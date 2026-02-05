@@ -8,10 +8,10 @@ from pathlib import Path
 import pytest
 
 from metainformant.gwas.analysis.summary_stats import (
-    write_summary_statistics,
-    write_significant_hits,
-    create_results_summary,
     _compute_lambda_gc,
+    create_results_summary,
+    write_significant_hits,
+    write_summary_statistics,
 )
 
 

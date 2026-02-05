@@ -8,13 +8,13 @@ from pathlib import Path
 import pytest
 
 try:
+    from metainformant.core.utils.errors import ValidationError
     from metainformant.life_events import Event, EventSequence
     from metainformant.phenotype import (
         aggregate_temporal_phenotypes,
         extract_phenotypes_from_events,
         map_events_to_traits,
     )
-    from metainformant.core.utils.errors import ValidationError
 
     LIFE_EVENTS_AVAILABLE = True
 except ImportError:

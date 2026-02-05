@@ -32,7 +32,6 @@ from metainformant.simulation.models.rna import (
     simulate_time_series_expression,
 )
 
-
 # ---------------------------------------------------------------------------
 # simulate_counts_negative_binomial
 # ---------------------------------------------------------------------------

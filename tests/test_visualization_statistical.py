@@ -3,22 +3,23 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from metainformant.visualization.analysis.statistical import (
-    histogram,
     box_plot,
-    violin_plot,
-    qq_plot,
     correlation_heatmap,
     density_plot,
+    histogram,
+    leverage_plot,
+    precision_recall_curve,
+    qq_plot,
+    residual_plot,
     ridge_plot,
     roc_curve,
-    precision_recall_curve,
-    residual_plot,
-    leverage_plot,
+    violin_plot,
 )
 
 # Check for optional dependencies

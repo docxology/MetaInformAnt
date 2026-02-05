@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import multiprocessing
 import os
-import time
 import threading
+import time
 from collections.abc import Callable, Iterable, Sequence
 from concurrent.futures import (
     Future,

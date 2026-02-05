@@ -32,7 +32,6 @@ from metainformant.rna.analysis.cross_species import (
     phylogenetic_expression_profile,
 )
 
-
 # =============================================================================
 # Fixtures: small synthetic data builders (inline, no external files)
 # =============================================================================

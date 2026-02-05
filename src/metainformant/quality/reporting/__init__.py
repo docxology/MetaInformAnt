@@ -7,10 +7,10 @@ aggregation, threshold checking, and trend analysis.
 from __future__ import annotations
 
 from .multiqc_integration import (
-    generate_qc_report,
     aggregate_sample_qc,
     check_qc_thresholds,
     default_qc_thresholds,
+    generate_qc_report,
     qc_trend_analysis,
 )
 

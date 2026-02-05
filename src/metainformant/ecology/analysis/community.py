@@ -7,13 +7,13 @@ similarity measures, and biodiversity assessment.
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple, Set, Iterator
-from collections import defaultdict, Counter
 import math
 import statistics
+from collections import Counter, defaultdict
+from pathlib import Path
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 
-from metainformant.core import logging, errors, validation
+from metainformant.core import errors, logging, validation
 
 logger = logging.get_logger(__name__)
 

@@ -52,7 +52,7 @@ class ExampleValidator:
             "total_examples": len(all_examples),
             "errors": len(errors),
             "warnings": len(warnings),
-            "issues": self.issues
+            "issues": self.issues,
         }
 
     def validate_example(self, example_path: Path) -> None:
@@ -73,19 +73,17 @@ class ExampleValidator:
     def _check_syntax(self, example_path: Path) -> None:
         """Check Python syntax."""
         try:
-            with open(example_path, 'r', encoding='utf-8') as f:
+            with open(example_path, "r", encoding="utf-8") as f:
                 ast.parse(f.read())
         except SyntaxError as e:
-            self._add_issue(example_path, "error", "syntax_error",
-                          f"Syntax error at line {e.lineno}: {e.msg}")
+            self._add_issue(example_path, "error", "syntax_error", f"Syntax error at line {e.lineno}: {e.msg}")
         except Exception as e:
-            self._add_issue(example_path, "error", "syntax_check_failed",
-                          f"Syntax check failed: {e}")
+            self._add_issue(example_path, "error", "syntax_check_failed", f"Syntax check failed: {e}")
 
     def _check_imports(self, example_path: Path) -> None:
         """Check import statements for common issues."""
         try:
-            with open(example_path, 'r', encoding='utf-8') as f:
+            with open(example_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
             # Check for problematic imports
@@ -94,8 +92,7 @@ class ExampleValidator:
                 self._validate_metainformant_imports(content, example_path)
 
         except Exception as e:
-            self._add_issue(example_path, "warning", "import_check_failed",
-                          f"Import check failed: {e}")
+            self._add_issue(example_path, "warning", "import_check_failed", f"Import check failed: {e}")
 
     def _validate_metainformant_imports(self, content: str, example_path: Path) -> None:
         """Validate METAINFORMANT imports exist."""
@@ -106,47 +103,50 @@ class ExampleValidator:
 
         for module_path in imports:
             # Convert module path to file path
-            module_parts = module_path.split('.')
+            module_parts = module_path.split(".")
             file_path = Path("src/metainformant") / Path(*module_parts)
 
             # Check if it's a Python file or package
-            if not (file_path.with_suffix('.py').exists() or (file_path / '__init__.py').exists()):
-                self._add_issue(example_path, "warning", "invalid_import",
-                              f"Import 'metainformant.{module_path}' may not exist")
+            if not (file_path.with_suffix(".py").exists() or (file_path / "__init__.py").exists()):
+                self._add_issue(
+                    example_path, "warning", "invalid_import", f"Import 'metainformant.{module_path}' may not exist"
+                )
 
     def _check_structure(self, example_path: Path) -> None:
         """Check basic example structure."""
         try:
-            with open(example_path, 'r', encoding='utf-8') as f:
+            with open(example_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
             # Check for required elements
             if 'if __name__ == "__main__":' not in content:
-                self._add_issue(example_path, "warning", "missing_main_guard",
-                              "Missing 'if __name__ == \"__main__\":' guard")
+                self._add_issue(
+                    example_path, "warning", "missing_main_guard", "Missing 'if __name__ == \"__main__\":' guard"
+                )
 
-            if 'def main():' not in content:
-                self._add_issue(example_path, "info", "missing_main_function",
-                              "Consider adding a main() function")
+            if "def main():" not in content:
+                self._add_issue(example_path, "info", "missing_main_function", "Consider adding a main() function")
 
             # Check for output directory usage
-            if 'output/examples/' not in content:
-                self._add_issue(example_path, "info", "no_output_directory",
-                              "Example doesn't write to output/examples/")
+            if "output/examples/" not in content:
+                self._add_issue(
+                    example_path, "info", "no_output_directory", "Example doesn't write to output/examples/"
+                )
 
         except Exception as e:
-            self._add_issue(example_path, "warning", "structure_check_failed",
-                          f"Structure check failed: {e}")
+            self._add_issue(example_path, "warning", "structure_check_failed", f"Structure check failed: {e}")
 
     def _add_issue(self, example_path: Path, severity: str, issue_type: str, message: str) -> None:
         """Add an issue to the issues list."""
-        self.issues.append({
-            "example": str(example_path.relative_to(self.examples_dir)),
-            "severity": severity,
-            "type": issue_type,
-            "message": message,
-            "file": str(example_path)
-        })
+        self.issues.append(
+            {
+                "example": str(example_path.relative_to(self.examples_dir)),
+                "severity": severity,
+                "type": issue_type,
+                "message": message,
+                "file": str(example_path),
+            }
+        )
 
 
 def main():

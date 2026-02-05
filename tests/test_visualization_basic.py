@@ -8,12 +8,12 @@ import numpy as np
 import pytest
 
 from metainformant.visualization.plots.basic import (
-    lineplot,
-    scatter_plot,
-    heatmap,
-    bar_plot,
-    pie_chart,
     area_plot,
+    bar_plot,
+    heatmap,
+    lineplot,
+    pie_chart,
+    scatter_plot,
     step_plot,
 )
 

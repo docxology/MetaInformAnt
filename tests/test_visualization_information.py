@@ -10,10 +10,10 @@ import pytest
 
 from metainformant.visualization.analysis.information import (
     plot_entropy_profile,
-    plot_mutual_information_matrix,
-    plot_renyi_spectra,
     plot_information_landscape,
     plot_information_network,
+    plot_mutual_information_matrix,
+    plot_renyi_spectra,
 )
 
 # Check for optional dependencies

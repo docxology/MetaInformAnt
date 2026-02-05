@@ -13,8 +13,10 @@ Output:
 from __future__ import annotations
 
 from pathlib import Path
+
 from metainformant.core import io
-from metainformant.networks.graph import create_network, centrality_measures
+from metainformant.networks.graph import centrality_measures, create_network
+
 
 def main():
     """Demonstrate network analysis."""
@@ -31,7 +33,7 @@ def main():
         ("Protein_B", "Protein_D"),
         ("Protein_C", "Protein_D"),
         ("Protein_C", "Protein_E"),
-        ("Protein_D", "Protein_F")
+        ("Protein_D", "Protein_F"),
     ]
 
     print(f"✓ Creating network with {len(edges)} interactions")
@@ -55,21 +57,22 @@ def main():
         "network_stats": {
             "nodes": network.num_nodes(),
             "edges": network.num_edges(),
-            "average_degree": sum(len(network.get_neighbors(node)) for node in network.nodes) / network.num_nodes()
+            "average_degree": sum(len(network.get_neighbors(node)) for node in network.nodes) / network.num_nodes(),
         },
-        "centrality_measures": centrality
+        "centrality_measures": centrality,
     }
 
-    print(f"Network: {analysis_results['network_stats']['nodes']} nodes, {analysis_results['network_stats']['edges']} edges")
+    print(
+        f"Network: {analysis_results['network_stats']['nodes']} nodes, {analysis_results['network_stats']['edges']} edges"
+    )
 
     # Save results
     results_file = output_dir / "network_analysis.json"
-    io.dump_json({
-        "network_analysis": analysis_results
-    }, results_file, indent=2)
+    io.dump_json({"network_analysis": analysis_results}, results_file, indent=2)
 
     print(f"✓ Results saved to: {results_file}")
     print("\n=== Networks Example Complete ===")
+
 
 if __name__ == "__main__":
     main()

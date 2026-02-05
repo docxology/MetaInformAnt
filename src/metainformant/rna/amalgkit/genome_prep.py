@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import gzip
 import shutil
-import subprocess
-import urllib.request
-import urllib.error
 import ssl
+import subprocess
+import urllib.error
+import urllib.request
 from pathlib import Path
 from typing import Any, Dict, Optional
 

@@ -21,7 +21,6 @@ IMPORT_FIXES = {
     "metainformant.rna.amalgkit.run_amalgkit": "metainformant.rna.amalgkit.amalgkit.run_amalgkit",
     # Math coalescent mapping
     "metainformant.math.coalescent": "metainformant.math.population_genetics.coalescent",
-
     "metainformant.visualization.genomics.genomics.networks": "metainformant.visualization.genomics.networks",
     "metainformant.visualization.genomics.genomics.expression": "metainformant.visualization.genomics.expression",
     "metainformant.visualization.genomics.genomics.genomics": "metainformant.visualization.genomics.genomics",
@@ -49,7 +48,6 @@ IMPORT_FIXES = {
     "metainformant.visualization.expression": "metainformant.visualization.genomics.expression",
     "metainformant.visualization.networks": "metainformant.visualization.genomics.networks",
     "metainformant.visualization.trees": "metainformant.visualization.genomics.trees",
-
     # GWAS
     "metainformant.gwas.visualization": "metainformant.gwas.visualization.general",
     "metainformant.gwas.visualization_comparison": "metainformant.gwas.visualization.comparison",
@@ -69,7 +67,6 @@ IMPORT_FIXES = {
     "metainformant.gwas.sra_download": "metainformant.gwas.data.sra_download",
     "metainformant.gwas.config": "metainformant.gwas.data.config",
     "metainformant.gwas.workflow": "metainformant.gwas.workflow.workflow",
-
     # Protein
     "metainformant.protein.alphafold": "metainformant.protein.structure.alphafold",
     "metainformant.protein.pdb": "metainformant.protein.structure.pdb",
@@ -84,7 +81,6 @@ IMPORT_FIXES = {
     "metainformant.protein.interpro": "metainformant.protein.database.interpro",
     "metainformant.protein.uniprot": "metainformant.protein.database.uniprot",
     "metainformant.protein.visualization": "metainformant.protein.visualization.general",
-
     # Core
     "metainformant.core.cache": "metainformant.core.io.cache",
     "metainformant.core.disk": "metainformant.core.io.disk",
@@ -108,7 +104,6 @@ IMPORT_FIXES = {
     "metainformant.core.discovery": "metainformant.core.execution.discovery",
     "metainformant.core.db": "metainformant.core.data.db",
     "metainformant.core.validation": "metainformant.core.data.validation",
-
     # DNA
     "metainformant.dna.composition": "metainformant.dna.sequence.composition",
     "metainformant.dna.sequence_analysis": "metainformant.dna.sequence.analysis",
@@ -120,7 +115,6 @@ IMPORT_FIXES = {
     "metainformant.dna.io": "metainformant.dna.io.fasta",
     "metainformant.dna.distances": "metainformant.dna.alignment.distances",
     "metainformant.dna.fastq": "metainformant.dna.io.fastq",
-
     # RNA
     "metainformant.rna.workflow": "metainformant.rna.engine.workflow",
     "metainformant.rna.pipeline": "metainformant.rna.engine.pipeline",
@@ -128,32 +122,27 @@ IMPORT_FIXES = {
     "metainformant.rna.deps": "metainformant.rna.core.deps",
     "metainformant.rna.validation": "metainformant.rna.analysis.validation",
     "metainformant.rna.discovery": "metainformant.rna.analysis.discovery",
-
     # Menu
     "metainformant.menu.display": "metainformant.menu.ui.display",
     "metainformant.menu.navigation": "metainformant.menu.ui.navigation",
     "metainformant.menu.discovery": "metainformant.menu.core.discovery",
     "metainformant.menu.executor": "metainformant.menu.core.executor",
-
     # Math
     "metainformant.math.coalescent": "metainformant.math.population_genetics.coalescent",
     "metainformant.math.demography": "metainformant.math.population_genetics.demography",
     "metainformant.math.ddm": "metainformant.math.decision_theory.ddm",
     "metainformant.math.epidemiology": "metainformant.math.epidemiology",
     "metainformant.math.evolutionary_dynamics": "metainformant.math.evolutionary_dynamics",
-
     # Networks
     "metainformant.networks.graph": "metainformant.networks.analysis.graph",
     "metainformant.networks.community": "metainformant.networks.analysis.community",
     "metainformant.networks.pathway": "metainformant.networks.analysis.pathway",
     "metainformant.networks.ppi": "metainformant.networks.interaction.ppi",
     "metainformant.networks.regulatory": "metainformant.networks.interaction.regulatory",
-
     # Quality
     "metainformant.quality.contamination": "metainformant.quality.analysis.contamination",
     "metainformant.quality.metrics": "metainformant.quality.analysis.metrics",
     "metainformant.quality.fastq": "metainformant.quality.io.fastq",
-
     # Singlecell
     "metainformant.singlecell.preprocessing": "metainformant.singlecell.data.preprocessing",
     "metainformant.singlecell.integration": "metainformant.singlecell.data.integration",
@@ -161,11 +150,9 @@ IMPORT_FIXES = {
     "metainformant.singlecell.dimensionality": "metainformant.singlecell.analysis.dimensionality",
     "metainformant.singlecell.trajectory": "metainformant.singlecell.analysis.trajectory",
     "metainformant.singlecell.visualization": "metainformant.singlecell.visualization.visualization",
-
     # Multiomics
     "metainformant.multiomics.integration": "metainformant.multiomics.analysis.integration",
     "metainformant.multiomics.visualization": "metainformant.multiomics.visualization.visualization",
-
     # Information
     "metainformant.information.analysis": "metainformant.information.metrics.analysis",
     "metainformant.information.continuous": "metainformant.information.metrics.continuous",
@@ -175,7 +162,6 @@ IMPORT_FIXES = {
     "metainformant.information.integration": "metainformant.information.integration.integration",
     "metainformant.information.networks": "metainformant.information.integration.networks",
     "metainformant.information.workflows": "metainformant.information.workflow.workflows",
-
     # Life Events
     "metainformant.life_events.models": "metainformant.life_events.models.models",
     "metainformant.life_events.embeddings": "metainformant.life_events.models.embeddings",
@@ -185,7 +171,6 @@ IMPORT_FIXES = {
     "metainformant.life_events.interpretability": "metainformant.life_events.analysis.interpretability",
     "metainformant.life_events.workflow": "metainformant.life_events.workflow.workflow",
     "metainformant.life_events.visualization": "metainformant.life_events.visualization.visualization",
-
     # Simulation
     "metainformant.simulation.agents": "metainformant.simulation.models.agents",
     "metainformant.simulation.popgen": "metainformant.simulation.models.popgen",
@@ -193,17 +178,14 @@ IMPORT_FIXES = {
     "metainformant.simulation.sequences": "metainformant.simulation.models.sequences",
     "metainformant.simulation.workflow": "metainformant.simulation.workflow.workflow",
     "metainformant.simulation.visualization": "metainformant.simulation.visualization.visualization",
-
     # Phenotype
     "metainformant.phenotype.antwiki": "metainformant.phenotype.data.antwiki",
     "metainformant.phenotype.scraper": "metainformant.phenotype.data.scraper",
     "metainformant.phenotype.life_course": "metainformant.phenotype.analysis.life_course",
     "metainformant.phenotype.visualization": "metainformant.phenotype.visualization.visualization",
-
     # Ecology
     "metainformant.ecology.community": "metainformant.ecology.analysis.community",
     "metainformant.ecology.visualization": "metainformant.ecology.visualization.visualization",
-
     # Epigenome
     "metainformant.epigenome.atacseq": "metainformant.epigenome.assays.atacseq",
     "metainformant.epigenome.chipseq": "metainformant.epigenome.assays.chipseq",
@@ -211,7 +193,6 @@ IMPORT_FIXES = {
     "metainformant.epigenome.tracks": "metainformant.epigenome.analysis.tracks",
     "metainformant.epigenome.workflow": "metainformant.epigenome.workflow.workflow",
     "metainformant.epigenome.visualization": "metainformant.epigenome.visualization.visualization",
-
     # ML
     "metainformant.ml.classification": "metainformant.ml.models.classification",
     "metainformant.ml.regression": "metainformant.ml.models.regression",
@@ -237,7 +218,7 @@ def fix_imports_in_file(file_path: Path) -> int:
 
     for old_path, new_path in IMPORT_FIXES.items():
         # Match "from old_path import ..." or "import old_path"
-        pattern = rf'\b{re.escape(old_path)}\b'
+        pattern = rf"\b{re.escape(old_path)}\b"
         if re.search(pattern, content):
             content = re.sub(pattern, new_path, content)
             replacements += 1

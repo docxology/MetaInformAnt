@@ -13,8 +13,10 @@ Output:
 from __future__ import annotations
 
 from pathlib import Path
+
 from metainformant.core import io
 from metainformant.dna import sequences
+
 
 def main():
     """Demonstrate DNA sequence processing basics."""
@@ -32,7 +34,7 @@ def main():
         "seq2": "GCTAGCTAGCTAGCTAGCTA",  # 20bp, GC=10/20=50%
         "seq3": "TTTTAAAAAAAATTTTTTAA",  # 20bp, GC=0/20=0%
         "seq4": "CGCGCGCGCGCGCGCGCGCG",  # 20bp, GC=20/20=100%
-        "seq5": "ATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG"  # 40bp, GC=20/40=50%
+        "seq5": "ATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG",  # 40bp, GC=20/40=50%
     }
 
     # Write to FASTA file
@@ -60,7 +62,7 @@ def main():
             "length": sequences.sequence_length(sequence),
             "gc_content": sequences.gc_content(sequence),
             "is_valid_dna": sequences.validate_dna_sequence(sequence),
-            "reverse_complement": sequences.reverse_complement(sequence)
+            "reverse_complement": sequences.reverse_complement(sequence),
         }
 
         # Verify reverse complement is valid
@@ -87,7 +89,7 @@ def main():
                 "counts": counts,
                 "frequencies": frequencies,
                 "unique_kmers": len(counts),
-                "most_common": max(counts.items(), key=lambda x: x[1]) if counts else None
+                "most_common": max(counts.items(), key=lambda x: x[1]) if counts else None,
             }
 
         kmer_results[seq_id] = kmer_analysis
@@ -119,7 +121,7 @@ def main():
             "complexity_score": complexity,
             "entropy_h1": entropy,
             "motifs_found": found_motifs,
-            "repeats_found": repeats
+            "repeats_found": repeats,
         }
 
         print(f"  {seq_id}: complexity={complexity:.3f}, entropy={entropy:.3f}")
@@ -152,7 +154,7 @@ def main():
             "codon_usage": codon_usage,
             "start_codons_at": start_positions,
             "stop_codons_at": stop_positions,
-            "sequence_length_mod3": len(sequence) % 3
+            "sequence_length_mod3": len(sequence) % 3,
         }
 
         print(f"  {seq_id}: {len(orfs)} ORFs, {len(start_positions)} start codons, {len(stop_positions)} stop codons")
@@ -181,7 +183,7 @@ def main():
             "at_skew": at_skew,
             "base_bias": bias,
             "palindromes": palindromes,
-            "melting_temperature_celsius": tm
+            "melting_temperature_celsius": tm,
         }
 
         print(f"  {seq_id}: GC skew={gc_skew:.3f}, AT skew={at_skew:.3f}")
@@ -196,7 +198,7 @@ def main():
 
     seq_ids = list(loaded_sequences.keys())
     for i, seq_id1 in enumerate(seq_ids):
-        for seq_id2 in seq_ids[i+1:]:
+        for seq_id2 in seq_ids[i + 1 :]:
             seq1 = loaded_sequences[seq_id1]
             seq2 = loaded_sequences[seq_id2]
 
@@ -231,7 +233,7 @@ def main():
                 "sequence_bias",
                 "palindrome_detection",
                 "melting_temperature",
-                "complementarity_scoring"
+                "complementarity_scoring",
             ],
             "results": {
                 "sequence_analysis": sequence_analysis,
@@ -239,22 +241,34 @@ def main():
                 "complexity_analysis": complexity_results,
                 "orf_analysis": orf_results,
                 "bias_analysis": bias_results,
-                "complementarity_scores": complementarity_scores
+                "complementarity_scores": complementarity_scores,
             },
             "summary_statistics": {
                 "total_sequences": len(loaded_sequences),
                 "total_bases": sum(len(seq) for seq in loaded_sequences.values()),
-                "average_gc_content": sum(sequence_analysis[s]["gc_content"] for s in sequence_analysis) / len(sequence_analysis),
+                "average_gc_content": sum(sequence_analysis[s]["gc_content"] for s in sequence_analysis)
+                / len(sequence_analysis),
                 "sequences_with_orfs": sum(1 for r in orf_results.values() if r["open_reading_frames"]),
-                "palindromes_found": sum(len(r["palindromes"]) for r in bias_results.values())
+                "palindromes_found": sum(len(r["palindromes"]) for r in bias_results.values()),
             },
             "functions_demonstrated": [
-                "read_fasta", "reverse_complement", "gc_content", "validate_dna_sequence",
-                "kmer_counts", "kmer_frequencies", "calculate_sequence_complexity",
-                "find_motifs", "find_orfs", "calculate_codon_usage", "detect_sequence_bias",
-                "calculate_gc_skew", "calculate_at_skew", "find_palindromes",
-                "calculate_melting_temperature", "dna_complementarity_score"
-            ]
+                "read_fasta",
+                "reverse_complement",
+                "gc_content",
+                "validate_dna_sequence",
+                "kmer_counts",
+                "kmer_frequencies",
+                "calculate_sequence_complexity",
+                "find_motifs",
+                "find_orfs",
+                "calculate_codon_usage",
+                "detect_sequence_bias",
+                "calculate_gc_skew",
+                "calculate_at_skew",
+                "find_palindromes",
+                "calculate_melting_temperature",
+                "dna_complementarity_score",
+            ],
         }
     }
 
@@ -274,6 +288,7 @@ def main():
     print("- Melting temperature and complementarity")
 
     print(f"\nAll outputs saved to: {output_dir}")
+
 
 if __name__ == "__main__":
     main()

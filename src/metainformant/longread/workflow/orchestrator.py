@@ -117,7 +117,7 @@ class LongReadOrchestrator:
             PipelineResult with QC metrics and report paths.
         """
         from ..quality.filtering import filter_by_length, filter_by_quality, trim_adapters
-        from ..quality.metrics import read_length_stats, quality_score_distribution, calculate_n50
+        from ..quality.metrics import calculate_n50, quality_score_distribution, read_length_stats
 
         params = self.config.get("parameters", {})
         min_length = params.get("min_length", 1000)
@@ -220,7 +220,7 @@ class LongReadOrchestrator:
 
             processed_reads = ctx[metric_dep]
             try:
-                from ..visualization.plots import plot_read_length_histogram, plot_quality_vs_length
+                from ..visualization.plots import plot_quality_vs_length, plot_read_length_histogram
 
                 length_plot = plot_read_length_histogram(
                     processed_reads,
@@ -251,7 +251,7 @@ class LongReadOrchestrator:
 
         # Step 7: Export report
         def _export_report(ctx: dict[str, Any]) -> Path:
-            from .reporting import generate_qc_report, export_report
+            from .reporting import export_report, generate_qc_report
 
             metrics = ctx["compute_metrics"]
             # Build a lightweight PipelineResult for the report generator
@@ -290,9 +290,9 @@ class LongReadOrchestrator:
         Returns:
             PipelineResult with assembly contigs and statistics.
         """
+        from ..assembly.consensus import calculate_consensus_quality, generate_consensus, polish_consensus
+        from ..assembly.overlap import compute_overlap_graph, filter_contained_reads, find_overlaps
         from ..quality.filtering import filter_by_length, filter_by_quality
-        from ..assembly.overlap import find_overlaps, compute_overlap_graph, filter_contained_reads
-        from ..assembly.consensus import generate_consensus, polish_consensus, calculate_consensus_quality
         from ..quality.metrics import read_length_stats
 
         params = self.config.get("parameters", {})
@@ -484,7 +484,7 @@ class LongReadOrchestrator:
         Returns:
             PipelineResult with methylation calls and analysis results.
         """
-        from ..analysis.modified_bases import call_5mc, call_6ma, aggregate_methylation, differential_methylation
+        from ..analysis.modified_bases import aggregate_methylation, call_5mc, call_6ma, differential_methylation
 
         params = self.config.get("parameters", {})
         modification_types = params.get("modification_types", ["5mC", "6mA"])
@@ -681,7 +681,7 @@ class LongReadOrchestrator:
 
         # Step 7: Methylation report
         def _methylation_report(ctx: dict[str, Any]) -> Path:
-            from .reporting import generate_methylation_report, export_report
+            from .reporting import export_report, generate_methylation_report
 
             interim_result = PipelineResult(
                 pipeline_name="methylation",
@@ -725,9 +725,9 @@ class LongReadOrchestrator:
             PipelineResult with structural variant calls and statistics.
         """
         from ..analysis.structural import (
-            detect_sv_from_long_reads,
             detect_insertions,
             detect_inversions,
+            detect_sv_from_long_reads,
             phase_structural_variants,
         )
 
@@ -964,9 +964,9 @@ class LongReadOrchestrator:
             PipelineResult with combined results from all sub-pipelines.
         """
         from .pipelines import (
-            get_qc_pipeline_config,
             get_assembly_pipeline_config,
             get_methylation_pipeline_config,
+            get_qc_pipeline_config,
             get_sv_pipeline_config,
         )
 

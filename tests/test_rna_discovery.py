@@ -12,10 +12,10 @@ import pytest
 
 from metainformant.rna.engine import discovery
 from metainformant.rna.engine.discovery import (
-    _construct_ftp_path,
-    _parse_sra_xml,
     BIOPYTHON_AVAILABLE,
     NCBI_DATASETS_AVAILABLE,
+    _construct_ftp_path,
+    _parse_sra_xml,
 )
 
 

@@ -70,7 +70,7 @@ class TestDefaultGeneration:
 
     def test_default_generation_unchanged(self, gwas_output):
         """Default params should produce 90 samples (80 diploid + 10 drones)."""
-        from run_amellifera_gwas import generate_real_vcf, DEFAULT_SUBSPECIES
+        from run_amellifera_gwas import DEFAULT_SUBSPECIES, generate_real_vcf
 
         vcf_path = generate_real_vcf(gwas_output, n_variants=100, force=True)
         assert vcf_path.exists()
@@ -340,7 +340,7 @@ class TestManifestCache:
 
     def test_manifest_cache_invalidation(self, gwas_output):
         """Changing params should trigger regeneration when manifest doesn't match."""
-        from run_amellifera_gwas import generate_real_vcf, _check_manifest
+        from run_amellifera_gwas import _check_manifest, generate_real_vcf
 
         # Generate with seed=42
         vcf_path = generate_real_vcf(gwas_output, n_variants=50, seed=42, force=True)
@@ -394,7 +394,7 @@ class TestConfigLoading:
 
     def test_load_from_none(self):
         """No config should return defaults."""
-        from run_amellifera_gwas import load_data_generation_config, DEFAULT_SUBSPECIES
+        from run_amellifera_gwas import DEFAULT_SUBSPECIES, load_data_generation_config
 
         dg = load_data_generation_config(None)
         assert dg["subspecies"] == DEFAULT_SUBSPECIES

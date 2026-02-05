@@ -15,22 +15,20 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
+from analyze import analyze_dataset
+from generate_dataset import generate_comprehensive_dataset
+from report import generate_summary_report
+from visualize import generate_visualizations
+
 from metainformant.core.io import ensure_directory
 from metainformant.core.utils.logging import setup_logger
-
-from generate_dataset import generate_comprehensive_dataset
-from analyze import analyze_dataset
-from visualize import generate_visualizations
-from report import generate_summary_report
 
 
 def main():
     """Main execution function."""
     import argparse
-    
-    parser = argparse.ArgumentParser(
-        description="Population genetics dataset generation and analysis"
-    )
+
+    parser = argparse.ArgumentParser(description="Population genetics dataset generation and analysis")
     parser.add_argument(
         "--output-dir",
         type=str,
@@ -60,14 +58,14 @@ def main():
         action="store_true",
         help="Skip generation, only analyze existing dataset",
     )
-    
+
     args = parser.parse_args()
-    
+
     output_dir = Path(args.output_dir)
     ensure_directory(str(output_dir))
-    
+
     logger = setup_logger("metainformant.popgen.comprehensive")
-    
+
     # Generate dataset
     if not args.skip_generation:
         logger.info("Step 1: Generating comprehensive dataset")
@@ -80,20 +78,21 @@ def main():
     else:
         logger.info("Skipping generation, loading existing dataset info")
         from metainformant.core.io import load_json
+
         dataset_info = load_json(str(output_dir / "dataset_info.json"))
-    
+
     # Analyze dataset
     logger.info("Step 2: Analyzing dataset")
     analysis_results = analyze_dataset(dataset_info, output_dir)
-    
+
     # Generate report
     logger.info("Step 3: Generating summary report")
     generate_summary_report(dataset_info, analysis_results, output_dir)
-    
+
     # Generate visualizations
     logger.info("Step 4: Generating visualizations")
     generate_visualizations(analysis_results, output_dir)
-    
+
     logger.info("Comprehensive analysis complete!")
     logger.info(f"Results saved to: {output_dir}")
 

@@ -8,7 +8,6 @@ and summary statistics for nanopore-derived methylation data.
 from __future__ import annotations
 
 from . import calling
-
 from .calling import (
     aggregate_methylation,
     call_methylation_from_signal,

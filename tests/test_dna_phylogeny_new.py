@@ -31,7 +31,6 @@ from metainformant.dna.phylogeny.tree import (
     upgma_tree,
 )
 
-
 # ---------------------------------------------------------------------------
 # Fixtures: hand-built trees for deterministic testing
 # ---------------------------------------------------------------------------

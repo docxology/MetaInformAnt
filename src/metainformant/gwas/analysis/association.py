@@ -370,8 +370,8 @@ def _logistic_regression_with_stats(X: Any, y: Any, max_iter: int) -> Tuple[floa
 
     # Try sklearn as fallback
     try:
-        from sklearn.linear_model import LogisticRegression
         import scipy.stats as stats
+        from sklearn.linear_model import LogisticRegression
 
         lr = LogisticRegression(max_iter=max_iter, random_state=42)
         lr.fit(X, y)

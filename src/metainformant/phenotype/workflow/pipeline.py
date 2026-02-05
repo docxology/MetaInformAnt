@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Callable, Union
 from datetime import datetime
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from metainformant.core import logging
 from metainformant.core.utils.errors import ValidationError
@@ -392,8 +392,8 @@ class PhenotypePipeline:
 
     def _analyze_morphological(self, data: Any, params: Dict) -> Dict[str, Any]:
         """Morphological phenotype analysis."""
-        from ..morphological.profile import summary_statistics, MorphometricProfile
         from ..morphological.measurement import Measurement
+        from ..morphological.profile import MorphometricProfile, summary_statistics
 
         if isinstance(data, list) and all(isinstance(d, MorphometricProfile) for d in data):
             return summary_statistics(data)

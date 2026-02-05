@@ -7,7 +7,8 @@ terms, and relationships in METAINFORMANT.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional, Set, Any, Tuple
+from typing import Any, Dict, List, Optional, Set, Tuple
+
 from metainformant.core import logging
 from metainformant.core.utils import errors
 

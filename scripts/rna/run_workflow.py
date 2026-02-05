@@ -26,10 +26,11 @@ from pathlib import Path
 
 # Import setup utilities (must be before other imports)
 sys.path.insert(0, str(Path(__file__).parent))
-from _setup_utils import ensure_venv_activated, check_environment_or_exit
+from _setup_utils import check_environment_or_exit, ensure_venv_activated
 
 # Suppress optional dependency warnings until venv is ready
-from metainformant.core.utils.optional_deps import suppress_optional_warnings, enable_optional_warnings
+from metainformant.core.utils.optional_deps import enable_optional_warnings, suppress_optional_warnings
+
 suppress_optional_warnings()
 
 # Auto-setup and activate venv
@@ -42,13 +43,13 @@ enable_optional_warnings()
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
+from metainformant.core.utils.logging import get_logger
 from metainformant.rna.core.cleanup import cleanup_partial_downloads, fix_abundance_naming_for_species
 from metainformant.rna.engine.monitoring import analyze_species_status, check_workflow_progress
 from metainformant.rna.engine.orchestration import (
     cleanup_unquantified_samples,
     run_workflow_for_species,
 )
-from metainformant.core.utils.logging import get_logger
 
 logger = get_logger("run_workflow")
 
@@ -196,12 +197,12 @@ def main() -> int:
         action="store_true",
         help="Force re-execution of all specified steps",
     )
-    
+
     args = parser.parse_args()
 
     # Process steps argument - split comma-separated values
     if args.steps:
-        args.steps = [step.strip() for s in args.steps for step in s.split(',') if step.strip()]
+        args.steps = [step.strip() for s in args.steps for step in s.split(",") if step.strip()]
 
     if args.list_configs:
         files = _discover_species_config_files()
@@ -239,7 +240,12 @@ def main() -> int:
 
     if args.plan:
         from metainformant.rna.amalgkit.amalgkit import build_amalgkit_command
-        from metainformant.rna.engine.workflow import apply_step_defaults, load_workflow_config, plan_workflow, sanitize_params_for_cli
+        from metainformant.rna.engine.workflow import (
+            apply_step_defaults,
+            load_workflow_config,
+            plan_workflow,
+            sanitize_params_for_cli,
+        )
 
         cfg = load_workflow_config(config_path)
         apply_step_defaults(cfg)
@@ -280,38 +286,38 @@ def main() -> int:
 
     # Validation
     if args.validate:
+        from metainformant.rna.analysis.validation import save_validation_report, validate_all_samples
         from metainformant.rna.engine.workflow import load_workflow_config
-        from metainformant.rna.analysis.validation import validate_all_samples, save_validation_report
-        
+
         logger.info(f"Running validation for {config_path.name}")
         config = load_workflow_config(config_path)
-        
+
         validation_result = validate_all_samples(config, stage=args.validate_stage)
-        
+
         # Save validation report
         validation_dir = config.work_dir / "validation"
         validation_dir.mkdir(parents=True, exist_ok=True)
         report_file = validation_dir / "validation_report.json"
         save_validation_report(validation_result, report_file)
-        
+
         # Print summary
-        total = validation_result.get('total_samples', 0)
-        validated = validation_result.get('validated', 0)
-        failed = validation_result.get('failed', 0)
-        stage = args.validate_stage or 'all'
-        
+        total = validation_result.get("total_samples", 0)
+        validated = validation_result.get("validated", 0)
+        failed = validation_result.get("failed", 0)
+        stage = args.validate_stage or "all"
+
         logger.info(f"Validation results ({stage}):")
         logger.info(f"  Total samples: {total}")
         logger.info(f"  Validated: {validated}")
         logger.info(f"  Failed: {failed}")
-        
-        if validation_result.get('summary'):
+
+        if validation_result.get("summary"):
             logger.info("  Stage breakdown:")
-            for stage_name, stage_info in validation_result['summary'].items():
-                complete = stage_info.get('complete', 0)
-                missing = stage_info.get('missing', 0)
+            for stage_name, stage_info in validation_result["summary"].items():
+                complete = stage_info.get("complete", 0)
+                missing = stage_info.get("missing", 0)
                 logger.info(f"    {stage_name}: {complete} complete, {missing} missing")
-        
+
         if failed > 0:
             logger.warning(f"  {failed} samples failed validation. Check {report_file} for details.")
             return 1
@@ -320,41 +326,47 @@ def main() -> int:
             return 0
 
     # Run robust download if getfastq is in steps (or steps is None/all)
-    should_run_download = args.steps is None or 'getfastq' in args.steps
-    
+    should_run_download = args.steps is None or "getfastq" in args.steps
+
     # Skip robust download if we are redoing select or metadata, as the selected file might be stale
-    is_redoing_select = args.redo and (args.steps is None or 'select' in args.steps or 'metadata' in args.steps)
-    
-    if should_run_download and not args.validate and not is_redoing_select: # Skip if validating or redoing
+    is_redoing_select = args.redo and (args.steps is None or "select" in args.steps or "metadata" in args.steps)
+
+    if should_run_download and not args.validate and not is_redoing_select:  # Skip if validating or redoing
         # Determine metadata path and fastq dir
         # We need to load config to get work_dir
         from metainformant.rna.engine.workflow import load_workflow_config
+
         cfg = load_workflow_config(config_path)
-        
+
         # Skip robust pre-download if max_bp limit is set (to avoid downloading too much)
-        getfastq_params = cfg.extra_config.get('steps', {}).get('getfastq', {})
-        has_size_limit = 'max_bp' in getfastq_params
-        
+        getfastq_params = cfg.extra_config.get("steps", {}).get("getfastq", {})
+        has_size_limit = "max_bp" in getfastq_params
+
         if not has_size_limit:
             metadata_path = cfg.work_dir / "metadata" / "metadata_selected.tsv"
             fastq_dir = cfg.work_dir.parent / "fastq" / "getfastq"
-            
-            steps_config = cfg.extra_config.get('steps', {})
-            if 'getfastq' in steps_config and 'out_dir' in steps_config['getfastq']:
-                fastq_dir = Path(steps_config['getfastq']['out_dir'])
+
+            steps_config = cfg.extra_config.get("steps", {})
+            if "getfastq" in steps_config and "out_dir" in steps_config["getfastq"]:
+                fastq_dir = Path(steps_config["getfastq"]["out_dir"])
                 if fastq_dir.name != "getfastq":
                     fastq_dir = fastq_dir / "getfastq"
-    
+
             if metadata_path.exists():
                 print(f"DEBUG: Metadata found at {metadata_path}, running robust download...")
                 logger.info(f"Running robust pre-download for SRA files to {fastq_dir}...")
                 from metainformant.core.io.download_robust import download_sra_files_from_metadata
+
                 download_sra_files_from_metadata(metadata_path, fastq_dir)
             else:
                 print(f"DEBUG: Metadata NOT found at {metadata_path}")
-                logger.info("Metadata selected file not found yet, skipping robust pre-download (will run in normal flow)")
+                logger.info(
+                    "Metadata selected file not found yet, skipping robust pre-download (will run in normal flow)"
+                )
         else:
-            logger.info("Skipping robust pre-download because max_bp limit is set (will use amalgkit's internal robust download)")
+            logger.info(
+                "Skipping robust pre-download because max_bp limit is set (will use amalgkit's internal robust download)"
+            )
     else:
         reason = "redo requested" if is_redoing_select else "skipping"
         print(f"DEBUG: Skipping robust download. should_run_download={should_run_download}, reason={reason}")
@@ -381,4 +393,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

@@ -1,5 +1,6 @@
-from typing import Dict, Optional, List
 from dataclasses import dataclass
+from typing import Dict, List, Optional
+
 from metainformant.core.utils.errors import ValidationError
 
 

@@ -12,11 +12,14 @@ Output:
 
 from __future__ import annotations
 
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+
 from metainformant.core import io
 from metainformant.gwas.association import association_test_linear, association_test_logistic
 from metainformant.gwas.correction import bonferroni_correction, fdr_correction
+
 
 def main():
     """Demonstrate GWAS association testing."""
@@ -32,7 +35,7 @@ def main():
     np.random.seed(42)  # For reproducible results
 
     n_samples = 1000  # 1000 individuals
-    n_snps = 100     # 100 SNPs for demonstration
+    n_snps = 100  # 100 SNPs for demonstration
 
     # Generate genotype data (0, 1, 2 for homozygous ref, het, homozygous alt)
     genotypes = np.random.randint(0, 3, size=(n_snps, n_samples))
@@ -63,17 +66,19 @@ def main():
 
         result = association_test_linear(snp_genotypes, phenotypes)
 
-        linear_results.append({
-            "snp_index": snp_idx,
-            "chromosome": f"chr{((snp_idx // 10) % 5) + 1}",  # Simulated chromosomes
-            "position": snp_idx * 100000,  # Simulated positions
-            "genotypes": snp_genotypes.tolist(),
-            "beta": result["beta"],
-            "se": result["se"],
-            "t_stat": result["t_stat"],
-            "p_value": result["p_value"],
-            "is_causal": snp_idx == causal_snp_idx
-        })
+        linear_results.append(
+            {
+                "snp_index": snp_idx,
+                "chromosome": f"chr{((snp_idx // 10) % 5) + 1}",  # Simulated chromosomes
+                "position": snp_idx * 100000,  # Simulated positions
+                "genotypes": snp_genotypes.tolist(),
+                "beta": result["beta"],
+                "se": result["se"],
+                "t_stat": result["t_stat"],
+                "p_value": result["p_value"],
+                "is_causal": snp_idx == causal_snp_idx,
+            }
+        )
 
         if snp_idx == causal_snp_idx:
             print(f"  Causal SNP {snp_idx}: β={result['beta']:.3f}, p={result['p_value']:.2e}")
@@ -90,15 +95,17 @@ def main():
 
         result = association_test_logistic(snp_genotypes, binary_phenotypes)
 
-        logistic_results.append({
-            "snp_index": snp_idx,
-            "beta": result["beta"],
-            "se": result["se"],
-            "z_stat": result["z_stat"],
-            "p_value": result["p_value"],
-            "odds_ratio": result.get("odds_ratio", np.exp(result["beta"])),
-            "is_causal": snp_idx == causal_snp_idx
-        })
+        logistic_results.append(
+            {
+                "snp_index": snp_idx,
+                "beta": result["beta"],
+                "se": result["se"],
+                "z_stat": result["z_stat"],
+                "p_value": result["p_value"],
+                "odds_ratio": result.get("odds_ratio", np.exp(result["beta"])),
+                "is_causal": snp_idx == causal_snp_idx,
+            }
+        )
 
     # Show example SNP result (first SNP)
     example_logistic = logistic_results[0]
@@ -124,12 +131,12 @@ def main():
         "bonferroni": {
             "alpha_threshold": bonferroni_threshold,
             "significant_snps": sum(bonferroni_rejected),
-            "significant_indices": [i for i, rej in enumerate(bonferroni_rejected) if rej]
+            "significant_indices": [i for i, rej in enumerate(bonferroni_rejected) if rej],
         },
         "fdr": {
             "significant_snps": sum(fdr_rejected),
-            "significant_indices": [i for i, rej in enumerate(fdr_rejected) if rej]
-        }
+            "significant_indices": [i for i, rej in enumerate(fdr_rejected) if rej],
+        },
     }
 
     print("  Bonferroni correction (α=0.05):")
@@ -155,12 +162,14 @@ def main():
         else:
             magnitude = "large"
 
-        effect_sizes.append({
-            "snp_index": result["snp_index"],
-            "effect_size": result["beta"],
-            "magnitude": magnitude,
-            "is_causal": result["is_causal"]
-        })
+        effect_sizes.append(
+            {
+                "snp_index": result["snp_index"],
+                "effect_size": result["beta"],
+                "magnitude": magnitude,
+                "is_causal": result["is_causal"],
+            }
+        )
 
     print("  Effect size interpretation:")
     for effect in effect_sizes[:3]:  # Show first 3
@@ -187,8 +196,8 @@ def main():
             "Power depends on sample size, effect size, and variance",
             "Larger effects are easier to detect",
             "More samples increase statistical power",
-            "Multiple testing correction reduces power"
-        ]
+            "Multiple testing correction reduces power",
+        ],
     }
 
     print(f"  Estimated power to detect causal effect: {power_estimate:.1%}")
@@ -206,21 +215,21 @@ def main():
                 "causal_snp": causal_snp_idx,
                 "causal_effect_size": causal_effect,
                 "phenotype_type": "continuous",
-                "binary_trait_available": True
+                "binary_trait_available": True,
             },
             "association_methods": {
                 "linear_regression": {
                     "description": "Tests association between SNP dosage and continuous phenotype",
                     "model": "phenotype ~ SNP_dosage",
                     "output": "beta (effect size), SE, t-statistic, p-value",
-                    "results": linear_results
+                    "results": linear_results,
                 },
                 "logistic_regression": {
                     "description": "Tests association between SNP dosage and binary phenotype",
                     "model": "logit(prob) = beta * SNP_dosage",
                     "output": "beta, SE, z-statistic, p-value, odds ratio",
-                    "results": logistic_results[:5]  # First 5 for brevity
-                }
+                    "results": logistic_results[:5],  # First 5 for brevity
+                },
             },
             "multiple_testing_correction": correction_results,
             "effect_size_analysis": effect_sizes,
@@ -230,15 +239,15 @@ def main():
                 f"Bonferroni correction identified {correction_results['bonferroni']['significant_snps']} significant SNPs",
                 f"FDR correction identified {correction_results['fdr']['significant_snps']} significant SNPs",
                 "Effect sizes range from small to large depending on SNP",
-                f"Statistical power estimated at {power_estimate:.1%} for effect size {causal_effect}"
+                f"Statistical power estimated at {power_estimate:.1%} for effect size {causal_effect}",
             ],
             "gwas_best_practices_demonstrated": [
                 "Use appropriate statistical model for phenotype type",
                 "Apply multiple testing correction",
                 "Interpret effect sizes in biological context",
                 "Consider statistical power in study design",
-                "Validate significant associations"
-            ]
+                "Validate significant associations",
+            ],
         }
     }
 
@@ -255,6 +264,7 @@ def main():
     print("- Statistical power considerations")
 
     print(f"\nAll outputs saved to: {output_dir}")
+
 
 if __name__ == "__main__":
     main()

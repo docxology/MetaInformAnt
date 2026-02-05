@@ -362,8 +362,8 @@ class TestModuleImports:
     def test_top_level_gwas_exports(self) -> None:
         """Verify commonly used functions are importable from the top-level gwas package."""
         from metainformant.gwas import (
-            PlotStyle,
             THEMES,
+            PlotStyle,
             apply_style,
             association_test_linear,
             bonferroni_correction,

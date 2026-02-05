@@ -7,11 +7,11 @@ into comprehensive analysis pipelines.
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Iterator, Tuple, Set
 from dataclasses import dataclass, field
+from pathlib import Path
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 
-from metainformant.core import logging, errors, validation, io, config, workflow, paths
+from metainformant.core import config, errors, io, logging, paths, validation, workflow
 
 logger = logging.get_logger(__name__)
 
@@ -277,7 +277,7 @@ def run_chipseq_workflow(
                 logger.info(f"Processing ChIP-seq file: {file_path}")
 
                 # Load peak data
-                from .chipseq import load_chip_peaks, filter_peaks_by_score
+                from .chipseq import filter_peaks_by_score, load_chip_peaks
 
                 format_type = _detect_peak_format(file_path)
                 peaks = load_chip_peaks(file_path, format=format_type)
@@ -412,7 +412,7 @@ def run_atacseq_workflow(
                 logger.info(f"Processing ATAC-seq file: {file_path}")
 
                 # Load peak data
-                from .atacseq import load_atac_peaks, filter_peaks_by_score
+                from .atacseq import filter_peaks_by_score, load_atac_peaks
 
                 format_type = _detect_peak_format(file_path)
                 peaks = load_atac_peaks(file_path, format=format_type)

@@ -7,16 +7,17 @@ mutual nearest neighbors (MNN), BBKNN, Harmony, and Scanorama-like approaches.
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
 
-from metainformant.core import logging, errors, validation
+from metainformant.core import errors, logging, validation
 
 # Optional scientific dependencies
 try:
-    from sklearn.preprocessing import StandardScaler
     from sklearn.decomposition import PCA
+    from sklearn.preprocessing import StandardScaler
 
     HAS_SKLEARN = True
 except ImportError:

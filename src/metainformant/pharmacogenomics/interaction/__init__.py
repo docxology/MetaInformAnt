@@ -7,10 +7,10 @@ and CYP enzyme inhibition/induction profiling.
 from __future__ import annotations
 
 from .drug_interactions import (
-    predict_drug_interaction,
-    polypharmacy_risk,
     cyp_inhibition_prediction,
     default_interaction_database,
+    polypharmacy_risk,
+    predict_drug_interaction,
 )
 
 __all__ = [

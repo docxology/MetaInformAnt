@@ -7,8 +7,7 @@ adapter content, and chimeric read detection.
 
 from __future__ import annotations
 
-from . import metrics
-from . import filtering
+from . import filtering, metrics
 
 __all__ = [
     "metrics",

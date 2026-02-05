@@ -6,9 +6,9 @@ including Manhattan plots, Q-Q plots, and regional association plots.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
-import math
 
 from metainformant.core import logging
 
@@ -16,8 +16,8 @@ logger = logging.get_logger(__name__)
 
 # Import matplotlib with graceful fallback
 try:
-    import matplotlib.pyplot as plt
     import matplotlib.patches as mpatches
+    import matplotlib.pyplot as plt
 
     HAS_MATPLOTLIB = True
 except ImportError:

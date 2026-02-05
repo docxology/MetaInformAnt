@@ -14,23 +14,23 @@ See docs/rna/amalgkit/PATH_RESOLUTION.md for complete path resolution documentat
 
 from __future__ import annotations
 
-import os
-import subprocess
-import sys
+import concurrent.futures
 import csv
 import math
-import time
-import tempfile
-import concurrent.futures
+import os
 import shutil
+import subprocess
+import sys
+import tempfile
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from metainformant.core import logging
 from metainformant.core.io.download import (
+    monitor_subprocess_directory_growth,
     monitor_subprocess_file_count,
     monitor_subprocess_sample_progress,
-    monitor_subprocess_directory_growth,
 )
 
 logger = logging.get_logger(__name__)

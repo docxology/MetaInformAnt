@@ -387,9 +387,9 @@ class TestSVCalling:
 
     def test_genotype_sv(self) -> None:
         from metainformant.structural_variants.detection.sv_calling import (
+            StructuralVariant,
             SVEvidence,
             SVType,
-            StructuralVariant,
             genotype_sv,
         )
 
@@ -997,13 +997,13 @@ class TestModuleImports:
 
     def test_import_top_level_functions(self) -> None:
         from metainformant.structural_variants import (
-            detect_cnv_from_depth,
-            call_structural_variants,
-            refine_breakpoints,
             annotate_gene_overlap,
-            predict_functional_impact,
+            call_structural_variants,
+            detect_cnv_from_depth,
             filter_by_quality,
             merge_callsets,
+            predict_functional_impact,
+            refine_breakpoints,
         )
 
         assert callable(detect_cnv_from_depth)
@@ -1024,13 +1024,13 @@ class TestModuleImports:
         assert SVType.INS.value == "INS"
 
     def test_import_dataclasses(self) -> None:
-        from metainformant.structural_variants.detection.cnv import CNVSegment, CNVResult
-        from metainformant.structural_variants.detection.sv_calling import StructuralVariant, SVEvidence
-        from metainformant.structural_variants.detection.breakpoints import Breakpoint, BreakpointPair
-        from metainformant.structural_variants.annotation.overlap import GenomicInterval, OverlapResult
         from metainformant.structural_variants.annotation.functional_impact import FunctionalImpact
-        from metainformant.structural_variants.filtering.quality_filter import FilterStats
+        from metainformant.structural_variants.annotation.overlap import GenomicInterval, OverlapResult
+        from metainformant.structural_variants.detection.breakpoints import Breakpoint, BreakpointPair
+        from metainformant.structural_variants.detection.cnv import CNVResult, CNVSegment
+        from metainformant.structural_variants.detection.sv_calling import StructuralVariant, SVEvidence
         from metainformant.structural_variants.filtering.merge import MergedVariant
+        from metainformant.structural_variants.filtering.quality_filter import FilterStats
 
         # Verify they are constructible
         seg = CNVSegment(chrom="chr1", start=0, end=1000, mean_log2ratio=0.0, n_bins=10)

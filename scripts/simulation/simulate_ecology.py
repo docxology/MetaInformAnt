@@ -36,20 +36,20 @@ def simulate_abundance(
     logger.info(f"Generating abundance matrix: {n_species} species x {n_samples} samples")
     rng = random.Random(seed)
     np.random.seed(seed)
-    
+
     # Generate abundance data (log-normal distribution)
     abundances = np.random.lognormal(mean=2.0, sigma=1.5, size=(n_species, n_samples))
-    
+
     # Create DataFrame
     species_ids = [f"species_{i:04d}" for i in range(n_species)]
     sample_ids = [f"sample_{i:03d}" for i in range(n_samples)]
     df = pd.DataFrame(abundances, index=species_ids, columns=sample_ids)
-    
+
     csv_file = output_dir / "species_abundance.csv"
     df.to_csv(csv_file)
-    
+
     logger.info(f"Abundance matrix saved to {csv_file}")
-    
+
     return {
         "type": "abundance",
         "n_species": n_species,
@@ -69,14 +69,14 @@ def simulate_community(
     logger.info(f"Generating community composition: {n_species} species")
     rng = random.Random(seed)
     np.random.seed(seed)
-    
+
     # Generate communities with controlled diversity
     communities = []
     for sample_idx in range(n_samples):
         # Generate relative abundances
         abundances = np.random.exponential(scale=1.0, size=n_species)
         abundances = abundances / abundances.sum()  # Normalize
-        
+
         # Adjust for diversity
         if diversity_index < 1.0:
             # Lower diversity: concentrate abundance in fewer species
@@ -87,23 +87,25 @@ def simulate_community(
                 new_abundances[idx] = abundances[idx]
             new_abundances = new_abundances / new_abundances.sum()
             abundances = new_abundances
-        
-        communities.append({
-            "sample_id": f"sample_{sample_idx:03d}",
-            "abundances": abundances.tolist(),
-        })
-    
+
+        communities.append(
+            {
+                "sample_id": f"sample_{sample_idx:03d}",
+                "abundances": abundances.tolist(),
+            }
+        )
+
     # Create abundance matrix
     abundance_matrix = np.array([c["abundances"] for c in communities]).T
     species_ids = [f"species_{i:04d}" for i in range(n_species)]
     sample_ids = [f"sample_{i:03d}" for i in range(n_samples)]
     df = pd.DataFrame(abundance_matrix, index=species_ids, columns=sample_ids)
-    
+
     csv_file = output_dir / "community_abundance.csv"
     df.to_csv(csv_file)
-    
+
     logger.info(f"Community composition saved to {csv_file}")
-    
+
     return {
         "type": "community",
         "n_species": n_species,
@@ -122,7 +124,7 @@ def simulate_environmental(
     logger.info(f"Generating environmental metadata: {n_samples} samples")
     rng = random.Random(seed)
     np.random.seed(seed)
-    
+
     # Common environmental variables
     metadata = {
         "sample_id": [f"sample_{i:03d}" for i in range(n_samples)],
@@ -134,21 +136,21 @@ def simulate_environmental(
         "longitude": np.random.uniform(-180.0, 180.0, n_samples),
         "soil_ph": np.random.normal(6.5, 1.0, n_samples),
     }
-    
+
     # Ensure reasonable ranges
     metadata["humidity"] = np.clip(metadata["humidity"], 0, 100)
     metadata["precipitation"] = np.maximum(metadata["precipitation"], 0)
     metadata["elevation"] = np.maximum(metadata["elevation"], 0)
     metadata["soil_ph"] = np.clip(metadata["soil_ph"], 3.0, 10.0)
-    
+
     # Create DataFrame
     df = pd.DataFrame(metadata)
-    
+
     csv_file = output_dir / "environmental_metadata.csv"
     df.to_csv(csv_file, index=False)
-    
+
     logger.info(f"Environmental metadata saved to {csv_file}")
-    
+
     return {
         "type": "environmental",
         "n_samples": n_samples,
@@ -174,7 +176,7 @@ Examples:
   %(prog)s --type environmental --n-samples 25
         """,
     )
-    
+
     parser.add_argument(
         "--type",
         required=True,
@@ -192,30 +194,29 @@ Examples:
     parser.add_argument("--diversity", type=float, default=0.7, help="Diversity index (community type, 0-1)")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
-    
+
     args = parser.parse_args()
-    
+
     if args.verbose:
         import logging as std_logging
+
         logger.setLevel(std_logging.DEBUG)
-    
+
     output_dir = paths.ensure_directory(args.output)
-    
+
     try:
         if args.type == "abundance":
             results = simulate_abundance(output_dir, args.n_species, args.n_samples, args.seed)
         elif args.type == "community":
-            results = simulate_community(
-                output_dir, args.n_species, args.n_samples, args.diversity, args.seed
-            )
+            results = simulate_community(output_dir, args.n_species, args.n_samples, args.diversity, args.seed)
         elif args.type == "environmental":
             results = simulate_environmental(output_dir, args.n_samples, args.seed)
-        
+
         # Save summary
         summary_file = output_dir / "simulation_summary.json"
         io.dump_json(results, summary_file, indent=2)
         logger.info(f"Simulation complete. Summary saved to {summary_file}")
-        
+
         return 0
     except Exception as e:
         logger.error(f"Simulation failed: {e}", exc_info=True)
@@ -224,4 +225,3 @@ Examples:
 
 if __name__ == "__main__":
     sys.exit(main())
-

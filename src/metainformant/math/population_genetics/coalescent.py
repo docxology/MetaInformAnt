@@ -7,8 +7,9 @@ related demographic parameters.
 
 from __future__ import annotations
 
-from typing import Dict, Any
 import math
+from typing import Any, Dict
+
 import numpy as np
 
 from metainformant.core import logging

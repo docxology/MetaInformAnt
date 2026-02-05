@@ -19,11 +19,11 @@ from . import (
 
 # Pathway enrichment imports
 from .pathway_enrichment.enrichment import (
-    over_representation_analysis,
-    gsea,
-    compute_enrichment_score,
-    pathway_network,
     compare_enrichments,
+    compute_enrichment_score,
+    gsea,
+    over_representation_analysis,
+    pathway_network,
 )
 
 # Optional imports with graceful fallbacks

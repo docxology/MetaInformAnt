@@ -14,11 +14,11 @@ from . import ollama
 
 # Convenience exports from ollama
 from .ollama import (
+    Chain,
+    ChatMessage,
     OllamaClient,
     OllamaConfig,
     PromptTemplate,
-    ChatMessage,
-    Chain,
     SequentialChain,
 )
 

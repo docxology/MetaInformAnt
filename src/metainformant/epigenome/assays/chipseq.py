@@ -6,13 +6,13 @@ including peak calling, motif analysis, quality control, and data integration.
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Iterator, Tuple, Set
-from collections import defaultdict
-import statistics
 import math
+import statistics
+from collections import defaultdict
+from pathlib import Path
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 
-from metainformant.core import logging, errors, validation, io
+from metainformant.core import errors, io, logging, validation
 
 logger = logging.get_logger(__name__)
 

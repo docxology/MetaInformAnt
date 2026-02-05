@@ -6,8 +6,9 @@ designed for biological trait prediction and quantitative analysis.
 
 from __future__ import annotations
 
-import numpy as np
 from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
 
 from metainformant.core.utils.logging import get_logger
 
@@ -16,17 +17,17 @@ logger = get_logger(__name__)
 # Optional imports for ML functionality
 try:
     from sklearn.base import BaseEstimator
-    from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-    from sklearn.linear_model import LinearRegression, Ridge, Lasso, ElasticNet
-    from sklearn.svm import SVR
-    from sklearn.model_selection import cross_val_score, KFold
+    from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+    from sklearn.linear_model import ElasticNet, Lasso, LinearRegression, Ridge
     from sklearn.metrics import (
-        mean_squared_error,
-        mean_absolute_error,
-        r2_score,
         explained_variance_score,
+        mean_absolute_error,
+        mean_squared_error,
         median_absolute_error,
+        r2_score,
     )
+    from sklearn.model_selection import KFold, cross_val_score
+    from sklearn.svm import SVR
 
     HAS_SKLEARN = True
 except ImportError:
@@ -268,7 +269,7 @@ def evaluate_regressor(regressor: "BiologicalRegressor", X: np.ndarray, y: np.nd
     Returns:
         Dictionary with evaluation metrics and predictions
     """
-    from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+    from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 
     if not regressor.is_fitted:
         from sklearn.model_selection import train_test_split

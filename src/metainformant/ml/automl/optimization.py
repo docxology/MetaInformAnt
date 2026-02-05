@@ -30,7 +30,7 @@ except ImportError:
 
 try:
     from sklearn.model_selection import cross_val_score
-    from sklearn.preprocessing import StandardScaler, LabelEncoder
+    from sklearn.preprocessing import LabelEncoder, StandardScaler
 
     HAS_SKLEARN = True
 except ImportError:
@@ -719,11 +719,11 @@ def model_selection(
 
     if HAS_SKLEARN:
         if task == "classification":
+            from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier
             from sklearn.linear_model import LogisticRegression
-            from sklearn.tree import DecisionTreeClassifier
-            from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
             from sklearn.neighbors import KNeighborsClassifier
             from sklearn.svm import SVC
+            from sklearn.tree import DecisionTreeClassifier
 
             model_configs = [
                 {"name": "logistic_regression", "model": LogisticRegression(max_iter=1000, random_state=42)},
@@ -742,10 +742,10 @@ def model_selection(
             if n_samples <= 10000:
                 model_configs.append({"name": "svm", "model": SVC(kernel="rbf", random_state=42)})
         else:
-            from sklearn.linear_model import LinearRegression, Ridge, Lasso
-            from sklearn.tree import DecisionTreeRegressor
-            from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
+            from sklearn.ensemble import GradientBoostingRegressor, RandomForestRegressor
+            from sklearn.linear_model import Lasso, LinearRegression, Ridge
             from sklearn.neighbors import KNeighborsRegressor
+            from sklearn.tree import DecisionTreeRegressor
 
             model_configs = [
                 {"name": "linear_regression", "model": LinearRegression()},

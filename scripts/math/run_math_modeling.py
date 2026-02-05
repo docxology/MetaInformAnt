@@ -20,7 +20,7 @@ from typing import Any
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core.io import ensure_directory, dump_json
+from metainformant.core.io import dump_json, ensure_directory
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -44,7 +44,7 @@ Examples:
 
   # Price equation analysis
   %(prog)s --model price --fitness 0.2,0.4,0.1 --trait-parent 1.0,1.2,0.9 --trait-offspring 1.25,1.35,0.95
-        """
+        """,
     )
     parser.add_argument(
         "--model",
@@ -96,34 +96,34 @@ Examples:
 def run_sir_model(args, output_dir: Path) -> dict[str, Any]:
     """Run SIR epidemiology model."""
     logger.info("Running SIR epidemiology model...")
-    from metainformant.math import sir_step, basic_reproduction_number
-    
+    from metainformant.math import basic_reproduction_number, sir_step
+
     S, I, R = args.S0, args.I0, args.R0_init
     beta, gamma = args.beta, args.gamma
-    
+
     results = {
         "time_points": [],
         "S": [],
         "I": [],
         "R": [],
     }
-    
+
     for t in range(args.steps):
         results["time_points"].append(t * args.dt)
         results["S"].append(S)
         results["I"].append(I)
         results["R"].append(R)
-        
+
         S, I, R = sir_step(S, I, R, beta, gamma, dt=args.dt)
-    
+
     R0 = basic_reproduction_number(beta, gamma)
     results["R0"] = R0
-    
+
     output_file = output_dir / "sir_simulation.json"
     dump_json(results, output_file)
     logger.info(f"SIR simulation saved to {output_file}")
     logger.info(f"R0 = {R0:.3f}")
-    
+
     return results
 
 
@@ -131,20 +131,20 @@ def run_logistic_model(args, output_dir: Path) -> dict[str, Any]:
     """Run logistic growth model."""
     logger.info("Running logistic growth model...")
     from metainformant.math import logistic_map
-    
+
     trajectory = logistic_map(r=args.r, x0=args.x0, n_iterations=args.steps)
-    
+
     results = {
         "r": args.r,
         "x0": args.x0,
         "trajectory": trajectory,
         "final_value": trajectory[-1],
     }
-    
+
     output_file = output_dir / "logistic_simulation.json"
     dump_json(results, output_file)
     logger.info(f"Logistic simulation saved to {output_file}")
-    
+
     return results
 
 
@@ -152,26 +152,23 @@ def run_selection_model(args, output_dir: Path) -> dict[str, Any]:
     """Run selection experiment simulation."""
     logger.info("Running selection experiment simulation...")
     import numpy as np
+
     from metainformant.math.selection_experiments import simulate_generations
-    
-    results_obj = simulate_generations(
-        generations=args.generations,
-        n=args.n,
-        s_hat=args.s_hat
-    )
-    
+
+    results_obj = simulate_generations(generations=args.generations, n=args.n, s_hat=args.s_hat)
+
     results = {
         "generations": args.generations,
         "n": args.n,
         "s_hat": args.s_hat,
-        "mean_s": results_obj.mean_s.tolist() if hasattr(results_obj.mean_s, 'tolist') else list(results_obj.mean_s),
-        "mean_q": results_obj.mean_q.tolist() if hasattr(results_obj.mean_q, 'tolist') else list(results_obj.mean_q),
+        "mean_s": results_obj.mean_s.tolist() if hasattr(results_obj.mean_s, "tolist") else list(results_obj.mean_s),
+        "mean_q": results_obj.mean_q.tolist() if hasattr(results_obj.mean_q, "tolist") else list(results_obj.mean_q),
     }
-    
+
     output_file = output_dir / "selection_simulation.json"
     dump_json(results, output_file)
     logger.info(f"Selection simulation saved to {output_file}")
-    
+
     return results
 
 
@@ -179,28 +176,28 @@ def run_price_equation(args, output_dir: Path) -> dict[str, Any]:
     """Run Price equation analysis."""
     logger.info("Running Price equation analysis...")
     from metainformant.math import price_equation
-    
+
     # Parse comma-separated values
     fitness = [float(x.strip()) for x in args.fitness.split(",")]
     trait_parent = [float(x.strip()) for x in args.trait_parent.split(",")]
     trait_offspring = [float(x.strip()) for x in args.trait_offspring.split(",")]
-    
+
     if len(fitness) != len(trait_parent) or len(fitness) != len(trait_offspring):
         raise ValueError("Fitness, trait_parent, and trait_offspring must have same length")
-    
+
     cov_term, trans_term, total = price_equation(fitness, trait_parent, trait_offspring)
-    
+
     results = {
         "covariance_term": float(cov_term),
         "transmission_term": float(trans_term),
         "total_change": float(total),
     }
-    
+
     output_file = output_dir / "price_equation.json"
     dump_json(results, output_file)
     logger.info(f"Price equation analysis saved to {output_file}")
     logger.info(f"Total change: {total:.6f} (covariance: {cov_term:.6f}, transmission: {trans_term:.6f})")
-    
+
     return results
 
 
@@ -208,29 +205,27 @@ def run_lotka_volterra(args, output_dir: Path) -> dict[str, Any]:
     """Run Lotka-Volterra predator-prey model."""
     logger.info("Running Lotka-Volterra model...")
     from metainformant.math import lotka_volterra_step
-    
+
     prey, predator = 100.0, 10.0
     alpha, beta, delta, gamma = 1.0, 0.1, 0.075, 1.5
-    
+
     results = {
         "time_points": [],
         "prey": [],
         "predator": [],
     }
-    
+
     for t in range(args.steps):
         results["time_points"].append(t * args.dt)
         results["prey"].append(prey)
         results["predator"].append(predator)
-        
-        prey, predator = lotka_volterra_step(
-            prey, predator, alpha, beta, delta, gamma, dt=args.dt
-        )
-    
+
+        prey, predator = lotka_volterra_step(prey, predator, alpha, beta, delta, gamma, dt=args.dt)
+
     output_file = output_dir / "lotka_volterra_simulation.json"
     dump_json(results, output_file)
     logger.info(f"Lotka-Volterra simulation saved to {output_file}")
-    
+
     return results
 
 
@@ -239,20 +234,20 @@ def run_workflow(args):
     logger.info("Starting mathematical biology workflow")
     logger.info(f"Model: {args.model}")
     logger.info(f"Output: {args.output}")
-    
+
     if args.dry_run:
         logger.info("DRY RUN - no changes will be made")
         return
-    
+
     output_dir = ensure_directory(args.output)
     logger.info(f"Output directory: {output_dir}")
-    
+
     workflow_results = {
         "model_type": args.model,
         "output_dir": str(output_dir),
         "results": {},
     }
-    
+
     try:
         if args.model == "sir":
             results = run_sir_model(args, output_dir)
@@ -271,26 +266,26 @@ def run_workflow(args):
         elif args.model == "lotka-volterra":
             results = run_lotka_volterra(args, output_dir)
             workflow_results["results"] = results
-        
+
         # Save summary
         summary_file = output_dir / "workflow_summary.json"
         dump_json(workflow_results, summary_file, indent=2)
         logger.info(f"Workflow summary saved to {summary_file}")
-        
+
     except Exception as e:
         logger.error(f"Model simulation failed: {e}", exc_info=True)
         raise
-    
+
     logger.info("Workflow complete")
 
 
 def main():
     """Main entry point."""
     args = parse_args()
-    
+
     if args.verbose:
         logger.setLevel(logging.DEBUG)
-    
+
     try:
         run_workflow(args)
         return 0
@@ -301,7 +296,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
-
-
-

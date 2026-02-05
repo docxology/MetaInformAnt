@@ -6,9 +6,7 @@ split/supplementary alignments, and haplotype phasing using heterozygous variant
 
 from __future__ import annotations
 
-from . import modified_bases
-from . import structural
-from . import phasing
+from . import modified_bases, phasing, structural
 
 __all__ = [
     "modified_bases",

@@ -7,9 +7,6 @@ Contains core simulation implementations:
 - agents: Agent-based ecosystem modeling
 """
 
-from . import agents
-from . import popgen
-from . import rna
-from . import sequences
+from . import agents, popgen, rna, sequences
 
 __all__ = ["agents", "popgen", "rna", "sequences"]

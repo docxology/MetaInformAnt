@@ -33,7 +33,7 @@ def simulate_sequences(
     """Simulate life event sequences."""
     logger.info(f"Generating life event sequences: {n_sequences} sequences")
     rng = random.Random(seed)
-    
+
     # Event types by domain
     event_types = {
         "education": ["enrollment", "graduation", "degree", "certification"],
@@ -42,48 +42,52 @@ def simulate_sequences(
         "family": ["marriage", "divorce", "birth", "adoption"],
         "residence": ["move", "purchase", "rental"],
     }
-    
+
     sequences = []
     start_date = datetime(2000, 1, 1)
-    
+
     for seq_idx in range(n_sequences):
         person_id = f"person_{seq_idx:04d}"
         n_events = rng.randint(min_events, max_events)
-        
+
         events = []
         current_date = start_date
-        
+
         for event_idx in range(n_events):
             # Select domain and event type
             domain = rng.choice(list(event_types.keys()))
             event_type = rng.choice(event_types[domain])
-            
+
             # Advance date
             days_advance = rng.randint(30, 365)
             current_date = current_date + timedelta(days=days_advance)
-            
-            events.append({
-                "domain": domain,
-                "event_type": event_type,
-                "date": current_date.isoformat(),
-                "metadata": {
-                    "sequence_position": event_idx,
-                    "age": (current_date - start_date).days // 365,
-                },
-            })
-        
-        sequences.append({
-            "person_id": person_id,
-            "events": events,
-            "n_events": len(events),
-        })
-    
+
+            events.append(
+                {
+                    "domain": domain,
+                    "event_type": event_type,
+                    "date": current_date.isoformat(),
+                    "metadata": {
+                        "sequence_position": event_idx,
+                        "age": (current_date - start_date).days // 365,
+                    },
+                }
+            )
+
+        sequences.append(
+            {
+                "person_id": person_id,
+                "events": events,
+                "n_events": len(events),
+            }
+        )
+
     # Save as JSON
     json_file = output_dir / "life_event_sequences.json"
     io.dump_json(sequences, json_file, indent=2)
-    
+
     logger.info(f"Life event sequences saved to {json_file}")
-    
+
     return {
         "type": "sequences",
         "n_sequences": n_sequences,
@@ -100,7 +104,7 @@ def simulate_patterns(
     """Simulate life course patterns."""
     logger.info(f"Generating life course patterns: {n_sequences} sequences, {n_patterns} patterns")
     rng = random.Random(seed)
-    
+
     # Define common life course patterns
     patterns = [
         {
@@ -128,13 +132,13 @@ def simulate_patterns(
             ],
         },
     ]
-    
+
     # Extend patterns if needed
     while len(patterns) < n_patterns:
         pattern_name = f"pattern_{len(patterns)}"
         n_pattern_events = rng.randint(2, 5)
         pattern_events = []
-        
+
         domains = ["education", "occupation", "health", "family", "residence"]
         event_types_map = {
             "education": ["enrollment", "graduation"],
@@ -143,53 +147,57 @@ def simulate_patterns(
             "family": ["marriage", "birth"],
             "residence": ["move", "purchase"],
         }
-        
+
         for _ in range(n_pattern_events):
             domain = rng.choice(domains)
             event_type = rng.choice(event_types_map[domain])
             pattern_events.append((domain, event_type))
-        
+
         patterns.append({"name": pattern_name, "events": pattern_events})
-    
+
     # Generate sequences following patterns
     sequences = []
     start_date = datetime(2000, 1, 1)
-    
+
     for seq_idx in range(n_sequences):
         person_id = f"person_{seq_idx:04d}"
         pattern = rng.choice(patterns)
-        
+
         events = []
         current_date = start_date
-        
+
         for domain, event_type in pattern["events"]:
             days_advance = rng.randint(180, 730)
             current_date = current_date + timedelta(days=days_advance)
-            
-            events.append({
-                "domain": domain,
-                "event_type": event_type,
-                "date": current_date.isoformat(),
+
+            events.append(
+                {
+                    "domain": domain,
+                    "event_type": event_type,
+                    "date": current_date.isoformat(),
+                    "pattern": pattern["name"],
+                }
+            )
+
+        sequences.append(
+            {
+                "person_id": person_id,
                 "pattern": pattern["name"],
-            })
-        
-        sequences.append({
-            "person_id": person_id,
-            "pattern": pattern["name"],
-            "events": events,
-            "n_events": len(events),
-        })
-    
+                "events": events,
+                "n_events": len(events),
+            }
+        )
+
     # Save sequences
     json_file = output_dir / "pattern_sequences.json"
     io.dump_json(sequences, json_file, indent=2)
-    
+
     # Save pattern definitions
     patterns_file = output_dir / "patterns.json"
     io.dump_json(patterns, patterns_file, indent=2)
-    
+
     logger.info(f"Life course patterns saved to {json_file}")
-    
+
     return {
         "type": "patterns",
         "n_sequences": n_sequences,
@@ -213,7 +221,7 @@ Examples:
   %(prog)s --type patterns --n-sequences 200 --n-patterns 5
         """,
     )
-    
+
     parser.add_argument(
         "--type",
         required=True,
@@ -232,28 +240,27 @@ Examples:
     parser.add_argument("--n-patterns", type=int, default=3, help="Number of patterns (patterns type)")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
-    
+
     args = parser.parse_args()
-    
+
     if args.verbose:
         import logging as std_logging
+
         logger.setLevel(std_logging.DEBUG)
-    
+
     output_dir = paths.ensure_directory(args.output)
-    
+
     try:
         if args.type == "sequences":
-            results = simulate_sequences(
-                output_dir, args.n_sequences, args.min_events, args.max_events, args.seed
-            )
+            results = simulate_sequences(output_dir, args.n_sequences, args.min_events, args.max_events, args.seed)
         elif args.type == "patterns":
             results = simulate_patterns(output_dir, args.n_sequences, args.n_patterns, args.seed)
-        
+
         # Save summary
         summary_file = output_dir / "simulation_summary.json"
         io.dump_json(results, summary_file, indent=2)
         logger.info(f"Simulation complete. Summary saved to {summary_file}")
-        
+
         return 0
     except Exception as e:
         logger.error(f"Simulation failed: {e}", exc_info=True)
@@ -262,4 +269,3 @@ Examples:
 
 if __name__ == "__main__":
     sys.exit(main())
-

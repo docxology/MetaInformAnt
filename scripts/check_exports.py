@@ -21,7 +21,7 @@ def extract_functions_and_classes(content: str) -> set[str]:
     for node in ast.walk(tree):
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
             # Skip private names (starting with _)
-            if not node.name.startswith('_'):
+            if not node.name.startswith("_"):
                 names.add(node.name)
 
     return names
@@ -31,7 +31,7 @@ def is_submodule_init(module_path: Path) -> bool:
     """Check if this is a submodule __init__.py file that imports functions."""
     # Check if the __all__ list contains function-like names (not just submodule names)
     try:
-        content = module_path.read_text(encoding='utf-8')
+        content = module_path.read_text(encoding="utf-8")
         exported = extract_all_exports(content)
         imported = extract_imported_modules(content)
 
@@ -78,7 +78,7 @@ def extract_all_exports(content: str) -> set[str]:
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign):
             for target in node.targets:
-                if isinstance(target, ast.Name) and target.id == '__all__':
+                if isinstance(target, ast.Name) and target.id == "__all__":
                     if isinstance(node.value, ast.List):
                         for item in node.value.elts:
                             if isinstance(item, ast.Constant) and isinstance(item.value, str):
@@ -90,15 +90,15 @@ def extract_all_exports(content: str) -> set[str]:
 def check_module_exports(module_path: Path) -> dict[str, Any]:
     """Check export completeness for a single module."""
     try:
-        content = module_path.read_text(encoding='utf-8')
+        content = module_path.read_text(encoding="utf-8")
     except Exception as e:
         return {
-            'status': 'error',
-            'error': f'Failed to read {module_path}: {e}',
-            'defined': set(),
-            'exported': set(),
-            'missing': set(),
-            'extra': set()
+            "status": "error",
+            "error": f"Failed to read {module_path}: {e}",
+            "defined": set(),
+            "exported": set(),
+            "missing": set(),
+            "extra": set(),
         }
 
     defined = extract_functions_and_classes(content)
@@ -109,37 +109,31 @@ def check_module_exports(module_path: Path) -> dict[str, Any]:
         # This is a package __init__.py that imports submodules
         # The __all__ list contains submodule names, which is correct
         return {
-            'status': 'ok',
-            'defined': defined,
-            'exported': exported,
-            'missing': set(),
-            'extra': set(),
-            'note': 'Package __init__.py with submodule exports'
+            "status": "ok",
+            "defined": defined,
+            "exported": exported,
+            "missing": set(),
+            "extra": set(),
+            "note": "Package __init__.py with submodule exports",
         }
 
     missing = defined - exported
     extra = exported - defined
 
-    return {
-        'status': 'ok',
-        'defined': defined,
-        'exported': exported,
-        'missing': missing,
-        'extra': extra
-    }
+    return {"status": "ok", "defined": defined, "exported": exported, "missing": missing, "extra": extra}
 
 
 def main():
     """Main function."""
     repo_root = Path(__file__).parent.parent
-    src_dir = repo_root / 'src' / 'metainformant'
+    src_dir = repo_root / "src" / "metainformant"
 
     if not src_dir.exists():
         print(f"Error: Source directory not found: {src_dir}")
         sys.exit(1)
 
     # Find all __init__.py files
-    init_files = list(src_dir.rglob('__init__.py'))
+    init_files = list(src_dir.rglob("__init__.py"))
 
     print("Checking export completeness across METAINFORMANT modules...")
     print("=" * 60)
@@ -148,22 +142,22 @@ def main():
     summary = []
 
     for init_file in sorted(init_files):
-        module_name = str(init_file.relative_to(src_dir)).replace('/__init__.py', '').replace('\\__init__.py', '')
+        module_name = str(init_file.relative_to(src_dir)).replace("/__init__.py", "").replace("\\__init__.py", "")
 
         result = check_module_exports(init_file)
         summary.append((module_name, result))
 
-        if result['status'] == 'error':
+        if result["status"] == "error":
             print(f"❌ {module_name}: {result['error']}")
             all_good = False
             continue
 
-        defined_count = len(result['defined'])
-        exported_count = len(result['exported'])
-        missing_count = len(result['missing'])
-        extra_count = len(result['extra'])
+        defined_count = len(result["defined"])
+        exported_count = len(result["exported"])
+        missing_count = len(result["missing"])
+        extra_count = len(result["extra"])
 
-        note = result.get('note', '')
+        note = result.get("note", "")
 
         if missing_count == 0 and extra_count == 0:
             status = "✅"
@@ -174,9 +168,9 @@ def main():
             print(f"⚠️  {module_name}: {exported_count}/{defined_count} exported")
             all_good = False
 
-            if result['missing']:
+            if result["missing"]:
                 print(f"    Missing exports: {sorted(result['missing'])}")
-            if result['extra']:
+            if result["extra"]:
                 print(f"    Extra exports: {sorted(result['extra'])}")
             if note:
                 print(f"    Note: {note}")
@@ -193,5 +187,5 @@ def main():
         sys.exit(1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

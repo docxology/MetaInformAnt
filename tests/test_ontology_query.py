@@ -9,17 +9,17 @@ import pytest
 
 from metainformant.ontology.query import (
     ancestors,
-    descendants,
-    subgraph,
-    common_ancestors,
-    path_to_root,
-    distance,
-    find_term_by_name,
-    filter_by_namespace,
-    get_roots,
-    get_leaves,
     clear_cache,
+    common_ancestors,
+    descendants,
+    distance,
+    filter_by_namespace,
+    find_term_by_name,
+    get_leaves,
+    get_roots,
+    path_to_root,
     set_cache_enabled,
+    subgraph,
 )
 from metainformant.ontology.types import Ontology, Term
 

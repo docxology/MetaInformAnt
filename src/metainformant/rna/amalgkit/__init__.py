@@ -1,27 +1,25 @@
 """Amalgkit RNA-seq workflow module exports."""
 
+from . import genome_prep, metadata_filter, metadata_utils
 from .amalgkit import (
     AmalgkitParams,
-    build_cli_args,
     build_amalgkit_command,
+    build_cli_args,
     check_cli_available,
-    ensure_cli_available,
-    run_amalgkit,
-    metadata,
-    integrate,
     config,
-    select,
-    getfastq,
-    quant,
-    merge,
+    csca,
     cstmm,
     curate,
-    csca,
+    ensure_cli_available,
+    getfastq,
+    integrate,
+    merge,
+    metadata,
+    quant,
+    run_amalgkit,
     sanity,
+    select,
 )
-from . import genome_prep
-from . import metadata_filter
-from . import metadata_utils
 
 __all__ = [
     "AmalgkitParams",

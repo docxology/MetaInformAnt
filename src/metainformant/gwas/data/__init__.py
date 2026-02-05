@@ -11,8 +11,8 @@ from metainformant.gwas.data.download import (
     download_variant_database,
 )
 from metainformant.gwas.data.genome import (
-    AMEL_HAV3_CHROMOSOMES,
     AMEL_HAV3_CHROM_SIZES,
+    AMEL_HAV3_CHROMOSOMES,
     get_chromosome_order,
     normalize_chromosome_name,
     parse_gff3_genes,

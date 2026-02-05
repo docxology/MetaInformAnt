@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.protein.structure.pdb import fetch_pdb_structure
 from metainformant.protein.database.uniprot import map_ids_uniprot
+from metainformant.protein.structure.pdb import fetch_pdb_structure
 
 
 def _check_online(url: str) -> bool:

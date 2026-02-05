@@ -28,11 +28,11 @@ from metainformant.dna.population_viz import (
     plot_neutrality_test_summary,
     plot_outlier_detection,
     plot_pca_results,
-    plot_pi_vs_theta,
     plot_permutation_test,
+    plot_pi_vs_theta,
+    plot_site_frequency_spectrum,
     plot_statistic_correlation_matrix,
     plot_statistic_distribution,
-    plot_site_frequency_spectrum,
     plot_summary_statistics_grid,
     plot_tajimas_d_comparison,
 )
@@ -52,6 +52,7 @@ def generate_visualizations(
     logger = setup_logger("metainformant.popgen.visualization")
     plots_dir = output_dir / "plots"
     from metainformant.core.io import ensure_directory
+
     ensure_directory(str(plots_dir))
 
     scenarios = analysis_results["scenario_analyses"]
@@ -255,8 +256,3 @@ def generate_visualizations(
         )
 
     logger.info(f"All visualizations saved to {plots_dir}")
-
-
-
-
-

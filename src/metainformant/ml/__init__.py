@@ -8,24 +8,19 @@ selection/engineering, and local LLM inference.
 from __future__ import annotations
 
 # Import subpackages
-from . import evaluation
-from . import features
-from . import models
-from . import llm
-from . import interpretability
-from . import automl
-
-# Import modules from subpackages for backward compatibility
-from .models import (
-    classification,
-    regression,
+from . import automl, evaluation, features, interpretability, llm, models
+from .evaluation import (
+    validation,
 )
 from .features import (
     dimensionality,
     features,
 )
-from .evaluation import (
-    validation,
+
+# Import modules from subpackages for backward compatibility
+from .models import (
+    classification,
+    regression,
 )
 
 # Optional imports with graceful fallbacks
@@ -47,18 +42,18 @@ except ImportError:
 # Interpretability subpackage
 try:
     from .interpretability.explainers import (
+        compute_attention_weights,
+        compute_lime_explanation,
         compute_permutation_importance,
         compute_shap_values_kernel,
-        compute_lime_explanation,
         feature_interaction,
         partial_dependence,
-        compute_attention_weights,
     )
     from .interpretability.feature_selection import (
         boruta_selection,
+        mutual_information_selection,
         recursive_elimination,
         stability_selection,
-        mutual_information_selection,
     )
 except ImportError:
     compute_permutation_importance = None  # type: ignore[assignment]
@@ -75,11 +70,11 @@ except ImportError:
 # AutoML subpackage
 try:
     from .automl.optimization import (
-        random_search,
+        auto_preprocess,
         bayesian_optimization,
         grid_search,
         model_selection,
-        auto_preprocess,
+        random_search,
     )
 except ImportError:
     random_search = None  # type: ignore[assignment]

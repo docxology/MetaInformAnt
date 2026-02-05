@@ -23,34 +23,36 @@ Submodules:
     integration: Cross-omic integration.
 """
 
-from . import analysis
-from . import behavior
-from . import chemical
-from . import data
-from . import electronic
-from . import gwas_integration
-from . import morphological
-from . import sonic
-from . import visualization
-from . import workflow
-from . import integration
+from . import (
+    analysis,
+    behavior,
+    chemical,
+    data,
+    electronic,
+    gwas_integration,
+    integration,
+    morphological,
+    sonic,
+    visualization,
+    workflow,
+)
 
 # Re-export key classes for convenience
-from .behavior import Ethogram, BehaviorSequence
-from .chemical import Compound, ChemicalProfile
+from .behavior import BehaviorSequence, Ethogram
+from .chemical import ChemicalProfile, Compound
 from .electronic import TrackingPoint, Trajectory
-from .morphological import Measurement, MorphometricProfile
-from .sonic import AcousticSignal
-from .workflow import PhenotypePipeline, PipelineConfig, PipelineResult
 
 # GWAS integration imports
 from .gwas_integration.phewas import (
-    run_phewas,
-    phenotype_correlation_matrix,
-    genetic_risk_score,
-    phenotype_heritability_screen,
     categorize_phenotypes,
+    genetic_risk_score,
+    phenotype_correlation_matrix,
+    phenotype_heritability_screen,
+    run_phewas,
 )
+from .morphological import Measurement, MorphometricProfile
+from .sonic import AcousticSignal
+from .workflow import PhenotypePipeline, PipelineConfig, PipelineResult
 
 __all__ = [
     # Submodules

@@ -8,9 +8,11 @@ statistics and filters.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, List, Set, Optional, Any, Iterable, Tuple
-from metainformant.core import logging, errors, validation
-from .types import Ontology, Term, Relationship
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+
+from metainformant.core import errors, logging, validation
+
+from .types import Ontology, Relationship, Term
 
 logger = logging.get_logger(__name__)
 

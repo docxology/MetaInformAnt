@@ -6,11 +6,11 @@ It uses ANSI escape codes for "oldschool" elegance.
 """
 
 import atexit
+import shutil
 import signal
 import sys
 import threading
 import time
-import shutil
 from dataclasses import dataclass
 from types import FrameType
 from typing import ClassVar, Dict, List, Optional

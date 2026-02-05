@@ -26,10 +26,10 @@ try:
     import matplotlib
 
     matplotlib.use("Agg")  # Non-interactive backend for file output
+    import matplotlib.colors as mcolors
     import matplotlib.pyplot as plt
     from matplotlib.collections import PatchCollection
     from matplotlib.patches import Wedge
-    import matplotlib.colors as mcolors
 except ImportError:
     plt = None  # type: ignore[assignment]
     PatchCollection = None  # type: ignore[assignment,misc]

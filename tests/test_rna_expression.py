@@ -26,7 +26,6 @@ from metainformant.rna.analysis.expression import (
     prepare_volcano_data,
 )
 
-
 # =============================================================================
 # Fixtures - Realistic RNA-seq data generated with numpy
 # =============================================================================

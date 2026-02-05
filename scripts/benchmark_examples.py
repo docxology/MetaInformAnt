@@ -59,7 +59,7 @@ class ExampleBenchmarker:
             # Load results from the JSON output
             results_file = Path("output/examples/test_results.json")
             if results_file.exists():
-                with open(results_file, 'r') as f:
+                with open(results_file, "r") as f:
                     run_results = json.load(f)
                 all_results.append(run_results)
             else:
@@ -73,7 +73,7 @@ class ExampleBenchmarker:
         baseline = self._calculate_baseline(all_results)
 
         # Save baseline
-        with open(self.baseline_file, 'w') as f:
+        with open(self.baseline_file, "w") as f:
             json.dump(baseline, f, indent=2)
 
         print(f"Baseline established and saved to: {self.baseline_file}")
@@ -108,7 +108,7 @@ class ExampleBenchmarker:
             print("❌ No current results file found")
             return {"error": "no_results_file"}
 
-        with open(results_file, 'r') as f:
+        with open(results_file, "r") as f:
             current_results = json.load(f)
 
         # Compare results
@@ -116,7 +116,7 @@ class ExampleBenchmarker:
 
         # Save comparison
         comparison_file = self.output_dir / "comparison.json"
-        with open(comparison_file, 'w') as f:
+        with open(comparison_file, "w") as f:
             json.dump(comparison, f, indent=2)
 
         print(f"Comparison saved to: {comparison_file}")
@@ -128,11 +128,7 @@ class ExampleBenchmarker:
 
     def _calculate_baseline(self, all_results: List[Dict[str, Any]]) -> Dict[str, Any]:
         """Calculate performance baseline from multiple runs."""
-        baseline = {
-            "timestamp": time.time(),
-            "runs": self.runs,
-            "examples": {}
-        }
+        baseline = {"timestamp": time.time(), "runs": self.runs, "examples": {}}
 
         # Group results by example
         example_results = {}
@@ -151,7 +147,7 @@ class ExampleBenchmarker:
                 "stdev": statistics.stdev(times) if len(times) > 1 else 0,
                 "min": min(times),
                 "max": max(times),
-                "runs": len(times)
+                "runs": len(times),
             }
 
         # Overall statistics
@@ -160,7 +156,7 @@ class ExampleBenchmarker:
             "total_mean": statistics.mean(all_times),
             "total_median": statistics.median(all_times),
             "total_stdev": statistics.stdev(all_times) if len(all_times) > 1 else 0,
-            "total_examples": len(example_results)
+            "total_examples": len(example_results),
         }
 
         return baseline
@@ -173,7 +169,7 @@ class ExampleBenchmarker:
             "threshold": threshold,
             "examples": {},
             "regressions": [],
-            "improvements": []
+            "improvements": [],
         }
 
         # Compare each example
@@ -196,23 +192,27 @@ class ExampleBenchmarker:
                     "change_percent": change * 100,
                     "is_regression": is_regression,
                     "is_improvement": is_improvement,
-                    "status": "passed" if result["status"] == "passed" else "failed"
+                    "status": "passed" if result["status"] == "passed" else "failed",
                 }
 
                 if is_regression:
-                    comparison["regressions"].append({
-                        "example": example_path,
-                        "change_percent": change * 100,
-                        "current_time": current_time,
-                        "baseline_mean": baseline_mean
-                    })
+                    comparison["regressions"].append(
+                        {
+                            "example": example_path,
+                            "change_percent": change * 100,
+                            "current_time": current_time,
+                            "baseline_mean": baseline_mean,
+                        }
+                    )
                 elif is_improvement:
-                    comparison["improvements"].append({
-                        "example": example_path,
-                        "change_percent": change * 100,
-                        "current_time": current_time,
-                        "baseline_mean": baseline_mean
-                    })
+                    comparison["improvements"].append(
+                        {
+                            "example": example_path,
+                            "change_percent": change * 100,
+                            "current_time": current_time,
+                            "baseline_mean": baseline_mean,
+                        }
+                    )
             else:
                 # New example
                 comparison["examples"][example_path] = {
@@ -222,7 +222,7 @@ class ExampleBenchmarker:
                     "is_regression": False,
                     "is_improvement": False,
                     "status": "passed" if result["status"] == "passed" else "failed",
-                    "new_example": True
+                    "new_example": True,
                 }
 
         return comparison
@@ -261,7 +261,9 @@ def main():
     parser = argparse.ArgumentParser(description="Benchmark METAINFORMANT examples performance")
     parser.add_argument("--baseline", action="store_true", help="Establish new performance baseline")
     parser.add_argument("--compare", action="store_true", help="Compare current performance against baseline")
-    parser.add_argument("--threshold", type=float, default=0.1, help="Performance regression threshold (default: 0.1 for 10%%)")
+    parser.add_argument(
+        "--threshold", type=float, default=0.1, help="Performance regression threshold (default: 0.1 for 10%%)"
+    )
     parser.add_argument("--output", type=Path, help="Output directory for benchmark results")
     parser.add_argument("--runs", type=int, default=3, help="Number of runs for baseline establishment (default: 3)")
 

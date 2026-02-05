@@ -1,8 +1,9 @@
 """Tests for visualization functionality."""
 
-import pytest
 import numpy as np
 import pandas as pd
+import pytest
+
 from metainformant.visualization import plots
 
 

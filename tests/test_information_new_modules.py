@@ -17,6 +17,34 @@ import numpy as np
 import pytest
 
 # ============================================================
+# Channel capacity imports
+# ============================================================
+from metainformant.information.metrics.channel import channel_capacity as channel_capacity_ch
+from metainformant.information.metrics.channel import channel_mutual_information as channel_mi_ch
+from metainformant.information.metrics.channel import information_bottleneck as ib_ch
+from metainformant.information.metrics.channel import noisy_channel_capacity as noisy_cap_ch
+from metainformant.information.metrics.channel import rate_distortion as rate_distortion_ch
+
+# ============================================================
+# Information geometry imports
+# ============================================================
+from metainformant.information.metrics.geometry import channel_capacity as channel_capacity_geo
+from metainformant.information.metrics.geometry import (
+    entropy_power_inequality,
+    exponential_family_entropy,
+    fisher_rao_distance,
+    hellinger_distance,
+)
+from metainformant.information.metrics.geometry import information_bottleneck as ib_geo
+from metainformant.information.metrics.geometry import (
+    information_dimension,
+    information_projection,
+    natural_gradient,
+    rate_distortion_function,
+    statistical_divergence,
+)
+
+# ============================================================
 # Hypothesis testing imports
 # ============================================================
 from metainformant.information.metrics.hypothesis import (
@@ -26,35 +54,6 @@ from metainformant.information.metrics.hypothesis import (
     information_significance_filter,
     mi_permutation_test,
 )
-
-# ============================================================
-# Channel capacity imports
-# ============================================================
-from metainformant.information.metrics.channel import (
-    channel_capacity as channel_capacity_ch,
-    channel_mutual_information as channel_mi_ch,
-    information_bottleneck as ib_ch,
-    noisy_channel_capacity as noisy_cap_ch,
-    rate_distortion as rate_distortion_ch,
-)
-
-# ============================================================
-# Information geometry imports
-# ============================================================
-from metainformant.information.metrics.geometry import (
-    channel_capacity as channel_capacity_geo,
-    entropy_power_inequality,
-    exponential_family_entropy,
-    fisher_rao_distance,
-    hellinger_distance,
-    information_bottleneck as ib_geo,
-    information_dimension,
-    information_projection,
-    natural_gradient,
-    rate_distortion_function,
-    statistical_divergence,
-)
-
 
 # ============================================================
 # ============================================================

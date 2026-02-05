@@ -13,7 +13,9 @@ Output:
 from __future__ import annotations
 
 from pathlib import Path
+
 from metainformant.core import io
+
 
 def main():
     """Demonstrate protein sequence analysis."""
@@ -28,7 +30,7 @@ def main():
         "protein_A": "MAKDVKFGNDPLAVDKGHLVQIYLGKGLTVLGGNDLRQFGGGK",
         "protein_B": "MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR",
         "protein_C": "MKVLWAALLVTFLAGCQAKVEQAVETEPEPELRQQTEWQSGQRWELALGRFWDYLRWVQTLSEQVQEELLSSQVTQELRALMDETMKELKAYKSELEEQLTPVAEETRARLSKELQAAQARLGADMEDVCGRLVQYRGEVQAMLGQSTEELRVRLASHLRKLRKRLLRDADDLQKRLAVYQAGAREGAERGLSAIRERLGPLVEQGRVRAATVGSLAGQPLQERAQAWGERLRARAEQDAAKGYR",
-        "protein_D": "MGDVEKGKKIFVQKCAQCHTVEKGGKHKTGPNLHGLFGRKTGQAPGYSYTAANKNKGIIWGEDTLMEYLENPKKYIPGTKMIFAGLKKEVGEHGLGHVTRAFSDGLAHLDNLKGTFAQLSELHCDKLHVDPENFRLLGNVLVCVLAHHFGKEFTPPVQAAYQKVVAGVANALAHKYH"
+        "protein_D": "MGDVEKGKKIFVQKCAQCHTVEKGGKHKTGPNLHGLFGRKTGQAPGYSYTAANKNKGIIWGEDTLMEYLENPKKYIPGTKMIFAGLKKEVGEHGLGHVTRAFSDGLAHLDNLKGTFAQLSELHCDKLHVDPENFRLLGNVLVCVLAHHFGKEFTPPVQAAYQKVVAGVANALAHKYH",
     }
 
     print(f"✓ Analyzing {len(sequences)} protein sequences")
@@ -44,7 +46,7 @@ def main():
             "hydrophobic_residues": sum(1 for aa in sequence if aa in "AILMFWYV"),
             "charged_residues": sum(1 for aa in sequence if aa in "DEKRH"),
             "hydrophobic_ratio": sum(1 for aa in sequence if aa in "AILMFWYV") / len(sequence),
-            "isoelectric_point_estimate": 6.0  # Simplified
+            "isoelectric_point_estimate": 6.0,  # Simplified
         }
         analysis_results[seq_id] = result
 
@@ -52,15 +54,15 @@ def main():
 
     # Save results
     results_file = output_dir / "sequence_analysis.json"
-    io.dump_json({
-        "protein_sequence_analysis": {
-            "sequences_analyzed": len(sequences),
-            "results": analysis_results
-        }
-    }, results_file, indent=2)
+    io.dump_json(
+        {"protein_sequence_analysis": {"sequences_analyzed": len(sequences), "results": analysis_results}},
+        results_file,
+        indent=2,
+    )
 
     print(f"✓ Results saved to: {results_file}")
     print("\n=== Protein Sequences Example Complete ===")
+
 
 if __name__ == "__main__":
     main()

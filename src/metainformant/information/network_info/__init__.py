@@ -8,11 +8,11 @@ flow networks from multivariate time series.
 from __future__ import annotations
 
 from .information_flow import (
-    transfer_entropy,
     granger_causality,
-    network_entropy,
     information_flow_network,
     mutual_information_network,
+    network_entropy,
+    transfer_entropy,
 )
 
 __all__ = [

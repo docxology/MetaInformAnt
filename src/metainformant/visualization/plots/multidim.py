@@ -7,13 +7,13 @@ radar charts, and 3D scatter plots.
 
 from __future__ import annotations
 
+from math import pi
 from pathlib import Path
 from typing import Any
-from math import pi
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
 from metainformant.core import logging, paths, validation

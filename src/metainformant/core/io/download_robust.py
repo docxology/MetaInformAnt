@@ -5,11 +5,11 @@ This module provides reliable download functions using available system tools
 unstable network conditions or large files (e.g., SRA/FASTQ).
 """
 
-import subprocess
 import shutil
+import subprocess
 import time
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Dict, Optional
 
 from metainformant.core.utils.logging import get_logger
 
@@ -153,6 +153,7 @@ def download_sra_files_from_metadata(
         Dictionary of sample_id -> success status
     """
     import csv
+
     from metainformant.core.io.download_manager import DownloadManager
 
     results = {}

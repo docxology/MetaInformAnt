@@ -15,7 +15,9 @@ from __future__ import annotations
 import time
 from pathlib import Path
 from typing import Any, Dict
+
 from metainformant.core import io, logging, workflow
+
 
 def main():
     """Demonstrate basic workflow orchestration."""
@@ -32,39 +34,40 @@ def main():
         "workflow": {
             "name": "dna_sequence_analysis_demo",
             "description": "Demonstration of basic workflow orchestration",
-            "version": "1.0"
+            "version": "1.0",
         },
         "steps": {
             "load_data": {
                 "description": "Load sequence data from file",
                 "input_file": "sample_sequences.fasta",
-                "expected_count": 5
+                "expected_count": 5,
             },
             "validate_data": {
                 "description": "Validate sequence integrity",
                 "min_length": 10,
-                "allowed_bases": ["A", "T", "C", "G"]
+                "allowed_bases": ["A", "T", "C", "G"],
             },
             "analyze_sequences": {
                 "description": "Calculate sequence statistics",
                 "calculate_gc": True,
-                "find_motifs": ["ATCG", "GATC"]
+                "find_motifs": ["ATCG", "GATC"],
             },
             "generate_report": {
                 "description": "Create analysis summary report",
                 "output_format": "json",
-                "include_plots": False
-            }
+                "include_plots": False,
+            },
         },
         "output": {
             "directory": str(output_dir / "workflow_output"),
             "intermediate_files": True,
-            "final_report": "analysis_report.json"
-        }
+            "final_report": "analysis_report.json",
+        },
     }
 
     config_file = output_dir / "workflow_config.yaml"
     import yaml
+
     with open(config_file, "w") as f:
         yaml.dump(workflow_config, f)
 
@@ -100,12 +103,7 @@ def main():
         start_time = time.time()
 
         # Simulate processing time based on step
-        processing_times = {
-            "load_data": 0.2,
-            "validate_data": 0.1,
-            "analyze_sequences": 0.5,
-            "generate_report": 0.3
-        }
+        processing_times = {"load_data": 0.2, "validate_data": 0.1, "analyze_sequences": 0.5, "generate_report": 0.3}
 
         time.sleep(processing_times.get(step_name, 0.1))
 
@@ -114,26 +112,26 @@ def main():
             result = {
                 "sequences_loaded": step_config.get("expected_count", 5),
                 "total_bases": 1250,
-                "file_format": "FASTA"
+                "file_format": "FASTA",
             }
         elif step_name == "validate_data":
             result = {
                 "sequences_validated": 5,
                 "invalid_sequences": 0,
-                "validation_checks": ["length", "bases", "format"]
+                "validation_checks": ["length", "bases", "format"],
             }
         elif step_name == "analyze_sequences":
             result = {
                 "average_length": 250,
                 "gc_content": 0.42,
                 "motifs_found": {"ATCG": 3, "GATC": 2},
-                "complexity_score": 0.85
+                "complexity_score": 0.85,
             }
         elif step_name == "generate_report":
             result = {
                 "report_sections": ["summary", "statistics", "motifs"],
                 "output_format": step_config.get("output_format", "json"),
-                "file_size_kb": 15.7
+                "file_size_kb": 15.7,
             }
         else:
             result = {"status": "unknown_step"}
@@ -165,14 +163,11 @@ def main():
         return {
             "processed_items": len(data) if isinstance(data, list) else 1,
             "data_type": type(data).__name__,
-            "processing_timestamp": "2024-12-26T10:00:00Z"
+            "processing_timestamp": "2024-12-26T10:00:00Z",
         }
 
     # Example URLs (these won't actually be downloaded in this demo)
-    example_urls = [
-        "https://example.com/sample_data.json",
-        "https://example.com/sequences.fasta"
-    ]
+    example_urls = ["https://example.com/sample_data.json", "https://example.com/sequences.fasta"]
 
     download_results = {}
     for url in example_urls:
@@ -193,10 +188,7 @@ def main():
 
     try:
         # This demonstrates the full workflow execution pattern
-        workflow_result = workflow.run_config_based_workflow(
-            config_file,
-            custom_param="demo_value"
-        )
+        workflow_result = workflow.run_config_based_workflow(config_file, custom_param="demo_value")
         print("✓ Config-based workflow completed")
         config_workflow_result = workflow_result
     except Exception as e:
@@ -212,23 +204,20 @@ def main():
             "configuration": {
                 "config_file_created": str(config_file.relative_to(output_dir)),
                 "sample_config_created": str(sample_config_file.relative_to(output_dir)),
-                "config_validation_passed": is_valid
+                "config_validation_passed": is_valid,
             },
             "workflow_execution": {
                 "steps_executed": len(step_results),
                 "total_execution_time": total_workflow_time,
                 "step_results": step_results,
-                "workflow_status": "completed"
+                "workflow_status": "completed",
             },
             "data_processing": {
                 "download_operations": len(download_results),
                 "download_results": download_results,
-                "processing_pattern": "download_and_process_data"
+                "processing_pattern": "download_and_process_data",
             },
-            "config_based_execution": {
-                "attempted": True,
-                "result": config_workflow_result
-            },
+            "config_based_execution": {"attempted": True, "result": config_workflow_result},
             "features_demonstrated": [
                 "Configuration file creation and validation",
                 "Sample configuration generation",
@@ -236,14 +225,14 @@ def main():
                 "Progress tracking and timing",
                 "Data download and processing patterns",
                 "Config-based workflow orchestration",
-                "Error handling and result aggregation"
+                "Error handling and result aggregation",
             ],
             "workflow_patterns": {
                 "step_execution": "Simulated realistic bioinformatics workflow steps",
                 "data_flow": "Config -> Validation -> Processing -> Results",
                 "error_handling": "Graceful handling of validation and execution errors",
-                "result_aggregation": "Comprehensive summary of all workflow outputs"
-            }
+                "result_aggregation": "Comprehensive summary of all workflow outputs",
+            },
         }
     }
 
@@ -261,6 +250,7 @@ def main():
     print("- Config-based workflow orchestration")
 
     print(f"\nAll outputs saved to: {output_dir}")
+
 
 if __name__ == "__main__":
     main()

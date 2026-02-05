@@ -259,8 +259,9 @@ def test_learn_event_embeddings_verbose(capsys):
 
 def test_predict_with_missing_events_in_vocab():
     """Test prediction with out-of-vocabulary events."""
-    from metainformant.life_events import EventSequencePredictor
     import numpy as np
+
+    from metainformant.life_events import EventSequencePredictor
 
     # Train on specific vocabulary
     train_sequences = [
@@ -323,6 +324,7 @@ embedding:
 def test_config_env_override_edge_cases(tmp_path):
     """Test invalid environment variable values."""
     import os
+
     from metainformant.life_events import load_life_events_config
 
     config_file = tmp_path / "test_config.yaml"

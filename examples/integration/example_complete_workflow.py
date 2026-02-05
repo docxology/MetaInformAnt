@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
+
 from metainformant.core import io, logging
+
 
 def main():
     """Demonstrate complete bioinformatics workflow."""
@@ -33,50 +35,50 @@ def main():
             "name": "data_ingestion",
             "description": "Load and validate input data",
             "duration_estimate": 2.0,
-            "output": "validated_datasets"
+            "output": "validated_datasets",
         },
         {
             "name": "quality_control",
             "description": "Assess data quality and filter",
             "duration_estimate": 3.0,
-            "output": "qc_filtered_data"
+            "output": "qc_filtered_data",
         },
         {
             "name": "dna_analysis",
             "description": "Sequence alignment and variant calling",
             "duration_estimate": 5.0,
-            "output": "variant_calls"
+            "output": "variant_calls",
         },
         {
             "name": "rna_analysis",
             "description": "Gene expression quantification",
             "duration_estimate": 4.0,
-            "output": "expression_matrix"
+            "output": "expression_matrix",
         },
         {
             "name": "integration",
             "description": "Multi-omics data integration",
             "duration_estimate": 3.0,
-            "output": "integrated_dataset"
+            "output": "integrated_dataset",
         },
         {
             "name": "statistical_analysis",
             "description": "Differential analysis and modeling",
             "duration_estimate": 4.0,
-            "output": "statistical_results"
+            "output": "statistical_results",
         },
         {
             "name": "visualization",
             "description": "Generate publication-ready figures",
             "duration_estimate": 2.0,
-            "output": "figures_and_plots"
+            "output": "figures_and_plots",
         },
         {
             "name": "report_generation",
             "description": "Create comprehensive analysis report",
             "duration_estimate": 1.0,
-            "output": "final_report"
-        }
+            "output": "final_report",
+        },
     ]
 
     # Execute workflow stages
@@ -89,7 +91,7 @@ def main():
         logger.info(f"Starting stage {i+1}/{len(workflow_stages)}: {stage['name']}")
 
         # Simulate stage execution
-        time.sleep(stage['duration_estimate'] * 0.1)  # Faster simulation
+        time.sleep(stage["duration_estimate"] * 0.1)  # Faster simulation
 
         stage_duration = time.time() - stage_start
         cumulative_time += stage_duration
@@ -102,7 +104,7 @@ def main():
             "duration_estimate": stage["duration_estimate"],
             "output_generated": stage["output"],
             "status": "completed",
-            "cumulative_time": cumulative_time
+            "cumulative_time": cumulative_time,
         }
 
         workflow_results.append(stage_result)
@@ -118,7 +120,7 @@ def main():
         "average_stage_duration": total_duration / len(workflow_stages),
         "efficiency_ratio": sum(s["duration_estimate"] for s in workflow_stages) / total_duration,
         "stages_completed": len([r for r in workflow_results if r["status"] == "completed"]),
-        "data_flow": [s["output"] for s in workflow_stages]
+        "data_flow": [s["output"] for s in workflow_stages],
     }
 
     results = {
@@ -130,22 +132,22 @@ def main():
             "input_types_processed": ["DNA_sequences", "RNA_reads", "phenotype_data"],
             "analysis_methods_applied": ["alignment", "quantification", "integration", "statistics", "visualization"],
             "outputs_generated": efficiency_metrics["data_flow"],
-            "quality_checks_performed": ["data_validation", "statistical_checks", "biological_validation"]
+            "quality_checks_performed": ["data_validation", "statistical_checks", "biological_validation"],
         },
         "workflow_characteristics": {
             "modular_design": True,
             "error_handling": True,
             "progress_tracking": True,
             "result_persistence": True,
-            "reproducibility": True
+            "reproducibility": True,
         },
         "key_achievements": [
             "Successfully processed multi-omics data through complete pipeline",
             "Generated integrated biological insights",
             "Created publication-ready visualizations and reports",
             "Maintained data integrity throughout analysis",
-            "Demonstrated scalable bioinformatics workflow design"
-        ]
+            "Demonstrated scalable bioinformatics workflow design",
+        ],
     }
 
     print(f"\n✓ Complete workflow finished in {total_duration:.2f}s")
@@ -154,12 +156,11 @@ def main():
 
     # Save results
     results_file = output_dir / "complete_workflow.json"
-    io.dump_json({
-        "complete_bioinformatics_workflow": results
-    }, results_file, indent=2)
+    io.dump_json({"complete_bioinformatics_workflow": results}, results_file, indent=2)
 
     print(f"✓ Results saved to: {results_file}")
     print("\n=== Complete Workflow Example Complete ===")
+
 
 if __name__ == "__main__":
     main()

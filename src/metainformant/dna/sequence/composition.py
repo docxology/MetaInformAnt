@@ -346,8 +346,8 @@ def sequence_complexity(seq: str, window_size: int = 10) -> List[float]:
         window = seq[i : i + window_size]
 
         # Calculate Shannon entropy
-        from collections import Counter
         import math
+        from collections import Counter
 
         counts = Counter(window.upper())
         total = sum(counts.values())

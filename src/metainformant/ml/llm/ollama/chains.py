@@ -9,9 +9,9 @@ from __future__ import annotations
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Callable, Optional, TypeVar, Generic
+from typing import Any, Callable, Generic, Optional, TypeVar
 
-from .client import OllamaClient, ChatMessage
+from .client import ChatMessage, OllamaClient
 from .prompts import PromptTemplate
 
 logger = logging.getLogger(__name__)

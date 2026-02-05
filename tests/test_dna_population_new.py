@@ -16,18 +16,17 @@ import math
 
 import pytest
 
-from metainformant.dna.population.core import (
-    hardy_weinberg_allele_freqs,
-    fay_wu_h_from_sequences,
-    fu_and_li_f_star_from_sequences,
-)
 from metainformant.dna.population.analysis import (
     calculate_fay_wu_h,
     calculate_fu_li_f,
     calculate_ld_decay,
     detect_population_structure,
 )
-
+from metainformant.dna.population.core import (
+    fay_wu_h_from_sequences,
+    fu_and_li_f_star_from_sequences,
+    hardy_weinberg_allele_freqs,
+)
 
 # ---------------------------------------------------------------------------
 # Fixtures: reusable sequence sets

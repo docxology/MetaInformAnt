@@ -7,9 +7,9 @@ from pathlib import Path
 from metainformant.gwas.visualization.visualization_regional import (
     gene_annotation_plot,
     recombination_rate_plot,
-    regional_plot as regional_plot_detailed,
     regional_ld_plot,
 )
+from metainformant.gwas.visualization.visualization_regional import regional_plot as regional_plot_detailed
 
 
 def test_regional_plot_detailed(tmp_path: Path) -> None:

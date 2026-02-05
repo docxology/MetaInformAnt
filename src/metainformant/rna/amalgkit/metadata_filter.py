@@ -6,9 +6,10 @@ ensuring downstream steps only process selected samples.
 
 from __future__ import annotations
 
-import pandas as pd
 from pathlib import Path
 from typing import Optional
+
+import pandas as pd
 
 from metainformant.core import logging
 

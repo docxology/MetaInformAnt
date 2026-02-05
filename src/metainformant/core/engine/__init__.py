@@ -9,15 +9,13 @@ This module provides:
   -> quant workflow.
 """
 
-from metainformant.core.engine.workflow_manager import (
-    # Generic pipeline primitives
+from metainformant.core.engine.workflow_manager import (  # Generic pipeline primitives; Backward-compatible RNA-seq types
     BasePipelineManager,
     PipelineItem,
     PipelinePhase,
-    Stage,
-    # Backward-compatible RNA-seq types
     SampleStage,
     SampleState,
+    Stage,
     WorkflowManager,
 )
 

@@ -21,7 +21,7 @@ from typing import Any
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core.io import ensure_directory, dump_json
+from metainformant.core.io import dump_json, ensure_directory
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -42,7 +42,7 @@ Examples:
 
   # Simulate gene expression counts
   %(prog)s --model expression --num-genes 1000 --num-samples 20 --output output/simulation/expression
-        """
+        """,
     )
     parser.add_argument(
         "--model",
@@ -95,23 +95,23 @@ Examples:
 def run_sequence_simulation(args, output_dir: Path) -> dict[str, Any]:
     """Run sequence generation simulation."""
     logger.info(f"Generating {args.n} sequences of length {args.length}...")
-    from metainformant.simulation import generate_random_dna, mutate_sequence
     from metainformant.dna.sequences import write_fasta
-    
+    from metainformant.simulation import generate_random_dna, mutate_sequence
+
     rng = random.Random(args.seed)
     sequences = {}
-    
+
     for i in range(args.n):
         seq = generate_random_dna(args.length, gc_content=args.gc_content, rng=rng)
         if args.mutations > 0:
             seq = mutate_sequence(seq, n_mut=args.mutations, rng=rng)
         sequences[f"seq_{i}"] = seq
-    
+
     # Save sequences
     fasta_file = output_dir / "simulated_sequences.fasta"
     write_fasta(sequences, str(fasta_file))
     logger.info(f"Sequences saved to {fasta_file}")
-    
+
     return {
         "n_sequences": args.n,
         "length": args.length,
@@ -125,21 +125,18 @@ def run_agent_simulation(args, output_dir: Path) -> dict[str, Any]:
     """Run agent-based model simulation."""
     logger.info(f"Running agent-based model: {args.width}x{args.height} grid, {args.num_agents} agents...")
     from metainformant.simulation import GridWorld
-    
+
     rng = random.Random(args.seed)
     world = GridWorld(width=args.width, height=args.height, num_agents=args.num_agents, rng=rng)
-    
+
     # Run simulation
     position_history = []
     for step in range(args.steps):
         world.step()
         if step % 10 == 0:  # Record every 10 steps
             positions = world.positions()
-            position_history.append({
-                "step": step,
-                "positions": positions[:100]  # Limit output size
-            })
-    
+            position_history.append({"step": step, "positions": positions[:100]})  # Limit output size
+
     results = {
         "grid_size": [args.width, args.height],
         "num_agents": args.num_agents,
@@ -147,37 +144,38 @@ def run_agent_simulation(args, output_dir: Path) -> dict[str, Any]:
         "position_history": position_history,
         "final_positions": world.positions()[:100],  # Limit output size
     }
-    
+
     output_file = output_dir / "agent_simulation.json"
     dump_json(results, output_file)
     logger.info(f"Agent simulation saved to {output_file}")
-    
+
     return results
 
 
 def run_expression_simulation(args, output_dir: Path) -> dict[str, Any]:
     """Run expression count simulation."""
     logger.info(f"Simulating expression: {args.num_genes} genes, {args.num_samples} samples...")
-    from metainformant.simulation import simulate_counts_negative_binomial
     import pandas as pd
-    
+
+    from metainformant.simulation import simulate_counts_negative_binomial
+
     rng = random.Random(args.seed)
     counts = simulate_counts_negative_binomial(
         num_genes=args.num_genes,
         num_samples=args.num_samples,
         mean_expression=args.mean_expression,
         dispersion=args.dispersion,
-        rng=rng
+        rng=rng,
     )
-    
+
     # Save as CSV
     df = pd.DataFrame(counts, columns=[f"sample_{i}" for i in range(args.num_samples)])
     df.index = [f"gene_{i}" for i in range(args.num_genes)]
-    
+
     csv_file = output_dir / "simulated_expression.csv"
     df.to_csv(csv_file)
     logger.info(f"Expression counts saved to {csv_file}")
-    
+
     return {
         "num_genes": args.num_genes,
         "num_samples": args.num_samples,
@@ -193,21 +191,21 @@ def run_workflow(args):
     logger.info("Starting biological simulation workflow")
     logger.info(f"Model: {args.model}")
     logger.info(f"Output: {args.output}")
-    
+
     if args.dry_run:
         logger.info("DRY RUN - no changes will be made")
         return
-    
+
     output_dir = ensure_directory(args.output)
     logger.info(f"Output directory: {output_dir}")
-    
+
     workflow_results = {
         "model_type": args.model,
         "output_dir": str(output_dir),
         "seed": args.seed,
         "results": {},
     }
-    
+
     try:
         if args.model == "sequences":
             results = run_sequence_simulation(args, output_dir)
@@ -218,26 +216,26 @@ def run_workflow(args):
         elif args.model == "expression":
             results = run_expression_simulation(args, output_dir)
             workflow_results["results"] = results
-        
+
         # Save summary
         summary_file = output_dir / "workflow_summary.json"
         dump_json(workflow_results, summary_file, indent=2)
         logger.info(f"Workflow summary saved to {summary_file}")
-        
+
     except Exception as e:
         logger.error(f"Simulation failed: {e}", exc_info=True)
         raise
-    
+
     logger.info("Workflow complete")
 
 
 def main():
     """Main entry point."""
     args = parse_args()
-    
+
     if args.verbose:
         logger.setLevel(logging.DEBUG)
-    
+
     try:
         run_workflow(args)
         return 0
@@ -248,7 +246,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
-
-
-

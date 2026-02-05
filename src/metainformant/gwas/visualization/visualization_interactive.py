@@ -17,8 +17,8 @@ from metainformant.core import logging
 logger = logging.get_logger(__name__)
 
 try:
-    import plotly.graph_objects as go
     import plotly.express as px
+    import plotly.graph_objects as go
 
     HAS_PLOTLY = True
 except ImportError:

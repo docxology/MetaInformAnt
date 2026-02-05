@@ -9,12 +9,11 @@ learning, and genome browser track generation.
 from __future__ import annotations
 
 # Import subpackages
-from . import analysis
-from . import assays
-from . import chromatin_state
-from . import peak_calling
-from . import visualization
-from . import workflow
+from . import analysis, assays, chromatin_state, peak_calling, visualization, workflow
+from .analysis import (
+    tracks,
+)
+from .analysis.tracks import read_bedgraph
 
 # Import modules from subpackages for backward compatibility
 from .assays import (
@@ -26,22 +25,6 @@ from .assays.methylation import (
     load_cpg_table,
     summarize_beta_by_chromosome,
 )
-from .analysis.tracks import read_bedgraph
-from .analysis import (
-    tracks,
-)
-from .workflow import workflow as workflow_module
-from .visualization import visualization as visualization_module
-
-# Peak calling public API
-from .peak_calling.peak_detection import (
-    call_peaks_broad,
-    call_peaks_simple,
-    compute_frip,
-    differential_peaks,
-    filter_peaks,
-    merge_peaks,
-)
 
 # Chromatin state public API
 from .chromatin_state.state_learning import (
@@ -52,6 +35,18 @@ from .chromatin_state.state_learning import (
     learn_chromatin_states,
     segment_genome,
 )
+
+# Peak calling public API
+from .peak_calling.peak_detection import (
+    call_peaks_broad,
+    call_peaks_simple,
+    compute_frip,
+    differential_peaks,
+    filter_peaks,
+    merge_peaks,
+)
+from .visualization import visualization as visualization_module
+from .workflow import workflow as workflow_module
 
 # Optional imports with graceful fallbacks
 try:

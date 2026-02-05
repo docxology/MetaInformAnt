@@ -1,5 +1,4 @@
-from . import core
-from . import price
+from . import core, price
 
 __all__ = [
     "core",

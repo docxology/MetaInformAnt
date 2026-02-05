@@ -9,9 +9,9 @@ import pandas as pd
 import pytest
 
 from metainformant.visualization.genomics.expression import (
-    plot_expression_heatmap,
-    plot_enrichment_barplot,
     plot_differential_expression,
+    plot_enrichment_barplot,
+    plot_expression_heatmap,
 )
 
 

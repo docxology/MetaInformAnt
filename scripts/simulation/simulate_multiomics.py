@@ -21,8 +21,8 @@ import pandas as pd
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core import io, logging, paths, validation
-from metainformant.simulation.rna import simulate_counts_negative_binomial
 from metainformant.simulation.popgen import generate_genotype_matrix
+from metainformant.simulation.rna import simulate_counts_negative_binomial
 from metainformant.simulation.sequences import generate_random_protein
 
 logger = logging.get_logger(__name__)
@@ -40,9 +40,9 @@ def simulate_crossplatform(
     logger.info(f"Generating cross-platform data: {n_samples} samples")
     rng = random.Random(seed)
     np.random.seed(seed)
-    
+
     sample_ids = [f"sample_{i:03d}" for i in range(n_samples)]
-    
+
     # Generate genomics (genotypes)
     logger.info("Generating genomics data...")
     genotypes = generate_genotype_matrix(n_samples, n_variants, rng=rng)
@@ -50,7 +50,7 @@ def simulate_crossplatform(
     genomics_df.insert(0, "sample_id", sample_ids)
     genomics_file = output_dir / "genomics.csv"
     genomics_df.to_csv(genomics_file, index=False)
-    
+
     # Generate transcriptomics (expression)
     logger.info("Generating transcriptomics data...")
     expression = simulate_counts_negative_binomial(n_genes, n_samples, mean_expression=100.0, dispersion=0.1, rng=rng)
@@ -58,7 +58,7 @@ def simulate_crossplatform(
     transcriptomics_df.index = [f"gene_{i:05d}" for i in range(n_genes)]
     transcriptomics_file = output_dir / "transcriptomics.csv"
     transcriptomics_df.to_csv(transcriptomics_file)
-    
+
     # Generate proteomics (protein abundance)
     logger.info("Generating proteomics data...")
     protein_abundance = np.random.lognormal(mean=5.0, sigma=1.0, size=(n_proteins, n_samples))
@@ -66,18 +66,20 @@ def simulate_crossplatform(
     proteomics_df.index = [f"protein_{i:05d}" for i in range(n_proteins)]
     proteomics_file = output_dir / "proteomics.csv"
     proteomics_df.to_csv(proteomics_file)
-    
+
     # Create sample metadata
-    metadata = pd.DataFrame({
-        "sample_id": sample_ids,
-        "batch": [f"batch_{i % 3}" for i in range(n_samples)],
-        "condition": [f"condition_{i % 2}" for i in range(n_samples)],
-    })
+    metadata = pd.DataFrame(
+        {
+            "sample_id": sample_ids,
+            "batch": [f"batch_{i % 3}" for i in range(n_samples)],
+            "condition": [f"condition_{i % 2}" for i in range(n_samples)],
+        }
+    )
     metadata_file = output_dir / "sample_metadata.csv"
     metadata.to_csv(metadata_file, index=False)
-    
+
     logger.info(f"Cross-platform data saved to {output_dir}")
-    
+
     return {
         "type": "cross-platform",
         "n_samples": n_samples,
@@ -99,16 +101,16 @@ def simulate_integrated(
     logger.info(f"Generating integrated data: {n_samples} samples, {n_omics} omics types")
     rng = random.Random(seed)
     np.random.seed(seed)
-    
+
     sample_ids = [f"sample_{i:03d}" for i in range(n_samples)]
     omics_types = ["genomics", "transcriptomics", "proteomics", "metabolomics", "epigenomics"]
-    
+
     integrated_data = {}
-    
+
     for omic_idx in range(min(n_omics, len(omics_types))):
         omic_type = omics_types[omic_idx]
         logger.info(f"Generating {omic_type} data...")
-        
+
         # Generate omic-specific data
         if omic_type == "genomics":
             data = generate_genotype_matrix(n_samples, n_features_per_omic, rng=rng)
@@ -120,7 +122,7 @@ def simulate_integrated(
             # Other omics: log-normal distribution
             data = np.random.lognormal(mean=5.0, sigma=1.0, size=(n_features_per_omic, n_samples))
             data = data.tolist()
-        
+
         # Create DataFrame
         feature_names = [f"{omic_type}_feature_{i:05d}" for i in range(n_features_per_omic)]
         if omic_type == "genomics":
@@ -129,13 +131,13 @@ def simulate_integrated(
         else:
             df = pd.DataFrame(data, columns=sample_ids)
             df.index = feature_names
-        
+
         integrated_data[omic_type] = df
-        
+
         # Save individual omic
         omic_file = output_dir / f"{omic_type}.csv"
         df.to_csv(omic_file)
-    
+
     # Create integrated matrix (samples x all features)
     all_features = []
     for omic_type, df in integrated_data.items():
@@ -146,13 +148,13 @@ def simulate_integrated(
         else:
             # Transcriptomics, etc. are already features x samples
             all_features.append(df.T)
-    
+
     integrated_df = pd.concat(all_features, axis=1)
     integrated_file = output_dir / "integrated_data.csv"
     integrated_df.to_csv(integrated_file)
-    
+
     logger.info(f"Integrated data saved to {integrated_file}")
-    
+
     return {
         "type": "integrated",
         "n_samples": n_samples,
@@ -176,7 +178,7 @@ Examples:
   %(prog)s --type integrated --n-samples 30 --n-features 200 --n-omics 3
         """,
     )
-    
+
     parser.add_argument(
         "--type",
         required=True,
@@ -197,15 +199,16 @@ Examples:
     parser.add_argument("--n-omics", type=int, default=3, help="Number of omics types (integrated type)")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
-    
+
     args = parser.parse_args()
-    
+
     if args.verbose:
         import logging as std_logging
+
         logger.setLevel(std_logging.DEBUG)
-    
+
     output_dir = paths.ensure_directory(args.output)
-    
+
     try:
         if args.type == "cross-platform":
             results = simulate_crossplatform(
@@ -217,15 +220,13 @@ Examples:
                 args.seed,
             )
         elif args.type == "integrated":
-            results = simulate_integrated(
-                output_dir, args.n_samples, args.n_features, args.n_omics, args.seed
-            )
-        
+            results = simulate_integrated(output_dir, args.n_samples, args.n_features, args.n_omics, args.seed)
+
         # Save summary
         summary_file = output_dir / "simulation_summary.json"
         io.dump_json(results, summary_file, indent=2)
         logger.info(f"Simulation complete. Summary saved to {summary_file}")
-        
+
         return 0
     except Exception as e:
         logger.error(f"Simulation failed: {e}", exc_info=True)
@@ -234,4 +235,3 @@ Examples:
 
 if __name__ == "__main__":
     sys.exit(main())
-

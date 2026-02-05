@@ -6,10 +6,11 @@ contamination detection, sequencing metrics, and FastQ file handling.
 
 from __future__ import annotations
 
+# Type checking imports
+from typing import TYPE_CHECKING
+
 # Import subpackages
-from . import analysis
-from . import io
-from . import reporting
+from . import analysis, io, reporting
 
 # Import modules from subpackages for backward compatibility
 from .analysis import (
@@ -20,15 +21,12 @@ from .io import (
     fastq,
 )
 from .reporting import (
-    generate_qc_report,
     aggregate_sample_qc,
     check_qc_thresholds,
     default_qc_thresholds,
+    generate_qc_report,
     qc_trend_analysis,
 )
-
-# Type checking imports
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     pass

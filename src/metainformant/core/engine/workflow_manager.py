@@ -34,8 +34,8 @@ from metainformant.core.ui.tui import (
     GREEN,
     MAGENTA,
     RED,
-    TerminalInterface,
     YELLOW,
+    TerminalInterface,
 )
 from metainformant.core.utils.logging import get_logger
 

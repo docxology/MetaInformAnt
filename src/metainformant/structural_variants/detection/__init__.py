@@ -8,9 +8,7 @@ breakpoint refinement to base-pair resolution.
 
 from __future__ import annotations
 
-from . import cnv
-from . import sv_calling
-from . import breakpoints
+from . import breakpoints, cnv, sv_calling
 
 __all__ = [
     "cnv",

@@ -10,6 +10,18 @@ from __future__ import annotations
 
 # Import subpackages
 from . import integration, metrics, network_info, workflow
+from .integration import integration as integration_module
+from .integration import networks
+
+# Network functions
+from .integration.networks import (
+    information_community_detection,
+    information_flow,
+    information_graph_distance,
+    network_entropy,
+    network_information_centrality,
+    network_motif_information,
+)
 
 # Import modules from subpackages
 from .metrics import (
@@ -24,8 +36,103 @@ from .metrics import (
     semantic,
     syntactic,
 )
-from .integration import integration as integration_module, networks
-from .workflow import workflows as workflow_module
+
+# Advanced measures
+from .metrics.advanced import (
+    binding_information,
+    fisher_information,
+    fisher_information_matrix,
+    interaction_information,
+    lautum_information,
+    relative_information_gain,
+    variation_of_information,
+)
+
+# Analysis functions
+from .metrics.analysis import (
+    analyze_sequence_information,
+    compare_sequences_information,
+    information_profile,
+    information_signature,
+)
+
+# Channel capacity functions
+from .metrics.channel import (
+    channel_capacity,
+    channel_mutual_information,
+    information_bottleneck,
+    noisy_channel_capacity,
+    rate_distortion,
+)
+
+# Continuous information functions
+from .metrics.continuous import (
+    conditional_entropy_continuous,
+    copula_entropy,
+    differential_entropy,
+    entropy_estimation,
+    information_flow_network,
+    kl_divergence_continuous,
+    mutual_information_continuous,
+    transfer_entropy_continuous,
+)
+
+# Partial Information Decomposition functions
+from .metrics.decomposition import (
+    co_information,
+    dual_total_correlation,
+    o_information,
+    partial_information_decomposition,
+    redundant_information,
+    synergistic_information,
+    unique_information,
+)
+
+# Estimation functions
+from .metrics.estimation import (
+    bias_correction,
+    entropy_bootstrap_confidence,
+    entropy_estimator,
+    entropy_rate_estimator,
+    kl_divergence_estimator,
+    mutual_information_estimator,
+    panzeri_treves_bias_correction,
+)
+
+# Information geometry functions
+from .metrics.geometry import (
+    entropy_power_inequality,
+    exponential_family_entropy,
+    fisher_rao_distance,
+    hellinger_distance,
+    information_dimension,
+    information_projection,
+    natural_gradient,
+    statistical_divergence,
+)
+
+# Hypothesis testing functions
+from .metrics.hypothesis import (
+    entropy_confidence_interval,
+    entropy_rate_test,
+    independence_test,
+    information_significance_filter,
+    mi_permutation_test,
+)
+
+# Semantic information functions
+from .metrics.semantic import (
+    annotation_specificity,
+    information_content,
+    information_content_from_annotations,
+    ontology_complexity,
+    semantic_distance,
+    semantic_entropy,
+    semantic_similarity,
+    semantic_similarity_matrix,
+    term_redundancy,
+    term_specificity,
+)
 
 # Syntactic information functions
 from .metrics.syntactic import (
@@ -46,112 +153,17 @@ from .metrics.syntactic import (
     tsallis_entropy,
 )
 
-# Semantic information functions
-from .metrics.semantic import (
-    annotation_specificity,
-    information_content,
-    information_content_from_annotations,
-    ontology_complexity,
-    semantic_distance,
-    semantic_entropy,
-    semantic_similarity,
-    semantic_similarity_matrix,
-    term_redundancy,
-    term_specificity,
+# Network information flow
+from .network_info.information_flow import (
+    granger_causality,
 )
-
-# Analysis functions
-from .metrics.analysis import (
-    analyze_sequence_information,
-    compare_sequences_information,
-    information_profile,
-    information_signature,
+from .network_info.information_flow import information_flow_network as build_information_flow_network
+from .network_info.information_flow import (
+    mutual_information_network,
 )
-
-# Continuous information functions
-from .metrics.continuous import (
-    conditional_entropy_continuous,
-    copula_entropy,
-    differential_entropy,
-    entropy_estimation,
-    information_flow_network,
-    kl_divergence_continuous,
-    mutual_information_continuous,
-    transfer_entropy_continuous,
-)
-
-# Estimation functions
-from .metrics.estimation import (
-    bias_correction,
-    entropy_bootstrap_confidence,
-    entropy_estimator,
-    entropy_rate_estimator,
-    kl_divergence_estimator,
-    mutual_information_estimator,
-    panzeri_treves_bias_correction,
-)
-
-# Advanced measures
-from .metrics.advanced import (
-    fisher_information,
-    fisher_information_matrix,
-    relative_information_gain,
-    variation_of_information,
-    interaction_information,
-    binding_information,
-    lautum_information,
-)
-
-# Hypothesis testing functions
-from .metrics.hypothesis import (
-    entropy_confidence_interval,
-    entropy_rate_test,
-    independence_test,
-    information_significance_filter,
-    mi_permutation_test,
-)
-
-# Channel capacity functions
-from .metrics.channel import (
-    channel_capacity,
-    channel_mutual_information,
-    information_bottleneck,
-    noisy_channel_capacity,
-    rate_distortion,
-)
-
-# Partial Information Decomposition functions
-from .metrics.decomposition import (
-    co_information,
-    dual_total_correlation,
-    o_information,
-    partial_information_decomposition,
-    redundant_information,
-    synergistic_information,
-    unique_information,
-)
-
-# Information geometry functions
-from .metrics.geometry import (
-    exponential_family_entropy,
-    fisher_rao_distance,
-    hellinger_distance,
-    information_projection,
-    natural_gradient,
-    statistical_divergence,
-    entropy_power_inequality,
-    information_dimension,
-)
-
-# Network functions
-from .integration.networks import (
-    information_community_detection,
-    information_flow,
-    information_graph_distance,
-    network_entropy,
-    network_information_centrality,
-    network_motif_information,
-)
+from .network_info.information_flow import network_entropy as network_von_neumann_entropy
+from .network_info.information_flow import transfer_entropy as transfer_entropy_network
+from .workflow import workflows as workflow_module
 
 # Workflow functions
 from .workflow.workflows import (
@@ -159,15 +171,6 @@ from .workflow.workflows import (
     compare_datasets,
     information_report,
     information_workflow,
-)
-
-# Network information flow
-from .network_info.information_flow import (
-    transfer_entropy as transfer_entropy_network,
-    granger_causality,
-    network_entropy as network_von_neumann_entropy,
-    information_flow_network as build_information_flow_network,
-    mutual_information_network,
 )
 
 __all__ = [

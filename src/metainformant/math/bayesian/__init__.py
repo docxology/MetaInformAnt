@@ -8,13 +8,13 @@ information criteria (DIC, WAIC).
 from __future__ import annotations
 
 from .inference import (
-    metropolis_hastings,
     abc_rejection,
     compute_bayes_factor,
-    conjugate_beta_binomial,
-    conjugate_normal,
     compute_dic,
     compute_waic,
+    conjugate_beta_binomial,
+    conjugate_normal,
+    metropolis_hastings,
 )
 
 __all__ = [

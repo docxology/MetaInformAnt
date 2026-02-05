@@ -13,8 +13,10 @@ Output:
 from __future__ import annotations
 
 from pathlib import Path
+
 from metainformant.core import io
 from metainformant.dna import population
+
 
 def main():
     """Demonstrate DNA population genetics analysis."""
@@ -62,7 +64,7 @@ def main():
     populations = {
         "low_diversity": population_1,
         "high_diversity": population_2,
-        "combined_neutrality_test": combined_population
+        "combined_neutrality_test": combined_population,
     }
 
     print(f"✓ Created {len(populations)} populations for analysis")
@@ -85,7 +87,7 @@ def main():
                 "nucleotide_diversity_pi": pi,
                 "wattersons_theta": theta,
                 "segregating_sites": s,
-                "pi_theta_ratio": pi / theta if theta > 0 else 0
+                "pi_theta_ratio": pi / theta if theta > 0 else 0,
             }
 
             print(f"  {pop_name}: π={pi:.4f}, θ={theta:.4f}, S={s}")
@@ -100,7 +102,7 @@ def main():
     neutrality_tests["tajimas_d"] = {
         "statistic": tajima_d,
         "interpretation": "Negative: purifying selection or population expansion; Positive: balancing selection or bottleneck",
-        "significance": "Typically significant if |D| > 2"
+        "significance": "Typically significant if |D| > 2",
     }
 
     # Fu and Li's D*
@@ -108,7 +110,7 @@ def main():
     neutrality_tests["fu_li_d_star"] = {
         "statistic": fu_li_d_star,
         "interpretation": "Tests for recent population growth or selection",
-        "significance": "Negative values suggest population expansion"
+        "significance": "Negative values suggest population expansion",
     }
 
     # Fu and Li's F*
@@ -116,7 +118,7 @@ def main():
     neutrality_tests["fu_li_f_star"] = {
         "statistic": fu_li_f_star,
         "interpretation": "More powerful for detecting population growth",
-        "significance": "Negative values suggest population expansion"
+        "significance": "Negative values suggest population expansion",
     }
 
     # Fay and Wu's H
@@ -124,13 +126,15 @@ def main():
     neutrality_tests["fay_wu_h"] = {
         "statistic": fay_wu_h,
         "interpretation": "Detects recent positive selection",
-        "significance": "Negative values suggest recent selective sweeps"
+        "significance": "Negative values suggest recent selective sweeps",
     }
 
     print("  Neutrality test results:")
     for test_name, result in neutrality_tests.items():
         stat = result["statistic"]
-        interpretation = "positive selection" if stat > 0 else "negative selection/growth" if stat < 0 else "neutral evolution"
+        interpretation = (
+            "positive selection" if stat > 0 else "negative selection/growth" if stat < 0 else "neutral evolution"
+        )
         print(f"    {test_name}: {stat:.4f} ({interpretation})")
 
     # 4. Population differentiation (Fst)
@@ -143,12 +147,9 @@ def main():
             "0.0-0.05": "Little genetic differentiation",
             "0.05-0.15": "Moderate genetic differentiation",
             "0.15-0.25": "Great genetic differentiation",
-            "0.25+": "Very great genetic differentiation"
+            "0.25+": "Very great genetic differentiation",
         },
-        "population_sizes": {
-            "population_1": len(population_1),
-            "population_2": len(population_2)
-        }
+        "population_sizes": {"population_1": len(population_1), "population_2": len(population_2)},
     }
 
     if fst_result < 0.05:
@@ -180,10 +181,7 @@ def main():
         [0, 1, 1, 1, 1],  # SNP 3
     ]
 
-    genotype_matrices = {
-        "population_1": genotype_matrix_1,
-        "population_2": genotype_matrix_2
-    }
+    genotype_matrices = {"population_1": genotype_matrix_1, "population_2": genotype_matrix_2}
 
     genotype_analysis = {}
 
@@ -204,7 +202,7 @@ def main():
             "observed_heterozygosity": avg_heterozygosity,
             "heterozygosity_per_snp": het_per_snp,
             "num_snps": len(matrix),
-            "num_individuals": len(matrix[0]) if matrix else 0
+            "num_individuals": len(matrix[0]) if matrix else 0,
         }
 
         print(f"  {pop_name}: {len(allele_freqs)} SNPs, heterozygosity = {avg_heterozygosity:.4f}")
@@ -215,9 +213,12 @@ def main():
     comparison = {
         "diversity_comparison": {
             "low_vs_high_diversity": {
-                "pi_ratio": diversity_stats["high_diversity"]["nucleotide_diversity_pi"] / diversity_stats["low_diversity"]["nucleotide_diversity_pi"],
-                "theta_ratio": diversity_stats["high_diversity"]["wattersons_theta"] / diversity_stats["low_diversity"]["wattersons_theta"],
-                "segregating_sites_ratio": diversity_stats["high_diversity"]["segregating_sites"] / diversity_stats["low_diversity"]["segregating_sites"]
+                "pi_ratio": diversity_stats["high_diversity"]["nucleotide_diversity_pi"]
+                / diversity_stats["low_diversity"]["nucleotide_diversity_pi"],
+                "theta_ratio": diversity_stats["high_diversity"]["wattersons_theta"]
+                / diversity_stats["low_diversity"]["wattersons_theta"],
+                "segregating_sites_ratio": diversity_stats["high_diversity"]["segregating_sites"]
+                / diversity_stats["low_diversity"]["segregating_sites"],
             }
         },
         "neutrality_test_summary": {
@@ -225,9 +226,9 @@ def main():
             "significant_deviations": sum(1 for test in neutrality_tests.values() if abs(test["statistic"]) > 2),
             "directional_bias": {
                 "negative": sum(1 for test in neutrality_tests.values() if test["statistic"] < -2),
-                "positive": sum(1 for test in neutrality_tests.values() if test["statistic"] > 2)
-            }
-        }
+                "positive": sum(1 for test in neutrality_tests.values() if test["statistic"] > 2),
+            },
+        },
     }
 
     print("  Diversity ratios (high/low):")
@@ -245,30 +246,30 @@ def main():
                 "nucleotide_diversity": {
                     "description": "Average pairwise differences between sequences (π)",
                     "formula": "π = (sum of pairwise differences) / (n choose 2)",
-                    "interpretation": "Higher values indicate more genetic diversity"
+                    "interpretation": "Higher values indicate more genetic diversity",
                 },
                 "wattersons_theta": {
                     "description": "Expected nucleotide diversity under neutral model",
                     "formula": "θ = S / sum(1/i for i in 1 to n-1)",
-                    "interpretation": "Expected diversity based on segregating sites"
+                    "interpretation": "Expected diversity based on segregating sites",
                 },
                 "tajimas_d": {
                     "description": "Test for departure from neutral evolution",
                     "formula": "D = (π - θ) / sqrt(Var(π - θ))",
-                    "interpretation": "Negative: purifying selection; Positive: balancing selection"
+                    "interpretation": "Negative: purifying selection; Positive: balancing selection",
                 },
                 "fst": {
                     "description": "Fixation index measuring population differentiation",
                     "formula": "Fst = (Ht - Hs) / Ht",
-                    "interpretation": "0: no differentiation; 1: complete differentiation"
-                }
+                    "interpretation": "0: no differentiation; 1: complete differentiation",
+                },
             },
             "results": {
                 "diversity_statistics": diversity_stats,
                 "neutrality_tests": neutrality_tests,
                 "population_differentiation": fst_analysis,
                 "genotype_analysis": genotype_analysis,
-                "comparative_analysis": comparison
+                "comparative_analysis": comparison,
             },
             "summary_metrics": {
                 "populations_analyzed": len(populations),
@@ -278,22 +279,28 @@ def main():
                 "genotype_matrices_analyzed": len(genotype_matrices),
                 "diversity_range": {
                     "min_pi": min(stats["nucleotide_diversity_pi"] for stats in diversity_stats.values()),
-                    "max_pi": max(stats["nucleotide_diversity_pi"] for stats in diversity_stats.values())
-                }
+                    "max_pi": max(stats["nucleotide_diversity_pi"] for stats in diversity_stats.values()),
+                },
             },
             "functions_demonstrated": [
-                "nucleotide_diversity", "wattersons_theta", "tajimas_d",
-                "hudson_fst", "fu_and_li_d_star_from_sequences",
-                "fu_and_li_f_star_from_sequences", "fay_wu_h_from_sequences",
-                "segregating_sites", "allele_frequencies", "observed_heterozygosity"
+                "nucleotide_diversity",
+                "wattersons_theta",
+                "tajimas_d",
+                "hudson_fst",
+                "fu_and_li_d_star_from_sequences",
+                "fu_and_li_f_star_from_sequences",
+                "fay_wu_h_from_sequences",
+                "segregating_sites",
+                "allele_frequencies",
+                "observed_heterozygosity",
             ],
             "key_insights": [
                 "High nucleotide diversity indicates recent population expansion or balancing selection",
                 "Tajima's D < 0 suggests purifying selection or population growth",
                 "Fst values near 0 indicate well-mixed populations",
                 "Heterozygosity measures genetic variation within populations",
-                "Multiple neutrality tests provide robust assessment of evolutionary forces"
-            ]
+                "Multiple neutrality tests provide robust assessment of evolutionary forces",
+            ],
         }
     }
 
@@ -311,6 +318,7 @@ def main():
     print("- Comparative analysis of population genetic parameters")
 
     print(f"\nAll outputs saved to: {output_dir}")
+
 
 if __name__ == "__main__":
     main()

@@ -20,7 +20,7 @@ from pathlib import Path
 
 # Import setup utilities (must be before other imports)
 sys.path.insert(0, str(Path(__file__).parent))
-from _setup_utils import ensure_venv_activated, check_environment_or_exit
+from _setup_utils import check_environment_or_exit, ensure_venv_activated
 
 # Auto-setup and activate venv
 ensure_venv_activated(auto_setup=True)
@@ -29,12 +29,12 @@ check_environment_or_exit(auto_setup=True)
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
+from metainformant.core.utils.logging import get_logger
 from metainformant.rna.discovery import (
     generate_config_yaml,
     get_genome_info,
     search_species_with_rnaseq,
 )
-from metainformant.core.utils.logging import get_logger
 
 logger = get_logger("discover_species")
 
@@ -143,11 +143,7 @@ def main() -> int:
     logger.info(f"Found {len(species_data)} species")
 
     # Filter by minimum samples
-    filtered_species = {
-        name: data
-        for name, data in species_data.items()
-        if data["sample_count"] >= args.min_samples
-    }
+    filtered_species = {name: data for name, data in species_data.items() if data["sample_count"] >= args.min_samples}
 
     logger.info(f"Filtered to {len(filtered_species)} species with ≥{args.min_samples} samples")
 
@@ -185,4 +181,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

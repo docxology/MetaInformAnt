@@ -6,9 +6,7 @@ for marker gene sequencing data.
 
 from __future__ import annotations
 
-from . import otu_clustering
-from . import asv_denoising
-from . import taxonomy
+from . import asv_denoising, otu_clustering, taxonomy
 
 __all__ = [
     "otu_clustering",

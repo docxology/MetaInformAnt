@@ -8,9 +8,10 @@ statistics.
 
 from __future__ import annotations
 
-import numpy as np
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
+
+import numpy as np
 
 from metainformant.core import logging
 

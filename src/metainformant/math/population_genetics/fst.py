@@ -6,7 +6,8 @@ of population differentiation from allele frequency data.
 
 from __future__ import annotations
 
-from typing import List, Dict, Any, Tuple
+from typing import Any, Dict, List, Tuple
+
 import numpy as np
 
 from metainformant.core import logging

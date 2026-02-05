@@ -60,8 +60,7 @@ See Also:
 from __future__ import annotations
 
 # Import subpackages
-from . import analysis
-from . import visualization
+from . import analysis, visualization
 
 # Import modules from subpackages for backward compatibility
 from .analysis import (

@@ -9,10 +9,10 @@ import pandas as pd
 import pytest
 
 from metainformant.visualization.analysis.quality import (
-    plot_quality_metrics,
     plot_adapter_content,
     plot_gc_distribution,
     plot_length_distribution,
+    plot_quality_metrics,
 )
 
 

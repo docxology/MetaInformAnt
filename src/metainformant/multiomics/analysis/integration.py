@@ -7,20 +7,21 @@ analysis, and other integrative approaches.
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Any, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
 from scipy import stats
 
-from metainformant.core import logging, errors, validation
+from metainformant.core import errors, logging, validation
 
 logger = logging.get_logger(__name__)
 
 # Optional scientific dependencies
 try:
-    from sklearn.preprocessing import StandardScaler
-    from sklearn.decomposition import PCA, NMF
     from sklearn.cross_decomposition import CCA
+    from sklearn.decomposition import NMF, PCA
+    from sklearn.preprocessing import StandardScaler
 
     HAS_SKLEARN = True
 except ImportError:

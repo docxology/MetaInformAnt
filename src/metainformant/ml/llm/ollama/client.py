@@ -8,11 +8,10 @@ from __future__ import annotations
 
 import json
 import time
-from dataclasses import dataclass
-from typing import Callable, Iterator, Optional, Any
-
-import urllib.request
 import urllib.error
+import urllib.request
+from dataclasses import dataclass
+from typing import Any, Callable, Iterator, Optional
 
 from metainformant.core import logging
 

@@ -7,8 +7,9 @@ elimination, and stability-based selection.
 
 from __future__ import annotations
 
-import numpy as np
 from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
 
 from metainformant.core.utils.logging import get_logger
 
@@ -17,19 +18,19 @@ logger = get_logger(__name__)
 # Optional imports for ML functionality
 try:
     from sklearn.base import BaseEstimator
+    from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
     from sklearn.feature_selection import (
-        SelectKBest,
-        SelectPercentile,
-        SelectFdr,
-        SelectFpr,
         RFE,
         RFECV,
+        SelectFdr,
+        SelectFpr,
         SelectFromModel,
+        SelectKBest,
+        SelectPercentile,
     )
-    from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
     from sklearn.linear_model import Lasso, LogisticRegression
+    from sklearn.model_selection import StratifiedKFold, cross_val_score
     from sklearn.preprocessing import StandardScaler
-    from sklearn.model_selection import cross_val_score, StratifiedKFold
 
     HAS_SKLEARN = True
 except ImportError:

@@ -7,13 +7,13 @@ custom track files for epigenomic data visualization and analysis.
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Iterator, Tuple, Set, Union
-from collections import defaultdict
-import statistics
 import gzip
+import statistics
+from collections import defaultdict
+from pathlib import Path
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
 
-from metainformant.core import logging, errors, validation, io
+from metainformant.core import errors, io, logging, validation
 
 logger = logging.get_logger(__name__)
 

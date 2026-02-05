@@ -35,7 +35,7 @@ def simulate_counts(
     seed: int,
 ) -> dict:
     """Simulate basic RNA-seq count matrix.
-    
+
     Args:
         output_dir: Output directory for results
         num_genes: Number of genes
@@ -43,10 +43,10 @@ def simulate_counts(
         mean_expression: Mean expression level
         dispersion: Dispersion parameter (must be > 0)
         seed: Random seed for reproducibility
-        
+
     Returns:
         Dictionary with simulation results and metadata
-        
+
     Raises:
         ValidationError: If parameters are invalid
     """
@@ -55,10 +55,10 @@ def simulate_counts(
     validation.validate_range(num_samples, min_val=1, name="num_samples")
     validation.validate_range(mean_expression, min_val=0.0, name="mean_expression")
     validation.validate_range(dispersion, min_val=0.0, name="dispersion")
-    
+
     logger.info(f"Simulating expression counts: {num_genes} genes x {num_samples} samples")
     rng = random.Random(seed)
-    
+
     counts = simulate_counts_negative_binomial(
         num_genes=num_genes,
         num_samples=num_samples,
@@ -66,16 +66,16 @@ def simulate_counts(
         dispersion=dispersion,
         rng=rng,
     )
-    
+
     # Save as CSV
     df = pd.DataFrame(counts, columns=[f"sample_{i:03d}" for i in range(num_samples)])
     df.index = [f"gene_{i:05d}" for i in range(num_genes)]
-    
+
     csv_file = output_dir / "expression_counts.csv"
     df.to_csv(csv_file)
-    
+
     logger.info(f"Expression counts saved to {csv_file}")
-    
+
     return {
         "type": "counts",
         "num_genes": num_genes,
@@ -97,7 +97,7 @@ def simulate_differential(
     seed: int,
 ) -> dict:
     """Simulate differential expression between two groups.
-    
+
     Args:
         output_dir: Output directory for results
         num_genes: Number of genes
@@ -107,10 +107,10 @@ def simulate_differential(
         mean_expression: Mean expression level
         dispersion: Dispersion parameter
         seed: Random seed for reproducibility
-        
+
     Returns:
         Dictionary with simulation results and metadata
-        
+
     Raises:
         ValidationError: If parameters are invalid
     """
@@ -121,58 +121,60 @@ def simulate_differential(
     validation.validate_range(fold_change, min_val=1.0, name="fold_change")
     validation.validate_range(mean_expression, min_val=0.0, name="mean_expression")
     validation.validate_range(dispersion, min_val=0.0, name="dispersion")
-    
+
     logger.info(f"Simulating differential expression: {n_de_genes} DE genes")
     rng = random.Random(seed)
-    
+
     n_group1 = num_samples // 2
     n_group2 = num_samples - n_group1
-    
+
     # Select DE genes
     n_de_genes = min(n_de_genes, num_genes)  # Ensure we don't exceed available genes
     de_genes = set(rng.sample(range(num_genes), n_de_genes))
-    
+
     counts = []
     gene_info = []
-    
+
     for gene_idx in range(num_genes):
         is_de = gene_idx in de_genes
         direction = rng.choice([-1, 1]) if is_de else 1
-        
+
         # Group 1 expression
         mean1 = mean_expression
         row1 = [
             simulate_counts_negative_binomial(1, 1, mean_expression=mean1, dispersion=dispersion, rng=rng)[0][0]
             for _ in range(n_group1)
         ]
-        
+
         # Group 2 expression (different if DE)
-        mean2 = mean_expression * (fold_change ** direction) if is_de else mean_expression
+        mean2 = mean_expression * (fold_change**direction) if is_de else mean_expression
         row2 = [
             simulate_counts_negative_binomial(1, 1, mean_expression=mean2, dispersion=dispersion, rng=rng)[0][0]
             for _ in range(n_group2)
         ]
-        
+
         counts.append(row1 + row2)
-        gene_info.append({
-            "gene_id": f"gene_{gene_idx:05d}",
-            "is_de": is_de,
-            "fold_change": fold_change ** direction if is_de else 1.0,
-        })
-    
+        gene_info.append(
+            {
+                "gene_id": f"gene_{gene_idx:05d}",
+                "is_de": is_de,
+                "fold_change": fold_change**direction if is_de else 1.0,
+            }
+        )
+
     # Save counts
     df = pd.DataFrame(counts, columns=[f"sample_{i:03d}" for i in range(num_samples)])
     df.index = [f"gene_{i:05d}" for i in range(num_genes)]
     csv_file = output_dir / "differential_expression.csv"
     df.to_csv(csv_file)
-    
+
     # Save gene info
     gene_df = pd.DataFrame(gene_info)
     gene_file = output_dir / "gene_info.csv"
     gene_df.to_csv(gene_file, index=False)
-    
+
     logger.info(f"Differential expression data saved to {csv_file}")
-    
+
     return {
         "type": "differential",
         "num_genes": num_genes,
@@ -195,7 +197,7 @@ def simulate_batch(
     seed: int,
 ) -> dict:
     """Simulate batch effects in expression data.
-    
+
     Args:
         output_dir: Output directory for results
         num_genes: Number of genes
@@ -205,10 +207,10 @@ def simulate_batch(
         mean_expression: Mean expression level
         dispersion: Dispersion parameter
         seed: Random seed for reproducibility
-        
+
     Returns:
         Dictionary with simulation results and metadata
-        
+
     Raises:
         ValidationError: If parameters are invalid
     """
@@ -219,53 +221,55 @@ def simulate_batch(
     validation.validate_range(batch_effect_size, min_val=0.0, name="batch_effect_size")
     validation.validate_range(mean_expression, min_val=0.0, name="mean_expression")
     validation.validate_range(dispersion, min_val=0.0, name="dispersion")
-    
+
     logger.info(f"Simulating batch effects: {n_batches} batches")
     rng = random.Random(seed)
-    
+
     samples_per_batch = num_samples // n_batches
-    
+
     # Generate batch effects
     batch_effects = [rng.gauss(0, batch_effect_size) for _ in range(n_batches)]
-    
+
     counts = []
     sample_info = []
-    
+
     for sample_idx in range(num_samples):
         batch_idx = sample_idx // samples_per_batch
         if batch_idx >= n_batches:
             batch_idx = n_batches - 1
-        
+
         batch_effect = batch_effects[batch_idx]
-        sample_mean = mean_expression * (2 ** batch_effect)
-        
+        sample_mean = mean_expression * (2**batch_effect)
+
         row = [
             simulate_counts_negative_binomial(1, 1, mean_expression=sample_mean, dispersion=dispersion, rng=rng)[0][0]
             for _ in range(num_genes)
         ]
         counts.append(row)
-        
-        sample_info.append({
-            "sample_id": f"sample_{sample_idx:03d}",
-            "batch": batch_idx,
-            "batch_effect": batch_effect,
-        })
-    
+
+        sample_info.append(
+            {
+                "sample_id": f"sample_{sample_idx:03d}",
+                "batch": batch_idx,
+                "batch_effect": batch_effect,
+            }
+        )
+
     # Transpose to genes x samples
     df = pd.DataFrame(counts).T
     df.columns = [f"sample_{i:03d}" for i in range(num_samples)]
     df.index = [f"gene_{i:05d}" for i in range(num_genes)]
-    
+
     csv_file = output_dir / "batch_expression.csv"
     df.to_csv(csv_file)
-    
+
     # Save sample info
     sample_df = pd.DataFrame(sample_info)
     sample_file = output_dir / "sample_info.csv"
     sample_df.to_csv(sample_file, index=False)
-    
+
     logger.info(f"Batch effect data saved to {csv_file}")
-    
+
     return {
         "type": "batch",
         "num_genes": num_genes,
@@ -294,7 +298,7 @@ Examples:
   %(prog)s --type batch --num-genes 2000 --num-samples 30 --n-batches 3
         """,
     )
-    
+
     parser.add_argument(
         "--type",
         required=True,
@@ -317,16 +321,17 @@ Examples:
     parser.add_argument("--batch-effect-size", type=float, default=0.5, help="Batch effect size (batch type)")
     parser.add_argument("--seed", type=int, default=42, help="Random seed")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose logging")
-    
+
     args = parser.parse_args()
-    
+
     if args.verbose:
         import logging as std_logging
+
         logger.setLevel(std_logging.DEBUG)
-    
+
     # Validate output directory
     output_dir = paths.ensure_directory(args.output)
-    
+
     # Validate common parameters
     validation.validate_range(args.num_genes, min_val=1, name="num_genes")
     validation.validate_range(args.num_samples, min_val=1, name="num_samples")
@@ -338,7 +343,7 @@ Examples:
         validation.validate_range(args.fold_change, min_val=1.0, name="fold_change")
     if hasattr(args, "n_batches"):
         validation.validate_range(args.n_batches, min_val=1, max_val=args.num_samples, name="n_batches")
-    
+
     try:
         if args.type == "counts":
             results = simulate_counts(
@@ -371,12 +376,12 @@ Examples:
                 args.dispersion,
                 args.seed,
             )
-        
+
         # Save summary
         summary_file = output_dir / "simulation_summary.json"
         io.dump_json(results, summary_file, indent=2)
         logger.info(f"Simulation complete. Summary saved to {summary_file}")
-        
+
         return 0
     except Exception as e:
         logger.error(f"Simulation failed: {e}", exc_info=True)
@@ -385,4 +390,3 @@ Examples:
 
 if __name__ == "__main__":
     sys.exit(main())
-

@@ -6,15 +6,15 @@ interactive plots, and quality control submodules.
 
 from __future__ import annotations
 
-import pytest
+import matplotlib
 import numpy as np
 import pandas as pd
-import matplotlib
+import pytest
 
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 from pathlib import Path
 
+import matplotlib.pyplot as plt
 
 # ---------------------------------------------------------------------------
 # Themes tests
@@ -70,7 +70,7 @@ class TestThemes:
         assert matplotlib.rcParams["figure.dpi"] == original_dpi
 
     def test_register_custom_theme(self):
-        from metainformant.visualization.themes import register_theme, get_theme
+        from metainformant.visualization.themes import get_theme, register_theme
 
         register_theme("custom_test", {"figure.dpi": 999})
         params = get_theme("custom_test")
@@ -461,7 +461,7 @@ class TestMainExports:
     """Test that main visualization package exports new modules."""
 
     def test_themes_exported(self):
-        from metainformant.visualization import themes, list_themes, apply_theme, theme
+        from metainformant.visualization import apply_theme, list_themes, theme, themes
 
         assert themes is not None
         assert callable(list_themes)
@@ -469,7 +469,7 @@ class TestMainExports:
         assert callable(theme)
 
     def test_palettes_exported(self):
-        from metainformant.visualization import palettes, chromosome_palette, categorical, WONG
+        from metainformant.visualization import WONG, categorical, chromosome_palette, palettes
 
         assert palettes is not None
         assert callable(chromosome_palette)
@@ -477,7 +477,7 @@ class TestMainExports:
         assert isinstance(WONG, list)
 
     def test_composite_exported(self):
-        from metainformant.visualization import composite, multi_panel, genomic_overview, qc_summary
+        from metainformant.visualization import composite, genomic_overview, multi_panel, qc_summary
 
         assert composite is not None
         assert callable(multi_panel)

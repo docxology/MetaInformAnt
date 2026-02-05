@@ -8,10 +8,10 @@ import numpy as np
 import pytest
 
 from metainformant.gwas.analysis.mixed_model import (
-    association_test_mixed,
-    run_mixed_model_gwas,
     _emma_eigendecompose,
     _emma_reml,
+    association_test_mixed,
+    run_mixed_model_gwas,
 )
 
 

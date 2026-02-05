@@ -6,7 +6,13 @@ allowing users to discover and execute analysis workflows.
 
 from __future__ import annotations
 
-from .ui.display import clear_screen, format_breadcrumb, format_menu, get_choice, show_menu
+from .core.discovery import (
+    ScriptInfo,
+    categorize_script,
+    discover_scripts,
+    extract_script_metadata,
+    generate_menu_from_scripts,
+)
 from .core.executor import (
     execute_bash_script,
     execute_python_script,
@@ -14,14 +20,8 @@ from .core.executor import (
     prompt_for_args,
     validate_script_executable,
 )
+from .ui.display import clear_screen, format_breadcrumb, format_menu, get_choice, show_menu
 from .ui.navigation import Menu, MenuHistory, MenuItem, MenuSystem, get_current_menu, go_back, navigate_to_submenu
-from .core.discovery import (
-    discover_scripts,
-    extract_script_metadata,
-    categorize_script,
-    generate_menu_from_scripts,
-    ScriptInfo,
-)
 
 __all__ = [
     # Data structures

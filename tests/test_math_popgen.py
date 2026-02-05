@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from metainformant.math import (
     fixation_probability,
     hardy_weinberg_genotype_freqs,

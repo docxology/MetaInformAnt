@@ -118,8 +118,8 @@ def main() -> int:
             species_dir = output_dir / "species"
             species_dir.mkdir(parents=True, exist_ok=True)
 
-            from metainformant.core.paths import sanitize_filename
             from metainformant.core.io import dump_json
+            from metainformant.core.paths import sanitize_filename
 
             safe_name = sanitize_filename(args.species)
             output_file = species_dir / f"{safe_name}.json"
@@ -169,4 +169,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

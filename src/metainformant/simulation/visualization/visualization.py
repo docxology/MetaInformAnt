@@ -11,12 +11,12 @@ import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
-import numpy as np
+import matplotlib.animation as animation
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from matplotlib.axes import Axes
 from matplotlib.patches import Circle, Rectangle
-import matplotlib.animation as animation
-import pandas as pd
 
 from metainformant.core import logging, paths, validation
 
@@ -31,8 +31,8 @@ except ImportError:
     sns = None
 
 try:
-    import plotly.graph_objects as go
     import plotly.express as px
+    import plotly.graph_objects as go
 
     HAS_PLOTLY = True
 except ImportError:

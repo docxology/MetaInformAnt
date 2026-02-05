@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
-from typing import Dict, List, Tuple, Any
+from typing import Any, Dict, List, Tuple
 
 from metainformant.core import logging
 

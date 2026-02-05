@@ -1,5 +1,4 @@
-from . import core
-from . import egt
+from . import core, egt
 
 __all__ = [
     "core",

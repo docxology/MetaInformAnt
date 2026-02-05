@@ -19,8 +19,8 @@ from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
-from ..annotations.cpic import lookup_drug_gene, get_dosing_recommendation, _CPIC_GUIDELINES
 from ..alleles.phenotype import MetabolizerPhenotype
+from ..annotations.cpic import _CPIC_GUIDELINES, get_dosing_recommendation, lookup_drug_gene
 
 logger = get_logger(__name__)
 

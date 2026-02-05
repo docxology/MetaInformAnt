@@ -11,10 +11,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas.workflow.workflow import run_gwas, _normalize_config, load_gwas_config
 from metainformant.gwas.analysis.association import association_test_linear
 from metainformant.gwas.analysis.quality import parse_vcf_full
 from metainformant.gwas.data.genome import normalize_chromosome_name
+from metainformant.gwas.workflow.workflow import _normalize_config, load_gwas_config, run_gwas
 from tests.fixtures.gwas.generate_test_data import generate_complete_test_dataset
 
 

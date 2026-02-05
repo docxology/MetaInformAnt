@@ -6,9 +6,10 @@ including deduplication and scientific name handling.
 
 from __future__ import annotations
 
-import pytest
 from pathlib import Path
+
 import pandas as pd
+import pytest
 
 from metainformant.rna.amalgkit.metadata_utils import deduplicate_metadata
 

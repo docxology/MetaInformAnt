@@ -16,46 +16,30 @@ from typing import Any
 import pytest
 
 # ---------------------------------------------------------------------------
-# Quality metrics
-# ---------------------------------------------------------------------------
-from metainformant.longread.quality.metrics import (
-    ReadLengthStatistics,
-    QualityDistribution,
-    calculate_n50,
-    calculate_nx,
-    read_length_stats,
-    quality_score_distribution,
-    estimate_accuracy,
-    calculate_throughput,
-)
-
-# ---------------------------------------------------------------------------
-# Filtering
-# ---------------------------------------------------------------------------
-from metainformant.longread.quality.filtering import (
-    ReadRecord,
-    AdapterMatch,
-    ONT_ADAPTERS,
-    PACBIO_ADAPTERS,
-    filter_by_length,
-    filter_by_quality,
-    trim_adapters,
-    detect_adapters,
-    split_chimeric_reads,
-)
-
-# ---------------------------------------------------------------------------
 # Analysis -- modified bases
 # ---------------------------------------------------------------------------
 from metainformant.longread.analysis.modified_bases import (
+    DifferentialMethylationResult,
     MethylationCall,
     RegionMethylation,
-    DifferentialMethylationResult,
-    detect_methylation,
+    aggregate_methylation,
     call_5mc,
     call_6ma,
-    aggregate_methylation,
+    detect_methylation,
     differential_methylation,
+)
+
+# ---------------------------------------------------------------------------
+# Analysis -- phasing
+# ---------------------------------------------------------------------------
+from metainformant.longread.analysis.phasing import (
+    PhaseBlock,
+    PhaseBlockStats,
+    Variant,
+    build_haplotype_blocks,
+    calculate_phase_block_stats,
+    phase_reads,
+    tag_reads_by_haplotype,
 )
 
 # ---------------------------------------------------------------------------
@@ -63,23 +47,34 @@ from metainformant.longread.analysis.modified_bases import (
 # ---------------------------------------------------------------------------
 from metainformant.longread.analysis.structural import (
     StructuralVariant,
-    detect_sv_from_long_reads,
     detect_insertions,
     detect_inversions,
+    detect_sv_from_long_reads,
     phase_structural_variants,
 )
 
 # ---------------------------------------------------------------------------
-# Analysis -- phasing
+# Assembly -- consensus
 # ---------------------------------------------------------------------------
-from metainformant.longread.analysis.phasing import (
-    Variant,
-    PhaseBlock,
-    PhaseBlockStats,
-    phase_reads,
-    build_haplotype_blocks,
-    tag_reads_by_haplotype,
-    calculate_phase_block_stats,
+from metainformant.longread.assembly.consensus import (
+    ConsensusResult,
+    MSAResult,
+    calculate_consensus_quality,
+    generate_consensus,
+    multiple_sequence_alignment,
+    polish_consensus,
+)
+
+# ---------------------------------------------------------------------------
+# Assembly -- hybrid
+# ---------------------------------------------------------------------------
+from metainformant.longread.assembly.hybrid import (
+    CorrectedRead,
+    HybridAssemblyResult,
+    Scaffold,
+    correct_with_short_reads,
+    hybrid_assemble,
+    scaffold_with_long_reads,
 )
 
 # ---------------------------------------------------------------------------
@@ -89,34 +84,21 @@ from metainformant.longread.assembly.overlap import (
     Minimizer,
     Overlap,
     OverlapGraph,
-    find_overlaps,
-    minimizer_sketch,
     compute_overlap_graph,
     filter_contained_reads,
+    find_overlaps,
+    minimizer_sketch,
 )
 
 # ---------------------------------------------------------------------------
-# Assembly -- consensus
+# IO -- bam
 # ---------------------------------------------------------------------------
-from metainformant.longread.assembly.consensus import (
-    ConsensusResult,
-    MSAResult,
-    generate_consensus,
-    polish_consensus,
-    multiple_sequence_alignment,
-    calculate_consensus_quality,
-)
-
-# ---------------------------------------------------------------------------
-# Assembly -- hybrid
-# ---------------------------------------------------------------------------
-from metainformant.longread.assembly.hybrid import (
-    CorrectedRead,
-    Scaffold,
-    HybridAssemblyResult,
-    hybrid_assemble,
-    correct_with_short_reads,
-    scaffold_with_long_reads,
+from metainformant.longread.io.bam import (
+    AlignmentStats,
+    LongReadAlignment,
+    calculate_alignment_stats,
+    extract_methylation_tags,
+    get_supplementary_alignments,
 )
 
 # ---------------------------------------------------------------------------
@@ -124,21 +106,10 @@ from metainformant.longread.assembly.hybrid import (
 # ---------------------------------------------------------------------------
 from metainformant.longread.io.fast5 import (
     Fast5Read,
-    read_fast5,
-    extract_signal,
     extract_basecalls,
+    extract_signal,
     get_read_metadata,
-)
-
-# ---------------------------------------------------------------------------
-# IO -- bam
-# ---------------------------------------------------------------------------
-from metainformant.longread.io.bam import (
-    LongReadAlignment,
-    AlignmentStats,
-    extract_methylation_tags,
-    get_supplementary_alignments,
-    calculate_alignment_stats,
+    read_fast5,
 )
 
 # ---------------------------------------------------------------------------
@@ -149,17 +120,45 @@ from metainformant.longread.io.formats import (
 )
 
 # ---------------------------------------------------------------------------
+# Filtering
+# ---------------------------------------------------------------------------
+from metainformant.longread.quality.filtering import (
+    ONT_ADAPTERS,
+    PACBIO_ADAPTERS,
+    AdapterMatch,
+    ReadRecord,
+    detect_adapters,
+    filter_by_length,
+    filter_by_quality,
+    split_chimeric_reads,
+    trim_adapters,
+)
+
+# ---------------------------------------------------------------------------
+# Quality metrics
+# ---------------------------------------------------------------------------
+from metainformant.longread.quality.metrics import (
+    QualityDistribution,
+    ReadLengthStatistics,
+    calculate_n50,
+    calculate_nx,
+    calculate_throughput,
+    estimate_accuracy,
+    quality_score_distribution,
+    read_length_stats,
+)
+
+# ---------------------------------------------------------------------------
 # Visualization
 # ---------------------------------------------------------------------------
 from metainformant.longread.visualization.plots import (
-    plot_read_length_histogram,
-    plot_quality_vs_length,
-    plot_dotplot,
     plot_alignment_view,
+    plot_dotplot,
     plot_methylation_track,
     plot_phasing_blocks,
+    plot_quality_vs_length,
+    plot_read_length_histogram,
 )
-
 
 # ===================================================================
 # Helpers -- synthetic data generators
@@ -1378,8 +1377,8 @@ class TestIO:
 
     def test_read_fast5_unrecognized_extension(self) -> None:
         """read_fast5 raises ValueError for wrong extension."""
-        import tempfile
         import os
+        import tempfile
 
         fd, path = tempfile.mkstemp(suffix=".txt")
         os.close(fd)

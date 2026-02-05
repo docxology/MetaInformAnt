@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import math
 import statistics
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
+from metainformant.core.utils.errors import ValidationError
 
 from .measurement import Measurement
-from metainformant.core.utils.errors import ValidationError
 
 
 class MorphometricProfile:

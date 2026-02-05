@@ -1,6 +1,7 @@
 """Tests for DNA sequence functionality."""
 
 import pytest
+
 from metainformant.dna import sequences
 
 

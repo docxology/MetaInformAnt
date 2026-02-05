@@ -8,24 +8,69 @@ and composite dashboards.
 
 from __future__ import annotations
 
-# Import subpackages
-from . import analysis
-from . import genomics
-from . import interactive_dashboards
-from . import plots
-
 # Core utilities
-from . import themes
-from . import palettes
-from . import composite
-from . import interactive
+# Import subpackages
+from . import analysis, composite, genomics, interactive, interactive_dashboards, palettes, plots, themes
+from .analysis import (  # Quality submodules
+    dimred,
+    information,
+    quality_assessment,
+    quality_omics,
+    quality_sequencing,
+    statistical,
+    timeseries,
+)
 
-# Import modules from subpackages for backward compatibility
-from .plots.animations import *
-from .plots.basic import *
-from .plots.general import *
-from .plots.multidim import *
-from .plots.specialized import *
+# Composite dashboards
+from .composite import (
+    genomic_overview,
+    multi_panel,
+    qc_summary,
+)
+from .genomics import (
+    expression,
+)
+from .genomics import genomics as genomics_module
+from .genomics import (
+    networks,
+    trees,
+)
+from .genomics.trees import (
+    circular_tree_plot,
+    plot_phylo_tree,
+    unrooted_tree_plot,
+)
+
+# Interactive plots
+from .interactive import (
+    interactive_heatmap,
+    interactive_manhattan,
+    interactive_scatter,
+    interactive_volcano,
+)
+
+# Interactive dashboards
+from .interactive_dashboards.dashboards import (
+    create_dashboard,
+    create_genome_browser_track,
+    create_interactive_heatmap,
+    create_interactive_scatter,
+    create_interactive_volcano,
+    export_to_html,
+)
+from .palettes import (
+    CHROMOSOME_COLORS,
+    IBM_COLORBLIND,
+    TOL_BRIGHT,
+    WONG,
+    alternating_pair,
+    categorical,
+    chromosome_palette,
+    expression_gradient,
+    heatmap_cmap,
+    significance_color,
+    significance_palette,
+)
 
 # Re-export submodules for explicit imports
 from .plots import (
@@ -35,74 +80,22 @@ from .plots import (
     multidim,
     specialized,
 )
-from .genomics import (
-    expression,
-    genomics as genomics_module,
-    networks,
-    trees,
-)
-from .genomics.trees import (
-    plot_phylo_tree,
-    circular_tree_plot,
-    unrooted_tree_plot,
-)
-from .analysis import (
-    dimred,
-    information,
-    statistical,
-    timeseries,
-    # Quality submodules
-    quality_sequencing,
-    quality_omics,
-    quality_assessment,
-)
+
+# Import modules from subpackages for backward compatibility
+from .plots.animations import *
+from .plots.basic import *
+from .plots.general import *
+from .plots.multidim import *
+from .plots.specialized import *
 
 # Theme and palette utilities
 from .themes import (
-    list_themes,
-    get_theme,
     apply_theme,
+    get_theme,
+    list_themes,
+    register_theme,
     reset_theme,
     theme,
-    register_theme,
-)
-from .palettes import (
-    chromosome_palette,
-    categorical,
-    expression_gradient,
-    significance_palette,
-    significance_color,
-    heatmap_cmap,
-    alternating_pair,
-    CHROMOSOME_COLORS,
-    WONG,
-    TOL_BRIGHT,
-    IBM_COLORBLIND,
-)
-
-# Composite dashboards
-from .composite import (
-    multi_panel,
-    genomic_overview,
-    qc_summary,
-)
-
-# Interactive plots
-from .interactive import (
-    interactive_scatter,
-    interactive_heatmap,
-    interactive_volcano,
-    interactive_manhattan,
-)
-
-# Interactive dashboards
-from .interactive_dashboards.dashboards import (
-    create_interactive_scatter,
-    create_interactive_heatmap,
-    create_genome_browser_track,
-    create_interactive_volcano,
-    export_to_html,
-    create_dashboard,
 )
 
 # Optional imports with graceful fallbacks

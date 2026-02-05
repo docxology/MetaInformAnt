@@ -7,72 +7,61 @@ motif discovery, and genomic data retrieval from NCBI databases.
 
 from __future__ import annotations
 
+# Type checking imports
+from typing import TYPE_CHECKING
+
 # Import subpackages
 from . import (
-    annotation,
-    sequence,
     alignment,
+    annotation,
     expression,
-    variation,
-    population,
-    phylogeny,
     external,
-    io,
     integration,
+    io,
+    phylogeny,
+    population,
+    sequence,
+    variation,
 )
 
-# Re-export modules to maintain backward compatibility
-# Sequence
-from .sequence import core as sequences
-from .sequence import composition
-from .sequence import motifs
-from .sequence import restriction
-from .sequence import consensus
-from .sequence import kmer
-
 # Alignment
+from .alignment import distances, msa
 from .alignment import pairwise as alignment
-from .alignment import msa
-from .alignment import distances
-
-# Expression
-from .expression import codon
-from .expression import transcription
-from .expression import translation
-
-# Variation
-from .variation import mutations
-from .variation import variants
-from .variation import calling
 
 # Annotation
-from .annotation import gene_prediction
-from .annotation import functional
+from .annotation import functional, gene_prediction
 
-# Population
-from .population import core as population
-from .population import analysis as population_analysis
-from .population import visualization as population_viz
-
-# Phylogeny
-from .phylogeny import tree as phylogeny
+# Expression
+from .expression import codon, transcription, translation
 
 # External
-from .external import ncbi
-from .external import entrez
-from .external import genomes
-
-# I/O
-from .io import fastq
+from .external import entrez, genomes, ncbi
 
 # Integration
 from .integration import rna as rna_integration
 
+# I/O
+from .io import fastq
+
 # Direct imports of commonly used classes
 from .io.fastq import FastqRecord
 
-# Type checking imports
-from typing import TYPE_CHECKING
+# Phylogeny
+from .phylogeny import tree as phylogeny
+
+# Population
+from .population import analysis as population_analysis
+from .population import core as population
+from .population import visualization as population_viz
+
+# Re-export modules to maintain backward compatibility
+# Sequence
+from .sequence import composition, consensus
+from .sequence import core as sequences
+from .sequence import kmer, motifs, restriction
+
+# Variation
+from .variation import calling, mutations, variants
 
 if TYPE_CHECKING:
     pass

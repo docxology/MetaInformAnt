@@ -29,10 +29,10 @@ try:
     import matplotlib
 
     matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
     import matplotlib.patches as mpatches
-    from matplotlib.colors import Normalize
+    import matplotlib.pyplot as plt
     from matplotlib.cm import ScalarMappable
+    from matplotlib.colors import Normalize
 
     HAS_MATPLOTLIB = True
 except ImportError:

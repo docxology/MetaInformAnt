@@ -7,12 +7,13 @@ diffusion pseudotime, DPT, PAGA, and simplified trajectory reconstruction.
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Any, Tuple, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
+
 import numpy as np
 import pandas as pd
 from scipy import sparse
 
-from metainformant.core import logging, errors, validation
+from metainformant.core import errors, logging, validation
 
 # Optional scientific dependencies
 try:

@@ -7,49 +7,49 @@ from __future__ import annotations
 
 # Basic plots
 from .basic import (
-    lineplot,
-    scatter_plot,
-    heatmap,
-    bar_plot,
-    pie_chart,
     area_plot,
+    bar_plot,
+    heatmap,
+    lineplot,
+    pie_chart,
+    scatter_plot,
     step_plot,
-)
-
-# Specialized plots
-from .specialized import (
-    plot_venn_diagram,
-    plot_sankey_diagram,
-    plot_chord_diagram,
-    plot_alluvial_diagram,
-    plot_circular_barplot,
-    plot_network_circular_layout,
-    plot_upset_plot,
-)
-
-# Multi-dimensional plots
-from .multidim import (
-    plot_pairwise_relationships,
-    plot_parallel_coordinates,
-    plot_radar_chart,
-    plot_3d_scatter,
 )
 
 # General plots
 from .general import (
-    expression_heatmap,
-    pca_plot,
     correlation_heatmap,
+    expression_heatmap,
+    manhattan_plot,
+    pca_plot,
     qq_plot,
     volcano_plot,
-    manhattan_plot,
+)
+
+# Multi-dimensional plots
+from .multidim import (
+    plot_3d_scatter,
+    plot_pairwise_relationships,
+    plot_parallel_coordinates,
+    plot_radar_chart,
+)
+
+# Specialized plots
+from .specialized import (
+    plot_alluvial_diagram,
+    plot_chord_diagram,
+    plot_circular_barplot,
+    plot_network_circular_layout,
+    plot_sankey_diagram,
+    plot_upset_plot,
+    plot_venn_diagram,
 )
 
 # Animations (optional)
 try:
     from .animations import (
-        create_animation,
         animate_time_series,
+        create_animation,
     )
 except ImportError:
     pass

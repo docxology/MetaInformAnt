@@ -13,9 +13,11 @@ Output:
 from __future__ import annotations
 
 from pathlib import Path
+
 from metainformant.core import io
-from metainformant.rna.workflow import AmalgkitWorkflowConfig, plan_workflow
 from metainformant.rna.amalgkit import check_cli_available
+from metainformant.rna.workflow import AmalgkitWorkflowConfig, plan_workflow
+
 
 def main():
     """Demonstrate amalgkit workflow basics."""
@@ -29,11 +31,7 @@ def main():
     print("\n1. Checking amalgkit availability...")
 
     available, version = check_cli_available()
-    amalgkit_status = {
-        "available": available,
-        "version": version,
-        "status": "available" if available else "not found"
-    }
+    amalgkit_status = {"available": available, "version": version, "status": "available" if available else "not found"}
 
     print(f"  Amalgkit status: {amalgkit_status['status']}")
     if version:
@@ -43,16 +41,14 @@ def main():
     print("\n2. Creating workflow configuration...")
 
     config = AmalgkitWorkflowConfig(
-        work_dir=output_dir / "amalgkit_work",
-        threads=2,  # Use fewer threads for example
-        species_list=["test_species"]
+        work_dir=output_dir / "amalgkit_work", threads=2, species_list=["test_species"]  # Use fewer threads for example
     )
 
     config_dict = {
         "work_dir": str(config.work_dir),
         "threads": config.threads,
         "species_list": config.species_list,
-        "other_defaults": "See AmalgkitWorkflowConfig for all options"
+        "other_defaults": "See AmalgkitWorkflowConfig for all options",
     }
 
     print("  Configuration created:")
@@ -70,7 +66,7 @@ def main():
             step_info = {
                 "step_name": step_name,
                 "parameters": step_params,
-                "description": f"Step {len(workflow_steps) + 1} in amalgkit pipeline"
+                "description": f"Step {len(workflow_steps) + 1} in amalgkit pipeline",
             }
             workflow_steps.append(step_info)
 
@@ -93,10 +89,7 @@ def main():
     # Note: These would normally run actual amalgkit commands
     # Here we demonstrate the API structure
 
-    step_functions = [
-        "metadata", "select", "getfastq", "quant",
-        "merge", "cstmm", "curate", "csca", "sanity"
-    ]
+    step_functions = ["metadata", "select", "getfastq", "quant", "merge", "cstmm", "curate", "csca", "sanity"]
 
     step_descriptions = {
         "metadata": "Download and process sample metadata from SRA",
@@ -107,14 +100,14 @@ def main():
         "cstmm": "Normalize expression data",
         "curate": "Apply quality filters and curation",
         "csca": "Perform statistical analysis",
-        "sanity": "Final quality checks and validation"
+        "sanity": "Final quality checks and validation",
     }
 
     workflow_api_demo = {
         "available_steps": step_functions,
         "step_descriptions": step_descriptions,
         "typical_workflow_order": step_functions,
-        "note": "Each step can be run individually or as part of complete pipeline"
+        "note": "Each step can be run individually or as part of complete pipeline",
     }
 
     print("  Amalgkit workflow steps:")
@@ -129,7 +122,7 @@ def main():
         "work_dir_exists": config.work_dir.exists() or "Would be created during execution",
         "threads_valid": config.threads > 0,
         "species_list_valid": len(config.species_list) > 0,
-        "overall_valid": True  # Would be False if any validation failed
+        "overall_valid": True,  # Would be False if any validation failed
     }
 
     print("  Configuration validation:")
@@ -147,13 +140,13 @@ def main():
                 "cli_availability": amalgkit_status,
                 "integration_method": "Subprocess execution with progress monitoring",
                 "supported_species": "All species with reference genomes in NCBI",
-                "data_sources": ["NCBI SRA", "ENA", "DDBJ"]
+                "data_sources": ["NCBI SRA", "ENA", "DDBJ"],
             },
             "workflow_configuration": config_dict,
             "workflow_planning": {
                 "steps_planned": len(workflow_steps) if workflow_steps else 0,
                 "step_details": workflow_steps[:3] if workflow_steps else [],  # First 3 steps
-                "planning_status": "successful" if workflow_steps else "demo_mode"
+                "planning_status": "successful" if workflow_steps else "demo_mode",
             },
             "pipeline_steps": workflow_api_demo,
             "configuration_validation": validation_results,
@@ -162,21 +155,21 @@ def main():
                 "Transcriptome assembly",
                 "Gene expression quantification",
                 "RNA-seq quality assessment",
-                "Cross-species comparative analysis"
+                "Cross-species comparative analysis",
             ],
             "key_features_demonstrated": [
                 "Workflow configuration and validation",
                 "Step-by-step pipeline planning",
                 "Integration with external tools",
                 "Progress monitoring and error handling",
-                "Species-specific workflow management"
+                "Species-specific workflow management",
             ],
             "integration_notes": [
                 "Amalgkit must be installed and available in PATH",
                 "Requires internet connection for data downloads",
                 "Large datasets may require significant disk space",
-                "Multi-threading improves performance on large datasets"
-            ]
+                "Multi-threading improves performance on large datasets",
+            ],
         }
     }
 
@@ -194,6 +187,7 @@ def main():
 
     print(f"\nAll outputs saved to: {output_dir}")
     print("\nNote: Actual execution requires amalgkit installation and real data.")
+
 
 if __name__ == "__main__":
     main()

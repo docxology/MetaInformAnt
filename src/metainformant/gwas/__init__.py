@@ -7,12 +7,15 @@ multiple testing correction, and publication-quality visualization.
 
 from __future__ import annotations
 
+# Type checking imports
+from typing import TYPE_CHECKING
+
 # Import subpackages (making them available at package level)
-from . import data  # Configuration and data acquisition
-from . import visualization  # Visualization tools
 from . import analysis  # Core analysis logic (depends on data)
-from . import workflow  # Workflow orchestration (depends on all)
+from . import data  # Configuration and data acquisition
 from . import finemapping  # Statistical fine-mapping (credible sets, coloc, SuSiE)
+from . import visualization  # Visualization tools
+from . import workflow  # Workflow orchestration (depends on all)
 from . import heritability as heritability_submodule  # Heritability estimation (LDSC, GREML)
 
 # Import modules from subpackages for backward compatibility and ease of use
@@ -28,6 +31,18 @@ from .analysis import (
     structure,
     summary_stats,
 )
+
+# Direct imports of commonly used functions
+from .analysis.annotation import annotate_variants_with_genes, classify_variant_location
+from .analysis.association import association_test_linear, association_test_logistic
+from .analysis.calling import check_bcftools_available
+from .analysis.correction import bonferroni_correction, fdr_correction, genomic_control
+from .analysis.heritability import estimate_heritability, heritability_bar_chart, partition_heritability_by_chromosome
+from .analysis.ld_pruning import ld_prune
+from .analysis.mixed_model import association_test_mixed, run_mixed_model_gwas
+from .analysis.quality import apply_qc_filters, extract_variant_regions, parse_vcf_full
+from .analysis.structure import compute_kinship_matrix, compute_pca, estimate_population_structure
+from .analysis.summary_stats import create_results_summary, write_significant_hits, write_summary_statistics
 from .data import (
     config,
     download,
@@ -35,7 +50,38 @@ from .data import (
     metadata,
     sra_download,
 )
-from .workflow import workflow as workflow_module
+from .data.config import load_gwas_config
+from .data.download import download_reference_genome, download_variant_data
+from .data.genome import AMEL_HAV3_CHROM_SIZES, AMEL_HAV3_CHROMOSOMES, normalize_chromosome_name
+from .data.metadata import get_geographic_coordinates, get_population_labels, load_sample_metadata, validate_metadata
+from .finemapping.colocalization import (
+    compute_clpp,
+    eqtl_coloc,
+    multi_trait_coloc,
+    regional_coloc,
+)
+
+# Fine-mapping submodule imports
+from .finemapping.credible_sets import (
+    annotate_credible_set,
+    colocalization,
+    compute_bayes_factors,
+)
+from .finemapping.credible_sets import compute_credible_set as finemapping_credible_set
+from .finemapping.credible_sets import (
+    conditional_analysis,
+    susie_regression,
+)
+
+# Heritability submodule imports
+from .heritability.estimation import (
+    compute_liability_h2,
+    estimate_h2_ldsc,
+    genetic_correlation,
+    greml_simple,
+    haseman_elston_regression,
+    partitioned_h2,
+)
 
 # Visualization modules
 # Note: 'visualization' module was renamed to 'general' inside the subpackage
@@ -56,87 +102,42 @@ from .visualization import (
     visualization_suite,
     visualization_variants,
 )
-
-# Direct imports of commonly used functions
-from .analysis.annotation import annotate_variants_with_genes, classify_variant_location
-from .analysis.association import association_test_linear, association_test_logistic
-from .analysis.calling import check_bcftools_available
-from .analysis.correction import bonferroni_correction, fdr_correction, genomic_control
-from .analysis.ld_pruning import ld_prune
-from .analysis.mixed_model import association_test_mixed, run_mixed_model_gwas
-from .analysis.quality import apply_qc_filters, parse_vcf_full, extract_variant_regions
-from .analysis.structure import compute_kinship_matrix, compute_pca, estimate_population_structure
-from .analysis.summary_stats import write_summary_statistics, write_significant_hits, create_results_summary
-from .analysis.heritability import estimate_heritability, partition_heritability_by_chromosome, heritability_bar_chart
-
-from .data.config import load_gwas_config
-from .data.metadata import load_sample_metadata, validate_metadata, get_population_labels, get_geographic_coordinates
-from .data.download import download_reference_genome, download_variant_data
-from .data.genome import normalize_chromosome_name, AMEL_HAV3_CHROMOSOMES, AMEL_HAV3_CHROM_SIZES
+from .visualization.config import THEMES, PlotStyle, apply_style, get_style
 
 # Visualization aliases
-from .visualization.general import qq_plot, manhattan_plot, kinship_heatmap
-from .visualization.visualization_variants import variant_density_plot
-from .visualization.visualization_population import (
-    pca_scree_plot,
-    admixture_plot,
-    kinship_dendrogram,
-    kinship_clustermap,
-)
+from .visualization.general import kinship_heatmap, manhattan_plot, qq_plot
 from .visualization.visualization_comparison import multi_trait_manhattan
+from .visualization.visualization_composite import gwas_summary_panel, population_structure_panel
 from .visualization.visualization_effects import functional_enrichment_plot
-from .visualization.visualization_statistical import power_plot
-from .visualization.visualization_regional import (
-    recombination_rate_plot,
-    effect_direction_plot,
-    regional_plot,
-    regional_ld_plot,
-)
+from .visualization.visualization_finemapping import compute_credible_set, credible_set_plot, pip_vs_ld_plot
 from .visualization.visualization_genome import genome_wide_ld_heatmap
+from .visualization.visualization_geography import allele_frequency_map, population_count_map, sample_map
+from .visualization.visualization_interactive import interactive_manhattan, interactive_pca, interactive_volcano
 from .visualization.visualization_ld import compute_ld_decay, ld_decay_plot, ld_heatmap_region
 from .visualization.visualization_phenotype import (
-    phenotype_distribution,
-    phenotype_correlation_matrix,
     genotype_phenotype_boxplot,
+    phenotype_correlation_matrix,
+    phenotype_distribution,
     phenotype_pca_correlation,
 )
-from .visualization.visualization_composite import gwas_summary_panel, population_structure_panel
-from .visualization.visualization_geography import sample_map, allele_frequency_map, population_count_map
-from .visualization.visualization_finemapping import credible_set_plot, compute_credible_set, pip_vs_ld_plot
-from .visualization.visualization_interactive import interactive_manhattan, interactive_pca, interactive_volcano
-from .visualization.visualization_population import pca_multi_panel, pca_3d
-from .visualization.config import PlotStyle, THEMES, get_style, apply_style
-
+from .visualization.visualization_population import (
+    admixture_plot,
+    kinship_clustermap,
+    kinship_dendrogram,
+    pca_3d,
+    pca_multi_panel,
+    pca_scree_plot,
+)
+from .visualization.visualization_regional import (
+    effect_direction_plot,
+    recombination_rate_plot,
+    regional_ld_plot,
+    regional_plot,
+)
+from .visualization.visualization_statistical import power_plot
+from .visualization.visualization_variants import variant_density_plot
+from .workflow import workflow as workflow_module
 from .workflow.workflow import GWASWorkflowConfig, execute_gwas_workflow, run_gwas
-
-# Fine-mapping submodule imports
-from .finemapping.credible_sets import (
-    compute_credible_set as finemapping_credible_set,
-    susie_regression,
-    compute_bayes_factors,
-    colocalization,
-    conditional_analysis,
-    annotate_credible_set,
-)
-from .finemapping.colocalization import (
-    multi_trait_coloc,
-    eqtl_coloc,
-    compute_clpp,
-    regional_coloc,
-)
-
-# Heritability submodule imports
-from .heritability.estimation import (
-    estimate_h2_ldsc,
-    partitioned_h2,
-    genetic_correlation,
-    haseman_elston_regression,
-    greml_simple,
-    compute_liability_h2,
-)
-
-# Type checking imports
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     pass

@@ -15,8 +15,9 @@ def test_secondary_structure_module_exists():
 
 def test_general_structure_functions():
     """Test basic structure functions are available."""
-    from metainformant.protein.structure.general import compute_rmsd_kabsch
     import numpy as np
+
+    from metainformant.protein.structure.general import compute_rmsd_kabsch
 
     # Simple test
     coords = np.array([[0.0, 0.0, 0.0], [1.0, 0.0, 0.0]])

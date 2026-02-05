@@ -7,7 +7,7 @@ including result summarization and workflow coordination.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 from metainformant.core import logging
 from metainformant.rna.core.configs import RNAPipelineConfig

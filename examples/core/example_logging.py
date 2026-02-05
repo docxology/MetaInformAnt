@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import time
 from pathlib import Path
+
 from metainformant.core import logging
+
 
 def main():
     """Demonstrate logging functionality."""
@@ -66,7 +68,7 @@ def main():
         ("data_validation", 0.05),
         ("sequence_analysis", 0.2),
         ("statistics_calculation", 0.15),
-        ("report_generation", 0.1)
+        ("report_generation", 0.1),
     ]
 
     total_time = 0
@@ -86,15 +88,11 @@ def main():
         "average_length": 450,
         "gc_content_range": [0.35, 0.65],
         "quality_threshold": 0.95,
-        "timestamp": "2024-12-26T10:00:00Z"
+        "timestamp": "2024-12-26T10:00:00Z",
     }
 
     logging.log_with_metadata(
-        file_logger,
-        "Analysis completed successfully",
-        analysis_metadata,
-        level="INFO",
-        structured=True
+        file_logger, "Analysis completed successfully", analysis_metadata, level="INFO", structured=True
     )
 
     # 6. Environment-based configuration
@@ -135,7 +133,7 @@ def main():
         return ["ATCG" * 25] * 100  # Simulate loading 100 sequences
 
     def calculate_gc_content(sequences):
-        return sum(seq.count('G') + seq.count('C') for seq in sequences) / sum(len(seq) for seq in sequences)
+        return sum(seq.count("G") + seq.count("C") for seq in sequences) / sum(len(seq) for seq in sequences)
 
     def find_motifs(sequences, motif="ATCG"):
         return sum(seq.count(motif) for seq in sequences)
@@ -152,7 +150,7 @@ def main():
     print("\n9. Creating logging summary...")
 
     # Read the log file to show what was captured
-    with open(log_file, 'r') as f:
+    with open(log_file, "r") as f:
         log_lines = f.readlines()
 
     summary = {
@@ -168,7 +166,7 @@ def main():
                 "Environment-based configuration",
                 "Multiple component loggers",
                 "Performance timing",
-                "Workflow step tracking"
+                "Workflow step tracking",
             ],
             "workflow_simulation": {
                 "steps_completed": len(workflow_steps),
@@ -176,15 +174,16 @@ def main():
                 "performance_operations": {
                     "sequence_loading": load_time,
                     "gc_content_calculation": gc_time,
-                    "motif_finding": motif_time
-                }
+                    "motif_finding": motif_time,
+                },
             },
-            "sample_log_entries": log_lines[-5:] if len(log_lines) >= 5 else log_lines
+            "sample_log_entries": log_lines[-5:] if len(log_lines) >= 5 else log_lines,
         }
     }
 
     summary_file = output_dir / "logging_demo_summary.json"
     from metainformant.core import io
+
     io.dump_json(summary, summary_file, indent=2)
 
     print(f"✓ Logging summary saved to: {summary_file}")
@@ -198,6 +197,7 @@ def main():
     print("- Use get_logger() for component-specific logging")
     print("- Use log_with_metadata() for structured data logging")
     print("- Configure logging level via CORE_LOG_LEVEL environment variable")
+
 
 if __name__ == "__main__":
     main()

@@ -9,11 +9,11 @@ import pandas as pd
 import pytest
 
 from metainformant.visualization.analysis.dimred import (
-    plot_pca,
-    plot_umap,
-    plot_tsne,
-    plot_pca_loadings,
     biplot,
+    plot_pca,
+    plot_pca_loadings,
+    plot_tsne,
+    plot_umap,
 )
 
 # Check for optional dependencies

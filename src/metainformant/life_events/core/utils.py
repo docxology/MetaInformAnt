@@ -7,8 +7,8 @@ and analyzing life event sequences.
 from __future__ import annotations
 
 import random
-from typing import List, Dict, Any, Optional
 from datetime import datetime, timedelta
+from typing import Any, Dict, List, Optional
 
 from metainformant.core import logging
 from metainformant.life_events.core.events import Event, EventSequence

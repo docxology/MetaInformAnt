@@ -13,8 +13,10 @@ Output:
 from __future__ import annotations
 
 from pathlib import Path
+
 from metainformant.core import io, paths
-from metainformant.core.config import load_mapping_from_file, apply_env_overrides
+from metainformant.core.config import apply_env_overrides, load_mapping_from_file
+
 
 def main():
     """Demonstrate configuration loading with environment overrides."""
@@ -29,16 +31,13 @@ def main():
         "log_dir": "output/example_workflow/logs",
         "max_memory_gb": 8,
         "debug": False,
-        "analysis": {
-            "method": "fast",
-            "quality_threshold": 0.95,
-            "save_intermediates": True
-        }
+        "analysis": {"method": "fast", "quality_threshold": 0.95, "save_intermediates": True},
     }
 
     # Save sample config
     config_file = output_dir / "sample_config.yaml"
     import yaml
+
     with open(config_file, "w") as f:
         yaml.dump(sample_config, f, default_flow_style=False)
 
@@ -113,8 +112,8 @@ def main():
         "environment_variables_used": {
             "CORE_THREADS": "int (number of threads)",
             "CORE_WORK_DIR": "str (working directory path)",
-            "CORE_LOG_DIR": "str (logging directory path)"
-        }
+            "CORE_LOG_DIR": "str (logging directory path)",
+        },
     }
 
     io.dump_json(result_data, result_file)
@@ -124,6 +123,7 @@ def main():
 
     print("\n=== Configuration Example Complete ===")
     print("Try setting environment variables and re-running to see overrides in action!")
+
 
 if __name__ == "__main__":
     main()

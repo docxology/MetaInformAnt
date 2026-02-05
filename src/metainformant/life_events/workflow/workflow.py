@@ -16,9 +16,7 @@ logger = logging.get_logger(__name__)
 
 # Optional imports for ML functionality
 try:
-    from . import embeddings
-    from . import models
-    from . import config
+    from . import config, embeddings, models
 
     EMBEDDINGS_AVAILABLE = True
 except ImportError:
@@ -383,8 +381,8 @@ def intervention_analysis(
     Returns:
         Dictionary containing pre/post intervention analysis
     """
-    from pathlib import Path
     import datetime
+    from pathlib import Path
 
     if output_dir:
         output_dir = Path(output_dir)

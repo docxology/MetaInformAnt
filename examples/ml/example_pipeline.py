@@ -12,10 +12,13 @@ Output:
 
 from __future__ import annotations
 
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+
 from metainformant.core import io
-from metainformant.ml.classification import train_ensemble_classifier, cross_validate_biological
+from metainformant.ml.classification import cross_validate_biological, train_ensemble_classifier
+
 
 def main():
     """Demonstrate ML pipeline."""
@@ -40,7 +43,7 @@ def main():
 
     # Cross-validation
     cv_results = cross_validate_biological(X, y, algorithm="random_forest", cv_folds=5)
-    accuracy = cv_results.get('accuracy', cv_results.get('mean_accuracy', 0.0))
+    accuracy = cv_results.get("accuracy", cv_results.get("mean_accuracy", 0.0))
     print(f"Cross-validation accuracy: {accuracy:.3f}")
 
     # Save results
@@ -65,16 +68,21 @@ def main():
         else:
             json_cv_results[key] = value
 
-    io.dump_json({
-        "ml_pipeline": {
-            "dataset_shape": [n_samples, n_features],
-            "model_type": "random_forest",
-            "cv_results": json_cv_results
-        }
-    }, results_file, indent=2)
+    io.dump_json(
+        {
+            "ml_pipeline": {
+                "dataset_shape": [n_samples, n_features],
+                "model_type": "random_forest",
+                "cv_results": json_cv_results,
+            }
+        },
+        results_file,
+        indent=2,
+    )
 
     print(f"✓ Results saved to: {results_file}")
     print("\n=== ML Pipeline Example Complete ===")
+
 
 if __name__ == "__main__":
     main()

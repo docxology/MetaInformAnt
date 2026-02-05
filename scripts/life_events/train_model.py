@@ -97,33 +97,33 @@ def parse_args():
 def main():
     """Main function."""
     args = parse_args()
-    
+
     if not args.sequences.exists():
         logger.error(f"Sequences file not found: {args.sequences}")
         return 1
-    
+
     if not args.outcomes.exists():
         logger.error(f"Outcomes file not found: {args.outcomes}")
         return 1
-    
+
     logger.info(f"Loading sequences from {args.sequences}")
     sequences = load_sequences_from_json(args.sequences)
     logger.info(f"✅ Loaded {len(sequences)} sequences")
-    
+
     logger.info(f"Loading outcomes from {args.outcomes}")
     outcomes_data = io.load_json(args.outcomes)
     outcomes = np.array(outcomes_data.get("outcomes", outcomes_data.get("outcome", [])))
     logger.info(f"✅ Loaded outcomes for {len(outcomes)} sequences")
-    
+
     if len(outcomes) != len(sequences):
         logger.error(f"Mismatch: {len(sequences)} sequences but {len(outcomes)} outcomes")
         return 1
-    
+
     # Convert to tokens
     sequences_tokens = convert_sequences_to_tokens(sequences)
-    
+
     logger.info(f"Training {args.model_type} model...")
-    
+
     if args.model_type == "lstm":
         model = LSTMSequenceModel(
             embedding_dim=args.embedding_dim,
@@ -148,21 +148,20 @@ def main():
             hidden_dim=args.hidden_dim,
             random_state=args.random_state,
         )
-    
+
     model.fit(sequences_tokens, outcomes)
-    
+
     # Save model
     paths.ensure_directory(args.output.parent)
     if hasattr(model, "save_model"):
         model.save_model(args.output)
     else:
         logger.warning("Model does not support saving, skipping...")
-    
+
     logger.info(f"✅ Model trained and saved to {args.output}")
-    
+
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

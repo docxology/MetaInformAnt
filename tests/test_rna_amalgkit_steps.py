@@ -11,19 +11,17 @@ from pathlib import Path
 import pytest
 
 from metainformant.rna import amalgkit
-from metainformant.rna.amalgkit.amalgkit import (
-    metadata as run_metadata,
-    integrate as run_integrate,
-    config as run_config,
-    select as run_select,
-    getfastq as run_getfastq,
-    quant as run_quant,
-    merge as run_merge,
-    cstmm as run_cstmm,
-    curate as run_curate,
-    csca as run_csca,
-    sanity as run_sanity,
-)
+from metainformant.rna.amalgkit.amalgkit import config as run_config
+from metainformant.rna.amalgkit.amalgkit import csca as run_csca
+from metainformant.rna.amalgkit.amalgkit import cstmm as run_cstmm
+from metainformant.rna.amalgkit.amalgkit import curate as run_curate
+from metainformant.rna.amalgkit.amalgkit import getfastq as run_getfastq
+from metainformant.rna.amalgkit.amalgkit import integrate as run_integrate
+from metainformant.rna.amalgkit.amalgkit import merge as run_merge
+from metainformant.rna.amalgkit.amalgkit import metadata as run_metadata
+from metainformant.rna.amalgkit.amalgkit import quant as run_quant
+from metainformant.rna.amalgkit.amalgkit import sanity as run_sanity
+from metainformant.rna.amalgkit.amalgkit import select as run_select
 
 # Step runners registry for testing
 STEP_RUNNERS = {

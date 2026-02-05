@@ -7,8 +7,8 @@ allometric regressions, and cross-specimen comparisons.
 from .measurement import Measurement
 from .profile import (
     MorphometricProfile,
-    coefficient_of_variation,
     allometric_regression,
+    coefficient_of_variation,
     compare_profiles,
     summary_statistics,
 )

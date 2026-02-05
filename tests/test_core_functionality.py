@@ -14,17 +14,16 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.core.utils.hash import sha256_bytes, sha256_file
-
 # Test core modules
 from metainformant.core.io.io import dump_json, load_json, open_text_auto
 from metainformant.core.io.paths import expand_and_resolve, is_within
+from metainformant.core.utils.hash import sha256_bytes, sha256_file
 from metainformant.core.utils.text import normalize_whitespace, slugify
-from metainformant.dna.sequence.composition import gc_skew, melting_temperature
 from metainformant.dna.alignment.distances import p_distance
 
 # Test DNA analysis functions
 from metainformant.dna.io.fastq import gc_content
+from metainformant.dna.sequence.composition import gc_skew, melting_temperature
 
 # Test ecology functions
 from metainformant.ecology.analysis.community import shannon_diversity, simpson_diversity

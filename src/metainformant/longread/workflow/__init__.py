@@ -13,25 +13,22 @@ Submodules:
 
 from __future__ import annotations
 
-from . import orchestrator
-from . import pipelines
-from . import reporting
-
-from .orchestrator import LongReadOrchestrator, PipelineStep, PipelineResult
+from . import orchestrator, pipelines, reporting
+from .orchestrator import LongReadOrchestrator, PipelineResult, PipelineStep
 from .pipelines import (
-    get_qc_pipeline_config,
     get_assembly_pipeline_config,
     get_methylation_pipeline_config,
+    get_qc_pipeline_config,
     get_sv_pipeline_config,
     load_pipeline_config,
     validate_pipeline_config,
 )
 from .reporting import (
     QCReport,
-    generate_qc_report,
+    export_report,
     generate_assembly_report,
     generate_methylation_report,
-    export_report,
+    generate_qc_report,
     generate_run_summary,
 )
 

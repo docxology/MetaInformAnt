@@ -7,7 +7,6 @@ spatial cell type mapping, deconvolution validation, and tissue niche identifica
 from __future__ import annotations
 
 from . import spatial_deconvolution
-
 from .spatial_deconvolution import (
     build_reference_profiles,
     deconvolve_spots,

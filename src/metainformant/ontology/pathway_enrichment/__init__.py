@@ -8,11 +8,11 @@ enrichment comparison.
 from __future__ import annotations
 
 from .enrichment import (
-    over_representation_analysis,
-    gsea,
-    compute_enrichment_score,
-    pathway_network,
     compare_enrichments,
+    compute_enrichment_score,
+    gsea,
+    over_representation_analysis,
+    pathway_network,
 )
 
 __all__ = [

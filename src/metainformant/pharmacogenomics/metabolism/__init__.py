@@ -7,11 +7,11 @@ activity score computation, and dose adjustment recommendations.
 from __future__ import annotations
 
 from .metabolizer_status import (
-    predict_metabolizer_status,
-    compute_activity_score,
     classify_metabolizer,
-    dose_adjustment,
+    compute_activity_score,
     default_allele_function_table,
+    dose_adjustment,
+    predict_metabolizer_status,
 )
 
 __all__ = [

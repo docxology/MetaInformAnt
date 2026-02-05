@@ -81,21 +81,21 @@ def parse_time(time_str: str) -> float:
 def main():
     """Main function."""
     args = parse_args()
-    
+
     if not args.sequences.exists():
         logger.error(f"Sequences file not found: {args.sequences}")
         return 1
-    
+
     logger.info(f"Loading sequences from {args.sequences}")
     sequences = load_sequences_from_json(args.sequences)
     logger.info(f"✅ Loaded {len(sequences)} sequences")
-    
+
     intervention_time = parse_time(args.intervention_time)
     logger.info(f"Intervention time: {datetime.fromtimestamp(intervention_time)}")
-    
+
     pre_outcomes = None
     post_outcomes = None
-    
+
     if args.pre_outcomes:
         if not args.pre_outcomes.exists():
             logger.error(f"Pre-outcomes file not found: {args.pre_outcomes}")
@@ -103,7 +103,7 @@ def main():
         pre_data = io.load_json(args.pre_outcomes)
         pre_outcomes = np.array(pre_data.get("outcomes", []))
         logger.info(f"✅ Loaded {len(pre_outcomes)} pre-intervention outcomes")
-    
+
     if args.post_outcomes:
         if not args.post_outcomes.exists():
             logger.error(f"Post-outcomes file not found: {args.post_outcomes}")
@@ -111,9 +111,9 @@ def main():
         post_data = io.load_json(args.post_outcomes)
         post_outcomes = np.array(post_data.get("outcomes", []))
         logger.info(f"✅ Loaded {len(post_outcomes)} post-intervention outcomes")
-    
+
     paths.ensure_directory(args.output)
-    
+
     logger.info("Analyzing intervention effects...")
     results = intervention_analysis(
         sequences,
@@ -122,7 +122,7 @@ def main():
         post_intervention_outcomes=post_outcomes,
         output_dir=args.output,
     )
-    
+
     # Generate visualization
     if pre_outcomes is not None and post_outcomes is not None:
         logger.info("Generating intervention visualization...")
@@ -135,16 +135,15 @@ def main():
             post_outcomes=post_outcomes,
             output_path=args.output / "intervention_effects.png",
         )
-    
+
     logger.info(f"✅ Intervention analysis complete. Results saved to {args.output}")
-    
+
     if "outcome_change" in results:
         logger.info(f"   Outcome change mean: {results['outcome_change']['mean']:.3f}")
         logger.info(f"   Outcome change std: {results['outcome_change']['std']:.3f}")
-    
+
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

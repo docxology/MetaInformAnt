@@ -19,7 +19,7 @@ from typing import Any
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core.io import ensure_directory, dump_json
+from metainformant.core.io import dump_json, ensure_directory
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -40,7 +40,7 @@ Examples:
 
   # Subsampled analysis for large files
   %(prog)s --fastq large_file.fastq --analyze-fastq --subsample 10000
-        """
+        """,
     )
     parser.add_argument(
         "--fastq",
@@ -91,36 +91,32 @@ def run_workflow(args):
     """Execute quality control workflow."""
     logger.info("Starting quality control workflow")
     logger.info(f"Output: {args.output}")
-    
+
     if args.dry_run:
         logger.info("DRY RUN - no changes will be made")
         if args.fastq:
             logger.info(f"Would analyze: {args.fastq}")
         return
-    
+
     output_dir = ensure_directory(args.output)
     logger.info(f"Output directory: {output_dir}")
-    
+
     workflow_results = {
         "output_dir": str(output_dir),
         "analyses": {},
     }
-    
+
     # FASTQ quality analysis
     if args.analyze_fastq and args.fastq:
         if not args.fastq.exists():
             raise FileNotFoundError(f"FASTQ file not found: {args.fastq}")
-        
+
         try:
             logger.info(f"Analyzing FASTQ quality from {args.fastq}...")
             from metainformant.quality import analyze_fastq_quality
-            
-            quality_results = analyze_fastq_quality(
-                args.fastq,
-                subsample=args.subsample,
-                seed=42
-            )
-            
+
+            quality_results = analyze_fastq_quality(args.fastq, subsample=args.subsample, seed=42)
+
             output_file = output_dir / "fastq_quality_analysis.json"
             dump_json(quality_results, output_file)
             workflow_results["analyses"]["fastq_quality"] = quality_results
@@ -129,24 +125,24 @@ def run_workflow(args):
         except Exception as e:
             logger.error(f"FASTQ analysis failed: {e}", exc_info=True)
             workflow_results["analyses"]["fastq_quality"] = {"error": str(e)}
-    
+
     # Contamination detection
     if args.detect_contamination and args.fastq:
         try:
             logger.info("Detecting contamination...")
-            from metainformant.quality import detect_adapter_contamination
             from metainformant.dna.fastq import iter_fastq
-            
+            from metainformant.quality import detect_adapter_contamination
+
             # Read sequences
             sequences = []
             for read_id, seq, qual in iter_fastq(args.fastq):
                 sequences.append(seq)
                 if len(sequences) >= 10000:  # Limit for performance
                     break
-            
+
             # Detect adapter contamination
             adapter_results = detect_adapter_contamination(sequences)
-            
+
             output_file = output_dir / "contamination_detection.json"
             dump_json(adapter_results, output_file)
             workflow_results["analyses"]["contamination"] = adapter_results
@@ -154,13 +150,13 @@ def run_workflow(args):
         except Exception as e:
             logger.error(f"Contamination detection failed: {e}", exc_info=True)
             workflow_results["analyses"]["contamination"] = {"error": str(e)}
-    
+
     # Generate quality report
     if args.generate_report:
         try:
             logger.info("Generating quality report...")
             from metainformant.quality import generate_quality_report
-            
+
             # Collect quality data
             quality_data = {}
             if "fastq_quality" in workflow_results["analyses"]:
@@ -171,12 +167,14 @@ def run_workflow(args):
                     quality_data["gc"] = fastq_data["gc_metrics"]
                 if "length_metrics" in fastq_data:
                     quality_data["length"] = fastq_data["length_metrics"]
-            
+
             if quality_data:
-                report_text = generate_quality_report(quality_data, sample_name=args.fastq.stem if args.fastq else "Unknown")
-                
+                report_text = generate_quality_report(
+                    quality_data, sample_name=args.fastq.stem if args.fastq else "Unknown"
+                )
+
                 report_file = output_dir / "quality_report.txt"
-                with open(report_file, 'w') as f:
+                with open(report_file, "w") as f:
                     f.write(report_text)
                 logger.info(f"Quality report saved to {report_file}")
                 workflow_results["analyses"]["report"] = {"file": str(report_file)}
@@ -185,22 +183,22 @@ def run_workflow(args):
         except Exception as e:
             logger.error(f"Report generation failed: {e}", exc_info=True)
             workflow_results["analyses"]["report"] = {"error": str(e)}
-    
+
     # Save summary
     summary_file = output_dir / "workflow_summary.json"
     dump_json(workflow_results, summary_file, indent=2)
     logger.info(f"Workflow summary saved to {summary_file}")
-    
+
     logger.info("Workflow complete")
 
 
 def main():
     """Main entry point."""
     args = parse_args()
-    
+
     if args.verbose:
         logger.setLevel(logging.DEBUG)
-    
+
     try:
         run_workflow(args)
         return 0

@@ -6,8 +6,6 @@ and FDA drug label parsing for pharmacogenomic biomarker information.
 
 from __future__ import annotations
 
-from . import cpic
-from . import pharmgkb
-from . import drug_labels
+from . import cpic, drug_labels, pharmgkb
 
 __all__ = ["cpic", "pharmgkb", "drug_labels"]

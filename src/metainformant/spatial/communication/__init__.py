@@ -7,7 +7,6 @@ and communication pattern discovery using spatial proximity information.
 from __future__ import annotations
 
 from . import cell_communication
-
 from .cell_communication import (
     build_communication_network,
     communication_pattern_analysis,

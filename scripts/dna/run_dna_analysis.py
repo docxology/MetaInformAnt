@@ -20,7 +20,7 @@ from typing import Any
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core.io import ensure_directory, dump_json
+from metainformant.core.io import dump_json, ensure_directory
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -41,7 +41,7 @@ Examples:
 
   # Quality control and composition only
   %(prog)s --input sequences.fasta --analyze-composition --min-length 100
-        """
+        """,
     )
     parser.add_argument(
         "--input",
@@ -92,38 +92,39 @@ Examples:
 
 def analyze_composition(sequences: dict[str, str], output_dir: Path) -> dict[str, Any]:
     """Analyze sequence composition.
-    
+
     Args:
         sequences: Dictionary of sequence ID to sequence string
         output_dir: Output directory for results
-        
+
     Returns:
         Dictionary with composition analysis results
     """
     logger.info("Analyzing sequence composition...")
-    
-    from metainformant.dna import sequences as dna_sequences, composition
-    
+
+    from metainformant.dna import composition
+    from metainformant.dna import sequences as dna_sequences
+
     results = {
         "gc_content": {},
         "sequence_lengths": {},
         "composition_stats": {},
     }
-    
+
     gc_values = []
     lengths = []
-    
+
     for seq_id, seq in sequences.items():
         # GC content
         gc = dna_sequences.gc_content(seq)
         results["gc_content"][seq_id] = gc
         gc_values.append(gc)
-        
+
         # Sequence length
         length = len(seq)
         results["sequence_lengths"][seq_id] = length
         lengths.append(length)
-    
+
     # Overall statistics
     if gc_values:
         results["composition_stats"] = {
@@ -135,34 +136,34 @@ def analyze_composition(sequences: dict[str, str], output_dir: Path) -> dict[str
             "max_length": max(lengths),
             "total_sequences": len(sequences),
         }
-    
+
     # Save results
     output_file = output_dir / "composition_analysis.json"
     dump_json(results, output_file)
     logger.info(f"Composition analysis saved to {output_file}")
-    
+
     return results
 
 
 def analyze_population(sequences: dict[str, str], output_dir: Path) -> dict[str, Any]:
     """Analyze population genetics metrics.
-    
+
     Args:
         sequences: Dictionary of sequence ID to sequence string
         output_dir: Output directory for results
-        
+
     Returns:
         Dictionary with population genetics results
     """
     logger.info("Analyzing population genetics...")
-    
+
     from metainformant.dna import population
-    
+
     # Convert to list for population functions
     seq_list = list(sequences.values())
-    
+
     results = {}
-    
+
     if len(seq_list) >= 2:
         # Nucleotide diversity
         try:
@@ -171,7 +172,7 @@ def analyze_population(sequences: dict[str, str], output_dir: Path) -> dict[str,
             logger.info(f"Nucleotide diversity (π): {pi:.6f}")
         except Exception as e:
             logger.warning(f"Could not calculate nucleotide diversity: {e}")
-        
+
         # Segregating sites
         try:
             segregating = population.segregating_sites(seq_list)
@@ -182,54 +183,54 @@ def analyze_population(sequences: dict[str, str], output_dir: Path) -> dict[str,
     else:
         logger.warning("Need at least 2 sequences for population genetics analysis")
         results["note"] = "Insufficient sequences for population analysis"
-    
+
     # Save results
     output_file = output_dir / "population_analysis.json"
     dump_json(results, output_file)
     logger.info(f"Population genetics analysis saved to {output_file}")
-    
+
     return results
 
 
 def analyze_phylogeny(sequences: dict[str, str], output_dir: Path) -> dict[str, Any]:
     """Perform phylogenetic analysis.
-    
+
     Args:
         sequences: Dictionary of sequence ID to sequence string
         output_dir: Output directory for results
-        
+
     Returns:
         Dictionary with phylogenetic results
     """
     logger.info("Analyzing phylogeny...")
-    
+
     from metainformant.dna import distances, phylogeny
-    
+
     # Convert to list for distance calculations
     seq_list = list(sequences.values())
     seq_ids = list(sequences.keys())
-    
+
     results = {}
-    
+
     if len(seq_list) >= 3:
         try:
             # Calculate distance matrix
             dist_matrix = distances.distance_matrix(seq_list)
             results["distance_matrix"] = {
                 "ids": seq_ids,
-                "distances": dist_matrix.tolist() if hasattr(dist_matrix, 'tolist') else dist_matrix,
+                "distances": dist_matrix.tolist() if hasattr(dist_matrix, "tolist") else dist_matrix,
             }
             logger.info(f"Calculated distance matrix for {len(seq_list)} sequences")
-            
+
             # Build phylogenetic tree (if possible)
             try:
                 tree = phylogeny.build_tree_neighbor_joining(dist_matrix, seq_ids)
                 results["tree_newick"] = tree
                 logger.info("Built neighbor-joining tree")
-                
+
                 # Save tree to file
                 tree_file = output_dir / "phylogenetic_tree.newick"
-                with open(tree_file, 'w') as f:
+                with open(tree_file, "w") as f:
                     f.write(tree)
                 logger.info(f"Tree saved to {tree_file}")
             except Exception as e:
@@ -241,28 +242,28 @@ def analyze_phylogeny(sequences: dict[str, str], output_dir: Path) -> dict[str, 
     else:
         logger.warning("Need at least 3 sequences for phylogenetic analysis")
         results["note"] = "Insufficient sequences for phylogenetic analysis"
-    
+
     # Save results
     output_file = output_dir / "phylogeny_analysis.json"
     dump_json(results, output_file)
     logger.info(f"Phylogenetic analysis saved to {output_file}")
-    
+
     return results
 
 
 def run_workflow(args):
     """Execute DNA analysis workflow.
-    
+
     Args:
         args: Parsed command-line arguments
     """
     logger.info("Starting DNA analysis workflow")
     logger.info(f"Input: {args.input}")
     logger.info(f"Output: {args.output}")
-    
+
     if not args.input.exists():
         raise FileNotFoundError(f"Input file not found: {args.input}")
-    
+
     if args.dry_run:
         logger.info("DRY RUN - no changes will be made")
         logger.info(f"Would analyze: {args.input}")
@@ -274,22 +275,22 @@ def run_workflow(args):
         if args.analyze_phylogeny:
             logger.info("Would perform phylogenetic analysis")
         return
-    
+
     # Ensure output directory exists
     output_dir = ensure_directory(args.output)
     logger.info(f"Output directory: {output_dir}")
-    
+
     # Load sequences
     logger.info(f"Loading sequences from {args.input}")
     from metainformant.dna import sequences as dna_sequences
-    
+
     try:
         all_sequences = dna_sequences.read_fasta(str(args.input))
         logger.info(f"Loaded {len(all_sequences)} sequences")
     except Exception as e:
         logger.error(f"Failed to load sequences: {e}")
         raise
-    
+
     # Filter by minimum length
     if args.min_length > 0:
         filtered = {sid: seq for sid, seq in all_sequences.items() if len(seq) >= args.min_length}
@@ -297,11 +298,11 @@ def run_workflow(args):
         sequences = filtered
     else:
         sequences = all_sequences
-    
+
     if not sequences:
         logger.warning("No sequences remaining after filtering")
         return
-    
+
     # Run analyses
     workflow_results = {
         "input_file": str(args.input),
@@ -309,7 +310,7 @@ def run_workflow(args):
         "total_sequences": len(sequences),
         "analyses": {},
     }
-    
+
     # Composition analysis (always run if no specific analysis requested, or if explicitly requested)
     if args.analyze_composition or not any([args.analyze_population, args.analyze_phylogeny]):
         try:
@@ -318,7 +319,7 @@ def run_workflow(args):
         except Exception as e:
             logger.error(f"Composition analysis failed: {e}", exc_info=True)
             workflow_results["analyses"]["composition"] = {"error": str(e)}
-    
+
     # Population genetics analysis
     if args.analyze_population:
         try:
@@ -327,7 +328,7 @@ def run_workflow(args):
         except Exception as e:
             logger.error(f"Population genetics analysis failed: {e}", exc_info=True)
             workflow_results["analyses"]["population"] = {"error": str(e)}
-    
+
     # Phylogenetic analysis
     if args.analyze_phylogeny:
         try:
@@ -336,23 +337,23 @@ def run_workflow(args):
         except Exception as e:
             logger.error(f"Phylogenetic analysis failed: {e}", exc_info=True)
             workflow_results["analyses"]["phylogeny"] = {"error": str(e)}
-    
+
     # Save workflow summary
     summary_file = output_dir / "workflow_summary.json"
     dump_json(workflow_results, summary_file, indent=2)
     logger.info(f"Workflow summary saved to {summary_file}")
-    
+
     logger.info("Workflow complete")
 
 
 def main():
     """Main entry point."""
     args = parse_args()
-    
+
     # Setup logging level
     if args.verbose:
         logger.setLevel(logging.DEBUG)
-    
+
     try:
         run_workflow(args)
         return 0
@@ -363,7 +364,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
-
-
-

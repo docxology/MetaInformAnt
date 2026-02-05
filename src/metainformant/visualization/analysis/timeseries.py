@@ -10,9 +10,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
 from metainformant.core import logging, paths, validation
@@ -21,8 +21,8 @@ logger = logging.get_logger(__name__)
 
 # Optional imports with graceful fallbacks
 try:
-    from statsmodels.tsa.seasonal import seasonal_decompose
     from statsmodels.graphics.tsaplots import plot_acf
+    from statsmodels.tsa.seasonal import seasonal_decompose
 
     HAS_STATSMODELS = True
 except ImportError:

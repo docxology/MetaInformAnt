@@ -418,17 +418,17 @@ def assess_alphafold_quality(
     results: Dict[str, Any] = {"path": str(pdb_path)}
 
     # Parse confidence scores (pLDDT from B-factor column)
-    from .structure.alphafold import parse_alphafold_confidence, get_alphafold_structure_quality
+    from .structure.alphafold import get_alphafold_structure_quality, parse_alphafold_confidence
 
     quality = get_alphafold_structure_quality(pdb_path)
     results["confidence"] = quality
 
     # Structure statistics
-    from .structure.io import parse_pdb_file
     from .structure.general import (
         calculate_radius_of_gyration,
         calculate_structural_statistics,
     )
+    from .structure.io import parse_pdb_file
 
     structure = parse_pdb_file(pdb_path)
     atoms = structure.get("atoms", [])
@@ -439,7 +439,7 @@ def assess_alphafold_quality(
 
         # Extract sequence and predict secondary structure
         from .structure.pdb import get_pdb_sequence
-        from .structure.secondary import predict_secondary_structure, calculate_ss_composition
+        from .structure.secondary import calculate_ss_composition, predict_secondary_structure
 
         sequence = get_pdb_sequence(structure)
         if sequence:

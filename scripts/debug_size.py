@@ -9,6 +9,7 @@ size = get_remote_file_size(url)
 print(f"Size: {size} bytes")
 
 import subprocess
+
 cmd = ["curl", "-s", "-I", "-L", url]
 print(f"Running debug curl: {' '.join(cmd)}")
 res = subprocess.run(cmd, capture_output=True, text=True)

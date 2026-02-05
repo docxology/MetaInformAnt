@@ -6,8 +6,8 @@ including heritability estimation and selection response.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
 import statistics
+from typing import Any, Dict, List, Optional
 
 from metainformant.core import logging
 

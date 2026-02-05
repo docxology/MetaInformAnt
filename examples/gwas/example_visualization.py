@@ -12,12 +12,15 @@ Output:
 
 from __future__ import annotations
 
+from pathlib import Path
+
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from pathlib import Path
-import matplotlib.pyplot as plt
+
 from metainformant.core import io
 from metainformant.gwas.visualization import manhattan_plot, qq_plot
+
 
 def main():
     """Demonstrate GWAS visualization techniques."""
@@ -63,13 +66,15 @@ def main():
     effect_sizes[significant_indices] += np.random.normal(0, 0.3, len(significant_indices))
 
     # Create DataFrame for visualization
-    gwas_results = pd.DataFrame({
-        'CHR': chromosomes,
-        'BP': positions,
-        'P': p_values,
-        'BETA': effect_sizes,
-        'SNP': [f'rs{i}' for i in range(n_snps)]
-    })
+    gwas_results = pd.DataFrame(
+        {
+            "CHR": chromosomes,
+            "BP": positions,
+            "P": p_values,
+            "BETA": effect_sizes,
+            "SNP": [f"rs{i}" for i in range(n_snps)],
+        }
+    )
 
     print(f"✓ Created GWAS results for {n_snps} SNPs across {len(set(chromosomes))} chromosomes")
     print(f"  Genome-wide significant SNPs: {len(gw_sig_indices)}")
@@ -82,13 +87,13 @@ def main():
         manhattan_fig = manhattan_plot(
             gwas_results,
             significance_threshold=5e-8,  # Genome-wide significance
-            suggestive_threshold=1e-5,    # Suggestive significance
-            title="GWAS Manhattan Plot - Simulated Data"
+            suggestive_threshold=1e-5,  # Suggestive significance
+            title="GWAS Manhattan Plot - Simulated Data",
         )
 
         manhattan_path = output_dir / "manhattan_plot.png"
-        manhattan_fig.savefig(manhattan_path, dpi=300, bbox_inches='tight')
-        manhattan_fig.savefig(output_dir / "manhattan_plot.pdf", bbox_inches='tight')
+        manhattan_fig.savefig(manhattan_path, dpi=300, bbox_inches="tight")
+        manhattan_fig.savefig(output_dir / "manhattan_plot.pdf", bbox_inches="tight")
         plt.close(manhattan_fig)
 
         print(f"✓ Manhattan plot saved to: {manhattan_path}")
@@ -98,9 +103,9 @@ def main():
             "significance_threshold": 5e-8,
             "suggestive_threshold": 1e-5,
             "snps_plotted": len(gwas_results),
-            "chromosomes": sorted(list(set(gwas_results['CHR']))),
-            "genome_wide_significant": len(gwas_results[gwas_results['P'] < 5e-8]),
-            "suggestive_significant": len(gwas_results[(gwas_results['P'] < 1e-5) & (gwas_results['P'] >= 5e-8)])
+            "chromosomes": sorted(list(set(gwas_results["CHR"]))),
+            "genome_wide_significant": len(gwas_results[gwas_results["P"] < 5e-8]),
+            "suggestive_significant": len(gwas_results[(gwas_results["P"] < 1e-5) & (gwas_results["P"] >= 5e-8)]),
         }
 
     except Exception as e:
@@ -111,21 +116,18 @@ def main():
     print("\n3. Generating Q-Q plot...")
 
     try:
-        qq_fig = qq_plot(
-            gwas_results['P'].values,
-            title="GWAS Q-Q Plot - Simulated Data"
-        )
+        qq_fig = qq_plot(gwas_results["P"].values, title="GWAS Q-Q Plot - Simulated Data")
 
         qq_path = output_dir / "qq_plot.png"
-        qq_fig.savefig(qq_path, dpi=300, bbox_inches='tight')
-        qq_fig.savefig(output_dir / "qq_plot.pdf", bbox_inches='tight')
+        qq_fig.savefig(qq_path, dpi=300, bbox_inches="tight")
+        qq_fig.savefig(output_dir / "qq_plot.pdf", bbox_inches="tight")
         plt.close(qq_fig)
 
         print(f"✓ Q-Q plot saved to: {qq_path}")
 
         # Calculate lambda GC (genomic control inflation factor)
         # Simplified calculation
-        observed_median = np.median(-np.log10(gwas_results['P']))
+        observed_median = np.median(-np.log10(gwas_results["P"]))
         expected_median = np.median(-np.log10(np.random.uniform(0, 1, len(gwas_results))))
         lambda_gc = observed_median / expected_median
 
@@ -134,7 +136,7 @@ def main():
             "lambda_gc": lambda_gc,
             "interpretation": "λ > 1 suggests test statistic inflation (population structure, etc.)",
             "snps_analyzed": len(gwas_results),
-            "inflation_status": "minimal" if lambda_gc < 1.05 else "moderate" if lambda_gc < 1.1 else "severe"
+            "inflation_status": "minimal" if lambda_gc < 1.05 else "moderate" if lambda_gc < 1.1 else "severe",
         }
 
         print(f"  Genomic control λ: {lambda_gc:.3f} ({qq_info['inflation_status']} inflation)")
@@ -148,17 +150,17 @@ def main():
 
     effect_analysis = {
         "summary_stats": {
-            "mean_beta": gwas_results['BETA'].mean(),
-            "median_beta": gwas_results['BETA'].median(),
-            "std_beta": gwas_results['BETA'].std(),
-            "min_beta": gwas_results['BETA'].min(),
-            "max_beta": gwas_results['BETA'].max()
+            "mean_beta": gwas_results["BETA"].mean(),
+            "median_beta": gwas_results["BETA"].median(),
+            "std_beta": gwas_results["BETA"].std(),
+            "min_beta": gwas_results["BETA"].min(),
+            "max_beta": gwas_results["BETA"].max(),
         },
         "significant_effects": {
-            "gw_sig_mean_beta": gwas_results[gwas_results['P'] < 5e-8]['BETA'].mean(),
-            "gw_sig_median_beta": gwas_results[gwas_results['P'] < 5e-8]['BETA'].median(),
-            "gw_sig_count": len(gwas_results[gwas_results['P'] < 5e-8])
-        }
+            "gw_sig_mean_beta": gwas_results[gwas_results["P"] < 5e-8]["BETA"].mean(),
+            "gw_sig_median_beta": gwas_results[gwas_results["P"] < 5e-8]["BETA"].median(),
+            "gw_sig_count": len(gwas_results[gwas_results["P"] < 5e-8]),
+        },
     }
 
     print("  Effect size distribution:")
@@ -170,20 +172,20 @@ def main():
 
     chr_stats = []
 
-    for chr_name in sorted(set(gwas_results['CHR'])):
-        chr_data = gwas_results[gwas_results['CHR'] == chr_name]
+    for chr_name in sorted(set(gwas_results["CHR"])):
+        chr_data = gwas_results[gwas_results["CHR"] == chr_name]
         chr_stat = {
             "chromosome": chr_name,
             "n_snps": len(chr_data),
-            "min_p": chr_data['P'].min(),
-            "gw_significant": len(chr_data[chr_data['P'] < 5e-8]),
-            "suggestive": len(chr_data[(chr_data['P'] < 1e-5) & (chr_data['P'] >= 5e-8)]),
-            "mean_beta": chr_data['BETA'].mean(),
-            "median_p": chr_data['P'].median()
+            "min_p": chr_data["P"].min(),
+            "gw_significant": len(chr_data[chr_data["P"] < 5e-8]),
+            "suggestive": len(chr_data[(chr_data["P"] < 1e-5) & (chr_data["P"] >= 5e-8)]),
+            "mean_beta": chr_data["BETA"].mean(),
+            "median_p": chr_data["P"].median(),
         }
         chr_stats.append(chr_stat)
 
-        if chr_stat['gw_significant'] > 0:
+        if chr_stat["gw_significant"] > 0:
             print(f"  {chr_name}: {chr_stat['n_snps']} SNPs, {chr_stat['gw_significant']} GW-significant")
 
     # 6. Visualization metadata
@@ -193,7 +195,7 @@ def main():
         "plot_files": {
             "manhattan_plot": "manhattan_plot.png",
             "qq_plot": "qq_plot.png",
-            "vector_formats": ["manhattan_plot.pdf", "qq_plot.pdf"]
+            "vector_formats": ["manhattan_plot.pdf", "qq_plot.pdf"],
         },
         "plot_characteristics": {
             "manhattan": {
@@ -201,19 +203,16 @@ def main():
                 "x_axis": "Chromosomal position",
                 "y_axis": "-log10(p-value)",
                 "color_scheme": "Alternating chromosome colors",
-                "thresholds": {
-                    "genome_wide": 5e-8,
-                    "suggestive": 1e-5
-                }
+                "thresholds": {"genome_wide": 5e-8, "suggestive": 1e-5},
             },
             "qq": {
                 "type": "Expected vs observed p-value distribution",
                 "x_axis": "Expected -log10(p)",
                 "y_axis": "Observed -log10(p)",
                 "diagonal": "Null expectation line",
-                "lambda_gc": "Genomic control inflation factor"
-            }
-        }
+                "lambda_gc": "Genomic control inflation factor",
+            },
+        },
     }
 
     # 7. Create comprehensive visualization results
@@ -224,15 +223,12 @@ def main():
             "timestamp": "2024-12-26T10:00:00Z",
             "dataset_summary": {
                 "total_snps": len(gwas_results),
-                "chromosomes": sorted(list(set(gwas_results['CHR']))),
-                "genome_wide_significant": len(gwas_results[gwas_results['P'] < 5e-8]),
-                "suggestive_significant": len(gwas_results[(gwas_results['P'] < 1e-5) & (gwas_results['P'] >= 5e-8)]),
-                "lambda_gc": qq_info.get("lambda_gc", "N/A")
+                "chromosomes": sorted(list(set(gwas_results["CHR"]))),
+                "genome_wide_significant": len(gwas_results[gwas_results["P"] < 5e-8]),
+                "suggestive_significant": len(gwas_results[(gwas_results["P"] < 1e-5) & (gwas_results["P"] >= 5e-8)]),
+                "lambda_gc": qq_info.get("lambda_gc", "N/A"),
             },
-            "plots_generated": {
-                "manhattan_plot": manhattan_info,
-                "qq_plot": qq_info
-            },
+            "plots_generated": {"manhattan_plot": manhattan_info, "qq_plot": qq_info},
             "effect_size_analysis": effect_analysis,
             "chromosome_statistics": chr_stats,
             "visualization_metadata": visualization_metadata,
@@ -243,15 +239,15 @@ def main():
                 "Use consistent color schemes across plots",
                 "Save both raster (PNG) and vector (PDF) formats",
                 "Include lambda GC values to assess inflation",
-                "Consider regional plots for significant loci"
+                "Consider regional plots for significant loci",
             ],
             "interpretation_guidelines": [
                 "Manhattan plot peaks indicate associated regions",
                 "Q-Q plot deviation from diagonal suggests inflation",
                 "λ > 1.05 may indicate population structure or other artifacts",
                 "Effect sizes help prioritize variants for follow-up",
-                "Chromosome-specific patterns may indicate technical artifacts"
-            ]
+                "Chromosome-specific patterns may indicate technical artifacts",
+            ],
         }
     }
 
@@ -268,6 +264,7 @@ def main():
     print("- Best practices for GWAS data visualization")
 
     print(f"\nAll outputs saved to: {output_dir}")
+
 
 if __name__ == "__main__":
     main()

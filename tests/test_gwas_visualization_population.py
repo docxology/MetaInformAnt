@@ -8,14 +8,14 @@ import numpy as np
 import pytest
 
 from metainformant.gwas.visualization.visualization_population import (
+    admixture_plot,
+    kinship_clustermap,
+    kinship_dendrogram,
+    kinship_heatmap,
+    pca_3d,
+    pca_multi_panel,
     pca_plot,
     pca_scree_plot,
-    kinship_heatmap,
-    admixture_plot,
-    kinship_dendrogram,
-    kinship_clustermap,
-    pca_multi_panel,
-    pca_3d,
 )
 
 

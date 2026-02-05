@@ -16,15 +16,9 @@ Subpackages:
 
 from __future__ import annotations
 
-# Import subpackages
-from . import analysis
-from . import data
-from . import visualization
-
 # Import new subpackages
-from . import celltyping
-from . import differential
-from . import velocity
+# Import subpackages
+from . import analysis, celltyping, data, differential, velocity, visualization
 
 # Import modules from subpackages for backward compatibility
 from .analysis import (
@@ -32,16 +26,16 @@ from .analysis import (
     dimensionality,
     trajectory,
 )
+
+# Import new modules for convenience
+from .celltyping import annotation
 from .data import (
     integration,
     preprocessing,
 )
-from .visualization import visualization as visualization_module
-
-# Import new modules for convenience
-from .celltyping import annotation
 from .differential import expression
 from .velocity import rna_velocity
+from .visualization import visualization as visualization_module
 
 # Optional imports with graceful fallbacks
 try:

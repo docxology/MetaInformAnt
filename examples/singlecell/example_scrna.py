@@ -12,9 +12,12 @@ Output:
 
 from __future__ import annotations
 
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+
 from metainformant.core import io
+
 
 def main():
     """Demonstrate single-cell analysis."""
@@ -44,8 +47,8 @@ def main():
         "genes_expressed_stats": {
             "mean": float(np.mean(genes_expressed)),
             "median": float(np.median(genes_expressed)),
-            "max": int(np.max(genes_expressed))
-        }
+            "max": int(np.max(genes_expressed)),
+        },
     }
 
     print(f"✓ Analyzed {n_cells} cells, {n_genes} genes")
@@ -53,12 +56,11 @@ def main():
 
     # Save results
     results_file = output_dir / "scrna_analysis.json"
-    io.dump_json({
-        "singlecell_analysis": results
-    }, results_file, indent=2)
+    io.dump_json({"singlecell_analysis": results}, results_file, indent=2)
 
     print(f"✓ Results saved to: {results_file}")
     print("\n=== Single-Cell Example Complete ===")
+
 
 if __name__ == "__main__":
     main()

@@ -8,11 +8,11 @@ import numpy as np
 import pytest
 
 from metainformant.gwas.visualization.visualization_genome import (
-    circular_manhattan_plot,
     chromosome_ideogram,
+    circular_manhattan_plot,
     genome_wide_ld_heatmap,
-    manhattan_plot as manhattan_plot_genome,
 )
+from metainformant.gwas.visualization.visualization_genome import manhattan_plot as manhattan_plot_genome
 
 
 def test_manhattan_plot_genome_basic(tmp_path: Path) -> None:

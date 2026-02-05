@@ -6,40 +6,40 @@ including configuration loading, workflow planning, and execution orchestration.
 
 from __future__ import annotations
 
-import json
-import shutil
-import os
-import math
 import csv
+import json
+import math
+import os
+import shutil
 import time as time_mod
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
-from dataclasses import dataclass
 
 from metainformant.core import io, logging
 from metainformant.core.utils.config import load_mapping_from_file
 from metainformant.rna.amalgkit.metadata_filter import filter_selected_metadata
 from metainformant.rna.amalgkit.metadata_utils import deduplicate_metadata
-from metainformant.rna.engine.workflow_cleanup import (
-    check_disk_space,
-    check_disk_space_or_fail,
-    cleanup_temp_files,
-    cleanup_incorrectly_placed_sra_files,
-    cleanup_fastqs,
-    get_quantified_samples,
-    cleanup_after_quant,
-    filter_metadata_for_unquantified,
-)
 from metainformant.rna.engine.sra_extraction import (
     extract_sra_directly,
     manual_integration_fallback,
 )
+from metainformant.rna.engine.workflow_cleanup import (
+    check_disk_space,
+    check_disk_space_or_fail,
+    cleanup_after_quant,
+    cleanup_fastqs,
+    cleanup_incorrectly_placed_sra_files,
+    cleanup_temp_files,
+    filter_metadata_for_unquantified,
+    get_quantified_samples,
+)
 from metainformant.rna.engine.workflow_steps import (
-    setup_vdb_config,
     check_step_completion_status,
-    validate_step_prerequisites,
     handle_post_step_actions,
     log_workflow_summary,
+    setup_vdb_config,
+    validate_step_prerequisites,
 )
 
 logger = logging.get_logger(__name__)
@@ -1329,18 +1329,20 @@ def execute_workflow(
     """
     from metainformant.rna.amalgkit.amalgkit import (
         AmalgkitParams,
-        metadata,
-        integrate,
-        select,
-        getfastq,
-        quant,
-        merge,
-        cstmm,
-        curate,
-        csca,
-        sanity,
     )
     from metainformant.rna.amalgkit.amalgkit import config as amalgkit_config
+    from metainformant.rna.amalgkit.amalgkit import (
+        csca,
+        cstmm,
+        curate,
+        getfastq,
+        integrate,
+        merge,
+        metadata,
+        quant,
+        sanity,
+        select,
+    )
     from metainformant.rna.core.deps import check_step_dependencies
 
     # Check if we need to prepare reference genome (for quant step)

@@ -11,8 +11,8 @@ from __future__ import annotations
 
 import math
 import statistics
-from typing import Dict, List, Any, Optional, Tuple, Union
 from collections import defaultdict
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from metainformant.core.utils.errors import ValidationError
 

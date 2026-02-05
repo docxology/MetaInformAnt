@@ -11,15 +11,16 @@ Tests the utility functions defined in metainformant.math.__init__.py:
 from __future__ import annotations
 
 import math
-import pytest
+
 import numpy as np
+import pytest
 
 from metainformant.math import (
     correlation_coefficient,
-    linear_regression,
     fisher_exact_test,
-    shannon_entropy,
     jensen_shannon_divergence,
+    linear_regression,
+    shannon_entropy,
 )
 
 

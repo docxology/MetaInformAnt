@@ -136,5 +136,3 @@ print("\n" + "=" * 60)
 print("Example completed successfully!")
 print(f"All outputs saved to: {output_dir}")
 print("=" * 60)
-
-

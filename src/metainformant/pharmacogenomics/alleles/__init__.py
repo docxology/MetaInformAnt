@@ -6,8 +6,6 @@ and metabolizer phenotype prediction for pharmacogenes.
 
 from __future__ import annotations
 
-from . import star_allele
-from . import diplotype
-from . import phenotype
+from . import diplotype, phenotype, star_allele
 
 __all__ = ["star_allele", "diplotype", "phenotype"]

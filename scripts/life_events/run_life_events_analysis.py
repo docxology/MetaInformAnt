@@ -44,7 +44,7 @@ Examples:
 
   # Generate visualizations only
   %(prog)s --input data/life_events/sequences.json --visualize-only
-        """
+        """,
     )
     parser.add_argument(
         "--input",
@@ -151,7 +151,7 @@ def generate_synthetic_data(
     random_state: int = 42,
 ) -> tuple[list, Optional[Any]]:
     """Generate synthetic life event sequences.
-    
+
     Args:
         n_sequences: Number of sequences to generate
         min_events: Minimum events per sequence
@@ -159,14 +159,14 @@ def generate_synthetic_data(
         generate_outcomes: Whether to generate outcomes
         outcome_relationship: Outcome relationship pattern
         random_state: Random seed
-        
+
     Returns:
         Tuple of (sequences, outcomes)
     """
     logger.info(f"Generating {n_sequences} synthetic event sequences...")
-    
+
     from metainformant.life_events import generate_synthetic_life_events
-    
+
     sequences, outcomes = generate_synthetic_life_events(
         n_sequences=n_sequences,
         min_events_per_sequence=min_events,
@@ -175,33 +175,33 @@ def generate_synthetic_data(
         outcome_relationship=outcome_relationship,
         random_state=random_state,
     )
-    
+
     logger.info(f"✅ Generated {len(sequences)} sequences")
     if outcomes is not None:
         logger.info(f"✅ Generated outcomes for {len(outcomes)} sequences")
-    
+
     return sequences, outcomes
 
 
 def load_sequences(input_path: Path) -> list:
     """Load event sequences from file.
-    
+
     Args:
         input_path: Path to input file
-        
+
     Returns:
         List of EventSequence objects
     """
     logger.info(f"Loading event sequences from {input_path}")
-    
+
     if not input_path.exists():
         raise FileNotFoundError(f"Input file not found: {input_path}")
-    
+
     from metainformant.life_events import load_sequences_from_json
-    
+
     sequences = load_sequences_from_json(input_path)
     logger.info(f"✅ Loaded {len(sequences)} sequences")
-    
+
     return sequences
 
 
@@ -216,7 +216,7 @@ def run_analysis(
     model_type: Optional[str],
 ) -> dict[str, Any]:
     """Run complete life course analysis workflow.
-    
+
     Args:
         sequences: List of event sequences
         outcomes: Optional outcome labels/values
@@ -226,21 +226,22 @@ def run_analysis(
         window_size: Optional window size override
         epochs: Optional epochs override
         model_type: Optional model type override
-        
+
     Returns:
         Analysis results dictionary
     """
     logger.info("Running complete life course analysis workflow...")
-    
-    from metainformant.life_events import analyze_life_course, load_life_events_config
+
     import numpy as np
-    
+
+    from metainformant.life_events import analyze_life_course, load_life_events_config
+
     # Prepare configuration
     config_obj = None
     if config_path and config_path.exists():
         config_obj = load_life_events_config(config_path)
         logger.info(f"✅ Loaded configuration from {config_path}")
-    
+
     # Override config with command-line arguments
     if config_obj and isinstance(config_obj, dict):
         config_dict = config_obj
@@ -257,7 +258,7 @@ def run_analysis(
         config_dict.update(config_obj.model)
     else:
         config_dict = {}
-    
+
     # Apply command-line overrides
     if embedding_dim is not None:
         config_dict["embedding_dim"] = embedding_dim
@@ -267,7 +268,7 @@ def run_analysis(
         config_dict["epochs"] = epochs
     if model_type is not None:
         config_dict["model_type"] = model_type
-    
+
     # Convert outcomes to numpy array if needed
     outcomes_array = None
     if outcomes is not None:
@@ -275,7 +276,7 @@ def run_analysis(
             outcomes_array = np.array(outcomes)
         else:
             outcomes_array = outcomes
-    
+
     # Run workflow
     results = analyze_life_course(
         sequences,
@@ -283,7 +284,7 @@ def run_analysis(
         config_obj=config_dict if config_dict else None,
         output_dir=output_dir,
     )
-    
+
     logger.info("✅ Analysis workflow complete")
     logger.info(f"   Model type: {results.get('model_type', 'N/A')}")
     logger.info(f"   Embedding dimension: {results.get('embedding_dim', 'N/A')}")
@@ -291,7 +292,7 @@ def run_analysis(
         logger.info(f"   Accuracy: {results['accuracy']:.3f}")
     if "r2_score" in results:
         logger.info(f"   R² score: {results['r2_score']:.3f}")
-    
+
     return results
 
 
@@ -302,7 +303,7 @@ def generate_visualizations(
     all_viz: bool = False,
 ) -> None:
     """Generate all visualizations.
-    
+
     Args:
         sequences: List of event sequences
         results: Analysis results dictionary
@@ -310,34 +311,34 @@ def generate_visualizations(
         all_viz: Whether to generate all visualization types
     """
     logger.info("Generating visualizations...")
-    
+
     viz_dir = output_dir / "visualizations"
     paths.ensure_directory(viz_dir)
-    
+
     try:
         from metainformant.life_events import (
-            plot_event_timeline,
-            plot_event_embeddings,
-            plot_prediction_importance,
-            learn_event_embeddings,
-            event_importance,
             EventSequencePredictor,
             convert_sequences_to_tokens,
+            event_importance,
+            learn_event_embeddings,
+            plot_event_embeddings,
+            plot_event_timeline,
+            plot_prediction_importance,
         )
-        
+
         # 1. Timeline visualization
         if sequences:
             logger.info("  Generating timeline visualization...")
             timeline_path = viz_dir / "event_timeline_first_sequence.png"
             plot_event_timeline(sequences[0], output_path=timeline_path)
             logger.info(f"  ✅ Timeline saved: {timeline_path}")
-            
+
             if all_viz and len(sequences) > 1:
                 # Generate timeline for a few more sequences
                 for i in range(1, min(4, len(sequences))):
                     timeline_path = viz_dir / f"event_timeline_sequence_{i+1}.png"
                     plot_event_timeline(sequences[i], output_path=timeline_path)
-        
+
         # 2. Embedding visualization
         if "embeddings" in results:
             logger.info("  Generating embedding visualization...")
@@ -345,11 +346,9 @@ def generate_visualizations(
             if embeddings_path.exists():
                 embeddings_data = io.load_json(embeddings_path)
                 import numpy as np
-                embeddings = {
-                    k: np.array(v) 
-                    for k, v in embeddings_data.items()
-                }
-                
+
+                embeddings = {k: np.array(v) for k, v in embeddings_data.items()}
+
                 # Try different methods
                 for method in ["pca", "umap"]:
                     try:
@@ -365,7 +364,7 @@ def generate_visualizations(
                     except Exception as e:
                         logger.warning(f"  ⚠️  {method} failed: {e}")
                         continue
-        
+
         # 3. Importance visualization
         if "model" in results:
             logger.info("  Generating importance visualization...")
@@ -374,7 +373,7 @@ def generate_visualizations(
                 if model_path.exists():
                     predictor = EventSequencePredictor.load_model(model_path)
                     sequences_tokens = convert_sequences_to_tokens(sequences)
-                    
+
                     # Get embeddings
                     if hasattr(predictor, "event_embeddings"):
                         embeddings = predictor.event_embeddings
@@ -384,7 +383,7 @@ def generate_visualizations(
                             embedding_dim=results.get("embedding_dim", 100),
                             random_state=42,
                         )
-                    
+
                     # Compute importance
                     importance = event_importance(
                         predictor,
@@ -392,7 +391,7 @@ def generate_visualizations(
                         embeddings,
                         method="permutation",
                     )
-                    
+
                     importance_path = viz_dir / "prediction_importance.png"
                     plot_prediction_importance(
                         importance,
@@ -402,9 +401,9 @@ def generate_visualizations(
                     logger.info(f"  ✅ Importance plot saved: {importance_path}")
             except Exception as e:
                 logger.warning(f"  ⚠️  Importance visualization failed: {e}")
-        
+
         logger.info("✅ All visualizations generated")
-        
+
     except ImportError as e:
         logger.warning(f"Visualization dependencies not available: {e}")
     except Exception as e:
@@ -414,26 +413,26 @@ def generate_visualizations(
 def main():
     """Main workflow function."""
     args = parse_args()
-    
+
     if args.verbose:
         logger.setLevel(logging.DEBUG)
-    
+
     if args.dry_run:
         logger.info("DRY RUN MODE - No files will be created")
         logger.info(f"Would process: {'synthetic' if args.synthetic else args.input}")
         logger.info(f"Would output to: {args.output}")
         return 0
-    
+
     try:
         # Setup output directory
         output_dir = Path(args.output)
         paths.ensure_directory(output_dir)
         logger.info(f"Output directory: {output_dir}")
-        
+
         # Load or generate sequences
         sequences = None
         outcomes = None
-        
+
         if args.synthetic:
             sequences, outcomes = generate_synthetic_data(
                 n_sequences=args.n_sequences,
@@ -442,13 +441,13 @@ def main():
                 generate_outcomes=args.generate_outcomes,
                 outcome_relationship=args.outcome_relationship,
             )
-            
+
             # Save synthetic data
             sequences_file = output_dir / "synthetic_sequences.json"
             sequences_data = [seq.to_dict() for seq in sequences]
             io.dump_json(sequences_data, sequences_file)
             logger.info(f"✅ Synthetic sequences saved: {sequences_file}")
-            
+
             if outcomes is not None:
                 outcomes_file = output_dir / "synthetic_outcomes.json"
                 io.dump_json(
@@ -459,7 +458,7 @@ def main():
                     outcomes_file,
                 )
                 logger.info(f"✅ Synthetic outcomes saved: {outcomes_file}")
-        
+
         elif args.input:
             sequences = load_sequences(args.input)
             # Try to load outcomes if they exist alongside input
@@ -467,16 +466,17 @@ def main():
             if outcomes_path.exists():
                 outcomes_data = io.load_json(outcomes_path)
                 import numpy as np
+
                 outcomes = np.array(outcomes_data.get("outcomes", []))
                 logger.info(f"✅ Loaded outcomes from {outcomes_path}")
         else:
             logger.error("Must specify either --synthetic or --input")
             return 1
-        
+
         if not sequences:
             logger.error("No sequences to process")
             return 1
-        
+
         # Run analysis workflow
         if not args.visualize_only:
             results = run_analysis(
@@ -489,7 +489,7 @@ def main():
                 args.epochs,
                 args.model_type,
             )
-            
+
             # Save workflow summary
             summary_path = output_dir / "workflow_summary.json"
             summary = {
@@ -515,18 +515,18 @@ def main():
             else:
                 logger.error("No existing results found for visualization-only mode")
                 return 1
-        
+
         # Generate visualizations
         generate_visualizations(sequences, results, output_dir, args.all_visualizations)
-        
+
         logger.info("=" * 60)
         logger.info("✅ Life events analysis workflow complete!")
         logger.info(f"   Output directory: {output_dir}")
         logger.info(f"   Sequences processed: {len(sequences)}")
         logger.info("=" * 60)
-        
+
         return 0
-        
+
     except Exception as e:
         logger.error(f"Workflow failed: {e}", exc_info=True)
         return 1
@@ -534,4 +534,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

@@ -11,13 +11,13 @@ from typing import List, Tuple
 import numpy as np
 import pytest
 
-from metainformant.ml.models.classification import BiologicalClassifier, cross_validate_biological, evaluate_classifier
 from metainformant.ml.features.dimensionality import (
     biological_embedding,
     reduce_dimensions_pca,
     reduce_dimensions_tsne,
     reduce_dimensions_umap,
 )
+from metainformant.ml.models.classification import BiologicalClassifier, cross_validate_biological, evaluate_classifier
 from metainformant.ml.models.regression import BiologicalRegressor, evaluate_regressor
 
 try:

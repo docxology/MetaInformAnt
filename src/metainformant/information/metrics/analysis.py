@@ -12,7 +12,8 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 
 from metainformant.core import logging
-from . import syntactic, semantic, continuous, estimation
+
+from . import continuous, estimation, semantic, syntactic
 
 logger = logging.get_logger(__name__)
 

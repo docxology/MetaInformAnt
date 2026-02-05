@@ -13,8 +13,10 @@ Output:
 from __future__ import annotations
 
 from pathlib import Path
+
 from metainformant.core import io
 from metainformant.dna import alignment
+
 
 def main():
     """Demonstrate DNA sequence alignment."""
@@ -29,9 +31,9 @@ def main():
 
     # Related sequences with mutations
     reference_seq = "ATCGATCGATCGATCGATCG"  # 20bp reference
-    similar_seq = "ATCGATCGATCGATCGATCA"   # One base difference at end
+    similar_seq = "ATCGATCGATCGATCGATCA"  # One base difference at end
     different_seq = "GCTAGCTAGCTAGCTAGCTA"  # Completely different sequence
-    mutated_seq = "ATCGATCGATCGATCGTTTG"   # Multiple mutations
+    mutated_seq = "ATCGATCGATCGATCGTTTG"  # Multiple mutations
 
     # Longer sequences for more interesting alignments
     seq_a = "ATCGATCGATCGATCGATCGATCGATCGATCGATCG"
@@ -45,7 +47,7 @@ def main():
         "mutated": mutated_seq,
         "seq_a": seq_a,
         "seq_b": seq_b,
-        "seq_c": seq_c
+        "seq_c": seq_c,
     }
 
     print(f"✓ Prepared {len(test_sequences)} test sequences for alignment")
@@ -56,12 +58,7 @@ def main():
     global_alignments = {}
 
     # Default parameters: match=1, mismatch=-1, gap=-2
-    alignment_pairs = [
-        ("reference", "similar"),
-        ("reference", "mutated"),
-        ("seq_a", "seq_b"),
-        ("seq_a", "seq_c")
-    ]
+    alignment_pairs = [("reference", "similar"), ("reference", "mutated"), ("seq_a", "seq_b"), ("seq_a", "seq_c")]
 
     for seq1_name, seq2_name in alignment_pairs:
         seq1 = test_sequences[seq1_name]
@@ -78,7 +75,7 @@ def main():
             "score": alignment_result.score,
             "identity": alignment.calculate_alignment_identity(alignment_result),
             "conserved_regions": alignment.find_conserved_regions(alignment_result),
-            "statistics": alignment.alignment_statistics(alignment_result)
+            "statistics": alignment.alignment_statistics(alignment_result),
         }
 
         print(f"  {seq1_name} vs {seq2_name}:")
@@ -95,7 +92,7 @@ def main():
     local_pairs = [
         ("reference", "different"),  # Very different sequences
         ("seq_a", "seq_c"),
-        ("reference", "seq_a")  # Subsequence matching
+        ("reference", "seq_a"),  # Subsequence matching
     ]
 
     for seq1_name, seq2_name in local_pairs:
@@ -112,7 +109,7 @@ def main():
             "score": alignment_result.score,
             "identity": alignment.calculate_alignment_identity(alignment_result),
             "conserved_regions": alignment.find_conserved_regions(alignment_result),
-            "statistics": alignment.alignment_statistics(alignment_result)
+            "statistics": alignment.alignment_statistics(alignment_result),
         }
 
         print(f"  {seq1_name} vs {seq2_name} (local):")
@@ -128,7 +125,7 @@ def main():
     scoring_schemes = [
         {"name": "strict", "match": 1, "mismatch": -3, "gap": -5},
         {"name": "lenient", "match": 2, "mismatch": -1, "gap": -1},
-        {"name": "nucleotide_bias", "match": 1, "mismatch": -2, "gap": -3}
+        {"name": "nucleotide_bias", "match": 1, "mismatch": -2, "gap": -3},
     ]
 
     test_seq1 = test_sequences["reference"]
@@ -137,10 +134,11 @@ def main():
     for scheme in scoring_schemes:
         name = scheme["name"]
         result = alignment.global_align(
-            test_seq1, test_seq2,
+            test_seq1,
+            test_seq2,
             match_score=scheme["match"],
             mismatch_score=scheme["mismatch"],
-            gap_score=scheme["gap"]
+            gap_score=scheme["gap"],
         )
 
         custom_alignments[name] = {
@@ -149,7 +147,7 @@ def main():
             "aligned_seq2": result.aligned_seq2,
             "score": result.score,
             "identity": alignment.calculate_alignment_identity(result),
-            "statistics": alignment.alignment_statistics(result)
+            "statistics": alignment.alignment_statistics(result),
         }
 
         print(f"  {name} scoring: score={result.score}, identity={custom_alignments[name]['identity']:.1%}")
@@ -170,7 +168,7 @@ def main():
                 "start_position": start_pos,
                 "end_position": end_pos,
                 "length": len(region_seq),
-                "gc_content": region_seq.count('G') + region_seq.count('C')
+                "gc_content": region_seq.count("G") + region_seq.count("C"),
             }
             region_details.append(region_info)
 
@@ -178,11 +176,15 @@ def main():
             "total_regions": len(conserved_regions),
             "regions": region_details,
             "total_conserved_bases": sum(len(r["sequence"]) for r in region_details),
-            "average_region_length": sum(len(r["sequence"]) for r in region_details) / len(region_details) if region_details else 0
+            "average_region_length": (
+                sum(len(r["sequence"]) for r in region_details) / len(region_details) if region_details else 0
+            ),
         }
 
         if conserved_regions:
-            print(f"  {alignment_name}: {len(conserved_regions)} conserved regions, {conserved_analysis[alignment_name]['total_conserved_bases']} conserved bases")
+            print(
+                f"  {alignment_name}: {len(conserved_regions)} conserved regions, {conserved_analysis[alignment_name]['total_conserved_bases']} conserved bases"
+            )
 
     # 6. Alignment statistics comparison
     print("\n6. Comparing alignment statistics...")
@@ -192,7 +194,7 @@ def main():
     all_alignments = {
         "global": global_alignments,
         "local": local_alignments,
-        "custom": {f"reference_vs_mutated_{k}": v for k, v in custom_alignments.items()}
+        "custom": {f"reference_vs_mutated_{k}": v for k, v in custom_alignments.items()},
     }
 
     for alignment_type, alignments in all_alignments.items():
@@ -221,40 +223,47 @@ def main():
                 "global_alignment": {
                     "description": "Needleman-Wunsch algorithm for full sequence alignment",
                     "use_case": "Comparing complete sequences of similar length",
-                    "default_parameters": {"match": 1, "mismatch": -1, "gap": -2}
+                    "default_parameters": {"match": 1, "mismatch": -1, "gap": -2},
                 },
                 "local_alignment": {
                     "description": "Smith-Waterman algorithm for subsequence alignment",
                     "use_case": "Finding conserved regions in dissimilar sequences",
-                    "default_parameters": {"match": 1, "mismatch": -1, "gap": -2}
-                }
+                    "default_parameters": {"match": 1, "mismatch": -1, "gap": -2},
+                },
             },
             "results": {
                 "global_alignments": global_alignments,
                 "local_alignments": local_alignments,
                 "custom_parameter_alignments": custom_alignments,
                 "conserved_region_analysis": conserved_analysis,
-                "statistics_comparison": stats_comparison
+                "statistics_comparison": stats_comparison,
             },
             "summary_metrics": {
                 "total_sequences_tested": len(test_sequences),
                 "total_alignments_performed": len(global_alignments) + len(local_alignments) + len(custom_alignments),
                 "alignment_types": ["global", "local", "custom_scoring"],
-                "average_global_identity": sum(a["identity"] for a in global_alignments.values()) / len(global_alignments) if global_alignments else 0,
+                "average_global_identity": (
+                    sum(a["identity"] for a in global_alignments.values()) / len(global_alignments)
+                    if global_alignments
+                    else 0
+                ),
                 "total_conserved_regions_found": sum(len(a["conserved_regions"]) for a in global_alignments.values()),
-                "custom_scoring_schemes_tested": len(scoring_schemes)
+                "custom_scoring_schemes_tested": len(scoring_schemes),
             },
             "functions_demonstrated": [
-                "global_align", "local_align", "calculate_alignment_identity",
-                "find_conserved_regions", "alignment_statistics"
+                "global_align",
+                "local_align",
+                "calculate_alignment_identity",
+                "find_conserved_regions",
+                "alignment_statistics",
             ],
             "key_insights": [
                 "Global alignment works best for similar sequences of equal length",
                 "Local alignment finds conserved regions in dissimilar sequences",
                 "Scoring parameters significantly affect alignment results",
                 "Conserved region analysis helps identify functional motifs",
-                "Alignment statistics provide quantitative comparison measures"
-            ]
+                "Alignment statistics provide quantitative comparison measures",
+            ],
         }
     }
 
@@ -272,6 +281,7 @@ def main():
     print("- Comparative analysis of different alignment approaches")
 
     print(f"\nAll outputs saved to: {output_dir}")
+
 
 if __name__ == "__main__":
     main()

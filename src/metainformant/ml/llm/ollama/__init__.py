@@ -14,23 +14,23 @@ Example:
 
 from __future__ import annotations
 
-from .config import OllamaConfig
-from .client import OllamaClient
-from .prompts import (
-    PromptTemplate,
-    SystemPrompt,
-    ChatMessage,
-    build_bioinformatics_prompt,
-)
 from .chains import (
     Chain,
     ChainResult,
-    PromptChain,
-    SequentialChain,
-    MapReduceChain,
-    RouterChain,
-    TransformChain,
     ConversationChain,
+    MapReduceChain,
+    PromptChain,
+    RouterChain,
+    SequentialChain,
+    TransformChain,
+)
+from .client import OllamaClient
+from .config import OllamaConfig
+from .prompts import (
+    ChatMessage,
+    PromptTemplate,
+    SystemPrompt,
+    build_bioinformatics_prompt,
 )
 
 __all__ = [

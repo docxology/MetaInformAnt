@@ -1,7 +1,9 @@
 """Utilities for Amalgkit metadata manipulation."""
 
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
+
 from metainformant.core import logging
 
 logger = logging.get_logger(__name__)

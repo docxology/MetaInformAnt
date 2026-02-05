@@ -62,10 +62,17 @@ See Also:
 from __future__ import annotations
 
 # Import subpackages
-from . import benchmark
-from . import models
-from . import visualization
-from . import workflow
+from . import benchmark, models, visualization, workflow
+
+# Visualization exports
+# Benchmark exports
+from .benchmark.generators import (
+    benchmark_suite,
+    evaluate_benchmark,
+    generate_benchmark_dataset,
+    generate_synthetic_expression,
+    generate_synthetic_variants,
+)
 
 # Import modules from subpackages for backward compatibility
 from .models import (
@@ -75,99 +82,88 @@ from .models import (
     sequences,
 )
 
-# Sequence simulation exports
-from .models.sequences import (
-    generate_random_dna,
-    generate_random_protein,
-    mutate_sequence,
-    evolve_sequence,
-    translate_dna_to_protein,
-    reverse_transcribe_protein_to_dna,
-    generate_coding_sequence,
-    calculate_sequence_similarity,
-    generate_sequence_family,
-    analyze_sequence_divergence,
-    simulate_gene_duplication,
-    DNA_BASES,
-    RNA_BASES,
-    AMINO_ACIDS,
-    GENETIC_CODE,
-)
-
-# RNA simulation exports
-from .models.rna import (
-    simulate_counts_negative_binomial,
-    simulate_rnaseq_counts,
-    simulate_differential_expression,
-    simulate_bulk_rnaseq,
-    simulate_single_cell_rnaseq,
-    simulate_time_series_expression,
-    simulate_spatial_expression,
-    add_technical_noise,
+# Agent simulation exports
+from .models.agents import (
+    Agent,
+    Ecosystem,
+    GridAgent,
+    GridWorld,
+    add_agent,
+    calculate_biodiversity_metrics,
+    count_agents_by_type,
+    create_ecosystem,
+    get_population_dynamics,
+    remove_agent,
+    run_simulation,
+    simulate_competition,
+    simulate_predator_prey,
+    simulation_step,
 )
 
 # Population genetics exports
 from .models.popgen import (
-    generate_population_sequences,
-    generate_two_populations,
     generate_genotype_matrix,
     generate_linkage_disequilibrium_data,
+    generate_population_sequences,
+    generate_site_frequency_spectrum,
+    generate_two_populations,
+    simulate_admixture,
     simulate_bottleneck_population,
     simulate_population_expansion,
-    generate_site_frequency_spectrum,
-    simulate_admixture,
     simulate_selection,
 )
 
-# Agent simulation exports
-from .models.agents import (
-    Agent,
-    GridAgent,
-    GridWorld,
-    Ecosystem,
-    create_ecosystem,
-    run_simulation,
-    simulation_step,
-    add_agent,
-    remove_agent,
-    get_population_dynamics,
-    calculate_biodiversity_metrics,
-    count_agents_by_type,
-    simulate_predator_prey,
-    simulate_competition,
+# RNA simulation exports
+from .models.rna import (
+    add_technical_noise,
+    simulate_bulk_rnaseq,
+    simulate_counts_negative_binomial,
+    simulate_differential_expression,
+    simulate_rnaseq_counts,
+    simulate_single_cell_rnaseq,
+    simulate_spatial_expression,
+    simulate_time_series_expression,
+)
+
+# Sequence simulation exports
+from .models.sequences import (
+    AMINO_ACIDS,
+    DNA_BASES,
+    GENETIC_CODE,
+    RNA_BASES,
+    analyze_sequence_divergence,
+    calculate_sequence_similarity,
+    evolve_sequence,
+    generate_coding_sequence,
+    generate_random_dna,
+    generate_random_protein,
+    generate_sequence_family,
+    mutate_sequence,
+    reverse_transcribe_protein_to_dna,
+    simulate_gene_duplication,
+    translate_dna_to_protein,
+)
+from .visualization.visualization import (
+    animate_population_dynamics,
+    animate_sequence_evolution,
+    create_interactive_simulation_dashboard,
+    plot_agent_based_model_results,
+    plot_evolutionary_simulation_summary,
+    plot_population_dynamics_simulation,
+    plot_rnaseq_simulation_results,
+    plot_sequence_evolution,
+    plot_simulation_parameter_sensitivity,
+    plot_simulation_validation_comparison,
 )
 
 # Workflow exports
 from .workflow.workflow import (
     SimulationConfig,
-    create_simulation_config,
-    run_simulation_workflow,
-    run_benchmark_simulation,
-    validate_simulation_output,
     calibrate_simulation_parameters,
-)
-
-# Visualization exports
-# Benchmark exports
-from .benchmark.generators import (
-    generate_benchmark_dataset,
-    generate_synthetic_variants,
-    generate_synthetic_expression,
-    evaluate_benchmark,
-    benchmark_suite,
-)
-
-from .visualization.visualization import (
-    plot_sequence_evolution,
-    animate_sequence_evolution,
-    plot_rnaseq_simulation_results,
-    plot_population_dynamics_simulation,
-    plot_agent_based_model_results,
-    plot_evolutionary_simulation_summary,
-    plot_simulation_parameter_sensitivity,
-    animate_population_dynamics,
-    plot_simulation_validation_comparison,
-    create_interactive_simulation_dashboard,
+    create_simulation_config,
+    run_benchmark_simulation,
+    run_simulation_workflow,
+    validate_simulation_output,
 )
 
 __all__ = [

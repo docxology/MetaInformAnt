@@ -8,7 +8,6 @@ and analysis result visualizations.
 from __future__ import annotations
 
 from . import plots
-
 from .plots import (
     plot_cell_type_map,
     plot_deconvolution_pie,

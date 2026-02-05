@@ -9,9 +9,9 @@ from __future__ import annotations
 
 from typing import Dict, List, Sequence
 
-import numpy as np
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
+import numpy as np
 
 from metainformant.core import logging
 

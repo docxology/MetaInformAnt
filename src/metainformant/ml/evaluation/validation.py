@@ -7,8 +7,9 @@ and permutation importance analysis.
 
 from __future__ import annotations
 
-import numpy as np
 from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
 
 from metainformant.core.utils.logging import get_logger
 
@@ -17,16 +18,16 @@ logger = get_logger(__name__)
 # Optional imports for ML functionality
 try:
     from sklearn.base import BaseEstimator
-    from sklearn.model_selection import train_test_split, StratifiedKFold, KFold, cross_val_score, cross_validate
     from sklearn.metrics import (
         accuracy_score,
-        precision_score,
-        recall_score,
         f1_score,
-        roc_auc_score,
         mean_squared_error,
+        precision_score,
         r2_score,
+        recall_score,
+        roc_auc_score,
     )
+    from sklearn.model_selection import KFold, StratifiedKFold, cross_val_score, cross_validate, train_test_split
     from sklearn.utils import resample
 
     HAS_SKLEARN = True

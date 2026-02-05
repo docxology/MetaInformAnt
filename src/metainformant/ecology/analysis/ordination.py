@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from metainformant.core import logging, errors, validation
+from metainformant.core import errors, logging, validation
 
 logger = logging.get_logger(__name__)
 

@@ -6,8 +6,7 @@ and metabolic pathway reconstruction from metagenomic sequences.
 
 from __future__ import annotations
 
-from . import annotation
-from . import pathways
+from . import annotation, pathways
 
 __all__ = [
     "annotation",

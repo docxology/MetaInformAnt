@@ -7,15 +7,16 @@ and ecological information.
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Iterator, Set, Tuple
-import time
 import re
+import time
+from pathlib import Path
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 from urllib.parse import urljoin, urlparse
+
 import requests
 from bs4 import BeautifulSoup
 
-from metainformant.core import logging, errors, validation, io
+from metainformant.core import errors, io, logging, validation
 
 logger = logging.get_logger(__name__)
 

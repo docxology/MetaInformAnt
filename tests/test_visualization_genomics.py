@@ -9,13 +9,13 @@ import pandas as pd
 import pytest
 
 from metainformant.visualization.genomics import (
-    manhattan_plot,
-    volcano_plot,
-    regional_plot,
-    circular_manhattan_plot,
     chromosome_ideogram,
+    circular_manhattan_plot,
     coverage_plot,
+    manhattan_plot,
+    regional_plot,
     variant_plot,
+    volcano_plot,
 )
 
 

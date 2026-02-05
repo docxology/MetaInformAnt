@@ -391,8 +391,8 @@ def ld_heatmap_region(
 
         # Build rotated coordinates for a triangular display
         # Each cell (i, j) where j > i is drawn as a diamond rotated 45 degrees
-        from matplotlib.patches import Polygon
         from matplotlib.collections import PatchCollection
+        from matplotlib.patches import Polygon
 
         patches = []
         colors_list = []

@@ -73,7 +73,8 @@ def _import_existing_functions() -> None:
     global _original_scatter_plot
 
     try:
-        from metainformant.visualization.analysis.statistical import correlation_heatmap as ch, qq_plot as qqp
+        from metainformant.visualization.analysis.statistical import correlation_heatmap as ch
+        from metainformant.visualization.analysis.statistical import qq_plot as qqp
 
         _original_correlation_heatmap = ch
         _original_qq_plot = qqp
@@ -81,7 +82,8 @@ def _import_existing_functions() -> None:
         logger.debug(f"Statistical plotting module not available: {e}")
 
     try:
-        from metainformant.visualization.genomics.genomics import volcano_plot as vp, manhattan_plot as mp
+        from metainformant.visualization.genomics.genomics import manhattan_plot as mp
+        from metainformant.visualization.genomics.genomics import volcano_plot as vp
 
         _original_volcano_plot = vp
         _original_manhattan_plot = mp

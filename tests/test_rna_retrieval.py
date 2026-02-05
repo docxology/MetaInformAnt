@@ -7,8 +7,9 @@ downloading FASTQ files from ENA/SRA.
 from __future__ import annotations
 
 import hashlib
-import pytest
 from pathlib import Path
+
+import pytest
 
 # Import the module under test
 from metainformant.rna.retrieval import ena_downloader

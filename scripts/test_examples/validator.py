@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 
 
 def validate_outputs(example_path: Path) -> tuple[List[str], List[str], List[str]]:
@@ -33,7 +33,7 @@ def validate_outputs(example_path: Path) -> tuple[List[str], List[str], List[str
             created_files.append(relative_path)
 
             # Validate JSON files
-            if file_path.suffix.lower() == '.json':
+            if file_path.suffix.lower() == ".json":
                 validation_result = _validate_json_content(file_path, example_path.parent.name, example_path.stem)
                 if validation_result["valid"]:
                     json_valid.append(relative_path)
@@ -55,7 +55,7 @@ def _validate_json_content(json_path: Path, domain: str, example_name: str) -> D
         Validation result dictionary
     """
     try:
-        with open(json_path, 'r', encoding='utf-8') as f:
+        with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
         # Basic structure validation
@@ -195,8 +195,3 @@ def _validate_core_content(results: Dict[str, Any], example_name: str) -> Dict[s
         return {"valid": False, "error": "Empty results in core example"}
 
     return {"valid": True, "error": None}
-
-
-
-
-

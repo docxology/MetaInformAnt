@@ -106,15 +106,15 @@ def parse_args():
 def main():
     """Main function."""
     args = parse_args()
-    
+
     if args.verbose:
         logger.setLevel("DEBUG")
-    
+
     logger.info(f"Generating {args.n_sequences} synthetic event sequences...")
-    
+
     # Ensure output directory exists
     paths.ensure_directory(args.output.parent)
-    
+
     # Generate sequences
     if args.realistic:
         sequences, outcomes = generate_realistic_life_events(
@@ -137,12 +137,12 @@ def main():
             outcome_relationship=args.outcome_relationship,
             random_state=args.random_state,
         )
-    
+
     # Save sequences
     sequences_data = [seq.to_dict() for seq in sequences]
     io.dump_json(sequences_data, args.output, indent=2)
     logger.info(f"✅ Saved {len(sequences)} sequences to {args.output}")
-    
+
     # Save outcomes if generated
     if outcomes is not None:
         outcomes_file = args.output.parent / f"{args.output.stem}_outcomes.json"
@@ -155,11 +155,10 @@ def main():
             indent=2,
         )
         logger.info(f"✅ Saved outcomes to {outcomes_file}")
-    
+
     logger.info("✅ Synthetic data generation complete!")
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

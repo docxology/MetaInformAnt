@@ -12,6 +12,15 @@ import math
 import numpy as np
 import pytest
 
+from metainformant.information.metrics.decomposition import (
+    co_information,
+    dual_total_correlation,
+    o_information,
+    partial_information_decomposition,
+    redundant_information,
+    synergistic_information,
+    unique_information,
+)
 from metainformant.information.metrics.geometry import (
     channel_capacity,
     entropy_power_inequality,
@@ -25,16 +34,6 @@ from metainformant.information.metrics.geometry import (
     rate_distortion_function,
     statistical_divergence,
 )
-from metainformant.information.metrics.decomposition import (
-    co_information,
-    dual_total_correlation,
-    o_information,
-    partial_information_decomposition,
-    redundant_information,
-    synergistic_information,
-    unique_information,
-)
-
 
 # ============================================================
 # Fisher-Rao Distance Tests

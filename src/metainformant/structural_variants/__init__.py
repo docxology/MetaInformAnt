@@ -15,37 +15,18 @@ Config prefix: SV_
 
 from __future__ import annotations
 
+# Type checking imports
+from typing import TYPE_CHECKING
+
 # Import subpackages
-from . import detection
-from . import annotation
-from . import filtering
-from . import visualization
-from . import population
+from . import annotation, detection, filtering, population, visualization
 
-# Detection - CNV
-from .detection.cnv import (
-    detect_cnv_from_depth,
-    segment_coverage,
-    call_cnv_states,
-    merge_adjacent_segments,
-    calculate_log2_ratio,
-)
-
-# Detection - SV calling
-from .detection.sv_calling import (
-    call_structural_variants,
-    detect_split_reads,
-    detect_discordant_pairs,
-    classify_sv_type,
-    genotype_sv,
-)
-
-# Detection - Breakpoints
-from .detection.breakpoints import (
-    refine_breakpoints,
-    detect_microhomology,
-    cluster_breakpoints,
-    calculate_breakpoint_confidence,
+# Annotation - Functional impact
+from .annotation.functional_impact import (
+    assess_dosage_sensitivity,
+    predict_functional_impact,
+    predict_tad_disruption,
+    score_pathogenicity,
 )
 
 # Annotation - Overlap
@@ -56,38 +37,46 @@ from .annotation.overlap import (
     find_nearest_gene,
 )
 
-# Annotation - Functional impact
-from .annotation.functional_impact import (
-    predict_functional_impact,
-    assess_dosage_sensitivity,
-    predict_tad_disruption,
-    score_pathogenicity,
+# Detection - Breakpoints
+from .detection.breakpoints import (
+    calculate_breakpoint_confidence,
+    cluster_breakpoints,
+    detect_microhomology,
+    refine_breakpoints,
 )
 
-# Filtering - Quality
-from .filtering.quality_filter import (
-    filter_by_quality,
-    filter_by_size,
-    filter_by_frequency,
-    apply_blacklist,
+# Detection - CNV
+from .detection.cnv import (
+    calculate_log2_ratio,
+    call_cnv_states,
+    detect_cnv_from_depth,
+    merge_adjacent_segments,
+    segment_coverage,
+)
+
+# Detection - SV calling
+from .detection.sv_calling import (
+    call_structural_variants,
+    classify_sv_type,
+    detect_discordant_pairs,
+    detect_split_reads,
+    genotype_sv,
 )
 
 # Filtering - Merge
 from .filtering.merge import (
-    merge_callsets,
     calculate_reciprocal_overlap,
-    survivor_merge,
     deduplicate_variants,
+    merge_callsets,
+    survivor_merge,
 )
 
-# Visualization
-from .visualization.plots import (
-    plot_circos,
-    plot_coverage_track,
-    plot_sv_size_distribution,
-    plot_sv_type_summary,
-    plot_breakpoint_detail,
-    plot_cnv_profile,
+# Filtering - Quality
+from .filtering.quality_filter import (
+    apply_blacklist,
+    filter_by_frequency,
+    filter_by_quality,
+    filter_by_size,
 )
 
 # Population submodule
@@ -100,8 +89,15 @@ from .population import (
     sv_population_structure,
 )
 
-# Type checking imports
-from typing import TYPE_CHECKING
+# Visualization
+from .visualization.plots import (
+    plot_breakpoint_detail,
+    plot_circos,
+    plot_cnv_profile,
+    plot_coverage_track,
+    plot_sv_size_distribution,
+    plot_sv_type_summary,
+)
 
 if TYPE_CHECKING:
     pass

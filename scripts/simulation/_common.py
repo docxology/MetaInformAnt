@@ -20,12 +20,12 @@ logger = logging.get_logger(__name__)
 
 def validate_positive_int(value: int, name: str, min_val: int = 1) -> None:
     """Validate that an integer is positive.
-    
+
     Args:
         value: Value to validate
         name: Parameter name for error messages
         min_val: Minimum allowed value
-        
+
     Raises:
         ValidationError: If value is invalid
     """
@@ -35,13 +35,13 @@ def validate_positive_int(value: int, name: str, min_val: int = 1) -> None:
 
 def validate_float_range(value: float, name: str, min_val: float = 0.0, max_val: float = 1.0) -> None:
     """Validate that a float is in a specified range.
-    
+
     Args:
         value: Value to validate
         name: Parameter name for error messages
         min_val: Minimum allowed value
         max_val: Maximum allowed value
-        
+
     Raises:
         ValidationError: If value is invalid
     """
@@ -51,13 +51,13 @@ def validate_float_range(value: float, name: str, min_val: float = 0.0, max_val:
 
 def validate_output_dir(output: Path) -> Path:
     """Validate and ensure output directory exists.
-    
+
     Args:
         output: Output directory path
-        
+
     Returns:
         Validated and created output directory
-        
+
     Raises:
         ValidationError: If path is invalid
     """
@@ -68,7 +68,7 @@ def validate_output_dir(output: Path) -> Path:
 
 def log_simulation_start(simulation_type: str, **params: Any) -> None:
     """Log simulation start with parameters.
-    
+
     Args:
         simulation_type: Type of simulation
         **params: Simulation parameters to log
@@ -80,7 +80,7 @@ def log_simulation_start(simulation_type: str, **params: Any) -> None:
 
 def log_simulation_complete(output_file: Path | str) -> None:
     """Log simulation completion.
-    
+
     Args:
         output_file: Path to output file
     """
@@ -89,7 +89,7 @@ def log_simulation_complete(output_file: Path | str) -> None:
 
 def handle_simulation_error(error: Exception, context: str = "") -> None:
     """Handle simulation errors with context.
-    
+
     Args:
         error: Exception that occurred
         context: Additional context string
@@ -97,4 +97,3 @@ def handle_simulation_error(error: Exception, context: str = "") -> None:
     context_msg = f" ({context})" if context else ""
     logger.error(f"Simulation failed{context_msg}: {error}", exc_info=True)
     raise
-

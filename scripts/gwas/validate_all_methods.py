@@ -108,10 +108,10 @@ def main() -> int:
     # Import from sibling module
     sys.path.insert(0, str(Path(__file__).resolve().parent))
     from run_amellifera_gwas import (
-        generate_real_vcf,
-        generate_phenotypes,
-        generate_metadata,
         download_genome_annotation,
+        generate_metadata,
+        generate_phenotypes,
+        generate_real_vcf,
     )
 
     try:
@@ -123,9 +123,7 @@ def main() -> int:
 
     force_regen = args.force_regenerate
     try:
-        vcf_path = generate_real_vcf(
-            output_base, n_variants=2000, scale_factor=args.scale_factor, force=force_regen
-        )
+        vcf_path = generate_real_vcf(output_base, n_variants=2000, scale_factor=args.scale_factor, force=force_regen)
         vr.record("VCF generation", vcf_path.exists(), f"{vcf_path}")
     except Exception as e:
         vr.record("VCF generation", False, str(e))
@@ -149,14 +147,16 @@ def main() -> int:
     # 2. VCF Parsing
     # =========================================================================
     print("\n--- 2. VCF PARSING ---")
-    from metainformant.gwas.analysis.quality import parse_vcf_full, apply_qc_filters, check_haplodiploidy
+    from metainformant.gwas.analysis.quality import apply_qc_filters, check_haplodiploidy, parse_vcf_full
 
     try:
         vcf_data = parse_vcf_full(vcf_path)
         n_variants = len(vcf_data.get("variants", []))
         n_samples = len(vcf_data.get("samples", []))
         vr.record("VCF parsing", n_variants > 0 and n_samples > 0, f"{n_variants} variants, {n_samples} samples")
-        vr.record("Sample count matches config", n_samples == expected_total, f"got {n_samples}, expected {expected_total}")
+        vr.record(
+            "Sample count matches config", n_samples == expected_total, f"got {n_samples}, expected {expected_total}"
+        )
     except Exception as e:
         vr.record("VCF parsing", False, str(e))
         return 1
@@ -339,7 +339,9 @@ def main() -> int:
         p_values_linear = [r.get("p_value", 1.0) for r in linear_results]
         all_valid = all(0 <= p <= 1 for p in p_values_linear)
         has_betas = all("beta" in r for r in linear_results)
-        vr.record("Linear association", len(linear_results) == n_tested and all_valid, f"{n_tested} tests, all p in [0,1]")
+        vr.record(
+            "Linear association", len(linear_results) == n_tested and all_valid, f"{n_tested} tests, all p in [0,1]"
+        )
         vr.record("Linear returns betas", has_betas)
     except Exception as e:
         vr.record("Linear association", False, str(e))
@@ -416,7 +418,7 @@ def main() -> int:
 
             if linear_results and mixed_results:
                 lambda_linear = compute_lambda([r.get("p_value", 1.0) for r in linear_results])
-                lambda_mixed = compute_lambda(p_values_mixed[:len(linear_results)])
+                lambda_mixed = compute_lambda(p_values_mixed[: len(linear_results)])
                 vr.record(
                     "Lambda_GC comparison",
                     True,
@@ -436,7 +438,7 @@ def main() -> int:
     # 11. Multiple Testing Correction
     # =========================================================================
     print("\n--- 11. MULTIPLE TESTING CORRECTION ---")
-    from metainformant.gwas.analysis.correction import fdr_correction, bonferroni_correction
+    from metainformant.gwas.analysis.correction import bonferroni_correction, fdr_correction
 
     if assoc_for_downstream:
         p_vals = [r.get("p_value", 1.0) for r in assoc_for_downstream]
@@ -504,10 +506,7 @@ def main() -> int:
                     r["pos"] = variants[i].get("pos", 0)
 
             annotate_variants_with_genes(assoc_for_downstream, str(gff_path), window_kb=50)
-            annotated = sum(
-                1 for r in assoc_for_downstream
-                if r.get("annotation", {}).get("nearest_gene")
-            )
+            annotated = sum(1 for r in assoc_for_downstream if r.get("annotation", {}).get("nearest_gene"))
             vr.record("Variant annotation", annotated > 0, f"{annotated} variants annotated with genes")
         else:
             vr.record("Variant annotation", False, "GFF3 not available")
@@ -549,9 +548,9 @@ def main() -> int:
     # =========================================================================
     print("\n--- 15. SUMMARY STATISTICS ---")
     from metainformant.gwas.analysis.summary_stats import (
-        write_summary_statistics,
-        write_significant_hits,
         create_results_summary,
+        write_significant_hits,
+        write_summary_statistics,
     )
 
     results_dir = output_base / "results"
@@ -580,7 +579,7 @@ def main() -> int:
     # 16. Metadata
     # =========================================================================
     print("\n--- 16. METADATA ---")
-    from metainformant.gwas.data.metadata import load_sample_metadata, validate_metadata, get_population_labels
+    from metainformant.gwas.data.metadata import get_population_labels, load_sample_metadata, validate_metadata
 
     try:
         if meta_path and meta_path.exists():
@@ -654,9 +653,9 @@ def main() -> int:
 
     # PCA plot
     try:
-        from metainformant.gwas.visualization.visualization_population import pca_plot
-
         import numpy as np
+
+        from metainformant.gwas.visualization.visualization_population import pca_plot
 
         if pca_result and pca_result.get("status") == "success":
             pca_data = {
@@ -732,11 +731,12 @@ def main() -> int:
 
     # Composite panels
     try:
+        import numpy as np
+
         from metainformant.gwas.visualization.visualization_composite import (
             gwas_summary_panel,
             population_structure_panel,
         )
-        import numpy as np
 
         pca_for_panel = pca_result if pca_result and pca_result.get("status") == "success" else None
         summary_panel = gwas_summary_panel(

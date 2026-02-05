@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from metainformant.core import logging
+from metainformant.rna.engine.sra_extraction import extract_sra_directly, manual_integration_fallback
 from metainformant.rna.engine.workflow_cleanup import (
     check_disk_space,
     check_disk_space_or_fail,
@@ -24,7 +25,6 @@ from metainformant.rna.engine.workflow_cleanup import (
     cleanup_temp_files,
     filter_metadata_for_unquantified,
 )
-from metainformant.rna.engine.sra_extraction import extract_sra_directly, manual_integration_fallback
 
 if TYPE_CHECKING:
     from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, WorkflowStepResult
@@ -527,7 +527,7 @@ def _validate_getfastq_results(
     from metainformant.rna.engine.workflow import WorkflowStepResult
 
     try:
-        from metainformant.rna.analysis.validation import validate_all_samples, save_validation_report
+        from metainformant.rna.analysis.validation import save_validation_report, validate_all_samples
 
         validation_result = validate_all_samples(config, stage="extraction")
         validation_dir = config.work_dir / "validation"
@@ -598,7 +598,7 @@ def _attempt_fallback_extraction(
 def _validate_quant_results(config: AmalgkitWorkflowConfig, check: bool, step_results: List) -> None:
     """Validate quant results and run post-quant cleanup."""
     try:
-        from metainformant.rna.analysis.validation import validate_all_samples, save_validation_report
+        from metainformant.rna.analysis.validation import save_validation_report, validate_all_samples
 
         validation_result = validate_all_samples(config, stage="quantification")
         validation_dir = config.work_dir / "validation"

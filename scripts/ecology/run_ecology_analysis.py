@@ -21,7 +21,7 @@ from typing import Any
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core.io import ensure_directory, dump_json, read_csv
+from metainformant.core.io import dump_json, ensure_directory, read_csv
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -48,7 +48,7 @@ Examples:
 
   # Macroecological analysis
   %(prog)s --input abundance.tsv --macroecology
-        """
+        """,
     )
     parser.add_argument(
         "--input",
@@ -196,11 +196,11 @@ def run_workflow(args):
         try:
             logger.info("Calculating diversity indices...")
             from metainformant.ecology.analysis.community import (
+                chao1_estimator,
+                pielou_evenness,
                 shannon_diversity,
                 simpson_diversity,
                 species_richness,
-                pielou_evenness,
-                chao1_estimator,
             )
 
             diversity_results = {}
@@ -231,8 +231,8 @@ def run_workflow(args):
         try:
             logger.info("Calculating beta diversity...")
             from metainformant.ecology.analysis.community import (
-                beta_diversity,
                 alpha_beta_gamma_diversity,
+                beta_diversity,
                 community_similarity_matrix,
             )
 
@@ -324,7 +324,7 @@ def run_workflow(args):
         else:
             try:
                 logger.info("Running indicator species analysis...")
-                from metainformant.ecology.analysis.indicators import indval, anosim
+                from metainformant.ecology.analysis.indicators import anosim, indval
 
                 # Build distance matrix for ANOSIM
                 from metainformant.ecology.analysis.ordination import distance_matrix

@@ -31,9 +31,9 @@ except ImportError:
     spearmanr = None  # type: ignore[assignment]
 
 try:
+    from sklearn.decomposition import PCA
     from sklearn.neighbors import NearestNeighbors
     from sklearn.preprocessing import StandardScaler
-    from sklearn.decomposition import PCA
 except ImportError:
     NearestNeighbors = None  # type: ignore[assignment,misc]
     StandardScaler = None  # type: ignore[assignment,misc]

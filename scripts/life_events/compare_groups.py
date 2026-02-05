@@ -66,32 +66,32 @@ def parse_args():
 def main():
     """Main function."""
     args = parse_args()
-    
+
     if not args.group1.exists():
         logger.error(f"Group 1 file not found: {args.group1}")
         return 1
-    
+
     if not args.group2.exists():
         logger.error(f"Group 2 file not found: {args.group2}")
         return 1
-    
+
     logger.info(f"Loading group 1 sequences from {args.group1}")
     sequences_group1 = load_sequences_from_json(args.group1)
     logger.info(f"✅ Loaded {len(sequences_group1)} sequences for group 1")
-    
+
     logger.info(f"Loading group 2 sequences from {args.group2}")
     sequences_group2 = load_sequences_from_json(args.group2)
     logger.info(f"✅ Loaded {len(sequences_group2)} sequences for group 2")
-    
+
     paths.ensure_directory(args.output)
-    
+
     logger.info("Comparing populations...")
     comparison = compare_populations(
         sequences_group1,
         sequences_group2,
         output_dir=args.output,
     )
-    
+
     logger.info("Generating comparison visualization...")
     plot_population_comparison(
         sequences_group1,
@@ -100,15 +100,14 @@ def main():
         group2_label=args.group2_label,
         output_path=args.output / "population_comparison.png",
     )
-    
+
     logger.info(f"✅ Comparison complete. Results saved to {args.output}")
     logger.info(f"   Common event types: {len(comparison['comparison']['common_event_types'])}")
     logger.info(f"   Unique to group 1: {len(comparison['comparison']['unique_to_group1'])}")
     logger.info(f"   Unique to group 2: {len(comparison['comparison']['unique_to_group2'])}")
-    
+
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

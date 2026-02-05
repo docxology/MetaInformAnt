@@ -61,8 +61,8 @@ except ImportError:
     MULTIOMICS_AVAILABLE = False
 
 try:
-    from metainformant.math.population_genetics.coalescent import expected_time_to_mrca, watterson_theta
     from metainformant.math.popgen import hardy_weinberg_genotype_freqs
+    from metainformant.math.population_genetics.coalescent import expected_time_to_mrca, watterson_theta
 
     MATH_AVAILABLE = True
 except ImportError:
@@ -388,8 +388,8 @@ class TestModuleInteroperability:
 
     def test_core_utilities_integration(self, tmp_path):
         """Test that core utilities work across all modules."""
-        from metainformant.core.utils.hash import sha256_bytes
         from metainformant.core.io.io import dump_json, load_json
+        from metainformant.core.utils.hash import sha256_bytes
         from metainformant.core.utils.text import slugify
 
         # Create test data

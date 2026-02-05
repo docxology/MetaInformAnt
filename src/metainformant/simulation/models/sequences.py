@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Dict, List, Optional, Tuple, Any
 from collections import Counter
+from typing import Any, Dict, List, Optional, Tuple
 
-from metainformant.core import logging, validation, errors
+from metainformant.core import errors, logging, validation
 
 logger = logging.get_logger(__name__)
 

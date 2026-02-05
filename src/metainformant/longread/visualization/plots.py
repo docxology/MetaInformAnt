@@ -27,8 +27,8 @@ try:
     import matplotlib  # type: ignore[import-untyped]
 
     matplotlib.use("Agg")  # Non-interactive backend
-    import matplotlib.pyplot as plt  # type: ignore[import-untyped]
     import matplotlib.patches as mpatches  # type: ignore[import-untyped]
+    import matplotlib.pyplot as plt  # type: ignore[import-untyped]
     from matplotlib.collections import LineCollection  # type: ignore[import-untyped]
 
     HAS_MATPLOTLIB = True

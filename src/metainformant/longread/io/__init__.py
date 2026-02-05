@@ -7,9 +7,7 @@ and format conversions between common long-read formats.
 
 from __future__ import annotations
 
-from . import fast5
-from . import bam
-from . import formats
+from . import bam, fast5, formats
 
 __all__ = [
     "fast5",

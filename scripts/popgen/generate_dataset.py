@@ -12,6 +12,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from Bio import SeqIO
+from Bio.Seq import Seq
+from Bio.SeqRecord import SeqRecord
+
 from metainformant.core.io import dump_json, ensure_directory
 from metainformant.core.utils.logging import setup_logger
 from metainformant.simulation.popgen import (
@@ -22,10 +26,6 @@ from metainformant.simulation.popgen import (
     simulate_bottleneck_population,
     simulate_population_expansion,
 )
-
-from Bio import SeqIO
-from Bio.Seq import Seq
-from Bio.SeqRecord import SeqRecord
 
 
 def generate_comprehensive_dataset(
@@ -71,10 +71,7 @@ def generate_comprehensive_dataset(
         rng=rng,
     )
     neutral_file = output_dir / "scenario1_neutral.fasta"
-    records = [
-        SeqRecord(Seq(seq), id=f"neutral_{i}", description="")
-        for i, seq in enumerate(neutral_seqs)
-    ]
+    records = [SeqRecord(Seq(seq), id=f"neutral_{i}", description="") for i, seq in enumerate(neutral_seqs)]
     SeqIO.write(records, str(neutral_file), "fasta")
     dataset_info["scenarios"]["neutral"] = {
         "file": str(neutral_file),
@@ -92,10 +89,7 @@ def generate_comprehensive_dataset(
         rng=rng,
     )
     high_div_file = output_dir / "scenario2_high_diversity.fasta"
-    records = [
-        SeqRecord(Seq(seq), id=f"highdiv_{i}", description="")
-        for i, seq in enumerate(high_div_seqs)
-    ]
+    records = [SeqRecord(Seq(seq), id=f"highdiv_{i}", description="") for i, seq in enumerate(high_div_seqs)]
     SeqIO.write(records, str(high_div_file), "fasta")
     dataset_info["scenarios"]["high_diversity"] = {
         "file": str(high_div_file),
@@ -113,10 +107,7 @@ def generate_comprehensive_dataset(
         rng=rng,
     )
     low_div_file = output_dir / "scenario3_low_diversity.fasta"
-    records = [
-        SeqRecord(Seq(seq), id=f"lowdiv_{i}", description="")
-        for i, seq in enumerate(low_div_seqs)
-    ]
+    records = [SeqRecord(Seq(seq), id=f"lowdiv_{i}", description="") for i, seq in enumerate(low_div_seqs)]
     SeqIO.write(records, str(low_div_file), "fasta")
     dataset_info["scenarios"]["low_diversity"] = {
         "file": str(low_div_file),
@@ -137,10 +128,7 @@ def generate_comprehensive_dataset(
         rng=rng,
     )
     bottleneck_file = output_dir / "scenario4_bottleneck.fasta"
-    records = [
-        SeqRecord(Seq(seq), id=f"bottleneck_{i}", description="")
-        for i, seq in enumerate(bottleneck_seqs)
-    ]
+    records = [SeqRecord(Seq(seq), id=f"bottleneck_{i}", description="") for i, seq in enumerate(bottleneck_seqs)]
     SeqIO.write(records, str(bottleneck_file), "fasta")
     dataset_info["scenarios"]["bottleneck"] = {
         "file": str(bottleneck_file),
@@ -160,10 +148,7 @@ def generate_comprehensive_dataset(
         rng=rng,
     )
     expansion_file = output_dir / "scenario5_expansion.fasta"
-    records = [
-        SeqRecord(Seq(seq), id=f"expansion_{i}", description="")
-        for i, seq in enumerate(expansion_seqs)
-    ]
+    records = [SeqRecord(Seq(seq), id=f"expansion_{i}", description="") for i, seq in enumerate(expansion_seqs)]
     SeqIO.write(records, str(expansion_file), "fasta")
     dataset_info["scenarios"]["expansion"] = {
         "file": str(expansion_file),
@@ -183,14 +168,8 @@ def generate_comprehensive_dataset(
     )
     pop1_low_file = output_dir / "scenario6_pop1_lowfst.fasta"
     pop2_low_file = output_dir / "scenario6_pop2_lowfst.fasta"
-    records1 = [
-        SeqRecord(Seq(seq), id=f"pop1_low_{i}", description="")
-        for i, seq in enumerate(pop1_low)
-    ]
-    records2 = [
-        SeqRecord(Seq(seq), id=f"pop2_low_{i}", description="")
-        for i, seq in enumerate(pop2_low)
-    ]
+    records1 = [SeqRecord(Seq(seq), id=f"pop1_low_{i}", description="") for i, seq in enumerate(pop1_low)]
+    records2 = [SeqRecord(Seq(seq), id=f"pop2_low_{i}", description="") for i, seq in enumerate(pop2_low)]
     SeqIO.write(records1, str(pop1_low_file), "fasta")
     SeqIO.write(records2, str(pop2_low_file), "fasta")
     dataset_info["scenarios"]["two_populations_low_fst"] = {
@@ -213,14 +192,8 @@ def generate_comprehensive_dataset(
     )
     pop1_high_file = output_dir / "scenario7_pop1_highfst.fasta"
     pop2_high_file = output_dir / "scenario7_pop2_highfst.fasta"
-    records1 = [
-        SeqRecord(Seq(seq), id=f"pop1_high_{i}", description="")
-        for i, seq in enumerate(pop1_high)
-    ]
-    records2 = [
-        SeqRecord(Seq(seq), id=f"pop2_high_{i}", description="")
-        for i, seq in enumerate(pop2_high)
-    ]
+    records1 = [SeqRecord(Seq(seq), id=f"pop1_high_{i}", description="") for i, seq in enumerate(pop1_high)]
+    records2 = [SeqRecord(Seq(seq), id=f"pop2_high_{i}", description="") for i, seq in enumerate(pop2_high)]
     SeqIO.write(records1, str(pop1_high_file), "fasta")
     SeqIO.write(records2, str(pop2_high_file), "fasta")
     dataset_info["scenarios"]["two_populations_high_fst"] = {
@@ -274,8 +247,3 @@ def generate_comprehensive_dataset(
 
     logger.info(f"Dataset generation complete. Info saved to {info_file}")
     return dataset_info
-
-
-
-
-

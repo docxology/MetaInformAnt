@@ -6,8 +6,9 @@ including replicator dynamics and fitness calculations.
 
 from __future__ import annotations
 
+from typing import Any, Dict, List, Optional
+
 import numpy as np
-from typing import List, Dict, Any, Optional
 
 from metainformant.core import logging
 

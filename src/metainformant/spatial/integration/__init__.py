@@ -7,7 +7,6 @@ including label transfer, correlation-based mapping, and gene imputation.
 from __future__ import annotations
 
 from . import scrna_mapping
-
 from .scrna_mapping import (
     anchor_based_transfer,
     correlation_mapping,

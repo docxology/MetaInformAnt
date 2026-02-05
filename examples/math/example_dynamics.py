@@ -12,15 +12,19 @@ Output:
 
 from __future__ import annotations
 
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+
 from metainformant.core import io
+
 
 def logistic_growth(N0, r, K, t_max):
     """Simple logistic growth model."""
     t = np.arange(t_max)
     N = K / (1 + (K - N0) / N0 * np.exp(-r * t))
     return t.tolist(), N.tolist()
+
 
 def main():
     """Demonstrate population dynamics modeling."""
@@ -43,19 +47,18 @@ def main():
         "parameters": {"N0": N0, "r": r, "K": K, "t_max": t_max},
         "time_series": {"time": t, "population": N},
         "final_population": N[-1],
-        "carrying_capacity_reached": N[-1] >= K * 0.95
+        "carrying_capacity_reached": N[-1] >= K * 0.95,
     }
 
     print(f"✓ Modeled population growth: {N0} → {results['final_population']:.1f}")
 
     # Save results
     results_file = output_dir / "dynamics_model.json"
-    io.dump_json({
-        "math_biology_modeling": results
-    }, results_file, indent=2)
+    io.dump_json({"math_biology_modeling": results}, results_file, indent=2)
 
     print(f"✓ Results saved to: {results_file}")
     print("\n=== Math Biology Example Complete ===")
+
 
 if __name__ == "__main__":
     main()

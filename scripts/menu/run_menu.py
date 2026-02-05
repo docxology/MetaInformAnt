@@ -18,11 +18,11 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
-from metainformant.menu import discover_scripts, generate_menu_from_scripts
-from metainformant.menu.display import clear_screen, format_breadcrumb, show_menu, get_choice
-from metainformant.menu.navigation import MenuSystem
-from metainformant.menu.executor import execute_script, prompt_for_args
 from metainformant.core.utils.logging import get_logger
+from metainformant.menu import discover_scripts, generate_menu_from_scripts
+from metainformant.menu.display import clear_screen, format_breadcrumb, get_choice, show_menu
+from metainformant.menu.executor import execute_script, prompt_for_args
+from metainformant.menu.navigation import MenuSystem
 
 logger = get_logger(__name__)
 
@@ -46,12 +46,7 @@ def check_uv_available() -> bool:
         True if uv is available, False otherwise
     """
     try:
-        result = subprocess.run(
-            ["uv", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
+        result = subprocess.run(["uv", "--version"], capture_output=True, text=True, timeout=5)
         return result.returncode == 0
     except (subprocess.TimeoutExpired, FileNotFoundError):
         return False
@@ -75,7 +70,7 @@ def check_optional_dependencies() -> dict[str, bool]:
                     capture_output=True,
                     text=True,
                     timeout=10,
-                    cwd=REPO_ROOT
+                    cwd=REPO_ROOT,
                 )
                 if result.returncode != 0:
                     group_available = False
@@ -110,11 +105,7 @@ def install_optional_dependencies(missing_groups: list[str]) -> bool:
         print(f"📦 Installing dependencies: {' '.join(missing_groups)}")
         print("   This may take a few minutes...")
 
-        result = subprocess.run(
-            cmd,
-            cwd=REPO_ROOT,
-            timeout=300  # 5 minute timeout
-        )
+        result = subprocess.run(cmd, cwd=REPO_ROOT, timeout=300)  # 5 minute timeout
 
         return result.returncode == 0
     except subprocess.TimeoutExpired:
@@ -160,11 +151,11 @@ def ensure_dependencies() -> bool:
         while True:
             try:
                 response = input("💡 Install missing optional dependencies? [y/N]: ").strip().lower()
-                if response in ('', 'n', 'no'):
+                if response in ("", "n", "no"):
                     print("ℹ️  Continuing without optional dependencies")
                     print("   Some features may be disabled (warnings will appear)")
                     return True
-                elif response in ('y', 'yes'):
+                elif response in ("y", "yes"):
                     if install_optional_dependencies(missing_groups):
                         print("✅ All dependencies installed successfully!")
                         print()
@@ -172,7 +163,7 @@ def ensure_dependencies() -> bool:
                     else:
                         print("❌ Failed to install dependencies")
                         response = input("💡 Continue anyway? [y/N]: ").strip().lower()
-                        return response in ('y', 'yes')
+                        return response in ("y", "yes")
                 else:
                     print("Please enter 'y' or 'n'")
             except (KeyboardInterrupt, EOFError):
@@ -211,7 +202,9 @@ def run_interactive_menu(menu_system: MenuSystem) -> None:
             if menu_system.current_menu_id == "root":
                 print("\n💡 Select a category to browse available scripts")
             else:
-                print(f"\n💡 Select a script to run or '0' to go back to {menu_system.history.get_path()[-2] if len(menu_system.history.get_path()) > 1 else 'main menu'}")
+                print(
+                    f"\n💡 Select a script to run or '0' to go back to {menu_system.history.get_path()[-2] if len(menu_system.history.get_path()) > 1 else 'main menu'}"
+                )
 
             # Get user choice
             try:

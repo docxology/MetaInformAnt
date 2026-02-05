@@ -10,10 +10,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Sequence
 
-import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.axes import Axes
+import numpy as np
 import pandas as pd
+from matplotlib.axes import Axes
 
 from metainformant.core import logging, paths, validation
 

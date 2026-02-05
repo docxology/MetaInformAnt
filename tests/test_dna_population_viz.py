@@ -22,7 +22,6 @@ from metainformant.dna.population.visualization import (
     plot_diversity_comparison,
     plot_fst_comparison,
     plot_fst_matrix,
-    plot_fst_matrix,
     plot_hardy_weinberg_test,
     plot_heterozygosity_distribution,
     plot_kinship_matrix,

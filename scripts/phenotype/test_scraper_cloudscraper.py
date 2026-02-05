@@ -15,10 +15,11 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from metainformant.phenotype.scraper import AntWikiScraper, AntWikiScraperConfig
 
+
 def test_scraper() -> None:
     """Test scraper with a single species page."""
     print("Testing AntWiki scraper with cloudscraper...")
-    
+
     # Create config with reasonable delays
     config = AntWikiScraperConfig(
         base_url="https://www.antwiki.org/wiki/",
@@ -29,13 +30,13 @@ def test_scraper() -> None:
         check_robots=True,
         output_dir=Path("output/phenotype/test_scraper"),
     )
-    
+
     scraper = AntWikiScraper(config)
-    
+
     # Test with a known species
     species_name = "Camponotus_pennsylvanicus"
     print(f"\nAttempting to scrape: {species_name}")
-    
+
     try:
         data = scraper.scrape_species_page(species_name)
         print(f"\n✓ Successfully scraped {species_name}!")
@@ -48,10 +49,11 @@ def test_scraper() -> None:
     except Exception as e:
         print(f"\n✗ Failed to scrape: {e}")
         import traceback
+
         traceback.print_exc()
         return False
+
 
 if __name__ == "__main__":
     success = test_scraper()
     sys.exit(0 if success else 1)
-

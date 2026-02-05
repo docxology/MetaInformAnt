@@ -32,8 +32,8 @@ def effect_size_plot(results: Any, output_file: Optional[str | Path] = None) -> 
     """
     try:
         import matplotlib.pyplot as plt
-        import seaborn as sns
         import pandas as pd
+        import seaborn as sns
     except ImportError:
         logger.warning("matplotlib, seaborn, or pandas not available for plotting")
         return None
@@ -147,8 +147,8 @@ def compare_effect_sizes(study_results: Dict[str, Any], output_file: Optional[st
     """
     try:
         import matplotlib.pyplot as plt
-        import seaborn as sns
         import pandas as pd
+        import seaborn as sns
     except ImportError:
         logger.warning("matplotlib, seaborn, or pandas not available for plotting")
         return None
@@ -465,8 +465,8 @@ def effect_size_forest_plot(
         >>> result = effect_size_forest_plot(data)
     """
     try:
-        import matplotlib.pyplot as plt
         import matplotlib.patches as patches
+        import matplotlib.pyplot as plt
     except ImportError:
         logger.warning("matplotlib not available for forest plot")
         return {"status": "failed", "error": "matplotlib not available"}

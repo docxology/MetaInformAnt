@@ -79,8 +79,10 @@ def generate_summary_report(
                 f.write(f"**PCA Analysis:**\n")
                 f.write(f"- Status: {scenario_data['pca']['status']}\n")
                 f.write(f"- Components: {scenario_data['pca']['n_components']}\n")
-                if scenario_data['pca'].get('explained_variance_ratio'):
-                    f.write(f"- Top 5 explained variance: {[f'{x:.4f}' for x in scenario_data['pca']['explained_variance_ratio']]}\n")
+                if scenario_data["pca"].get("explained_variance_ratio"):
+                    f.write(
+                        f"- Top 5 explained variance: {[f'{x:.4f}' for x in scenario_data['pca']['explained_variance_ratio']]}\n"
+                    )
 
                 if "hardy_weinberg_test" in scenario_data:
                     hwe = scenario_data["hardy_weinberg_test"]
@@ -151,9 +153,9 @@ def generate_summary_report(
             f.write("\n## Validation Summary\n\n")
             f.write(f"- **Status**: {validation['status']}\n")
             f.write(f"- **Total scenarios analyzed**: {validation['total_scenarios']}\n")
-            if validation.get('errors'):
+            if validation.get("errors"):
                 f.write(f"- **Issues found**: {len(validation['errors'])}\n")
-                for error in validation['errors']:
+                for error in validation["errors"]:
                     f.write(f"  - {error}\n")
             else:
                 f.write("- **All validation checks passed** ✓\n")
@@ -161,17 +163,18 @@ def generate_summary_report(
         f.write("\n## Conclusions\n\n")
         f.write("This comprehensive analysis demonstrates:\n\n")
         f.write("1. **Diversity Control**: Successfully generated populations with target diversity levels\n")
-        f.write("2. **Demographic Signatures**: Bottleneck and expansion scenarios show expected patterns (negative Tajima's D)\n")
+        f.write(
+            "2. **Demographic Signatures**: Bottleneck and expansion scenarios show expected patterns (negative Tajima's D)\n"
+        )
         f.write("3. **Population Structure**: Fst values match target specifications\n")
-        f.write("4. **Large-Scale Analysis**: Successfully analyzed large genotype matrices (1000 individuals × 10000 sites)\n")
-        f.write("5. **Comprehensive Neutrality Testing**: All neutrality tests (Tajima's D, Fu & Li's, Fay & Wu's H) calculated across scenarios\n")
+        f.write(
+            "4. **Large-Scale Analysis**: Successfully analyzed large genotype matrices (1000 individuals × 10000 sites)\n"
+        )
+        f.write(
+            "5. **Comprehensive Neutrality Testing**: All neutrality tests (Tajima's D, Fu & Li's, Fay & Wu's H) calculated across scenarios\n"
+        )
         f.write("6. **Statistical Validation**: Results validated for completeness and correctness\n")
         f.write("7. **Integration**: All modules work together seamlessly for comprehensive analysis\n")
         f.write("8. **Visualizations**: Comprehensive publication-quality plots generated for all analyses\n")
 
     print(f"Summary report saved to {report_file}")
-
-
-
-
-

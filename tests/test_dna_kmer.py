@@ -27,7 +27,6 @@ from metainformant.dna.sequence.kmer import (
     sliding_window_kmer_complexity,
 )
 
-
 # ===================================================================
 # 1. count_kmers
 # ===================================================================

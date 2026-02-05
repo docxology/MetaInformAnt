@@ -19,7 +19,7 @@ from typing import Any
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core.io import ensure_directory, dump_json, read_csv
+from metainformant.core.io import dump_json, ensure_directory, read_csv
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -40,7 +40,7 @@ Examples:
 
   # Metrics and centrality only
   %(prog)s --input interactions.tsv --analyze-metrics --analyze-centrality
-        """
+        """,
     )
     parser.add_argument(
         "--input",
@@ -90,18 +90,18 @@ Examples:
 
 def load_interactions(input_path: Path) -> list[tuple[str, str, float]]:
     """Load interaction data from file.
-    
+
     Args:
         input_path: Path to input file
-        
+
     Returns:
         List of (node1, node2, weight) tuples
     """
     logger.info(f"Loading interactions from {input_path}")
-    
+
     try:
         df = read_csv(input_path, sep="\t" if input_path.suffix == ".tsv" else ",")
-        
+
         # Find column names
         if "node1" in df.columns and "node2" in df.columns:
             node1_col = "node1"
@@ -111,21 +111,21 @@ def load_interactions(input_path: Path) -> list[tuple[str, str, float]]:
             node2_col = df.columns[1]
         else:
             raise ValueError("Need at least 2 columns for node1 and node2")
-        
+
         # Get weight column if present
         weight_col = None
         if "weight" in df.columns:
             weight_col = "weight"
         elif len(df.columns) >= 3:
             weight_col = df.columns[2]
-        
+
         interactions = []
         for _, row in df.iterrows():
             node1 = str(row[node1_col])
             node2 = str(row[node2_col])
             weight = float(row[weight_col]) if weight_col and weight_col in row else 1.0
             interactions.append((node1, node2, weight))
-        
+
         logger.info(f"Loaded {len(interactions)} interactions")
         return interactions
     except Exception as e:
@@ -135,26 +135,26 @@ def load_interactions(input_path: Path) -> list[tuple[str, str, float]]:
 
 def analyze_metrics(network, output_dir: Path) -> dict[str, Any]:
     """Calculate network metrics.
-    
+
     Args:
         network: BiologicalNetwork object
         output_dir: Output directory for results
-        
+
     Returns:
         Dictionary with network metrics
     """
     logger.info("Calculating network metrics...")
-    
+
     from metainformant.networks import network_metrics
-    
+
     try:
         metrics = network_metrics(network)
-        
+
         # Save results
         output_file = output_dir / "network_metrics.json"
         dump_json(metrics, output_file)
         logger.info(f"Network metrics saved to {output_file}")
-        
+
         return metrics
     except Exception as e:
         logger.error(f"Failed to calculate metrics: {e}")
@@ -163,26 +163,26 @@ def analyze_metrics(network, output_dir: Path) -> dict[str, Any]:
 
 def analyze_centrality(network, output_dir: Path) -> dict[str, Any]:
     """Calculate centrality measures.
-    
+
     Args:
         network: BiologicalNetwork object
         output_dir: Output directory for results
-        
+
     Returns:
         Dictionary with centrality measures
     """
     logger.info("Calculating centrality measures...")
-    
+
     from metainformant.networks import centrality_measures
-    
+
     try:
         centralities = centrality_measures(network)
-        
+
         # Save results
         output_file = output_dir / "centrality_measures.json"
         dump_json(centralities, output_file)
         logger.info(f"Centrality measures saved to {output_file}")
-        
+
         return centralities
     except Exception as e:
         logger.error(f"Failed to calculate centrality: {e}")
@@ -191,41 +191,41 @@ def analyze_centrality(network, output_dir: Path) -> dict[str, Any]:
 
 def detect_communities_analysis(network, output_dir: Path) -> dict[str, Any]:
     """Detect network communities.
-    
+
     Args:
         network: BiologicalNetwork object
         output_dir: Output directory for results
-        
+
     Returns:
         Dictionary with community detection results
     """
     logger.info("Detecting network communities...")
-    
-    from metainformant.networks import detect_communities, modularity, community_metrics
-    
+
+    from metainformant.networks import community_metrics, detect_communities, modularity
+
     try:
         # Detect communities
         communities = detect_communities(network, method="louvain")
-        
+
         # Calculate modularity
         mod = modularity(network, communities)
-        
+
         # Calculate community metrics
         comm_metrics = community_metrics(network, communities)
-        
+
         results = {
             "communities": communities,
             "modularity": mod,
             "community_metrics": comm_metrics,
             "num_communities": len(set(communities.values())),
         }
-        
+
         # Save results
         output_file = output_dir / "community_detection.json"
         dump_json(results, output_file)
         logger.info(f"Community detection saved to {output_file}")
         logger.info(f"Detected {results['num_communities']} communities (modularity: {mod:.3f})")
-        
+
         return results
     except Exception as e:
         logger.error(f"Failed to detect communities: {e}")
@@ -234,17 +234,17 @@ def detect_communities_analysis(network, output_dir: Path) -> dict[str, Any]:
 
 def run_workflow(args):
     """Execute network analysis workflow.
-    
+
     Args:
         args: Parsed command-line arguments
     """
     logger.info("Starting network analysis workflow")
     logger.info(f"Input: {args.input}")
     logger.info(f"Output: {args.output}")
-    
+
     if not args.input.exists():
         raise FileNotFoundError(f"Input file not found: {args.input}")
-    
+
     if args.dry_run:
         logger.info("DRY RUN - no changes will be made")
         logger.info(f"Would analyze: {args.input}")
@@ -256,31 +256,31 @@ def run_workflow(args):
         if args.detect_communities:
             logger.info("Would detect communities")
         return
-    
+
     # Ensure output directory exists
     output_dir = ensure_directory(args.output)
     logger.info(f"Output directory: {output_dir}")
-    
+
     # Load interactions
     try:
         interactions = load_interactions(args.input)
     except Exception as e:
         logger.error(f"Failed to load interactions: {e}")
         raise
-    
+
     if not interactions:
         logger.warning("No interactions loaded")
         return
-    
+
     # Construct network
     logger.info("Constructing network...")
-    from metainformant.networks import create_network, add_edges_from_interactions
-    
+    from metainformant.networks import add_edges_from_interactions, create_network
+
     network = create_network(directed=args.directed)
     add_edges_from_interactions(network, interactions)
-    
+
     logger.info(f"Network constructed: {network.num_nodes()} nodes, {network.num_edges()} edges")
-    
+
     # Run analyses
     workflow_results = {
         "input_file": str(args.input),
@@ -292,7 +292,7 @@ def run_workflow(args):
         },
         "analyses": {},
     }
-    
+
     # Metrics analysis (always run if no specific analysis requested, or if explicitly requested)
     if args.analyze_metrics or not any([args.analyze_centrality, args.detect_communities]):
         try:
@@ -301,7 +301,7 @@ def run_workflow(args):
         except Exception as e:
             logger.error(f"Metrics analysis failed: {e}", exc_info=True)
             workflow_results["analyses"]["metrics"] = {"error": str(e)}
-    
+
     # Centrality analysis
     if args.analyze_centrality:
         try:
@@ -310,7 +310,7 @@ def run_workflow(args):
         except Exception as e:
             logger.error(f"Centrality analysis failed: {e}", exc_info=True)
             workflow_results["analyses"]["centrality"] = {"error": str(e)}
-    
+
     # Community detection
     if args.detect_communities:
         try:
@@ -319,23 +319,23 @@ def run_workflow(args):
         except Exception as e:
             logger.error(f"Community detection failed: {e}", exc_info=True)
             workflow_results["analyses"]["communities"] = {"error": str(e)}
-    
+
     # Save workflow summary
     summary_file = output_dir / "workflow_summary.json"
     dump_json(workflow_results, summary_file, indent=2)
     logger.info(f"Workflow summary saved to {summary_file}")
-    
+
     logger.info("Workflow complete")
 
 
 def main():
     """Main entry point."""
     args = parse_args()
-    
+
     # Setup logging level
     if args.verbose:
         logger.setLevel(logging.DEBUG)
-    
+
     try:
         run_workflow(args)
         return 0
@@ -346,7 +346,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
-
-
-

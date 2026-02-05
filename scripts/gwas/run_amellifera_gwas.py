@@ -55,17 +55,41 @@ KNOWN_GENES = [
     {"chrom": "NC_037639.1", "start": 3000000, "end": 3050000, "name": "LOC406085", "desc": "odorant receptor 11"},
     {"chrom": "NC_037640.1", "start": 7500000, "end": 7520000, "name": "LOC413022", "desc": "yellow-y"},
     {"chrom": "NC_037641.1", "start": 2000000, "end": 2030000, "name": "LOC552100", "desc": "abaecin"},
-    {"chrom": "NC_037642.1", "start": 8000000, "end": 8100000, "name": "LOC410087", "desc": "major royal jelly protein 1"},
+    {
+        "chrom": "NC_037642.1",
+        "start": 8000000,
+        "end": 8100000,
+        "name": "LOC410087",
+        "desc": "major royal jelly protein 1",
+    },
     {"chrom": "NC_037643.1", "start": 4000000, "end": 4040000, "name": "LOC551964", "desc": "hymenoptaecin"},
     {"chrom": "NC_037644.1", "start": 6000000, "end": 6050000, "name": "LOC409523", "desc": "cytochrome P450 9Q3"},
     {"chrom": "NC_037645.1", "start": 3000000, "end": 3030000, "name": "LOC724367", "desc": "glucose oxidase"},
     {"chrom": "NC_037646.1", "start": 5000000, "end": 5050000, "name": "LOC724886", "desc": "prophenoloxidase"},
     {"chrom": "NC_037647.1", "start": 2500000, "end": 2550000, "name": "LOC725189", "desc": "lysozyme 1"},
     {"chrom": "NC_037648.1", "start": 8000000, "end": 8040000, "name": "LOC552678", "desc": "apidaecin"},
-    {"chrom": "NC_037649.1", "start": 4000000, "end": 4050000, "name": "LOC411059", "desc": "odorant binding protein 1"},
+    {
+        "chrom": "NC_037649.1",
+        "start": 4000000,
+        "end": 4050000,
+        "name": "LOC411059",
+        "desc": "odorant binding protein 1",
+    },
     {"chrom": "NC_037650.1", "start": 6000000, "end": 6030000, "name": "LOC725013", "desc": "transferrin"},
-    {"chrom": "NC_037651.1", "start": 3000000, "end": 3025000, "name": "LOC724239", "desc": "serine protease inhibitor"},
-    {"chrom": "NC_037652.1", "start": 5000000, "end": 5020000, "name": "LOC726601", "desc": "peptidoglycan recognition"},
+    {
+        "chrom": "NC_037651.1",
+        "start": 3000000,
+        "end": 3025000,
+        "name": "LOC724239",
+        "desc": "serine protease inhibitor",
+    },
+    {
+        "chrom": "NC_037652.1",
+        "start": 5000000,
+        "end": 5020000,
+        "name": "LOC726601",
+        "desc": "peptidoglycan recognition",
+    },
     {"chrom": "NC_037653.1", "start": 2000000, "end": 2015000, "name": "LOC551073", "desc": "toll-like receptor"},
 ]
 
@@ -288,7 +312,9 @@ def generate_real_vcf(
                         gene_variants.append(pos)
 
         # Random positions across the chromosome
-        random_positions = sorted(rng.sample(range(1000, chrom_info["size"] - 1000), min(n_chrom_variants, chrom_info["size"] // 1000)))
+        random_positions = sorted(
+            rng.sample(range(1000, chrom_info["size"] - 1000), min(n_chrom_variants, chrom_info["size"] // 1000))
+        )
 
         all_positions = sorted(set(gene_variants + random_positions))
 
@@ -323,14 +349,16 @@ def generate_real_vcf(
             # Quality score (real GATK-like distribution)
             qual = round(max(30, min(10000, rng.gauss(500, 200))), 1)
 
-            variants.append({
-                "chrom": chrom_acc,
-                "pos": pos,
-                "ref": ref,
-                "alt": alt,
-                "qual": qual,
-                "genotypes": genotypes,
-            })
+            variants.append(
+                {
+                    "chrom": chrom_acc,
+                    "pos": pos,
+                    "ref": ref,
+                    "alt": alt,
+                    "qual": qual,
+                    "genotypes": genotypes,
+                }
+            )
 
     # Sort by chromosome and position
     chrom_order = list(AMEL_CHROMOSOMES.keys())
@@ -643,11 +671,7 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
     plots_dir = output_dir / "plots"
     plots_dir.mkdir(parents=True, exist_ok=True)
 
-    from metainformant.gwas.visualization.general import manhattan_plot, qq_plot, kinship_heatmap
-    from metainformant.gwas.visualization.visualization_variants import (
-        variant_density_plot,
-        maf_distribution,
-    )
+    from metainformant.gwas.visualization.general import kinship_heatmap, manhattan_plot, qq_plot
     from metainformant.gwas.visualization.visualization_population import (
         pca_plot,
         pca_scree_plot,
@@ -655,6 +679,10 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
     from metainformant.gwas.visualization.visualization_statistical import (
         power_plot,
         volcano_plot,
+    )
+    from metainformant.gwas.visualization.visualization_variants import (
+        maf_distribution,
+        variant_density_plot,
     )
 
     plot_results = {}
@@ -739,10 +767,7 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
     # 5. Variant density plot (expects list of dicts with CHROM/POS)
     logger.info("Generating variant density plot...")
     try:
-        variant_dicts = [
-            {"CHROM": r.get("chrom", ""), "POS": r.get("pos", 0)}
-            for r in assoc_results
-        ]
+        variant_dicts = [{"CHROM": r.get("chrom", ""), "POS": r.get("pos", 0)} for r in assoc_results]
         result = variant_density_plot(
             variant_dicts,
             output_file=str(plots_dir / "variant_density.png"),
@@ -800,12 +825,12 @@ def main():
     """Run the complete Apis mellifera GWAS pipeline."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Apis mellifera GWAS Pipeline — real end-to-end analysis"
-    )
+    parser = argparse.ArgumentParser(description="Apis mellifera GWAS Pipeline — real end-to-end analysis")
     parser.add_argument("--config", type=str, help="YAML config file path")
     parser.add_argument("--n-variants", type=int, default=None, help="Override n_variants")
-    parser.add_argument("--scale-factor", type=int, default=None, help="Sample count multiplier (e.g. 2 = 160 diploid + 20 drones)")
+    parser.add_argument(
+        "--scale-factor", type=int, default=None, help="Sample count multiplier (e.g. 2 = 160 diploid + 20 drones)"
+    )
     parser.add_argument("--n-drones", type=int, default=None, help="Number of drone samples")
     parser.add_argument("--output", type=str, default=None, help="Output directory")
     parser.add_argument("--force", action="store_true", help="Force regeneration ignoring cache")
@@ -870,9 +895,7 @@ def main():
 
     # Step 3: Generate phenotypes
     print("\n[3/6] Generating phenotype data (varroa resistance + disease resistance)...")
-    pheno_path = generate_phenotypes(
-        output_base, vcf_path, seed=dg["seed"], force=force, subspecies=dg["subspecies"]
-    )
+    pheno_path = generate_phenotypes(output_base, vcf_path, seed=dg["seed"], force=force, subspecies=dg["subspecies"])
     print(f"  Phenotypes: {pheno_path}")
 
     # Step 4: Generate sample metadata
@@ -888,7 +911,12 @@ def main():
         multi_config = {
             "work_dir": str(output_base / "work"),
             "qc": {"min_maf": 0.01, "max_missing": 0.05, "hwe_pval": 1e-6, "min_qual": 30.0},
-            "structure": {"compute_pca": True, "n_components": 10, "compute_relatedness": True, "kinship_method": "vanraden"},
+            "structure": {
+                "compute_pca": True,
+                "n_components": 10,
+                "compute_relatedness": True,
+                "kinship_method": "vanraden",
+            },
             "ld_pruning": {"enabled": True, "window_size": 50, "step_size": 5, "r2_threshold": 0.2},
             "haplodiploidy": {"enabled": True, "het_threshold": 0.05, "exclude_haploid": True},
             "association": {"model": "mixed", "min_sample_size": 10, "relatedness_matrix": "auto"},
@@ -956,7 +984,9 @@ def main():
 
     ld_result = results_data.get("ld_pruning", {})
     if ld_result:
-        print(f"  LD pruning:          {ld_result.get('variants_before', 'N/A')} -> {ld_result.get('variants_after', 'N/A')}")
+        print(
+            f"  LD pruning:          {ld_result.get('variants_before', 'N/A')} -> {ld_result.get('variants_after', 'N/A')}"
+        )
 
     pca_result = results_data.get("pca", {})
     if pca_result and pca_result.get("status") == "success":
@@ -985,7 +1015,11 @@ def main():
                 elif k in ("pca", "kinship"):
                     # Summarize large matrices
                     if isinstance(v, dict):
-                        summary = {sk: sv for sk, sv in v.items() if sk not in ("kinship_matrix", "components", "pca_components")}
+                        summary = {
+                            sk: sv
+                            for sk, sv in v.items()
+                            if sk not in ("kinship_matrix", "components", "pca_components")
+                        }
                         serializable_results[key][k] = summary
                 else:
                     serializable_results[key][k] = v

@@ -7,10 +7,11 @@ and sample-specific patches.
 
 from __future__ import annotations
 
-import yaml
 from pathlib import Path
-from typing import Optional, Dict, List, Set
+from typing import Dict, List, Optional, Set
+
 import pandas as pd
+import yaml
 
 from metainformant.core import logging
 

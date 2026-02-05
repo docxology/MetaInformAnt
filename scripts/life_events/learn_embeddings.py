@@ -92,21 +92,21 @@ def parse_args():
 def main():
     """Main function."""
     args = parse_args()
-    
+
     if args.verbose:
         logger.setLevel("DEBUG")
-    
+
     if not args.input.exists():
         logger.error(f"Input file not found: {args.input}")
         return 1
-    
+
     logger.info(f"Loading sequences from {args.input}")
     sequences = load_sequences_from_json(args.input)
     logger.info(f"✅ Loaded {len(sequences)} sequences")
-    
+
     # Convert to tokens
     sequences_tokens = convert_sequences_to_tokens(sequences)
-    
+
     logger.info("Learning event embeddings...")
     embeddings = learn_event_embeddings(
         sequences_tokens,
@@ -118,18 +118,17 @@ def main():
         random_state=args.random_state,
         verbose=args.verbose,
     )
-    
+
     # Save embeddings
     paths.ensure_directory(args.output.parent)
     embeddings_dict = {k: v.tolist() for k, v in embeddings.items()}
     io.dump_json(embeddings_dict, args.output, indent=2)
-    
+
     logger.info(f"✅ Learned embeddings for {len(embeddings)} events")
     logger.info(f"✅ Saved embeddings to {args.output}")
-    
+
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

@@ -6,9 +6,7 @@ profiling from whole-genome shotgun sequencing data.
 
 from __future__ import annotations
 
-from . import assembly
-from . import binning
-from . import profiling
+from . import assembly, binning, profiling
 
 __all__ = [
     "assembly",

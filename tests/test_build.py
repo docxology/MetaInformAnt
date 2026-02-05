@@ -5,13 +5,14 @@ Tests for validating build artifacts, package installation,
 and build process integrity.
 """
 
-import pytest
-import subprocess
-import tempfile
-import shutil
-from pathlib import Path
-import sys
 import os
+import shutil
+import subprocess
+import sys
+import tempfile
+from pathlib import Path
+
+import pytest
 
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -32,7 +33,7 @@ class TestBuildArtifacts:
     def test_core_modules_importable(self):
         """Test that core modules can be imported."""
         try:
-            from metainformant.core import io, paths, logging, config
+            from metainformant.core import config, io, logging, paths
 
             assert True  # Import successful
         except ImportError as e:

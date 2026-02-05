@@ -8,9 +8,9 @@ Fixes common violations:
 3. Reserved keywords as node IDs
 """
 
-import re
-import os
 import glob
+import os
+import re
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -18,23 +18,23 @@ from typing import Dict, List, Tuple
 def camel_case(text: str) -> str:
     """Convert text to camelCase, removing spaces and underscores."""
     # Split on spaces, underscores, and other separators
-    words = re.split(r'[_\s]+', text.strip())
+    words = re.split(r"[_\s]+", text.strip())
     # Convert first word to lowercase, others to title case
     if not words:
         return ""
-    return words[0].lower() + ''.join(word.capitalize() for word in words[1:])
+    return words[0].lower() + "".join(word.capitalize() for word in words[1:])
 
 
 def fix_node_id(node_id: str) -> str:
     """Fix a mermaid node ID to follow camelCase convention."""
     # Remove brackets if present
-    node_id = node_id.strip('[]')
+    node_id = node_id.strip("[]")
     return camel_case(node_id)
 
 
 def fix_mermaid_content(content: str) -> str:
     """Fix mermaid diagram content by correcting node definitions."""
-    lines = content.split('\n')
+    lines = content.split("\n")
     fixed_lines = []
 
     for line in lines:
@@ -43,7 +43,7 @@ def fix_mermaid_content(content: str) -> str:
         # 2. NODE_ID[label_with_underscores] (underscores in labels are okay, but fix node IDs)
 
         # Pattern 1: [Label with spaces] - these are invalid node definitions
-        bracket_only_pattern = r'\[([^\]]*[ _][^\]]*)\]'
+        bracket_only_pattern = r"\[([^\]]*[ _][^\]]*)\]"
         bracket_matches = list(re.finditer(bracket_only_pattern, line))
 
         if bracket_matches:
@@ -59,14 +59,14 @@ def fix_mermaid_content(content: str) -> str:
                 start_pos = match.start() + offset
                 end_pos = match.end() + offset
 
-                replacement = f'{node_id}[{label}]'
+                replacement = f"{node_id}[{label}]"
                 new_line = new_line[:start_pos] + replacement + new_line[end_pos:]
                 offset += len(replacement) - (end_pos - start_pos)
 
             fixed_lines.append(new_line)
         else:
             # Pattern 2: Check for NODE_ID[label] where NODE_ID has issues
-            node_pattern = r'(\w+)\[([^\]]+)\]'
+            node_pattern = r"(\w+)\[([^\]]+)\]"
             matches = re.finditer(node_pattern, line)
 
             if matches:
@@ -78,8 +78,7 @@ def fix_mermaid_content(content: str) -> str:
                     label = match.group(2)
 
                     # Check if node_id has violations
-                    if (' ' in node_id or '_' in node_id or
-                        node_id in ['end', 'subgraph', 'graph', 'flowchart']):
+                    if " " in node_id or "_" in node_id or node_id in ["end", "subgraph", "graph", "flowchart"]:
                         new_node_id = fix_node_id(label)
 
                         start_pos = match.start(1) + offset
@@ -92,16 +91,16 @@ def fix_mermaid_content(content: str) -> str:
             else:
                 fixed_lines.append(line)
 
-    return '\n'.join(fixed_lines)
+    return "\n".join(fixed_lines)
 
 
 def process_file(filepath: Path) -> Tuple[int, List[str]]:
     """Process a single file, fixing mermaid violations."""
-    with open(filepath, 'r', encoding='utf-8') as f:
+    with open(filepath, "r", encoding="utf-8") as f:
         content = f.read()
 
     # Find all mermaid code blocks
-    mermaid_blocks = re.findall(r'```mermaid\n(.*?)\n```', content, re.DOTALL)
+    mermaid_blocks = re.findall(r"```mermaid\n(.*?)\n```", content, re.DOTALL)
 
     if not mermaid_blocks:
         return 0, []
@@ -113,12 +112,11 @@ def process_file(filepath: Path) -> Tuple[int, List[str]]:
         fixed_block = fix_mermaid_content(block)
         if fixed_block != block:
             # Replace the block in the content
-            new_content = new_content.replace(f'```mermaid\n{block}\n```',
-                                            f'```mermaid\n{fixed_block}\n```')
+            new_content = new_content.replace(f"```mermaid\n{block}\n```", f"```mermaid\n{fixed_block}\n```")
             changes_made.append(f"Fixed mermaid block in {filepath}")
 
     if changes_made:
-        with open(filepath, 'w', encoding='utf-8') as f:
+        with open(filepath, "w", encoding="utf-8") as f:
             f.write(new_content)
 
     return len(changes_made), changes_made

@@ -1,7 +1,7 @@
 """Tests for DNA mutation functions."""
 
-from metainformant.dna.variation import mutations
 from metainformant.dna.alignment import distances
+from metainformant.dna.variation import mutations
 
 
 def test_generate_point_mutations() -> None:

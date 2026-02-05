@@ -8,10 +8,10 @@ import numpy as np
 import pytest
 
 from metainformant.gwas.visualization.visualization_comparison import (
+    concordance_plot,
+    cross_cohort_forest,
     miami_plot,
     multi_trait_manhattan,
-    cross_cohort_forest,
-    concordance_plot,
 )
 
 

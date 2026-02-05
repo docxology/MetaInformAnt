@@ -211,7 +211,7 @@ def proteome_statistics(fasta_path: Union[str, Path]) -> Dict[str, Any]:
         Dictionary with proteome statistics
     """
     try:
-        from metainformant.protein.sequence.sequences import read_fasta, molecular_weight
+        from metainformant.protein.sequence.sequences import molecular_weight, read_fasta
 
         sequences = read_fasta(fasta_path)
 

@@ -31,85 +31,85 @@ def normalize_anchor(text: str) -> str:
     """Convert heading text to markdown anchor format."""
     # Markdown anchors: lowercase, spaces to hyphens, remove special chars
     text = text.lower()
-    text = re.sub(r'[^\w\s-]', '', text)
-    text = re.sub(r'[\s]+', '-', text)
-    return text.strip('-')
+    text = re.sub(r"[^\w\s-]", "", text)
+    text = re.sub(r"[\s]+", "-", text)
+    return text.strip("-")
 
 
 def check_fragment_exists(doc_file: Path, fragment: str) -> bool:
     """Check if a fragment anchor exists in a markdown file."""
     if not doc_file.exists():
         return False
-    
+
     content = doc_file.read_text()
-    
+
     # Find all headings
-    headings = re.findall(r'^##+ (.+)$', content, re.MULTILINE)
-    
+    headings = re.findall(r"^##+ (.+)$", content, re.MULTILINE)
+
     # Check if any heading matches the fragment (normalized)
     normalized_fragment = normalize_anchor(fragment)
     for heading in headings:
         if normalize_anchor(heading) == normalized_fragment:
             return True
-    
+
     return False
 
 
 def check_code_example_syntax(code: str, file_path: Path, line_num: int) -> list[str]:
     """Check if a code example is syntactically valid."""
     issues_found = []
-    
+
     # Skip function signatures (single line with def/class)
-    lines = code.strip().split('\n')
-    if len(lines) == 1 and (code.strip().startswith('def ') or code.strip().startswith('class ')):
+    lines = code.strip().split("\n")
+    if len(lines) == 1 and (code.strip().startswith("def ") or code.strip().startswith("class ")):
         return []  # Function/class signature, not executable
-    
+
     # Skip type hints only
-    if code.strip().startswith('->') or ':' in code and 'def' not in code and 'class' not in code:
+    if code.strip().startswith("->") or ":" in code and "def" not in code and "class" not in code:
         # Might be a type annotation, check if it's valid
         try:
             ast.parse(f"def dummy{code}")
             return []
         except:
             pass
-    
+
     try:
         ast.parse(code, filename=str(file_path))
     except SyntaxError as e:
         # Check if it's a meaningful error (not just incomplete example)
-        if 'expected' in str(e).lower() or 'invalid' in str(e).lower():
+        if "expected" in str(e).lower() or "invalid" in str(e).lower():
             issues_found.append(f"{file_path}:{line_num}: Syntax error: {e.msg}")
-    
+
     return issues_found
 
 
 def check_doc_links(doc_file: Path) -> list[str]:
     """Check internal markdown links in documentation."""
     issues_found = []
-    
+
     if not doc_file.exists():
         return [f"Documentation file missing: {doc_file}"]
-    
+
     content = doc_file.read_text()
     doc_dir = doc_file.parent
-    
+
     # Find markdown links [text](path)
-    link_pattern = re.compile(r'\[([^\]]+)\]\(([^)]+)\)')
-    
+    link_pattern = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
+
     for match in link_pattern.finditer(content):
         link_text, link_path = match.groups()
-        
+
         # Skip external links
         if link_path.startswith("http"):
             continue
-        
+
         # Handle fragment links
-        if '#' in link_path:
-            file_part, fragment = link_path.split('#', 1)
+        if "#" in link_path:
+            file_part, fragment = link_path.split("#", 1)
         else:
             file_part = link_path
             fragment = None
-        
+
         # Resolve file path
         if file_part.startswith("/"):
             target_file = REPO_ROOT / file_part.lstrip("/")
@@ -120,43 +120,43 @@ def check_doc_links(doc_file: Path) -> list[str]:
         else:
             # Relative path in same directory
             target_file = doc_dir / file_part
-        
+
         # Normalize path (resolve symlinks, etc.)
         try:
             target_file = target_file.resolve()
         except (OSError, RuntimeError):
             pass  # If resolve fails, use original path
-        
+
         # Check if file exists
         if not target_file.exists():
             issues_found.append(f"{doc_file}: Broken link to {link_path} ({link_text}) - resolved to {target_file}")
             continue
-        
+
         # Check fragment exists
         if fragment:
             if not check_fragment_exists(target_file, fragment):
                 # Try without the fragment - maybe it's just a navigation link
                 # Only warn if it's clearly a section reference
-                if any(word in fragment.lower() for word in ['section', 'heading', 'anchor']):
+                if any(word in fragment.lower() for word in ["section", "heading", "anchor"]):
                     warnings.append(f"{doc_file}: Fragment '{fragment}' may not exist in {target_file.name}")
-    
+
     return issues_found
 
 
 def check_doc_examples(file_path: Path) -> list[str]:
     """Check code examples in documentation files."""
     issues_found = []
-    
+
     if not file_path.exists():
         return [f"Documentation file missing: {file_path}"]
-    
+
     content = file_path.read_text()
-    
+
     # Find code blocks
     in_code_block = False
     code_lines = []
     code_start_line = 0
-    
+
     for i, line in enumerate(content.split("\n"), 1):
         if line.strip().startswith("```python"):
             in_code_block = True
@@ -173,7 +173,7 @@ def check_doc_examples(file_path: Path) -> list[str]:
             code_lines = []
         elif in_code_block:
             code_lines.append(line)
-    
+
     return issues_found
 
 
@@ -237,18 +237,18 @@ def extract_signature_from_docstring(docstring: str) -> dict[str, Any]:
     returns = None
 
     # Look for Args: section
-    args_match = re.search(r'Args?:[\s\n]+(.*?)(?=\n\n|\n[A-Z]|\Z)', docstring, re.DOTALL)
+    args_match = re.search(r"Args?:[\s\n]+(.*?)(?=\n\n|\n[A-Z]|\Z)", docstring, re.DOTALL)
     if args_match:
         args_text = args_match.group(1)
-        for line in args_text.split('\n'):
+        for line in args_text.split("\n"):
             line = line.strip()
-            if ':' in line:
-                param_name = line.split(':')[0].strip()
-                param_desc = line.split(':', 1)[1].strip()
+            if ":" in line:
+                param_name = line.split(":")[0].strip()
+                param_desc = line.split(":", 1)[1].strip()
                 params[param_name] = param_desc
 
     # Look for Returns: section
-    returns_match = re.search(r'Returns?:[\s\n]+(.*?)(?=\n\n|\n[A-Z]|\Z)', docstring, re.DOTALL)
+    returns_match = re.search(r"Returns?:[\s\n]+(.*?)(?=\n\n|\n[A-Z]|\Z)", docstring, re.DOTALL)
     if returns_match:
         returns = returns_match.group(1).strip()
 
@@ -264,12 +264,14 @@ def check_method_signature_match(func, docstring: str) -> list[str]:
         doc_params = extract_signature_from_docstring(docstring)
 
         # Skip checking for builtin/standard library methods
-        if func.__module__ and ('builtin' in func.__module__ or 'posixpath' in func.__module__ or 'pathlib' in func.__module__):
+        if func.__module__ and (
+            "builtin" in func.__module__ or "posixpath" in func.__module__ or "pathlib" in func.__module__
+        ):
             return issues_found
 
         # Check parameters
         for param_name, param in sig.parameters.items():
-            if param_name == 'self':
+            if param_name == "self":
                 continue
             # Skip **kwargs - these are intentionally flexible
             if param.kind == inspect.Parameter.VAR_KEYWORD:
@@ -286,7 +288,7 @@ def check_method_signature_match(func, docstring: str) -> list[str]:
         # Check documented parameters exist (only if we have a structured docstring)
         if doc_params.get("params"):
             for doc_param in doc_params.get("params", {}):
-                if doc_param not in sig.parameters and doc_param not in ['kwargs', '**kwargs']:
+                if doc_param not in sig.parameters and doc_param not in ["kwargs", "**kwargs"]:
                     # Might be a typo or alternative name
                     pass
 
@@ -302,20 +304,20 @@ def check_code_example_executable(code: str, context: dict[str, Any] = None) -> 
         context = {}
 
     # Skip function signatures
-    if code.strip().startswith('def ') and ':' in code and code.count('\n') <= 2:
+    if code.strip().startswith("def ") and ":" in code and code.count("\n") <= 2:
         return True, None
 
     # Skip type hints only
-    if '->' in code and 'def' not in code and 'class' not in code:
+    if "->" in code and "def" not in code and "class" not in code:
         return True, None
 
     try:
         # Try to compile
-        compile(code, '<example>', 'exec')
+        compile(code, "<example>", "exec")
         return True, None
     except SyntaxError as e:
         # Check if it's a meaningful error
-        if 'expected' in str(e).lower() or 'invalid' in str(e).lower():
+        if "expected" in str(e).lower() or "invalid" in str(e).lower():
             return False, f"Syntax error: {e.msg} at line {e.lineno}"
         return True, None
     except Exception as e:
@@ -331,7 +333,7 @@ def find_all_links(doc_file: Path) -> list[tuple[str, str]]:
     links = []
 
     # Find markdown links [text](path)
-    link_pattern = re.compile(r'\[([^\]]+)\]\(([^)]+)\)')
+    link_pattern = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 
     for match in link_pattern.finditer(content):
         link_text, link_path = match.groups()
@@ -349,13 +351,13 @@ def resolve_link_path(base_file: Path, link_path: str) -> Path:
         return None
 
     # Handle fragment links
-    if '#' in link_path:
-        file_part = link_path.split('#')[0]
+    if "#" in link_path:
+        file_part = link_path.split("#")[0]
     else:
         file_part = link_path
 
     # Resolve relative paths
-    if file_part.startswith('/'):
+    if file_part.startswith("/"):
         return Path(file_part[1:])  # Remove leading /
     else:
         return (base_dir / file_part).resolve()
@@ -367,11 +369,11 @@ def main():
     print("RNA DOCUMENTATION AND CODE COMPREHENSIVE VERIFICATION")
     print("=" * 80)
     print()
-    
+
     # Phase 1: Method Documentation
     print("Phase 1: Method Documentation Verification")
     print("-" * 80)
-    
+
     # Check key modules
     key_modules = [
         ("metainformant.rna.amalgkit", SRC_DIR / "amalgkit.py"),
@@ -380,7 +382,7 @@ def main():
         ("metainformant.rna.monitoring", SRC_DIR / "monitoring.py"),
         ("metainformant.rna.environment", SRC_DIR / "environment.py"),
     ]
-    
+
     for module_name, module_path in key_modules:
         if module_path.exists():
             try:
@@ -388,7 +390,7 @@ def main():
                 if spec and spec.loader:
                     module = importlib.util.module_from_spec(spec)
                     spec.loader.exec_module(module)
-                    
+
                     # Check public members have docstrings
                     missing_docs = []
                     for name, obj in inspect.getmembers(module):
@@ -397,7 +399,7 @@ def main():
                         if inspect.isfunction(obj) or inspect.isclass(obj):
                             if not obj.__doc__ or len(obj.__doc__.strip()) < 10:
                                 missing_docs.append(name)
-                    
+
                     if missing_docs:
                         issues.extend([f"{module_name}.{name}: Missing/incomplete docstring" for name in missing_docs])
                         print(f"  ❌ {module_name}: {len(missing_docs)} undocumented items")
@@ -406,13 +408,13 @@ def main():
             except Exception as e:
                 warnings.append(f"{module_name}: Could not check - {e}")
                 print(f"  ⚠️  {module_name}: Check failed")
-    
+
     print()
-    
+
     # Phase 2: Documentation Accuracy
     print("Phase 2: Documentation Accuracy")
     print("-" * 80)
-    
+
     key_docs = [
         DOCS_DIR / "README.md",
         DOCS_DIR / "WORKFLOW.md",
@@ -422,14 +424,14 @@ def main():
         DOCS_DIR / "ORCHESTRATION" / "MULTI_SPECIES.md",
         DOCS_DIR / "ORCHESTRATION" / "BATCH_DOWNLOAD.md",
     ]
-    
+
     for doc_file in key_docs:
         if doc_file.exists():
             example_issues = check_doc_examples(doc_file)
             link_issues = check_doc_links(doc_file)
             issues.extend(example_issues)
             issues.extend(link_issues)
-            
+
             total = len(example_issues) + len(link_issues)
             if total == 0:
                 print(f"  ✅ {doc_file.name}: Valid")
@@ -438,9 +440,9 @@ def main():
         else:
             warnings.append(f"Missing: {doc_file}")
             print(f"  ❌ {doc_file.name}: Missing")
-    
+
     print()
-    
+
     # Phase 3: Script Verification
     print("Phase 3: Script Verification")
     print("-" * 80)
@@ -467,17 +469,17 @@ def main():
             print(f"  ❌ {script.name}: Missing")
 
     print()
-    
+
     # Phase 4: Import Verification
     print("Phase 4: Import Verification")
     print("-" * 80)
-    
+
     try:
         from metainformant.rna import __all__ as rna_all
-        
+
         importable = 0
         failed = 0
-        
+
         for export_name in rna_all:
             try:
                 exec(f"from metainformant.rna import {export_name}")
@@ -485,37 +487,37 @@ def main():
             except Exception as e:
                 issues.append(f"Cannot import {export_name}: {e}")
                 failed += 1
-        
+
         print(f"  ✅ {importable}/{len(rna_all)} exports importable")
         if failed > 0:
             print(f"  ❌ {failed} imports failed")
     except Exception as e:
         issues.append(f"Cannot check exports: {e}")
         print(f"  ❌ Cannot check: {e}")
-    
+
     print()
-    
+
     # Summary
     print("=" * 80)
     print("VERIFICATION SUMMARY")
     print("=" * 80)
     print(f"Issues: {len(issues)}")
     print(f"Warnings: {len(warnings)}")
-    
+
     if issues:
         print("\nIssues to fix:")
         for issue in issues[:20]:
             print(f"  - {issue}")
         if len(issues) > 20:
             print(f"  ... and {len(issues) - 20} more")
-    
+
     if warnings:
         print("\nWarnings:")
         for warning in warnings[:10]:
             print(f"  - {warning}")
         if len(warnings) > 10:
             print(f"  ... and {len(warnings) - 10} more")
-    
+
     if not issues:
         print("\n✅ All critical verifications passed!")
         return 0
@@ -526,4 +528,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-

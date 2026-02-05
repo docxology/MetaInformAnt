@@ -8,6 +8,16 @@ from __future__ import annotations
 
 from . import autocorrelation, clustering, deconvolution, neighborhood
 
+# Autocorrelation
+from .autocorrelation import (
+    gearys_c,
+    getis_ord_g,
+    local_morans_i,
+    morans_i,
+    spatial_variogram,
+    spatial_weights_matrix,
+)
+
 # Clustering
 from .clustering import (
     build_spatial_graph,
@@ -33,16 +43,6 @@ from .neighborhood import (
     neighborhood_enrichment,
     niche_detection,
     ripley_k,
-)
-
-# Autocorrelation
-from .autocorrelation import (
-    gearys_c,
-    getis_ord_g,
-    local_morans_i,
-    morans_i,
-    spatial_variogram,
-    spatial_weights_matrix,
 )
 
 __all__ = [

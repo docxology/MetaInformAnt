@@ -157,8 +157,8 @@ def hybrid_assemble(
     logger.info("Corrected %d long reads", len(corrected_seqs))
 
     # Step 3: Find overlaps between corrected reads
-    from .overlap import find_overlaps, filter_contained_reads
     from .consensus import generate_consensus
+    from .overlap import filter_contained_reads, find_overlaps
 
     if len(corrected_seqs) >= 2:
         overlaps = find_overlaps(corrected_seqs, min_overlap=min_overlap)

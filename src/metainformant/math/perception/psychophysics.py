@@ -7,8 +7,9 @@ intensity to perceived sensation.
 from __future__ import annotations
 
 import math
-import numpy as np
 from typing import Sequence, Union
+
+import numpy as np
 
 
 def weber_contrast(intensity: float, background: float) -> float:

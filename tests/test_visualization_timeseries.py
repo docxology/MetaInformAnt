@@ -3,15 +3,16 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
 
 from metainformant.visualization.analysis.timeseries import (
-    plot_time_series,
     plot_autocorrelation,
-    plot_seasonal_decomposition,
     plot_forecast,
+    plot_seasonal_decomposition,
+    plot_time_series,
     plot_trend_analysis,
 )
 

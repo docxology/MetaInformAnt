@@ -6,8 +6,9 @@ and event sequences using various embedding techniques.
 
 from __future__ import annotations
 
-import numpy as np
 from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
 
 from metainformant.core import logging
 

@@ -247,8 +247,8 @@ def calculate_sequence_complexity(seq: str) -> float:
     if not seq:
         return 0.0
 
-    from collections import Counter
     import math
+    from collections import Counter
 
     # Count nucleotide frequencies
     counts = Counter(seq.upper())
@@ -364,8 +364,8 @@ def calculate_sequence_entropy(seq: str, k: int = 1) -> float:
     if len(seq) < k:
         return 0.0
 
-    from collections import Counter
     import math
+    from collections import Counter
 
     # Count k-mers
     kmers = [seq[i : i + k] for i in range(len(seq) - k + 1)]

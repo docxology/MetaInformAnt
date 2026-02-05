@@ -22,7 +22,6 @@ from metainformant.rna.engine.sra_extraction import (
 )
 from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------

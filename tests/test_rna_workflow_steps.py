@@ -23,7 +23,6 @@ from metainformant.rna.engine.workflow_steps import (
     validate_step_prerequisites,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------

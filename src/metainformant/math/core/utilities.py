@@ -5,8 +5,8 @@ This module provides general mathematical utility functions for statistical anal
 
 from __future__ import annotations
 
-from typing import List, Sequence, Union
 import math
+from typing import List, Sequence, Union
 
 import numpy as np
 

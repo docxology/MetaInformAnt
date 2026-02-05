@@ -5,8 +5,8 @@ This module provides functions for Price equation analysis and quantitative gene
 
 from __future__ import annotations
 
-from typing import Dict, Any, List, Tuple
 import statistics
+from typing import Any, Dict, List, Tuple
 
 from metainformant.core import logging
 

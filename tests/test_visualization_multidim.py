@@ -9,10 +9,10 @@ import pandas as pd
 import pytest
 
 from metainformant.visualization.plots.multidim import (
+    plot_3d_scatter,
     plot_pairwise_relationships,
     plot_parallel_coordinates,
     plot_radar_chart,
-    plot_3d_scatter,
 )
 
 # Check for optional dependencies

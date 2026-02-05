@@ -476,8 +476,8 @@ def get_sample_progress_report(config_path: Path) -> Dict[str, Any]:
     Raises:
         No exceptions raised; errors are captured in return dict.
     """
-    from metainformant.rna.engine.workflow import load_workflow_config
     from metainformant.rna.analysis.validation import validate_all_samples
+    from metainformant.rna.engine.workflow import load_workflow_config
 
     try:
         config = load_workflow_config(config_path)

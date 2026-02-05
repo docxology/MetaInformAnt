@@ -14,6 +14,7 @@ Tests use real network requests and real tools (no mocks per project policy).
 import subprocess
 import sys
 from pathlib import Path
+
 import pytest
 
 # Add src to path

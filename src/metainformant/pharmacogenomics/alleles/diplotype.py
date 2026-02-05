@@ -15,7 +15,7 @@ from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
-from .star_allele import StarAllele, load_allele_definitions, call_star_alleles
+from .star_allele import StarAllele, call_star_alleles, load_allele_definitions
 
 logger = get_logger(__name__)
 

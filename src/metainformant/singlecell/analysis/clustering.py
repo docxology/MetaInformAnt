@@ -8,19 +8,20 @@ marker gene identification.
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Any, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
+
 import numpy as np
 import pandas as pd
 from scipy import sparse
-from scipy.cluster.hierarchy import linkage, fcluster
+from scipy.cluster.hierarchy import fcluster, linkage
 from scipy.spatial.distance import pdist
 
-from metainformant.core import logging, errors, validation
+from metainformant.core import errors, logging, validation
 
 # Optional scientific dependencies
 try:
     from sklearn.cluster import KMeans
-    from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
+    from sklearn.metrics import calinski_harabasz_score, davies_bouldin_score, silhouette_score
 
     HAS_SKLEARN = True
 except ImportError:
@@ -702,7 +703,7 @@ def evaluate_clustering_performance(
 
     # Supervised metrics if ground truth available
     if ground_truth_col and ground_truth_col in data.obs.columns:
-        from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score, homogeneity_score
+        from sklearn.metrics import adjusted_rand_score, homogeneity_score, normalized_mutual_info_score
 
         true_labels = data.obs[ground_truth_col].values
 

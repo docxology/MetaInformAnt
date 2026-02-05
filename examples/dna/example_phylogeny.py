@@ -13,8 +13,10 @@ Output:
 from __future__ import annotations
 
 from pathlib import Path
+
 from metainformant.core import io
 from metainformant.dna import phylogeny
+
 
 def main():
     """Demonstrate DNA phylogenetic analysis."""
@@ -40,7 +42,7 @@ def main():
         "species_d": "GTCGATCGATCGATCGATCG",  # One mutation at start
         "species_e": "ATCGATCGATCGATCGATCG",  # Identical to ancestral
         "species_f": "ATCGATCGATCGATCGAAAA",  # Multiple mutations at end
-        "outgroup":  "GCTAGCTAGCTAGCTAGCTA"   # Very different (outgroup)
+        "outgroup": "GCTAGCTAGCTAGCTAGCTA",  # Very different (outgroup)
     }
 
     print(f"✓ Created {len(sequences)} sequences for phylogenetic analysis")
@@ -92,10 +94,7 @@ def main():
             kmer_newick = phylogeny.to_newick(kmer_tree)
             kmer_stats = phylogeny.basic_tree_stats(kmer_tree)
 
-            kmer_trees[f"k{k}"] = {
-                "newick": kmer_newick,
-                "stats": kmer_stats
-            }
+            kmer_trees[f"k{k}"] = {"newick": kmer_newick, "stats": kmer_stats}
 
             print(f"✓ K-mer tree (k={k}) constructed: {kmer_stats}")
 
@@ -135,9 +134,7 @@ def main():
     # Note: Bootstrap analysis with small dataset may not be meaningful
     # but demonstrates the API
     try:
-        bootstrap_tree = phylogeny.bootstrap_support(
-            nj_tree, sequences, n_replicates=10, method="nj"
-        )
+        bootstrap_tree = phylogeny.bootstrap_support(nj_tree, sequences, n_replicates=10, method="nj")
         bootstrap_newick = phylogeny.to_newick(bootstrap_tree)
 
         bootstrap_file = output_dir / "bootstrap_tree.newick"
@@ -158,13 +155,13 @@ def main():
         "neighbor_joining": {
             "newick_length": len(nj_newick),
             "stats": nj_stats,
-            "topology_summary": "Distance-based method assuming molecular clock"
+            "topology_summary": "Distance-based method assuming molecular clock",
         },
         "upgma": {
             "newick_length": len(upgma_newick),
             "stats": upgma_stats,
-            "topology_summary": "Assumes constant molecular clock rate"
-        }
+            "topology_summary": "Assumes constant molecular clock rate",
+        },
     }
 
     # Compare Newick strings to see topological differences
@@ -183,7 +180,7 @@ def main():
 
     seq_ids = list(sequences.keys())
     for i, id1 in enumerate(seq_ids):
-        for id2 in seq_ids[i+1:]:
+        for id2 in seq_ids[i + 1 :]:
             seq1 = sequences[id1]
             seq2 = sequences[id2]
 
@@ -194,7 +191,7 @@ def main():
             sequence_distances[f"{id1}_vs_{id2}"] = {
                 "distance": distance,
                 "normalized_distance": normalized_distance,
-                "similarity": 1 - normalized_distance
+                "similarity": 1 - normalized_distance,
             }
 
     # Find most similar and dissimilar pairs
@@ -205,14 +202,14 @@ def main():
         "most_similar_pair": {
             "pair": most_similar[0],
             "distance": most_similar[1]["distance"],
-            "similarity": most_similar[1]["similarity"]
+            "similarity": most_similar[1]["similarity"],
         },
         "most_dissimilar_pair": {
             "pair": most_dissimilar[0],
             "distance": most_dissimilar[1]["distance"],
-            "similarity": most_dissimilar[1]["similarity"]
+            "similarity": most_dissimilar[1]["similarity"],
         },
-        "all_distances": sequence_distances
+        "all_distances": sequence_distances,
     }
 
     print(f"  Most similar: {most_similar[0]} (distance: {most_similar[1]['distance']})")
@@ -229,64 +226,65 @@ def main():
                 "neighbor_joining": {
                     "description": "Distance-based method that doesn't assume molecular clock",
                     "algorithm": "Saitou and Nei (1987)",
-                    "use_case": "General phylogenetic reconstruction"
+                    "use_case": "General phylogenetic reconstruction",
                 },
                 "upgma": {
                     "description": "Assumes constant rate of evolution (molecular clock)",
                     "algorithm": "Sokal and Michener (1958)",
-                    "use_case": "When evolutionary rates are expected to be constant"
+                    "use_case": "When evolutionary rates are expected to be constant",
                 },
                 "kmer_based": {
                     "description": "Uses k-mer frequencies for distance calculation",
                     "algorithm": "Neighbor-joining with k-mer distances",
-                    "use_case": "Large datasets where full alignment is expensive"
-                }
+                    "use_case": "Large datasets where full alignment is expensive",
+                },
             },
             "results": {
                 "neighbor_joining": {
                     "newick_string": nj_newick,
                     "statistics": nj_stats,
-                    "ascii_visualization": nj_ascii
+                    "ascii_visualization": nj_ascii,
                 },
-                "upgma": {
-                    "newick_string": upgma_newick,
-                    "statistics": upgma_stats,
-                    "ascii_visualization": upgma_ascii
-                },
+                "upgma": {"newick_string": upgma_newick, "statistics": upgma_stats, "ascii_visualization": upgma_ascii},
                 "kmer_trees": kmer_trees,
                 "bootstrap_analysis": {
                     "performed": bootstrap_newick is not None,
                     "replicates": 10 if bootstrap_newick else 0,
-                    "newick_string": bootstrap_newick
+                    "newick_string": bootstrap_newick,
                 },
                 "tree_comparison": tree_comparison,
-                "sequence_relationships": relationship_analysis
+                "sequence_relationships": relationship_analysis,
             },
             "summary_metrics": {
                 "sequences_analyzed": len(sequences),
                 "tree_methods_tested": 3,  # NJ, UPGMA, k-mer
                 "k_values_tested": len(k_values),
                 "bootstrap_replicates": 10,
-                "output_files_generated": [
-                    "neighbor_joining_tree.newick",
-                    "upgma_tree.newick",
-                    "bootstrap_tree.newick"
-                ] + [f"kmer_tree_k{k}.newick" for k in k_values if f"k{k}" in kmer_trees and "error" not in kmer_trees[f"k{k}"]],
+                "output_files_generated": ["neighbor_joining_tree.newick", "upgma_tree.newick", "bootstrap_tree.newick"]
+                + [
+                    f"kmer_tree_k{k}.newick"
+                    for k in k_values
+                    if f"k{k}" in kmer_trees and "error" not in kmer_trees[f"k{k}"]
+                ],
                 "most_similar_sequences": most_similar[0],
-                "most_dissimilar_sequences": most_dissimilar[0]
+                "most_dissimilar_sequences": most_dissimilar[0],
             },
             "functions_demonstrated": [
-                "neighbor_joining_tree", "upgma_tree", "to_newick",
-                "to_ascii", "basic_tree_stats", "bootstrap_support",
-                "nj_tree_from_kmer"
+                "neighbor_joining_tree",
+                "upgma_tree",
+                "to_newick",
+                "to_ascii",
+                "basic_tree_stats",
+                "bootstrap_support",
+                "nj_tree_from_kmer",
             ],
             "key_insights": [
                 "Different tree construction methods can yield different topologies",
                 "Neighbor-joining is more flexible than UPGMA for varying evolutionary rates",
                 "K-mer based methods scale better for large sequence datasets",
                 "Bootstrap support helps assess tree reliability",
-                "Sequence similarity analysis complements tree reconstruction"
-            ]
+                "Sequence similarity analysis complements tree reconstruction",
+            ],
         }
     }
 
@@ -304,6 +302,7 @@ def main():
     print("- Tree topology comparison and sequence relationship analysis")
 
     print(f"\nAll outputs saved to: {output_dir}")
+
 
 if __name__ == "__main__":
     main()

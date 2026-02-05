@@ -7,14 +7,17 @@ including enrichment analysis, semantic similarity calculations, and GO-specific
 from __future__ import annotations
 
 import math
-from pathlib import Path
-from typing import Dict, List, Optional, Set, Any, Tuple
 from collections import defaultdict
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Set, Tuple
+
 import pandas as pd
-from metainformant.core import logging, io, validation, paths
+
+from metainformant.core import io, logging, paths, validation
+
 from .obo import parse_obo
-from .types import Ontology, Term, create_ontology
 from .query import ancestors, descendants
+from .types import Ontology, Term, create_ontology
 
 logger = logging.get_logger(__name__)
 

@@ -38,11 +38,12 @@ class DependencyChecker:
         if not self.dependencies_file.exists():
             raise FileNotFoundError(f"Dependencies file not found: {self.dependencies_file}")
 
-        with open(self.dependencies_file, 'r') as f:
+        with open(self.dependencies_file, "r") as f:
             return json.load(f)
 
-    def check_all_dependencies(self, domain_filter: str | None = None,
-                              example_filter: str | None = None) -> Dict[str, any]:
+    def check_all_dependencies(
+        self, domain_filter: str | None = None, example_filter: str | None = None
+    ) -> Dict[str, any]:
         """Check all dependencies."""
         results = {
             "total_examples": 0,
@@ -50,7 +51,7 @@ class DependencyChecker:
             "missing_required": [],
             "missing_optional": [],
             "external_tools": [],
-            "example_status": {}
+            "example_status": {},
         }
 
         # Check global dependencies
@@ -122,7 +123,7 @@ class DependencyChecker:
             "optional": optional,
             "missing_required": missing_required,
             "missing_optional": missing_optional,
-            "all_available": len(missing_required) == 0
+            "all_available": len(missing_required) == 0,
         }
 
     def _check_example_dependencies(self, example_path: str) -> Dict[str, any]:
@@ -141,7 +142,7 @@ class DependencyChecker:
                     "optional": [],
                     "missing_required": [],
                     "missing_optional": [],
-                    "all_available": True
+                    "all_available": True,
                 }
 
     def _is_package_available(self, package_name: str) -> bool:
@@ -165,13 +166,7 @@ class DependencyChecker:
         check_command = tool_info.get("check_command", f"which {tool_name}")
 
         try:
-            result = subprocess.run(
-                check_command,
-                shell=True,
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
+            result = subprocess.run(check_command, shell=True, capture_output=True, text=True, timeout=10)
             available = result.returncode == 0
         except (subprocess.TimeoutExpired, subprocess.SubprocessError):
             available = False
@@ -181,7 +176,7 @@ class DependencyChecker:
             "available": available,
             "description": tool_info.get("description", ""),
             "examples": tool_info.get("examples", []),
-            "install_hint": tool_info.get("install_hint", "")
+            "install_hint": tool_info.get("install_hint", ""),
         }
 
     def print_report(self, results: Dict[str, any]) -> None:
@@ -281,10 +276,7 @@ def main():
 
     try:
         # Check dependencies
-        results = checker.check_all_dependencies(
-            domain_filter=args.domain,
-            example_filter=args.example
-        )
+        results = checker.check_all_dependencies(domain_filter=args.domain, example_filter=args.example)
 
         # Print report
         if not args.quiet:
@@ -294,10 +286,7 @@ def main():
         if args.fix:
             if checker.attempt_fix(results):
                 # Re-check after fix
-                results = checker.check_all_dependencies(
-                    domain_filter=args.domain,
-                    example_filter=args.example
-                )
+                results = checker.check_all_dependencies(domain_filter=args.domain, example_filter=args.example)
                 if not args.quiet:
                     print("\nAfter fix attempt:")
                     checker.print_report(results)

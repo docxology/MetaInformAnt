@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import math
-from typing import List, Tuple, Dict, Any, Optional
-from dataclasses import dataclass, field
 from collections import defaultdict
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
+
+from metainformant.core.utils.errors import ValidationError
 
 from .ethogram import Ethogram
-from metainformant.core.utils.errors import ValidationError
 
 
 @dataclass

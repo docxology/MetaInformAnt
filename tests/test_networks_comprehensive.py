@@ -13,6 +13,14 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from metainformant.networks.analysis.community import (
+    community_metrics,
+    detect_communities,
+    evaluate_communities,
+    greedy_modularity_communities,
+    label_propagation_communities,
+    modularity,
+)
 from metainformant.networks.analysis.graph import (
     BiologicalNetwork,
     add_edges_from_correlation,
@@ -36,19 +44,19 @@ from metainformant.networks.analysis.graph import (
     shortest_paths,
     validate_network,
 )
-from metainformant.networks.analysis.community import (
-    community_metrics,
-    detect_communities,
-    evaluate_communities,
-    greedy_modularity_communities,
-    label_propagation_communities,
-    modularity,
-)
 from metainformant.networks.analysis.pathway import (
     PathwayNetwork,
     load_pathway_database,
     pathway_enrichment,
     pathway_enrichment_analysis,
+)
+from metainformant.networks.config import (
+    CommunityDetectionConfig,
+    GRNConfig,
+    NetworkConfig,
+    NetworkWorkflowConfig,
+    PathwayEnrichmentConfig,
+    PPIConfig,
 )
 from metainformant.networks.interaction.ppi import (
     ProteinNetwork,
@@ -59,14 +67,6 @@ from metainformant.networks.interaction.regulatory import (
     GeneRegulatoryNetwork,
     infer_grn,
     regulatory_motifs,
-)
-from metainformant.networks.config import (
-    CommunityDetectionConfig,
-    GRNConfig,
-    NetworkConfig,
-    NetworkWorkflowConfig,
-    PPIConfig,
-    PathwayEnrichmentConfig,
 )
 from metainformant.networks.workflow import NetworkWorkflow
 

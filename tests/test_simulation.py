@@ -16,31 +16,26 @@ from typing import List
 import numpy as np
 import pytest
 
-from metainformant.simulation import (
-    # Sequence functions
-    generate_random_dna,
-    generate_random_protein,
-    mutate_sequence,
-    evolve_sequence,
-    translate_dna_to_protein,
-    reverse_transcribe_protein_to_dna,
-    generate_coding_sequence,
-    calculate_sequence_similarity,
-    generate_sequence_family,
-    analyze_sequence_divergence,
-    simulate_gene_duplication,
-    # Constants
-    DNA_BASES,
-    RNA_BASES,
+from metainformant.simulation import (  # Sequence functions; Constants; RNA simulation; Agent-based models
     AMINO_ACIDS,
+    DNA_BASES,
     GENETIC_CODE,
-    # RNA simulation
-    simulate_rnaseq_counts,
-    # Agent-based models
+    RNA_BASES,
     GridAgent,
     GridWorld,
+    analyze_sequence_divergence,
+    calculate_sequence_similarity,
+    evolve_sequence,
+    generate_coding_sequence,
+    generate_random_dna,
+    generate_random_protein,
+    generate_sequence_family,
+    mutate_sequence,
+    reverse_transcribe_protein_to_dna,
+    simulate_gene_duplication,
+    simulate_rnaseq_counts,
+    translate_dna_to_protein,
 )
-
 
 # ---------------------------------------------------------------------------
 # DNA generation

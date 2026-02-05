@@ -8,9 +8,9 @@ covariate handling.
 from __future__ import annotations
 
 from .time_to_event import (
-    kaplan_meier_estimator,
-    cox_ph_model,
     competing_risks,
+    cox_ph_model,
+    kaplan_meier_estimator,
     recurrent_events,
     time_varying_covariates,
 )

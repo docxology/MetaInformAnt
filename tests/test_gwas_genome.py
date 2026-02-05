@@ -7,8 +7,8 @@ from pathlib import Path
 import pytest
 
 from metainformant.gwas.data.genome import (
-    AMEL_HAV3_CHROMOSOMES,
     AMEL_HAV3_CHROM_SIZES,
+    AMEL_HAV3_CHROMOSOMES,
     get_chromosome_order,
     get_genome_size,
     normalize_chromosome_name,

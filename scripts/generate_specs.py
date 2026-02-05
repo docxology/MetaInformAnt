@@ -1,4 +1,3 @@
-
 import os
 from pathlib import Path
 
@@ -19,7 +18,7 @@ MODULES = {
     "quality": "Data quality assessment and control",
     "simulation": "Synthetic data generation and agent-based modeling",
     "singlecell": "Single-cell transcriptomic analysis",
-    "visualization": "Unified plotting and animation framework"
+    "visualization": "Unified plotting and animation framework",
 }
 
 TEMPLATE = """# {title} Technical Specification
@@ -42,20 +41,25 @@ The `{module}` module is a component of the `metainformant` package, designed to
 *   **Testing**: Pytest with 100% coverage target
 """
 
+
 def generate_specs():
     base_dir = Path("src/metainformant")
     created = []
-    
+
     for module, desc in MODULES.items():
         spec_path = base_dir / module / "SPEC.md"
         if not spec_path.exists():
             print(f"Creating SPEC.md for {module}...")
             title = f"{module.replace('_', ' ').title()} Module"
-            if module == "gwas": title = "GWAS Module"
-            if module == "dna": title = "DNA Module"
-            if module == "rna": title = "RNA Module"
-            if module == "ml": title = "Machine Learning Module"
-            
+            if module == "gwas":
+                title = "GWAS Module"
+            if module == "dna":
+                title = "DNA Module"
+            if module == "rna":
+                title = "RNA Module"
+            if module == "ml":
+                title = "Machine Learning Module"
+
             content = TEMPLATE.format(title=title, module=module, description=desc.lower())
             spec_path.write_text(content)
             created.append(module)
@@ -66,6 +70,7 @@ def generate_specs():
         print(f"\nCreated SPEC.md for: {', '.join(created)}")
     else:
         print("\nNo new SPEC.md files created.")
+
 
 if __name__ == "__main__":
     generate_specs()

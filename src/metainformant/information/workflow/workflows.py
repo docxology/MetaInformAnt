@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 
 from metainformant.core import io, logging
-from metainformant.information.metrics import analysis, syntactic, semantic, continuous, estimation
+from metainformant.information.metrics import analysis, continuous, estimation, semantic, syntactic
 
 logger = logging.get_logger(__name__)
 

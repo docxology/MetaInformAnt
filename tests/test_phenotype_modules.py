@@ -6,8 +6,8 @@ analysis, workflow, and integration. No mocking — all real computations.
 
 from __future__ import annotations
 
-import math
 import json
+import math
 from pathlib import Path
 from typing import Dict
 
@@ -29,15 +29,15 @@ class TestEthogram:
         assert not eth.validate("X")
 
     def test_create_from_definitions(self):
-        from metainformant.phenotype.behavior.ethogram import Ethogram, BehaviorDefinition
+        from metainformant.phenotype.behavior.ethogram import BehaviorDefinition, Ethogram
 
         bd = BehaviorDefinition(code="F", name="Forage", description="Searching for food")
         eth = Ethogram({"F": bd})
         assert eth.get("F").name == "Forage"
 
     def test_invalid_definition_raises(self):
-        from metainformant.phenotype.behavior.ethogram import Ethogram
         from metainformant.core.utils.errors import ValidationError
+        from metainformant.phenotype.behavior.ethogram import Ethogram
 
         with pytest.raises(ValidationError):
             Ethogram({"X": 123})
@@ -52,7 +52,7 @@ class TestBehaviorSequence:
 
     @pytest.fixture
     def sequence(self, ethogram):
-        from metainformant.phenotype.behavior.sequence import BehaviorSequence, BehaviorEvent
+        from metainformant.phenotype.behavior.sequence import BehaviorEvent, BehaviorSequence
 
         events = [
             BehaviorEvent(timestamp=0, code="F", duration=10.0),
@@ -117,8 +117,8 @@ class TestBehaviorSequence:
         assert counts["G"] == 2
 
     def test_invalid_code_raises(self, ethogram):
-        from metainformant.phenotype.behavior.sequence import BehaviorSequence, BehaviorEvent
         from metainformant.core.utils.errors import ValidationError
+        from metainformant.phenotype.behavior.sequence import BehaviorEvent, BehaviorSequence
 
         events = [BehaviorEvent(timestamp=0, code="INVALID", duration=1.0)]
         with pytest.raises(ValidationError):
@@ -884,18 +884,18 @@ class TestTopLevelImports:
 
     def test_key_classes_importable(self):
         from metainformant.phenotype import (
-            Ethogram,
+            AcousticSignal,
             BehaviorSequence,
-            Compound,
             ChemicalProfile,
-            TrackingPoint,
-            Trajectory,
+            Compound,
+            Ethogram,
             Measurement,
             MorphometricProfile,
-            AcousticSignal,
             PhenotypePipeline,
             PipelineConfig,
             PipelineResult,
+            TrackingPoint,
+            Trajectory,
         )
 
         assert all(

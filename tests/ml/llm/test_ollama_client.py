@@ -7,9 +7,9 @@ Requires Ollama server running with at least smollm2 model.
 import pytest
 
 from metainformant.ml.llm.ollama import (
+    ChatMessage,
     OllamaClient,
     OllamaConfig,
-    ChatMessage,
 )
 
 

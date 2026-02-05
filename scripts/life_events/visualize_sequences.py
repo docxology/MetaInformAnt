@@ -76,24 +76,21 @@ def parse_args():
 def main():
     """Main function."""
     args = parse_args()
-    
+
     if not args.input.exists():
         logger.error(f"Input file not found: {args.input}")
         return 1
-    
+
     logger.info(f"Loading sequences from {args.input}")
     sequences = load_sequences_from_json(args.input)
     logger.info(f"✅ Loaded {len(sequences)} sequences")
-    
+
     paths.ensure_directory(args.output)
-    
+
     generate_all = args.all_visualizations or (
-        not args.timeline
-        and not args.domain_distribution
-        and not args.temporal_density
-        and not args.sequence_lengths
+        not args.timeline and not args.domain_distribution and not args.temporal_density and not args.sequence_lengths
     )
-    
+
     if generate_all or args.timeline:
         logger.info("Generating timeline visualizations...")
         for i in range(min(5, len(sequences))):
@@ -102,7 +99,7 @@ def main():
                 output_path=args.output / f"timeline_sequence_{i+1}.png",
             )
         logger.info("✅ Timeline visualizations generated")
-    
+
     if generate_all or args.domain_distribution:
         logger.info("Generating domain distribution plot...")
         plot_domain_distribution(
@@ -110,7 +107,7 @@ def main():
             output_path=args.output / "domain_distribution.png",
         )
         logger.info("✅ Domain distribution plot generated")
-    
+
     if generate_all or args.temporal_density:
         logger.info("Generating temporal density plot...")
         plot_temporal_density(
@@ -118,7 +115,7 @@ def main():
             output_path=args.output / "temporal_density.png",
         )
         logger.info("✅ Temporal density plot generated")
-    
+
     if generate_all or args.sequence_lengths:
         logger.info("Generating sequence length distribution...")
         plot_sequence_length_distribution(
@@ -126,11 +123,10 @@ def main():
             output_path=args.output / "sequence_length_distribution.png",
         )
         logger.info("✅ Sequence length distribution generated")
-    
+
     logger.info(f"✅ All visualizations saved to {args.output}")
     return 0
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

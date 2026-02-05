@@ -7,17 +7,17 @@ respective runner functions.
 from __future__ import annotations
 
 from metainformant.rna.amalgkit.amalgkit import (
-    metadata,
-    integrate,
-    select,
-    getfastq,
-    quant,
-    merge,
+    config,
+    csca,
     cstmm,
     curate,
-    csca,
+    getfastq,
+    integrate,
+    merge,
+    metadata,
+    quant,
     sanity,
-    config,
+    select,
 )
 
 STEP_RUNNERS = {

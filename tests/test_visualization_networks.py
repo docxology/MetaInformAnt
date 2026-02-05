@@ -7,11 +7,11 @@ from pathlib import Path
 import pytest
 
 from metainformant.visualization.genomics.networks import (
+    plot_community_network,
     plot_network_basic,
     plot_network_circular,
-    plot_network_hierarchical,
     plot_network_force_directed,
-    plot_community_network,
+    plot_network_hierarchical,
 )
 
 # Check for optional dependencies

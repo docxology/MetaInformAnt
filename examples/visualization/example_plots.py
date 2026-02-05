@@ -12,10 +12,13 @@ Output:
 
 from __future__ import annotations
 
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+
 from metainformant.core import io
 from metainformant.visualization.plots import lineplot
+
 
 def main():
     """Demonstrate visualization capabilities."""
@@ -51,7 +54,7 @@ def main():
             "data_points": len(x),
             "signals": ["signal_1", "signal_2"],
             "output_format": "PNG",
-            "resolution": "300 DPI"
+            "resolution": "300 DPI",
         }
 
     except Exception as e:
@@ -60,12 +63,11 @@ def main():
 
     # Save results
     results_file = output_dir / "plots_demo.json"
-    io.dump_json({
-        "visualization_demo": results
-    }, results_file, indent=2)
+    io.dump_json({"visualization_demo": results}, results_file, indent=2)
 
     print(f"✓ Results saved to: {results_file}")
     print("\n=== Visualization Example Complete ===")
+
 
 if __name__ == "__main__":
     main()

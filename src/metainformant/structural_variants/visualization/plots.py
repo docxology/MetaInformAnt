@@ -26,11 +26,11 @@ try:
     import matplotlib
 
     matplotlib.use("Agg")  # Non-interactive backend
-    import matplotlib.pyplot as plt
     import matplotlib.patches as mpatches
+    import matplotlib.pyplot as plt
     from matplotlib.collections import LineCollection, PatchCollection
-    from matplotlib.figure import Figure
     from matplotlib.colors import Normalize
+    from matplotlib.figure import Figure
 
     HAS_MATPLOTLIB = True
 except ImportError:

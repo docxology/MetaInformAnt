@@ -18,6 +18,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from metainformant.core import io
+
 {% if imports %}
 {% for import_line in imports -%}
 {{ import_line }}

@@ -10,16 +10,14 @@ from __future__ import annotations
 # Import subpackages
 from . import analysis, interaction, regulatory
 from .analysis import community, graph, pathway
-from .interaction import ppi, regulatory as interaction_regulatory
-from .config import (
-    CommunityDetectionConfig,
-    GRNConfig,
-    NetworkConfig,
-    NetworkWorkflowConfig,
-    PPIConfig,
-    PathwayEnrichmentConfig,
+from .analysis.community import (
+    community_metrics,
+    detect_communities,
+    evaluate_communities,
+    greedy_modularity_communities,
+    label_propagation_communities,
+    louvain_communities,
 )
-from .workflow import NetworkWorkflow
 
 # Direct imports of commonly used classes and functions
 from .analysis.graph import (
@@ -39,14 +37,6 @@ from .analysis.graph import (
     save_network,
     shortest_paths,
 )
-from .analysis.community import (
-    detect_communities,
-    evaluate_communities,
-    community_metrics,
-    louvain_communities,
-    greedy_modularity_communities,
-    label_propagation_communities,
-)
 from .analysis.pathway import (
     PathwayNetwork,
     load_pathway_database,
@@ -54,20 +44,31 @@ from .analysis.pathway import (
     pathway_enrichment,
     pathway_enrichment_analysis,
 )
+from .config import (
+    CommunityDetectionConfig,
+    GRNConfig,
+    NetworkConfig,
+    NetworkWorkflowConfig,
+    PathwayEnrichmentConfig,
+    PPIConfig,
+)
+from .interaction import ppi
+from .interaction import regulatory as interaction_regulatory
 from .interaction.ppi import (
     ProteinNetwork,
-    predict_interactions,
     load_ppi_network,
     ppi_network_analysis,
+    predict_interactions,
 )
+from .workflow import NetworkWorkflow
 
 # Optional imports that may fail if dependencies missing
 try:
     from .interaction.regulatory import (
         GeneRegulatoryNetwork,
         infer_grn,
-        regulatory_motifs,
         pathway_regulation_analysis,
+        regulatory_motifs,
     )
 except ImportError:
     GeneRegulatoryNetwork = None  # type: ignore[assignment,misc]
@@ -78,18 +79,18 @@ except ImportError:
 # Regulatory network inference subpackage
 try:
     from .regulatory.grn_inference import (
+        compute_network_motifs,
         infer_grn_correlation,
         infer_grn_mutual_info,
         infer_grn_regression,
         score_regulators,
-        compute_network_motifs,
         validate_grn,
     )
     from .regulatory.motif_analysis import (
-        find_tf_binding_motifs,
-        score_motif_match,
         build_pwm,
+        find_tf_binding_motifs,
         scan_sequence_for_motifs,
+        score_motif_match,
     )
 except ImportError:
     infer_grn_correlation = None  # type: ignore[assignment]

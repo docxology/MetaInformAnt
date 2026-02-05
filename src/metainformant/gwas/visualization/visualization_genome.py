@@ -232,8 +232,8 @@ def chromosome_ideogram(
     """
     try:
         import matplotlib.pyplot as plt
-        from matplotlib.patches import Rectangle
         import numpy as np
+        from matplotlib.patches import Rectangle
     except ImportError:
         logger.warning("matplotlib not available for chromosome ideogram")
         return {"status": "failed", "error": "matplotlib not available"}
@@ -377,8 +377,8 @@ def genome_wide_ld_heatmap(
         Dictionary with status and metadata
     """
     try:
-        import matplotlib.pyplot as plt
         import matplotlib.patches as patches
+        import matplotlib.pyplot as plt
         import numpy as np
     except ImportError:
         logger.warning("matplotlib not available for genome-wide LD heatmap")

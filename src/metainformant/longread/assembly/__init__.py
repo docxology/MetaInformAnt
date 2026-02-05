@@ -6,9 +6,7 @@ generation, iterative polishing, and hybrid assembly combining long and short re
 
 from __future__ import annotations
 
-from . import overlap
-from . import consensus
-from . import hybrid
+from . import consensus, hybrid, overlap
 
 __all__ = [
     "overlap",

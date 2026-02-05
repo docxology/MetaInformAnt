@@ -8,9 +8,11 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Dict, List, Any, Iterator, Optional
-from metainformant.core import logging, io, validation
-from .types import Ontology, Term, Relationship, create_term, create_relationship, create_ontology
+from typing import Any, Dict, Iterator, List, Optional
+
+from metainformant.core import io, logging, validation
+
+from .types import Ontology, Relationship, Term, create_ontology, create_relationship, create_term
 
 logger = logging.get_logger(__name__)
 

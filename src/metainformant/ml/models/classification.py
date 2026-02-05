@@ -7,8 +7,9 @@ and biological data handling.
 
 from __future__ import annotations
 
-import numpy as np
 from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
 
 from metainformant.core.utils.logging import get_logger
 
@@ -17,18 +18,18 @@ logger = get_logger(__name__)
 # Optional imports for ML functionality
 try:
     from sklearn.base import BaseEstimator
-    from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier, VotingClassifier
+    from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier, VotingClassifier
     from sklearn.linear_model import LogisticRegression
-    from sklearn.model_selection import cross_val_score, StratifiedKFold
     from sklearn.metrics import (
         accuracy_score,
+        classification_report,
+        confusion_matrix,
+        f1_score,
         precision_score,
         recall_score,
-        f1_score,
         roc_auc_score,
-        confusion_matrix,
-        classification_report,
     )
+    from sklearn.model_selection import StratifiedKFold, cross_val_score
 
     HAS_SKLEARN = True
 except ImportError:

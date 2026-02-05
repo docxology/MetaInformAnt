@@ -119,9 +119,7 @@ print("\n4. Evaluating NMF reconstruction...")
 reconstruction_error_transcript = np.sum(
     (omics_data.get_layer("transcriptomics").values - W @ H["transcriptomics"]) ** 2
 )
-reconstruction_error_protein = np.sum(
-    (omics_data.get_layer("proteomics").values - W @ H["proteomics"]) ** 2
-)
+reconstruction_error_protein = np.sum((omics_data.get_layer("proteomics").values - W @ H["proteomics"]) ** 2)
 total_error = reconstruction_error_transcript + reconstruction_error_protein
 print(f"   Total reconstruction error: {total_error:.6f}")
 print(f"   Transcriptomics error: {reconstruction_error_transcript:.6f}")
@@ -150,5 +148,3 @@ print("\n" + "=" * 60)
 print("Joint analysis example completed!")
 print(f"All outputs saved to: {output_dir}")
 print("=" * 60)
-
-

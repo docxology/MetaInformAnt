@@ -8,10 +8,12 @@ All tests require amalgkit CLI to be available. The conftest.py fixture
 ensures amalgkit is available before tests run.
 """
 
-import pytest
-from pathlib import Path
-import subprocess
 import shutil
+import subprocess
+from pathlib import Path
+
+import pytest
+
 from metainformant.rna import amalgkit
 
 

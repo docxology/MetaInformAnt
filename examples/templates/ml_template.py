@@ -15,8 +15,9 @@ Expected output:
 
 from __future__ import annotations
 
-import numpy as np
 from pathlib import Path
+
+import numpy as np
 
 from metainformant.core import io
 from metainformant.ml import classification
@@ -68,17 +69,14 @@ def main():
                 "n_samples": n_samples,
                 "n_features": n_features,
                 "train_samples": len(X_train),
-                "test_samples": len(X_test)
+                "test_samples": len(X_test),
             },
-            "model_performance": {
-                "accuracy": float(accuracy),
-                "method": "rf"
-            },
+            "model_performance": {"accuracy": float(accuracy), "method": "rf"},
             "predictions": {
                 "true_labels": y_test.tolist(),
                 "predicted_labels": predictions[0].tolist(),
-                "confidences": predictions[1].tolist()
-            }
+                "confidences": predictions[1].tolist(),
+            },
         }
 
         results = {
@@ -86,7 +84,7 @@ def main():
             "domain": "ml",
             "analysis_type": "{{analysis_type}}",
             "description": "Machine learning {{analysis_type.lower()}} example",
-            "results": results_data
+            "results": results_data,
         }
 
         io.dump_json(results, output_file)

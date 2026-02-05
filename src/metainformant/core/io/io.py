@@ -571,8 +571,9 @@ def download_csv(url: str, *, timeout: int = 30, **kwargs) -> Any:
     logger = core_logging.get_logger(__name__)
 
     try:
-        import pandas as pd
         import io as std_io
+
+        import pandas as pd
 
         text_content = download_text(url, timeout=timeout)
         if text_content:

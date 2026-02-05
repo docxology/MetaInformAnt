@@ -8,6 +8,14 @@ from __future__ import annotations
 
 from . import merfish, visium, xenium
 
+# MERFISH
+from .merfish import (
+    aggregate_to_cells,
+    load_merfish,
+    load_transcript_spots,
+    parse_cell_metadata,
+)
+
 # Visium
 from .visium import (
     create_spatial_dataset,
@@ -15,14 +23,6 @@ from .visium import (
     load_visium,
     read_spatial_image,
     read_tissue_positions,
-)
-
-# MERFISH
-from .merfish import (
-    aggregate_to_cells,
-    load_merfish,
-    load_transcript_spots,
-    parse_cell_metadata,
 )
 
 # Xenium

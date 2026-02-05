@@ -15,16 +15,16 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 # Import setup utilities (must be before other imports)
 sys.path.insert(0, str(Path(__file__).parent))
-from _setup_utils import ensure_venv_activated, check_environment_or_exit
+from _setup_utils import check_environment_or_exit, ensure_venv_activated
 
 # Auto-setup and activate venv
 ensure_venv_activated(auto_setup=True)
 check_environment_or_exit(auto_setup=True)
 
-from metainformant.rna.workflow import load_workflow_config
-from metainformant.rna import steps as _steps_mod
 from metainformant.core.io import read_delimited
 from metainformant.core.utils.logging import get_logger
+from metainformant.rna import steps as _steps_mod
+from metainformant.rna.workflow import load_workflow_config
 
 logger = get_logger("process_samples_sequential")
 
@@ -32,7 +32,7 @@ logger = get_logger("process_samples_sequential")
 def main() -> int:
     """Main entry point."""
     import argparse
-    
+
     parser = argparse.ArgumentParser(
         description="Process samples sequentially: download → quantify → delete",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -49,24 +49,24 @@ def main() -> int:
         default=None,
         help="Maximum number of samples to process (default: all)",
     )
-    
+
     args = parser.parse_args()
-    
+
     config_path = args.config.resolve()
     if not config_path.exists():
         logger.error(f"Config file not found: {config_path}")
         return 1
-    
+
     # Load config
     cfg = load_workflow_config(config_path)
-    
+
     # Get parameters
     getfastq_params = cfg.per_step.get("getfastq", {}).copy()
     quant_params = cfg.per_step.get("quant", {}).copy()
-    
+
     # Force sequential mode (num_workers=1)
     getfastq_params["num_download_workers"] = 1
-    
+
     # Find metadata file
     metadata_paths = [
         cfg.work_dir / "metadata" / "metadata.filtered.clean.tsv",
@@ -84,16 +84,16 @@ def main() -> int:
                     break
             except Exception:
                 continue
-    
+
     if not metadata_file:
         logger.error("No metadata file with 'run' column found")
         return 1
-    
+
     # Run unified workflow in sequential mode
     logger.info("🚀 Starting sequential processing (one sample at a time)")
     logger.info("   Each sample: download → quantify → delete FASTQs → next sample")
     logger.info("   Maximum disk efficiency: only one sample's FASTQs exist at a time")
-    
+
     try:
         stats = _steps_mod.run_download_quant_workflow(
             metadata_path=metadata_file,
@@ -105,7 +105,7 @@ def main() -> int:
             max_samples=args.max_samples,
             skip_completed=True,  # Skip already quantified samples
         )
-        
+
         logger.info("=" * 80)
         logger.info("Processing complete!")
         logger.info(f"  Total samples: {stats['total_samples']}")
@@ -115,9 +115,9 @@ def main() -> int:
         if stats.get("failed_runs"):
             logger.warning(f"  Failed runs: {stats['failed_runs'][:10]}")
         logger.info("=" * 80)
-        
+
         return 0 if stats.get("failed", 0) == 0 else 1
-        
+
     except Exception as e:
         logger.error(f"Sequential processing failed: {e}", exc_info=True)
         return 1
@@ -125,5 +125,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-
-

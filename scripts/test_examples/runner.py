@@ -45,7 +45,7 @@ def run_example(example_path: Path, repo_root: Path, verbose: bool = False) -> D
         "error_details": None,
         "error_line": None,
         "error_file": None,
-        "traceback": None
+        "traceback": None,
     }
 
     try:
@@ -62,7 +62,7 @@ def run_example(example_path: Path, repo_root: Path, verbose: bool = False) -> D
             capture_output=True,
             text=True,
             timeout=300,  # 5 minute timeout
-            env=env
+            env=env,
         )
 
         result["exit_code"] = process.returncode
@@ -101,7 +101,7 @@ def run_example(example_path: Path, repo_root: Path, verbose: bool = False) -> D
     except Exception as e:
         result["status"] = "error"
         result["error_message"] = str(e)
-        result["traceback"] = ''.join(traceback.format_exception(type(e), e, e.__traceback__))
+        result["traceback"] = "".join(traceback.format_exception(type(e), e, e.__traceback__))
         result["execution_time"] = time.time() - start_time
 
     return result
@@ -133,7 +133,9 @@ def run_examples_sequential(examples: List[Path], repo_root: Path, verbose: bool
     return results
 
 
-def run_examples_parallel(examples: List[Path], repo_root: Path, verbose: bool = False, max_workers: int = 4) -> List[Dict[str, Any]]:
+def run_examples_parallel(
+    examples: List[Path], repo_root: Path, verbose: bool = False, max_workers: int = 4
+) -> List[Dict[str, Any]]:
     """Run examples in parallel using thread pools.
 
     Args:
@@ -152,8 +154,7 @@ def run_examples_parallel(examples: List[Path], repo_root: Path, verbose: bool =
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Submit all jobs
         future_to_example = {
-            executor.submit(run_example, example_path, repo_root, verbose): example_path
-            for example_path in examples
+            executor.submit(run_example, example_path, repo_root, verbose): example_path for example_path in examples
         }
 
         # Process results as they complete
@@ -173,20 +174,22 @@ def run_examples_parallel(examples: List[Path], repo_root: Path, verbose: bool =
             except Exception as exc:
                 print(f"❌ {example_path.relative_to(repo_root / 'examples')} - error: {exc}")
                 # Add error result
-                results.append({
-                    "example_path": str(example_path.relative_to(repo_root / "examples")),
-                    "domain": example_path.parent.name,
-                    "filename": example_path.name,
-                    "status": "error",
-                    "error_message": str(exc),
-                    "execution_time": 0,
-                    "exit_code": -1,
-                    "stdout": "",
-                    "stderr": str(exc),
-                    "output_files_created": [],
-                    "json_outputs_valid": [],
-                    "json_outputs_invalid": []
-                })
+                results.append(
+                    {
+                        "example_path": str(example_path.relative_to(repo_root / "examples")),
+                        "domain": example_path.parent.name,
+                        "filename": example_path.name,
+                        "status": "error",
+                        "error_message": str(exc),
+                        "execution_time": 0,
+                        "exit_code": -1,
+                        "stdout": "",
+                        "stderr": str(exc),
+                        "output_files_created": [],
+                        "json_outputs_valid": [],
+                        "json_outputs_invalid": [],
+                    }
+                )
 
     return results
 
@@ -201,16 +204,16 @@ def _get_expected_outputs(example_path: Path) -> List[str]:
         List of expected output patterns
     """
     try:
-        with open(example_path, 'r', encoding='utf-8') as f:
+        with open(example_path, "r", encoding="utf-8") as f:
             content = f.read()
 
         # Look for "Output:" section in docstring
-        lines = content.split('\n')
+        lines = content.split("\n")
         in_output_section = False
         outputs = []
 
         for line in lines:
-            if line.strip().startswith('Output:'):
+            if line.strip().startswith("Output:"):
                 in_output_section = True
                 continue
             elif in_output_section and line.strip().startswith('"""'):
@@ -218,7 +221,7 @@ def _get_expected_outputs(example_path: Path) -> List[str]:
             elif in_output_section and line.strip():
                 # Extract output paths
                 output_line = line.strip()
-                if output_line.startswith('output/'):
+                if output_line.startswith("output/"):
                     outputs.append(output_line)
 
         return outputs
@@ -246,19 +249,14 @@ def _parse_error_details(result: Dict[str, Any]) -> None:
         result["error_line"] = int(traceback_match.group(2))
 
     # Extract main error message
-    lines = stderr.strip().split('\n')
+    lines = stderr.strip().split("\n")
     for line in lines:
-        if line.startswith('Traceback') or line.startswith('  File'):
+        if line.startswith("Traceback") or line.startswith("  File"):
             continue
-        if line.strip() and not line.startswith(' ') and ':' in line:
+        if line.strip() and not line.startswith(" ") and ":" in line:
             result["error_details"] = line.strip()
             break
 
     # Store full traceback
-    if 'Traceback' in stderr:
+    if "Traceback" in stderr:
         result["traceback"] = stderr
-
-
-
-
-

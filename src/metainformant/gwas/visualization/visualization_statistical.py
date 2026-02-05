@@ -193,8 +193,8 @@ def power_plot(
 
     try:
         import matplotlib.pyplot as plt
-        from scipy import stats
         import numpy as np
+        from scipy import stats
     except ImportError:
         logger.warning("matplotlib or scipy not available for power plot")
         return {"status": "failed", "error": "matplotlib or scipy not available"}

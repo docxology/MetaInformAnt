@@ -29,12 +29,11 @@ except ImportError:
     np = None  # type: ignore[assignment]
 
 # Import pairwise coloc from the credible_sets module
+from metainformant.gwas.finemapping.credible_sets import colocalization as _pairwise_coloc
 from metainformant.gwas.finemapping.credible_sets import (
-    colocalization as _pairwise_coloc,
     compute_bayes_factors,
     compute_credible_set,
 )
-
 
 # ---------------------------------------------------------------------------
 # Public API

@@ -196,7 +196,7 @@ class TestUtilsModule:
 
     def test_validate_fasta_file(self, isolated_tmp_dir):
         """Test FASTA file validation."""
-        from tests.utils import validate_fasta_file, create_sample_fasta_file
+        from tests.utils import create_sample_fasta_file, validate_fasta_file
 
         # Valid FASTA
         valid_fasta = create_sample_fasta_file(isolated_tmp_dir / "valid.fasta", {"seq1": "ATCG", "seq2": "GCTA"})
@@ -209,7 +209,7 @@ class TestUtilsModule:
 
     def test_validate_fastq_file(self, isolated_tmp_dir):
         """Test FASTQ file validation."""
-        from tests.utils import validate_fastq_file, create_sample_fastq_file
+        from tests.utils import create_sample_fastq_file, validate_fastq_file
 
         # Valid FASTQ
         valid_fastq = create_sample_fastq_file(isolated_tmp_dir / "valid.fastq", {"read1": "ATCG", "read2": "GCTA"})

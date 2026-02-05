@@ -12,9 +12,12 @@ Output:
 
 from __future__ import annotations
 
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+
 from metainformant.core import io
+
 
 def main():
     """Demonstrate biological simulation."""
@@ -51,8 +54,8 @@ def main():
         "expression_stability": float(np.std(expression_trajectory[-1]) / np.mean(expression_trajectory[-1])),
         "trajectory_summary": {
             "start": [float(x) for x in expression_trajectory[0][:5]],  # First 5 genes
-            "end": [float(x) for x in expression_trajectory[-1][:5]]
-        }
+            "end": [float(x) for x in expression_trajectory[-1][:5]],
+        },
     }
 
     print(f"✓ Simulated {n_generations} generations of evolution")
@@ -60,12 +63,11 @@ def main():
 
     # Save results
     results_file = output_dir / "simulation_results.json"
-    io.dump_json({
-        "biological_simulation": results
-    }, results_file, indent=2)
+    io.dump_json({"biological_simulation": results}, results_file, indent=2)
 
     print(f"✓ Results saved to: {results_file}")
     print("\n=== Simulation Example Complete ===")
+
 
 if __name__ == "__main__":
     main()

@@ -10,8 +10,7 @@ Submodules:
 
 from __future__ import annotations
 
-from . import factorization
-from . import clustering
+from . import clustering, factorization
 
 __all__ = [
     "factorization",

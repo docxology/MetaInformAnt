@@ -45,53 +45,62 @@ from __future__ import annotations
 # Import subpackages
 from . import analysis, communication, deconvolution, integration, io, visualization
 
-# IO - Data loading
-from .io import (
-    # Visium
-    create_spatial_dataset,
-    filter_tissue_spots,
-    load_visium,
-    read_spatial_image,
-    read_tissue_positions,
-    # MERFISH
-    aggregate_to_cells,
-    load_merfish,
-    load_transcript_spots,
-    parse_cell_metadata,
-    # Xenium
-    load_cell_boundaries,
-    load_xenium,
-    read_cell_features,
-    read_transcripts,
-)
-
 # Analysis - Spatial statistics and clustering
-from .analysis import (
-    # Clustering
+from .analysis import (  # Clustering; Deconvolution; Neighborhood; Autocorrelation
     build_spatial_graph,
-    leiden_clustering,
-    louvain_clustering,
-    spatial_cluster,
-    spatial_domains,
-    # Deconvolution
+    compute_interaction_matrix,
     create_reference_profiles,
     deconvolve_spots,
     enrichment_score,
     estimate_cell_fractions,
-    nnls_deconvolution,
-    # Neighborhood
-    compute_interaction_matrix,
-    ligand_receptor_spatial,
-    neighborhood_enrichment,
-    niche_detection,
-    ripley_k,
-    # Autocorrelation
     gearys_c,
     getis_ord_g,
+    leiden_clustering,
+    ligand_receptor_spatial,
     local_morans_i,
+    louvain_clustering,
     morans_i,
+    neighborhood_enrichment,
+    niche_detection,
+    nnls_deconvolution,
+    ripley_k,
+    spatial_cluster,
+    spatial_domains,
     spatial_variogram,
     spatial_weights_matrix,
+)
+from .analysis.autocorrelation import (
+    GearyCResult,
+    GetisOrdResult,
+    LocalMoransResult,
+    MoransIResult,
+    VariogramResult,
+)
+from .analysis.clustering import SpatialClusterResult
+from .analysis.deconvolution import DeconvolutionResult
+from .analysis.neighborhood import (
+    InteractionResult,
+    NeighborhoodEnrichmentResult,
+    NicheResult,
+    RipleyKResult,
+)
+
+# Communication submodule
+from .communication import (
+    build_communication_network,
+    communication_pattern_analysis,
+    compute_ligand_receptor_interactions,
+    default_lr_database,
+    spatial_interaction_score,
+)
+
+# Deconvolution submodule
+from .deconvolution import build_reference_profiles as deconv_build_reference_profiles
+from .deconvolution import deconvolve_spots as deconv_deconvolve_spots
+from .deconvolution import (
+    niche_identification,
+    spatial_cell_type_mapping,
+    validate_deconvolution,
 )
 
 # Integration
@@ -101,6 +110,29 @@ from .integration import (
     impute_spatial_genes,
     map_scrna_to_spatial,
 )
+from .integration.scrna_mapping import ImputationResult, MappingResult
+
+# IO - Data loading
+from .io import (  # Visium; MERFISH; Xenium
+    aggregate_to_cells,
+    create_spatial_dataset,
+    filter_tissue_spots,
+    load_cell_boundaries,
+    load_merfish,
+    load_transcript_spots,
+    load_visium,
+    load_xenium,
+    parse_cell_metadata,
+    read_cell_features,
+    read_spatial_image,
+    read_tissue_positions,
+    read_transcripts,
+)
+from .io.merfish import CellMetadata, MERFISHDataset, TranscriptSpot
+
+# Data classes re-exported for convenience
+from .io.visium import SpatialDataset, TissuePosition
+from .io.xenium import CellBoundary, XeniumDataset, XeniumTranscript
 
 # Visualization
 from .visualization import (
@@ -112,45 +144,6 @@ from .visualization import (
     plot_spatial_autocorrelation,
     plot_spatial_scatter,
     plot_tissue_overlay,
-)
-
-# Data classes re-exported for convenience
-from .io.visium import SpatialDataset, TissuePosition
-from .io.merfish import CellMetadata, MERFISHDataset, TranscriptSpot
-from .io.xenium import CellBoundary, XeniumDataset, XeniumTranscript
-from .analysis.clustering import SpatialClusterResult
-from .analysis.deconvolution import DeconvolutionResult
-from .analysis.neighborhood import (
-    InteractionResult,
-    NeighborhoodEnrichmentResult,
-    NicheResult,
-    RipleyKResult,
-)
-from .analysis.autocorrelation import (
-    GearyCResult,
-    GetisOrdResult,
-    LocalMoransResult,
-    MoransIResult,
-    VariogramResult,
-)
-from .integration.scrna_mapping import ImputationResult, MappingResult
-
-# Deconvolution submodule
-from .deconvolution import (
-    build_reference_profiles as deconv_build_reference_profiles,
-    deconvolve_spots as deconv_deconvolve_spots,
-    niche_identification,
-    spatial_cell_type_mapping,
-    validate_deconvolution,
-)
-
-# Communication submodule
-from .communication import (
-    build_communication_network,
-    communication_pattern_analysis,
-    compute_ligand_receptor_interactions,
-    default_lr_database,
-    spatial_interaction_score,
 )
 
 __all__ = [

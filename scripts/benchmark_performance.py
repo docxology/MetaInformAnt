@@ -8,12 +8,13 @@ vectorization, and optimization enhancements.
 from __future__ import annotations
 
 import time
-import numpy as np
 from pathlib import Path
 
-from metainformant.math import coalescent
-from metainformant.math.price import variance, covariance
+import numpy as np
+
 from metainformant.information.syntactic import shannon_entropy
+from metainformant.math import coalescent
+from metainformant.math.price import covariance, variance
 
 
 def benchmark_tajima_constants():
@@ -58,10 +59,10 @@ def benchmark_vectorization():
         cov_time = time.time() - start
 
         results[size] = {
-            'variance_time': var_time,
-            'covariance_time': cov_time,
-            'variance_result': var_result,
-            'covariance_result': cov_result
+            "variance_time": var_time,
+            "covariance_time": cov_time,
+            "variance_result": var_result,
+            "covariance_result": cov_result,
         }
 
         print("2d")

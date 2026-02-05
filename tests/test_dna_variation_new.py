@@ -17,7 +17,6 @@ import pytest
 from metainformant.dna import variants
 from metainformant.dna.variation import mutations
 
-
 # ---------------------------------------------------------------------------
 # Helpers: build VCF-like variant dicts without mocking
 # ---------------------------------------------------------------------------

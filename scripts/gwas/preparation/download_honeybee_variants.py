@@ -32,13 +32,13 @@ from pathlib import Path
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
 
+from metainformant.core.io import ensure_directory
+from metainformant.gwas.download import download_variant_data
 from metainformant.gwas.sra_download import (
     check_sra_tools_available,
     download_sra_project,
     search_sra_for_organism,
 )
-from metainformant.gwas.download import download_variant_data
-from metainformant.core.io import ensure_directory
 
 logging.basicConfig(
     level=logging.INFO,
@@ -56,23 +56,24 @@ def print_section(title: str) -> None:
 
 def main() -> None:
     """Download real Apis mellifera variant data."""
-    
+
     print_section("REAL APIS MELLIFERA VARIANT DATA DOWNLOAD")
-    
+
     # Setup directories
     data_dir = Path("data/variants/amellifera/real")
     ensure_directory(data_dir)
-    
+
     print(f"📁 Output directory: {data_dir}")
-    
+
     # Check available tools
     print_section("CHECKING AVAILABLE TOOLS")
-    
+
     has_sra = check_sra_tools_available()
     print(f"  SRA Toolkit: {'✅ Available' if has_sra else '❌ Not installed'}")
-    
+
     if not has_sra:
-        print("""
+        print(
+            """
   ⚠️  SRA Toolkit not found!
   
   To download raw sequencing data from NCBI SRA, install SRA Toolkit:
@@ -86,26 +87,27 @@ def main() -> None:
   Or download from: https://github.com/ncbi/sra-tools/wiki/01.-Downloading-SRA-Toolkit
   
   After installation, configure with: vdb-config --interactive
-        """)
-    
+        """
+        )
+
     # Search for Apis mellifera data
     print_section("SEARCHING FOR APIS MELLIFERA GENOMIC DATA")
-    
+
     search_result = search_sra_for_organism(
         organism="Apis mellifera",
         strategy="WGS",
         max_results=100,
     )
-    
+
     print(f"📊 Search status: {search_result['status']}")
     if search_result.get("sra_search_url"):
         print(f"🔗 Manual search: {search_result['sra_search_url']}")
     if search_result.get("note"):
         print(f"📝 Note: {search_result['note']}")
-    
+
     # Key datasets for Apis mellifera
     print_section("KEY APIS MELLIFERA DATASETS")
-    
+
     datasets = [
         {
             "name": "Scout/Recruit Behavioral Caste Variants",
@@ -127,7 +129,7 @@ def main() -> None:
             "url": "https://www.ncbi.nlm.nih.gov/bioproject/392242",
         },
     ]
-    
+
     for i, ds in enumerate(datasets, 1):
         print(f"{i}. {ds['name']}")
         print(f"   BioProject: {ds['bioproject']}")
@@ -136,30 +138,31 @@ def main() -> None:
         if "runs_example" in ds:
             print(f"   Example runs: {', '.join(ds['runs_example'][:3])}")
         print()
-    
+
     # Demonstrate BioProject download (instructions)
     print_section("DOWNLOADING FROM BIOPROJECT (INSTRUCTIONS)")
-    
+
     bioproject = "PRJNA292680"
     project_result = download_sra_project(
         bioproject=bioproject,
         dest_dir=data_dir / bioproject,
         max_runs=5,
     )
-    
+
     print(f"📦 BioProject: {bioproject}")
     print(f"Status: {project_result['status']}")
     print(f"\n{project_result['message']}")
-    
+
     if "instructions" in project_result:
         print("\nSteps to download:")
         for instruction in project_result["instructions"]:
             print(f"  {instruction}")
-    
+
     # Public VCF repositories
     print_section("PUBLIC VCF REPOSITORIES")
-    
-    print("""
+
+    print(
+        """
   For pre-called variant data, check these resources:
   
   1. European Variation Archive (EVA)
@@ -177,12 +180,14 @@ def main() -> None:
   4. Research Group Repositories
      - Honey Bee Genome Consortium
      - Individual lab websites (check recent papers)
-    """)
-    
+    """
+    )
+
     # Try downloading from a known public URL (example)
     print_section("EXAMPLE: DOWNLOAD FROM DIRECT URL")
-    
-    print("""
+
+    print(
+        """
   If you have a direct URL to a VCF file, you can download it:
   
   Example (hypothetical URL):
@@ -195,12 +200,14 @@ def main() -> None:
     )
     
   This will download the file using wget or curl.
-    """)
-    
+    """
+    )
+
     # Real workflow example
     print_section("REAL WORKFLOW: SRA TO VARIANTS")
-    
-    print("""
+
+    print(
+        """
   Complete workflow to go from SRA data to variants:
   
   1. DOWNLOAD SRA DATA
@@ -222,12 +229,14 @@ def main() -> None:
   
   5. RUN GWAS
      Use the METAINFORMANT GWAS module with the generated VCF
-    """)
-    
+    """
+    )
+
     # Summary and next steps
     print_section("SUMMARY AND NEXT STEPS")
-    
-    print("""
+
+    print(
+        """
   ✅ CHECKED: Available tools and data sources
   📚 PROVIDED: Links to key Apis mellifera datasets
   📝 DOCUMENTED: Complete workflow from SRA to variants
@@ -256,8 +265,9 @@ def main() -> None:
     - European Variation Archive (EVA)
     - Supplementary data from published papers
     - Zenodo/FigShare repositories
-    """)
-    
+    """
+    )
+
     print("\n" + "=" * 80)
     print("  For questions or issues, see docs/gwas/data_acquisition.md")
     print("=" * 80 + "\n")
@@ -265,4 +275,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

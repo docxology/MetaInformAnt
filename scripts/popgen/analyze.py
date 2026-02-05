@@ -14,9 +14,9 @@ from typing import Any
 from metainformant.core.io import dump_json, load_json
 from metainformant.core.utils.logging import setup_logger
 from metainformant.dna.population import (
+    fay_wu_h_from_sequences,
     fu_and_li_d_star_from_sequences,
     fu_and_li_f_star_from_sequences,
-    fay_wu_h_from_sequences,
 )
 from metainformant.dna.population_analysis import (
     calculate_summary_statistics,
@@ -25,14 +25,14 @@ from metainformant.dna.population_analysis import (
 )
 from metainformant.dna.sequences import read_fasta
 from metainformant.gwas.quality import test_hwe
-from metainformant.gwas.structure import compute_pca, compute_kinship_matrix
-# Note: Additional neutrality tests are imported where used
-
+from metainformant.gwas.structure import compute_kinship_matrix, compute_pca
 from metainformant.math.demography import (
     bottleneck_effective_size,
     exponential_growth_effective_size,
     two_epoch_effective_size,
 )
+
+# Note: Additional neutrality tests are imported where used
 
 
 def analyze_dataset(dataset_info: dict[str, Any], output_dir: Path) -> dict[str, Any]:
@@ -176,13 +176,15 @@ def analyze_dataset(dataset_info: dict[str, Any], output_dir: Path) -> dict[str,
     # Format results for plotting function
     hwe_result = []
     for i, p_value in enumerate(hwe_p_values):
-        hwe_result.append({
-            "locus": f"Variant_{i}",
-            "p_value": p_value,
-            "chi_square": None,  # Could be calculated if needed
-            "degrees_of_freedom": 2,  # Standard for HWE test
-            "hwe_deviated": p_value < 0.05  # Significant deviation
-        })
+        hwe_result.append(
+            {
+                "locus": f"Variant_{i}",
+                "p_value": p_value,
+                "chi_square": None,  # Could be calculated if needed
+                "degrees_of_freedom": 2,  # Standard for HWE test
+                "hwe_deviated": p_value < 0.05,  # Significant deviation
+            }
+        )
 
     results["scenario_analyses"]["large_genotypes"] = {
         "pca": {

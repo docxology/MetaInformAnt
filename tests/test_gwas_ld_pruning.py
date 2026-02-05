@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.gwas.analysis.ld_pruning import ld_prune, _compute_r_squared_pair
+from metainformant.gwas.analysis.ld_pruning import _compute_r_squared_pair, ld_prune
 
 
 class TestComputeRSquared:

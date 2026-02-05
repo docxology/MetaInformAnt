@@ -21,11 +21,7 @@ from metainformant.core import io
 from metainformant.dna import sequences
 
 # Sample DNA sequences for demonstration
-SAMPLE_SEQUENCES = {
-    "seq1": "ATCGATCGATCGATCG",
-    "seq2": "GCTAGCTAGCTAGCTA",
-    "seq3": "ATATATATATATATAT"
-}
+SAMPLE_SEQUENCES = {"seq1": "ATCGATCGATCGATCG", "seq2": "GCTAGCTAGCTAGCTA", "seq3": "ATATATATATATATAT"}
 
 
 def main():
@@ -49,7 +45,7 @@ def main():
             results_data[seq_id] = {
                 "sequence": sequence,
                 "length": len(sequence),
-                "gc_content": sequences.gc_content(sequence)
+                "gc_content": sequences.gc_content(sequence),
             }
 
             # {{analysis_type}} specific analysis
@@ -61,7 +57,7 @@ def main():
             "domain": "dna",
             "analysis_type": "{{analysis_type}}",
             "description": "DNA {{analysis_type}} analysis example",
-            "results": results_data
+            "results": results_data,
         }
 
         io.dump_json(results, output_file)

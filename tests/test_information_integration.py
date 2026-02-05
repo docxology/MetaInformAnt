@@ -25,7 +25,6 @@ from metainformant.information.integration.integration import (
     singlecell_integration,
 )
 
-
 # ============================================================
 # DNA Integration Tests
 # ============================================================
@@ -317,6 +316,7 @@ class TestNetworkIntegration:
         """Test network entropy calculation."""
         try:
             import networkx as nx
+
             from metainformant.information.integration.networks import network_entropy
 
             G = nx.karate_club_graph()
@@ -329,6 +329,7 @@ class TestNetworkIntegration:
         """Test network entropy with node attribute."""
         try:
             import networkx as nx
+
             from metainformant.information.integration.networks import network_entropy
 
             G = nx.karate_club_graph()
@@ -343,6 +344,7 @@ class TestNetworkIntegration:
         """Test network entropy on empty graph returns 0."""
         try:
             import networkx as nx
+
             from metainformant.information.integration.networks import network_entropy
 
             G = nx.Graph()
@@ -355,6 +357,7 @@ class TestNetworkIntegration:
         """Test information flow calculation."""
         try:
             import networkx as nx
+
             from metainformant.information.integration.networks import information_flow
 
             G = nx.karate_club_graph()
@@ -368,6 +371,7 @@ class TestNetworkIntegration:
         """Test network information centrality returns per-node scores."""
         try:
             import networkx as nx
+
             from metainformant.information.integration.networks import (
                 network_information_centrality,
             )

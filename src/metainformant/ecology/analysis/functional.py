@@ -14,7 +14,7 @@ from __future__ import annotations
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
-from metainformant.core import logging, errors, validation
+from metainformant.core import errors, logging, validation
 
 logger = logging.get_logger(__name__)
 

@@ -43,36 +43,35 @@ __version__ = "0.2.0"
 __author__ = "MetaInformAnt Development Team"
 __license__ = "Apache License 2.0"
 
+# Type checking imports
+from typing import TYPE_CHECKING
+
 # Import all domain modules for easy access
 from . import (
     core,
     dna,
-    rna,
-    protein,
-    gwas,
-    math,
-    information,
-    life_events,
-    visualization,
-    networks,
-    multiomics,
-    singlecell,
-    simulation,
-    quality,
-    ml,
-    ontology,
-    phenotype,
     ecology,
     epigenome,
+    gwas,
+    information,
+    life_events,
     longread,
-    structural_variants,
-    spatial,
+    math,
     menu,
+    ml,
+    multiomics,
+    networks,
+    ontology,
+    phenotype,
+    protein,
+    quality,
+    rna,
+    simulation,
+    singlecell,
+    spatial,
+    structural_variants,
+    visualization,
 )
-
-
-# Type checking imports
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     pass

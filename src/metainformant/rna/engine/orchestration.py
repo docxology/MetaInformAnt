@@ -42,7 +42,7 @@ def run_workflow_for_species(
     Returns:
         Workflow execution results
     """
-    from metainformant.rna.engine.workflow import load_workflow_config, execute_workflow
+    from metainformant.rna.engine.workflow import execute_workflow, load_workflow_config
 
     logger.info(f"Running workflow for species: {species}")
 
@@ -85,8 +85,8 @@ def cleanup_unquantified_samples(config_path: str | Path) -> tuple[int, int]:
     Returns:
         Tuple of (quantified_count, failed_count)
     """
-    from metainformant.rna.engine.workflow import load_workflow_config
     from metainformant.rna.core.cleanup import cleanup_unquantified_samples as cleanup_func
+    from metainformant.rna.engine.workflow import load_workflow_config
 
     config = load_workflow_config(config_path)
 

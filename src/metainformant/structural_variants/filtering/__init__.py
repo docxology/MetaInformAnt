@@ -7,8 +7,7 @@ of structural variant calls.
 
 from __future__ import annotations
 
-from . import quality_filter
-from . import merge
+from . import merge, quality_filter
 
 __all__ = [
     "quality_filter",

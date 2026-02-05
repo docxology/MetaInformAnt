@@ -11,10 +11,10 @@ import warnings
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.axes import Axes
-from matplotlib.patches import FancyBboxPatch, Circle, Rectangle
+from matplotlib.patches import Circle, FancyBboxPatch, Rectangle
 
 from metainformant.core import logging, paths, validation
 
@@ -38,8 +38,8 @@ except ImportError:
     sns = None
 
 try:
-    import plotly.graph_objects as go
     import plotly.express as px
+    import plotly.graph_objects as go
 
     HAS_PLOTLY = True
 except ImportError:

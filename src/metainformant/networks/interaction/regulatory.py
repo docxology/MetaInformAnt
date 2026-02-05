@@ -907,8 +907,8 @@ def infer_grn(
 
     elif method == "mutual_info":
         # Use mutual information for inference
-        from sklearn.feature_selection import mutual_info_regression
         import numpy as np
+        from sklearn.feature_selection import mutual_info_regression
 
         if tf_genes is None:
             # Use all genes as potential TFs

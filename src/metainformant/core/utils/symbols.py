@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from metainformant.core.io.io import load_json, dump_json
+from metainformant.core.io.io import dump_json, load_json
 
 
 @dataclass

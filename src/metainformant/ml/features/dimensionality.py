@@ -6,8 +6,9 @@ for biological data analysis, including PCA, ICA, UMAP, and t-SNE.
 
 from __future__ import annotations
 
-import numpy as np
 from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
 
 from metainformant.core.utils.logging import get_logger
 

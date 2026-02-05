@@ -19,7 +19,7 @@ from typing import Any
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core.io import ensure_directory, dump_json, read_csv, load_json
+from metainformant.core.io import dump_json, ensure_directory, load_json, read_csv
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -40,7 +40,7 @@ Examples:
 
   # Basic statistics only
   %(prog)s --input traits.tsv --analyze-statistics
-        """
+        """,
     )
     parser.add_argument(
         "--input",
@@ -80,19 +80,20 @@ Examples:
 
 def load_phenotype_data(input_path: Path) -> dict[str, Any]:
     """Load phenotype data from various formats.
-    
+
     Args:
         input_path: Path to input file
-        
+
     Returns:
         Dictionary with loaded data and metadata
     """
     logger.info(f"Loading phenotype data from {input_path}")
-    
+
     if input_path.suffix == ".json":
         # Try AntWiki format first
         try:
             from metainformant.phenotype.antwiki import load_antwiki_json
+
             data = load_antwiki_json(input_path)
             return {
                 "format": "antwiki_json",
@@ -125,21 +126,21 @@ def load_phenotype_data(input_path: Path) -> dict[str, Any]:
 
 def analyze_statistics(data: dict[str, Any], output_dir: Path) -> dict[str, Any]:
     """Calculate basic statistics for numeric traits.
-    
+
     Args:
         data: Loaded phenotype data
         output_dir: Output directory for results
-        
+
     Returns:
         Dictionary with statistics results
     """
     logger.info("Calculating trait statistics...")
-    
+
     results = {
         "statistics": {},
         "numeric_traits": [],
     }
-    
+
     if data["format"] == "antwiki_json":
         # Analyze AntWiki measurements
         all_measurements = {}
@@ -148,13 +149,13 @@ def analyze_statistics(data: dict[str, Any], output_dir: Path) -> dict[str, Any]
             for trait, values in measurements.items():
                 if trait not in all_measurements:
                     all_measurements[trait] = []
-                
+
                 # Handle both single values and lists
                 if isinstance(values, list):
                     all_measurements[trait].extend(values)
                 elif isinstance(values, (int, float)):
                     all_measurements[trait].append(values)
-        
+
         # Calculate statistics for each measurement type
         for trait, values in all_measurements.items():
             if values and all(isinstance(v, (int, float)) for v in values):
@@ -166,14 +167,14 @@ def analyze_statistics(data: dict[str, Any], output_dir: Path) -> dict[str, Any]
                     "count": len(numeric_values),
                 }
                 results["numeric_traits"].append(trait)
-    
+
     elif data["format"] == "tabular":
         # Analyze tabular data
         import pandas as pd
-        
+
         df = pd.DataFrame(data["data"])
         numeric_cols = df.select_dtypes(include=["number"]).columns
-        
+
         for col in numeric_cols:
             results["statistics"][col] = {
                 "mean": float(df[col].mean()),
@@ -183,39 +184,39 @@ def analyze_statistics(data: dict[str, Any], output_dir: Path) -> dict[str, Any]
                 "count": int(df[col].count()),
             }
             results["numeric_traits"].append(col)
-    
+
     # Save results
     output_file = output_dir / "statistics_analysis.json"
     dump_json(results, output_file)
     logger.info(f"Statistics analysis saved to {output_file}")
-    
+
     return results
 
 
 def analyze_correlations(data: dict[str, Any], output_dir: Path) -> dict[str, Any]:
     """Calculate correlations between numeric traits.
-    
+
     Args:
         data: Loaded phenotype data
         output_dir: Output directory for results
-        
+
     Returns:
         Dictionary with correlation results
     """
     logger.info("Calculating trait correlations...")
-    
+
     results = {
         "correlations": {},
     }
-    
+
     try:
-        import pandas as pd
         import numpy as np
+        import pandas as pd
     except ImportError:
         logger.warning("pandas/numpy required for correlation analysis")
         results["error"] = "pandas/numpy not available"
         return results
-    
+
     if data["format"] == "antwiki_json":
         # Convert AntWiki data to dataframe for correlation
         records = []
@@ -225,15 +226,17 @@ def analyze_correlations(data: dict[str, Any], output_dir: Path) -> dict[str, An
             for trait, values in measurements.items():
                 # Use mean if list, otherwise use value directly
                 if isinstance(values, list) and values:
-                    record[trait] = sum(v for v in values if isinstance(v, (int, float))) / len([v for v in values if isinstance(v, (int, float))])
+                    record[trait] = sum(v for v in values if isinstance(v, (int, float))) / len(
+                        [v for v in values if isinstance(v, (int, float))]
+                    )
                 elif isinstance(values, (int, float)):
                     record[trait] = values
             records.append(record)
-        
+
         if records:
             df = pd.DataFrame(records)
             numeric_cols = df.select_dtypes(include=["number"]).columns
-            
+
             if len(numeric_cols) >= 2:
                 corr_matrix = df[numeric_cols].corr()
                 results["correlations"] = corr_matrix.to_dict()
@@ -242,39 +245,39 @@ def analyze_correlations(data: dict[str, Any], output_dir: Path) -> dict[str, An
                 results["note"] = "Need at least 2 numeric traits for correlation"
         else:
             results["note"] = "No valid records for correlation analysis"
-    
+
     elif data["format"] == "tabular":
         df = pd.DataFrame(data["data"])
         numeric_cols = df.select_dtypes(include=["number"]).columns
-        
+
         if len(numeric_cols) >= 2:
             corr_matrix = df[numeric_cols].corr()
             results["correlations"] = corr_matrix.to_dict()
             logger.info(f"Calculated correlations for {len(numeric_cols)} traits")
         else:
             results["note"] = "Need at least 2 numeric traits for correlation"
-    
+
     # Save results
     output_file = output_dir / "correlation_analysis.json"
     dump_json(results, output_file)
     logger.info(f"Correlation analysis saved to {output_file}")
-    
+
     return results
 
 
 def run_workflow(args):
     """Execute phenotype analysis workflow.
-    
+
     Args:
         args: Parsed command-line arguments
     """
     logger.info("Starting phenotype analysis workflow")
     logger.info(f"Input: {args.input}")
     logger.info(f"Output: {args.output}")
-    
+
     if not args.input.exists():
         raise FileNotFoundError(f"Input file not found: {args.input}")
-    
+
     if args.dry_run:
         logger.info("DRY RUN - no changes will be made")
         logger.info(f"Would analyze: {args.input}")
@@ -284,19 +287,21 @@ def run_workflow(args):
         if args.analyze_correlations:
             logger.info("Would calculate correlations")
         return
-    
+
     # Ensure output directory exists
     output_dir = ensure_directory(args.output)
     logger.info(f"Output directory: {output_dir}")
-    
+
     # Load phenotype data
     try:
         data = load_phenotype_data(args.input)
-        logger.info(f"Loaded data: {data.get('format', 'unknown')} format, {data.get('num_entries', data.get('num_rows', 'unknown'))} entries")
+        logger.info(
+            f"Loaded data: {data.get('format', 'unknown')} format, {data.get('num_entries', data.get('num_rows', 'unknown'))} entries"
+        )
     except Exception as e:
         logger.error(f"Failed to load phenotype data: {e}")
         raise
-    
+
     # Run analyses
     workflow_results = {
         "input_file": str(args.input),
@@ -304,7 +309,7 @@ def run_workflow(args):
         "data_format": data.get("format", "unknown"),
         "analyses": {},
     }
-    
+
     # Statistics analysis (always run if no specific analysis requested, or if explicitly requested)
     if args.analyze_statistics or not args.analyze_correlations:
         try:
@@ -313,7 +318,7 @@ def run_workflow(args):
         except Exception as e:
             logger.error(f"Statistics analysis failed: {e}", exc_info=True)
             workflow_results["analyses"]["statistics"] = {"error": str(e)}
-    
+
     # Correlation analysis
     if args.analyze_correlations:
         try:
@@ -322,23 +327,23 @@ def run_workflow(args):
         except Exception as e:
             logger.error(f"Correlation analysis failed: {e}", exc_info=True)
             workflow_results["analyses"]["correlations"] = {"error": str(e)}
-    
+
     # Save workflow summary
     summary_file = output_dir / "workflow_summary.json"
     dump_json(workflow_results, summary_file, indent=2)
     logger.info(f"Workflow summary saved to {summary_file}")
-    
+
     logger.info("Workflow complete")
 
 
 def main():
     """Main entry point."""
     args = parse_args()
-    
+
     # Setup logging level
     if args.verbose:
         logger.setLevel(logging.DEBUG)
-    
+
     try:
         run_workflow(args)
         return 0
@@ -349,7 +354,3 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
-
-
-

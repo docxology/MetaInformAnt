@@ -7,10 +7,11 @@ making under uncertainty.
 
 from __future__ import annotations
 
-from typing import Tuple
 import math
-import scipy.stats as stats
+from typing import Tuple
+
 import numpy as np
+import scipy.stats as stats
 
 from metainformant.core import logging
 

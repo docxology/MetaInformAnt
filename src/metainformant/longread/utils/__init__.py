@@ -6,8 +6,7 @@ functions for common long-read analysis workflows.
 
 from __future__ import annotations
 
-from . import batch
-from . import summary
+from . import batch, summary
 
 __all__ = [
     "batch",

@@ -15,8 +15,8 @@ logger = logging.get_logger(__name__)
 
 # Optional dependencies
 try:
-    import matplotlib.pyplot as plt
     import matplotlib.dates as mdates
+    import matplotlib.pyplot as plt
     import numpy as np
 
     HAS_MATPLOTLIB = True
@@ -1113,7 +1113,7 @@ def plot_prediction_accuracy(
                 )
 
         # ROC curve
-        from sklearn.metrics import roc_curve, auc
+        from sklearn.metrics import auc, roc_curve
 
         fpr, tpr, _ = roc_curve(y_true, y_pred)
         roc_auc = auc(fpr, tpr)
@@ -1128,7 +1128,7 @@ def plot_prediction_accuracy(
         axes[0, 1].legend(loc="lower right")
 
         # Precision-Recall curve
-        from sklearn.metrics import precision_recall_curve, average_precision_score
+        from sklearn.metrics import average_precision_score, precision_recall_curve
 
         precision, recall, _ = precision_recall_curve(y_true, y_pred)
         average_precision = average_precision_score(y_true, y_pred)
@@ -1279,8 +1279,8 @@ def plot_sequence_similarity(
         return None
 
     try:
-        from sklearn.metrics.pairwise import cosine_similarity
         from sklearn.feature_extraction.text import TfidfVectorizer
+        from sklearn.metrics.pairwise import cosine_similarity
 
         HAS_SKLEARN = True
     except ImportError:

@@ -308,8 +308,8 @@ def kmer_distance(seq1: str, seq2: str, k: int = 3) -> float:
     Returns:
         K-mer distance (cosine distance between k-mer frequency vectors)
     """
-    from collections import Counter
     import math
+    from collections import Counter
 
     def get_kmer_counts(seq: str, k: int) -> Counter:
         """Get k-mer counts for a sequence."""

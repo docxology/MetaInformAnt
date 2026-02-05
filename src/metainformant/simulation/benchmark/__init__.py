@@ -8,11 +8,11 @@ comparison/evaluation.
 from __future__ import annotations
 
 from .generators import (
-    generate_benchmark_dataset,
-    generate_synthetic_variants,
-    generate_synthetic_expression,
-    evaluate_benchmark,
     benchmark_suite,
+    evaluate_benchmark,
+    generate_benchmark_dataset,
+    generate_synthetic_expression,
+    generate_synthetic_variants,
 )
 
 __all__ = [

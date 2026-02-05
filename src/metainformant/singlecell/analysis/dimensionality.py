@@ -8,17 +8,18 @@ single-cell data.
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 import pandas as pd
 
-from metainformant.core import logging, errors, validation
+from metainformant.core import errors, logging, validation
 
 # Try to import optional dependencies
 try:
     from sklearn.decomposition import PCA
-    from sklearn.preprocessing import StandardScaler
     from sklearn.manifold import TSNE
+    from sklearn.preprocessing import StandardScaler
 
     HAS_SKLEARN = True
     HAS_TSNE = True

@@ -10,7 +10,9 @@ import pytest
 from metainformant.gwas.visualization.visualization_statistical import (
     lambda_gc_plot,
     power_plot,
-    qq_plot as qq_plot_statistical,
+)
+from metainformant.gwas.visualization.visualization_statistical import qq_plot as qq_plot_statistical
+from metainformant.gwas.visualization.visualization_statistical import (
     qq_plot_stratified,
     volcano_plot,
 )

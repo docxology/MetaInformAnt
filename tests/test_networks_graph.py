@@ -498,7 +498,7 @@ class TestNetworkComparison:
 
     def test_network_union_intersection(self):
         """Test network union and intersection."""
-        from metainformant.networks.analysis.graph import network_union, network_intersection
+        from metainformant.networks.analysis.graph import network_intersection, network_union
 
         net1 = create_network(["A", "B", "C"], directed=False)
         net1.add_edge("A", "B", weight=0.5)
@@ -516,7 +516,7 @@ class TestNetworkComparison:
 
     def test_remove_node_edge(self):
         """Test node and edge removal."""
-        from metainformant.networks.analysis.graph import remove_node, remove_edge
+        from metainformant.networks.analysis.graph import remove_edge, remove_node
 
         network = create_network(["A", "B", "C"], directed=False)
         network.add_edge("A", "B")

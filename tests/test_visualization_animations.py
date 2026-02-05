@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 import numpy as np
 import pytest
 
 from metainformant.visualization.plots.animations import (
-    animate_time_series,
-    animate_evolution,
     animate_clustering,
+    animate_evolution,
     animate_network,
+    animate_time_series,
     animate_trajectory,
 )
 

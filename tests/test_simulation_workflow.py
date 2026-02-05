@@ -25,15 +25,12 @@ from metainformant.simulation import (
     run_simulation_workflow,
     validate_simulation_output,
 )
-from metainformant.simulation.workflow.workflow import (
-    SimulationConfig as WorkflowSimulationConfig,
-    calibrate_simulation_parameters as wf_calibrate,
-    create_simulation_config as wf_create_config,
-    run_benchmark_simulation as wf_run_benchmark,
-    run_simulation_workflow as wf_run_workflow,
-    validate_simulation_output as wf_validate_output,
-)
-
+from metainformant.simulation.workflow.workflow import SimulationConfig as WorkflowSimulationConfig
+from metainformant.simulation.workflow.workflow import calibrate_simulation_parameters as wf_calibrate
+from metainformant.simulation.workflow.workflow import create_simulation_config as wf_create_config
+from metainformant.simulation.workflow.workflow import run_benchmark_simulation as wf_run_benchmark
+from metainformant.simulation.workflow.workflow import run_simulation_workflow as wf_run_workflow
+from metainformant.simulation.workflow.workflow import validate_simulation_output as wf_validate_output
 
 # ---------------------------------------------------------------------------
 # Constants for small/fast simulation sizes

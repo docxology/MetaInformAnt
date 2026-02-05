@@ -38,38 +38,44 @@ class ExampleGenerator:
             "core": {
                 "template": "base_template.py",
                 "description": "Core utilities demonstration",
-                "features": ["Configuration management", "I/O operations", "Logging setup"]
+                "features": ["Configuration management", "I/O operations", "Logging setup"],
             },
             "dna": {
                 "template": "dna_template.py",
                 "description": "DNA sequence analysis",
-                "features": ["Sequence processing", "Analysis algorithms", "Result visualization"]
+                "features": ["Sequence processing", "Analysis algorithms", "Result visualization"],
             },
             "rna": {
                 "template": "rna_template.py",
                 "description": "RNA analysis workflows",
-                "features": ["Transcriptomic analysis", "Expression quantification", "Workflow orchestration"]
+                "features": ["Transcriptomic analysis", "Expression quantification", "Workflow orchestration"],
             },
             "gwas": {
                 "template": "gwas_template.py",
                 "description": "Genome-wide association studies",
-                "features": ["Association testing", "Statistical analysis", "Visualization"]
+                "features": ["Association testing", "Statistical analysis", "Visualization"],
             },
             "protein": {
                 "template": "protein_template.py",
                 "description": "Protein sequence analysis",
-                "features": ["Structure analysis", "Sequence alignment", "Property calculation"]
+                "features": ["Structure analysis", "Sequence alignment", "Property calculation"],
             },
             "ml": {
                 "template": "ml_template.py",
                 "description": "Machine learning analysis",
-                "features": ["Model training", "Feature selection", "Performance evaluation"]
-            }
+                "features": ["Model training", "Feature selection", "Performance evaluation"],
+            },
         }
 
-    def generate_example(self, domain: str, name: str, description: str | None = None,
-                        features: List[str] | None = None, template: str | None = None,
-                        dry_run: bool = False) -> Dict[str, Any]:
+    def generate_example(
+        self,
+        domain: str,
+        name: str,
+        description: str | None = None,
+        features: List[str] | None = None,
+        template: str | None = None,
+        dry_run: bool = False,
+    ) -> Dict[str, Any]:
         """Generate a new example file."""
         if domain not in self.domain_configs:
             available_domains = list(self.domain_configs.keys())
@@ -97,7 +103,7 @@ class ExampleGenerator:
             raise FileExistsError(f"Example already exists: {example_file}")
 
         # Load template
-        with open(template_path, 'r', encoding='utf-8') as f:
+        with open(template_path, "r", encoding="utf-8") as f:
             template_content = f.read()
 
         # Prepare template variables
@@ -109,7 +115,7 @@ class ExampleGenerator:
             "analysis_type": self._get_analysis_type(domain, name),
             "imports": self._get_domain_imports(domain),
             "custom_imports": self._get_custom_imports(domain),
-            "code_block": self._get_code_block(domain, name)
+            "code_block": self._get_code_block(domain, name),
         }
 
         # Render template
@@ -120,14 +126,14 @@ class ExampleGenerator:
                 "action": "dry_run",
                 "example_file": str(example_file),
                 "content": rendered_content,
-                "template_vars": template_vars
+                "template_vars": template_vars,
             }
 
         # Create directory if needed
         example_dir.mkdir(parents=True, exist_ok=True)
 
         # Write example file
-        with open(example_file, 'w', encoding='utf-8') as f:
+        with open(example_file, "w", encoding="utf-8") as f:
             f.write(rendered_content)
 
         # Update README if it exists
@@ -139,7 +145,7 @@ class ExampleGenerator:
             "action": "created",
             "example_file": str(example_file),
             "readme_updated": readme_path.exists(),
-            "template_used": template
+            "template_used": template,
         }
 
     def _render_template(self, template: str, variables: Dict[str, Any]) -> str:
@@ -154,18 +160,22 @@ class ExampleGenerator:
                 if key == "features":
                     # Special handling for features list
                     features_text = "\n".join(f"- {feature}" for feature in value)
-                    result = result.replace("{% for feature in features -%}\n- {{ feature }}\n{% endfor %}", features_text)
+                    result = result.replace(
+                        "{% for feature in features -%}\n- {{ feature }}\n{% endfor %}", features_text
+                    )
                 elif key == "imports":
                     imports_text = "\n".join(value)
-                    result = result.replace("{% for import_line in imports -%}\n{{ import_line }}\n{% endfor %}", imports_text)
+                    result = result.replace(
+                        "{% for import_line in imports -%}\n{{ import_line }}\n{% endfor %}", imports_text
+                    )
                 else:
                     result = result.replace(f"{{{{ {key} }}}}", str(value))
             else:
                 result = result.replace(f"{{{{ {key} }}}}", str(value))
 
         # Clean up any remaining template tags
-        result = re.sub(r'{%.*?%}', '', result)
-        result = re.sub(r'{{.*?}}', '', result)
+        result = re.sub(r"{%.*?%}", "", result)
+        result = re.sub(r"{{.*?}}", "", result)
 
         return result
 
@@ -176,16 +186,10 @@ class ExampleGenerator:
                 "sequences": "Sequence",
                 "alignment": "Alignment",
                 "phylogeny": "Phylogenetic",
-                "population": "Population Genetics"
+                "population": "Population Genetics",
             },
-            "rna": {
-                "amalgkit": "Amalgkit Workflow",
-                "quantification": "Expression Quantification"
-            },
-            "gwas": {
-                "association": "Association Testing",
-                "visualization": "GWAS Visualization"
-            }
+            "rna": {"amalgkit": "Amalgkit Workflow", "quantification": "Expression Quantification"},
+            "gwas": {"association": "Association Testing", "visualization": "GWAS Visualization"},
         }
 
         return analysis_types.get(domain, {}).get(name, "Analysis")
@@ -198,7 +202,7 @@ class ExampleGenerator:
             "gwas": ["from metainformant.gwas import association"],
             "protein": ["from metainformant.protein import sequences"],
             "ml": ["from metainformant.ml import classification"],
-            "core": []
+            "core": [],
         }
         return imports_map.get(domain, [])
 
@@ -209,7 +213,7 @@ class ExampleGenerator:
     def _get_code_block(self, domain: str, name: str) -> str:
         """Get the main code block for the example."""
         code_blocks = {
-            "dna": '''
+            "dna": """
         # Perform sequence analysis
         if "{{analysis_type}}" == "Sequence":
             results_data[seq_id].update({
@@ -220,8 +224,8 @@ class ExampleGenerator:
         elif "{{analysis_type}}" == "Alignment":
             # Simple alignment example
             results_data[seq_id]["aligned_with_seq1"] = "Example alignment result"
-        ''',
-            "core": '''
+        """,
+            "core": """
         # Example core functionality
         results_data = {
             "config_loaded": True,
@@ -229,20 +233,23 @@ class ExampleGenerator:
             "logging_setup": True,
             "paths_validated": True
         }
-        '''
+        """,
         }
 
-        return code_blocks.get(domain, '''
+        return code_blocks.get(
+            domain,
+            """
         # Add your example code here
         results_data = {
             "placeholder": "Replace with actual analysis results"
         }
-        ''')
+        """,
+        )
 
     def _update_readme(self, readme_path: Path, name: str, description: str) -> None:
         """Update domain README to include new example."""
         try:
-            with open(readme_path, 'r', encoding='utf-8') as f:
+            with open(readme_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
             # Add to examples list if there's a section
@@ -250,7 +257,7 @@ class ExampleGenerator:
                 example_entry = f"- `example_{name}.py`: {description}\n"
                 content = content.replace("## Examples", f"## Examples\n{example_entry}", 1)
 
-                with open(readme_path, 'w', encoding='utf-8') as f:
+                with open(readme_path, "w", encoding="utf-8") as f:
                     f.write(content)
 
         except Exception:
@@ -285,7 +292,7 @@ def main():
             description=args.description,
             features=features,
             template=args.template,
-            dry_run=args.dry_run
+            dry_run=args.dry_run,
         )
 
         if args.dry_run:
@@ -293,10 +300,10 @@ def main():
             print(f"File: {result['example_file']}")
             print("\nContent preview:")
             print("-" * 40)
-            print(result['content'][:500] + "..." if len(result['content']) > 500 else result['content'])
+            print(result["content"][:500] + "..." if len(result["content"]) > 500 else result["content"])
         else:
             print(f"✅ Created example: {result['example_file']}")
-            if result.get('readme_updated'):
+            if result.get("readme_updated"):
                 print("✅ Updated README.md")
             print(f"Template used: {result['template_used']}")
 

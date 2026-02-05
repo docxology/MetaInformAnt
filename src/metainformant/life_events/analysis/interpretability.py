@@ -6,9 +6,10 @@ including feature attribution, attention weights, and temporal pattern analysis.
 
 from __future__ import annotations
 
-import numpy as np
-from typing import Dict, List, Any, Optional, Union, Callable
 from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Union
+
+import numpy as np
 
 from metainformant.core import logging
 
@@ -323,7 +324,7 @@ def learn_event_embeddings(
     Returns:
         Dictionary mapping events to embedding vectors
     """
-    from collections import defaultdict, Counter
+    from collections import Counter, defaultdict
 
     logger.info(f"Learning embeddings for {len(sequences)} sequences")
 

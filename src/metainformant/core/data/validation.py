@@ -10,9 +10,9 @@ import json
 from pathlib import Path
 from typing import Any, Callable
 
-from metainformant.core.utils.errors import ValidationError
-from metainformant.core.io.paths import expand_and_resolve, is_within
 from metainformant.core.io.io import load_json
+from metainformant.core.io.paths import expand_and_resolve, is_within
+from metainformant.core.utils.errors import ValidationError
 
 
 def validate_type(value: Any, expected_type: type | tuple[type, ...], name: str = "value") -> None:

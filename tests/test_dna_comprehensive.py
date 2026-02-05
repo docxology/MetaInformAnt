@@ -14,12 +14,12 @@ from pathlib import Path
 import pytest
 
 from metainformant.core.utils.errors import ValidationError
+from metainformant.dna.alignment.distances import jc69_distance, kimura_2p_distance, kmer_distance, p_distance
+from metainformant.dna.io.fastq import average_phred_by_position, iter_fastq
 
 # Import gc_content from core functionality tests since it's working there
 from metainformant.dna.sequence.composition import gc_skew  # We'll use a different approach for gc_content
 from metainformant.dna.sequence.composition import cumulative_gc_skew, melting_temperature
-from metainformant.dna.alignment.distances import jc69_distance, kimura_2p_distance, kmer_distance, p_distance
-from metainformant.dna.io.fastq import average_phred_by_position, iter_fastq
 from metainformant.simulation.models.sequences import generate_random_dna
 
 

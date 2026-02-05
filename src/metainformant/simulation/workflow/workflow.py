@@ -7,16 +7,16 @@ All workflows support reproducible results and comprehensive output tracking.
 
 from __future__ import annotations
 
+import json
 import random
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
-import json
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import numpy as np
 
-from metainformant.core import logging, errors, validation, config, io, paths
+from metainformant.core import config, errors, io, logging, paths, validation
 
 logger = logging.get_logger(__name__)
 
@@ -458,7 +458,7 @@ def run_simulation_workflow(config: SimulationConfig) -> Dict[str, Any]:
 
 def _run_sequence_simulation(config: SimulationConfig, rng: random.Random) -> Dict[str, Any]:
     """Run sequence evolution simulation."""
-    from ..models.sequences import generate_random_dna, evolve_sequence, analyze_sequence_divergence
+    from ..models.sequences import analyze_sequence_divergence, evolve_sequence, generate_random_dna
 
     # Generate initial population
     population = []
@@ -538,10 +538,10 @@ def _run_rna_simulation(config: SimulationConfig, rng: random.Random) -> Dict[st
 def _run_agent_simulation(config: SimulationConfig, rng: random.Random) -> Dict[str, Any]:
     """Run agent-based ecosystem simulation."""
     from ..models.agents import (
-        create_ecosystem,
-        run_simulation,
-        get_population_dynamics,
         calculate_biodiversity_metrics,
+        create_ecosystem,
+        get_population_dynamics,
+        run_simulation,
     )
 
     # Create ecosystem

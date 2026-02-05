@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import pytest
 import tempfile
 from pathlib import Path
+
+import pytest
 
 from metainformant.core import io, paths
 

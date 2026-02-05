@@ -10,33 +10,16 @@ cell type deconvolution from bulk RNA-seq data.
 from __future__ import annotations
 
 # Import subpackages
-from . import core  # Base configs and utils
-from . import analysis  # Analysis modules (expression, QC, validation)
 from . import amalgkit  # Amalgkit integration
+from . import analysis  # Analysis modules (expression, QC, validation)
+from . import core  # Base configs and utils
+from . import deconvolution  # Cell type deconvolution from bulk RNA-seq
 from . import engine  # Orchestration engine (depends on others)
 from . import retrieval  # Data retrieval (ENA downloader)
-from . import steps  # Step runners shim
 from . import splicing  # Alternative splicing detection and isoform analysis
-from . import deconvolution  # Cell type deconvolution from bulk RNA-seq
-
-# Import modules from subpackages for backward compatibility
-from .core import (
-    cleanup,
-    configs,
-    deps,
-    environment,
-    validate_environment,
-)
-from .engine import (
-    discovery,
-    monitoring,
-    orchestration,
-    pipeline,
-    progress_tracker,
-    workflow,
-)
+from . import steps  # Step runners shim
+from .amalgkit import amalgkit as amalgkit_module
 from .amalgkit import (
-    amalgkit as amalgkit_module,
     genome_prep,
     metadata_filter,
     tissue_normalizer,
@@ -46,19 +29,36 @@ from .analysis import (
     validation,
 )
 
+# Import modules from subpackages for backward compatibility
+from .core import (
+    cleanup,
+    configs,
+    deps,
+    environment,
+    validate_environment,
+)
+
 # Direct imports of commonly used classes and functions
-from .core.configs import RNAPipelineConfig, AmalgkitRunLayout
-from .engine.progress_tracker import ProgressTracker
+from .core.configs import AmalgkitRunLayout, RNAPipelineConfig
+from .engine import (
+    discovery,
+    monitoring,
+    orchestration,
+    pipeline,
+    progress_tracker,
+    workflow,
+)
 from .engine.pipeline import summarize_curate_tables
+from .engine.progress_tracker import ProgressTracker
 from .engine.workflow import AmalgkitWorkflowConfig
 
 # Conditional imports for new analysis modules
 try:
     from .analysis.expression import (
-        normalize_counts,
         differential_expression,
-        pca_analysis,
         filter_low_expression,
+        normalize_counts,
+        pca_analysis,
     )
 except ImportError:
     pass
@@ -74,17 +74,17 @@ except ImportError:
 # Conditional imports for splicing submodule
 try:
     from .splicing import (
-        detect_splice_junctions,
-        classify_splicing_events,
-        compute_psi,
-        differential_splicing,
-        find_novel_junctions,
-        compute_splice_site_strength,
-        quantify_isoforms,
         build_isoform_graph,
-        enumerate_isoforms,
-        compute_isoform_diversity,
+        classify_splicing_events,
         compare_isoform_usage,
+        compute_isoform_diversity,
+        compute_psi,
+        compute_splice_site_strength,
+        detect_splice_junctions,
+        differential_splicing,
+        enumerate_isoforms,
+        find_novel_junctions,
+        quantify_isoforms,
     )
 except ImportError:
     pass
@@ -92,12 +92,12 @@ except ImportError:
 # Conditional imports for deconvolution submodule
 try:
     from .deconvolution import (
+        batch_deconvolve,
+        build_signature_matrix,
         deconvolve_nnls,
         deconvolve_svr,
-        build_signature_matrix,
         select_marker_genes,
         validate_deconvolution,
-        batch_deconvolve,
     )
 except ImportError:
     pass

@@ -7,10 +7,10 @@ Uses real data only (NO mocking per project policy).
 from __future__ import annotations
 
 import math
-import pytest
 from pathlib import Path
 from typing import List
 
+import pytest
 
 # ──────────────────────────────────────────────────────────────────────────────
 # Test data fixtures
@@ -982,9 +982,9 @@ class TestPackageImports:
     def test_top_level_re_exports(self):
         """Test that key functions are available at the ecology package level."""
         from metainformant.ecology import (
+            beta_diversity,
+            community_metrics,
             shannon_diversity,
             simpson_diversity,
             species_richness,
-            beta_diversity,
-            community_metrics,
         )

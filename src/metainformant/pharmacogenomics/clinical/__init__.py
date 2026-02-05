@@ -6,8 +6,6 @@ and clinical pharmacogenomic report generation.
 
 from __future__ import annotations
 
-from . import pathogenicity
-from . import drug_interaction
-from . import reporting
+from . import drug_interaction, pathogenicity, reporting
 
 __all__ = ["pathogenicity", "drug_interaction", "reporting"]

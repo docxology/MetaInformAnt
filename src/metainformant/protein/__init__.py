@@ -8,12 +8,7 @@ protein-protein interactions, proteome analysis, and orchestrated workflows.
 from __future__ import annotations
 
 # Import subpackages
-from . import database
-from . import domains
-from . import function
-from . import sequence
-from . import structure
-from . import visualization
+from . import database, domains, function, sequence, structure, visualization
 
 # Import modules from subpackages for backward compatibility
 from .sequence import (
@@ -21,11 +16,9 @@ from .sequence import (
     proteomes,
     sequences,
 )
-from .structure import (
-    analysis as structure_analysis,
-    io as structure_io,
-    general as structure_general,
-)
+from .structure import analysis as structure_analysis
+from .structure import general as structure_general
+from .structure import io as structure_io
 
 # Optional imports with graceful fallbacks
 try:
@@ -59,10 +52,8 @@ except ImportError:
     uniprot = None  # type: ignore[assignment]
 
 # Domain analysis
-from .domains import (
-    classification as domain_classification,
-    detection as domain_detection,
-)
+from .domains import classification as domain_classification
+from .domains import detection as domain_detection
 
 # Function prediction
 from .function import prediction as function_prediction

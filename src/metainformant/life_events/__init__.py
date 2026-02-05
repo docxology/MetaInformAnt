@@ -68,40 +68,7 @@ See Also:
 from __future__ import annotations
 
 # Import subpackages
-from . import analysis
-from . import core
-from . import models
-from . import survival
-from . import visualization
-from . import workflow
-
-# Import modules from subpackages for backward compatibility
-from .models import (
-    embeddings,
-    models as models_module,
-)
-from .core import (
-    config,
-    events,
-    utils,
-)
-from .core.events import Event, EventSequence, EventDatabase
-
-# Models
-from .models.models import (
-    EventSequencePredictor,
-    EnsemblePredictor,
-    GRUSequenceModel,
-    LSTMSequenceModel,
-    MultiTaskPredictor,
-    SurvivalPredictor,
-    attention_weights,
-)
-from .models.embeddings import (
-    learn_event_embeddings,
-    biological_embedding,
-    domain_specific_embeddings,
-)
+from . import analysis, core, models, survival, visualization, workflow
 
 # Analysis
 from .analysis import (
@@ -109,6 +76,82 @@ from .analysis import (
     feature_attribution,
 )
 from .analysis.interpretability import temporal_patterns
+from .core import (
+    config,
+    events,
+    utils,
+)
+
+# Config
+from .core.config import LifeEventsWorkflowConfig, load_life_events_config
+from .core.events import Event, EventDatabase, EventSequence
+
+# Utils
+from .core.utils import (
+    add_temporal_noise,
+    convert_sequences_to_tokens,
+    generate_cohort_sequences,
+    generate_event_chain,
+    generate_synthetic_life_events,
+    get_event_statistics,
+    load_sequences_from_json,
+    sequence_embeddings,
+    validate_sequence,
+)
+
+# Import modules from subpackages for backward compatibility
+from .models import (
+    embeddings,
+)
+from .models import models as models_module
+from .models.embeddings import (
+    biological_embedding,
+    domain_specific_embeddings,
+    learn_event_embeddings,
+)
+
+# Models
+from .models.models import (
+    EnsemblePredictor,
+    EventSequencePredictor,
+    GRUSequenceModel,
+    LSTMSequenceModel,
+    MultiTaskPredictor,
+    SurvivalPredictor,
+    attention_weights,
+)
+
+# Survival analysis
+from .survival.time_to_event import (
+    competing_risks,
+    cox_ph_model,
+    kaplan_meier_estimator,
+    recurrent_events,
+    time_varying_covariates,
+)
+from .visualization import visualization as visualization_module
+
+# Visualization
+from .visualization.visualization import (
+    plot_attention_heatmap,
+    plot_domain_distribution,
+    plot_domain_timeline,
+    plot_embedding_clusters,
+    plot_event_cooccurrence,
+    plot_event_embeddings,
+    plot_event_frequency_heatmap,
+    plot_event_timeline,
+    plot_intervention_effects,
+    plot_outcome_distribution,
+    plot_population_comparison,
+    plot_prediction_accuracy,
+    plot_prediction_importance,
+    plot_sequence_length_distribution,
+    plot_sequence_similarity,
+    plot_temporal_density,
+    plot_temporal_patterns,
+    plot_transition_network,
+)
 
 # Workflow
 from .workflow import workflow as workflow_module
@@ -117,54 +160,6 @@ from .workflow.workflow import (
     compare_populations,
     intervention_analysis,
 )
-
-# Utils
-from .core.utils import (
-    load_sequences_from_json,
-    get_event_statistics,
-    add_temporal_noise,
-    validate_sequence,
-    generate_cohort_sequences,
-    generate_synthetic_life_events,
-    generate_event_chain,
-    sequence_embeddings,
-    convert_sequences_to_tokens,
-)
-
-# Config
-from .core.config import LifeEventsWorkflowConfig, load_life_events_config
-
-# Survival analysis
-from .survival.time_to_event import (
-    kaplan_meier_estimator,
-    cox_ph_model,
-    competing_risks,
-    recurrent_events,
-    time_varying_covariates,
-)
-
-# Visualization
-from .visualization.visualization import (
-    plot_domain_distribution,
-    plot_domain_timeline,
-    plot_event_timeline,
-    plot_event_embeddings,
-    plot_attention_heatmap,
-    plot_prediction_importance,
-    plot_embedding_clusters,
-    plot_event_cooccurrence,
-    plot_event_frequency_heatmap,
-    plot_intervention_effects,
-    plot_outcome_distribution,
-    plot_population_comparison,
-    plot_prediction_accuracy,
-    plot_sequence_length_distribution,
-    plot_sequence_similarity,
-    plot_temporal_density,
-    plot_temporal_patterns,
-    plot_transition_network,
-)
-from .visualization import visualization as visualization_module
 
 # Optional imports with graceful fallbacks
 try:

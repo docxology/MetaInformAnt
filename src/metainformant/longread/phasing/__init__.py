@@ -7,7 +7,6 @@ switch error computation, read haplotagging, and allele-specific analysis.
 from __future__ import annotations
 
 from . import haplotyping
-
 from .haplotyping import (
     allele_specific_analysis,
     build_phase_blocks,

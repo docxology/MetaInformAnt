@@ -162,8 +162,8 @@ def setup_test_environment():
         # If metainformant.core.filesystem is not available (e.g., package not installed),
         # fall back to manual detection using the same logic
         try:
-            import subprocess
             import platform
+            import subprocess
 
             # Detect filesystem type
             fs_type = "unknown"
@@ -222,6 +222,7 @@ def load_ncbi_config():
     if "NCBI_EMAIL" not in os.environ:
         try:
             from pathlib import Path
+
             from metainformant.core.utils.config import load_mapping_from_file
 
             config_path = Path(__file__).parent.parent / "config" / "ncbi.yaml"
@@ -248,7 +249,9 @@ def ensure_amalgkit_available():
     """
     import os
     from pathlib import Path
+
     import pytest
+
     from metainformant.rna.amalgkit.amalgkit import check_cli_available, ensure_cli_available
 
     # Ensure user local bin is in PATH (common for --user installs)

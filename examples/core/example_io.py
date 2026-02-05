@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import csv
 from pathlib import Path
+
 from metainformant.core import io
+
 
 def main():
     """Demonstrate file I/O operations."""
@@ -26,21 +28,13 @@ def main():
 
     # Sample data for demonstration
     sample_data = {
-        "analysis": {
-            "type": "dna_sequence_analysis",
-            "timestamp": "2024-12-26T10:00:00Z",
-            "version": "1.0"
-        },
+        "analysis": {"type": "dna_sequence_analysis", "timestamp": "2024-12-26T10:00:00Z", "version": "1.0"},
         "sequences": [
             {"id": "seq1", "sequence": "ATCGATCG", "length": 8, "gc_content": 0.5},
             {"id": "seq2", "sequence": "GCTAGCTA", "length": 8, "gc_content": 0.5},
-            {"id": "seq3", "sequence": "TTTTAAAA", "length": 8, "gc_content": 0.0}
+            {"id": "seq3", "sequence": "TTTTAAAA", "length": 8, "gc_content": 0.0},
         ],
-        "statistics": {
-            "total_sequences": 3,
-            "average_length": 8.0,
-            "average_gc": 0.333
-        }
+        "statistics": {"total_sequences": 3, "average_length": 8.0, "average_gc": 0.333},
     }
 
     # 1. JSON file operations
@@ -71,12 +65,9 @@ def main():
     # Convert sequence data to CSV format
     csv_data = []
     for seq in sample_data["sequences"]:
-        csv_data.append({
-            "id": seq["id"],
-            "sequence": seq["sequence"],
-            "length": seq["length"],
-            "gc_content": seq["gc_content"]
-        })
+        csv_data.append(
+            {"id": seq["id"], "sequence": seq["sequence"], "length": seq["length"], "gc_content": seq["gc_content"]}
+        )
 
     csv_file = output_dir / "io_example.csv"
     io.write_csv(csv_data, csv_file)
@@ -94,7 +85,7 @@ def main():
         {"step": 1, "operation": "load_data", "status": "success", "duration_ms": 150},
         {"step": 2, "operation": "validate_data", "status": "success", "duration_ms": 50},
         {"step": 3, "operation": "analyze_sequences", "status": "success", "duration_ms": 500},
-        {"step": 4, "operation": "generate_report", "status": "success", "duration_ms": 200}
+        {"step": 4, "operation": "generate_report", "status": "success", "duration_ms": 200},
     ]
 
     jsonl_file = output_dir / "io_example.jsonl"
@@ -127,12 +118,13 @@ def main():
     print("\n7. File size comparison...")
 
     import os
+
     sizes = {
         "JSON": os.path.getsize(json_file),
         "JSON.gz": os.path.getsize(json_gz_file),
         "CSV": os.path.getsize(csv_file),
         "JSONL": os.path.getsize(jsonl_file),
-        "JSONL.gz": os.path.getsize(jsonl_gz_file)
+        "JSONL.gz": os.path.getsize(jsonl_gz_file),
     }
 
     print("File sizes (bytes):")
@@ -153,7 +145,7 @@ def main():
                 "json_gz": str(json_gz_file.relative_to(output_dir)),
                 "csv": str(csv_file.relative_to(output_dir)),
                 "jsonl": str(jsonl_file.relative_to(output_dir)),
-                "jsonl_gz": str(jsonl_gz_file.relative_to(output_dir))
+                "jsonl_gz": str(jsonl_gz_file.relative_to(output_dir)),
             },
             "file_sizes_bytes": sizes,
             "compression_ratio": compression_ratio,
@@ -163,13 +155,13 @@ def main():
                 "CSV data handling",
                 "JSONL (JSON Lines) format",
                 "Atomic write operations",
-                "Error handling and validation"
+                "Error handling and validation",
             ],
             "data_summary": {
                 "sequences_processed": len(sample_data["sequences"]),
                 "workflow_steps": len(jsonl_data),
-                "total_data_points": sum(len(seq["sequence"]) for seq in sample_data["sequences"])
-            }
+                "total_data_points": sum(len(seq["sequence"]) for seq in sample_data["sequences"]),
+            },
         }
     }
 
@@ -184,6 +176,7 @@ def main():
     print("- Use write_jsonl/read_jsonl for streaming large datasets")
     print("- Use .gz extension for automatic compression")
     print("- All writes are atomic to prevent corruption")
+
 
 if __name__ == "__main__":
     main()

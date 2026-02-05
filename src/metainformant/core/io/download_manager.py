@@ -6,12 +6,12 @@ Orchestrates parallel downloads and updates the Terminal UI.
 import logging
 import threading
 import time
-from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path
 from typing import Dict, List
 
-from metainformant.core.ui.tui import BLUE, GREEN, RED, TerminalInterface
 from metainformant.core.io.download_robust import robust_download_url
+from metainformant.core.ui.tui import BLUE, GREEN, RED, TerminalInterface
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)

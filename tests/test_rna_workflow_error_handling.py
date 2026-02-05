@@ -12,13 +12,13 @@ from pathlib import Path
 
 import pytest
 
+from metainformant.core.io.io import dump_json, read_jsonl
 from metainformant.rna.engine.workflow import (
     AmalgkitWorkflowConfig,
     execute_workflow,
     load_workflow_config,
     plan_workflow,
 )
-from metainformant.core.io.io import dump_json, read_jsonl
 
 
 class TestWorkflowErrorHandling:
@@ -236,9 +236,9 @@ class TestEarlyExitAndValidation:
 
     def test_early_exit_on_getfastq_validation_failure(self, tmp_path: Path):
         """Test that workflow stops early when getfastq validation shows 0 samples with FASTQ files."""
-        from metainformant.rna.engine.workflow import execute_workflow
-        from metainformant.rna.analysis.validation import validate_all_samples, save_validation_report
         from metainformant.core.io.io import write_delimited
+        from metainformant.rna.analysis.validation import save_validation_report, validate_all_samples
+        from metainformant.rna.engine.workflow import execute_workflow
 
         # Create config
         config_data = {
@@ -391,7 +391,7 @@ class TestEarlyExitAndValidation:
 
     def test_fastq_extraction_validation(self, tmp_path: Path):
         """Test that FASTQ extraction validation correctly detects FASTQ files."""
-        from metainformant.rna.analysis.validation import validate_all_samples, get_sample_pipeline_status
+        from metainformant.rna.analysis.validation import get_sample_pipeline_status, validate_all_samples
 
         config_data = {
             "work_dir": str(tmp_path / "work"),

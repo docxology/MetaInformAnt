@@ -10,7 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from metainformant.core import config as core_config, io, logging
+from metainformant.core import config as core_config
+from metainformant.core import io, logging
 
 logger = logging.get_logger(__name__)
 

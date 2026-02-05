@@ -26,6 +26,7 @@ from typing import Dict, List
 import numpy as np
 import pytest
 
+from metainformant.core.utils.errors import ValidationError
 from metainformant.simulation import (
     Agent,
     Ecosystem,
@@ -40,8 +41,6 @@ from metainformant.simulation import (
     simulate_predator_prey,
     simulation_step,
 )
-from metainformant.core.utils.errors import ValidationError
-
 
 # ---------------------------------------------------------------------------
 # Agent dataclass — creation and defaults

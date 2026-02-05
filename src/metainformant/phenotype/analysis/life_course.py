@@ -7,13 +7,13 @@ outcomes based on phenotypic data.
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Dict, List, Any, Optional, Iterator, Set, Tuple, Union
+import statistics
 from collections import defaultdict
 from dataclasses import dataclass, field
-import statistics
+from pathlib import Path
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
 
-from metainformant.core import logging, errors, validation
+from metainformant.core import errors, logging, validation
 
 logger = logging.get_logger(__name__)
 

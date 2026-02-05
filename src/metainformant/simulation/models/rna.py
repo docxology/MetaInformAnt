@@ -8,10 +8,11 @@ All functions support reproducible results through random seed control.
 from __future__ import annotations
 
 import random
-from typing import Dict, List, Optional, Tuple, Any
+from typing import Any, Dict, List, Optional, Tuple
+
 import numpy as np
 
-from metainformant.core import logging, validation, errors
+from metainformant.core import errors, logging, validation
 
 logger = logging.get_logger(__name__)
 

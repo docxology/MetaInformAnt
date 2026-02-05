@@ -8,12 +8,12 @@ JSON-serializable data structures suitable for web rendering.
 from __future__ import annotations
 
 from .dashboards import (
-    create_interactive_scatter,
-    create_interactive_heatmap,
+    create_dashboard,
     create_genome_browser_track,
+    create_interactive_heatmap,
+    create_interactive_scatter,
     create_interactive_volcano,
     export_to_html,
-    create_dashboard,
 )
 
 __all__ = [

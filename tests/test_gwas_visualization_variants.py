@@ -8,11 +8,11 @@ import numpy as np
 import pytest
 
 from metainformant.gwas.visualization.visualization_variants import (
-    maf_distribution,
-    variant_density_plot,
     hwe_deviation_plot,
+    maf_distribution,
     missingness_plot,
     transition_transversion_plot,
+    variant_density_plot,
 )
 
 

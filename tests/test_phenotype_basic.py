@@ -5,8 +5,9 @@ from pathlib import Path
 
 import pytest
 
+from metainformant.core.utils.errors import IOError as CoreIOError
+from metainformant.core.utils.errors import ValidationError
 from metainformant.phenotype.data.antwiki import load_antwiki_json
-from metainformant.core.utils.errors import IOError as CoreIOError, ValidationError
 
 
 class TestAntWiki:

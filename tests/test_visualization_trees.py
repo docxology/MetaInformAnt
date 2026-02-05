@@ -7,11 +7,11 @@ from pathlib import Path
 import pytest
 
 from metainformant.visualization.genomics.trees import (
-    plot_phylo_tree,
     circular_tree_plot,
-    unrooted_tree_plot,
-    tree_comparison_plot,
+    plot_phylo_tree,
     tree_annotation_plot,
+    tree_comparison_plot,
+    unrooted_tree_plot,
 )
 
 # Check for optional dependencies

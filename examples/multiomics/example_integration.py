@@ -12,9 +12,12 @@ Output:
 
 from __future__ import annotations
 
-import numpy as np
 from pathlib import Path
+
+import numpy as np
+
 from metainformant.core import io
+
 
 def main():
     """Demonstrate multi-omics integration."""
@@ -31,7 +34,7 @@ def main():
     omics_data = {
         "dna_methylation": np.random.beta(2, 5, n_samples),  # Methylation levels
         "rna_expression": np.random.lognormal(0, 1, n_samples),  # Expression values
-        "protein_abundance": np.random.gamma(2, 2, n_samples)  # Protein levels
+        "protein_abundance": np.random.gamma(2, 2, n_samples),  # Protein levels
     }
 
     # Calculate correlations between omics layers
@@ -39,7 +42,7 @@ def main():
     omics_types = list(omics_data.keys())
 
     for i, omic1 in enumerate(omics_types):
-        for omic2 in omics_types[i+1:]:
+        for omic2 in omics_types[i + 1 :]:
             corr = np.corrcoef(omics_data[omic1], omics_data[omic2])[0, 1]
             correlations[f"{omic1}_vs_{omic2}"] = corr
 
@@ -50,8 +53,8 @@ def main():
         "integration_summary": {
             "layers_integrated": len(omics_types),
             "correlation_pairs": len(correlations),
-            "strongest_correlation": max(correlations.items(), key=lambda x: abs(x[1]))
-        }
+            "strongest_correlation": max(correlations.items(), key=lambda x: abs(x[1])),
+        },
     }
 
     print(f"✓ Integrated {len(omics_types)} omics layers")
@@ -59,12 +62,11 @@ def main():
 
     # Save results
     results_file = output_dir / "integration_analysis.json"
-    io.dump_json({
-        "multiomics_integration": results
-    }, results_file, indent=2)
+    io.dump_json({"multiomics_integration": results}, results_file, indent=2)
 
     print(f"✓ Results saved to: {results_file}")
     print("\n=== Multi-Omics Example Complete ===")
+
 
 if __name__ == "__main__":
     main()

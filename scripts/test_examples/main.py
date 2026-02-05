@@ -17,7 +17,14 @@ from .runner import run_examples_parallel, run_examples_sequential
 class ExampleTester:
     """Test runner for METAINFORMANT examples."""
 
-    def __init__(self, verbose: bool = False, domain_filter: str | None = None, continue_on_error: bool = False, parallel: bool = False, max_workers: int | None = None):
+    def __init__(
+        self,
+        verbose: bool = False,
+        domain_filter: str | None = None,
+        continue_on_error: bool = False,
+        parallel: bool = False,
+        max_workers: int | None = None,
+    ):
         self.verbose = verbose
         self.domain_filter = domain_filter
         self.continue_on_error = continue_on_error
@@ -35,10 +42,12 @@ class ExampleTester:
             return {
                 "summary": {"total": 0, "passed": 0, "failed": 0, "error": 0, "timeout": 0},
                 "results": [],
-                "error": f"No examples found{' for domain ' + self.domain_filter if self.domain_filter else ''}"
+                "error": f"No examples found{' for domain ' + self.domain_filter if self.domain_filter else ''}",
             }
 
-        print(f"Found {len(examples)} examples to test{' for domain ' + self.domain_filter if self.domain_filter else ''}")
+        print(
+            f"Found {len(examples)} examples to test{' for domain ' + self.domain_filter if self.domain_filter else ''}"
+        )
         if self.parallel:
             print(f"Running in parallel with {self.max_workers} workers")
         print("=" * 60)
@@ -57,7 +66,7 @@ class ExampleTester:
             "failed": sum(1 for r in self.results if r["status"] == "failed"),
             "error": sum(1 for r in self.results if r["status"] == "error"),
             "timeout": sum(1 for r in self.results if r["status"] == "timeout"),
-            "total_execution_time": sum(r.get("execution_time", 0) for r in self.results if r.get("execution_time"))
+            "total_execution_time": sum(r.get("execution_time", 0) for r in self.results if r.get("execution_time")),
         }
 
         summary["success_rate"] = summary["passed"] / summary["total"] if summary["total"] > 0 else 0
@@ -68,7 +77,7 @@ class ExampleTester:
             "timestamp": time.time(),
             "command_line": sys.argv,
             "parallel_execution": self.parallel,
-            "max_workers": self.max_workers
+            "max_workers": self.max_workers,
         }
 
 
@@ -96,7 +105,7 @@ def main():
         domain_filter=args.domain,
         continue_on_error=args.continue_on_error,
         parallel=args.parallel,
-        max_workers=args.max_workers
+        max_workers=args.max_workers,
     )
 
     try:

@@ -7,9 +7,68 @@ parallel processing, caching, and workflow orchestration.
 
 from __future__ import annotations
 
+# 6. UI (Terminal Interface)
+# 5. Engine (Workflow Manager)
+# 4. Execution (Workflow)
+# Depends on IO and Utils
+# 3. IO (Input/Output)
+# Depends on Utils for logging/config
+# 2. Data (Structures)
 # Import subpackages (reordered for dependency resolution)
 # 1. Utils (Foundation)
-from . import utils
+from . import data, engine, execution, io, ui, utils
+from .data import (
+    validate_not_empty,
+    validate_not_none,
+    validate_path_exists,
+    validate_range,
+    validate_schema,
+    validate_type,
+    validation,
+)
+from .engine import (
+    SampleStage,
+    SampleState,
+    WorkflowManager,
+)
+from .execution import (
+    cpu_count,
+    discover_configs,
+    discover_functions,
+    discovery,
+    parallel,
+    parallel_batch,
+    thread_map,
+    workflow,
+)
+from .io import (
+    atomic_replace,
+    atomic_write,
+    cache,
+    compute_checksums_batch,
+    compute_md5,
+    compute_sha256,
+    disk,
+    download,
+    download_file,
+    dump_json,
+)
+from .io import io as io_module
+from .io import (
+    load_json,
+    load_yaml,
+    paths,
+    safe_write_bytes,
+    safe_write_text,
+    temp_directory,
+    verify_checksum,
+    verify_checksum_file,
+    write_checksum_file,
+)
+from .ui import (
+    ProgressState,
+    TerminalInterface,
+)
 from .utils import (
     Timer,
     config,
@@ -23,73 +82,6 @@ from .utils import (
     text,
     timed,
     timeout_after,
-)
-
-# 2. Data (Structures)
-from . import data
-from .data import (
-    validation,
-    validate_type,
-    validate_range,
-    validate_path_exists,
-    validate_not_none,
-    validate_not_empty,
-    validate_schema,
-)
-
-# 3. IO (Input/Output)
-# Depends on Utils for logging/config
-from . import io
-from .io import (
-    atomic_replace,
-    atomic_write,
-    cache,
-    compute_checksums_batch,
-    compute_md5,
-    compute_sha256,
-    disk,
-    download,
-    download_file,
-    dump_json,
-    io as io_module,
-    load_json,
-    load_yaml,
-    paths,
-    safe_write_bytes,
-    safe_write_text,
-    temp_directory,
-    verify_checksum,
-    verify_checksum_file,
-    write_checksum_file,
-)
-
-# 4. Execution (Workflow)
-# Depends on IO and Utils
-from . import execution
-from .execution import (
-    discovery,
-    parallel,
-    workflow,
-    discover_functions,
-    discover_configs,
-    thread_map,
-    parallel_batch,
-    cpu_count,
-)
-
-# 5. Engine (Workflow Manager)
-from . import engine
-from .engine import (
-    WorkflowManager,
-    SampleStage,
-    SampleState,
-)
-
-# 6. UI (Terminal Interface)
-from . import ui
-from .ui import (
-    ProgressState,
-    TerminalInterface,
 )
 
 # Optional dependencies

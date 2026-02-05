@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Any, Optional, Tuple
 from collections import defaultdict
+from typing import Any, Dict, List, Optional, Tuple
+
+from metainformant.core.utils.errors import ValidationError
 
 from .compound import Compound
-from metainformant.core.utils.errors import ValidationError
 
 
 class ChemicalProfile:

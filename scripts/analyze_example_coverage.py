@@ -52,7 +52,7 @@ class CoverageAnalyzer:
             "metainformant.networks",
             "metainformant.ml",
             "metainformant.simulation",
-            "metainformant.visualization"
+            "metainformant.visualization",
         ]
 
     def analyze_coverage(self) -> Dict[str, Any]:
@@ -71,14 +71,14 @@ class CoverageAnalyzer:
 
         # Generate reports
         coverage_data = {
-            "timestamp": __import__('time').time(),
+            "timestamp": __import__("time").time(),
             "total_functions": len(all_functions),
             "covered_functions": len(covered_functions),
             "coverage_percentage": coverage_stats["overall_coverage"],
             "module_coverage": coverage_stats["module_coverage"],
             "uncovered_functions": coverage_stats["uncovered_functions"],
             "covered_functions_detail": covered_functions,
-            "examples_analyzed": len(list(examples_dir.rglob("example_*.py")))
+            "examples_analyzed": len(list(examples_dir.rglob("example_*.py"))),
         }
 
         return coverage_data
@@ -103,15 +103,15 @@ class CoverageAnalyzer:
         functions = {}
 
         for name, obj in inspect.getmembers(module):
-            if (inspect.isfunction(obj) or inspect.ismethod(obj)) and not name.startswith('_'):
+            if (inspect.isfunction(obj) or inspect.ismethod(obj)) and not name.startswith("_"):
                 # Skip private functions and methods
-                if hasattr(obj, '__module__') and obj.__module__ == module_name:
+                if hasattr(obj, "__module__") and obj.__module__ == module_name:
                     functions[f"{module_name}.{name}"] = {
                         "name": name,
                         "module": module_name,
                         "signature": str(inspect.signature(obj)),
                         "docstring": obj.__doc__ or "",
-                        "file": getattr(obj, '__code__', None) and obj.__code__.co_filename
+                        "file": getattr(obj, "__code__", None) and obj.__code__.co_filename,
                     }
 
         return functions
@@ -121,11 +121,11 @@ class CoverageAnalyzer:
         covered_functions = {}
 
         # Get function names for pattern matching
-        function_names = {name.split('.')[-1]: full_name for full_name, _ in all_functions.items()}
+        function_names = {name.split(".")[-1]: full_name for full_name, _ in all_functions.items()}
 
         for example_file in examples_dir.rglob("example_*.py"):
             try:
-                with open(example_file, 'r', encoding='utf-8') as f:
+                with open(example_file, "r", encoding="utf-8") as f:
                     content = f.read()
 
                 # Extract function calls
@@ -163,13 +163,15 @@ class CoverageAnalyzer:
 
         except SyntaxError:
             # If parsing fails, use regex as fallback
-            func_pattern = r'\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\('
+            func_pattern = r"\b([a-zA-Z_][a-zA-Z0-9_]*)\s*\("
             matches = re.findall(func_pattern, content)
             called_functions.update(matches)
 
         return called_functions
 
-    def _calculate_coverage_stats(self, all_functions: Dict[str, Dict[str, Any]], covered_functions: Dict[str, List[str]]) -> Dict[str, Any]:
+    def _calculate_coverage_stats(
+        self, all_functions: Dict[str, Dict[str, Any]], covered_functions: Dict[str, List[str]]
+    ) -> Dict[str, Any]:
         """Calculate coverage statistics."""
         total_functions = len(all_functions)
         covered_count = len(covered_functions)
@@ -194,8 +196,7 @@ class CoverageAnalyzer:
         # Calculate percentages
         for module_stats in module_coverage.values():
             module_stats["coverage_percentage"] = (
-                module_stats["covered"] / module_stats["total"] * 100
-                if module_stats["total"] > 0 else 0
+                module_stats["covered"] / module_stats["total"] * 100 if module_stats["total"] > 0 else 0
             )
 
         overall_coverage = covered_count / total_functions * 100 if total_functions > 0 else 0
@@ -203,14 +204,14 @@ class CoverageAnalyzer:
         return {
             "overall_coverage": overall_coverage,
             "module_coverage": module_coverage,
-            "uncovered_functions": uncovered_functions
+            "uncovered_functions": uncovered_functions,
         }
 
     def save_coverage_report(self, coverage_data: Dict[str, Any], detailed: bool = False, report: bool = False) -> None:
         """Save coverage analysis results."""
         # Save JSON data
         coverage_file = self.output_dir / "coverage.json"
-        with open(coverage_file, 'w') as f:
+        with open(coverage_file, "w") as f:
             json.dump(coverage_data, f, indent=2)
 
         print(f"Coverage analysis saved to: {coverage_file}")
@@ -218,11 +219,15 @@ class CoverageAnalyzer:
         # Generate detailed report if requested
         if detailed:
             detailed_file = self.output_dir / "coverage_detailed.json"
-            with open(detailed_file, 'w') as f:
-                json.dump({
-                    "covered_functions": coverage_data["covered_functions_detail"],
-                    "uncovered_functions": coverage_data["uncovered_functions"]
-                }, f, indent=2)
+            with open(detailed_file, "w") as f:
+                json.dump(
+                    {
+                        "covered_functions": coverage_data["covered_functions_detail"],
+                        "uncovered_functions": coverage_data["uncovered_functions"],
+                    },
+                    f,
+                    indent=2,
+                )
             print(f"Detailed coverage saved to: {detailed_file}")
 
         # Generate human-readable report
@@ -233,7 +238,7 @@ class CoverageAnalyzer:
 
     def _generate_readable_report(self, coverage_data: Dict[str, Any], report_file: Path) -> None:
         """Generate a human-readable coverage report."""
-        with open(report_file, 'w') as f:
+        with open(report_file, "w") as f:
             f.write("# METAINFORMANT Examples Coverage Report\n\n")
 
             f.write(f"## Overview\n\n")
@@ -246,20 +251,20 @@ class CoverageAnalyzer:
             f.write("| Module | Functions | Covered | Coverage |\n")
             f.write("|--------|-----------|---------|----------|\n")
 
-            for module, stats in sorted(coverage_data['module_coverage'].items()):
-                module_short = module.replace('metainformant.', '')
+            for module, stats in sorted(coverage_data["module_coverage"].items()):
+                module_short = module.replace("metainformant.", "")
                 f.write(".1f")
 
             f.write("\n## Top Uncovered Functions\n\n")
-            uncovered = coverage_data['uncovered_functions']
+            uncovered = coverage_data["uncovered_functions"]
             if uncovered:
                 f.write("| Function | Module |\n")
                 f.write("|----------|--------|\n")
 
                 # Show top 20 uncovered functions
                 for i, (func_name, func_info) in enumerate(list(uncovered.items())[:20]):
-                    module_short = func_info['module'].replace('metainformant.', '')
-                    func_short = func_name.split('.')[-1]
+                    module_short = func_info["module"].replace("metainformant.", "")
+                    func_short = func_name.split(".")[-1]
                     f.write(f"| `{func_short}` | {module_short} |\n")
 
                 if len(uncovered) > 20:
@@ -295,7 +300,7 @@ def main():
         print(".1f")
         print(f"Examples analyzed: {coverage_data['examples_analyzed']}")
 
-        if coverage_data['uncovered_functions']:
+        if coverage_data["uncovered_functions"]:
             print(f"\n⚠️  {len(coverage_data['uncovered_functions'])} functions not covered by examples")
         else:
             print("\n✅ All functions are covered by examples!")

@@ -20,7 +20,7 @@ from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
-from .diplotype import Diplotype, determine_diplotype, _ACTIVITY_SCORE_TABLES
+from .diplotype import _ACTIVITY_SCORE_TABLES, Diplotype, determine_diplotype
 
 logger = get_logger(__name__)
 

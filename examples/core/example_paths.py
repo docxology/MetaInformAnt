@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import tempfile
 from pathlib import Path
-from metainformant.core import paths, io
+
+from metainformant.core import io, paths
+
 
 def main():
     """Demonstrate path management functionality."""
@@ -29,9 +31,9 @@ def main():
 
     test_paths = [
         "~/Documents/project",  # User home expansion
-        "./relative/path",      # Relative path
-        "/absolute/path",       # Absolute path
-        "output/examples/../core"  # Path with ..
+        "./relative/path",  # Relative path
+        "/absolute/path",  # Absolute path
+        "output/examples/../core",  # Path with ..
     ]
 
     expanded_paths = {}
@@ -47,7 +49,7 @@ def main():
         ("output/examples/core", "output/examples"),
         ("output/examples/core", "output/different"),
         ("/tmp/test", "/tmp"),
-        ("/var/log", "/tmp")
+        ("/var/log", "/tmp"),
     ]
 
     containment_results = {}
@@ -61,14 +63,14 @@ def main():
     print("\n3. Safe path validation...")
 
     safe_tests = [
-        "data/sequences.fasta",      # Safe relative path
-        "output/results.json",       # Safe output path
-        "../../../etc/passwd",       # Path traversal attack
-        "/etc/passwd",               # Absolute system path
-        "data;rm -rf /",             # Command injection
-        "data|cat /etc/passwd",      # Pipe injection
-        "data && evil_command",      # Command chaining
-        "data$HOME",                 # Environment variable
+        "data/sequences.fasta",  # Safe relative path
+        "output/results.json",  # Safe output path
+        "../../../etc/passwd",  # Path traversal attack
+        "/etc/passwd",  # Absolute system path
+        "data;rm -rf /",  # Command injection
+        "data|cat /etc/passwd",  # Pipe injection
+        "data && evil_command",  # Command chaining
+        "data$HOME",  # Environment variable
     ]
 
     safety_results = {}
@@ -82,11 +84,7 @@ def main():
     print("\n4. Directory creation and file preparation...")
 
     # Create nested directory structure
-    test_dirs = [
-        "output/examples/core/analysis",
-        "output/examples/core/visualizations",
-        "output/examples/core/temp"
-    ]
+    test_dirs = ["output/examples/core/analysis", "output/examples/core/visualizations", "output/examples/core/temp"]
 
     for dir_path in test_dirs:
         created_dir = io.ensure_directory(dir_path)
@@ -96,7 +94,7 @@ def main():
     test_files = [
         "output/examples/core/analysis/sequences.json",
         "output/examples/core/visualizations/plot.png",
-        "output/examples/core/temp/cache.tmp"
+        "output/examples/core/temp/cache.tmp",
     ]
 
     for file_path in test_files:
@@ -119,7 +117,7 @@ def main():
         "expression.tsv",
         "results.json",
         "report.html",
-        "data.csv"
+        "data.csv",
     ]
 
     for filename in test_files_to_create:
@@ -147,7 +145,7 @@ def main():
         "file*with*asterisks.txt",
         'file"with"quotes.txt',
         "file/with/slashes.txt",
-        "file\\with\\backslashes.txt"
+        "file\\with\\backslashes.txt",
     ]
 
     sanitized_names = {}
@@ -164,11 +162,7 @@ def main():
     temp_dir = Path("output/examples/core/temp")
 
     for i in range(3):
-        temp_file = paths.create_temp_file(
-            suffix=f"_example_{i}.tmp",
-            prefix="metainformant_",
-            directory=temp_dir
-        )
+        temp_file = paths.create_temp_file(suffix=f"_example_{i}.tmp", prefix="metainformant_", directory=temp_dir)
         temp_files.append(str(temp_file.relative_to(output_dir)))
         # Write something to demonstrate
         temp_file.write_text(f"Temporary file {i} content")
@@ -180,11 +174,7 @@ def main():
 
     # Calculate sizes
     sizes = {}
-    dirs_to_check = [
-        "output/examples/core",
-        "output/examples/core/analysis",
-        "output/examples/core/temp"
-    ]
+    dirs_to_check = ["output/examples/core", "output/examples/core/analysis", "output/examples/core/temp"]
 
     for dir_path in dirs_to_check:
         try:
@@ -208,34 +198,34 @@ def main():
                 "File discovery by extension",
                 "Filename sanitization",
                 "Temporary file management",
-                "Directory size calculation"
+                "Directory size calculation",
             ],
             "path_operations": {
                 "expanded_paths": expanded_paths,
                 "containment_checks": containment_results,
                 "safety_validation": safety_results,
-                "sanitized_filenames": sanitized_names
+                "sanitized_filenames": sanitized_names,
             },
             "file_system_operations": {
                 "directories_created": len(test_dirs),
                 "files_prepared": len(test_files),
                 "temp_files_created": len(temp_files),
                 "files_found_by_extension": found_files,
-                "directory_sizes": sizes
+                "directory_sizes": sizes,
             },
             "security_features": [
                 "Path traversal attack prevention",
                 "Command injection detection",
                 "Safe filename sanitization",
-                "Containment validation"
+                "Containment validation",
             ],
             "output_structure": {
                 "main_output_dir": str(output_dir),
                 "test_files_dir": str(test_file_dir.relative_to(output_dir)),
                 "analysis_dir": "analysis",
                 "visualizations_dir": "visualizations",
-                "temp_dir": "temp"
-            }
+                "temp_dir": "temp",
+            },
         }
     }
 
@@ -252,6 +242,7 @@ def main():
     print("- Use is_safe_path() to prevent security issues")
     print("- Use ensure_directory() and prepare_file_path() for setup")
     print("- Use sanitize_filename() for safe file naming")
+
 
 if __name__ == "__main__":
     main()

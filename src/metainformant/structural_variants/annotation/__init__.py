@@ -7,8 +7,7 @@ dosage sensitivity assessment and TAD boundary disruption analysis.
 
 from __future__ import annotations
 
-from . import overlap
-from . import functional_impact
+from . import functional_impact, overlap
 
 __all__ = [
     "overlap",
