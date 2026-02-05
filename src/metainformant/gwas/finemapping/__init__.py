@@ -18,6 +18,13 @@ from metainformant.gwas.finemapping.credible_sets import (
     conditional_analysis,
     susie_regression,
 )
+from metainformant.gwas.finemapping.eqtl import (
+    cis_eqtl_scan,
+    conditional_eqtl,
+    eqtl_effect_sizes,
+    eqtl_summary_stats,
+    trans_eqtl_scan,
+)
 
 __all__ = [
     # Credible set analysis
@@ -32,4 +39,11 @@ __all__ = [
     "eqtl_coloc",
     "compute_clpp",
     "regional_coloc",
+    # eQTL analysis
+    "cis_eqtl_scan",
+    "trans_eqtl_scan",
+    "conditional_eqtl",
+    "eqtl_effect_sizes",
+    "eqtl_summary_stats",
 ]
+

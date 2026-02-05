@@ -1,0 +1,151 @@
+# METAINFORMANT eQTL Configuration
+# Species: Apis mellifera (Western Honey Bee)
+# Purpose: Expression QTL analysis linking GWAS variants to RNA expression
+
+# =============================================================================
+# EXPRESSION DATA
+# =============================================================================
+# RNA-seq expression data from kallisto quantification
+expression:
+  # Directory containing sample abundance files
+  quant_dir: output/amalgkit/apis_mellifera_all/work/quant/
+  
+  # Expression matrix file (if pre-merged)
+  # expression_matrix: output/amalgkit/apis_mellifera_all/work/merge/expression_matrix.tsv
+  
+  # Gene-level or transcript-level
+  level: transcript
+  
+  # TPM threshold for expressed genes
+  min_tpm: 1.0
+  
+  # Minimum samples with expression
+  min_samples_expressed: 10
+  
+  # Normalization method: tpm, tmm, or quantile
+  normalization: tmm
+
+# =============================================================================
+# VARIANT DATA
+# =============================================================================
+# GWAS variant data for eQTL association
+variants:
+  # VCF file with genotype dosages
+  vcf_file: output/gwas/amellifera/variants/amellifera_population.vcf
+  
+  # Minimum minor allele frequency
+  min_maf: 0.05
+  
+  # Maximum missing rate
+  max_missing: 0.1
+  
+  # Variant positions file (if separate from VCF)
+  # positions_file: output/gwas/amellifera/variants/variant_positions.tsv
+
+# =============================================================================
+# GENE ANNOTATIONS
+# =============================================================================
+# Gene/transcript position information for cis-window definition
+annotations:
+  # GFF3 or GTF file
+  gff_file: output/gwas/amellifera/genome/genomic.gff
+  
+  # Gene positions TSV (gene_id, chrom, tss_position)
+  # gene_positions: output/gwas/amellifera/annotations/gene_positions.tsv
+  
+  # Feature type to extract (gene, mRNA, exon)
+  feature_type: gene
+
+# =============================================================================
+# CIS-eQTL ANALYSIS
+# =============================================================================
+cis_eqtl:
+  # Enable cis-eQTL analysis
+  enabled: true
+  
+  # Window size around TSS (bp)
+  window: 1000000  # 1Mb
+  
+  # Minimum samples for testing
+  min_samples: 30
+  
+  # FDR threshold for significance
+  fdr_threshold: 0.05
+  
+  # Permutation-based significance (slower but more accurate)
+  permutations: 0  # 0 = no permutation, 1000 recommended for final analysis
+
+# =============================================================================
+# TRANS-eQTL ANALYSIS
+# =============================================================================
+trans_eqtl:
+  # Enable trans-eQTL analysis
+  enabled: false  # Computationally expensive
+  
+  # P-value threshold for reporting (pre-FDR)
+  pvalue_threshold: 1.0e-6
+  
+  # FDR threshold for significance
+  fdr_threshold: 0.01
+
+# =============================================================================
+# COLOCALIZATION
+# =============================================================================
+# Colocalization with GWAS phenotype associations
+colocalization:
+  enabled: true
+  
+  # GWAS summary statistics file
+  gwas_sumstats: output/gwas/amellifera/results/varroa_resistance.tsv
+  
+  # Colocalization method: coloc or clpp
+  method: coloc
+  
+  # Posterior probability threshold for shared causal variant (H4)
+  pp_h4_threshold: 0.75
+
+# =============================================================================
+# SAMPLE MATCHING
+# =============================================================================
+# Sample ID mapping between expression and genotype data
+samples:
+  # Sample ID mapping file (expression_id, genotype_id)
+  # mapping_file: output/eqtl/amellifera/sample_mapping.tsv
+  
+  # Covariates to include (population PCs, batch, etc.)
+  covariates:
+    - PC1
+    - PC2
+    - PC3
+  
+  # Covariate file path
+  # covariates_file: output/gwas/amellifera/structure/pca_covariates.tsv
+
+# =============================================================================
+# OUTPUT
+# =============================================================================
+output:
+  # Output directory
+  results_dir: output/eqtl/amellifera/results
+  
+  # Plots directory
+  plots_dir: output/eqtl/amellifera/plots
+  
+  # Output format: tsv, json, parquet
+  format: tsv
+  
+  # Generate summary report
+  summary_report: true
+
+# =============================================================================
+# COMPUTATIONAL
+# =============================================================================
+compute:
+  threads: 8
+  memory_gb: 16
+  
+  # Batch processing for large datasets
+  batch_size: 1000  # genes per batch
+  
+  # Random seed for reproducibility
+  seed: 42

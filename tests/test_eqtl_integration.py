@@ -218,3 +218,127 @@ class TestMultiOmicsData:
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+
+
+class TestCisEqtlScan:
+    """Tests for cis-eQTL scanning."""
+
+    def test_cis_eqtl_scan_basic(self):
+        """Test basic cis-eQTL scan."""
+        import pandas as pd
+        from metainformant.gwas.finemapping.eqtl import cis_eqtl_scan
+
+        # Create minimal test data
+        expression = pd.DataFrame(
+            {"s1": [1.0, 2.0], "s2": [1.5, 2.5], "s3": [0.8, 1.8]},
+            index=["gene1", "gene2"],
+        )
+        genotypes = pd.DataFrame(
+            {"s1": [0, 1], "s2": [1, 2], "s3": [0, 0]},
+            index=["var1", "var2"],
+        )
+        gene_pos = pd.DataFrame({
+            "gene_id": ["gene1", "gene2"],
+            "chrom": ["1", "1"],
+            "tss_position": [100000, 200000],
+        })
+        var_pos = pd.DataFrame({
+            "variant_id": ["var1", "var2"],
+            "chrom": ["1", "1"],
+            "position": [105000, 195000],
+        })
+
+        result = cis_eqtl_scan(
+            expression_matrix=expression,
+            genotype_matrix=genotypes,
+            gene_positions=gene_pos,
+            variant_positions=var_pos,
+            cis_window=1_000_000,
+            maf_threshold=0.0,  # Allow all for small test
+        )
+
+        assert isinstance(result, pd.DataFrame)
+
+    def test_cis_eqtl_scan_empty(self):
+        """Test cis-eQTL scan with no overlapping samples."""
+        import pandas as pd
+        from metainformant.gwas.finemapping.eqtl import cis_eqtl_scan
+
+        expression = pd.DataFrame({"a": [1.0]}, index=["gene1"])
+        genotypes = pd.DataFrame({"b": [0]}, index=["var1"])
+        gene_pos = pd.DataFrame({
+            "gene_id": ["gene1"],
+            "chrom": ["1"],
+            "tss_position": [100000],
+        })
+        var_pos = pd.DataFrame({
+            "variant_id": ["var1"],
+            "chrom": ["1"],
+            "position": [105000],
+        })
+
+        result = cis_eqtl_scan(
+            expression, genotypes, gene_pos, var_pos,
+            maf_threshold=0.0,
+        )
+
+        assert len(result) == 0
+
+
+class TestEqtlEffectSizes:
+    """Tests for effect size computation."""
+
+    def test_effect_sizes_basic(self):
+        """Test effect size calculation."""
+        import pandas as pd
+        from metainformant.gwas.finemapping.eqtl import eqtl_effect_sizes
+
+        expression = pd.DataFrame(
+            {"s1": [1.0, 2.0], "s2": [2.0, 3.0], "s3": [1.5, 2.5]},
+            index=["gene1", "gene2"],
+        )
+        genotypes = pd.DataFrame(
+            {"s1": [0, 1], "s2": [2, 0], "s3": [1, 2]},
+            index=["var1", "var2"],
+        )
+        associations = pd.DataFrame({
+            "gene_id": ["gene1"],
+            "variant_id": ["var1"],
+        })
+
+        result = eqtl_effect_sizes(expression, genotypes, associations)
+
+        assert "beta" in result.columns
+        assert "r_squared" in result.columns
+
+
+class TestEqtlSummaryStats:
+    """Tests for summary statistics."""
+
+    def test_summary_stats_basic(self):
+        """Test summary statistics generation."""
+        import pandas as pd
+        from metainformant.gwas.finemapping.eqtl import eqtl_summary_stats
+
+        results = pd.DataFrame({
+            "gene_id": ["g1", "g1", "g2"],
+            "variant_id": ["v1", "v2", "v3"],
+            "beta": [0.5, 0.1, 0.8],
+            "pvalue": [0.001, 0.5, 0.0001],
+        })
+
+        summary = eqtl_summary_stats(results, fdr_threshold=0.1)
+
+        assert "n_tests" in summary
+        assert summary["n_tests"] == 3
+
+    def test_summary_stats_empty(self):
+        """Test summary statistics with empty input."""
+        import pandas as pd
+        from metainformant.gwas.finemapping.eqtl import eqtl_summary_stats
+
+        results = pd.DataFrame()
+        summary = eqtl_summary_stats(results)
+
+        assert summary["n_tests"] == 0
+
