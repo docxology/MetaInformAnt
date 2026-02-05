@@ -70,13 +70,49 @@ KNOWN_GENES = [
 ]
 
 # Apis mellifera subspecies for population structure
-SUBSPECIES = {
+DEFAULT_SUBSPECIES = {
     "A.m.ligustica": {"label": "Italian", "n_samples": 25, "pop_effect": 0.0},
     "A.m.carnica": {"label": "Carniolan", "n_samples": 20, "pop_effect": 0.3},
     "A.m.mellifera": {"label": "Dark European", "n_samples": 15, "pop_effect": -0.2},
     "A.m.caucasica": {"label": "Caucasian", "n_samples": 10, "pop_effect": 0.1},
     "A.m.scutellata": {"label": "African", "n_samples": 10, "pop_effect": -0.5},
 }
+# Backward compatibility alias
+SUBSPECIES = DEFAULT_SUBSPECIES
+
+
+def load_data_generation_config(config: dict | None = None) -> dict:
+    """Extract data_generation params from config, falling back to defaults."""
+    dg = (config or {}).get("data_generation", {})
+    if not isinstance(dg, dict):
+        dg = {}
+    return {
+        "subspecies": dg.get("subspecies", DEFAULT_SUBSPECIES),
+        "n_drones": dg.get("n_drones", 10),
+        "n_variants": dg.get("n_variants", 2000),
+        "scale_factor": dg.get("scale_factor", 1),
+        "seed": dg.get("seed", 42),
+    }
+
+
+def _write_manifest(vcf_path: Path, params: dict) -> None:
+    """Write a sidecar manifest with generation parameters."""
+    manifest = vcf_path.with_suffix(".vcf.manifest.json")
+    with open(manifest, "w") as f:
+        json.dump(params, f, indent=2, default=str)
+
+
+def _check_manifest(vcf_path: Path, params: dict) -> bool:
+    """Check if existing VCF was generated with the same parameters."""
+    manifest = vcf_path.with_suffix(".vcf.manifest.json")
+    if not manifest.exists():
+        return False
+    try:
+        with open(manifest) as f:
+            existing = json.load(f)
+        return existing == json.loads(json.dumps(params, default=str))
+    except (json.JSONDecodeError, OSError):
+        return False
 
 
 def download_genome_annotation(output_dir: Path) -> Path | None:
@@ -159,40 +195,73 @@ def download_genome_annotation(output_dir: Path) -> Path | None:
     return gff_path
 
 
-def generate_real_vcf(output_dir: Path, n_variants: int = 2000) -> Path:
+def generate_real_vcf(
+    output_dir: Path,
+    n_variants: int = 2000,
+    subspecies: dict | None = None,
+    n_drones: int | None = None,
+    scale_factor: int = 1,
+    seed: int = 42,
+    force: bool = False,
+) -> Path:
     """Generate a realistic multi-sample VCF with real Apis mellifera coordinates.
 
     Uses real chromosome accessions, sizes, known gene loci, and population-level
     allele frequency distributions consistent with published honeybee genomics.
 
-    Variant density is proportional to chromosome size.
-    Some variants are placed near known gene loci to test annotation.
-    Allele frequencies follow the site frequency spectrum (SFS) expected
-    for a population of ~80 diploid honeybees.
+    Args:
+        output_dir: Base output directory.
+        n_variants: Number of variants to generate.
+        subspecies: Subspecies config dict. Defaults to DEFAULT_SUBSPECIES.
+        n_drones: Number of drone (haploid) samples. Defaults to 10.
+        scale_factor: Multiply each subspecies n_samples by this factor.
+        seed: Random seed for reproducibility.
+        force: If True, regenerate even if cached VCF exists.
+
+    Returns:
+        Path to generated VCF file.
     """
+    subspecies = subspecies or DEFAULT_SUBSPECIES
+    if n_drones is None:
+        n_drones = 10
+
     vcf_dir = output_dir / "variants"
     vcf_dir.mkdir(parents=True, exist_ok=True)
     vcf_path = vcf_dir / "amellifera_population.vcf"
 
-    if vcf_path.exists():
-        logger.info(f"VCF already exists: {vcf_path}")
-        return vcf_path
+    # Build manifest params for cache validation
+    manifest_params = {
+        "n_variants": n_variants,
+        "subspecies": {k: v["n_samples"] for k, v in subspecies.items()},
+        "n_drones": n_drones,
+        "scale_factor": scale_factor,
+        "seed": seed,
+    }
 
-    rng = random.Random(42)
+    if not force and vcf_path.exists():
+        if _check_manifest(vcf_path, manifest_params):
+            logger.info(f"VCF already exists with matching params: {vcf_path}")
+            return vcf_path
+        else:
+            logger.info("VCF exists but params differ, regenerating")
+
+    rng = random.Random(seed)
 
     # Build sample list with population structure
     samples = []
     sample_pops = []
     sample_ploidy = []  # Track ploidy: 'diploid' or 'haploid'
-    for subsp, info in SUBSPECIES.items():
-        for i in range(info["n_samples"]):
+    for subsp, info in subspecies.items():
+        scaled_n = info["n_samples"] * scale_factor
+        for i in range(scaled_n):
             sample_id = f"{subsp.replace('A.m.', '')}_{i+1:03d}"
             samples.append(sample_id)
             sample_pops.append(subsp)
             sample_ploidy.append("diploid")
 
-    # Add 10 drone (haploid) samples — males with only homozygous genotypes
-    for i in range(10):
+    # Add drone (haploid) samples — males with only homozygous genotypes
+    scaled_drones = n_drones * scale_factor
+    for i in range(scaled_drones):
         sample_id = f"drone_{i+1:03d}"
         samples.append(sample_id)
         sample_pops.append("A.m.ligustica")  # Drones from Italian population
@@ -236,7 +305,7 @@ def generate_real_vcf(output_dir: Path, n_variants: int = 2000) -> Path:
             # Population-structured genotypes
             genotypes = []
             for s_idx, pop in enumerate(sample_pops):
-                pop_info = SUBSPECIES[pop]
+                pop_info = subspecies[pop]
                 # Adjust allele freq by population (Fst-like differentiation)
                 pop_freq = max(0.01, min(0.99, maf + rng.gauss(0, 0.05) * pop_info["pop_effect"]))
 
@@ -309,26 +378,41 @@ def generate_real_vcf(output_dir: Path, n_variants: int = 2000) -> Path:
             f.write("\n")
 
     logger.info(f"Generated VCF: {len(variants)} variants x {n_samples} samples -> {vcf_path}")
+    _write_manifest(vcf_path, manifest_params)
     return vcf_path
 
 
-def generate_phenotypes(output_dir: Path, vcf_path: Path) -> Path:
+def generate_phenotypes(
+    output_dir: Path,
+    vcf_path: Path,
+    seed: int = 42,
+    force: bool = False,
+    subspecies: dict | None = None,
+) -> Path:
     """Generate realistic phenotype data matched to VCF samples.
 
     Simulates a quantitative trait (varroa resistance score) with:
     - Population-level means (subspecies effects)
     - Polygenic genetic component from true causal variants
     - Environmental noise
+
+    Args:
+        output_dir: Base output directory.
+        vcf_path: Path to VCF file for reading sample IDs.
+        seed: Random seed for reproducibility.
+        force: If True, regenerate even if cached file exists.
+        subspecies: Subspecies config dict. Defaults to DEFAULT_SUBSPECIES.
     """
+    subspecies = subspecies or DEFAULT_SUBSPECIES
     pheno_dir = output_dir / "phenotypes"
     pheno_dir.mkdir(parents=True, exist_ok=True)
     pheno_path = pheno_dir / "varroa_resistance.tsv"
 
-    if pheno_path.exists():
+    if not force and pheno_path.exists():
         logger.info(f"Phenotype file already exists: {pheno_path}")
         return pheno_path
 
-    rng = random.Random(42)
+    rng = random.Random(seed)
 
     # Read sample IDs from VCF
     samples = []
@@ -345,7 +429,7 @@ def generate_phenotypes(output_dir: Path, vcf_path: Path) -> Path:
     # Assign populations
     sample_pops = {}
     for sample in samples:
-        for subsp in SUBSPECIES:
+        for subsp in subspecies:
             prefix = subsp.replace("A.m.", "")
             if sample.startswith(prefix):
                 sample_pops[sample] = subsp
@@ -355,7 +439,7 @@ def generate_phenotypes(output_dir: Path, vcf_path: Path) -> Path:
     phenotypes = {}
     for sample in samples:
         pop = sample_pops.get(sample, "A.m.ligustica")
-        pop_effect = SUBSPECIES[pop]["pop_effect"]
+        pop_effect = subspecies[pop]["pop_effect"]
 
         # Population mean + noise
         # Varroa resistance: 0-10 scale
@@ -370,7 +454,7 @@ def generate_phenotypes(output_dir: Path, vcf_path: Path) -> Path:
     disease_resistance = {}
     for sample in samples:
         pop = sample_pops.get(sample, "A.m.ligustica")
-        pop_effect = SUBSPECIES[pop]["pop_effect"]
+        pop_effect = subspecies[pop]["pop_effect"]
         # Higher varroa resistance -> higher disease resistance probability
         base_prob = 0.3 + pop_effect * 0.1
         base_prob = max(0.1, min(0.6, base_prob))
@@ -386,12 +470,19 @@ def generate_phenotypes(output_dir: Path, vcf_path: Path) -> Path:
     return pheno_path
 
 
-def generate_metadata(output_dir: Path, vcf_path: Path) -> Path:
+def generate_metadata(
+    output_dir: Path,
+    vcf_path: Path,
+    seed: int = 42,
+    force: bool = False,
+) -> Path:
     """Generate sample metadata file with subspecies, caste, location, and date.
 
     Args:
         output_dir: Base output directory.
         vcf_path: Path to VCF file for reading sample IDs.
+        seed: Random seed for reproducibility.
+        force: If True, regenerate even if cached file exists.
 
     Returns:
         Path to generated metadata TSV.
@@ -400,11 +491,11 @@ def generate_metadata(output_dir: Path, vcf_path: Path) -> Path:
     meta_dir.mkdir(parents=True, exist_ok=True)
     meta_path = meta_dir / "sample_metadata.tsv"
 
-    if meta_path.exists():
+    if not force and meta_path.exists():
         logger.info(f"Metadata file already exists: {meta_path}")
         return meta_path
 
-    rng = random.Random(42)
+    rng = random.Random(seed)
 
     # Read sample IDs from VCF
     samples = []
@@ -707,14 +798,56 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
 
 def main():
     """Run the complete Apis mellifera GWAS pipeline."""
-    output_base = Path("output/gwas/amellifera")
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Apis mellifera GWAS Pipeline — real end-to-end analysis"
+    )
+    parser.add_argument("--config", type=str, help="YAML config file path")
+    parser.add_argument("--n-variants", type=int, default=None, help="Override n_variants")
+    parser.add_argument("--scale-factor", type=int, default=None, help="Sample count multiplier (e.g. 2 = 160 diploid + 20 drones)")
+    parser.add_argument("--n-drones", type=int, default=None, help="Number of drone samples")
+    parser.add_argument("--output", type=str, default=None, help="Output directory")
+    parser.add_argument("--force", action="store_true", help="Force regeneration ignoring cache")
+    parser.add_argument("--traits", nargs="+", default=None, help="Multiple traits to analyze")
+    parser.add_argument("--seed", type=int, default=None, help="Random seed")
+    args = parser.parse_args()
+
+    # Load config from file if provided
+    yaml_config = None
+    if args.config:
+        config_path = Path(args.config)
+        if config_path.exists():
+            yaml_config = io.load_yaml(str(config_path))
+        else:
+            print(f"Warning: Config file not found: {args.config}")
+
+    # Extract data_generation config from YAML, then apply CLI overrides
+    dg = load_data_generation_config(yaml_config)
+    if args.n_variants is not None:
+        dg["n_variants"] = args.n_variants
+    if args.scale_factor is not None:
+        dg["scale_factor"] = args.scale_factor
+    if args.n_drones is not None:
+        dg["n_drones"] = args.n_drones
+    if args.seed is not None:
+        dg["seed"] = args.seed
+
+    output_base = Path(args.output) if args.output else Path("output/gwas/amellifera")
     output_base.mkdir(parents=True, exist_ok=True)
+
+    force = args.force
+    traits = args.traits
 
     print("=" * 80)
     print("APIS MELLIFERA GWAS PIPELINE - REAL END-TO-END ANALYSIS")
     print("Species: Apis mellifera (Western Honey Bee)")
     print("Assembly: GCF_003254395.2 (Amel_HAv3.1)")
     print(f"Output: {output_base}")
+    if dg["scale_factor"] != 1:
+        print(f"Scale factor: {dg['scale_factor']}x")
+    if traits:
+        print(f"Traits: {', '.join(traits)}")
     print("=" * 80)
 
     # Step 1: Download genome annotation
@@ -724,30 +857,74 @@ def main():
 
     # Step 2: Generate realistic VCF
     print("\n[2/6] Generating population-level VCF with real coordinates...")
-    vcf_path = generate_real_vcf(output_base, n_variants=2000)
+    vcf_path = generate_real_vcf(
+        output_base,
+        n_variants=dg["n_variants"],
+        subspecies=dg["subspecies"],
+        n_drones=dg["n_drones"],
+        scale_factor=dg["scale_factor"],
+        seed=dg["seed"],
+        force=force,
+    )
     print(f"  VCF: {vcf_path}")
 
     # Step 3: Generate phenotypes
     print("\n[3/6] Generating phenotype data (varroa resistance + disease resistance)...")
-    pheno_path = generate_phenotypes(output_base, vcf_path)
+    pheno_path = generate_phenotypes(
+        output_base, vcf_path, seed=dg["seed"], force=force, subspecies=dg["subspecies"]
+    )
     print(f"  Phenotypes: {pheno_path}")
 
     # Step 4: Generate sample metadata
     print("\n[4/6] Generating sample metadata...")
-    meta_path = generate_metadata(output_base, vcf_path)
+    meta_path = generate_metadata(output_base, vcf_path, seed=dg["seed"], force=force)
     print(f"  Metadata: {meta_path}")
 
-    # Step 5: Run full GWAS
-    print("\n[5/6] Running full GWAS pipeline...")
-    gwas_results = run_full_gwas(vcf_path, pheno_path, gff_path, output_base)
+    # Step 5: Run full GWAS (multi-trait if specified)
+    if traits and len(traits) > 1:
+        print(f"\n[5/6] Running multi-trait GWAS pipeline ({len(traits)} traits)...")
+        from metainformant.gwas.workflow.workflow import run_multi_trait_gwas
 
-    if gwas_results.get("status") == "success":
-        print(f"  Status: SUCCESS")
-        print(f"  Steps completed: {gwas_results.get('steps_completed', [])}")
+        multi_config = {
+            "work_dir": str(output_base / "work"),
+            "qc": {"min_maf": 0.01, "max_missing": 0.05, "hwe_pval": 1e-6, "min_qual": 30.0},
+            "structure": {"compute_pca": True, "n_components": 10, "compute_relatedness": True, "kinship_method": "vanraden"},
+            "ld_pruning": {"enabled": True, "window_size": 50, "step_size": 5, "r2_threshold": 0.2},
+            "haplodiploidy": {"enabled": True, "het_threshold": 0.05, "exclude_haploid": True},
+            "association": {"model": "mixed", "min_sample_size": 10, "relatedness_matrix": "auto"},
+            "correction": {"method": "bonferroni", "alpha": 0.05},
+            "significance_threshold": 5e-8,
+        }
+        if gff_path and gff_path.exists():
+            multi_config["annotation"] = {"enabled": True, "gff3_file": str(gff_path), "window_kb": 50}
+
+        gwas_results = run_multi_trait_gwas(
+            vcf_path=vcf_path,
+            phenotype_path=pheno_path,
+            traits=traits,
+            config=multi_config,
+            output_dir=output_base / "results",
+        )
+        if gwas_results.get("status") == "success":
+            print(f"  Status: SUCCESS")
+            print(f"  Traits analyzed: {list(gwas_results.get('trait_results', {}).keys())}")
+        else:
+            print(f"  Status: {gwas_results.get('status', 'unknown')}")
     else:
-        print(f"  Status: {gwas_results.get('status', 'unknown')}")
-        print(f"  Error: {gwas_results.get('error', 'unknown')}")
-        # Continue to visualizations even if some steps had issues
+        # Single trait — use run_full_gwas (which wraps run_gwas with default config)
+        if traits:
+            print(f"\n[5/6] Running GWAS pipeline for trait: {traits[0]}...")
+        else:
+            print("\n[5/6] Running full GWAS pipeline...")
+        gwas_results = run_full_gwas(vcf_path, pheno_path, gff_path, output_base)
+
+        if gwas_results.get("status") == "success":
+            print(f"  Status: SUCCESS")
+            print(f"  Steps completed: {gwas_results.get('steps_completed', [])}")
+        else:
+            print(f"  Status: {gwas_results.get('status', 'unknown')}")
+            print(f"  Error: {gwas_results.get('error', 'unknown')}")
+            # Continue to visualizations even if some steps had issues
 
     # Step 6: Generate visualizations
     print("\n[6/6] Generating visualizations...")
