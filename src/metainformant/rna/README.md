@@ -71,8 +71,33 @@ result = execute_workflow(config, steps=["getfastq", "quant", "merge"])
 | `merge` | Combine abundance files |
 | `curate` | Quality control and filtering |
 
+## 🧬 GWAS Integration
+
+RNA expression data can be integrated with GWAS variants for eQTL analysis:
+
+```python
+from metainformant.multiomics.analysis import integration
+from metainformant.gwas.finemapping import eqtl_coloc
+
+# Prepare expression data for integration
+rna_data = integration.from_rna_expression(
+    expression_df,
+    normalize=True
+)
+
+# Run colocalization with GWAS summary statistics
+result = eqtl_coloc(
+    gwas_z=gwas_zscores,
+    eqtl_z=expression_zscores,
+    gene_id="LOC123456"
+)
+```
+
+See [metainformant.multiomics](../multiomics/) for comprehensive integration methods.
+
 ## 🔗 Related
 
 - [scripts/rna/](../../../scripts/rna/) - Workflow scripts
 - [config/amalgkit/](../../../config/amalgkit/) - Configuration files
 - [config/amalgkit/amalgkit_faq.md](../../../config/amalgkit/amalgkit_faq.md) - FAQ
+- [metainformant.multiomics](../multiomics/) - GWAS-expression integration
