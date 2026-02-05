@@ -7,69 +7,12 @@ parallel processing, caching, and workflow orchestration.
 
 from __future__ import annotations
 
-# 6. UI (Terminal Interface)
-# 5. Engine (Workflow Manager)
-# 4. Execution (Workflow)
-# Depends on IO and Utils
-# 3. IO (Input/Output)
-# Depends on Utils for logging/config
-# 2. Data (Structures)
-# Import subpackages (reordered for dependency resolution)
-# 1. Utils (Foundation)
-from . import data, engine, execution, io, ui, utils
-from .data import (
-    validate_not_empty,
-    validate_not_none,
-    validate_path_exists,
-    validate_range,
-    validate_schema,
-    validate_type,
-    validation,
-)
-from .engine import (
-    SampleStage,
-    SampleState,
-    WorkflowManager,
-)
-from .execution import (
-    cpu_count,
-    discover_configs,
-    discover_functions,
-    discovery,
-    parallel,
-    parallel_batch,
-    thread_map,
-    workflow,
-)
-from .io import (
-    atomic_replace,
-    atomic_write,
-    cache,
-    compute_checksums_batch,
-    compute_md5,
-    compute_sha256,
-    disk,
-    download,
-    download_file,
-    dump_json,
-)
-from .io import io as io_module
-from .io import (
-    load_json,
-    load_yaml,
-    paths,
-    safe_write_bytes,
-    safe_write_text,
-    temp_directory,
-    verify_checksum,
-    verify_checksum_file,
-    write_checksum_file,
-)
-from .ui import (
-    ProgressState,
-    TerminalInterface,
-)
-from .utils import (
+# Import subpackages in dependency order (NOT alphabetical - order matters!)
+# isort: skip_file
+
+# 1. Utils (Foundation) - must be first, other modules depend on config/logging
+from . import utils  # noqa: E402
+from .utils import (  # noqa: E402
     Timer,
     config,
     errors,
@@ -82,6 +25,73 @@ from .utils import (
     text,
     timed,
     timeout_after,
+)
+
+# 2. Data (Structures)
+from . import data  # noqa: E402
+from .data import (  # noqa: E402
+    validate_not_empty,
+    validate_not_none,
+    validate_path_exists,
+    validate_range,
+    validate_schema,
+    validate_type,
+    validation,
+)
+
+# 3. IO (Input/Output) - depends on Utils for logging/config
+from . import io  # noqa: E402
+from .io import (  # noqa: E402
+    atomic_replace,
+    atomic_write,
+    cache,
+    compute_checksums_batch,
+    compute_md5,
+    compute_sha256,
+    disk,
+    download,
+    download_file,
+    dump_json,
+)
+from .io import io as io_module  # noqa: E402
+from .io import (  # noqa: E402
+    load_json,
+    load_yaml,
+    paths,
+    safe_write_bytes,
+    safe_write_text,
+    temp_directory,
+    verify_checksum,
+    verify_checksum_file,
+    write_checksum_file,
+)
+
+# 4. Execution (Workflow) - depends on IO and Utils
+from . import execution  # noqa: E402
+from .execution import (  # noqa: E402
+    cpu_count,
+    discover_configs,
+    discover_functions,
+    discovery,
+    parallel,
+    parallel_batch,
+    thread_map,
+    workflow,
+)
+
+# 5. Engine (Workflow Manager)
+from . import engine  # noqa: E402
+from .engine import (  # noqa: E402
+    SampleStage,
+    SampleState,
+    WorkflowManager,
+)
+
+# 6. UI (Terminal Interface)
+from . import ui  # noqa: E402
+from .ui import (  # noqa: E402
+    ProgressState,
+    TerminalInterface,
 )
 
 # Optional dependencies
