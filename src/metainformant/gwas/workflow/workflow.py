@@ -539,6 +539,10 @@ from metainformant.gwas.analysis.summary_stats import (
 )
 from metainformant.gwas.analysis.annotation import annotate_variants_with_genes
 from metainformant.gwas.visualization.general import generate_all_plots
+from metainformant.gwas.data.metadata import load_sample_metadata, validate_metadata, get_population_labels
+from metainformant.gwas.analysis.heritability import estimate_heritability, partition_heritability_by_chromosome
+from metainformant.gwas.visualization.config import style_from_config, apply_style
+from metainformant.gwas.visualization.visualization_finemapping import compute_credible_set
 
 
 def run_gwas(
@@ -700,6 +704,32 @@ def run_gwas(
             "trait_name": trait_name or "unknown",
         }
 
+        # Step 5b: Load sample metadata (optional)
+        metadata = None
+        metadata_path = (
+            config.get("metadata_file") or config.get("samples", {}).get("metadata_file")
+            if isinstance(config.get("samples"), dict)
+            else None
+        )
+        if metadata_path and Path(metadata_path).exists():
+            logger.info("Step 5b: Loading sample metadata")
+            try:
+                meta_result = load_sample_metadata(metadata_path)
+                if meta_result.get("status") == "success":
+                    metadata = meta_result.get("metadata", {})
+                    sample_ids = filtered_data.get("samples", [])
+                    if sample_ids:
+                        validation = validate_metadata(metadata, sample_ids)
+                        if validation.get("missing_samples"):
+                            logger.warning(f"Metadata missing for {len(validation['missing_samples'])} samples")
+                    results["steps_completed"].append("load_metadata")
+                    results["results"]["metadata_summary"] = {
+                        "n_samples_with_metadata": meta_result.get("n_samples", 0),
+                        "columns": meta_result.get("columns", []),
+                    }
+            except Exception as e:
+                logger.warning(f"Metadata loading failed: {e}")
+
         # Align sample counts
         min_samples = min(len(phenotypes), n_samples) if genotypes_by_variant else 0
         if min_samples > 0 and len(phenotypes) != n_samples:
@@ -755,6 +785,30 @@ def run_gwas(
         results["steps_completed"].append("association_testing")
         results["results"]["association_results"] = assoc_results
 
+        # Compute lambda GC for inflation assessment
+        if assoc_results:
+            import math
+
+            valid_p = [
+                r.get("p_value", 1.0)
+                for r in assoc_results
+                if r.get("p_value") is not None and 0 < r.get("p_value", 1.0) <= 1.0
+            ]
+            if valid_p:
+                valid_p_sorted = sorted(valid_p)
+                median_p = valid_p_sorted[len(valid_p_sorted) // 2]
+                # Lambda GC = median(chi2) / 0.456 where chi2 = qchisq(1-p, 1)
+                # Approximation: -2 * log(median_p) / 1.386 (median of chi2(1))
+                if median_p > 0:
+                    lambda_gc = -2.0 * math.log(median_p) / 1.386
+                    results["results"]["lambda_gc"] = round(lambda_gc, 4)
+                    if lambda_gc > 1.1:
+                        logger.warning(f"Genomic inflation detected: lambda_GC = {lambda_gc:.3f} (>1.1)")
+                    elif lambda_gc < 0.9:
+                        logger.warning(f"Genomic deflation detected: lambda_GC = {lambda_gc:.3f} (<0.9)")
+                    else:
+                        logger.info(f"Lambda GC = {lambda_gc:.3f} (within expected range)")
+
         # Step 7: Multiple testing correction
         logger.info("Step 7: Applying multiple testing correction")
         if assoc_results:
@@ -777,6 +831,34 @@ def run_gwas(
                         assoc_results[i]["bonferroni_significant"] = is_sig
 
         results["steps_completed"].append("multiple_testing_correction")
+
+        # Step 7b: Heritability estimation (optional)
+        if kinship_result and kinship_result.get("status") == "success" and phenotypes:
+            logger.info("Step 7b: Estimating SNP heritability")
+            try:
+                km = kinship_result["kinship_matrix"]
+                km_size = len(km) if isinstance(km, list) else (km.shape[0] if hasattr(km, "shape") else 0)
+                pheno_for_h2 = phenotypes[:km_size] if len(phenotypes) > km_size else phenotypes
+                logger.info(
+                    f"Heritability inputs: kinship {km_size}x{km_size}, "
+                    f"phenotypes {len(pheno_for_h2)} (from {len(phenotypes)} total)"
+                )
+                h2_result = estimate_heritability(km, pheno_for_h2)
+                if h2_result.get("status") == "success":
+                    results["steps_completed"].append("heritability")
+                    results["results"]["heritability"] = {
+                        "h2": h2_result.get("h2"),
+                        "h2_se": h2_result.get("h2_se"),
+                        "sigma_g": h2_result.get("sigma_g"),
+                        "sigma_e": h2_result.get("sigma_e"),
+                    }
+                    logger.info(
+                        f"SNP heritability: h2 = {h2_result.get('h2', 0):.3f} (SE = {h2_result.get('h2_se', 0):.3f})"
+                    )
+                else:
+                    logger.warning(f"Heritability estimation returned non-success: {h2_result}")
+            except Exception as e:
+                logger.warning(f"Heritability estimation failed: {e}", exc_info=True)
 
         # Step 8: Write summary statistics
         logger.info("Step 8: Writing summary statistics")
@@ -815,11 +897,36 @@ def run_gwas(
             else:
                 logger.info("Step 9: Skipping annotation (GFF3 file not found)")
 
+        # Step 9b: Fine-mapping credible sets (optional)
+        finemapping_config = config.get("finemapping", {})
+        if isinstance(finemapping_config, dict) and finemapping_config.get("enabled", False) and assoc_results:
+            logger.info("Step 9b: Computing fine-mapping credible sets")
+            try:
+                credible_level = finemapping_config.get("credible_level", 0.95)
+                cs_result = compute_credible_set(assoc_results, credible_level=credible_level)
+                if cs_result.get("status") == "success":
+                    results["steps_completed"].append("fine_mapping")
+                    results["results"]["fine_mapping"] = {
+                        "credible_set_size": cs_result.get("credible_set_size"),
+                        "credible_level": credible_level,
+                    }
+            except Exception as e:
+                logger.warning(f"Fine-mapping failed: {e}")
+
+        # Apply visualization style from config
+        try:
+            style = style_from_config(config)
+            apply_style(style)
+        except Exception:
+            pass  # Non-critical, use defaults
+
         # Step 10: Generate plots
         logger.info("Step 10: Generating visualization plots")
         try:
-            plot_results = generate_all_plots(
-                association_results=str(output_dir / "association_results.json"),
+            from metainformant.gwas.visualization.visualization_suite import generate_all_plots as gen_plots
+
+            plot_results = gen_plots(
+                association_results=assoc_results,
                 output_dir=output_dir,
                 significance_threshold=config.get("significance_threshold", 5e-8),
             )
@@ -827,6 +934,73 @@ def run_gwas(
             results["results"]["plots"] = plot_results
         except Exception as e:
             logger.warning(f"Plot generation failed: {e}")
+
+        # Step 11: Enhanced visualizations (using new modules)
+        logger.info("Step 11: Generating enhanced visualizations")
+        enhanced_panels = []
+        try:
+            from metainformant.gwas.visualization.visualization_composite import (
+                gwas_summary_panel,
+                population_structure_panel,
+            )
+
+            # GWAS summary panel
+            pca_data_for_viz = results["results"].get("pca")
+            kinship_for_viz = kinship_result.get("kinship_matrix") if kinship_result else None
+            logger.info(
+                f"Enhanced viz inputs: assoc_results={len(assoc_results)}, "
+                f"pca={'yes' if pca_data_for_viz else 'no'}, "
+                f"kinship={'yes' if kinship_for_viz is not None else 'no'}, "
+                f"metadata={'yes' if metadata else 'no'}"
+            )
+            try:
+                summary_panel = gwas_summary_panel(
+                    assoc_results,
+                    pca_data=pca_data_for_viz,
+                    kinship_matrix=kinship_for_viz,
+                    output_file=output_dir / "gwas_summary_panel.png",
+                )
+                enhanced_panels.append("gwas_summary_panel")
+                logger.info(f"GWAS summary panel: {summary_panel.get('status')}")
+            except Exception as e:
+                logger.warning(f"GWAS summary panel failed: {e}", exc_info=True)
+
+            # Population structure panel (if PCA and kinship available)
+            if pca_data_for_viz and kinship_for_viz is not None:
+                try:
+                    pop_panel = population_structure_panel(
+                        pca_data_for_viz,
+                        kinship_for_viz,
+                        metadata=metadata,
+                        output_file=output_dir / "population_structure_panel.png",
+                    )
+                    enhanced_panels.append("population_structure_panel")
+                    logger.info(f"Population structure panel: {pop_panel.get('status')}")
+                except Exception as e:
+                    logger.warning(f"Population structure panel failed: {e}", exc_info=True)
+
+            # Heritability bar chart (if per-chromosome available)
+            h2_data = results["results"].get("heritability")
+            if h2_data and h2_data.get("per_chromosome"):
+                try:
+                    from metainformant.gwas.analysis.heritability import heritability_bar_chart
+
+                    heritability_bar_chart(h2_data, output_file=output_dir / "heritability_bar.png")
+                    enhanced_panels.append("heritability_bar")
+                    logger.info("Heritability bar chart generated")
+                except Exception as e:
+                    logger.warning(f"Heritability bar chart failed: {e}", exc_info=True)
+
+            if enhanced_panels:
+                results["steps_completed"].append("enhanced_visualization")
+                results["results"]["enhanced_panels"] = enhanced_panels
+                logger.info(f"Enhanced visualization: {len(enhanced_panels)} panels generated")
+            else:
+                logger.warning("No enhanced visualization panels were generated")
+        except ImportError as e:
+            logger.warning(f"Enhanced visualization import failed: {e}")
+        except Exception as e:
+            logger.warning(f"Enhanced visualization failed: {e}", exc_info=True)
 
         results["status"] = "success"
         logger.info("GWAS workflow completed successfully")

@@ -1,0 +1,181 @@
+# METAINFORMANT Long-Read Sequencing Configuration Template
+# Oxford Nanopore / PacBio Analysis Pipeline Configuration
+#
+# Environment variable overrides use LR_ prefix:
+#   LR_THREADS=16  LR_MIN_LENGTH=5000  etc.
+
+work_dir: output/longread/work
+log_dir: output/longread/logs
+output_dir: output/longread/results
+threads: 8
+
+# =============================================================================
+# INPUT DATA
+# =============================================================================
+input:
+  # Data source type: 'fast5', 'pod5', 'bam', 'fastq'
+  format: fastq
+
+  # Path(s) to input files or directory
+  paths:
+    # - data/longread/reads.fastq.gz
+    # - data/longread/basecalled/
+
+  # Platform: 'ont' (Oxford Nanopore) or 'pacbio'
+  platform: ont
+
+  # Sequencing chemistry (ONT: r9.4.1, r10.4.1; PacBio: sequel2, revio)
+  chemistry: r10.4.1
+
+# =============================================================================
+# QUALITY CONTROL
+# =============================================================================
+qc:
+  # Minimum read length to keep (bp)
+  min_length: 1000
+
+  # Maximum read length (null = no upper limit)
+  max_length: null
+
+  # Minimum mean quality score (Phred)
+  min_quality: 7.0
+
+  # Adapter trimming
+  trim_adapters: true
+  adapter_sequences: null  # null = use default ONT/PacBio adapters
+
+  # Chimeric read splitting
+  split_chimeras: true
+
+  # Output filtered reads
+  save_filtered: true
+
+# =============================================================================
+# ASSEMBLY
+# =============================================================================
+assembly:
+  # Enable assembly pipeline
+  enabled: true
+
+  # Minimizer parameters
+  minimizer_k: 15        # k-mer size
+  minimizer_w: 10        # window size
+
+  # Overlap detection
+  min_overlap: 2000      # Minimum overlap length (bp)
+  max_overhang: 500      # Maximum overhang before overlap discarded
+
+  # Consensus
+  polish_iterations: 2   # Number of polishing rounds
+
+  # Hybrid assembly (requires short reads)
+  hybrid:
+    enabled: false
+    short_reads: null     # Path to short-read FASTQ(s)
+    correction_rounds: 1
+
+# =============================================================================
+# METHYLATION ANALYSIS
+# =============================================================================
+methylation:
+  # Enable methylation calling
+  enabled: true
+
+  # Modification types to detect
+  modifications:
+    - 5mC   # 5-methylcytosine
+    - 6mA   # N6-methyladenine
+
+  # Minimum coverage for reliable methylation calls
+  min_coverage: 5
+
+  # Methylation probability threshold
+  min_probability: 0.5
+
+  # CpG context analysis
+  cpg_only: false
+
+  # Differential methylation analysis
+  differential:
+    enabled: false
+    # Sample groups for comparison
+    group1: null   # List of sample names/paths
+    group2: null
+    significance: 0.05
+    min_diff: 0.2  # Minimum methylation difference
+
+# =============================================================================
+# STRUCTURAL VARIANT CALLING
+# =============================================================================
+sv_calling:
+  # Enable SV detection
+  enabled: true
+
+  # SV types to detect
+  sv_types:
+    - DEL    # Deletions
+    - INS    # Insertions
+    - INV    # Inversions
+    - DUP    # Duplications
+    - BND    # Breakends / Translocations
+
+  # Minimum SV size (bp)
+  min_size: 50
+
+  # Maximum SV size (null = no limit)
+  max_size: null
+
+  # Minimum supporting reads
+  min_support: 3
+
+  # Phasing
+  phase_variants: true
+
+# =============================================================================
+# HAPLOTYPE PHASING
+# =============================================================================
+phasing:
+  # Enable haplotype phasing
+  enabled: true
+
+  # Minimum heterozygous variant quality
+  min_variant_quality: 20
+
+  # Maximum phase block gap (bp)
+  max_gap: 300000
+
+# =============================================================================
+# VISUALIZATION
+# =============================================================================
+visualization:
+  # Generate plots
+  enabled: true
+
+  # Output format
+  format: png   # png, pdf, svg
+
+  # DPI for raster formats
+  dpi: 150
+
+  # Plots to generate
+  plots:
+    - read_length_histogram
+    - quality_vs_length
+    - methylation_track
+    - phasing_blocks
+
+# =============================================================================
+# REPORTING
+# =============================================================================
+reporting:
+  # Generate QC report
+  qc_report: true
+
+  # Generate assembly report
+  assembly_report: true
+
+  # Report format
+  format: json   # json, text, html
+
+  # Include raw data in report
+  include_raw_data: false

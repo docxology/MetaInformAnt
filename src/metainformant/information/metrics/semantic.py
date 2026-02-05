@@ -374,9 +374,10 @@ def ontology_complexity(hierarchy: Dict[str, Set[str]], term_ic: Optional[Dict[s
     if term_ic:
         ic_values = list(term_ic.values())
         if ic_values:
+            ic_mean = sum(ic_values) / len(ic_values)
             ic_stats = {
-                "ic_mean": sum(ic_values) / len(ic_values),
-                "ic_std": math.sqrt(sum((x - ic_stats.get("ic_mean", 0)) ** 2 for x in ic_values) / len(ic_values)),
+                "ic_mean": ic_mean,
+                "ic_std": math.sqrt(sum((x - ic_mean) ** 2 for x in ic_values) / len(ic_values)),
                 "ic_min": min(ic_values),
                 "ic_max": max(ic_values),
                 "ic_range": max(ic_values) - min(ic_values),

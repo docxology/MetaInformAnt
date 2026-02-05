@@ -226,7 +226,9 @@ def plot_tsne(
         raise ValueError("n_components must be 2 or 3")
 
     # Perform t-SNE (may be slow for large datasets)
-    tsne = TSNE(n_components=n_components, random_state=42)
+    # Perplexity must be less than n_samples; default to min(30, n-1)
+    perplexity = min(30.0, data_array.shape[0] - 1)
+    tsne = TSNE(n_components=n_components, perplexity=perplexity, random_state=42)
     tsne_result = tsne.fit_transform(data_array)
 
     if n_components == 2:

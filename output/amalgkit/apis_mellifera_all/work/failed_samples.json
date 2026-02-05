@@ -1,0 +1,476 @@
+[
+  {
+    "sample_id": "SRR34509586",
+    "success": false,
+    "steps": {
+      "download": "prefetch failed: 2026-02-03T18:41:52 prefetch.3.2.1 warn: lock exists while copying file - Lock file /Users/mini/Documents/GitHub/metainformant/output/amalgkit/apis_mellifera_all/fastq/getfastq/SRR34509586/SRR34509586"
+    },
+    "error": "Download: prefetch failed: 2026-02-03T18:41:52 prefetch.3.2.1 warn: lock exists while copying file - Lock file /Users/mini/Documents/GitHub/metainformant/output/amalgkit/apis_mellifera_all/fastq/getfastq/SRR34509586/SRR34509586",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR34509587",
+    "success": false,
+    "steps": {
+      "download": "prefetch failed: 2026-02-03T18:41:52 prefetch.3.2.1 warn: lock exists while copying file - Lock file /Users/mini/Documents/GitHub/metainformant/output/amalgkit/apis_mellifera_all/fastq/getfastq/SRR34509587/SRR34509587"
+    },
+    "error": "Download: prefetch failed: 2026-02-03T18:41:52 prefetch.3.2.1 warn: lock exists while copying file - Lock file /Users/mini/Documents/GitHub/metainformant/output/amalgkit/apis_mellifera_all/fastq/getfastq/SRR34509587/SRR34509587",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR34020838",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "fasterq-dump failed: 2026-02-03T19:00:42 fasterq-dump.3.2.1 err: execute_concat_un_compressed() KDirectoryFileSize( '/Users/mini/Documents/GitHub/metainformant/output/amalgkit/apis_mellifera_all/fastq/getfastq/SRR34020838"
+    },
+    "error": "Extract: fasterq-dump failed: 2026-02-03T19:00:42 fasterq-dump.3.2.1 err: execute_concat_un_compressed() KDirectoryFileSize( '/Users/mini/Documents/GitHub/metainformant/output/amalgkit/apis_mellifera_all/fastq/getfastq/SRR34020838",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR34020847",
+    "success": false,
+    "steps": {
+      "download": "prefetch failed: 2026-02-03T19:00:45 prefetch.3.2.1 warn: lock exists while copying file - Lock file /Users/mini/Documents/GitHub/metainformant/output/amalgkit/apis_mellifera_all/fastq/getfastq/SRR34020847/SRR34020847"
+    },
+    "error": "Download: prefetch failed: 2026-02-03T19:00:45 prefetch.3.2.1 warn: lock exists while copying file - Lock file /Users/mini/Documents/GitHub/metainformant/output/amalgkit/apis_mellifera_all/fastq/getfastq/SRR34020847/SRR34020847",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR34020852",
+    "success": false,
+    "steps": {
+      "download": "prefetch failed: 2026-02-03T19:00:48 prefetch.3.2.1 warn: lock exists while copying file - Lock file /Users/mini/Documents/GitHub/metainformant/output/amalgkit/apis_mellifera_all/fastq/getfastq/SRR34020852/SRR34020852"
+    },
+    "error": "Download: prefetch failed: 2026-02-03T19:00:48 prefetch.3.2.1 warn: lock exists while copying file - Lock file /Users/mini/Documents/GitHub/metainformant/output/amalgkit/apis_mellifera_all/fastq/getfastq/SRR34020852/SRR34020852",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR34020833",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "Extracted",
+      "quantify": "No FASTQ files found"
+    },
+    "error": "Quantify: No FASTQ files found",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR34020871",
+    "success": false,
+    "steps": {
+      "download": "prefetch failed: 2026-02-03T19:05:55 prefetch.3.2.1 int: path not found while opening directory within file system module - Cannot OpenFileWrite(/Users/mini/Documents/GitHub/metainformant/output/amalgkit/apis_mellifer"
+    },
+    "error": "Download: prefetch failed: 2026-02-03T19:05:55 prefetch.3.2.1 int: path not found while opening directory within file system module - Cannot OpenFileWrite(/Users/mini/Documents/GitHub/metainformant/output/amalgkit/apis_mellifer",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR35303680",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR34509591",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "Extracted",
+      "quantify": "No FASTQ files found"
+    },
+    "error": "Quantify: No FASTQ files found",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR34509589",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "fasterq-dump failed: 2026-02-03T19:08:38 fasterq-dump.3.2.1 err: execute_concat_un_compressed() KDirectoryFileSize( '/Users/mini/Documents/GitHub/metainformant/output/amalgkit/apis_mellifera_all/fastq/getfastq/SRR34509589"
+    },
+    "error": "Extract: fasterq-dump failed: 2026-02-03T19:08:38 fasterq-dump.3.2.1 err: execute_concat_un_compressed() KDirectoryFileSize( '/Users/mini/Documents/GitHub/metainformant/output/amalgkit/apis_mellifera_all/fastq/getfastq/SRR34509589",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR35303692",
+    "success": false,
+    "steps": {
+      "download": "Downloaded"
+    },
+    "error": "Timeout",
+    "duration": 2465.2448670864105
+  },
+  {
+    "sample_id": "SRR34020903",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR34020909",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "fasterq-dump failed: 2026-02-03T19:31:15 fasterq-dump.3.2.1 err: storage exhausted while writing file within file system module - system bad file descriptor error fd='3'\n2026-02-03T19:31:15 fasterq-dump.3.2.1 err: you hav"
+    },
+    "error": "Extract: fasterq-dump failed: 2026-02-03T19:31:15 fasterq-dump.3.2.1 err: storage exhausted while writing file within file system module - system bad file descriptor error fd='3'\n2026-02-03T19:31:15 fasterq-dump.3.2.1 err: you hav",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR34020908",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "fasterq-dump failed: 2026-02-03T19:31:15 fasterq-dump.3.2.1 err: storage exhausted while writing file within file system module - system bad file descriptor error fd='3'\n2026-02-03T19:31:15 fasterq-dump.3.2.1 err: you hav"
+    },
+    "error": "Extract: fasterq-dump failed: 2026-02-03T19:31:15 fasterq-dump.3.2.1 err: storage exhausted while writing file within file system module - system bad file descriptor error fd='3'\n2026-02-03T19:31:15 fasterq-dump.3.2.1 err: you hav",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR34020874",
+    "success": false,
+    "steps": {
+      "download": "Downloaded"
+    },
+    "error": "Timeout",
+    "duration": 1993.4631650447845
+  },
+  {
+    "sample_id": "SRR34020884",
+    "success": false,
+    "steps": {
+      "download": "Downloaded"
+    },
+    "error": "Timeout",
+    "duration": 2340.405774116516
+  },
+  {
+    "sample_id": "SRR34020912",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381836",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381833",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR34020910",
+    "success": false,
+    "steps": {
+      "download": "Downloaded"
+    },
+    "error": "Timeout",
+    "duration": 1647.5758228302002
+  },
+  {
+    "sample_id": "SRR34020911",
+    "success": false,
+    "steps": {
+      "download": "Downloaded"
+    },
+    "error": "Timeout",
+    "duration": 1564.3835372924805
+  },
+  {
+    "sample_id": "SRR33381840",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381847",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381849",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381838",
+    "success": false,
+    "steps": {
+      "download": "Downloaded"
+    },
+    "error": "Timeout",
+    "duration": 2440.9708528518677
+  },
+  {
+    "sample_id": "SRR33381851",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381864",
+    "success": false,
+    "steps": {
+      "download": "prefetch failed: 2026-02-03T20:34:50 prefetch.3.2.1 err: storage exhausted while writing file within file system module - system bad file descriptor error fd='7'\n2026-02-03T20:34:50 prefetch.3.2.1 int: storage exhaust"
+    },
+    "error": "Download: prefetch failed: 2026-02-03T20:34:50 prefetch.3.2.1 err: storage exhausted while writing file within file system module - system bad file descriptor error fd='7'\n2026-02-03T20:34:50 prefetch.3.2.1 int: storage exhaust",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381861",
+    "success": false,
+    "steps": {
+      "download": "prefetch failed: 2026-02-03T20:34:50 prefetch.3.2.1 err: storage exhausted while writing file within file system module - system bad file descriptor error fd='7'\n2026-02-03T20:34:50 prefetch.3.2.1 int: storage exhaust"
+    },
+    "error": "Download: prefetch failed: 2026-02-03T20:34:50 prefetch.3.2.1 err: storage exhausted while writing file within file system module - system bad file descriptor error fd='7'\n2026-02-03T20:34:50 prefetch.3.2.1 int: storage exhaust",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381854",
+    "success": false,
+    "steps": {
+      "download": "prefetch failed: 2026-02-03T20:34:50 prefetch.3.2.1 err: storage exhausted while writing file within file system module - system bad file descriptor error fd='7'\n2026-02-03T20:34:50 prefetch.3.2.1 int: storage exhaust"
+    },
+    "error": "Download: prefetch failed: 2026-02-03T20:34:50 prefetch.3.2.1 err: storage exhausted while writing file within file system module - system bad file descriptor error fd='7'\n2026-02-03T20:34:50 prefetch.3.2.1 int: storage exhaust",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381859",
+    "success": false,
+    "steps": {
+      "download": "prefetch failed: 2026-02-03T20:34:50 prefetch.3.2.1 err: storage exhausted while writing file within file system module - system bad file descriptor error fd='7'\n2026-02-03T20:34:50 prefetch.3.2.1 int: storage exhaust"
+    },
+    "error": "Download: prefetch failed: 2026-02-03T20:34:50 prefetch.3.2.1 err: storage exhausted while writing file within file system module - system bad file descriptor error fd='7'\n2026-02-03T20:34:50 prefetch.3.2.1 int: storage exhaust",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381853",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "fasterq-dump failed: 2026-02-03T20:34:50 fasterq-dump.3.2.1 err: storage exhausted while writing file within file system module - system bad file descriptor error fd='5'\n2026-02-03T20:34:50 fasterq-dump.3.2.1 err: you hav"
+    },
+    "error": "Extract: fasterq-dump failed: 2026-02-03T20:34:50 fasterq-dump.3.2.1 err: storage exhausted while writing file within file system module - system bad file descriptor error fd='5'\n2026-02-03T20:34:50 fasterq-dump.3.2.1 err: you hav",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381872",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381876",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381866",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381873",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381886",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381885",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381868",
+    "success": false,
+    "steps": {
+      "download": "Downloaded"
+    },
+    "error": "Timeout",
+    "duration": 1855.2880120277405
+  },
+  {
+    "sample_id": "SRR33381894",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381888",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381881",
+    "success": false,
+    "steps": {
+      "download": "Downloaded"
+    },
+    "error": "Timeout",
+    "duration": 1717.2473871707916
+  },
+  {
+    "sample_id": "SRR33381902",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381907",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381903",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381899",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381910",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33381896",
+    "success": false,
+    "steps": {
+      "download": "Downloaded"
+    },
+    "error": "Timeout",
+    "duration": 2021.2854871749878
+  },
+  {
+    "sample_id": "SRR33364839",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  },
+  {
+    "sample_id": "SRR33364845",
+    "success": false,
+    "steps": {
+      "download": "Downloaded",
+      "extract": "disk-limit exceeded"
+    },
+    "error": "Extract: disk-limit exceeded",
+    "duration": 0
+  }
+]

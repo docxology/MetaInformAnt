@@ -6,7 +6,8 @@ including network inference, motif discovery, and dynamic analysis.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from metainformant.core import logging
 

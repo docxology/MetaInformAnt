@@ -19,14 +19,19 @@ from .discovery import (
     find_symbol_usage,
     get_module_dependencies,
     discover_workflows,
+    invalidate_discovery_cache,
 )
 
 # Parallel processing
 from .parallel import (
     thread_map,
     thread_map_unordered,
+    process_map,
     parallel_batch,
     cpu_count,
+    gather_results,
+    rate_limited_map,
+    resource_aware_workers,
 )
 
 # Workflow orchestration
@@ -53,11 +58,16 @@ __all__ = [
     "find_symbol_usage",
     "get_module_dependencies",
     "discover_workflows",
+    "invalidate_discovery_cache",
     # Parallel
     "thread_map",
     "thread_map_unordered",
+    "process_map",
     "parallel_batch",
     "cpu_count",
+    "gather_results",
+    "rate_limited_map",
+    "resource_aware_workers",
     # Workflow
     "validate_config_file",
     "create_sample_config",

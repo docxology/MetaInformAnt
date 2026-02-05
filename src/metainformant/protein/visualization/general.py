@@ -701,3 +701,203 @@ def create_interactive_structure_viewer(
         logger.info(f"Interactive structure viewer saved to {html_path}")
 
     return fig
+
+
+def plot_helical_wheel(
+    sequence: str,
+    *,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
+    figsize: Tuple[float, float] = (8, 8),
+    **kwargs,
+) -> Axes:
+    """Plot a helical wheel diagram for a protein segment.
+
+    Displays residues projected onto a circle as viewed end-on along
+    the helix axis (100 degrees per residue for alpha helix).
+
+    Args:
+        sequence: Protein sequence (typically 18-25 residues)
+        ax: Optional matplotlib axes to plot on
+        output_path: Optional path to save the figure
+        figsize: Figure size as (width, height)
+
+    Returns:
+        matplotlib Axes object
+    """
+    validation.validate_type(sequence, str, "sequence")
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize, subplot_kw={"aspect": "equal"})
+
+    # Hydrophobicity color scale (Kyte-Doolittle)
+    hydro = {
+        "I": 4.5, "V": 4.2, "L": 3.8, "F": 2.8, "C": 2.5,
+        "M": 1.9, "A": 1.8, "G": -0.4, "T": -0.7, "S": -0.8,
+        "W": -0.9, "Y": -1.3, "P": -1.6, "H": -3.2, "E": -3.5,
+        "Q": -3.5, "D": -3.5, "N": -3.5, "K": -3.9, "R": -4.5,
+    }
+    h_min, h_max = -4.5, 4.5
+
+    angle_per_residue = 100.0  # degrees for alpha helix
+    n = len(sequence)
+    radius = 1.0
+
+    for i, aa in enumerate(sequence.upper()):
+        angle_deg = i * angle_per_residue
+        angle_rad = np.radians(angle_deg)
+        x = radius * np.cos(angle_rad)
+        y = radius * np.sin(angle_rad)
+
+        # Color by hydrophobicity
+        h_val = hydro.get(aa, 0.0)
+        norm_val = (h_val - h_min) / (h_max - h_min)
+        color = plt.cm.RdYlBu_r(norm_val)
+
+        circle = plt.Circle((x, y), 0.12, facecolor=color, edgecolor="black", linewidth=1)
+        ax.add_patch(circle)
+        ax.text(x, y, f"{aa}{i + 1}", ha="center", va="center", fontsize=7, fontweight="bold")
+
+        # Draw connection line to next residue
+        if i < n - 1:
+            next_angle = np.radians((i + 1) * angle_per_residue)
+            nx = radius * np.cos(next_angle)
+            ny = radius * np.sin(next_angle)
+            ax.plot([x, nx], [y, ny], "k-", alpha=0.2, linewidth=0.5)
+
+    ax.set_xlim(-1.5, 1.5)
+    ax.set_ylim(-1.5, 1.5)
+    ax.set_title("Helical Wheel Diagram")
+    ax.set_xticks([])
+    ax.set_yticks([])
+
+    if output_path:
+        paths.ensure_directory(Path(output_path).parent)
+        plt.savefig(str(output_path), dpi=300, bbox_inches="tight")
+        logger.info(f"Helical wheel saved to {output_path}")
+
+    return ax
+
+
+def plot_msa_heatmap(
+    aligned_sequences: List[str],
+    labels: List[str] | None = None,
+    *,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
+    figsize: Tuple[float, float] = (14, 6),
+    **kwargs,
+) -> Axes:
+    """Plot a heatmap visualization of a multiple sequence alignment.
+
+    Each cell is colored by amino acid property (hydrophobic, charged,
+    polar, special). Gaps are shown in white.
+
+    Args:
+        aligned_sequences: List of aligned sequences (same length, with gaps '-')
+        labels: Optional sequence labels
+        ax: Optional matplotlib axes
+        output_path: Optional save path
+        figsize: Figure size
+
+    Returns:
+        matplotlib Axes object
+    """
+    validation.validate_type(aligned_sequences, list, "aligned_sequences")
+    validation.validate_not_empty(aligned_sequences, "aligned_sequences")
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+
+    n_seqs = len(aligned_sequences)
+    aln_len = len(aligned_sequences[0])
+
+    # Property groups
+    aa_group = {}
+    for aa in "AILMFWVP":
+        aa_group[aa] = 0  # hydrophobic
+    for aa in "DEKRH":
+        aa_group[aa] = 1  # charged
+    for aa in "STNQYC":
+        aa_group[aa] = 2  # polar
+    for aa in "G":
+        aa_group[aa] = 3  # special
+
+    # Build matrix
+    matrix = np.full((n_seqs, aln_len), np.nan)
+    for i, seq in enumerate(aligned_sequences):
+        for j, aa in enumerate(seq.upper()):
+            if aa != "-":
+                matrix[i, j] = aa_group.get(aa, 2)
+
+    cmap = plt.cm.get_cmap("Set2", 4)
+    cmap.set_bad("white")
+
+    ax.imshow(matrix, aspect="auto", cmap=cmap, vmin=-0.5, vmax=3.5, interpolation="nearest")
+
+    if labels:
+        ax.set_yticks(range(n_seqs))
+        ax.set_yticklabels(labels[:n_seqs], fontsize=8)
+    ax.set_xlabel("Alignment Position")
+    ax.set_ylabel("Sequence")
+    ax.set_title("Multiple Sequence Alignment")
+
+    if output_path:
+        paths.ensure_directory(Path(output_path).parent)
+        plt.savefig(str(output_path), dpi=300, bbox_inches="tight")
+        logger.info(f"MSA heatmap saved to {output_path}")
+
+    return ax
+
+
+def plot_property_distribution(
+    properties: Dict[str, List[float]],
+    *,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
+    figsize: Tuple[float, float] = (10, 6),
+    kind: str = "box",
+    **kwargs,
+) -> Axes:
+    """Plot distribution of protein properties across multiple proteins.
+
+    Args:
+        properties: Dictionary mapping property names to value lists
+        ax: Optional matplotlib axes
+        output_path: Optional save path
+        figsize: Figure size
+        kind: Plot type ('box', 'violin')
+
+    Returns:
+        matplotlib Axes object
+    """
+    validation.validate_type(properties, dict, "properties")
+
+    if ax is None:
+        fig, ax = plt.subplots(figsize=figsize)
+
+    names = list(properties.keys())
+    data = [properties[n] for n in names]
+
+    if kind == "violin" and HAS_SEABORN:
+        import pandas as pd
+
+        rows = []
+        for name, values in properties.items():
+            for v in values:
+                rows.append({"Property": name, "Value": v})
+        df = pd.DataFrame(rows)
+        sns.violinplot(data=df, x="Property", y="Value", ax=ax)
+    else:
+        ax.boxplot(data, labels=names)
+
+    ax.set_ylabel("Value")
+    ax.set_title("Protein Property Distributions")
+    ax.grid(True, alpha=0.3, axis="y")
+
+    if output_path:
+        paths.ensure_directory(Path(output_path).parent)
+        plt.savefig(str(output_path), dpi=300, bbox_inches="tight")
+        logger.info(f"Property distribution saved to {output_path}")
+
+    return ax

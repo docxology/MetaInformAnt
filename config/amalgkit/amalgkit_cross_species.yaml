@@ -1,0 +1,37 @@
+# Amalgkit Cross-Species Configuration
+# Analysis of Apis mellifera and Pogonomyrmex barbatus
+
+# Working directory
+work_dir: output/amalgkit/cross_species/work
+log_dir: output/amalgkit/cross_species/logs
+threads: 8
+
+# Species to include
+species_list:
+  - Apis_mellifera
+  - Pogonomyrmex_barbatus
+
+# Steps configuration
+steps:
+  # Cross-Species TMM Normalization
+  cstmm:
+    out_dir: output/amalgkit/cross_species/cstmm
+    # Path to the ortholog table we are generating
+    orthogroup_table: output/amalgkit/cross_species/orthologs/orthogroups.tsv
+    
+    # Directory where per-species merge outputs are located
+    # Note: amalgkit usually looks in {out_dir}/merge, but for cross-species
+    # we might need to symlink or specify paths. 
+    # Since amalgkit structure expects species subdirs, we'll need to 
+    # structure the input directory correctly.
+    dir_count: output/amalgkit/cross_species/work/merge_inputs
+
+  # Cross-Species Correlation Analysis
+  csca:
+    out_dir: output/amalgkit/cross_species/csca
+    orthogroup_table: output/amalgkit/cross_species/orthologs/orthogroups.tsv
+    sample_group: tissue
+    
+# Debug options
+debug:
+  verbose: true

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Dict, Iterator, List, Tuple, Union
+from typing import Any, Dict, Iterator, List, Tuple, Union
 
 from metainformant.core import io, logging
 
@@ -175,7 +175,10 @@ def molecular_weight(seq: str) -> float:
 
 
 def isoelectric_point(seq: str) -> float:
-    """Calculate isoelectric point of a protein sequence.
+    """Calculate isoelectric point using Henderson-Hasselbalch bisection method.
+
+    Uses pKa values for amino acid side chains, N-terminus, and C-terminus
+    to find the pH at which the net charge is zero.
 
     Args:
         seq: Protein sequence string
@@ -183,22 +186,45 @@ def isoelectric_point(seq: str) -> float:
     Returns:
         Isoelectric point (pI)
     """
-    # Simplified pI calculation
-    # In practice, would use more sophisticated algorithms
+    if not seq:
+        return 0.0
 
-    acidic_count = seq.upper().count("D") + seq.upper().count("E")
-    basic_count = seq.upper().count("R") + seq.upper().count("H") + seq.upper().count("K")
+    seq = seq.upper()
 
-    if acidic_count == 0 and basic_count == 0:
-        return 7.0  # Neutral
+    # pKa values
+    pka_nterm = 9.69
+    pka_cterm = 2.34
+    pka_side = {
+        "D": 3.65, "E": 4.25,  # acidic
+        "C": 8.18, "Y": 10.07,  # weakly acidic
+        "H": 6.00, "K": 10.53, "R": 12.48,  # basic
+    }
 
-    # Rough approximation
-    if acidic_count > basic_count:
-        return 4.0  # Acidic
-    elif basic_count > acidic_count:
-        return 10.0  # Basic
-    else:
-        return 7.0  # Neutral
+    def _charge_at_ph(ph: float) -> float:
+        """Calculate net charge at given pH."""
+        charge = 0.0
+        # N-terminus (positive)
+        charge += 1.0 / (1.0 + 10 ** (ph - pka_nterm))
+        # C-terminus (negative)
+        charge -= 1.0 / (1.0 + 10 ** (pka_cterm - ph))
+        # Side chains
+        for aa in seq:
+            if aa in ("D", "E", "C", "Y"):
+                charge -= 1.0 / (1.0 + 10 ** (pka_side[aa] - ph))
+            elif aa in ("H", "K", "R"):
+                charge += 1.0 / (1.0 + 10 ** (ph - pka_side[aa]))
+        return charge
+
+    # Bisection method
+    low, high = 0.0, 14.0
+    for _ in range(100):
+        mid = (low + high) / 2.0
+        charge = _charge_at_ph(mid)
+        if charge > 0:
+            low = mid
+        else:
+            high = mid
+    return round((low + high) / 2.0, 2)
 
 
 def find_motifs(seq: str, motif_patterns: List[str]) -> Dict[str, List[int]]:
@@ -334,3 +360,229 @@ def amino_acid_composition(seq: str) -> Dict[str, float]:
         composition[aa] = (count / total) * 100
 
     return composition
+
+
+def extinction_coefficient(seq: str, disulfide_bonds: int = 0) -> Dict[str, float]:
+    """Calculate molar extinction coefficient at 280 nm.
+
+    Uses the Pace method based on Trp, Tyr, and Cys content.
+
+    Args:
+        seq: Protein sequence string
+        disulfide_bonds: Number of disulfide bonds (cystines)
+
+    Returns:
+        Dictionary with extinction coefficients (reduced and oxidized)
+    """
+    if not seq:
+        return {"reduced": 0.0, "oxidized": 0.0}
+
+    seq = seq.upper()
+    n_trp = seq.count("W")
+    n_tyr = seq.count("Y")
+    n_cys = seq.count("C")
+
+    # Pace et al. (1995) coefficients
+    ext_reduced = n_trp * 5500 + n_tyr * 1490
+    ext_oxidized = ext_reduced + disulfide_bonds * 125
+
+    return {
+        "reduced": float(ext_reduced),
+        "oxidized": float(ext_oxidized),
+        "n_trp": n_trp,
+        "n_tyr": n_tyr,
+        "n_cys": n_cys,
+    }
+
+
+def gravy(seq: str) -> float:
+    """Calculate Grand Average of Hydropathy (GRAVY) score.
+
+    GRAVY is the average Kyte-Doolittle hydropathy value across
+    the entire sequence. Positive = hydrophobic, negative = hydrophilic.
+
+    Args:
+        seq: Protein sequence string
+
+    Returns:
+        GRAVY score
+    """
+    if not seq:
+        return 0.0
+
+    kd_scale = {
+        "I": 4.5, "V": 4.2, "L": 3.8, "F": 2.8, "C": 2.5,
+        "M": 1.9, "A": 1.8, "G": -0.4, "T": -0.7, "S": -0.8,
+        "W": -0.9, "Y": -1.3, "P": -1.6, "H": -3.2, "E": -3.5,
+        "Q": -3.5, "D": -3.5, "N": -3.5, "K": -3.9, "R": -4.5,
+    }
+
+    total = sum(kd_scale.get(aa, 0.0) for aa in seq.upper())
+    return total / len(seq)
+
+
+def instability_index(seq: str) -> float:
+    """Calculate protein instability index (Guruprasad et al., 1990).
+
+    Values above 40 indicate the protein is likely unstable in vitro.
+
+    Args:
+        seq: Protein sequence string
+
+    Returns:
+        Instability index value
+    """
+    if len(seq) < 2:
+        return 0.0
+
+    # DIWV weight values for dipeptides (subset of most impactful pairs)
+    diwv = {
+        "WW": 1.0, "WC": 1.0, "WM": 24.68, "WH": 24.68,
+        "CW": -14.03, "CH": 33.60, "CC": 1.0, "CF": -14.03,
+        "FY": 33.60, "FF": 1.0, "FK": -14.03, "FL": 1.0,
+        "GG": 13.34, "GE": -14.03, "GA": -7.49, "GR": 1.0,
+        "EE": 33.60, "ED": -14.03, "EK": 1.0, "EA": 11.0,
+        "KK": 1.0, "KD": 1.0, "KE": 33.60, "KR": 33.60,
+        "DD": 1.0, "DG": 1.0, "DE": 1.0, "DR": -6.54,
+        "AA": 1.0, "AE": 1.0, "AG": 1.0, "AV": 1.0,
+        "RR": 58.28, "RK": 44.94, "RL": 1.0, "RA": 1.0,
+        "VV": 1.0, "VA": 1.0, "VL": 1.0, "VK": -7.49,
+        "LL": 1.0, "LA": 1.0, "LK": -7.49, "LR": 1.0,
+        "SS": 1.0, "SA": 1.0, "SG": 1.0, "SR": 44.94,
+        "PP": 20.26, "PG": 1.0, "PA": 20.26, "PV": 20.26,
+        "II": 1.0, "IA": 1.0, "IL": 20.26, "IV": -7.49,
+        "TT": 1.0, "TA": 1.0, "TG": -7.49, "TR": 1.0,
+        "YY": 33.60, "YF": 33.60, "YW": -9.37, "YA": 24.68,
+        "HH": 1.0, "HW": -1.88, "HR": 1.0, "HA": 1.0,
+        "QQ": 20.26, "QR": 1.0, "QE": 33.60, "QK": 1.0,
+        "NN": 1.0, "NR": 1.0, "NG": -14.03, "NK": 24.68,
+        "MM": -1.88, "MK": 1.0, "ML": 1.0, "MA": 1.0,
+    }
+
+    seq = seq.upper()
+    score = 0.0
+    for i in range(len(seq) - 1):
+        dipeptide = seq[i : i + 2]
+        score += diwv.get(dipeptide, 1.0)
+
+    return (10.0 / len(seq)) * score
+
+
+def aromaticity(seq: str) -> float:
+    """Calculate aromaticity index (frequency of aromatic amino acids).
+
+    Aromatic amino acids: Phe (F), Trp (W), Tyr (Y).
+
+    Args:
+        seq: Protein sequence string
+
+    Returns:
+        Aromaticity value (0.0 to 1.0)
+    """
+    if not seq:
+        return 0.0
+
+    seq = seq.upper()
+    aromatic_count = seq.count("F") + seq.count("W") + seq.count("Y")
+    return aromatic_count / len(seq)
+
+
+def charge_at_ph(seq: str, ph: float = 7.0) -> float:
+    """Calculate net charge of protein at a given pH.
+
+    Args:
+        seq: Protein sequence string
+        ph: pH value (default 7.0)
+
+    Returns:
+        Net charge at the given pH
+    """
+    if not seq:
+        return 0.0
+
+    seq = seq.upper()
+
+    pka_nterm = 9.69
+    pka_cterm = 2.34
+    pka_side = {
+        "D": 3.65, "E": 4.25,
+        "C": 8.18, "Y": 10.07,
+        "H": 6.00, "K": 10.53, "R": 12.48,
+    }
+
+    charge = 0.0
+    charge += 1.0 / (1.0 + 10 ** (ph - pka_nterm))
+    charge -= 1.0 / (1.0 + 10 ** (pka_cterm - ph))
+
+    for aa in seq:
+        if aa in ("D", "E", "C", "Y"):
+            charge -= 1.0 / (1.0 + 10 ** (pka_side[aa] - ph))
+        elif aa in ("H", "K", "R"):
+            charge += 1.0 / (1.0 + 10 ** (ph - pka_side[aa]))
+
+    return round(charge, 4)
+
+
+def sequence_summary(seq: str) -> Dict[str, Any]:
+    """Generate a comprehensive summary of protein sequence properties.
+
+    Args:
+        seq: Protein sequence string
+
+    Returns:
+        Dictionary with all computed sequence properties
+    """
+    if not seq:
+        return {}
+
+    return {
+        "length": sequence_length(seq),
+        "molecular_weight": molecular_weight(seq),
+        "isoelectric_point": isoelectric_point(seq),
+        "gravy": gravy(seq),
+        "aromaticity": aromaticity(seq),
+        "instability_index": instability_index(seq),
+        "extinction_coefficient": extinction_coefficient(seq),
+        "charge_at_ph7": charge_at_ph(seq, 7.0),
+        "amino_acid_composition": amino_acid_composition(seq),
+        "is_valid": validate_protein_sequence(seq),
+    }
+
+
+# Aliases for backward compatibility
+parse_fasta = read_fasta
+is_valid_protein_sequence = validate_protein_sequence
+
+
+def calculate_aa_composition(seq: str) -> Dict[str, float]:
+    """Calculate amino acid composition as fractions (0-1).
+
+    Args:
+        seq: Protein sequence
+
+    Returns:
+        Dictionary mapping amino acids to their fractional abundance
+    """
+    comp = amino_acid_composition(seq)
+    return {aa: pct / 100.0 for aa, pct in comp.items()}
+
+
+def kmer_frequencies(seq: str, k: int = 2) -> Dict[str, int]:
+    """Calculate k-mer frequencies in a protein sequence.
+
+    Args:
+        seq: Protein sequence
+        k: Length of k-mers
+
+    Returns:
+        Dictionary mapping k-mers to their counts
+    """
+    if k < 1 or k > len(seq):
+        return {}
+
+    counts: Dict[str, int] = {}
+    for i in range(len(seq) - k + 1):
+        kmer = seq[i : i + k]
+        counts[kmer] = counts.get(kmer, 0) + 1
+
+    return counts

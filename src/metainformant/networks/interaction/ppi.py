@@ -7,7 +7,7 @@ This module provides specialized tools for analyzing protein-protein interaction
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from metainformant.core import logging, io
 
@@ -21,6 +21,13 @@ try:
 except ImportError:
     HAS_NETWORKX = False
     logger.warning("networkx not available, PPI analysis disabled")
+
+try:
+    import numpy as np
+
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
 
 
 def load_ppi_network(ppi_file: Union[str, Path], format: str = "tsv", **kwargs: Any) -> Any:
@@ -76,7 +83,7 @@ def load_ppi_network(ppi_file: Union[str, Path], format: str = "tsv", **kwargs: 
         # BioPlex format (specific columns)
         ppi_data = []
         with open(ppi_file, "r") as f:
-            header = next(f).strip().split("\t")
+            next(f)  # skip header line
             for line in f:
                 parts = line.strip().split("\t")
                 if len(parts) > 1:
@@ -875,7 +882,9 @@ def _predict_by_similarity(
             # Since target is not in network, we can't use topology
             # Return empty predictions with explanation
             predictions[target] = []
-            logger.info(f"Target protein {target} not found in network - cannot predict interactions without additional features")
+            logger.info(
+                f"Target protein {target} not found in network - cannot predict interactions without additional features"
+            )
 
     return predictions
 
@@ -975,8 +984,6 @@ def _predict_by_ml(
     **kwargs: Any,
 ) -> Dict[str, List[Dict[str, Any]]]:
     """Predict interactions using machine learning."""
-    predictions = {}
-
     # This would implement a proper ML model (e.g., random forest, neural network)
     # For now, use a simplified approach
     logger.warning("ML prediction method not fully implemented - using correlation fallback")
@@ -1059,16 +1066,17 @@ def functional_enrichment_ppi(
         Dictionary mapping functions to enrichment statistics
     """
     import math
-    from collections import defaultdict, Counter
+    from collections import defaultdict
 
     if background_proteins is None:
-        background_proteins = list(ppi_network.proteins.keys())
+        background_proteins = list(ppi_network.graph.nodes())
 
     # Get functional annotations for background
     background_functions = defaultdict(list)
     for protein in background_proteins:
-        if protein in ppi_network.proteins and function_key in ppi_network.proteins[protein]:
-            functions = ppi_network.proteins[protein][function_key]
+        node_data = ppi_network.get_protein_metadata(protein)
+        if function_key in node_data:
+            functions = node_data[function_key]
             if isinstance(functions, str):
                 functions = [functions]
             for func in functions:
@@ -1077,8 +1085,9 @@ def functional_enrichment_ppi(
     # Get functional annotations for test set
     test_functions = defaultdict(list)
     for protein in protein_list:
-        if protein in ppi_network.proteins and function_key in ppi_network.proteins[protein]:
-            functions = ppi_network.proteins[protein][function_key]
+        node_data = ppi_network.get_protein_metadata(protein)
+        if function_key in node_data:
+            functions = node_data[function_key]
             if isinstance(functions, str):
                 functions = [functions]
             for func in functions:

@@ -61,11 +61,11 @@ def compute_rmsd_kabsch(coords_ref: np.ndarray, coords_mobile: np.ndarray) -> fl
     if np.linalg.det(np.dot(U, Vt)) < 0:
         U[:, -1] *= -1
 
-    # Optimal rotation matrix
+    # Optimal rotation matrix R = U @ Vt (minimizes ||ref - mobile @ R||)
     rotation = np.dot(U, Vt)
 
-    # Apply rotation
-    aligned_mobile = np.dot(mobile_centered, rotation.T)
+    # Apply rotation: aligned = mobile @ R
+    aligned_mobile = np.dot(mobile_centered, rotation)
 
     # Calculate RMSD
     diff = ref_centered - aligned_mobile
@@ -137,11 +137,11 @@ def align_structures_kabsch(coords_ref: np.ndarray, coords_mobile: np.ndarray) -
     if np.linalg.det(np.dot(U, Vt)) < 0:
         U[:, -1] *= -1
 
-    # Optimal rotation matrix
+    # Optimal rotation matrix R = U @ Vt
     rotation = np.dot(U, Vt)
 
-    # Apply rotation
-    aligned_mobile = np.dot(mobile_centered, rotation.T)
+    # Apply rotation: aligned = mobile @ R
+    aligned_mobile = np.dot(mobile_centered, rotation)
 
     # Translate back to reference centroid
     aligned_mobile += ref_centroid
@@ -235,25 +235,18 @@ def calculate_inertia_tensor(coords: np.ndarray, masses: Optional[np.ndarray] = 
     com = calculate_center_of_mass(coords, masses)
     coords_centered = coords - com
 
-    # Calculate inertia tensor
+    # Calculate inertia tensor (vectorized)
+    x = coords_centered[:, 0]
+    y = coords_centered[:, 1]
+    z = coords_centered[:, 2]
+
     I = np.zeros((3, 3))
-
-    for i in range(len(coords)):
-        r = coords_centered[i]
-        m = masses[i]
-
-        I[0, 0] += m * (r[1] ** 2 + r[2] ** 2)
-        I[1, 1] += m * (r[0] ** 2 + r[2] ** 2)
-        I[2, 2] += m * (r[0] ** 2 + r[1] ** 2)
-
-        I[0, 1] -= m * r[0] * r[1]
-        I[0, 2] -= m * r[0] * r[2]
-        I[1, 2] -= m * r[1] * r[2]
-
-    # Symmetrize
-    I[1, 0] = I[0, 1]
-    I[2, 0] = I[0, 2]
-    I[2, 1] = I[1, 2]
+    I[0, 0] = np.sum(masses * (y ** 2 + z ** 2))
+    I[1, 1] = np.sum(masses * (x ** 2 + z ** 2))
+    I[2, 2] = np.sum(masses * (x ** 2 + y ** 2))
+    I[0, 1] = I[1, 0] = -np.sum(masses * x * y)
+    I[0, 2] = I[2, 0] = -np.sum(masses * x * z)
+    I[1, 2] = I[2, 1] = -np.sum(masses * y * z)
 
     return I
 

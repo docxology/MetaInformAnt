@@ -171,32 +171,32 @@ def get_dependency_report() -> Dict[str, Any]:
 
 
 def print_dependency_report() -> None:
-    """Print a formatted dependency report to console."""
+    """Print a formatted dependency report to console (and log)."""
     report = get_dependency_report()
 
-    print("RNA-seq Workflow Dependency Report")
-    print("=" * 40)
+    logger.info("RNA-seq Workflow Dependency Report")
+    logger.info("=" * 40)
 
     # Amalgkit status
     amalgkit_ok, amalgkit_info = report["amalgkit"]
     status = "✓ Available" if amalgkit_ok else "✗ Missing"
-    print(f"Amalgkit: {status} ({amalgkit_info})")
+    logger.info(f"Amalgkit: {status} ({amalgkit_info})")
 
     # Quantification tools
-    print("\nQuantification Tools:")
+    logger.info("\nQuantification Tools:")
     for tool, (avail, version) in report["quantification_tools"].items():
         status = "✓" if avail else "✗"
-        print(f"  {tool}: {status} {version}")
+        logger.info(f"  {tool}: {status} {version}")
 
     # System requirements
     sys_req = report["system_requirements"]
-    print(f"\nSystem Requirements:")
-    print(f"  Memory: {sys_req['memory_gb']:.1f} GB")
-    print(f"  CPU Cores: {sys_req['cpu_cores']}")
-    print(f"  Disk Space: {sys_req['disk_space_gb']:.1f} GB")
-    print(f"  Python: {sys_req['python_version']}")
+    logger.info("\nSystem Requirements:")
+    logger.info(f"  Memory: {sys_req['memory_gb']:.1f} GB")
+    logger.info(f"  CPU Cores: {sys_req['cpu_cores']}")
+    logger.info(f"  Disk Space: {sys_req['disk_space_gb']:.1f} GB")
+    logger.info(f"  Python: {sys_req['python_version']}")
 
-    print(f"\nOverall Status: {report['overall_status']}")
+    logger.info(f"\nOverall Status: {report['overall_status']}")
 
 
 def ensure_dependencies() -> bool:
@@ -208,7 +208,7 @@ def ensure_dependencies() -> bool:
     report = get_dependency_report()
 
     if report["overall_status"] == "ISSUES":
-        print("Dependency issues detected:")
+        logger.warning("Dependency issues detected:")
         print_dependency_report()
         return False
 

@@ -27,6 +27,7 @@ from .sequence import composition
 from .sequence import motifs
 from .sequence import restriction
 from .sequence import consensus
+from .sequence import kmer
 
 # Alignment
 from .alignment import pairwise as alignment
@@ -87,6 +88,7 @@ __all__ = [
     "motifs",
     "restriction",
     "consensus",
+    "kmer",
     "alignment",
     "msa",
     "distances",

@@ -481,3 +481,62 @@ def classify_contact_types(atoms: List[Dict[str, Any]], coords: np.ndarray) -> D
             "total_residue_contacts": int(np.sum(contact_map) / 2),
         },
     }
+
+
+def compute_ca_contact_pairs(
+    coords: list,
+    threshold: float = 8.0,
+) -> list:
+    """Compute C-alpha contact pairs from a list of coordinates.
+
+    Given a list of (x, y, z) tuples representing C-alpha positions,
+    returns all pairs (i, j) with i < j whose Euclidean distance
+    is within the threshold.
+
+    Uses vectorized numpy distance computation for O(n^2) memory but
+    fast execution, with scipy.spatial.distance.pdist when available.
+
+    Args:
+        coords: List of (x, y, z) tuples or lists for C-alpha atoms
+        threshold: Distance threshold in Angstroms
+
+    Returns:
+        List of (i, j) tuples representing contact pairs
+
+    Example:
+        >>> coords = [(0.0, 0.0, 0.0), (3.0, 0.0, 0.0), (10.0, 0.0, 0.0)]
+        >>> pairs = compute_ca_contact_pairs(coords, threshold=4.0)
+        >>> (0, 1) in pairs
+        True
+        >>> (0, 2) in pairs
+        False
+    """
+    n = len(coords)
+    if n < 2:
+        return []
+
+    arr = np.asarray(coords, dtype=np.float64)
+
+    try:
+        from scipy.spatial.distance import pdist, squareform
+
+        condensed = pdist(arr)
+        # Convert condensed index back to (i, j) pairs
+        pairs = []
+        k = 0
+        for i in range(n):
+            for j in range(i + 1, n):
+                if condensed[k] <= threshold:
+                    pairs.append((i, j))
+                k += 1
+        return pairs
+    except ImportError:
+        pass
+
+    # Fallback: numpy broadcasting
+    diff = arr[:, np.newaxis, :] - arr[np.newaxis, :, :]
+    dist_matrix = np.sqrt(np.sum(diff ** 2, axis=2))
+
+    # Extract upper triangle where distance <= threshold
+    i_idx, j_idx = np.where(np.triu(dist_matrix <= threshold, k=1))
+    return list(zip(i_idx.tolist(), j_idx.tolist()))

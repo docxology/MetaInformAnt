@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import ast
 import re
+import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -65,6 +66,93 @@ class ModuleDependency:
     module: str
     imports: list[str] = field(default_factory=list)
     from_imports: dict[str, list[str]] = field(default_factory=dict)
+
+
+class _DiscoveryCache:
+    """Thread-safe mtime-based cache for parsed AST results.
+
+    Stores parsed AST trees keyed by file path.  On cache hit, compares the
+    file's current mtime to the cached mtime; if the file has been modified
+    the entry is evicted and the caller re-parses.
+    """
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        # path_str -> (mtime, ast.Module)
+        self._entries: dict[str, tuple[float, ast.Module]] = {}
+
+    def get(self, path: Path) -> ast.Module | None:
+        """Return cached AST if the file has not been modified since caching."""
+        key = str(path)
+        with self._lock:
+            entry = self._entries.get(key)
+            if entry is None:
+                return None
+            cached_mtime, tree = entry
+            try:
+                current_mtime = path.stat().st_mtime
+            except OSError:
+                # File disappeared; evict.
+                self._entries.pop(key, None)
+                return None
+            if current_mtime > cached_mtime:
+                # Stale; evict and signal re-parse.
+                self._entries.pop(key, None)
+                return None
+            return tree
+
+    def put(self, path: Path, tree: ast.Module) -> None:
+        """Store a parsed AST with the file's current mtime."""
+        key = str(path)
+        try:
+            mtime = path.stat().st_mtime
+        except OSError:
+            return  # Cannot stat; do not cache.
+        with self._lock:
+            self._entries[key] = (mtime, tree)
+
+    def invalidate(self, path: Path) -> None:
+        """Remove a single path from the cache."""
+        with self._lock:
+            self._entries.pop(str(path), None)
+
+    def clear(self) -> None:
+        """Remove all entries from the cache."""
+        with self._lock:
+            self._entries.clear()
+
+
+# Module-level singleton used by discover_functions / find_symbol_usage.
+_discovery_cache = _DiscoveryCache()
+
+
+def invalidate_discovery_cache(path: Path | str | None = None) -> None:
+    """Public helper to invalidate the discovery AST cache.
+
+    Args:
+        path: If given, only that file is invalidated.  If ``None`` the
+              entire cache is cleared.
+    """
+    if path is None:
+        _discovery_cache.clear()
+    else:
+        _discovery_cache.invalidate(Path(path))
+
+
+def _cached_parse(path: Path) -> ast.Module:
+    """Parse a Python file, using the mtime-based cache when possible.
+
+    Raises:
+        SyntaxError: If the file cannot be parsed.
+        OSError: If the file cannot be read.
+    """
+    tree = _discovery_cache.get(path)
+    if tree is not None:
+        return tree
+    with open(path, "rt", encoding="utf-8") as f:
+        tree = ast.parse(f.read(), filename=str(path))
+    _discovery_cache.put(path, tree)
+    return tree
 
 
 def _get_cache_dir(repo_root: Path) -> Path:
@@ -150,8 +238,7 @@ def discover_functions(module_path: str | Path, pattern: str | None = None) -> l
         raise FileNotFoundError(f"Module not found: {module_path}")
 
     try:
-        with open(module_path, "rt", encoding="utf-8") as f:
-            tree = ast.parse(f.read(), filename=str(module_path))
+        tree = _cached_parse(module_path)
     except SyntaxError as e:
         raise SyntaxError(f"Failed to parse {module_path}: {e}") from e
 
@@ -387,8 +474,7 @@ def build_call_graph(entry_point: str | Path, repo_root: str | Path | None = Non
         return {}
 
     try:
-        with open(entry_path, "rt", encoding="utf-8") as f:
-            tree = ast.parse(f.read(), filename=str(entry_path))
+        tree = _cached_parse(entry_path)
     except (SyntaxError, OSError):
         return {}
 
@@ -437,18 +523,19 @@ def find_symbol_usage(symbol_name: str, repo_root: str | Path) -> list[SymbolUsa
             continue
 
         try:
+            # Read source lines (needed for context snippets regardless of cache).
             with open(py_file, "rt", encoding="utf-8") as f:
                 content = f.read()
                 lines = content.splitlines()
 
             try:
-                tree = ast.parse(content, filename=str(py_file))
+                tree = _cached_parse(py_file)
             except SyntaxError:
                 # Skip files with syntax errors
                 continue
 
             class UsageVisitor(ast.NodeVisitor):
-                def visit_Name(self, node: ast.Name):
+                def visit_Name(self, node: ast.Name) -> None:
                     if node.id == symbol_name:
                         # Get context line
                         line = lines[node.lineno - 1] if node.lineno <= len(lines) else ""
@@ -483,8 +570,7 @@ def get_module_dependencies(module_path: str | Path) -> ModuleDependency:
         return ModuleDependency(module=str(module_path), imports=[], from_imports={})
 
     try:
-        with open(module_path, "rt", encoding="utf-8") as f:
-            tree = ast.parse(f.read(), filename=str(module_path))
+        tree = _cached_parse(module_path)
     except (SyntaxError, OSError):
         return ModuleDependency(module=str(module_path), imports=[], from_imports={})
 

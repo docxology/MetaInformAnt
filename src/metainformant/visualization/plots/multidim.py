@@ -120,9 +120,10 @@ def plot_parallel_coordinates(
             ax.plot(subset.drop(columns=[color_col]).T.values, alpha=0.7, label=str(category))
         ax.legend()
     else:
-        # Basic matplotlib version
-        for i in range(len(plot_data)):
-            ax.plot(plot_data.iloc[i].values, alpha=0.7)
+        # Basic matplotlib version — plot only numeric columns
+        numeric_only = plot_data.select_dtypes(include=[np.number])
+        for i in range(len(numeric_only)):
+            ax.plot(numeric_only.iloc[i].values, alpha=0.7)
 
     # Set x-ticks to column names
     ax.set_xticks(range(len(numeric_data.columns)))

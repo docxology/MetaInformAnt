@@ -33,7 +33,7 @@ PROGRESS_FILE = WORK_DIR / "parallel_progress.json"
 LOG_FILE = WORK_DIR / "parallel_processing.log"
 
 # Parallel processing settings
-NUM_WORKERS = 10  # Number of parallel workers (maximized - external drive has 1.8TB)
+NUM_WORKERS = 20  # Number of parallel workers (maximized - external drive has 1.8TB)
 THREADS_PER_SAMPLE = 2  # Threads for fasterq-dump and kallisto per sample
 DISK_CHECK_INTERVAL = 10  # Check disk every N samples
 MIN_FREE_GB = 50  # Minimum free disk space in GB
@@ -98,7 +98,7 @@ def download_sample(sample_id: str, sample_dir: Path) -> tuple[bool, str]:
         cmd, 
         capture_output=True, 
         text=True,
-        timeout=7200  # 2 hour timeout for large files
+        timeout=14400  # 4 hour timeout for large files
     )
     
     if result.returncode != 0:
@@ -132,7 +132,7 @@ def extract_fastq(sample_id: str, sample_dir: Path) -> tuple[bool, str]:
         cmd,
         capture_output=True,
         text=True,
-        timeout=7200  # 2 hour timeout for large files
+        timeout=14400  # 4 hour timeout for large files
     )
     
     if result.returncode != 0:
@@ -374,7 +374,7 @@ def main():
                 sample_id = futures[future]
                 
                 try:
-                    result = future.result(timeout=7200)  # 2 hour max per sample
+                    result = future.result(timeout=14400)  # 4 hour max per sample
                     
                     if result["success"]:
                         success_count += 1

@@ -1,1 +1,1 @@
-{"config": {"downloads": {"sample": {"filename": "sample.json", "url": "https://httpbin.org/json"}}}, "downloads": {"sample": {"path": "output/test_config/sample.json", "status": "success"}}, "end_time": 1770136978.293942, "errors": [], "processing": {}, "start_time": 1770136976.7767491}
+{"config": {"downloads": {"sample": {"filename": "sample.json", "url": "https://httpbin.org/json"}}}, "downloads": {"sample": {"path": "output/test_config/sample.json", "status": "success"}}, "end_time": 1770267688.54411, "errors": [], "processing": {}, "start_time": 1770267687.0276392}

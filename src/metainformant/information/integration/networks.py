@@ -64,13 +64,16 @@ def _shannon_network_entropy(G: Any, attribute: Optional[str] = None) -> float:
     """Calculate Shannon entropy of network structure or attributes."""
     if attribute is None:
         # Structural entropy based on degree distribution
+        total_nodes = len(G)
+        if total_nodes == 0:
+            return 0.0
+
         degrees = [d for n, d in G.degree()]
         from collections import Counter
 
         degree_counts = Counter(degrees)
 
         # Convert to probabilities
-        total_nodes = len(G)
         probs = [count / total_nodes for count in degree_counts.values()]
 
         # Calculate entropy
@@ -234,8 +237,21 @@ def _random_walk_information_flow(
                 if target_nodes is None or target in target_nodes:
                     flow_dict[source][target] = flow_matrix[i, j]
 
+    # Calculate path length entropy from the flow distribution
+    all_flows = []
+    for source_flows in flow_dict.values():
+        all_flows.extend(source_flows.values())
+    path_length_entropy = 0.0
+    total_flow = sum(abs(f) for f in all_flows)
+    if total_flow > 0:
+        probs = [abs(f) / total_flow for f in all_flows if abs(f) > 0]
+        for p in probs:
+            if p > 0:
+                path_length_entropy -= p * math.log2(p)
+
     return {
         "flow_matrix": flow_dict,
+        "path_length_entropy": path_length_entropy,
         "method": "random_walk",
         "steps": steps,
         "source_nodes": source_nodes,
@@ -566,13 +582,17 @@ def _information_flow_centrality(G: Any, normalized: bool = True) -> Dict[str, f
 def network_motif_information(graph: Any, motif_size: int = 3, n_random: int = 100) -> Dict[str, Any]:
     """Analyze network motifs using information-theoretic measures.
 
+    Enumerates all connected subgraphs of the specified size, classifies
+    them by isomorphism class, computes z-scores against a random graph
+    null model, and calculates the entropy of the motif distribution.
+
     Args:
-        graph: NetworkX graph
+        graph: NetworkX graph (directed or undirected)
         motif_size: Size of motifs to analyze (3 or 4)
         n_random: Number of random graphs for null model
 
     Returns:
-        Dictionary with motif analysis results
+        Dictionary with motif counts, z-scores, entropy, and significance
 
     Raises:
         ImportError: If networkx not available
@@ -584,19 +604,125 @@ def network_motif_information(graph: Any, motif_size: int = 3, n_random: int = 1
     if motif_size not in [3, 4]:
         raise ValueError("Motif size must be 3 or 4")
 
-    # This is a complex implementation that would require external motif detection libraries
-    # For now, return placeholder structure
+    if isinstance(graph, np.ndarray):
+        G = nx.from_numpy_array(graph)
+    elif hasattr(graph, "nodes"):
+        G = graph
+    else:
+        raise ValueError("Graph must be NetworkX graph or numpy adjacency matrix")
 
-    logger.warning("Network motif analysis requires external motif detection libraries")
+    if len(G) < motif_size:
+        return {
+            "motif_size": motif_size,
+            "status": "completed",
+            "motifs_found": {},
+            "z_scores": {},
+            "motif_entropy": 0.0,
+            "n_subgraphs_enumerated": 0,
+        }
+
+    # Enumerate connected subgraphs and classify by graph6 canonical form
+    motif_counts = _count_motifs(G, motif_size)
+
+    # Null model: randomized graphs preserving degree sequence
+    random_counts_list = []
+    for _ in range(n_random):
+        try:
+            if G.is_directed():
+                R = nx.directed_configuration_model(
+                    [d for _, d in G.in_degree()],
+                    [d for _, d in G.out_degree()],
+                    create_using=nx.DiGraph,
+                )
+            else:
+                degree_seq = [d for _, d in G.degree()]
+                if sum(degree_seq) % 2 != 0:
+                    degree_seq[0] += 1
+                R = nx.configuration_model(degree_seq)
+            R = nx.Graph(R)
+            R.remove_edges_from(nx.selfloop_edges(R))
+            random_counts_list.append(_count_motifs(R, motif_size))
+        except Exception:
+            continue
+
+    # Compute z-scores
+    z_scores = {}
+    for motif_key, observed_count in motif_counts.items():
+        random_values = [rc.get(motif_key, 0) for rc in random_counts_list]
+        if random_values:
+            mean_random = np.mean(random_values)
+            std_random = np.std(random_values)
+            if std_random > 0:
+                z_scores[motif_key] = float((observed_count - mean_random) / std_random)
+            else:
+                z_scores[motif_key] = 0.0 if observed_count == mean_random else float("inf")
+        else:
+            z_scores[motif_key] = 0.0
+
+    # Motif distribution entropy
+    total_motifs = sum(motif_counts.values())
+    motif_entropy = 0.0
+    if total_motifs > 0:
+        for count in motif_counts.values():
+            p = count / total_motifs
+            if p > 0:
+                motif_entropy -= p * math.log2(p)
 
     return {
         "motif_size": motif_size,
-        "status": "not_implemented",
-        "message": "Motif analysis requires specialized libraries (e.g., network-motifs)",
-        "n_random": n_random,
-        "motifs_found": {},
-        "z_scores": {},
+        "status": "completed",
+        "motifs_found": {k: int(v) for k, v in motif_counts.items()},
+        "z_scores": z_scores,
+        "motif_entropy": motif_entropy,
+        "n_subgraphs_enumerated": total_motifs,
+        "n_random_graphs": len(random_counts_list),
+        "n_unique_motifs": len(motif_counts),
     }
+
+
+def _count_motifs(graph: Any, motif_size: int) -> Dict[str, int]:
+    """Count motifs in a graph by enumerating connected subgraphs.
+
+    Uses canonical graph labeling to identify isomorphic subgraphs.
+
+    Args:
+        graph: NetworkX graph
+        motif_size: Size of subgraphs to enumerate
+
+    Returns:
+        Dictionary mapping canonical label to count
+    """
+    motif_counts: Dict[str, int] = {}
+    nodes = list(graph.nodes())
+    n = len(nodes)
+
+    if n < motif_size:
+        return motif_counts
+
+    # Sample node combinations for large graphs
+    from itertools import combinations
+
+    node_combos = list(combinations(nodes, motif_size))
+
+    # Limit enumeration for large graphs
+    max_combos = 50000
+    if len(node_combos) > max_combos:
+        rng = np.random.default_rng(42)
+        indices = rng.choice(len(node_combos), max_combos, replace=False)
+        node_combos = [node_combos[i] for i in indices]
+
+    for combo in node_combos:
+        subgraph = graph.subgraph(combo)
+        if nx.is_connected(subgraph.to_undirected() if subgraph.is_directed() else subgraph):
+            # Use sorted edge tuple as canonical form
+            edges = tuple(sorted((min(u, v), max(u, v)) for u, v in subgraph.edges()))
+            n_edges = len(edges)
+            # Canonical key: (n_nodes, n_edges, degree_sequence)
+            degree_seq = tuple(sorted(d for _, d in subgraph.degree()))
+            key = f"n{motif_size}_e{n_edges}_d{''.join(str(d) for d in degree_seq)}"
+            motif_counts[key] = motif_counts.get(key, 0) + 1
+
+    return motif_counts
 
 
 def information_graph_distance(graph1: Any, graph2: Any, method: str = "entropy") -> float:

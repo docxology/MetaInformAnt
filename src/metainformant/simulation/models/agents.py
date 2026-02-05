@@ -19,7 +19,11 @@ logger = logging.get_logger(__name__)
 
 @dataclass
 class Agent:
-    """Represents an individual agent in the ecosystem."""
+    """Represents an individual agent in the ecosystem.
+
+    Used by the Ecosystem-based simulation system for ecological modeling
+    with typed agents (producer, consumer, decomposer).
+    """
 
     id: int
     agent_type: str
@@ -81,6 +85,34 @@ class Agent:
             return {"interaction": "cooperation", "energy_gain": energy_gain}
 
         return {"interaction": "neutral"}
+
+
+@dataclass
+class GridAgent:
+    """Lightweight agent for grid-based simulations.
+
+    Used by GridWorld for simple spatial agent-based models where agents
+    have x/y coordinates and energy.
+    """
+
+    id: int
+    x: int
+    y: int
+    energy: float = 100.0
+    properties: Dict[str, Any] = field(default_factory=dict)
+
+    def step(self, world: GridWorld, rng: random.Random) -> None:
+        """Execute one movement step within a GridWorld.
+
+        Args:
+            world: The GridWorld environment
+            rng: Random number generator
+        """
+        dx = rng.choice([-1, 0, 1])
+        dy = rng.choice([-1, 0, 1])
+        self.x = max(0, min(world.width - 1, self.x + dx))
+        self.y = max(0, min(world.height - 1, self.y + dy))
+        self.energy = max(0, self.energy - 0.1)
 
 
 @dataclass
@@ -641,38 +673,36 @@ def simulate_competition(
 class GridWorld:
     """A grid-based world for agent-based simulations.
 
-    This class provides a 2D grid environment where agents can move,
+    This class provides a 2D grid environment where GridAgents can move,
     interact, and evolve according to specified rules.
+
+    Args:
+        width: Width of the grid
+        height: Height of the grid
+        num_agents: Number of agents to create
+        rng: Random number generator (optional)
+        **kwargs: Additional parameters
     """
 
     def __init__(self, width: int, height: int, num_agents: int, rng: Optional[Any] = None, **kwargs: Any):
-        """Initialize the grid world.
-
-        Args:
-            width: Width of the grid
-            height: Height of the grid
-            num_agents: Number of agents to create
-            rng: Random number generator (optional)
-            **kwargs: Additional parameters
-        """
         self.width = width
         self.height = height
-        self.agents = []
+        self.agents: List[GridAgent] = []
 
-        # Initialize random number generator
         if rng is None:
-            import random
-
             self.rng = random.Random()
         else:
             self.rng = rng
 
-        # Create agents
         for i in range(num_agents):
-            agent = Agent(agent_id=i, x=self.rng.randint(0, width - 1), y=self.rng.randint(0, height - 1), energy=100.0)
+            agent = GridAgent(
+                id=i,
+                x=self.rng.randint(0, width - 1),
+                y=self.rng.randint(0, height - 1),
+                energy=100.0,
+            )
             self.agents.append(agent)
 
-        # Simulation state
         self.time_step = 0
 
     def step(self) -> Dict[str, Any]:
@@ -681,20 +711,8 @@ class GridWorld:
         Returns:
             Dictionary with step results
         """
-        # Move agents randomly
         for agent in self.agents:
-            # Random movement
-            dx = self.rng.choice([-1, 0, 1])
-            dy = self.rng.choice([-1, 0, 1])
-
-            agent.x = max(0, min(self.width - 1, agent.x + dx))
-            agent.y = max(0, min(self.height - 1, agent.y + dy))
-
-            # Decrease energy slightly
-            agent.energy -= 0.1
-
-            # Ensure minimum energy
-            agent.energy = max(0, agent.energy)
+            agent.step(self, self.rng)
 
         self.time_step += 1
 
@@ -705,13 +723,21 @@ class GridWorld:
             "total_energy": sum(a.energy for a in self.agents),
         }
 
-    def get_agent_positions(self) -> List[Tuple[int, int]]:
+    def positions(self) -> List[Tuple[int, int]]:
         """Get current positions of all agents.
 
         Returns:
             List of (x, y) coordinate tuples
         """
         return [(agent.x, agent.y) for agent in self.agents]
+
+    def get_agent_positions(self) -> List[Tuple[int, int]]:
+        """Get current positions of all agents (alias for positions()).
+
+        Returns:
+            List of (x, y) coordinate tuples
+        """
+        return self.positions()
 
     def get_agent_energies(self) -> List[float]:
         """Get current energy levels of all agents.
@@ -721,7 +747,7 @@ class GridWorld:
         """
         return [agent.energy for agent in self.agents]
 
-    def add_agent(self, x: Optional[int] = None, y: Optional[int] = None, energy: float = 100.0) -> Agent:
+    def add_agent(self, x: Optional[int] = None, y: Optional[int] = None, energy: float = 100.0) -> GridAgent:
         """Add a new agent to the world.
 
         Args:
@@ -730,35 +756,35 @@ class GridWorld:
             energy: Initial energy level
 
         Returns:
-            The newly created agent
+            The newly created GridAgent
         """
         if x is None:
             x = self.rng.randint(0, self.width - 1)
         if y is None:
             y = self.rng.randint(0, self.height - 1)
 
-        agent = Agent(agent_id=len(self.agents), x=x, y=y, energy=energy)
+        agent = GridAgent(id=len(self.agents), x=x, y=y, energy=energy)
         self.agents.append(agent)
         return agent
 
-    def remove_agent(self, agent: Agent) -> None:
+    def remove_agent(self, agent: GridAgent) -> None:
         """Remove an agent from the world.
 
         Args:
-            agent: Agent to remove
+            agent: GridAgent to remove
         """
         if agent in self.agents:
             self.agents.remove(agent)
 
-    def get_neighbors(self, agent: Agent, radius: int = 1) -> List[Agent]:
-        """Get neighboring agents within a given radius.
+    def get_neighbors(self, agent: GridAgent, radius: int = 1) -> List[GridAgent]:
+        """Get neighboring agents within a given radius (Manhattan distance).
 
         Args:
             agent: Reference agent
             radius: Search radius
 
         Returns:
-            List of neighboring agents
+            List of neighboring GridAgents
         """
         neighbors = []
         for other in self.agents:

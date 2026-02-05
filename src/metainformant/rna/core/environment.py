@@ -39,28 +39,16 @@ logger = logging.get_logger(__name__)
 def check_amalgkit() -> Tuple[bool, str]:
     """Check if amalgkit CLI tool is available.
 
-    Attempts to run 'amalgkit --version' to verify installation and availability.
+    Delegates to deps.check_amalgkit_availability() which uses the amalgkit module's
+    own check_cli_available() for consistent behavior.
 
     Returns:
         Tuple of (available, message) where available is True if command succeeds,
         and message contains version info on success or error description on failure.
     """
-    try:
-        result = subprocess.run(
-            ["amalgkit", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
+    from metainformant.rna.core.deps import check_amalgkit_availability
 
-        if result.returncode == 0:
-            version = result.stdout.strip() or result.stderr.strip()
-            return True, version
-        else:
-            return False, f"Command failed with return code {result.returncode}"
-
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as e:
-        return False, str(e)
+    return check_amalgkit_availability()
 
 
 def check_sra_toolkit() -> Tuple[bool, str]:
@@ -96,28 +84,18 @@ def check_sra_toolkit() -> Tuple[bool, str]:
 def check_kallisto() -> Tuple[bool, str]:
     """Check if Kallisto is available.
 
-    Attempts to run 'kallisto version' to verify Kallisto installation.
+    Delegates to deps.check_quantification_tools() for consistent behavior.
 
     Returns:
         Tuple of (available, message) where available is True if Kallisto found,
         and message contains version info on success or error description on failure.
     """
-    try:
-        result = subprocess.run(
-            ["kallisto", "version"],
-            capture_output=True,
-            text=True,
-            timeout=10,
-        )
+    from metainformant.rna.core.deps import check_quantification_tools
 
-        if result.returncode == 0:
-            version = result.stdout.strip() or result.stderr.strip()
-            return True, version
-        else:
-            return False, f"Command failed with return code {result.returncode}"
-
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as e:
-        return False, str(e)
+    tools = check_quantification_tools()
+    if "kallisto" in tools:
+        return tools["kallisto"]
+    return False, "kallisto not checked"
 
 
 def check_metainformant() -> Tuple[bool, str]:

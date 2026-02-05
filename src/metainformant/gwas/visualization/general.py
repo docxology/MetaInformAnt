@@ -37,6 +37,10 @@ def manhattan_plot(
     results: Union[List[Dict[str, Any]], Dict[str, Any]],
     output_path: Optional[Union[str, Path]] = None,
     significance_threshold: float = 5e-8,
+    gene_annotations: Optional[List[Dict[str, Any]]] = None,
+    highlight_regions: Optional[List[Dict[str, Any]]] = None,
+    suggestive_threshold: Optional[float] = 1e-5,
+    label_top_n: int = 0,
 ) -> Any:
     """Create a Manhattan plot from GWAS results.
 
@@ -44,6 +48,16 @@ def manhattan_plot(
         results: GWAS results dictionary or list of result dictionaries
         output_path: Path to save the plot (optional)
         significance_threshold: P-value threshold for significance line
+        gene_annotations: Optional list of dicts with keys: variant_index or
+            (chrom, pos), and gene_name. When provided, annotate top hits with
+            gene names using arrows.
+        highlight_regions: Optional list of dicts with keys: chrom, start, end,
+            color (optional), label (optional). When provided, draw colored
+            rectangular highlights over those genomic regions.
+        suggestive_threshold: Optional p-value threshold for a secondary dashed
+            significance line. Defaults to 1e-5. Set to None to disable.
+        label_top_n: Auto-label the top N hits with their variant_id or
+            chr:pos. Defaults to 0 (disabled).
 
     Returns:
         matplotlib Figure object
@@ -114,6 +128,99 @@ def manhattan_plot(
             label=f"Significance threshold ({significance_threshold})",
         )
 
+    # Add suggestive threshold line
+    if suggestive_threshold is not None and suggestive_threshold > 0:
+        suggestive_line = -math.log10(suggestive_threshold)
+        ax.axhline(
+            y=suggestive_line,
+            color="blue",
+            linestyle="--",
+            alpha=0.5,
+            label=f"Suggestive threshold ({suggestive_threshold})",
+        )
+
+    # Draw highlight regions
+    if highlight_regions:
+        for region in highlight_regions:
+            region_chrom = str(region.get("chrom", ""))
+            region_start = region.get("start", 0)
+            region_end = region.get("end", 0)
+            region_color = region.get("color", "yellow")
+            region_label = region.get("label", None)
+
+            if region_chrom in chrom_offsets:
+                start_x = chrom_offsets[region_chrom] + region_start
+                end_x = chrom_offsets[region_chrom] + region_end
+                ax.axvspan(start_x, end_x, alpha=0.2, color=region_color, label=region_label)
+
+    # Annotate genes
+    if gene_annotations:
+        for annotation in gene_annotations:
+            gene_name = annotation.get("gene_name", "")
+            ann_x = None
+            ann_y = None
+
+            # Look up by variant_index
+            if "variant_index" in annotation:
+                idx = annotation["variant_index"]
+                if 0 <= idx < len(positions):
+                    ann_x = positions[idx]
+                    ann_y = p_values[idx]
+            # Look up by chrom + pos
+            elif "chrom" in annotation and "pos" in annotation:
+                ann_chrom = str(annotation["chrom"])
+                ann_pos = annotation["pos"]
+                if ann_chrom in chrom_offsets:
+                    target_x = chrom_offsets[ann_chrom] + ann_pos
+                    # Find the closest point
+                    best_dist = float("inf")
+                    for j, (px, py) in enumerate(zip(positions, p_values)):
+                        dist = abs(px - target_x)
+                        if dist < best_dist:
+                            best_dist = dist
+                            ann_x = px
+                            ann_y = py
+
+            if ann_x is not None and ann_y is not None:
+                offset = max(p_values) * 0.08 if p_values else 1.0
+                ax.annotate(
+                    gene_name,
+                    xy=(ann_x, ann_y),
+                    xytext=(ann_x, ann_y + offset),
+                    arrowprops=dict(arrowstyle="->", color="black", lw=0.8),
+                    fontsize=8,
+                    ha="center",
+                )
+
+    # Label top N hits
+    if label_top_n > 0 and positions:
+        # Build index of (neg_log_p, position_idx) and sort by neg_log_p descending
+        indexed = sorted(enumerate(p_values), key=lambda x: x[1], reverse=True)
+        top_indices = [idx for idx, _ in indexed[:label_top_n]]
+        offset = max(p_values) * 0.06 if p_values else 1.0
+
+        for rank, idx in enumerate(top_indices):
+            px = positions[idx]
+            py = p_values[idx]
+            # Use variant_id if available, otherwise chr:pos
+            result_entry = results[idx] if idx < len(results) else {}
+            variant_label = result_entry.get(
+                "variant_id",
+                f"{result_entry.get('chrom', result_entry.get('chromosome', '?'))}:"
+                f"{result_entry.get('pos', result_entry.get('position', '?'))}",
+            )
+            # Stagger offsets slightly to reduce overlap
+            y_offset = offset + rank * (offset * 0.4)
+            ax.annotate(
+                variant_label,
+                xy=(px, py),
+                xytext=(px, py + y_offset),
+                arrowprops=dict(arrowstyle="->", color="gray", lw=0.6),
+                fontsize=7,
+                ha="center",
+                color="darkred",
+            )
+
     # Add chromosome labels
     chrom_centers = {}
     for chrom in sorted(chrom_offsets.keys(), key=lambda x: int(x) if x.isdigit() else 999):
@@ -134,7 +241,12 @@ def manhattan_plot(
         mpatches.Patch(color=color, label=f"Chr {chrom}")
         for chrom, color in zip(sorted(chrom_offsets.keys()), chrom_colors)
     ]
-    if significance_threshold > 0:
+    # Collect any auto-labeled artists (threshold lines, highlight regions)
+    auto_handles, auto_labels = ax.get_legend_handles_labels()
+    for handle, lbl in zip(auto_handles, auto_labels):
+        if lbl and lbl not in [e.get_label() for e in legend_elements]:
+            legend_elements.append(handle)
+    if legend_elements:
         ax.legend(handles=legend_elements, loc="upper right")
 
     plt.tight_layout()

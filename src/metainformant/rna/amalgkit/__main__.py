@@ -47,10 +47,10 @@ def main(argv: Optional[List[str]] = None) -> int:
         return 1
 
     if args.dry_run:
-        print(f"Would run amalgkit workflow with:")
-        print(f"  Config: {config_path}")
-        print(f"  Steps: {args.steps or 'all'}")
-        print(f"  Species: {args.species or 'from config'}")
+        logger.info("DRY RUN - would run amalgkit workflow with:")
+        logger.info(f"  Config: {config_path}")
+        logger.info(f"  Steps: {args.steps or 'all'}")
+        logger.info(f"  Species: {args.species or 'from config'}")
         return 0
 
     # Import and run workflow
@@ -63,18 +63,15 @@ def main(argv: Optional[List[str]] = None) -> int:
 
         # Report results
         if results.get("success"):
-            logger.info("Workflow completed successfully")
-            print(f"\n✅ Workflow completed: {results.get('successful_steps', 0)} steps successful")
+            logger.info(f"Workflow completed successfully: {results.get('successful_steps', 0)} steps successful")
             return 0
         else:
-            logger.error("Workflow completed with failures")
             failed = results.get("failed", [])
-            print(f"\n❌ Workflow failed: {len(failed)} steps failed: {', '.join(failed)}")
+            logger.error(f"Workflow failed: {len(failed)} steps failed: {', '.join(failed)}")
             return 1
 
     except Exception as e:
         logger.exception(f"Workflow execution failed: {e}")
-        print(f"\n❌ Fatal error: {e}")
         return 1
 
 

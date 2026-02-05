@@ -1,7 +1,9 @@
 """Core I/O exceptions."""
 
+from metainformant.core.utils.errors import METAINFORMANTError
 
-class IOError(Exception):
+
+class IOError(METAINFORMANTError):
     """Base class for I/O errors in metainformant."""
 
     pass

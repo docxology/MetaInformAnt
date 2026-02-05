@@ -1,20 +1,46 @@
-import os
-import sys
+"""ENA (European Nucleotide Archive) FASTQ downloader.
+
+This module provides functionality to download FASTQ files from the European
+Nucleotide Archive (ENA) for RNA-seq samples. It handles URL resolution,
+MD5 verification, and resume-capable downloads.
+
+Example usage:
+    >>> from metainformant.rna.retrieval.ena_downloader import download_sra_samples
+    >>> download_sra_samples(["SRR12345"], Path("output/fastq"))
+"""
+
+from __future__ import annotations
+
 import argparse
-import requests
-import subprocess
 import hashlib
+import os
+import subprocess
+import sys
 import time
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional
+from typing import List, Tuple
+
+import requests
+
+from metainformant.core import logging
+
+logger = logging.get_logger(__name__)
 
 
 def get_ena_links(sra_id: str) -> List[Tuple[str, str]]:
+    """Query ENA to get FASTQ download links and MD5 checksums.
+
+    Args:
+        sra_id: SRA accession ID (e.g., SRR12345, ERR12345, DRR12345)
+
+    Returns:
+        List of (url, md5) tuples for each FASTQ file associated with the sample.
+        Empty list if no data found or on error.
     """
-    Query ENA to get FASTQ download links and MD5s.
-    Returns list of (url, md5) tuples.
-    """
-    url = f"https://www.ebi.ac.uk/ena/portal/api/filereport?accession={sra_id}&result=read_run&fields=fastq_ftp,fastq_md5&format=tsv"
+    url = (
+        f"https://www.ebi.ac.uk/ena/portal/api/filereport?accession={sra_id}"
+        f"&result=read_run&fields=fastq_ftp,fastq_md5&format=tsv"
+    )
 
     try:
         response = requests.get(url, timeout=10)
@@ -22,7 +48,7 @@ def get_ena_links(sra_id: str) -> List[Tuple[str, str]]:
 
         lines = response.text.strip().split("\n")
         if len(lines) < 2:
-            print(f"[{sra_id}] No data found in ENA.")
+            logger.warning(f"[{sra_id}] No data found in ENA.")
             return []
 
         header = lines[0].split("\t")
@@ -32,14 +58,14 @@ def get_ena_links(sra_id: str) -> List[Tuple[str, str]]:
         row = dict(zip(header, data))
 
         if "fastq_ftp" not in row or not row["fastq_ftp"]:
-            print(f"[{sra_id}] No FASTQ FTP links returned.")
+            logger.warning(f"[{sra_id}] No FASTQ FTP links returned.")
             return []
 
         ftps = row["fastq_ftp"].split(";")
         md5s = row["fastq_md5"].split(";")
 
         if len(ftps) != len(md5s):
-            print(f"[{sra_id}] Mismatch between FTP links and MD5s.")
+            logger.warning(f"[{sra_id}] Mismatch between FTP links and MD5s.")
             return []
 
         results = []
@@ -56,12 +82,19 @@ def get_ena_links(sra_id: str) -> List[Tuple[str, str]]:
         return results
 
     except requests.exceptions.RequestException as e:
-        print(f"[{sra_id}] API Request failed: {e}")
+        logger.error(f"[{sra_id}] API Request failed: {e}")
         return []
 
 
 def calculate_md5(file_path: Path) -> str:
-    """Calculate MD5 checksum of a file efficiently."""
+    """Calculate MD5 checksum of a file efficiently.
+
+    Args:
+        file_path: Path to the file to checksum
+
+    Returns:
+        Hexadecimal MD5 digest string
+    """
     hash_md5 = hashlib.md5()
     with open(file_path, "rb") as f:
         for chunk in iter(lambda: f.read(4096), b""):
@@ -69,23 +102,33 @@ def calculate_md5(file_path: Path) -> str:
     return hash_md5.hexdigest()
 
 
-def clean_stagnant_file(file_path: Path):
-    """Delete a file if it exists."""
+def clean_stagnant_file(file_path: Path) -> None:
+    """Delete a file if it exists (cleanup for corrupted/incomplete downloads).
+
+    Args:
+        file_path: Path to the file to delete
+    """
     if file_path.exists():
         try:
             os.remove(file_path)
-            print(f"  Deleted incomplete/stagnant file: {file_path}")
+            logger.info(f"Deleted incomplete/stagnant file: {file_path}")
         except OSError as e:
-            print(f"  Error deleting {file_path}: {e}")
+            logger.warning(f"Error deleting {file_path}: {e}")
 
 
 def download_file(url: str, dest_path: Path, expected_md5: str, retries: int = 5) -> bool:
-    """Download file using curl with retries and MD5 verification."""
+    """Download file using curl with retries and MD5 verification.
 
-    # Don't delete immediately - try to resume first
-    # clean_stagnant_file(dest_path)
+    Args:
+        url: URL to download from
+        dest_path: Local path to save the file
+        expected_md5: Expected MD5 checksum for verification
+        retries: Number of retry attempts
 
-    print(f"  Downloading {url} -> {dest_path}")
+    Returns:
+        True if download succeeded and MD5 verified, False otherwise
+    """
+    logger.info(f"Downloading {url} -> {dest_path}")
 
     for attempt in range(1, retries + 1):
         try:
@@ -115,31 +158,40 @@ def download_file(url: str, dest_path: Path, expected_md5: str, retries: int = 5
             subprocess.run(cmd, check=True)
 
             if dest_path.exists():
-                print(f"  Verifying MD5 for {dest_path.name}...")
+                logger.info(f"Verifying MD5 for {dest_path.name}...")
                 current_md5 = calculate_md5(dest_path)
                 if current_md5 == expected_md5:
-                    print(f"  [OK] {dest_path.name} verified.")
+                    logger.info(f"[OK] {dest_path.name} verified.")
                     return True
                 else:
-                    print(
-                        f"  [FAIL] MD5 mismatch (Attempt {attempt}/{retries}). Expected {expected_md5}, got {current_md5}"
+                    logger.warning(
+                        f"[FAIL] MD5 mismatch (Attempt {attempt}/{retries}). "
+                        f"Expected {expected_md5}, got {current_md5}"
                     )
                     # If MD5 fails, the file is likely corrupted (wrong offset or bad network).
                     # Delete it to start fresh next time.
                     clean_stagnant_file(dest_path)
 
         except subprocess.CalledProcessError as e:
-            print(f"  [FAIL] Download command failed (Attempt {attempt}/{retries}). Exit code: {e.returncode}")
+            logger.warning(f"[FAIL] Download command failed (Attempt {attempt}/{retries}). Exit code: {e.returncode}")
 
         time.sleep(5 * attempt)
 
     return False
 
 
-def download_sra_samples(sra_ids: List[str], base_out_dir: Path):
-    """
-    Main driver to download samples.
-    Structure: base_out_dir/getfastq/SRA_ID/SRA_ID_1.fastq.gz
+def download_sra_samples(sra_ids: List[str], base_out_dir: Path) -> Tuple[int, int]:
+    """Download FASTQ files for a list of SRA samples from ENA.
+
+    Creates amalgkit-compatible directory structure:
+    base_out_dir/getfastq/SRA_ID/SRA_ID_1.amalgkit.fastq.gz
+
+    Args:
+        sra_ids: List of SRA accession IDs to download
+        base_out_dir: Base output directory
+
+    Returns:
+        Tuple of (success_count, fail_count)
     """
     base_out_dir = Path(base_out_dir)
     getfastq_dir = base_out_dir / "getfastq"
@@ -149,11 +201,11 @@ def download_sra_samples(sra_ids: List[str], base_out_dir: Path):
     fail_count = 0
 
     for sra_id in sra_ids:
-        print(f"Processing {sra_id}...")
+        logger.info(f"Processing {sra_id}...")
 
         links = get_ena_links(sra_id)
         if not links:
-            print(f"  Skipping {sra_id} (No links found).")
+            logger.warning(f"Skipping {sra_id} (No links found).")
             fail_count += 1
             continue
 
@@ -187,42 +239,52 @@ def download_sra_samples(sra_ids: List[str], base_out_dir: Path):
             # Ideally, we just rename them to what amalgkit expects for the 'integrate' step.
             # Amalgkit integrate looks for *.amalgkit.fastq.gz
 
-            print(f"  Renaming files to .amalgkit.fastq.gz format for compatibility...")
+            logger.info(f"Renaming files to .amalgkit.fastq.gz format for compatibility...")
             for f in sample_dir.glob("*.fastq.gz"):
                 if ".amalgkit." not in f.name:
                     new_name = f.name.replace(".fastq.gz", ".amalgkit.fastq.gz")
                     f.rename(sample_dir / new_name)
-                    print(f"    Renamed {f.name} -> {new_name}")
+                    logger.debug(f"Renamed {f.name} -> {new_name}")
 
             success_count += 1
-            print(f"[SUCCESS] {sra_id} fully downloaded.")
+            logger.info(f"[SUCCESS] {sra_id} fully downloaded.")
         else:
             fail_count += 1
-            print(f"[FAILURE] {sra_id} failed to download.")
+            logger.error(f"[FAILURE] {sra_id} failed to download.")
 
-    print(f"\nSummary: {success_count} Success, {fail_count} Failed.")
+    logger.info(f"Summary: {success_count} Success, {fail_count} Failed.")
+    return success_count, fail_count
 
 
-if __name__ == "__main__":
+def main() -> int:
+    """CLI entry point for ENA downloader."""
     parser = argparse.ArgumentParser(description="Modular ENA Downloader")
     parser.add_argument("--ids", nargs="+", help="List of SRA IDs to download")
     parser.add_argument("--file", help="File containing SRA IDs (one per line)")
-    parser.add_argument("--out", required=True, help="Output base directory (e.g. output/amalgkit/pbarbatus_all/fastq)")
+    parser.add_argument(
+        "--out", required=True, help="Output base directory (e.g. output/amalgkit/pbarbatus_all/fastq)"
+    )
 
     args = parser.parse_args()
 
-    id_list = []
+    id_list: List[str] = []
     if args.ids:
         id_list.extend(args.ids)
     if args.file:
         try:
             with open(args.file) as f:
-                id_list.extend([l.strip() for l in f if l.strip()])
+                id_list.extend([line.strip() for line in f if line.strip()])
         except FileNotFoundError:
-            print(f"Error: File {args.file} not found.")
+            logger.error(f"File {args.file} not found.")
+            return 1
 
     if not id_list:
-        print("No IDs provided.")
-        sys.exit(1)
+        logger.error("No IDs provided.")
+        return 1
 
-    download_sra_samples(id_list, args.out)
+    success, failed = download_sra_samples(id_list, Path(args.out))
+    return 0 if failed == 0 else 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

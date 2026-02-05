@@ -587,6 +587,68 @@ def create_life_course_report(sequences: List[EventSequence], output_path: Optio
     return report
 
 
+def identify_trajectory_patterns(sequences: List[EventSequence]) -> Dict[str, Any]:
+    """Identify trajectory patterns in event sequences using transition analysis.
+
+    Classifies sequences by activity level and event type diversity, then
+    identifies common transition patterns between event types.
+
+    Args:
+        sequences: List of EventSequence objects
+
+    Returns:
+        Dictionary with pattern classifications and transition frequencies
+    """
+    if not sequences:
+        return {"patterns": {}, "transitions": {}}
+
+    pattern_counts: Dict[str, int] = defaultdict(int)
+    transition_counts: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
+
+    for seq in sequences:
+        if not seq.events:
+            pattern_counts["empty"] += 1
+            continue
+
+        unique_types = set(e.event_type for e in seq.events)
+        n_events = len(seq.events)
+
+        # Classify by activity and diversity
+        if n_events > 20 and len(unique_types) > 5:
+            pattern = "complex_high_activity"
+        elif n_events > 20:
+            pattern = "repetitive_high_activity"
+        elif n_events > 10 and len(unique_types) > 3:
+            pattern = "diverse_moderate"
+        elif n_events > 10:
+            pattern = "focused_moderate"
+        elif len(unique_types) > 3:
+            pattern = "diverse_low"
+        else:
+            pattern = "simple_low"
+
+        pattern_counts[pattern] += 1
+
+        # Track transitions
+        sorted_events = sorted(seq.events, key=lambda e: e.timestamp)
+        for i in range(len(sorted_events) - 1):
+            from_type = sorted_events[i].event_type
+            to_type = sorted_events[i + 1].event_type
+            transition_counts[from_type][to_type] += 1
+
+    # Normalize transitions to probabilities
+    transition_probs: Dict[str, Dict[str, float]] = {}
+    for from_type, targets in transition_counts.items():
+        total = sum(targets.values())
+        transition_probs[from_type] = {to: count / total for to, count in targets.items()}
+
+    return {
+        "patterns": dict(pattern_counts),
+        "transitions": transition_probs,
+        "n_sequences": len(sequences),
+    }
+
+
 def analyze_life_course(sequences: List[EventSequence], outcomes: List[str] | None = None) -> Dict[str, Any]:
     """Comprehensive analysis of life course trajectories.
 

@@ -21,6 +21,8 @@ def circular_manhattan_plot(
     output_file: Optional[str | Path] = None,
     significance_threshold: float = 5e-8,
     title: str = "Circular Manhattan Plot",
+    suggestive_threshold: Optional[float] = 1e-5,
+    label_top_n: int = 0,
 ) -> Dict[str, Any]:
     """Create a circular Manhattan plot for GWAS results.
 
@@ -30,6 +32,10 @@ def circular_manhattan_plot(
         output_file: Optional output file path
         significance_threshold: P-value threshold for significance line
         title: Plot title
+        suggestive_threshold: Optional p-value threshold for a secondary dashed
+            ring. Defaults to 1e-5. Set to None to disable.
+        label_top_n: Auto-label the top N hits with their chr:pos. Defaults to
+            0 (disabled).
 
     Returns:
         Dictionary with status and metadata
@@ -130,6 +136,58 @@ def circular_manhattan_plot(
     ax.text(
         0, threshold_radius + 0.05, f"p = {significance_threshold}", ha="center", va="bottom", fontsize=10, color="red"
     )
+
+    # Add suggestive threshold ring
+    if suggestive_threshold is not None and suggestive_threshold > 0:
+        sug_radius = 1 + (-np.log10(suggestive_threshold)) * 0.1
+        ax.plot(theta, [sug_radius] * 100, "b--", linewidth=1.5, alpha=0.6)
+        ax.text(
+            np.pi / 4,
+            sug_radius + 0.05,
+            f"p = {suggestive_threshold}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+            color="blue",
+        )
+
+    # Label top N hits
+    if label_top_n > 0:
+        # Collect all points with their polar coordinates
+        all_points: List[tuple] = []
+        for i, chrom in enumerate(unique_chroms):
+            data = chrom_data_map[chrom]
+            if not data:
+                continue
+            start_angle = i * angle_per_chrom
+            pos_arr = np.array([d[0] for d in data], dtype=float)
+            pval_arr = np.array([d[1] for d in data], dtype=float)
+            neg_log_p_arr = -np.log10(np.clip(pval_arr, 1e-50, None))
+            pos_range = pos_arr.max() - pos_arr.min()
+            if pos_range > 0:
+                norm_pos = (pos_arr - pos_arr.min()) / pos_range
+            else:
+                norm_pos = np.full_like(pos_arr, 0.5)
+            for j in range(len(data)):
+                angle_deg = start_angle + norm_pos[j] * angle_per_chrom
+                radius = 1 + neg_log_p_arr[j] * 0.1
+                all_points.append((pval_arr[j], angle_deg, radius, chrom, int(pos_arr[j])))
+
+        # Sort by p-value ascending (smallest p-value = most significant)
+        all_points.sort(key=lambda x: x[0])
+        for rank, (pval, angle_deg, radius, chrom_label, pos_val) in enumerate(all_points[:label_top_n]):
+            label_text = f"{chrom_label}:{pos_val}"
+            angle_rad = np.deg2rad(angle_deg)
+            label_radius = radius + 0.15 + rank * 0.05
+            ax.annotate(
+                label_text,
+                xy=(angle_rad, radius),
+                xytext=(angle_rad, label_radius),
+                arrowprops=dict(arrowstyle="->", color="black", lw=0.8),
+                fontsize=7,
+                ha="center",
+                color="darkred",
+            )
 
     # Configure plot
     ax.set_title(title, fontsize=14, pad=20)

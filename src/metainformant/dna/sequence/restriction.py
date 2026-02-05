@@ -435,9 +435,7 @@ def simulate_cloning(
         vector_fragments = double_digest(vector_sequence, vector_enzyme1, vector_enzyme2)
         result["vector_fragments"] = vector_fragments
         result["ligation_possible"] = (
-            len(insert_fragments) > 0
-            and len(vector_fragments) > 0
-            and enzyme_compatibility["insert_vector_compatible"]
+            len(insert_fragments) > 0 and len(vector_fragments) > 0 and enzyme_compatibility["insert_vector_compatible"]
         )
     else:
         # Without vector sequence, we can only analyze the insert

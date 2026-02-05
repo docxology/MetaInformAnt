@@ -7,7 +7,7 @@ and transaction management for bioinformatics data storage and retrieval.
 from __future__ import annotations
 
 import contextlib
-from typing import Any, Dict, Iterator, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from metainformant.core.utils.logging import get_logger
 

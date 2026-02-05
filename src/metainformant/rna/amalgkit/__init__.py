@@ -43,4 +43,5 @@ __all__ = [
     "sanity",
     "genome_prep",
     "metadata_filter",
+    "metadata_utils",
 ]

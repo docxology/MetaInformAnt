@@ -7,7 +7,7 @@ distance matrix calculation, and tree manipulation for DNA sequence data.
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -16,7 +16,7 @@ from metainformant.core import logging
 logger = logging.get_logger(__name__)
 
 # Type alias for tree representation
-Tree = Dict[str, any]
+Tree = Dict[str, Any]
 
 
 def neighbor_joining_tree(id_to_seq: Dict[str, str]) -> Tree:
@@ -261,7 +261,7 @@ def bootstrap_support(tree: Tree, sequences: Dict[str, str], n_replicates: int =
         # Build resampled sequences
         resampled_seqs = {}
         for name, seq in sequences.items():
-            resampled_seqs[name] = ''.join(seq[i] if i < len(seq) else '-' for i in sampled_sites)
+            resampled_seqs[name] = "".join(seq[i] if i < len(seq) else "-" for i in sampled_sites)
 
         # Build tree from resampled data
         try:
@@ -507,10 +507,16 @@ def nj_tree_from_kmer(id_to_seq: Dict[str, str], *, k: int = 3, metric: str = "c
                 idx2 = working_taxa.index(taxon2)
 
                 # Calculate Q matrix element (NJ criterion)
-                r_i = sum(working_matrix[idx1][l] for l in range(len(working_taxa))
-                         if working_taxa[l] in active_taxa and l != idx1)
-                r_j = sum(working_matrix[idx2][l] for l in range(len(working_taxa))
-                         if working_taxa[l] in active_taxa and l != idx2)
+                r_i = sum(
+                    working_matrix[idx1][l]
+                    for l in range(len(working_taxa))
+                    if working_taxa[l] in active_taxa and l != idx1
+                )
+                r_j = sum(
+                    working_matrix[idx2][l]
+                    for l in range(len(working_taxa))
+                    if working_taxa[l] in active_taxa and l != idx2
+                )
 
                 q_ij = (n_active - 2) * working_matrix[idx1][idx2] - r_i - r_j
 
@@ -526,10 +532,16 @@ def nj_tree_from_kmer(id_to_seq: Dict[str, str], *, k: int = 3, metric: str = "c
         idx2 = working_taxa.index(taxon2)
 
         # Calculate branch lengths using NJ formula
-        r1 = sum(working_matrix[idx1][j] for j in range(len(working_taxa))
-                 if working_taxa[j] in active_taxa and j != idx1 and j != idx2)
-        r2 = sum(working_matrix[idx2][j] for j in range(len(working_taxa))
-                 if working_taxa[j] in active_taxa and j != idx1 and j != idx2)
+        r1 = sum(
+            working_matrix[idx1][j]
+            for j in range(len(working_taxa))
+            if working_taxa[j] in active_taxa and j != idx1 and j != idx2
+        )
+        r2 = sum(
+            working_matrix[idx2][j]
+            for j in range(len(working_taxa))
+            if working_taxa[j] in active_taxa and j != idx1 and j != idx2
+        )
 
         d_ij = working_matrix[idx1][idx2]
         n_remaining = len(active_taxa) - 2
@@ -588,6 +600,412 @@ def nj_tree_from_kmer(id_to_seq: Dict[str, str], *, k: int = 3, metric: str = "c
         }
 
     return tree
+
+
+def robinson_foulds_distance(tree1: Tree, tree2: Tree) -> int:
+    """Calculate the Robinson-Foulds distance between two phylogenetic trees.
+
+    The Robinson-Foulds (RF) distance is the symmetric difference of the sets
+    of bipartitions (splits) induced by the two trees. Each internal edge in an
+    unrooted tree defines a bipartition of the leaf set; the RF distance counts
+    how many bipartitions appear in one tree but not the other.
+
+    Args:
+        tree1: First tree represented as nested dictionary.
+        tree2: Second tree represented as nested dictionary.
+
+    Returns:
+        Robinson-Foulds distance (non-negative integer).
+
+    Raises:
+        ValueError: If the two trees do not share the same leaf set.
+    """
+    leaves1 = set(_get_all_leaves(tree1))
+    leaves2 = set(_get_all_leaves(tree2))
+
+    if leaves1 != leaves2:
+        raise ValueError(
+            f"Trees must have the same leaf set. " f"tree1 leaves: {sorted(leaves1)}, tree2 leaves: {sorted(leaves2)}"
+        )
+
+    # Extract bipartitions as frozensets of the smaller side
+    splits1 = _get_bipartitions(tree1, leaves1)
+    splits2 = _get_bipartitions(tree2, leaves2)
+
+    # Symmetric difference
+    return len(splits1.symmetric_difference(splits2))
+
+
+def is_monophyletic(tree: Tree, taxa: List[str]) -> bool:
+    """Check if a set of taxa forms a monophyletic group in the tree.
+
+    A set of taxa is monophyletic if there exists an internal node in the tree
+    whose set of descendant leaves is exactly the given set of taxa.
+
+    Args:
+        tree: Tree represented as nested dictionary.
+        taxa: List of taxon names to test for monophyly.
+
+    Returns:
+        True if the taxa form a monophyletic group, False otherwise.
+    """
+    if not taxa:
+        return True
+
+    target = set(taxa)
+    all_leaves = set(_get_all_leaves(tree))
+
+    # If the target is the full leaf set, it is trivially monophyletic (the root)
+    if target == all_leaves:
+        return True
+
+    # Check if any node's descendant leaf set matches the target exactly
+    for node in tree:
+        if isinstance(tree.get(node), dict):
+            descendant_leaves = set(_get_descendant_leaves(tree, node))
+            if descendant_leaves == target:
+                return True
+
+    return False
+
+
+def total_branch_length(tree: Tree) -> float:
+    """Calculate the sum of all branch lengths in the tree.
+
+    Iterates over every internal node and sums the branch lengths of all
+    edges. Branches with no length (None) are treated as zero.
+
+    Args:
+        tree: Tree represented as nested dictionary.
+
+    Returns:
+        Total branch length as a float.
+    """
+    total = 0.0
+
+    for node, children in tree.items():
+        if isinstance(children, dict):
+            for child, branch_length in children.items():
+                if child == "bootstrap":
+                    continue
+                if branch_length is not None:
+                    total += float(branch_length)
+
+    return total
+
+
+def from_newick(newick_str: str) -> Tree:
+    """Parse a Newick format string into the Tree dictionary structure.
+
+    Supports branch lengths (e.g. ``(A:0.1,B:0.2):0.3;``), nested clades,
+    and unlabeled internal nodes (which receive auto-generated names).
+
+    Args:
+        newick_str: Newick format string (must end with ``;``).
+
+    Returns:
+        Tree represented as nested dictionary consistent with this module.
+
+    Raises:
+        ValueError: If the Newick string is empty or malformed.
+    """
+    if not newick_str or not newick_str.strip():
+        raise ValueError("Newick string is empty")
+
+    newick_str = newick_str.strip()
+    if newick_str.endswith(";"):
+        newick_str = newick_str[:-1]
+
+    if not newick_str:
+        raise ValueError("Newick string is empty after removing semicolon")
+
+    tree: Tree = {}
+    _internal_counter = [0]
+
+    def _parse(s: str) -> Tuple[str, float | None]:
+        """Parse a Newick sub-expression, returning (node_name, branch_length)."""
+        s = s.strip()
+
+        if s.startswith("("):
+            # Find matching closing parenthesis
+            depth = 0
+            end_paren = -1
+            for i, ch in enumerate(s):
+                if ch == "(":
+                    depth += 1
+                elif ch == ")":
+                    depth -= 1
+                    if depth == 0:
+                        end_paren = i
+                        break
+
+            if end_paren == -1:
+                raise ValueError("Unmatched parenthesis in Newick string")
+
+            # Content inside parentheses
+            inner = s[1:end_paren]
+
+            # Remainder after closing paren: optional label and branch length
+            remainder = s[end_paren + 1 :]
+
+            # Parse label and branch length from remainder
+            node_label, branch_length = _parse_label_length(remainder)
+
+            if not node_label:
+                node_label = f"Internal_{_internal_counter[0]}"
+                _internal_counter[0] += 1
+
+            # Split inner by commas at depth 0
+            children_strs = _split_at_top_level(inner)
+
+            # Parse each child
+            children_dict: Dict[str, float] = {}
+            for child_str in children_strs:
+                child_name, child_bl = _parse(child_str)
+                children_dict[child_name] = child_bl if child_bl is not None else 0.0
+
+            tree[node_label] = children_dict
+            return node_label, branch_length
+
+        else:
+            # Leaf node: "name:length" or just "name"
+            label, branch_length = _parse_label_length(s)
+            if not label:
+                raise ValueError(f"Empty leaf label in Newick string: '{s}'")
+            tree[label] = None
+            return label, branch_length
+
+    def _parse_label_length(s: str) -> Tuple[str, float | None]:
+        """Parse 'label:length' returning (label, length)."""
+        s = s.strip()
+        if ":" in s:
+            parts = s.rsplit(":", 1)
+            label = parts[0].strip()
+            try:
+                bl = float(parts[1].strip())
+            except ValueError:
+                bl = None
+            return label, bl
+        return s, None
+
+    def _split_at_top_level(s: str) -> List[str]:
+        """Split string by commas not inside parentheses."""
+        parts: List[str] = []
+        depth = 0
+        current: List[str] = []
+        for ch in s:
+            if ch == "(":
+                depth += 1
+                current.append(ch)
+            elif ch == ")":
+                depth -= 1
+                current.append(ch)
+            elif ch == "," and depth == 0:
+                parts.append("".join(current))
+                current = []
+            else:
+                current.append(ch)
+        if current:
+            parts.append("".join(current))
+        return parts
+
+    _parse(newick_str)
+    return tree
+
+
+def prune_tree(tree: Tree, taxa_to_keep: List[str]) -> Tree:
+    """Prune a tree to keep only the specified taxa.
+
+    Removes all leaves not in ``taxa_to_keep`` and collapses any resulting
+    internal nodes that have only a single child by merging their branch
+    lengths.
+
+    Args:
+        tree: Tree represented as nested dictionary.
+        taxa_to_keep: List of leaf taxon names to retain.
+
+    Returns:
+        New pruned tree containing only the specified taxa.
+
+    Raises:
+        ValueError: If ``taxa_to_keep`` is empty or contains names not in the tree.
+    """
+    if not taxa_to_keep:
+        raise ValueError("taxa_to_keep must not be empty")
+
+    keep_set = set(taxa_to_keep)
+    all_leaves = set(_get_all_leaves(tree))
+    missing = keep_set - all_leaves
+    if missing:
+        raise ValueError(f"Taxa not found in tree: {sorted(missing)}")
+
+    # Find root
+    root = _find_root(tree)
+
+    # Recursively build pruned tree
+    pruned: Tree = {}
+
+    def _prune(node: str) -> Tuple[str | None, float]:
+        """Return (pruned_node_name, branch_length_to_parent) or (None, 0) if pruned away."""
+        if tree.get(node) is None or not isinstance(tree.get(node), dict):
+            # Leaf node
+            if node in keep_set:
+                pruned[node] = None
+                return node, 0.0
+            else:
+                return None, 0.0
+
+        # Internal node: recurse into children
+        children = [c for c in tree[node].keys() if c != "bootstrap"]
+        surviving_children: Dict[str, float] = {}
+
+        for child in children:
+            child_bl = tree[node][child] if tree[node][child] is not None else 0.0
+            result_name, extra_bl = _prune(child)
+            if result_name is not None:
+                surviving_children[result_name] = child_bl + extra_bl
+
+        if len(surviving_children) == 0:
+            # No surviving descendants
+            return None, 0.0
+        elif len(surviving_children) == 1:
+            # Collapse: pass through the single child, accumulating branch length
+            child_name = next(iter(surviving_children))
+            child_bl = surviving_children[child_name]
+            return child_name, child_bl
+        else:
+            # Multiple surviving children: keep this internal node
+            pruned[node] = surviving_children
+            return node, 0.0
+
+    _prune(root)
+    return pruned
+
+
+def tree_diameter(tree: Tree) -> float:
+    """Calculate the diameter of the tree (longest path between any two leaves).
+
+    The diameter is the maximum sum of branch lengths along the path connecting
+    any pair of leaf nodes in the tree.
+
+    Args:
+        tree: Tree represented as nested dictionary.
+
+    Returns:
+        Tree diameter as a float.
+    """
+    root = _find_root(tree)
+
+    # For each node, compute the farthest leaf distance and track the global max path
+    max_diameter = [0.0]
+
+    def _farthest(node: str) -> float:
+        """Return the distance from node to its farthest descendant leaf."""
+        if tree.get(node) is None or not isinstance(tree.get(node), dict):
+            return 0.0
+
+        children = [c for c in tree[node].keys() if c != "bootstrap"]
+        if not children:
+            return 0.0
+
+        child_depths: List[float] = []
+        for child in children:
+            bl = tree[node][child] if tree[node][child] is not None else 0.0
+            depth = _farthest(child) + float(bl)
+            child_depths.append(depth)
+
+        child_depths.sort(reverse=True)
+
+        # The diameter through this node is the sum of the two longest arms
+        if len(child_depths) >= 2:
+            candidate = child_depths[0] + child_depths[1]
+            if candidate > max_diameter[0]:
+                max_diameter[0] = candidate
+
+        # Also check single-arm (in case root is a leaf edge)
+        if child_depths[0] > max_diameter[0] and len(child_depths) == 1:
+            max_diameter[0] = child_depths[0]
+
+        return child_depths[0]
+
+    _farthest(root)
+    return max_diameter[0]
+
+
+def _find_root(tree: Tree) -> str:
+    """Find the root node of a tree (node with no parent).
+
+    Args:
+        tree: Tree represented as nested dictionary.
+
+    Returns:
+        Name of the root node.
+    """
+    all_nodes = set(tree.keys())
+    child_nodes: set[str] = set()
+
+    for node_data in tree.values():
+        if isinstance(node_data, dict):
+            child_nodes.update(node_data.keys())
+
+    roots = all_nodes - child_nodes
+    return roots.pop()
+
+
+def _get_all_leaves(tree: Tree) -> List[str]:
+    """Get all leaf nodes from a tree.
+
+    Args:
+        tree: Tree represented as nested dictionary.
+
+    Returns:
+        List of leaf node names.
+    """
+    leaves: List[str] = []
+    for node, children in tree.items():
+        if children is None or not isinstance(children, dict):
+            leaves.append(node)
+    return leaves
+
+
+def _get_bipartitions(tree: Tree, all_leaves: set[str]) -> set[frozenset[str]]:
+    """Extract the set of non-trivial bipartitions from a tree.
+
+    Each internal edge induces a split of the leaf set into two groups.
+    We represent each split by the frozenset of the smaller side (or
+    alphabetically first if equal size) to ensure canonical form.
+
+    Args:
+        tree: Tree represented as nested dictionary.
+        all_leaves: Complete set of leaf names.
+
+    Returns:
+        Set of frozensets, each representing one side of a bipartition.
+    """
+    splits: set[frozenset[str]] = set()
+
+    for node in tree:
+        if isinstance(tree.get(node), dict):
+            children = [c for c in tree[node].keys() if c != "bootstrap"]
+            for child in children:
+                descendant_leaves = frozenset(_get_descendant_leaves(tree, child))
+                complement = frozenset(all_leaves - descendant_leaves)
+
+                # Skip trivial splits (single leaf or entire tree)
+                if len(descendant_leaves) <= 1 or len(complement) <= 1:
+                    continue
+
+                # Canonical form: use the smaller side, or sorted-first if equal
+                if len(descendant_leaves) < len(complement):
+                    canonical = descendant_leaves
+                elif len(complement) < len(descendant_leaves):
+                    canonical = complement
+                else:
+                    canonical = min(descendant_leaves, complement, key=lambda s: sorted(s))
+
+                splits.add(canonical)
+
+    return splits
 
 
 def _calculate_distance_matrix(id_to_seq: Dict[str, str]) -> List[List[float]]:

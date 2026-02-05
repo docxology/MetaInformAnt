@@ -10,6 +10,7 @@ import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import numpy as np
 import requests
 
 from metainformant.core import io, logging
@@ -33,18 +34,15 @@ def build_alphafold_url(uniprot_acc: str, *, version: int = 4, fmt: str = "pdb")
         >>> "alphafold.ebi.ac.uk" in url
         True
     """
-    if version not in [2, 3, 4]:
-        raise ValueError(f"Unsupported AlphaFold version: {version}")
-
-    if fmt not in ["pdb", "cif"]:
-        raise ValueError(f"Unsupported format: {fmt}. Use 'pdb' or 'cif'")
+    if fmt not in ("pdb", "cif"):
+        raise ValueError("fmt must be 'pdb' or 'cif'")
 
     base_url = f"https://alphafold.ebi.ac.uk/files/AF-{uniprot_acc}-F1-model_v{version}"
 
     if fmt == "pdb":
         url = f"{base_url}.pdb"
     else:  # cif
-        url = f"{base_url}-model_v{version}.cif"
+        url = f"{base_url}.cif"
 
     return url
 

@@ -31,6 +31,16 @@ from .config import (
 
 # Error Handling
 from .errors import (
+    METAINFORMANTError,
+    ConfigError,
+    IOError,
+    ValidationError,
+    NetworkError,
+    CacheError,
+    DownloadError,
+    PipelineError,
+    DependencyError,
+    ResourceError,
     retry_with_backoff,
     error_context,
     safe_execute,
@@ -88,6 +98,14 @@ from .text import (
     truncate_text,
 )
 
+# Timing & Performance
+from .timing import (
+    Timer,
+    rate_limiter,
+    timed,
+    timeout_after,
+)
+
 # Symbol Indexing (lazy import to avoid circular deps)
 # from .symbols import index_functions, find_symbol, etc.
 
@@ -107,6 +125,16 @@ __all__ = [
     "find_configs_for_module",
     "list_config_templates",
     # Error Handling
+    "METAINFORMANTError",
+    "ConfigError",
+    "IOError",
+    "ValidationError",
+    "NetworkError",
+    "CacheError",
+    "DownloadError",
+    "PipelineError",
+    "DependencyError",
+    "ResourceError",
     "retry_with_backoff",
     "error_context",
     "safe_execute",
@@ -147,4 +175,9 @@ __all__ = [
     "clean_sequence_id",
     "extract_numbers",
     "truncate_text",
+    # Timing & Performance
+    "Timer",
+    "rate_limiter",
+    "timed",
+    "timeout_after",
 ]

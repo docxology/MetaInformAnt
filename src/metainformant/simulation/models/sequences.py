@@ -7,6 +7,7 @@ All functions support reproducible results through random seed control.
 
 from __future__ import annotations
 
+import math
 import random
 from typing import Dict, List, Optional, Tuple, Any
 from collections import Counter
@@ -223,8 +224,18 @@ def evolve_sequence(
         # Calculate expected number of mutations
         expected_mutations = len(current_seq) * mutation_rate
 
-        # Use Poisson distribution for actual number of mutations
-        n_mutations = rng.poisson(expected_mutations)
+        # Poisson sampling using Knuth's algorithm (stdlib, no numpy needed)
+        if expected_mutations < 500:
+            big_l = math.exp(-expected_mutations)
+            k = 0
+            p = 1.0
+            while p > big_l:
+                k += 1
+                p *= rng.random()
+            n_mutations = k - 1
+        else:
+            # Normal approximation for large lambda
+            n_mutations = max(0, int(rng.gauss(expected_mutations, math.sqrt(expected_mutations))))
 
         if n_mutations > 0:
             current_seq = mutate_sequence(current_seq, min(n_mutations, len(current_seq)), rng=rng)

@@ -14,6 +14,22 @@ from metainformant.core import logging
 
 logger = logging.get_logger(__name__)
 
+# Optional network analysis dependencies
+try:
+    import networkx as nx
+
+    HAS_NETWORKX = True
+except ImportError:
+    HAS_NETWORKX = False
+    logger.warning("networkx not available, network functionality disabled")
+
+try:
+    import numpy as np
+
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
+
 
 class BiologicalNetwork:
     """A biological network class wrapping NetworkX functionality.
@@ -140,24 +156,6 @@ class BiologicalNetwork:
     def adj(self):
         """Return adjacency object."""
         return self.graph.adj
-
-    def __len__(self) -> int:
-        """Get the number of nodes in the network."""
-        return self.number_of_nodes()
-
-    def __contains__(self, node_id: str) -> bool:
-        """Check if a node is in the network."""
-        return node_id in self.graph
-
-
-# Optional network analysis dependencies
-try:
-    import networkx as nx
-
-    HAS_NETWORKX = True
-except ImportError:
-    HAS_NETWORKX = False
-    logger.warning("networkx not available, network functionality disabled")
 
 
 def create_network(edges: List[Tuple[str, str]], directed: bool = False, **kwargs: Any) -> Any:
@@ -526,8 +524,6 @@ def convert_to_adjacency_matrix(graph: Any) -> Any:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for matrix conversion")
 
-    import numpy as np
-
     return nx.to_numpy_array(graph)
 
 
@@ -547,8 +543,6 @@ def convert_from_adjacency_matrix(matrix: Any, node_labels: Optional[List[str]] 
     """
     if not HAS_NETWORKX:
         raise ImportError("networkx required for matrix conversion")
-
-    import numpy as np
 
     if node_labels is None:
         n_nodes = matrix.shape[0]
@@ -592,13 +586,24 @@ def get_network_summary(graph: Any) -> Dict[str, Any]:
     if summary["n_nodes"] > 0:
         # Degree statistics
         degrees = [d for n, d in graph.degree()]
-        summary["degree_stats"] = {
-            "mean": float(np.mean(degrees)),
-            "std": float(np.std(degrees)),
-            "min": int(np.min(degrees)),
-            "max": int(np.max(degrees)),
-            "median": int(np.median(degrees)),
-        }
+        if HAS_NUMPY:
+            summary["degree_stats"] = {
+                "mean": float(np.mean(degrees)),
+                "std": float(np.std(degrees)),
+                "min": int(min(degrees)),
+                "max": int(max(degrees)),
+                "median": float(np.median(degrees)),
+            }
+        else:
+            sorted_degrees = sorted(degrees)
+            n = len(sorted_degrees)
+            summary["degree_stats"] = {
+                "mean": sum(degrees) / len(degrees),
+                "std": 0.0,
+                "min": min(degrees),
+                "max": max(degrees),
+                "median": float(sorted_degrees[n // 2]),
+            }
 
         # Connected components
         if not graph.is_directed():
@@ -784,17 +789,22 @@ def network_metrics(graph: Any) -> Dict[str, Any]:
         metrics["is_multigraph"] = graph.is_multigraph()
 
         if metrics["num_nodes"] > 0:
-            # Density
-            max_edges = metrics["num_nodes"] * (metrics["num_nodes"] - 1)
+            # Density: n*(n-1) for directed, n*(n-1)/2 for undirected
+            n = metrics["num_nodes"]
             if metrics["is_directed"]:
-                max_edges *= 2
+                max_edges = n * (n - 1)
+            else:
+                max_edges = n * (n - 1) // 2
             metrics["density"] = metrics["num_edges"] / max_edges if max_edges > 0 else 0
 
             # Degree statistics
             degrees = [d for n, d in graph.degree()]
             metrics["avg_degree"] = sum(degrees) / len(degrees)
             metrics["max_degree"] = max(degrees)
-            metrics["degree_assortativity"] = nx.degree_assortativity_coefficient(graph)
+            try:
+                metrics["degree_assortativity"] = nx.degree_assortativity_coefficient(graph)
+            except Exception:
+                metrics["degree_assortativity"] = None
 
             # Clustering
             if not metrics["is_directed"]:

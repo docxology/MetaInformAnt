@@ -64,6 +64,23 @@ from .disk import (
     get_recommended_batch_size,
 )
 
+from .atomic import (
+    atomic_replace,
+    atomic_write,
+    safe_write_bytes,
+    safe_write_text,
+    temp_directory,
+)
+
+from .checksums import (
+    compute_checksums_batch,
+    compute_md5,
+    compute_sha256,
+    verify_checksum,
+    verify_checksum_file,
+    write_checksum_file,
+)
+
 from .paths import (
     get_project_root,
     get_data_dir,
@@ -127,6 +144,19 @@ __all__ = [
     "get_disk_space_info",
     "detect_drive_size_category",
     "get_recommended_batch_size",
+    # Atomic
+    "atomic_replace",
+    "atomic_write",
+    "safe_write_bytes",
+    "safe_write_text",
+    "temp_directory",
+    # Checksums
+    "compute_checksums_batch",
+    "compute_md5",
+    "compute_sha256",
+    "verify_checksum",
+    "verify_checksum_file",
+    "write_checksum_file",
     # Paths
     "get_project_root",
     "get_data_dir",

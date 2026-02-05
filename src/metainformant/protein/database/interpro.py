@@ -30,6 +30,9 @@ def fetch_interpro_domains(uniprot_id: str) -> List[Dict[str, Any]]:
         >>> # isinstance(domains, list)
         >>> # True
     """
+    if uniprot_id is None:
+        raise AttributeError("uniprot_id cannot be None")
+
     # InterPro API endpoint
     url = f"https://www.ebi.ac.uk/interpro/api/entry/interpro/protein/UniProt/{uniprot_id}"
 

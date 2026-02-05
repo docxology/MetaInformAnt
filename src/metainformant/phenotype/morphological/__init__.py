@@ -1,10 +1,23 @@
-"""
-Morphological phenotype analysis module.
+"""Morphological phenotype analysis module.
 
-This module provides tools for handling morphometric measurements and shape analysis.
+Provides tools for morphometric measurements, shape analysis,
+allometric regressions, and cross-specimen comparisons.
 """
 
 from .measurement import Measurement
-from .profile import MorphometricProfile
+from .profile import (
+    MorphometricProfile,
+    coefficient_of_variation,
+    allometric_regression,
+    compare_profiles,
+    summary_statistics,
+)
 
-__all__ = ["Measurement", "MorphometricProfile"]
+__all__ = [
+    "Measurement",
+    "MorphometricProfile",
+    "coefficient_of_variation",
+    "allometric_regression",
+    "compare_profiles",
+    "summary_statistics",
+]

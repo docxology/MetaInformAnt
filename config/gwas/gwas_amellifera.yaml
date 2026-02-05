@@ -38,7 +38,7 @@ variants:
   # Option 1: Pre-called VCF file(s) - provide path(s) to existing VCF files
   # Recommended: Use pre-called VCFs from large-scale honeybee projects when available
   vcf_files:
-    - data/variants/amellifera/honeybee_cohort.vcf
+    - output/gwas/amellifera/variants/amellifera_population.vcf
 
   # Option 2: Download from public database (if available for A. mellifera)
   # Note: dbSNP may have honeybee variants, but large cohort VCFs are typically
@@ -109,7 +109,10 @@ samples:
   # Phenotype file (TSV format: sample_id, trait1, trait2, ...)
   # Common honeybee traits: Varroa resistance, hygienic behavior, honey production,
   #                          colony strength, overwintering success, disease resistance
-  phenotype_file: data/phenotypes/amellifera/phenotypes.tsv
+  phenotype_file: output/gwas/amellifera/phenotypes/varroa_resistance.tsv
+
+  # Sample metadata file (TSV format: sample_id, subspecies, caste, location, collection_date)
+  metadata_file: output/gwas/amellifera/metadata/sample_metadata.tsv
 
   # Covariates file (TSV format: sample_id, age, sex, population, PC1, PC2, ...)
   # Important for honeybees: population/subspecies, sampling location, season
@@ -229,4 +232,12 @@ output:
   summary_stats: true
   significant_hits: true
   significance_threshold: 5.0e-8
+
+# =============================================================================
+# FINE-MAPPING
+# =============================================================================
+# Compute Bayesian credible sets from association results
+finemapping:
+  enabled: true
+  credible_level: 0.95
 

@@ -7,11 +7,14 @@ All workflows support reproducible results and comprehensive output tracking.
 
 from __future__ import annotations
 
+import random
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 import json
+
+import numpy as np
 
 from metainformant.core import logging, errors, validation, config, io, paths
 
@@ -111,7 +114,7 @@ def create_simulation_config(simulation_type: str, parameters: Dict[str, Any]) -
         return config
     except Exception as e:
         logger.error(f"Failed to create simulation config: {e}")
-        raise errors.ConfigurationError(f"Invalid simulation configuration: {e}") from e
+        raise errors.ConfigError(f"Invalid simulation configuration: {e}") from e
 
 
 def run_benchmark_simulation(
@@ -346,8 +349,6 @@ def calibrate_simulation_parameters(
     best_params = {}
     best_fitness = float("-inf")
 
-    import random
-
     rng = random.Random()
 
     for iteration in range(n_iterations):
@@ -391,12 +392,8 @@ def run_simulation_workflow(config: SimulationConfig) -> Dict[str, Any]:
     logger.info(f"Starting simulation workflow: {config.simulation_type}")
 
     # Set up random seed for reproducibility
-    import random
-
     if config.random_seed is not None:
         random.seed(config.random_seed)
-        import numpy as np
-
         np.random.seed(config.random_seed)
 
     rng = random.Random(config.random_seed)
@@ -421,7 +418,7 @@ def run_simulation_workflow(config: SimulationConfig) -> Dict[str, Any]:
         result = _run_competition_simulation(config, rng)
 
     else:
-        raise errors.ConfigurationError(f"Unsupported simulation type: {config.simulation_type}")
+        raise errors.ConfigError(f"Unsupported simulation type: {config.simulation_type}")
 
     # Add metadata
     result.update(
@@ -461,7 +458,7 @@ def run_simulation_workflow(config: SimulationConfig) -> Dict[str, Any]:
 
 def _run_sequence_simulation(config: SimulationConfig, rng: random.Random) -> Dict[str, Any]:
     """Run sequence evolution simulation."""
-    from .sequences import generate_random_dna, evolve_sequence, analyze_sequence_divergence
+    from ..models.sequences import generate_random_dna, evolve_sequence, analyze_sequence_divergence
 
     # Generate initial population
     population = []
@@ -489,10 +486,11 @@ def _run_sequence_simulation(config: SimulationConfig, rng: random.Random) -> Di
 
 def _run_population_genetics_simulation(config: SimulationConfig, rng: random.Random) -> Dict[str, Any]:
     """Run population genetics simulation."""
-    from .popgen import generate_genotype_matrix, simulate_selection
+    from ..models.popgen import generate_genotype_matrix, simulate_selection
 
-    # Generate initial genotypes
-    genotypes = generate_genotype_matrix(config.population_size, config.n_snps, maf_min=0.05, maf_max=0.5, rng=rng)
+    # Generate initial genotypes (returns list; convert to ndarray for downstream)
+    genotypes_list = generate_genotype_matrix(config.population_size, config.n_snps, maf_min=0.05, maf_max=0.5, rng=rng)
+    genotypes = np.array(genotypes_list)
 
     # Apply selection if specified
     if config.selection_coefficient > 0:
@@ -501,13 +499,14 @@ def _run_population_genetics_simulation(config: SimulationConfig, rng: random.Ra
             genotypes, fitness_effects, config.n_steps, selection_strength=config.selection_coefficient, rng=rng
         )
 
+        final_geno = selection_result["final_genotypes"]
         return {
             "population_size": config.population_size,
             "n_snps": config.n_snps,
             "generations": config.n_steps,
             "selection_coefficient": config.selection_coefficient,
             "initial_genotypes": genotypes.tolist(),
-            "final_genotypes": selection_result["final_genotypes"].tolist(),
+            "final_genotypes": final_geno.tolist() if hasattr(final_geno, "tolist") else final_geno,
             "allele_frequencies": selection_result["allele_frequencies"],
         }
     else:
@@ -521,7 +520,7 @@ def _run_population_genetics_simulation(config: SimulationConfig, rng: random.Ra
 
 def _run_rna_simulation(config: SimulationConfig, rng: random.Random) -> Dict[str, Any]:
     """Run RNA expression simulation."""
-    from .rna import simulate_bulk_rnaseq
+    from ..models.rna import simulate_bulk_rnaseq
 
     # Simulate expression data
     expression_matrix = simulate_bulk_rnaseq(config.n_samples, config.n_genes, rng=rng)
@@ -538,7 +537,7 @@ def _run_rna_simulation(config: SimulationConfig, rng: random.Random) -> Dict[st
 
 def _run_agent_simulation(config: SimulationConfig, rng: random.Random) -> Dict[str, Any]:
     """Run agent-based ecosystem simulation."""
-    from .agents import create_ecosystem, run_simulation, get_population_dynamics, calculate_biodiversity_metrics
+    from ..models.agents import create_ecosystem, run_simulation, get_population_dynamics, calculate_biodiversity_metrics
 
     # Create ecosystem
     ecosystem = create_ecosystem(config.n_agents, config.agent_types, config.environment_size, rng=rng)
@@ -564,7 +563,7 @@ def _run_agent_simulation(config: SimulationConfig, rng: random.Random) -> Dict[
 
 def _run_predator_prey_simulation(config: SimulationConfig, rng: random.Random) -> Dict[str, Any]:
     """Run predator-prey ecosystem simulation."""
-    from .agents import create_ecosystem, simulate_predator_prey
+    from ..models.agents import create_ecosystem, simulate_predator_prey
 
     # Create ecosystem with predator-prey setup
     ecosystem = create_ecosystem(
@@ -591,7 +590,7 @@ def _run_predator_prey_simulation(config: SimulationConfig, rng: random.Random) 
 
 def _run_competition_simulation(config: SimulationConfig, rng: random.Random) -> Dict[str, Any]:
     """Run competition simulation."""
-    from .agents import create_ecosystem, simulate_competition
+    from ..models.agents import create_ecosystem, simulate_competition
 
     # Create ecosystem
     ecosystem = create_ecosystem(config.n_agents, config.agent_types, config.environment_size, rng=rng)

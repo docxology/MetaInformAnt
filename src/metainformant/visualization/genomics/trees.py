@@ -10,6 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
@@ -376,9 +377,31 @@ def _convert_tree_to_networkx(tree: Any, directed: bool = True) -> nx.Graph:
         for root, subtree in tree.items():
             add_edges(root, subtree)
     else:
-        # Assume it's already a compatible structure
-        # This is a fallback - real implementation would handle Bio.Phylo trees, etc.
-        raise ValueError("Unsupported tree format. Please provide NetworkX graph or dict-based tree.")
+        # Handle Bio.Phylo tree objects
+        try:
+            from Bio import Phylo as BioPhylo
+
+            if isinstance(tree, BioPhylo.BaseTree.Tree):
+                # Convert Bio.Phylo tree to NetworkX graph
+                node_counter = 0
+
+                def _add_clade(clade, parent_name=None):
+                    nonlocal node_counter
+                    name = clade.name if clade.name else f"internal_{node_counter}"
+                    node_counter += 1
+                    G.add_node(name)
+                    if parent_name is not None:
+                        weight = clade.branch_length if clade.branch_length else 1.0
+                        G.add_edge(parent_name, name, weight=weight)
+                    for child in clade.clades:
+                        _add_clade(child, name)
+
+                _add_clade(tree.root)
+                return G
+        except ImportError:
+            pass
+
+        raise ValueError("Unsupported tree format. Please provide NetworkX graph, dict-based tree, or Bio.Phylo tree.")
 
     return G
 

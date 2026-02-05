@@ -7,7 +7,9 @@ configuration files, with step validation, error recovery, and progress tracking
 from __future__ import annotations
 
 import importlib
+import threading
 import time
+from collections import deque
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
@@ -247,7 +249,7 @@ def run_config_based_workflow(
 
 
 class WorkflowStep:
-    """Represents a single step in a workflow."""
+    """Represents a single step in a workflow with timing and dependency tracking."""
 
     def __init__(self, name: str, function: Callable, config: Dict[str, Any], depends_on: Optional[List[str]] = None):
         self.name = name
@@ -255,32 +257,352 @@ class WorkflowStep:
         self.config = config
         self.depends_on = depends_on or []
         self.status = "pending"
-        self.result = None
-        self.error = None
+        self.result: Any = None
+        self.error: Optional[str] = None
+        self.start_time: Optional[float] = None
+        self.end_time: Optional[float] = None
 
-    def execute(self, **kwargs) -> Any:
+    def execute(self, **kwargs: Any) -> Any:
+        """Execute the step function with config and dependency results.
+
+        Tracks start/end time for duration measurement. Merges step config
+        with kwargs from dependency results.
+
+        Args:
+            **kwargs: Additional keyword arguments (typically results from dependency steps).
+
+        Returns:
+            The result of the step function.
+
+        Raises:
+            Exception: Re-raises any exception from the step function after recording it.
+        """
         self.status = "running"
+        self.start_time = time.monotonic()
         try:
             self.result = self.function(**{**self.config, **kwargs})
+            self.end_time = time.monotonic()
             self.status = "completed"
             return self.result
         except Exception as e:
+            self.end_time = time.monotonic()
             self.status = "failed"
             self.error = str(e)
             raise
 
     def duration(self) -> float:
+        """Return elapsed execution time in seconds, or 0.0 if not yet run."""
+        if self.start_time is not None and self.end_time is not None:
+            return self.end_time - self.start_time
         return 0.0
+
+    def reset(self) -> None:
+        """Reset step state to allow re-execution."""
+        self.status = "pending"
+        self.result = None
+        self.error = None
+        self.start_time = None
+        self.end_time = None
 
 
 class BaseWorkflowOrchestrator:
-    """Base class for workflow orchestration."""
+    """DAG-based workflow orchestrator with topological execution ordering.
 
-    def __init__(self, config: Dict[str, Any], working_dir: Path = None):
+    Supports adding steps with inter-step dependencies, config-based step
+    auto-loading via importlib, cycle detection, and failed-step propagation
+    (downstream dependents are skipped when an upstream step fails).
+
+    Thread-safe access to ``_results`` is ensured via an internal lock so that
+    subclasses may extend execution to parallel workers in the future.
+    """
+
+    def __init__(self, config: Dict[str, Any], working_dir: Optional[Path] = None):
         self.config = config
-        self.steps = {}
-        # Minimal implementation for compatibility if needed
-        pass
+        self.working_dir = working_dir or Path("output")
+        self.steps: Dict[str, WorkflowStep] = {}
+        self._results: Dict[str, Any] = {}
+        self._execution_order: List[str] = []
+        self._lock = threading.Lock()
+
+    # ------------------------------------------------------------------
+    # Step management
+    # ------------------------------------------------------------------
+
+    def add_step(
+        self,
+        name: str,
+        function: Union[Callable, str],
+        config: Optional[Dict[str, Any]] = None,
+        depends_on: Optional[List[str]] = None,
+    ) -> "BaseWorkflowOrchestrator":
+        """Add a workflow step.
+
+        Args:
+            name: Unique step name.
+            function: A callable, or a ``"module.path:function_name"`` string
+                that will be resolved via :meth:`_resolve_function`.
+            config: Parameters to pass to the function at execution time.
+            depends_on: List of step names this step depends on.
+
+        Returns:
+            ``self`` for method chaining.
+        """
+        if isinstance(function, str):
+            resolved = self._resolve_function(function)
+        else:
+            resolved = function
+
+        step = WorkflowStep(
+            name=name,
+            function=resolved,
+            config=config or {},
+            depends_on=depends_on or [],
+        )
+        self.steps[name] = step
+        return self
+
+    # ------------------------------------------------------------------
+    # Function resolution
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _resolve_function(func_ref: str) -> Callable:
+        """Resolve a ``"module.path:function_name"`` string to a callable.
+
+        Args:
+            func_ref: Dotted module path and function name separated by ``:``.
+
+        Returns:
+            The resolved callable.
+
+        Raises:
+            ValueError: If the format is invalid.
+            ImportError: If the module cannot be imported.
+            AttributeError: If the function is not found in the module.
+        """
+        if ":" not in func_ref:
+            raise ValueError(f"Function reference must be in 'module.path:function_name' format, got: {func_ref!r}")
+
+        module_path, func_name = func_ref.rsplit(":", 1)
+        module = importlib.import_module(module_path)
+        func = getattr(module, func_name)
+        if not callable(func):
+            raise AttributeError(f"{func_ref!r} resolved to a non-callable object")
+        return func
+
+    # ------------------------------------------------------------------
+    # DAG validation & topological sort
+    # ------------------------------------------------------------------
+
+    def _validate_dag(self) -> List[str]:
+        """Validate the step dependency graph.
+
+        Checks:
+        - All ``depends_on`` references point to existing steps.
+        - The graph contains no cycles.
+
+        Returns:
+            A list of error messages (empty means valid).
+        """
+        errors: List[str] = []
+
+        # 1. Check that all dependency references exist
+        for name, step in self.steps.items():
+            for dep in step.depends_on:
+                if dep not in self.steps:
+                    errors.append(f"Step '{name}' depends on unknown step '{dep}'")
+
+        # If references are broken, skip the cycle check (sort will fail anyway)
+        if errors:
+            return errors
+
+        # 2. Cycle detection via Kahn's algorithm (attempt to produce full ordering)
+        try:
+            self._topological_sort()
+        except ValueError as exc:
+            errors.append(str(exc))
+
+        return errors
+
+    def _topological_sort(self) -> List[str]:
+        """Compute a topological ordering of steps using Kahn's algorithm.
+
+        Returns:
+            Ordered list of step names respecting dependency edges.
+
+        Raises:
+            ValueError: If a cycle is detected in the dependency graph.
+        """
+        # Build in-degree map and adjacency list
+        in_degree: Dict[str, int] = {name: 0 for name in self.steps}
+        # adjacency: step -> list of steps that depend on it (downstream)
+        dependents: Dict[str, List[str]] = {name: [] for name in self.steps}
+
+        for name, step in self.steps.items():
+            for dep in step.depends_on:
+                if dep in self.steps:
+                    in_degree[name] += 1
+                    dependents[dep].append(name)
+
+        # Seed the queue with nodes that have zero in-degree
+        queue: deque[str] = deque()
+        for name in self.steps:
+            if in_degree[name] == 0:
+                queue.append(name)
+
+        order: List[str] = []
+        while queue:
+            current = queue.popleft()
+            order.append(current)
+            for downstream in dependents[current]:
+                in_degree[downstream] -= 1
+                if in_degree[downstream] == 0:
+                    queue.append(downstream)
+
+        if len(order) != len(self.steps):
+            # Identify the cycle participants for a helpful error message
+            cycle_members = sorted(name for name in self.steps if in_degree[name] > 0)
+            raise ValueError(f"Cycle detected in workflow DAG involving steps: {cycle_members}")
+
+        return order
+
+    # ------------------------------------------------------------------
+    # Execution
+    # ------------------------------------------------------------------
+
+    def _load_steps_from_config(self) -> None:
+        """Auto-add steps from the ``steps`` key in ``self.config``."""
+        steps_config = self.config.get("steps")
+        if not steps_config or not isinstance(steps_config, dict):
+            return
+
+        for step_name, step_cfg in steps_config.items():
+            if step_name in self.steps:
+                # Already added programmatically -- skip config duplicate
+                continue
+            func_ref = step_cfg.get("function", "")
+            depends = step_cfg.get("depends_on", [])
+            params = step_cfg.get("params", {})
+
+            self.add_step(
+                name=step_name,
+                function=func_ref,
+                config=params,
+                depends_on=depends,
+            )
 
     def run_workflow(self) -> Dict[str, Any]:
-        return {"success": True, "results": {}}
+        """Execute the full workflow.
+
+        1. Auto-load steps from ``self.config["steps"]`` if present.
+        2. Validate the DAG.
+        3. Compute topological execution order.
+        4. Execute each step in order, passing upstream results as kwargs.
+        5. If a step fails, all transitive downstream dependents are skipped.
+
+        Returns:
+            A result dictionary::
+
+                {
+                    "success": bool,
+                    "results": {step_name: result, ...},
+                    "errors": [str, ...],
+                    "execution_order": [str, ...],
+                    "total_duration": float,
+                }
+        """
+        errors: List[str] = []
+        workflow_start = time.monotonic()
+
+        # 1. Auto-load from config
+        try:
+            self._load_steps_from_config()
+        except Exception as exc:
+            errors.append(f"Failed to load steps from config: {exc}")
+            return {
+                "success": False,
+                "results": {},
+                "errors": errors,
+                "execution_order": [],
+                "total_duration": time.monotonic() - workflow_start,
+            }
+
+        # 2. Validate DAG
+        validation_errors = self._validate_dag()
+        if validation_errors:
+            return {
+                "success": False,
+                "results": {},
+                "errors": validation_errors,
+                "execution_order": [],
+                "total_duration": time.monotonic() - workflow_start,
+            }
+
+        # 3. Topological sort (already validated, so no cycle expected)
+        execution_order = self._topological_sort()
+        self._execution_order = execution_order
+
+        # 4. Execute in order
+        failed_steps: set[str] = set()
+
+        for step_name in execution_order:
+            step = self.steps[step_name]
+
+            # Check if any upstream dependency failed -> skip
+            upstream_failed = any(dep in failed_steps for dep in step.depends_on)
+            if upstream_failed:
+                step.status = "skipped"
+                failed_steps.add(step_name)
+                errors.append(f"Step '{step_name}' skipped due to failed dependency")
+                logger.warning("Skipping step '%s' — upstream dependency failed", step_name)
+                continue
+
+            # Gather dependency results as kwargs
+            dep_kwargs: Dict[str, Any] = {}
+            with self._lock:
+                for dep in step.depends_on:
+                    if dep in self._results:
+                        dep_kwargs[dep] = self._results[dep]
+
+            # Execute
+            try:
+                logger.info("Executing workflow step '%s'", step_name)
+                result = step.execute(**dep_kwargs)
+                with self._lock:
+                    self._results[step_name] = result
+                logger.info(
+                    "Step '%s' completed in %.3fs",
+                    step_name,
+                    step.duration(),
+                )
+            except Exception as exc:
+                failed_steps.add(step_name)
+                errors.append(f"Step '{step_name}' failed: {exc}")
+                logger.error("Step '%s' failed: %s", step_name, exc)
+
+        total_duration = time.monotonic() - workflow_start
+        success = len(failed_steps) == 0
+
+        with self._lock:
+            results_snapshot = dict(self._results)
+
+        return {
+            "success": success,
+            "results": results_snapshot,
+            "errors": errors,
+            "execution_order": execution_order,
+            "total_duration": total_duration,
+        }
+
+    # ------------------------------------------------------------------
+    # Introspection
+    # ------------------------------------------------------------------
+
+    def get_step_status(self) -> Dict[str, str]:
+        """Return the current status of every registered step.
+
+        Returns:
+            Mapping of step name to status string
+            (``"pending"``, ``"running"``, ``"completed"``, ``"failed"``, ``"skipped"``).
+        """
+        return {name: step.status for name, step in self.steps.items()}

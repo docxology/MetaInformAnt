@@ -232,7 +232,7 @@ def calculate_structural_similarity(structure1: Dict[str, Any], structure2: Dict
         return {"rmsd": float("inf"), "similarity": 0.0}
 
     # Use RMSD as similarity measure
-    from .structure import compute_rmsd_simple
+    from .general import compute_rmsd_simple
 
     rmsd = compute_rmsd_simple(coords1, coords2)
 
@@ -380,7 +380,7 @@ def calculate_structural_alignment_quality(structure1: Dict[str, Any], structure
         return {"quality_score": 0.0, "aligned_atoms": 0}
 
     # Calculate RMSD
-    from .structure import compute_rmsd_simple
+    from .general import compute_rmsd_simple
 
     rmsd = compute_rmsd_simple(coords1, coords2)
 

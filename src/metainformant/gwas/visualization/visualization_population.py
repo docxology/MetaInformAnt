@@ -594,3 +594,689 @@ def admixture_plot(
 
     except Exception as e:
         return {"status": "failed", "error": str(e)}
+
+
+def kinship_dendrogram(
+    kinship_matrix: np.ndarray | List[List[float]],
+    sample_labels: Optional[List[str]] = None,
+    output_file: Optional[str | Path] = None,
+    method: str = "ward",
+    color_by: Optional[str] = None,
+    metadata: Optional[Dict[str, Dict[str, str]]] = None,
+) -> Dict[str, Any]:
+    """Create a hierarchical clustering dendrogram from a kinship matrix.
+
+    Converts the kinship similarity matrix to a distance matrix (1 - kinship)
+    and performs hierarchical clustering using scipy.
+
+    Args:
+        kinship_matrix: Square kinship matrix (similarity, not distance).
+            Values typically range from 0 to 1 where 1 = self-kinship.
+        sample_labels: Optional list of sample labels for leaf nodes.
+        output_file: Optional path to save the figure.
+        method: Linkage method for scipy (e.g., "ward", "complete", "average", "single").
+        color_by: Metadata field name to color leaves by (e.g., "population").
+        metadata: Dictionary of {sample_id: {field: value}} for coloring leaves.
+            Used together with color_by to assign colors per population/group.
+
+    Returns:
+        Dictionary with keys:
+            - status: "success", "failed", or "skipped"
+            - output_path: Path to saved file or None
+            - n_samples: Number of samples in the dendrogram
+    """
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        HAS_MATPLOTLIB = True
+    except ImportError:
+        HAS_MATPLOTLIB = False
+
+    try:
+        from scipy.cluster.hierarchy import dendrogram as scipy_dendrogram
+        from scipy.cluster.hierarchy import linkage
+        from scipy.spatial.distance import squareform
+
+        HAS_SCIPY = True
+    except ImportError:
+        HAS_SCIPY = False
+
+    if not HAS_MATPLOTLIB:
+        logger.warning("matplotlib not available, cannot create kinship dendrogram")
+        return {"status": "skipped", "output_path": None, "n_samples": 0}
+
+    if not HAS_SCIPY:
+        logger.warning("scipy not available, cannot create kinship dendrogram")
+        return {"status": "skipped", "output_path": None, "n_samples": 0}
+
+    try:
+        # Convert to numpy array if needed
+        if isinstance(kinship_matrix, list):
+            kinship_matrix = np.array(kinship_matrix, dtype=np.float64)
+        elif kinship_matrix.dtype != np.float64:
+            kinship_matrix = kinship_matrix.astype(np.float64)
+
+        n_samples = kinship_matrix.shape[0]
+
+        # Edge case: fewer than 2 samples
+        if n_samples < 2:
+            logger.warning("Need at least 2 samples for a dendrogram")
+            return {"status": "failed", "output_path": None, "n_samples": n_samples}
+
+        # Generate default labels if not provided
+        if sample_labels is None or len(sample_labels) != n_samples:
+            sample_labels = [f"S{i}" for i in range(n_samples)]
+
+        # Convert kinship (similarity) to distance: distance = 1 - kinship
+        # Clip to avoid negative distances from numerical noise
+        distance_matrix = np.clip(1.0 - kinship_matrix, 0.0, None)
+
+        # Force symmetry and zero diagonal
+        distance_matrix = (distance_matrix + distance_matrix.T) / 2.0
+        np.fill_diagonal(distance_matrix, 0.0)
+
+        # Handle all-identical matrix (all zeros in distance) gracefully
+        if np.allclose(distance_matrix, 0.0):
+            logger.warning("All kinship values are identical; dendrogram will be flat")
+
+        # Convert to condensed form for scipy linkage
+        condensed_dist = squareform(distance_matrix, checks=False)
+
+        # Perform hierarchical clustering
+        linkage_matrix = linkage(condensed_dist, method=method)
+
+        # Determine leaf colors from metadata
+        leaf_colors: Optional[Dict[str, str]] = None
+        if color_by and metadata:
+            # Build group-to-color mapping
+            groups: List[str] = []
+            for label in sample_labels:
+                sample_meta = metadata.get(label, {})
+                groups.append(sample_meta.get(color_by, "unknown"))
+
+            unique_groups = sorted(set(groups))
+            cmap = plt.cm.tab10(np.linspace(0, 1, max(len(unique_groups), 1)))
+            group_to_color = {g: cmap[i] for i, g in enumerate(unique_groups)}
+
+            # scipy dendrogram uses link_color_func; we colorize after via leaf labeling
+            leaf_colors = {}
+            for i, label in enumerate(sample_labels):
+                grp = groups[i]
+                rgba = group_to_color[grp]
+                # Convert RGBA to hex for matplotlib
+                hex_color = "#{:02x}{:02x}{:02x}".format(int(rgba[0] * 255), int(rgba[1] * 255), int(rgba[2] * 255))
+                leaf_colors[label] = hex_color
+
+        # Create figure
+        fig_width = max(10, n_samples * 0.3)
+        fig, ax = plt.subplots(figsize=(fig_width, 8))
+
+        # Draw dendrogram
+        dendro_result = scipy_dendrogram(
+            linkage_matrix,
+            labels=sample_labels,
+            leaf_rotation=90,
+            leaf_font_size=max(6, min(12, 200 // n_samples)),
+            ax=ax,
+        )
+
+        # Color the leaf labels if metadata coloring is requested
+        if leaf_colors:
+            xlbls = ax.get_xticklabels()
+            for lbl in xlbls:
+                label_text = lbl.get_text()
+                if label_text in leaf_colors:
+                    lbl.set_color(leaf_colors[label_text])
+
+            # Add a legend for population groups
+            if color_by and metadata:
+                from matplotlib.patches import Patch
+
+                legend_elements = [Patch(facecolor=group_to_color[g], label=g) for g in unique_groups if g != "unknown"]
+                if legend_elements:
+                    ax.legend(
+                        handles=legend_elements,
+                        title=color_by.capitalize(),
+                        bbox_to_anchor=(1.05, 1),
+                        loc="upper left",
+                    )
+
+        ax.set_title("Kinship Dendrogram", fontsize=14, pad=20)
+        ax.set_ylabel("Distance (1 - kinship)", fontsize=12)
+        ax.set_xlabel("Samples", fontsize=12)
+
+        plt.tight_layout()
+
+        output_path_str: Optional[str] = None
+        if output_file:
+            output_file = Path(output_file)
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            fig.savefig(output_file, dpi=300, bbox_inches="tight")
+            output_path_str = str(output_file)
+            logger.info(f"Saved kinship dendrogram to {output_file}")
+
+        plt.close(fig)
+        return {
+            "status": "success",
+            "output_path": output_path_str,
+            "n_samples": n_samples,
+        }
+
+    except Exception as e:
+        logger.error(f"Error creating kinship dendrogram: {e}")
+        return {"status": "failed", "output_path": None, "n_samples": 0}
+
+
+def kinship_clustermap(
+    kinship_matrix: np.ndarray | List[List[float]],
+    sample_labels: Optional[List[str]] = None,
+    output_file: Optional[str | Path] = None,
+    method: str = "ward",
+    metadata: Optional[Dict[str, Dict[str, str]]] = None,
+    annotate_populations: bool = True,
+) -> Dict[str, Any]:
+    """Create a combined heatmap with dendrograms on both axes from a kinship matrix.
+
+    Produces a clustermap-style visualization with hierarchical clustering
+    dendrograms along both axes and optional population color annotation bars.
+
+    Args:
+        kinship_matrix: Square kinship matrix (similarity values).
+        sample_labels: Optional list of sample labels.
+        output_file: Optional path to save the figure.
+        method: Linkage method for scipy clustering.
+        metadata: Dictionary of {sample_id: {population: str, ...}} for annotations.
+        annotate_populations: Whether to add population color bars when metadata
+            is available. Defaults to True.
+
+    Returns:
+        Dictionary with keys:
+            - status: "success", "failed", or "skipped"
+            - output_path: Path to saved file or None
+            - n_samples: Number of samples in the clustermap
+    """
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        import matplotlib.gridspec as gridspec
+
+        HAS_MATPLOTLIB = True
+    except ImportError:
+        HAS_MATPLOTLIB = False
+
+    try:
+        from scipy.cluster.hierarchy import dendrogram as scipy_dendrogram
+        from scipy.cluster.hierarchy import linkage
+        from scipy.spatial.distance import squareform
+
+        HAS_SCIPY = True
+    except ImportError:
+        HAS_SCIPY = False
+
+    if not HAS_MATPLOTLIB:
+        logger.warning("matplotlib not available, cannot create kinship clustermap")
+        return {"status": "skipped", "output_path": None, "n_samples": 0}
+
+    if not HAS_SCIPY:
+        logger.warning("scipy not available, cannot create kinship clustermap")
+        return {"status": "skipped", "output_path": None, "n_samples": 0}
+
+    try:
+        # Convert to numpy array if needed
+        if isinstance(kinship_matrix, list):
+            kinship_matrix = np.array(kinship_matrix, dtype=np.float64)
+        elif kinship_matrix.dtype != np.float64:
+            kinship_matrix = kinship_matrix.astype(np.float64)
+
+        n_samples = kinship_matrix.shape[0]
+
+        # Edge case: fewer than 2 samples
+        if n_samples < 2:
+            logger.warning("Need at least 2 samples for a clustermap")
+            return {"status": "failed", "output_path": None, "n_samples": n_samples}
+
+        # Generate default labels if not provided
+        if sample_labels is None or len(sample_labels) != n_samples:
+            sample_labels = [f"S{i}" for i in range(n_samples)]
+
+        # Convert kinship (similarity) to distance
+        distance_matrix = np.clip(1.0 - kinship_matrix, 0.0, None)
+        distance_matrix = (distance_matrix + distance_matrix.T) / 2.0
+        np.fill_diagonal(distance_matrix, 0.0)
+
+        # Condensed distance for scipy
+        condensed_dist = squareform(distance_matrix, checks=False)
+
+        # Perform hierarchical clustering
+        linkage_matrix = linkage(condensed_dist, method=method)
+
+        # Determine population annotations
+        has_pop_annotations = False
+        pop_groups: List[str] = []
+        unique_pops: List[str] = []
+        pop_color_map: Dict[str, Any] = {}
+        if annotate_populations and metadata:
+            for label in sample_labels:
+                sample_meta = metadata.get(label, {})
+                pop_groups.append(sample_meta.get("population", "unknown"))
+            unique_pops = sorted(set(pop_groups))
+            if len(unique_pops) > 1 or (len(unique_pops) == 1 and unique_pops[0] != "unknown"):
+                has_pop_annotations = True
+                cmap_colors = plt.cm.tab10(np.linspace(0, 1, max(len(unique_pops), 1)))
+                pop_color_map = {pop: cmap_colors[i] for i, pop in enumerate(unique_pops)}
+
+        # Build the layout using GridSpec
+        # Layout: top dendrogram, optional color bar, heatmap + left dendrogram
+        fig_size = max(10, n_samples * 0.25)
+        fig = plt.figure(figsize=(fig_size + 2, fig_size))
+
+        # Define grid ratios
+        if has_pop_annotations:
+            # Rows: top-dendrogram, color-bar, heatmap
+            # Cols: left-dendrogram, color-bar, heatmap
+            gs = gridspec.GridSpec(
+                3,
+                3,
+                width_ratios=[0.15, 0.02, 0.83],
+                height_ratios=[0.15, 0.02, 0.83],
+                wspace=0.01,
+                hspace=0.01,
+            )
+        else:
+            # Rows: top-dendrogram, heatmap
+            # Cols: left-dendrogram, heatmap
+            gs = gridspec.GridSpec(
+                2,
+                2,
+                width_ratios=[0.15, 0.85],
+                height_ratios=[0.15, 0.85],
+                wspace=0.01,
+                hspace=0.01,
+            )
+
+        # --- Top dendrogram ---
+        if has_pop_annotations:
+            ax_top_dendro = fig.add_subplot(gs[0, 2])
+        else:
+            ax_top_dendro = fig.add_subplot(gs[0, 1])
+
+        dendro_top = scipy_dendrogram(
+            linkage_matrix,
+            orientation="top",
+            no_labels=True,
+            ax=ax_top_dendro,
+        )
+        ax_top_dendro.set_xticks([])
+        ax_top_dendro.set_yticks([])
+        ax_top_dendro.spines["top"].set_visible(False)
+        ax_top_dendro.spines["right"].set_visible(False)
+        ax_top_dendro.spines["bottom"].set_visible(False)
+        ax_top_dendro.spines["left"].set_visible(False)
+
+        # Get the reordered indices from the dendrogram
+        reorder_idx = dendro_top["leaves"]
+
+        # --- Left dendrogram ---
+        if has_pop_annotations:
+            ax_left_dendro = fig.add_subplot(gs[2, 0])
+        else:
+            ax_left_dendro = fig.add_subplot(gs[1, 0])
+
+        scipy_dendrogram(
+            linkage_matrix,
+            orientation="left",
+            no_labels=True,
+            ax=ax_left_dendro,
+        )
+        ax_left_dendro.set_xticks([])
+        ax_left_dendro.set_yticks([])
+        ax_left_dendro.spines["top"].set_visible(False)
+        ax_left_dendro.spines["right"].set_visible(False)
+        ax_left_dendro.spines["bottom"].set_visible(False)
+        ax_left_dendro.spines["left"].set_visible(False)
+        ax_left_dendro.invert_yaxis()
+
+        # --- Population color bars ---
+        if has_pop_annotations:
+            # Top color bar (columns)
+            ax_col_colors = fig.add_subplot(gs[1, 2])
+            col_colors_arr = np.array([pop_color_map[pop_groups[i]] for i in reorder_idx]).reshape(1, -1, 4)
+            ax_col_colors.imshow(col_colors_arr, aspect="auto", interpolation="nearest")
+            ax_col_colors.set_xticks([])
+            ax_col_colors.set_yticks([])
+
+            # Left color bar (rows)
+            ax_row_colors = fig.add_subplot(gs[2, 1])
+            row_colors_arr = np.array([pop_color_map[pop_groups[i]] for i in reorder_idx]).reshape(-1, 1, 4)
+            ax_row_colors.imshow(row_colors_arr, aspect="auto", interpolation="nearest")
+            ax_row_colors.set_xticks([])
+            ax_row_colors.set_yticks([])
+
+        # --- Main heatmap ---
+        if has_pop_annotations:
+            ax_heatmap = fig.add_subplot(gs[2, 2])
+        else:
+            ax_heatmap = fig.add_subplot(gs[1, 1])
+
+        # Reorder kinship matrix according to dendrogram
+        reordered_matrix = kinship_matrix[np.ix_(reorder_idx, reorder_idx)]
+
+        im = ax_heatmap.imshow(reordered_matrix, cmap="viridis", aspect="equal", interpolation="nearest")
+
+        # Add sample labels if not too many
+        reordered_labels = [sample_labels[i] for i in reorder_idx]
+        if n_samples <= 50:
+            font_size = max(5, min(10, 150 // n_samples))
+            ax_heatmap.set_xticks(range(n_samples))
+            ax_heatmap.set_xticklabels(reordered_labels, rotation=90, fontsize=font_size)
+            ax_heatmap.set_yticks(range(n_samples))
+            ax_heatmap.set_yticklabels(reordered_labels, fontsize=font_size)
+        else:
+            ax_heatmap.set_xticks([])
+            ax_heatmap.set_yticks([])
+
+        # Colorbar
+        cbar = fig.colorbar(im, ax=ax_heatmap, fraction=0.046, pad=0.04)
+        cbar.set_label("Kinship coefficient", fontsize=10)
+
+        # Add population legend if applicable
+        if has_pop_annotations:
+            from matplotlib.patches import Patch
+
+            legend_elements = [Patch(facecolor=pop_color_map[p], label=p) for p in unique_pops]
+            fig.legend(
+                handles=legend_elements,
+                title="Population",
+                loc="upper right",
+                bbox_to_anchor=(0.98, 0.98),
+                fontsize=8,
+            )
+
+        fig.suptitle("Kinship Clustermap", fontsize=14, y=1.02)
+
+        output_path_str: Optional[str] = None
+        if output_file:
+            output_file = Path(output_file)
+            output_file.parent.mkdir(parents=True, exist_ok=True)
+            fig.savefig(output_file, dpi=300, bbox_inches="tight")
+            output_path_str = str(output_file)
+            logger.info(f"Saved kinship clustermap to {output_file}")
+
+        plt.close(fig)
+        return {
+            "status": "success",
+            "output_path": output_path_str,
+            "n_samples": n_samples,
+        }
+
+    except Exception as e:
+        logger.error(f"Error creating kinship clustermap: {e}")
+        return {"status": "failed", "output_path": None, "n_samples": 0}
+
+
+def pca_multi_panel(
+    pca_data: Dict[str, Any],
+    metadata: Optional[Dict[str, Dict]] = None,
+    output_file: Optional[str | Path] = None,
+    pairs: Optional[List[tuple[int, int]]] = None,
+    color_by: str = "population",
+    title: str = "PCA Multi-Panel",
+) -> Dict[str, Any]:
+    """Create a grid of PCA scatter plots for different PC pairs.
+
+    Generates a multi-panel figure with one scatter plot per PC pair.  When
+    ``metadata`` is provided each sample is coloured by the ``color_by`` field.
+
+    Args:
+        pca_data: Dictionary with keys:
+            - ``"pcs"``: list of lists (samples x components) or 2-D ndarray.
+            - ``"explained_variance_ratio"``: list of floats (one per component).
+            - ``"sample_ids"`` (optional): list of str identifying samples.
+        metadata: Optional mapping from sample id to a dict of annotations.
+            The ``color_by`` key inside each annotation dict determines colour.
+        output_file: Optional file path for saving the figure.
+        pairs: List of (pc_i, pc_j) tuples to plot.  Defaults to
+            ``[(0, 1), (0, 2), (1, 2)]``, pruned to available components.
+        color_by: Metadata field name used for colouring points.
+        title: Super-title for the figure.
+
+    Returns:
+        Dictionary with ``"status"``, ``"output_path"``, ``"n_samples"``, and
+        ``"n_panels"`` keys.
+    """
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except ImportError:
+        logger.warning("matplotlib not available for PCA multi-panel plot")
+        return {"status": "skipped", "output_path": None, "n_samples": 0, "n_panels": 0}
+
+    try:
+        pcs = np.asarray(pca_data.get("pcs", []), dtype=np.float64)
+        explained = pca_data.get("explained_variance_ratio", [])
+        sample_ids = pca_data.get("sample_ids", [])
+
+        if pcs.ndim != 2 or pcs.shape[0] == 0:
+            logger.error("pca_data['pcs'] must be a non-empty 2D structure")
+            return {"status": "failed", "output_path": None, "n_samples": 0, "n_panels": 0}
+
+        n_samples, n_pcs = pcs.shape
+
+        # Build default pairs and prune to available components
+        if pairs is None:
+            pairs = [(0, 1), (0, 2), (1, 2)]
+        valid_pairs = [(a, b) for a, b in pairs if a < n_pcs and b < n_pcs]
+        if not valid_pairs:
+            logger.error("No valid PC pairs for the number of available components")
+            return {"status": "failed", "output_path": None, "n_samples": n_samples, "n_panels": 0}
+
+        n_panels = len(valid_pairs)
+        n_cols = min(n_panels, 3)
+        n_rows = (n_panels + n_cols - 1) // n_cols
+
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 5 * n_rows), squeeze=False)
+
+        # Resolve per-sample colour labels from metadata
+        color_labels: Optional[List[str]] = None
+        if metadata is not None and sample_ids:
+            color_labels = []
+            for sid in sample_ids:
+                entry = metadata.get(sid, {})
+                color_labels.append(str(entry.get(color_by, "unknown")))
+
+        unique_labels: Optional[List[str]] = None
+        label_to_color: Optional[Dict[str, Any]] = None
+        if color_labels is not None:
+            unique_labels = sorted(set(color_labels))
+            cmap = plt.cm.tab10(np.linspace(0, 1, max(len(unique_labels), 1)))
+            label_to_color = {lab: cmap[i] for i, lab in enumerate(unique_labels)}
+
+        for idx, (pc_a, pc_b) in enumerate(valid_pairs):
+            row, col = divmod(idx, n_cols)
+            ax = axes[row][col]
+
+            if color_labels is not None and label_to_color is not None and unique_labels is not None:
+                for lab in unique_labels:
+                    mask = np.array([cl == lab for cl in color_labels])
+                    ax.scatter(pcs[mask, pc_a], pcs[mask, pc_b], label=lab, alpha=0.7, s=40)
+            else:
+                ax.scatter(pcs[:, pc_a], pcs[:, pc_b], alpha=0.7, s=40, c="steelblue")
+
+            xlabel = f"PC{pc_a + 1}"
+            ylabel = f"PC{pc_b + 1}"
+            if pc_a < len(explained):
+                xlabel += f" ({explained[pc_a] * 100:.1f}%)"
+            if pc_b < len(explained):
+                ylabel += f" ({explained[pc_b] * 100:.1f}%)"
+            ax.set_xlabel(xlabel, fontsize=10)
+            ax.set_ylabel(ylabel, fontsize=10)
+            ax.grid(True, alpha=0.3)
+
+        # Hide unused axes
+        for idx in range(n_panels, n_rows * n_cols):
+            row, col = divmod(idx, n_cols)
+            axes[row][col].set_visible(False)
+
+        # Shared legend from the first axes
+        if unique_labels is not None and len(unique_labels) > 0:
+            handles, labels = axes[0][0].get_legend_handles_labels()
+            if handles:
+                fig.legend(handles, labels, loc="upper right", title=color_by, fontsize=9)
+
+        fig.suptitle(title, fontsize=14, y=1.02)
+        fig.tight_layout()
+
+        output_path_str: Optional[str] = None
+        if output_file:
+            out = Path(output_file)
+            out.parent.mkdir(parents=True, exist_ok=True)
+            fig.savefig(out, dpi=300, bbox_inches="tight")
+            output_path_str = str(out)
+            logger.info(f"Saved PCA multi-panel plot to {out}")
+
+        plt.close(fig)
+        return {
+            "status": "success",
+            "output_path": output_path_str,
+            "n_samples": n_samples,
+            "n_panels": n_panels,
+        }
+
+    except Exception as e:
+        logger.error(f"Error creating PCA multi-panel plot: {e}")
+        return {"status": "failed", "output_path": None, "n_samples": 0, "n_panels": 0}
+
+
+def pca_3d(
+    pca_data: Dict[str, Any],
+    metadata: Optional[Dict[str, Dict]] = None,
+    output_file: Optional[str | Path] = None,
+    components: tuple[int, int, int] = (0, 1, 2),
+    color_by: str = "population",
+    title: str = "3D PCA",
+) -> Dict[str, Any]:
+    """Create a static 3D PCA scatter plot.
+
+    Uses matplotlib's ``Axes3D`` projection to render three principal components
+    in a single 3-D scatter.  Points are coloured by the ``color_by`` metadata
+    field when ``metadata`` is supplied.
+
+    Args:
+        pca_data: Dictionary with keys:
+            - ``"pcs"``: list of lists (samples x components) or 2-D ndarray.
+            - ``"explained_variance_ratio"``: list of floats (one per component).
+            - ``"sample_ids"`` (optional): list of str identifying samples.
+        metadata: Optional mapping from sample id to a dict of annotations.
+        output_file: Optional file path for saving the figure.
+        components: Tuple of three 0-based PC indices to plot.
+        color_by: Metadata field name used for colouring points.
+        title: Title for the figure.
+
+    Returns:
+        Dictionary with ``"status"``, ``"output_path"``, ``"n_samples"``, and
+        ``"n_components"`` keys.
+    """
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+        from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
+    except ImportError:
+        logger.warning("matplotlib/mpl_toolkits not available for 3D PCA plot")
+        return {"status": "skipped", "output_path": None, "n_samples": 0, "n_components": 0}
+
+    try:
+        pcs = np.asarray(pca_data.get("pcs", []), dtype=np.float64)
+        explained = pca_data.get("explained_variance_ratio", [])
+        sample_ids = pca_data.get("sample_ids", [])
+
+        if pcs.ndim != 2 or pcs.shape[0] == 0:
+            logger.error("pca_data['pcs'] must be a non-empty 2D structure")
+            return {"status": "failed", "output_path": None, "n_samples": 0, "n_components": 0}
+
+        n_samples, n_pcs = pcs.shape
+
+        # Validate that all requested components exist
+        max_comp = max(components)
+        if max_comp >= n_pcs:
+            # Graceful degradation: fall back to available components
+            available = tuple(c for c in components if c < n_pcs)
+            if len(available) < 3:
+                logger.warning(f"Only {n_pcs} PCs available, need 3 for 3D plot. " f"Returning status 'failed'.")
+                return {
+                    "status": "failed",
+                    "output_path": None,
+                    "n_samples": n_samples,
+                    "n_components": n_pcs,
+                    "error": f"Need at least 3 PCs but only {n_pcs} available",
+                }
+            components = (available[0], available[1], available[2])
+
+        pc_a, pc_b, pc_c = components
+
+        fig = plt.figure(figsize=(10, 8))
+        ax = fig.add_subplot(111, projection="3d")
+
+        # Resolve per-sample colour labels from metadata
+        color_labels: Optional[List[str]] = None
+        if metadata is not None and sample_ids:
+            color_labels = [str(metadata.get(sid, {}).get(color_by, "unknown")) for sid in sample_ids]
+
+        if color_labels is not None:
+            unique_labels = sorted(set(color_labels))
+            cmap = plt.cm.tab10(np.linspace(0, 1, max(len(unique_labels), 1)))
+            label_to_color = {lab: cmap[i] for i, lab in enumerate(unique_labels)}
+            for lab in unique_labels:
+                mask = np.array([cl == lab for cl in color_labels])
+                ax.scatter(
+                    pcs[mask, pc_a],
+                    pcs[mask, pc_b],
+                    pcs[mask, pc_c],
+                    label=lab,
+                    alpha=0.7,
+                    s=40,
+                    c=[label_to_color[lab]],
+                )
+            ax.legend(title=color_by, fontsize=9)
+        else:
+            ax.scatter(pcs[:, pc_a], pcs[:, pc_b], pcs[:, pc_c], alpha=0.7, s=40, c="steelblue")
+
+        # Axis labels with explained variance
+        def _label(idx: int) -> str:
+            base = f"PC{idx + 1}"
+            if idx < len(explained):
+                base += f" ({explained[idx] * 100:.1f}%)"
+            return base
+
+        ax.set_xlabel(_label(pc_a), fontsize=10)
+        ax.set_ylabel(_label(pc_b), fontsize=10)
+        ax.set_zlabel(_label(pc_c), fontsize=10)
+        ax.set_title(title, fontsize=14, pad=20)
+
+        output_path_str: Optional[str] = None
+        if output_file:
+            out = Path(output_file)
+            out.parent.mkdir(parents=True, exist_ok=True)
+            fig.savefig(out, dpi=300, bbox_inches="tight")
+            output_path_str = str(out)
+            logger.info(f"Saved 3D PCA plot to {out}")
+
+        plt.close(fig)
+        return {
+            "status": "success",
+            "output_path": output_path_str,
+            "n_samples": n_samples,
+            "n_components": n_pcs,
+        }
+
+    except Exception as e:
+        logger.error(f"Error creating 3D PCA plot: {e}")
+        return {"status": "failed", "output_path": None, "n_samples": 0, "n_components": 0}

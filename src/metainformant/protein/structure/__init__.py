@@ -1,11 +1,15 @@
-from .alphafold import *
-from .pdb import *
-from .general import *
-from .analysis import *
-from .contacts import *
-from .io import *
-from .secondary import *
+"""Protein structure analysis subpackage."""
+
+from __future__ import annotations
+
+from . import alphafold, analysis, contacts, general, io, pdb, secondary
 
 __all__ = [
-    # Exported names from submodules (wildcard imports bring them in)
+    "alphafold",
+    "analysis",
+    "contacts",
+    "general",
+    "io",
+    "pdb",
+    "secondary",
 ]

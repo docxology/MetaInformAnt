@@ -100,32 +100,45 @@ def calculate_single_diversity(abundances: List[float], method: str) -> float:
         raise ValueError(f"Unknown diversity method: {method}")
 
 
-def species_richness(community_data: List[List[float]] | Dict[str, List[float]]) -> List[int] | Dict[str, int]:
-    """Calculate species richness for communities.
+def species_richness(
+    community_data: List[float] | List[List[float]] | Dict[str, List[float]],
+) -> int | List[int] | Dict[str, int]:
+    """Calculate species richness for one or more communities.
 
     Species richness is the number of different species present.
 
     Args:
-        community_data: Species abundance data
+        community_data: Species abundance data. Can be:
+            - Simple list of floats: returns int count
+            - List of lists: returns list of int counts
+            - Dict of lists: returns dict of int counts
 
     Returns:
-        Species richness for each community
+        Species richness count(s)
     """
-    validation.validate_not_empty(community_data, "community_data")
+    if not community_data:
+        return 0
 
+    # Simple list case (flat list of numbers, not nested)
+    if isinstance(community_data, list) and (
+        not community_data or not isinstance(community_data[0], list)
+    ):
+        return species_richness_simple(community_data)
+
+    # Dict case
     if isinstance(community_data, dict):
         results = {}
         for community_name, abundances in community_data.items():
-            # Count species with abundance > 0
             richness = sum(1 for abundance in abundances if abundance > 0)
             results[community_name] = richness
         return results
-    else:
-        results = []
-        for abundances in community_data:
-            richness = sum(1 for abundance in abundances if abundance > 0)
-            results.append(richness)
-        return results
+
+    # Nested list case
+    results = []
+    for abundances in community_data:
+        richness = sum(1 for abundance in abundances if abundance > 0)
+        results.append(richness)
+    return results
 
 
 def calculate_evenness(abundances: List[float], method: str = "pielou") -> float:
@@ -366,17 +379,27 @@ def species_area_relationship(species_counts: List[int], area_sizes: List[float]
 
     # Linear regression: log(S) = log(c) + z * log(A)
     try:
-        slope, intercept, r_value, p_value, std_err = statistics.linear_regression(log_areas, log_species)
+        result = statistics.linear_regression(log_areas, log_species)
+        slope = result.slope
+        intercept = result.intercept
 
         # Convert back to power law parameters: S = c * A^z
         c = math.exp(intercept)
         z = slope
 
+        # Calculate R-squared manually
+        mean_y = statistics.mean(log_species)
+        ss_tot = sum((y - mean_y) ** 2 for y in log_species)
+        ss_res = sum(
+            (y - (slope * x + intercept)) ** 2
+            for x, y in zip(log_areas, log_species)
+        )
+        r_squared = 1.0 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
+
         return {
             "c": c,
             "z": z,
-            "r_squared": r_value**2,
-            "p_value": p_value,
+            "r_squared": r_squared,
             "intercept": intercept,
             "slope": slope,
             "model": "power_law",
@@ -682,24 +705,6 @@ def species_richness_simple(abundances: List[float]) -> int:
     return sum(1 for a in abundances if a > 0)
 
 
-# Alias for simpler interface
-def species_richness(abundances: List[float] | List[List[float]] | Dict[str, List[float]]) -> int | List[int] | Dict[str, int]:
-    """Calculate species richness.
-
-    Supports both simple list input (returns int) and complex inputs (original behavior).
-
-    Args:
-        abundances: List of species abundances (simple) or complex data structure
-
-    Returns:
-        Species richness count(s)
-    """
-    # Simple list case - return integer count
-    if isinstance(abundances, list) and (not abundances or not isinstance(abundances[0], list)):
-        return species_richness_simple(abundances)
-    # Complex case - delegate to original function
-    from metainformant.ecology.analysis.community import species_richness as _original_species_richness
-    return _original_species_richness(abundances)
 
 
 def pielou_evenness(abundances: List[float]) -> float:

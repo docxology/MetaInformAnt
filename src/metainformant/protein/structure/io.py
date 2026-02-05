@@ -413,6 +413,23 @@ def validate_pdb_file(file_path: str | Path) -> Tuple[bool, List[str]]:
         return False, issues
 
 
+def read_pdb_ca_coordinates(file_path: str | Path) -> List[Tuple[float, float, float]]:
+    """Read CA (alpha carbon) coordinates from a PDB file.
+
+    Args:
+        file_path: Path to PDB file
+
+    Returns:
+        List of (x, y, z) tuples for each CA atom
+    """
+    pdb_data = parse_pdb_file(file_path)
+    ca_coords = []
+    for atom in pdb_data["atoms"]:
+        if atom["name"] == "CA":
+            ca_coords.append((atom["x"], atom["y"], atom["z"]))
+    return ca_coords
+
+
 def get_pdb_statistics(file_path: str | Path) -> Dict[str, Any]:
     """Get statistics about a PDB file.
 

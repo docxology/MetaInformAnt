@@ -47,10 +47,16 @@ bash scripts/package/uv_quality.sh typecheck # mypy
 ### CLI
 
 ```bash
-uv run metainformant --help                  # Show all commands
-uv run metainformant dna align --input data/sequences.fasta --output output/dna/
-uv run metainformant rna run-config --config config/amalgkit/species.yaml
-uv run metainformant gwas run --config config/gwas/gwas_template.yaml
+uv run metainformant --help                  # Show help
+uv run metainformant --version               # Show version
+uv run metainformant --modules               # List available modules
+```
+
+**Note:** Module functionality is accessed via Python imports, not CLI subcommands:
+```python
+from metainformant.dna import sequences
+from metainformant.rna.workflow import orchestrator
+from metainformant.gwas.analysis import association
 ```
 
 ## Architecture
@@ -68,7 +74,7 @@ src/metainformant/
 ├── networks/       # Biological networks, community detection
 ├── multiomics/     # Multi-omic integration
 ├── singlecell/     # scRNA-seq analysis
-├── visualization/  # 57+ plot types
+├── visualization/  # 80+ plot types
 ├── quality/        # QC metrics
 ├── ml/             # Machine learning pipelines
 ├── math/           # Population genetics theory, coalescent
@@ -77,7 +83,13 @@ src/metainformant/
 ├── phenotype/      # Trait analysis
 ├── ecology/        # Community diversity
 ├── simulation/     # Synthetic data generation
-└── life_events/    # Event sequence analysis
+├── life_events/    # Event sequence analysis
+├── menu/           # Interactive menu and discovery system
+├── metagenomics/   # Microbiome: amplicon, shotgun, functional annotation
+├── structural_variants/  # CNV/SV detection, annotation, visualization
+├── longread/       # PacBio/Nanopore: FAST5/POD5, modified bases, assembly
+├── spatial/        # Spatial transcriptomics: Visium, MERFISH, Xenium
+└── pharmacogenomics/    # Clinical variants: CPIC, PharmGKB, ACMG
 ```
 
 ### Data Flow
@@ -92,7 +104,7 @@ data/ (inputs) → Module Processing → output/ (results)
 
 ```python
 from metainformant.core import io, paths, config
-from metainformant.core.logging import get_logger
+from metainformant.core.utils.logging import get_logger
 
 # File I/O (auto-creates dirs, gzip-aware)
 data = io.load_json("config/example.yaml")
@@ -115,6 +127,8 @@ logger = get_logger(__name__)
 
 - Core: `CORE_`, DNA: `DNA_`, RNA: `AK_`, GWAS: `GWAS_`
 - Protein: `PROT_`, Epigenome: `EPI_`, Ontology: `ONT_`
+- Metagenomics: `META_`, Structural Variants: `SV_`, Long Read: `LR_`
+- Spatial: `SPATIAL_`, Pharmacogenomics: `PHARMA_`
 - Others: `{MODULE}_` pattern (e.g., `NET_`, `ML_`, `VIZ_`)
 
 ## Testing Requirements

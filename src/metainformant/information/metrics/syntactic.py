@@ -479,9 +479,9 @@ def tsallis_entropy(probs: Sequence[float], q: float = 2.0, base: float = 2.0) -
         # Hartley entropy
         return math.log(len(probs_array), base)
     else:
-        # Tsallis entropy: (1/(q-1)) * (sum(p^q) - 1)
+        # Tsallis entropy: S_q = (1 - sum(p^q)) / (q - 1)
         sum_p_q = np.sum(probs_array**q)
-        return (1.0 / (q - 1.0)) * (sum_p_q - 1.0)
+        return (1.0 - sum_p_q) / (q - 1.0)
 
 
 def normalized_mutual_information(
@@ -519,9 +519,8 @@ def normalized_mutual_information(
         # NMI = 2 * I(X;Y) / (H(X) + H(Y))
         denominator = h_x + h_y
     elif method == "geometric":
-        # NMI = 2 * I(X;Y) / (H(X) + H(Y)) * 2 / (H(X) + H(Y)) wait, that's wrong
-        # Actually geometric mean normalization
-        denominator = math.sqrt(h_x * h_y) * 2
+        # NMI = I(X;Y) / sqrt(H(X) * H(Y))
+        denominator = math.sqrt(h_x * h_y)
     elif method == "max":
         # NMI = I(X;Y) / max(H(X), H(Y))
         denominator = max(h_x, h_y)
@@ -534,7 +533,12 @@ def normalized_mutual_information(
     if denominator == 0:
         return 0.0
 
-    return 2.0 * mi / denominator if method in ["arithmetic", "geometric"] else mi / denominator
+    if method == "arithmetic":
+        return 2.0 * mi / denominator
+    elif method == "geometric":
+        return mi / denominator
+    else:
+        return mi / denominator
 
 
 def information_coefficient(x: Sequence[Any], y: Sequence[Any], base: float = 2.0) -> float:

@@ -318,9 +318,7 @@ def fu_and_li_f_star_from_sequences(seqs: Sequence[str]) -> float:
     return f_star
 
 
-def fay_wu_h_from_sequences(
-    seqs: Sequence[str], outgroup: str | None = None
-) -> float:
+def fay_wu_h_from_sequences(seqs: Sequence[str], outgroup: str | None = None) -> float:
     """Calculate Fay and Wu's H statistic from sequences.
 
     H = π - θ_H, where θ_H weights each SNP by the square of its derived
@@ -368,6 +366,7 @@ def fay_wu_h_from_sequences(
 
         # Count allele frequencies
         from collections import Counter
+
         allele_counts = Counter(nucs)
 
         if len(allele_counts) < 2:
@@ -461,11 +460,11 @@ def hardy_weinberg_allele_freqs(p: float, q: float) -> Tuple[float, float, float
     if not (0 <= p <= 1) or not (0 <= q <= 1) or abs(p + q - 1) > 1e-6:
         raise ValueError("Allele frequencies must sum to 1")
 
-    aa_freq = p * p
-    aa_freq = q * q
-    het_freq = 2 * p * q
+    homo_dom = p * p  # AA frequency
+    het_freq = 2 * p * q  # Aa frequency
+    homo_rec = q * q  # aa frequency
 
-    return (aa_freq, het_freq, aa_freq)
+    return (homo_dom, het_freq, homo_rec)
 
 
 def linkage_disequilibrium(seqs: Sequence[str], pos1: int, pos2: int) -> float:

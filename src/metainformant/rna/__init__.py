@@ -9,9 +9,10 @@ from __future__ import annotations
 
 # Import subpackages
 from . import core  # Base configs and utils
-from . import analysis  # Analysis modules
+from . import analysis  # Analysis modules (expression, QC, validation)
 from . import amalgkit  # Amalgkit integration
 from . import engine  # Orchestration engine (depends on others)
+from . import retrieval  # Data retrieval (ENA downloader)
 from . import steps  # Step runners shim
 
 # Import modules from subpackages for backward compatibility
@@ -34,6 +35,7 @@ from .amalgkit import (
     amalgkit as amalgkit_module,
     genome_prep,
     metadata_filter,
+    tissue_normalizer,
 )
 from .analysis import (
     protein_integration,
@@ -45,6 +47,25 @@ from .core.configs import RNAPipelineConfig, AmalgkitRunLayout
 from .engine.progress_tracker import ProgressTracker
 from .engine.pipeline import summarize_curate_tables
 from .engine.workflow import AmalgkitWorkflowConfig
+
+# Conditional imports for new analysis modules
+try:
+    from .analysis.expression import (
+        normalize_counts,
+        differential_expression,
+        pca_analysis,
+        filter_low_expression,
+    )
+except ImportError:
+    pass
+
+try:
+    from .analysis.qc import (
+        compute_sample_metrics,
+        generate_qc_report,
+    )
+except ImportError:
+    pass
 
 # Type checking imports
 from typing import TYPE_CHECKING
@@ -58,6 +79,7 @@ __all__ = [
     "analysis",
     "core",
     "engine",
+    "retrieval",
     # Core workflow management
     "workflow",
     "orchestration",
@@ -66,6 +88,7 @@ __all__ = [
     "progress_tracker",
     # Amalgkit integration
     "amalgkit_module",
+    "tissue_normalizer",
     # Configuration and setup
     "configs",
     # Environment and discovery
@@ -86,4 +109,12 @@ __all__ = [
     "summarize_curate_tables",
     "AmalgkitWorkflowConfig",
     "steps",
+    # Expression analysis
+    "normalize_counts",
+    "differential_expression",
+    "pca_analysis",
+    "filter_low_expression",
+    # QC
+    "compute_sample_metrics",
+    "generate_qc_report",
 ]

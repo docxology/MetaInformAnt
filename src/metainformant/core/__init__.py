@@ -11,14 +11,18 @@ from __future__ import annotations
 # 1. Utils (Foundation)
 from . import utils
 from .utils import (
+    Timer,
     config,
     errors,
     hash,
     logging,
     optional_deps,
     progress,
+    rate_limiter,
     symbols,
     text,
+    timed,
+    timeout_after,
 )
 
 # 2. Data (Structures)
@@ -37,15 +41,26 @@ from .data import (
 # Depends on Utils for logging/config
 from . import io
 from .io import (
+    atomic_replace,
+    atomic_write,
     cache,
+    compute_checksums_batch,
+    compute_md5,
+    compute_sha256,
     disk,
     download,
-    io as io_module,
-    paths,
-    load_json,
-    dump_json,
-    load_yaml,
     download_file,
+    dump_json,
+    io as io_module,
+    load_json,
+    load_yaml,
+    paths,
+    safe_write_bytes,
+    safe_write_text,
+    temp_directory,
+    verify_checksum,
+    verify_checksum_file,
+    write_checksum_file,
 )
 
 # 4. Execution (Workflow)
@@ -90,12 +105,6 @@ from .execution.workflow import (
     run_config_based_workflow,
     validate_config_file,
 )
-
-# Type system
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 __all__ = [
     # Subpackages
@@ -153,4 +162,22 @@ __all__ = [
     # Optional modules
     "db",
     "disk",
+    # Timing & Performance
+    "Timer",
+    "rate_limiter",
+    "timed",
+    "timeout_after",
+    # Atomic IO
+    "atomic_replace",
+    "atomic_write",
+    "safe_write_bytes",
+    "safe_write_text",
+    "temp_directory",
+    # Checksums
+    "compute_checksums_batch",
+    "compute_md5",
+    "compute_sha256",
+    "verify_checksum",
+    "verify_checksum_file",
+    "write_checksum_file",
 ]

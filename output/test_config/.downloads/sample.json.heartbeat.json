@@ -3,10 +3,10 @@
   "destination": "output/test_config/sample.json",
   "errors": [],
   "eta_seconds": 0.0,
-  "last_update": "2026-02-03T16:42:58Z",
+  "last_update": "2026-02-05T05:01:28Z",
   "progress_percent": 100.0,
-  "speed_mbps": 0.0010010331175123043,
-  "started_at": "2026-02-03T16:42:56Z",
+  "speed_mbps": 0.000365896329799676,
+  "started_at": "2026-02-05T05:01:27Z",
   "status": "completed",
   "total_bytes": 429,
   "url": "https://httpbin.org/json"

@@ -19,6 +19,7 @@ from .analysis import (
     association,
     calling,
     correction,
+    heritability,
     ld_pruning,
     mixed_model,
     quality,
@@ -29,6 +30,7 @@ from .data import (
     config,
     download,
     genome,
+    metadata,
     sra_download,
 )
 from .workflow import workflow as workflow_module
@@ -38,8 +40,14 @@ from .workflow import workflow as workflow_module
 from .visualization import general as visualization_module
 from .visualization import (
     visualization_comparison,
+    visualization_composite,
     visualization_effects,
+    visualization_finemapping,
     visualization_genome,
+    visualization_geography,
+    visualization_interactive,
+    visualization_ld,
+    visualization_phenotype,
     visualization_population,
     visualization_regional,
     visualization_statistical,
@@ -57,15 +65,22 @@ from .analysis.mixed_model import association_test_mixed, run_mixed_model_gwas
 from .analysis.quality import apply_qc_filters, parse_vcf_full, extract_variant_regions
 from .analysis.structure import compute_kinship_matrix, compute_pca, estimate_population_structure
 from .analysis.summary_stats import write_summary_statistics, write_significant_hits, create_results_summary
+from .analysis.heritability import estimate_heritability, partition_heritability_by_chromosome, heritability_bar_chart
 
 from .data.config import load_gwas_config
+from .data.metadata import load_sample_metadata, validate_metadata, get_population_labels, get_geographic_coordinates
 from .data.download import download_reference_genome, download_variant_data
 from .data.genome import normalize_chromosome_name, AMEL_HAV3_CHROMOSOMES, AMEL_HAV3_CHROM_SIZES
 
 # Visualization aliases
 from .visualization.general import qq_plot, manhattan_plot, kinship_heatmap
 from .visualization.visualization_variants import variant_density_plot
-from .visualization.visualization_population import pca_scree_plot, admixture_plot
+from .visualization.visualization_population import (
+    pca_scree_plot,
+    admixture_plot,
+    kinship_dendrogram,
+    kinship_clustermap,
+)
 from .visualization.visualization_comparison import multi_trait_manhattan
 from .visualization.visualization_effects import functional_enrichment_plot
 from .visualization.visualization_statistical import power_plot
@@ -76,6 +91,19 @@ from .visualization.visualization_regional import (
     regional_ld_plot,
 )
 from .visualization.visualization_genome import genome_wide_ld_heatmap
+from .visualization.visualization_ld import compute_ld_decay, ld_decay_plot, ld_heatmap_region
+from .visualization.visualization_phenotype import (
+    phenotype_distribution,
+    phenotype_correlation_matrix,
+    genotype_phenotype_boxplot,
+    phenotype_pca_correlation,
+)
+from .visualization.visualization_composite import gwas_summary_panel, population_structure_panel
+from .visualization.visualization_geography import sample_map, allele_frequency_map, population_count_map
+from .visualization.visualization_finemapping import credible_set_plot, compute_credible_set, pip_vs_ld_plot
+from .visualization.visualization_interactive import interactive_manhattan, interactive_pca, interactive_volcano
+from .visualization.visualization_population import pca_multi_panel, pca_3d
+from .visualization.config import PlotStyle, THEMES, get_style, apply_style
 
 from .workflow.workflow import GWASWorkflowConfig, execute_gwas_workflow, run_gwas
 
@@ -150,6 +178,57 @@ __all__ = [
     "regional_ld_plot",
     "genome_wide_ld_heatmap",
     "admixture_plot",
+    "kinship_dendrogram",
+    "kinship_clustermap",
+    "pca_multi_panel",
+    "pca_3d",
+    # New visualization modules
+    "visualization_composite",
+    "visualization_finemapping",
+    "visualization_geography",
+    "visualization_interactive",
+    "visualization_ld",
+    "visualization_phenotype",
+    # LD decay
+    "compute_ld_decay",
+    "ld_decay_plot",
+    "ld_heatmap_region",
+    # Phenotype plots
+    "phenotype_distribution",
+    "phenotype_correlation_matrix",
+    "genotype_phenotype_boxplot",
+    "phenotype_pca_correlation",
+    # Composite figures
+    "gwas_summary_panel",
+    "population_structure_panel",
+    # Geography
+    "sample_map",
+    "allele_frequency_map",
+    "population_count_map",
+    # Fine-mapping
+    "credible_set_plot",
+    "compute_credible_set",
+    "pip_vs_ld_plot",
+    # Interactive
+    "interactive_manhattan",
+    "interactive_pca",
+    "interactive_volcano",
+    # Viz config
+    "PlotStyle",
+    "THEMES",
+    "get_style",
+    "apply_style",
+    # Heritability
+    "heritability",
+    "estimate_heritability",
+    "partition_heritability_by_chromosome",
+    "heritability_bar_chart",
+    # Metadata
+    "metadata",
+    "load_sample_metadata",
+    "validate_metadata",
+    "get_population_labels",
+    "get_geographic_coordinates",
     # Workflow
     "execute_gwas_workflow",
     "run_gwas",

@@ -2,7 +2,7 @@
 
 This module provides comprehensive tools for protein analysis, including
 sequence processing, structure prediction, functional annotation,
-protein-protein interactions, and proteome analysis.
+protein-protein interactions, proteome analysis, and orchestrated workflows.
 """
 
 from __future__ import annotations
@@ -20,43 +20,50 @@ from .sequence import (
     sequences,
 )
 from .structure import (
-    alphafold,
-    contacts,
-    pdb,
-    secondary,
     analysis as structure_analysis,
     io as structure_io,
     general as structure_general,
 )
-from .database import (
-    interpro,
-    uniprot,
-)
-
-# Visualization
-from .visualization import general as visualization_general
 
 # Optional imports with graceful fallbacks
 try:
     from .structure import alphafold
 except ImportError:
-    alphafold = None
+    alphafold = None  # type: ignore[assignment]
+
+try:
+    from .structure import contacts
+except ImportError:
+    contacts = None  # type: ignore[assignment]
+
+try:
+    from .structure import secondary
+except ImportError:
+    secondary = None  # type: ignore[assignment]
+
+try:
+    from .structure import pdb
+except ImportError:
+    pdb = None  # type: ignore[assignment]
 
 try:
     from .database import interpro
 except ImportError:
-    interpro = None
+    interpro = None  # type: ignore[assignment]
 
 try:
     from .database import uniprot
 except ImportError:
-    uniprot = None
+    uniprot = None  # type: ignore[assignment]
 
-# Type checking imports
-from typing import TYPE_CHECKING
+# Visualization
+from .visualization import general as visualization_general
 
-if TYPE_CHECKING:
-    pass
+# Orchestration
+try:
+    from . import orchestration
+except ImportError:
+    orchestration = None  # type: ignore[assignment]
 
 __all__ = [
     # Subpackages
@@ -82,4 +89,6 @@ __all__ = [
     "proteomes",
     # Visualization
     "visualization_general",
+    # Orchestration
+    "orchestration",
 ]

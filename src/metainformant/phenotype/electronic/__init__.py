@@ -1,10 +1,9 @@
+"""Electronic phenotype analysis module.
+
+Provides tools for analyzing data from electronic sensors,
+including RFID tags, video tracking, and GPS systems.
 """
-Electronic phenotype analysis module.
 
-This module provides tools for analyzing data from electronic sensors,
-including RFID tags and tracking systems.
-"""
+from .tracking import TrackingPoint, Trajectory, detect_interactions
 
-from .tracking import TrackingPoint, Trajectory
-
-__all__ = ["TrackingPoint", "Trajectory"]
+__all__ = ["TrackingPoint", "Trajectory", "detect_interactions"]

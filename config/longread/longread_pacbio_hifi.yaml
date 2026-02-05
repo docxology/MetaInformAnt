@@ -1,0 +1,70 @@
+# METAINFORMANT Long-Read Config: PacBio HiFi (CCS)
+# Optimized for PacBio HiFi / Circular Consensus Sequencing
+#
+# HiFi characteristics:
+# - Very high accuracy (>Q20, typically Q30+)
+# - Read lengths 10-25 kb (shorter than ONT ultra-long)
+# - CCS reads from Sequel II / Revio systems
+# - 5mC detection via kinetics (IpdRatio)
+
+work_dir: output/longread/pacbio_hifi/work
+log_dir: output/longread/pacbio_hifi/logs
+output_dir: output/longread/pacbio_hifi/results
+threads: 8
+
+input:
+  format: bam     # PacBio outputs unaligned BAM with kinetics
+  paths: []
+  platform: pacbio
+  chemistry: revio
+
+qc:
+  min_length: 5000      # HiFi reads are typically >10kb
+  max_length: null
+  min_quality: 20.0     # HiFi is high accuracy — strict threshold
+  trim_adapters: true
+  split_chimeras: false  # Rare in HiFi
+  save_filtered: true
+
+assembly:
+  enabled: true
+  minimizer_k: 19       # Larger k-mer for high accuracy
+  minimizer_w: 10
+  min_overlap: 5000     # HiFi accuracy allows longer overlap requirement
+  max_overhang: 200
+  polish_iterations: 0   # HiFi accuracy often doesn't need polishing
+
+methylation:
+  enabled: true
+  modifications:
+    - 5mC               # PacBio kinetics-based 5mC
+  min_coverage: 10      # Higher coverage for kinetics-based calling
+  min_probability: 0.6
+  cpg_only: true
+
+sv_calling:
+  enabled: true
+  sv_types: [DEL, INS, INV, DUP, BND]
+  min_size: 50
+  min_support: 5        # HiFi — higher confidence threshold
+  phase_variants: true
+
+phasing:
+  enabled: true
+  min_variant_quality: 30   # HiFi accuracy allows strict threshold
+  max_gap: 500000
+
+visualization:
+  enabled: true
+  format: png
+  dpi: 150
+  plots:
+    - read_length_histogram
+    - quality_vs_length
+    - methylation_track
+    - phasing_blocks
+
+reporting:
+  qc_report: true
+  assembly_report: true
+  format: json

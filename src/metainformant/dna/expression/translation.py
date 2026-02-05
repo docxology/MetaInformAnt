@@ -5,6 +5,7 @@ This module provides functions for translating RNA/DNA sequences to amino acid s
 
 from __future__ import annotations
 
+import re
 from typing import Dict, List, Tuple
 
 from metainformant.core import logging
@@ -339,16 +340,61 @@ def get_genetic_code(code_id: int = 1) -> Dict[str, str]:
     """Get genetic code dictionary for specified code table.
 
     Args:
-        code_id: Genetic code table ID (1 = standard)
+        code_id: Genetic code table ID
+            1 = Standard
+            2 = Vertebrate Mitochondrial
+            3 = Yeast Mitochondrial
+            5 = Invertebrate Mitochondrial
+            11 = Bacterial/Archaeal/Plant Plastid
 
     Returns:
-        Dictionary mapping codons to amino acids
+        Dictionary mapping RNA codons to amino acids
+
+    Example:
+        >>> code = get_genetic_code(1)
+        >>> code["AUG"]
+        'M'
     """
     if code_id == 1:
         return GENETIC_CODE.copy()
-    else:
-        logger.warning(f"Genetic code {code_id} not implemented, using standard code")
+
+    # Vertebrate Mitochondrial Code
+    if code_id == 2:
+        code = GENETIC_CODE.copy()
+        code["AGA"] = "*"  # Arg -> Stop
+        code["AGG"] = "*"  # Arg -> Stop
+        code["AUA"] = "M"  # Ile -> Met
+        code["UGA"] = "W"  # Stop -> Trp
+        return code
+
+    # Yeast Mitochondrial Code
+    if code_id == 3:
+        code = GENETIC_CODE.copy()
+        code["CUA"] = "T"  # Leu -> Thr
+        code["CUC"] = "T"  # Leu -> Thr
+        code["CUG"] = "T"  # Leu -> Thr
+        code["CUU"] = "T"  # Leu -> Thr
+        code["UGA"] = "W"  # Stop -> Trp
+        code["AUA"] = "M"  # Ile -> Met
+        return code
+
+    # Invertebrate Mitochondrial Code
+    if code_id == 5:
+        code = GENETIC_CODE.copy()
+        code["AGA"] = "S"  # Arg -> Ser
+        code["AGG"] = "S"  # Arg -> Ser
+        code["AUA"] = "M"  # Ile -> Met
+        code["UGA"] = "W"  # Stop -> Trp
+        return code
+
+    # Bacterial, Archaeal and Plant Plastid Code
+    if code_id == 11:
+        # Same as standard but GTG and TTG can be start codons
+        # (start codon handling is separate from aa mapping)
         return GENETIC_CODE.copy()
+
+    logger.warning(f"Genetic code {code_id} not implemented, using standard code")
+    return GENETIC_CODE.copy()
 
 
 def back_translate(protein_seq: str, codon_usage: Dict[str, float] = None) -> str:
@@ -397,7 +443,3 @@ def back_translate(protein_seq: str, codon_usage: Dict[str, float] = None) -> st
     dna_seq = rna_seq.replace("U", "T")
 
     return dna_seq
-
-
-# Import re at module level for find_orfs function
-import re

@@ -1,12 +1,15 @@
 """Information-theoretic integration across biological data types.
 
 This module provides functions for integrating information-theoretic analysis
-across different biological data modalities (DNA, RNA, single-cell, multi-omics).
+across different biological data modalities (DNA, RNA, single-cell, multi-omics,
+and machine learning feature analysis).
 """
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from collections import Counter
+from typing import Any, Dict, List, Optional, Union
+
 import numpy as np
 
 from metainformant.core import logging
@@ -15,7 +18,11 @@ logger = logging.get_logger(__name__)
 
 # Import information theory functions
 try:
-    from .syntactic import shannon_entropy, mutual_information
+    from metainformant.information.metrics.syntactic import (
+        mutual_information,
+        shannon_entropy,
+        shannon_entropy_from_counts,
+    )
 
     HAS_SYNTACTIC = True
 except ImportError:
@@ -23,7 +30,7 @@ except ImportError:
     logger.warning("Syntactic information functions not available")
 
 try:
-    from .analysis import information_profile
+    from metainformant.information.metrics.analysis import information_profile
 
     HAS_ANALYSIS = True
 except ImportError:
@@ -31,252 +38,414 @@ except ImportError:
     logger.warning("Analysis functions not available")
 
 
-def dna_integration(sequences: List[str], k_values: Optional[List[int]] = None) -> Dict[str, Any]:
+def _discretize_and_entropy(values: np.ndarray, n_bins: int = 10) -> float:
+    """Discretize continuous values and compute Shannon entropy."""
+    if len(values) < 2:
+        return 0.0
+    val_range = float(np.max(values) - np.min(values))
+    if val_range == 0:
+        return 0.0
+    bins = np.linspace(np.min(values), np.max(values), n_bins)
+    digitized = np.digitize(values, bins) - 1
+    _, counts = np.unique(digitized, return_counts=True)
+    if len(counts) <= 1:
+        return 0.0
+    total = counts.sum()
+    probs = counts / total
+    if HAS_SYNTACTIC:
+        return shannon_entropy(probs)
+    # Fallback: compute manually
+    probs = probs[probs > 0]
+    return float(-np.sum(probs * np.log2(probs)))
+
+
+def dna_integration(
+    sequences: Union[List[str], Dict[str, str]],
+    *,
+    k: int = 1,
+    k_values: Optional[List[int]] = None,
+    analysis_type: str = "entropy",
+) -> Dict[str, Any]:
     """Integrate information-theoretic analysis for DNA sequences.
 
     Args:
-        sequences: List of DNA sequences
-        k_values: k-mer sizes to analyze (default: [1, 2, 3])
+        sequences: List of DNA sequences or dict mapping names to sequences
+        k: k-mer size for analysis (convenience for single k)
+        k_values: k-mer sizes to analyze (overrides k if provided)
+        analysis_type: Type of analysis ('entropy' or 'profile')
 
     Returns:
         Dictionary with integrated DNA information analysis
+
+    Raises:
+        ValueError: If no sequences provided
     """
-    if not sequences:
+    # Accept dict or list
+    if isinstance(sequences, dict):
+        seq_names = list(sequences.keys())
+        seq_list = list(sequences.values())
+    else:
+        seq_list = list(sequences)
+        seq_names = [f"sequence_{i}" for i in range(len(seq_list))]
+
+    if not seq_list:
         raise ValueError("No sequences provided")
 
     if k_values is None:
-        k_values = [1, 2, 3]
+        k_values = [k]
 
-    results = {"n_sequences": len(sequences), "k_values": k_values, "sequence_info": {}, "integrated_metrics": {}}
+    results: Dict[str, Any] = {
+        "n_sequences": len(seq_list),
+        "k_values": k_values,
+        "analysis_type": analysis_type,
+    }
 
-    # Individual sequence analysis
-    sequence_entropies = []
-    for i, seq in enumerate(sequences):
+    if analysis_type == "entropy":
+        entropy_analysis: Dict[str, Any] = {}
+        sequence_entropies: List[float] = []
+
+        for name, seq in zip(seq_names, seq_list):
+            nucleotides = ["A", "T", "C", "G"]
+            counts = [seq.upper().count(nuc) for nuc in nucleotides]
+            total = sum(counts)
+            if total > 0 and HAS_SYNTACTIC:
+                probs = [c / total for c in counts if c > 0]
+                prob_sum = sum(probs)
+                probs = [p / prob_sum for p in probs]
+                entropy = shannon_entropy(probs)
+            else:
+                entropy = 0.0
+            entropy_analysis[name] = {"entropy": entropy, "length": len(seq)}
+            sequence_entropies.append(entropy)
+
+        results["entropy_analysis"] = entropy_analysis
+
+        if sequence_entropies:
+            results["integrated_metrics"] = {
+                "mean_entropy": float(np.mean(sequence_entropies)),
+                "std_entropy": float(np.std(sequence_entropies)),
+                "min_entropy": float(np.min(sequence_entropies)),
+                "max_entropy": float(np.max(sequence_entropies)),
+            }
+        else:
+            results["integrated_metrics"] = {}
+
+    elif analysis_type == "profile":
         if HAS_ANALYSIS:
             try:
-                seq_info = information_profile([seq], k=max(k_values))
-                results["sequence_info"][f"sequence_{i}"] = seq_info
-                if "entropy" in seq_info:
-                    sequence_entropies.append(seq_info["entropy"])
+                profile = information_profile(seq_list, k=max(k_values))
+                results["profile"] = profile
             except Exception as e:
-                logger.warning(f"Failed to analyze sequence {i}: {e}")
+                logger.warning(f"Failed profile analysis: {e}")
+                results["profile"] = {}
         else:
-            # Basic entropy calculation
-            if HAS_SYNTACTIC:
-                try:
-                    # Simple nucleotide frequency entropy
-                    nucleotides = ["A", "T", "C", "G"]
-                    counts = [seq.upper().count(nuc) for nuc in nucleotides]
-                    total = sum(counts)
-                    if total > 0:
-                        probs = [c / total for c in counts]
-                        entropy = shannon_entropy(probs)
-                        sequence_entropies.append(entropy)
-                        results["sequence_info"][f"sequence_{i}"] = {"entropy": entropy}
-                except Exception as e:
-                    logger.warning(f"Failed to analyze sequence {i}: {e}")
-
-    # Integrated metrics
-    if sequence_entropies:
-        results["integrated_metrics"] = {
-            "mean_entropy": float(np.mean(sequence_entropies)),
-            "std_entropy": float(np.std(sequence_entropies)),
-            "min_entropy": float(np.min(sequence_entropies)),
-            "max_entropy": float(np.max(sequence_entropies)),
-        }
+            results["profile"] = {}
 
     return results
 
 
-def rna_integration(expression_matrix: Any, normalize: bool = True) -> Dict[str, Any]:
+def rna_integration(
+    expression_matrix: Any,
+    *,
+    method: str = "entropy",
+    normalize: bool = True,
+) -> Dict[str, Any]:
     """Integrate information-theoretic analysis for RNA expression data.
 
     Args:
-        expression_matrix: Expression matrix (pandas DataFrame or numpy array)
+        expression_matrix: Expression matrix (numpy array or DataFrame).
+            Rows = samples, columns = genes.
+        method: Analysis method ('entropy' or 'mutual_information')
         normalize: Whether to normalize expression values
 
     Returns:
         Dictionary with RNA information analysis
     """
-    try:
-        import pandas as pd
-    except ImportError:
-        logger.warning("pandas not available for RNA integration")
-        return {"error": "pandas required"}
-
-    # Convert to DataFrame if needed
-    if isinstance(expression_matrix, np.ndarray):
-        df = pd.DataFrame(expression_matrix)
-    elif hasattr(expression_matrix, "values"):
-        df = pd.DataFrame(expression_matrix.values)
+    # Convert to numpy array
+    if hasattr(expression_matrix, "values"):
+        data = np.array(expression_matrix.values, dtype=float)
     else:
-        df = pd.DataFrame(expression_matrix)
+        data = np.array(expression_matrix, dtype=float)
 
-    results = {"n_genes": df.shape[0], "n_samples": df.shape[1], "integrated_metrics": {}}
+    n_samples, n_genes = data.shape
+    results: Dict[str, Any] = {"n_samples": n_samples, "n_genes": n_genes, "method": method}
 
-    # Expression entropy analysis
-    gene_entropies = []
-    sample_entropies = []
+    if method == "entropy":
+        gene_entropies: List[float] = []
+        for gene_idx in range(n_genes):
+            gene_expr = data[:, gene_idx].copy()
+            if normalize and np.sum(np.abs(gene_expr)) > 0:
+                gene_expr = gene_expr / np.sum(np.abs(gene_expr))
+            entropy = _discretize_and_entropy(gene_expr)
+            gene_entropies.append(entropy)
 
-    for gene_idx in range(df.shape[0]):
-        gene_expr = df.iloc[gene_idx, :].values
-        if normalize and gene_expr.sum() > 0:
-            gene_expr = gene_expr / gene_expr.sum()
+        results["gene_entropies"] = gene_entropies
+        results["integrated_metrics"] = {
+            "gene_entropy_mean": float(np.mean(gene_entropies)) if gene_entropies else 0.0,
+            "gene_entropy_std": float(np.std(gene_entropies)) if gene_entropies else 0.0,
+        }
 
-        if HAS_SYNTACTIC and len(gene_expr) > 1:
-            try:
-                # Discretize expression for entropy calculation
-                bins = np.linspace(np.min(gene_expr), np.max(gene_expr), 10)
-                digitized = np.digitize(gene_expr, bins) - 1
-                unique_vals, counts = np.unique(digitized, return_counts=True)
-                probs = counts / len(counts)
-                entropy = shannon_entropy(probs)
-                gene_entropies.append(entropy)
-            except Exception as e:
-                logger.debug(f"Failed gene entropy calculation: {e}")
+    elif method == "mutual_information":
+        # Compute pairwise MI between genes (discretized)
+        mi_matrix = np.zeros((n_genes, n_genes))
+        discretized = np.zeros_like(data, dtype=int)
+        for g in range(n_genes):
+            vals = data[:, g]
+            val_range = np.max(vals) - np.min(vals)
+            if val_range > 0:
+                bins = np.linspace(np.min(vals), np.max(vals), 10)
+                discretized[:, g] = np.digitize(vals, bins) - 1
+            else:
+                discretized[:, g] = 0
 
-    for sample_idx in range(df.shape[1]):
-        sample_expr = df.iloc[:, sample_idx].values
-        if normalize and sample_expr.sum() > 0:
-            sample_expr = sample_expr / sample_expr.sum()
+        for i in range(n_genes):
+            for j in range(i, n_genes):
+                if i == j:
+                    mi_matrix[i][j] = 0.0
+                else:
+                    if HAS_SYNTACTIC:
+                        mi_val = mutual_information(
+                            list(discretized[:, i]),
+                            list(discretized[:, j]),
+                        )
+                    else:
+                        mi_val = 0.0
+                    mi_matrix[i][j] = mi_val
+                    mi_matrix[j][i] = mi_val
 
-        if HAS_SYNTACTIC and len(sample_expr) > 1:
-            try:
-                # Discretize expression for entropy calculation
-                bins = np.linspace(np.min(sample_expr), np.max(sample_expr), 10)
-                digitized = np.digitize(sample_expr, bins) - 1
-                unique_vals, counts = np.unique(digitized, return_counts=True)
-                probs = counts / len(counts)
-                entropy = shannon_entropy(probs)
-                sample_entropies.append(entropy)
-            except Exception as e:
-                logger.debug(f"Failed sample entropy calculation: {e}")
-
-    # Integrated metrics
-    results["integrated_metrics"] = {
-        "gene_entropy_mean": float(np.mean(gene_entropies)) if gene_entropies else None,
-        "gene_entropy_std": float(np.std(gene_entropies)) if gene_entropies else None,
-        "sample_entropy_mean": float(np.mean(sample_entropies)) if sample_entropies else None,
-        "sample_entropy_std": float(np.std(sample_entropies)) if sample_entropies else None,
-    }
+        results["mi_matrix"] = mi_matrix.tolist()
 
     return results
 
 
-def singlecell_integration(adata: Any) -> Dict[str, Any]:
+def singlecell_integration(
+    data: Any,
+    *,
+    cell_types: Optional[List[str]] = None,
+    method: str = "gene_entropy",
+) -> Dict[str, Any]:
     """Integrate information-theoretic analysis for single-cell data.
 
     Args:
-        adata: AnnData object with single-cell data
+        data: Count matrix (numpy array, shape: cells x genes) or AnnData object
+        cell_types: Optional list of cell type labels (one per cell)
+        method: Analysis method ('gene_entropy' or 'cell_type_entropy')
 
     Returns:
         Dictionary with single-cell information analysis
     """
-    try:
-        import scanpy as sc
+    # Extract expression matrix
+    if hasattr(data, "X"):
+        # AnnData object
+        expr_matrix = data.X.toarray() if hasattr(data.X, "toarray") else np.array(data.X)
+        n_cells = data.n_obs if hasattr(data, "n_obs") else expr_matrix.shape[0]
+        n_genes = data.n_vars if hasattr(data, "n_vars") else expr_matrix.shape[1]
+    else:
+        expr_matrix = np.array(data, dtype=float)
+        n_cells, n_genes = expr_matrix.shape
 
-        HAS_SCANPY = True
-    except ImportError:
-        HAS_SCANPY = False
-        logger.warning("scanpy not available for single-cell integration")
+    results: Dict[str, Any] = {
+        "n_cells": n_cells,
+        "n_genes": n_genes,
+        "method": method,
+    }
 
-    results = {"n_cells": getattr(adata, "n_obs", 0), "n_genes": getattr(adata, "n_vars", 0), "integrated_metrics": {}}
+    if method == "gene_entropy":
+        gene_entropies: List[float] = []
+        for gene_idx in range(n_genes):
+            gene_expr = expr_matrix[:, gene_idx].astype(float)
+            if gene_expr.sum() > 0:
+                gene_expr_norm = gene_expr / gene_expr.sum()
+                entropy = _discretize_and_entropy(gene_expr_norm)
+            else:
+                entropy = 0.0
+            gene_entropies.append(entropy)
 
-    # Basic expression entropy
-    if hasattr(adata, "X") and adata.X is not None:
-        try:
-            # Convert to dense if sparse
-            expr_matrix = adata.X.toarray() if hasattr(adata.X, "toarray") else adata.X
+        results["gene_entropies"] = gene_entropies
 
-            # Gene expression entropy
-            gene_entropies = []
-            for gene_idx in range(min(expr_matrix.shape[1], 1000)):  # Limit for performance
-                gene_expr = expr_matrix[:, gene_idx]
+    elif method == "cell_type_entropy":
+        if cell_types is None:
+            raise ValueError("cell_types required for cell_type_entropy method")
+
+        unique_types = list(set(cell_types))
+        results["num_cell_types"] = len(unique_types)
+
+        # Compute entropy of cell type distribution
+        type_counts = Counter(cell_types)
+        total = sum(type_counts.values())
+        probs = [count / total for count in type_counts.values()]
+        if HAS_SYNTACTIC:
+            ct_entropy = shannon_entropy(probs)
+        else:
+            probs_arr = np.array([p for p in probs if p > 0])
+            ct_entropy = float(-np.sum(probs_arr * np.log2(probs_arr)))
+
+        results["cell_type_entropy"] = ct_entropy
+
+        # Per-type gene entropy
+        type_entropies: Dict[str, float] = {}
+        for ct in unique_types:
+            mask = [i for i, t in enumerate(cell_types) if t == ct]
+            subset = expr_matrix[mask, :]
+            type_gene_entropies = []
+            for gene_idx in range(n_genes):
+                gene_expr = subset[:, gene_idx].astype(float)
                 if gene_expr.sum() > 0:
-                    # Normalize and discretize
-                    gene_expr = gene_expr / gene_expr.sum()
-                    bins = np.linspace(np.min(gene_expr), np.max(gene_expr), 10)
-                    digitized = np.digitize(gene_expr, bins) - 1
-                    unique_vals, counts = np.unique(digitized, return_counts=True)
-                    if len(counts) > 1:
-                        probs = counts / len(counts)
-                        if HAS_SYNTACTIC:
-                            entropy = shannon_entropy(probs)
-                            gene_entropies.append(entropy)
+                    gene_expr_norm = gene_expr / gene_expr.sum()
+                    entropy = _discretize_and_entropy(gene_expr_norm)
+                else:
+                    entropy = 0.0
+                type_gene_entropies.append(entropy)
+            type_entropies[ct] = float(np.mean(type_gene_entropies))
 
-            results["integrated_metrics"] = {
-                "gene_expression_entropy_mean": float(np.mean(gene_entropies)) if gene_entropies else None,
-                "gene_expression_entropy_std": float(np.std(gene_entropies)) if gene_entropies else None,
-            }
-
-        except Exception as e:
-            logger.warning(f"Failed single-cell expression analysis: {e}")
+        results["per_type_entropy"] = type_entropies
 
     return results
 
 
-def multiomics_integration(omics_data: Dict[str, Any]) -> Dict[str, Any]:
+def multiomics_integration(
+    *,
+    omics_data: Optional[Dict[str, Any]] = None,
+    method: str = "platform_entropy",
+    feature_indices: Optional[Dict[str, Any]] = None,
+    **kwargs: Any,
+) -> Dict[str, Any]:
     """Integrate information across multiple omics platforms.
 
     Args:
-        omics_data: Dictionary with different omics data types
+        omics_data: Dictionary mapping omics type names to data arrays
+        method: Integration method ('platform_entropy' or 'cross_platform_mi')
+        feature_indices: Optional dict mapping platform names to feature indices
+        **kwargs: Named platform data (e.g., genomics_data=..., transcriptomics_data=...)
 
     Returns:
         Dictionary with multi-omics information integration
     """
-    results = {"omics_types": list(omics_data.keys()), "integrated_metrics": {}, "cross_platform_analysis": {}}
+    # Build platform data from kwargs or omics_data
+    # Separate sequence data (lists of strings) from numeric arrays
+    platforms: Dict[str, np.ndarray] = {}
+    sequence_platforms: Dict[str, List[str]] = {}
 
-    # Analyze each omics type
-    omics_results = {}
-    for omics_type, data in omics_data.items():
-        try:
-            if omics_type.lower() in ["dna", "sequences"]:
-                omics_results[omics_type] = dna_integration(data)
-            elif omics_type.lower() in ["rna", "expression"]:
-                omics_results[omics_type] = rna_integration(data)
-            elif omics_type.lower() in ["singlecell", "sc"]:
-                omics_results[omics_type] = singlecell_integration(data)
+    if omics_data is not None:
+        for name, data in omics_data.items():
+            if isinstance(data, list) and data and isinstance(data[0], str):
+                sequence_platforms[name] = data
             else:
-                logger.warning(f"Unknown omics type: {omics_type}")
-                continue
-        except Exception as e:
-            logger.warning(f"Failed to analyze {omics_type}: {e}")
+                platforms[name] = np.array(data, dtype=float)
 
-    results["omics_results"] = omics_results
+    # Extract named platform data from kwargs
+    for key, value in kwargs.items():
+        if key.endswith("_data"):
+            platform_name = key[:-5]  # Remove "_data" suffix
+            if isinstance(value, list) and value and isinstance(value[0], str):
+                sequence_platforms[platform_name] = value
+            else:
+                platforms[platform_name] = np.array(value, dtype=float)
 
-    # Cross-platform integration
-    if len(omics_results) > 1:
-        # Simple integration: average entropies across platforms
-        entropy_measures = []
-        for omics_type, result in omics_results.items():
-            metrics = result.get("integrated_metrics", {})
-            for key, value in metrics.items():
-                if "entropy" in key and value is not None:
-                    entropy_measures.append(value)
+    all_names = list(sequence_platforms.keys()) + list(platforms.keys())
 
-        if entropy_measures:
-            results["cross_platform_analysis"] = {
-                "mean_entropy_across_platforms": float(np.mean(entropy_measures)),
-                "std_entropy_across_platforms": float(np.std(entropy_measures)),
-                "n_entropy_measures": len(entropy_measures),
-            }
+    results: Dict[str, Any] = {
+        "omics_types": all_names,
+        "method": method,
+    }
+
+    if method == "platform_entropy":
+        # Handle sequence platforms (DNA) via dna_integration
+        for platform_name, seqs in sequence_platforms.items():
+            try:
+                dna_result = dna_integration(seqs)
+                metrics = dna_result.get("integrated_metrics", {})
+                results[f"{platform_name}_entropy"] = metrics.get("mean_entropy", 0.0)
+            except (ValueError, Exception) as e:
+                logger.warning(f"Failed {platform_name} integration: {e}")
+                results[f"{platform_name}_entropy"] = 0.0
+
+        # Handle numeric platforms
+        for platform_name, data in platforms.items():
+            n_features = data.shape[1] if data.ndim > 1 else 1
+            feature_entropies = []
+            for f in range(n_features):
+                col = data[:, f] if data.ndim > 1 else data
+                entropy = _discretize_and_entropy(col)
+                feature_entropies.append(entropy)
+            results[f"{platform_name}_entropy"] = float(np.mean(feature_entropies))
+
+    elif method == "cross_platform_mi":
+        # Compute pairwise MI between platforms
+        platform_names = list(platforms.keys())
+
+        for i in range(len(platform_names)):
+            for j in range(i + 1, len(platform_names)):
+                name_i = platform_names[i]
+                name_j = platform_names[j]
+                data_i = platforms[name_i]
+                data_j = platforms[name_j]
+
+                # Get feature indices
+                idx_i = feature_indices.get(name_i, None) if feature_indices else None
+                idx_j = feature_indices.get(name_j, None) if feature_indices else None
+
+                # Normalize indices to lists
+                if idx_i is not None:
+                    if isinstance(idx_i, (int, np.integer)):
+                        idx_i = [int(idx_i)]
+                    idx_i = list(idx_i)
+                else:
+                    idx_i = [0]  # Default to first feature
+
+                if idx_j is not None:
+                    if isinstance(idx_j, (int, np.integer)):
+                        idx_j = [int(idx_j)]
+                    idx_j = list(idx_j)
+                else:
+                    idx_j = [0]
+
+                # Compute MI matrix between selected features
+                mi_matrix = []
+                for fi in idx_i:
+                    row = []
+                    for fj in idx_j:
+                        col_i = data_i[:, fi] if data_i.ndim > 1 else data_i
+                        col_j = data_j[:, fj] if data_j.ndim > 1 else data_j
+                        # Discretize both
+                        bins_i = np.linspace(np.min(col_i), np.max(col_i), 10)
+                        bins_j = np.linspace(np.min(col_j), np.max(col_j), 10)
+                        disc_i = list(np.digitize(col_i, bins_i) - 1)
+                        disc_j = list(np.digitize(col_j, bins_j) - 1)
+                        if HAS_SYNTACTIC:
+                            mi_val = mutual_information(disc_i, disc_j)
+                        else:
+                            mi_val = 0.0
+                        row.append(float(mi_val))
+                    mi_matrix.append(row)
+
+                key_prefix = f"{name_i}_{name_j}"
+                results[f"{key_prefix}_mi_matrix"] = mi_matrix
+                flat = [v for row in mi_matrix for v in row]
+                results[f"{key_prefix}_mean_mi"] = float(np.mean(flat))
+                results[f"{key_prefix}_max_mi"] = float(np.max(flat))
+                results[f"{key_prefix}_min_mi"] = float(np.min(flat))
 
     return results
 
 
-def ml_integration(features: Any, labels: Any, method: str = "mutual_info") -> Dict[str, Any]:
+def ml_integration(
+    features: Any,
+    labels: Any,
+    method: str = "feature_mi",
+) -> Dict[str, Any]:
     """Integrate information theory with machine learning feature analysis.
 
     Args:
-        features: Feature matrix
-        labels: Target labels
-        method: Integration method ('mutual_info', 'entropy', 'correlation')
+        features: Feature matrix (numpy array or DataFrame)
+        labels: Target labels (classification or regression)
+        method: Integration method ('feature_mi', 'mutual_info', 'feature_entropy',
+                'entropy', 'correlation')
 
     Returns:
         Dictionary with ML-information integration results
     """
     try:
-        import pandas as pd
         from sklearn.feature_selection import mutual_info_classif, mutual_info_regression
     except ImportError:
         logger.warning("scikit-learn not available for ML integration")
@@ -286,58 +455,56 @@ def ml_integration(features: Any, labels: Any, method: str = "mutual_info") -> D
     if hasattr(features, "values"):
         X = features.values
     else:
-        X = np.array(features)
+        X = np.array(features, dtype=float)
 
     if hasattr(labels, "values"):
         y = labels.values
     else:
         y = np.array(labels)
 
-    results = {"n_features": X.shape[1], "n_samples": X.shape[0], "method": method, "feature_scores": {}}
+    n_samples, n_features = X.shape
+    results: Dict[str, Any] = {"n_features": n_features, "n_samples": n_samples, "method": method}
 
     try:
-        if method == "mutual_info":
+        if method in ("feature_mi", "mutual_info"):
             # Mutual information between features and target
-            if len(np.unique(y)) <= 10:  # Classification
+            if len(np.unique(y)) <= 10:
                 scores = mutual_info_classif(X, y)
-            else:  # Regression
+            else:
                 scores = mutual_info_regression(X, y)
 
-            # Store top features
-            feature_indices = np.argsort(scores)[::-1]
-            results["feature_scores"] = {f"feature_{i}": float(scores[i]) for i in feature_indices[:10]}  # Top 10
+            results["feature_mis"] = scores.tolist()
 
-        elif method == "entropy":
-            # Feature entropy analysis
+            # Top features (sorted by MI score)
+            top_indices = np.argsort(scores)[::-1][:min(10, n_features)]
+            results["top_features"] = [
+                {"index": int(idx), "mi": float(scores[idx])} for idx in top_indices
+            ]
+            results["feature_scores"] = {f"feature_{i}": float(scores[i]) for i in top_indices}
+
+        elif method in ("feature_entropy", "entropy"):
             feature_entropies = []
-            for col in range(X.shape[1]):
+            for col in range(n_features):
                 feature_vals = X[:, col]
-                # Discretize for entropy calculation
-                bins = np.linspace(np.min(feature_vals), np.max(feature_vals), 10)
-                digitized = np.digitize(feature_vals, bins) - 1
-                unique_vals, counts = np.unique(digitized, return_counts=True)
-                if len(counts) > 1 and HAS_SYNTACTIC:
-                    probs = counts / len(counts)
-                    entropy = shannon_entropy(probs)
-                    feature_entropies.append(entropy)
+                entropy = _discretize_and_entropy(feature_vals)
+                feature_entropies.append(entropy)
 
-            if feature_entropies:
-                results["feature_scores"] = {
-                    "mean_feature_entropy": float(np.mean(feature_entropies)),
-                    "std_feature_entropy": float(np.std(feature_entropies)),
-                    "max_feature_entropy": float(np.max(feature_entropies)),
-                    "min_feature_entropy": float(np.min(feature_entropies)),
-                }
+            results["feature_entropies"] = feature_entropies
+            results["feature_scores"] = {
+                "mean_feature_entropy": float(np.mean(feature_entropies)),
+                "std_feature_entropy": float(np.std(feature_entropies)),
+                "max_feature_entropy": float(np.max(feature_entropies)),
+                "min_feature_entropy": float(np.min(feature_entropies)),
+            }
 
         elif method == "correlation":
-            # Correlation with target
             correlations = []
-            for col in range(X.shape[1]):
+            for col in range(n_features):
                 feature_vals = X[:, col]
                 try:
-                    corr = np.corrcoef(feature_vals, y)[0, 1]
+                    corr = np.corrcoef(feature_vals, y.astype(float))[0, 1]
                     if not np.isnan(corr):
-                        correlations.append(abs(corr))
+                        correlations.append(abs(float(corr)))
                 except (ValueError, TypeError, FloatingPointError):
                     continue
 
@@ -347,9 +514,12 @@ def ml_integration(features: Any, labels: Any, method: str = "mutual_info") -> D
                     "max_correlation": float(np.max(correlations)),
                     "n_significant_features": sum(1 for c in correlations if c > 0.1),
                 }
+            else:
+                results["feature_scores"] = {}
 
     except Exception as e:
         logger.warning(f"Failed ML integration: {e}")
         results["error"] = str(e)
+        results["feature_scores"] = {}
 
     return results

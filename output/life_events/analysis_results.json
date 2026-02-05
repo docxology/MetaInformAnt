@@ -1,0 +1,1 @@
+{"config_used": {}, "model_results": {}, "n_sequences": 1, "output_dir": "output/life_events", "predictions": {}, "sequence_stats": {"avg_events_per_sequence": 1.0, "n_unique_domains": 1, "n_unique_event_types": 1, "sequence_lengths": [1], "total_events": 1, "total_sequences": 1, "unique_domains": ["education"], "unique_event_types": ["degree"]}, "visualizations": []}

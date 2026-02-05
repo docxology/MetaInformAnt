@@ -7,10 +7,10 @@ quantities with bias correction to improve accuracy on finite samples.
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Optional, Union
+from collections import Counter
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
-from scipy import special
 
 from metainformant.core import logging, validation
 
@@ -195,8 +195,6 @@ def mutual_information_estimator(
         raise ValueError("Sequences must have the same length")
 
     # Convert to count dictionaries
-    from collections import Counter
-
     # Joint counts
     joint_counts = Counter(zip(x, y))
 
@@ -234,8 +232,6 @@ def kl_divergence_estimator(p: List[Any], q: List[Any], method: str = "plugin", 
         raise ValueError("Sample lists must have the same length")
 
     # Convert to probability distributions using counts
-    from collections import Counter
-
     p_counts = Counter(p)
     q_counts = Counter(q)
 

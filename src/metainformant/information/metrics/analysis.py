@@ -95,6 +95,8 @@ def information_profile(
     }
 
     result = {
+        "entropy": profile_stats["mean_entropy"],
+        "positions": [pos["position"] for pos in profile],
         "profile": profile,
         "statistics": profile_stats,
         "parameters": {
@@ -361,6 +363,13 @@ def _infer_sequence_type(sequence: str) -> str:
     nucleotides = set("ATCGU")
     # Amino acid characters (simplified)
     amino_acids = set("ACDEFGHIKLMNPQRSTVWY")
+
+    # If ALL characters are valid nucleotides, classify as DNA/RNA
+    if chars <= nucleotides:
+        if "U" in chars:
+            return "RNA"
+        else:
+            return "DNA"
 
     nuc_overlap = len(chars & nucleotides)
     aa_overlap = len(chars & amino_acids)

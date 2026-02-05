@@ -407,22 +407,132 @@ def ss_to_dSSP_format(ss_assignments: List[str]) -> str:
 def parse_dssp_file(dssp_content: str) -> Dict[str, Any]:
     """Parse DSSP output file.
 
+    Parses the standard DSSP output format, extracting per-residue secondary
+    structure assignments, solvent accessibility, phi/psi angles, and
+    hydrogen bond data.
+
     Args:
-        dssp_content: DSSP file content
+        dssp_content: DSSP file content as string
 
     Returns:
-        Parsed DSSP data
+        Parsed DSSP data with keys: sequence, secondary_structure,
+        accessibility, phi_angles, psi_angles, residues, total_residues
 
     Example:
-        >>> # Assuming DSSP content exists
-        >>> # dssp_data = parse_dssp_file(dssp_string)
-        >>> # isinstance(dssp_data, dict)
-        >>> # True
+        >>> content = "  #  RESIDUE AA STRUCTURE BP1 BP2  ACC\\n    1    1 A M  H  \\n"
+        >>> data = parse_dssp_file(content)
+        >>> isinstance(data, dict)
+        True
     """
-    # This would parse actual DSSP output
-    # Placeholder implementation
-    logger.info("DSSP parsing not fully implemented")
-    return {"sequence": "", "secondary_structure": [], "accessibility": [], "total_residues": 0}
+    lines = dssp_content.strip().split("\n")
+
+    sequence = []
+    secondary_structure = []
+    accessibility = []
+    phi_angles = []
+    psi_angles = []
+    residues = []
+
+    # Find the start of residue data (after the header line starting with "  #  RESIDUE")
+    data_start = 0
+    for i, line in enumerate(lines):
+        if line.strip().startswith("#  RESIDUE"):
+            data_start = i + 1
+            break
+
+    if data_start == 0:
+        # Try alternate: look for lines with residue data pattern
+        for i, line in enumerate(lines):
+            if len(line) >= 17 and line[5:10].strip().isdigit():
+                data_start = i
+                break
+
+    for line in lines[data_start:]:
+        if len(line) < 17:
+            continue
+
+        try:
+            # DSSP format: columns are fixed-width
+            # Col 1-5: residue number (DSSP numbering)
+            # Col 6-10: residue number (PDB numbering)
+            # Col 11: insertion code
+            # Col 12: chain ID
+            # Col 13: amino acid (one letter)
+            # Col 16: secondary structure code
+            # Col 35-38: solvent accessibility
+
+            aa = line[13:14].strip() if len(line) > 13 else ""
+            if not aa or aa == "!":  # Chain break
+                continue
+
+            ss = line[16:17].strip() if len(line) > 16 else ""
+            # Normalize SS code: H=helix, E=sheet, everything else=coil
+            if ss in ("H", "G", "I"):  # H=alpha, G=3-10, I=pi helix
+                ss_norm = "H"
+            elif ss in ("E", "B"):  # E=extended, B=bridge
+                ss_norm = "E"
+            else:
+                ss_norm = "C"
+
+            # Parse accessibility
+            acc = 0.0
+            if len(line) >= 38:
+                acc_str = line[35:38].strip()
+                if acc_str:
+                    try:
+                        acc = float(acc_str)
+                    except ValueError:
+                        acc = 0.0
+
+            # Parse phi/psi angles
+            phi = 0.0
+            psi = 0.0
+            if len(line) >= 109:
+                phi_str = line[103:109].strip()
+                psi_str = line[109:115].strip() if len(line) >= 115 else ""
+                try:
+                    phi = float(phi_str) if phi_str else 0.0
+                except ValueError:
+                    phi = 0.0
+                try:
+                    psi = float(psi_str) if psi_str else 0.0
+                except ValueError:
+                    psi = 0.0
+
+            # Parse residue number and chain
+            res_num_str = line[5:10].strip()
+            chain_id = line[11:12].strip()
+            res_num = int(res_num_str) if res_num_str else 0
+
+            sequence.append(aa)
+            secondary_structure.append(ss_norm)
+            accessibility.append(acc)
+            phi_angles.append(phi)
+            psi_angles.append(psi)
+            residues.append({
+                "residue_number": res_num,
+                "chain_id": chain_id,
+                "amino_acid": aa,
+                "secondary_structure": ss_norm,
+                "raw_ss": line[16:17].strip(),
+                "accessibility": acc,
+                "phi": phi,
+                "psi": psi,
+            })
+
+        except (ValueError, IndexError) as e:
+            logger.debug(f"Skipping DSSP line: {e}")
+            continue
+
+    return {
+        "sequence": "".join(sequence),
+        "secondary_structure": secondary_structure,
+        "accessibility": accessibility,
+        "phi_angles": phi_angles,
+        "psi_angles": psi_angles,
+        "residues": residues,
+        "total_residues": len(sequence),
+    }
 
 
 def predict_transmembrane_regions(sequence: str) -> List[Dict[str, Any]]:

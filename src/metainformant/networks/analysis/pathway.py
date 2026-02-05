@@ -7,7 +7,8 @@ analysis, and pathway visualization in biological networks.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
 from metainformant.core import logging
 
@@ -412,7 +413,7 @@ def pathway_disease_association(
 
         for pathway_result in pathway_results:
             pathway_name = pathway_result["pathway"]
-            enriched_genes = []  # Would need pathway gene lists
+            _ = []  # Would need pathway gene lists
 
             # Calculate overlap
             pathway_gene_set = set()  # Would need to populate this
@@ -610,8 +611,11 @@ class PathwayNetwork:
         pathway_names = list(self.pathways.keys())
         overlap_matrix = {}
 
+        # Initialize all keys first
+        for name in pathway_names:
+            overlap_matrix[name] = {}
+
         for i, name1 in enumerate(pathway_names):
-            overlap_matrix[name1] = {}
             genes1 = set(self.pathways[name1])
 
             for j, name2 in enumerate(pathway_names):
@@ -792,7 +796,6 @@ def pathway_enrichment(
             corrected_p_values = [min(p * len(results), 1.0) for p in p_values]
         elif correction == "fdr" and HAS_SCIPY:
             # Benjamini-Hochberg FDR correction
-            from scipy.stats import rankdata
 
             sorted_indices = sorted(range(len(p_values)), key=lambda i: p_values[i])
             corrected_p_values = [1.0] * len(p_values)

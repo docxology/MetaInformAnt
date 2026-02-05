@@ -87,6 +87,59 @@ def simulate_counts_negative_binomial(
     return counts
 
 
+def simulate_rnaseq_counts(
+    n_genes: int = 1000,
+    n_samples: int = 10,
+    *,
+    mean_expression: float = 100.0,
+    dispersion: float = 0.5,
+    rng: random.Random | None = None,
+) -> np.ndarray:
+    """Convenience wrapper for simulating RNA-seq counts with simple parameters.
+
+    This is a user-friendly wrapper around simulate_counts_negative_binomial
+    that generates realistic mean and dispersion arrays automatically.
+
+    Args:
+        n_genes: Number of genes to simulate (default: 1000)
+        n_samples: Number of samples to simulate (default: 10)
+        mean_expression: Average expression level (default: 100.0)
+        dispersion: Dispersion parameter for NB distribution (default: 0.5)
+        rng: Random number generator for reproducibility
+
+    Returns:
+        Count matrix of shape (n_samples, n_genes)
+
+    Example:
+        >>> counts = simulate_rnaseq_counts(n_genes=100, n_samples=5)
+        >>> counts.shape
+        (5, 100)
+    """
+    validation.validate_range(n_genes, min_val=1, name="n_genes")
+    validation.validate_range(n_samples, min_val=1, name="n_samples")
+    validation.validate_range(mean_expression, min_val=0.0, name="mean_expression")
+    validation.validate_range(dispersion, min_val=0.001, name="dispersion")
+
+    if rng is None:
+        rng = random.Random()
+
+    # Set numpy seed for reproducibility
+    np.random.seed(rng.randint(0, 2**32))
+
+    # Generate realistic gene means (log-normal distribution)
+    gene_means = np.random.lognormal(
+        mean=np.log(mean_expression),
+        sigma=1.5,
+        size=n_genes,
+    )
+    gene_means = np.clip(gene_means, 0.1, mean_expression * 100)
+
+    # Generate dispersion values (inverse relationship with mean, typical RNA-seq pattern)
+    gene_dispersions = np.full(n_genes, dispersion)
+
+    return simulate_counts_negative_binomial(n_samples, n_genes, gene_means, gene_dispersions, rng=rng)
+
+
 def simulate_differential_expression(
     n_samples: int, n_features: int, fold_changes: np.ndarray, rng: random.Random | None = None
 ) -> Tuple[np.ndarray, np.ndarray]:
@@ -380,9 +433,10 @@ def simulate_spatial_expression(
     if spatial_patterns == "random":
         coordinates = np.random.uniform(0, 100, (n_spots, 2))
     elif spatial_patterns == "gradient":
-        # Create a gradient across space
-        x_coords = np.linspace(0, 100, int(np.sqrt(n_spots)))
-        y_coords = np.linspace(0, 100, int(np.sqrt(n_spots)))
+        # Create a gradient across space (ceil ensures grid has >= n_spots points)
+        grid_size = int(np.ceil(np.sqrt(n_spots)))
+        x_coords = np.linspace(0, 100, grid_size)
+        y_coords = np.linspace(0, 100, grid_size)
         xx, yy = np.meshgrid(x_coords, y_coords)
         coordinates = np.column_stack([xx.ravel()[:n_spots], yy.ravel()[:n_spots]])
     else:  # clusters

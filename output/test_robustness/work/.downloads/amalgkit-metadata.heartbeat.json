@@ -3,7 +3,7 @@
   "destination": "output/test_robustness/work/metadata",
   "errors": [],
   "eta_seconds": null,
-  "last_update": "2026-02-03T16:50:04Z",
+  "last_update": "2026-02-05T04:23:59Z",
   "progress": {
     "current": 1,
     "percent": 25.0,
@@ -11,8 +11,8 @@
     "type": "file_count"
   },
   "progress_percent": 25.0,
-  "speed_mbps": 0.004084124014130841,
-  "started_at": "2026-02-03T16:50:03Z",
+  "speed_mbps": 0.0005808808427588093,
+  "started_at": "2026-02-05T04:23:52Z",
   "status": "failed",
   "step": "amalgkit metadata",
   "total_bytes": null,

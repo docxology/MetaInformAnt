@@ -10,6 +10,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict
 
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 
@@ -310,7 +311,7 @@ def plot_community_network(
         plt.Line2D([0], [0], marker="o", color="w", markerfacecolor=color, markersize=10, label=f"Community {comm_id}")
         for comm_id, color in community_colors.items()
     ]
-    if "gray" in node_colors:
+    if any(isinstance(c, str) and c == "gray" for c in node_colors):
         legend_elements.append(
             plt.Line2D([0], [0], marker="o", color="w", markerfacecolor="gray", markersize=10, label="Unassigned")
         )

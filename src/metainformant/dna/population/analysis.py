@@ -7,7 +7,7 @@ including demographic inference, selection tests, and population structure analy
 from __future__ import annotations
 
 import math
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -377,27 +377,35 @@ def detect_population_structure(sequences: List[str], k_max: int = 5) -> Dict[st
     # Simple distance-based clustering
     # In practice, would use more sophisticated methods
 
-    clusters = []
-    distances = []
+    def _p_distance_simple(seq_a: str, seq_b: str) -> float:
+        """Calculate p-distance between two sequences."""
+        if len(seq_a) != len(seq_b):
+            min_len = min(len(seq_a), len(seq_b))
+            seq_a = seq_a[:min_len]
+            seq_b = seq_b[:min_len]
+        if len(seq_a) == 0:
+            return 0.0
+        mismatches = sum(1 for a, b in zip(seq_a, seq_b) if a != b)
+        return mismatches / len(seq_a)
 
     # Calculate pairwise distances
+    pairwise_dists: List[Tuple[int, int, float]] = []
     for i in range(len(sequences)):
         for j in range(i + 1, len(sequences)):
-            from ..alignment import distances
-
-            dist = distances.p_distance(sequences[i], sequences[j])
-            distances.append((i, j, dist))
+            dist = _p_distance_simple(sequences[i], sequences[j])
+            pairwise_dists.append((i, j, dist))
 
     # Simple clustering based on distance threshold
     threshold = 0.1  # 10% divergence
-    cluster_assignments = {}
+    cluster_map: Dict[int, List[int]] = {}
+    cluster_assignments: Dict[int, int] = {}
 
     cluster_id = 0
-    for i, seq in enumerate(sequences):
+    for i in range(len(sequences)):
         assigned = False
-        for cid, members in clusters.items():
+        for cid, members in cluster_map.items():
             # Check if this sequence is close to cluster members
-            avg_dist = sum(distances.p_distance(seq, sequences[j]) for j in members) / len(members)
+            avg_dist = sum(_p_distance_simple(sequences[i], sequences[j]) for j in members) / len(members)
             if avg_dist < threshold:
                 members.append(i)
                 cluster_assignments[i] = cid
@@ -405,9 +413,11 @@ def detect_population_structure(sequences: List[str], k_max: int = 5) -> Dict[st
                 break
 
         if not assigned:
-            clusters.append([i])
+            cluster_map[cluster_id] = [i]
             cluster_assignments[i] = cluster_id
             cluster_id += 1
+
+    clusters = list(cluster_map.values())
 
     return {
         "clusters": clusters,
@@ -417,54 +427,86 @@ def detect_population_structure(sequences: List[str], k_max: int = 5) -> Dict[st
     }
 
 
-def calculate_ld_decay(sequences: List[str]) -> List[Tuple[int, float]]:
-    """Calculate linkage disequilibrium decay with distance.
+def calculate_ld_decay(sequences: List[str], max_distance: int = 0) -> List[Tuple[int, float]]:
+    """Calculate linkage disequilibrium (r²) decay with physical distance.
+
+    Computes pairwise r² between biallelic polymorphic sites and averages by distance.
 
     Args:
-        sequences: List of DNA sequences
+        sequences: List of aligned DNA sequences
+        max_distance: Maximum distance to consider (0 = all)
 
     Returns:
-        List of tuples (distance, average_ld)
+        List of tuples (distance, average_r_squared)
 
     Example:
-        >>> seqs = ["ATCGATCG", "ATCGATCG"]
+        >>> seqs = ["ATCGATCG", "GCTAGCTA", "ATCGATCG", "GCTAGCTA"]
         >>> ld_decay = calculate_ld_decay(seqs)
         >>> isinstance(ld_decay, list)
         True
     """
+    from collections import Counter
+
     if len(sequences) < 2:
         return []
 
     seq_length = len(sequences[0])
-    ld_values = []
 
-    # Calculate LD for all pairs of sites
-    for i in range(seq_length):
-        for j in range(i + 1, seq_length):
-            distance = j - i
+    # Find biallelic polymorphic sites
+    polymorphic = []
+    for pos in range(seq_length):
+        alleles = set(seq[pos].upper() for seq in sequences if seq[pos].upper() in "ACGT")
+        if len(alleles) == 2:
+            polymorphic.append(pos)
 
-            # Calculate correlation coefficient (simplified LD measure)
-            alleles_i = [seq[i] for seq in sequences]
-            alleles_j = [seq[j] for seq in sequences]
+    if len(polymorphic) < 2:
+        return []
 
-            # Simple correlation
-            from ..alignment import distances
+    ld_by_distance: Dict[int, List[float]] = {}
 
-            correlation = 0.0  # Would need proper LD calculation
+    for idx_i in range(len(polymorphic)):
+        for idx_j in range(idx_i + 1, len(polymorphic)):
+            pos_i = polymorphic[idx_i]
+            pos_j = polymorphic[idx_j]
+            distance = pos_j - pos_i
 
-            ld_values.append((distance, correlation))
+            if max_distance > 0 and distance > max_distance:
+                continue
 
-    # Average LD by distance
-    distance_groups = {}
-    for dist, ld in ld_values:
-        if dist not in distance_groups:
-            distance_groups[dist] = []
-        distance_groups[dist].append(ld)
+            alleles_i = [seq[pos_i].upper() for seq in sequences if seq[pos_i].upper() in "ACGT"]
+            alleles_j = [seq[pos_j].upper() for seq in sequences if seq[pos_j].upper() in "ACGT"]
+
+            if len(alleles_i) != len(alleles_j) or len(alleles_i) < 2:
+                continue
+
+            # Encode as 0/1 (major=0, minor=1)
+            count_i = Counter(alleles_i)
+            count_j = Counter(alleles_j)
+            major_i = count_i.most_common(1)[0][0]
+            major_j = count_j.most_common(1)[0][0]
+
+            x = [0 if a == major_i else 1 for a in alleles_i]
+            y = [0 if a == major_j else 1 for a in alleles_j]
+
+            n_hap = len(x)
+            p_a = sum(x) / n_hap
+            p_b = sum(y) / n_hap
+
+            if p_a == 0 or p_a == 1 or p_b == 0 or p_b == 1:
+                continue
+
+            p_ab = sum(1 for xi, yi in zip(x, y) if xi == 1 and yi == 1) / n_hap
+            d = p_ab - p_a * p_b
+            r_squared = (d * d) / (p_a * (1 - p_a) * p_b * (1 - p_b))
+
+            if distance not in ld_by_distance:
+                ld_by_distance[distance] = []
+            ld_by_distance[distance].append(r_squared)
 
     avg_ld_by_distance = []
-    for dist in sorted(distance_groups.keys()):
-        avg_ld = sum(distance_groups[dist]) / len(distance_groups[dist])
-        avg_ld_by_distance.append((dist, avg_ld))
+    for dist in sorted(ld_by_distance.keys()):
+        avg_r2 = sum(ld_by_distance[dist]) / len(ld_by_distance[dist])
+        avg_ld_by_distance.append((dist, avg_r2))
 
     return avg_ld_by_distance
 
@@ -641,6 +683,113 @@ def compare_populations(pop1_data: Dict[str, Any], pop2_data: Dict[str, Any]) ->
             comparison["fst_ratio"] = fst2 / fst1 if fst1 > 0 else float("inf")
 
     return comparison
+
+
+def calculate_fay_wu_h(sequences: List[str]) -> Tuple[float, float]:
+    """Calculate Fay and Wu's H statistic.
+
+    Delegates to fay_wu_h_from_sequences() in core.py and adds
+    a p-value approximation using a normal distribution.
+
+    Args:
+        sequences: List of DNA sequences
+
+    Returns:
+        Tuple of (fay_wu_h, p_value)
+
+    Example:
+        >>> seqs = ["ATCG", "ATCG", "GCTA", "GCTA"]
+        >>> h, p = calculate_fay_wu_h(seqs)
+        >>> isinstance(h, float)
+        True
+    """
+    if len(sequences) < 4:
+        return 0.0, 1.0
+
+    from . import core as population
+
+    h = population.fay_wu_h_from_sequences(sequences)
+
+    # Approximate p-value using normal distribution
+    # Variance approximation for Fay and Wu's H
+    n = len(sequences)
+    seq_length = len(sequences[0])
+    seg_sites = sum(1 for pos in range(seq_length) if len(set(seq[pos] for seq in sequences)) > 1)
+
+    if seg_sites == 0:
+        return 0.0, 1.0
+
+    # Simplified variance: Var(H) ~ theta * f(n)
+    # Use a conservative normal approximation
+    a1 = sum(1.0 / i for i in range(1, n))
+    theta_w = seg_sites / a1 if a1 > 0 else 0.0
+    # Approximate variance of H (Zeng et al. 2006 simplified)
+    var_h = (theta_w * (n - 2) / (6 * (n - 1))) if n > 1 else 1.0
+
+    if var_h <= 0:
+        return h, 1.0
+
+    z = h / math.sqrt(var_h)
+
+    try:
+        from scipy import stats
+
+        p_value = 2 * (1 - stats.norm.cdf(abs(z)))
+    except ImportError:
+        p_value = min(1.0, 2 * (1 - 0.5 * (1 + math.erf(abs(z) / math.sqrt(2)))))
+
+    return h, p_value
+
+
+def calculate_fu_li_f(sequences: List[str]) -> Tuple[float, float]:
+    """Calculate Fu and Li's F* statistic.
+
+    Delegates to fu_and_li_f_star_from_sequences() in core.py and adds
+    a p-value approximation using a normal distribution.
+
+    Args:
+        sequences: List of DNA sequences
+
+    Returns:
+        Tuple of (fu_li_f_star, p_value)
+
+    Example:
+        >>> seqs = ["ATCG", "ATCG", "GCTA", "GCTA"]
+        >>> f_star, p = calculate_fu_li_f(seqs)
+        >>> isinstance(f_star, float)
+        True
+    """
+    if len(sequences) < 4:
+        return 0.0, 1.0
+
+    from . import core as population
+
+    f_star = population.fu_and_li_f_star_from_sequences(sequences)
+
+    # Approximate p-value using normal distribution
+    n = len(sequences)
+    seq_length = len(sequences[0])
+    seg_sites = sum(1 for pos in range(seq_length) if len(set(seq[pos] for seq in sequences)) > 1)
+
+    if seg_sites == 0:
+        return 0.0, 1.0
+
+    # Use variance from Fu and Li (1993) simplified
+    variance = calculate_fu_li_variance(n, seg_sites)
+
+    if variance <= 0:
+        return f_star, 1.0
+
+    z = f_star / math.sqrt(variance)
+
+    try:
+        from scipy import stats
+
+        p_value = 2 * (1 - stats.norm.cdf(abs(z)))
+    except ImportError:
+        p_value = min(1.0, 2 * (1 - 0.5 * (1 + math.erf(abs(z) / math.sqrt(2)))))
+
+    return f_star, p_value
 
 
 def neutrality_test_suite(sequences: List[str]) -> Dict[str, Any]:

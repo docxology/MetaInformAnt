@@ -17,10 +17,10 @@ import os
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable, Iterable, Protocol
+from typing import Any, Iterable, Protocol
 from urllib.parse import urlparse
 
-from metainformant.core import io, logging, progress
+from metainformant.core import logging, progress
 
 logger = logging.get_logger(__name__)
 
@@ -303,6 +303,23 @@ def download_with_progress(
     last_hb = 0.0
     errors: list[str] = []
 
+    # Setup progress bar (bytes-based) if requested.
+    # For http we can discover total via HEAD. For others may be None.
+    total_for_bar: int | None = None
+    if show_progress and scheme in ("http", "https"):
+        total_for_bar = _http_head_size(url, timeout=timeout)
+
+    bar = None
+    if show_progress:
+        desc = f"Downloading {dest.name}"
+        bar = progress.progress_bar(total=total_for_bar, desc=desc, unit="B", unit_scale=True)
+
+    # Initialise start_time BEFORE defining _progress_cb so the closure
+    # captures an already-initialised variable (previously it was set after
+    # the closure definition, which worked by accident of late binding but
+    # was fragile).
+    start_time = time.time()
+
     def _progress_cb(*, bytes_written: int, total_bytes: int | None) -> None:
         nonlocal last_hb
         now = time.time()
@@ -335,19 +352,6 @@ def download_with_progress(
 
     attempt = 0
     final: DownloadResult | None = None
-
-    # Setup progress bar (bytes-based) if requested.
-    # For http we can discover total via HEAD. For others may be None.
-    total_for_bar: int | None = None
-    if show_progress and scheme in ("http", "https"):
-        total_for_bar = _http_head_size(url, timeout=timeout)
-
-    bar = None
-    if show_progress:
-        desc = f"Downloading {dest.name}"
-        bar = progress.progress_bar(total=total_for_bar, desc=desc, unit="B", unit_scale=True)
-
-    start_time = time.time()
     try:
         while attempt < max_retries:
             attempt += 1
@@ -462,6 +466,36 @@ def _directory_size_bytes(root: Path, *, glob: str = "**/*") -> int:
     return total
 
 
+class _CachedDirectorySize:
+    """TTL-based cache for directory size calculations.
+
+    Avoids re-walking the entire directory tree on every call when the
+    monitoring loops already sleep(1) between iterations.  A 1-second
+    TTL means at most one full walk per second per unique (root, glob) key.
+    """
+
+    def __init__(self, ttl: float = 1.0) -> None:
+        self._cache: dict[str, tuple[float, int]] = {}  # key -> (timestamp, size)
+        self._ttl = ttl
+
+    def get(self, root: Path, glob: str = "**/*") -> int:
+        """Return directory size, served from cache if within TTL."""
+        key = f"{root}:{glob}"
+        now = time.time()
+        entry = self._cache.get(key)
+        if entry is not None:
+            ts, size = entry
+            if now - ts < self._ttl:
+                return size
+        size = _directory_size_bytes(root, glob=glob)
+        self._cache[key] = (now, size)
+        return size
+
+    def clear(self) -> None:
+        """Evict all cached entries."""
+        self._cache.clear()
+
+
 def monitor_subprocess_directory_growth(
     *,
     process: "Any",
@@ -500,6 +534,7 @@ def monitor_subprocess_directory_growth(
     last = 0.0
     last_bytes = 0
     start_time = time.time()
+    _size_cache = _CachedDirectorySize(ttl=1.0)
 
     def _write(status: str, bytes_done: int) -> None:
         elapsed = max(0.0, time.time() - start_time)
@@ -532,7 +567,7 @@ def monitor_subprocess_directory_growth(
     while True:
         rc = process.poll()
         now = time.time()
-        bytes_done = _directory_size_bytes(watch)
+        bytes_done = _size_cache.get(watch)
 
         if bar is not None:
             delta = bytes_done - bar.n
@@ -586,6 +621,7 @@ def monitor_subprocess_file_count(
 
     last = 0.0
     start_time = time.time()
+    _size_cache = _CachedDirectorySize(ttl=1.0)
 
     def _count_done() -> int:
         done = 0
@@ -597,15 +633,16 @@ def monitor_subprocess_file_count(
     def _write(status: str, done: int) -> None:
         elapsed = max(0.0, time.time() - start_time)
         pct = (done / total) * 100.0 if total else None
+        cached_size = _size_cache.get(watch)
         state = DownloadHeartbeatState(
             url=str(getattr(process, "args", "subprocess")),
             destination=str(watch),
             started_at=started,
             last_update=_utc_iso(),
-            bytes_downloaded=_directory_size_bytes(watch),
+            bytes_downloaded=cached_size,
             total_bytes=None,
             progress_percent=pct,
-            speed_mbps=_compute_speed_mbps(_directory_size_bytes(watch), elapsed),
+            speed_mbps=_compute_speed_mbps(cached_size, elapsed),
             eta_seconds=None,
             status=status,
             step=desc,
@@ -671,6 +708,7 @@ def monitor_subprocess_sample_progress(
 
     last = 0.0
     start_time = time.time()
+    _size_cache = _CachedDirectorySize(ttl=1.0)
 
     def _count_done() -> int:
         return len(list(watch.glob(completion_glob)))
@@ -680,15 +718,16 @@ def monitor_subprocess_sample_progress(
         pct = None
         if total_samples:
             pct = min(100.0, (done / total_samples) * 100.0)
+        cached_size = _size_cache.get(watch)
         state = DownloadHeartbeatState(
             url=str(getattr(process, "args", "subprocess")),
             destination=str(watch),
             started_at=started,
             last_update=_utc_iso(),
-            bytes_downloaded=_directory_size_bytes(watch),
+            bytes_downloaded=cached_size,
             total_bytes=None,
             progress_percent=pct,
-            speed_mbps=_compute_speed_mbps(_directory_size_bytes(watch), elapsed),
+            speed_mbps=_compute_speed_mbps(cached_size, elapsed),
             eta_seconds=None,
             status=status,
             step=desc,

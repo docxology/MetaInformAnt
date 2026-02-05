@@ -70,18 +70,43 @@ def get_expected_index_path(work_dir: Path, species_name: str) -> Path:
     return index_path
 
 
-def _download_url(url: str, output_path: Path, timeout: int = 600) -> bool:
-    """Helper to download file from URL."""
+def _download_url(url: str, output_path: Path, timeout: int = 600, verify_ssl: bool = True) -> bool:
+    """Helper to download file from URL.
+
+    Args:
+        url: URL to download from
+        output_path: Path to save the file
+        timeout: Connection timeout in seconds
+        verify_ssl: Whether to verify SSL certificates. Set to False only for known-good
+                   scientific FTP servers with certificate issues (e.g., some NCBI mirrors).
+
+    Returns:
+        True if download succeeded, False otherwise.
+    """
     try:
-        # Create context to ignore SSL errors if needed (often an issue with some legacy scientific sites)
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
+        if verify_ssl:
+            ctx = ssl.create_default_context()
+        else:
+            # Only disable SSL verification for specific scientific data servers with known
+            # certificate issues. Log a warning so this is visible in logs.
+            logger.warning(f"SSL verification disabled for download from: {url}")
+            ctx = ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = ssl.CERT_NONE
 
         logger.info(f"Downloading {url} to {output_path}")
         with urllib.request.urlopen(url, context=ctx, timeout=timeout) as response, open(output_path, "wb") as out_file:
             shutil.copyfileobj(response, out_file)
         return True
+    except ssl.SSLCertVerificationError as e:
+        # Retry without SSL verification for FTP URLs from known scientific sources
+        if verify_ssl and ("ftp.ncbi" in url or "ebi.ac.uk" in url):
+            logger.warning(f"SSL verification failed for {url}, retrying without verification: {e}")
+            return _download_url(url, output_path, timeout, verify_ssl=False)
+        logger.error(f"SSL verification failed for {url}: {e}")
+        if output_path.exists():
+            output_path.unlink()
+        return False
     except Exception as e:
         logger.error(f"Failed to download {url}: {e}")
         if output_path.exists():

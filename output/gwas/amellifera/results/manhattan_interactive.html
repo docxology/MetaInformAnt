@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Interactive Manhattan Plot</title>
+<style>
+body { font-family: Arial, Helvetica, sans-serif; margin: 2rem; background: #fafafa; }
+h1 { color: #333; }
+table { border-collapse: collapse; width: 100%; margin-top: 1rem; }
+th, td { padding: 8px 12px; border: 1px solid #ddd; text-align: left; }
+th { background: #4a90d9; color: white; }
+tr:nth-child(even) { background: #f2f2f2; }
+tr:hover { background: #e0ecf8; }
+.note { color: #888; font-size: 0.9rem; margin-top: 0.5rem; }
+</style>
+</head>
+<body>
+<h1>Interactive Manhattan Plot</h1>
+<p class="note">Showing top 50 of 1739 entries.
+Install <code>plotly</code> for interactive plots.</p>
+<table>
+<thead><tr><th>Variant</th><th>Chromosome</th><th>Position</th><th>P-value</th><th>Beta</th><th>-log10(p)</th></tr></thead>
+<tbody>
+<tr><td>1:6483834</td><td>1</td><td>6483834</td><td>2.74e-04</td><td>N/A</td><td>3.56</td></tr>
+<tr><td>1:1468974</td><td>1</td><td>1468974</td><td>4.56e-04</td><td>N/A</td><td>3.34</td></tr>
+<tr><td>1:6528707</td><td>1</td><td>6528707</td><td>5.65e-04</td><td>N/A</td><td>3.25</td></tr>
+<tr><td>1:9186654</td><td>1</td><td>9186654</td><td>2.70e-03</td><td>N/A</td><td>2.57</td></tr>
+<tr><td>1:7499000</td><td>1</td><td>7499000</td><td>3.16e-03</td><td>N/A</td><td>2.50</td></tr>
+<tr><td>1:24853685</td><td>1</td><td>24853685</td><td>3.48e-03</td><td>N/A</td><td>2.46</td></tr>
+<tr><td>1:3198617</td><td>1</td><td>3198617</td><td>3.53e-03</td><td>N/A</td><td>2.45</td></tr>
+<tr><td>1:8633473</td><td>1</td><td>8633473</td><td>4.41e-03</td><td>N/A</td><td>2.36</td></tr>
+<tr><td>1:4025505</td><td>1</td><td>4025505</td><td>4.92e-03</td><td>N/A</td><td>2.31</td></tr>
+<tr><td>1:16281299</td><td>1</td><td>16281299</td><td>4.98e-03</td><td>N/A</td><td>2.30</td></tr>
+<tr><td>1:600572</td><td>1</td><td>600572</td><td>6.88e-03</td><td>N/A</td><td>2.16</td></tr>
+<tr><td>1:10898456</td><td>1</td><td>10898456</td><td>7.78e-03</td><td>N/A</td><td>2.11</td></tr>
+<tr><td>1:5242825</td><td>1</td><td>5242825</td><td>7.88e-03</td><td>N/A</td><td>2.10</td></tr>
+<tr><td>1:1091955</td><td>1</td><td>1091955</td><td>8.50e-03</td><td>N/A</td><td>2.07</td></tr>
+<tr><td>1:950899</td><td>1</td><td>950899</td><td>8.53e-03</td><td>N/A</td><td>2.07</td></tr>
+<tr><td>1:7380275</td><td>1</td><td>7380275</td><td>1.06e-02</td><td>N/A</td><td>1.97</td></tr>
+<tr><td>1:17796716</td><td>1</td><td>17796716</td><td>1.07e-02</td><td>N/A</td><td>1.97</td></tr>
+<tr><td>1:7268445</td><td>1</td><td>7268445</td><td>1.09e-02</td><td>N/A</td><td>1.96</td></tr>
+<tr><td>1:158020</td><td>1</td><td>158020</td><td>1.28e-02</td><td>N/A</td><td>1.89</td></tr>
+<tr><td>1:3115710</td><td>1</td><td>3115710</td><td>1.35e-02</td><td>N/A</td><td>1.87</td></tr>
+<tr><td>1:6278618</td><td>1</td><td>6278618</td><td>1.38e-02</td><td>N/A</td><td>1.86</td></tr>
+<tr><td>1:1402224</td><td>1</td><td>1402224</td><td>1.39e-02</td><td>N/A</td><td>1.86</td></tr>
+<tr><td>1:24466435</td><td>1</td><td>24466435</td><td>1.44e-02</td><td>N/A</td><td>1.84</td></tr>
+<tr><td>1:11407833</td><td>1</td><td>11407833</td><td>1.48e-02</td><td>N/A</td><td>1.83</td></tr>
+<tr><td>1:6002000</td><td>1</td><td>6002000</td><td>1.73e-02</td><td>N/A</td><td>1.76</td></tr>
+<tr><td>1:5955385</td><td>1</td><td>5955385</td><td>1.79e-02</td><td>N/A</td><td>1.75</td></tr>
+<tr><td>1:3051413</td><td>1</td><td>3051413</td><td>1.87e-02</td><td>N/A</td><td>1.73</td></tr>
+<tr><td>1:16385322</td><td>1</td><td>16385322</td><td>1.89e-02</td><td>N/A</td><td>1.72</td></tr>
+<tr><td>1:4539861</td><td>1</td><td>4539861</td><td>1.89e-02</td><td>N/A</td><td>1.72</td></tr>
+<tr><td>1:9019292</td><td>1</td><td>9019292</td><td>1.96e-02</td><td>N/A</td><td>1.71</td></tr>
+<tr><td>1:3614915</td><td>1</td><td>3614915</td><td>1.99e-02</td><td>N/A</td><td>1.70</td></tr>
+<tr><td>1:2163265</td><td>1</td><td>2163265</td><td>2.05e-02</td><td>N/A</td><td>1.69</td></tr>
+<tr><td>1:3437069</td><td>1</td><td>3437069</td><td>2.10e-02</td><td>N/A</td><td>1.68</td></tr>
+<tr><td>1:2132636</td><td>1</td><td>2132636</td><td>2.18e-02</td><td>N/A</td><td>1.66</td></tr>
+<tr><td>1:8534323</td><td>1</td><td>8534323</td><td>2.19e-02</td><td>N/A</td><td>1.66</td></tr>
+<tr><td>1:4938114</td><td>1</td><td>4938114</td><td>2.20e-02</td><td>N/A</td><td>1.66</td></tr>
+<tr><td>1:11494350</td><td>1</td><td>11494350</td><td>2.51e-02</td><td>N/A</td><td>1.60</td></tr>
+<tr><td>1:9326083</td><td>1</td><td>9326083</td><td>2.52e-02</td><td>N/A</td><td>1.60</td></tr>
+<tr><td>1:3323051</td><td>1</td><td>3323051</td><td>2.60e-02</td><td>N/A</td><td>1.58</td></tr>
+<tr><td>1:6880891</td><td>1</td><td>6880891</td><td>2.64e-02</td><td>N/A</td><td>1.58</td></tr>
+<tr><td>1:6034160</td><td>1</td><td>6034160</td><td>2.69e-02</td><td>N/A</td><td>1.57</td></tr>
+<tr><td>1:1151711</td><td>1</td><td>1151711</td><td>2.72e-02</td><td>N/A</td><td>1.57</td></tr>
+<tr><td>1:11095052</td><td>1</td><td>11095052</td><td>2.74e-02</td><td>N/A</td><td>1.56</td></tr>
+<tr><td>1:2995000</td><td>1</td><td>2995000</td><td>2.84e-02</td><td>N/A</td><td>1.55</td></tr>
+<tr><td>1:4802611</td><td>1</td><td>4802611</td><td>2.99e-02</td><td>N/A</td><td>1.52</td></tr>
+<tr><td>1:7853502</td><td>1</td><td>7853502</td><td>3.06e-02</td><td>N/A</td><td>1.51</td></tr>
+<tr><td>1:5716504</td><td>1</td><td>5716504</td><td>3.07e-02</td><td>N/A</td><td>1.51</td></tr>
+<tr><td>1:510968</td><td>1</td><td>510968</td><td>3.09e-02</td><td>N/A</td><td>1.51</td></tr>
+<tr><td>1:17185476</td><td>1</td><td>17185476</td><td>3.09e-02</td><td>N/A</td><td>1.51</td></tr>
+<tr><td>1:1054008</td><td>1</td><td>1054008</td><td>3.09e-02</td><td>N/A</td><td>1.51</td></tr>
+
+</tbody>
+</table>
+</body>
+</html>

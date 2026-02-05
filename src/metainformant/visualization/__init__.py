@@ -2,7 +2,8 @@
 
 This module provides comprehensive plotting and visualization capabilities
 for biological data, including statistical plots, genomic visualizations,
-genomic networks, animations, and publication-quality figure generation.
+genomic networks, animations, publication-quality themes, interactive plots,
+and composite dashboards.
 """
 
 from __future__ import annotations
@@ -11,6 +12,12 @@ from __future__ import annotations
 from . import analysis
 from . import genomics
 from . import plots
+
+# Core utilities
+from . import themes
+from . import palettes
+from . import composite
+from . import interactive
 
 # Import modules from subpackages for backward compatibility
 from .plots.animations import *
@@ -41,9 +48,50 @@ from .genomics.trees import (
 from .analysis import (
     dimred,
     information,
-    quality,
     statistical,
     timeseries,
+    # Quality submodules
+    quality_sequencing,
+    quality_omics,
+    quality_assessment,
+)
+
+# Theme and palette utilities
+from .themes import (
+    list_themes,
+    get_theme,
+    apply_theme,
+    reset_theme,
+    theme,
+    register_theme,
+)
+from .palettes import (
+    chromosome_palette,
+    categorical,
+    expression_gradient,
+    significance_palette,
+    significance_color,
+    heatmap_cmap,
+    alternating_pair,
+    CHROMOSOME_COLORS,
+    WONG,
+    TOL_BRIGHT,
+    IBM_COLORBLIND,
+)
+
+# Composite dashboards
+from .composite import (
+    multi_panel,
+    genomic_overview,
+    qc_summary,
+)
+
+# Interactive plots
+from .interactive import (
+    interactive_scatter,
+    interactive_heatmap,
+    interactive_volcano,
+    interactive_manhattan,
 )
 
 # Optional imports with graceful fallbacks
@@ -93,12 +141,19 @@ __all__ = [
     "analysis",
     "genomics",
     "plots",
+    # Core modules
+    "themes",
+    "palettes",
+    "composite",
+    "interactive",
     # Core plotting functionality
     "basic",
-    "plots",
+    "general",
+    "multidim",
+    "specialized",
+    "animations",
     # Statistical visualizations
     "statistical",
-    "quality",
     # Biological data visualizations
     "genomics_module",
     "expression",
@@ -109,12 +164,41 @@ __all__ = [
     "unrooted_tree_plot",
     # Advanced plotting
     "dimred",
-    "multidim",
     "timeseries",
-    "animations",
-    "specialized",
     # Information theory visualizations
     "information",
+    # Quality submodules
+    "quality_sequencing",
+    "quality_omics",
+    "quality_assessment",
+    # Theme utilities
+    "list_themes",
+    "get_theme",
+    "apply_theme",
+    "reset_theme",
+    "theme",
+    "register_theme",
+    # Palette utilities
+    "chromosome_palette",
+    "categorical",
+    "expression_gradient",
+    "significance_palette",
+    "significance_color",
+    "heatmap_cmap",
+    "alternating_pair",
+    "CHROMOSOME_COLORS",
+    "WONG",
+    "TOL_BRIGHT",
+    "IBM_COLORBLIND",
+    # Composite dashboards
+    "multi_panel",
+    "genomic_overview",
+    "qc_summary",
+    # Interactive plots
+    "interactive_scatter",
+    "interactive_heatmap",
+    "interactive_volcano",
+    "interactive_manhattan",
     # Domain-specific visualizations
     "protein",
     "epigenome",

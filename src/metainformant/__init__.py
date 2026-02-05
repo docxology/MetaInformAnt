@@ -32,6 +32,9 @@ Modules:
 - phenotype: Phenotypic trait analysis
 - ecology: Ecological and community analysis
 - epigenome: Epigenomic data analysis
+- longread: Long-read sequencing analysis (ONT, PacBio)
+- structural_variants: Structural variant detection and analysis
+- spatial: Spatial transcriptomics analysis
 """
 
 from __future__ import annotations
@@ -61,6 +64,9 @@ from . import (
     phenotype,
     ecology,
     epigenome,
+    longread,
+    structural_variants,
+    spatial,
     menu,
 )
 
@@ -83,6 +89,7 @@ __all__ = [
     "rna",
     "protein",
     "epigenome",
+    "longread",
     # Statistical & ML modules
     "gwas",
     "math",
@@ -92,6 +99,8 @@ __all__ = [
     "networks",
     "multiomics",
     "singlecell",
+    "spatial",
+    "structural_variants",
     "simulation",
     # Annotation & metadata modules
     "ontology",

@@ -17,6 +17,13 @@ from metainformant.gwas.data.genome import (
     normalize_chromosome_name,
     parse_gff3_genes,
 )
+from metainformant.gwas.data.metadata import (
+    get_geographic_coordinates,
+    get_population_labels,
+    load_sample_metadata,
+    merge_metadata_with_phenotypes,
+    validate_metadata,
+)
 from metainformant.gwas.data.sra_download import (
     batch_download_sra,
     check_sra_tools_available,
@@ -56,4 +63,10 @@ __all__ = [
     "prefetch_sra_metadata",
     "validate_sra_download",
     "check_sra_tools_available",
+    # Sample metadata
+    "load_sample_metadata",
+    "merge_metadata_with_phenotypes",
+    "validate_metadata",
+    "get_population_labels",
+    "get_geographic_coordinates",
 ]

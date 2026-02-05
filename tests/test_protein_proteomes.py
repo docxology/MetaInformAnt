@@ -13,7 +13,8 @@ def test_read_taxon_ids_basic(tmp_path: Path) -> None:
     taxon_file.write_text("9606\n10090\n10116\n")
 
     result = read_taxon_ids(taxon_file)
-    expected = [9606, 10090, 10116]
+    # read_taxon_ids returns List[str]
+    expected = ["9606", "10090", "10116"]
 
     assert result == expected
 
@@ -34,7 +35,7 @@ def test_read_taxon_ids_with_comments(tmp_path: Path) -> None:
     )
 
     result = read_taxon_ids(taxon_file)
-    expected = [9606, 10090, 10116]
+    expected = ["9606", "10090", "10116"]
 
     assert result == expected
 
@@ -61,7 +62,7 @@ also_invalid
     )
 
     result = read_taxon_ids(taxon_file)
-    expected = [9606, 10090, 10116]  # Invalid lines should be skipped
+    expected = ["9606", "10090", "10116"]  # Invalid lines should be skipped
 
     assert result == expected
 
@@ -72,6 +73,6 @@ def test_read_taxon_ids_whitespace_handling(tmp_path: Path) -> None:
     taxon_file.write_text("  9606  \n\t10090\t\n  \n10116\n")
 
     result = read_taxon_ids(taxon_file)
-    expected = [9606, 10090, 10116]
+    expected = ["9606", "10090", "10116"]
 
     assert result == expected

@@ -8,7 +8,7 @@ interaction networks, gene regulatory networks, and other biological graphs.
 from __future__ import annotations
 
 import random
-from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 from metainformant.core import logging
 
@@ -116,12 +116,10 @@ def leiden_communities(
         raise ImportError("networkx required for community detection")
 
     try:
-        import igraph as ig
+        import igraph as ig  # noqa: F401
         import leidenalg as la
 
-        HAS_LEIDEN = True
     except ImportError:
-        HAS_LEIDEN = False
         logger.warning("leidenalg and python-igraph not available, Leiden method disabled")
         raise ImportError("leidenalg and python-igraph required for Leiden method")
 

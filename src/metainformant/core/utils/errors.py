@@ -13,6 +13,10 @@ utilities for robust operation across all modules.
    - `ValidationError`: Data validation errors
    - `NetworkError`: Network operation errors
    - `CacheError`: Cache operation errors
+   - `DownloadError`: Download operation errors (inherits NetworkError)
+   - `PipelineError`: Workflow pipeline execution errors
+   - `DependencyError`: Missing external tool/dependency errors
+   - `ResourceError`: Resource exhaustion (disk, memory) errors
 
 2. **Use error_context() for Context**: Wrap operations that might fail:
    ```python
@@ -95,6 +99,46 @@ class NetworkError(METAINFORMANTError):
 
 class CacheError(METAINFORMANTError):
     """Cache operation errors."""
+
+    pass
+
+
+class DownloadError(NetworkError):
+    """Download operation errors.
+
+    Inherits from NetworkError since downloads are network operations.
+    Available at the utils level for cross-module use.
+    """
+
+    pass
+
+
+class PipelineError(METAINFORMANTError):
+    """Workflow pipeline execution errors.
+
+    Raised when a multi-step pipeline or workflow fails,
+    including step failures, ordering issues, or pipeline configuration problems.
+    """
+
+    pass
+
+
+class DependencyError(METAINFORMANTError):
+    """Missing external tool or dependency errors.
+
+    Raised when a required external tool (e.g., samtools, muscle, amalgkit)
+    or library dependency is not available on the system.
+    """
+
+    pass
+
+
+class ResourceError(METAINFORMANTError):
+    """Resource exhaustion errors.
+
+    Raised when system resources (disk space, memory, file handles)
+    are insufficient for the requested operation.
+    """
 
     pass
 

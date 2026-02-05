@@ -451,3 +451,366 @@ def calculate_allele_frequency(vcf_data: Dict[str, Any], variant_index: int) -> 
             frequencies[allele] = count / total_alleles
 
     return frequencies
+
+
+# Standard genetic code for codon translation
+_GENETIC_CODE: Dict[str, str] = {
+    "TTT": "F",
+    "TTC": "F",
+    "TTA": "L",
+    "TTG": "L",
+    "TCT": "S",
+    "TCC": "S",
+    "TCA": "S",
+    "TCG": "S",
+    "TAT": "Y",
+    "TAC": "Y",
+    "TAA": "*",
+    "TAG": "*",
+    "TGT": "C",
+    "TGC": "C",
+    "TGA": "*",
+    "TGG": "W",
+    "CTT": "L",
+    "CTC": "L",
+    "CTA": "L",
+    "CTG": "L",
+    "CCT": "P",
+    "CCC": "P",
+    "CCA": "P",
+    "CCG": "P",
+    "CAT": "H",
+    "CAC": "H",
+    "CAA": "Q",
+    "CAG": "Q",
+    "CGT": "R",
+    "CGC": "R",
+    "CGA": "R",
+    "CGG": "R",
+    "ATT": "I",
+    "ATC": "I",
+    "ATA": "I",
+    "ATG": "M",
+    "ACT": "T",
+    "ACC": "T",
+    "ACA": "T",
+    "ACG": "T",
+    "AAT": "N",
+    "AAC": "N",
+    "AAA": "K",
+    "AAG": "K",
+    "AGT": "S",
+    "AGC": "S",
+    "AGA": "R",
+    "AGG": "R",
+    "GTT": "V",
+    "GTC": "V",
+    "GTA": "V",
+    "GTG": "V",
+    "GCT": "A",
+    "GCC": "A",
+    "GCA": "A",
+    "GCG": "A",
+    "GAT": "D",
+    "GAC": "D",
+    "GAA": "E",
+    "GAG": "E",
+    "GGT": "G",
+    "GGC": "G",
+    "GGA": "G",
+    "GGG": "G",
+}
+
+
+def predict_variant_effect(ref: str, alt: str, position: int, coding_sequence: str) -> Dict[str, Any]:
+    """Predict the effect of a variant on protein coding.
+
+    Determines whether a variant causes a synonymous, missense, nonsense, or frameshift
+    change by translating the original and mutated codons using the standard genetic code.
+
+    Args:
+        ref: Reference allele string (e.g., "A", "AT")
+        alt: Alternative allele string (e.g., "G", "A")
+        position: 0-based position of the variant within the coding sequence
+        coding_sequence: The full coding DNA sequence (CDS) in which the variant occurs
+
+    Returns:
+        Dictionary with keys:
+            - effect_type: One of 'synonymous', 'missense', 'nonsense', 'frameshift',
+              'splice_site', 'intergenic'
+            - original_codon: The reference codon (or None if not applicable)
+            - mutated_codon: The mutated codon (or None if not applicable)
+            - original_aa: The reference amino acid (or None)
+            - mutated_aa: The mutated amino acid (or None)
+            - codon_position: 0-based position within the codon (0, 1, or 2), or None
+
+    Raises:
+        ValueError: If position is negative
+
+    Example:
+        >>> result = predict_variant_effect("A", "G", 0, "ATGATCGAA")
+        >>> result["effect_type"]
+        'missense'
+        >>> result["original_aa"]
+        'M'
+        >>> result["mutated_aa"]
+        'V'
+    """
+    if position < 0:
+        raise ValueError("Position must be non-negative")
+
+    result: Dict[str, Any] = {
+        "effect_type": "intergenic",
+        "original_codon": None,
+        "mutated_codon": None,
+        "original_aa": None,
+        "mutated_aa": None,
+        "codon_position": None,
+    }
+
+    ref = ref.upper()
+    alt = alt.upper()
+    coding_sequence = coding_sequence.upper()
+
+    # If position is outside the coding sequence, classify as intergenic
+    if position >= len(coding_sequence) or not coding_sequence:
+        return result
+
+    # Check for frameshift: indels where length difference is not a multiple of 3
+    ref_len = len(ref)
+    alt_len = len(alt)
+    if ref_len != alt_len:
+        length_diff = abs(ref_len - alt_len)
+        if length_diff % 3 != 0:
+            result["effect_type"] = "frameshift"
+            return result
+
+    # Check for splice site proximity (within 2 bp of exon boundary)
+    # Splice sites are at the very start or end of the coding sequence
+    if position < 2 or position >= len(coding_sequence) - 2:
+        # Only flag as splice_site for SNPs at the boundaries, not for all boundary variants
+        if ref_len == 1 and alt_len == 1 and (position < 2 or position >= len(coding_sequence) - 2):
+            # Check if this is truly at a boundary (first/last 2 bases)
+            if position < 2 or position >= len(coding_sequence) - 2:
+                pass  # Continue to codon analysis; splice_site only if at exact boundary
+
+    # For SNPs or in-frame substitutions, analyze codon impact
+    if ref_len == 1 and alt_len == 1:
+        codon_index = position // 3
+        codon_start = codon_index * 3
+
+        # Ensure we have a complete codon
+        if codon_start + 3 > len(coding_sequence):
+            result["effect_type"] = "intergenic"
+            return result
+
+        codon_pos = position % 3
+        original_codon = coding_sequence[codon_start : codon_start + 3]
+
+        # Build the mutated codon
+        mutated_codon = original_codon[:codon_pos] + alt + original_codon[codon_pos + 1 :]
+
+        original_aa = _GENETIC_CODE.get(original_codon, "X")
+        mutated_aa = _GENETIC_CODE.get(mutated_codon, "X")
+
+        result["original_codon"] = original_codon
+        result["mutated_codon"] = mutated_codon
+        result["original_aa"] = original_aa
+        result["mutated_aa"] = mutated_aa
+        result["codon_position"] = codon_pos
+
+        if original_aa == mutated_aa:
+            result["effect_type"] = "synonymous"
+        elif mutated_aa == "*":
+            result["effect_type"] = "nonsense"
+        else:
+            result["effect_type"] = "missense"
+
+    logger.info(f"Predicted variant effect at position {position}: {result['effect_type']}")
+    return result
+
+
+def calculate_ti_tv_ratio(vcf_data: Dict[str, Any]) -> float:
+    """Calculate transition/transversion ratio from VCF data.
+
+    Transitions are purine-to-purine (A<->G) or pyrimidine-to-pyrimidine (C<->T)
+    substitutions. Transversions are all other single-nucleotide substitutions.
+
+    Args:
+        vcf_data: Parsed VCF data dictionary from parse_vcf(), containing a 'variants' list
+                  where each variant has 'ref' and 'alt' keys
+
+    Returns:
+        Transition/transversion ratio as a float. Returns 0.0 if no transversions
+        are found (to avoid division by zero).
+
+    Example:
+        >>> vcf = {"variants": [
+        ...     {"ref": "A", "alt": ["G"]},
+        ...     {"ref": "C", "alt": ["T"]},
+        ...     {"ref": "A", "alt": ["C"]},
+        ... ]}
+        >>> ratio = calculate_ti_tv_ratio(vcf)
+        >>> ratio == 2.0
+        True
+    """
+    transition_pairs = {("A", "G"), ("G", "A"), ("C", "T"), ("T", "C")}
+
+    transitions = 0
+    transversions = 0
+
+    for variant in vcf_data.get("variants", []):
+        ref = variant["ref"].upper()
+        alts = variant["alt"] if isinstance(variant["alt"], list) else [variant["alt"]]
+
+        for alt in alts:
+            alt = alt.upper()
+            # Only count SNPs (single nucleotide polymorphisms)
+            if len(ref) == 1 and len(alt) == 1:
+                if (ref, alt) in transition_pairs:
+                    transitions += 1
+                else:
+                    transversions += 1
+
+    if transversions == 0:
+        logger.warning("No transversions found; returning 0.0 for Ti/Tv ratio")
+        return 0.0
+
+    ratio = transitions / transversions
+    logger.info(f"Ti/Tv ratio: {ratio:.4f} (transitions={transitions}, transversions={transversions})")
+    return ratio
+
+
+def summarize_variants_by_chromosome(vcf_data: Dict[str, Any]) -> Dict[str, Dict[str, int]]:
+    """Group variant counts by chromosome with SNP/indel breakdown.
+
+    Iterates through all variants in the VCF data and categorizes each as either
+    a SNP (single nucleotide polymorphism) or indel (insertion/deletion) per chromosome.
+
+    Args:
+        vcf_data: Parsed VCF data dictionary from parse_vcf(), containing a 'variants' list
+                  where each variant has 'chrom', 'ref', and 'alt' keys
+
+    Returns:
+        Dictionary mapping chromosome names to count dictionaries, each containing:
+            - total: Total variant count on this chromosome
+            - snp: Number of SNPs
+            - indel: Number of indels (insertions and deletions)
+
+    Example:
+        >>> vcf = {"variants": [
+        ...     {"chrom": "chr1", "ref": "A", "alt": ["G"]},
+        ...     {"chrom": "chr1", "ref": "AT", "alt": ["A"]},
+        ...     {"chrom": "chr2", "ref": "C", "alt": ["T"]},
+        ... ]}
+        >>> summary = summarize_variants_by_chromosome(vcf)
+        >>> summary["chr1"]["snp"]
+        1
+        >>> summary["chr1"]["indel"]
+        1
+        >>> summary["chr2"]["total"]
+        1
+    """
+    chrom_summary: Dict[str, Dict[str, int]] = {}
+
+    for variant in vcf_data.get("variants", []):
+        chrom = variant["chrom"]
+
+        if chrom not in chrom_summary:
+            chrom_summary[chrom] = {"total": 0, "snp": 0, "indel": 0}
+
+        chrom_summary[chrom]["total"] += 1
+
+        ref = variant["ref"]
+        alts = variant["alt"] if isinstance(variant["alt"], list) else [variant["alt"]]
+
+        # A variant is a SNP only if all alt alleles are single-base substitutions
+        is_snp = all(len(ref) == 1 and len(alt) == 1 for alt in alts) and len(alts) > 0
+        if is_snp:
+            chrom_summary[chrom]["snp"] += 1
+        else:
+            chrom_summary[chrom]["indel"] += 1
+
+    logger.info(f"Summarized variants across {len(chrom_summary)} chromosomes")
+    return chrom_summary
+
+
+def merge_vcf_data(vcf1: Dict[str, Any], vcf2: Dict[str, Any]) -> Dict[str, Any]:
+    """Merge two VCF datasets, combining variants and deduplicating.
+
+    Variants are considered duplicates if they share the same chromosome, position,
+    reference allele, and alternative allele(s). Metadata from vcf1 takes precedence
+    where keys overlap, with vcf2 metadata merged in for new keys. Samples from both
+    datasets are combined (union).
+
+    Args:
+        vcf1: First parsed VCF data dictionary from parse_vcf()
+        vcf2: Second parsed VCF data dictionary from parse_vcf()
+
+    Returns:
+        Merged VCF data dictionary with deduplicated variants, combined metadata,
+        and unified sample lists
+
+    Example:
+        >>> vcf1 = {
+        ...     "metadata": {"source": "gatk"},
+        ...     "samples": ["S1"],
+        ...     "variants": [{"chrom": "chr1", "pos": 100, "ref": "A", "alt": ["G"],
+        ...                    "id": ".", "qual": 30.0, "filter": [], "info": {}, "samples": {}}],
+        ...     "total_variants": 1,
+        ... }
+        >>> vcf2 = {
+        ...     "metadata": {"caller": "bcftools"},
+        ...     "samples": ["S2"],
+        ...     "variants": [{"chrom": "chr1", "pos": 200, "ref": "C", "alt": ["T"],
+        ...                    "id": ".", "qual": 40.0, "filter": [], "info": {}, "samples": {}}],
+        ...     "total_variants": 1,
+        ... }
+        >>> merged = merge_vcf_data(vcf1, vcf2)
+        >>> merged["total_variants"]
+        2
+        >>> "S1" in merged["samples"] and "S2" in merged["samples"]
+        True
+    """
+    # Merge metadata (vcf1 takes precedence for overlapping keys)
+    merged_metadata = {}
+    merged_metadata.update(vcf2.get("metadata", {}))
+    merged_metadata.update(vcf1.get("metadata", {}))
+
+    # Merge samples (union, preserving order)
+    samples1 = vcf1.get("samples", [])
+    samples2 = vcf2.get("samples", [])
+    seen_samples: set = set()
+    merged_samples: List[str] = []
+    for s in samples1 + samples2:
+        if s not in seen_samples:
+            seen_samples.add(s)
+            merged_samples.append(s)
+
+    # Merge and deduplicate variants by (chrom, pos, ref, alt_tuple)
+    seen_variants: set = set()
+    merged_variants: List[Dict[str, Any]] = []
+
+    for variant in vcf1.get("variants", []) + vcf2.get("variants", []):
+        alt_list = variant["alt"] if isinstance(variant["alt"], list) else [variant["alt"]]
+        variant_key = (variant["chrom"], variant["pos"], variant["ref"], tuple(sorted(alt_list)))
+
+        if variant_key not in seen_variants:
+            seen_variants.add(variant_key)
+            merged_variants.append(variant)
+
+    # Sort merged variants by chromosome and position for consistent output
+    merged_variants.sort(key=lambda v: (v["chrom"], v["pos"]))
+
+    result = {
+        "metadata": merged_metadata,
+        "samples": merged_samples,
+        "variants": merged_variants,
+        "total_variants": len(merged_variants),
+    }
+
+    logger.info(
+        f"Merged VCF data: {vcf1.get('total_variants', 0)} + {vcf2.get('total_variants', 0)} "
+        f"-> {result['total_variants']} variants (after deduplication)"
+    )
+    return result

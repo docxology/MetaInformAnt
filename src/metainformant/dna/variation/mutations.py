@@ -8,7 +8,7 @@ evolutionary rate calculations.
 from __future__ import annotations
 
 import random
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from metainformant.core import logging
 
@@ -131,10 +131,10 @@ def classify_mutations(ancestral: str, derived: str) -> Dict[str, int]:
         "GTC": "V",
         "GTA": "V",
         "GTG": "V",
-        "GCT": "G",
-        "GCC": "G",
-        "GCA": "G",
-        "GCG": "G",
+        "GCT": "A",
+        "GCC": "A",
+        "GCA": "A",
+        "GCG": "A",
         "GAT": "D",
         "GAC": "D",
         "GAA": "E",
@@ -385,7 +385,7 @@ def generate_mutant_library(sequence: str, positions: List[int], mutations: List
     return mutants
 
 
-def analyze_mutation_spectrum(sequence: str, reference: str) -> Dict[str, any]:
+def analyze_mutation_spectrum(sequence: str, reference: str) -> Dict[str, Any]:
     """Analyze the spectrum of mutations between sequences.
 
     Args:

@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional, Union
 import numpy as np
 
 from metainformant.core import io, logging
-from metainformant.information import analysis, syntactic, semantic, continuous, estimation
+from metainformant.information.metrics import analysis, syntactic, semantic, continuous, estimation
 
 logger = logging.get_logger(__name__)
 
@@ -538,8 +538,13 @@ def _generate_markdown_report(results: Dict[str, Any]) -> str:
 
         if "entropy_statistics" in agg:
             lines.append("### Entropy Statistics\n")
-            for method, stats in agg["entropy_statistics"].items():
-                lines.append(f"- **{method}**: {stats['mean']:.3f} ± {stats['std']:.3f}")
+            ent_stats = agg["entropy_statistics"]
+            if isinstance(ent_stats, dict) and "mean" in ent_stats:
+                lines.append(
+                    f"- **Shannon entropy**: {ent_stats['mean']:.3f} ± {ent_stats.get('std', 0):.3f}"
+                    f" (range: {ent_stats.get('min', 0):.3f} – {ent_stats.get('max', 0):.3f},"
+                    f" n={ent_stats.get('n_sequences', 'N/A')})"
+                )
             lines.append("")
 
     # Detailed results
@@ -555,7 +560,7 @@ def _generate_markdown_report(results: Dict[str, Any]) -> str:
             seq_type = analysis.get("sequence_type", "N/A")
 
             if isinstance(entropy, (int, float)):
-                entropy = ".3f"
+                entropy = f"{entropy:.3f}"
 
             lines.append(f"| {seq_idx} | {length} | {entropy} | {seq_type} |")
 
