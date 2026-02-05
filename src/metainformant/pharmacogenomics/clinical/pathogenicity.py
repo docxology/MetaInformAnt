@@ -96,7 +96,7 @@ class ACMGCriteria(str, Enum):
 
 _CRITERIA_DESCRIPTIONS: dict[str, str] = {
     "PVS1": "Null variant (nonsense, frameshift, canonical +/-1 or 2 splice sites, initiation codon, "
-            "single or multi-exon deletion) in gene where LOF is a known mechanism of disease",
+    "single or multi-exon deletion) in gene where LOF is a known mechanism of disease",
     "PS1": "Same amino acid change as a previously established pathogenic variant regardless of nucleotide change",
     "PS2": "De novo (both maternity and paternity confirmed) in patient with disease and no family history",
     "PS3": "Well-established in vitro or in vivo functional studies supportive of a damaging effect on the gene product",
@@ -119,7 +119,7 @@ _CRITERIA_DESCRIPTIONS: dict[str, str] = {
     "BS4": "Lack of segregation in affected members of a family",
     "BP1": "Missense variant in gene for which primarily truncating variants are known to cause disease",
     "BP2": "Observed in trans with a pathogenic variant for a fully penetrant dominant disorder, "
-           "or observed in cis with a pathogenic variant",
+    "or observed in cis with a pathogenic variant",
     "BP3": "In-frame deletions/insertions in a repetitive region without known function",
     "BP4": "Multiple lines of computational evidence suggest no impact on gene product",
     "BP5": "Variant found in a case with an alternate molecular basis for disease",
@@ -236,9 +236,7 @@ def classify_variant_acmg(
 
     # Collect met criteria
     criteria_met: list[str] = [k for k, v in evidence.items() if v]
-    criteria_details: dict[str, str] = {
-        c: _CRITERIA_DESCRIPTIONS.get(c, "No description") for c in criteria_met
-    }
+    criteria_details: dict[str, str] = {c: _CRITERIA_DESCRIPTIONS.get(c, "No description") for c in criteria_met}
 
     # Aggregate into classification
     classification = aggregate_evidence(evidence)
@@ -313,8 +311,16 @@ def apply_acmg_criteria(
     segregation = variant_data.get("segregation_data", {})
 
     # ── PVS1: Null variant in LOF-mechanism gene ──────────────────────────
-    lof_consequences = {"frameshift", "nonsense", "stop_gained", "splice_donor", "splice_acceptor",
-                        "start_lost", "initiator_codon", "exon_deletion"}
+    lof_consequences = {
+        "frameshift",
+        "nonsense",
+        "stop_gained",
+        "splice_donor",
+        "splice_acceptor",
+        "start_lost",
+        "initiator_codon",
+        "exon_deletion",
+    }
     criteria["PVS1"] = consequence in lof_consequences
 
     # ── PS1: Same amino acid change as known pathogenic ───────────────────
@@ -328,10 +334,11 @@ def apply_acmg_criteria(
     # ── PS3: Well-established functional studies ──────────────────────────
     functional_result = functional.get("result", "")
     functional_quality = functional.get("quality", "")
-    criteria["PS3"] = (
-        functional_result.lower() in ("damaging", "loss_of_function", "deleterious")
-        and functional_quality.lower() in ("strong", "well-established")
-    )
+    criteria["PS3"] = functional_result.lower() in (
+        "damaging",
+        "loss_of_function",
+        "deleterious",
+    ) and functional_quality.lower() in ("strong", "well-established")
 
     # ── PS4: Significantly increased prevalence in affected vs controls ───
     case_count = variant_data.get("case_count", 0)
@@ -364,10 +371,7 @@ def apply_acmg_criteria(
     criteria["PP1"] = seg_lod >= 1.5
 
     # ── PP2: Missense in constrained gene ─────────────────────────────────
-    criteria["PP2"] = (
-        "missense" in consequence
-        and bool(variant_data.get("gene_missense_constrained", False))
-    )
+    criteria["PP2"] = "missense" in consequence and bool(variant_data.get("gene_missense_constrained", False))
 
     # ── PP3: Computational evidence (deleterious) ─────────────────────────
     deleterious_count = 0
@@ -375,8 +379,7 @@ def apply_acmg_criteria(
     for tool, prediction in comp_preds.items():
         total_preds += 1
         pred_lower = str(prediction).lower()
-        if pred_lower in ("damaging", "deleterious", "probably_damaging",
-                          "disease_causing", "pathogenic", "high"):
+        if pred_lower in ("damaging", "deleterious", "probably_damaging", "disease_causing", "pathogenic", "high"):
             deleterious_count += 1
     criteria["PP3"] = total_preds >= 2 and deleterious_count > total_preds / 2
 
@@ -397,28 +400,24 @@ def apply_acmg_criteria(
     criteria["BS2"] = bool(variant_data.get("observed_healthy_adult", False))
 
     # ── BS3: Functional studies show no damaging effect ───────────────────
-    criteria["BS3"] = (
-        functional_result.lower() in ("benign", "normal", "no_effect", "neutral")
-        and functional_quality.lower() in ("strong", "well-established")
-    )
+    criteria["BS3"] = functional_result.lower() in (
+        "benign",
+        "normal",
+        "no_effect",
+        "neutral",
+    ) and functional_quality.lower() in ("strong", "well-established")
 
     # ── BS4: Lack of segregation ──────────────────────────────────────────
     criteria["BS4"] = bool(segregation.get("does_not_segregate", False))
 
     # ── BP1: Missense in truncating-variant disease gene ──────────────────
-    criteria["BP1"] = (
-        "missense" in consequence
-        and bool(variant_data.get("gene_truncating_mechanism", False))
-    )
+    criteria["BP1"] = "missense" in consequence and bool(variant_data.get("gene_truncating_mechanism", False))
 
     # ── BP2: Observed in trans/cis with pathogenic (dominant) ─────────────
     criteria["BP2"] = bool(variant_data.get("in_trans_dominant_pathogenic", False))
 
     # ── BP3: In-frame in repetitive region ────────────────────────────────
-    criteria["BP3"] = (
-        consequence in inframe_consequences
-        and bool(variant_data.get("in_repetitive_region", False))
-    )
+    criteria["BP3"] = consequence in inframe_consequences and bool(variant_data.get("in_repetitive_region", False))
 
     # ── BP4: Computational evidence (benign) ──────────────────────────────
     benign_count = 0
@@ -435,10 +434,7 @@ def apply_acmg_criteria(
     criteria["BP6"] = bool(variant_data.get("reputable_source_benign", False))
 
     # ── BP7: Synonymous with no splice impact ─────────────────────────────
-    criteria["BP7"] = (
-        "synonymous" in consequence
-        and not bool(variant_data.get("splice_impact", False))
-    )
+    criteria["BP7"] = "synonymous" in consequence and not bool(variant_data.get("splice_impact", False))
 
     met = [k for k, v in criteria.items() if v]
     logger.debug("ACMG criteria evaluation: %d met (%s)", len(met), ", ".join(sorted(met)))

@@ -108,10 +108,7 @@ def read_fast5(filepath: str | Path) -> list[Fast5Read]:
 def _read_fast5_hdf5(filepath: Path) -> list[Fast5Read]:
     """Read a FAST5 (HDF5) file, handling both single-read and multi-read formats."""
     if h5py is None:
-        raise ImportError(
-            "h5py is required for reading FAST5 files. "
-            "Install it with: uv pip install h5py"
-        )
+        raise ImportError("h5py is required for reading FAST5 files. " "Install it with: uv pip install h5py")
 
     reads: list[Fast5Read] = []
 
@@ -327,10 +324,7 @@ def _parse_single_read_fast5(f5: Any, fallback_id: str) -> Fast5Read:
 def _read_pod5(filepath: Path) -> list[Fast5Read]:
     """Read a POD5 file and convert to Fast5Read objects."""
     if pod5_lib is None:
-        raise ImportError(
-            "pod5 is required for reading POD5 files. "
-            "Install it with: uv pip install pod5"
-        )
+        raise ImportError("pod5 is required for reading POD5 files. " "Install it with: uv pip install pod5")
 
     reads: list[Fast5Read] = []
 

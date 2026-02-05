@@ -26,22 +26,70 @@ _ENV_PREFIX = "META_"
 
 # Genetic code (Standard, NCBI Table 1)
 _CODON_TABLE: dict[str, str] = {
-    "TTT": "F", "TTC": "F", "TTA": "L", "TTG": "L",
-    "CTT": "L", "CTC": "L", "CTA": "L", "CTG": "L",
-    "ATT": "I", "ATC": "I", "ATA": "I", "ATG": "M",
-    "GTT": "V", "GTC": "V", "GTA": "V", "GTG": "V",
-    "TCT": "S", "TCC": "S", "TCA": "S", "TCG": "S",
-    "CCT": "P", "CCC": "P", "CCA": "P", "CCG": "P",
-    "ACT": "T", "ACC": "T", "ACA": "T", "ACG": "T",
-    "GCT": "A", "GCC": "A", "GCA": "A", "GCG": "A",
-    "TAT": "Y", "TAC": "Y", "TAA": "*", "TAG": "*",
-    "CAT": "H", "CAC": "H", "CAA": "Q", "CAG": "Q",
-    "AAT": "N", "AAC": "N", "AAA": "K", "AAG": "K",
-    "GAT": "D", "GAC": "D", "GAA": "E", "GAG": "E",
-    "TGT": "C", "TGC": "C", "TGA": "*", "TGG": "W",
-    "CGT": "R", "CGC": "R", "CGA": "R", "CGG": "R",
-    "AGT": "S", "AGC": "S", "AGA": "R", "AGG": "R",
-    "GGT": "G", "GGC": "G", "GGA": "G", "GGG": "G",
+    "TTT": "F",
+    "TTC": "F",
+    "TTA": "L",
+    "TTG": "L",
+    "CTT": "L",
+    "CTC": "L",
+    "CTA": "L",
+    "CTG": "L",
+    "ATT": "I",
+    "ATC": "I",
+    "ATA": "I",
+    "ATG": "M",
+    "GTT": "V",
+    "GTC": "V",
+    "GTA": "V",
+    "GTG": "V",
+    "TCT": "S",
+    "TCC": "S",
+    "TCA": "S",
+    "TCG": "S",
+    "CCT": "P",
+    "CCC": "P",
+    "CCA": "P",
+    "CCG": "P",
+    "ACT": "T",
+    "ACC": "T",
+    "ACA": "T",
+    "ACG": "T",
+    "GCT": "A",
+    "GCC": "A",
+    "GCA": "A",
+    "GCG": "A",
+    "TAT": "Y",
+    "TAC": "Y",
+    "TAA": "*",
+    "TAG": "*",
+    "CAT": "H",
+    "CAC": "H",
+    "CAA": "Q",
+    "CAG": "Q",
+    "AAT": "N",
+    "AAC": "N",
+    "AAA": "K",
+    "AAG": "K",
+    "GAT": "D",
+    "GAC": "D",
+    "GAA": "E",
+    "GAG": "E",
+    "TGT": "C",
+    "TGC": "C",
+    "TGA": "*",
+    "TGG": "W",
+    "CGT": "R",
+    "CGC": "R",
+    "CGA": "R",
+    "CGG": "R",
+    "AGT": "S",
+    "AGC": "S",
+    "AGA": "R",
+    "AGG": "R",
+    "GGT": "G",
+    "GGC": "G",
+    "GGA": "G",
+    "GGG": "G",
 }
 
 _START_CODONS = {"ATG", "GTG", "TTG"}
@@ -212,7 +260,7 @@ def predict_orfs(
             # Handle partial ORFs at sequence end
             if allow_partial and current_starts:
                 for start_pos in current_starts:
-                    orf_seq = working_seq[start_pos : pos]
+                    orf_seq = working_seq[start_pos:pos]
                     if len(orf_seq) >= min_length:
                         protein = _translate(orf_seq, stop_at_stop=False)
                         if strand == "+":
@@ -393,11 +441,7 @@ def classify_gene_families(
 
     if reference_profiles is not None:
         # Filter profiles by database prefix
-        db_profiles = {
-            pid: profile
-            for pid, profile in reference_profiles.items()
-            if pid.startswith(prefix)
-        }
+        db_profiles = {pid: profile for pid, profile in reference_profiles.items() if pid.startswith(prefix)}
 
         for gene_id, protein_seq in genes.items():
             families: list[str] = []
@@ -440,8 +484,12 @@ def _composition_classify(protein_seq: str, database: str) -> list[str]:
     # Simple heuristic features
     charged = (aa_counts.get("D", 0) + aa_counts.get("E", 0) + aa_counts.get("K", 0) + aa_counts.get("R", 0)) / length
     hydrophobic = (
-        aa_counts.get("A", 0) + aa_counts.get("V", 0) + aa_counts.get("I", 0)
-        + aa_counts.get("L", 0) + aa_counts.get("M", 0) + aa_counts.get("F", 0)
+        aa_counts.get("A", 0)
+        + aa_counts.get("V", 0)
+        + aa_counts.get("I", 0)
+        + aa_counts.get("L", 0)
+        + aa_counts.get("M", 0)
+        + aa_counts.get("F", 0)
         + aa_counts.get("W", 0)
     ) / length
     cys_frac = aa_counts.get("C", 0) / length

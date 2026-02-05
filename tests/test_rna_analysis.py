@@ -23,12 +23,10 @@ class TestCalculateTranslationEfficiency:
     def test_ratio_method_basic(self) -> None:
         """Test ratio method with simple data."""
         rna_df = pd.DataFrame(
-            {"gene1": [10.0, 20.0, 30.0], "gene2": [5.0, 10.0, 15.0]},
-            index=["sample1", "sample2", "sample3"]
+            {"gene1": [10.0, 20.0, 30.0], "gene2": [5.0, 10.0, 15.0]}, index=["sample1", "sample2", "sample3"]
         )
         protein_df = pd.DataFrame(
-            {"gene1": [1.0, 2.0, 3.0], "gene2": [0.5, 1.0, 1.5]},
-            index=["sample1", "sample2", "sample3"]
+            {"gene1": [1.0, 2.0, 3.0], "gene2": [0.5, 1.0, 1.5]}, index=["sample1", "sample2", "sample3"]
         )
 
         result = calculate_translation_efficiency(rna_df, protein_df, method="ratio")
@@ -47,12 +45,10 @@ class TestCalculateTranslationEfficiency:
         """Test correlation method with correlated data."""
         # Create perfectly correlated data
         rna_df = pd.DataFrame(
-            {"gene1": [10.0, 20.0, 30.0, 40.0], "gene2": [5.0, 10.0, 15.0, 20.0]},
-            index=["s1", "s2", "s3", "s4"]
+            {"gene1": [10.0, 20.0, 30.0, 40.0], "gene2": [5.0, 10.0, 15.0, 20.0]}, index=["s1", "s2", "s3", "s4"]
         )
         protein_df = pd.DataFrame(
-            {"gene1": [1.0, 2.0, 3.0, 4.0], "gene2": [2.5, 5.0, 7.5, 10.0]},
-            index=["s1", "s2", "s3", "s4"]
+            {"gene1": [1.0, 2.0, 3.0, 4.0], "gene2": [2.5, 5.0, 7.5, 10.0]}, index=["s1", "s2", "s3", "s4"]
         )
 
         result = calculate_translation_efficiency(rna_df, protein_df, method="correlation")
@@ -64,10 +60,7 @@ class TestCalculateTranslationEfficiency:
 
     def test_empty_dataframes(self) -> None:
         """Test handling of empty DataFrames."""
-        result = calculate_translation_efficiency(
-            pd.DataFrame(),
-            pd.DataFrame()
-        )
+        result = calculate_translation_efficiency(pd.DataFrame(), pd.DataFrame())
         assert len(result) == 0
         assert list(result.columns) == ["gene_id", "efficiency", "method"]
 
@@ -89,14 +82,8 @@ class TestCalculateTranslationEfficiency:
 
     def test_handles_zero_values(self) -> None:
         """Test that zero RNA values are handled correctly."""
-        rna_df = pd.DataFrame(
-            {"gene1": [10.0, 0.0, 30.0], "gene2": [0.0, 10.0, 15.0]},
-            index=["s1", "s2", "s3"]
-        )
-        protein_df = pd.DataFrame(
-            {"gene1": [1.0, 0.0, 3.0], "gene2": [0.0, 1.0, 1.5]},
-            index=["s1", "s2", "s3"]
-        )
+        rna_df = pd.DataFrame({"gene1": [10.0, 0.0, 30.0], "gene2": [0.0, 10.0, 15.0]}, index=["s1", "s2", "s3"])
+        protein_df = pd.DataFrame({"gene1": [1.0, 0.0, 3.0], "gene2": [0.0, 1.0, 1.5]}, index=["s1", "s2", "s3"])
 
         result = calculate_translation_efficiency(rna_df, protein_df, method="ratio")
         # Should still compute efficiency for valid pairs
@@ -108,10 +95,7 @@ class TestPredictProteinAbundance:
 
     def test_basic_prediction(self) -> None:
         """Test basic protein abundance prediction."""
-        rna_df = pd.DataFrame(
-            {"gene1": [10.0, 20.0, 30.0], "gene2": [5.0, 10.0, 15.0]},
-            index=["s1", "s2", "s3"]
-        )
+        rna_df = pd.DataFrame({"gene1": [10.0, 20.0, 30.0], "gene2": [5.0, 10.0, 15.0]}, index=["s1", "s2", "s3"])
 
         predictions = predict_protein_abundance_from_rna(rna_df, method="linear")
 
@@ -122,25 +106,14 @@ class TestPredictProteinAbundance:
     def test_with_training_data(self) -> None:
         """Test prediction with training data."""
         # Training data
-        train_rna = pd.DataFrame(
-            {"gene1": [10.0, 20.0], "gene2": [5.0, 10.0]},
-            index=["train1", "train2"]
-        )
-        train_protein = pd.DataFrame(
-            {"gene1": [1.0, 2.0], "gene2": [2.5, 5.0]},
-            index=["train1", "train2"]
-        )
+        train_rna = pd.DataFrame({"gene1": [10.0, 20.0], "gene2": [5.0, 10.0]}, index=["train1", "train2"])
+        train_protein = pd.DataFrame({"gene1": [1.0, 2.0], "gene2": [2.5, 5.0]}, index=["train1", "train2"])
 
         # Test data
-        test_rna = pd.DataFrame(
-            {"gene1": [30.0, 40.0], "gene2": [15.0, 20.0]},
-            index=["test1", "test2"]
-        )
+        test_rna = pd.DataFrame({"gene1": [30.0, 40.0], "gene2": [15.0, 20.0]}, index=["test1", "test2"])
 
         predictions = predict_protein_abundance_from_rna(
-            test_rna,
-            training_rna=train_rna,
-            training_protein=train_protein
+            test_rna, training_rna=train_rna, training_protein=train_protein
         )
 
         assert predictions.shape == test_rna.shape
@@ -161,11 +134,11 @@ class TestRibosomeProfilingIntegration:
         """Test basic ribosome profiling integration."""
         rna_df = pd.DataFrame(
             {"gene1": [10.0, 20.0, 30.0], "gene2": [5.0, 10.0, 15.0], "gene3": [100.0, 200.0, 300.0]},
-            index=["s1", "s2", "s3"]
+            index=["s1", "s2", "s3"],
         )
         ribo_df = pd.DataFrame(
             {"gene1": [5.0, 10.0, 15.0], "gene2": [10.0, 20.0, 30.0], "gene3": [10.0, 20.0, 30.0]},
-            index=["s1", "s2", "s3"]
+            index=["s1", "s2", "s3"],
         )
 
         result = ribosome_profiling_integration(rna_df, ribo_df)
@@ -193,14 +166,8 @@ class TestRibosomeProfilingIntegration:
 
     def test_zero_rna_handling(self) -> None:
         """Test handling of zero RNA values."""
-        rna_df = pd.DataFrame(
-            {"gene1": [0.0, 10.0], "gene2": [10.0, 0.0]},
-            index=["s1", "s2"]
-        )
-        ribo_df = pd.DataFrame(
-            {"gene1": [5.0, 10.0], "gene2": [5.0, 5.0]},
-            index=["s1", "s2"]
-        )
+        rna_df = pd.DataFrame({"gene1": [0.0, 10.0], "gene2": [10.0, 0.0]}, index=["s1", "s2"])
+        ribo_df = pd.DataFrame({"gene1": [5.0, 10.0], "gene2": [5.0, 5.0]}, index=["s1", "s2"])
 
         result = ribosome_profiling_integration(rna_df, ribo_df)
 
@@ -257,14 +224,8 @@ class TestEdgeCases:
 
     def test_nan_handling_in_efficiency(self) -> None:
         """Test NaN handling in translation efficiency calculation."""
-        rna_df = pd.DataFrame(
-            {"gene1": [10.0, np.nan, 30.0], "gene2": [5.0, 10.0, np.nan]},
-            index=["s1", "s2", "s3"]
-        )
-        protein_df = pd.DataFrame(
-            {"gene1": [1.0, 2.0, 3.0], "gene2": [0.5, np.nan, 1.5]},
-            index=["s1", "s2", "s3"]
-        )
+        rna_df = pd.DataFrame({"gene1": [10.0, np.nan, 30.0], "gene2": [5.0, 10.0, np.nan]}, index=["s1", "s2", "s3"])
+        protein_df = pd.DataFrame({"gene1": [1.0, 2.0, 3.0], "gene2": [0.5, np.nan, 1.5]}, index=["s1", "s2", "s3"])
 
         result = calculate_translation_efficiency(rna_df, protein_df)
         # Should still produce results for valid pairs

@@ -659,17 +659,21 @@ def _analyze_methylation_chip_associations(
     chip_peaks = chipseq_results.get("peaks", [])
 
     if not meth_sites:
-        associations["findings"].append({
-            "type": "warning",
-            "description": "No methylation sites provided for analysis",
-        })
+        associations["findings"].append(
+            {
+                "type": "warning",
+                "description": "No methylation sites provided for analysis",
+            }
+        )
         return associations
 
     if not chip_peaks:
-        associations["findings"].append({
-            "type": "warning",
-            "description": "No ChIP-seq peaks provided for analysis",
-        })
+        associations["findings"].append(
+            {
+                "type": "warning",
+                "description": "No ChIP-seq peaks provided for analysis",
+            }
+        )
         return associations
 
     # Perform intersection analysis
@@ -726,18 +730,22 @@ def _analyze_methylation_chip_associations(
 
     # Generate findings based on statistics
     if overlapping > 0:
-        associations["findings"].append({
-            "type": "overlap",
-            "description": f"{overlapping} methylation sites ({associations['statistics']['overlap_rate']:.1%}) overlap with ChIP-seq peaks",
-            "count": overlapping,
-        })
+        associations["findings"].append(
+            {
+                "type": "overlap",
+                "description": f"{overlapping} methylation sites ({associations['statistics']['overlap_rate']:.1%}) overlap with ChIP-seq peaks",
+                "count": overlapping,
+            }
+        )
 
     if proximal > 0:
-        associations["findings"].append({
-            "type": "proximal",
-            "description": f"{proximal} methylation sites are within {max_dist}bp of ChIP-seq peaks",
-            "count": proximal,
-        })
+        associations["findings"].append(
+            {
+                "type": "proximal",
+                "description": f"{proximal} methylation sites are within {max_dist}bp of ChIP-seq peaks",
+                "count": proximal,
+            }
+        )
 
     return associations
 
@@ -763,17 +771,21 @@ def _analyze_methylation_atac_associations(
     atac_peaks = atacseq_results.get("peaks", atacseq_results.get("accessible_regions", []))
 
     if not meth_sites:
-        associations["findings"].append({
-            "type": "warning",
-            "description": "No methylation sites provided for analysis",
-        })
+        associations["findings"].append(
+            {
+                "type": "warning",
+                "description": "No methylation sites provided for analysis",
+            }
+        )
         return associations
 
     if not atac_peaks:
-        associations["findings"].append({
-            "type": "warning",
-            "description": "No ATAC-seq peaks/accessible regions provided for analysis",
-        })
+        associations["findings"].append(
+            {
+                "type": "warning",
+                "description": "No ATAC-seq peaks/accessible regions provided for analysis",
+            }
+        )
         return associations
 
     # Analyze methylation in accessible vs closed chromatin
@@ -850,22 +862,26 @@ def _analyze_methylation_atac_associations(
 
     # Generate findings
     if in_accessible > 0:
-        associations["findings"].append({
-            "type": "accessible_overlap",
-            "description": f"{in_accessible} methylation sites ({in_accessible/total_sites:.1%}) located within accessible chromatin",
-            "count": in_accessible,
-        })
+        associations["findings"].append(
+            {
+                "type": "accessible_overlap",
+                "description": f"{in_accessible} methylation sites ({in_accessible/total_sites:.1%}) located within accessible chromatin",
+                "count": in_accessible,
+            }
+        )
 
     if meth_values_accessible and meth_values_closed:
         mean_acc = sum(meth_values_accessible) / len(meth_values_accessible)
         mean_clo = sum(meth_values_closed) / len(meth_values_closed)
         if mean_acc < mean_clo:
-            associations["findings"].append({
-                "type": "methylation_pattern",
-                "description": f"Lower methylation in accessible regions (mean: {mean_acc:.3f}) vs closed chromatin (mean: {mean_clo:.3f})",
-                "accessible_mean": mean_acc,
-                "closed_mean": mean_clo,
-            })
+            associations["findings"].append(
+                {
+                    "type": "methylation_pattern",
+                    "description": f"Lower methylation in accessible regions (mean: {mean_acc:.3f}) vs closed chromatin (mean: {mean_clo:.3f})",
+                    "accessible_mean": mean_acc,
+                    "closed_mean": mean_clo,
+                }
+            )
 
     return associations
 

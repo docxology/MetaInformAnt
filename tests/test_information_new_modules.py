@@ -504,12 +504,14 @@ class TestInformationBottleneckCh:
 
     def test_block_diagonal_joint(self) -> None:
         """Block-diagonal joint distribution should cluster cleanly."""
-        joint = np.array([
-            [0.2, 0.05, 0.0, 0.0],
-            [0.05, 0.2, 0.0, 0.0],
-            [0.0, 0.0, 0.2, 0.05],
-            [0.0, 0.0, 0.05, 0.2],
-        ])
+        joint = np.array(
+            [
+                [0.2, 0.05, 0.0, 0.0],
+                [0.05, 0.2, 0.0, 0.0],
+                [0.0, 0.0, 0.2, 0.05],
+                [0.0, 0.0, 0.05, 0.2],
+            ]
+        )
         result = ib_ch(joint, beta=10.0, n_clusters=2)
 
         assert "assignments" in result
@@ -799,7 +801,7 @@ class TestExponentialFamilyEntropy:
         mu = 0.0
         eta = [mu / sigma2]
         e_t = [mu]
-        a_eta = mu ** 2 / (2 * sigma2) + 0.5 * math.log(2 * math.pi * sigma2)
+        a_eta = mu**2 / (2 * sigma2) + 0.5 * math.log(2 * math.pi * sigma2)
         h = exponential_family_entropy(eta, e_t, a_eta)
         # H = -eta^T E[T] + A(eta) = 0 + 0.5*ln(2*pi)
         expected = 0.5 * math.log(2 * math.pi * sigma2)
@@ -935,12 +937,14 @@ class TestInformationBottleneckGeo:
 
     def test_block_diagonal_joint(self) -> None:
         """Block-diagonal joint should cluster into 2 groups."""
-        joint = np.array([
-            [0.2, 0.05, 0.0, 0.0],
-            [0.05, 0.2, 0.0, 0.0],
-            [0.0, 0.0, 0.2, 0.05],
-            [0.0, 0.0, 0.05, 0.2],
-        ])
+        joint = np.array(
+            [
+                [0.2, 0.05, 0.0, 0.0],
+                [0.05, 0.2, 0.0, 0.0],
+                [0.0, 0.0, 0.2, 0.05],
+                [0.0, 0.0, 0.05, 0.2],
+            ]
+        )
         result = ib_geo(joint, beta=10.0, n_clusters=2)
 
         assert "compression_rate" in result

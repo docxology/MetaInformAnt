@@ -136,17 +136,13 @@ class TestNormalizeTPM:
         with pytest.raises(ValueError, match="gene_lengths required"):
             normalize_counts(count_matrix, method="tpm")
 
-    def test_tpm_sums_to_one_million(
-        self, count_matrix: pd.DataFrame, gene_lengths: pd.Series
-    ) -> None:
+    def test_tpm_sums_to_one_million(self, count_matrix: pd.DataFrame, gene_lengths: pd.Series) -> None:
         result = normalize_counts(count_matrix, method="tpm", gene_lengths=gene_lengths)
         column_sums = result.sum(axis=0)
         for col_sum in column_sums:
             assert abs(col_sum - 1e6) < 1.0, f"TPM column sum {col_sum} not close to 1e6"
 
-    def test_tpm_preserves_shape(
-        self, count_matrix: pd.DataFrame, gene_lengths: pd.Series
-    ) -> None:
+    def test_tpm_preserves_shape(self, count_matrix: pd.DataFrame, gene_lengths: pd.Series) -> None:
         result = normalize_counts(count_matrix, method="tpm", gene_lengths=gene_lengths)
         assert result.shape == count_matrix.shape
 
@@ -178,15 +174,11 @@ class TestNormalizeRPKM:
         with pytest.raises(ValueError, match="gene_lengths required"):
             normalize_counts(count_matrix, method="rpkm")
 
-    def test_rpkm_preserves_shape(
-        self, count_matrix: pd.DataFrame, gene_lengths: pd.Series
-    ) -> None:
+    def test_rpkm_preserves_shape(self, count_matrix: pd.DataFrame, gene_lengths: pd.Series) -> None:
         result = normalize_counts(count_matrix, method="rpkm", gene_lengths=gene_lengths)
         assert result.shape == count_matrix.shape
 
-    def test_rpkm_values_nonnegative(
-        self, count_matrix: pd.DataFrame, gene_lengths: pd.Series
-    ) -> None:
+    def test_rpkm_values_nonnegative(self, count_matrix: pd.DataFrame, gene_lengths: pd.Series) -> None:
         result = normalize_counts(count_matrix, method="rpkm", gene_lengths=gene_lengths)
         assert (result.values >= 0).all()
 
@@ -371,9 +363,7 @@ class TestDifferentialExpressionDeseq2Like:
         if len(gene_b) > 0:
             assert gene_b["log2_fold_change"].values[0] < 0, "gene_B should be downregulated in treatment"
 
-    def test_deseq2_like_pvalues_valid(
-        self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]
-    ) -> None:
+    def test_deseq2_like_pvalues_valid(self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]) -> None:
         result = differential_expression(small_count_matrix, conditions_6sample, method="deseq2_like")
         assert (result["p_value"] >= 0).all()
         assert (result["p_value"] <= 1).all()
@@ -389,9 +379,7 @@ class TestDifferentialExpressionTtest:
         required_cols = {"gene", "log2_fold_change", "p_value", "adjusted_p_value", "base_mean", "stat"}
         assert required_cols.issubset(set(result.columns))
 
-    def test_ttest_fold_change_direction(
-        self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]
-    ) -> None:
+    def test_ttest_fold_change_direction(self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]) -> None:
         result = differential_expression(small_count_matrix, conditions_6sample, method="ttest")
         gene_a = result[result["gene"] == "gene_A"]
         if len(gene_a) > 0:
@@ -418,8 +406,12 @@ class TestDifferentialExpressionWilcoxon:
         # Create data with an outlier; Wilcoxon should be robust
         counts = pd.DataFrame(
             {
-                "ctrl_1": [100, 200], "ctrl_2": [110, 180], "ctrl_3": [9000, 210],
-                "treat_1": [300, 50], "treat_2": [280, 60], "treat_3": [320, 55],
+                "ctrl_1": [100, 200],
+                "ctrl_2": [110, 180],
+                "ctrl_3": [9000, 210],
+                "treat_1": [300, 50],
+                "treat_2": [280, 60],
+                "treat_3": [320, 55],
             },
             index=["gene_A", "gene_B"],
         )
@@ -463,8 +455,10 @@ class TestDifferentialExpressionEdgeCases:
     def test_min_count_filtering(self) -> None:
         counts = pd.DataFrame(
             {
-                "ctrl_1": [5, 100], "ctrl_2": [3, 120],
-                "treat_1": [4, 200], "treat_2": [6, 180],
+                "ctrl_1": [5, 100],
+                "ctrl_2": [3, 120],
+                "treat_1": [4, 200],
+                "treat_2": [6, 180],
             },
             index=["low_gene", "high_gene"],
         )
@@ -786,8 +780,10 @@ class TestGetHighlyVariableGenes:
         # gene_variable has high CV, gene_constant has low CV
         counts = pd.DataFrame(
             {
-                "s1": [10, 100], "s2": [100, 100],
-                "s3": [1000, 100], "s4": [5, 100],
+                "s1": [10, 100],
+                "s2": [100, 100],
+                "s3": [1000, 100],
+                "s4": [5, 100],
             },
             index=["gene_variable", "gene_constant"],
         )
@@ -797,8 +793,10 @@ class TestGetHighlyVariableGenes:
     def test_variance_method_selects_variable_genes(self) -> None:
         counts = pd.DataFrame(
             {
-                "s1": [10, 100], "s2": [1000, 101],
-                "s3": [500, 99], "s4": [50, 100],
+                "s1": [10, 100],
+                "s2": [1000, 101],
+                "s3": [500, 99],
+                "s4": [50, 100],
             },
             index=["gene_variable", "gene_constant"],
         )
@@ -1057,7 +1055,9 @@ class TestEndToEndWorkflow:
         for gene in hvg:
             assert gene in filtered.index
 
-    def test_all_normalization_methods_produce_valid_output(self, count_matrix: pd.DataFrame, gene_lengths: pd.Series) -> None:
+    def test_all_normalization_methods_produce_valid_output(
+        self, count_matrix: pd.DataFrame, gene_lengths: pd.Series
+    ) -> None:
         """Verify every normalization method runs without error and produces finite output."""
         methods_no_lengths = ["cpm", "log2cpm", "quantile", "median_ratio"]
         methods_with_lengths = ["tpm", "rpkm"]

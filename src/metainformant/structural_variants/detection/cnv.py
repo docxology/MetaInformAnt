@@ -154,9 +154,7 @@ def detect_cnv_from_depth(
         cnv_segments: list[CNVSegment] = []
         for seg_start, seg_end, seg_mean in segments:
             state, cn = _assign_cnv_state(seg_mean, ploidy)
-            confidence = _calculate_segment_confidence(
-                log2_ratios[seg_start:seg_end], seg_mean, state
-            )
+            confidence = _calculate_segment_confidence(log2_ratios[seg_start:seg_end], seg_mean, state)
             cnv_segments.append(
                 CNVSegment(
                     chrom=chrom,
@@ -461,9 +459,7 @@ def call_cnv_states(
             end = end_idx
             n_bins = end_idx - start_idx
 
-        state, cn = _assign_cnv_state(
-            mean_lr, ploidy, del_threshold, dup_threshold, amp_threshold, homodel_threshold
-        )
+        state, cn = _assign_cnv_state(mean_lr, ploidy, del_threshold, dup_threshold, amp_threshold, homodel_threshold)
 
         result.append(
             CNVSegment(
@@ -503,7 +499,7 @@ def _assign_cnv_state(
         Tuple of (state_string, integer_copy_number).
     """
     # Convert log2 ratio to copy number: CN = ploidy * 2^(log2ratio)
-    cn_float = ploidy * (2 ** mean_log2ratio)
+    cn_float = ploidy * (2**mean_log2ratio)
     cn = max(0, round(cn_float))
 
     if mean_log2ratio <= homodel_threshold:
@@ -591,16 +587,10 @@ def merge_adjacent_segments(
         prev = merged[-1]
 
         # Check if we can merge
-        if (
-            seg.chrom == prev.chrom
-            and seg.state == prev.state
-            and (seg.start - prev.end) <= max_gap
-        ):
+        if seg.chrom == prev.chrom and seg.state == prev.state and (seg.start - prev.end) <= max_gap:
             # Merge: extend the previous segment
             total_bins = prev.n_bins + seg.n_bins
-            weighted_mean = (
-                prev.mean_log2ratio * prev.n_bins + seg.mean_log2ratio * seg.n_bins
-            ) / total_bins
+            weighted_mean = (prev.mean_log2ratio * prev.n_bins + seg.mean_log2ratio * seg.n_bins) / total_bins
 
             merged[-1] = CNVSegment(
                 chrom=prev.chrom,
@@ -648,9 +638,7 @@ def calculate_log2_ratio(
     if np is None:
         # Pure Python fallback
         if len(tumor_depth) != len(normal_depth):
-            raise ValueError(
-                f"Array length mismatch: tumor={len(tumor_depth)}, normal={len(normal_depth)}"
-            )
+            raise ValueError(f"Array length mismatch: tumor={len(tumor_depth)}, normal={len(normal_depth)}")
         ratios: list[float] = []
         for t, n in zip(tumor_depth, normal_depth):
             ratio = (t + pseudocount) / (n + pseudocount)
@@ -661,9 +649,7 @@ def calculate_log2_ratio(
     normal = np.asarray(normal_depth, dtype=np.float64)
 
     if tumor.shape != normal.shape:
-        raise ValueError(
-            f"Array shape mismatch: tumor={tumor.shape}, normal={normal.shape}"
-        )
+        raise ValueError(f"Array shape mismatch: tumor={tumor.shape}, normal={normal.shape}")
 
     # Compute raw log2 ratio
     ratio = (tumor + pseudocount) / (normal + pseudocount)
@@ -673,9 +659,7 @@ def calculate_log2_ratio(
     if gc_content is not None:
         gc = np.asarray(gc_content, dtype=np.float64)
         if gc.shape != tumor.shape:
-            raise ValueError(
-                f"GC content shape mismatch: gc={gc.shape}, tumor={tumor.shape}"
-            )
+            raise ValueError(f"GC content shape mismatch: gc={gc.shape}, tumor={tumor.shape}")
         log2_ratio = _gc_correct(log2_ratio, gc)
 
     # Center the log2 ratios around 0 (median normalization)

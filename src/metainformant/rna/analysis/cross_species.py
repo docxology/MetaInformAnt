@@ -107,12 +107,16 @@ def build_ortholog_map(
         raise ValueError("orthologs_df cannot be empty")
 
     if source_col not in orthologs_df.columns:
-        raise ValueError(f"Source column '{source_col}' not found in orthologs_df. "
-                         f"Available columns: {orthologs_df.columns.tolist()}")
+        raise ValueError(
+            f"Source column '{source_col}' not found in orthologs_df. "
+            f"Available columns: {orthologs_df.columns.tolist()}"
+        )
 
     if target_col not in orthologs_df.columns:
-        raise ValueError(f"Target column '{target_col}' not found in orthologs_df. "
-                         f"Available columns: {orthologs_df.columns.tolist()}")
+        raise ValueError(
+            f"Target column '{target_col}' not found in orthologs_df. "
+            f"Available columns: {orthologs_df.columns.tolist()}"
+        )
 
     # Drop rows with missing values in the key columns
     valid = orthologs_df[[source_col, target_col]].dropna()
@@ -136,8 +140,10 @@ def build_ortholog_map(
 
     n_one_to_one = sum(1 for v in ortholog_map.values() if len(v) == 1)
     n_one_to_many = sum(1 for v in ortholog_map.values() if len(v) > 1)
-    logger.info(f"Built ortholog map: {len(ortholog_map)} source genes "
-                f"({n_one_to_one} one-to-one, {n_one_to_many} one-to-many)")
+    logger.info(
+        f"Built ortholog map: {len(ortholog_map)} source genes "
+        f"({n_one_to_one} one-to-one, {n_one_to_many} one-to-many)"
+    )
 
     return ortholog_map
 
@@ -226,8 +232,7 @@ def map_expression_to_orthologs(
 
     n_mapped = len(mapped_df)
     n_original = len(expression_df)
-    logger.info(f"Mapped {n_original} source genes to {n_mapped} ortholog genes "
-                f"(aggregation={aggregation})")
+    logger.info(f"Mapped {n_original} source genes to {n_mapped} ortholog genes " f"(aggregation={aggregation})")
 
     return mapped_df
 
@@ -288,11 +293,11 @@ def compute_expression_conservation(
     # Find shared genes
     shared_genes = sorted(set(expr_a.index) & set(expr_b.index))
     if not shared_genes:
-        raise ValueError("No shared genes between expr_a and expr_b. "
-                         "Ensure both are mapped to the same ortholog space.")
+        raise ValueError(
+            "No shared genes between expr_a and expr_b. " "Ensure both are mapped to the same ortholog space."
+        )
 
-    logger.info(f"Computing expression conservation for {len(shared_genes)} shared genes "
-                f"using {method} method")
+    logger.info(f"Computing expression conservation for {len(shared_genes)} shared genes " f"using {method} method")
 
     results = []
 
@@ -307,12 +312,14 @@ def compute_expression_conservation(
 
         if min_len < 2:
             # Cannot compute correlation with fewer than 2 data points
-            results.append({
-                "gene_id": gene,
-                "correlation": np.nan,
-                "p_value": np.nan,
-                "conserved": False,
-            })
+            results.append(
+                {
+                    "gene_id": gene,
+                    "correlation": np.nan,
+                    "p_value": np.nan,
+                    "conserved": False,
+                }
+            )
             continue
 
         if method == "spearman":
@@ -355,18 +362,19 @@ def compute_expression_conservation(
 
         conserved = bool(corr > 0.5 and pval < 0.05)
 
-        results.append({
-            "gene_id": gene,
-            "correlation": float(corr),
-            "p_value": float(pval),
-            "conserved": conserved,
-        })
+        results.append(
+            {
+                "gene_id": gene,
+                "correlation": float(corr),
+                "p_value": float(pval),
+                "conserved": conserved,
+            }
+        )
 
     result_df = pd.DataFrame(results)
 
     n_conserved = result_df["conserved"].sum()
-    logger.info(f"Expression conservation: {n_conserved}/{len(result_df)} genes conserved "
-                f"(corr > 0.5, p < 0.05)")
+    logger.info(f"Expression conservation: {n_conserved}/{len(result_df)} genes conserved " f"(corr > 0.5, p < 0.05)")
 
     return result_df
 
@@ -417,8 +425,10 @@ def identify_divergent_genes(
     # Sort by correlation ascending (most divergent first)
     divergent = divergent.sort_values("correlation", ascending=True).reset_index(drop=True)
 
-    logger.info(f"Identified {len(divergent)} divergent genes "
-                f"(correlation <= {threshold}) out of {len(conservation_df)} total")
+    logger.info(
+        f"Identified {len(divergent)} divergent genes "
+        f"(correlation <= {threshold}) out of {len(conservation_df)} total"
+    )
 
     return divergent
 
@@ -515,30 +525,39 @@ def compare_expression_across_species(
 
     if not gene_scores:
         logger.warning("No pairwise comparisons produced results")
-        return pd.DataFrame(columns=[
-            "gene_id", "mean_conservation", "min_conservation",
-            "max_conservation", "n_species_compared", "conserved_in_all",
-        ])
+        return pd.DataFrame(
+            columns=[
+                "gene_id",
+                "mean_conservation",
+                "min_conservation",
+                "max_conservation",
+                "n_species_compared",
+                "conserved_in_all",
+            ]
+        )
 
     # Aggregate across pairwise comparisons
     results = []
     for gene, scores in gene_scores.items():
         scores_arr = np.array(scores)
-        results.append({
-            "gene_id": gene,
-            "mean_conservation": float(np.mean(scores_arr)),
-            "min_conservation": float(np.min(scores_arr)),
-            "max_conservation": float(np.max(scores_arr)),
-            "n_species_compared": len(scores),
-            "conserved_in_all": bool(np.all(scores_arr > 0.5)),
-        })
+        results.append(
+            {
+                "gene_id": gene,
+                "mean_conservation": float(np.mean(scores_arr)),
+                "min_conservation": float(np.min(scores_arr)),
+                "max_conservation": float(np.max(scores_arr)),
+                "n_species_compared": len(scores),
+                "conserved_in_all": bool(np.all(scores_arr > 0.5)),
+            }
+        )
 
     result_df = pd.DataFrame(results)
     result_df = result_df.sort_values("mean_conservation", ascending=False).reset_index(drop=True)
 
     n_conserved = result_df["conserved_in_all"].sum()
-    logger.info(f"Cross-species comparison: {n_conserved}/{len(result_df)} genes "
-                f"conserved across all pairwise comparisons")
+    logger.info(
+        f"Cross-species comparison: {n_conserved}/{len(result_df)} genes " f"conserved across all pairwise comparisons"
+    )
 
     return result_df
 
@@ -637,9 +656,11 @@ def compute_expression_divergence_matrix(
 
     result_df = pd.DataFrame(divergence, index=species_names, columns=species_names)
 
-    logger.info(f"Divergence matrix computed. "
-                f"Range: [{divergence[np.triu_indices(n_species, k=1)].min():.3f}, "
-                f"{divergence[np.triu_indices(n_species, k=1)].max():.3f}]")
+    logger.info(
+        f"Divergence matrix computed. "
+        f"Range: [{divergence[np.triu_indices(n_species, k=1)].min():.3f}, "
+        f"{divergence[np.triu_indices(n_species, k=1)].max():.3f}]"
+    )
 
     return result_df
 
@@ -735,15 +756,17 @@ def phylogenetic_expression_profile(
                     if parent_means is not None and gene in parent_means:
                         parent_change = abs(val - parent_means[gene])
 
-                    results.append({
-                        "gene_id": gene,
-                        "node": node_name,
-                        "mean_expression": val,
-                        "variance": 0.0,
-                        "n_leaves": 1,
-                        "branch_distance": branch_dist,
-                        "expression_change": parent_change,
-                    })
+                    results.append(
+                        {
+                            "gene_id": gene,
+                            "node": node_name,
+                            "mean_expression": val,
+                            "variance": 0.0,
+                            "n_leaves": 1,
+                            "branch_distance": branch_dist,
+                            "expression_change": parent_change,
+                        }
+                    )
                 return leaf_values
             else:
                 logger.warning(f"Leaf node '{node_name}' not found in expression data")
@@ -780,15 +803,17 @@ def phylogenetic_expression_profile(
                     if parent_means is not None and gene in parent_means:
                         parent_change = abs(mean_val - parent_means[gene])
 
-                    results.append({
-                        "gene_id": gene,
-                        "node": node_name,
-                        "mean_expression": mean_val,
-                        "variance": var_val,
-                        "n_leaves": n_leaves,
-                        "branch_distance": branch_dist,
-                        "expression_change": parent_change,
-                    })
+                    results.append(
+                        {
+                            "gene_id": gene,
+                            "node": node_name,
+                            "mean_expression": mean_val,
+                            "variance": var_val,
+                            "n_leaves": n_leaves,
+                            "branch_distance": branch_dist,
+                            "expression_change": parent_change,
+                        }
+                    )
 
             # Now re-traverse children with correct parent means for expression_change
             # We already stored results, so update expression_change for child entries
@@ -806,10 +831,17 @@ def phylogenetic_expression_profile(
 
     if not results:
         logger.warning("No results produced from tree traversal")
-        return pd.DataFrame(columns=[
-            "gene_id", "node", "mean_expression", "variance",
-            "n_leaves", "branch_distance", "expression_change",
-        ])
+        return pd.DataFrame(
+            columns=[
+                "gene_id",
+                "node",
+                "mean_expression",
+                "variance",
+                "n_leaves",
+                "branch_distance",
+                "expression_change",
+            ]
+        )
 
     result_df = pd.DataFrame(results)
 
@@ -871,11 +903,14 @@ def cross_species_pca(
     shared_genes = sorted(set.intersection(*gene_sets))
 
     if not shared_genes:
-        raise ValueError("No genes shared across all species. "
-                         "Ensure all expression matrices are in shared ortholog space.")
+        raise ValueError(
+            "No genes shared across all species. " "Ensure all expression matrices are in shared ortholog space."
+        )
 
-    logger.info(f"Cross-species PCA: {len(shared_genes)} shared genes, "
-                f"{n_species} species, {n_components} components requested")
+    logger.info(
+        f"Cross-species PCA: {len(shared_genes)} shared genes, "
+        f"{n_species} species, {n_components} components requested"
+    )
 
     # Build combined expression matrix: shared genes x all samples
     combined_parts = []
@@ -941,8 +976,8 @@ def cross_species_pca(
     transformed = U_k * S_k
 
     # Explained variance
-    total_variance = (X_scaled ** 2).sum()
-    explained_var = S_k ** 2 / (n_samples - 1)
+    total_variance = (X_scaled**2).sum()
+    explained_var = S_k**2 / (n_samples - 1)
     explained_var_ratio = explained_var / (total_variance / (n_samples - 1))
 
     # Gene loadings
@@ -956,8 +991,7 @@ def cross_species_pca(
 
     loadings_df = pd.DataFrame(loadings, index=shared_genes, columns=pc_names)
 
-    logger.info(f"Cross-species PCA complete. "
-                f"Variance explained: {[f'{v:.3f}' for v in explained_var_ratio]}")
+    logger.info(f"Cross-species PCA complete. " f"Variance explained: {[f'{v:.3f}' for v in explained_var_ratio]}")
 
     return {
         "coordinates": coords_df,

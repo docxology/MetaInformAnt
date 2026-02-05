@@ -261,9 +261,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Modular ENA Downloader")
     parser.add_argument("--ids", nargs="+", help="List of SRA IDs to download")
     parser.add_argument("--file", help="File containing SRA IDs (one per line)")
-    parser.add_argument(
-        "--out", required=True, help="Output base directory (e.g. output/amalgkit/pbarbatus_all/fastq)"
-    )
+    parser.add_argument("--out", required=True, help="Output base directory (e.g. output/amalgkit/pbarbatus_all/fastq)")
 
     args = parser.parse_args()
 

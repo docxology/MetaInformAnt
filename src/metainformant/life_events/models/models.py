@@ -258,7 +258,9 @@ class EventSequencePredictor:
             # Linear regression weights
             self.regressor = self._train_linear_regression(X, y)
 
-    def _train_logistic_regression(self, X: np.ndarray, y: np.ndarray, lr: float = 0.01, epochs: int = 100) -> Dict[str, np.ndarray]:
+    def _train_logistic_regression(
+        self, X: np.ndarray, y: np.ndarray, lr: float = 0.01, epochs: int = 100
+    ) -> Dict[str, np.ndarray]:
         """Train logistic regression model using gradient descent.
 
         Args:
@@ -1325,7 +1327,7 @@ class SurvivalPredictor:
                 # Unknown model type - use feature-based heuristic
                 predicted_times = np.array([np.sum(f) + 100 for f in features])
 
-        elif hasattr(self.model, 'eval'):  # PyTorch model
+        elif hasattr(self.model, "eval"):  # PyTorch model
             self.model.eval()
             with torch.no_grad():
                 inputs = torch.tensor(features, dtype=torch.float)

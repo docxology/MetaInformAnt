@@ -43,10 +43,22 @@ def generate_test_vcf(
     ncbi_chroms = [f"NC_03763{i}.1" if i < 10 else f"NC_0376{i}.1" for i in range(8, 8 + n_chroms)]
     # Fix: actual NCBI accessions
     ncbi_accessions = {
-        1: "NC_037638.1", 2: "NC_037639.1", 3: "NC_037640.1", 4: "NC_037641.1",
-        5: "NC_037642.1", 6: "NC_037643.1", 7: "NC_037644.1", 8: "NC_037645.1",
-        9: "NC_037646.1", 10: "NC_037647.1", 11: "NC_037648.1", 12: "NC_037649.1",
-        13: "NC_037650.1", 14: "NC_037651.1", 15: "NC_037652.1", 16: "NC_037653.1",
+        1: "NC_037638.1",
+        2: "NC_037639.1",
+        3: "NC_037640.1",
+        4: "NC_037641.1",
+        5: "NC_037642.1",
+        6: "NC_037643.1",
+        7: "NC_037644.1",
+        8: "NC_037645.1",
+        9: "NC_037646.1",
+        10: "NC_037647.1",
+        11: "NC_037648.1",
+        12: "NC_037649.1",
+        13: "NC_037650.1",
+        14: "NC_037651.1",
+        15: "NC_037652.1",
+        16: "NC_037653.1",
     }
 
     sample_names = [f"BEE_{i:03d}" for i in range(1, n_samples + 1)]
@@ -105,10 +117,7 @@ def generate_test_vcf(
                     gts.append(gt)
 
                 info = f"AF={base_freq:.3f}"
-                f.write(
-                    f"{chrom_name}\t{pos}\trs{variant_id}\t{ref}\t{alt}\t"
-                    f"60\tPASS\t{info}\tGT"
-                )
+                f.write(f"{chrom_name}\t{pos}\trs{variant_id}\t{ref}\t{alt}\t" f"60\tPASS\t{info}\tGT")
                 for gt in gts:
                     f.write(f"\t{gt}")
                 f.write("\n")
@@ -226,10 +235,7 @@ def generate_complete_test_dataset(
     if genotypes_by_sample and genotypes_by_sample[0]:
         ns = len(genotypes_by_sample)
         nv = len(genotypes_by_sample[0])
-        genotypes_by_variant = [
-            [genotypes_by_sample[s][v] for s in range(ns)]
-            for v in range(nv)
-        ]
+        genotypes_by_variant = [[genotypes_by_sample[s][v] for s in range(ns)] for v in range(nv)]
     else:
         genotypes_by_variant = []
 
@@ -287,10 +293,22 @@ def _generate_test_gff3(
         Path to GFF3 file
     """
     ncbi_accessions = {
-        1: "NC_037638.1", 2: "NC_037639.1", 3: "NC_037640.1", 4: "NC_037641.1",
-        5: "NC_037642.1", 6: "NC_037643.1", 7: "NC_037644.1", 8: "NC_037645.1",
-        9: "NC_037646.1", 10: "NC_037647.1", 11: "NC_037648.1", 12: "NC_037649.1",
-        13: "NC_037650.1", 14: "NC_037651.1", 15: "NC_037652.1", 16: "NC_037653.1",
+        1: "NC_037638.1",
+        2: "NC_037639.1",
+        3: "NC_037640.1",
+        4: "NC_037641.1",
+        5: "NC_037642.1",
+        6: "NC_037643.1",
+        7: "NC_037644.1",
+        8: "NC_037645.1",
+        9: "NC_037646.1",
+        10: "NC_037647.1",
+        11: "NC_037648.1",
+        12: "NC_037649.1",
+        13: "NC_037650.1",
+        14: "NC_037651.1",
+        15: "NC_037652.1",
+        16: "NC_037653.1",
     }
 
     output_path = Path(output_path)

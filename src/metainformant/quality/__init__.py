@@ -9,6 +9,7 @@ from __future__ import annotations
 # Import subpackages
 from . import analysis
 from . import io
+from . import reporting
 
 # Import modules from subpackages for backward compatibility
 from .analysis import (
@@ -17,6 +18,13 @@ from .analysis import (
 )
 from .io import (
     fastq,
+)
+from .reporting import (
+    generate_qc_report,
+    aggregate_sample_qc,
+    check_qc_thresholds,
+    default_qc_thresholds,
+    qc_trend_analysis,
 )
 
 # Type checking imports
@@ -34,4 +42,11 @@ __all__ = [
     "metrics",
     # IO
     "fastq",
+    # Reporting
+    "reporting",
+    "generate_qc_report",
+    "aggregate_sample_qc",
+    "check_qc_thresholds",
+    "default_qc_thresholds",
+    "qc_trend_analysis",
 ]

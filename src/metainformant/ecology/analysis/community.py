@@ -120,9 +120,7 @@ def species_richness(
         return 0
 
     # Simple list case (flat list of numbers, not nested)
-    if isinstance(community_data, list) and (
-        not community_data or not isinstance(community_data[0], list)
-    ):
+    if isinstance(community_data, list) and (not community_data or not isinstance(community_data[0], list)):
         return species_richness_simple(community_data)
 
     # Dict case
@@ -390,10 +388,7 @@ def species_area_relationship(species_counts: List[int], area_sizes: List[float]
         # Calculate R-squared manually
         mean_y = statistics.mean(log_species)
         ss_tot = sum((y - mean_y) ** 2 for y in log_species)
-        ss_res = sum(
-            (y - (slope * x + intercept)) ** 2
-            for x, y in zip(log_areas, log_species)
-        )
+        ss_res = sum((y - (slope * x + intercept)) ** 2 for x, y in zip(log_areas, log_species))
         r_squared = 1.0 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
 
         return {
@@ -705,8 +700,6 @@ def species_richness_simple(abundances: List[float]) -> int:
     return sum(1 for a in abundances if a > 0)
 
 
-
-
 def pielou_evenness(abundances: List[float]) -> float:
     """Calculate Pielou's evenness index.
 
@@ -770,7 +763,7 @@ def chao1_estimator(abundances: List[float]) -> float:
     f2 = sum(1 for a in abundances if a == 2)  # Doubletons
 
     if f2 > 0:
-        return S_obs + (f1 ** 2) / (2 * f2)
+        return S_obs + (f1**2) / (2 * f2)
     else:
         # Bias-corrected form when f2 = 0
         return S_obs + (f1 * (f1 - 1)) / 2

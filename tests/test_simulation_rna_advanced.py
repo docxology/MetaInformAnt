@@ -37,6 +37,7 @@ from metainformant.simulation.models.rna import (
 # simulate_counts_negative_binomial
 # ---------------------------------------------------------------------------
 
+
 class TestSimulateCountsNegativeBinomial:
     """Tests for the core negative binomial count simulator."""
 
@@ -47,9 +48,7 @@ class TestSimulateCountsNegativeBinomial:
         dispersions = np.full(n_features, 0.5)
         rng = random.Random(42)
 
-        counts = simulate_counts_negative_binomial(
-            n_samples, n_features, means, dispersions, rng=rng
-        )
+        counts = simulate_counts_negative_binomial(n_samples, n_features, means, dispersions, rng=rng)
 
         assert counts.shape == (n_samples, n_features)
 
@@ -60,9 +59,7 @@ class TestSimulateCountsNegativeBinomial:
         dispersions = np.full(n_features, 0.3)
         rng = random.Random(99)
 
-        counts = simulate_counts_negative_binomial(
-            n_samples, n_features, means, dispersions, rng=rng
-        )
+        counts = simulate_counts_negative_binomial(n_samples, n_features, means, dispersions, rng=rng)
 
         assert np.all(counts >= 0), "Counts must be non-negative"
         assert np.issubdtype(counts.dtype, np.integer), "Counts must be integers"
@@ -74,9 +71,7 @@ class TestSimulateCountsNegativeBinomial:
         dispersions = np.full(n_features, 0.5)
         rng = random.Random(42)
 
-        counts = simulate_counts_negative_binomial(
-            n_samples, n_features, means, dispersions, rng=rng
-        )
+        counts = simulate_counts_negative_binomial(n_samples, n_features, means, dispersions, rng=rng)
 
         assert np.all(counts[:, 0] == 0), "Zero-mean feature should yield zero counts"
         assert np.all(counts[:, 2] == 0), "Zero-mean feature should yield zero counts"
@@ -88,9 +83,7 @@ class TestSimulateCountsNegativeBinomial:
         dispersions = np.array([0.5, 0.5])
         rng = random.Random(42)
 
-        counts = simulate_counts_negative_binomial(
-            n_samples, n_features, means, dispersions, rng=rng
-        )
+        counts = simulate_counts_negative_binomial(n_samples, n_features, means, dispersions, rng=rng)
 
         mean_low = counts[:, 0].mean()
         mean_high = counts[:, 1].mean()
@@ -103,9 +96,7 @@ class TestSimulateCountsNegativeBinomial:
         dispersions = np.array([0.1, 0.2, 0.3, 0.5, 1.0])
         rng = random.Random(7)
 
-        counts = simulate_counts_negative_binomial(
-            n_samples, n_features, means, dispersions, rng=rng
-        )
+        counts = simulate_counts_negative_binomial(n_samples, n_features, means, dispersions, rng=rng)
 
         assert counts.shape == (n_samples, n_features)
         assert np.all(counts >= 0)
@@ -136,12 +127,8 @@ class TestSimulateCountsNegativeBinomial:
         means = np.array([10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0])
         dispersions = np.full(n_features, 0.5)
 
-        counts_a = simulate_counts_negative_binomial(
-            n_samples, n_features, means, dispersions, rng=random.Random(42)
-        )
-        counts_b = simulate_counts_negative_binomial(
-            n_samples, n_features, means, dispersions, rng=random.Random(42)
-        )
+        counts_a = simulate_counts_negative_binomial(n_samples, n_features, means, dispersions, rng=random.Random(42))
+        counts_b = simulate_counts_negative_binomial(n_samples, n_features, means, dispersions, rng=random.Random(42))
 
         np.testing.assert_array_equal(counts_a, counts_b)
 
@@ -190,6 +177,7 @@ class TestSimulateCountsNegativeBinomial:
 # simulate_rnaseq_counts
 # ---------------------------------------------------------------------------
 
+
 class TestSimulateRnaseqCounts:
     """Tests for the convenience RNA-seq count wrapper."""
 
@@ -220,14 +208,10 @@ class TestSimulateRnaseqCounts:
     def test_higher_mean_expression_raises_counts(self) -> None:
         """Higher mean_expression should produce higher total counts on average."""
         rng_low = random.Random(42)
-        counts_low = simulate_rnaseq_counts(
-            n_genes=20, n_samples=50, mean_expression=5.0, rng=rng_low
-        )
+        counts_low = simulate_rnaseq_counts(n_genes=20, n_samples=50, mean_expression=5.0, rng=rng_low)
 
         rng_high = random.Random(42)
-        counts_high = simulate_rnaseq_counts(
-            n_genes=20, n_samples=50, mean_expression=500.0, rng=rng_high
-        )
+        counts_high = simulate_rnaseq_counts(n_genes=20, n_samples=50, mean_expression=500.0, rng=rng_high)
 
         assert counts_high.sum() > counts_low.sum()
 
@@ -254,6 +238,7 @@ class TestSimulateRnaseqCounts:
 # simulate_differential_expression
 # ---------------------------------------------------------------------------
 
+
 class TestSimulateDifferentialExpression:
     """Tests for the differential expression simulator."""
 
@@ -263,9 +248,7 @@ class TestSimulateDifferentialExpression:
         fold_changes = np.array([2.0, 3.0, 0.5])
         rng = random.Random(42)
 
-        expr, labels = simulate_differential_expression(
-            n_samples, n_features, fold_changes, rng=rng
-        )
+        expr, labels = simulate_differential_expression(n_samples, n_features, fold_changes, rng=rng)
 
         assert expr.shape == (n_samples, n_features)
         assert labels.shape == (n_samples,)
@@ -308,9 +291,7 @@ class TestSimulateDifferentialExpression:
         fold_changes = np.array([10.0])  # 10x upregulation of gene 0
         rng = random.Random(42)
 
-        expr, labels = simulate_differential_expression(
-            n_samples, n_features, fold_changes, rng=rng
-        )
+        expr, labels = simulate_differential_expression(n_samples, n_features, fold_changes, rng=rng)
 
         group0_mean = expr[labels == 0, 0].mean()
         group1_mean = expr[labels == 1, 0].mean()
@@ -345,12 +326,8 @@ class TestSimulateDifferentialExpression:
         """Same seed produces identical results."""
         fold_changes = np.array([2.0, 0.5])
 
-        expr_a, labels_a = simulate_differential_expression(
-            10, 15, fold_changes, rng=random.Random(42)
-        )
-        expr_b, labels_b = simulate_differential_expression(
-            10, 15, fold_changes, rng=random.Random(42)
-        )
+        expr_a, labels_a = simulate_differential_expression(10, 15, fold_changes, rng=random.Random(42))
+        expr_b, labels_b = simulate_differential_expression(10, 15, fold_changes, rng=random.Random(42))
 
         np.testing.assert_array_equal(expr_a, expr_b)
         np.testing.assert_array_equal(labels_a, labels_b)
@@ -359,6 +336,7 @@ class TestSimulateDifferentialExpression:
 # ---------------------------------------------------------------------------
 # simulate_bulk_rnaseq
 # ---------------------------------------------------------------------------
+
 
 class TestSimulateBulkRnaseq:
     """Tests for bulk RNA-seq simulation."""
@@ -382,9 +360,7 @@ class TestSimulateBulkRnaseq:
         library_sizes = np.array([10000, 20000, 15000, 25000, 18000, 22000], dtype=float)
         rng = random.Random(42)
 
-        counts = simulate_bulk_rnaseq(
-            n_samples, n_genes, library_sizes=library_sizes, rng=rng
-        )
+        counts = simulate_bulk_rnaseq(n_samples, n_genes, library_sizes=library_sizes, rng=rng)
 
         assert counts.shape == (n_samples, n_genes)
         # Each sample's total counts should equal its library size
@@ -397,9 +373,7 @@ class TestSimulateBulkRnaseq:
         gene_means = np.random.RandomState(0).exponential(50, n_genes)
         rng = random.Random(42)
 
-        counts = simulate_bulk_rnaseq(
-            n_samples, n_genes, gene_means=gene_means, rng=rng
-        )
+        counts = simulate_bulk_rnaseq(n_samples, n_genes, gene_means=gene_means, rng=rng)
 
         assert counts.shape == (n_samples, n_genes)
         assert np.all(counts >= 0)
@@ -411,9 +385,7 @@ class TestSimulateBulkRnaseq:
         gene_means = np.random.RandomState(0).exponential(100, n_genes)
         rng = random.Random(42)
 
-        counts = simulate_bulk_rnaseq(
-            n_samples, n_genes, library_sizes=library_sizes, gene_means=gene_means, rng=rng
-        )
+        counts = simulate_bulk_rnaseq(n_samples, n_genes, library_sizes=library_sizes, gene_means=gene_means, rng=rng)
 
         assert counts.shape == (n_samples, n_genes)
         for i in range(n_samples):
@@ -456,6 +428,7 @@ class TestSimulateBulkRnaseq:
 # simulate_single_cell_rnaseq
 # ---------------------------------------------------------------------------
 
+
 class TestSimulateSingleCellRnaseq:
     """Tests for single-cell RNA-seq simulation."""
 
@@ -490,9 +463,7 @@ class TestSimulateSingleCellRnaseq:
     def test_dropout_produces_zeros(self) -> None:
         """High dropout rate should produce many zeros in the matrix."""
         rng = random.Random(42)
-        expr, _ = simulate_single_cell_rnaseq(
-            50, 20, dropout_rate=0.8, rng=rng
-        )
+        expr, _ = simulate_single_cell_rnaseq(50, 20, dropout_rate=0.8, rng=rng)
 
         zero_fraction = np.sum(expr == 0) / expr.size
         # With 80% dropout, expect a substantial fraction of zeros
@@ -501,14 +472,10 @@ class TestSimulateSingleCellRnaseq:
     def test_zero_dropout_fewer_zeros(self) -> None:
         """Zero dropout should produce fewer zeros than high dropout."""
         rng_no_drop = random.Random(42)
-        expr_no_drop, _ = simulate_single_cell_rnaseq(
-            50, 20, dropout_rate=0.0, rng=rng_no_drop
-        )
+        expr_no_drop, _ = simulate_single_cell_rnaseq(50, 20, dropout_rate=0.0, rng=rng_no_drop)
 
         rng_high_drop = random.Random(42)
-        expr_high_drop, _ = simulate_single_cell_rnaseq(
-            50, 20, dropout_rate=0.9, rng=rng_high_drop
-        )
+        expr_high_drop, _ = simulate_single_cell_rnaseq(50, 20, dropout_rate=0.9, rng=rng_high_drop)
 
         zeros_no_drop = np.sum(expr_no_drop == 0)
         zeros_high_drop = np.sum(expr_high_drop == 0)
@@ -523,12 +490,8 @@ class TestSimulateSingleCellRnaseq:
 
     def test_reproducibility(self) -> None:
         """Same seed produces identical results."""
-        expr_a, labels_a = simulate_single_cell_rnaseq(
-            20, 10, n_cell_types=3, rng=random.Random(42)
-        )
-        expr_b, labels_b = simulate_single_cell_rnaseq(
-            20, 10, n_cell_types=3, rng=random.Random(42)
-        )
+        expr_a, labels_a = simulate_single_cell_rnaseq(20, 10, n_cell_types=3, rng=random.Random(42))
+        expr_b, labels_b = simulate_single_cell_rnaseq(20, 10, n_cell_types=3, rng=random.Random(42))
         np.testing.assert_array_equal(expr_a, expr_b)
         np.testing.assert_array_equal(labels_a, labels_b)
 
@@ -536,6 +499,7 @@ class TestSimulateSingleCellRnaseq:
 # ---------------------------------------------------------------------------
 # simulate_time_series_expression
 # ---------------------------------------------------------------------------
+
 
 class TestSimulateTimeSeriesExpression:
     """Tests for time-series gene expression simulation."""
@@ -564,9 +528,7 @@ class TestSimulateTimeSeriesExpression:
         oscillation_freq = np.array([0.5, 1.0, 1.5, 2.0, 2.5])
         rng = random.Random(42)
 
-        expr = simulate_time_series_expression(
-            10, n_genes, oscillation_freq=oscillation_freq, rng=rng
-        )
+        expr = simulate_time_series_expression(10, n_genes, oscillation_freq=oscillation_freq, rng=rng)
 
         assert expr.shape == (10, n_genes)
 
@@ -609,15 +571,14 @@ class TestSimulateTimeSeriesExpression:
 # simulate_spatial_expression
 # ---------------------------------------------------------------------------
 
+
 class TestSimulateSpatialExpression:
     """Tests for spatially-resolved expression simulation."""
 
     def test_random_pattern_shapes(self) -> None:
         """Random pattern returns correct expression and coordinate shapes."""
         rng = random.Random(42)
-        expr, coords = simulate_spatial_expression(
-            30, 10, spatial_patterns="random", rng=rng
-        )
+        expr, coords = simulate_spatial_expression(30, 10, spatial_patterns="random", rng=rng)
 
         assert expr.shape == (30, 10)
         assert coords.shape == (30, 2)
@@ -631,9 +592,7 @@ class TestSimulateSpatialExpression:
         """
         n_spots = 25  # 5x5 grid -- perfect square
         rng = random.Random(42)
-        expr, coords = simulate_spatial_expression(
-            n_spots, 10, spatial_patterns="gradient", rng=rng
-        )
+        expr, coords = simulate_spatial_expression(n_spots, 10, spatial_patterns="gradient", rng=rng)
 
         assert expr.shape == (n_spots, 10)
         assert coords.shape == (n_spots, 2)
@@ -641,9 +600,7 @@ class TestSimulateSpatialExpression:
     def test_clusters_pattern_shapes(self) -> None:
         """Clusters pattern returns correct shapes."""
         rng = random.Random(42)
-        expr, coords = simulate_spatial_expression(
-            30, 10, spatial_patterns="clusters", rng=rng
-        )
+        expr, coords = simulate_spatial_expression(30, 10, spatial_patterns="clusters", rng=rng)
 
         assert expr.shape == (30, 10)
         assert coords.shape == (30, 2)
@@ -657,9 +614,7 @@ class TestSimulateSpatialExpression:
         pattern_spots = {"random": 20, "gradient": 25, "clusters": 21}
         for pattern, n_spots in pattern_spots.items():
             rng = random.Random(42)
-            expr, _ = simulate_spatial_expression(
-                n_spots, 8, spatial_patterns=pattern, rng=rng
-            )
+            expr, _ = simulate_spatial_expression(n_spots, 8, spatial_patterns=pattern, rng=rng)
             assert np.all(expr >= 0), f"Negative expression in {pattern} pattern"
 
     def test_integer_counts(self) -> None:
@@ -676,9 +631,7 @@ class TestSimulateSpatialExpression:
         pattern_spots = {"random": 20, "gradient": 16, "clusters": 21}
         for pattern, n_spots in pattern_spots.items():
             rng = random.Random(42)
-            _, coords = simulate_spatial_expression(
-                n_spots, 5, spatial_patterns=pattern, rng=rng
-            )
+            _, coords = simulate_spatial_expression(n_spots, 5, spatial_patterns=pattern, rng=rng)
             assert np.all(np.isfinite(coords)), f"Non-finite coordinates in {pattern}"
 
     def test_invalid_pattern_raises(self) -> None:
@@ -692,9 +645,7 @@ class TestSimulateSpatialExpression:
         expr_default, _ = simulate_spatial_expression(15, 5, rng=rng)
 
         rng2 = random.Random(42)
-        expr_random, _ = simulate_spatial_expression(
-            15, 5, spatial_patterns="random", rng=rng2
-        )
+        expr_random, _ = simulate_spatial_expression(15, 5, spatial_patterns="random", rng=rng2)
 
         np.testing.assert_array_equal(expr_default, expr_random)
 
@@ -732,35 +683,23 @@ class TestSimulateSpatialExpression:
 
     def test_reproducibility_random(self) -> None:
         """Same seed produces identical results for random pattern."""
-        expr_a, coords_a = simulate_spatial_expression(
-            15, 5, spatial_patterns="random", rng=random.Random(42)
-        )
-        expr_b, coords_b = simulate_spatial_expression(
-            15, 5, spatial_patterns="random", rng=random.Random(42)
-        )
+        expr_a, coords_a = simulate_spatial_expression(15, 5, spatial_patterns="random", rng=random.Random(42))
+        expr_b, coords_b = simulate_spatial_expression(15, 5, spatial_patterns="random", rng=random.Random(42))
         np.testing.assert_array_equal(expr_a, expr_b)
         np.testing.assert_array_equal(coords_a, coords_b)
 
     def test_reproducibility_gradient(self) -> None:
         """Same seed produces identical results for gradient pattern."""
         n_spots = 16  # 4x4 perfect square for gradient mode
-        expr_a, coords_a = simulate_spatial_expression(
-            n_spots, 5, spatial_patterns="gradient", rng=random.Random(42)
-        )
-        expr_b, coords_b = simulate_spatial_expression(
-            n_spots, 5, spatial_patterns="gradient", rng=random.Random(42)
-        )
+        expr_a, coords_a = simulate_spatial_expression(n_spots, 5, spatial_patterns="gradient", rng=random.Random(42))
+        expr_b, coords_b = simulate_spatial_expression(n_spots, 5, spatial_patterns="gradient", rng=random.Random(42))
         np.testing.assert_array_equal(expr_a, expr_b)
         np.testing.assert_array_equal(coords_a, coords_b)
 
     def test_reproducibility_clusters(self) -> None:
         """Same seed produces identical results for clusters pattern."""
-        expr_a, coords_a = simulate_spatial_expression(
-            15, 5, spatial_patterns="clusters", rng=random.Random(42)
-        )
-        expr_b, coords_b = simulate_spatial_expression(
-            15, 5, spatial_patterns="clusters", rng=random.Random(42)
-        )
+        expr_a, coords_a = simulate_spatial_expression(15, 5, spatial_patterns="clusters", rng=random.Random(42))
+        expr_b, coords_b = simulate_spatial_expression(15, 5, spatial_patterns="clusters", rng=random.Random(42))
         np.testing.assert_array_equal(expr_a, expr_b)
         np.testing.assert_array_equal(coords_a, coords_b)
 
@@ -768,6 +707,7 @@ class TestSimulateSpatialExpression:
 # ---------------------------------------------------------------------------
 # add_technical_noise
 # ---------------------------------------------------------------------------
+
 
 class TestAddTechnicalNoise:
     """Tests for the technical noise injection function."""
@@ -822,9 +762,7 @@ class TestAddTechnicalNoise:
         original = np.random.RandomState(0).poisson(50, (5, 20))
         target_depth = 5000.0
 
-        noisy = add_technical_noise(
-            original, amplification_bias=0.0, sequencing_depth=target_depth, rng=rng
-        )
+        noisy = add_technical_noise(original, amplification_bias=0.0, sequencing_depth=target_depth, rng=rng)
 
         assert noisy.shape == original.shape
         # Due to Poisson noise the depth won't be exact, but should be in the ballpark
@@ -885,6 +823,7 @@ class TestAddTechnicalNoise:
 # Cross-function integration tests
 # ---------------------------------------------------------------------------
 
+
 class TestRnaSimulationIntegration:
     """Integration tests combining multiple RNA simulation functions."""
 
@@ -938,9 +877,7 @@ class TestRnaSimulationIntegration:
         """All spatial pattern types produce valid, non-trivial data."""
         for pattern in ("random", "gradient", "clusters"):
             rng = random.Random(42)
-            expr, coords = simulate_spatial_expression(
-                30, 8, spatial_patterns=pattern, rng=rng
-            )
+            expr, coords = simulate_spatial_expression(30, 8, spatial_patterns=pattern, rng=rng)
 
             assert expr.shape == (30, 8), f"Wrong shape for {pattern}"
             assert coords.shape == (30, 2), f"Wrong coords shape for {pattern}"

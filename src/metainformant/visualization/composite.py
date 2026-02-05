@@ -26,6 +26,7 @@ logger = logging.get_logger(__name__)
 # Generic multi-panel builder
 # ---------------------------------------------------------------------------
 
+
 def multi_panel(
     panels: List[Dict[str, Any]],
     *,
@@ -90,6 +91,7 @@ def multi_panel(
 # ---------------------------------------------------------------------------
 # Genomic overview dashboard
 # ---------------------------------------------------------------------------
+
 
 def genomic_overview(
     data: Dict[str, Any],
@@ -162,7 +164,8 @@ def genomic_overview(
         pvals = np.asarray(data["pvalues"])
         neg_log_p = -np.log10(np.clip(pvals, 1e-300, 1))
         colors = np.where(
-            (np.abs(log2fc) > 1) & (pvals < 0.05), "#D32F2F",
+            (np.abs(log2fc) > 1) & (pvals < 0.05),
+            "#D32F2F",
             np.where(pvals < 0.05, "#FF9800", "#9E9E9E"),
         )
         ax.scatter(log2fc, neg_log_p, c=colors, s=10, alpha=0.6)
@@ -204,6 +207,7 @@ def genomic_overview(
 # ---------------------------------------------------------------------------
 # QC summary dashboard
 # ---------------------------------------------------------------------------
+
 
 def qc_summary(
     qc_data: Dict[str, Any],

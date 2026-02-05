@@ -138,8 +138,10 @@ def normalize_counts(
     elif method == "median_ratio":
         return _normalize_median_ratio(counts)
     else:
-        raise ValueError(f"Unknown normalization method: {method}. "
-                        f"Valid methods: cpm, tpm, rpkm, log2cpm, quantile, median_ratio")
+        raise ValueError(
+            f"Unknown normalization method: {method}. "
+            f"Valid methods: cpm, tpm, rpkm, log2cpm, quantile, median_ratio"
+        )
 
 
 def _normalize_cpm(counts: pd.DataFrame) -> pd.DataFrame:
@@ -255,11 +257,7 @@ def _normalize_quantile(counts: pd.DataFrame) -> pd.DataFrame:
     rank_to_value = pd.Series(mean_distribution, index=np.arange(1, n_genes + 1))
 
     # Apply normalization
-    normalized = pd.DataFrame(
-        index=counts.index,
-        columns=counts.columns,
-        dtype=float
-    )
+    normalized = pd.DataFrame(index=counts.index, columns=counts.columns, dtype=float)
 
     for col in counts.columns:
         # Map ranks to normalized values (handle ties by averaging)
@@ -520,13 +518,15 @@ def _de_deseq2_like(
         se = np.sqrt(variance / len(all_counts)) if variance > 0 else 1.0
         wald_stat = log2fc / se if se > 0 else 0.0
 
-        results.append({
-            "gene": gene,
-            "log2_fold_change": log2fc,
-            "p_value": pvalue,
-            "base_mean": base_mean,
-            "stat": wald_stat,
-        })
+        results.append(
+            {
+                "gene": gene,
+                "log2_fold_change": log2fc,
+                "p_value": pvalue,
+                "base_mean": base_mean,
+                "stat": wald_stat,
+            }
+        )
 
     return pd.DataFrame(results)
 
@@ -567,13 +567,15 @@ def _de_ttest(
             pvalue = 1.0
             t_stat = 0.0
 
-        results.append({
-            "gene": gene,
-            "log2_fold_change": log2fc,
-            "p_value": pvalue,
-            "base_mean": counts.loc[gene].mean(),
-            "stat": t_stat,
-        })
+        results.append(
+            {
+                "gene": gene,
+                "log2_fold_change": log2fc,
+                "p_value": pvalue,
+                "base_mean": counts.loc[gene].mean(),
+                "stat": t_stat,
+            }
+        )
 
     return pd.DataFrame(results)
 
@@ -615,13 +617,15 @@ def _de_wilcoxon(
         if np.isnan(pvalue):
             pvalue = 1.0
 
-        results.append({
-            "gene": gene,
-            "log2_fold_change": log2fc,
-            "p_value": pvalue,
-            "base_mean": counts.loc[gene].mean(),
-            "stat": u_stat,
-        })
+        results.append(
+            {
+                "gene": gene,
+                "log2_fold_change": log2fc,
+                "p_value": pvalue,
+                "base_mean": counts.loc[gene].mean(),
+                "stat": u_stat,
+            }
+        )
 
     return pd.DataFrame(results)
 
@@ -720,7 +724,7 @@ def _estimate_dispersion(counts: np.ndarray) -> float:
 
     # Method of moments: var = mu + alpha * mu^2
     # alpha = (var - mu) / mu^2
-    dispersion = (var_val - mean_val) / (mean_val ** 2) if mean_val > 0 else 0.1
+    dispersion = (var_val - mean_val) / (mean_val**2) if mean_val > 0 else 0.1
 
     # Shrink toward prior and ensure positive
     prior_dispersion = 0.1
@@ -889,8 +893,8 @@ def pca_analysis(
     transformed = U * S
 
     # Explained variance ratio
-    total_variance = (X_scaled ** 2).sum()
-    explained_variance = S ** 2 / (n_samples - 1)
+    total_variance = (X_scaled**2).sum()
+    explained_variance = S**2 / (n_samples - 1)
     explained_variance_ratio = explained_variance / (total_variance / (n_samples - 1))
 
     # Gene loadings (correlation of genes with PCs)
@@ -1030,8 +1034,10 @@ def filter_low_expression(
     keep_genes = expressed_samples >= min_samples
 
     n_removed = (~keep_genes).sum()
-    logger.info(f"Removed {n_removed}/{len(counts_df)} genes with low expression "
-                f"(< {min_count} counts in < {min_samples} samples)")
+    logger.info(
+        f"Removed {n_removed}/{len(counts_df)} genes with low expression "
+        f"(< {min_count} counts in < {min_samples} samples)"
+    )
 
     return counts_df.loc[keep_genes]
 
@@ -1162,8 +1168,10 @@ def prepare_volcano_data(
     n_up = (regulation == "up").sum()
     n_down = (regulation == "down").sum()
     n_ns = (regulation == "ns").sum()
-    logger.info(f"Volcano plot data: {n_up} up, {n_down} down, {n_ns} not significant "
-                f"(|log2FC| >= {fc_threshold}, p <= {pvalue_threshold})")
+    logger.info(
+        f"Volcano plot data: {n_up} up, {n_down} down, {n_ns} not significant "
+        f"(|log2FC| >= {fc_threshold}, p <= {pvalue_threshold})"
+    )
 
     return result
 

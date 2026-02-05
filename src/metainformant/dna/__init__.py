@@ -9,6 +9,7 @@ from __future__ import annotations
 
 # Import subpackages
 from . import (
+    annotation,
     sequence,
     alignment,
     expression,
@@ -42,6 +43,11 @@ from .expression import translation
 # Variation
 from .variation import mutations
 from .variation import variants
+from .variation import calling
+
+# Annotation
+from .annotation import gene_prediction
+from .annotation import functional
 
 # Population
 from .population import core as population
@@ -73,6 +79,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     # Subpackages
+    "annotation",
     "sequence",
     "alignment",
     "expression",
@@ -97,6 +104,9 @@ __all__ = [
     "translation",
     "mutations",
     "variants",
+    "calling",
+    "gene_prediction",
+    "functional",
     "population",
     "population_analysis",
     "population_viz",

@@ -182,8 +182,12 @@ def _build_position_weight_matrix(
 
         # Align sequence to backbone using banded DP
         alignment = _banded_semiglobal_align(
-            backbone.upper(), seq.upper(),
-            match_score, mismatch_penalty, gap_open, gap_extend,
+            backbone.upper(),
+            seq.upper(),
+            match_score,
+            mismatch_penalty,
+            gap_open,
+            gap_extend,
             bandwidth=min(500, max(50, abs(len(backbone) - len(seq)) + 50)),
         )
 
@@ -199,7 +203,7 @@ def _build_position_weight_matrix(
             if ref_base != "-":
                 ref_pos += 1
 
-    return pwm[:len(backbone)]
+    return pwm[: len(backbone)]
 
 
 def _consensus_from_pwm(
@@ -243,6 +247,7 @@ def _consensus_from_pwm(
             consensus_fraction = best_count / coverage
             # Convert fraction to Phred: Q = -10 * log10(1 - fraction)
             import math
+
             if consensus_fraction >= 1.0:
                 quality = 60.0  # Max quality
             elif consensus_fraction > 0:
@@ -466,11 +471,11 @@ def _simple_align(ref: str, query: str) -> dict[str, Any]:
                 ref_aligned.extend(["-"] * (query_gap - min_gap))
                 query_aligned.extend(query[prev_query + min_gap : query_pos])
         elif ref_gap > 0:
-            ref_aligned.extend(ref[prev_ref : ref_pos])
+            ref_aligned.extend(ref[prev_ref:ref_pos])
             query_aligned.extend(["-"] * ref_gap)
         elif query_gap > 0:
             ref_aligned.extend(["-"] * query_gap)
-            query_aligned.extend(query[prev_query : query_pos])
+            query_aligned.extend(query[prev_query:query_pos])
 
         # Add anchor match
         ref_aligned.extend(ref[ref_pos : ref_pos + k])

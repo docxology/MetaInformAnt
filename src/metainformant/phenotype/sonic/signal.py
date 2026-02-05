@@ -123,9 +123,7 @@ class AcousticSignal:
         crossings = np.sum(np.abs(np.diff(signs)) > 0)
         return float(crossings / self.duration) if self.duration > 0 else 0.0
 
-    def spectrogram(
-        self, window_size: int = 1024, hop_size: int = 512
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def spectrogram(self, window_size: int = 1024, hop_size: int = 512) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         """Short-time Fourier transform spectrogram.
 
         Args:
@@ -202,19 +200,23 @@ class AcousticSignal:
                         syllables[-1]["duration"] = syllables[-1]["offset"] - syllables[-1]["onset"]
                         continue
 
-                syllables.append({
-                    "onset": onset_idx / self.sample_rate,
-                    "offset": offset_idx / self.sample_rate,
-                    "duration": (offset_idx - onset_idx) / self.sample_rate,
-                })
+                syllables.append(
+                    {
+                        "onset": onset_idx / self.sample_rate,
+                        "offset": offset_idx / self.sample_rate,
+                        "duration": (offset_idx - onset_idx) / self.sample_rate,
+                    }
+                )
 
         # Handle case where signal ends during a syllable
         if in_syllable:
-            syllables.append({
-                "onset": onset_idx / self.sample_rate,
-                "offset": len(self.waveform) / self.sample_rate,
-                "duration": (len(self.waveform) - onset_idx) / self.sample_rate,
-            })
+            syllables.append(
+                {
+                    "onset": onset_idx / self.sample_rate,
+                    "offset": len(self.waveform) / self.sample_rate,
+                    "duration": (len(self.waveform) - onset_idx) / self.sample_rate,
+                }
+            )
 
         return syllables
 

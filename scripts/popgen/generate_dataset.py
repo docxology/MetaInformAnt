@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from metainformant.core.io import dump_json, ensure_directory
-from metainformant.core.logging import setup_logger
+from metainformant.core.utils.logging import setup_logger
 from metainformant.simulation.popgen import (
     generate_genotype_matrix,
     generate_linkage_disequilibrium_data,

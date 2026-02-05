@@ -73,9 +73,7 @@ CNV_COLORS: dict[str, str] = {
 def _check_matplotlib() -> None:
     """Raise an import error if matplotlib is not available."""
     if not HAS_MATPLOTLIB:
-        raise ImportError(
-            "matplotlib is required for visualization. Install with: uv pip install matplotlib"
-        )
+        raise ImportError("matplotlib is required for visualization. Install with: uv pip install matplotlib")
 
 
 def plot_circos(
@@ -171,10 +169,7 @@ def plot_circos(
     ax.grid(False)
 
     # Legend
-    legend_patches = [
-        mpatches.Patch(color=SV_COLORS[t], label=t)
-        for t in ["DEL", "DUP", "INV", "TRA", "INS"]
-    ]
+    legend_patches = [mpatches.Patch(color=SV_COLORS[t], label=t) for t in ["DEL", "DUP", "INV", "TRA", "INS"]]
     ax.legend(
         handles=legend_patches,
         loc="lower right",
@@ -238,9 +233,7 @@ def plot_coverage_track(
     n_bins = len(cov)
     positions = [reg_start + i * bin_size for i in range(n_bins)]
 
-    fig, (ax_cov, ax_sv) = plt.subplots(
-        2, 1, figsize=figsize, height_ratios=[4, 1], sharex=True
-    )
+    fig, (ax_cov, ax_sv) = plt.subplots(2, 1, figsize=figsize, height_ratios=[4, 1], sharex=True)
 
     # Coverage track
     if np is not None:
@@ -275,13 +268,23 @@ def plot_coverage_track(
         width = v_end - v_start
 
         rect = mpatches.Rectangle(
-            (v_start, 0), width, 1,
-            linewidth=1, edgecolor=color, facecolor=color, alpha=0.6,
+            (v_start, 0),
+            width,
+            1,
+            linewidth=1,
+            edgecolor=color,
+            facecolor=color,
+            alpha=0.6,
         )
         ax_sv.add_patch(rect)
         ax_sv.text(
-            v_start + width / 2, 0.5, sv_type,
-            ha="center", va="center", fontsize=8, fontweight="bold",
+            v_start + width / 2,
+            0.5,
+            sv_type,
+            ha="center",
+            va="center",
+            fontsize=8,
+            fontweight="bold",
         )
 
     ax_sv.set_xlim(reg_start, reg_end)
@@ -525,9 +528,7 @@ def plot_breakpoint_detail(
     region_start = max(0, bp1 - flanking)
     region_end = bp2 + flanking
 
-    fig, (ax_align, ax_cov, ax_evidence) = plt.subplots(
-        3, 1, figsize=figsize, height_ratios=[3, 2, 2], sharex=True
-    )
+    fig, (ax_align, ax_cov, ax_evidence) = plt.subplots(3, 1, figsize=figsize, height_ratios=[3, 2, 2], sharex=True)
 
     # Filter reads in region
     region_reads: list[dict[str, Any]] = []
@@ -566,7 +567,8 @@ def plot_breakpoint_detail(
     ax_align.set_ylabel("Reads", fontsize=11)
     ax_align.set_title(
         f"Breakpoint Detail - {chrom}:{bp1:,}-{bp2:,} ({sv_type})",
-        fontsize=13, fontweight="bold",
+        fontsize=13,
+        fontweight="bold",
     )
 
     # Draw breakpoint lines
@@ -604,15 +606,22 @@ def plot_breakpoint_detail(
         if name in evidence_reads:
             if "S" in str(cigar):
                 ax_evidence.barh(
-                    split_count, read.get("read_length", 150),
-                    left=r_pos, height=0.8, color="#E74C3C", alpha=0.7,
+                    split_count,
+                    read.get("read_length", 150),
+                    left=r_pos,
+                    height=0.8,
+                    color="#E74C3C",
+                    alpha=0.7,
                 )
                 split_count += 1
             else:
                 ax_evidence.barh(
                     split_count + discordant_count + 1,
                     read.get("read_length", 150),
-                    left=r_pos, height=0.8, color="#9B59B6", alpha=0.7,
+                    left=r_pos,
+                    height=0.8,
+                    color="#9B59B6",
+                    alpha=0.7,
                 )
                 discordant_count += 1
 
@@ -693,9 +702,13 @@ def plot_cnv_profile(
 
         # Chromosome label
         ax.text(
-            offset + size / 2, -2.8,
+            offset + size / 2,
+            -2.8,
             chrom.replace("chr", ""),
-            ha="center", va="top", fontsize=8, rotation=45,
+            ha="center",
+            va="top",
+            fontsize=8,
+            rotation=45,
         )
 
     # Plot segments
@@ -717,8 +730,13 @@ def plot_cnv_profile(
 
         # Draw segment as a horizontal bar
         ax.barh(
-            lr, width, left=start, height=0.05,
-            color=color, alpha=0.8, edgecolor="none",
+            lr,
+            width,
+            left=start,
+            height=0.05,
+            color=color,
+            alpha=0.8,
+            edgecolor="none",
         )
 
         # Also plot as a scatter point at the segment midpoint
@@ -727,8 +745,22 @@ def plot_cnv_profile(
 
     # Reference lines
     ax.axhline(y=0, color="black", linewidth=1, linestyle="-", alpha=0.5)
-    ax.axhline(y=math.log2(1 / ploidy + 1e-10) if ploidy > 0 else -1, color="#E74C3C", linewidth=0.5, linestyle="--", alpha=0.5, label="DEL")
-    ax.axhline(y=math.log2((ploidy + 1) / ploidy) if ploidy > 0 else 0.58, color="#3498DB", linewidth=0.5, linestyle="--", alpha=0.5, label="DUP")
+    ax.axhline(
+        y=math.log2(1 / ploidy + 1e-10) if ploidy > 0 else -1,
+        color="#E74C3C",
+        linewidth=0.5,
+        linestyle="--",
+        alpha=0.5,
+        label="DEL",
+    )
+    ax.axhline(
+        y=math.log2((ploidy + 1) / ploidy) if ploidy > 0 else 0.58,
+        color="#3498DB",
+        linewidth=0.5,
+        linestyle="--",
+        alpha=0.5,
+        label="DUP",
+    )
 
     ax.set_xlim(0, total_genome)
     ax.set_ylim(-3, 3)
@@ -843,8 +875,13 @@ def _draw_chromosome_arcs(
             mid_angle = (start_angle + end_angle) / 2
             label = chrom.replace("chr", "")
             ax.text(
-                mid_angle, outer_r + 0.05, label,
-                ha="center", va="center", fontsize=8, fontweight="bold",
+                mid_angle,
+                outer_r + 0.05,
+                label,
+                ha="center",
+                va="center",
+                fontsize=8,
+                fontweight="bold",
             )
 
 

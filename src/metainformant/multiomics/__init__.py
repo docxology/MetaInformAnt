@@ -10,10 +10,17 @@ Capabilities:
     - **Dimensionality Reduction**: Multi-omic PCA, CCA, and factor analysis
     - **Pathway Integration**: Integrate pathway-level signals across omics
     - **Network Integration**: Build multi-layer biological networks
+    - **Integration Methods**: Joint NMF, MOFA, tensor decomposition, SNF, CCA
+    - **Clustering**: Multi-omic clustering, consensus clustering, spectral methods
+    - **Pathway Analysis**: Multi-omic enrichment, active modules, topology analysis
+    - **Survival Analysis**: Cox PH, Kaplan-Meier, log-rank, Lasso-Cox models
 
 Submodules:
     - analysis.integration: Core integration algorithms and methods
     - visualization: Multi-omic visualization tools
+    - methods: Matrix factorization, clustering, and network fusion
+    - pathways: Multi-omic pathway enrichment and concordance
+    - survival: Cox regression, Kaplan-Meier, risk stratification
 
 Integration Methods:
     - Early integration: Concatenate features from all omics
@@ -68,6 +75,21 @@ try:
 except ImportError:
     integration = None
 
+try:
+    from . import methods
+except ImportError:
+    methods = None  # type: ignore[assignment]
+
+try:
+    from . import pathways
+except ImportError:
+    pathways = None  # type: ignore[assignment]
+
+try:
+    from . import survival
+except ImportError:
+    survival = None  # type: ignore[assignment]
+
 # Type checking imports
 from typing import TYPE_CHECKING
 
@@ -78,4 +100,7 @@ __all__ = [
     # Subpackages
     "analysis",
     "visualization",
+    "methods",
+    "pathways",
+    "survival",
 ]

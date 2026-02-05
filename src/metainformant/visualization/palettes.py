@@ -22,12 +22,30 @@ logger = logging.get_logger(__name__)
 # ---------------------------------------------------------------------------
 
 CHROMOSOME_COLORS: Dict[str, str] = {
-    "1": "#E41A1C", "2": "#377EB8", "3": "#4DAF4A", "4": "#984EA3",
-    "5": "#FF7F00", "6": "#A65628", "7": "#F781BF", "8": "#999999",
-    "9": "#66C2A5", "10": "#FC8D62", "11": "#8DA0CB", "12": "#E78AC3",
-    "13": "#A6D854", "14": "#FFD92F", "15": "#E5C494", "16": "#B3B3B3",
-    "17": "#1B9E77", "18": "#D95F02", "19": "#7570B3", "20": "#E7298A",
-    "21": "#66A61E", "22": "#E6AB02", "X": "#A6761D", "Y": "#666666",
+    "1": "#E41A1C",
+    "2": "#377EB8",
+    "3": "#4DAF4A",
+    "4": "#984EA3",
+    "5": "#FF7F00",
+    "6": "#A65628",
+    "7": "#F781BF",
+    "8": "#999999",
+    "9": "#66C2A5",
+    "10": "#FC8D62",
+    "11": "#8DA0CB",
+    "12": "#E78AC3",
+    "13": "#A6D854",
+    "14": "#FFD92F",
+    "15": "#E5C494",
+    "16": "#B3B3B3",
+    "17": "#1B9E77",
+    "18": "#D95F02",
+    "19": "#7570B3",
+    "20": "#E7298A",
+    "21": "#66A61E",
+    "22": "#E6AB02",
+    "X": "#A6761D",
+    "Y": "#666666",
     "MT": "#000000",
 }
 
@@ -99,6 +117,7 @@ def categorical(n: int, *, palette: str = "wong") -> List[str]:
 # Sequential / diverging palettes for biological data
 # ---------------------------------------------------------------------------
 
+
 def expression_gradient(n: int = 256, *, center_white: bool = True) -> mcolors.LinearSegmentedColormap:
     """Blue-white-red gradient for gene expression (log2 fold-change).
 
@@ -107,21 +126,19 @@ def expression_gradient(n: int = 256, *, center_white: bool = True) -> mcolors.L
         center_white: Whether white is at the midpoint.
     """
     if center_white:
-        colors = ["#2166AC", "#4393C3", "#D1E5F0", "#FFFFFF",
-                  "#FDDBC7", "#F4A582", "#D6604D", "#B2182B"]
+        colors = ["#2166AC", "#4393C3", "#D1E5F0", "#FFFFFF", "#FDDBC7", "#F4A582", "#D6604D", "#B2182B"]
     else:
-        colors = ["#2166AC", "#4393C3", "#92C5DE",
-                  "#F4A582", "#D6604D", "#B2182B"]
+        colors = ["#2166AC", "#4393C3", "#92C5DE", "#F4A582", "#D6604D", "#B2182B"]
     return mcolors.LinearSegmentedColormap.from_list("expression", colors, N=n)
 
 
 def significance_palette() -> Dict[str, str]:
     """Standard colors for p-value significance levels."""
     return {
-        "highly_significant": "#D32F2F",   # p < 0.001
-        "significant": "#FF9800",          # p < 0.01
+        "highly_significant": "#D32F2F",  # p < 0.001
+        "significant": "#FF9800",  # p < 0.01
         "marginally_significant": "#FFC107",  # p < 0.05
-        "not_significant": "#9E9E9E",      # p >= 0.05
+        "not_significant": "#9E9E9E",  # p >= 0.05
     }
 
 

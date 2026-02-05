@@ -147,13 +147,15 @@ def phase_reads(
     norm_variants: list[Variant] = []
     for v in variants:
         if isinstance(v, dict):
-            norm_variants.append(Variant(
-                chromosome=v.get("chromosome", ""),
-                position=v.get("position", 0),
-                ref_allele=v.get("ref_allele", ""),
-                alt_allele=v.get("alt_allele", ""),
-                genotype=v.get("genotype", "0/1"),
-            ))
+            norm_variants.append(
+                Variant(
+                    chromosome=v.get("chromosome", ""),
+                    position=v.get("position", 0),
+                    ref_allele=v.get("ref_allele", ""),
+                    alt_allele=v.get("alt_allele", ""),
+                    genotype=v.get("genotype", "0/1"),
+                )
+            )
         else:
             norm_variants.append(v)
 
@@ -251,17 +253,19 @@ def phase_reads(
         # Quality based on consistency of edge weights
         block_quality = _compute_block_quality(sorted_indices, edge_weights, haplotype_assignment)
 
-        phase_blocks.append(PhaseBlock(
-            block_id=block_id,
-            chromosome=chrom,
-            start=start,
-            end=end,
-            variants=[v.position for v in block_variants],
-            haplotype1=h1,
-            haplotype2=h2,
-            num_variants=len(sorted_indices),
-            quality=block_quality,
-        ))
+        phase_blocks.append(
+            PhaseBlock(
+                block_id=block_id,
+                chromosome=chrom,
+                start=start,
+                end=end,
+                variants=[v.position for v in block_variants],
+                haplotype1=h1,
+                haplotype2=h2,
+                num_variants=len(sorted_indices),
+                quality=block_quality,
+            )
+        )
 
     # Assign reads to haplotypes based on majority vote
     read_assignments: dict[str, int] = {}

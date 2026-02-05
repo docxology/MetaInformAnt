@@ -79,9 +79,7 @@ def harmonic_mean_effective_size(population_sizes: List[float]) -> float:
     return n_generations / harmonic_sum
 
 
-def effective_population_size_from_heterozygosity(
-    heterozygosity: float, mutation_rate: float = 1e-8
-) -> float:
+def effective_population_size_from_heterozygosity(heterozygosity: float, mutation_rate: float = 1e-8) -> float:
     """Estimate effective population size from heterozygosity.
 
     Uses the relationship H = 4*Ne*mu / (1 + 4*Ne*mu) for diploid organisms,

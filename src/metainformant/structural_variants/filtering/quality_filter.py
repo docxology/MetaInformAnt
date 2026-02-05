@@ -275,9 +275,7 @@ def filter_by_frequency(
         parameters={"max_af": max_af, "match_window": match_window},
     )
 
-    logger.info(
-        f"Frequency filter (AF <= {max_af}): {stats.output_count}/{stats.input_count} passed"
-    )
+    logger.info(f"Frequency filter (AF <= {max_af}): {stats.output_count}/{stats.input_count} passed")
     return passed, stats
 
 

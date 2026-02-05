@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Any
 
 from metainformant.core.io import dump_json, load_json
-from metainformant.core.logging import setup_logger
+from metainformant.core.utils.logging import setup_logger
 from metainformant.dna.population import (
     fu_and_li_d_star_from_sequences,
     fu_and_li_f_star_from_sequences,

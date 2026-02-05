@@ -621,9 +621,7 @@ class TestComputeCorrelationMatrix:
 class TestDetectGcBias:
     """Tests for detect_gc_bias function."""
 
-    def test_returns_required_keys(
-        self, count_matrix: pd.DataFrame, gc_content_series: pd.Series
-    ) -> None:
+    def test_returns_required_keys(self, count_matrix: pd.DataFrame, gc_content_series: pd.Series) -> None:
         """Result should contain overall_correlation, overall_pvalue, bias_detected, per_sample."""
         result = detect_gc_bias(count_matrix, gc_content_series)
         assert "overall_correlation" in result
@@ -631,9 +629,7 @@ class TestDetectGcBias:
         assert "bias_detected" in result
         assert "per_sample" in result
 
-    def test_per_sample_contains_all_samples(
-        self, count_matrix: pd.DataFrame, gc_content_series: pd.Series
-    ) -> None:
+    def test_per_sample_contains_all_samples(self, count_matrix: pd.DataFrame, gc_content_series: pd.Series) -> None:
         """per_sample should have an entry for each sample in the expression DataFrame."""
         result = detect_gc_bias(count_matrix, gc_content_series)
         for sample in count_matrix.columns:
@@ -678,9 +674,7 @@ class TestDetectGcBias:
 class TestDetectLengthBias:
     """Tests for detect_length_bias function."""
 
-    def test_returns_required_keys(
-        self, count_matrix: pd.DataFrame, gene_lengths_series: pd.Series
-    ) -> None:
+    def test_returns_required_keys(self, count_matrix: pd.DataFrame, gene_lengths_series: pd.Series) -> None:
         """Result should contain overall_correlation, overall_pvalue, bias_detected, per_sample."""
         result = detect_length_bias(count_matrix, gene_lengths_series)
         assert "overall_correlation" in result
@@ -716,9 +710,7 @@ class TestDetectLengthBias:
         with pytest.raises(ValueError, match="cannot be empty"):
             detect_length_bias(pd.DataFrame(), lengths)
 
-    def test_per_sample_correlations_present(
-        self, count_matrix: pd.DataFrame, gene_lengths_series: pd.Series
-    ) -> None:
+    def test_per_sample_correlations_present(self, count_matrix: pd.DataFrame, gene_lengths_series: pd.Series) -> None:
         """per_sample should map each sample to a dict with correlation and pvalue."""
         result = detect_length_bias(count_matrix, gene_lengths_series)
         for sample in count_matrix.columns:

@@ -120,7 +120,10 @@ def filter_by_length(
 
     logger.info(
         "Length filter: %d/%d reads passed (min=%d, max=%s)",
-        passed, total, min_length, max_length or "None",
+        passed,
+        total,
+        min_length,
+        max_length or "None",
     )
     return filtered
 
@@ -232,7 +235,9 @@ def trim_adapters(
         if len(trimmed_seq) > 0:
             metadata = {}
             if isinstance(read, dict):
-                metadata = {k: v for k, v in read.items() if k not in ("sequence", "quality", "quality_string", "read_id")}
+                metadata = {
+                    k: v for k, v in read.items() if k not in ("sequence", "quality", "quality_string", "read_id")
+                }
             elif hasattr(read, "metadata"):
                 metadata = dict(read.metadata)
 
@@ -240,12 +245,14 @@ def trim_adapters(
             metadata["trimmed_start"] = trim_start
             metadata["trimmed_end"] = len(seq) - trim_end
 
-            trimmed.append(ReadRecord(
-                read_id=read_id,
-                sequence=trimmed_seq,
-                quality_string=trimmed_qual,
-                metadata=metadata,
-            ))
+            trimmed.append(
+                ReadRecord(
+                    read_id=read_id,
+                    sequence=trimmed_seq,
+                    quality_string=trimmed_qual,
+                    metadata=metadata,
+                )
+            )
 
     logger.info("Adapter trimming: processed %d reads, %d with sequence remaining", len(reads), len(trimmed))
     return trimmed
@@ -305,15 +312,17 @@ def detect_adapters(
                     else:
                         location = "internal"
 
-                    matches.append(AdapterMatch(
-                        adapter_name=adapter_name + suffix,
-                        adapter_sequence=search_adapter,
-                        position=i,
-                        end_position=i + adapter_len,
-                        score=identity * adapter_len,
-                        identity=identity,
-                        location=location,
-                    ))
+                    matches.append(
+                        AdapterMatch(
+                            adapter_name=adapter_name + suffix,
+                            adapter_sequence=search_adapter,
+                            position=i,
+                            end_position=i + adapter_len,
+                            score=identity * adapter_len,
+                            identity=identity,
+                            location=location,
+                        )
+                    )
 
     # Sort by position and deduplicate overlapping matches
     matches.sort(key=lambda m: m.position)
@@ -365,12 +374,14 @@ def split_chimeric_reads(
 
         if not internal_matches:
             # Not chimeric, return as-is
-            result.append(ReadRecord(
-                read_id=read_id,
-                sequence=seq,
-                quality_string=qual_str,
-                metadata={"chimeric": False},
-            ))
+            result.append(
+                ReadRecord(
+                    read_id=read_id,
+                    sequence=seq,
+                    quality_string=qual_str,
+                    metadata={"chimeric": False},
+                )
+            )
             continue
 
         # Split at internal adapters
@@ -400,25 +411,29 @@ def split_chimeric_reads(
             frag_qual = qual_str[start:end] if qual_str else ""
 
             if len(frag_seq) >= min_fragment_length:
-                result.append(ReadRecord(
-                    read_id=f"{read_id}_fragment_{fragment_idx}",
-                    sequence=frag_seq,
-                    quality_string=frag_qual,
-                    metadata={
-                        "chimeric": True,
-                        "parent_read": read_id,
-                        "fragment_index": fragment_idx,
-                        "fragment_start": start,
-                        "fragment_end": end,
-                    },
-                ))
+                result.append(
+                    ReadRecord(
+                        read_id=f"{read_id}_fragment_{fragment_idx}",
+                        sequence=frag_seq,
+                        quality_string=frag_qual,
+                        metadata={
+                            "chimeric": True,
+                            "parent_read": read_id,
+                            "fragment_index": fragment_idx,
+                            "fragment_start": start,
+                            "fragment_end": end,
+                        },
+                    )
+                )
                 fragment_idx += 1
 
             i += 1
 
     logger.info(
         "Chimeric detection: %d/%d reads were chimeric, produced %d total fragments",
-        chimeric_count, len(reads), len(result),
+        chimeric_count,
+        len(reads),
+        len(result),
     )
     return result
 

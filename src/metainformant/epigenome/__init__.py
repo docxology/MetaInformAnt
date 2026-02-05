@@ -2,7 +2,8 @@
 
 This module provides tools for analyzing epigenetic data, including
 DNA methylation, histone modifications (ChIP-seq), and chromatin
-accessibility (ATAC-seq), along with genome browser track generation.
+accessibility (ATAC-seq), along with peak calling, chromatin state
+learning, and genome browser track generation.
 """
 
 from __future__ import annotations
@@ -10,6 +11,8 @@ from __future__ import annotations
 # Import subpackages
 from . import analysis
 from . import assays
+from . import chromatin_state
+from . import peak_calling
 from . import visualization
 from . import workflow
 
@@ -29,6 +32,26 @@ from .analysis import (
 )
 from .workflow import workflow as workflow_module
 from .visualization import visualization as visualization_module
+
+# Peak calling public API
+from .peak_calling.peak_detection import (
+    call_peaks_broad,
+    call_peaks_simple,
+    compute_frip,
+    differential_peaks,
+    filter_peaks,
+    merge_peaks,
+)
+
+# Chromatin state public API
+from .chromatin_state.state_learning import (
+    assign_states,
+    compare_chromatin_states,
+    compute_state_enrichment,
+    interpret_states,
+    learn_chromatin_states,
+    segment_genome,
+)
 
 # Optional imports with graceful fallbacks
 try:
@@ -56,6 +79,8 @@ __all__ = [
     # Subpackages
     "analysis",
     "assays",
+    "chromatin_state",
+    "peak_calling",
     "visualization",
     "workflow",
     # Epigenetic assays
@@ -66,6 +91,20 @@ __all__ = [
     "load_cpg_table",
     "summarize_beta_by_chromosome",
     "read_bedgraph",
+    # Peak calling
+    "call_peaks_simple",
+    "call_peaks_broad",
+    "merge_peaks",
+    "filter_peaks",
+    "compute_frip",
+    "differential_peaks",
+    # Chromatin state learning
+    "learn_chromatin_states",
+    "assign_states",
+    "interpret_states",
+    "compute_state_enrichment",
+    "segment_genome",
+    "compare_chromatin_states",
     # Data visualization and tracks
     "tracks",
     "visualization_module",

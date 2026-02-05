@@ -61,17 +61,17 @@ class MetabolizerPhenotype(str, Enum):
 
 _PHENOTYPE_THRESHOLDS: dict[str, list[tuple[float, float, MetabolizerPhenotype]]] = {
     "CYP2D6": [
-        (0.0, 0.0, MetabolizerPhenotype.POOR),         # AS = 0
+        (0.0, 0.0, MetabolizerPhenotype.POOR),  # AS = 0
         (0.25, 1.0, MetabolizerPhenotype.INTERMEDIATE),  # 0 < AS < 1.25
-        (1.0, 2.25, MetabolizerPhenotype.NORMAL),        # 1.25 <= AS <= 2.25
-        (2.25, 99.0, MetabolizerPhenotype.ULTRARAPID),   # AS > 2.25
+        (1.0, 2.25, MetabolizerPhenotype.NORMAL),  # 1.25 <= AS <= 2.25
+        (2.25, 99.0, MetabolizerPhenotype.ULTRARAPID),  # AS > 2.25
     ],
     "CYP2C19": [
-        (0.0, 0.0, MetabolizerPhenotype.POOR),          # AS = 0
-        (0.5, 1.0, MetabolizerPhenotype.INTERMEDIATE),   # 0 < AS < 1
-        (1.0, 2.0, MetabolizerPhenotype.NORMAL),         # AS = 1 to < 2
-        (2.0, 2.5, MetabolizerPhenotype.RAPID),          # AS = 2 (one *17)
-        (2.5, 99.0, MetabolizerPhenotype.ULTRARAPID),    # AS >= 2.5 (two *17)
+        (0.0, 0.0, MetabolizerPhenotype.POOR),  # AS = 0
+        (0.5, 1.0, MetabolizerPhenotype.INTERMEDIATE),  # 0 < AS < 1
+        (1.0, 2.0, MetabolizerPhenotype.NORMAL),  # AS = 1 to < 2
+        (2.0, 2.5, MetabolizerPhenotype.RAPID),  # AS = 2 (one *17)
+        (2.5, 99.0, MetabolizerPhenotype.ULTRARAPID),  # AS >= 2.5 (two *17)
     ],
     "CYP2C9": [
         (0.0, 0.0, MetabolizerPhenotype.POOR),
@@ -190,12 +190,14 @@ def get_phenotype_thresholds(
 
     result: list[dict[str, Any]] = []
     for low, high, phenotype in thresholds:
-        result.append({
-            "lower_bound": low,
-            "upper_bound": high,
-            "phenotype": phenotype,
-            "abbreviation": phenotype.abbreviation,
-        })
+        result.append(
+            {
+                "lower_bound": low,
+                "upper_bound": high,
+                "phenotype": phenotype,
+                "abbreviation": phenotype.abbreviation,
+            }
+        )
 
     return result
 
@@ -292,8 +294,7 @@ def _generate_clinical_note(phenotype: MetabolizerPhenotype, gene: str) -> str:
             "Consider significant dose adjustment or alternative therapy per CPIC guidelines."
         ),
         MetabolizerPhenotype.INDETERMINATE: (
-            f"Indeterminate metabolizer status for {gene}. "
-            "Insufficient data to assign a phenotype category."
+            f"Indeterminate metabolizer status for {gene}. " "Insufficient data to assign a phenotype category."
         ),
     }
     return notes.get(phenotype, f"Unknown phenotype status for {gene}.")
@@ -340,7 +341,9 @@ def population_phenotype_frequencies(
 
     # Calculate diplotype frequencies under HWE
     allele_names = sorted(alleles.keys())
-    phenotype_freqs: dict[str, float] = {p.abbreviation: 0.0 for p in MetabolizerPhenotype if p != MetabolizerPhenotype.INDETERMINATE}
+    phenotype_freqs: dict[str, float] = {
+        p.abbreviation: 0.0 for p in MetabolizerPhenotype if p != MetabolizerPhenotype.INDETERMINATE
+    }
 
     scoring_table = _ACTIVITY_SCORE_TABLES.get(gene_upper, {})
 

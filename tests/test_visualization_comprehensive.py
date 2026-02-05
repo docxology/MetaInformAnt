@@ -20,6 +20,7 @@ from pathlib import Path
 # Themes tests
 # ---------------------------------------------------------------------------
 
+
 class TestThemes:
     """Tests for themes module."""
 
@@ -79,6 +80,7 @@ class TestThemes:
 # ---------------------------------------------------------------------------
 # Palettes tests
 # ---------------------------------------------------------------------------
+
 
 class TestPalettes:
     """Tests for palettes module."""
@@ -153,6 +155,7 @@ class TestPalettes:
 # Composite dashboards tests
 # ---------------------------------------------------------------------------
 
+
 class TestComposite:
     """Tests for composite dashboard functions."""
 
@@ -207,6 +210,7 @@ class TestComposite:
 # Interactive plots tests
 # ---------------------------------------------------------------------------
 
+
 class TestInteractive:
     """Tests for interactive plot wrappers."""
 
@@ -230,11 +234,13 @@ class TestInteractive:
     def test_interactive_volcano(self, tmp_path: Path):
         from metainformant.visualization.interactive import interactive_volcano
 
-        df = pd.DataFrame({
-            "log2FoldChange": np.random.uniform(-3, 3, 100),
-            "pvalue": np.random.uniform(0.0001, 1, 100),
-            "gene": [f"Gene{i}" for i in range(100)],
-        })
+        df = pd.DataFrame(
+            {
+                "log2FoldChange": np.random.uniform(-3, 3, 100),
+                "pvalue": np.random.uniform(0.0001, 1, 100),
+                "gene": [f"Gene{i}" for i in range(100)],
+            }
+        )
         output = tmp_path / "volcano.png"
         result = interactive_volcano(df, output_path=output)
         assert result is not None
@@ -242,11 +248,13 @@ class TestInteractive:
     def test_interactive_manhattan(self, tmp_path: Path):
         from metainformant.visualization.interactive import interactive_manhattan
 
-        df = pd.DataFrame({
-            "chromosome": np.repeat([str(i) for i in range(1, 6)], 20),
-            "position": np.tile(np.arange(1000, 21000, 1000), 5),
-            "pvalue": np.random.uniform(1e-8, 1, 100),
-        })
+        df = pd.DataFrame(
+            {
+                "chromosome": np.repeat([str(i) for i in range(1, 6)], 20),
+                "position": np.tile(np.arange(1000, 21000, 1000), 5),
+                "pvalue": np.random.uniform(1e-8, 1, 100),
+            }
+        )
         output = tmp_path / "manhattan.png"
         result = interactive_manhattan(df, output_path=output)
         assert result is not None
@@ -256,6 +264,7 @@ class TestInteractive:
 # Quality submodules tests
 # ---------------------------------------------------------------------------
 
+
 class TestQualitySequencing:
     """Tests for quality_sequencing module."""
 
@@ -263,10 +272,25 @@ class TestQualitySequencing:
         from metainformant.visualization.analysis.quality_sequencing import plot_quality_metrics
 
         qc_data = {
-            "per_base_quality": {"positions": list(range(150)), "mean_qualities": np.random.normal(35, 2, 150).tolist()},
-            "gc_content_distribution": {"bins": list(range(0, 101, 5)), "counts": np.random.randint(10, 100, 20).tolist()},
-            "sequence_length_distribution": {"lengths": list(range(140, 160)), "counts": np.random.randint(1, 50, 20).tolist()},
-            "basic_statistics": {"num_reads": 1000, "total_bases": 150000, "min_length": 140, "max_length": 155, "mean_length": 150},
+            "per_base_quality": {
+                "positions": list(range(150)),
+                "mean_qualities": np.random.normal(35, 2, 150).tolist(),
+            },
+            "gc_content_distribution": {
+                "bins": list(range(0, 101, 5)),
+                "counts": np.random.randint(10, 100, 20).tolist(),
+            },
+            "sequence_length_distribution": {
+                "lengths": list(range(140, 160)),
+                "counts": np.random.randint(1, 50, 20).tolist(),
+            },
+            "basic_statistics": {
+                "num_reads": 1000,
+                "total_bases": 150000,
+                "min_length": 140,
+                "max_length": 155,
+                "mean_length": 150,
+            },
         }
         output = tmp_path / "quality_metrics.png"
         ax = plot_quality_metrics(qc_data, output_path=output)
@@ -384,6 +408,7 @@ class TestQualityAssessment:
 # Analysis __init__ exports test
 # ---------------------------------------------------------------------------
 
+
 class TestAnalysisExports:
     """Test that analysis subpackage exports all expected functions."""
 
@@ -431,40 +456,37 @@ class TestAnalysisExports:
 # Main visualization __init__ exports test
 # ---------------------------------------------------------------------------
 
+
 class TestMainExports:
     """Test that main visualization package exports new modules."""
 
     def test_themes_exported(self):
-        from metainformant.visualization import (
-            themes, list_themes, apply_theme, theme
-        )
+        from metainformant.visualization import themes, list_themes, apply_theme, theme
+
         assert themes is not None
         assert callable(list_themes)
         assert callable(apply_theme)
         assert callable(theme)
 
     def test_palettes_exported(self):
-        from metainformant.visualization import (
-            palettes, chromosome_palette, categorical, WONG
-        )
+        from metainformant.visualization import palettes, chromosome_palette, categorical, WONG
+
         assert palettes is not None
         assert callable(chromosome_palette)
         assert callable(categorical)
         assert isinstance(WONG, list)
 
     def test_composite_exported(self):
-        from metainformant.visualization import (
-            composite, multi_panel, genomic_overview, qc_summary
-        )
+        from metainformant.visualization import composite, multi_panel, genomic_overview, qc_summary
+
         assert composite is not None
         assert callable(multi_panel)
         assert callable(genomic_overview)
         assert callable(qc_summary)
 
     def test_interactive_exported(self):
-        from metainformant.visualization import (
-            interactive, interactive_scatter, interactive_volcano
-        )
+        from metainformant.visualization import interactive, interactive_scatter, interactive_volcano
+
         assert interactive is not None
         assert callable(interactive_scatter)
         assert callable(interactive_volcano)

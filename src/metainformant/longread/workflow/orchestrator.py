@@ -132,37 +132,44 @@ class LongReadOrchestrator:
         def _read_input(ctx: dict[str, Any]) -> list[dict[str, Any]]:
             return self._load_reads_sync(reads)
 
-        steps.append(PipelineStep(
-            name="read_input",
-            function=_read_input,
-            params={},
-            depends_on=[],
-        ))
+        steps.append(
+            PipelineStep(
+                name="read_input",
+                function=_read_input,
+                params={},
+                depends_on=[],
+            )
+        )
 
         # Step 2: Filter by length
         def _filter_length(ctx: dict[str, Any]) -> list[Any]:
             return filter_by_length(ctx["read_input"], min_length=min_length)
 
-        steps.append(PipelineStep(
-            name="filter_length",
-            function=_filter_length,
-            params={},
-            depends_on=["read_input"],
-        ))
+        steps.append(
+            PipelineStep(
+                name="filter_length",
+                function=_filter_length,
+                params={},
+                depends_on=["read_input"],
+            )
+        )
 
         # Step 3: Filter by quality
         def _filter_quality(ctx: dict[str, Any]) -> list[Any]:
             return filter_by_quality(ctx["filter_length"], min_q=min_quality)
 
-        steps.append(PipelineStep(
-            name="filter_quality",
-            function=_filter_quality,
-            params={},
-            depends_on=["filter_length"],
-        ))
+        steps.append(
+            PipelineStep(
+                name="filter_quality",
+                function=_filter_quality,
+                params={},
+                depends_on=["filter_length"],
+            )
+        )
 
         # Step 4: Trim adapters (optional)
         if do_trim:
+
             def _trim_adapters(ctx: dict[str, Any]) -> list[Any]:
                 return trim_adapters(
                     ctx["filter_quality"],
@@ -170,12 +177,14 @@ class LongReadOrchestrator:
                     min_identity=min_adapter_identity,
                 )
 
-            steps.append(PipelineStep(
-                name="trim_adapters",
-                function=_trim_adapters,
-                params={},
-                depends_on=["filter_quality"],
-            ))
+            steps.append(
+                PipelineStep(
+                    name="trim_adapters",
+                    function=_trim_adapters,
+                    params={},
+                    depends_on=["filter_quality"],
+                )
+            )
             metric_dep = "trim_adapters"
         else:
             metric_dep = "filter_quality"
@@ -194,12 +203,14 @@ class LongReadOrchestrator:
                 "reads_after_processing": len(processed_reads),
             }
 
-        steps.append(PipelineStep(
-            name="compute_metrics",
-            function=_compute_metrics,
-            params={},
-            depends_on=[metric_dep],
-        ))
+        steps.append(
+            PipelineStep(
+                name="compute_metrics",
+                function=_compute_metrics,
+                params={},
+                depends_on=[metric_dep],
+            )
+        )
 
         # Step 6: Generate QC plots
         def _generate_qc_plots(ctx: dict[str, Any]) -> dict[str, Path]:
@@ -210,6 +221,7 @@ class LongReadOrchestrator:
             processed_reads = ctx[metric_dep]
             try:
                 from ..visualization.plots import plot_read_length_histogram, plot_quality_vs_length
+
                 length_plot = plot_read_length_histogram(
                     processed_reads,
                     plots_dir / "read_length_histogram.png",
@@ -228,16 +240,19 @@ class LongReadOrchestrator:
 
             return generated
 
-        steps.append(PipelineStep(
-            name="generate_qc_plots",
-            function=_generate_qc_plots,
-            params={},
-            depends_on=["compute_metrics"],
-        ))
+        steps.append(
+            PipelineStep(
+                name="generate_qc_plots",
+                function=_generate_qc_plots,
+                params={},
+                depends_on=["compute_metrics"],
+            )
+        )
 
         # Step 7: Export report
         def _export_report(ctx: dict[str, Any]) -> Path:
             from .reporting import generate_qc_report, export_report
+
             metrics = ctx["compute_metrics"]
             # Build a lightweight PipelineResult for the report generator
             interim_result = PipelineResult(
@@ -251,12 +266,14 @@ class LongReadOrchestrator:
             qc_report = generate_qc_report(interim_result)
             return export_report(qc_report, self.output_dir / "qc_report.json", format="json")
 
-        steps.append(PipelineStep(
-            name="export_report",
-            function=_export_report,
-            params={},
-            depends_on=["compute_metrics"],
-        ))
+        steps.append(
+            PipelineStep(
+                name="export_report",
+                function=_export_report,
+                params={},
+                depends_on=["compute_metrics"],
+            )
+        )
 
         return self._run_steps("qc", steps)
 
@@ -297,12 +314,14 @@ class LongReadOrchestrator:
             quality_filtered = filter_by_quality(length_filtered, min_q=min_read_quality)
             return quality_filtered  # type: ignore[return-value]
 
-        steps.append(PipelineStep(
-            name="filter_reads",
-            function=_filter_reads,
-            params={},
-            depends_on=[],
-        ))
+        steps.append(
+            PipelineStep(
+                name="filter_reads",
+                function=_filter_reads,
+                params={},
+                depends_on=[],
+            )
+        )
 
         # Step 2: Find overlaps
         def _find_overlaps(ctx: dict[str, Any]) -> list[Any]:
@@ -315,12 +334,14 @@ class LongReadOrchestrator:
                 max_overhang=max_overhang,
             )
 
-        steps.append(PipelineStep(
-            name="find_overlaps",
-            function=_find_overlaps,
-            params={},
-            depends_on=["filter_reads"],
-        ))
+        steps.append(
+            PipelineStep(
+                name="find_overlaps",
+                function=_find_overlaps,
+                params={},
+                depends_on=["filter_reads"],
+            )
+        )
 
         # Step 3: Build overlap graph
         def _build_graph(ctx: dict[str, Any]) -> dict[str, Any]:
@@ -329,12 +350,14 @@ class LongReadOrchestrator:
             graph = compute_overlap_graph(filtered_overlaps)
             return {"graph": graph, "overlaps": filtered_overlaps}
 
-        steps.append(PipelineStep(
-            name="build_graph",
-            function=_build_graph,
-            params={},
-            depends_on=["find_overlaps"],
-        ))
+        steps.append(
+            PipelineStep(
+                name="build_graph",
+                function=_build_graph,
+                params={},
+                depends_on=["find_overlaps"],
+            )
+        )
 
         # Step 4: Generate consensus
         def _generate_consensus(ctx: dict[str, Any]) -> Any:
@@ -343,12 +366,14 @@ class LongReadOrchestrator:
                 return None
             return generate_consensus(filtered_reads)
 
-        steps.append(PipelineStep(
-            name="generate_consensus",
-            function=_generate_consensus,
-            params={},
-            depends_on=["build_graph"],
-        ))
+        steps.append(
+            PipelineStep(
+                name="generate_consensus",
+                function=_generate_consensus,
+                params={},
+                depends_on=["build_graph"],
+            )
+        )
 
         # Step 5: Polish consensus
         def _polish(ctx: dict[str, Any]) -> Any:
@@ -361,12 +386,14 @@ class LongReadOrchestrator:
                 iterations=polish_iterations,
             )
 
-        steps.append(PipelineStep(
-            name="polish",
-            function=_polish,
-            params={},
-            depends_on=["generate_consensus"],
-        ))
+        steps.append(
+            PipelineStep(
+                name="polish",
+                function=_polish,
+                params={},
+                depends_on=["generate_consensus"],
+            )
+        )
 
         # Step 6: Calculate stats
         def _calculate_stats(ctx: dict[str, Any]) -> dict[str, Any]:
@@ -400,12 +427,14 @@ class LongReadOrchestrator:
 
             return stats
 
-        steps.append(PipelineStep(
-            name="calculate_stats",
-            function=_calculate_stats,
-            params={},
-            depends_on=["polish"],
-        ))
+        steps.append(
+            PipelineStep(
+                name="calculate_stats",
+                function=_calculate_stats,
+                params={},
+                depends_on=["polish"],
+            )
+        )
 
         # Step 7: Assembly plots
         def _assembly_plots(ctx: dict[str, Any]) -> dict[str, Path]:
@@ -415,6 +444,7 @@ class LongReadOrchestrator:
 
             try:
                 from ..visualization.plots import plot_read_length_histogram
+
                 filtered_reads = ctx["filter_reads"]
                 length_plot = plot_read_length_histogram(
                     filtered_reads,
@@ -429,12 +459,14 @@ class LongReadOrchestrator:
 
             return generated
 
-        steps.append(PipelineStep(
-            name="assembly_plots",
-            function=_assembly_plots,
-            params={},
-            depends_on=["calculate_stats"],
-        ))
+        steps.append(
+            PipelineStep(
+                name="assembly_plots",
+                function=_assembly_plots,
+                params={},
+                depends_on=["calculate_stats"],
+            )
+        )
 
         return self._run_steps("assembly", steps)
 
@@ -468,12 +500,14 @@ class LongReadOrchestrator:
         def _load_meth_reads(ctx: dict[str, Any]) -> list[dict[str, Any]]:
             return self._load_reads_sync(reads)
 
-        steps.append(PipelineStep(
-            name="load_reads",
-            function=_load_meth_reads,
-            params={},
-            depends_on=[],
-        ))
+        steps.append(
+            PipelineStep(
+                name="load_reads",
+                function=_load_meth_reads,
+                params={},
+                depends_on=[],
+            )
+        )
 
         # Step 2: Call 5mC
         def _call_5mc(ctx: dict[str, Any]) -> list[Any]:
@@ -486,12 +520,14 @@ class LongReadOrchestrator:
             return call_5mc(features)
 
         if "5mC" in modification_types:
-            steps.append(PipelineStep(
-                name="call_5mc",
-                function=_call_5mc,
-                params={},
-                depends_on=["load_reads"],
-            ))
+            steps.append(
+                PipelineStep(
+                    name="call_5mc",
+                    function=_call_5mc,
+                    params={},
+                    depends_on=["load_reads"],
+                )
+            )
 
         # Step 3: Call 6mA
         def _call_6ma(ctx: dict[str, Any]) -> list[Any]:
@@ -503,12 +539,14 @@ class LongReadOrchestrator:
             return call_6ma(features)
 
         if "6mA" in modification_types:
-            steps.append(PipelineStep(
-                name="call_6ma",
-                function=_call_6ma,
-                params={},
-                depends_on=["load_reads"],
-            ))
+            steps.append(
+                PipelineStep(
+                    name="call_6ma",
+                    function=_call_6ma,
+                    params={},
+                    depends_on=["load_reads"],
+                )
+            )
 
         # Step 4: Aggregate regions
         def _aggregate_regions(ctx: dict[str, Any]) -> list[Any]:
@@ -529,12 +567,14 @@ class LongReadOrchestrator:
         if "6mA" in modification_types:
             agg_deps.append("call_6ma")
 
-        steps.append(PipelineStep(
-            name="aggregate_regions",
-            function=_aggregate_regions,
-            params={},
-            depends_on=agg_deps,
-        ))
+        steps.append(
+            PipelineStep(
+                name="aggregate_regions",
+                function=_aggregate_regions,
+                params={},
+                depends_on=agg_deps,
+            )
+        )
 
         # Step 5: Differential analysis
         def _differential_analysis(ctx: dict[str, Any]) -> dict[str, Any]:
@@ -571,12 +611,14 @@ class LongReadOrchestrator:
                 "num_significant": sum(1 for r in diff_results if r.is_significant),
             }
 
-        steps.append(PipelineStep(
-            name="differential_analysis",
-            function=_differential_analysis,
-            params={},
-            depends_on=["aggregate_regions"],
-        ))
+        steps.append(
+            PipelineStep(
+                name="differential_analysis",
+                function=_differential_analysis,
+                params={},
+                depends_on=["aggregate_regions"],
+            )
+        )
 
         # Step 6: Methylation plots
         def _methylation_plots(ctx: dict[str, Any]) -> dict[str, Path]:
@@ -595,6 +637,7 @@ class LongReadOrchestrator:
 
             try:
                 from ..visualization.plots import plot_methylation_track
+
                 # Plot methylation for each region if defined
                 call_dicts = [
                     {"position": c.position, "probability": c.probability, "chromosome": c.chromosome}
@@ -627,12 +670,14 @@ class LongReadOrchestrator:
 
             return generated
 
-        steps.append(PipelineStep(
-            name="methylation_plots",
-            function=_methylation_plots,
-            params={},
-            depends_on=["aggregate_regions"],
-        ))
+        steps.append(
+            PipelineStep(
+                name="methylation_plots",
+                function=_methylation_plots,
+                params={},
+                depends_on=["aggregate_regions"],
+            )
+        )
 
         # Step 7: Methylation report
         def _methylation_report(ctx: dict[str, Any]) -> Path:
@@ -655,12 +700,14 @@ class LongReadOrchestrator:
             return export_report(report, self.output_dir / "methylation_report.json", format="json")
 
         report_deps = ["differential_analysis", "methylation_plots"]
-        steps.append(PipelineStep(
-            name="methylation_report",
-            function=_methylation_report,
-            params={},
-            depends_on=report_deps,
-        ))
+        steps.append(
+            PipelineStep(
+                name="methylation_report",
+                function=_methylation_report,
+                params={},
+                depends_on=report_deps,
+            )
+        )
 
         return self._run_steps("methylation", steps)
 
@@ -696,12 +743,14 @@ class LongReadOrchestrator:
         def _load_sv_alignments(ctx: dict[str, Any]) -> list[dict[str, Any]]:
             return self._load_alignments_sync(alignments)
 
-        steps.append(PipelineStep(
-            name="load_alignments",
-            function=_load_sv_alignments,
-            params={},
-            depends_on=[],
-        ))
+        steps.append(
+            PipelineStep(
+                name="load_alignments",
+                function=_load_sv_alignments,
+                params={},
+                depends_on=[],
+            )
+        )
 
         # Step 2: Detect all SVs
         def _detect_svs(ctx: dict[str, Any]) -> list[Any]:
@@ -712,15 +761,18 @@ class LongReadOrchestrator:
                 min_mapping_quality=min_mapping_quality,
             )
 
-        steps.append(PipelineStep(
-            name="detect_svs",
-            function=_detect_svs,
-            params={},
-            depends_on=["load_alignments"],
-        ))
+        steps.append(
+            PipelineStep(
+                name="detect_svs",
+                function=_detect_svs,
+                params={},
+                depends_on=["load_alignments"],
+            )
+        )
 
         # Step 3: Detect insertions
         if "INS" in sv_types:
+
             def _detect_insertions(ctx: dict[str, Any]) -> list[Any]:
                 return detect_insertions(
                     ctx["load_alignments"],
@@ -728,15 +780,18 @@ class LongReadOrchestrator:
                     min_support=min_support,
                 )
 
-            steps.append(PipelineStep(
-                name="detect_insertions",
-                function=_detect_insertions,
-                params={},
-                depends_on=["load_alignments"],
-            ))
+            steps.append(
+                PipelineStep(
+                    name="detect_insertions",
+                    function=_detect_insertions,
+                    params={},
+                    depends_on=["load_alignments"],
+                )
+            )
 
         # Step 4: Detect inversions
         if "INV" in sv_types:
+
             def _detect_inversions(ctx: dict[str, Any]) -> list[Any]:
                 return detect_inversions(
                     ctx["load_alignments"],
@@ -744,12 +799,14 @@ class LongReadOrchestrator:
                     min_support=min_support,
                 )
 
-            steps.append(PipelineStep(
-                name="detect_inversions",
-                function=_detect_inversions,
-                params={},
-                depends_on=["load_alignments"],
-            ))
+            steps.append(
+                PipelineStep(
+                    name="detect_inversions",
+                    function=_detect_inversions,
+                    params={},
+                    depends_on=["load_alignments"],
+                )
+            )
 
         # Step 5: Phase variants
         def _phase_variants(ctx: dict[str, Any]) -> list[Any]:
@@ -776,12 +833,14 @@ class LongReadOrchestrator:
 
             return phase_structural_variants(svs, haplotype_tags)
 
-        steps.append(PipelineStep(
-            name="phase_variants",
-            function=_phase_variants,
-            params={},
-            depends_on=["detect_svs"],
-        ))
+        steps.append(
+            PipelineStep(
+                name="phase_variants",
+                function=_phase_variants,
+                params={},
+                depends_on=["detect_svs"],
+            )
+        )
 
         # Step 6: SV summary
         def _sv_summary(ctx: dict[str, Any]) -> dict[str, Any]:
@@ -815,8 +874,7 @@ class LongReadOrchestrator:
                     }
 
             phased_count = sum(
-                1 for sv in phased_svs
-                if (sv.haplotype if hasattr(sv, "haplotype") else sv.get("haplotype", 0)) > 0
+                1 for sv in phased_svs if (sv.haplotype if hasattr(sv, "haplotype") else sv.get("haplotype", 0)) > 0
             )
 
             return {
@@ -835,12 +893,14 @@ class LongReadOrchestrator:
         if "INV" in sv_types:
             summary_deps.append("detect_inversions")
 
-        steps.append(PipelineStep(
-            name="sv_summary",
-            function=_sv_summary,
-            params={},
-            depends_on=summary_deps,
-        ))
+        steps.append(
+            PipelineStep(
+                name="sv_summary",
+                function=_sv_summary,
+                params={},
+                depends_on=summary_deps,
+            )
+        )
 
         # Step 7: SV plots
         def _sv_plots(ctx: dict[str, Any]) -> dict[str, Path]:
@@ -854,6 +914,7 @@ class LongReadOrchestrator:
 
             try:
                 from ..visualization.plots import plot_read_length_histogram
+
                 # Plot SV size distribution using the length histogram
                 sv_sizes = []
                 for sv in all_svs:
@@ -877,12 +938,14 @@ class LongReadOrchestrator:
 
             return generated
 
-        steps.append(PipelineStep(
-            name="sv_plots",
-            function=_sv_plots,
-            params={},
-            depends_on=["sv_summary"],
-        ))
+        steps.append(
+            PipelineStep(
+                name="sv_plots",
+                function=_sv_plots,
+                params={},
+                depends_on=["sv_summary"],
+            )
+        )
 
         return self._run_steps("sv", steps)
 
@@ -1028,9 +1091,7 @@ class LongReadOrchestrator:
         }
 
         if pipeline_name not in dispatch:
-            raise ValueError(
-                f"Unknown pipeline '{pipeline_name}'. Valid pipelines: {sorted(dispatch.keys())}"
-            )
+            raise ValueError(f"Unknown pipeline '{pipeline_name}'. Valid pipelines: {sorted(dispatch.keys())}")
 
         logger.info("Running pipeline: %s", pipeline_name)
         return dispatch[pipeline_name](input_data)
@@ -1057,10 +1118,7 @@ class LongReadOrchestrator:
 
         for step in ordered_steps:
             # Check if dependencies completed
-            deps_met = all(
-                context.get(dep + "_status") == "completed"
-                for dep in step.depends_on
-            )
+            deps_met = all(context.get(dep + "_status") == "completed" for dep in step.depends_on)
 
             if not deps_met:
                 step.status = "skipped"
@@ -1242,6 +1300,7 @@ class LongReadOrchestrator:
 
             if suffix in (".fast5", ".pod5"):
                 from ..io.fast5 import read_fast5
+
                 fast5_reads = read_fast5(reads_path)
                 return [
                     {
@@ -1254,6 +1313,7 @@ class LongReadOrchestrator:
 
             if suffix in (".bam", ".cram"):
                 from ..io.bam import read_long_read_bam
+
                 bam_alignments = read_long_read_bam(reads_path)
                 return [
                     {
@@ -1329,6 +1389,7 @@ class LongReadOrchestrator:
 
         if isinstance(alignments, Path) or (isinstance(alignments, str) and Path(alignments).exists()):
             from ..io.bam import read_long_read_bam
+
             bam_alignments = read_long_read_bam(Path(alignments))
             return [
                 {
@@ -1389,6 +1450,7 @@ def _extract_methylation_features(
             mm_tag = tags.get("MM") or tags.get("Mm")
             if mm_tag:
                 from ..io.bam import _parse_methylation_from_tags
+
                 parsed = _parse_methylation_from_tags(tags)
                 modifications = parsed.get("modifications", [])
                 for mod in modifications:
@@ -1411,16 +1473,18 @@ def _extract_methylation_features(
                         for idx in range(len(deltas)):
                             position = ref_start + sum(deltas[: idx + 1]) + idx
                             prob = probs[idx] / 255.0 if idx < len(probs) else 0.0
-                            features.append({
-                                "position": position,
-                                "chromosome": chrom,
-                                "strand": "+",
-                                "context_shift": prob * 5.0,  # Scale probability to approximate pA shift
-                                "dwell_time": 1.0,
-                                "current_std": 0.5,
-                                "context": "CpG" if mod_type == "5mC" else "A",
-                                "modification_type": mod_type,
-                            })
+                            features.append(
+                                {
+                                    "position": position,
+                                    "chromosome": chrom,
+                                    "strand": "+",
+                                    "context_shift": prob * 5.0,  # Scale probability to approximate pA shift
+                                    "dwell_time": 1.0,
+                                    "current_std": 0.5,
+                                    "context": "CpG" if mod_type == "5mC" else "A",
+                                    "modification_type": mod_type,
+                                }
+                            )
 
     return features
 

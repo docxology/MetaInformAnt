@@ -20,9 +20,7 @@ class TrackingPoint:
 
     def distance_to(self, other: TrackingPoint) -> float:
         """Euclidean distance to another point (3D)."""
-        return math.sqrt(
-            (self.x - other.x) ** 2 + (self.y - other.y) ** 2 + (self.z - other.z) ** 2
-        )
+        return math.sqrt((self.x - other.x) ** 2 + (self.y - other.y) ** 2 + (self.z - other.z) ** 2)
 
 
 class Trajectory:
@@ -51,10 +49,7 @@ class Trajectory:
         """Total path length (sum of step distances)."""
         if len(self.points) < 2:
             return 0.0
-        return sum(
-            self.points[i].distance_to(self.points[i + 1])
-            for i in range(len(self.points) - 1)
-        )
+        return sum(self.points[i].distance_to(self.points[i + 1]) for i in range(len(self.points) - 1))
 
     def net_displacement(self) -> float:
         """Straight-line distance from first to last point."""
@@ -229,12 +224,14 @@ def detect_interactions(
                     if abs(pa.timestamp - pb.timestamp) <= time_threshold:
                         d = pa.distance_to(pb)
                         if d <= distance_threshold:
-                            interactions.append({
-                                "entity_a": t_a.entity_id,
-                                "entity_b": t_b.entity_id,
-                                "timestamp": (pa.timestamp + pb.timestamp) / 2,
-                                "distance": d,
-                            })
+                            interactions.append(
+                                {
+                                    "entity_a": t_a.entity_id,
+                                    "entity_b": t_b.entity_id,
+                                    "timestamp": (pa.timestamp + pb.timestamp) / 2,
+                                    "distance": d,
+                                }
+                            )
     return interactions
 
 

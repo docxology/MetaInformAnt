@@ -509,16 +509,18 @@ def parse_dssp_file(dssp_content: str) -> Dict[str, Any]:
             accessibility.append(acc)
             phi_angles.append(phi)
             psi_angles.append(psi)
-            residues.append({
-                "residue_number": res_num,
-                "chain_id": chain_id,
-                "amino_acid": aa,
-                "secondary_structure": ss_norm,
-                "raw_ss": line[16:17].strip(),
-                "accessibility": acc,
-                "phi": phi,
-                "psi": psi,
-            })
+            residues.append(
+                {
+                    "residue_number": res_num,
+                    "chain_id": chain_id,
+                    "amino_acid": aa,
+                    "secondary_structure": ss_norm,
+                    "raw_ss": line[16:17].strip(),
+                    "accessibility": acc,
+                    "phi": phi,
+                    "psi": psi,
+                }
+            )
 
         except (ValueError, IndexError) as e:
             logger.debug(f"Skipping DSSP line: {e}")

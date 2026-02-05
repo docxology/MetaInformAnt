@@ -8,6 +8,7 @@ Tests cover:
 - Manifest cache invalidation
 - CLI argument override of config
 """
+
 from __future__ import annotations
 
 import json
@@ -26,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts" / "gwas")
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def gwas_output(tmp_path):
     """Provide a fresh temporary output directory."""
@@ -38,6 +40,7 @@ def gwas_output(tmp_path):
 def default_vcf(gwas_output):
     """Generate default VCF with standard params."""
     from run_amellifera_gwas import generate_real_vcf
+
     return generate_real_vcf(gwas_output, n_variants=200, force=True)
 
 
@@ -45,6 +48,7 @@ def default_vcf(gwas_output):
 def default_phenotypes(gwas_output, default_vcf):
     """Generate default phenotypes."""
     from run_amellifera_gwas import generate_phenotypes
+
     return generate_phenotypes(gwas_output, default_vcf, force=True)
 
 
@@ -52,12 +56,14 @@ def default_phenotypes(gwas_output, default_vcf):
 def default_metadata(gwas_output, default_vcf):
     """Generate default metadata."""
     from run_amellifera_gwas import generate_metadata
+
     return generate_metadata(gwas_output, default_vcf, force=True)
 
 
 # ---------------------------------------------------------------------------
 # 1. Default generation backward compatibility
 # ---------------------------------------------------------------------------
+
 
 class TestDefaultGeneration:
     """Ensure defaults produce the same results as before."""
@@ -70,15 +76,18 @@ class TestDefaultGeneration:
         assert vcf_path.exists()
 
         from metainformant.gwas.analysis.quality import parse_vcf_full
+
         data = parse_vcf_full(vcf_path)
         assert len(data["samples"]) == 90
         # Check subspecies alias still works
         from run_amellifera_gwas import SUBSPECIES
+
         assert SUBSPECIES is DEFAULT_SUBSPECIES
 
     def test_default_subspecies_structure(self):
         """DEFAULT_SUBSPECIES has expected keys and structure."""
         from run_amellifera_gwas import DEFAULT_SUBSPECIES
+
         assert "A.m.ligustica" in DEFAULT_SUBSPECIES
         assert "A.m.scutellata" in DEFAULT_SUBSPECIES
         total = sum(v["n_samples"] for v in DEFAULT_SUBSPECIES.values())
@@ -89,6 +98,7 @@ class TestDefaultGeneration:
 # 2. Scale factor
 # ---------------------------------------------------------------------------
 
+
 class TestScaleFactor:
     """Test that scale_factor multiplies sample counts."""
 
@@ -96,10 +106,9 @@ class TestScaleFactor:
         """scale_factor=2 should produce 180 samples (160 diploid + 20 drones)."""
         from run_amellifera_gwas import generate_real_vcf
 
-        vcf_path = generate_real_vcf(
-            gwas_output, n_variants=50, scale_factor=2, force=True
-        )
+        vcf_path = generate_real_vcf(gwas_output, n_variants=50, scale_factor=2, force=True)
         from metainformant.gwas.analysis.quality import parse_vcf_full
+
         data = parse_vcf_full(vcf_path)
         assert len(data["samples"]) == 180
 
@@ -107,10 +116,9 @@ class TestScaleFactor:
         """scale_factor=1 should match default (90 samples)."""
         from run_amellifera_gwas import generate_real_vcf
 
-        vcf_path = generate_real_vcf(
-            gwas_output, n_variants=50, scale_factor=1, force=True
-        )
+        vcf_path = generate_real_vcf(gwas_output, n_variants=50, scale_factor=1, force=True)
         from metainformant.gwas.analysis.quality import parse_vcf_full
+
         data = parse_vcf_full(vcf_path)
         assert len(data["samples"]) == 90
 
@@ -118,6 +126,7 @@ class TestScaleFactor:
 # ---------------------------------------------------------------------------
 # 3. Sample subsetting
 # ---------------------------------------------------------------------------
+
 
 class TestSubsetting:
     """Test subset_vcf_data functionality."""
@@ -215,6 +224,7 @@ class TestSubsetting:
 # 4. Phenotype ID matching
 # ---------------------------------------------------------------------------
 
+
 class TestPhenotypeMatching:
     """Test ID-based phenotype alignment."""
 
@@ -249,6 +259,7 @@ class TestPhenotypeMatching:
 # ---------------------------------------------------------------------------
 # 5. Multi-trait
 # ---------------------------------------------------------------------------
+
 
 class TestMultiTrait:
     """Test multi-trait analysis sharing PCA/kinship."""
@@ -310,6 +321,7 @@ class TestMultiTrait:
 # 6. Manifest cache
 # ---------------------------------------------------------------------------
 
+
 class TestManifestCache:
     """Test manifest-based cache validation."""
 
@@ -337,7 +349,13 @@ class TestManifestCache:
         # Check manifest matches
         params_same = {
             "n_variants": 50,
-            "subspecies": {"A.m.ligustica": 25, "A.m.carnica": 20, "A.m.mellifera": 15, "A.m.caucasica": 10, "A.m.scutellata": 10},
+            "subspecies": {
+                "A.m.ligustica": 25,
+                "A.m.carnica": 20,
+                "A.m.mellifera": 15,
+                "A.m.caucasica": 10,
+                "A.m.scutellata": 10,
+            },
             "n_drones": 10,
             "scale_factor": 1,
             "seed": 42,
@@ -359,6 +377,7 @@ class TestManifestCache:
 
         # Second call without force should use cache
         import time
+
         time.sleep(0.1)
         vcf_path2 = generate_real_vcf(gwas_output, n_variants=50)
         mtime2 = vcf_path2.stat().st_mtime
@@ -369,12 +388,14 @@ class TestManifestCache:
 # 7. Config loading
 # ---------------------------------------------------------------------------
 
+
 class TestConfigLoading:
     """Test load_data_generation_config."""
 
     def test_load_from_none(self):
         """No config should return defaults."""
         from run_amellifera_gwas import load_data_generation_config, DEFAULT_SUBSPECIES
+
         dg = load_data_generation_config(None)
         assert dg["subspecies"] == DEFAULT_SUBSPECIES
         assert dg["n_drones"] == 10
@@ -383,6 +404,7 @@ class TestConfigLoading:
     def test_load_from_yaml_config(self):
         """Config dict should override defaults."""
         from run_amellifera_gwas import load_data_generation_config
+
         config = {
             "data_generation": {
                 "n_variants": 5000,

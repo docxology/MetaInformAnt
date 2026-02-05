@@ -241,9 +241,9 @@ def calculate_inertia_tensor(coords: np.ndarray, masses: Optional[np.ndarray] = 
     z = coords_centered[:, 2]
 
     I = np.zeros((3, 3))
-    I[0, 0] = np.sum(masses * (y ** 2 + z ** 2))
-    I[1, 1] = np.sum(masses * (x ** 2 + z ** 2))
-    I[2, 2] = np.sum(masses * (x ** 2 + y ** 2))
+    I[0, 0] = np.sum(masses * (y**2 + z**2))
+    I[1, 1] = np.sum(masses * (x**2 + z**2))
+    I[2, 2] = np.sum(masses * (x**2 + y**2))
     I[0, 1] = I[1, 0] = -np.sum(masses * x * y)
     I[0, 2] = I[2, 0] = -np.sum(masses * x * z)
     I[1, 2] = I[2, 1] = -np.sum(masses * y * z)

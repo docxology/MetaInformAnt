@@ -135,9 +135,7 @@ def trait_expression_correlation(
         }
 
     # Sort by absolute correlation
-    sorted_genes = sorted(
-        results["correlations"].items(), key=lambda x: abs(x[1]["correlation"]), reverse=True
-    )
+    sorted_genes = sorted(results["correlations"].items(), key=lambda x: abs(x[1]["correlation"]), reverse=True)
     results["top_genes"] = [g[0] for g in sorted_genes[:10]]
 
     return results
@@ -190,11 +188,13 @@ def multi_phenotype_integration(
     for i in range(n_phenotypes):
         for j in range(i + 1, n_phenotypes):
             if abs(correlation_matrix[i][j]) > 0.5:
-                strong_pairs.append({
-                    "phenotype_a": phenotype_names[i],
-                    "phenotype_b": phenotype_names[j],
-                    "correlation": correlation_matrix[i][j],
-                })
+                strong_pairs.append(
+                    {
+                        "phenotype_a": phenotype_names[i],
+                        "phenotype_b": phenotype_names[j],
+                        "correlation": correlation_matrix[i][j],
+                    }
+                )
 
     return {
         "n_phenotypes": n_phenotypes,
@@ -274,11 +274,7 @@ def phenotype_environment_interaction(
         }
 
     # Find significant interactions
-    sig_interactions = [
-        {"variant": v, **data}
-        for v, data in results["interactions"].items()
-        if data["p_value"] < 0.05
-    ]
+    sig_interactions = [{"variant": v, **data} for v, data in results["interactions"].items() if data["p_value"] < 0.05]
     results["significant_interactions"] = sorted(sig_interactions, key=lambda x: x["p_value"])
 
     return results

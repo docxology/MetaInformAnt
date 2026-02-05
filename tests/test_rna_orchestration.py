@@ -58,10 +58,7 @@ def _make_result(
     steps: List[tuple[str, int, bool]],
 ) -> WorkflowExecutionResult:
     """Build a WorkflowExecutionResult from a compact list of (name, rc, success)."""
-    step_results = [
-        WorkflowStepResult(step_name=name, return_code=rc, success=ok)
-        for name, rc, ok in steps
-    ]
+    step_results = [WorkflowStepResult(step_name=name, return_code=rc, success=ok) for name, rc, ok in steps]
     total = len(step_results)
     succeeded = sum(1 for s in step_results if s.success)
     return WorkflowExecutionResult(
@@ -99,11 +96,13 @@ def _seed_metadata(work_dir: Path, filename: str = "metadata.tsv") -> Path:
     meta_dir = work_dir / "metadata"
     meta_dir.mkdir(parents=True, exist_ok=True)
     meta_file = meta_dir / filename
-    content = textwrap.dedent("""\
+    content = textwrap.dedent(
+        """\
         run\torganism\tlayout
         SRR000001\tApis mellifera\tPAIRED
         SRR000002\tApis mellifera\tPAIRED
-    """)
+    """
+    )
     meta_file.write_text(content)
     return meta_file
 
@@ -131,12 +130,14 @@ def _seed_yaml_config(config_dir: Path, species_name: str) -> Path:
     config_dir.mkdir(parents=True, exist_ok=True)
     cfg_file = config_dir / f"amalgkit_{species_name}.yaml"
     cfg_file.write_text(
-        textwrap.dedent(f"""\
+        textwrap.dedent(
+            f"""\
             work_dir: /tmp/work
             threads: 4
             species_list:
               - {species_name}
-        """)
+        """
+        )
     )
     return cfg_file
 
@@ -559,11 +560,13 @@ class TestRetryFailedSteps:
         from metainformant.rna.engine.orchestration import retry_failed_steps
 
         config = _make_config(tmp_path)
-        prev = _make_result([
-            ("metadata", 0, True),
-            ("select", 0, True),
-            ("quant", 1, False),
-        ])
+        prev = _make_result(
+            [
+                ("metadata", 0, True),
+                ("select", 0, True),
+                ("quant", 1, False),
+            ]
+        )
 
         result = retry_failed_steps(config, prev, max_retries=1, base_delay=0.01)
 
@@ -810,12 +813,14 @@ class TestRunWorkflowForSpecies:
         # Write a minimal YAML config
         config_file = tmp_path / "test_config.yaml"
         config_file.write_text(
-            textwrap.dedent("""\
+            textwrap.dedent(
+                """\
                 work_dir: {work_dir}
                 threads: 2
                 species_list:
                   - Apis_mellifera
-            """).format(work_dir=str(tmp_path / "work"))
+            """
+            ).format(work_dir=str(tmp_path / "work"))
         )
 
         # Will likely fail downstream but should parse config and attempt execution
@@ -833,12 +838,14 @@ class TestRunWorkflowForSpecies:
 
         config_file = tmp_path / "test_config.yaml"
         config_file.write_text(
-            textwrap.dedent("""\
+            textwrap.dedent(
+                """\
                 work_dir: {work_dir}
                 threads: 2
                 species_list:
                   - Apis_mellifera
-            """).format(work_dir=str(tmp_path / "work"))
+            """
+            ).format(work_dir=str(tmp_path / "work"))
         )
 
         try:
@@ -867,12 +874,14 @@ class TestCleanupUnquantifiedSamples:
 
         config_file = tmp_path / "cfg.yaml"
         config_file.write_text(
-            textwrap.dedent("""\
+            textwrap.dedent(
+                """\
                 work_dir: {work_dir}
                 threads: 2
                 species_list:
                   - Apis_mellifera
-            """).format(work_dir=str(tmp_path / "work"))
+            """
+            ).format(work_dir=str(tmp_path / "work"))
         )
         (tmp_path / "work").mkdir(parents=True, exist_ok=True)
 
@@ -890,12 +899,14 @@ class TestCleanupUnquantifiedSamples:
         config_file = tmp_path / "cfg.yaml"
         work_dir = tmp_path / "work"
         config_file.write_text(
-            textwrap.dedent("""\
+            textwrap.dedent(
+                """\
                 work_dir: {work_dir}
                 threads: 2
                 species_list:
                   - TestSpecies
-            """).format(work_dir=str(work_dir))
+            """
+            ).format(work_dir=str(work_dir))
         )
         work_dir.mkdir(parents=True, exist_ok=True)
 

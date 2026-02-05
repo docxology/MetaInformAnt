@@ -185,12 +185,14 @@ def minimizer_sketch(
 
         # Only emit if this is a new minimizer
         if min_pos != prev_min_pos:
-            minimizers.append(Minimizer(
-                hash_value=min_hash,
-                position=min_pos,
-                is_reverse=min_rc,
-                kmer=min_kmer,
-            ))
+            minimizers.append(
+                Minimizer(
+                    hash_value=min_hash,
+                    position=min_pos,
+                    is_reverse=min_rc,
+                    kmer=min_kmer,
+                )
+            )
             prev_min_hash = min_hash
             prev_min_pos = min_pos
 
@@ -293,7 +295,13 @@ def find_overlaps(
 
         # Compute overlap coordinates by chaining matches
         overlap = _chain_minimizer_matches(
-            rid_a, len_a, rid_b, len_b, matches, min_overlap, max_overhang,
+            rid_a,
+            len_a,
+            rid_b,
+            len_b,
+            matches,
+            min_overlap,
+            max_overhang,
         )
 
         if overlap is not None:
@@ -376,9 +384,9 @@ def _chain_minimizer_matches(
     identity = min(1.0, len(best_matches) / max(expected_minimizers, 1))
 
     # Check for containment
-    is_contained = (q_start <= max_overhang and
-                    query_length - q_end <= max_overhang and
-                    overlap_length >= query_length * 0.8)
+    is_contained = (
+        q_start <= max_overhang and query_length - q_end <= max_overhang and overlap_length >= query_length * 0.8
+    )
 
     return Overlap(
         query_name=query_name,
@@ -459,14 +467,13 @@ def filter_contained_reads(overlaps: Sequence[Overlap]) -> list[Overlap]:
         logger.info("Identified %d contained reads for removal", len(contained))
 
     # Filter out overlaps involving contained reads
-    filtered = [
-        ovl for ovl in overlaps
-        if ovl.query_name not in contained and ovl.target_name not in contained
-    ]
+    filtered = [ovl for ovl in overlaps if ovl.query_name not in contained and ovl.target_name not in contained]
 
     logger.info(
         "Filtered overlaps: %d -> %d (removed %d involving contained reads)",
-        len(overlaps), len(filtered), len(overlaps) - len(filtered),
+        len(overlaps),
+        len(filtered),
+        len(overlaps) - len(filtered),
     )
     return filtered
 

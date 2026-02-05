@@ -42,7 +42,7 @@ def community_matrix() -> List[List[float]]:
         [10, 8, 6, 4, 2, 0, 0],  # Community A
         [0, 6, 8, 10, 4, 2, 1],  # Community B
         [10, 8, 6, 4, 2, 0, 0],  # Community C (same as A)
-        [1, 1, 1, 1, 1, 1, 1],   # Community D (even)
+        [1, 1, 1, 1, 1, 1, 1],  # Community D (even)
     ]
 
 
@@ -608,9 +608,9 @@ class TestIndVal:
         # Species 1 is abundant only in group A, species 3 only in group B
         matrix = [
             [10, 0, 0, 5],  # Site 1 (group A)
-            [8, 1, 0, 4],   # Site 2 (group A)
+            [8, 1, 0, 4],  # Site 2 (group A)
             [0, 5, 10, 3],  # Site 3 (group B)
-            [0, 4, 8, 2],   # Site 4 (group B)
+            [0, 4, 8, 2],  # Site 4 (group B)
         ]
         groups = ["A", "A", "B", "B"]
         result = indval(matrix, groups)
@@ -747,7 +747,7 @@ class TestFunctionalDiversity:
     def test_raos_q(self, trait_matrix, simple_abundances):
         from metainformant.ecology.analysis.functional import raos_quadratic_entropy
 
-        abundances = simple_abundances[:len(trait_matrix)]
+        abundances = simple_abundances[: len(trait_matrix)]
         result = raos_quadratic_entropy(trait_matrix, abundances)
         assert result >= 0.0
 

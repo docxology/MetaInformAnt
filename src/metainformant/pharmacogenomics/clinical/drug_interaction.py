@@ -120,7 +120,7 @@ _CONTRAINDICATION_DB: dict[tuple[str, str, str], dict[str, Any]] = {
         "contraindicated": True,
         "severity": InteractionSeverity.MAJOR,
         "reason": "Complete DPD deficiency. Life-threatening toxicity risk including neutropenia, "
-                  "mucositis, diarrhea, and neurotoxicity.",
+        "mucositis, diarrhea, and neurotoxicity.",
         "alternatives": ["Consult oncologist for alternative regimen"],
     },
     ("fluorouracil", "DPYD", "IM"): {
@@ -390,13 +390,15 @@ def check_contraindications(
 
     for (d, g, p), info in _CONTRAINDICATION_DB.items():
         if d == drug_lower and p == phenotype_abbrev:
-            gene_interactions.append({
-                "gene": g,
-                "contraindicated": info["contraindicated"],
-                "severity": info["severity"].value,
-                "reason": info["reason"],
-                "alternatives": info.get("alternatives", []),
-            })
+            gene_interactions.append(
+                {
+                    "gene": g,
+                    "contraindicated": info["contraindicated"],
+                    "severity": info["severity"].value,
+                    "reason": info["reason"],
+                    "alternatives": info.get("alternatives", []),
+                }
+            )
             if info["contraindicated"]:
                 any_contraindicated = True
             if info["severity"].value > max_severity.value:
@@ -533,30 +535,34 @@ def polypharmacy_analysis(
             gene_drug_map[rec.gene].append(rec.drug)
 
     # Identify gene overlaps (multiple drugs affected by same gene)
-    gene_overlap: dict[str, list[str]] = {
-        gene: drugs for gene, drugs in gene_drug_map.items() if len(drugs) > 1
-    }
+    gene_overlap: dict[str, list[str]] = {gene: drugs for gene, drugs in gene_drug_map.items() if len(drugs) > 1}
 
     # Identify high-risk combinations
     high_risk: list[dict[str, Any]] = []
     for gene, drugs in gene_overlap.items():
         major_drugs = [
-            rec.drug for rec in all_interactions
-            if rec.gene == gene and rec.severity == InteractionSeverity.MAJOR
+            rec.drug for rec in all_interactions if rec.gene == gene and rec.severity == InteractionSeverity.MAJOR
         ]
         if len(major_drugs) >= 2:
-            high_risk.append({
-                "gene": gene,
-                "drugs": major_drugs,
-                "risk": "Multiple drugs with major PGx interactions via the same gene pathway",
-            })
+            high_risk.append(
+                {
+                    "gene": gene,
+                    "drugs": major_drugs,
+                    "risk": "Multiple drugs with major PGx interactions via the same gene pathway",
+                }
+            )
 
     # Generate prioritized recommendations
-    sorted_interactions = sorted(all_interactions, key=lambda r: (
-        0 if r.severity == InteractionSeverity.MAJOR else
-        1 if r.severity == InteractionSeverity.MODERATE else
-        2 if r.severity == InteractionSeverity.MINOR else 3
-    ))
+    sorted_interactions = sorted(
+        all_interactions,
+        key=lambda r: (
+            0
+            if r.severity == InteractionSeverity.MAJOR
+            else (
+                1 if r.severity == InteractionSeverity.MODERATE else 2 if r.severity == InteractionSeverity.MINOR else 3
+            )
+        ),
+    )
 
     prioritized_recs: list[str] = []
     for rec in sorted_interactions:
@@ -631,13 +637,13 @@ def suggest_alternatives(
 
     alternatives_list: list[dict[str, Any]] = []
     for alt_name, alt_info in drug_info.get("alternatives", {}).items():
-        alternatives_list.append({
-            "drug": alt_name,
-            "notes": alt_info.get("notes", ""),
-            "pgx_considerations": {
-                k: v for k, v in alt_info.items() if k not in ("notes",)
-            },
-        })
+        alternatives_list.append(
+            {
+                "drug": alt_name,
+                "notes": alt_info.get("notes", ""),
+                "pgx_considerations": {k: v for k, v in alt_info.items() if k not in ("notes",)},
+            }
+        )
 
     result = {
         "drug": drug,
@@ -645,8 +651,8 @@ def suggest_alternatives(
         "alternatives": alternatives_list,
         "phenotype": phenotype_str,
         "rationale": f"Patient has {phenotype_str} status affecting {drug} metabolism. "
-                     f"Alternatives from the same therapeutic class ({drug_info.get('therapeutic_class', 'unknown')}) "
-                     f"with reduced or no pharmacogenomic interaction risk are listed.",
+        f"Alternatives from the same therapeutic class ({drug_info.get('therapeutic_class', 'unknown')}) "
+        f"with reduced or no pharmacogenomic interaction risk are listed.",
     }
 
     logger.info(

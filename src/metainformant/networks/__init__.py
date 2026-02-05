@@ -8,9 +8,9 @@ and pathway enrichment analysis.
 from __future__ import annotations
 
 # Import subpackages
-from . import analysis, interaction
+from . import analysis, interaction, regulatory
 from .analysis import community, graph, pathway
-from .interaction import ppi, regulatory
+from .interaction import ppi, regulatory as interaction_regulatory
 from .config import (
     CommunityDetectionConfig,
     GRNConfig,
@@ -75,6 +75,34 @@ except ImportError:
     regulatory_motifs = None  # type: ignore[assignment]
     pathway_regulation_analysis = None  # type: ignore[assignment]
 
+# Regulatory network inference subpackage
+try:
+    from .regulatory.grn_inference import (
+        infer_grn_correlation,
+        infer_grn_mutual_info,
+        infer_grn_regression,
+        score_regulators,
+        compute_network_motifs,
+        validate_grn,
+    )
+    from .regulatory.motif_analysis import (
+        find_tf_binding_motifs,
+        score_motif_match,
+        build_pwm,
+        scan_sequence_for_motifs,
+    )
+except ImportError:
+    infer_grn_correlation = None  # type: ignore[assignment]
+    infer_grn_mutual_info = None  # type: ignore[assignment]
+    infer_grn_regression = None  # type: ignore[assignment]
+    score_regulators = None  # type: ignore[assignment]
+    compute_network_motifs = None  # type: ignore[assignment]
+    validate_grn = None  # type: ignore[assignment]
+    find_tf_binding_motifs = None  # type: ignore[assignment]
+    score_motif_match = None  # type: ignore[assignment]
+    build_pwm = None  # type: ignore[assignment]
+    scan_sequence_for_motifs = None  # type: ignore[assignment]
+
 __all__ = [
     # Subpackages
     "analysis",
@@ -124,6 +152,17 @@ __all__ = [
     "infer_grn",
     "regulatory_motifs",
     "pathway_regulation_analysis",
+    # Regulatory network inference (new subpackage)
+    "infer_grn_correlation",
+    "infer_grn_mutual_info",
+    "infer_grn_regression",
+    "score_regulators",
+    "compute_network_motifs",
+    "validate_grn",
+    "find_tf_binding_motifs",
+    "score_motif_match",
+    "build_pwm",
+    "scan_sequence_for_motifs",
     # Config and workflow
     "CommunityDetectionConfig",
     "GRNConfig",

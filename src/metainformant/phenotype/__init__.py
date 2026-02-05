@@ -28,6 +28,7 @@ from . import behavior
 from . import chemical
 from . import data
 from . import electronic
+from . import gwas_integration
 from . import morphological
 from . import sonic
 from . import visualization
@@ -41,6 +42,15 @@ from .electronic import TrackingPoint, Trajectory
 from .morphological import Measurement, MorphometricProfile
 from .sonic import AcousticSignal
 from .workflow import PhenotypePipeline, PipelineConfig, PipelineResult
+
+# GWAS integration imports
+from .gwas_integration.phewas import (
+    run_phewas,
+    phenotype_correlation_matrix,
+    genetic_risk_score,
+    phenotype_heritability_screen,
+    categorize_phenotypes,
+)
 
 __all__ = [
     # Submodules
@@ -67,4 +77,11 @@ __all__ = [
     "PhenotypePipeline",
     "PipelineConfig",
     "PipelineResult",
+    # GWAS integration
+    "gwas_integration",
+    "run_phewas",
+    "phenotype_correlation_matrix",
+    "genetic_risk_score",
+    "phenotype_heritability_screen",
+    "categorize_phenotypes",
 ]

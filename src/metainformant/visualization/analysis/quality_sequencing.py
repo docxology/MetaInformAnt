@@ -85,8 +85,14 @@ def plot_quality_metrics(
         axes[3].set_title("Basic Statistics")
         axes[3].tick_params(axis="x", rotation=45)
         for bar, value in zip(bars, stat_values):
-            axes[3].text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
-                         f"{value:.0f}", ha="center", va="bottom", fontsize=8)
+            axes[3].text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height(),
+                f"{value:.0f}",
+                ha="center",
+                va="bottom",
+                fontsize=8,
+            )
 
     plt.tight_layout()
 
@@ -134,8 +140,9 @@ def plot_adapter_content(
     ax.grid(True, alpha=0.3)
 
     for bar, pct in zip(bars, percentages_sorted):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height(),
-                f"{pct:.1f}%", ha="center", va="bottom", fontsize=8)
+        ax.text(
+            bar.get_x() + bar.get_width() / 2, bar.get_height(), f"{pct:.1f}%", ha="center", va="bottom", fontsize=8
+        )
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
@@ -175,8 +182,14 @@ def plot_gc_distribution(
     median_gc = np.median(gc_data)
     std_gc = np.std(gc_data)
     stats_text = f"Mean: {mean_gc:.1f}%\nMedian: {median_gc:.1f}%\nStd: {std_gc:.1f}%"
-    ax.text(0.02, 0.98, stats_text, transform=ax.transAxes, verticalalignment="top",
-            bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8))
+    ax.text(
+        0.02,
+        0.98,
+        stats_text,
+        transform=ax.transAxes,
+        verticalalignment="top",
+        bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
+    )
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
@@ -217,8 +230,14 @@ def plot_length_distribution(
     min_len = np.min(length_data)
     max_len = np.max(length_data)
     stats_text = f"Mean: {mean_len:.0f} bp\nMedian: {median_len:.0f} bp\nRange: {min_len}-{max_len} bp"
-    ax.text(0.02, 0.98, stats_text, transform=ax.transAxes, verticalalignment="top",
-            bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8))
+    ax.text(
+        0.02,
+        0.98,
+        stats_text,
+        transform=ax.transAxes,
+        verticalalignment="top",
+        bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
+    )
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
@@ -318,8 +337,14 @@ def plot_sequence_duplication_levels(
     ax.grid(True, alpha=0.3, axis="y")
 
     for bar, pct in zip(bars, percentages):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.5,
-                f"{pct:.1f}%", ha="center", va="bottom", fontsize=8)
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + 0.5,
+            f"{pct:.1f}%",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
@@ -371,8 +396,14 @@ def plot_overrepresented_sequences(
     ax.grid(True, alpha=0.3, axis="x")
 
     for i, (bar, pct, count) in enumerate(zip(bars, percentages, counts)):
-        ax.text(bar.get_width() + 0.1, bar.get_y() + bar.get_height() / 2,
-                f"{pct:.2f}%\n({count})", ha="left", va="center", fontsize=8)
+        ax.text(
+            bar.get_width() + 0.1,
+            bar.get_y() + bar.get_height() / 2,
+            f"{pct:.2f}%\n({count})",
+            ha="left",
+            va="center",
+            fontsize=8,
+        )
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
@@ -420,8 +451,14 @@ def plot_kmer_profiles(
     ax.grid(True, alpha=0.3, axis="y")
 
     for bar, count in zip(bars, counts):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + max(counts) * 0.01,
-                f"{count}", ha="center", va="bottom", fontsize=8)
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + max(counts) * 0.01,
+            f"{count}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)

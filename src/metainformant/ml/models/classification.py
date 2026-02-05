@@ -46,7 +46,9 @@ class BiologicalClassifier:
 
     _ALGORITHM_MAP = {
         "random_forest": lambda **kw: RandomForestClassifier(**kw) if HAS_SKLEARN else None,
-        "svm": lambda **kw: __import__("sklearn.svm", fromlist=["SVC"]).SVC(probability=True, **kw) if HAS_SKLEARN else None,
+        "svm": lambda **kw: (
+            __import__("sklearn.svm", fromlist=["SVC"]).SVC(probability=True, **kw) if HAS_SKLEARN else None
+        ),
         "logistic_regression": lambda **kw: LogisticRegression(max_iter=1000, **kw) if HAS_SKLEARN else None,
         "gradient_boosting": lambda **kw: GradientBoostingClassifier(**kw) if HAS_SKLEARN else None,
     }

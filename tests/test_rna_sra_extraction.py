@@ -191,9 +191,7 @@ class TestExtractSraDirectly:
         assert len(deduped) == 1
         assert deduped[0].name == "SRR50001.sra"
 
-    def test_skips_already_extracted_samples(
-        self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path
-    ) -> None:
+    def test_skips_already_extracted_samples(self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path) -> None:
         """Samples with existing .fastq.gz files in output should be skipped."""
         sra_dir = tmp_path / "sra"
         _create_fake_sra(sra_dir / "SRR60001.sra")
@@ -207,9 +205,7 @@ class TestExtractSraDirectly:
         # by checking that the output dir already has fastq.gz
         assert list(sample_out.glob("*.fastq.gz"))
 
-    def test_creates_output_subdirectories(
-        self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path
-    ) -> None:
+    def test_creates_output_subdirectories(self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path) -> None:
         """extract_sra_directly should create per-sample output subdirectories."""
         # This tests the directory creation pattern without needing fasterq-dump
         output_dir = tmp_path / "output"
@@ -221,9 +217,7 @@ class TestExtractSraDirectly:
         assert sample_out_dir.is_dir()
 
     @pytest.mark.external_tool
-    def test_full_extraction_with_real_tools(
-        self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path
-    ) -> None:
+    def test_full_extraction_with_real_tools(self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path) -> None:
         """Full integration test requiring fasterq-dump and gzip.
 
         This test only runs when both fasterq-dump and gzip/pigz are installed.
@@ -650,9 +644,9 @@ class TestEdgeCases:
 
         getfastq_dir = work_dir / "fastq" / "getfastq"
         accessions = [
-            "SRR1",           # Minimal digits
+            "SRR1",  # Minimal digits
             "ERR1234567890",  # Many digits
-            "DRR999",         # Mid-length
+            "DRR999",  # Mid-length
         ]
         for acc in accessions:
             sample_dir = getfastq_dir / acc

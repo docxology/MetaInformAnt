@@ -19,10 +19,10 @@ logger = logging.get_logger(__name__)
 
 def load_tissue_mapping(mapping_path: str | Path) -> Dict[str, List[str]]:
     """Load tissue synonym mapping from YAML file.
-    
+
     Args:
         mapping_path: Path to tissue_mapping.yaml
-        
+
     Returns:
         Dict mapping canonical tissue names to list of synonyms
     """
@@ -30,20 +30,20 @@ def load_tissue_mapping(mapping_path: str | Path) -> Dict[str, List[str]]:
     if not path.exists():
         logger.warning(f"Tissue mapping file not found: {mapping_path}")
         return {}
-    
+
     with open(path) as f:
         mapping = yaml.safe_load(f)
-    
+
     # Filter out non-mapping keys (like comments)
     return {k: v for k, v in mapping.items() if isinstance(v, list)}
 
 
 def load_tissue_patches(patches_path: str | Path) -> Dict[str, Dict[str, str]]:
     """Load tissue patches from YAML file.
-    
+
     Args:
         patches_path: Path to tissue_patches.yaml
-        
+
     Returns:
         Dict with 'samples', 'bioprojects', 'biosamples' patch mappings
     """
@@ -51,10 +51,10 @@ def load_tissue_patches(patches_path: str | Path) -> Dict[str, Dict[str, str]]:
     if not path.exists():
         logger.warning(f"Tissue patches file not found: {patches_path}")
         return {"samples": {}, "bioprojects": {}, "biosamples": {}}
-    
+
     with open(path) as f:
         patches = yaml.safe_load(f) or {}
-    
+
     return {
         "samples": patches.get("samples") or {},
         "bioprojects": patches.get("bioprojects") or {},
@@ -64,10 +64,10 @@ def load_tissue_patches(patches_path: str | Path) -> Dict[str, Dict[str, str]]:
 
 def build_synonym_lookup(mapping: Dict[str, List[str]]) -> Dict[str, str]:
     """Build reverse lookup from synonym to canonical name.
-    
+
     Args:
         mapping: Dict mapping canonical names to synonym lists
-        
+
     Returns:
         Dict mapping each synonym (lowercase) to its canonical name
     """
@@ -79,27 +79,23 @@ def build_synonym_lookup(mapping: Dict[str, List[str]]) -> Dict[str, str]:
     return lookup
 
 
-def normalize_tissue(
-    raw_value: str,
-    synonym_lookup: Dict[str, str],
-    default: str = "unknown"
-) -> str:
+def normalize_tissue(raw_value: str, synonym_lookup: Dict[str, str], default: str = "unknown") -> str:
     """Normalize a single tissue value to canonical form.
-    
+
     Args:
         raw_value: Original tissue value from metadata
         synonym_lookup: Dict mapping synonyms to canonical names
         default: Value to return if no mapping found
-        
+
     Returns:
         Canonical tissue name or default if unmapped
     """
     if not raw_value or pd.isna(raw_value):
         return ""
-    
+
     # Clean and lowercase for lookup
     cleaned = str(raw_value).lower().strip()
-    
+
     return synonym_lookup.get(cleaned, "")
 
 
@@ -111,13 +107,13 @@ def apply_tissue_normalization(
     run_column: str = "run",
     bioproject_column: str = "bioproject",
     biosample_column: str = "biosample",
-    output_column: str = "tissue_normalized"
+    output_column: str = "tissue_normalized",
 ) -> pd.DataFrame:
     """Apply tissue normalization to a metadata DataFrame.
-    
+
     Adds a new column with normalized tissue values. Never modifies
     the original tissue column.
-    
+
     Args:
         df: Metadata DataFrame
         mapping_path: Path to tissue_mapping.yaml
@@ -127,24 +123,24 @@ def apply_tissue_normalization(
         bioproject_column: Name of bioproject column
         biosample_column: Name of biosample column
         output_column: Name for normalized tissue column
-        
+
     Returns:
         DataFrame with added tissue_normalized column
     """
     # Load configurations
     mapping = load_tissue_mapping(mapping_path)
     synonym_lookup = build_synonym_lookup(mapping)
-    
+
     patches = {}
     if patches_path:
         patches = load_tissue_patches(patches_path)
-    
+
     # Create copy to avoid modifying original
     result = df.copy()
-    
+
     # Initialize normalized column
     result[output_column] = ""
-    
+
     # Track statistics
     stats = {
         "total": len(df),
@@ -153,32 +149,32 @@ def apply_tissue_normalization(
         "patched_bioproject": 0,
         "patched_biosample": 0,
         "unmapped": 0,
-        "empty": 0
+        "empty": 0,
     }
-    
+
     for idx, row in result.iterrows():
         run_id = row.get(run_column, "")
         bioproject = row.get(bioproject_column, "")
         biosample = row.get(biosample_column, "")
         raw_tissue = row.get(tissue_column, "")
-        
+
         normalized = ""
-        
+
         # Priority 1: Sample-specific patch
         if run_id and run_id in patches.get("samples", {}):
             normalized = patches["samples"][run_id]
             stats["patched_sample"] += 1
-        
+
         # Priority 2: Biosample patch
         elif biosample and biosample in patches.get("biosamples", {}):
             normalized = patches["biosamples"][biosample]
             stats["patched_biosample"] += 1
-        
+
         # Priority 3: Bioproject patch
         elif bioproject and bioproject in patches.get("bioprojects", {}):
             normalized = patches["bioprojects"][bioproject]
             stats["patched_bioproject"] += 1
-        
+
         # Priority 4: Synonym mapping
         else:
             normalized = normalize_tissue(raw_tissue, synonym_lookup)
@@ -188,9 +184,9 @@ def apply_tissue_normalization(
                 stats["unmapped"] += 1
             else:
                 stats["empty"] += 1
-        
+
         result.at[idx, output_column] = normalized
-    
+
     # Log statistics
     logger.info(f"Tissue normalization complete:")
     logger.info(f"  Total samples: {stats['total']}")
@@ -200,74 +196,66 @@ def apply_tissue_normalization(
     logger.info(f"  Patched (biosample): {stats['patched_biosample']}")
     logger.info(f"  Unmapped (needs review): {stats['unmapped']}")
     logger.info(f"  Empty tissue field: {stats['empty']}")
-    
+
     return result
 
 
-def get_unmapped_tissues(
-    df: pd.DataFrame,
-    mapping_path: str | Path,
-    tissue_column: str = "tissue"
-) -> Dict[str, int]:
+def get_unmapped_tissues(df: pd.DataFrame, mapping_path: str | Path, tissue_column: str = "tissue") -> Dict[str, int]:
     """Get tissue values that don't have mappings.
-    
+
     Args:
         df: Metadata DataFrame
         mapping_path: Path to tissue_mapping.yaml
         tissue_column: Name of tissue column
-        
+
     Returns:
         Dict mapping unmapped tissue values to their counts
     """
     mapping = load_tissue_mapping(mapping_path)
     synonym_lookup = build_synonym_lookup(mapping)
-    
+
     unmapped = {}
-    
+
     for value in df[tissue_column]:
         if not value or pd.isna(value):
             continue
-        
+
         cleaned = str(value).lower().strip()
         if cleaned not in synonym_lookup:
             raw = str(value).strip()
             unmapped[raw] = unmapped.get(raw, 0) + 1
-    
+
     # Sort by count descending
     return dict(sorted(unmapped.items(), key=lambda x: -x[1]))
 
 
 def get_missing_tissue_samples(
-    df: pd.DataFrame,
-    tissue_column: str = "tissue",
-    run_column: str = "run",
-    bioproject_column: str = "bioproject"
+    df: pd.DataFrame, tissue_column: str = "tissue", run_column: str = "run", bioproject_column: str = "bioproject"
 ) -> pd.DataFrame:
     """Get samples with missing tissue information.
-    
+
     Args:
         df: Metadata DataFrame
         tissue_column: Name of tissue column
         run_column: Name of run column
         bioproject_column: Name of bioproject column
-        
+
     Returns:
         DataFrame with samples missing tissue, grouped by bioproject
     """
-    missing = df[
-        df[tissue_column].isna() | 
-        (df[tissue_column].astype(str).str.strip() == "")
-    ][[run_column, bioproject_column]].copy()
-    
+    missing = df[df[tissue_column].isna() | (df[tissue_column].astype(str).str.strip() == "")][
+        [run_column, bioproject_column]
+    ].copy()
+
     return missing
 
 
 def get_canonical_tissues(mapping_path: str | Path) -> List[str]:
     """Get list of canonical tissue names from mapping.
-    
+
     Args:
         mapping_path: Path to tissue_mapping.yaml
-        
+
     Returns:
         Sorted list of canonical tissue names
     """

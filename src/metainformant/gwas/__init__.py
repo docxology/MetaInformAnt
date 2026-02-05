@@ -12,6 +12,8 @@ from . import data  # Configuration and data acquisition
 from . import visualization  # Visualization tools
 from . import analysis  # Core analysis logic (depends on data)
 from . import workflow  # Workflow orchestration (depends on all)
+from . import finemapping  # Statistical fine-mapping (credible sets, coloc, SuSiE)
+from . import heritability as heritability_submodule  # Heritability estimation (LDSC, GREML)
 
 # Import modules from subpackages for backward compatibility and ease of use
 from .analysis import (
@@ -106,6 +108,32 @@ from .visualization.visualization_population import pca_multi_panel, pca_3d
 from .visualization.config import PlotStyle, THEMES, get_style, apply_style
 
 from .workflow.workflow import GWASWorkflowConfig, execute_gwas_workflow, run_gwas
+
+# Fine-mapping submodule imports
+from .finemapping.credible_sets import (
+    compute_credible_set as finemapping_credible_set,
+    susie_regression,
+    compute_bayes_factors,
+    colocalization,
+    conditional_analysis,
+    annotate_credible_set,
+)
+from .finemapping.colocalization import (
+    multi_trait_coloc,
+    eqtl_coloc,
+    compute_clpp,
+    regional_coloc,
+)
+
+# Heritability submodule imports
+from .heritability.estimation import (
+    estimate_h2_ldsc,
+    partitioned_h2,
+    genetic_correlation,
+    haseman_elston_regression,
+    greml_simple,
+    compute_liability_h2,
+)
 
 # Type checking imports
 from typing import TYPE_CHECKING
@@ -233,4 +261,24 @@ __all__ = [
     "execute_gwas_workflow",
     "run_gwas",
     "GWASWorkflowConfig",
+    # Fine-mapping submodule
+    "finemapping",
+    "finemapping_credible_set",
+    "susie_regression",
+    "compute_bayes_factors",
+    "colocalization",
+    "conditional_analysis",
+    "annotate_credible_set",
+    "multi_trait_coloc",
+    "eqtl_coloc",
+    "compute_clpp",
+    "regional_coloc",
+    # Heritability submodule (LDSC, GREML, etc.)
+    "heritability_submodule",
+    "estimate_h2_ldsc",
+    "partitioned_h2",
+    "genetic_correlation",
+    "haseman_elston_regression",
+    "greml_simple",
+    "compute_liability_h2",
 ]

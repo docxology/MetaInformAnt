@@ -128,10 +128,7 @@ def read_long_read_bam(
         ImportError: If pysam is not installed.
     """
     if pysam is None:
-        raise ImportError(
-            "pysam is required for reading BAM files. "
-            "Install it with: uv pip install pysam"
-        )
+        raise ImportError("pysam is required for reading BAM files. " "Install it with: uv pip install pysam")
 
     filepath = Path(filepath)
     if not filepath.exists():
@@ -269,15 +266,17 @@ def _parse_methylation_from_tags(tags: dict[str, Any]) -> dict[str, Any]:
         probs = ml_probs[prob_offset : prob_offset + n_positions]
         prob_offset += n_positions
 
-        modifications.append({
-            "base": base_char,
-            "strand": strand,
-            "modification": mod_code,
-            "implicit": implicit_flag == "?",
-            "delta_positions": deltas,
-            "probabilities": probs,
-            "probability_scale": 255,  # ML tag uses 0-255 scale
-        })
+        modifications.append(
+            {
+                "base": base_char,
+                "strand": strand,
+                "modification": mod_code,
+                "implicit": implicit_flag == "?",
+                "delta_positions": deltas,
+                "probabilities": probs,
+                "probability_scale": 255,  # ML tag uses 0-255 scale
+            }
+        )
 
     if modifications:
         result["modifications"] = modifications
@@ -403,16 +402,18 @@ def get_supplementary_alignments(alignment: LongReadAlignment) -> list[dict[str,
         # Parse CIGAR to get aligned length
         aligned_length = _cigar_aligned_length(cigar)
 
-        supplementary.append({
-            "reference_name": ref_name,
-            "reference_start": pos,
-            "strand": strand,
-            "cigar": cigar,
-            "mapping_quality": mapq,
-            "edit_distance": nm,
-            "aligned_length": aligned_length,
-            "is_reverse": strand == "-",
-        })
+        supplementary.append(
+            {
+                "reference_name": ref_name,
+                "reference_start": pos,
+                "strand": strand,
+                "cigar": cigar,
+                "mapping_quality": mapq,
+                "edit_distance": nm,
+                "aligned_length": aligned_length,
+                "is_reverse": strand == "-",
+            }
+        )
 
     return supplementary
 

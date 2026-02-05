@@ -550,8 +550,10 @@ def ripley_k(
                     # Simplified: use inverse of border correction
                     xi, yi = point_set[i]
                     dist_to_border = min(
-                        xi - x_min, x_max - xi,
-                        yi - y_min, y_max - yi,
+                        xi - x_min,
+                        x_max - xi,
+                        yi - y_min,
+                        y_max - yi,
                     )
                     if d <= dist_to_border:
                         weight = 1.0
@@ -600,10 +602,7 @@ def ripley_k(
     envelope_lower = np.percentile(l_simulations, 2.5, axis=0)
     envelope_upper = np.percentile(l_simulations, 97.5, axis=0)
 
-    logger.info(
-        f"Ripley's K: {n} points, {len(r_arr)} radii, "
-        f"max L={l_observed.max():.3f}"
-    )
+    logger.info(f"Ripley's K: {n} points, {len(r_arr)} radii, " f"max L={l_observed.max():.3f}")
 
     return RipleyKResult(
         radii=r_arr,

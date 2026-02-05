@@ -327,50 +327,60 @@ def export_run_summary(
         ]
 
         if summary.qc_stats:
-            lines.extend([
-                f"--- Quality Control ---",
-                f"  Total reads:   {summary.qc_stats.get('total_reads', 'N/A'):,}",
-                f"  Total bases:   {summary.qc_stats.get('total_bases', 'N/A'):,}",
-                f"  N50:           {summary.qc_stats.get('n50', 'N/A'):,}",
-                f"  Mean length:   {summary.qc_stats.get('mean_length', 'N/A'):,.1f}",
-                f"  Mean quality:  {summary.qc_stats.get('mean_quality', 'N/A')}",
-                "",
-            ])
+            lines.extend(
+                [
+                    f"--- Quality Control ---",
+                    f"  Total reads:   {summary.qc_stats.get('total_reads', 'N/A'):,}",
+                    f"  Total bases:   {summary.qc_stats.get('total_bases', 'N/A'):,}",
+                    f"  N50:           {summary.qc_stats.get('n50', 'N/A'):,}",
+                    f"  Mean length:   {summary.qc_stats.get('mean_length', 'N/A'):,.1f}",
+                    f"  Mean quality:  {summary.qc_stats.get('mean_quality', 'N/A')}",
+                    "",
+                ]
+            )
 
         if summary.assembly_stats:
-            lines.extend([
-                f"--- Assembly ---",
-                f"  Contigs:       {summary.assembly_stats.get('total_contigs', 'N/A'):,}",
-                f"  Total bases:   {summary.assembly_stats.get('total_bases', 'N/A'):,}",
-                f"  N50:           {summary.assembly_stats.get('n50', 'N/A'):,}",
-                f"  Largest:       {summary.assembly_stats.get('largest_contig', 'N/A'):,}",
-                "",
-            ])
+            lines.extend(
+                [
+                    f"--- Assembly ---",
+                    f"  Contigs:       {summary.assembly_stats.get('total_contigs', 'N/A'):,}",
+                    f"  Total bases:   {summary.assembly_stats.get('total_bases', 'N/A'):,}",
+                    f"  N50:           {summary.assembly_stats.get('n50', 'N/A'):,}",
+                    f"  Largest:       {summary.assembly_stats.get('largest_contig', 'N/A'):,}",
+                    "",
+                ]
+            )
 
         if summary.methylation_stats:
-            lines.extend([
-                f"--- Methylation ---",
-                f"  Mod type:      {summary.methylation_stats.get('modification_type', 'N/A')}",
-                f"  Total sites:   {summary.methylation_stats.get('total_sites', 'N/A'):,}",
-                f"  Methylated:    {summary.methylation_stats.get('methylated_sites', 'N/A'):,}",
-                f"  Global rate:   {summary.methylation_stats.get('global_methylation_rate', 'N/A')}",
-                "",
-            ])
+            lines.extend(
+                [
+                    f"--- Methylation ---",
+                    f"  Mod type:      {summary.methylation_stats.get('modification_type', 'N/A')}",
+                    f"  Total sites:   {summary.methylation_stats.get('total_sites', 'N/A'):,}",
+                    f"  Methylated:    {summary.methylation_stats.get('methylated_sites', 'N/A'):,}",
+                    f"  Global rate:   {summary.methylation_stats.get('global_methylation_rate', 'N/A')}",
+                    "",
+                ]
+            )
 
         if summary.sv_stats:
-            lines.extend([
-                f"--- Structural Variants ---",
-                f"  Total SVs:     {summary.sv_stats.get('total_variants', 'N/A')}",
-                f"  By type:       {summary.sv_stats.get('by_type', {})}",
-                "",
-            ])
+            lines.extend(
+                [
+                    f"--- Structural Variants ---",
+                    f"  Total SVs:     {summary.sv_stats.get('total_variants', 'N/A')}",
+                    f"  By type:       {summary.sv_stats.get('by_type', {})}",
+                    "",
+                ]
+            )
 
         if summary.warnings:
-            lines.extend([
-                f"--- Warnings ---",
-                *[f"  - {w}" for w in summary.warnings],
-                "",
-            ])
+            lines.extend(
+                [
+                    f"--- Warnings ---",
+                    *[f"  - {w}" for w in summary.warnings],
+                    "",
+                ]
+            )
 
         lines.append(f"{'=' * 60}")
         path.write_text("\n".join(lines))

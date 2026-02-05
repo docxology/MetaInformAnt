@@ -25,6 +25,8 @@ from . import assembly
 from . import visualization
 from . import utils
 from . import workflow
+from . import methylation
+from . import phasing
 
 # IO
 from .io.fast5 import (
@@ -140,6 +142,24 @@ from .workflow.reporting import (
     QCReport,
 )
 
+# Methylation submodule
+from .methylation import (
+    aggregate_methylation as meth_aggregate_methylation,
+    call_methylation_from_signal,
+    compute_methylation_stats,
+    detect_dmrs,
+    methylation_pattern_analysis,
+)
+
+# Phasing submodule
+from .phasing import (
+    allele_specific_analysis,
+    build_phase_blocks as phasing_build_phase_blocks,
+    compute_switch_errors,
+    haplotag_reads,
+    phase_reads as phasing_phase_reads,
+)
+
 # Type checking imports
 from typing import TYPE_CHECKING
 
@@ -230,4 +250,18 @@ __all__ = [
     "PipelineStep",
     "PipelineResult",
     "QCReport",
+    # Methylation submodule
+    "methylation",
+    "meth_aggregate_methylation",
+    "call_methylation_from_signal",
+    "compute_methylation_stats",
+    "detect_dmrs",
+    "methylation_pattern_analysis",
+    # Phasing submodule
+    "phasing",
+    "allele_specific_analysis",
+    "phasing_build_phase_blocks",
+    "compute_switch_errors",
+    "haplotag_reads",
+    "phasing_phase_reads",
 ]

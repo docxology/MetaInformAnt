@@ -390,7 +390,7 @@ def _infomap_community_detection(graph: Any, **kwargs: Any) -> Dict[str, Any]:
     id_to_node = {i: node for node, i in node_to_id.items()}
 
     for u, v in graph.edges():
-        weight = graph[u][v].get('weight', 1.0)
+        weight = graph[u][v].get("weight", 1.0)
         im.add_link(node_to_id[u], node_to_id[v], weight)
 
     # Run infomap

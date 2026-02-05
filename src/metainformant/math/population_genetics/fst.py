@@ -14,9 +14,7 @@ from metainformant.core import logging
 logger = logging.get_logger(__name__)
 
 
-def fst_from_allele_freqs(
-    pop1_freqs: List[float], pop2_freqs: List[float] | None = None
-) -> float:
+def fst_from_allele_freqs(pop1_freqs: List[float], pop2_freqs: List[float] | None = None) -> float:
     """Calculate F_ST from allele frequencies between two populations.
 
     F_ST measures the genetic differentiation between populations.
@@ -196,8 +194,9 @@ def weirs_fst(haplotype_counts: Dict[str, int], population_labels: List[str]) ->
     pop_freqs = {}
     for pop in populations:
         pop_weight = pop_sizes[pop] / total_n
-        pop_freqs[pop] = {h: freq * (1 + 0.1 * (hash(pop + h) % 10 - 5) / 5 * pop_weight)
-                          for h, freq in overall_freqs.items()}
+        pop_freqs[pop] = {
+            h: freq * (1 + 0.1 * (hash(pop + h) % 10 - 5) / 5 * pop_weight) for h, freq in overall_freqs.items()
+        }
         # Normalize
         total_freq = sum(pop_freqs[pop].values())
         if total_freq > 0:
@@ -277,6 +276,7 @@ def fst_confidence_interval(fst_value: float, sample_size: int, confidence_level
     else:
         # Use normal approximation for other confidence levels
         from scipy import stats
+
         z_score = stats.norm.ppf((1 + confidence_level) / 2)
 
     lower = max(0.0, fst_value - z_score * se)

@@ -476,10 +476,8 @@ def ml_integration(
             results["feature_mis"] = scores.tolist()
 
             # Top features (sorted by MI score)
-            top_indices = np.argsort(scores)[::-1][:min(10, n_features)]
-            results["top_features"] = [
-                {"index": int(idx), "mi": float(scores[idx])} for idx in top_indices
-            ]
+            top_indices = np.argsort(scores)[::-1][: min(10, n_features)]
+            results["top_features"] = [{"index": int(idx), "mi": float(scores[idx])} for idx in top_indices]
             results["feature_scores"] = {f"feature_{i}": float(scores[i]) for i in top_indices}
 
         elif method in ("feature_entropy", "entropy"):

@@ -240,10 +240,12 @@ class TestChannelCapacity:
     def test_binary_symmetric_channel(self) -> None:
         """BSC(p): C = 1 - H(p) where H is binary entropy."""
         p_error = 0.1
-        transition = np.array([
-            [1 - p_error, p_error],
-            [p_error, 1 - p_error],
-        ])
+        transition = np.array(
+            [
+                [1 - p_error, p_error],
+                [p_error, 1 - p_error],
+            ]
+        )
         result = channel_capacity(transition)
         assert "capacity" in result
         assert "optimal_input" in result
@@ -304,12 +306,14 @@ class TestInformationBottleneck:
     def test_basic_joint_distribution(self) -> None:
         """Information bottleneck on a simple joint distribution."""
         # Create a block-diagonal joint distribution
-        joint = np.array([
-            [0.2, 0.05, 0.0, 0.0],
-            [0.05, 0.2, 0.0, 0.0],
-            [0.0, 0.0, 0.2, 0.05],
-            [0.0, 0.0, 0.05, 0.2],
-        ])
+        joint = np.array(
+            [
+                [0.2, 0.05, 0.0, 0.0],
+                [0.05, 0.2, 0.0, 0.0],
+                [0.0, 0.0, 0.2, 0.05],
+                [0.0, 0.0, 0.05, 0.2],
+            ]
+        )
         result = information_bottleneck(joint, beta=10.0, n_clusters=2)
         assert "compression_rate" in result
         assert "relevance" in result

@@ -484,10 +484,13 @@ class TestFilterMetadataForUnquantified:
         """When nothing is quantified, the source is copied as-is."""
         source = tmp_path / "source.tsv"
         output = tmp_path / "output.tsv"
-        _create_metadata_tsv(source, [
-            {"run": "SRR000001", "organism": "honeybee", "layout": "PAIRED"},
-            {"run": "SRR000002", "organism": "honeybee", "layout": "SINGLE"},
-        ])
+        _create_metadata_tsv(
+            source,
+            [
+                {"run": "SRR000001", "organism": "honeybee", "layout": "PAIRED"},
+                {"run": "SRR000002", "organism": "honeybee", "layout": "SINGLE"},
+            ],
+        )
 
         count = filter_metadata_for_unquantified(workflow_config, source, output)
         assert count == 2
@@ -500,11 +503,14 @@ class TestFilterMetadataForUnquantified:
 
         source = tmp_path / "source.tsv"
         output = tmp_path / "output.tsv"
-        _create_metadata_tsv(source, [
-            {"run": "SRR000001", "organism": "bee", "layout": "PAIRED"},
-            {"run": "SRR000002", "organism": "bee", "layout": "PAIRED"},
-            {"run": "SRR000003", "organism": "bee", "layout": "SINGLE"},
-        ])
+        _create_metadata_tsv(
+            source,
+            [
+                {"run": "SRR000001", "organism": "bee", "layout": "PAIRED"},
+                {"run": "SRR000002", "organism": "bee", "layout": "PAIRED"},
+                {"run": "SRR000003", "organism": "bee", "layout": "SINGLE"},
+            ],
+        )
 
         count = filter_metadata_for_unquantified(workflow_config, source, output)
         assert count == 2
@@ -525,10 +531,13 @@ class TestFilterMetadataForUnquantified:
 
         source = tmp_path / "source.tsv"
         output = tmp_path / "output.tsv"
-        _create_metadata_tsv(source, [
-            {"run": "SRR000010", "organism": "bee", "layout": "PAIRED"},
-            {"run": "SRR000011", "organism": "bee", "layout": "PAIRED"},
-        ])
+        _create_metadata_tsv(
+            source,
+            [
+                {"run": "SRR000010", "organism": "bee", "layout": "PAIRED"},
+                {"run": "SRR000011", "organism": "bee", "layout": "PAIRED"},
+            ],
+        )
 
         count = filter_metadata_for_unquantified(workflow_config, source, output)
         assert count == 0
@@ -549,10 +558,13 @@ class TestFilterMetadataForUnquantified:
 
         source = tmp_path / "source.tsv"
         output = tmp_path / "output.tsv"
-        _create_metadata_tsv(source, [
-            {"run": "SRR000020", "organism": "ant", "layout": "PAIRED"},
-            {"run": "SRR000021", "organism": "wasp", "layout": "SINGLE"},
-        ])
+        _create_metadata_tsv(
+            source,
+            [
+                {"run": "SRR000020", "organism": "ant", "layout": "PAIRED"},
+                {"run": "SRR000021", "organism": "wasp", "layout": "SINGLE"},
+            ],
+        )
 
         filter_metadata_for_unquantified(workflow_config, source, output)
 
@@ -623,9 +635,7 @@ class TestEdgeCases:
         for sid in quantified:
             assert not (fastq_base / sid).exists()
 
-    def test_cleanup_after_quant_with_multiple_fastq_extensions(
-        self, workflow_config: AmalgkitWorkflowConfig
-    ) -> None:
+    def test_cleanup_after_quant_with_multiple_fastq_extensions(self, workflow_config: AmalgkitWorkflowConfig) -> None:
         """cleanup_after_quant should handle .fq, .fq.gz, .amalgkit.fastq.gz extensions."""
         quant_dir = workflow_config.work_dir / "quant"
         _create_abundance(quant_dir, "SRR700001")

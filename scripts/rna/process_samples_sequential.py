@@ -24,7 +24,7 @@ check_environment_or_exit(auto_setup=True)
 from metainformant.rna.workflow import load_workflow_config
 from metainformant.rna import steps as _steps_mod
 from metainformant.core.io import read_delimited
-from metainformant.core.logging import get_logger
+from metainformant.core.utils.logging import get_logger
 
 logger = get_logger("process_samples_sequential")
 

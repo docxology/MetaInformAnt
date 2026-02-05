@@ -34,7 +34,7 @@ from metainformant.rna.discovery import (
     get_genome_info,
     search_species_with_rnaseq,
 )
-from metainformant.core.logging import get_logger
+from metainformant.core.utils.logging import get_logger
 
 logger = get_logger("discover_species")
 

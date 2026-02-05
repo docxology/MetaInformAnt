@@ -175,12 +175,14 @@ class TestBuildOrthologMap:
 
     def test_extra_columns_ignored(self) -> None:
         """Additional columns in the DataFrame are ignored."""
-        df = pd.DataFrame({
-            "human": ["TP53", "BRCA1"],
-            "mouse": ["Trp53", "Brca1"],
-            "score": [0.95, 0.88],
-            "type": ["1:1", "1:1"],
-        })
+        df = pd.DataFrame(
+            {
+                "human": ["TP53", "BRCA1"],
+                "mouse": ["Trp53", "Brca1"],
+                "score": [0.95, 0.88],
+                "type": ["1:1", "1:1"],
+            }
+        )
         result = build_ortholog_map(df, "human", "mouse")
 
         assert len(result) == 2
@@ -534,12 +536,14 @@ class TestIdentifyDivergentGenes:
 
     def test_basic_filtering(self) -> None:
         """Genes below threshold are identified as divergent."""
-        conservation_df = pd.DataFrame({
-            "gene_id": ["gene1", "gene2", "gene3", "gene4"],
-            "correlation": [0.9, 0.5, 0.2, -0.3],
-            "p_value": [0.001, 0.01, 0.1, 0.5],
-            "conserved": [True, True, False, False],
-        })
+        conservation_df = pd.DataFrame(
+            {
+                "gene_id": ["gene1", "gene2", "gene3", "gene4"],
+                "correlation": [0.9, 0.5, 0.2, -0.3],
+                "p_value": [0.001, 0.01, 0.1, 0.5],
+                "conserved": [True, True, False, False],
+            }
+        )
 
         result = identify_divergent_genes(conservation_df, threshold=0.3)
 
@@ -551,12 +555,14 @@ class TestIdentifyDivergentGenes:
 
     def test_all_conserved(self) -> None:
         """No divergent genes when all are above threshold."""
-        conservation_df = pd.DataFrame({
-            "gene_id": ["gene1", "gene2"],
-            "correlation": [0.8, 0.9],
-            "p_value": [0.001, 0.001],
-            "conserved": [True, True],
-        })
+        conservation_df = pd.DataFrame(
+            {
+                "gene_id": ["gene1", "gene2"],
+                "correlation": [0.8, 0.9],
+                "p_value": [0.001, 0.001],
+                "conserved": [True, True],
+            }
+        )
 
         result = identify_divergent_genes(conservation_df, threshold=0.3)
 
@@ -564,12 +570,14 @@ class TestIdentifyDivergentGenes:
 
     def test_all_divergent(self) -> None:
         """All genes divergent when all are below threshold."""
-        conservation_df = pd.DataFrame({
-            "gene_id": ["gene1", "gene2"],
-            "correlation": [0.1, -0.2],
-            "p_value": [0.5, 0.8],
-            "conserved": [False, False],
-        })
+        conservation_df = pd.DataFrame(
+            {
+                "gene_id": ["gene1", "gene2"],
+                "correlation": [0.1, -0.2],
+                "p_value": [0.5, 0.8],
+                "conserved": [False, False],
+            }
+        )
 
         result = identify_divergent_genes(conservation_df, threshold=0.3)
 
@@ -577,12 +585,14 @@ class TestIdentifyDivergentGenes:
 
     def test_nan_correlation_treated_as_divergent(self) -> None:
         """NaN correlations are treated as divergent (filled with -1.0)."""
-        conservation_df = pd.DataFrame({
-            "gene_id": ["gene1", "gene2"],
-            "correlation": [np.nan, 0.9],
-            "p_value": [np.nan, 0.001],
-            "conserved": [False, True],
-        })
+        conservation_df = pd.DataFrame(
+            {
+                "gene_id": ["gene1", "gene2"],
+                "correlation": [np.nan, 0.9],
+                "p_value": [np.nan, 0.001],
+                "conserved": [False, True],
+            }
+        )
 
         result = identify_divergent_genes(conservation_df, threshold=0.3)
 
@@ -591,12 +601,14 @@ class TestIdentifyDivergentGenes:
 
     def test_threshold_at_boundary(self) -> None:
         """Genes exactly at threshold are included (<=)."""
-        conservation_df = pd.DataFrame({
-            "gene_id": ["gene1", "gene2"],
-            "correlation": [0.3, 0.31],
-            "p_value": [0.05, 0.05],
-            "conserved": [False, False],
-        })
+        conservation_df = pd.DataFrame(
+            {
+                "gene_id": ["gene1", "gene2"],
+                "correlation": [0.3, 0.31],
+                "p_value": [0.05, 0.05],
+                "conserved": [False, False],
+            }
+        )
 
         result = identify_divergent_genes(conservation_df, threshold=0.3)
 
@@ -619,10 +631,12 @@ class TestIdentifyDivergentGenes:
 
     def test_custom_threshold(self) -> None:
         """Custom threshold values work correctly."""
-        conservation_df = pd.DataFrame({
-            "gene_id": ["gene1", "gene2", "gene3"],
-            "correlation": [0.1, 0.5, 0.8],
-        })
+        conservation_df = pd.DataFrame(
+            {
+                "gene_id": ["gene1", "gene2", "gene3"],
+                "correlation": [0.1, 0.5, 0.8],
+            }
+        )
 
         # High threshold captures more genes
         result_high = identify_divergent_genes(conservation_df, threshold=0.6)
@@ -634,12 +648,14 @@ class TestIdentifyDivergentGenes:
 
     def test_result_sorted_ascending(self) -> None:
         """Result is sorted by correlation ascending."""
-        conservation_df = pd.DataFrame({
-            "gene_id": ["gene1", "gene2", "gene3"],
-            "correlation": [0.2, -0.5, 0.0],
-            "p_value": [0.1, 0.5, 0.3],
-            "conserved": [False, False, False],
-        })
+        conservation_df = pd.DataFrame(
+            {
+                "gene_id": ["gene1", "gene2", "gene3"],
+                "correlation": [0.2, -0.5, 0.0],
+                "p_value": [0.1, 0.5, 0.3],
+                "conserved": [False, False, False],
+            }
+        )
 
         result = identify_divergent_genes(conservation_df, threshold=0.3)
 
@@ -647,10 +663,12 @@ class TestIdentifyDivergentGenes:
 
     def test_result_index_reset(self) -> None:
         """Result index is reset to 0-based sequential."""
-        conservation_df = pd.DataFrame({
-            "gene_id": ["gene1", "gene2", "gene3"],
-            "correlation": [0.1, 0.2, 0.0],
-        })
+        conservation_df = pd.DataFrame(
+            {
+                "gene_id": ["gene1", "gene2", "gene3"],
+                "correlation": [0.1, 0.2, 0.0],
+            }
+        )
 
         result = identify_divergent_genes(conservation_df, threshold=0.3)
 
@@ -791,8 +809,13 @@ class TestPhylogeneticExpressionProfile:
 
         assert isinstance(result, pd.DataFrame)
         assert set(result.columns) == {
-            "gene_id", "node", "mean_expression", "variance",
-            "n_leaves", "branch_distance", "expression_change",
+            "gene_id",
+            "node",
+            "mean_expression",
+            "variance",
+            "n_leaves",
+            "branch_distance",
+            "expression_change",
         }
 
         # Should have entries for: human, mouse, root (for each gene)
@@ -948,20 +971,19 @@ class TestCrossSpeciesPCA:
         genes = [f"gene{i}" for i in range(10)]
 
         species_data = {
-            "human": pd.DataFrame(
-                rng.random((10, 3)), index=genes, columns=["h1", "h2", "h3"]
-            ),
-            "mouse": pd.DataFrame(
-                rng.random((10, 3)), index=genes, columns=["m1", "m2", "m3"]
-            ),
+            "human": pd.DataFrame(rng.random((10, 3)), index=genes, columns=["h1", "h2", "h3"]),
+            "mouse": pd.DataFrame(rng.random((10, 3)), index=genes, columns=["m1", "m2", "m3"]),
         }
 
         result = cross_species_pca(species_data, n_components=2)
 
         assert isinstance(result, dict)
         assert set(result.keys()) == {
-            "coordinates", "explained_variance", "loadings",
-            "species_labels", "shared_genes",
+            "coordinates",
+            "explained_variance",
+            "loadings",
+            "species_labels",
+            "shared_genes",
         }
 
         coords = result["coordinates"]
@@ -988,12 +1010,8 @@ class TestCrossSpeciesPCA:
         rng = np.random.default_rng(101)
         genes = ["gene1", "gene2", "gene3"]
         species_data = {
-            "human": pd.DataFrame(
-                rng.random((3, 2)), index=genes, columns=["h1", "h2"]
-            ),
-            "mouse": pd.DataFrame(
-                rng.random((3, 2)), index=genes, columns=["m1", "m2"]
-            ),
+            "human": pd.DataFrame(rng.random((3, 2)), index=genes, columns=["h1", "h2"]),
+            "mouse": pd.DataFrame(rng.random((3, 2)), index=genes, columns=["m1", "m2"]),
         }
 
         result = cross_species_pca(species_data, n_components=2)
@@ -1196,9 +1214,7 @@ class TestCompareExpressionAcrossSpecies:
             ("sp_a", "sp_b"): {"gA1": ["not_in_b"]},
         }
 
-        result = compare_expression_across_species(
-            {"sp_a": expr_a, "sp_b": expr_b}, orth_maps
-        )
+        result = compare_expression_across_species({"sp_a": expr_a, "sp_b": expr_b}, orth_maps)
 
         assert result.empty
 
@@ -1266,10 +1282,12 @@ class TestIntegrationWorkflows:
     def test_full_pipeline_build_map_then_compare(self) -> None:
         """End-to-end: build ortholog map, map expression, compute conservation."""
         # Step 1: Build ortholog map
-        orthologs_df = pd.DataFrame({
-            "human_gene": ["TP53", "BRCA1", "EGFR", "MYC"],
-            "mouse_gene": ["Trp53", "Brca1", "Egfr", "Myc"],
-        })
+        orthologs_df = pd.DataFrame(
+            {
+                "human_gene": ["TP53", "BRCA1", "EGFR", "MYC"],
+                "mouse_gene": ["Trp53", "Brca1", "Egfr", "Myc"],
+            }
+        )
         orth_map = build_ortholog_map(orthologs_df, "human_gene", "mouse_gene")
 
         assert len(orth_map) == 4
@@ -1316,15 +1334,9 @@ class TestIntegrationWorkflows:
         genes = [f"gene{i}" for i in range(15)]
 
         species_data = {
-            "sp_a": pd.DataFrame(
-                rng.random((15, 4)), index=genes, columns=["a1", "a2", "a3", "a4"]
-            ),
-            "sp_b": pd.DataFrame(
-                rng.random((15, 4)), index=genes, columns=["b1", "b2", "b3", "b4"]
-            ),
-            "sp_c": pd.DataFrame(
-                rng.random((15, 4)), index=genes, columns=["c1", "c2", "c3", "c4"]
-            ),
+            "sp_a": pd.DataFrame(rng.random((15, 4)), index=genes, columns=["a1", "a2", "a3", "a4"]),
+            "sp_b": pd.DataFrame(rng.random((15, 4)), index=genes, columns=["b1", "b2", "b3", "b4"]),
+            "sp_c": pd.DataFrame(rng.random((15, 4)), index=genes, columns=["c1", "c2", "c3", "c4"]),
         }
 
         # Divergence matrix
@@ -1425,12 +1437,8 @@ class TestEdgeCases:
         genes = [f"gene{i}" for i in range(100)]
 
         species_data = {
-            "sp_a": pd.DataFrame(
-                rng.random((100, 5)), index=genes, columns=[f"a{i}" for i in range(5)]
-            ),
-            "sp_b": pd.DataFrame(
-                rng.random((100, 5)), index=genes, columns=[f"b{i}" for i in range(5)]
-            ),
+            "sp_a": pd.DataFrame(rng.random((100, 5)), index=genes, columns=[f"a{i}" for i in range(5)]),
+            "sp_b": pd.DataFrame(rng.random((100, 5)), index=genes, columns=[f"b{i}" for i in range(5)]),
         }
 
         result = cross_species_pca(species_data, n_components=5)

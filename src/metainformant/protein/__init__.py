@@ -9,6 +9,8 @@ from __future__ import annotations
 
 # Import subpackages
 from . import database
+from . import domains
+from . import function
 from . import sequence
 from . import structure
 from . import visualization
@@ -56,6 +58,15 @@ try:
 except ImportError:
     uniprot = None  # type: ignore[assignment]
 
+# Domain analysis
+from .domains import (
+    classification as domain_classification,
+    detection as domain_detection,
+)
+
+# Function prediction
+from .function import prediction as function_prediction
+
 # Visualization
 from .visualization import general as visualization_general
 
@@ -68,6 +79,8 @@ except ImportError:
 __all__ = [
     # Subpackages
     "database",
+    "domains",
+    "function",
     "sequence",
     "structure",
     "visualization",
@@ -85,6 +98,11 @@ __all__ = [
     "interpro",
     "uniprot",
     "pdb",
+    # Domain analysis
+    "domain_classification",
+    "domain_detection",
+    # Function prediction
+    "function_prediction",
     # Proteome analysis
     "proteomes",
     # Visualization

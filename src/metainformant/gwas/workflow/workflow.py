@@ -533,9 +533,7 @@ def _load_phenotypes(phenotype_path: str | Path, trait: str | None = None) -> Li
         raise ValueError(f"Error loading phenotypes from {phenotype_path}: {e}")
 
 
-def _load_phenotypes_by_id(
-    phenotype_path: str | Path, trait: str | None = None
-) -> Dict[str, float]:
+def _load_phenotypes_by_id(phenotype_path: str | Path, trait: str | None = None) -> Dict[str, float]:
     """Load phenotype data as a dict keyed by sample_id.
 
     Args:
@@ -690,9 +688,8 @@ def run_gwas(
 
             meta_for_subset = None
             if sample_subset:
-                metadata_path_sub = (
-                    config.get("metadata_file")
-                    or (config.get("samples", {}).get("metadata_file") if isinstance(config.get("samples"), dict) else None)
+                metadata_path_sub = config.get("metadata_file") or (
+                    config.get("samples", {}).get("metadata_file") if isinstance(config.get("samples"), dict) else None
                 )
                 if metadata_path_sub and Path(metadata_path_sub).exists():
                     meta_result_sub = load_sample_metadata(metadata_path_sub)
@@ -843,7 +840,9 @@ def run_gwas(
                     aligned_phenotypes.append(pheno_by_id[sid])
             if aligned_phenotypes:
                 phenotypes = aligned_phenotypes
-                logger.info(f"ID-based phenotype alignment: {len(aligned_phenotypes)}/{len(sample_ids)} samples matched")
+                logger.info(
+                    f"ID-based phenotype alignment: {len(aligned_phenotypes)}/{len(sample_ids)} samples matched"
+                )
 
         # Fallback: positional alignment
         min_samples = min(len(phenotypes), n_samples) if genotypes_by_variant else 0

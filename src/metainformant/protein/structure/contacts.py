@@ -535,7 +535,7 @@ def compute_ca_contact_pairs(
 
     # Fallback: numpy broadcasting
     diff = arr[:, np.newaxis, :] - arr[np.newaxis, :, :]
-    dist_matrix = np.sqrt(np.sum(diff ** 2, axis=2))
+    dist_matrix = np.sqrt(np.sum(diff**2, axis=2))
 
     # Extract upper triangle where distance <= threshold
     i_idx, j_idx = np.where(np.triu(dist_matrix <= threshold, k=1))

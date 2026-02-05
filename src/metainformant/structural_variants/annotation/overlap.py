@@ -249,10 +249,7 @@ def annotate_gene_overlap(
         annotated.append(result)
 
     total_annotated = sum(1 for v in annotated if v["n_genes_affected"] > 0)
-    logger.info(
-        f"Annotated {len(annotated)} variants: "
-        f"{total_annotated} overlap with genes"
-    )
+    logger.info(f"Annotated {len(annotated)} variants: " f"{total_annotated} overlap with genes")
     return annotated
 
 
@@ -502,9 +499,7 @@ def _compute_overlap_bp(a_start: int, a_end: int, b_start: int, b_end: int) -> i
     return max(0, overlap_end - overlap_start)
 
 
-def _classify_relationship(
-    v_start: int, v_end: int, f_start: int, f_end: int
-) -> str:
+def _classify_relationship(v_start: int, v_end: int, f_start: int, f_end: int) -> str:
     """Classify the spatial relationship between a variant and a feature.
 
     Args:

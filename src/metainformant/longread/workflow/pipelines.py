@@ -443,6 +443,7 @@ def load_pipeline_config(config_path: Path | str) -> dict[str, Any]:
     # Apply LR_ environment variable overrides if the config utility supports it
     try:
         from metainformant.core.utils.config import apply_env_overrides
+
         raw_config = apply_env_overrides(raw_config, prefix="LR")
     except (ImportError, AttributeError):
         pass
@@ -470,9 +471,7 @@ def validate_pipeline_config(config: dict[str, Any], pipeline_name: str) -> list
     if "pipeline_name" not in config:
         errors.append("Missing required key 'pipeline_name'")
     elif config["pipeline_name"] != pipeline_name:
-        errors.append(
-            f"Pipeline name mismatch: expected '{pipeline_name}', got '{config['pipeline_name']}'"
-        )
+        errors.append(f"Pipeline name mismatch: expected '{pipeline_name}', got '{config['pipeline_name']}'")
 
     if pipeline_name not in VALID_PIPELINE_NAMES:
         errors.append(f"Unknown pipeline name '{pipeline_name}'. Valid: {sorted(VALID_PIPELINE_NAMES)}")
@@ -486,9 +485,7 @@ def validate_pipeline_config(config: dict[str, Any], pipeline_name: str) -> list
             value = params[param_name]
             if isinstance(value, (int, float)):
                 if value < lower or value > upper:
-                    errors.append(
-                        f"Parameter '{param_name}' value {value} out of range [{lower}, {upper}]"
-                    )
+                    errors.append(f"Parameter '{param_name}' value {value} out of range [{lower}, {upper}]")
 
     # Validate step dependencies
     steps = config.get("steps", [])
@@ -506,9 +503,7 @@ def validate_pipeline_config(config: dict[str, Any], pipeline_name: str) -> list
         depends_on = step.get("depends_on", [])
         for dep in depends_on:
             if dep not in step_names:
-                errors.append(
-                    f"Step '{step['name']}' depends on unknown step '{dep}'"
-                )
+                errors.append(f"Step '{step['name']}' depends on unknown step '{dep}'")
 
     if errors:
         logger.warning("Pipeline config validation found %d errors for '%s'", len(errors), pipeline_name)

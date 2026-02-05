@@ -2,7 +2,9 @@
 
 This module provides comprehensive tools for RNA-seq analysis, including
 amalgkit workflow orchestration, expression quantification, quality control,
-differential expression analysis, and multi-species comparative studies.
+differential expression analysis, multi-species comparative studies,
+alternative splicing detection and isoform quantification, and
+cell type deconvolution from bulk RNA-seq data.
 """
 
 from __future__ import annotations
@@ -14,6 +16,8 @@ from . import amalgkit  # Amalgkit integration
 from . import engine  # Orchestration engine (depends on others)
 from . import retrieval  # Data retrieval (ENA downloader)
 from . import steps  # Step runners shim
+from . import splicing  # Alternative splicing detection and isoform analysis
+from . import deconvolution  # Cell type deconvolution from bulk RNA-seq
 
 # Import modules from subpackages for backward compatibility
 from .core import (
@@ -67,6 +71,37 @@ try:
 except ImportError:
     pass
 
+# Conditional imports for splicing submodule
+try:
+    from .splicing import (
+        detect_splice_junctions,
+        classify_splicing_events,
+        compute_psi,
+        differential_splicing,
+        find_novel_junctions,
+        compute_splice_site_strength,
+        quantify_isoforms,
+        build_isoform_graph,
+        enumerate_isoforms,
+        compute_isoform_diversity,
+        compare_isoform_usage,
+    )
+except ImportError:
+    pass
+
+# Conditional imports for deconvolution submodule
+try:
+    from .deconvolution import (
+        deconvolve_nnls,
+        deconvolve_svr,
+        build_signature_matrix,
+        select_marker_genes,
+        validate_deconvolution,
+        batch_deconvolve,
+    )
+except ImportError:
+    pass
+
 # Type checking imports
 from typing import TYPE_CHECKING
 
@@ -80,6 +115,8 @@ __all__ = [
     "core",
     "engine",
     "retrieval",
+    "splicing",
+    "deconvolution",
     # Core workflow management
     "workflow",
     "orchestration",
@@ -117,4 +154,23 @@ __all__ = [
     # QC
     "compute_sample_metrics",
     "generate_qc_report",
+    # Splicing analysis
+    "detect_splice_junctions",
+    "classify_splicing_events",
+    "compute_psi",
+    "differential_splicing",
+    "find_novel_junctions",
+    "compute_splice_site_strength",
+    "quantify_isoforms",
+    "build_isoform_graph",
+    "enumerate_isoforms",
+    "compute_isoform_diversity",
+    "compare_isoform_usage",
+    # Deconvolution
+    "deconvolve_nnls",
+    "deconvolve_svr",
+    "build_signature_matrix",
+    "select_marker_genes",
+    "validate_deconvolution",
+    "batch_deconvolve",
 ]

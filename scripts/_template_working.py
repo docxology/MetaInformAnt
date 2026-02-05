@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core import io, paths
-from metainformant.core.logging import setup_logger
+from metainformant.core.utils.logging import setup_logger
 
 # Example of how scripts should be structured
 def main():

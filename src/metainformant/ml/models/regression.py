@@ -43,7 +43,9 @@ class BiologicalRegressor:
     """
 
     _ALGORITHM_MAP = {
-        "linear": lambda **kw: LinearRegression(**{k: v for k, v in kw.items() if k != "random_state"}) if HAS_SKLEARN else None,
+        "linear": lambda **kw: (
+            LinearRegression(**{k: v for k, v in kw.items() if k != "random_state"}) if HAS_SKLEARN else None
+        ),
         "random_forest": lambda **kw: RandomForestRegressor(**kw) if HAS_SKLEARN else None,
         "gradient_boosting": lambda **kw: GradientBoostingRegressor(**kw) if HAS_SKLEARN else None,
         "ridge": lambda **kw: Ridge(**kw) if HAS_SKLEARN else None,
@@ -251,9 +253,7 @@ def train_regressor(X: np.ndarray, y: np.ndarray, method: str = "rf", **kwargs: 
     return regressor
 
 
-def evaluate_regressor(
-    regressor: "BiologicalRegressor", X: np.ndarray, y: np.ndarray, **kwargs: Any
-) -> Dict[str, Any]:
+def evaluate_regressor(regressor: "BiologicalRegressor", X: np.ndarray, y: np.ndarray, **kwargs: Any) -> Dict[str, Any]:
     """Evaluate a trained regressor on data.
 
     If the regressor is already fitted, evaluates on the provided data directly.

@@ -20,6 +20,7 @@ from . import detection
 from . import annotation
 from . import filtering
 from . import visualization
+from . import population
 
 # Detection - CNV
 from .detection.cnv import (
@@ -89,6 +90,16 @@ from .visualization.plots import (
     plot_cnv_profile,
 )
 
+# Population submodule
+from .population import (
+    genotype_sv_population,
+    merge_sv_callsets,
+    sv_allele_frequency,
+    sv_association_test,
+    sv_ld_analysis,
+    sv_population_structure,
+)
+
 # Type checking imports
 from typing import TYPE_CHECKING
 
@@ -145,4 +156,12 @@ __all__ = [
     "plot_sv_type_summary",
     "plot_breakpoint_detail",
     "plot_cnv_profile",
+    # Population submodule
+    "population",
+    "genotype_sv_population",
+    "merge_sv_callsets",
+    "sv_allele_frequency",
+    "sv_association_test",
+    "sv_ld_analysis",
+    "sv_population_structure",
 ]

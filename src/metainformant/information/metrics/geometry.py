@@ -106,10 +106,7 @@ def fisher_rao_distance(
     q_arr = _validate_distribution(np.asarray(q), "q")
 
     if p_arr.size != q_arr.size:
-        raise ValueError(
-            f"Distributions must have the same length: "
-            f"len(p)={p_arr.size}, len(q)={q_arr.size}"
-        )
+        raise ValueError(f"Distributions must have the same length: " f"len(p)={p_arr.size}, len(q)={q_arr.size}")
 
     # Bhattacharyya coefficient BC(p, q) = sum sqrt(p_i * q_i)
     bc = float(np.sum(np.sqrt(p_arr * q_arr)))
@@ -169,13 +166,9 @@ def natural_gradient(
     fim = np.asarray(fisher_info_matrix, dtype=np.float64)
 
     if fim.ndim != 2:
-        raise ValueError(
-            f"fisher_info_matrix must be 2-dimensional, got {fim.ndim}D"
-        )
+        raise ValueError(f"fisher_info_matrix must be 2-dimensional, got {fim.ndim}D")
     if fim.shape[0] != fim.shape[1]:
-        raise ValueError(
-            f"fisher_info_matrix must be square, got shape {fim.shape}"
-        )
+        raise ValueError(f"fisher_info_matrix must be square, got shape {fim.shape}")
     if grad.size != fim.shape[0]:
         raise ValueError(
             f"Dimension mismatch: loss_gradient has {grad.size} elements but "
@@ -187,9 +180,7 @@ def natural_gradient(
         nat_grad = np.linalg.solve(fim, grad)
     except np.linalg.LinAlgError:
         # Fall back to pseudo-inverse for singular / near-singular FIM
-        logger.warning(
-            "Fisher information matrix is singular; using pseudo-inverse"
-        )
+        logger.warning("Fisher information matrix is singular; using pseudo-inverse")
         nat_grad = np.linalg.lstsq(fim, grad, rcond=None)[0]
 
     logger.debug(
@@ -248,9 +239,7 @@ def information_projection(
         ValueError: If the inputs are invalid or the method is unknown.
     """
     if method != "iterative_scaling":
-        raise ValueError(
-            f"Unknown method '{method}'; only 'iterative_scaling' is supported"
-        )
+        raise ValueError(f"Unknown method '{method}'; only 'iterative_scaling' is supported")
     if max_iter < 1:
         raise ValueError(f"max_iter must be >= 1, got {max_iter}")
 
@@ -268,14 +257,10 @@ def information_projection(
             raise ValueError(f"Constraint {idx}: index_set must not be empty")
         for i in index_set:
             if i < 0 or i >= p_arr.size:
-                raise ValueError(
-                    f"Constraint {idx}: index {i} out of range [0, {p_arr.size})"
-                )
+                raise ValueError(f"Constraint {idx}: index {i} out of range [0, {p_arr.size})")
         target_arr = np.asarray(target_marginal, dtype=np.float64)
         if np.any(target_arr < 0):
-            raise ValueError(
-                f"Constraint {idx}: target_marginal contains negative values"
-            )
+            raise ValueError(f"Constraint {idx}: target_marginal contains negative values")
 
     # Iterative proportional fitting (iterative scaling)
     q = p_arr.copy()
@@ -309,8 +294,7 @@ def information_projection(
         max_change = float(np.max(np.abs(q - q_prev)))
         if max_change < tol:
             logger.debug(
-                "Information projection converged after %d iterations "
-                "(max_change=%.2e)",
+                "Information projection converged after %d iterations " "(max_change=%.2e)",
                 iteration,
                 max_change,
             )
@@ -386,32 +370,23 @@ def statistical_divergence(
     q_arr = _validate_distribution(np.asarray(q), "q")
 
     if p_arr.size != q_arr.size:
-        raise ValueError(
-            f"Distributions must have the same length: "
-            f"len(p)={p_arr.size}, len(q)={q_arr.size}"
-        )
+        raise ValueError(f"Distributions must have the same length: " f"len(p)={p_arr.size}, len(q)={q_arr.size}")
 
     # Handle special cases where formula has 0/0 indeterminate form
     if abs(alpha - 1.0) < 1e-12:
         # Forward KL: D_KL(p || q)
         if kl_divergence is not None:
             return kl_divergence(p_arr, q_arr, base=math.e)
-        raise ValueError(
-            "alpha=1 requires KL divergence but syntactic module is unavailable"
-        )
+        raise ValueError("alpha=1 requires KL divergence but syntactic module is unavailable")
 
     if abs(alpha) < 1e-12:
         # Reverse KL: D_KL(q || p)
         if kl_divergence is not None:
             return kl_divergence(q_arr, p_arr, base=math.e)
-        raise ValueError(
-            "alpha=0 requires KL divergence but syntactic module is unavailable"
-        )
+        raise ValueError("alpha=0 requires KL divergence but syntactic module is unavailable")
 
     if abs(abs(alpha) - 1.0) < 1e-12:
-        raise ValueError(
-            f"|alpha| must not equal 1 for the general formula, got alpha={alpha}"
-        )
+        raise ValueError(f"|alpha| must not equal 1 for the general formula, got alpha={alpha}")
 
     # General alpha-divergence
     exp_p = (1.0 + alpha) / 2.0
@@ -482,8 +457,7 @@ def exponential_family_entropy(
 
     if eta.size != e_t.size:
         raise ValueError(
-            f"natural_params and sufficient_stats_expectation must have the "
-            f"same length: {eta.size} != {e_t.size}"
+            f"natural_params and sufficient_stats_expectation must have the " f"same length: {eta.size} != {e_t.size}"
         )
 
     if eta.size == 0:
@@ -495,8 +469,7 @@ def exponential_family_entropy(
     entropy = -float(np.dot(eta, e_t)) + log_partition_val
 
     logger.debug(
-        "Exponential family entropy: %.6f nats "
-        "(||eta||=%.4f, A(eta)=%.4f)",
+        "Exponential family entropy: %.6f nats " "(||eta||=%.4f, A(eta)=%.4f)",
         entropy,
         float(np.linalg.norm(eta)),
         log_partition_val,
@@ -549,14 +522,11 @@ def hellinger_distance(
     q_arr = _validate_distribution(np.asarray(q), "q")
 
     if p_arr.size != q_arr.size:
-        raise ValueError(
-            f"Distributions must have the same length: "
-            f"len(p)={p_arr.size}, len(q)={q_arr.size}"
-        )
+        raise ValueError(f"Distributions must have the same length: " f"len(p)={p_arr.size}, len(q)={q_arr.size}")
 
     # H(p, q) = (1/sqrt(2)) * || sqrt(p) - sqrt(q) ||_2
     diff = np.sqrt(p_arr) - np.sqrt(q_arr)
-    distance = float(np.sqrt(np.sum(diff ** 2)) / math.sqrt(2.0))
+    distance = float(np.sqrt(np.sum(diff**2)) / math.sqrt(2.0))
 
     # Clamp to [0, 1] for numerical safety
     distance = max(0.0, min(1.0, distance))
@@ -638,23 +608,16 @@ def _validate_transition_matrix(matrix: np.ndarray) -> np.ndarray:
     """
     matrix = np.asarray(matrix, dtype=np.float64)
     if matrix.ndim != 2:
-        raise ValueError(
-            f"transition_matrix must be 2-dimensional, got {matrix.ndim}D"
-        )
+        raise ValueError(f"transition_matrix must be 2-dimensional, got {matrix.ndim}D")
     n_x, n_y = matrix.shape
     if n_x < 2 or n_y < 2:
-        raise ValueError(
-            f"transition_matrix must be at least 2x2, got {n_x}x{n_y}"
-        )
+        raise ValueError(f"transition_matrix must be at least 2x2, got {n_x}x{n_y}")
     if np.any(matrix < 0):
         raise ValueError("transition_matrix contains negative entries")
     row_sums = matrix.sum(axis=1)
     if not np.allclose(row_sums, 1.0, atol=1e-6):
         bad = int(np.argmax(np.abs(row_sums - 1.0)))
-        raise ValueError(
-            f"Row {bad} of transition_matrix sums to {row_sums[bad]:.8f}, "
-            "expected 1.0"
-        )
+        raise ValueError(f"Row {bad} of transition_matrix sums to {row_sums[bad]:.8f}, " "expected 1.0")
     # Renormalise rows to machine precision
     return matrix / row_sums[:, np.newaxis]
 
@@ -699,9 +662,7 @@ def channel_capacity(
             unknown, or *max_iter* < 1.
     """
     if method != "blahut_arimoto":
-        raise ValueError(
-            f"Unknown method '{method}'; only 'blahut_arimoto' is supported"
-        )
+        raise ValueError(f"Unknown method '{method}'; only 'blahut_arimoto' is supported")
     if max_iter < 1:
         raise ValueError(f"max_iter must be >= 1, got {max_iter}")
 
@@ -808,15 +769,10 @@ def rate_distortion_function(
     D = np.asarray(distortion_matrix, dtype=np.float64)
 
     if D.ndim != 2:
-        raise ValueError(
-            f"distortion_matrix must be 2-dimensional, got {D.ndim}D"
-        )
+        raise ValueError(f"distortion_matrix must be 2-dimensional, got {D.ndim}D")
     n_source, n_repr = D.shape
     if n_source != p_x.size:
-        raise ValueError(
-            f"distortion_matrix has {n_source} rows but source_probs has "
-            f"{p_x.size} symbols"
-        )
+        raise ValueError(f"distortion_matrix has {n_source} rows but source_probs has " f"{p_x.size} symbols")
     if np.any(D < 0):
         raise ValueError("distortion_matrix contains negative entries")
     if n_points < 2:
@@ -839,10 +795,7 @@ def rate_distortion_function(
         q_j = np.full(n_repr, 1.0 / n_repr)
 
         for _ in range(200):
-            log_q_cond = (
-                np.log(np.maximum(q_j, 1e-300))[np.newaxis, :]
-                - beta * D
-            )  # (n_source, n_repr)
+            log_q_cond = np.log(np.maximum(q_j, 1e-300))[np.newaxis, :] - beta * D  # (n_source, n_repr)
             log_q_cond -= log_q_cond.max(axis=1, keepdims=True)
             q_cond = np.exp(log_q_cond)
             q_cond /= q_cond.sum(axis=1, keepdims=True)
@@ -929,14 +882,10 @@ def information_bottleneck(
     """
     joint = np.asarray(joint_xy, dtype=np.float64)
     if joint.ndim != 2:
-        raise ValueError(
-            f"joint_xy must be 2-dimensional, got {joint.ndim}D"
-        )
+        raise ValueError(f"joint_xy must be 2-dimensional, got {joint.ndim}D")
     n_x, n_y = joint.shape
     if n_x < 2 or n_y < 2:
-        raise ValueError(
-            f"joint_xy must be at least 2x2, got {n_x}x{n_y}"
-        )
+        raise ValueError(f"joint_xy must be at least 2x2, got {n_x}x{n_y}")
     if np.any(joint < 0):
         raise ValueError("joint_xy contains negative entries")
     total = joint.sum()
@@ -949,9 +898,7 @@ def information_bottleneck(
     if n_clusters < 2:
         raise ValueError(f"n_clusters must be >= 2, got {n_clusters}")
     if n_clusters > n_x:
-        raise ValueError(
-            f"n_clusters ({n_clusters}) cannot exceed |X| ({n_x})"
-        )
+        raise ValueError(f"n_clusters ({n_clusters}) cannot exceed |X| ({n_x})")
     if max_iter < 1:
         raise ValueError(f"max_iter must be >= 1, got {max_iter}")
 
@@ -992,10 +939,7 @@ def information_bottleneck(
             kl[:, t] = np.sum(p_y_given_x * diff, axis=1)
 
         # Update q(t|x) proportional to q(t) exp(-beta * kl)
-        log_q_t_given_x = (
-            np.log(np.maximum(q_t, 1e-300))[np.newaxis, :]
-            - beta * kl
-        )  # (n_x, n_t)
+        log_q_t_given_x = np.log(np.maximum(q_t, 1e-300))[np.newaxis, :] - beta * kl  # (n_x, n_t)
         log_q_t_given_x -= log_q_t_given_x.max(axis=1, keepdims=True)
         q_t_given_x_new = np.exp(log_q_t_given_x)
         q_t_given_x_new /= q_t_given_x_new.sum(axis=1, keepdims=True)
@@ -1095,8 +1039,7 @@ def entropy_power_inequality(
         raise ValueError("variances must contain at least one element")
     if np.any(variances_arr <= 0):
         raise ValueError(
-            "All variances must be positive; got values: "
-            + str(variances_arr[variances_arr <= 0].tolist())
+            "All variances must be positive; got values: " + str(variances_arr[variances_arr <= 0].tolist())
         )
 
     # For Gaussian X_i with variance sigma_i^2:
@@ -1176,23 +1119,17 @@ def information_dimension(
         ValueError: If samples are too few or the method is unknown.
     """
     if method != "correlation":
-        raise ValueError(
-            f"Unknown method '{method}'; only 'correlation' is supported"
-        )
+        raise ValueError(f"Unknown method '{method}'; only 'correlation' is supported")
 
     samples = np.asarray(samples, dtype=np.float64)
     if samples.ndim == 1:
         samples = samples.reshape(-1, 1)
     if samples.ndim != 2:
-        raise ValueError(
-            f"samples must be 1-D or 2-D, got {samples.ndim}-D"
-        )
+        raise ValueError(f"samples must be 1-D or 2-D, got {samples.ndim}-D")
 
     n_samples, _n_dims = samples.shape
     if n_samples < 10:
-        raise ValueError(
-            f"Need at least 10 samples for dimension estimation, got {n_samples}"
-        )
+        raise ValueError(f"Need at least 10 samples for dimension estimation, got {n_samples}")
 
     # Pairwise distances (condensed form)
     dists = pdist(samples)
@@ -1202,9 +1139,7 @@ def information_dimension(
     # Remove exact zeros (duplicate points)
     dists_nonzero = dists[dists > 0]
     if dists_nonzero.size == 0:
-        raise ValueError(
-            "All pairwise distances are zero -- cannot estimate dimension"
-        )
+        raise ValueError("All pairwise distances are zero -- cannot estimate dimension")
 
     # Choose r_values if not provided
     if r_values is None:
@@ -1216,9 +1151,7 @@ def information_dimension(
             r_max = float(dists_nonzero.max())
             r_min = float(dists_nonzero.min())
         if r_min <= 0 or r_max <= 0 or r_min >= r_max:
-            raise ValueError(
-                "Cannot determine a valid range of radii from the data"
-            )
+            raise ValueError("Cannot determine a valid range of radii from the data")
         r_values = np.logspace(np.log10(r_min), np.log10(r_max), 30)
     else:
         r_values = np.asarray(r_values, dtype=np.float64).ravel()
@@ -1237,9 +1170,7 @@ def information_dimension(
     # Keep only points where C(r) > 0 for log-log fit
     valid = corr_integral > 0
     if valid.sum() < 2:
-        logger.warning(
-            "Fewer than 2 valid C(r) points; returning dimension=0.0"
-        )
+        logger.warning("Fewer than 2 valid C(r) points; returning dimension=0.0")
         return {
             "dimension": 0.0,
             "r_values": r_values,

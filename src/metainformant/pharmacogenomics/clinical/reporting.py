@@ -140,14 +140,16 @@ def generate_clinical_report(
         interactions = analyze_drug_gene_interactions(drugs, genotypes)
         for rec in interactions:
             drug_rec = format_recommendation(
-                rec.drug, rec.gene, rec.phenotype,
+                rec.drug,
+                rec.gene,
+                rec.phenotype,
                 {
                     "recommendation": rec.recommendation,
                     "evidence_level": rec.evidence_level,
                     "source": rec.source,
                     "severity": rec.severity.value,
                     "alternatives": rec.alternatives,
-                }
+                },
             )
             drug_recommendations.append(drug_rec)
     else:
@@ -160,19 +162,23 @@ def generate_clinical_report(
     clinical_actions: list[dict[str, Any]] = []
     action_priority = 1
 
-    for rec in sorted(interactions, key=lambda r: (
-        0 if r.severity == InteractionSeverity.MAJOR else
-        1 if r.severity == InteractionSeverity.MODERATE else 2
-    )):
+    for rec in sorted(
+        interactions,
+        key=lambda r: (
+            0 if r.severity == InteractionSeverity.MAJOR else 1 if r.severity == InteractionSeverity.MODERATE else 2
+        ),
+    ):
         if rec.severity.requires_action:
-            clinical_actions.append({
-                "priority": action_priority,
-                "drug": rec.drug,
-                "gene": rec.gene,
-                "severity": rec.severity.value,
-                "action": rec.recommendation,
-                "alternatives": rec.alternatives,
-            })
+            clinical_actions.append(
+                {
+                    "priority": action_priority,
+                    "drug": rec.drug,
+                    "gene": rec.gene,
+                    "severity": rec.severity.value,
+                    "action": rec.recommendation,
+                    "alternatives": rec.alternatives,
+                }
+            )
             action_priority += 1
 
     # ── Assemble Report ───────────────────────────────────────────────────
@@ -202,8 +208,11 @@ def _get_abbrev(phenotype: Any) -> str:
         return phenotype.abbreviation
     s = str(phenotype).lower()
     mapping = {
-        "poor": "PM", "intermediate": "IM", "normal": "NM",
-        "rapid": "RM", "ultrarapid": "UM",
+        "poor": "PM",
+        "intermediate": "IM",
+        "normal": "NM",
+        "rapid": "RM",
+        "ultrarapid": "UM",
     }
     for key, abbrev in mapping.items():
         if key in s:
@@ -461,9 +470,13 @@ def _format_html_report(report: dict[str, Any]) -> str:
     html_parts.append(".major { color: #d32f2f; font-weight: bold; }")
     html_parts.append(".moderate { color: #f57c00; font-weight: bold; }")
     html_parts.append(".minor { color: #388e3c; }")
-    html_parts.append(".disclaimer { background: #fff3cd; border: 1px solid #ffc107; padding: 1em; "
-                       "margin-top: 2em; font-size: 0.9em; }")
-    html_parts.append(".action-item { background: #ffebee; border-left: 4px solid #d32f2f; padding: 0.5em 1em; margin: 0.5em 0; }")
+    html_parts.append(
+        ".disclaimer { background: #fff3cd; border: 1px solid #ffc107; padding: 1em; "
+        "margin-top: 2em; font-size: 0.9em; }"
+    )
+    html_parts.append(
+        ".action-item { background: #ffebee; border-left: 4px solid #d32f2f; padding: 0.5em 1em; margin: 0.5em 0; }"
+    )
     html_parts.append("</style>")
     html_parts.append("</head><body>")
 
@@ -476,15 +489,21 @@ def _format_html_report(report: dict[str, Any]) -> str:
     patient = report.get("patient_info", {})
     html_parts.append("<h2>Patient Information</h2>")
     html_parts.append("<table>")
-    for key, label in [("patient_id", "Patient ID"), ("sex", "Sex"), ("ethnicity", "Ethnicity"),
-                        ("ordering_provider", "Ordering Provider")]:
+    for key, label in [
+        ("patient_id", "Patient ID"),
+        ("sex", "Sex"),
+        ("ethnicity", "Ethnicity"),
+        ("ordering_provider", "Ordering Provider"),
+    ]:
         html_parts.append(f"<tr><th>{label}</th><td>{_html_escape(str(patient.get(key, 'N/A')))}</td></tr>")
     html_parts.append("</table>")
 
     # Genotype Results
     html_parts.append("<h2>Genotype Results</h2>")
     html_parts.append("<table>")
-    html_parts.append("<tr><th>Gene</th><th>Diplotype</th><th>Phenotype</th><th>Activity Score</th><th>Clinical Significance</th></tr>")
+    html_parts.append(
+        "<tr><th>Gene</th><th>Diplotype</th><th>Phenotype</th><th>Activity Score</th><th>Clinical Significance</th></tr>"
+    )
     for result in report.get("genotype_results", []):
         phenotype = result.get("phenotype", "")
         if isinstance(phenotype, MetabolizerPhenotype):
@@ -503,8 +522,10 @@ def _format_html_report(report: dict[str, Any]) -> str:
     if drug_recs:
         html_parts.append("<h2>Drug Recommendations</h2>")
         html_parts.append("<table>")
-        html_parts.append("<tr><th>Drug</th><th>Gene</th><th>Phenotype</th><th>Severity</th>"
-                         "<th>Recommendation</th><th>Alternatives</th></tr>")
+        html_parts.append(
+            "<tr><th>Drug</th><th>Gene</th><th>Phenotype</th><th>Severity</th>"
+            "<th>Recommendation</th><th>Alternatives</th></tr>"
+        )
         for rec in drug_recs:
             severity = rec.get("severity", "None")
             sev_class = severity.lower() if severity.lower() in ("major", "moderate", "minor") else ""
@@ -532,7 +553,9 @@ def _format_html_report(report: dict[str, Any]) -> str:
             )
 
     # Disclaimer
-    html_parts.append(f'<div class="disclaimer"><h3>Disclaimer</h3><p>{_html_escape(report.get("disclaimer", _CLINICAL_DISCLAIMER))}</p></div>')
+    html_parts.append(
+        f'<div class="disclaimer"><h3>Disclaimer</h3><p>{_html_escape(report.get("disclaimer", _CLINICAL_DISCLAIMER))}</p></div>'
+    )
 
     html_parts.append("</body></html>")
     return "\n".join(html_parts)

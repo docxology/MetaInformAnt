@@ -49,10 +49,10 @@ class TestOllamaClient:
     def test_list_models(self, client: OllamaClient, check_ollama):
         """Test listing available models."""
         models = client.list_models()
-        
+
         assert isinstance(models, list)
         assert len(models) > 0
-        
+
         # Check model info structure
         model = models[0]
         assert hasattr(model, "name")
@@ -62,7 +62,7 @@ class TestOllamaClient:
     def test_generate_simple(self, client: OllamaClient, check_ollama):
         """Test simple text generation."""
         response = client.generate("Say hello in one word.")
-        
+
         assert response.text  # Non-empty response
         assert response.model == client.config.model
         assert response.done is True
@@ -74,23 +74,23 @@ class TestOllamaClient:
             "What are you?",
             system="You are a helpful robot. Respond briefly.",
         )
-        
+
         assert response.text
         assert response.done is True
 
     def test_generate_streaming(self, client: OllamaClient, check_ollama):
         """Test streaming generation."""
         chunks: list[str] = []
-        
+
         def callback(text: str) -> None:
             chunks.append(text)
-        
+
         response = client.generate(
             "Count to 3.",
             stream=True,
             stream_callback=callback,
         )
-        
+
         assert response.text
         assert len(chunks) > 0  # Should have received chunks
         assert "".join(chunks) == response.text
@@ -100,9 +100,9 @@ class TestOllamaClient:
         messages = [
             ChatMessage("user", "Say hello briefly."),
         ]
-        
+
         response = client.chat(messages)
-        
+
         assert response.text
         assert response.message.role == "assistant"
         assert response.done is True
@@ -113,9 +113,9 @@ class TestOllamaClient:
             ChatMessage("system", "You are a pirate. Respond briefly."),
             ChatMessage("user", "Greet me."),
         ]
-        
+
         response = client.chat(messages)
-        
+
         assert response.text
         assert response.message.role == "assistant"
 
@@ -127,14 +127,14 @@ class TestOllamaClient:
             system="Remember what the user tells you. Be brief.",
         )
         assert response1.text
-        
+
         # Second turn - should remember context
         response2 = client.conversation("What is my name?")
         assert response2.text
-        
+
         # History should have 4 messages (system, user, assistant, user, assistant)
         assert len(client.conversation_history) == 5
-        
+
         # Reset and verify
         client.reset_conversation()
         assert len(client.conversation_history) == 0
@@ -146,7 +146,7 @@ class TestOllamaClient:
             temperature=0.5,
             top_p=0.8,
         )
-        
+
         assert response.text
         assert response.done is True
 
@@ -157,7 +157,7 @@ class TestOllamaConfig:
     def test_default_config(self):
         """Test default configuration values."""
         config = OllamaConfig()
-        
+
         assert config.host == "http://localhost:11434"
         assert config.model == "smollm2:135m-instruct-q4_K_S"
         assert config.temperature == 0.7
@@ -170,7 +170,7 @@ class TestOllamaConfig:
             temperature=0.3,
             timeout=60.0,
         )
-        
+
         assert config.model == "llama3:latest"
         assert config.temperature == 0.3
         assert config.timeout == 60.0
@@ -184,7 +184,7 @@ class TestOllamaConfig:
         """Test temperature validation."""
         with pytest.raises(ValueError, match="temperature"):
             OllamaConfig(temperature=3.0)
-        
+
         with pytest.raises(ValueError, match="temperature"):
             OllamaConfig(temperature=-0.5)
 
@@ -196,7 +196,7 @@ class TestOllamaConfig:
     def test_api_urls(self):
         """Test API URL properties."""
         config = OllamaConfig()
-        
+
         assert config.api_url == "http://localhost:11434/api"
         assert config.generate_url == "http://localhost:11434/api/generate"
         assert config.chat_url == "http://localhost:11434/api/chat"
@@ -206,7 +206,7 @@ class TestOllamaConfig:
         """Test creating config with different model."""
         config1 = OllamaConfig(model="model1", temperature=0.5)
         config2 = config1.with_model("model2")
-        
+
         assert config1.model == "model1"
         assert config2.model == "model2"
         assert config2.temperature == 0.5  # Preserved
@@ -219,9 +219,9 @@ class TestOllamaConfig:
             top_k=50,
             context_length=2048,
         )
-        
+
         options = config.to_options_dict()
-        
+
         assert options["temperature"] == 0.8
         assert options["top_p"] == 0.95
         assert options["top_k"] == 50

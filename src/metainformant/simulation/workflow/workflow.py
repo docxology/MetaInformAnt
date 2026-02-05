@@ -537,7 +537,12 @@ def _run_rna_simulation(config: SimulationConfig, rng: random.Random) -> Dict[st
 
 def _run_agent_simulation(config: SimulationConfig, rng: random.Random) -> Dict[str, Any]:
     """Run agent-based ecosystem simulation."""
-    from ..models.agents import create_ecosystem, run_simulation, get_population_dynamics, calculate_biodiversity_metrics
+    from ..models.agents import (
+        create_ecosystem,
+        run_simulation,
+        get_population_dynamics,
+        calculate_biodiversity_metrics,
+    )
 
     # Create ecosystem
     ecosystem = create_ecosystem(config.n_agents, config.agent_types, config.environment_size, rng=rng)

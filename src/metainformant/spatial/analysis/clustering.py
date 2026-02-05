@@ -285,9 +285,7 @@ def louvain_clustering(
             if s < t:
                 G.add_edge(s, t, weight=w)
 
-        partition = community_louvain.best_partition(
-            G, resolution=resolution, random_state=seed
-        )
+        partition = community_louvain.best_partition(G, resolution=resolution, random_state=seed)
         labels = np.array([partition[i] for i in range(n)], dtype=np.int32)
         modularity = float(community_louvain.modularity(partition, G))
         logger.info(f"Louvain clustering: {len(set(labels))} clusters, modularity={modularity:.4f}")
@@ -376,10 +374,7 @@ def _greedy_modularity_clustering(
                 w_current = comm_weights.get(current_comm, 0.0)
 
                 # Delta modularity (resolution-scaled)
-                delta_q = (
-                    (w_ic - w_current) / m
-                    - resolution * ki * (sigma_tot - cur_sigma) / (2.0 * m * m)
-                )
+                delta_q = (w_ic - w_current) / m - resolution * ki * (sigma_tot - cur_sigma) / (2.0 * m * m)
 
                 if delta_q > best_delta_q:
                     best_delta_q = delta_q
@@ -514,10 +509,12 @@ def spatial_cluster(
         coords_scaled = StandardScaler().fit_transform(coords)
 
         # Concatenate with weighting
-        features = np.hstack([
-            expr_pca * (1.0 - spatial_weight),
-            coords_scaled * spatial_weight,
-        ])
+        features = np.hstack(
+            [
+                expr_pca * (1.0 - spatial_weight),
+                coords_scaled * spatial_weight,
+            ]
+        )
 
         km = KMeans(n_clusters=n_clusters, random_state=seed, n_init=10)
         labels = km.fit_predict(features)
@@ -714,7 +711,7 @@ def spatial_domains(
         metadata={
             "n_pcs": n_components,
             "n_neighbors": n_neighbors,
-            "iterations": iteration + 1 if 'iteration' in dir() else max_iterations,
+            "iterations": iteration + 1 if "iteration" in dir() else max_iterations,
             "smoothing_factor": smoothing_factor,
         },
     )

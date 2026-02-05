@@ -57,11 +57,16 @@ def test_residue_contacts_matrix():
     """Test residue contact map calculation."""
     from metainformant.protein.structure.contacts import calculate_residue_contacts
 
-    coords = np.array([
-        [0.0, 0.0, 0.0], [1.0, 0.0, 0.0],  # residue 0
-        [5.0, 0.0, 0.0], [6.0, 0.0, 0.0],  # residue 1
-        [50.0, 0.0, 0.0], [51.0, 0.0, 0.0],  # residue 2 (far away)
-    ])
+    coords = np.array(
+        [
+            [0.0, 0.0, 0.0],
+            [1.0, 0.0, 0.0],  # residue 0
+            [5.0, 0.0, 0.0],
+            [6.0, 0.0, 0.0],  # residue 1
+            [50.0, 0.0, 0.0],
+            [51.0, 0.0, 0.0],  # residue 2 (far away)
+        ]
+    )
     residue_ranges = [(0, 2), (2, 4), (4, 6)]
     contacts = calculate_residue_contacts(coords, residue_ranges, threshold=8.0)
 
@@ -74,12 +79,14 @@ def test_contact_network_analysis():
     """Test contact network analysis."""
     from metainformant.protein.structure.contacts import analyze_contact_network
 
-    contact_map = np.array([
-        [0, 1, 1, 0],
-        [1, 0, 1, 0],
-        [1, 1, 0, 1],
-        [0, 0, 1, 0],
-    ])
+    contact_map = np.array(
+        [
+            [0, 1, 1, 0],
+            [1, 0, 1, 0],
+            [1, 1, 0, 1],
+            [0, 0, 1, 0],
+        ]
+    )
     analysis = analyze_contact_network(contact_map)
 
     assert analysis["n_residues"] == 4

@@ -77,9 +77,7 @@ def _gower_distance(a: List[float], b: List[float], ranges: List[float]) -> floa
 # ---------------------------------------------------------------------------
 
 
-def trait_distance_matrix(
-    trait_matrix: List[List[float]], method: str = "euclidean"
-) -> List[List[float]]:
+def trait_distance_matrix(trait_matrix: List[List[float]], method: str = "euclidean") -> List[List[float]]:
     """Compute pairwise trait distance matrix for all species.
 
     Args:
@@ -267,9 +265,7 @@ def _to_relative(abundances: List[float]) -> List[float]:
 # ---------------------------------------------------------------------------
 
 
-def functional_richness(
-    trait_matrix: List[List[float]], abundances: Optional[List[float]] = None
-) -> float:
+def functional_richness(trait_matrix: List[List[float]], abundances: Optional[List[float]] = None) -> float:
     """Calculate Functional Richness (FRic).
 
     FRic measures the volume of functional trait space occupied by the community.
@@ -658,7 +654,7 @@ def functional_redundancy(trait_matrix: List[List[float]], abundances: List[floa
         return 0.0
 
     rel = _to_relative(pos_ab)
-    simpson = 1.0 - sum(p ** 2 for p in rel)
+    simpson = 1.0 - sum(p**2 for p in rel)
 
     rao_q = raos_quadratic_entropy(trait_matrix, abundances)
 
@@ -726,9 +722,7 @@ def functional_beta_diversity(
     scale2 = 1.0 / (2.0 * total_ab2) if total_ab2 > 0 else 0.0
 
     pooled_traits = list(community1_traits) + list(community2_traits)
-    pooled_abundances = [a * scale1 for a in community1_abundances] + [
-        a * scale2 for a in community2_abundances
-    ]
+    pooled_abundances = [a * scale1 for a in community1_abundances] + [a * scale2 for a in community2_abundances]
 
     # Renormalise pooled abundances so they sum to a positive total for Rao
     pool_total = sum(pooled_abundances)
@@ -767,9 +761,7 @@ def functional_beta_diversity(
 # ---------------------------------------------------------------------------
 
 
-def functional_diversity_suite(
-    trait_matrix: List[List[float]], abundances: List[float]
-) -> Dict[str, Any]:
+def functional_diversity_suite(trait_matrix: List[List[float]], abundances: List[float]) -> Dict[str, Any]:
     """Compute all major functional diversity indices in a single pass.
 
     This is a convenience wrapper that returns FRic, FEve, FDiv, FDis, Rao's Q,

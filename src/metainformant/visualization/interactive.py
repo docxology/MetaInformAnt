@@ -34,6 +34,7 @@ except ImportError:
 # Interactive scatter
 # ---------------------------------------------------------------------------
 
+
 def interactive_scatter(
     data: pd.DataFrame,
     x: str,
@@ -62,8 +63,13 @@ def interactive_scatter(
     """
     if HAS_PLOTLY:
         fig = px.scatter(
-            data, x=x, y=y, color=color, size=size,
-            hover_data=hover_data, title=title,
+            data,
+            x=x,
+            y=y,
+            color=color,
+            size=size,
+            hover_data=hover_data,
+            title=title,
         )
         if output_path:
             out = Path(output_path)
@@ -92,6 +98,7 @@ def interactive_scatter(
 # ---------------------------------------------------------------------------
 # Interactive heatmap
 # ---------------------------------------------------------------------------
+
 
 def interactive_heatmap(
     data: pd.DataFrame | np.ndarray,
@@ -123,9 +130,7 @@ def interactive_heatmap(
         z = np.asarray(data)
 
     if HAS_PLOTLY:
-        fig = go.Figure(
-            data=go.Heatmap(z=z, x=x_labels, y=y_labels, colorscale=colorscale)
-        )
+        fig = go.Figure(data=go.Heatmap(z=z, x=x_labels, y=y_labels, colorscale=colorscale))
         fig.update_layout(title=title)
         if output_path:
             out = Path(output_path)
@@ -154,6 +159,7 @@ def interactive_heatmap(
 # ---------------------------------------------------------------------------
 # Interactive volcano
 # ---------------------------------------------------------------------------
+
 
 def interactive_volcano(
     data: pd.DataFrame,
@@ -201,9 +207,13 @@ def interactive_volcano(
     if HAS_PLOTLY:
         hover = [gene_col] if gene_col and gene_col in df.columns else None
         fig = px.scatter(
-            df, x=log2fc_col, y="neg_log10_p",
-            color="significance", color_discrete_map=color_map,
-            hover_data=hover, title=title,
+            df,
+            x=log2fc_col,
+            y="neg_log10_p",
+            color="significance",
+            color_discrete_map=color_map,
+            hover_data=hover,
+            title=title,
         )
         fig.add_hline(y=-np.log10(p_threshold), line_dash="dash", line_color="grey")
         fig.add_vline(x=fc_threshold, line_dash="dash", line_color="grey")
@@ -219,8 +229,7 @@ def interactive_volcano(
     fig_m, ax = plt.subplots(figsize=(8, 6))
     for sig, color in color_map.items():
         mask = df["significance"] == sig
-        ax.scatter(df.loc[mask, log2fc_col], df.loc[mask, "neg_log10_p"],
-                   c=color, label=sig, s=10, alpha=0.6)
+        ax.scatter(df.loc[mask, log2fc_col], df.loc[mask, "neg_log10_p"], c=color, label=sig, s=10, alpha=0.6)
     ax.axhline(-np.log10(p_threshold), ls="--", color="grey", alpha=0.7)
     ax.axvline(fc_threshold, ls="--", color="grey", alpha=0.7)
     ax.axvline(-fc_threshold, ls="--", color="grey", alpha=0.7)
@@ -237,6 +246,7 @@ def interactive_volcano(
 # ---------------------------------------------------------------------------
 # Interactive Manhattan
 # ---------------------------------------------------------------------------
+
 
 def interactive_manhattan(
     data: pd.DataFrame,
@@ -271,32 +281,40 @@ def interactive_manhattan(
 
     # Compute cumulative position
     chroms = df[chrom_col].unique()
-    chrom_order = sorted(chroms, key=lambda c: (
-        int(str(c).replace("chr", "")) if str(c).replace("chr", "").isdigit()
-        else 100 + ord(str(c).replace("chr", "")[0])
-    ))
+    chrom_order = sorted(
+        chroms,
+        key=lambda c: (
+            int(str(c).replace("chr", ""))
+            if str(c).replace("chr", "").isdigit()
+            else 100 + ord(str(c).replace("chr", "")[0])
+        ),
+    )
     chrom_offsets: Dict[Any, int] = {}
     cumulative = 0
     for ch in chrom_order:
         chrom_offsets[ch] = cumulative
         cumulative += int(df.loc[df[chrom_col] == ch, pos_col].max())
 
-    df["cumulative_pos"] = df.apply(
-        lambda r: r[pos_col] + chrom_offsets.get(r[chrom_col], 0), axis=1
-    )
+    df["cumulative_pos"] = df.apply(lambda r: r[pos_col] + chrom_offsets.get(r[chrom_col], 0), axis=1)
 
     if HAS_PLOTLY:
         hover = [chrom_col, pos_col, pvalue_col]
         if gene_col and gene_col in df.columns:
             hover.append(gene_col)
         fig = px.scatter(
-            df, x="cumulative_pos", y="neg_log10_p",
-            color=chrom_col, hover_data=hover, title=title,
+            df,
+            x="cumulative_pos",
+            y="neg_log10_p",
+            color=chrom_col,
+            hover_data=hover,
+            title=title,
         )
-        fig.add_hline(y=-np.log10(significance_threshold), line_dash="dash",
-                       line_color="red", annotation_text="Genome-wide")
-        fig.add_hline(y=-np.log10(suggestive_threshold), line_dash="dot",
-                       line_color="blue", annotation_text="Suggestive")
+        fig.add_hline(
+            y=-np.log10(significance_threshold), line_dash="dash", line_color="red", annotation_text="Genome-wide"
+        )
+        fig.add_hline(
+            y=-np.log10(suggestive_threshold), line_dash="dot", line_color="blue", annotation_text="Suggestive"
+        )
         fig.update_layout(xaxis_title="Genomic Position", yaxis_title="-log10(p)")
         if output_path:
             out = Path(output_path)
@@ -307,12 +325,14 @@ def interactive_manhattan(
 
     logger.warning("Plotly not available, falling back to static Manhattan")
     from . import palettes
+
     fig_m, ax = plt.subplots(figsize=(14, 6))
     colors = palettes.alternating_pair(len(chrom_order))
     for i, ch in enumerate(chrom_order):
         mask = df[chrom_col] == ch
-        ax.scatter(df.loc[mask, "cumulative_pos"], df.loc[mask, "neg_log10_p"],
-                   c=colors[i % len(colors)], s=5, alpha=0.6)
+        ax.scatter(
+            df.loc[mask, "cumulative_pos"], df.loc[mask, "neg_log10_p"], c=colors[i % len(colors)], s=5, alpha=0.6
+        )
     ax.axhline(-np.log10(significance_threshold), ls="--", color="red", alpha=0.7)
     ax.axhline(-np.log10(suggestive_threshold), ls=":", color="blue", alpha=0.7)
     ax.set_xlabel("Genomic Position")

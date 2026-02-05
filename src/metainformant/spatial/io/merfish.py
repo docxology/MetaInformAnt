@@ -148,14 +148,10 @@ def parse_cell_metadata(metadata_file: str | Path) -> list[CellMetadata]:
         fov_col = _find_column(headers, ["fov", "FOV", "fov_id"])
 
         if id_col is None:
-            raise ValueError(
-                f"No cell ID column found in {metadata_path}. "
-                f"Available columns: {sorted(headers)}"
-            )
+            raise ValueError(f"No cell ID column found in {metadata_path}. " f"Available columns: {sorted(headers)}")
         if x_col is None or y_col is None:
             raise ValueError(
-                f"No coordinate columns (x, y) found in {metadata_path}. "
-                f"Available columns: {sorted(headers)}"
+                f"No coordinate columns (x, y) found in {metadata_path}. " f"Available columns: {sorted(headers)}"
             )
 
         known_cols = {id_col, x_col, y_col}
@@ -218,8 +214,7 @@ def load_transcript_spots(spots_file: str | Path) -> list[TranscriptSpot]:
 
         if gene_col is None or x_col is None or y_col is None:
             raise ValueError(
-                f"Required columns (gene, x, y) not found in {spots_path}. "
-                f"Available: {sorted(headers)}"
+                f"Required columns (gene, x, y) not found in {spots_path}. " f"Available: {sorted(headers)}"
             )
 
         for row in reader:
@@ -302,9 +297,7 @@ def aggregate_to_cells(
             counts[nearest_idx, gene_idx] += 1
 
     assigned_count = int(np.sum(counts))
-    logger.info(
-        f"Aggregated {assigned_count} transcripts across {n_cells} cells and {n_genes} genes"
-    )
+    logger.info(f"Aggregated {assigned_count} transcripts across {n_cells} cells and {n_genes} genes")
     return counts, cell_id_list, gene_list
 
 

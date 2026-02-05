@@ -323,7 +323,7 @@ def anchor_based_transfer(
                 # No direct anchors: use KNN in PCA space to scRNA-seq
                 nn = NearestNeighbors(n_neighbors=min(5, n_cells), metric="euclidean")
                 nn.fit(scrna_pca)
-                dists, indices = nn.kneighbors(spatial_pca[si:si + 1])
+                dists, indices = nn.kneighbors(spatial_pca[si : si + 1])
                 for j_idx in range(indices.shape[1]):
                     ri = int(indices[0, j_idx])
                     d = float(dists[0, j_idx])
@@ -566,10 +566,7 @@ def impute_spatial_genes(
         # Lower CV = higher confidence; map to [0, 1]
         confidence[gi] = float(1.0 / (1.0 + np.mean(cv)))
 
-    logger.info(
-        f"Imputed {n_targets} genes for {n_spots} spots, "
-        f"mean confidence={confidence.mean():.3f}"
-    )
+    logger.info(f"Imputed {n_targets} genes for {n_spots} spots, " f"mean confidence={confidence.mean():.3f}")
 
     return ImputationResult(
         imputed_expression=imputed,

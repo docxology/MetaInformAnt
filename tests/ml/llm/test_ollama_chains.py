@@ -50,7 +50,7 @@ class TestChainResult:
     def test_ok_result(self):
         """Test successful result creation."""
         result = ChainResult.ok("test value", tokens=10)
-        
+
         assert result.success is True
         assert result.value == "test value"
         assert result.error is None
@@ -59,7 +59,7 @@ class TestChainResult:
     def test_fail_result(self):
         """Test failed result creation."""
         result = ChainResult.fail("something went wrong")
-        
+
         assert result.success is False
         assert result.value is None
         assert result.error == "something went wrong"
@@ -72,7 +72,7 @@ class TestPromptTemplate:
         """Test simple variable substitution."""
         template = PromptTemplate("Hello, {name}!")
         result = template.format(name="Alice")
-        
+
         assert result == "Hello, Alice!"
 
     def test_with_defaults(self):
@@ -81,11 +81,11 @@ class TestPromptTemplate:
             "Hello, {name}! You are {age} years old.",
             {"name": "Unknown", "age": "unknown"},
         )
-        
+
         # Use defaults
         result1 = template.format()
         assert "Unknown" in result1
-        
+
         # Override one default
         result2 = template.format(name="Bob")
         assert "Bob" in result2
@@ -95,24 +95,24 @@ class TestPromptTemplate:
         """Test partial template filling."""
         template = PromptTemplate("Hello, {name}! Age: {age}")
         partial = template.partial(name="Alice")
-        
+
         result = partial.format(age=30)
         assert result == "Hello, Alice! Age: 30"
 
     def test_variable_names(self):
         """Test extracting variable names."""
         template = PromptTemplate("{greeting}, {name}! {message}")
-        
+
         names = template.variable_names
         assert set(names) == {"greeting", "name", "message"}
 
     def test_validate(self):
         """Test validation of variables."""
         template = PromptTemplate("{a}, {b}, {c}")
-        
+
         assert template.validate(a=1, b=2, c=3) is True
         assert template.validate(a=1, b=2) is False
-        
+
         # With defaults
         template2 = PromptTemplate("{a}, {b}", {"a": "default"})
         assert template2.validate(b=2) is True
@@ -125,7 +125,7 @@ class TestTransformChain:
         """Test simple transformation."""
         chain = TransformChain(lambda x: x.upper())
         result = chain.run("hello")
-        
+
         assert result.success is True
         assert result.value == "HELLO"
 
@@ -133,7 +133,7 @@ class TestTransformChain:
         """Test transformation that raises exception."""
         chain = TransformChain(lambda x: x / 0)
         result = chain.run(10)
-        
+
         assert result.success is False
         assert "division" in result.error.lower()
 
@@ -141,10 +141,10 @@ class TestTransformChain:
         """Test chaining transforms."""
         upper = TransformChain(lambda x: x.upper())
         add_exclaim = TransformChain(lambda x: x + "!")
-        
+
         pipeline = SequentialChain([upper, add_exclaim])
         result = pipeline.run("hello")
-        
+
         assert result.success is True
         assert result.value == "HELLO!"
 
@@ -156,9 +156,9 @@ class TestPromptChain:
         """Test simple prompt chain execution."""
         template = PromptTemplate("Say the word: {word}")
         chain = PromptChain(template, client=client)
-        
+
         result = chain.run({"word": "hello"})
-        
+
         assert result.success is True
         assert result.value  # Non-empty response
         assert "tokens" in result.metadata
@@ -172,10 +172,10 @@ class TestSequentialChain:
         step1 = TransformChain(lambda x: x + 1)
         step2 = TransformChain(lambda x: x * 2)
         step3 = TransformChain(lambda x: x - 3)
-        
+
         chain = SequentialChain([step1, step2, step3])
         result = chain.run(5)
-        
+
         # (5 + 1) * 2 - 3 = 9
         assert result.success is True
         assert result.value == 9
@@ -186,10 +186,10 @@ class TestSequentialChain:
         step1 = TransformChain(lambda x: x + 1)
         step2 = TransformChain(lambda x: 1 / 0)  # Will fail
         step3 = TransformChain(lambda x: x - 3)
-        
+
         chain = SequentialChain([step1, step2, step3])
         result = chain.run(5)
-        
+
         assert result.success is False
         assert result.metadata["failed_at"] == 1
 
@@ -197,7 +197,7 @@ class TestSequentialChain:
         """Test adding chain to sequence."""
         chain = SequentialChain([TransformChain(lambda x: x + 1)])
         chain.add(TransformChain(lambda x: x * 2))
-        
+
         result = chain.run(5)
         assert result.value == 12
 
@@ -208,9 +208,9 @@ class TestConversationChain:
     def test_conversation_without_system(self, client: OllamaClient, check_ollama):
         """Test conversation chain without system prompt."""
         chain = ConversationChain(client=client)
-        
+
         result = chain.run("Say hello briefly.")
-        
+
         assert result.success is True
         assert result.value
         assert len(chain.messages) == 2  # user + assistant
@@ -221,9 +221,9 @@ class TestConversationChain:
             system="You are a helpful assistant. Be very brief.",
             client=client,
         )
-        
+
         result = chain.run("What are you?")
-        
+
         assert result.success is True
         assert result.value
         assert len(chain.messages) == 3  # system + user + assistant
@@ -234,10 +234,10 @@ class TestConversationChain:
             system="Remember what I tell you. Be brief.",
             client=client,
         )
-        
+
         chain.run("My favorite color is blue.")
         chain.run("What is my favorite color?")
-        
+
         # Should have: system, user, assistant, user, assistant
         assert len(chain.messages) == 5
 
@@ -247,10 +247,10 @@ class TestConversationChain:
             system="Test system prompt.",
             client=client,
         )
-        
+
         chain.run("Hello")
         assert len(chain.messages) == 3
-        
+
         chain.reset()
         # After reset, should only have system message
         assert len(chain.messages) == 1
@@ -264,14 +264,14 @@ class TestMapReduceChain:
         """Test map-reduce using transform chains."""
         # Simple numeric map-reduce
         items = [1, 2, 3, 4, 5]
-        
+
         # Map: square each
         # Reduce: sum (manual since we're using transforms)
-        map_chain = TransformChain(lambda x: [i ** 2 for i in x])
+        map_chain = TransformChain(lambda x: [i**2 for i in x])
         reduce_chain = TransformChain(lambda x: sum(x))
-        
+
         pipeline = SequentialChain([map_chain, reduce_chain])
         result = pipeline.run(items)
-        
+
         assert result.success is True
         assert result.value == 55  # 1 + 4 + 9 + 16 + 25

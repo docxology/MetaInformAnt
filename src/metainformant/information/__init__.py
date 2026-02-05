@@ -9,10 +9,21 @@ continuous information theory, estimation methods, and analysis workflows.
 from __future__ import annotations
 
 # Import subpackages
-from . import integration, metrics, workflow
+from . import integration, metrics, network_info, workflow
 
 # Import modules from subpackages
-from .metrics import advanced, analysis, channel, continuous, decomposition, estimation, geometry, hypothesis, semantic, syntactic
+from .metrics import (
+    advanced,
+    analysis,
+    channel,
+    continuous,
+    decomposition,
+    estimation,
+    geometry,
+    hypothesis,
+    semantic,
+    syntactic,
+)
 from .integration import integration as integration_module, networks
 from .workflow import workflows as workflow_module
 
@@ -150,6 +161,15 @@ from .workflow.workflows import (
     information_workflow,
 )
 
+# Network information flow
+from .network_info.information_flow import (
+    transfer_entropy as transfer_entropy_network,
+    granger_causality,
+    network_entropy as network_von_neumann_entropy,
+    information_flow_network as build_information_flow_network,
+    mutual_information_network,
+)
+
 __all__ = [
     # Subpackages
     "integration",
@@ -262,4 +282,11 @@ __all__ = [
     "information_workflow",
     "compare_datasets",
     "information_report",
+    # Network information flow
+    "network_info",
+    "transfer_entropy_network",
+    "granger_causality",
+    "network_von_neumann_entropy",
+    "build_information_flow_network",
+    "mutual_information_network",
 ]

@@ -22,7 +22,7 @@ from metainformant.menu import discover_scripts, generate_menu_from_scripts
 from metainformant.menu.display import clear_screen, format_breadcrumb, show_menu, get_choice
 from metainformant.menu.navigation import MenuSystem
 from metainformant.menu.executor import execute_script, prompt_for_args
-from metainformant.core.logging import get_logger
+from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 

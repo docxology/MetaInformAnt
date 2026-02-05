@@ -109,7 +109,11 @@ def detect_sv_from_long_reads(
 
         if sa_tag:
             split_svs = _detect_split_read_svs(
-                chrom, ref_start, cigar, sa_tag, read_name,
+                chrom,
+                ref_start,
+                cigar,
+                sa_tag,
+                read_name,
                 _get_attr(aln, "is_reverse", False),
                 _get_attr(aln, "query_length", 0) or len(_get_attr(aln, "query_sequence", "")),
                 min_size,
@@ -148,29 +152,33 @@ def _detect_cigar_svs(
 
     for op, length in tuples:
         if op == 2 and length >= min_size:  # D = deletion
-            svs.append(StructuralVariant(
-                sv_type="DEL",
-                chromosome=chrom,
-                start=ref_pos,
-                end=ref_pos + length,
-                size=length,
-                supporting_reads=1,
-                read_names=[read_name],
-                quality=float(length),
-                info={"source": "cigar"},
-            ))
+            svs.append(
+                StructuralVariant(
+                    sv_type="DEL",
+                    chromosome=chrom,
+                    start=ref_pos,
+                    end=ref_pos + length,
+                    size=length,
+                    supporting_reads=1,
+                    read_names=[read_name],
+                    quality=float(length),
+                    info={"source": "cigar"},
+                )
+            )
         elif op == 1 and length >= min_size:  # I = insertion
-            svs.append(StructuralVariant(
-                sv_type="INS",
-                chromosome=chrom,
-                start=ref_pos,
-                end=ref_pos + 1,
-                size=length,
-                supporting_reads=1,
-                read_names=[read_name],
-                quality=float(length),
-                info={"source": "cigar"},
-            ))
+            svs.append(
+                StructuralVariant(
+                    sv_type="INS",
+                    chromosome=chrom,
+                    start=ref_pos,
+                    end=ref_pos + 1,
+                    size=length,
+                    supporting_reads=1,
+                    read_names=[read_name],
+                    quality=float(length),
+                    info={"source": "cigar"},
+                )
+            )
 
         # Advance reference position
         if op in (0, 2, 3, 7, 8):  # M, D, N, =, X consume reference
@@ -233,17 +241,19 @@ def _detect_split_read_svs(
                     del_start = min(primary_ref_end, sa_ref_end)
                     del_end = max(primary_start, sa_pos)
                     if del_end > del_start:
-                        svs.append(StructuralVariant(
-                            sv_type="DEL",
-                            chromosome=primary_chrom,
-                            start=del_start,
-                            end=del_end,
-                            size=del_end - del_start,
-                            supporting_reads=1,
-                            read_names=[read_name],
-                            quality=float(sa_mapq),
-                            info={"source": "split_read"},
-                        ))
+                        svs.append(
+                            StructuralVariant(
+                                sv_type="DEL",
+                                chromosome=primary_chrom,
+                                start=del_start,
+                                end=del_end,
+                                size=del_end - del_start,
+                                supporting_reads=1,
+                                read_names=[read_name],
+                                quality=float(sa_mapq),
+                                info={"source": "split_read"},
+                            )
+                        )
 
                 # Check for tandem duplication (overlapping alignments)
                 overlap = 0
@@ -251,17 +261,19 @@ def _detect_split_read_svs(
                     overlap = min(primary_ref_end, sa_ref_end) - max(primary_start, sa_pos)
 
                 if overlap >= min_size:
-                    svs.append(StructuralVariant(
-                        sv_type="DUP",
-                        chromosome=primary_chrom,
-                        start=max(primary_start, sa_pos),
-                        end=min(primary_ref_end, sa_ref_end),
-                        size=overlap,
-                        supporting_reads=1,
-                        read_names=[read_name],
-                        quality=float(sa_mapq),
-                        info={"source": "split_read"},
-                    ))
+                    svs.append(
+                        StructuralVariant(
+                            sv_type="DUP",
+                            chromosome=primary_chrom,
+                            start=max(primary_start, sa_pos),
+                            end=min(primary_ref_end, sa_ref_end),
+                            size=overlap,
+                            supporting_reads=1,
+                            read_names=[read_name],
+                            quality=float(sa_mapq),
+                            info={"source": "split_read"},
+                        )
+                    )
 
             else:
                 # Different strands on same chromosome = inversion
@@ -270,32 +282,36 @@ def _detect_split_read_svs(
                 inv_size = inv_end - inv_start
 
                 if inv_size >= min_size:
-                    svs.append(StructuralVariant(
-                        sv_type="INV",
-                        chromosome=primary_chrom,
-                        start=inv_start,
-                        end=inv_end,
-                        size=inv_size,
-                        supporting_reads=1,
-                        read_names=[read_name],
-                        quality=float(sa_mapq),
-                        info={"source": "split_read"},
-                    ))
+                    svs.append(
+                        StructuralVariant(
+                            sv_type="INV",
+                            chromosome=primary_chrom,
+                            start=inv_start,
+                            end=inv_end,
+                            size=inv_size,
+                            supporting_reads=1,
+                            read_names=[read_name],
+                            quality=float(sa_mapq),
+                            info={"source": "split_read"},
+                        )
+                    )
         else:
             # Different chromosomes = breakend / translocation
-            svs.append(StructuralVariant(
-                sv_type="BND",
-                chromosome=primary_chrom,
-                start=primary_ref_end,
-                end=primary_ref_end + 1,
-                size=0,
-                supporting_reads=1,
-                read_names=[read_name],
-                quality=float(sa_mapq),
-                mate_chromosome=sa_chrom,
-                mate_position=sa_pos,
-                info={"source": "split_read", "sa_strand": sa_strand},
-            ))
+            svs.append(
+                StructuralVariant(
+                    sv_type="BND",
+                    chromosome=primary_chrom,
+                    start=primary_ref_end,
+                    end=primary_ref_end + 1,
+                    size=0,
+                    supporting_reads=1,
+                    read_names=[read_name],
+                    quality=float(sa_mapq),
+                    mate_chromosome=sa_chrom,
+                    mate_position=sa_pos,
+                    info={"source": "split_read", "sa_strand": sa_strand},
+                )
+            )
 
     return svs
 
@@ -507,8 +523,7 @@ def _cluster_sv_calls(
             cluster_start = min(sv.start for sv in current_cluster)
 
             # Check if this call overlaps or is near the current cluster
-            if (abs(call.start - cluster_start) <= max_distance or
-                    abs(call.start - cluster_end) <= max_distance):
+            if abs(call.start - cluster_start) <= max_distance or abs(call.start - cluster_end) <= max_distance:
                 current_cluster.append(call)
             else:
                 clusters.append(current_cluster)
@@ -542,22 +557,22 @@ def _cluster_sv_calls(
 
             max_quality = max(sv.quality for sv in cluster)
 
-            merged.append(StructuralVariant(
-                sv_type=sv_type,
-                chromosome=chrom,
-                start=median_start,
-                end=median_end,
-                size=median_size,
-                supporting_reads=actual_support,
-                read_names=unique_reads,
-                quality=max_quality,
-                genotype="0/1" if actual_support >= min_support else "./.",
-                info={
-                    "cluster_size": len(cluster),
-                    "sources": list(set(
-                        sv.info.get("source", "unknown") for sv in cluster
-                    )),
-                },
-            ))
+            merged.append(
+                StructuralVariant(
+                    sv_type=sv_type,
+                    chromosome=chrom,
+                    start=median_start,
+                    end=median_end,
+                    size=median_size,
+                    supporting_reads=actual_support,
+                    read_names=unique_reads,
+                    quality=max_quality,
+                    genotype="0/1" if actual_support >= min_support else "./.",
+                    info={
+                        "cluster_size": len(cluster),
+                        "sources": list(set(sv.info.get("source", "unknown") for sv in cluster)),
+                    },
+                )
+            )
 
     return merged

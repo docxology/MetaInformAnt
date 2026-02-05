@@ -18,6 +18,8 @@ from __future__ import annotations
 from . import annotations
 from . import alleles
 from . import clinical
+from . import interaction
+from . import metabolism
 from . import visualization
 
 # Annotation imports
@@ -94,6 +96,23 @@ from .visualization.plots import (
     plot_drug_response_heatmap,
     plot_population_comparison,
     plot_acmg_criteria,
+)
+
+# Interaction imports
+from .interaction.drug_interactions import (
+    predict_drug_interaction,
+    polypharmacy_risk,
+    cyp_inhibition_prediction,
+    default_interaction_database,
+)
+
+# Metabolism imports
+from .metabolism.metabolizer_status import (
+    predict_metabolizer_status as predict_metabolizer,
+    compute_activity_score,
+    classify_metabolizer,
+    dose_adjustment,
+    default_allele_function_table,
 )
 
 # Data structure imports
@@ -181,4 +200,17 @@ __all__ = [
     "plot_drug_response_heatmap",
     "plot_population_comparison",
     "plot_acmg_criteria",
+    # Interaction
+    "interaction",
+    "predict_drug_interaction",
+    "polypharmacy_risk",
+    "cyp_inhibition_prediction",
+    "default_interaction_database",
+    # Metabolism
+    "metabolism",
+    "predict_metabolizer",
+    "compute_activity_score",
+    "classify_metabolizer",
+    "dose_adjustment",
+    "default_allele_function_table",
 ]

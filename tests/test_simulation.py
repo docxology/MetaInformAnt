@@ -559,26 +559,20 @@ class TestSimulateGeneDuplication:
     def test_zero_divergence_time(self) -> None:
         """Zero divergence time produces copies identical to original."""
         original = "ATCGATCG"
-        copies = simulate_gene_duplication(
-            original, 3, divergence_time=0, rng=random.Random(42)
-        )
+        copies = simulate_gene_duplication(original, 3, divergence_time=0, rng=random.Random(42))
         assert len(copies) == 3
         assert all(c == original for c in copies)
 
     def test_copy_count(self) -> None:
         """Requested number of copies is produced."""
         original = "GGGGCCCC"
-        copies = simulate_gene_duplication(
-            original, 5, divergence_time=0, rng=random.Random(42)
-        )
+        copies = simulate_gene_duplication(original, 5, divergence_time=0, rng=random.Random(42))
         assert len(copies) == 5
 
     def test_single_copy(self) -> None:
         """Single copy duplication works."""
         original = "ATCGATCG"
-        copies = simulate_gene_duplication(
-            original, 1, divergence_time=0, rng=random.Random(42)
-        )
+        copies = simulate_gene_duplication(original, 1, divergence_time=0, rng=random.Random(42))
         assert len(copies) == 1
         assert copies[0] == original
 
@@ -622,12 +616,8 @@ class TestSimulateRNASeqCounts:
 
     def test_higher_mean_produces_higher_total(self) -> None:
         """Higher mean_expression produces larger total count."""
-        counts_low = simulate_rnaseq_counts(
-            n_genes=100, n_samples=10, mean_expression=10.0, rng=random.Random(42)
-        )
-        counts_high = simulate_rnaseq_counts(
-            n_genes=100, n_samples=10, mean_expression=1000.0, rng=random.Random(42)
-        )
+        counts_low = simulate_rnaseq_counts(n_genes=100, n_samples=10, mean_expression=10.0, rng=random.Random(42))
+        counts_high = simulate_rnaseq_counts(n_genes=100, n_samples=10, mean_expression=1000.0, rng=random.Random(42))
         assert counts_high.sum() > counts_low.sum()
 
     def test_default_parameters(self) -> None:

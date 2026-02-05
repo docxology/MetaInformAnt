@@ -43,7 +43,7 @@ Example usage::
 from __future__ import annotations
 
 # Import subpackages
-from . import analysis, integration, io, visualization
+from . import analysis, communication, deconvolution, integration, io, visualization
 
 # IO - Data loading
 from .io import (
@@ -135,9 +135,29 @@ from .analysis.autocorrelation import (
 )
 from .integration.scrna_mapping import ImputationResult, MappingResult
 
+# Deconvolution submodule
+from .deconvolution import (
+    build_reference_profiles as deconv_build_reference_profiles,
+    deconvolve_spots as deconv_deconvolve_spots,
+    niche_identification,
+    spatial_cell_type_mapping,
+    validate_deconvolution,
+)
+
+# Communication submodule
+from .communication import (
+    build_communication_network,
+    communication_pattern_analysis,
+    compute_ligand_receptor_interactions,
+    default_lr_database,
+    spatial_interaction_score,
+)
+
 __all__ = [
     # Subpackages
     "analysis",
+    "communication",
+    "deconvolution",
     "integration",
     "io",
     "visualization",
@@ -194,6 +214,18 @@ __all__ = [
     "plot_spatial_autocorrelation",
     "plot_spatial_scatter",
     "plot_tissue_overlay",
+    # Deconvolution submodule
+    "deconv_build_reference_profiles",
+    "deconv_deconvolve_spots",
+    "niche_identification",
+    "spatial_cell_type_mapping",
+    "validate_deconvolution",
+    # Communication submodule
+    "build_communication_network",
+    "communication_pattern_analysis",
+    "compute_ligand_receptor_interactions",
+    "default_lr_database",
+    "spatial_interaction_score",
     # Data classes
     "CellBoundary",
     "CellMetadata",

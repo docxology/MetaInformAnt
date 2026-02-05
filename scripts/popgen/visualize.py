@@ -12,7 +12,7 @@ import random
 from pathlib import Path
 from typing import Any
 
-from metainformant.core.logging import setup_logger
+from metainformant.core.utils.logging import setup_logger
 from metainformant.dna.population_viz import (
     plot_allele_frequency_spectrum,
     plot_bootstrap_distribution,

@@ -36,10 +36,42 @@ _TETRA_INDEX = {t: i for i, t in enumerate(_ALL_TETRANUCLEOTIDES)}
 # Universal single-copy marker genes (simplified set based on bacterial markers)
 # These represent conserved genes expected once per genome
 _BACTERIAL_MARKERS = [
-    "rpoB", "rpoC", "rpsB", "rpsC", "rpsE", "rpsJ", "rpsK", "rpsM", "rpsS",
-    "rplB", "rplC", "rplD", "rplE", "rplF", "rplK", "rplL", "rplM", "rplN",
-    "rplP", "rplS", "rplT", "rplV", "rplW", "tsf", "infC", "smpB", "frr",
-    "pgk", "pyrG", "nusA", "dnaG", "rpoA", "secY", "ffh", "rnhB", "ychF",
+    "rpoB",
+    "rpoC",
+    "rpsB",
+    "rpsC",
+    "rpsE",
+    "rpsJ",
+    "rpsK",
+    "rpsM",
+    "rpsS",
+    "rplB",
+    "rplC",
+    "rplD",
+    "rplE",
+    "rplF",
+    "rplK",
+    "rplL",
+    "rplM",
+    "rplN",
+    "rplP",
+    "rplS",
+    "rplT",
+    "rplV",
+    "rplW",
+    "tsf",
+    "infC",
+    "smpB",
+    "frr",
+    "pgk",
+    "pyrG",
+    "nusA",
+    "dnaG",
+    "rpoA",
+    "secY",
+    "ffh",
+    "rnhB",
+    "ychF",
 ]
 
 # Representative k-mer signatures for marker gene detection (simplified)
@@ -216,7 +248,7 @@ def _kmeans_cluster(
         distances = []
         for feat in features:
             min_dist = min(_euclidean_distance(feat, c) for c in centroids)
-            distances.append(min_dist ** 2)
+            distances.append(min_dist**2)
         total_dist = sum(distances)
         if total_dist == 0:
             # All points are identical to existing centroids
@@ -257,9 +289,7 @@ def _kmeans_cluster(
         for c_idx in range(n_clusters):
             members = [features[i] for i in range(n) if assignments[i] == c_idx]
             if members:
-                centroids[c_idx] = [
-                    sum(m[d] for m in members) / len(members) for d in range(dim)
-                ]
+                centroids[c_idx] = [sum(m[d] for m in members) / len(members) for d in range(dim)]
 
     return assignments
 
@@ -657,7 +687,7 @@ def _detect_markers_by_composition(sequence: str, total_length: int) -> dict[str
         kmer = sequence[i : i + kmer_k]
         if all(c in "ACGT" for c in kmer):
             observed_kmers.add(kmer)
-    max_possible = min(4 ** kmer_k, len(sequence) - kmer_k + 1)
+    max_possible = min(4**kmer_k, len(sequence) - kmer_k + 1)
     complexity = len(observed_kmers) / max_possible if max_possible > 0 else 0.0
 
     # Estimate markers: combination of size and complexity

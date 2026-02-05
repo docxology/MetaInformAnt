@@ -1196,9 +1196,7 @@ class TestWorkflowStepsIntegration:
         assert to_run == []
 
         # Log all-success summary
-        results = [
-            WorkflowStepResult(step_name=name, return_code=0, success=True) for name, _ in steps
-        ]
+        results = [WorkflowStepResult(step_name=name, return_code=0, success=True) for name, _ in steps]
         log_workflow_summary(results, config)
 
     def test_post_step_actions_for_multiple_steps(self, tmp_path: Path) -> None:

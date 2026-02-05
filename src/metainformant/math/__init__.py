@@ -7,6 +7,7 @@ from __future__ import annotations
 
 # Subpackages
 from . import (
+    bayesian,
     decision_theory,
     epidemiology,
     evolutionary_dynamics,
@@ -137,6 +138,17 @@ from .population_genetics.ld import (
 # Re-export core utilities for backward compatibility
 from .core.utilities import r_squared, correlation_coefficient, linear_regression
 
+# Bayesian inference
+from .bayesian.inference import (
+    metropolis_hastings,
+    abc_rejection,
+    compute_bayes_factor,
+    conjugate_beta_binomial,
+    conjugate_normal,
+    compute_dic,
+    compute_waic,
+)
+
 __all__ = [
     "coalescent",
     "decision_theory",
@@ -223,4 +235,13 @@ __all__ = [
     "haldane_d_to_c",
     "kosambi_c_to_d",
     "kosambi_d_to_c",
+    # Bayesian
+    "bayesian",
+    "metropolis_hastings",
+    "abc_rejection",
+    "compute_bayes_factor",
+    "conjugate_beta_binomial",
+    "conjugate_normal",
+    "compute_dic",
+    "compute_waic",
 ]

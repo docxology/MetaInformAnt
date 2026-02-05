@@ -35,8 +35,8 @@ _PHARMGKB_CLINICAL_ANNOTATIONS: list[dict[str, Any]] = [
         "evidence_level": "1A",
         "phenotype_category": "Efficacy",
         "annotation_text": "CYP2D6 poor metabolizers have significantly reduced morphine formation "
-                           "from codeine. Ultrarapid metabolizers have increased morphine formation "
-                           "with risk of toxicity.",
+        "from codeine. Ultrarapid metabolizers have increased morphine formation "
+        "with risk of toxicity.",
         "population": "General",
     },
     {
@@ -47,7 +47,7 @@ _PHARMGKB_CLINICAL_ANNOTATIONS: list[dict[str, Any]] = [
         "evidence_level": "1A",
         "phenotype_category": "Efficacy",
         "annotation_text": "CYP2C19 poor and intermediate metabolizers have reduced conversion of "
-                           "clopidogrel to active metabolite, leading to decreased platelet inhibition.",
+        "clopidogrel to active metabolite, leading to decreased platelet inhibition.",
         "population": "General",
     },
     {
@@ -58,7 +58,7 @@ _PHARMGKB_CLINICAL_ANNOTATIONS: list[dict[str, Any]] = [
         "evidence_level": "1A",
         "phenotype_category": "Toxicity",
         "annotation_text": "CYP2C19 poor metabolizers have higher voriconazole trough concentrations, "
-                           "increasing risk of adverse effects including hepatotoxicity and visual disturbances.",
+        "increasing risk of adverse effects including hepatotoxicity and visual disturbances.",
         "population": "General",
     },
     {
@@ -69,7 +69,7 @@ _PHARMGKB_CLINICAL_ANNOTATIONS: list[dict[str, Any]] = [
         "evidence_level": "1A",
         "phenotype_category": "Toxicity",
         "annotation_text": "DPYD poor metabolizers have dramatically increased exposure to fluoropyrimidines "
-                           "with severe, potentially fatal toxicity including neutropenia and mucositis.",
+        "with severe, potentially fatal toxicity including neutropenia and mucositis.",
         "population": "General",
     },
     {
@@ -80,7 +80,7 @@ _PHARMGKB_CLINICAL_ANNOTATIONS: list[dict[str, Any]] = [
         "evidence_level": "1A",
         "phenotype_category": "Toxicity",
         "annotation_text": "TPMT poor metabolizers accumulate thioguanine nucleotides with high risk of "
-                           "severe myelosuppression. Intermediate metabolizers require dose reduction.",
+        "severe myelosuppression. Intermediate metabolizers require dose reduction.",
         "population": "General",
     },
     {
@@ -91,7 +91,7 @@ _PHARMGKB_CLINICAL_ANNOTATIONS: list[dict[str, Any]] = [
         "evidence_level": "1A",
         "phenotype_category": "Toxicity",
         "annotation_text": "SLCO1B1 rs4149056 C allele carriers have increased simvastatin acid exposure "
-                           "and higher risk of statin-induced myopathy.",
+        "and higher risk of statin-induced myopathy.",
         "population": "General",
     },
     {
@@ -102,7 +102,7 @@ _PHARMGKB_CLINICAL_ANNOTATIONS: list[dict[str, Any]] = [
         "evidence_level": "1A",
         "phenotype_category": "Dosage",
         "annotation_text": "CYP2C9 poor and intermediate metabolizers require lower warfarin doses "
-                           "to achieve therapeutic INR. Standard doses increase bleeding risk.",
+        "to achieve therapeutic INR. Standard doses increase bleeding risk.",
         "population": "General",
     },
     {
@@ -113,7 +113,7 @@ _PHARMGKB_CLINICAL_ANNOTATIONS: list[dict[str, Any]] = [
         "evidence_level": "1A",
         "phenotype_category": "Efficacy",
         "annotation_text": "CYP2D6 poor metabolizers have reduced endoxifen concentrations and may "
-                           "have worse breast cancer outcomes with tamoxifen therapy.",
+        "have worse breast cancer outcomes with tamoxifen therapy.",
         "population": "General",
     },
     {
@@ -124,7 +124,7 @@ _PHARMGKB_CLINICAL_ANNOTATIONS: list[dict[str, Any]] = [
         "evidence_level": "1A",
         "phenotype_category": "Toxicity",
         "annotation_text": "NUDT15 poor metabolizers (*3/*3) have extremely high risk of leukopenia "
-                           "with thiopurine therapy. Intermediate metabolizers require dose reduction.",
+        "with thiopurine therapy. Intermediate metabolizers require dose reduction.",
         "population": "East Asian",
     },
 ]
@@ -143,7 +143,13 @@ _VARIANT_ANNOTATIONS: dict[str, dict[str, Any]] = {
         "consequence": "Splicing defect",
         "clinical_significance": "Loss of function",
         "evidence_level": "1A",
-        "allele_frequency": {"Global": 0.28, "African": 0.17, "East_Asian": 0.30, "European": 0.15, "South_Asian": 0.36},
+        "allele_frequency": {
+            "Global": 0.28,
+            "African": 0.17,
+            "East_Asian": 0.30,
+            "European": 0.15,
+            "South_Asian": 0.36,
+        },
         "associated_drugs": ["clopidogrel", "voriconazole", "escitalopram", "omeprazole"],
     },
     "rs4986893": {
@@ -157,7 +163,13 @@ _VARIANT_ANNOTATIONS: dict[str, dict[str, Any]] = {
         "consequence": "Premature stop codon",
         "clinical_significance": "Loss of function",
         "evidence_level": "1A",
-        "allele_frequency": {"Global": 0.01, "African": 0.002, "East_Asian": 0.07, "European": 0.001, "South_Asian": 0.01},
+        "allele_frequency": {
+            "Global": 0.01,
+            "African": 0.002,
+            "East_Asian": 0.07,
+            "European": 0.001,
+            "South_Asian": 0.01,
+        },
         "associated_drugs": ["clopidogrel", "voriconazole"],
     },
     "rs12248560": {
@@ -171,7 +183,13 @@ _VARIANT_ANNOTATIONS: dict[str, dict[str, Any]] = {
         "consequence": "Increased transcription",
         "clinical_significance": "Increased function",
         "evidence_level": "1A",
-        "allele_frequency": {"Global": 0.21, "African": 0.27, "East_Asian": 0.01, "European": 0.21, "South_Asian": 0.15},
+        "allele_frequency": {
+            "Global": 0.21,
+            "African": 0.27,
+            "East_Asian": 0.01,
+            "European": 0.21,
+            "South_Asian": 0.15,
+        },
         "associated_drugs": ["clopidogrel", "voriconazole", "escitalopram"],
     },
     "rs3892097": {
@@ -185,7 +203,13 @@ _VARIANT_ANNOTATIONS: dict[str, dict[str, Any]] = {
         "consequence": "Splicing defect",
         "clinical_significance": "Loss of function",
         "evidence_level": "1A",
-        "allele_frequency": {"Global": 0.12, "African": 0.07, "East_Asian": 0.01, "European": 0.19, "South_Asian": 0.10},
+        "allele_frequency": {
+            "Global": 0.12,
+            "African": 0.07,
+            "East_Asian": 0.01,
+            "European": 0.19,
+            "South_Asian": 0.10,
+        },
         "associated_drugs": ["codeine", "tramadol", "tamoxifen", "ondansetron"],
     },
     "rs16947": {
@@ -199,7 +223,13 @@ _VARIANT_ANNOTATIONS: dict[str, dict[str, Any]] = {
         "consequence": "Missense (R296C)",
         "clinical_significance": "Normal function",
         "evidence_level": "1A",
-        "allele_frequency": {"Global": 0.33, "African": 0.34, "East_Asian": 0.15, "European": 0.29, "South_Asian": 0.35},
+        "allele_frequency": {
+            "Global": 0.33,
+            "African": 0.34,
+            "East_Asian": 0.15,
+            "European": 0.29,
+            "South_Asian": 0.35,
+        },
         "associated_drugs": ["codeine", "tramadol", "tamoxifen"],
     },
     "rs1065852": {
@@ -213,7 +243,13 @@ _VARIANT_ANNOTATIONS: dict[str, dict[str, Any]] = {
         "consequence": "Missense (P34S)",
         "clinical_significance": "Decreased function",
         "evidence_level": "1A",
-        "allele_frequency": {"Global": 0.22, "African": 0.08, "East_Asian": 0.50, "European": 0.05, "South_Asian": 0.15},
+        "allele_frequency": {
+            "Global": 0.22,
+            "African": 0.08,
+            "East_Asian": 0.50,
+            "European": 0.05,
+            "South_Asian": 0.15,
+        },
         "associated_drugs": ["codeine", "tramadol", "tamoxifen"],
     },
     "rs4149056": {
@@ -227,7 +263,13 @@ _VARIANT_ANNOTATIONS: dict[str, dict[str, Any]] = {
         "consequence": "Missense (V174A)",
         "clinical_significance": "Decreased function",
         "evidence_level": "1A",
-        "allele_frequency": {"Global": 0.08, "African": 0.02, "East_Asian": 0.12, "European": 0.15, "South_Asian": 0.05},
+        "allele_frequency": {
+            "Global": 0.08,
+            "African": 0.02,
+            "East_Asian": 0.12,
+            "European": 0.15,
+            "South_Asian": 0.05,
+        },
         "associated_drugs": ["simvastatin", "atorvastatin", "methotrexate"],
     },
     "rs1799853": {
@@ -241,7 +283,13 @@ _VARIANT_ANNOTATIONS: dict[str, dict[str, Any]] = {
         "consequence": "Missense (R144C)",
         "clinical_significance": "Decreased function",
         "evidence_level": "1A",
-        "allele_frequency": {"Global": 0.06, "African": 0.02, "East_Asian": 0.00, "European": 0.13, "South_Asian": 0.04},
+        "allele_frequency": {
+            "Global": 0.06,
+            "African": 0.02,
+            "East_Asian": 0.00,
+            "European": 0.13,
+            "South_Asian": 0.04,
+        },
         "associated_drugs": ["warfarin", "phenytoin"],
     },
     "rs1057910": {
@@ -255,7 +303,13 @@ _VARIANT_ANNOTATIONS: dict[str, dict[str, Any]] = {
         "consequence": "Missense (I359L)",
         "clinical_significance": "Loss of function",
         "evidence_level": "1A",
-        "allele_frequency": {"Global": 0.04, "African": 0.01, "East_Asian": 0.04, "European": 0.06, "South_Asian": 0.08},
+        "allele_frequency": {
+            "Global": 0.04,
+            "African": 0.01,
+            "East_Asian": 0.04,
+            "European": 0.06,
+            "South_Asian": 0.08,
+        },
         "associated_drugs": ["warfarin", "phenytoin"],
     },
     "rs3918290": {
@@ -269,7 +323,13 @@ _VARIANT_ANNOTATIONS: dict[str, dict[str, Any]] = {
         "consequence": "Splicing defect (IVS14+1G>A)",
         "clinical_significance": "Loss of function",
         "evidence_level": "1A",
-        "allele_frequency": {"Global": 0.01, "African": 0.001, "East_Asian": 0.001, "European": 0.01, "South_Asian": 0.001},
+        "allele_frequency": {
+            "Global": 0.01,
+            "African": 0.001,
+            "East_Asian": 0.001,
+            "European": 0.01,
+            "South_Asian": 0.001,
+        },
         "associated_drugs": ["fluorouracil", "capecitabine"],
     },
 }
@@ -285,7 +345,7 @@ _DRUG_PATHWAYS: dict[str, dict[str, Any]] = {
         "key_metabolizing_enzyme": "CYP2C19",
         "active_metabolite": "clopidogrel thiol active metabolite",
         "mechanism": "CYP2C19 is the primary enzyme for conversion of clopidogrel prodrug to active thiol metabolite "
-                     "that irreversibly inhibits the P2Y12 ADP receptor on platelets.",
+        "that irreversibly inhibits the P2Y12 ADP receptor on platelets.",
         "transporter_genes": ["ABCB1"],
     },
     "codeine": {
@@ -296,7 +356,7 @@ _DRUG_PATHWAYS: dict[str, dict[str, Any]] = {
         "key_metabolizing_enzyme": "CYP2D6",
         "active_metabolite": "morphine",
         "mechanism": "CYP2D6 O-demethylates codeine to morphine, the active analgesic metabolite. "
-                     "CYP3A4 N-demethylates codeine to norcodeine (inactive).",
+        "CYP3A4 N-demethylates codeine to norcodeine (inactive).",
         "transporter_genes": [],
     },
     "warfarin": {
@@ -307,7 +367,7 @@ _DRUG_PATHWAYS: dict[str, dict[str, Any]] = {
         "key_metabolizing_enzyme": "CYP2C9",
         "active_metabolite": "S-warfarin (more potent enantiomer)",
         "mechanism": "CYP2C9 is the primary metabolizer of S-warfarin. VKORC1 is the pharmacodynamic target "
-                     "(vitamin K epoxide reductase). VKORC1 promoter variants affect warfarin sensitivity.",
+        "(vitamin K epoxide reductase). VKORC1 promoter variants affect warfarin sensitivity.",
         "transporter_genes": [],
     },
     "simvastatin": {
@@ -318,7 +378,7 @@ _DRUG_PATHWAYS: dict[str, dict[str, Any]] = {
         "key_metabolizing_enzyme": "CYP3A4",
         "active_metabolite": "simvastatin acid",
         "mechanism": "SLCO1B1 encodes OATP1B1 hepatic uptake transporter. Reduced OATP1B1 function increases "
-                     "systemic exposure to simvastatin acid, raising myopathy risk.",
+        "systemic exposure to simvastatin acid, raising myopathy risk.",
         "transporter_genes": ["SLCO1B1", "ABCB1", "ABCG2"],
     },
     "tamoxifen": {
@@ -329,7 +389,7 @@ _DRUG_PATHWAYS: dict[str, dict[str, Any]] = {
         "key_metabolizing_enzyme": "CYP2D6",
         "active_metabolite": "endoxifen",
         "mechanism": "CYP2D6 is the primary enzyme for conversion of tamoxifen (via N-desmethyl-tamoxifen) "
-                     "to the potent active metabolite endoxifen.",
+        "to the potent active metabolite endoxifen.",
         "transporter_genes": [],
     },
     "fluorouracil": {
@@ -340,7 +400,7 @@ _DRUG_PATHWAYS: dict[str, dict[str, Any]] = {
         "key_metabolizing_enzyme": "DPYD",
         "active_metabolite": "fluorodeoxyuridine monophosphate (FdUMP)",
         "mechanism": "DPYD (dihydropyrimidine dehydrogenase) is the rate-limiting enzyme for fluoropyrimidine "
-                     "catabolism. DPD deficiency leads to accumulation of 5-FU and severe toxicity.",
+        "catabolism. DPD deficiency leads to accumulation of 5-FU and severe toxicity.",
         "transporter_genes": [],
     },
     "azathioprine": {
@@ -351,7 +411,7 @@ _DRUG_PATHWAYS: dict[str, dict[str, Any]] = {
         "key_metabolizing_enzyme": "TPMT",
         "active_metabolite": "6-thioguanine nucleotides (6-TGN)",
         "mechanism": "TPMT methylates mercaptopurine (azathioprine metabolite), diverting it from the cytotoxic "
-                     "6-TGN pathway. Low TPMT activity leads to 6-TGN accumulation and myelosuppression.",
+        "6-TGN pathway. Low TPMT activity leads to 6-TGN accumulation and myelosuppression.",
         "transporter_genes": [],
     },
 }
@@ -447,14 +507,16 @@ def parse_clinical_annotations(
             drug_list = [d.strip() for d in drugs.split(";") if d.strip()] if drugs else []
 
             for drug in drug_list or [""]:
-                annotations.append({
-                    "annotation_id": annotation_id,
-                    "gene": gene,
-                    "drug": drug.lower(),
-                    "evidence_level": level,
-                    "phenotype_category": phenotype_cat,
-                    "annotation_text": text,
-                })
+                annotations.append(
+                    {
+                        "annotation_id": annotation_id,
+                        "gene": gene,
+                        "drug": drug.lower(),
+                        "evidence_level": level,
+                        "phenotype_category": phenotype_cat,
+                        "annotation_text": text,
+                    }
+                )
 
     logger.info("Parsed %d clinical annotations from %s", len(annotations), filepath)
     return annotations
@@ -510,11 +572,14 @@ def get_evidence_level(
         },
     }
 
-    info = level_descriptions.get(level, {
-        "description": f"Unknown evidence level: {level}",
-        "strength": "Unknown",
-        "actionable": False,
-    })
+    info = level_descriptions.get(
+        level,
+        {
+            "description": f"Unknown evidence level: {level}",
+            "strength": "Unknown",
+            "actionable": False,
+        },
+    )
 
     return {
         "level": level,

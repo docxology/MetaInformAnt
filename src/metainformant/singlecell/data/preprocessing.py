@@ -255,9 +255,7 @@ def calculate_qc_metrics(data: SingleCellData) -> SingleCellData:
             pct_mt = np.nan_to_num(pct_mt, nan=0.0)
 
         # Ribosomal genes (RPS and RPL)
-        ribo_genes = [
-            i for i, gene in enumerate(gene_names) if gene.upper().startswith(("RPS", "RPL", "MRPS", "MRPL"))
-        ]
+        ribo_genes = [i for i, gene in enumerate(gene_names) if gene.upper().startswith(("RPS", "RPL", "MRPS", "MRPL"))]
         if ribo_genes:
             ribo_counts = np.sum(X_dense[:, ribo_genes], axis=1)
             pct_ribo = 100 * ribo_counts / np.where(total_counts > 0, total_counts, 1)

@@ -25,22 +25,26 @@ logger = get_logger(__name__)
 
 try:
     import matplotlib  # type: ignore[import-untyped]
+
     matplotlib.use("Agg")  # Non-interactive backend
     import matplotlib.pyplot as plt  # type: ignore[import-untyped]
     import matplotlib.patches as mpatches  # type: ignore[import-untyped]
     from matplotlib.collections import LineCollection  # type: ignore[import-untyped]
+
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
 
 try:
     import seaborn as sns  # type: ignore[import-untyped]
+
     HAS_SEABORN = True
 except ImportError:
     HAS_SEABORN = False
 
 try:
     import numpy as np  # type: ignore[import-untyped]
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
@@ -49,10 +53,7 @@ except ImportError:
 def _ensure_matplotlib() -> None:
     """Ensure matplotlib is available."""
     if not HAS_MATPLOTLIB:
-        raise ImportError(
-            "matplotlib is required for visualization. "
-            "Install it with: uv pip install matplotlib"
-        )
+        raise ImportError("matplotlib is required for visualization. " "Install it with: uv pip install matplotlib")
 
 
 def _apply_style() -> None:
@@ -149,9 +150,13 @@ def plot_read_length_histogram(
         f"Max: {max(lengths):,} bp"
     )
     ax.text(
-        0.98, 0.95, summary_text,
-        transform=ax.transAxes, fontsize=9,
-        verticalalignment="top", horizontalalignment="right",
+        0.98,
+        0.95,
+        summary_text,
+        transform=ax.transAxes,
+        fontsize=9,
+        verticalalignment="top",
+        horizontalalignment="right",
         bbox=dict(boxstyle="round,pad=0.5", facecolor="white", alpha=0.8),
     )
 
@@ -234,8 +239,7 @@ def plot_quality_vs_length(
     # Add quality threshold lines
     for q_threshold in [7, 10, 20]:
         ax.axhline(q_threshold, color="gray", linestyle=":", linewidth=0.5, alpha=0.7)
-        ax.text(max(lengths) * 0.98, q_threshold + 0.3, f"Q{q_threshold}",
-                fontsize=8, color="gray", ha="right")
+        ax.text(max(lengths) * 0.98, q_threshold + 0.3, f"Q{q_threshold}", fontsize=8, color="gray", ha="right")
 
     plt.tight_layout()
     fig.savefig(str(output_path), dpi=150, bbox_inches="tight")
@@ -451,9 +455,13 @@ def plot_alignment_view(
         width = aln_end - aln_start
 
         rect = mpatches.FancyBboxPatch(
-            (aln_start, y), width, height,
+            (aln_start, y),
+            width,
+            height,
             boxstyle="round,pad=0",
-            facecolor=color, edgecolor="gray", linewidth=0.3,
+            facecolor=color,
+            edgecolor="gray",
+            linewidth=0.3,
         )
         ax.add_patch(rect)
 
@@ -545,13 +553,27 @@ def plot_methylation_track(
     if positions:
         # Color by methylation level
         colors = ["#2196F3" if l < threshold else "#F44336" for l in levels]
-        ax.bar(positions, levels, width=max(1, (reg_end - reg_start) // len(positions) // 2),
-               color=colors, alpha=0.8, edgecolor="none")
+        ax.bar(
+            positions,
+            levels,
+            width=max(1, (reg_end - reg_start) // len(positions) // 2),
+            color=colors,
+            alpha=0.8,
+            edgecolor="none",
+        )
 
         ax.axhline(threshold, color="gray", linestyle="--", linewidth=0.5, alpha=0.5)
     else:
-        ax.text(0.5, 0.5, "No methylation data in region",
-                transform=ax.transAxes, ha="center", va="center", fontsize=12, color="gray")
+        ax.text(
+            0.5,
+            0.5,
+            "No methylation data in region",
+            transform=ax.transAxes,
+            ha="center",
+            va="center",
+            fontsize=12,
+            color="gray",
+        )
 
     ax.set_xlim(reg_start, reg_end)
     ax.set_ylim(0, 1.05)
@@ -606,8 +628,9 @@ def plot_phasing_blocks(
         # Create empty plot
         _apply_style()
         fig, ax = plt.subplots(figsize=figsize)
-        ax.text(0.5, 0.5, "No phase blocks", transform=ax.transAxes,
-                ha="center", va="center", fontsize=14, color="gray")
+        ax.text(
+            0.5, 0.5, "No phase blocks", transform=ax.transAxes, ha="center", va="center", fontsize=14, color="gray"
+        )
         ax.set_title(title, fontsize=14, fontweight="bold")
         fig.savefig(str(output_path), dpi=150, bbox_inches="tight")
         plt.close(fig)
@@ -619,13 +642,15 @@ def plot_phasing_blocks(
         if isinstance(b, dict):
             blocks.append(b)
         elif hasattr(b, "chromosome"):
-            blocks.append({
-                "chromosome": b.chromosome,
-                "start": b.start,
-                "end": b.end,
-                "num_variants": getattr(b, "num_variants", 0),
-                "quality": getattr(b, "quality", 0.0),
-            })
+            blocks.append(
+                {
+                    "chromosome": b.chromosome,
+                    "start": b.start,
+                    "end": b.end,
+                    "num_variants": getattr(b, "num_variants", 0),
+                    "quality": getattr(b, "quality", 0.0),
+                }
+            )
 
     # Group by chromosome
     chroms: dict[str, list[dict[str, Any]]] = {}
@@ -662,20 +687,28 @@ def plot_phasing_blocks(
             alpha = min(1.0, 0.5 + quality * 0.5) if quality > 0 else 0.8
 
             rect = mpatches.FancyBboxPatch(
-                (start, y_pos - 0.35), width, 0.7,
+                (start, y_pos - 0.35),
+                width,
+                0.7,
                 boxstyle="round,pad=0",
-                facecolor=color, alpha=alpha,
-                edgecolor="black", linewidth=0.5,
+                facecolor=color,
+                alpha=alpha,
+                edgecolor="black",
+                linewidth=0.5,
             )
             ax.add_patch(rect)
 
             # Annotate with variant count
             if num_vars > 0 and width > 0:
                 ax.text(
-                    start + width / 2, y_pos,
+                    start + width / 2,
+                    y_pos,
                     f"{num_vars}",
-                    fontsize=7, ha="center", va="center",
-                    color="white", fontweight="bold",
+                    fontsize=7,
+                    ha="center",
+                    va="center",
+                    color="white",
+                    fontweight="bold",
                 )
 
         y_pos += 1

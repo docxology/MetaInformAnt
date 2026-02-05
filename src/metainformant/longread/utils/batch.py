@@ -88,9 +88,7 @@ def process_batch(
         result = _process_sequential(items, processor, continue_on_error)
 
     result.duration_seconds = time.monotonic() - start_time
-    result.items_per_second = (
-        result.total_items / result.duration_seconds if result.duration_seconds > 0 else 0.0
-    )
+    result.items_per_second = result.total_items / result.duration_seconds if result.duration_seconds > 0 else 0.0
 
     logger.info(
         f"Batch processing complete: {result.successful}/{result.total_items} succeeded "
@@ -135,10 +133,7 @@ def _process_parallel(
     result = BatchResult(total_items=len(items))
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        future_to_id = {
-            executor.submit(processor, item_id, item_data): item_id
-            for item_id, item_data in items.items()
-        }
+        future_to_id = {executor.submit(processor, item_id, item_data): item_id for item_id, item_data in items.items()}
 
         for future in as_completed(future_to_id):
             item_id = future_to_id[future]

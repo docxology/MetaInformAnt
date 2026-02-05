@@ -115,7 +115,8 @@ def plot_spatial_scatter(
         for v in unique_vals:
             mask = vals == v
             ax.scatter(
-                coords[mask, 1], coords[mask, 0],
+                coords[mask, 1],
+                coords[mask, 0],
                 c=[color_map[v]],
                 s=point_size,
                 alpha=alpha,
@@ -123,13 +124,17 @@ def plot_spatial_scatter(
                 edgecolors="none",
             )
         ax.legend(
-            bbox_to_anchor=(1.05, 1), loc="upper left",
-            frameon=False, fontsize=8, markerscale=2,
+            bbox_to_anchor=(1.05, 1),
+            loc="upper left",
+            frameon=False,
+            fontsize=8,
+            markerscale=2,
         )
     else:
         vals_float = vals.astype(np.float64)
         sc = ax.scatter(
-            coords[:, 1], coords[:, 0],
+            coords[:, 1],
+            coords[:, 0],
             c=vals_float,
             cmap=cmap,
             s=point_size,
@@ -206,19 +211,30 @@ def plot_tissue_overlay(
         for v in unique_vals:
             mask = vals == v
             ax.scatter(
-                coords[mask, 1], coords[mask, 0],
-                c=[color_map[v]], s=point_size, alpha=alpha,
-                label=str(v), edgecolors="none",
+                coords[mask, 1],
+                coords[mask, 0],
+                c=[color_map[v]],
+                s=point_size,
+                alpha=alpha,
+                label=str(v),
+                edgecolors="none",
             )
         ax.legend(
-            bbox_to_anchor=(1.05, 1), loc="upper left",
-            frameon=False, fontsize=8, markerscale=2,
+            bbox_to_anchor=(1.05, 1),
+            loc="upper left",
+            frameon=False,
+            fontsize=8,
+            markerscale=2,
         )
     else:
         vals_float = vals.astype(np.float64)
         sc = ax.scatter(
-            coords[:, 1], coords[:, 0],
-            c=vals_float, cmap=cmap, s=point_size, alpha=alpha,
+            coords[:, 1],
+            coords[:, 0],
+            c=vals_float,
+            cmap=cmap,
+            s=point_size,
+            alpha=alpha,
             edgecolors="none",
         )
         fig.colorbar(sc, ax=ax, shrink=0.5, pad=0.02)
@@ -385,24 +401,35 @@ def plot_neighborhood_graph(
             for v in unique_vals:
                 mask = nc == v
                 ax.scatter(
-                    coords[mask, 1], coords[mask, 0],
-                    c=[color_map[v]], s=node_size,
-                    label=str(v), edgecolors="none", zorder=2,
+                    coords[mask, 1],
+                    coords[mask, 0],
+                    c=[color_map[v]],
+                    s=node_size,
+                    label=str(v),
+                    edgecolors="none",
+                    zorder=2,
                 )
             ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left", frameon=False, fontsize=8)
         else:
             nc_float = nc.astype(np.float64)
             sc = ax.scatter(
-                coords[:, 1], coords[:, 0],
-                c=nc_float, cmap="viridis", s=node_size,
-                edgecolors="none", zorder=2,
+                coords[:, 1],
+                coords[:, 0],
+                c=nc_float,
+                cmap="viridis",
+                s=node_size,
+                edgecolors="none",
+                zorder=2,
             )
             fig.colorbar(sc, ax=ax, shrink=0.5)
     else:
         ax.scatter(
-            coords[:, 1], coords[:, 0],
-            c="steelblue", s=node_size,
-            edgecolors="none", zorder=2,
+            coords[:, 1],
+            coords[:, 0],
+            c="steelblue",
+            s=node_size,
+            edgecolors="none",
+            zorder=2,
         )
 
     ax.set_title(title, fontsize=14, fontweight="bold")
@@ -561,8 +588,10 @@ def plot_deconvolution_pie(
                 continue
             sweep = spot_frac[ti] * 360.0
             wedge = Wedge(
-                (cx, cy), pie_radius,
-                start_angle, start_angle + sweep,
+                (cx, cy),
+                pie_radius,
+                start_angle,
+                start_angle + sweep,
                 facecolor=colors[ti],
                 edgecolor="white",
                 linewidth=0.3,
@@ -576,9 +605,12 @@ def plot_deconvolution_pie(
         patch = plt.Rectangle((0, 0), 1, 1, facecolor=colors[ti])
         legend_handles.append(patch)
     ax.legend(
-        legend_handles, cell_type_names,
-        bbox_to_anchor=(1.05, 1), loc="upper left",
-        frameon=False, fontsize=8,
+        legend_handles,
+        cell_type_names,
+        bbox_to_anchor=(1.05, 1),
+        loc="upper left",
+        frameon=False,
+        fontsize=8,
     )
 
     ax.set_title(title, fontsize=14, fontweight="bold")
@@ -633,11 +665,11 @@ def plot_spatial_autocorrelation(
         labels = np.asarray(cluster_labels)
 
         lisa_colors = {
-            "HH": "#d73027",    # Hot-spot: red
-            "LL": "#4575b4",    # Cold-spot: blue
-            "HL": "#f4a582",    # High-Low outlier: pink
-            "LH": "#abd9e9",    # Low-High outlier: light blue
-            "NS": "#e0e0e0",    # Not significant: gray
+            "HH": "#d73027",  # Hot-spot: red
+            "LL": "#4575b4",  # Cold-spot: blue
+            "HL": "#f4a582",  # High-Low outlier: pink
+            "LH": "#abd9e9",  # Low-High outlier: light blue
+            "NS": "#e0e0e0",  # Not significant: gray
         }
 
         fig, ax = plt.subplots(1, 1, figsize=figsize)
@@ -649,15 +681,21 @@ def plot_spatial_autocorrelation(
                 continue
             color = lisa_colors.get(label_type, "#e0e0e0")
             ax.scatter(
-                coords[mask, 1], coords[mask, 0],
-                c=color, s=point_size,
+                coords[mask, 1],
+                coords[mask, 0],
+                c=color,
+                s=point_size,
                 label=f"{label_type} (n={mask.sum()})",
-                edgecolors="none", alpha=0.8,
+                edgecolors="none",
+                alpha=0.8,
             )
 
         ax.legend(
-            bbox_to_anchor=(1.05, 1), loc="upper left",
-            frameon=False, fontsize=9, markerscale=2,
+            bbox_to_anchor=(1.05, 1),
+            loc="upper left",
+            frameon=False,
+            fontsize=9,
+            markerscale=2,
         )
 
         ax.set_title(title, fontsize=14, fontweight="bold")

@@ -169,7 +169,9 @@ def detect_outlier_samples(
         try:
             from sklearn.ensemble import IsolationForest
         except ImportError:
-            raise ImportError("sklearn is required for isolation_forest method. Install with: uv pip install scikit-learn")
+            raise ImportError(
+                "sklearn is required for isolation_forest method. Install with: uv pip install scikit-learn"
+            )
 
         # Prepare feature matrix: samples as rows, gene expressions as features
         # For efficiency with many genes, use log-transformed summary stats

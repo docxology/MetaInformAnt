@@ -372,12 +372,7 @@ def calculate_breakpoint_confidence(
     mapq_score = min(1.0, mapq_mean / 60.0)
 
     # Weighted combination
-    confidence = (
-        0.35 * support_score
-        + 0.30 * position_score
-        + 0.20 * fraction_score
-        + 0.15 * mapq_score
-    )
+    confidence = 0.35 * support_score + 0.30 * position_score + 0.20 * fraction_score + 0.15 * mapq_score
 
     return max(0.0, min(1.0, confidence))
 

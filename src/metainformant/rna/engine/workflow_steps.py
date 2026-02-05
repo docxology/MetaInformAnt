@@ -83,9 +83,7 @@ def setup_vdb_config(
         if result.returncode == 0:
             logger.info(f"Configured vdb-config repository path for prefetch: {getfastq_dir}")
         else:
-            logger.warning(
-                f"Could not set vdb-config repository path (may require interactive): {result.stderr[:100]}"
-            )
+            logger.warning(f"Could not set vdb-config repository path (may require interactive): {result.stderr[:100]}")
             logger.info("Will rely on TMPDIR and VDB_CONFIG environment variables")
 
         # Prepare extraction directories
@@ -242,9 +240,7 @@ def _find_fastq_files(config: AmalgkitWorkflowConfig, steps_config: Dict[str, An
     return fastq_files, checked_dirs
 
 
-def _validate_integrate_prerequisites(
-    config: AmalgkitWorkflowConfig, steps_config: Dict[str, Any]
-) -> Optional[str]:
+def _validate_integrate_prerequisites(config: AmalgkitWorkflowConfig, steps_config: Dict[str, Any]) -> Optional[str]:
     """Validate prerequisites for integrate step."""
     fastq_files, checked_dirs = _find_fastq_files(config, steps_config)
     if not fastq_files:
@@ -261,9 +257,7 @@ def _validate_integrate_prerequisites(
     return None
 
 
-def _validate_quant_prerequisites(
-    config: AmalgkitWorkflowConfig, steps_config: Dict[str, Any]
-) -> Optional[str]:
+def _validate_quant_prerequisites(config: AmalgkitWorkflowConfig, steps_config: Dict[str, Any]) -> Optional[str]:
     """Validate prerequisites for quant step."""
     # Check integrate output
     integrated_metadata = config.work_dir / "integration" / "integrated_metadata.json"
@@ -494,9 +488,7 @@ def _ensure_config_symlink(config: AmalgkitWorkflowConfig) -> None:
                 logger.warning(f"Could not copy config files as fallback: {e2}")
 
 
-def _create_filtered_metadata(
-    config: AmalgkitWorkflowConfig, check: bool, step_results: List
-) -> None:
+def _create_filtered_metadata(config: AmalgkitWorkflowConfig, check: bool, step_results: List) -> None:
     """Create filtered metadata after select step."""
     from metainformant.rna.amalgkit.metadata_filter import filter_selected_metadata
     from metainformant.rna.engine.workflow import WorkflowStepResult
@@ -510,7 +502,9 @@ def _create_filtered_metadata(
             )
         except ValueError as e:
             if "No samples meet the filtering criteria" in str(e):
-                logger.warning("All selected samples are LITE files. Creating metadata_selected.tsv without LITE filtering.")
+                logger.warning(
+                    "All selected samples are LITE files. Creating metadata_selected.tsv without LITE filtering."
+                )
                 filter_selected_metadata(
                     config.work_dir / "metadata" / "metadata.tsv",
                     config.work_dir / "metadata" / "metadata_selected.tsv",
@@ -601,9 +595,7 @@ def _attempt_fallback_extraction(
     )
 
 
-def _validate_quant_results(
-    config: AmalgkitWorkflowConfig, check: bool, step_results: List
-) -> None:
+def _validate_quant_results(config: AmalgkitWorkflowConfig, check: bool, step_results: List) -> None:
     """Validate quant results and run post-quant cleanup."""
     try:
         from metainformant.rna.analysis.validation import validate_all_samples, save_validation_report
@@ -698,8 +690,7 @@ def log_workflow_summary(
             "    3. Install ggplot2: Rscript -e \"install.packages('ggplot2')\""
         ),
         "curate": (
-            "    1. Ensure merge completed successfully\n"
-            "    2. Install R if missing: apt-get install r-base-core"
+            "    1. Ensure merge completed successfully\n" "    2. Install R if missing: apt-get install r-base-core"
         ),
     }
 
@@ -709,10 +700,7 @@ def log_workflow_summary(
         if template is None and sn == "getfastq_validation":
             template = _REMEDIATION_TEMPLATES["getfastq"]
         if template:
-            logger.info(
-                f"\n  For {sn}:\n"
-                + template.format(log_dir=config.log_dir, work_dir=config.work_dir)
-            )
+            logger.info(f"\n  For {sn}:\n" + template.format(log_dir=config.log_dir, work_dir=config.work_dir))
         else:
             logger.info(
                 f"\n  For {sn}:\n"

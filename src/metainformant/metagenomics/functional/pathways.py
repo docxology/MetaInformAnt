@@ -73,8 +73,16 @@ _BUILTIN_PATHWAYS: dict[str, PathwayDefinition] = {
         name="Glycolysis / Gluconeogenesis",
         database="KEGG",
         required_kos=[
-            "K00844", "K00845", "K01810", "K00850", "K01623",
-            "K01624", "K01803", "K00134", "K00927", "K01689",
+            "K00844",
+            "K00845",
+            "K01810",
+            "K00850",
+            "K01623",
+            "K01624",
+            "K01803",
+            "K00134",
+            "K00927",
+            "K01689",
             "K00873",
         ],
         category="Metabolism",
@@ -85,9 +93,18 @@ _BUILTIN_PATHWAYS: dict[str, PathwayDefinition] = {
         name="Citrate cycle (TCA cycle)",
         database="KEGG",
         required_kos=[
-            "K01647", "K01681", "K00031", "K00030", "K00164",
-            "K00658", "K01902", "K01903", "K00234", "K00235",
-            "K01676", "K00024",
+            "K01647",
+            "K01681",
+            "K00031",
+            "K00030",
+            "K00164",
+            "K00658",
+            "K01902",
+            "K01903",
+            "K00234",
+            "K00235",
+            "K01676",
+            "K00024",
         ],
         category="Metabolism",
         subcategory="Carbohydrate metabolism",
@@ -97,8 +114,13 @@ _BUILTIN_PATHWAYS: dict[str, PathwayDefinition] = {
         name="Pentose phosphate pathway",
         database="KEGG",
         required_kos=[
-            "K00036", "K01057", "K00033", "K01783", "K00615",
-            "K00616", "K01807",
+            "K00036",
+            "K01057",
+            "K00033",
+            "K01783",
+            "K00615",
+            "K00616",
+            "K01807",
         ],
         category="Metabolism",
         subcategory="Carbohydrate metabolism",
@@ -108,10 +130,20 @@ _BUILTIN_PATHWAYS: dict[str, PathwayDefinition] = {
         name="Oxidative phosphorylation",
         database="KEGG",
         required_kos=[
-            "K02274", "K02275", "K02276", "K02277",
-            "K00330", "K00331", "K00332", "K00333",
-            "K00411", "K00412",
-            "K02256", "K02257", "K02258", "K02259",
+            "K02274",
+            "K02275",
+            "K02276",
+            "K02277",
+            "K00330",
+            "K00331",
+            "K00332",
+            "K00333",
+            "K00411",
+            "K00412",
+            "K02256",
+            "K02257",
+            "K02258",
+            "K02259",
         ],
         category="Metabolism",
         subcategory="Energy metabolism",
@@ -121,8 +153,14 @@ _BUILTIN_PATHWAYS: dict[str, PathwayDefinition] = {
         name="Arginine biosynthesis",
         database="KEGG",
         required_kos=[
-            "K01940", "K01755", "K00611", "K01438", "K01476",
-            "K00145", "K00930", "K00818",
+            "K01940",
+            "K01755",
+            "K00611",
+            "K01438",
+            "K01476",
+            "K00145",
+            "K00930",
+            "K00818",
         ],
         category="Metabolism",
         subcategory="Amino acid metabolism",
@@ -132,8 +170,15 @@ _BUILTIN_PATHWAYS: dict[str, PathwayDefinition] = {
         name="Nitrogen metabolism",
         database="KEGG",
         required_kos=[
-            "K02567", "K02568", "K00360", "K00366",
-            "K00362", "K00363", "K10944", "K10945", "K10946",
+            "K02567",
+            "K02568",
+            "K00360",
+            "K00366",
+            "K00362",
+            "K00363",
+            "K10944",
+            "K10945",
+            "K10946",
         ],
         category="Metabolism",
         subcategory="Energy metabolism",
@@ -143,8 +188,14 @@ _BUILTIN_PATHWAYS: dict[str, PathwayDefinition] = {
         name="Methane metabolism",
         database="KEGG",
         required_kos=[
-            "K00399", "K00401", "K00402", "K00169", "K00170",
-            "K00171", "K00172", "K01895",
+            "K00399",
+            "K00401",
+            "K00402",
+            "K00169",
+            "K00170",
+            "K00171",
+            "K00172",
+            "K01895",
         ],
         category="Metabolism",
         subcategory="Energy metabolism",
@@ -154,8 +205,14 @@ _BUILTIN_PATHWAYS: dict[str, PathwayDefinition] = {
         name="Photosynthesis",
         database="KEGG",
         required_kos=[
-            "K02689", "K02690", "K02691", "K02692",
-            "K02703", "K02706", "K02707", "K02708",
+            "K02689",
+            "K02690",
+            "K02691",
+            "K02692",
+            "K02703",
+            "K02706",
+            "K02707",
+            "K02708",
         ],
         category="Metabolism",
         subcategory="Energy metabolism",
@@ -185,9 +242,7 @@ def reconstruct_pathways(
         List of PathwayResult objects, sorted by completeness descending.
     """
     if pathway_definitions is None:
-        pathways = {
-            pid: pdef for pid, pdef in _BUILTIN_PATHWAYS.items() if pdef.database == database
-        }
+        pathways = {pid: pdef for pid, pdef in _BUILTIN_PATHWAYS.items() if pdef.database == database}
     else:
         pathways = pathway_definitions
 
@@ -208,7 +263,9 @@ def reconstruct_pathways(
                 all_ecs.add(ann_upper)
                 ec_counts[ann_upper] += 1
 
-    logger.info(f"Input annotations: {len(all_kos)} unique KOs, {len(all_ecs)} unique ECs from {len(annotations)} genes")
+    logger.info(
+        f"Input annotations: {len(all_kos)} unique KOs, {len(all_ecs)} unique ECs from {len(annotations)} genes"
+    )
 
     results: list[PathwayResult] = []
 
@@ -321,9 +378,7 @@ def compare_pathway_profiles(
         for result in results:
             comparison[result.pathway_id][sample_id] = result.completeness
 
-    logger.info(
-        f"Compared {len(comparison)} pathways across {len(samples)} samples"
-    )
+    logger.info(f"Compared {len(comparison)} pathways across {len(samples)} samples")
     return dict(comparison)
 
 
@@ -348,7 +403,10 @@ def find_differential_pathways(
         List of dicts with pathway_id, pathway_name, group1_mean,
         group2_mean, difference, and direction.
     """
-    all_samples = {**{f"g1_{k}": v for k, v in group1_samples.items()}, **{f"g2_{k}": v for k, v in group2_samples.items()}}
+    all_samples = {
+        **{f"g1_{k}": v for k, v in group1_samples.items()},
+        **{f"g2_{k}": v for k, v in group2_samples.items()},
+    }
 
     profiles = compare_pathway_profiles(all_samples, pathway_definitions=pathway_definitions)
 

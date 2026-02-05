@@ -922,9 +922,7 @@ class TestPopulationDynamics:
 
     def test_even_distribution_max_diversity(self) -> None:
         """Perfectly even distribution has maximum Shannon diversity."""
-        snapshots = [
-            {"step": 0, "n_agents": 30, "agent_counts": {"a": 10, "b": 10, "c": 10}, "total_energy": 3000.0}
-        ]
+        snapshots = [{"step": 0, "n_agents": 30, "agent_counts": {"a": 10, "b": 10, "c": 10}, "total_energy": 3000.0}]
         dynamics = get_population_dynamics(snapshots)
         expected_shannon = -3 * (1 / 3 * np.log(1 / 3))
         assert dynamics["diversity_trajectory"][0] == pytest.approx(expected_shannon, rel=1e-6)
@@ -939,9 +937,7 @@ class TestBiodiversityMetrics:
     """Test calculate_biodiversity_metrics function."""
 
     def test_basic_metrics(self) -> None:
-        snapshots = [
-            {"step": 0, "n_agents": 10, "agent_counts": {"producer": 5, "consumer": 3, "decomposer": 2}}
-        ]
+        snapshots = [{"step": 0, "n_agents": 10, "agent_counts": {"producer": 5, "consumer": 3, "decomposer": 2}}]
         metrics = calculate_biodiversity_metrics(snapshots)
 
         assert "species_richness" in metrics
@@ -1078,12 +1074,8 @@ class TestSimulatePredatorPrey:
             rng=rng2,
         )
 
-        snaps_low = simulate_predator_prey(
-            eco_low, n_steps=10, predator_efficiency=0.1, rng=random.Random(99)
-        )
-        snaps_high = simulate_predator_prey(
-            eco_high, n_steps=10, predator_efficiency=0.9, rng=random.Random(99)
-        )
+        snaps_low = simulate_predator_prey(eco_low, n_steps=10, predator_efficiency=0.1, rng=random.Random(99))
+        snaps_high = simulate_predator_prey(eco_high, n_steps=10, predator_efficiency=0.9, rng=random.Random(99))
         # With higher predator efficiency, expect fewer prey at the end
         # (or at least no more prey than low efficiency on average)
         final_prey_low = snaps_low[-1]["n_prey"]

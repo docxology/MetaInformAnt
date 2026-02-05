@@ -120,10 +120,7 @@ def create_reference_profiles(
             profiles[idx, :] = np.mean(subset, axis=0)
 
     type_names = [str(t) for t in unique_types]
-    logger.info(
-        f"Created reference profiles: {len(type_names)} cell types, "
-        f"{n_genes} genes, method={method}"
-    )
+    logger.info(f"Created reference profiles: {len(type_names)} cell types, " f"{n_genes} genes, method={method}")
     return profiles, type_names, gene_names
 
 

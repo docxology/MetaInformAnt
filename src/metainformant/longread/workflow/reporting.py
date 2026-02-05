@@ -139,7 +139,8 @@ def generate_qc_report(pipeline_result: Any) -> QCReport:
         if step.name == "trim_adapters" and step.result is not None:
             if isinstance(step.result, list):
                 adapter_trimmed = sum(
-                    1 for r in step.result
+                    1
+                    for r in step.result
                     if (isinstance(r, dict) and r.get("metadata", {}).get("trimmed_start", 0) > 0)
                     or (hasattr(r, "metadata") and r.metadata.get("trimmed_start", 0) > 0)
                 )
@@ -317,15 +318,17 @@ def generate_methylation_report(pipeline_result: Any) -> dict[str, Any]:
     region_summary: list[dict[str, Any]] = []
     for reg in aggregated:
         if hasattr(reg, "chromosome"):
-            region_summary.append({
-                "chromosome": reg.chromosome,
-                "start": reg.start,
-                "end": reg.end,
-                "name": reg.name,
-                "mean_methylation": reg.mean_methylation,
-                "num_cpgs": reg.num_cpgs,
-                "mean_coverage": reg.mean_coverage,
-            })
+            region_summary.append(
+                {
+                    "chromosome": reg.chromosome,
+                    "start": reg.start,
+                    "end": reg.end,
+                    "name": reg.name,
+                    "mean_methylation": reg.mean_methylation,
+                    "num_cpgs": reg.num_cpgs,
+                    "mean_coverage": reg.mean_coverage,
+                }
+            )
         elif isinstance(reg, dict):
             region_summary.append(reg)
 
@@ -557,9 +560,9 @@ def _write_html_report(report_dict: dict[str, Any], output_path: Path) -> None:
     # Build HTML content
     html_parts: list[str] = [
         "<!DOCTYPE html>",
-        "<html lang=\"en\">",
+        '<html lang="en">',
         "<head>",
-        "<meta charset=\"utf-8\">",
+        '<meta charset="utf-8">',
         f"<title>Long-Read Report: {pipeline}</title>",
         "<style>",
         "body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; ",
@@ -579,7 +582,7 @@ def _write_html_report(report_dict: dict[str, Any], output_path: Path) -> None:
         "</head>",
         "<body>",
         f"<h1>Long-Read Analysis Report: {pipeline}</h1>",
-        f"<p class=\"timestamp\">Generated: {timestamp}</p>",
+        f'<p class="timestamp">Generated: {timestamp}</p>',
     ]
 
     # Summary metrics table
@@ -615,9 +618,7 @@ def _write_html_report(report_dict: dict[str, Any], output_path: Path) -> None:
                         formatted = f"{sub_value:.4f}"
                     else:
                         formatted = str(sub_value)
-                    html_parts.append(
-                        f'<tr><td>{label}</td><td class="metric-value">{formatted}</td></tr>'
-                    )
+                    html_parts.append(f'<tr><td>{label}</td><td class="metric-value">{formatted}</td></tr>')
 
             html_parts.append("</table>")
 
@@ -635,9 +636,7 @@ def _write_html_report(report_dict: dict[str, Any], output_path: Path) -> None:
                 duration = step.get("duration_seconds", 0.0)
                 error = step.get("error", "")
 
-                status_class = "success" if status == "completed" else (
-                    "failed" if status == "failed" else "skipped"
-                )
+                status_class = "success" if status == "completed" else ("failed" if status == "failed" else "skipped")
                 html_parts.append(
                     f'<tr><td>{name}</td><td class="{status_class}">{status}</td>'
                     f'<td class="metric-value">{duration:.2f}</td><td>{error}</td></tr>'
@@ -645,10 +644,12 @@ def _write_html_report(report_dict: dict[str, Any], output_path: Path) -> None:
 
         html_parts.append("</table>")
 
-    html_parts.extend([
-        "</body>",
-        "</html>",
-    ])
+    html_parts.extend(
+        [
+            "</body>",
+            "</html>",
+        ]
+    )
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write("\n".join(html_parts))

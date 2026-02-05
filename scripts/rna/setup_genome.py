@@ -33,7 +33,7 @@ check_environment_or_exit(auto_setup=True)
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from metainformant.rna.genome_prep import orchestrate_genome_setup, verify_genome_status
-from metainformant.core.logging import get_logger
+from metainformant.core.utils.logging import get_logger
 
 logger = get_logger("setup_genome")
 

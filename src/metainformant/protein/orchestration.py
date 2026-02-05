@@ -222,9 +222,11 @@ def comparative_analysis(
     pairwise = {}
     if use_blosum:
         from .sequence.alignment import matrix_align
+
         align_fn = matrix_align
     else:
         from .sequence.alignment import global_align
+
         align_fn = global_align
 
     for i in range(n):
@@ -387,9 +389,7 @@ def compare_structures(
         "shared_contacts": shared_contacts,
         "contacts_only_a": contacts_only_a,
         "contacts_only_b": contacts_only_b,
-        "jaccard_similarity": (
-            shared_contacts / max(1, shared_contacts + contacts_only_a + contacts_only_b)
-        ),
+        "jaccard_similarity": (shared_contacts / max(1, shared_contacts + contacts_only_a + contacts_only_b)),
     }
 
     logger.info(f"Structure comparison complete: RMSD={per_res_dist.mean():.2f} Å")
@@ -488,7 +488,9 @@ def full_protein_analysis(
 
     # Sequence analysis
     results["sequence_analysis"] = analyze_protein_sequence(
-        sequence, name=name, predict_ss=predict_ss,
+        sequence,
+        name=name,
+        predict_ss=predict_ss,
     )
 
     # Structure analysis (if PDB provided)

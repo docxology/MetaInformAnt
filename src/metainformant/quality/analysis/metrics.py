@@ -200,7 +200,9 @@ def _calculate_vcf_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
 
     # Calculate total score
     total_score = sum(c["score"] for c in score_components.values())
-    max_score = sum(c["score"] / c["weight"] * c["weight"] for c in score_components.values()) if score_components else 100
+    max_score = (
+        sum(c["score"] / c["weight"] * c["weight"] for c in score_components.values()) if score_components else 100
+    )
     overall_score = (total_score / max_score * 100) if max_score > 0 else 0
 
     # If no components were calculated, return error state
@@ -285,7 +287,9 @@ def _calculate_bam_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
 
     # Calculate total score
     total_score = sum(c["score"] for c in score_components.values())
-    max_score = sum(c["score"] / c["weight"] * c["weight"] for c in score_components.values()) if score_components else 100
+    max_score = (
+        sum(c["score"] / c["weight"] * c["weight"] for c in score_components.values()) if score_components else 100
+    )
     overall_score = (total_score / max_score * 100) if max_score > 0 else 0
 
     # If no components were calculated, return error state

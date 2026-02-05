@@ -62,6 +62,7 @@ See Also:
 from __future__ import annotations
 
 # Import subpackages
+from . import benchmark
 from . import models
 from . import visualization
 from . import workflow
@@ -147,6 +148,15 @@ from .workflow.workflow import (
 )
 
 # Visualization exports
+# Benchmark exports
+from .benchmark.generators import (
+    generate_benchmark_dataset,
+    generate_synthetic_variants,
+    generate_synthetic_expression,
+    evaluate_benchmark,
+    benchmark_suite,
+)
+
 from .visualization.visualization import (
     plot_sequence_evolution,
     animate_sequence_evolution,
@@ -237,4 +247,11 @@ __all__ = [
     "animate_population_dynamics",
     "plot_simulation_validation_comparison",
     "create_interactive_simulation_dashboard",
+    # Benchmark
+    "benchmark",
+    "generate_benchmark_dataset",
+    "generate_synthetic_variants",
+    "generate_synthetic_expression",
+    "evaluate_benchmark",
+    "benchmark_suite",
 ]

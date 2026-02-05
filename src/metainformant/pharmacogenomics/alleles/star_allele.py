@@ -651,13 +651,15 @@ def detect_novel_alleles(
 
         score = allele.partial_match_score(observed)
         if score > 0.0 and score < 1.0:
-            partial_matches.append({
-                "allele": allele.name,
-                "gene": allele.gene,
-                "match_score": score,
-                "matched_variants": sorted(allele.defining_variants.intersection(observed)),
-                "missing_variants": sorted(allele.defining_variants - observed),
-            })
+            partial_matches.append(
+                {
+                    "allele": allele.name,
+                    "gene": allele.gene,
+                    "match_score": score,
+                    "matched_variants": sorted(allele.defining_variants.intersection(observed)),
+                    "missing_variants": sorted(allele.defining_variants - observed),
+                }
+            )
         if score >= 1.0:
             explained_variants.update(allele.defining_variants)
 
@@ -749,8 +751,8 @@ def handle_cyp2d6_cnv(
 
     if copy_number == 1:
         # Hemizygous: one called allele + *5 deletion
-        primary_allele = called[0] if called else StarAllele(
-            name="*1", gene=gene, function="Normal function", activity_value=1.0
+        primary_allele = (
+            called[0] if called else StarAllele(name="*1", gene=gene, function="Normal function", activity_value=1.0)
         )
         alleles = sorted([primary_allele, deletion_allele], key=lambda a: a.name)
         total_score = primary_allele.activity_value + deletion_allele.activity_value
@@ -771,9 +773,7 @@ def handle_cyp2d6_cnv(
         elif len(called) == 1:
             allele1 = called[0]
             # Second allele defaults to reference
-            allele2 = StarAllele(
-                name="*1", gene=gene, function="Normal function", activity_value=1.0
-            )
+            allele2 = StarAllele(name="*1", gene=gene, function="Normal function", activity_value=1.0)
         else:
             allele1 = StarAllele(name="*1", gene=gene, function="Normal function", activity_value=1.0)
             allele2 = StarAllele(name="*1", gene=gene, function="Normal function", activity_value=1.0)
@@ -812,10 +812,7 @@ def handle_cyp2d6_cnv(
         other_allele = allele1
 
     # Total activity: normal alleles + extra copies of duplicated allele
-    total_score = (
-        duplicated_allele.activity_value * (1 + extra_copies)
-        + other_allele.activity_value
-    )
+    total_score = duplicated_allele.activity_value * (1 + extra_copies) + other_allele.activity_value
 
     dup_name = f"{duplicated_allele.name}x{1 + extra_copies}"
     alleles_sorted = sorted([duplicated_allele, other_allele], key=lambda a: a.name)

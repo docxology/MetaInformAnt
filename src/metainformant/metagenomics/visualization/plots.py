@@ -384,7 +384,7 @@ def plot_ordination(
 
     # Classical MDS / PCoA via double centering
     # 1. Compute squared distances
-    D2 = [[d ** 2 for d in row] for row in D]
+    D2 = [[d**2 for d in row] for row in D]
 
     # 2. Double centering: B = -0.5 * J * D^2 * J, where J = I - 1/n * 11'
     row_means = [sum(row) / n for row in D2]
@@ -546,7 +546,7 @@ def plot_alpha_diversity(
             doubletons = sum(1 for c in counts if c == 2)
             observed = len(counts)
             if doubletons > 0:
-                chao1 = observed + (singletons ** 2) / (2 * doubletons)
+                chao1 = observed + (singletons**2) / (2 * doubletons)
             elif singletons > 0:
                 chao1 = observed + singletons * (singletons - 1) / 2
             else:

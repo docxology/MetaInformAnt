@@ -19,11 +19,19 @@ class TestDeduplicateMetadata:
     def test_deduplicate_removes_duplicate_runs(self, tmp_path: Path) -> None:
         """Test that duplicate runs are removed, keeping first occurrence."""
         # Create test metadata with duplicate runs
-        metadata = pd.DataFrame({
-            "run": ["SRR001", "SRR001", "SRR002", "SRR003", "SRR003"],
-            "scientific_name": ["Homo sapiens", "Homo sapiens", "Mus musculus", "Rattus norvegicus", "Rattus norvegicus"],
-            "sample_group": ["group1", "group1", "group2", "group3", "group3"],
-        })
+        metadata = pd.DataFrame(
+            {
+                "run": ["SRR001", "SRR001", "SRR002", "SRR003", "SRR003"],
+                "scientific_name": [
+                    "Homo sapiens",
+                    "Homo sapiens",
+                    "Mus musculus",
+                    "Rattus norvegicus",
+                    "Rattus norvegicus",
+                ],
+                "sample_group": ["group1", "group1", "group2", "group3", "group3"],
+            }
+        )
 
         input_path = tmp_path / "metadata.tsv"
         metadata.to_csv(input_path, sep="\t", index=False)
@@ -42,11 +50,13 @@ class TestDeduplicateMetadata:
         """Test that real scientific names are preferred over placeholders."""
         # Create metadata with placeholder names
         placeholder = "Please add in format: Genus species"
-        metadata = pd.DataFrame({
-            "run": ["SRR001", "SRR001", "SRR002", "SRR002"],
-            "scientific_name": [placeholder, "Homo sapiens", "Mus musculus", placeholder],
-            "sample_group": ["group1", "group1", "group2", "group2"],
-        })
+        metadata = pd.DataFrame(
+            {
+                "run": ["SRR001", "SRR001", "SRR002", "SRR002"],
+                "scientific_name": [placeholder, "Homo sapiens", "Mus musculus", placeholder],
+                "sample_group": ["group1", "group1", "group2", "group2"],
+            }
+        )
 
         input_path = tmp_path / "metadata.tsv"
         metadata.to_csv(input_path, sep="\t", index=False)
@@ -70,10 +80,12 @@ class TestDeduplicateMetadata:
 
     def test_deduplicate_with_custom_output_path(self, tmp_path: Path) -> None:
         """Test deduplication with separate output path."""
-        metadata = pd.DataFrame({
-            "run": ["SRR001", "SRR001", "SRR002"],
-            "scientific_name": ["Species A", "Species A", "Species B"],
-        })
+        metadata = pd.DataFrame(
+            {
+                "run": ["SRR001", "SRR001", "SRR002"],
+                "scientific_name": ["Species A", "Species A", "Species B"],
+            }
+        )
 
         input_path = tmp_path / "input.tsv"
         output_path = tmp_path / "output.tsv"
@@ -117,10 +129,12 @@ class TestDeduplicateMetadata:
 
     def test_deduplicate_without_scientific_name_column(self, tmp_path: Path) -> None:
         """Test deduplication when scientific_name column is missing."""
-        metadata = pd.DataFrame({
-            "run": ["SRR001", "SRR001", "SRR002"],
-            "sample_group": ["group1", "group1", "group2"],
-        })
+        metadata = pd.DataFrame(
+            {
+                "run": ["SRR001", "SRR001", "SRR002"],
+                "sample_group": ["group1", "group1", "group2"],
+            }
+        )
 
         input_path = tmp_path / "metadata.tsv"
         metadata.to_csv(input_path, sep="\t", index=False)
@@ -135,14 +149,16 @@ class TestDeduplicateMetadata:
 
     def test_deduplicate_preserves_all_columns(self, tmp_path: Path) -> None:
         """Test that all metadata columns are preserved."""
-        metadata = pd.DataFrame({
-            "run": ["SRR001", "SRR001", "SRR002"],
-            "scientific_name": ["Homo sapiens", "Homo sapiens", "Mus musculus"],
-            "sample_group": ["brain", "brain", "liver"],
-            "library_strategy": ["RNA-Seq", "RNA-Seq", "RNA-Seq"],
-            "platform": ["ILLUMINA", "ILLUMINA", "ILLUMINA"],
-            "extra_col": ["a", "b", "c"],
-        })
+        metadata = pd.DataFrame(
+            {
+                "run": ["SRR001", "SRR001", "SRR002"],
+                "scientific_name": ["Homo sapiens", "Homo sapiens", "Mus musculus"],
+                "sample_group": ["brain", "brain", "liver"],
+                "library_strategy": ["RNA-Seq", "RNA-Seq", "RNA-Seq"],
+                "platform": ["ILLUMINA", "ILLUMINA", "ILLUMINA"],
+                "extra_col": ["a", "b", "c"],
+            }
+        )
 
         input_path = tmp_path / "metadata.tsv"
         metadata.to_csv(input_path, sep="\t", index=False)
@@ -153,16 +169,25 @@ class TestDeduplicateMetadata:
 
         df_result = pd.read_csv(input_path, sep="\t")
         assert len(df_result) == 2
-        assert list(df_result.columns) == ["run", "scientific_name", "sample_group", "library_strategy", "platform", "extra_col"]
+        assert list(df_result.columns) == [
+            "run",
+            "scientific_name",
+            "sample_group",
+            "library_strategy",
+            "platform",
+            "extra_col",
+        ]
 
     def test_deduplicate_with_many_placeholders(self, tmp_path: Path) -> None:
         """Test handling when many entries have placeholder names."""
         placeholder = "Please add in format: Genus species"
-        metadata = pd.DataFrame({
-            "run": ["SRR001", "SRR002", "SRR003", "SRR004", "SRR005"],
-            "scientific_name": [placeholder, "Real species", placeholder, placeholder, "Another species"],
-            "sample_group": ["g1", "g2", "g3", "g4", "g5"],
-        })
+        metadata = pd.DataFrame(
+            {
+                "run": ["SRR001", "SRR002", "SRR003", "SRR004", "SRR005"],
+                "scientific_name": [placeholder, "Real species", placeholder, placeholder, "Another species"],
+                "sample_group": ["g1", "g2", "g3", "g4", "g5"],
+            }
+        )
 
         input_path = tmp_path / "metadata.tsv"
         metadata.to_csv(input_path, sep="\t", index=False)
@@ -181,10 +206,12 @@ class TestDeduplicateMetadata:
         runs = [f"SRR{i:06d}" for i in range(500)] * 2
         names = ["Species " + chr(65 + (i % 26)) for i in range(1000)]
 
-        metadata = pd.DataFrame({
-            "run": runs,
-            "scientific_name": names,
-        })
+        metadata = pd.DataFrame(
+            {
+                "run": runs,
+                "scientific_name": names,
+            }
+        )
 
         input_path = tmp_path / "large_metadata.tsv"
         metadata.to_csv(input_path, sep="\t", index=False)
@@ -205,15 +232,23 @@ class TestMetadataUtilsIntegration:
         """Test with realistic amalgkit metadata patterns."""
         # Simulate amalgkit integrate output with duplicates
         placeholder = "Please add in format: Genus species"
-        metadata = pd.DataFrame({
-            "run": ["SRR14740487", "SRR14740487", "SRR14740488", "SRR14740488", "SRR14740489"],
-            "scientific_name": ["Pogonomyrmex barbatus", placeholder, placeholder, "Pogonomyrmex barbatus", "Pogonomyrmex barbatus"],
-            "sample_group": ["worker", "worker", "queen", "queen", "male"],
-            "library_strategy": ["RNA-Seq"] * 5,
-            "library_layout": ["PAIRED"] * 5,
-            "instrument_model": ["Illumina HiSeq 2500"] * 5,
-            "bio_material": ["caste:worker", "caste:worker", "caste:queen", "caste:queen", "caste:male"],
-        })
+        metadata = pd.DataFrame(
+            {
+                "run": ["SRR14740487", "SRR14740487", "SRR14740488", "SRR14740488", "SRR14740489"],
+                "scientific_name": [
+                    "Pogonomyrmex barbatus",
+                    placeholder,
+                    placeholder,
+                    "Pogonomyrmex barbatus",
+                    "Pogonomyrmex barbatus",
+                ],
+                "sample_group": ["worker", "worker", "queen", "queen", "male"],
+                "library_strategy": ["RNA-Seq"] * 5,
+                "library_layout": ["PAIRED"] * 5,
+                "instrument_model": ["Illumina HiSeq 2500"] * 5,
+                "bio_material": ["caste:worker", "caste:worker", "caste:queen", "caste:queen", "caste:male"],
+            }
+        )
 
         input_path = tmp_path / "metadata_integrate.tsv"
         metadata.to_csv(input_path, sep="\t", index=False)

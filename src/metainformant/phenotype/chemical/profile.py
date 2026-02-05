@@ -214,13 +214,15 @@ def identify_marker_compounds(
             continue
 
         if fc >= min_fold_change:
-            markers.append({
-                "compound": compound,
-                "mean_a": mean_a,
-                "mean_b": mean_b,
-                "fold_change": fc,
-                "enriched_in": "A" if mean_a > mean_b else "B",
-            })
+            markers.append(
+                {
+                    "compound": compound,
+                    "mean_a": mean_a,
+                    "mean_b": mean_b,
+                    "fold_change": fc,
+                    "enriched_in": "A" if mean_a > mean_b else "B",
+                }
+            )
 
     markers.sort(key=lambda m: m["fold_change"], reverse=True)
     return markers

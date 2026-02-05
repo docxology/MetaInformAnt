@@ -234,27 +234,33 @@ class TestHelicalWheel:
 
     def test_helical_wheel_returns_axes(self):
         import matplotlib
+
         matplotlib.use("Agg")
         from metainformant.protein.visualization.general import plot_helical_wheel
 
         ax = plot_helical_wheel("AKLVFEQHIND")
         from matplotlib.axes import Axes
+
         assert isinstance(ax, Axes)
         import matplotlib.pyplot as plt
+
         plt.close("all")
 
     def test_helical_wheel_short_sequence(self):
         import matplotlib
+
         matplotlib.use("Agg")
         from metainformant.protein.visualization.general import plot_helical_wheel
 
         ax = plot_helical_wheel("AKL")
         assert ax is not None
         import matplotlib.pyplot as plt
+
         plt.close("all")
 
     def test_helical_wheel_save(self, tmp_path):
         import matplotlib
+
         matplotlib.use("Agg")
         from metainformant.protein.visualization.general import plot_helical_wheel
 
@@ -262,6 +268,7 @@ class TestHelicalWheel:
         ax = plot_helical_wheel("AKLVFEQHIND", output_path=out)
         assert out.exists()
         import matplotlib.pyplot as plt
+
         plt.close("all")
 
 
@@ -270,6 +277,7 @@ class TestMSAHeatmap:
 
     def test_msa_heatmap_basic(self):
         import matplotlib
+
         matplotlib.use("Agg")
         from metainformant.protein.visualization.general import plot_msa_heatmap
 
@@ -277,10 +285,12 @@ class TestMSAHeatmap:
         ax = plot_msa_heatmap(seqs, labels=["seq1", "seq2", "seq3"])
         assert ax is not None
         import matplotlib.pyplot as plt
+
         plt.close("all")
 
     def test_msa_heatmap_no_labels(self):
         import matplotlib
+
         matplotlib.use("Agg")
         from metainformant.protein.visualization.general import plot_msa_heatmap
 
@@ -288,10 +298,12 @@ class TestMSAHeatmap:
         ax = plot_msa_heatmap(seqs)
         assert ax is not None
         import matplotlib.pyplot as plt
+
         plt.close("all")
 
     def test_msa_heatmap_save(self, tmp_path):
         import matplotlib
+
         matplotlib.use("Agg")
         from metainformant.protein.visualization.general import plot_msa_heatmap
 
@@ -299,6 +311,7 @@ class TestMSAHeatmap:
         ax = plot_msa_heatmap(["AKLV", "EKLV"], output_path=out)
         assert out.exists()
         import matplotlib.pyplot as plt
+
         plt.close("all")
 
 
@@ -307,6 +320,7 @@ class TestPropertyDistribution:
 
     def test_property_distribution_box(self):
         import matplotlib
+
         matplotlib.use("Agg")
         from metainformant.protein.visualization.general import plot_property_distribution
 
@@ -314,10 +328,12 @@ class TestPropertyDistribution:
         ax = plot_property_distribution(props, kind="box")
         assert ax is not None
         import matplotlib.pyplot as plt
+
         plt.close("all")
 
     def test_property_distribution_save(self, tmp_path):
         import matplotlib
+
         matplotlib.use("Agg")
         from metainformant.protein.visualization.general import plot_property_distribution
 
@@ -326,6 +342,7 @@ class TestPropertyDistribution:
         ax = plot_property_distribution(props, output_path=out)
         assert out.exists()
         import matplotlib.pyplot as plt
+
         plt.close("all")
 
 
@@ -343,10 +360,7 @@ def _write_test_pdb(path: Path, *, n_residues: int = 10, chain: str = "A") -> No
         x = float(i * 3.8)
         y = float(i * 0.5)
         z = float(i * 0.3)
-        line = (
-            f"ATOM  {serial:5d}  CA  ALA {chain}{i:4d}    "
-            f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00 50.00           C  "
-        )
+        line = f"ATOM  {serial:5d}  CA  ALA {chain}{i:4d}    " f"{x:8.3f}{y:8.3f}{z:8.3f}  1.00 50.00           C  "
         lines.append(line)
         serial += 1
     lines.append("END")
@@ -667,8 +681,7 @@ class TestReadPdbCaCoordinates:
         lines = ["HEADER    TEST"]
         for i in range(1, 4):
             lines.append(
-                f"ATOM  {i:5d}  CB  ALA A{i:4d}    "
-                f"{float(i):8.3f}{0.0:8.3f}{0.0:8.3f}  1.00 20.00           C  "
+                f"ATOM  {i:5d}  CB  ALA A{i:4d}    " f"{float(i):8.3f}{0.0:8.3f}{0.0:8.3f}  1.00 20.00           C  "
             )
         lines.append("END")
         pdb.write_text("\n".join(lines))
@@ -687,19 +700,23 @@ class TestPackageInits:
 
     def test_database_init_imports(self):
         from metainformant.protein import database
+
         assert hasattr(database, "interpro")
         assert hasattr(database, "uniprot")
 
     def test_visualization_init_imports(self):
         from metainformant.protein import visualization
+
         assert hasattr(visualization, "general")
 
     def test_database_submodule_access(self):
         from metainformant.protein.database import interpro
+
         assert hasattr(interpro, "fetch_interpro_domains")
 
     def test_visualization_submodule_access(self):
         from metainformant.protein.visualization import general
+
         assert hasattr(general, "plot_helical_wheel")
         assert hasattr(general, "plot_msa_heatmap")
         assert hasattr(general, "plot_property_distribution")

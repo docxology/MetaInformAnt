@@ -631,6 +631,7 @@ def subset_vcf_data(
         if max_per_sub and metadata:
             # Cap per subspecies
             from collections import defaultdict
+
             counts: Dict[str, int] = defaultdict(int)
             capped = []
             for sid in target_ids:

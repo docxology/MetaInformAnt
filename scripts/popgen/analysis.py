@@ -16,7 +16,7 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root / "src"))
 
 from metainformant.core.io import ensure_directory
-from metainformant.core.logging import setup_logger
+from metainformant.core.utils.logging import setup_logger
 
 from generate_dataset import generate_comprehensive_dataset
 from analyze import analyze_dataset

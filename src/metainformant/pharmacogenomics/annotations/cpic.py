@@ -191,13 +191,13 @@ _CPIC_GUIDELINES: list[dict[str, Any]] = [
         "recommendations": {
             "Poor Metabolizer": {
                 "recommendation": "Reduce warfarin dose significantly (typically 50-80% reduction). "
-                                  "Consider pharmacogenomic dosing algorithm.",
+                "Consider pharmacogenomic dosing algorithm.",
                 "classification": "Strong",
                 "implications": "Greatly reduced warfarin clearance. High bleeding risk with standard dose.",
             },
             "Intermediate Metabolizer": {
                 "recommendation": "Reduce warfarin dose (typically 20-40% reduction). "
-                                  "Consider pharmacogenomic dosing algorithm.",
+                "Consider pharmacogenomic dosing algorithm.",
                 "classification": "Moderate",
                 "implications": "Reduced warfarin clearance.",
             },
@@ -217,7 +217,7 @@ _CPIC_GUIDELINES: list[dict[str, Any]] = [
         "recommendations": {
             "Poor Metabolizer": {
                 "recommendation": "Avoid fluorouracil, capecitabine, or tegafur. "
-                                  "If unavoidable, use strongly reduced dose (< 25% of standard).",
+                "If unavoidable, use strongly reduced dose (< 25% of standard).",
                 "classification": "Strong",
                 "implications": "Complete DPD deficiency. Very high risk of severe, potentially fatal toxicity.",
             },
@@ -242,13 +242,12 @@ _CPIC_GUIDELINES: list[dict[str, Any]] = [
         "recommendations": {
             "Poor Metabolizer": {
                 "recommendation": "Consider alternative agent or reduce dose to 10% of standard. "
-                                  "Allow 4-6 weeks to reach steady state before dose adjustment.",
+                "Allow 4-6 weeks to reach steady state before dose adjustment.",
                 "classification": "Strong",
                 "implications": "Homozygous for non-functional TPMT alleles. Very high risk of myelosuppression.",
             },
             "Intermediate Metabolizer": {
-                "recommendation": "Reduce starting dose to 30-80% of standard. "
-                                  "Titrate based on tolerance.",
+                "recommendation": "Reduce starting dose to 30-80% of standard. " "Titrate based on tolerance.",
                 "classification": "Strong",
                 "implications": "Heterozygous. Moderate risk of myelosuppression.",
             },
@@ -268,7 +267,7 @@ _CPIC_GUIDELINES: list[dict[str, Any]] = [
         "recommendations": {
             "Poor Metabolizer": {
                 "recommendation": "Use alternative statin (rosuvastatin, pravastatin, fluvastatin). "
-                                  "If simvastatin required, use lower dose (max 20mg).",
+                "If simvastatin required, use lower dose (max 20mg).",
                 "classification": "Strong",
                 "implications": "Increased simvastatin acid exposure. High risk of myopathy.",
             },
@@ -338,13 +337,15 @@ def _load_guidelines_from_file(filepath: str | Path) -> list[dict[str, Any]]:
     with open(path, "r", encoding="utf-8") as fh:
         reader = csv.DictReader(fh, delimiter="\t")
         for row in reader:
-            guidelines.append({
-                "drug": row.get("drug", "").lower(),
-                "gene": row.get("gene", "").upper(),
-                "cpic_level": row.get("cpic_level", row.get("level", "")),
-                "guideline_url": row.get("guideline_url", row.get("url", "")),
-                "recommendations": {},
-            })
+            guidelines.append(
+                {
+                    "drug": row.get("drug", "").lower(),
+                    "gene": row.get("gene", "").upper(),
+                    "cpic_level": row.get("cpic_level", row.get("level", "")),
+                    "guideline_url": row.get("guideline_url", row.get("url", "")),
+                    "recommendations": {},
+                }
+            )
 
     logger.info("Loaded %d CPIC guidelines from %s", len(guidelines), filepath)
     return guidelines
@@ -499,11 +500,13 @@ def list_actionable_genes(
             continue
         seen.add(key)
 
-        actionable.append({
-            "gene": guideline["gene"].upper(),
-            "drug": guideline["drug"],
-            "cpic_level": level,
-        })
+        actionable.append(
+            {
+                "gene": guideline["gene"].upper(),
+                "drug": guideline["drug"],
+                "cpic_level": level,
+            }
+        )
 
     # Sort by gene, then drug
     actionable.sort(key=lambda x: (x["gene"], x["drug"]))
@@ -588,12 +591,14 @@ def parse_cpic_allele_definitions(
             result[gene] = []
 
         meta = allele_meta[(gene, allele)]
-        result[gene].append({
-            "allele": allele,
-            "defining_variants": variants,
-            "function": meta["function"],
-            "activity_value": meta["activity_value"],
-        })
+        result[gene].append(
+            {
+                "allele": allele,
+                "defining_variants": variants,
+                "function": meta["function"],
+                "activity_value": meta["activity_value"],
+            }
+        )
 
     total_alleles = sum(len(v) for v in result.values())
     logger.info(

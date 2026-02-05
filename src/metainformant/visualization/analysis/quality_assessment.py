@@ -66,8 +66,14 @@ def plot_coverage_uniformity(
     stats_text = (
         f"CV: {std_cov/mean_cov:.3f}\nIQR: {np.percentile(coverage_data, 75) - np.percentile(coverage_data, 25):.1f}"
     )
-    ax.text(0.02, 0.98, stats_text, transform=ax.transAxes, verticalalignment="top",
-            bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8))
+    ax.text(
+        0.02,
+        0.98,
+        stats_text,
+        transform=ax.transAxes,
+        verticalalignment="top",
+        bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
+    )
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
@@ -165,8 +171,14 @@ def plot_batch_effects_qc(
             colors = plt.cm.tab10(np.linspace(0, 1, len(unique_batches)))
             for i, batch in enumerate(unique_batches):
                 mask = np.array(pca_data["batches"]) == batch
-                axes[plot_idx].scatter(np.array(pca_data["pc1"])[mask], np.array(pca_data["pc2"])[mask],
-                                       color=colors[i], label=batch, alpha=0.7, s=50)
+                axes[plot_idx].scatter(
+                    np.array(pca_data["pc1"])[mask],
+                    np.array(pca_data["pc2"])[mask],
+                    color=colors[i],
+                    label=batch,
+                    alpha=0.7,
+                    s=50,
+                )
             axes[plot_idx].set_xlabel("PC1")
             axes[plot_idx].set_ylabel("PC2")
             axes[plot_idx].set_title("Batch Effects in PCA")
@@ -186,8 +198,14 @@ def plot_batch_effects_qc(
             axes[plot_idx].tick_params(axis="x", rotation=45)
             axes[plot_idx].grid(True, alpha=0.3, axis="y")
             for bar, score in zip(bars, scores):
-                axes[plot_idx].text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.01,
-                                     f"{score:.3f}", ha="center", va="bottom", fontsize=8)
+                axes[plot_idx].text(
+                    bar.get_x() + bar.get_width() / 2,
+                    bar.get_height() + 0.01,
+                    f"{score:.3f}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=8,
+                )
         plot_idx += 1
 
     if "batch_de_stats" in batch_qc_data:
@@ -283,8 +301,14 @@ def plot_data_integrity_metrics(
     ax.grid(True, alpha=0.3, axis="y")
 
     for bar, value in zip(bars, values):
-        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.01,
-                f"{value:.3f}", ha="center", va="bottom", fontsize=8)
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + 0.01,
+            f"{value:.3f}",
+            ha="center",
+            va="bottom",
+            fontsize=8,
+        )
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)

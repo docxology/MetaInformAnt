@@ -253,12 +253,7 @@ def search_species_with_rnaseq(query: str, max_records: int = 10, email: Optiona
 
     try:
         # Search SRA database
-        handle = Entrez.esearch(
-            db="sra",
-            term=search_query,
-            retmax=max_records,
-            usehistory="y"
-        )
+        handle = Entrez.esearch(db="sra", term=search_query, retmax=max_records, usehistory="y")
         search_results = Entrez.read(handle)
         handle.close()
 
@@ -272,24 +267,14 @@ def search_species_with_rnaseq(query: str, max_records: int = 10, email: Optiona
         # Fetch detailed records for the found IDs
         logger.info(f"Found {total_count} records, fetching details for {len(id_list)}")
 
-        fetch_handle = Entrez.efetch(
-            db="sra",
-            id=",".join(id_list),
-            rettype="xml",
-            retmode="xml"
-        )
+        fetch_handle = Entrez.efetch(db="sra", id=",".join(id_list), rettype="xml", retmode="xml")
         fetch_data = fetch_handle.read()
         fetch_handle.close()
 
         # Parse the XML response
         results = _parse_sra_xml(fetch_data, query)
 
-        return {
-            "query": query,
-            "results": results,
-            "total": total_count,
-            "returned": len(results)
-        }
+        return {"query": query, "results": results, "total": total_count, "returned": len(results)}
 
     except Exception as e:
         logger.error(f"NCBI Entrez query failed: {e}")
@@ -436,20 +421,30 @@ def get_genome_info(taxonomy_id: str, species_name: str) -> Optional[Dict[str, A
             for assembly_data in response.assemblies:
                 if hasattr(assembly_data, "assembly"):
                     asm = assembly_data.assembly
-                    assemblies.append({
-                        "assembly": {
-                            "assembly_accession": getattr(asm, "assembly_accession", ""),
-                            "assembly_level": getattr(asm, "assembly_level", ""),
-                            "assembly_name": getattr(asm, "assembly_name", ""),
-                            "org": {
-                                "sci_name": getattr(getattr(asm, "org", None), "sci_name", species_name) if hasattr(asm, "org") else species_name,
-                                "tax_id": taxonomy_id
-                            }
-                        },
-                        "assembly_stats": {
-                            "contig_n50": getattr(getattr(assembly_data, "assembly_stats", None), "contig_n50", 0) if hasattr(assembly_data, "assembly_stats") else 0
+                    assemblies.append(
+                        {
+                            "assembly": {
+                                "assembly_accession": getattr(asm, "assembly_accession", ""),
+                                "assembly_level": getattr(asm, "assembly_level", ""),
+                                "assembly_name": getattr(asm, "assembly_name", ""),
+                                "org": {
+                                    "sci_name": (
+                                        getattr(getattr(asm, "org", None), "sci_name", species_name)
+                                        if hasattr(asm, "org")
+                                        else species_name
+                                    ),
+                                    "tax_id": taxonomy_id,
+                                },
+                            },
+                            "assembly_stats": {
+                                "contig_n50": (
+                                    getattr(getattr(assembly_data, "assembly_stats", None), "contig_n50", 0)
+                                    if hasattr(assembly_data, "assembly_stats")
+                                    else 0
+                                )
+                            },
                         }
-                    })
+                    )
 
             best = _select_best_assembly(assemblies)
 

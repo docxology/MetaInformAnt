@@ -20,7 +20,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core.io import ensure_directory, dump_json
-from metainformant.core.logging import get_logger
+from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 

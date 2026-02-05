@@ -106,8 +106,14 @@ def plot_vcf_quality_metrics(
         axes[5].set_title("Summary Statistics")
         axes[5].grid(True, alpha=0.3, axis="y")
         for bar, value in zip(bars, stat_values):
-            axes[5].text(bar.get_x() + bar.get_width() / 2, bar.get_height() + max(stat_values) * 0.01,
-                         f"{value:.0f}", ha="center", va="bottom", fontsize=8)
+            axes[5].text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + max(stat_values) * 0.01,
+                f"{value:.0f}",
+                ha="center",
+                va="bottom",
+                fontsize=8,
+            )
 
     plt.tight_layout()
 
@@ -207,9 +213,16 @@ def plot_singlecell_qc_metrics(
             corr_data = np.column_stack([qc_metrics[m] for m in available_metrics])
             corr_matrix = np.corrcoef(corr_data.T)
             if HAS_SEABORN:
-                sns.heatmap(corr_matrix, annot=True, fmt=".2f", cmap="coolwarm",
-                            xticklabels=available_metrics, yticklabels=available_metrics,
-                            ax=axes[plot_idx], center=0)
+                sns.heatmap(
+                    corr_matrix,
+                    annot=True,
+                    fmt=".2f",
+                    cmap="coolwarm",
+                    xticklabels=available_metrics,
+                    yticklabels=available_metrics,
+                    ax=axes[plot_idx],
+                    center=0,
+                )
             else:
                 im = axes[plot_idx].imshow(corr_matrix, cmap="coolwarm", aspect="equal", vmin=-1, vmax=1)
                 axes[plot_idx].set_xticks(range(len(available_metrics)))
@@ -281,8 +294,9 @@ def plot_protein_structure_quality(
             axes[2].set_title("Steric Clashes")
             axes[2].tick_params(axis="x", rotation=45)
         else:
-            axes[2].text(0.5, 0.5, f"Clash Score: {clash_data:.2f}",
-                         ha="center", va="center", transform=axes[2].transAxes)
+            axes[2].text(
+                0.5, 0.5, f"Clash Score: {clash_data:.2f}", ha="center", va="center", transform=axes[2].transAxes
+            )
             axes[2].set_title("Clash Score")
         axes[2].grid(True, alpha=0.3, axis="y")
 
@@ -296,11 +310,18 @@ def plot_protein_structure_quality(
             axes[3].set_title("Quality Metrics")
             axes[3].tick_params(axis="x", rotation=45)
             for bar, value in zip(bars, values):
-                axes[3].text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.01,
-                             f"{value:.2f}", ha="center", va="bottom", fontsize=8)
+                axes[3].text(
+                    bar.get_x() + bar.get_width() / 2,
+                    bar.get_height() + 0.01,
+                    f"{value:.2f}",
+                    ha="center",
+                    va="bottom",
+                    fontsize=8,
+                )
         else:
-            axes[3].text(0.5, 0.5, f"Overall Quality: {quality_data:.2f}",
-                         ha="center", va="center", transform=axes[3].transAxes)
+            axes[3].text(
+                0.5, 0.5, f"Overall Quality: {quality_data:.2f}", ha="center", va="center", transform=axes[3].transAxes
+            )
             axes[3].set_title("Overall Quality Score")
         axes[3].grid(True, alpha=0.3, axis="y")
 
@@ -365,8 +386,7 @@ def plot_multiomics_quality_overview(
     ax.grid(True, alpha=0.3)
 
     for angle, score, omics in zip(angles[:-1], quality_scores[:-1], omics_types):
-        ax.text(angle, score + max(quality_scores) * 0.05, f"{score:.2f}",
-                ha="center", va="bottom", fontsize=8)
+        ax.text(angle, score + max(quality_scores) * 0.05, f"{score:.2f}", ha="center", va="bottom", fontsize=8)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)

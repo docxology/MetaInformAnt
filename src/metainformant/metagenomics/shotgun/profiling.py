@@ -156,9 +156,7 @@ def build_kmer_index(
                 taxon_lineages[taxon_id] = taxonomy.get(taxon_id, [("species", taxon_id)])
         else:
             # Compute LCA
-            lca_lineage = _compute_lca(
-                [taxonomy.get(tid, [("species", tid)]) for tid in taxa_ids]
-            )
+            lca_lineage = _compute_lca([taxonomy.get(tid, [("species", tid)]) for tid in taxa_ids])
             lca_id = _lineage_to_id(lca_lineage)
             kmer_to_taxon[kmer] = lca_id
             if lca_id not in taxon_lineages:

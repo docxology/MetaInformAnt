@@ -306,19 +306,19 @@ def morans_i(
     # Variance under normality assumption (randomization)
     S1 = float(((W + W.T).multiply(W + W.T)).sum()) / 2.0
     S2_vec = np.array(W.sum(axis=0)).flatten() + np.array(W.sum(axis=1)).flatten()
-    S2 = float((S2_vec ** 2).sum())
+    S2 = float((S2_vec**2).sum())
 
     # Kurtosis term
-    b2 = (n * np.sum(z ** 4)) / (np.sum(z ** 2) ** 2)
+    b2 = (n * np.sum(z**4)) / (np.sum(z**2) ** 2)
 
-    A = n * ((n ** 2 - 3 * n + 3) * S1 - n * S2 + 3 * S0 ** 2)
-    B = b2 * ((n ** 2 - n) * S1 - 2 * n * S2 + 6 * S0 ** 2)
-    C = (n - 1) * (n - 2) * (n - 3) * S0 ** 2
+    A = n * ((n**2 - 3 * n + 3) * S1 - n * S2 + 3 * S0**2)
+    B = b2 * ((n**2 - n) * S1 - 2 * n * S2 + 6 * S0**2)
+    C = (n - 1) * (n - 2) * (n - 3) * S0**2
 
     if C == 0:
         Var_I = 0.0
     else:
-        Var_I = (A - B) / C - E_I ** 2
+        Var_I = (A - B) / C - E_I**2
 
     # Z-score and p-value
     if Var_I > 0:
@@ -330,8 +330,12 @@ def morans_i(
 
     logger.info(f"Moran's I={I:.4f}, z={z_score:.2f}, p={p_value:.4e}")
     return MoransIResult(
-        I=I, expected_I=E_I, variance_I=Var_I,
-        z_score=z_score, p_value=p_value, n=n,
+        I=I,
+        expected_I=E_I,
+        variance_I=Var_I,
+        z_score=z_score,
+        p_value=p_value,
+        n=n,
     )
 
 
@@ -381,7 +385,7 @@ def gearys_c(
     numerator = float(np.sum(w_vals * sq_diffs))
 
     # Denominator: sum of (x_i - x_bar)^2
-    denominator = float(np.sum(z ** 2))
+    denominator = float(np.sum(z**2))
 
     if denominator == 0:
         return GearyCResult(C=1.0, expected_C=1.0, variance_C=0.0, z_score=0.0, p_value=1.0, n=n)
@@ -394,14 +398,11 @@ def gearys_c(
     # Variance under normality assumption
     S1 = float(((W + W.T).multiply(W + W.T)).sum()) / 2.0
     S2_vec = np.array(W.sum(axis=0)).flatten() + np.array(W.sum(axis=1)).flatten()
-    S2 = float((S2_vec ** 2).sum())
+    S2 = float((S2_vec**2).sum())
 
     n_f = float(n)
     if n > 3:
-        Var_C = (
-            ((2 * S1 + S2) * (n_f - 1) - 4 * S0 ** 2)
-            / (2 * (n_f + 1) * S0 ** 2)
-        )
+        Var_C = ((2 * S1 + S2) * (n_f - 1) - 4 * S0**2) / (2 * (n_f + 1) * S0**2)
     else:
         Var_C = 0.0
 
@@ -414,8 +415,12 @@ def gearys_c(
 
     logger.info(f"Geary's C={C:.4f}, z={z_score:.2f}, p={p_value:.4e}")
     return GearyCResult(
-        C=C, expected_C=E_C, variance_C=Var_C,
-        z_score=z_score, p_value=p_value, n=n,
+        C=C,
+        expected_C=E_C,
+        variance_C=Var_C,
+        z_score=z_score,
+        p_value=p_value,
+        n=n,
     )
 
 
@@ -465,7 +470,7 @@ def local_morans_i(
     z = x - x_mean
 
     # Variance of z
-    m2 = float(np.sum(z ** 2) / n)
+    m2 = float(np.sum(z**2) / n)
     if m2 == 0:
         return LocalMoransResult(
             local_I=np.zeros(n),
@@ -489,13 +494,13 @@ def local_morans_i(
     w_i_sq = np.array(W.multiply(W).sum(axis=1)).flatten()
     w_i_sum = np.array(W.sum(axis=1)).flatten()
 
-    b2 = (np.sum(z ** 4) / n) / (m2 ** 2)
+    b2 = (np.sum(z**4) / n) / (m2**2)
 
     Var_Ii = np.zeros(n, dtype=np.float64)
     for i in range(n):
         wii_sq = w_i_sq[i]
         wi_sum = w_i_sum[i]
-        Var_Ii[i] = wii_sq * (n - b2) / (n - 1) + wi_sum ** 2 * (2 * b2 - n) / ((n - 1) * (n - 2)) - E_Ii ** 2
+        Var_Ii[i] = wii_sq * (n - b2) / (n - 1) + wi_sum**2 * (2 * b2 - n) / ((n - 1) * (n - 2)) - E_Ii**2
 
     Var_Ii = np.maximum(Var_Ii, 1e-20)
 
@@ -523,9 +528,7 @@ def local_morans_i(
             cluster_labels.append("NS")
 
     n_sig = sum(1 for l in cluster_labels if l != "NS")
-    logger.info(
-        f"Local Moran's I: {n_sig}/{n} significant at alpha={significance}"
-    )
+    logger.info(f"Local Moran's I: {n_sig}/{n} significant at alpha={significance}")
 
     return LocalMoransResult(
         local_I=local_I,
@@ -602,7 +605,7 @@ def getis_ord_g(
         wi_sq_sum = W_star_sq_sum[i]
 
         numerator = Wx[i] - x_bar * wi_sum
-        denominator_inner = (n * wi_sq_sum - wi_sum ** 2) / (n - 1)
+        denominator_inner = (n * wi_sq_sum - wi_sum**2) / (n - 1)
 
         if denominator_inner > 0:
             denominator = S * np.sqrt(denominator_inner)
@@ -749,10 +752,7 @@ def spatial_variogram(
                 range_param = float(bin_centers[bi])
                 break
 
-    logger.info(
-        f"Variogram: nugget={nugget:.4f}, sill={sill:.4f}, "
-        f"range={range_param:.2f}, {n_bins} bins"
-    )
+    logger.info(f"Variogram: nugget={nugget:.4f}, sill={sill:.4f}, " f"range={range_param:.2f}, {n_bins} bins")
 
     return VariogramResult(
         bin_centers=bin_centers,

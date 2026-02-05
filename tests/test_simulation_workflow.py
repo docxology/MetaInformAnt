@@ -357,9 +357,7 @@ class TestRunPopulationGenetics:
     """Tests for population_genetics simulation type."""
 
     def test_neutral_evolution(self, tmp_path: Path) -> None:
-        cfg = _make_small_config(
-            "population_genetics", tmp_path, extra={"selection_coefficient": 0.0}
-        )
+        cfg = _make_small_config("population_genetics", tmp_path, extra={"selection_coefficient": 0.0})
         result = run_simulation_workflow(cfg)
         assert result["simulation_type"] == "population_genetics"
         assert result["population_size"] == SMALL_POP_SIZE
@@ -367,9 +365,7 @@ class TestRunPopulationGenetics:
         assert "genotypes" in result
 
     def test_with_selection(self, tmp_path: Path) -> None:
-        cfg = _make_small_config(
-            "population_genetics", tmp_path, extra={"selection_coefficient": 0.1}
-        )
+        cfg = _make_small_config("population_genetics", tmp_path, extra={"selection_coefficient": 0.1})
         result = run_simulation_workflow(cfg)
         assert result["simulation_type"] == "population_genetics"
         assert "allele_frequencies" in result or "final_genotypes" in result
@@ -634,9 +630,7 @@ class TestCalibrateSimulationParameters:
             "mutation_rate": (0.001, 0.1),
             "population_size": (10.0, 500.0),
         }
-        result = calibrate_simulation_parameters(
-            target_data, ranges, n_iterations=20
-        )
+        result = calibrate_simulation_parameters(target_data, ranges, n_iterations=20)
         assert isinstance(result, dict)
         assert "mutation_rate" in result
         assert "population_size" in result
@@ -646,9 +640,7 @@ class TestCalibrateSimulationParameters:
             "alpha": (0.0, 1.0),
             "beta": (10.0, 100.0),
         }
-        result = calibrate_simulation_parameters(
-            {"target": 0.5}, ranges, n_iterations=50
-        )
+        result = calibrate_simulation_parameters({"target": 0.5}, ranges, n_iterations=50)
         assert 0.0 <= result["alpha"] <= 1.0
         assert 10.0 <= result["beta"] <= 100.0
 
@@ -675,9 +667,7 @@ class TestCalibrateSimulationParameters:
 
     def test_single_iteration(self) -> None:
         ranges = {"p": (0.0, 1.0)}
-        result = calibrate_simulation_parameters(
-            {}, ranges, n_iterations=1
-        )
+        result = calibrate_simulation_parameters({}, ranges, n_iterations=1)
         assert "p" in result
 
     def test_invalid_n_iterations_raises(self) -> None:
@@ -695,9 +685,7 @@ class TestRunBenchmarkSimulation:
 
     def test_benchmark_returns_summary(self, tmp_path: Path) -> None:
         cfg = _make_small_config("sequence_evolution", tmp_path)
-        result = run_benchmark_simulation(
-            cfg, n_replicates=2, output_dir=str(tmp_path / "benchmark")
-        )
+        result = run_benchmark_simulation(cfg, n_replicates=2, output_dir=str(tmp_path / "benchmark"))
         assert isinstance(result, dict)
         assert result["simulation_type"] == "sequence_evolution"
         assert result["n_replicates"] == 2
@@ -715,16 +703,12 @@ class TestRunBenchmarkSimulation:
 
     def test_benchmark_replicate_count(self, tmp_path: Path) -> None:
         cfg = _make_small_config("sequence_evolution", tmp_path)
-        result = run_benchmark_simulation(
-            cfg, n_replicates=3, output_dir=str(tmp_path / "benchmark")
-        )
+        result = run_benchmark_simulation(cfg, n_replicates=3, output_dir=str(tmp_path / "benchmark"))
         assert len(result["replicates"]) == 3
 
     def test_benchmark_summary_stats(self, tmp_path: Path) -> None:
         cfg = _make_small_config("sequence_evolution", tmp_path)
-        result = run_benchmark_simulation(
-            cfg, n_replicates=2, output_dir=str(tmp_path / "benchmark")
-        )
+        result = run_benchmark_simulation(cfg, n_replicates=2, output_dir=str(tmp_path / "benchmark"))
         summary = result["summary"]
         assert summary["total_replicates"] == 2
         assert summary["successful_replicates"] >= 1
@@ -733,9 +717,7 @@ class TestRunBenchmarkSimulation:
 
     def test_benchmark_with_seed_increments(self, tmp_path: Path) -> None:
         cfg = _make_small_config("sequence_evolution", tmp_path, seed=100)
-        result = run_benchmark_simulation(
-            cfg, n_replicates=3, output_dir=str(tmp_path / "benchmark")
-        )
+        result = run_benchmark_simulation(cfg, n_replicates=3, output_dir=str(tmp_path / "benchmark"))
         seeds = [r["seed"] for r in result["replicates"] if "seed" in r]
         # Seeds should be 100, 101, 102
         assert seeds == [100, 101, 102]
@@ -750,12 +732,8 @@ class TestReproducibility:
     """Verify that the same seed produces identical results."""
 
     def test_sequence_evolution_reproducible(self, tmp_path: Path) -> None:
-        cfg1 = _make_small_config(
-            "sequence_evolution", tmp_path / "run1", seed=777
-        )
-        cfg2 = _make_small_config(
-            "sequence_evolution", tmp_path / "run2", seed=777
-        )
+        cfg1 = _make_small_config("sequence_evolution", tmp_path / "run1", seed=777)
+        cfg2 = _make_small_config("sequence_evolution", tmp_path / "run2", seed=777)
         r1 = run_simulation_workflow(cfg1)
         r2 = run_simulation_workflow(cfg2)
         # Core simulation data must match
@@ -763,23 +741,15 @@ class TestReproducibility:
         assert r1["divergence_analysis"] == r2["divergence_analysis"]
 
     def test_population_genetics_reproducible(self, tmp_path: Path) -> None:
-        cfg1 = _make_small_config(
-            "population_genetics", tmp_path / "run1", seed=888
-        )
-        cfg2 = _make_small_config(
-            "population_genetics", tmp_path / "run2", seed=888
-        )
+        cfg1 = _make_small_config("population_genetics", tmp_path / "run1", seed=888)
+        cfg2 = _make_small_config("population_genetics", tmp_path / "run2", seed=888)
         r1 = run_simulation_workflow(cfg1)
         r2 = run_simulation_workflow(cfg2)
         assert r1["genotypes"] == r2["genotypes"]
 
     def test_different_seeds_produce_different_results(self, tmp_path: Path) -> None:
-        cfg1 = _make_small_config(
-            "sequence_evolution", tmp_path / "run1", seed=111
-        )
-        cfg2 = _make_small_config(
-            "sequence_evolution", tmp_path / "run2", seed=999
-        )
+        cfg1 = _make_small_config("sequence_evolution", tmp_path / "run1", seed=111)
+        cfg2 = _make_small_config("sequence_evolution", tmp_path / "run2", seed=999)
         r1 = run_simulation_workflow(cfg1)
         r2 = run_simulation_workflow(cfg2)
         # With different seeds and mutations, populations should differ
@@ -814,9 +784,7 @@ class TestEdgeCases:
         assert "output_file" in result
 
     def test_validate_output_disabled(self, tmp_path: Path) -> None:
-        cfg = _make_small_config(
-            "sequence_evolution", tmp_path, extra={"validate_output": False}
-        )
+        cfg = _make_small_config("sequence_evolution", tmp_path, extra={"validate_output": False})
         result = run_simulation_workflow(cfg)
         assert "validation" not in result
 

@@ -302,7 +302,11 @@ class TestRobinsonFouldsDistance:
         """
         # ((A,B),(C,(D,E))) has split {A,B}
         t1 = {
-            "A": None, "B": None, "C": None, "D": None, "E": None,
+            "A": None,
+            "B": None,
+            "C": None,
+            "D": None,
+            "E": None,
             "N_AB": {"A": 1.0, "B": 1.0},
             "N_DE": {"D": 1.0, "E": 1.0},
             "N_CDE": {"C": 1.0, "N_DE": 0.5},
@@ -310,7 +314,11 @@ class TestRobinsonFouldsDistance:
         }
         # ((A,C),(B,(D,E))) has split {A,C} instead
         t2 = {
-            "A": None, "B": None, "C": None, "D": None, "E": None,
+            "A": None,
+            "B": None,
+            "C": None,
+            "D": None,
+            "E": None,
             "N_AC": {"A": 1.0, "C": 1.0},
             "N_DE": {"D": 1.0, "E": 1.0},
             "N_BDE": {"B": 1.0, "N_DE": 0.5},
@@ -326,7 +334,11 @@ class TestRobinsonFouldsDistance:
         """
         # Tree 1: ((A,B),(C,(D,E)))
         t1 = {
-            "A": None, "B": None, "C": None, "D": None, "E": None,
+            "A": None,
+            "B": None,
+            "C": None,
+            "D": None,
+            "E": None,
             "N_AB": {"A": 1.0, "B": 1.0},
             "N_DE": {"D": 1.0, "E": 1.0},
             "N_CDE": {"C": 1.0, "N_DE": 0.5},
@@ -334,7 +346,11 @@ class TestRobinsonFouldsDistance:
         }
         # Tree 2: ((A,C),(B,(D,E)))
         t2 = {
-            "A": None, "B": None, "C": None, "D": None, "E": None,
+            "A": None,
+            "B": None,
+            "C": None,
+            "D": None,
+            "E": None,
             "N_AC": {"A": 1.0, "C": 1.0},
             "N_DE": {"D": 1.0, "E": 1.0},
             "N_BDE": {"B": 1.0, "N_DE": 0.5},
@@ -342,7 +358,11 @@ class TestRobinsonFouldsDistance:
         }
         # Tree 3: ((A,D),(B,(C,E)))
         t3 = {
-            "A": None, "B": None, "C": None, "D": None, "E": None,
+            "A": None,
+            "B": None,
+            "C": None,
+            "D": None,
+            "E": None,
             "N_AD": {"A": 1.0, "D": 1.0},
             "N_CE": {"C": 1.0, "E": 1.0},
             "N_BCE": {"B": 1.0, "N_CE": 0.5},
@@ -371,12 +391,16 @@ class TestRobinsonFouldsDistance:
     def test_three_leaf_trees_same_topology(self) -> None:
         """All unrooted 3-leaf binary trees have the same topology -> RF = 0."""
         t1 = {
-            "A": None, "B": None, "C": None,
+            "A": None,
+            "B": None,
+            "C": None,
             "N": {"A": 1.0, "B": 1.0},
             "Root": {"N": 0.5, "C": 1.0},
         }
         t2 = {
-            "A": None, "B": None, "C": None,
+            "A": None,
+            "B": None,
+            "C": None,
             "N": {"B": 1.0, "C": 1.0},
             "Root": {"N": 0.5, "A": 1.0},
         }
@@ -937,7 +961,11 @@ class TestIntegration:
         t1 = _make_five_leaf_tree()
         # Build a different 5-leaf topology
         t2 = {
-            "A": None, "B": None, "C": None, "D": None, "E": None,
+            "A": None,
+            "B": None,
+            "C": None,
+            "D": None,
+            "E": None,
             "N_AC": {"A": 1.0, "C": 1.0},
             "N_BD": {"B": 1.0, "D": 1.0},
             "N_ACE": {"N_AC": 0.5, "E": 1.0},

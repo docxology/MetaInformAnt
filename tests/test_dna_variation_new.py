@@ -216,7 +216,14 @@ class TestPredictVariantEffect:
     def test_result_dictionary_keys(self) -> None:
         """Result dictionary has all expected keys."""
         result = variants.predict_variant_effect("A", "G", 0, "ATGATCGAA")
-        expected_keys = {"effect_type", "original_codon", "mutated_codon", "original_aa", "mutated_aa", "codon_position"}
+        expected_keys = {
+            "effect_type",
+            "original_codon",
+            "mutated_codon",
+            "original_aa",
+            "mutated_aa",
+            "codon_position",
+        }
         assert set(result.keys()) == expected_keys
 
 
@@ -230,60 +237,72 @@ class TestCalculateTiTvRatio:
 
     def test_known_ratio_two_to_one(self) -> None:
         """2 transitions and 1 transversion gives Ti/Tv = 2.0."""
-        vcf = _make_vcf_data([
-            _make_variant(ref="A", alt=["G"]),   # transition
-            _make_variant(ref="C", alt=["T"]),   # transition
-            _make_variant(ref="A", alt=["C"]),   # transversion
-        ])
+        vcf = _make_vcf_data(
+            [
+                _make_variant(ref="A", alt=["G"]),  # transition
+                _make_variant(ref="C", alt=["T"]),  # transition
+                _make_variant(ref="A", alt=["C"]),  # transversion
+            ]
+        )
         ratio = variants.calculate_ti_tv_ratio(vcf)
         assert ratio == pytest.approx(2.0)
 
     def test_all_transitions_returns_zero(self) -> None:
         """When there are zero transversions, ratio returns 0.0."""
-        vcf = _make_vcf_data([
-            _make_variant(ref="A", alt=["G"]),
-            _make_variant(ref="C", alt=["T"]),
-            _make_variant(ref="G", alt=["A"]),
-        ])
+        vcf = _make_vcf_data(
+            [
+                _make_variant(ref="A", alt=["G"]),
+                _make_variant(ref="C", alt=["T"]),
+                _make_variant(ref="G", alt=["A"]),
+            ]
+        )
         ratio = variants.calculate_ti_tv_ratio(vcf)
         assert ratio == 0.0
 
     def test_all_transversions(self) -> None:
         """When there are zero transitions, ratio is 0.0 / N = 0.0."""
-        vcf = _make_vcf_data([
-            _make_variant(ref="A", alt=["C"]),
-            _make_variant(ref="A", alt=["T"]),
-            _make_variant(ref="G", alt=["C"]),
-            _make_variant(ref="G", alt=["T"]),
-        ])
+        vcf = _make_vcf_data(
+            [
+                _make_variant(ref="A", alt=["C"]),
+                _make_variant(ref="A", alt=["T"]),
+                _make_variant(ref="G", alt=["C"]),
+                _make_variant(ref="G", alt=["T"]),
+            ]
+        )
         ratio = variants.calculate_ti_tv_ratio(vcf)
         assert ratio == pytest.approx(0.0)
 
     def test_equal_ti_tv_gives_one(self) -> None:
         """Equal counts of transitions and transversions gives ratio = 1.0."""
-        vcf = _make_vcf_data([
-            _make_variant(ref="A", alt=["G"]),   # Ti
-            _make_variant(ref="A", alt=["C"]),   # Tv
-        ])
+        vcf = _make_vcf_data(
+            [
+                _make_variant(ref="A", alt=["G"]),  # Ti
+                _make_variant(ref="A", alt=["C"]),  # Tv
+            ]
+        )
         ratio = variants.calculate_ti_tv_ratio(vcf)
         assert ratio == pytest.approx(1.0)
 
     def test_indels_excluded_from_ratio(self) -> None:
         """Indels (len(ref) != len(alt)) are excluded from Ti/Tv calculation."""
-        vcf = _make_vcf_data([
-            _make_variant(ref="A", alt=["G"]),    # Ti (counted)
-            _make_variant(ref="AT", alt=["A"]),   # indel (skipped)
-            _make_variant(ref="A", alt=["T"]),    # Tv (counted)
-        ])
+        vcf = _make_vcf_data(
+            [
+                _make_variant(ref="A", alt=["G"]),  # Ti (counted)
+                _make_variant(ref="AT", alt=["A"]),  # indel (skipped)
+                _make_variant(ref="A", alt=["T"]),  # Tv (counted)
+            ]
+        )
         ratio = variants.calculate_ti_tv_ratio(vcf)
         # 1 Ti / 1 Tv = 1.0
         assert ratio == pytest.approx(1.0)
 
     def test_multiallelic_snps(self) -> None:
         """Multiple alt alleles are each classified independently."""
-        vcf = _make_vcf_data([
-            _make_variant(ref="A", alt=["G", "C"]),  # G=Ti, C=Tv
-        ])
+        vcf = _make_vcf_data(
+            [
+                _make_variant(ref="A", alt=["G", "C"]),  # G=Ti, C=Tv
+            ]
+        )
         ratio = variants.calculate_ti_tv_ratio(vcf)
         # 1 Ti / 1 Tv = 1.0
         assert ratio == pytest.approx(1.0)
@@ -296,22 +315,20 @@ class TestCalculateTiTvRatio:
 
     def test_case_insensitivity(self) -> None:
         """Lowercase ref/alt alleles are handled correctly."""
-        vcf = _make_vcf_data([
-            _make_variant(ref="a", alt=["g"]),   # transition
-            _make_variant(ref="a", alt=["c"]),   # transversion
-        ])
+        vcf = _make_vcf_data(
+            [
+                _make_variant(ref="a", alt=["g"]),  # transition
+                _make_variant(ref="a", alt=["c"]),  # transversion
+            ]
+        )
         ratio = variants.calculate_ti_tv_ratio(vcf)
         assert ratio == pytest.approx(1.0)
 
     def test_typical_human_genome_range(self) -> None:
         """A dataset resembling typical human exome Ti/Tv (~2.0-3.0)."""
         # Build a dataset with 6 transitions and 2 transversions => ratio 3.0
-        ti_variants = [
-            _make_variant(ref="A", alt=["G"], pos=i) for i in range(6)
-        ]
-        tv_variants = [
-            _make_variant(ref="A", alt=["C"], pos=i + 100) for i in range(2)
-        ]
+        ti_variants = [_make_variant(ref="A", alt=["G"], pos=i) for i in range(6)]
+        tv_variants = [_make_variant(ref="A", alt=["C"], pos=i + 100) for i in range(2)]
         vcf = _make_vcf_data(ti_variants + tv_variants)
         ratio = variants.calculate_ti_tv_ratio(vcf)
         assert ratio == pytest.approx(3.0)
@@ -327,10 +344,12 @@ class TestSummarizeVariantsByChromosome:
 
     def test_single_chromosome_snps_only(self) -> None:
         """All SNPs on one chromosome."""
-        vcf = _make_vcf_data([
-            _make_variant(chrom="chr1", ref="A", alt=["G"]),
-            _make_variant(chrom="chr1", ref="C", alt=["T"], pos=200),
-        ])
+        vcf = _make_vcf_data(
+            [
+                _make_variant(chrom="chr1", ref="A", alt=["G"]),
+                _make_variant(chrom="chr1", ref="C", alt=["T"], pos=200),
+            ]
+        )
         summary = variants.summarize_variants_by_chromosome(vcf)
         assert summary["chr1"]["total"] == 2
         assert summary["chr1"]["snp"] == 2
@@ -338,10 +357,12 @@ class TestSummarizeVariantsByChromosome:
 
     def test_single_chromosome_indels_only(self) -> None:
         """All indels on one chromosome."""
-        vcf = _make_vcf_data([
-            _make_variant(chrom="chr1", ref="AT", alt=["A"]),        # deletion
-            _make_variant(chrom="chr1", ref="G", alt=["GCC"], pos=200),  # insertion
-        ])
+        vcf = _make_vcf_data(
+            [
+                _make_variant(chrom="chr1", ref="AT", alt=["A"]),  # deletion
+                _make_variant(chrom="chr1", ref="G", alt=["GCC"], pos=200),  # insertion
+            ]
+        )
         summary = variants.summarize_variants_by_chromosome(vcf)
         assert summary["chr1"]["total"] == 2
         assert summary["chr1"]["snp"] == 0
@@ -349,14 +370,16 @@ class TestSummarizeVariantsByChromosome:
 
     def test_mixed_snps_and_indels_across_chromosomes(self) -> None:
         """Mixed SNPs and indels distributed across multiple chromosomes."""
-        vcf = _make_vcf_data([
-            _make_variant(chrom="chr1", ref="A", alt=["G"], pos=100),        # SNP
-            _make_variant(chrom="chr1", ref="AT", alt=["A"], pos=200),       # indel
-            _make_variant(chrom="chr2", ref="C", alt=["T"], pos=100),        # SNP
-            _make_variant(chrom="chr2", ref="G", alt=["A"], pos=200),        # SNP
-            _make_variant(chrom="chr2", ref="G", alt=["GATT"], pos=300),     # indel
-            _make_variant(chrom="chrX", ref="T", alt=["A"], pos=100),        # SNP
-        ])
+        vcf = _make_vcf_data(
+            [
+                _make_variant(chrom="chr1", ref="A", alt=["G"], pos=100),  # SNP
+                _make_variant(chrom="chr1", ref="AT", alt=["A"], pos=200),  # indel
+                _make_variant(chrom="chr2", ref="C", alt=["T"], pos=100),  # SNP
+                _make_variant(chrom="chr2", ref="G", alt=["A"], pos=200),  # SNP
+                _make_variant(chrom="chr2", ref="G", alt=["GATT"], pos=300),  # indel
+                _make_variant(chrom="chrX", ref="T", alt=["A"], pos=100),  # SNP
+            ]
+        )
         summary = variants.summarize_variants_by_chromosome(vcf)
 
         assert summary["chr1"]["total"] == 2
@@ -379,18 +402,22 @@ class TestSummarizeVariantsByChromosome:
 
     def test_multiallelic_variant_classification(self) -> None:
         """Multiallelic SNPs (all single-base alts) are counted as SNP."""
-        vcf = _make_vcf_data([
-            _make_variant(chrom="chr1", ref="A", alt=["G", "C"]),
-        ])
+        vcf = _make_vcf_data(
+            [
+                _make_variant(chrom="chr1", ref="A", alt=["G", "C"]),
+            ]
+        )
         summary = variants.summarize_variants_by_chromosome(vcf)
         assert summary["chr1"]["snp"] == 1
         assert summary["chr1"]["indel"] == 0
 
     def test_multiallelic_with_indel_classified_as_indel(self) -> None:
         """Multiallelic variant with one indel alt is classified as indel."""
-        vcf = _make_vcf_data([
-            _make_variant(chrom="chr1", ref="A", alt=["G", "AT"]),  # mixed: one SNP alt, one indel alt
-        ])
+        vcf = _make_vcf_data(
+            [
+                _make_variant(chrom="chr1", ref="A", alt=["G", "AT"]),  # mixed: one SNP alt, one indel alt
+            ]
+        )
         summary = variants.summarize_variants_by_chromosome(vcf)
         # The function checks: all alts single-base? No => indel
         assert summary["chr1"]["indel"] == 1
@@ -470,13 +497,17 @@ class TestMergeVcfData:
 
     def test_merged_variants_sorted_by_chrom_and_pos(self) -> None:
         """Merged variants are sorted by chromosome then position."""
-        vcf1 = _make_vcf_data([
-            _make_variant(chrom="chr2", pos=300, ref="G", alt=["A"]),
-        ])
-        vcf2 = _make_vcf_data([
-            _make_variant(chrom="chr1", pos=100, ref="A", alt=["G"]),
-            _make_variant(chrom="chr2", pos=100, ref="C", alt=["T"]),
-        ])
+        vcf1 = _make_vcf_data(
+            [
+                _make_variant(chrom="chr2", pos=300, ref="G", alt=["A"]),
+            ]
+        )
+        vcf2 = _make_vcf_data(
+            [
+                _make_variant(chrom="chr1", pos=100, ref="A", alt=["G"]),
+                _make_variant(chrom="chr2", pos=100, ref="C", alt=["T"]),
+            ]
+        )
         merged = variants.merge_vcf_data(vcf1, vcf2)
         positions = [(v["chrom"], v["pos"]) for v in merged["variants"]]
         assert positions == sorted(positions)
@@ -484,10 +515,12 @@ class TestMergeVcfData:
     def test_merge_empty_with_nonempty(self) -> None:
         """Merging an empty dataset with a non-empty one returns the non-empty data."""
         vcf_empty = _make_vcf_data([])
-        vcf_full = _make_vcf_data([
-            _make_variant(chrom="chr1", pos=100, ref="A", alt=["G"]),
-            _make_variant(chrom="chr1", pos=200, ref="C", alt=["T"]),
-        ])
+        vcf_full = _make_vcf_data(
+            [
+                _make_variant(chrom="chr1", pos=100, ref="A", alt=["G"]),
+                _make_variant(chrom="chr1", pos=200, ref="C", alt=["T"]),
+            ]
+        )
         merged = variants.merge_vcf_data(vcf_empty, vcf_full)
         assert merged["total_variants"] == 2
 
@@ -609,14 +642,18 @@ class TestVariationIntegration:
 
     def test_merge_then_summarize(self) -> None:
         """Merge two VCF datasets and summarize by chromosome."""
-        vcf1 = _make_vcf_data([
-            _make_variant(chrom="chr1", pos=100, ref="A", alt=["G"]),
-            _make_variant(chrom="chr2", pos=100, ref="AT", alt=["A"]),
-        ])
-        vcf2 = _make_vcf_data([
-            _make_variant(chrom="chr1", pos=200, ref="C", alt=["T"]),
-            _make_variant(chrom="chr3", pos=100, ref="G", alt=["GAA"]),
-        ])
+        vcf1 = _make_vcf_data(
+            [
+                _make_variant(chrom="chr1", pos=100, ref="A", alt=["G"]),
+                _make_variant(chrom="chr2", pos=100, ref="AT", alt=["A"]),
+            ]
+        )
+        vcf2 = _make_vcf_data(
+            [
+                _make_variant(chrom="chr1", pos=200, ref="C", alt=["T"]),
+                _make_variant(chrom="chr3", pos=100, ref="G", alt=["GAA"]),
+            ]
+        )
         merged = variants.merge_vcf_data(vcf1, vcf2)
         summary = variants.summarize_variants_by_chromosome(merged)
 
@@ -629,13 +666,17 @@ class TestVariationIntegration:
 
     def test_merge_then_ti_tv_ratio(self) -> None:
         """Merge two VCF datasets and compute Ti/Tv ratio on the merged result."""
-        vcf1 = _make_vcf_data([
-            _make_variant(chrom="chr1", pos=100, ref="A", alt=["G"]),  # Ti
-            _make_variant(chrom="chr1", pos=200, ref="A", alt=["G"]),  # Ti
-        ])
-        vcf2 = _make_vcf_data([
-            _make_variant(chrom="chr1", pos=300, ref="A", alt=["C"]),  # Tv
-        ])
+        vcf1 = _make_vcf_data(
+            [
+                _make_variant(chrom="chr1", pos=100, ref="A", alt=["G"]),  # Ti
+                _make_variant(chrom="chr1", pos=200, ref="A", alt=["G"]),  # Ti
+            ]
+        )
+        vcf2 = _make_vcf_data(
+            [
+                _make_variant(chrom="chr1", pos=300, ref="A", alt=["C"]),  # Tv
+            ]
+        )
         merged = variants.merge_vcf_data(vcf1, vcf2)
         ratio = variants.calculate_ti_tv_ratio(merged)
         assert ratio == pytest.approx(2.0)

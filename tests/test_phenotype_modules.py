@@ -416,13 +416,15 @@ class TestMorphologicalFunctions:
 
         profiles = []
         # Create specimens with known scaling
-        for i, (hw, hl, tl, fl) in enumerate([
-            (1.0, 1.2, 1.8, 1.5),
-            (1.5, 1.8, 2.7, 2.25),
-            (2.0, 2.4, 3.6, 3.0),
-            (2.5, 3.0, 4.5, 3.75),
-            (3.0, 3.6, 5.4, 4.5),
-        ]):
+        for i, (hw, hl, tl, fl) in enumerate(
+            [
+                (1.0, 1.2, 1.8, 1.5),
+                (1.5, 1.8, 2.7, 2.25),
+                (2.0, 2.4, 3.6, 3.0),
+                (2.5, 3.0, 4.5, 3.75),
+                (3.0, 3.6, 5.4, 4.5),
+            ]
+        ):
             profiles.append(
                 MorphometricProfile(
                     f"sp_{i}",
@@ -620,18 +622,20 @@ class TestLifeCourseAnalysis:
                 Event(timestamp=1000, event_type="health_event", description="Checkup"),
             ]
             if i > 2:
-                events.extend([
-                    Event(timestamp=1100, event_type="job_end"),
-                    Event(timestamp=1200, event_type="job_start"),
-                    Event(timestamp=1300, event_type="job_end"),
-                    Event(timestamp=1400, event_type="job_start"),
-                    Event(timestamp=1500, event_type="health_event"),
-                    Event(timestamp=1600, event_type="health_event"),
-                    Event(timestamp=1700, event_type="health_event"),
-                    Event(timestamp=1800, event_type="health_event"),
-                    Event(timestamp=1900, event_type="health_event"),
-                    Event(timestamp=2000, event_type="health_event"),
-                ])
+                events.extend(
+                    [
+                        Event(timestamp=1100, event_type="job_end"),
+                        Event(timestamp=1200, event_type="job_start"),
+                        Event(timestamp=1300, event_type="job_end"),
+                        Event(timestamp=1400, event_type="job_start"),
+                        Event(timestamp=1500, event_type="health_event"),
+                        Event(timestamp=1600, event_type="health_event"),
+                        Event(timestamp=1700, event_type="health_event"),
+                        Event(timestamp=1800, event_type="health_event"),
+                        Event(timestamp=1900, event_type="health_event"),
+                        Event(timestamp=2000, event_type="health_event"),
+                    ]
+                )
             seqs.append(EventSequence(person_id=f"person_{i}", events=events))
         return seqs
 
@@ -700,11 +704,13 @@ class TestPipelineConfig:
     def test_from_dict(self):
         from metainformant.phenotype.workflow.pipeline import PipelineConfig
 
-        config = PipelineConfig.from_dict({
-            "name": "test_pipeline",
-            "phenotype_types": ["behavioral", "chemical"],
-            "steps": ["load", "analyze"],
-        })
+        config = PipelineConfig.from_dict(
+            {
+                "name": "test_pipeline",
+                "phenotype_types": ["behavioral", "chemical"],
+                "steps": ["load", "analyze"],
+            }
+        )
         assert config.name == "test_pipeline"
         assert len(config.phenotype_types) == 2
 
@@ -892,8 +898,19 @@ class TestTopLevelImports:
             PipelineResult,
         )
 
-        assert all([
-            Ethogram, BehaviorSequence, Compound, ChemicalProfile,
-            TrackingPoint, Trajectory, Measurement, MorphometricProfile,
-            AcousticSignal, PhenotypePipeline, PipelineConfig, PipelineResult,
-        ])
+        assert all(
+            [
+                Ethogram,
+                BehaviorSequence,
+                Compound,
+                ChemicalProfile,
+                TrackingPoint,
+                Trajectory,
+                Measurement,
+                MorphometricProfile,
+                AcousticSignal,
+                PhenotypePipeline,
+                PipelineConfig,
+                PipelineResult,
+            ]
+        )

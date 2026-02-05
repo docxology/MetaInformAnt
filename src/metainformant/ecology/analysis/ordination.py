@@ -141,7 +141,7 @@ def pcoa(
 
     # Gower's double-centering: B = -0.5 * J D^2 J
     # where J = I - (1/n) * 11^T is the centering matrix
-    D_sq = D ** 2
+    D_sq = D**2
     row_means = D_sq.mean(axis=1, keepdims=True)
     col_means = D_sq.mean(axis=0, keepdims=True)
     grand_mean = D_sq.mean()
@@ -250,7 +250,7 @@ def _kruskal_stress(
         Stress-1 value (0 = perfect, higher = worse).
     """
     numerator = float(np.sum((d_hat - d_config) ** 2))
-    denominator = float(np.sum(d_config ** 2))
+    denominator = float(np.sum(d_config**2))
     if denominator < 1e-15:
         return 0.0
     return math.sqrt(numerator / denominator)
@@ -386,7 +386,7 @@ def nmds(
                     idx += 1
 
             # Normalise gradient and step
-            grad_norm = float(np.sqrt(np.sum(grad ** 2)))
+            grad_norm = float(np.sqrt(np.sum(grad**2)))
             if grad_norm > 1e-12:
                 X -= step_size * (grad / grad_norm) * np.std(d_config)
 
@@ -411,7 +411,10 @@ def nmds(
 
     logger.info(
         "NMDS: %d objects -> %d components, stress=%.4f, iterations=%d",
-        n, n_components, best_stress, best_n_iter,
+        n,
+        n_components,
+        best_stress,
+        best_n_iter,
     )
 
     return {
@@ -770,8 +773,8 @@ def procrustes(
     Y_c = Y - Y_centroid
 
     # Step 2: Scale X to unit sum-of-squares (Frobenius norm)
-    ss_X = float(np.sum(X_c ** 2))
-    ss_Y = float(np.sum(Y_c ** 2))
+    ss_X = float(np.sum(X_c**2))
+    ss_Y = float(np.sum(Y_c**2))
 
     if ss_X < 1e-15 or ss_Y < 1e-15:
         # Degenerate: all points coincide

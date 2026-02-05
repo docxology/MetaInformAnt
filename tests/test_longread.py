@@ -165,6 +165,7 @@ from metainformant.longread.visualization.plots import (
 # Helpers -- synthetic data generators
 # ===================================================================
 
+
 def _random_dna(length: int, seed: int = 42) -> str:
     """Generate a deterministic random DNA sequence."""
     rng = random.Random(seed)
@@ -522,18 +523,26 @@ class TestMethylationAnalysis:
 
     def test_call_5mc_high_shift_gives_higher_probability(self) -> None:
         """Larger context_shift should yield higher methylation probability."""
-        high_shift = call_5mc([{
-            "position": 0,
-            "context_shift": 10.0,
-            "dwell_time": 3.0,
-            "current_std": 2.0,
-        }])[0]
-        low_shift = call_5mc([{
-            "position": 0,
-            "context_shift": 0.1,
-            "dwell_time": 1.0,
-            "current_std": 0.1,
-        }])[0]
+        high_shift = call_5mc(
+            [
+                {
+                    "position": 0,
+                    "context_shift": 10.0,
+                    "dwell_time": 3.0,
+                    "current_std": 2.0,
+                }
+            ]
+        )[0]
+        low_shift = call_5mc(
+            [
+                {
+                    "position": 0,
+                    "context_shift": 0.1,
+                    "dwell_time": 1.0,
+                    "current_std": 0.1,
+                }
+            ]
+        )[0]
         assert high_shift.probability > low_shift.probability
 
     def test_call_6ma_returns_calls(self) -> None:
@@ -580,13 +589,15 @@ class TestMethylationAnalysis:
         import numpy as np
 
         rng = np.random.RandomState(99)
-        signal = np.concatenate([
-            rng.normal(100, 1, 50),
-            rng.normal(120, 2, 50),
-            rng.normal(90, 1, 50),
-            rng.normal(130, 4, 50),
-            rng.normal(100, 1, 50),
-        ])
+        signal = np.concatenate(
+            [
+                rng.normal(100, 1, 50),
+                rng.normal(120, 2, 50),
+                rng.normal(90, 1, 50),
+                rng.normal(130, 4, 50),
+                rng.normal(100, 1, 50),
+            ]
+        )
         calls = detect_methylation(signal, model="6ma", threshold=0.3)
         assert isinstance(calls, list)
         for c in calls:
@@ -637,17 +648,12 @@ class TestMethylationAnalysis:
     def test_differential_methylation_detects_difference(self) -> None:
         """differential_methylation finds sites with significant differences."""
         # Sample 1: high methylation at position 100
-        sample1 = [
-            MethylationCall(chromosome="chr1", position=100, probability=0.9)
-            for _ in range(10)
-        ]
+        sample1 = [MethylationCall(chromosome="chr1", position=100, probability=0.9) for _ in range(10)]
         # Sample 2: low methylation at position 100
-        sample2 = [
-            MethylationCall(chromosome="chr1", position=100, probability=0.1)
-            for _ in range(10)
-        ]
+        sample2 = [MethylationCall(chromosome="chr1", position=100, probability=0.1) for _ in range(10)]
         results = differential_methylation(
-            sample1, sample2,
+            sample1,
+            sample2,
             min_coverage=5,
             min_difference=0.2,
             alpha=0.05,
@@ -660,16 +666,11 @@ class TestMethylationAnalysis:
 
     def test_differential_methylation_no_difference(self) -> None:
         """Similar samples produce no significant results."""
-        sample1 = [
-            MethylationCall(chromosome="chr1", position=100, probability=0.5)
-            for _ in range(10)
-        ]
-        sample2 = [
-            MethylationCall(chromosome="chr1", position=100, probability=0.55)
-            for _ in range(10)
-        ]
+        sample1 = [MethylationCall(chromosome="chr1", position=100, probability=0.5) for _ in range(10)]
+        sample2 = [MethylationCall(chromosome="chr1", position=100, probability=0.55) for _ in range(10)]
         results = differential_methylation(
-            sample1, sample2,
+            sample1,
+            sample2,
             min_coverage=5,
             min_difference=0.2,
         )
@@ -717,10 +718,7 @@ class TestStructuralVariants:
 
     def test_detect_sv_cigar_deletion(self) -> None:
         """Detect a deletion from a CIGAR D operation >= min_size."""
-        alns = [
-            self._make_alignment(read_name=f"r{i}", cigar_string="2000M200D3000M")
-            for i in range(3)
-        ]
+        alns = [self._make_alignment(read_name=f"r{i}", cigar_string="2000M200D3000M") for i in range(3)]
         svs = detect_sv_from_long_reads(alns, min_size=50, min_support=2)
         del_svs = [sv for sv in svs if sv.sv_type == "DEL"]
         assert len(del_svs) >= 1
@@ -728,10 +726,7 @@ class TestStructuralVariants:
 
     def test_detect_sv_cigar_insertion(self) -> None:
         """Detect an insertion from a CIGAR I operation >= min_size."""
-        alns = [
-            self._make_alignment(read_name=f"r{i}", cigar_string="2000M150I3000M")
-            for i in range(3)
-        ]
+        alns = [self._make_alignment(read_name=f"r{i}", cigar_string="2000M150I3000M") for i in range(3)]
         svs = detect_sv_from_long_reads(alns, min_size=50, min_support=2)
         ins_svs = [sv for sv in svs if sv.sv_type == "INS"]
         assert len(ins_svs) >= 1
@@ -741,8 +736,11 @@ class TestStructuralVariants:
         sa_tag = "chr1,6000,-,5000M,60,0"
         alns = [
             self._make_alignment(
-                read_name=f"r{i}", ref_start=1000,
-                cigar_string="2500M", sa_tag=sa_tag, query_length=5000,
+                read_name=f"r{i}",
+                ref_start=1000,
+                cigar_string="2500M",
+                sa_tag=sa_tag,
+                query_length=5000,
             )
             for i in range(3)
         ]
@@ -752,10 +750,7 @@ class TestStructuralVariants:
 
     def test_detect_insertions_convenience(self) -> None:
         """detect_insertions filters to INS type only."""
-        alns = [
-            self._make_alignment(read_name=f"r{i}", cigar_string="2000M150I3000M")
-            for i in range(3)
-        ]
+        alns = [self._make_alignment(read_name=f"r{i}", cigar_string="2000M150I3000M") for i in range(3)]
         insertions = detect_insertions(alns, min_size=50, min_support=2)
         assert all(sv.sv_type == "INS" for sv in insertions)
 
@@ -764,8 +759,11 @@ class TestStructuralVariants:
         sa_tag = "chr1,6000,-,5000M,60,0"
         alns = [
             self._make_alignment(
-                read_name=f"r{i}", ref_start=1000,
-                cigar_string="2500M", sa_tag=sa_tag, query_length=5000,
+                read_name=f"r{i}",
+                ref_start=1000,
+                cigar_string="2500M",
+                sa_tag=sa_tag,
+                query_length=5000,
             )
             for i in range(3)
         ]
@@ -775,8 +773,7 @@ class TestStructuralVariants:
     def test_detect_sv_low_mapq_filtered(self) -> None:
         """Alignments below min_mapping_quality are ignored."""
         alns = [
-            self._make_alignment(read_name=f"r{i}", cigar_string="2000M200D3000M", mapping_quality=5)
-            for i in range(3)
+            self._make_alignment(read_name=f"r{i}", cigar_string="2000M200D3000M", mapping_quality=5) for i in range(3)
         ]
         svs = detect_sv_from_long_reads(alns, min_size=50, min_support=2, min_mapping_quality=20)
         assert len(svs) == 0
@@ -832,30 +829,48 @@ class TestPhasing:
         ]
         # Reads: haplotype 1 carries alleles [0, 0, 1, 1], haplotype 2 carries [1, 1, 0, 0]
         reads = [
-            {"read_name": "h1_r1", "variants": [
-                {"chromosome": "chr1", "position": 1000, "allele": 0, "quality": 30},
-                {"chromosome": "chr1", "position": 2000, "allele": 0, "quality": 30},
-            ]},
-            {"read_name": "h1_r2", "variants": [
-                {"chromosome": "chr1", "position": 2000, "allele": 0, "quality": 30},
-                {"chromosome": "chr1", "position": 3000, "allele": 1, "quality": 30},
-            ]},
-            {"read_name": "h1_r3", "variants": [
-                {"chromosome": "chr1", "position": 3000, "allele": 1, "quality": 30},
-                {"chromosome": "chr1", "position": 4000, "allele": 1, "quality": 30},
-            ]},
-            {"read_name": "h2_r1", "variants": [
-                {"chromosome": "chr1", "position": 1000, "allele": 1, "quality": 30},
-                {"chromosome": "chr1", "position": 2000, "allele": 1, "quality": 30},
-            ]},
-            {"read_name": "h2_r2", "variants": [
-                {"chromosome": "chr1", "position": 2000, "allele": 1, "quality": 30},
-                {"chromosome": "chr1", "position": 3000, "allele": 0, "quality": 30},
-            ]},
-            {"read_name": "h2_r3", "variants": [
-                {"chromosome": "chr1", "position": 3000, "allele": 0, "quality": 30},
-                {"chromosome": "chr1", "position": 4000, "allele": 0, "quality": 30},
-            ]},
+            {
+                "read_name": "h1_r1",
+                "variants": [
+                    {"chromosome": "chr1", "position": 1000, "allele": 0, "quality": 30},
+                    {"chromosome": "chr1", "position": 2000, "allele": 0, "quality": 30},
+                ],
+            },
+            {
+                "read_name": "h1_r2",
+                "variants": [
+                    {"chromosome": "chr1", "position": 2000, "allele": 0, "quality": 30},
+                    {"chromosome": "chr1", "position": 3000, "allele": 1, "quality": 30},
+                ],
+            },
+            {
+                "read_name": "h1_r3",
+                "variants": [
+                    {"chromosome": "chr1", "position": 3000, "allele": 1, "quality": 30},
+                    {"chromosome": "chr1", "position": 4000, "allele": 1, "quality": 30},
+                ],
+            },
+            {
+                "read_name": "h2_r1",
+                "variants": [
+                    {"chromosome": "chr1", "position": 1000, "allele": 1, "quality": 30},
+                    {"chromosome": "chr1", "position": 2000, "allele": 1, "quality": 30},
+                ],
+            },
+            {
+                "read_name": "h2_r2",
+                "variants": [
+                    {"chromosome": "chr1", "position": 2000, "allele": 1, "quality": 30},
+                    {"chromosome": "chr1", "position": 3000, "allele": 0, "quality": 30},
+                ],
+            },
+            {
+                "read_name": "h2_r3",
+                "variants": [
+                    {"chromosome": "chr1", "position": 3000, "allele": 0, "quality": 30},
+                    {"chromosome": "chr1", "position": 4000, "allele": 0, "quality": 30},
+                ],
+            },
         ]
         return variants, reads
 
@@ -1043,9 +1058,17 @@ class TestAssemblyOverlap:
     def test_compute_overlap_graph_structure(self) -> None:
         """compute_overlap_graph produces valid OverlapGraph."""
         ovl = Overlap(
-            query_name="r1", query_length=5000, query_start=0, query_end=3000,
-            target_name="r2", target_length=5000, target_start=2000, target_end=5000,
-            overlap_length=3000, num_matches=10, identity=0.9,
+            query_name="r1",
+            query_length=5000,
+            query_start=0,
+            query_end=3000,
+            target_name="r2",
+            target_length=5000,
+            target_start=2000,
+            target_end=5000,
+            overlap_length=3000,
+            num_matches=10,
+            identity=0.9,
         )
         graph = compute_overlap_graph([ovl])
         assert isinstance(graph, OverlapGraph)
@@ -1057,14 +1080,28 @@ class TestAssemblyOverlap:
     def test_filter_contained_reads_removes_contained(self) -> None:
         """Overlaps involving contained reads are filtered out."""
         ovl_contained = Overlap(
-            query_name="short", query_length=1000, query_start=0, query_end=1000,
-            target_name="long", target_length=10000, target_start=1000, target_end=2000,
-            overlap_length=1000, is_contained=True,
+            query_name="short",
+            query_length=1000,
+            query_start=0,
+            query_end=1000,
+            target_name="long",
+            target_length=10000,
+            target_start=1000,
+            target_end=2000,
+            overlap_length=1000,
+            is_contained=True,
         )
         ovl_normal = Overlap(
-            query_name="r1", query_length=5000, query_start=0, query_end=3000,
-            target_name="r2", target_length=5000, target_start=2000, target_end=5000,
-            overlap_length=3000, is_contained=False,
+            query_name="r1",
+            query_length=5000,
+            query_start=0,
+            query_end=3000,
+            target_name="r2",
+            target_length=5000,
+            target_start=2000,
+            target_end=5000,
+            overlap_length=3000,
+            is_contained=False,
         )
         filtered = filter_contained_reads([ovl_contained, ovl_normal])
         # The contained overlap involves "short", so any overlap with "short" is removed
@@ -1074,9 +1111,16 @@ class TestAssemblyOverlap:
         """When no reads are contained, all overlaps are returned."""
         overlaps = [
             Overlap(
-                query_name="r1", query_length=5000, query_start=0, query_end=3000,
-                target_name="r2", target_length=5000, target_start=2000, target_end=5000,
-                overlap_length=3000, is_contained=False,
+                query_name="r1",
+                query_length=5000,
+                query_start=0,
+                query_end=3000,
+                target_name="r2",
+                target_length=5000,
+                target_start=2000,
+                target_end=5000,
+                overlap_length=3000,
+                is_contained=False,
             ),
         ]
         filtered = filter_contained_reads(overlaps)
@@ -1202,7 +1246,7 @@ class TestAssemblyHybrid:
         # Short reads covering the error region (fragments of the correct sequence)
         short_reads: list[str] = []
         for i in range(0, 400, 20):
-            short_reads.append(correct_seq[i:i + 100])
+            short_reads.append(correct_seq[i : i + 100])
 
         corrected = correct_with_short_reads([long_read], short_reads, kmer_size=15)
         assert len(corrected) == 1
@@ -1220,10 +1264,11 @@ class TestAssemblyHybrid:
         seq = _random_dna(3000, seed=90)
         long_reads = [seq]
         # Short reads overlapping the long read
-        short_reads = [seq[i:i + 150] for i in range(0, 2800, 50)]
+        short_reads = [seq[i : i + 150] for i in range(0, 2800, 50)]
 
         result = hybrid_assemble(
-            long_reads, short_reads,
+            long_reads,
+            short_reads,
             min_long_read_length=1000,
             kmer_size=15,
         )
@@ -1547,10 +1592,7 @@ class TestVisualization:
 
     def test_plot_methylation_track(self, tmp_path: Path) -> None:
         """Methylation track plot is saved."""
-        meth_data = [
-            {"chromosome": "chr1", "position": 100 + i * 50, "probability": 0.1 + 0.05 * i}
-            for i in range(20)
-        ]
+        meth_data = [{"chromosome": "chr1", "position": 100 + i * 50, "probability": 0.1 + 0.05 * i} for i in range(20)]
         out = tmp_path / "meth_track.png"
         result = plot_methylation_track(
             meth_data,

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 # Import subpackages
 from . import analysis
+from . import phylogenetic
 from . import visualization
 
 # Re-export all analysis functions at package level for convenient access
@@ -88,6 +89,16 @@ from .analysis import (
 )
 
 # Re-export visualization functions
+# Re-export phylogenetic ecology functions
+from .phylogenetic.diversity import (
+    faiths_pd,
+    phylogenetic_beta_diversity,
+    compute_unifrac,
+    nri_nti,
+    phylogenetic_signal,
+    build_simple_tree,
+)
+
 from .visualization.visualization import (
     plot_diversity_indices_comparison,
     plot_community_composition,
@@ -181,4 +192,12 @@ __all__ = [
     "plot_ecological_network",
     "plot_diversity_accumulation_curve",
     "create_interactive_ecology_dashboard",
+    # Phylogenetic ecology
+    "phylogenetic",
+    "faiths_pd",
+    "phylogenetic_beta_diversity",
+    "compute_unifrac",
+    "nri_nti",
+    "phylogenetic_signal",
+    "build_simple_tree",
 ]

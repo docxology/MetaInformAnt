@@ -508,10 +508,7 @@ def build_taxonomy_tree(classifications: list[TaxonomyAssignment]) -> TaxonomyNo
         # Increment the leaf count
         current_node.count += 1
 
-    logger.info(
-        f"Taxonomy tree built: {root.total_descendants()} sequences, "
-        f"{len(root.children)} top-level taxa"
-    )
+    logger.info(f"Taxonomy tree built: {root.total_descendants()} sequences, " f"{len(root.children)} top-level taxa")
     return root
 
 

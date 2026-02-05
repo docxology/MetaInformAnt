@@ -52,8 +52,7 @@ def _ensure_matplotlib() -> None:
     """Raise ImportError if matplotlib is not available."""
     if not HAS_MATPLOTLIB:
         raise ImportError(
-            "matplotlib is required for pharmacogenomics visualization. "
-            "Install with: uv pip install matplotlib"
+            "matplotlib is required for pharmacogenomics visualization. " "Install with: uv pip install matplotlib"
         )
 
 
@@ -289,9 +288,18 @@ def plot_activity_score_distribution(
     threshold_values_added: set[float] = set()
     for low, high, phenotype in thresholds:
         if low > 0 and low not in threshold_values_added:
-            ax.axvline(x=low, color=_PHENOTYPE_COLORS.get(phenotype.value, "#888"), linestyle="--", alpha=0.7, linewidth=1.5)
-            ax.text(low, ax.get_ylim()[1] * 0.95, phenotype.abbreviation, ha="center", fontsize=9,
-                    color=_PHENOTYPE_COLORS.get(phenotype.value, "#888"), fontweight="bold")
+            ax.axvline(
+                x=low, color=_PHENOTYPE_COLORS.get(phenotype.value, "#888"), linestyle="--", alpha=0.7, linewidth=1.5
+            )
+            ax.text(
+                low,
+                ax.get_ylim()[1] * 0.95,
+                phenotype.abbreviation,
+                ha="center",
+                fontsize=9,
+                color=_PHENOTYPE_COLORS.get(phenotype.value, "#888"),
+                fontweight="bold",
+            )
             threshold_values_added.add(low)
 
     ax.set_xlabel("Activity Score", fontsize=12)
@@ -342,11 +350,16 @@ def plot_drug_response_heatmap(
     # Build numeric matrix for coloring
     severity_to_num = {"Major": 3, "Moderate": 2, "Minor": 1, "None": 0, "": 0}
     phenotype_to_num = {
-        "Poor Metabolizer": 0, "PM": 0,
-        "Intermediate Metabolizer": 1, "IM": 1,
-        "Normal Metabolizer": 2, "NM": 2,
-        "Rapid Metabolizer": 3, "RM": 3,
-        "Ultrarapid Metabolizer": 4, "UM": 4,
+        "Poor Metabolizer": 0,
+        "PM": 0,
+        "Intermediate Metabolizer": 1,
+        "IM": 1,
+        "Normal Metabolizer": 2,
+        "NM": 2,
+        "Rapid Metabolizer": 3,
+        "RM": 3,
+        "Ultrarapid Metabolizer": 4,
+        "UM": 4,
     }
 
     matrix: list[list[float]] = []

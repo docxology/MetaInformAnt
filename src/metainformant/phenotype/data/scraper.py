@@ -621,9 +621,7 @@ class AntWikiScraper:
         """
         return list(self.scrape_species_list(limit=limit))
 
-    def scrape_all_species(
-        self, output_dir: str | Path | None = None, limit: Optional[int] = None
-    ) -> Dict[str, Any]:
+    def scrape_all_species(self, output_dir: str | Path | None = None, limit: Optional[int] = None) -> Dict[str, Any]:
         """Scrape all species and save to output directory.
 
         Args:

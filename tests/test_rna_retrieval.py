@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import pytest
 from pathlib import Path
+
 # Import the module under test
 from metainformant.rna.retrieval import ena_downloader
 

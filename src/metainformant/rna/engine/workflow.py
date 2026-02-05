@@ -1380,7 +1380,6 @@ def execute_workflow(
     if any(step == "getfastq" for step, _ in steps_planned):
         steps_planned = setup_vdb_config(config, steps_planned)
 
-
     step_results = []
     step_functions = {
         "metadata": metadata,
@@ -1693,15 +1692,11 @@ def execute_workflow(
                     continue
 
             # Pre-step prerequisite validation
-            prereq_error = validate_step_prerequisites(
-                step_name, step_params, config, steps_planned, steps_config
-            )
+            prereq_error = validate_step_prerequisites(step_name, step_params, config, steps_planned, steps_config)
             if prereq_error:
                 logger.error(prereq_error)
                 step_results.append(
-                    WorkflowStepResult(
-                        step_name=step_name, return_code=1, success=False, error_message=prereq_error
-                    )
+                    WorkflowStepResult(step_name=step_name, return_code=1, success=False, error_message=prereq_error)
                 )
                 if check:
                     break
@@ -1753,13 +1748,17 @@ def execute_workflow(
             else:
                 logger.info(f"Step {step_name} completed successfully")
 
-
             # Run post-step actions (metadata dedup, symlinks, validation, cleanup)
             handle_post_step_actions(
-                step_name, step_params, result, config,
-                steps_planned, steps_config, check, step_results,
+                step_name,
+                step_params,
+                result,
+                config,
+                steps_planned,
+                steps_config,
+                check,
+                step_results,
             )
-
 
             step_results.append(
                 WorkflowStepResult(
@@ -1837,7 +1836,6 @@ def execute_workflow(
     if progress:
         log_workflow_summary(step_results, config)
 
-
     # After loop, ensure we record results in manifest
     # This ensures consistency with tests expecting a manifest file
     try:
@@ -1867,7 +1865,6 @@ def execute_workflow(
         successful_steps=successful_steps,
         failed_steps=failed_steps,
     )
-
 
 
 def validate_workflow_config(config: AmalgkitWorkflowConfig) -> Tuple[bool, List[str]]:

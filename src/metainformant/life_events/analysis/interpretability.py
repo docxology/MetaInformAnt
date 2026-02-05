@@ -35,22 +35,23 @@ def attention_weights(
     # Check for PyTorch transformer model
     try:
         import torch
-        if hasattr(model, 'transformer') or hasattr(model, 'attention'):
+
+        if hasattr(model, "transformer") or hasattr(model, "attention"):
             # Extract attention from transformer model
-            if hasattr(model, 'get_attention_weights'):
+            if hasattr(model, "get_attention_weights"):
                 weights = model.get_attention_weights(sequences)
                 return {
                     "attention_weights": weights,
                     "supported": True,
                     "model_type": "transformer",
                 }
-            elif hasattr(model, 'encoder') and hasattr(model.encoder, 'layers'):
+            elif hasattr(model, "encoder") and hasattr(model.encoder, "layers"):
                 # Try to extract from encoder layers
                 weights = []
                 model.eval()
                 with torch.no_grad():
                     for layer in model.encoder.layers:
-                        if hasattr(layer, 'self_attn'):
+                        if hasattr(layer, "self_attn"):
                             weights.append("attention_layer_present")
                 if weights:
                     return {
@@ -63,7 +64,7 @@ def attention_weights(
         pass
 
     # Check for sklearn models with feature_importances_
-    if hasattr(model, 'feature_importances_'):
+    if hasattr(model, "feature_importances_"):
         importances = model.feature_importances_.tolist()
         return {
             "attention_weights": importances,
@@ -73,9 +74,9 @@ def attention_weights(
         }
 
     # Check for sklearn models with coef_
-    if hasattr(model, 'coef_'):
+    if hasattr(model, "coef_"):
         coef = model.coef_
-        if hasattr(coef, 'tolist'):
+        if hasattr(coef, "tolist"):
             coef = coef.tolist()
         return {
             "attention_weights": coef,
@@ -91,7 +92,7 @@ def attention_weights(
         "supported": False,
         "model_type": str(type(model).__name__),
         "message": "Attention weights not available for this model type. "
-                   "Use transformer models or tree/linear models for feature attribution.",
+        "Use transformer models or tree/linear models for feature attribution.",
     }
 
 

@@ -321,13 +321,19 @@ def load_bigwig_track(
                 values = bw.values(chrom, start, end)
                 if values:
                     # Store as genomic feature
-                    track.add_feature({
-                        "chrom": chrom,
-                        "start": start,
-                        "end": end,
-                        "values": values,
-                        "mean": sum(v for v in values if v is not None) / len([v for v in values if v is not None]) if any(v is not None for v in values) else 0,
-                    })
+                    track.add_feature(
+                        {
+                            "chrom": chrom,
+                            "start": start,
+                            "end": end,
+                            "values": values,
+                            "mean": (
+                                sum(v for v in values if v is not None) / len([v for v in values if v is not None])
+                                if any(v is not None for v in values)
+                                else 0
+                            ),
+                        }
+                    )
         else:
             # Load summary statistics for each chromosome
             for chrom, length in chroms.items():
@@ -335,12 +341,14 @@ def load_bigwig_track(
                 try:
                     stats = bw.stats(chrom, 0, length)
                     if stats and stats[0] is not None:
-                        track.add_feature({
-                            "chrom": chrom,
-                            "start": 0,
-                            "end": length,
-                            "mean": stats[0],
-                        })
+                        track.add_feature(
+                            {
+                                "chrom": chrom,
+                                "start": 0,
+                                "end": length,
+                                "mean": stats[0],
+                            }
+                        )
                 except Exception as e:
                     logger.warning(f"Could not load stats for {chrom}: {e}")
                     continue

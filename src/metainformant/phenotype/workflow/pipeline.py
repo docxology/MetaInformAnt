@@ -36,9 +36,7 @@ class PipelineConfig:
     input_path: Optional[str] = None
     output_path: Optional[str] = None
     parameters: Dict[str, Any] = field(default_factory=dict)
-    steps: List[str] = field(
-        default_factory=lambda: ["load", "validate", "analyze", "summarize"]
-    )
+    steps: List[str] = field(default_factory=lambda: ["load", "validate", "analyze", "summarize"])
 
     @classmethod
     def from_yaml(cls, path: Union[str, Path]) -> PipelineConfig:
@@ -181,7 +179,8 @@ class PhenotypePipeline:
         registered_steps = set(self._step_functions.keys())
         warnings = [w for w in config_issues if "warning" in w.lower()]
         errors = [
-            e for e in config_issues
+            e
+            for e in config_issues
             if "warning" not in e.lower()
             and not (e.startswith("Unknown step:") and e.split(": ", 1)[1] in registered_steps)
         ]

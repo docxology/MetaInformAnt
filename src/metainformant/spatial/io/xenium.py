@@ -278,9 +278,7 @@ def read_transcripts(
         nuc_col = _find_col(headers, ["overlaps_nucleus"])
 
         if gene_col is None or x_col is None or y_col is None:
-            raise ValueError(
-                f"Required columns not found in {tpath}. Available: {sorted(headers)}"
-            )
+            raise ValueError(f"Required columns not found in {tpath}. Available: {sorted(headers)}")
 
         total = 0
         for row in reader:
@@ -342,8 +340,7 @@ def load_cell_boundaries(boundaries_path: str | Path) -> list[CellBoundary]:
 
         if cell_col is None or x_col is None or y_col is None:
             raise ValueError(
-                f"Required columns (cell_id, vertex_x, vertex_y) not found. "
-                f"Available: {sorted(headers)}"
+                f"Required columns (cell_id, vertex_x, vertex_y) not found. " f"Available: {sorted(headers)}"
             )
 
         for row in reader:
@@ -354,10 +351,7 @@ def load_cell_boundaries(boundaries_path: str | Path) -> list[CellBoundary]:
                 cell_vertices[cid] = []
             cell_vertices[cid].append((vx, vy))
 
-    boundaries = [
-        CellBoundary(cell_id=cid, vertices=verts)
-        for cid, verts in cell_vertices.items()
-    ]
+    boundaries = [CellBoundary(cell_id=cid, vertices=verts) for cid, verts in cell_vertices.items()]
 
     logger.info(f"Loaded boundaries for {len(boundaries)} cells")
     return boundaries

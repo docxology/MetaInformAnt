@@ -71,6 +71,7 @@ from __future__ import annotations
 from . import analysis
 from . import core
 from . import models
+from . import survival
 from . import visualization
 from . import workflow
 
@@ -132,6 +133,15 @@ from .core.utils import (
 
 # Config
 from .core.config import LifeEventsWorkflowConfig, load_life_events_config
+
+# Survival analysis
+from .survival.time_to_event import (
+    kaplan_meier_estimator,
+    cox_ph_model,
+    competing_risks,
+    recurrent_events,
+    time_varying_covariates,
+)
 
 # Visualization
 from .visualization.visualization import (
@@ -225,4 +235,11 @@ __all__ = [
     "sequence_embeddings",
     "generate_event_chain",
     "generate_synthetic_life_events",
+    # Survival analysis
+    "survival",
+    "kaplan_meier_estimator",
+    "cox_ph_model",
+    "competing_risks",
+    "recurrent_events",
+    "time_varying_covariates",
 ]

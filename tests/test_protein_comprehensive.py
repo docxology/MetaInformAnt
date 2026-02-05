@@ -409,9 +409,7 @@ class TestStructuralGeometry:
         coords = np.random.rand(15, 3) * 10
         # Rotate around Z axis
         theta = np.pi / 4
-        R = np.array([[np.cos(theta), -np.sin(theta), 0],
-                       [np.sin(theta), np.cos(theta), 0],
-                       [0, 0, 1]])
+        R = np.array([[np.cos(theta), -np.sin(theta), 0], [np.sin(theta), np.cos(theta), 0], [0, 0, 1]])
         rotated = (coords - coords.mean(axis=0)) @ R.T + np.array([5, 5, 5])
         aligned, rotation, rmsd = align_structures_kabsch(coords, rotated)
         assert rmsd < 1e-5
@@ -705,10 +703,7 @@ class TestPDBIO:
     def test_validate_pdb(self, tmp_path: Path):
         from metainformant.protein.structure.io import validate_pdb_file
 
-        pdb_content = (
-            "ATOM      1  N   ALA A   1       1.000   2.000   3.000  1.00 10.00           N\n"
-            "END\n"
-        )
+        pdb_content = "ATOM      1  N   ALA A   1       1.000   2.000   3.000  1.00 10.00           N\n" "END\n"
         pdb_path = tmp_path / "test.pdb"
         pdb_path.write_text(pdb_content)
 

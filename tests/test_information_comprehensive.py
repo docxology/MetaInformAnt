@@ -710,9 +710,7 @@ class TestEstimation:
     def test_panzeri_treves_correction(self) -> None:
         from metainformant.information import panzeri_treves_bias_correction
 
-        corrected = panzeri_treves_bias_correction(
-            entropy=2.0, sample_size=100, alphabet_size=4
-        )
+        corrected = panzeri_treves_bias_correction(entropy=2.0, sample_size=100, alphabet_size=4)
         assert corrected >= 0.0
 
     def test_entropy_rate_estimator(self) -> None:
@@ -817,9 +815,7 @@ class TestAnalysis:
     def test_analyze_sequence_complexity(self) -> None:
         from metainformant.information import analyze_sequence_information
 
-        result = analyze_sequence_information(
-            "ATCGATCGATCG", methods=["complexity"]
-        )
+        result = analyze_sequence_information("ATCGATCGATCG", methods=["complexity"])
         assert "complexity" in result["methods"]
         assert "linguistic_complexity" in result["methods"]["complexity"]
         assert "compression_ratio" in result["methods"]["complexity"]

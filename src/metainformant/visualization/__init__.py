@@ -11,6 +11,7 @@ from __future__ import annotations
 # Import subpackages
 from . import analysis
 from . import genomics
+from . import interactive_dashboards
 from . import plots
 
 # Core utilities
@@ -92,6 +93,16 @@ from .interactive import (
     interactive_heatmap,
     interactive_volcano,
     interactive_manhattan,
+)
+
+# Interactive dashboards
+from .interactive_dashboards.dashboards import (
+    create_interactive_scatter,
+    create_interactive_heatmap,
+    create_genome_browser_track,
+    create_interactive_volcano,
+    export_to_html,
+    create_dashboard,
 )
 
 # Optional imports with graceful fallbacks
@@ -199,6 +210,14 @@ __all__ = [
     "interactive_heatmap",
     "interactive_volcano",
     "interactive_manhattan",
+    # Interactive dashboards
+    "interactive_dashboards",
+    "create_interactive_scatter",
+    "create_interactive_heatmap",
+    "create_genome_browser_track",
+    "create_interactive_volcano",
+    "export_to_html",
+    "create_dashboard",
     # Domain-specific visualizations
     "protein",
     "epigenome",

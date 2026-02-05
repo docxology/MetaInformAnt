@@ -35,7 +35,7 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "boxed_warning": True,
         "section": "Warnings and Precautions",
         "label_text": "Serious and sometimes fatal hypersensitivity reactions have been associated with "
-                      "HLA-B*5701 allele. Screen for HLA-B*5701 allele before starting abacavir.",
+        "HLA-B*5701 allele. Screen for HLA-B*5701 allele before starting abacavir.",
         "recommendation": "Do not use abacavir in patients positive for HLA-B*5701.",
         "therapeutic_area": "HIV",
         "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
@@ -49,10 +49,10 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "boxed_warning": True,
         "section": "Warnings and Precautions",
         "label_text": "Serious dermatologic reactions including Stevens-Johnson syndrome and toxic epidermal "
-                      "necrolysis (SJS/TEN). HLA-B*15:02 allele increases risk. Patients of Southeast Asian "
-                      "ancestry should be screened before starting carbamazepine.",
+        "necrolysis (SJS/TEN). HLA-B*15:02 allele increases risk. Patients of Southeast Asian "
+        "ancestry should be screened before starting carbamazepine.",
         "recommendation": "Screen patients with ancestry in populations with high prevalence of HLA-B*15:02. "
-                          "Do not use carbamazepine in patients positive for HLA-B*15:02 unless benefit clearly outweighs risk.",
+        "Do not use carbamazepine in patients positive for HLA-B*15:02 unless benefit clearly outweighs risk.",
         "therapeutic_area": "Epilepsy",
         "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
     },
@@ -65,7 +65,7 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "boxed_warning": True,
         "section": "Boxed Warning",
         "label_text": "Diminished effectiveness in CYP2C19 poor metabolizers. Tests are available to identify "
-                      "CYP2C19 genotype. Consider use of another platelet P2Y12 inhibitor in poor metabolizers.",
+        "CYP2C19 genotype. Consider use of another platelet P2Y12 inhibitor in poor metabolizers.",
         "recommendation": "Consider alternative antiplatelet therapy (prasugrel or ticagrelor) in CYP2C19 poor metabolizers.",
         "therapeutic_area": "Cardiology",
         "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
@@ -79,7 +79,7 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "boxed_warning": True,
         "section": "Boxed Warning",
         "label_text": "Respiratory depression and death have occurred in children who received codeine following "
-                      "tonsillectomy/adenoidectomy and had evidence of being CYP2D6 ultrarapid metabolizers.",
+        "tonsillectomy/adenoidectomy and had evidence of being CYP2D6 ultrarapid metabolizers.",
         "recommendation": "Avoid use of codeine in CYP2D6 ultrarapid metabolizers. Use alternative analgesics.",
         "therapeutic_area": "Pain Management",
         "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
@@ -93,8 +93,8 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "boxed_warning": False,
         "section": "Clinical Pharmacology",
         "label_text": "Genetic variations in CYP2C9 and VKORC1 genes affect warfarin pharmacokinetics "
-                      "and pharmacodynamics. Consider lower initial and maintenance doses in patients "
-                      "known to have CYP2C9 *2 and *3 alleles or VKORC1 A allele.",
+        "and pharmacodynamics. Consider lower initial and maintenance doses in patients "
+        "known to have CYP2C9 *2 and *3 alleles or VKORC1 A allele.",
         "recommendation": "Consider pharmacogenomic-guided dosing for patients with CYP2C9 and/or VKORC1 variants.",
         "therapeutic_area": "Cardiology",
         "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
@@ -121,10 +121,10 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "boxed_warning": False,
         "section": "Warnings and Precautions",
         "label_text": "Patients with certain DPYD variants have increased risk of severe or fatal "
-                      "fluoropyrimidine toxicity. Consider DPYD genotyping or phenotyping before "
-                      "initiating fluoropyrimidine-based chemotherapy.",
+        "fluoropyrimidine toxicity. Consider DPYD genotyping or phenotyping before "
+        "initiating fluoropyrimidine-based chemotherapy.",
         "recommendation": "Test for DPYD deficiency before starting fluoropyrimidine therapy. "
-                          "Avoid in patients with complete DPD deficiency. Reduce dose in partial deficiency.",
+        "Avoid in patients with complete DPD deficiency. Reduce dose in partial deficiency.",
         "therapeutic_area": "Oncology",
         "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
     },
@@ -137,9 +137,9 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "boxed_warning": False,
         "section": "Warnings and Precautions",
         "label_text": "Consider genotyping or phenotyping for TPMT and NUDT15 before starting azathioprine. "
-                      "Patients with TPMT or NUDT15 deficiency are at increased risk for severe myelotoxicity.",
+        "Patients with TPMT or NUDT15 deficiency are at increased risk for severe myelotoxicity.",
         "recommendation": "Consider TPMT and NUDT15 testing before starting thiopurine therapy. "
-                          "Reduce dose or use alternative in poor metabolizers.",
+        "Reduce dose or use alternative in poor metabolizers.",
         "therapeutic_area": "Immunology",
         "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
     },
@@ -152,9 +152,9 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "boxed_warning": False,
         "section": "Clinical Pharmacology",
         "label_text": "CYP2D6 is required for conversion of tamoxifen to the active metabolite endoxifen. "
-                      "Reduced CYP2D6 activity may result in lower endoxifen concentrations.",
+        "Reduced CYP2D6 activity may result in lower endoxifen concentrations.",
         "recommendation": "CYP2D6 poor metabolizers may have reduced benefit from tamoxifen. "
-                          "Consider aromatase inhibitors as alternative in postmenopausal patients.",
+        "Consider aromatase inhibitors as alternative in postmenopausal patients.",
         "therapeutic_area": "Oncology",
         "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
     },
@@ -167,7 +167,7 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "boxed_warning": False,
         "section": "Indications and Usage",
         "label_text": "Indicated for treatment of cystic fibrosis in patients who have specific CFTR mutations "
-                      "that are responsive to ivacaftor. CFTR genotyping is required to determine eligibility.",
+        "that are responsive to ivacaftor. CFTR genotyping is required to determine eligibility.",
         "recommendation": "Confirm presence of a responsive CFTR mutation using FDA-cleared CFTR genotyping test.",
         "therapeutic_area": "Pulmonology",
         "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
@@ -210,8 +210,14 @@ def parse_drug_label(
 
     # Extract PGx-relevant fields
     result: dict[str, Any] = {
-        "drug": data.get("drug", data.get("openfda", {}).get("generic_name", [""])[0] if isinstance(data.get("openfda"), dict) else ""),
-        "brand_name": data.get("brand_name", data.get("openfda", {}).get("brand_name", [""])[0] if isinstance(data.get("openfda"), dict) else ""),
+        "drug": data.get(
+            "drug",
+            data.get("openfda", {}).get("generic_name", [""])[0] if isinstance(data.get("openfda"), dict) else "",
+        ),
+        "brand_name": data.get(
+            "brand_name",
+            data.get("openfda", {}).get("brand_name", [""])[0] if isinstance(data.get("openfda"), dict) else "",
+        ),
         "gene_biomarker": data.get("gene_biomarker", ""),
         "sections": {},
         "biomarker_info": {},
@@ -220,9 +226,14 @@ def parse_drug_label(
 
     # Extract PGx-relevant sections
     pgx_section_keys = [
-        "boxed_warning", "warnings_and_precautions", "indications_and_usage",
-        "dosage_and_administration", "clinical_pharmacology",
-        "warnings", "precautions", "contraindications",
+        "boxed_warning",
+        "warnings_and_precautions",
+        "indications_and_usage",
+        "dosage_and_administration",
+        "clinical_pharmacology",
+        "warnings",
+        "precautions",
+        "contraindications",
     ]
 
     for key in pgx_section_keys:
@@ -259,9 +270,14 @@ def _parse_label_text(text: str) -> dict[str, Any]:
     current_text: list[str] = []
 
     section_headers = [
-        "BOXED WARNING", "INDICATIONS AND USAGE", "DOSAGE AND ADMINISTRATION",
-        "WARNINGS AND PRECAUTIONS", "CONTRAINDICATIONS", "CLINICAL PHARMACOLOGY",
-        "WARNINGS", "PRECAUTIONS",
+        "BOXED WARNING",
+        "INDICATIONS AND USAGE",
+        "DOSAGE AND ADMINISTRATION",
+        "WARNINGS AND PRECAUTIONS",
+        "CONTRAINDICATIONS",
+        "CLINICAL PHARMACOLOGY",
+        "WARNINGS",
+        "PRECAUTIONS",
     ]
 
     for line in text.split("\n"):
@@ -296,11 +312,29 @@ def _contains_pgx_terms(text: str) -> bool:
         True if PGx terms found
     """
     pgx_terms = [
-        "pharmacogenomic", "pharmacogenetic", "genotype", "genotyping",
-        "allele", "metabolizer", "CYP", "HLA", "DPYD", "TPMT", "NUDT15",
-        "SLCO1B1", "VKORC1", "CFTR", "G6PD", "UGT1A1",
-        "poor metabolizer", "intermediate metabolizer", "ultrarapid metabolizer",
-        "gene", "polymorphism", "variant", "biomarker",
+        "pharmacogenomic",
+        "pharmacogenetic",
+        "genotype",
+        "genotyping",
+        "allele",
+        "metabolizer",
+        "CYP",
+        "HLA",
+        "DPYD",
+        "TPMT",
+        "NUDT15",
+        "SLCO1B1",
+        "VKORC1",
+        "CFTR",
+        "G6PD",
+        "UGT1A1",
+        "poor metabolizer",
+        "intermediate metabolizer",
+        "ultrarapid metabolizer",
+        "gene",
+        "polymorphism",
+        "variant",
+        "biomarker",
     ]
     text_lower = text.lower()
     return any(term.lower() in text_lower for term in pgx_terms)
@@ -393,8 +427,11 @@ def classify_label_type(
 
     # Required: testing mandated language
     required_phrases = [
-        "must be tested", "testing is required", "genotyping is required",
-        "should not be used without", "contraindicated without testing",
+        "must be tested",
+        "testing is required",
+        "genotyping is required",
+        "should not be used without",
+        "contraindicated without testing",
     ]
     if any(phrase in all_text for phrase in required_phrases):
         return {
@@ -404,8 +441,11 @@ def classify_label_type(
 
     # Recommended: strong suggestion
     recommended_phrases = [
-        "testing is recommended", "consider genotyping", "should be tested",
-        "genotyping should be performed", "testing should be considered",
+        "testing is recommended",
+        "consider genotyping",
+        "should be tested",
+        "genotyping should be performed",
+        "testing should be considered",
     ]
     if any(phrase in all_text for phrase in recommended_phrases):
         return {
@@ -415,8 +455,12 @@ def classify_label_type(
 
     # Actionable: dosing modifications based on genotype
     actionable_phrases = [
-        "dose adjustment", "dose reduction", "alternative therapy",
-        "consider alternative", "poor metabolizer", "ultrarapid metabolizer",
+        "dose adjustment",
+        "dose reduction",
+        "alternative therapy",
+        "consider alternative",
+        "poor metabolizer",
+        "ultrarapid metabolizer",
         "reduced dose",
     ]
     if any(phrase in all_text for phrase in actionable_phrases):

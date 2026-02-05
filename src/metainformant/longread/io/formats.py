@@ -121,15 +121,9 @@ def convert_pod5_to_fast5(
         ImportError: If pod5 and/or h5py are not installed.
     """
     if pod5_lib is None:
-        raise ImportError(
-            "pod5 is required for reading POD5 files. "
-            "Install it with: uv pip install pod5"
-        )
+        raise ImportError("pod5 is required for reading POD5 files. " "Install it with: uv pip install pod5")
     if h5py is None:
-        raise ImportError(
-            "h5py is required for writing FAST5 files. "
-            "Install it with: uv pip install h5py"
-        )
+        raise ImportError("h5py is required for writing FAST5 files. " "Install it with: uv pip install h5py")
 
     pod5_path = Path(pod5_path)
     output_path = Path(output_path)

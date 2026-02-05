@@ -10,10 +10,20 @@ from __future__ import annotations
 from . import (
     go,
     obo,
+    pathway_enrichment,
     query,
     serialize,
     types,
     visualization,
+)
+
+# Pathway enrichment imports
+from .pathway_enrichment.enrichment import (
+    over_representation_analysis,
+    gsea,
+    compute_enrichment_score,
+    pathway_network,
+    compare_enrichments,
 )
 
 # Optional imports with graceful fallbacks
@@ -37,4 +47,11 @@ __all__ = [
     "types",
     "serialize",
     "visualization",
+    # Pathway enrichment
+    "pathway_enrichment",
+    "over_representation_analysis",
+    "gsea",
+    "compute_enrichment_score",
+    "pathway_network",
+    "compare_enrichments",
 ]

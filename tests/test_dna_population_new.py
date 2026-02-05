@@ -448,9 +448,7 @@ class TestDetectPopulationStructure:
     def test_two_clear_clusters_detected(self, two_cluster_sequences: list[str]) -> None:
         """Two highly divergent groups should be split into 2 clusters."""
         result = detect_population_structure(two_cluster_sequences, k_max=5)
-        assert result["k_optimal"] == 2, (
-            f"Expected 2 clusters from divergent groups, got {result['k_optimal']}"
-        )
+        assert result["k_optimal"] == 2, f"Expected 2 clusters from divergent groups, got {result['k_optimal']}"
 
     def test_all_indices_assigned(self, two_cluster_sequences: list[str]) -> None:
         """Every sequence index must appear in exactly one cluster."""

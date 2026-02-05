@@ -673,9 +673,7 @@ def _cophenetic_distances(n: int, dendrogram: List[Dict[str, Any]]) -> List[List
     return coph
 
 
-def _pearson_correlation(
-    mat_a: List[List[float]], mat_b: List[List[float]], n: int
-) -> float:
+def _pearson_correlation(mat_a: List[List[float]], mat_b: List[List[float]], n: int) -> float:
     """Pearson correlation of the upper-triangle elements of two N x N matrices.
 
     Args:

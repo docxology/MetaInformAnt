@@ -138,7 +138,8 @@ def hybrid_assemble(
 
     logger.info(
         "Hybrid assembly: %d long reads, %d short reads",
-        len(long_seqs), len(short_seqs),
+        len(long_seqs),
+        len(short_seqs),
     )
 
     # Step 1: Build k-mer database from short reads
@@ -201,7 +202,9 @@ def hybrid_assemble(
 
     logger.info(
         "Assembly result: %d contigs, total %d bp, N50 %d bp",
-        len(contigs), total_length, n50,
+        len(contigs),
+        total_length,
+        n50,
     )
 
     return HybridAssemblyResult(
@@ -267,24 +270,30 @@ def correct_with_short_reads(
 
         # Correct the sequence
         corrected_seq, num_corrections, correction_regions = _correct_sequence(
-            seq, kmer_db, kmer_size, min_kmer_support,
+            seq,
+            kmer_db,
+            kmer_size,
+            min_kmer_support,
         )
 
         correction_rate = num_corrections / len(seq) if len(seq) > 0 else 0.0
 
-        corrected_reads.append(CorrectedRead(
-            read_id=str(read_id),
-            original_sequence=seq,
-            corrected_sequence=corrected_seq,
-            corrections_made=num_corrections,
-            correction_rate=correction_rate,
-            regions_corrected=correction_regions,
-        ))
+        corrected_reads.append(
+            CorrectedRead(
+                read_id=str(read_id),
+                original_sequence=seq,
+                corrected_sequence=corrected_seq,
+                corrections_made=num_corrections,
+                correction_rate=correction_rate,
+                regions_corrected=correction_regions,
+            )
+        )
 
     total_corrections = sum(cr.corrections_made for cr in corrected_reads)
     logger.info(
         "Error correction: corrected %d long reads, %d total corrections",
-        len(corrected_reads), total_corrections,
+        len(corrected_reads),
+        total_corrections,
     )
 
     return corrected_reads
@@ -417,7 +426,9 @@ def scaffold_with_long_reads(
 
     # Map long reads to contigs
     # For each long read, find which contigs it aligns to
-    read_to_contigs: dict[str, list[tuple[str, int, int, str]]] = defaultdict(list)  # read -> [(contig, start, end, strand)]
+    read_to_contigs: dict[str, list[tuple[str, int, int, str]]] = defaultdict(
+        list
+    )  # read -> [(contig, start, end, strand)]
 
     for rname, rseq in long_seqs:
         contig_hits: dict[str, list[int]] = defaultdict(list)
@@ -452,10 +463,12 @@ def scaffold_with_long_reads(
             if c1 != c2:
                 key = (c1, c2)
                 bridges[key] += 1
-                bridge_orders[key].append((
-                    sorted_contigs[i][2],  # end of c1 alignment on read
-                    sorted_contigs[i + 1][1],  # start of c2 alignment on read
-                ))
+                bridge_orders[key].append(
+                    (
+                        sorted_contigs[i][2],  # end of c1 alignment on read
+                        sorted_contigs[i + 1][1],  # start of c2 alignment on read
+                    )
+                )
 
     # Build scaffolds from bridges
     # Use a greedy approach: find connected chains of contigs
@@ -494,35 +507,40 @@ def scaffold_with_long_reads(
 
         scaffold_seq = "".join(seq_parts)
 
-        scaffolds.append(Scaffold(
-            scaffold_id=f"scaffold_{scaffold_id}",
-            sequence=scaffold_seq,
-            contigs=chain,
-            contig_orientations=orientations,
-            gaps=[gap_size],
-            total_length=len(scaffold_seq),
-            num_contigs=len(chain),
-            supporting_reads=support,
-        ))
+        scaffolds.append(
+            Scaffold(
+                scaffold_id=f"scaffold_{scaffold_id}",
+                sequence=scaffold_seq,
+                contigs=chain,
+                contig_orientations=orientations,
+                gaps=[gap_size],
+                total_length=len(scaffold_seq),
+                num_contigs=len(chain),
+                supporting_reads=support,
+            )
+        )
         scaffold_id += 1
 
     # Add unscaffolded contigs as singletons
     for cname, cseq in contig_data:
         if cname not in used_contigs:
-            scaffolds.append(Scaffold(
-                scaffold_id=f"scaffold_{scaffold_id}",
-                sequence=cseq,
-                contigs=[cname],
-                contig_orientations=["+"],
-                gaps=[],
-                total_length=len(cseq),
-                num_contigs=1,
-            ))
+            scaffolds.append(
+                Scaffold(
+                    scaffold_id=f"scaffold_{scaffold_id}",
+                    sequence=cseq,
+                    contigs=[cname],
+                    contig_orientations=["+"],
+                    gaps=[],
+                    total_length=len(cseq),
+                    num_contigs=1,
+                )
+            )
             scaffold_id += 1
 
     logger.info(
         "Scaffolding: %d contigs -> %d scaffolds (%d bridged)",
-        len(contig_data), len(scaffolds),
+        len(contig_data),
+        len(scaffolds),
         sum(1 for s in scaffolds if s.num_contigs > 1),
     )
 

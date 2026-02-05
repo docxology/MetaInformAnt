@@ -143,7 +143,9 @@ def detect_methylation(
         List of MethylationCall objects for detected modification sites.
     """
     if np is None:
-        raise ImportError("numpy is required for signal-level methylation detection. Install with: uv pip install numpy")
+        raise ImportError(
+            "numpy is required for signal-level methylation detection. Install with: uv pip install numpy"
+        )
 
     signal = np.asarray(signal_data, dtype=np.float64)
 
@@ -208,19 +210,23 @@ def _detect_cpg_methylation(signal: Any, threshold: float) -> list[MethylationCa
         std_ratio = event["std"] / (np.mean(context_stds) + 1e-10)
 
         # Combined score using logistic function
-        raw_score = 0.4 * _sigmoid(norm_deviation * 3 - 1.0) + \
-                    0.35 * _sigmoid(abs(current_shift) * 0.8 - 1.5) + \
-                    0.25 * _sigmoid(abs(std_ratio - 1.0) * 2.0 - 0.5)
+        raw_score = (
+            0.4 * _sigmoid(norm_deviation * 3 - 1.0)
+            + 0.35 * _sigmoid(abs(current_shift) * 0.8 - 1.5)
+            + 0.25 * _sigmoid(abs(std_ratio - 1.0) * 2.0 - 0.5)
+        )
 
         if raw_score >= threshold:
-            calls.append(MethylationCall(
-                position=event["start"],
-                modification_type="5mC",
-                probability=float(raw_score),
-                context="CpG",
-                coverage=1,
-                modified_count=1 if raw_score >= threshold else 0,
-            ))
+            calls.append(
+                MethylationCall(
+                    position=event["start"],
+                    modification_type="5mC",
+                    probability=float(raw_score),
+                    context="CpG",
+                    coverage=1,
+                    modified_count=1 if raw_score >= threshold else 0,
+                )
+            )
 
     return calls
 
@@ -253,22 +259,26 @@ def _detect_6ma_methylation(signal: Any, threshold: float) -> list[MethylationCa
         deviation = abs(current_shift) / local_range
 
         # Duration feature: modified bases may have different translocation speed
-        mean_duration = np.mean([e["duration"] for e in events[max(0, i - 2):i + 3]])
+        mean_duration = np.mean([e["duration"] for e in events[max(0, i - 2) : i + 3]])
         duration_ratio = event["duration"] / (mean_duration + 1e-10)
 
-        raw_score = 0.45 * _sigmoid(deviation * 2.5 - 0.8) + \
-                    0.35 * _sigmoid(abs(event["mean"] - neighbor_mean) * 0.5 - 1.0) + \
-                    0.20 * _sigmoid(abs(duration_ratio - 1.0) * 3.0 - 0.5)
+        raw_score = (
+            0.45 * _sigmoid(deviation * 2.5 - 0.8)
+            + 0.35 * _sigmoid(abs(event["mean"] - neighbor_mean) * 0.5 - 1.0)
+            + 0.20 * _sigmoid(abs(duration_ratio - 1.0) * 3.0 - 0.5)
+        )
 
         if raw_score >= threshold:
-            calls.append(MethylationCall(
-                position=event["start"],
-                modification_type="6mA",
-                probability=float(raw_score),
-                context="A",
-                coverage=1,
-                modified_count=1 if raw_score >= threshold else 0,
-            ))
+            calls.append(
+                MethylationCall(
+                    position=event["start"],
+                    modification_type="6mA",
+                    probability=float(raw_score),
+                    context="A",
+                    coverage=1,
+                    modified_count=1 if raw_score >= threshold else 0,
+                )
+            )
 
     return calls
 
@@ -288,13 +298,15 @@ def _segment_signal(signal: Any, min_event_length: int = 5) -> list[dict[str, An
     """
     if len(signal) < min_event_length * 2:
         if len(signal) > 0:
-            return [{
-                "start": 0,
-                "end": len(signal),
-                "mean": float(np.mean(signal)),
-                "std": float(np.std(signal)),
-                "duration": len(signal),
-            }]
+            return [
+                {
+                    "start": 0,
+                    "end": len(signal),
+                    "mean": float(np.mean(signal)),
+                    "std": float(np.std(signal)),
+                    "duration": len(signal),
+                }
+            ]
         return []
 
     events: list[dict[str, Any]] = []
@@ -321,7 +333,7 @@ def _segment_signal(signal: Any, min_event_length: int = 5) -> list[dict[str, An
             right_std = float(np.std(right)) + 1e-10
 
             # Welch's t-test statistic
-            pooled_se = math.sqrt(left_std ** 2 / len(left) + right_std ** 2 / len(right))
+            pooled_se = math.sqrt(left_std**2 / len(left) + right_std**2 / len(right))
             if pooled_se > 0:
                 t_stat = abs(left_mean - right_mean) / pooled_se
             else:
@@ -334,36 +346,42 @@ def _segment_signal(signal: Any, min_event_length: int = 5) -> list[dict[str, An
         # Only split if the t-statistic is significant
         if best_score > 3.0:  # Roughly p < 0.003 for large df
             segment = signal[start:best_split]
-            events.append({
-                "start": start,
-                "end": best_split,
-                "mean": float(np.mean(segment)),
-                "std": float(np.std(segment)),
-                "duration": best_split - start,
-            })
+            events.append(
+                {
+                    "start": start,
+                    "end": best_split,
+                    "mean": float(np.mean(segment)),
+                    "std": float(np.std(segment)),
+                    "duration": best_split - start,
+                }
+            )
             start = best_split
         else:
             # No significant change point found, extend to search_end
             segment = signal[start:search_end]
-            events.append({
-                "start": start,
-                "end": search_end,
-                "mean": float(np.mean(segment)),
-                "std": float(np.std(segment)),
-                "duration": search_end - start,
-            })
+            events.append(
+                {
+                    "start": start,
+                    "end": search_end,
+                    "mean": float(np.mean(segment)),
+                    "std": float(np.std(segment)),
+                    "duration": search_end - start,
+                }
+            )
             start = search_end
 
     # Handle remaining signal
     if start < len(signal):
         segment = signal[start:]
-        events.append({
-            "start": start,
-            "end": len(signal),
-            "mean": float(np.mean(segment)),
-            "std": float(np.std(segment)),
-            "duration": len(signal) - start,
-        })
+        events.append(
+            {
+                "start": start,
+                "end": len(signal),
+                "mean": float(np.mean(segment)),
+                "std": float(np.std(segment)),
+                "duration": len(signal) - start,
+            }
+        )
 
     return events
 
@@ -428,14 +446,16 @@ def call_5mc(signal_features: Sequence[dict[str, Any]]) -> list[MethylationCall]
 
         probability = 0.40 * shift_score + 0.30 * dwell_score + 0.30 * std_score
 
-        calls.append(MethylationCall(
-            chromosome=chromosome,
-            position=position,
-            strand=strand,
-            modification_type="5mC",
-            probability=probability,
-            context=context,
-        ))
+        calls.append(
+            MethylationCall(
+                chromosome=chromosome,
+                position=position,
+                strand=strand,
+                modification_type="5mC",
+                probability=probability,
+                context=context,
+            )
+        )
 
     return calls
 
@@ -471,14 +491,16 @@ def call_6ma(signal_features: Sequence[dict[str, Any]]) -> list[MethylationCall]
 
         probability = 0.45 * shift_score + 0.30 * dwell_score + 0.25 * std_score
 
-        calls.append(MethylationCall(
-            chromosome=chromosome,
-            position=position,
-            strand=strand,
-            modification_type="6mA",
-            probability=probability,
-            context=context,
-        ))
+        calls.append(
+            MethylationCall(
+                chromosome=chromosome,
+                position=position,
+                strand=strand,
+                modification_type="6mA",
+                probability=probability,
+                context=context,
+            )
+        )
 
     return calls
 
@@ -535,12 +557,14 @@ def aggregate_methylation(
                     break
 
         if not region_calls:
-            results.append(RegionMethylation(
-                chromosome=chrom,
-                start=start,
-                end=end,
-                name=name,
-            ))
+            results.append(
+                RegionMethylation(
+                    chromosome=chrom,
+                    start=start,
+                    end=end,
+                    name=name,
+                )
+            )
             continue
 
         # Aggregate calls by position
@@ -561,12 +585,14 @@ def aggregate_methylation(
                 coverages.append(len(probs))
 
         if not methylation_levels:
-            results.append(RegionMethylation(
-                chromosome=chrom,
-                start=start,
-                end=end,
-                name=name,
-            ))
+            results.append(
+                RegionMethylation(
+                    chromosome=chrom,
+                    start=start,
+                    end=end,
+                    name=name,
+                )
+            )
             continue
 
         sorted_levels = sorted(methylation_levels)
@@ -579,17 +605,19 @@ def aggregate_methylation(
 
         mean_cov = sum(coverages) / len(coverages) if coverages else 0.0
 
-        results.append(RegionMethylation(
-            chromosome=chrom,
-            start=start,
-            end=end,
-            name=name,
-            mean_methylation=mean_meth,
-            median_methylation=median_meth,
-            num_cpgs=len(methylation_levels),
-            mean_coverage=mean_cov,
-            methylation_levels=methylation_levels,
-        ))
+        results.append(
+            RegionMethylation(
+                chromosome=chrom,
+                start=start,
+                end=end,
+                name=name,
+                mean_methylation=mean_meth,
+                median_methylation=median_meth,
+                num_cpgs=len(methylation_levels),
+                mean_coverage=mean_cov,
+                methylation_levels=methylation_levels,
+            )
+        )
 
     return results
 
@@ -621,6 +649,7 @@ def differential_methylation(
     Returns:
         List of DifferentialMethylationResult objects for tested sites.
     """
+
     # Index calls by (chromosome, position)
     def _index_calls(calls: Sequence[MethylationCall]) -> dict[tuple[str, int], list[float]]:
         index: dict[tuple[str, int], list[float]] = {}
@@ -675,16 +704,18 @@ def differential_methylation(
 
         p_value = _fishers_exact_test(mod1, unmod1, mod2, unmod2)
 
-        raw_results.append(DifferentialMethylationResult(
-            chromosome=chrom,
-            position=pos,
-            sample1_methylation=meth1,
-            sample2_methylation=meth2,
-            difference=diff,
-            p_value=p_value,
-            sample1_coverage=len(probs1),
-            sample2_coverage=len(probs2),
-        ))
+        raw_results.append(
+            DifferentialMethylationResult(
+                chromosome=chrom,
+                position=pos,
+                sample1_methylation=meth1,
+                sample2_methylation=meth2,
+                difference=diff,
+                p_value=p_value,
+                sample1_coverage=len(probs1),
+                sample2_coverage=len(probs2),
+            )
+        )
 
     # Benjamini-Hochberg correction
     if raw_results:
