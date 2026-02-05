@@ -337,7 +337,7 @@ def fluid_communities(graph: Any, k: int, **kwargs: Any) -> List[List[str]]:
     return community_lists
 
 
-def detect_communities(graph: Any, method: str = "louvain", **kwargs: Any) -> List[List[str]]:
+def detect_communities(graph: Any, method: str = "louvain", **kwargs: Any) -> Dict[str, int]:
     """Unified interface for community detection.
 
     Args:
@@ -346,7 +346,7 @@ def detect_communities(graph: Any, method: str = "louvain", **kwargs: Any) -> Li
         **kwargs: Method-specific parameters
 
     Returns:
-        List of community lists
+        Dict mapping node IDs to community IDs
 
     Raises:
         ValueError: If method not supported
@@ -365,7 +365,16 @@ def detect_communities(graph: Any, method: str = "louvain", **kwargs: Any) -> Li
         available_methods = list(method_map.keys())
         raise ValueError(f"Unknown method '{method}'. Available: {available_methods}")
 
-    return method_map[method](graph, **kwargs)
+    # Get community lists from underlying method
+    community_lists = method_map[method](graph, **kwargs)
+
+    # Convert to dict mapping node -> community ID
+    node_to_community = {}
+    for comm_id, community in enumerate(community_lists):
+        for node in community:
+            node_to_community[node] = comm_id
+
+    return node_to_community
 
 
 def evaluate_communities(graph: Any, communities: List[List[str]]) -> Dict[str, Any]:

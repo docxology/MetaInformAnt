@@ -489,71 +489,112 @@ def biological_dimensionality_analysis(
 
 
 def biological_embedding(
-    sequences: List[Any], embedding_dim: int = 100, method: str = "pca", **kwargs: Any
-) -> np.ndarray:
+    sequences: List[Any] | None = None,
+    embedding_dim: int = 100,
+    method: str = "pca",
+    X: np.ndarray | None = None,
+    n_components: int | None = None,
+    labels: np.ndarray | None = None,
+    **kwargs: Any,
+) -> Dict[str, Any]:
     """Create biological embeddings from sequences or features.
 
     Args:
         sequences: List of sequences or feature vectors
         embedding_dim: Dimension of the embedding
         method: Embedding method ('pca', 'umap', 'tsne')
+        X: Feature matrix (alternative to sequences)
+        n_components: Number of components (alternative to embedding_dim)
+        labels: Optional sample labels
         **kwargs: Additional arguments for the embedding method
 
     Returns:
-        Embedding matrix
+        Dictionary with embedding results
     """
-    if not sequences:
-        raise ValueError("No sequences provided")
-
-    # Convert sequences to feature matrix
-    if isinstance(sequences[0], str):
-        # If sequences are strings, convert to basic features
-        # This is a simplified implementation - in practice you'd use more sophisticated methods
-        features = []
-        for seq in sequences:
-            # Simple k-mer counting (k=1,2,3)
-            features.append(_sequence_to_features(seq))
-        X = np.array(features)
+    # Handle alternative parameter names
+    if X is not None:
+        data = X
+    elif sequences is not None:
+        if not sequences:
+            raise ValueError("No sequences provided")
+        if isinstance(sequences[0], str):
+            features = []
+            for seq in sequences:
+                features.append(_sequence_to_features(seq))
+            data = np.array(features)
+        else:
+            data = np.array(sequences)
     else:
-        # Assume sequences are already feature vectors
-        X = np.array(sequences)
+        raise ValueError("Must provide either sequences or X")
 
-    if X.shape[0] == 0:
+    if n_components is not None:
+        embedding_dim = n_components
+
+    if data.shape[0] == 0:
         raise ValueError("No valid features extracted")
 
     # Apply dimensionality reduction
+    result: Dict[str, Any] = {"method": method}
+
     if method == "pca":
-        return reduce_dimensions_pca(X, n_components=embedding_dim, **kwargs)
+        X_reduced, components, explained_var = reduce_dimensions_pca(data, n_components=embedding_dim, **kwargs)
+        result["embedding"] = X_reduced
+        result["explained_variance"] = explained_var
+        result["components"] = components
     elif method == "umap" and HAS_UMAP:
-        return reduce_dimensions_umap(X, n_components=embedding_dim, **kwargs)
+        X_reduced = reduce_dimensions_umap(data, n_components=embedding_dim, **kwargs)
+        result["embedding"] = X_reduced
+        result["explained_variance"] = None
     elif method == "tsne" and HAS_TSNE:
-        return reduce_dimensions_tsne(X, n_components=embedding_dim, **kwargs)
+        X_reduced = reduce_dimensions_tsne(data, n_components=embedding_dim, **kwargs)
+        result["embedding"] = X_reduced
+        result["explained_variance"] = None
     else:
         raise ValueError(f"Unsupported embedding method: {method}")
 
+    if labels is not None:
+        result["labels"] = labels
+
+    return result
+
 
 def reduce_dimensions_pca(
-    X: np.ndarray, n_components: int | None = None, scale_data: bool = True, **kwargs: Any
-) -> np.ndarray:
+    X: np.ndarray,
+    n_components: int | None = None,
+    scale_data: bool = True,
+    standardize: bool | None = None,
+    **kwargs: Any,
+) -> tuple:
     """Reduce dimensions using PCA.
 
     Args:
         X: Input data matrix
         n_components: Number of components to keep
         scale_data: Whether to scale data before PCA
+        standardize: Alias for scale_data
         **kwargs: Additional arguments for PCA
 
     Returns:
-        Reduced dimensionality data
+        Tuple of (X_reduced, components, explained_variance_ratio)
     """
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for PCA")
 
+    if standardize is not None:
+        scale_data = standardize
+
     if n_components is None:
         n_components = min(X.shape[0], X.shape[1], 50)
 
-    X_reduced, _ = pca_reduction(X, n_components=n_components, scale_data=scale_data, **kwargs)
-    return X_reduced
+    X_reduced, pca_obj = pca_reduction(X, n_components=n_components, scale_data=scale_data, **kwargs)
+
+    # Return components and explained variance alongside reduced data
+    components = pca_obj.components_.T if hasattr(pca_obj, "components_") else np.eye(X.shape[1], n_components)
+    explained_var = (
+        pca_obj.explained_variance_ratio_ if hasattr(pca_obj, "explained_variance_ratio_") else np.zeros(n_components)
+    )
+
+    return X_reduced, components, explained_var
 
 
 def reduce_dimensions_tsne(X: np.ndarray, n_components: int = 2, perplexity: float = 30.0, **kwargs: Any) -> np.ndarray:
@@ -571,8 +612,7 @@ def reduce_dimensions_tsne(X: np.ndarray, n_components: int = 2, perplexity: flo
     if not HAS_TSNE:
         raise ImportError("scikit-learn required for t-SNE")
 
-    X_reduced, _ = tsne_reduction(X, n_components=n_components, perplexity=perplexity, **kwargs)
-    return X_reduced
+    return tsne_reduction(X, n_components=n_components, perplexity=perplexity, **kwargs)
 
 
 def reduce_dimensions_umap(X: np.ndarray, n_components: int = 2, n_neighbors: int = 15, **kwargs: Any) -> np.ndarray:

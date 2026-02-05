@@ -108,26 +108,67 @@ def equilibrium_heterozygosity_infinite_alleles(theta: float) -> float:
     return theta / (1 + theta)
 
 
-def fixation_probability(selection_coefficient: float, population_size: int) -> float:
+def fixation_probability(
+    initial_frequency: float | None = None,
+    population_size: int | None = None,
+    *,
+    selection_coefficient: float = 0.0,
+    Ne: int | None = None,
+    p0: float | None = None,
+) -> float:
     """Calculate fixation probability under selection.
 
+    Supports multiple calling conventions:
+    - fixation_probability(p0, Ne, selection_coefficient=s)
+    - fixation_probability(selection_coefficient=s, population_size=N)
+
     Args:
-        selection_coefficient: Selection coefficient (s)
+        initial_frequency: Initial allele frequency (p0)
         population_size: Population size (N)
+        selection_coefficient: Selection coefficient (s)
+        Ne: Alias for population_size
+        p0: Alias for initial_frequency
 
     Returns:
         Probability of fixation
     """
-    if selection_coefficient == 0:
-        return 1.0 / (2 * population_size)  # Neutral case
+    # Handle parameter aliases
+    if Ne is not None and population_size is None:
+        population_size = Ne
+    if p0 is not None and initial_frequency is None:
+        initial_frequency = p0
+
+    # Default values
+    if initial_frequency is None:
+        initial_frequency = 1.0 / (2 * population_size) if population_size else 0.5
+    if population_size is None:
+        raise ValueError("population_size (or Ne) must be provided")
 
     s = selection_coefficient
     N = population_size
+    p = initial_frequency
 
-    if s > 0:  # Beneficial mutation
-        return (1 - math.exp(-2 * s)) / (1 - math.exp(-4 * N * s))
-    else:  # Deleterious mutation
-        return (1 - math.exp(-2 * s)) / (1 - math.exp(-4 * N * s))
+    # For neutral allele, fixation probability equals initial frequency
+    if s == 0:
+        return p
+
+    # Kimura's diffusion approximation
+    # P(fix) = (1 - exp(-4*N*s*p)) / (1 - exp(-4*N*s))
+    try:
+        exp_term = 4 * N * s
+        numerator = 1 - math.exp(-exp_term * p)
+        denominator = 1 - math.exp(-exp_term)
+
+        if abs(denominator) < 1e-10:
+            return p  # Very weak selection, nearly neutral
+
+        return numerator / denominator
+    except OverflowError:
+        # For very strong selection
+        if s > 0:
+            return 1.0 if p > 0 else 0.0
+        else:
+            return 0.0
 
 
 def bottleneck_effective_size(

@@ -43,15 +43,40 @@ def test_association_linear_no_association() -> None:
 
 def test_association_linear_with_covariates() -> None:
     """Test linear regression with covariates."""
-    genotypes = [0, 1, 2, 0, 1, 2]
-    phenotypes = [10.0, 11.0, 12.0, 10.0, 11.0, 12.0]
-    covariates = [[30, 40, 50, 30, 40, 50], [1, 1, 1, 0, 0, 0]]  # age, sex
+    # Use more samples and non-collinear covariates
+    genotypes = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0]
+    phenotypes = [10.0, 11.0, 12.0, 10.5, 11.5, 12.5, 9.5, 10.5, 11.5, 10.0]
+    covariates = [[25, 35, 45, 30, 40, 50, 28, 38, 48, 33], [1, 1, 1, 0, 0, 0, 1, 0, 1, 0]]  # age, sex
 
     result = association_test_linear(genotypes, phenotypes, covariates)
 
     assert result["status"] == "success"
     assert "beta" in result
     assert "p_value" in result
+
+    # CRITICAL: verify result is NOT the old hardcoded (0.1, 0.05, 2.0, 0.05, 0.5)
+    assert not (
+        abs(result["beta"] - 0.1) < 1e-10 and abs(result["se"] - 0.05) < 1e-10 and abs(result["p_value"] - 0.05) < 1e-10
+    ), "Multi-covariate regression still returns hardcoded values!"
+
+    # SE should be positive (real computation)
+    assert result["se"] > 0
+
+
+def test_association_linear_covariates_produce_different_results() -> None:
+    """Test that adding covariates produces different results than no covariates."""
+    genotypes = [0, 1, 2, 0, 1, 2, 0, 1, 2, 0]
+    phenotypes = [10.0, 11.0, 12.0, 10.5, 11.5, 12.5, 9.5, 10.5, 11.5, 10.0]
+
+    result_no_cov = association_test_linear(genotypes, phenotypes)
+    # Use a covariate NOT perfectly correlated with genotype
+    covariates = [[25, 35, 45, 30, 40, 50, 28, 38, 48, 33]]
+    result_with_cov = association_test_linear(genotypes, phenotypes, covariates=covariates)
+
+    assert result_no_cov["status"] == "success"
+    assert result_with_cov["status"] == "success"
+    # Results should differ when covariates are added
+    assert result_no_cov["se"] != result_with_cov["se"] or result_no_cov["r_squared"] != result_with_cov["r_squared"]
 
 
 def test_association_linear_missing_data() -> None:

@@ -32,5 +32,13 @@ from . import analysis
 from . import data
 from . import visualization
 
-# Flattened exports for convenience (optional, sticking to module access preferred for clarity)
-# But we can expose key classes if desired.
+__all__ = [
+    "behavior",
+    "chemical",
+    "electronic",
+    "morphological",
+    "sonic",
+    "analysis",
+    "data",
+    "visualization",
+]

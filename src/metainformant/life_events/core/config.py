@@ -33,6 +33,8 @@ class LifeEventsWorkflowConfig:
         embedding_window: Context window size for embeddings
         min_event_count: Minimum event frequency for embedding
         sequence_max_length: Maximum sequence length for models
+        threads: Number of threads for parallel processing
+        embedding: Alias for embedding_dim (backward compatibility)
     """
 
     work_dir: Path
@@ -51,9 +53,22 @@ class LifeEventsWorkflowConfig:
     embedding_window: int = 5
     min_event_count: int = 5
     sequence_max_length: int = 100
+    threads: int = 1
+    # Aliases for backward compatibility
+    embedding: Optional[int] = None  # Alias for embedding_dim
+    model: Optional[str] = None  # Alias for model_type
+    log_dir: Optional[Path] = None  # Alias for output_dir
 
     def __post_init__(self):
         """Post-initialization validation and setup."""
+        # Handle parameter aliases
+        if self.embedding is not None:
+            self.embedding_dim = self.embedding
+        if self.model is not None:
+            self.model_type = self.model
+        if self.log_dir is not None and self.output_dir is None:
+            self.output_dir = self.log_dir
+
         if self.output_dir is None:
             self.output_dir = self.work_dir / "output"
 
@@ -80,6 +95,7 @@ class LifeEventsWorkflowConfig:
             "embedding_window": self.embedding_window,
             "min_event_count": self.min_event_count,
             "sequence_max_length": self.sequence_max_length,
+            "threads": self.threads,
         }
 
     @classmethod

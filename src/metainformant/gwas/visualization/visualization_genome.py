@@ -21,72 +21,97 @@ def circular_manhattan_plot(
     output_file: Optional[str | Path] = None,
     significance_threshold: float = 5e-8,
     title: str = "Circular Manhattan Plot",
-) -> Optional[Any]:
+) -> Dict[str, Any]:
     """Create a circular Manhattan plot for GWAS results.
 
     Args:
-        results_df: DataFrame with columns 'CHR', 'BP', 'P'
+        results_df: DataFrame with columns 'CHR', 'BP', 'P', or list of dicts
+            with 'CHROM', 'POS', 'p_value' keys
         output_file: Optional output file path
         significance_threshold: P-value threshold for significance line
         title: Plot title
 
     Returns:
-        Plot object if matplotlib available, None otherwise
+        Dictionary with status and metadata
 
     Example:
-        >>> plot = circular_manhattan_plot(gwas_results)
+        >>> result = circular_manhattan_plot(gwas_results)
     """
     try:
         import matplotlib.pyplot as plt
         from matplotlib.patches import Wedge
     except ImportError:
         logger.warning("matplotlib not available for circular Manhattan plot")
-        return None
+        return {"status": "failed", "error": "matplotlib not available"}
 
-    # Validate input data
-    if not hasattr(results_df, "columns"):
-        logger.error("Input data must be a DataFrame")
-        return None
+    # Convert list-of-dicts to parallel arrays
+    if isinstance(results_df, list):
+        if not results_df:
+            return {"status": "failed", "error": "No results provided"}
+        chroms_list = []
+        positions_list = []
+        pvalues_list = []
+        for entry in results_df:
+            chroms_list.append(entry.get("CHROM", entry.get("CHR", entry.get("chr", "1"))))
+            positions_list.append(entry.get("POS", entry.get("BP", entry.get("pos", 0))))
+            pvalues_list.append(entry.get("p_value", entry.get("P", entry.get("pval", 1.0))))
+    elif hasattr(results_df, "columns"):
+        # DataFrame path
+        required_cols = ["CHR", "BP", "P"]
+        missing_cols = [col for col in required_cols if col not in results_df.columns]
+        if missing_cols:
+            logger.error(f"Missing required columns: {missing_cols}")
+            return {"status": "failed", "error": f"Missing required columns: {missing_cols}"}
+        chroms_list = results_df["CHR"].tolist()
+        positions_list = results_df["BP"].tolist()
+        pvalues_list = results_df["P"].tolist()
+    else:
+        logger.error("Input data must be a DataFrame or list of dicts")
+        return {"status": "failed", "error": "Input data must be a DataFrame or list of dicts"}
 
-    required_cols = ["CHR", "BP", "P"]
-    missing_cols = [col for col in required_cols if col not in results_df.columns]
-    if missing_cols:
-        logger.error(f"Missing required columns: {missing_cols}")
-        return None
-
-    fig, ax = plt.subplots(1, 1, figsize=(10, 10))
+    fig, ax = plt.subplots(1, 1, figsize=(10, 10), subplot_kw=dict(projection="polar"))
 
     # Prepare data
-    chroms = sorted(results_df["CHR"].unique())
-    chrom_angles = {}
+    unique_chroms = sorted(set(str(c) for c in chroms_list))
+    chrom_angles: Dict[str, tuple] = {}
 
     # Calculate chromosome angles (equal spacing)
-    angle_per_chrom = 360 / len(chroms)
+    angle_per_chrom = 360 / len(unique_chroms)
 
     # Colors for chromosomes
-    colors = plt.cm.tab20(np.linspace(0, 1, len(chroms)))
+    colors = plt.cm.tab20(np.linspace(0, 1, len(unique_chroms)))
+
+    # Group data by chromosome
+    chrom_data_map: Dict[str, List[tuple]] = {c: [] for c in unique_chroms}
+    for chrom, pos, pval in zip(chroms_list, positions_list, pvalues_list):
+        chrom_data_map[str(chrom)].append((pos, pval))
 
     # Plot each chromosome as a sector
-    for i, chrom in enumerate(chroms):
-        chrom_data = results_df[results_df["CHR"] == chrom].copy()
-        if chrom_data.empty:
+    for i, chrom in enumerate(unique_chroms):
+        data = chrom_data_map[chrom]
+        if not data:
             continue
 
         start_angle = i * angle_per_chrom
         end_angle = (i + 1) * angle_per_chrom
         chrom_angles[chrom] = (start_angle, end_angle)
 
+        pos_arr = np.array([d[0] for d in data], dtype=float)
+        pval_arr = np.array([d[1] for d in data], dtype=float)
+
         # Convert p-values to radial positions
-        chrom_data["neg_log_p"] = -np.log10(chrom_data["P"].clip(lower=1e-50))
+        neg_log_p = -np.log10(np.clip(pval_arr, 1e-50, None))
 
         # Normalize positions within chromosome
-        chrom_data["norm_pos"] = (chrom_data["BP"] - chrom_data["BP"].min()) / (
-            chrom_data["BP"].max() - chrom_data["BP"].min()
-        )
+        pos_range = pos_arr.max() - pos_arr.min()
+        if pos_range > 0:
+            norm_pos = (pos_arr - pos_arr.min()) / pos_range
+        else:
+            norm_pos = np.full_like(pos_arr, 0.5)
 
         # Convert to polar coordinates
-        angles = start_angle + chrom_data["norm_pos"] * angle_per_chrom
-        radii = 1 + chrom_data["neg_log_p"] * 0.1  # Scale for visibility
+        angles = start_angle + norm_pos * angle_per_chrom
+        radii = 1 + neg_log_p * 0.1  # Scale for visibility
 
         # Plot points
         ax.scatter(np.deg2rad(angles), radii, c=[colors[i]], s=1, alpha=0.6)
@@ -114,34 +139,38 @@ def circular_manhattan_plot(
     ax.grid(False)
     ax.spines["polar"].set_visible(False)
 
-    # Set equal aspect ratio
-    ax.set_aspect("equal")
-
     plt.tight_layout()
 
     if output_file:
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved circular Manhattan plot to {output_file}")
 
-    return plt.gcf()
+    return {
+        "status": "success",
+        "n_variants": len(chroms_list),
+        "n_chromosomes": len(unique_chroms),
+        "output_path": str(output_file) if output_file else None,
+    }
 
 
 def chromosome_ideogram(
-    chromosome_lengths: Dict[str, int],
-    highlighted_regions: Optional[List[Dict[str, Any]]] = None,
+    chromosome_data: Any,
     output_file: Optional[str | Path] = None,
+    highlighted_regions: Optional[List[Dict[str, Any]]] = None,
     title: str = "Chromosome Ideogram",
-) -> Optional[Any]:
+) -> Dict[str, Any]:
     """Create a chromosome ideogram showing chromosome structure.
 
     Args:
-        chromosome_lengths: Dictionary mapping chromosome names to lengths
-        highlighted_regions: Optional list of regions to highlight
+        chromosome_data: Dictionary mapping chromosome names to lengths,
+            or a list of GWAS result dicts with 'CHROM' and 'POS' keys
+            (chromosome lengths will be inferred from max positions).
         output_file: Optional output file path
+        highlighted_regions: Optional list of regions to highlight
         title: Plot title
 
     Returns:
-        Plot object if matplotlib available, None otherwise
+        Dictionary with status and metadata
     """
     try:
         import matplotlib.pyplot as plt
@@ -149,11 +178,26 @@ def chromosome_ideogram(
         import numpy as np
     except ImportError:
         logger.warning("matplotlib not available for chromosome ideogram")
-        return None
+        return {"status": "failed", "error": "matplotlib not available"}
+
+    # Convert list-of-dicts (GWAS results) to chromosome_lengths dict
+    if isinstance(chromosome_data, list):
+        if not chromosome_data:
+            return {"status": "failed", "error": "No chromosome data provided"}
+        chromosome_lengths: Dict[str, int] = {}
+        for entry in chromosome_data:
+            chrom = str(entry.get("CHROM", entry.get("CHR", entry.get("chr", "1"))))
+            pos = int(entry.get("POS", entry.get("BP", entry.get("pos", 0))))
+            if chrom not in chromosome_lengths or pos > chromosome_lengths[chrom]:
+                chromosome_lengths[chrom] = pos
+    elif isinstance(chromosome_data, dict):
+        chromosome_lengths = chromosome_data
+    else:
+        return {"status": "failed", "error": "Invalid chromosome data format"}
 
     if not chromosome_lengths:
         logger.error("No chromosome lengths provided")
-        return None
+        return {"status": "failed", "error": "No chromosome lengths provided"}
 
     # Sort chromosomes
     chroms = sorted(
@@ -245,7 +289,12 @@ def chromosome_ideogram(
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved chromosome ideogram to {output_file}")
 
-    return fig
+    return {
+        "status": "success",
+        "n_chromosomes": len(chroms),
+        "chromosomes": chroms,
+        "output_path": str(output_file) if output_file else None,
+    }
 
 
 def genome_wide_ld_heatmap(
@@ -384,6 +433,7 @@ def manhattan_plot(
     results: list[dict],
     output_path: Optional[str | Path] = None,
     significance_threshold: float = 5e-8,
+    suggestiveness_threshold: Optional[float] = None,
     figsize: tuple[int, int] = (12, 8),
 ) -> dict[str, Any]:
     """Create a Manhattan plot for GWAS results.
@@ -392,6 +442,7 @@ def manhattan_plot(
         results: List of dictionaries with CHROM, POS, p_value keys
         output_path: Path to save the plot
         significance_threshold: P-value threshold for significance line
+        suggestiveness_threshold: P-value threshold for suggestive significance line
         figsize: Figure size
 
     Returns:
@@ -405,7 +456,10 @@ def manhattan_plot(
         HAS_MATPLOTLIB = False
 
     if not HAS_MATPLOTLIB:
-        return {"status": "error", "message": "matplotlib not available"}
+        return {"status": "failed", "error": "matplotlib not available"}
+
+    if not results:
+        return {"status": "failed", "error": "No results provided"}
 
     try:
         # Convert to DataFrame-like structure
@@ -444,12 +498,14 @@ def manhattan_plot(
 
         # Color by chromosome
         colors = ["#1f77b4", "#ff7f0e"] * len(unique_chroms)
+        num_to_chrom = {v: k for k, v in chrom_to_num.items()}
         chrom_colors = {}
         for i, chrom in enumerate(unique_chroms):
             chrom_colors[chrom] = colors[i % len(colors)]
 
         for i in range(len(x_positions)):
-            ax.scatter(x_positions[i], neg_log_p[i], color=chrom_colors[chrom_nums[i]], alpha=0.8, s=20)
+            chrom_name = num_to_chrom[chrom_nums[i]]
+            ax.scatter(x_positions[i], neg_log_p[i], color=chrom_colors[chrom_name], alpha=0.8, s=20)
 
         # Add significance line
         sig_threshold = -math.log10(significance_threshold)
@@ -461,10 +517,22 @@ def manhattan_plot(
             label=f"Significance threshold ({significance_threshold})",
         )
 
+        # Add suggestiveness threshold line if provided
+        if suggestiveness_threshold is not None:
+            sug_threshold = -math.log10(suggestiveness_threshold)
+            ax.axhline(
+                y=sug_threshold,
+                color="blue",
+                linestyle=":",
+                alpha=0.7,
+                label=f"Suggestiveness threshold ({suggestiveness_threshold})",
+            )
+
         # Add chromosome labels at centers
         chrom_centers = []
         for chrom in unique_chroms:
-            chrom_x = [x for x, c in zip(x_positions, chrom_nums) if c == chrom]
+            chrom_num = chrom_to_num[chrom]
+            chrom_x = [x for x, c in zip(x_positions, chrom_nums) if c == chrom_num]
             if chrom_x:
                 chrom_centers.append((chrom, sum(chrom_x) / len(chrom_x)))
 
@@ -492,4 +560,4 @@ def manhattan_plot(
         }
 
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "failed", "error": str(e)}

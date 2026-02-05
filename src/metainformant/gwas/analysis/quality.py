@@ -344,6 +344,68 @@ def _chi2_sf(x: float, df: int = 1) -> float:
         return h * math.exp(-z + a * math.log(z) - math.lgamma(a))
 
 
+def check_haplodiploidy(
+    vcf_data: Dict[str, Any],
+    het_threshold: float = 0.05,
+) -> Dict[str, Any]:
+    """Detect haploid samples in a haplodiploid species (e.g., Hymenoptera).
+
+    In haplodiploid species like Apis mellifera, males (drones) are haploid and
+    will show near-zero heterozygosity. This function identifies such samples.
+
+    Args:
+        vcf_data: Parsed VCF data dictionary with 'genotypes' (samples x variants)
+        het_threshold: Maximum heterozygosity rate to classify as haploid (default: 0.05)
+
+    Returns:
+        Dictionary with:
+        - haploid_samples: list of sample indices identified as haploid
+        - diploid_samples: list of sample indices identified as diploid
+        - het_rates: heterozygosity rate per sample
+        - n_haploid: count of haploid samples
+        - n_diploid: count of diploid samples
+    """
+    genotypes = vcf_data.get("genotypes", [])
+    if not genotypes:
+        return {
+            "haploid_samples": [],
+            "diploid_samples": [],
+            "het_rates": [],
+            "n_haploid": 0,
+            "n_diploid": 0,
+        }
+
+    n_samples = len(genotypes)
+    het_rates = []
+    haploid_samples = []
+    diploid_samples = []
+
+    for s in range(n_samples):
+        sample_gts = genotypes[s]
+        n_het = sum(1 for g in sample_gts if g == 1)
+        n_valid = sum(1 for g in sample_gts if g >= 0)
+        het_rate = n_het / n_valid if n_valid > 0 else 0.0
+        het_rates.append(het_rate)
+
+        if het_rate <= het_threshold:
+            haploid_samples.append(s)
+        else:
+            diploid_samples.append(s)
+
+    logger.info(
+        f"Haplodiploidy check: {len(haploid_samples)} haploid, "
+        f"{len(diploid_samples)} diploid samples (threshold={het_threshold})"
+    )
+
+    return {
+        "haploid_samples": haploid_samples,
+        "diploid_samples": diploid_samples,
+        "het_rates": het_rates,
+        "n_haploid": len(haploid_samples),
+        "n_diploid": len(diploid_samples),
+    }
+
+
 def apply_qc_filters(
     vcf_input: Union[str, Path, Dict[str, Any]], qc_config: Optional[Dict[str, Any]] = None
 ) -> Dict[str, Any]:

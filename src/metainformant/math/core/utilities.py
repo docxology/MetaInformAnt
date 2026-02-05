@@ -88,18 +88,48 @@ def linear_regression(x: Sequence[float] | np.ndarray, y: Sequence[float] | np.n
     return slope, intercept, r_squared
 
 
-def r_squared(x: List[float], y: List[float]) -> float:
-    """Calculate R-squared for linear regression of x vs y.
+def r_squared(
+    x_or_pA: List[float] | float,
+    y_or_pa: List[float] | float | None = None,
+    pB: float | None = None,
+    pb: float | None = None,
+    pAB: float | None = None,
+) -> float:
+    """Calculate R-squared for linear regression or LD.
+
+    Can be called with:
+    - Two lists: r_squared(x, y) for linear regression R-squared
+    - Allele frequencies: r_squared(pA, pa, pB, pb, pAB) for LD r²
 
     Args:
-        x: Independent variable values
-        y: Dependent variable values
+        x_or_pA: Either x values for regression or pA allele frequency
+        y_or_pa: Either y values for regression or pa allele frequency
+        pB: Allele frequency for B (if using LD mode)
+        pb: Allele frequency for b (if using LD mode)
+        pAB: Haplotype frequency for AB (if using LD mode)
 
     Returns:
-        R-squared value (0 to 1)
+        R-squared value
     """
-    _, _, r_squared = linear_regression(x, y)
-    return r_squared
+    # Check if we're in LD mode (allele frequencies)
+    if pB is not None and pb is not None and pAB is not None:
+        pA = x_or_pA
+        pa = y_or_pa
+        # Calculate D = P(AB) - P(A)*P(B)
+        D = pAB - pA * pB
+        # r² = D² / (pA * pa * pB * pb)
+        denom = pA * pa * pB * pb
+        if denom == 0:
+            return 0.0
+        return (D * D) / denom
+
+    # Linear regression mode
+    x = x_or_pA
+    y = y_or_pa
+    if y is None:
+        raise ValueError("y is required for linear regression mode")
+    _, _, r2 = linear_regression(x, y)
+    return r2
 
 
 def fisher_exact_test(a: int, b: int, c: int, d: int) -> tuple[float, float]:

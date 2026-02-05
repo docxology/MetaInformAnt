@@ -20,6 +20,7 @@ except ImportError:
 
 pytestmark = pytest.mark.skipif(not SCIPY_AVAILABLE, reason="scipy not available")
 
+from metainformant.core.utils.errors import ValidationError
 from metainformant.singlecell.analysis.dimensionality import (
     SKLEARN_AVAILABLE,
     compute_diffusion_map,
@@ -174,7 +175,7 @@ class TestPCA:
         assert len(pca_info["variance_ratio"]) == 20
 
         # Variance ratios should sum to less than 1 and be decreasing
-        var_ratios = pca_info["variance_ratio"]
+        var_ratios = np.array(pca_info["variance_ratio"])
         assert np.all(var_ratios > 0)
         assert np.all(np.diff(var_ratios) <= 0)  # Decreasing
         assert np.sum(var_ratios) <= 1.0
@@ -575,7 +576,7 @@ class TestEdgeCases:
         data = SingleCellData(X)
 
         # PCA should handle single cell (though not very meaningful)
-        with pytest.raises((ValueError, np.linalg.LinAlgError)):
+        with pytest.raises((ValueError, np.linalg.LinAlgError, ValidationError)):
             # Should fail gracefully for single sample
             compute_pca(data, n_components=5)
 

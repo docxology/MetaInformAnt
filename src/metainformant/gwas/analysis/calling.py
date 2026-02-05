@@ -51,8 +51,8 @@ def call_variants_bcftools(
 
     bam_files_str = [str(f) for f in bam_files]
 
-    # Build bcftools command
-    cmd = [
+    # Build bcftools mpileup command
+    mpileup_cmd = [
         "bcftools",
         "mpileup",
         "-f",
@@ -67,42 +67,44 @@ def call_variants_bcftools(
     ]
 
     # Add BAM files
-    cmd.extend(bam_files_str)
+    mpileup_cmd.extend(bam_files_str)
 
-    # Pipe to bcftools call
-    cmd.extend(
-        [
-            "|",
-            "bcftools",
-            "call",
-            "-mv",  # multiallelic caller, output variants only
-            "-Ou",  # output uncompressed BCF
-            "--threads",
-            str(threads),
-            "-o",
-            str(output_vcf.with_suffix(".bcf")),
-        ]
-    )
+    # Build bcftools call command
+    call_cmd = [
+        "bcftools",
+        "call",
+        "-mv",  # multiallelic caller, output variants only
+        "-Ou",  # output uncompressed BCF
+        "--threads",
+        str(threads),
+        "-o",
+        str(output_vcf.with_suffix(".bcf")),
+    ]
 
-    # Convert to VCF
-    cmd.extend(
-        [
-            "&&",
-            "bcftools",
-            "view",
-            "-o",
-            str(output_vcf),
-            "-O",
-            "v",  # output uncompressed VCF
-            str(output_vcf.with_suffix(".bcf")),
-        ]
-    )
+    # Build bcftools view command to convert BCF to VCF
+    view_cmd = [
+        "bcftools",
+        "view",
+        "-o",
+        str(output_vcf),
+        "-O",
+        "v",  # output uncompressed VCF
+        str(output_vcf.with_suffix(".bcf")),
+    ]
 
-    logger.info(f"Running bcftools variant calling: {' '.join(cmd[:5])}...")
+    logger.info(f"Running bcftools variant calling: {' '.join(mpileup_cmd[:5])}...")
 
     try:
-        result = subprocess.run(" ".join(cmd), shell=True, capture_output=True, text=True)
+        # Pipe mpileup output into call (no shell=True needed)
+        mpileup_proc = subprocess.Popen(mpileup_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        result = subprocess.run(call_cmd, stdin=mpileup_proc.stdout, capture_output=True, text=True)
+        mpileup_proc.stdout.close()
+        mpileup_proc.wait()
         result.check_returncode()
+
+        # Convert BCF to VCF
+        view_result = subprocess.run(view_cmd, capture_output=True, text=True)
+        view_result.check_returncode()
 
         logger.info(f"bcftools variant calling completed: {output_vcf}")
 
@@ -111,7 +113,7 @@ def call_variants_bcftools(
         if bcf_file.exists():
             bcf_file.unlink()
 
-        return result
+        return view_result
 
     except subprocess.CalledProcessError as e:
         logger.error(f"bcftools variant calling failed: {e}")
@@ -286,13 +288,12 @@ def call_variants_freebayes(
     for bam_file in bam_files:
         cmd.extend(["-b", str(bam_file)])
 
-    # Output to VCF
-    cmd.extend([">", str(output_vcf)])
-
     logger.info(f"Running freebayes: {' '.join(cmd[:5])}...")
 
     try:
-        result = subprocess.run(" ".join(cmd), shell=True, capture_output=True, text=True)
+        # Write stdout to output file instead of using shell redirection
+        with open(output_vcf, "w") as vcf_out:
+            result = subprocess.run(cmd, stdout=vcf_out, stderr=subprocess.PIPE, text=True)
         result.check_returncode()
 
         logger.info(f"freebayes variant calling completed: {output_vcf}")
@@ -359,9 +360,10 @@ def index_vcf(vcf_path: str | Path) -> subprocess.CompletedProcess:
     if vcf_path.suffix != ".gz":
         compressed_vcf = vcf_path.with_suffix(".vcf.gz")
 
-        # Compress with bgzip
-        compress_cmd = ["bgzip", "-c", str(vcf_path), ">", str(compressed_vcf)]
-        subprocess.run(" ".join(compress_cmd), shell=True, check=True)
+        # Compress with bgzip (write stdout to file instead of shell redirection)
+        compress_cmd = ["bgzip", "-c", str(vcf_path)]
+        with open(compressed_vcf, "wb") as gz_out:
+            subprocess.run(compress_cmd, stdout=gz_out, check=True)
 
         vcf_path = compressed_vcf
 

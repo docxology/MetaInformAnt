@@ -5,6 +5,7 @@ This module provides plots for statistical analysis and quality control.
 
 from __future__ import annotations
 
+import math
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -16,19 +17,19 @@ logger = logging.get_logger(__name__)
 
 
 def lambda_gc_plot(
-    lambda_values: List[float],
+    results: List[Any],
     output_file: Optional[str | Path] = None,
     title: str = "Genomic Control Lambda Distribution",
-) -> Optional[Any]:
+) -> dict[str, Any]:
     """Create a plot showing the distribution of genomic control lambda values.
 
     Args:
-        lambda_values: List of lambda GC values from different analyses
+        results: List of GWAS result dicts (with 'p_value' and 'CHROM' keys) or list of float lambda values
         output_file: Optional output file path
         title: Plot title
 
     Returns:
-        Plot object if matplotlib available, None otherwise
+        Dictionary with plot status and metadata
 
     Example:
         >>> lambdas = [1.05, 1.12, 1.08, 1.15]
@@ -36,77 +37,133 @@ def lambda_gc_plot(
     """
     try:
         import matplotlib.pyplot as plt
-        import seaborn as sns
     except ImportError:
-        logger.warning("matplotlib or seaborn not available for lambda GC plot")
-        return None
+        logger.warning("matplotlib not available for lambda GC plot")
+        return {"status": "failed", "error": "matplotlib not available"}
 
-    if not lambda_values:
-        logger.error("No lambda values provided")
-        return None
+    if not results:
+        logger.error("No data provided")
+        return {"status": "failed", "error": "No data provided"}
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+    try:
+        # Accept list-of-dicts: compute per-chromosome lambda GC from p-values
+        if isinstance(results[0], dict):
+            from collections import defaultdict
 
-    # Plot 1: Histogram of lambda values
-    ax1.hist(lambda_values, bins=20, alpha=0.7, color="skyblue", edgecolor="black")
-    ax1.axvline(
-        x=np.mean(lambda_values), color="red", linestyle="--", linewidth=2, label=f"Mean: {np.mean(lambda_values):.3f}"
-    )
-    ax1.axvline(x=1.0, color="green", linestyle="-", alpha=0.7, label="Expected (1.0)")
-    ax1.set_xlabel("Genomic Control Lambda", fontsize=12)
-    ax1.set_ylabel("Frequency", fontsize=12)
-    ax1.set_title("Lambda GC Distribution", fontsize=14)
-    ax1.legend()
-    ax1.grid(True, alpha=0.3)
+            chrom_pvals: dict[str, list[float]] = defaultdict(list)
+            for r in results:
+                p = r.get("p_value")
+                chrom = r.get("CHROM", "unknown")
+                if p is not None:
+                    chrom_pvals[chrom].append(p)
 
-    # Plot 2: Q-Q plot against expected distribution
-    expected_lambdas = np.random.normal(1.0, 0.1, len(lambda_values))
-    expected_lambdas = np.sort(expected_lambdas)
-    observed_lambdas = np.sort(lambda_values)
+            lambda_by_chrom: dict[str, float] = {}
+            lambda_values: list[float] = []
+            for chrom, pvals in chrom_pvals.items():
+                if len(pvals) >= 2:
+                    obs = sorted([-math.log10(max(p, 1e-300)) for p in pvals])
+                    n = len(obs)
+                    exp = sorted([-math.log10((i + 1) / (n + 1)) for i in range(n)])
+                    med_obs = float(np.median(obs))
+                    med_exp = float(np.median(exp))
+                    lam = med_obs / med_exp if med_exp != 0 else 1.0
+                    lambda_by_chrom[chrom] = lam
+                    lambda_values.append(lam)
 
-    ax2.scatter(expected_lambdas, observed_lambdas, alpha=0.7, color="orange")
-    ax2.plot(
-        [min(expected_lambdas), max(expected_lambdas)],
-        [min(expected_lambdas), max(expected_lambdas)],
-        "k--",
-        alpha=0.7,
-        label="Expected",
-    )
+            if not lambda_values:
+                return {"status": "failed", "error": "Not enough data to compute lambda GC"}
 
-    ax2.set_xlabel("Expected Lambda GC", fontsize=12)
-    ax2.set_ylabel("Observed Lambda GC", fontsize=12)
-    ax2.set_title("Q-Q Plot", fontsize=14)
-    ax2.legend()
-    ax2.grid(True, alpha=0.3)
+            # Also compute overall lambda GC
+            all_pvals = []
+            for pvals in chrom_pvals.values():
+                all_pvals.extend(pvals)
+            obs_all = sorted([-math.log10(max(p, 1e-300)) for p in all_pvals])
+            n_all = len(obs_all)
+            exp_all = sorted([-math.log10((i + 1) / (n_all + 1)) for i in range(n_all)])
+            overall_lambda = (
+                float(np.median(obs_all)) / float(np.median(exp_all)) if float(np.median(exp_all)) != 0 else 1.0
+            )
+        else:
+            lambda_values = list(results)
+            lambda_by_chrom = {}
+            overall_lambda = float(np.mean(lambda_values))
 
-    # Overall title
-    fig.suptitle(title, fontsize=16, y=0.98)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
-    # Add summary statistics as text
-    stats_text = f"""Summary Statistics:
+        # Plot 1: Histogram of lambda values
+        ax1.hist(lambda_values, bins=max(1, min(20, len(lambda_values))), alpha=0.7, color="skyblue", edgecolor="black")
+        ax1.axvline(
+            x=np.mean(lambda_values),
+            color="red",
+            linestyle="--",
+            linewidth=2,
+            label=f"Mean: {np.mean(lambda_values):.3f}",
+        )
+        ax1.axvline(x=1.0, color="green", linestyle="-", alpha=0.7, label="Expected (1.0)")
+        ax1.set_xlabel("Genomic Control Lambda", fontsize=12)
+        ax1.set_ylabel("Frequency", fontsize=12)
+        ax1.set_title("Lambda GC Distribution", fontsize=14)
+        ax1.legend()
+        ax1.grid(True, alpha=0.3)
+
+        # Plot 2: Q-Q plot against expected distribution
+        expected_lambdas = np.random.normal(1.0, 0.1, len(lambda_values))
+        expected_lambdas = np.sort(expected_lambdas)
+        observed_lambdas = np.sort(lambda_values)
+
+        ax2.scatter(expected_lambdas, observed_lambdas, alpha=0.7, color="orange")
+        ax2.plot(
+            [min(expected_lambdas), max(expected_lambdas)],
+            [min(expected_lambdas), max(expected_lambdas)],
+            "k--",
+            alpha=0.7,
+            label="Expected",
+        )
+
+        ax2.set_xlabel("Expected Lambda GC", fontsize=12)
+        ax2.set_ylabel("Observed Lambda GC", fontsize=12)
+        ax2.set_title("Q-Q Plot", fontsize=14)
+        ax2.legend()
+        ax2.grid(True, alpha=0.3)
+
+        # Overall title
+        fig.suptitle(title, fontsize=16, y=0.98)
+
+        # Add summary statistics as text
+        stats_text = f"""Summary Statistics:
 Mean: {np.mean(lambda_values):.3f}
 Median: {np.median(lambda_values):.3f}
 SD: {np.std(lambda_values):.3f}
 Range: {np.min(lambda_values):.3f} - {np.max(lambda_values):.3f}
 Inflated: {np.mean(lambda_values) > 1.1}"""
 
-    fig.text(
-        0.02,
-        0.02,
-        stats_text,
-        fontsize=10,
-        verticalalignment="bottom",
-        fontfamily="monospace",
-        bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
-    )
+        fig.text(
+            0.02,
+            0.02,
+            stats_text,
+            fontsize=10,
+            verticalalignment="bottom",
+            fontfamily="monospace",
+            bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
+        )
 
-    plt.tight_layout()
+        plt.tight_layout()
 
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches="tight")
-        logger.info(f"Saved lambda GC plot to {output_file}")
+        if output_file:
+            plt.savefig(output_file, dpi=300, bbox_inches="tight")
+            logger.info(f"Saved lambda GC plot to {output_file}")
 
-    return plt.gcf()
+        result: dict[str, Any] = {
+            "status": "success",
+            "overall_lambda_gc": overall_lambda,
+            "output_path": str(output_file) if output_file else None,
+        }
+        if lambda_by_chrom:
+            result["lambda_gc_by_chrom"] = lambda_by_chrom
+        return result
+
+    except Exception as e:
+        return {"status": "failed", "error": str(e)}
 
 
 def power_plot(
@@ -114,8 +171,9 @@ def power_plot(
     effect_sizes: List[float],
     alpha: float = 0.05,
     output_file: Optional[str | Path] = None,
+    output_path: Optional[str | Path] = None,
     title: str = "Statistical Power Analysis",
-) -> Optional[Any]:
+) -> dict[str, Any]:
     """Create a power analysis plot showing statistical power vs sample size and effect size.
 
     Args:
@@ -123,22 +181,27 @@ def power_plot(
         effect_sizes: List of effect sizes to evaluate
         alpha: Significance level
         output_file: Optional output file path
+        output_path: Alias for output_file
         title: Plot title
 
     Returns:
-        Plot object if matplotlib and scipy available, None otherwise
+        Dictionary with plot status and metadata
     """
+    # Allow output_path as alias for output_file
+    if output_path is not None and output_file is None:
+        output_file = output_path
+
     try:
         import matplotlib.pyplot as plt
         from scipy import stats
         import numpy as np
     except ImportError:
         logger.warning("matplotlib or scipy not available for power plot")
-        return None
+        return {"status": "failed", "error": "matplotlib or scipy not available"}
 
     if not sample_sizes or not effect_sizes:
         logger.error("No sample sizes or effect sizes provided")
-        return None
+        return {"status": "failed", "error": "No sample sizes or effect sizes provided"}
 
     # Create meshgrid for power calculation
     n_grid, effect_grid = np.meshgrid(sample_sizes, effect_sizes)
@@ -203,16 +266,22 @@ def power_plot(
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved power analysis plot to {output_file}")
 
-    return fig
+    return {
+        "status": "success",
+        "n_sample_sizes": len(sample_sizes),
+        "n_effect_sizes": len(effect_sizes),
+        "alpha": alpha,
+        "output_path": str(output_file) if output_file else None,
+    }
 
 
 def qq_plot(
-    p_values: list[float], output_path: Optional[str | Path] = None, figsize: tuple[int, int] = (8, 8)
+    results: list[Any], output_path: Optional[str | Path] = None, figsize: tuple[int, int] = (8, 8)
 ) -> dict[str, Any]:
     """Create a Q-Q plot for p-values.
 
     Args:
-        p_values: List of p-values
+        results: List of p-values (floats) or list of result dicts with 'p_value' key
         output_path: Path to save the plot
         figsize: Figure size
 
@@ -228,14 +297,20 @@ def qq_plot(
         HAS_MATPLOTLIB = False
 
     if not HAS_MATPLOTLIB:
-        return {"status": "error", "message": "matplotlib not available"}
+        return {"status": "failed", "error": "matplotlib not available"}
 
     try:
+        # Accept list-of-dicts: extract p_value from each dict
+        if results and isinstance(results[0], dict):
+            p_values: list[float] = [r["p_value"] for r in results if r.get("p_value") is not None]
+        else:
+            p_values = list(results)
+
         # Remove NA values
         p_values = [p for p in p_values if p is not None and not math.isnan(p)]
 
         if not p_values:
-            return {"status": "error", "message": "No valid p-values provided"}
+            return {"status": "failed", "error": "No valid p-values provided"}
 
         # Sort p-values
         p_values = sorted(p_values)
@@ -287,21 +362,23 @@ def qq_plot(
         }
 
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "failed", "error": str(e)}
 
 
 def qq_plot_stratified(
-    p_values: list[float],
-    strata: list[str],
+    results: list[Any],
     output_path: Optional[str | Path] = None,
+    strata: Optional[list[str]] = None,
+    maf_bins: Optional[list[tuple[float, float]]] = None,
     figsize: tuple[int, int] = (15, 10),
 ) -> dict[str, Any]:
     """Create stratified Q-Q plots for p-values by different groups.
 
     Args:
-        p_values: List of p-values
-        strata: List of stratum labels (same length as p_values)
+        results: List of result dicts with 'p_value' (and optionally 'MAF') keys, or list of p-values
         output_path: Path to save the plot
+        strata: List of stratum labels (same length as results, used when results are floats)
+        maf_bins: Optional list of (min, max) MAF bin tuples for stratification
         figsize: Figure size
 
     Returns:
@@ -316,35 +393,53 @@ def qq_plot_stratified(
         HAS_MATPLOTLIB = False
 
     if not HAS_MATPLOTLIB:
-        return {"status": "error", "message": "matplotlib not available"}
+        return {"status": "failed", "error": "matplotlib not available"}
 
     try:
-        if len(p_values) != len(strata):
-            return {"status": "error", "message": "p_values and strata must have same length"}
-
-        # Group p-values by strata
-        stratum_data = {}
-        for p_val, stratum in zip(p_values, strata):
-            if stratum not in stratum_data:
-                stratum_data[stratum] = []
-            stratum_data[stratum].append(p_val)
+        # Accept list-of-dicts with MAF bins
+        if results and isinstance(results[0], dict) and maf_bins is not None:
+            stratum_data: dict[str, list[float]] = {}
+            for r in results:
+                p = r.get("p_value")
+                maf = r.get("MAF")
+                if p is None or maf is None:
+                    continue
+                for lo, hi in maf_bins:
+                    label = f"MAF [{lo:.2f}, {hi:.2f})"
+                    if lo <= maf < hi:
+                        if label not in stratum_data:
+                            stratum_data[label] = []
+                        stratum_data[label].append(p)
+                        break
+            if not stratum_data:
+                return {"status": "failed", "error": "No valid data for MAF bins"}
+        elif results and isinstance(results[0], dict):
+            # List-of-dicts without MAF bins: single stratum
+            p_values_list = [r["p_value"] for r in results if r.get("p_value") is not None]
+            stratum_data = {"all": p_values_list}
+        elif strata is not None:
+            p_values_list = list(results)
+            if len(p_values_list) != len(strata):
+                return {"status": "failed", "error": "p_values and strata must have same length"}
+            stratum_data = {}
+            for p_val, stratum in zip(p_values_list, strata):
+                if stratum not in stratum_data:
+                    stratum_data[stratum] = []
+                stratum_data[stratum].append(p_val)
+        else:
+            return {"status": "failed", "error": "Must provide strata or maf_bins for stratification"}
 
         if not stratum_data:
-            return {"status": "error", "message": "No valid data"}
+            return {"status": "failed", "error": "No valid data"}
 
         n_strata = len(stratum_data)
         n_cols = min(3, n_strata)
         n_rows = (n_strata + n_cols - 1) // n_cols
 
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=figsize)
-        if n_rows == 1:
-            axes = [axes] if n_cols == 1 else axes
-        elif n_cols == 1:
-            axes = [axes[i] for i in range(n_rows)]
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=figsize, squeeze=False)
+        axes = axes.flatten()
 
-        axes = axes.flatten() if hasattr(axes, "flatten") else [axes]
-
-        results = {}
+        strata_results: dict[str, Any] = {}
 
         for i, (stratum, stratum_p_values) in enumerate(stratum_data.items()):
             if i >= len(axes):
@@ -383,7 +478,7 @@ def qq_plot_stratified(
             ax.set_title(f"{stratum}\nλ = {lambda_gc:.3f}")
             ax.grid(True, alpha=0.3)
 
-            results[stratum] = {
+            strata_results[stratum] = {
                 "n_p_values": n,
                 "lambda_gc": lambda_gc,
                 "median_expected": median_expected,
@@ -402,17 +497,16 @@ def qq_plot_stratified(
         return {
             "status": "success",
             "n_strata": len(stratum_data),
-            "strata_results": results,
+            "strata_results": strata_results,
             "output_path": str(output_path) if output_path else None,
         }
 
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "failed", "error": str(e)}
 
 
 def volcano_plot(
-    effect_sizes: list[float],
-    p_values: list[float],
+    results: list[Any],
     output_path: Optional[str | Path] = None,
     significance_threshold: float = 5e-8,
     effect_size_threshold: float = 0.5,
@@ -421,8 +515,8 @@ def volcano_plot(
     """Create a volcano plot for GWAS results.
 
     Args:
-        effect_sizes: List of effect sizes (beta coefficients)
-        p_values: List of p-values (same length as effect_sizes)
+        results: List of result dicts with 'p_value' and 'beta' keys, or list of effect sizes
+            (if list of floats, a second positional arg for p_values is expected via output_path)
         output_path: Path to save the plot
         significance_threshold: P-value threshold for significance
         effect_size_threshold: Effect size threshold for highlighting
@@ -440,11 +534,20 @@ def volcano_plot(
         HAS_MATPLOTLIB = False
 
     if not HAS_MATPLOTLIB:
-        return {"status": "error", "message": "matplotlib not available"}
+        return {"status": "failed", "error": "matplotlib not available"}
 
     try:
+        # Accept list-of-dicts: extract effect_sizes and p_values
+        if results and isinstance(results[0], dict):
+            effect_sizes: list[float] = [r.get("beta", 0.0) for r in results]
+            p_values: list[float] = [r["p_value"] for r in results]
+        else:
+            effect_sizes = list(results)
+            p_values = list(output_path) if output_path is not None else []
+            output_path = None
+
         if len(effect_sizes) != len(p_values):
-            return {"status": "error", "message": "effect_sizes and p_values must have same length"}
+            return {"status": "failed", "error": "effect_sizes and p_values must have same length"}
 
         # Convert p-values to -log10
         neg_log_p = [-math.log10(max(p, 1e-300)) for p in p_values]
@@ -528,4 +631,4 @@ def volcano_plot(
         }
 
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "failed", "error": str(e)}

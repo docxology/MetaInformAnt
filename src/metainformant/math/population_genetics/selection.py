@@ -30,20 +30,54 @@ def breeders_equation_response(heritability: float, selection_differential: floa
     return heritability * selection_differential
 
 
-def kin_selection_response(individual_fitness: float, kin_fitness: float, relatedness: float) -> float:
-    """Calculate kin selection response.
+def kin_selection_response(
+    relatedness: float | None = None,
+    benefit: float | None = None,
+    cost: float | None = None,
+    *,
+    r: float | None = None,
+    b: float | None = None,
+    c: float | None = None,
+    individual_fitness: float | None = None,
+    kin_fitness: float | None = None,
+) -> float:
+    """Calculate kin selection response using Hamilton's rule.
+
+    Supports multiple calling conventions:
+    - kin_selection_response(r, b, c) - relatedness, benefit, cost
+    - kin_selection_response(relatedness=r, benefit=b, cost=c)
+    - kin_selection_response(individual_fitness, kin_fitness, relatedness) - legacy
+
+    Hamilton's rule: r*b - c > 0 for altruism to evolve
 
     Args:
-        individual_fitness: Fitness cost to individual
-        kin_fitness: Fitness benefit to kin
         relatedness: Coefficient of relatedness (r)
+        benefit: Fitness benefit to kin (b)
+        cost: Fitness cost to individual (c)
+        r, b, c: Aliases for relatedness, benefit, cost
+        individual_fitness: Legacy alias for cost
+        kin_fitness: Legacy alias for benefit
 
     Returns:
-        Net selection response
+        Net selection response (r*b - c)
     """
+    # Handle parameter aliases
+    if r is not None:
+        relatedness = r
+    if b is not None:
+        benefit = b
+    if c is not None:
+        cost = c
+    if individual_fitness is not None and cost is None:
+        cost = individual_fitness
+    if kin_fitness is not None and benefit is None:
+        benefit = kin_fitness
+
+    if relatedness is None or benefit is None or cost is None:
+        raise ValueError("Must provide relatedness, benefit, and cost")
+
     # Hamilton's rule: rb - c > 0
-    # Net response = benefit to kin - cost to individual
-    return relatedness * kin_fitness - individual_fitness
+    return relatedness * benefit - cost
 
 
 def mutation_update(allele_frequency: float, mutation_rate_forward: float, mutation_rate_backward: float) -> float:
@@ -70,14 +104,27 @@ def mutation_update(allele_frequency: float, mutation_rate_forward: float, mutat
 
 
 def selection_update(
-    allele_frequency: float, selection_coefficient: float, dominance_coefficient: float = 0.5
+    allele_frequency: float,
+    selection_coefficient: float | None = None,
+    dominance_coefficient: float = 0.5,
+    *,
+    fitness_AA: float | None = None,
+    fitness_Aa: float | None = None,
+    fitness_aa: float | None = None,
 ) -> float:
     """Update allele frequency due to selection.
 
+    Supports two parameter styles:
+    1. selection_coefficient + dominance_coefficient (traditional)
+    2. fitness_AA, fitness_Aa, fitness_aa (explicit fitness values)
+
     Args:
-        allele_frequency: Current allele frequency (p)
-        selection_coefficient: Selection coefficient (s)
-        dominance_coefficient: Dominance coefficient (h)
+        allele_frequency: Current allele frequency (p) for allele A
+        selection_coefficient: Selection coefficient (s) - used if fitness values not provided
+        dominance_coefficient: Dominance coefficient (h) - default 0.5 for additive
+        fitness_AA: Fitness of AA homozygote
+        fitness_Aa: Fitness of Aa heterozygote
+        fitness_aa: Fitness of aa homozygote
 
     Returns:
         New allele frequency after selection
@@ -85,18 +132,43 @@ def selection_update(
     if not (0 <= allele_frequency <= 1):
         raise ValueError("Allele frequency must be between 0 and 1")
 
+    p = allele_frequency
+    q = 1 - p
+
+    # If fitness values are provided, use them directly
+    if fitness_AA is not None and fitness_Aa is not None and fitness_aa is not None:
+        # Calculate genotype frequencies under HWE
+        freq_AA = p * p
+        freq_Aa = 2 * p * q
+        freq_aa = q * q
+
+        # Mean fitness
+        w_bar = freq_AA * fitness_AA + freq_Aa * fitness_Aa + freq_aa * fitness_aa
+
+        if w_bar == 0:
+            return allele_frequency
+
+        # New allele frequency: p' = (p² * w_AA + p*q * w_Aa) / w_bar
+        p_new = (freq_AA * fitness_AA + 0.5 * freq_Aa * fitness_Aa) / w_bar
+
+        return max(0, min(1, p_new))
+
+    # Otherwise use selection coefficient approach
+    if selection_coefficient is None:
+        selection_coefficient = 0.0
+
     # Selection: Δp = s*p*(1-p)*(p*h + (1-p))/mean_fitness
     # Simplified for haploid or additive case
     if dominance_coefficient == 0.5:  # Additive
         # Δp ≈ s*p*(1-p)/2 for weak selection
-        delta_p = selection_coefficient * allele_frequency * (1 - allele_frequency) / 2
+        delta_p = selection_coefficient * p * q / 2
     else:
         # General case: Δp = s*p*(1-p)*[p*h + (1-p)] / w_bar
         # Approximate for weak selection
-        fitness_effect = allele_frequency * dominance_coefficient + (1 - allele_frequency)
-        delta_p = selection_coefficient * allele_frequency * (1 - allele_frequency) * fitness_effect
+        fitness_effect = p * dominance_coefficient + q
+        delta_p = selection_coefficient * p * q * fitness_effect
 
-    new_frequency = allele_frequency + delta_p
+    new_frequency = p + delta_p
 
     # Ensure bounds
     return max(0, min(1, new_frequency))

@@ -17,7 +17,19 @@ logger = logging.get_logger(__name__)
 
 
 def generate_population_sequences(
-    n_sequences: int, length: int, *, theta: float = 0.01, n_sites: int = 1000, rng: random.Random | None = None
+    n_sequences: int,
+    length: int | None = None,
+    *,
+    theta: float | None = None,
+    n_sites: int = 1000,
+    rng: random.Random | None = None,
+    # Parameter aliases for backward compatibility
+    sequence_length: int | None = None,
+    random_seed: int | None = None,
+    mutation_rate: float | None = None,
+    nucleotide_diversity: float | None = None,
+    wattersons_theta: float | None = None,
+    reference_sequence: str | None = None,
 ) -> List[str]:
     """Generate a population of DNA sequences with neutral mutations.
 
@@ -27,6 +39,12 @@ def generate_population_sequences(
         theta: Population mutation parameter (4*N*mu)
         n_sites: Number of polymorphic sites to simulate
         rng: Random number generator for reproducibility
+        sequence_length: Alias for length (backward compatibility)
+        random_seed: Random seed for reproducibility (creates rng if provided)
+        mutation_rate: Per-site mutation rate (alternative to theta)
+        nucleotide_diversity: Target nucleotide diversity (pi)
+        wattersons_theta: Watterson's theta estimate
+        reference_sequence: Reference sequence to use as ancestor
 
     Returns:
         List of DNA sequences
@@ -34,6 +52,27 @@ def generate_population_sequences(
     Raises:
         ValueError: If parameters are invalid
     """
+    # Handle parameter aliases
+    if sequence_length is not None and length is None:
+        length = sequence_length
+    if reference_sequence is not None:
+        length = len(reference_sequence)
+    if length is None:
+        raise ValueError("length (or sequence_length) is required")
+    if random_seed is not None and rng is None:
+        rng = random.Random(random_seed)
+
+    # Determine theta from various parameters
+    if theta is None:
+        if mutation_rate is not None:
+            theta = 4 * n_sequences * mutation_rate
+        elif nucleotide_diversity is not None:
+            theta = nucleotide_diversity
+        elif wattersons_theta is not None:
+            theta = wattersons_theta
+        else:
+            theta = 0.01  # Default
+
     validation.validate_range(n_sequences, min_val=2, name="n_sequences")
     validation.validate_range(length, min_val=1, name="length")
     validation.validate_range(theta, min_val=0.0, name="theta")
@@ -44,8 +83,11 @@ def generate_population_sequences(
 
     np.random.seed(rng.randint(0, 2**32))
 
-    # Generate ancestral sequence
-    ancestral_seq = "".join(rng.choices("ATCG", k=length))
+    # Generate or use ancestral sequence
+    if reference_sequence is not None:
+        ancestral_seq = reference_sequence
+    else:
+        ancestral_seq = "".join(rng.choices("ATCG", k=length))
 
     # Generate mutation positions
     mutation_positions = rng.sample(range(length), min(n_sites, length))
@@ -56,8 +98,9 @@ def generate_population_sequences(
         seq = list(ancestral_seq)
 
         # Apply mutations at polymorphic sites
+        mutation_prob = theta / (4 * n_sequences) if theta > 0 else 0.01
         for pos in mutation_positions:
-            if rng.random() < theta / (4 * n_sequences):  # Simplified mutation probability
+            if rng.random() < mutation_prob:
                 # Mutate to different base
                 current_base = seq[pos]
                 possible_mutations = [b for b in "ATCG" if b != current_base]
@@ -71,12 +114,14 @@ def generate_population_sequences(
 def generate_two_populations(
     n_pop1: int,
     n_pop2: int,
-    length: int,
+    length: int | None = None,
     *,
-    f_st: float = 0.1,
+    f_st: float | None = None,
+    fst: float | None = None,
     theta: float = 0.01,
     n_sites: int = 1000,
     rng: random.Random | None = None,
+    sequence_length: int | None = None,
 ) -> Tuple[List[str], List[str]]:
     """Generate two populations with specified differentiation (F_ST).
 
@@ -85,9 +130,11 @@ def generate_two_populations(
         n_pop2: Size of population 2
         length: Sequence length
         f_st: Desired F_ST value (0-1)
+        fst: Alias for f_st (lowercase)
         theta: Population mutation parameter
         n_sites: Number of polymorphic sites
         rng: Random number generator for reproducibility
+        sequence_length: Alias for length
 
     Returns:
         Tuple of (population1_sequences, population2_sequences)
@@ -95,6 +142,16 @@ def generate_two_populations(
     Raises:
         ValueError: If parameters are invalid
     """
+    # Handle parameter aliases
+    if sequence_length is not None and length is None:
+        length = sequence_length
+    if fst is not None and f_st is None:
+        f_st = fst
+    if f_st is None:
+        f_st = 0.1
+    if length is None:
+        raise ValueError("length (or sequence_length) is required")
+
     validation.validate_range(n_pop1, min_val=2, name="n_pop1")
     validation.validate_range(n_pop2, min_val=2, name="n_pop2")
     validation.validate_range(length, min_val=1, name="length")
@@ -138,80 +195,120 @@ def generate_two_populations(
 
 def generate_genotype_matrix(
     n_individuals: int,
-    n_snps: int,
+    n_snps: int | None = None,
     *,
+    n_sites: int | None = None,
     maf_min: float = 0.05,
     maf_max: float = 0.5,
     hwe_deviation: float = 0.0,
+    hwe: bool = True,
+    allele_frequencies: List[float] | None = None,
+    ploidy: int = 2,
     rng: random.Random | None = None,
-) -> np.ndarray:
+) -> List[List[int]]:
     """Generate a genotype matrix for population genetics analysis.
 
     Args:
         n_individuals: Number of individuals
-        n_snps: Number of SNPs
+        n_snps: Number of SNPs (alias: n_sites)
+        n_sites: Number of sites (alias for n_snps)
         maf_min: Minimum minor allele frequency
         maf_max: Maximum minor allele frequency
         hwe_deviation: Deviation from Hardy-Weinberg equilibrium (0 = perfect HWE)
+        hwe: Whether to generate genotypes under HWE (True) or not (False)
+        allele_frequencies: List of allele frequencies for each site
+        ploidy: Ploidy level (1=haploid, 2=diploid)
         rng: Random number generator for reproducibility
 
     Returns:
-        Genotype matrix (n_individuals x n_snps) with values 0, 1, 2
+        Genotype matrix as list of lists (n_individuals x n_sites) with values 0-ploidy
 
     Raises:
         ValueError: If parameters are invalid
     """
-    validation.validate_range(n_individuals, min_val=2, name="n_individuals")
+    # Handle parameter aliases
+    if n_sites is not None and n_snps is None:
+        n_snps = n_sites
+    if n_snps is None:
+        raise ValueError("n_snps (or n_sites) is required")
+
+    # Use allele_frequencies to infer n_snps if provided
+    if allele_frequencies is not None:
+        n_snps = len(allele_frequencies)
+
+    validation.validate_range(n_individuals, min_val=1, name="n_individuals")
     validation.validate_range(n_snps, min_val=1, name="n_snps")
     validation.validate_range(maf_min, min_val=0.0, max_val=0.5, name="maf_min")
     validation.validate_range(maf_max, min_val=maf_min, max_val=0.5, name="maf_max")
     validation.validate_range(hwe_deviation, min_val=0.0, max_val=1.0, name="hwe_deviation")
+    validation.validate_range(ploidy, min_val=1, max_val=2, name="ploidy")
+
+    # Convert hwe boolean to hwe_deviation
+    if not hwe:
+        hwe_deviation = 0.3  # Some deviation from HWE
 
     if rng is None:
         rng = random.Random()
 
     np.random.seed(rng.randint(0, 2**32))
 
-    genotype_matrix = np.zeros((n_individuals, n_snps), dtype=int)
+    genotype_matrix = []
 
-    for snp_idx in range(n_snps):
-        # Generate allele frequency
-        maf = rng.uniform(maf_min, maf_max)
-
-        # Generate genotypes
-        for ind_idx in range(n_individuals):
-            if hwe_deviation == 0:
-                # Perfect HWE
-                p_aa = (1 - maf) ** 2
-                p_ab = 2 * maf * (1 - maf)
-                p_bb = maf**2
-
-                genotype = rng.choices([0, 1, 2], weights=[p_aa, p_ab, p_bb])[0]
+    for ind_idx in range(n_individuals):
+        ind_genotypes = []
+        for snp_idx in range(n_snps):
+            # Get allele frequency
+            if allele_frequencies is not None:
+                maf = allele_frequencies[snp_idx]
             else:
-                # Deviate from HWE (e.g., due to selection, assortative mating)
-                # Simplified deviation: increase homozygosity
-                homozygosity_bias = hwe_deviation
+                maf = rng.uniform(maf_min, maf_max)
 
-                if rng.random() < homozygosity_bias:
-                    genotype = rng.choice([0, 2])  # Favor homozygotes
+            # Generate genotype based on ploidy
+            if ploidy == 1:
+                # Haploid: 0 or 1
+                genotype = 1 if rng.random() < maf else 0
+            else:
+                # Diploid: 0, 1, or 2
+                if hwe_deviation == 0:
+                    # Perfect HWE
+                    p_aa = (1 - maf) ** 2
+                    p_ab = 2 * maf * (1 - maf)
+                    p_bb = maf**2
+
+                    genotype = rng.choices([0, 1, 2], weights=[p_aa, p_ab, p_bb])[0]
                 else:
-                    genotype = rng.choices([0, 1, 2], weights=[(1 - maf) ** 2, 2 * maf * (1 - maf), maf**2])[0]
+                    # Deviate from HWE
+                    if rng.random() < hwe_deviation:
+                        genotype = rng.choice([0, 2])  # Favor homozygotes
+                    else:
+                        p_aa = (1 - maf) ** 2
+                        p_ab = 2 * maf * (1 - maf)
+                        p_bb = maf**2
+                        genotype = rng.choices([0, 1, 2], weights=[p_aa, p_ab, p_bb])[0]
 
-            genotype_matrix[ind_idx, snp_idx] = genotype
+            ind_genotypes.append(genotype)
+        genotype_matrix.append(ind_genotypes)
 
     return genotype_matrix
 
 
 def simulate_bottleneck_population(
-    initial_size: int,
-    bottleneck_size: int,
-    final_size: int,
-    generations: int,
+    initial_size: int | None = None,
+    bottleneck_size: int | None = None,
+    final_size: int | None = None,
+    generations: int | None = None,
     *,
     mutation_rate: float = 1e-8,
     rng: random.Random | None = None,
-) -> Dict[str, Any]:
+    # Alternative interface for sequence generation
+    n_sequences: int | None = None,
+    sequence_length: int | None = None,
+    bottleneck_duration: int | None = None,
+    pre_bottleneck_diversity: float | None = None,
+) -> List[str] | Dict[str, Any]:
     """Simulate a population bottleneck followed by recovery.
+
+    Can return either sequences (if n_sequences provided) or statistics dict.
 
     Args:
         initial_size: Initial population size
@@ -220,21 +317,68 @@ def simulate_bottleneck_population(
         generations: Total generations to simulate
         mutation_rate: Per-base mutation rate
         rng: Random number generator for reproducibility
+        n_sequences: Number of sequences to generate (alternative interface)
+        sequence_length: Length of each sequence
+        bottleneck_duration: Duration of bottleneck in generations
+        pre_bottleneck_diversity: Initial nucleotide diversity
 
     Returns:
-        Dictionary with simulation results including population sizes and genetic diversity
+        List of sequences if n_sequences provided, otherwise dictionary with simulation results
 
     Raises:
         ValueError: If parameters are invalid
     """
+    if rng is None:
+        rng = random.Random()
+
+    # Alternative interface: return sequences
+    if n_sequences is not None:
+        if sequence_length is None:
+            raise ValueError("sequence_length required when using n_sequences interface")
+        if bottleneck_size is None:
+            bottleneck_size = max(2, n_sequences // 4)
+        if bottleneck_duration is None:
+            bottleneck_duration = 10
+
+        # Generate pre-bottleneck population
+        diversity = pre_bottleneck_diversity if pre_bottleneck_diversity else 0.01
+        pre_seqs = generate_population_sequences(
+            n_sequences=bottleneck_size,
+            sequence_length=sequence_length,
+            mutation_rate=diversity,
+            rng=rng,
+        )
+
+        # Expand from bottleneck survivors
+        sequences = []
+        for _ in range(n_sequences):
+            # Sample from bottleneck survivors
+            base_seq = rng.choice(pre_seqs)
+            # Add some mutations
+            seq_list = list(base_seq)
+            for i in range(len(seq_list)):
+                if rng.random() < diversity / 10:  # Reduced diversity post-bottleneck
+                    current = seq_list[i]
+                    seq_list[i] = rng.choice([b for b in "ATCG" if b != current])
+            sequences.append("".join(seq_list))
+
+        return sequences
+
+    # Original interface: return statistics
+    if initial_size is None:
+        initial_size = 1000
+    if bottleneck_size is None:
+        bottleneck_size = 100
+    if final_size is None:
+        final_size = initial_size
+    if generations is None:
+        generations = 100
+
     validation.validate_range(initial_size, min_val=2, name="initial_size")
     validation.validate_range(bottleneck_size, min_val=2, name="bottleneck_size")
     validation.validate_range(final_size, min_val=2, name="final_size")
     validation.validate_range(generations, min_val=1, name="generations")
     validation.validate_range(mutation_rate, min_val=0.0, name="mutation_rate")
-
-    if rng is None:
-        rng = random.Random()
 
     np.random.seed(rng.randint(0, 2**32))
 
@@ -254,14 +398,12 @@ def simulate_bottleneck_population(
         population_sizes.append(size)
 
     # Simulate genetic diversity changes (simplified)
-    # In a real simulation, this would track actual alleles
     initial_diversity = 1.0
     diversity_trajectory = []
 
     for size in population_sizes:
-        # Diversity decreases during bottleneck due to drift
         diversity = initial_diversity * (size / initial_size)
-        diversity = max(diversity, 0.01)  # Minimum diversity
+        diversity = max(diversity, 0.01)
         diversity_trajectory.append(diversity)
 
     # Simulate mutations
@@ -269,8 +411,7 @@ def simulate_bottleneck_population(
     mutation_trajectory = []
 
     for gen, size in enumerate(population_sizes):
-        # Mutations proportional to population size and mutation rate
-        expected_mutations = size * 1000 * mutation_rate  # Assuming 1000bp genome
+        expected_mutations = size * 1000 * mutation_rate
         mutations_this_gen = rng.poisson(expected_mutations)
         total_mutations += mutations_this_gen
         mutation_trajectory.append(total_mutations)
@@ -287,14 +428,20 @@ def simulate_bottleneck_population(
 
 
 def simulate_population_expansion(
-    initial_size: int,
-    final_size: int,
-    expansion_time: int,
+    initial_size: int | None = None,
+    final_size: int | None = None,
+    expansion_time: int | None = None,
     *,
     mutation_rate: float = 1e-8,
     rng: random.Random | None = None,
-) -> Dict[str, Any]:
+    # Alternative interface for sequence generation
+    n_sequences: int | None = None,
+    sequence_length: int | None = None,
+    expansion_factor: float | None = None,
+) -> List[str] | Dict[str, Any]:
     """Simulate exponential population expansion.
+
+    Can return either sequences (if n_sequences provided) or statistics dict.
 
     Args:
         initial_size: Initial population size
@@ -302,20 +449,63 @@ def simulate_population_expansion(
         expansion_time: Generations over which expansion occurs
         mutation_rate: Per-base mutation rate
         rng: Random number generator for reproducibility
+        n_sequences: Number of sequences to generate (alternative interface)
+        sequence_length: Length of each sequence
+        expansion_factor: Factor by which population expanded
 
     Returns:
-        Dictionary with simulation results
+        List of sequences if n_sequences provided, otherwise dictionary with simulation results
 
     Raises:
         ValueError: If parameters are invalid
     """
+    if rng is None:
+        rng = random.Random()
+
+    # Alternative interface: return sequences
+    if n_sequences is not None:
+        if sequence_length is None:
+            raise ValueError("sequence_length required when using n_sequences interface")
+        if expansion_factor is None:
+            expansion_factor = 10.0
+
+        # Start with small founding population
+        founding_size = max(2, int(n_sequences / expansion_factor))
+
+        # Generate founding sequences
+        founding_seqs = generate_population_sequences(
+            n_sequences=founding_size,
+            sequence_length=sequence_length,
+            mutation_rate=0.01,
+            rng=rng,
+        )
+
+        # Expand population
+        sequences = []
+        for _ in range(n_sequences):
+            base_seq = rng.choice(founding_seqs)
+            # Add some mutations during expansion
+            seq_list = list(base_seq)
+            for i in range(len(seq_list)):
+                if rng.random() < 0.001:  # Some new mutations
+                    current = seq_list[i]
+                    seq_list[i] = rng.choice([b for b in "ATCG" if b != current])
+            sequences.append("".join(seq_list))
+
+        return sequences
+
+    # Original interface: return statistics
+    if initial_size is None:
+        initial_size = 100
+    if final_size is None:
+        final_size = 10000
+    if expansion_time is None:
+        expansion_time = 100
+
     validation.validate_range(initial_size, min_val=2, name="initial_size")
     validation.validate_range(final_size, min_val=initial_size, name="final_size")
     validation.validate_range(expansion_time, min_val=1, name="expansion_time")
     validation.validate_range(mutation_rate, min_val=0.0, name="mutation_rate")
-
-    if rng is None:
-        rng = random.Random()
 
     np.random.seed(rng.randint(0, 2**32))
 
@@ -330,17 +520,14 @@ def simulate_population_expansion(
     current_diversity = 1.0
 
     for gen in range(expansion_time + 1):
-        # Population size at this generation
         size = int(initial_size * np.exp(growth_rate * gen))
-        size = min(size, final_size)  # Cap at final size
+        size = min(size, final_size)
         population_sizes.append(size)
 
-        # Diversity increases slightly with population size
         diversity_increase = (size - initial_size) / (final_size - initial_size) * 0.1
         current_diversity = min(1.0, current_diversity + diversity_increase)
         diversity_trajectory.append(current_diversity)
 
-        # Mutations
         expected_mutations = size * 1000 * mutation_rate
         mutations_this_gen = rng.poisson(expected_mutations)
         total_mutations += mutations_this_gen
@@ -358,28 +545,40 @@ def simulate_population_expansion(
 
 
 def generate_site_frequency_spectrum(
-    n_samples: int,
-    n_sites: int,
+    n_samples: int | None = None,
+    n_sites: int | None = None,
     *,
+    sample_size: int | None = None,
+    folded: bool = False,
     demographic_model: str = "constant",
     parameters: Dict[str, float] | None = None,
     rng: random.Random | None = None,
-) -> np.ndarray:
+) -> List[int]:
     """Generate a site frequency spectrum under different demographic models.
 
     Args:
-        n_samples: Number of sampled chromosomes
+        n_samples: Number of sampled chromosomes (alias: sample_size)
         n_sites: Number of polymorphic sites
+        sample_size: Alias for n_samples
+        folded: Whether to return folded SFS (default False)
         demographic_model: Demographic model ("constant", "expansion", "bottleneck")
         parameters: Model-specific parameters
         rng: Random number generator for reproducibility
 
     Returns:
-        Site frequency spectrum (array of length n_samples-1)
+        Site frequency spectrum as list of counts
 
     Raises:
         ValueError: If parameters are invalid
     """
+    # Handle parameter aliases
+    if sample_size is not None and n_samples is None:
+        n_samples = sample_size
+    if n_samples is None:
+        raise ValueError("n_samples (or sample_size) is required")
+    if n_sites is None:
+        raise ValueError("n_sites is required")
+
     validation.validate_range(n_samples, min_val=2, name="n_samples")
     validation.validate_range(n_sites, min_val=1, name="n_sites")
 
@@ -394,56 +593,87 @@ def generate_site_frequency_spectrum(
     if parameters is None:
         parameters = {}
 
-    sfs = np.zeros(n_samples - 1)
+    # Unfolded SFS has n-1 bins
+    sfs = [0] * (n_samples - 1)
 
     for site in range(n_sites):
         if demographic_model == "constant":
-            # Neutral coalescent
-            freq = rng.randint(1, n_samples)  # Uniform frequency
+            # Neutral coalescent - 1/i distribution
+            weights = [1.0 / i for i in range(1, n_samples)]
+            total = sum(weights)
+            weights = [w / total for w in weights]
+            freq = rng.choices(range(1, n_samples), weights=weights)[0]
         elif demographic_model == "expansion":
-            # Favor low frequency variants (recent expansion)
+            # Favor low frequency variants
             alpha = parameters.get("alpha", 1.0)
-            freq = rng.zipf(alpha)  # Zipf distribution favors low frequencies
-            freq = min(freq, n_samples - 1)
+            freq = min(rng.zipf(alpha), n_samples - 1)
         elif demographic_model == "bottleneck":
-            # Favor high frequency variants (old bottleneck)
+            # Favor high frequency variants
             bottleneck_strength = parameters.get("bottleneck_strength", 0.1)
             if rng.random() < bottleneck_strength:
-                freq = rng.randint(n_samples // 2, n_samples - 1)  # High frequency
+                freq = rng.randint(n_samples // 2, n_samples - 1)
             else:
-                freq = rng.randint(1, n_samples // 2)  # Low frequency
+                freq = rng.randint(1, max(2, n_samples // 2))
 
         # Ensure valid frequency
         freq = max(1, min(freq, n_samples - 1))
 
-        sfs[freq - 1] += 1  # SFS is 1-indexed
+        sfs[freq - 1] += 1
+
+    # Fold SFS if requested
+    if folded:
+        folded_sfs = []
+        mid = n_samples // 2
+        for i in range(mid):
+            # Combine frequency class i and n-1-i (complement frequencies)
+            j = n_samples - 2 - i
+            if i < len(sfs) and j < len(sfs) and i != j:
+                folded_sfs.append(sfs[i] + sfs[j])
+            elif i < len(sfs):
+                # Middle bin (only when i == j) or edge case
+                folded_sfs.append(sfs[i])
+        return folded_sfs
 
     return sfs
 
 
 def generate_linkage_disequilibrium_data(
     n_individuals: int,
-    n_snps: int,
+    n_snps: int | None = None,
     *,
+    n_sites: int | None = None,
     recombination_rate: float = 1e-8,
     selection_coefficient: float = 0.0,
+    r_squared_target: float | None = None,
+    allele_frequencies: List[float] | None = None,
     rng: random.Random | None = None,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> List[List[int]]:
     """Generate genotype data with linkage disequilibrium patterns.
 
     Args:
         n_individuals: Number of individuals
-        n_snps: Number of SNPs
+        n_snps: Number of SNPs (alias: n_sites)
+        n_sites: Alias for n_snps
         recombination_rate: Recombination rate between adjacent SNPs
         selection_coefficient: Selection coefficient (0 = neutral)
+        r_squared_target: Target r-squared for LD between adjacent sites
+        allele_frequencies: List of allele frequencies per site
         rng: Random number generator for reproducibility
 
     Returns:
-        Tuple of (genotype_matrix, ld_matrix)
+        Genotype matrix as list of lists
 
     Raises:
         ValueError: If parameters are invalid
     """
+    # Handle parameter aliases
+    if n_sites is not None and n_snps is None:
+        n_snps = n_sites
+    if allele_frequencies is not None:
+        n_snps = len(allele_frequencies)
+    if n_snps is None:
+        raise ValueError("n_snps (or n_sites) is required")
+
     validation.validate_range(n_individuals, min_val=2, name="n_individuals")
     validation.validate_range(n_snps, min_val=2, name="n_snps")
     validation.validate_range(recombination_rate, min_val=0.0, name="recombination_rate")
@@ -453,70 +683,48 @@ def generate_linkage_disequilibrium_data(
 
     np.random.seed(rng.randint(0, 2**32))
 
-    # Generate haplotype blocks
-    block_size = max(2, int(1.0 / recombination_rate) if recombination_rate > 0 else n_snps)
-    n_blocks = (n_snps + block_size - 1) // block_size
+    # Determine linkage strength from r_squared_target if provided
+    linkage_strength = 0.5  # default
+    if r_squared_target is not None:
+        # r_squared_target controls how correlated adjacent SNPs are
+        linkage_strength = r_squared_target
 
     genotype_matrix = np.zeros((n_individuals, n_snps), dtype=int)
 
-    for block_start in range(0, n_snps, block_size):
-        block_end = min(block_start + block_size, n_snps)
-        block_size_actual = block_end - block_start
+    for ind in range(n_individuals):
+        for pos in range(n_snps):
+            if allele_frequencies is not None:
+                # Use provided allele frequency
+                af = allele_frequencies[pos]
+            else:
+                # Use default 0.5
+                af = 0.5
 
-        # Generate haplotypes for this block
-        haplotypes = []
+            if pos == 0:
+                # First SNP based on allele frequency
+                allele = 1 if rng.random() < af else 0
+            else:
+                # Subsequent SNPs linked to previous with strength based on r_squared_target
+                prev_allele = genotype_matrix[ind, pos - 1]
 
-        for _ in range(n_individuals):
-            # Generate haplotype with LD structure
-            haplotype = []
-
-            for pos in range(block_size_actual):
-                if pos == 0:
-                    # First SNP independent
-                    allele = rng.choice([0, 1])
-                else:
-                    # Subsequent SNPs linked to previous
-                    prev_allele = haplotype[-1]
-
-                    if selection_coefficient == 0:
-                        # Neutral LD decay
-                        linkage_strength = np.exp(-recombination_rate * pos)
-                        if rng.random() < linkage_strength:
-                            allele = prev_allele  # Maintain LD
-                        else:
-                            allele = 1 - prev_allele  # Break LD
+                if selection_coefficient == 0:
+                    # Neutral LD - use linkage_strength
+                    if rng.random() < linkage_strength:
+                        allele = prev_allele  # Maintain LD
                     else:
-                        # Selection maintains LD
-                        if rng.random() < abs(selection_coefficient):
-                            allele = prev_allele
-                        else:
-                            allele = 1 - prev_allele
+                        # Generate based on allele frequency
+                        allele = 1 if rng.random() < af else 0
+                else:
+                    # Selection maintains LD
+                    if rng.random() < abs(selection_coefficient):
+                        allele = prev_allele
+                    else:
+                        allele = 1 if rng.random() < af else 0
 
-                haplotype.append(allele)
+            genotype_matrix[ind, pos] = allele
 
-            haplotypes.append(haplotype)
-
-        # Convert haplotypes to genotypes (simplified)
-        for ind in range(n_individuals):
-            for pos in range(block_size_actual):
-                genotype_matrix[ind, block_start + pos] = haplotypes[ind][pos]
-
-    # Calculate LD matrix (simplified D')
-    ld_matrix = np.zeros((n_snps, n_snps))
-
-    for i in range(n_snps):
-        for j in range(i + 1, n_snps):
-            # Calculate correlation between SNPs
-            snp_i = genotype_matrix[:, i]
-            snp_j = genotype_matrix[:, j]
-
-            # Simple correlation coefficient as LD measure
-            if np.std(snp_i) > 0 and np.std(snp_j) > 0:
-                corr = np.corrcoef(snp_i, snp_j)[0, 1]
-                ld_matrix[i, j] = abs(corr)
-                ld_matrix[j, i] = abs(corr)
-
-    return genotype_matrix, ld_matrix
+    # Return as List[List[int]]
+    return [[int(genotype_matrix[i, j]) for j in range(n_snps)] for i in range(n_individuals)]
 
 
 def simulate_admixture(

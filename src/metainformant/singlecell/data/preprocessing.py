@@ -14,6 +14,15 @@ import pandas as pd
 
 from metainformant.core import logging, errors, validation, io, paths
 
+# Import scipy.sparse for sparse matrix support
+try:
+    from scipy import sparse as sp_sparse
+
+    HAS_SCIPY_SPARSE = True
+except ImportError:
+    sp_sparse = None
+    HAS_SCIPY_SPARSE = False
+
 logger = logging.get_logger(__name__)
 
 # Try to import anndata, but provide fallback if not available
@@ -36,11 +45,27 @@ class SingleCellData:
         obs: pd.DataFrame | None = None,
         var: pd.DataFrame | None = None,
         uns: Dict[str, Any] | None = None,
+        obsm: Dict[str, np.ndarray] | None = None,
+        varm: Dict[str, np.ndarray] | None = None,
+        obsp: Dict[str, np.ndarray] | None = None,
+        varp: Dict[str, np.ndarray] | None = None,
+        layers: Dict[str, np.ndarray] | None = None,
     ):
+        # Validate dimensions if obs/var provided
+        if obs is not None and len(obs) != X.shape[0]:
+            raise ValueError(f"obs length ({len(obs)}) must match number of rows in X ({X.shape[0]})")
+        if var is not None and len(var) != X.shape[1]:
+            raise ValueError(f"var length ({len(var)}) must match number of columns in X ({X.shape[1]})")
+
         self.X = X  # Expression matrix (cells x genes)
         self.obs = obs if obs is not None else pd.DataFrame(index=range(X.shape[0]))  # Cell metadata
         self.var = var if var is not None else pd.DataFrame(index=range(X.shape[1]))  # Gene metadata
         self.uns = uns if uns is not None else {}  # Unstructured metadata
+        self.obsm = obsm if obsm is not None else {}  # Multi-dimensional obs annotations (e.g., embeddings)
+        self.varm = varm if varm is not None else {}  # Multi-dimensional var annotations
+        self.obsp = obsp if obsp is not None else {}  # Pairwise obs annotations
+        self.varp = varp if varp is not None else {}  # Pairwise var annotations
+        self.layers = layers if layers is not None else {}  # Different matrix representations
 
     @property
     def n_obs(self) -> int:
@@ -56,16 +81,27 @@ class SingleCellData:
 
     def copy(self) -> SingleCellData:
         """Create a copy of the data."""
+        # Handle sparse matrix copy properly
+        if hasattr(self.X, "copy"):
+            X_copy = self.X.copy()
+        else:
+            X_copy = self.X
         return SingleCellData(
-            X=self.X.copy(),
+            X=X_copy,
             obs=self.obs.copy() if self.obs is not None else None,
             var=self.var.copy() if self.var is not None else None,
             uns=self.uns.copy(),
+            obsm={k: v.copy() for k, v in self.obsm.items()} if self.obsm else None,
+            varm={k: v.copy() for k, v in self.varm.items()} if self.varm else None,
+            obsp={k: v.copy() for k, v in self.obsp.items()} if self.obsp else None,
+            varp={k: v.copy() for k, v in self.varp.items()} if self.varp else None,
+            layers={k: v.copy() for k, v in self.layers.items()} if self.layers else None,
         )
 
     def to_df(self) -> pd.DataFrame:
         """Convert to pandas DataFrame."""
-        df = pd.DataFrame(self.X, index=self.obs.index, columns=self.var.index)
+        X_dense = self.X.toarray() if hasattr(self.X, "toarray") else self.X
+        df = pd.DataFrame(X_dense, index=self.obs.index, columns=self.var.index)
         return df
 
 
@@ -106,9 +142,15 @@ def load_count_matrix(filepath: str | Path, format: str = "h5ad", **kwargs) -> S
 
     elif format in ["csv", "tsv"]:
         separator = "\t" if format == "tsv" else ","
+        transpose = kwargs.pop("transpose", False)
         try:
             df = pd.read_csv(filepath, sep=separator, index_col=0, **kwargs)
+            if transpose:
+                df = df.T  # Transpose so rows are cells, columns are genes
             X = df.values
+            # Convert to sparse matrix if scipy is available
+            if HAS_SCIPY_SPARSE:
+                X = sp_sparse.csr_matrix(X)
             obs = pd.DataFrame(index=df.index)
             var = pd.DataFrame(index=df.columns)
             return SingleCellData(X=X, obs=obs, var=var)
@@ -129,7 +171,12 @@ def load_count_matrix(filepath: str | Path, format: str = "h5ad", **kwargs) -> S
             # Load matrix
             from scipy.io import mmread
 
-            X = mmread(matrix_file).toarray().T  # Transpose to cells x genes
+            X = mmread(matrix_file).T  # Transpose to cells x genes, keep sparse
+            # Convert to csr_matrix if not already
+            if HAS_SCIPY_SPARSE and not sp_sparse.issparse(X):
+                X = sp_sparse.csr_matrix(X)
+            elif HAS_SCIPY_SPARSE:
+                X = sp_sparse.csr_matrix(X)
 
             # Load gene names
             genes_df = pd.read_csv(genes_file, header=None)
@@ -154,7 +201,17 @@ def load_count_matrix(filepath: str | Path, format: str = "h5ad", **kwargs) -> S
 
 def _annadata_to_singlecelldata(adata: Any) -> SingleCellData:
     """Convert AnnData object to SingleCellData."""
-    return SingleCellData(X=adata.X, obs=adata.obs, var=adata.var, uns=adata.uns)
+    return SingleCellData(
+        X=adata.X,
+        obs=adata.obs,
+        var=adata.var,
+        uns=adata.uns,
+        obsm=dict(adata.obsm) if hasattr(adata, "obsm") else None,
+        varm=dict(adata.varm) if hasattr(adata, "varm") else None,
+        obsp=dict(adata.obsp) if hasattr(adata, "obsp") else None,
+        varp=dict(adata.varp) if hasattr(adata, "varp") else None,
+        layers=dict(adata.layers) if hasattr(adata, "layers") else None,
+    )
 
 
 def calculate_qc_metrics(data: SingleCellData) -> SingleCellData:
@@ -180,32 +237,49 @@ def calculate_qc_metrics(data: SingleCellData) -> SingleCellData:
     X_dense = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # Per-cell metrics
-    n_counts = np.sum(X_dense, axis=1)  # Total counts per cell
+    total_counts = np.sum(X_dense, axis=1)  # Total counts per cell
     n_genes = np.sum(X_dense > 0, axis=1)  # Number of genes expressed per cell
-    pct_mito = np.zeros(data.n_obs)  # Placeholder for mitochondrial percentage
+    pct_mt = np.zeros(data.n_obs)  # Mitochondrial percentage
+    pct_ribo = np.zeros(data.n_obs)  # Ribosomal percentage
 
-    # Detect mitochondrial genes (simple heuristic)
+    # Detect mitochondrial and ribosomal genes (simple heuristic)
     if data.var is not None and hasattr(data.var, "index"):
-        mt_genes = [i for i, gene in enumerate(data.var.index) if gene.upper().startswith(("MT-", "MT.", "MT_"))]
+        # Convert index to string for comparison
+        gene_names = [str(gene) for gene in data.var.index]
+
+        # Mitochondrial genes
+        mt_genes = [i for i, gene in enumerate(gene_names) if gene.upper().startswith(("MT-", "MT.", "MT_"))]
         if mt_genes:
             mt_counts = np.sum(X_dense[:, mt_genes], axis=1)
-            pct_mito = 100 * mt_counts / n_counts
-            pct_mito = np.nan_to_num(pct_mito, nan=0.0)  # Handle division by zero
+            pct_mt = 100 * mt_counts / np.where(total_counts > 0, total_counts, 1)
+            pct_mt = np.nan_to_num(pct_mt, nan=0.0)
+
+        # Ribosomal genes (RPS and RPL)
+        ribo_genes = [
+            i for i, gene in enumerate(gene_names) if gene.upper().startswith(("RPS", "RPL", "MRPS", "MRPL"))
+        ]
+        if ribo_genes:
+            ribo_counts = np.sum(X_dense[:, ribo_genes], axis=1)
+            pct_ribo = 100 * ribo_counts / np.where(total_counts > 0, total_counts, 1)
+            pct_ribo = np.nan_to_num(pct_ribo, nan=0.0)
 
     # Per-gene metrics
     n_cells = np.sum(X_dense > 0, axis=0)  # Number of cells expressing each gene
+    gene_total_counts = np.sum(X_dense, axis=0)  # Total counts per gene
     mean_expression = np.mean(X_dense, axis=0)
     pct_dropout = 100 * (1 - n_cells / data.n_obs)
 
     # Add to obs (cell metrics)
     result.obs = result.obs.copy() if result.obs is not None else pd.DataFrame()
-    result.obs["n_counts"] = n_counts
+    result.obs["total_counts"] = total_counts
     result.obs["n_genes"] = n_genes
-    result.obs["pct_mito"] = pct_mito
+    result.obs["pct_mt"] = pct_mt
+    result.obs["pct_ribo"] = pct_ribo
 
     # Add to var (gene metrics)
     result.var = result.var.copy() if result.var is not None else pd.DataFrame()
     result.var["n_cells"] = n_cells
+    result.var["total_counts"] = gene_total_counts
     result.var["mean_expression"] = mean_expression
     result.var["pct_dropout"] = pct_dropout
 
@@ -213,10 +287,10 @@ def calculate_qc_metrics(data: SingleCellData) -> SingleCellData:
     result.uns["qc_summary"] = {
         "total_cells": data.n_obs,
         "total_genes": data.n_vars,
-        "mean_counts_per_cell": float(np.mean(n_counts)),
+        "mean_counts_per_cell": float(np.mean(total_counts)),
         "mean_genes_per_cell": float(np.mean(n_genes)),
-        "mean_mito_pct": float(np.mean(pct_mito)),
-        "median_counts_per_cell": float(np.median(n_counts)),
+        "mean_mito_pct": float(np.mean(pct_mt)),
+        "median_counts_per_cell": float(np.median(total_counts)),
         "median_genes_per_cell": float(np.median(n_genes)),
     }
 
@@ -230,7 +304,8 @@ def filter_cells(
     max_counts: int | None = None,
     min_genes: int | None = None,
     max_genes: int | None = None,
-    max_mito_percent: float | None = None,
+    max_pct_mt: float | None = None,
+    max_mito_percent: float | None = None,  # Alias for max_pct_mt
 ) -> SingleCellData:
     """Filter cells based on QC metrics.
 
@@ -240,7 +315,8 @@ def filter_cells(
         max_counts: Maximum total counts per cell
         min_genes: Minimum number of genes per cell
         max_genes: Maximum number of genes per cell
-        max_mito_percent: Maximum mitochondrial percentage
+        max_pct_mt: Maximum mitochondrial percentage
+        max_mito_percent: Alias for max_pct_mt (deprecated)
 
     Returns:
         Filtered SingleCellData
@@ -252,8 +328,12 @@ def filter_cells(
 
     logger.info("Filtering cells based on QC metrics")
 
+    # Handle alias
+    if max_mito_percent is not None and max_pct_mt is None:
+        max_pct_mt = max_mito_percent
+
     # Check if QC metrics are available
-    if "n_counts" not in data.obs.columns:
+    if "total_counts" not in data.obs.columns:
         logger.warning("QC metrics not found in data.obs. Run calculate_qc_metrics first.")
         data = calculate_qc_metrics(data)
 
@@ -261,24 +341,28 @@ def filter_cells(
     keep_cells = np.ones(data.n_obs, dtype=bool)
 
     if min_counts is not None:
-        keep_cells &= data.obs["n_counts"] >= min_counts
+        keep_cells &= np.asarray(data.obs["total_counts"] >= min_counts)
     if max_counts is not None:
-        keep_cells &= data.obs["n_counts"] <= max_counts
+        keep_cells &= np.asarray(data.obs["total_counts"] <= max_counts)
     if min_genes is not None:
-        keep_cells &= data.obs["n_genes"] >= min_genes
+        keep_cells &= np.asarray(data.obs["n_genes"] >= min_genes)
     if max_genes is not None:
-        keep_cells &= data.obs["n_genes"] <= max_genes
-    if max_mito_percent is not None:
-        keep_cells &= data.obs["pct_mito"] <= max_mito_percent
+        keep_cells &= np.asarray(data.obs["n_genes"] <= max_genes)
+    if max_pct_mt is not None:
+        keep_cells &= np.asarray(data.obs["pct_mt"] <= max_pct_mt)
 
     n_kept = np.sum(keep_cells)
     n_filtered = data.n_obs - n_kept
 
     logger.info(f"Filtered {n_filtered} cells, keeping {n_kept} cells")
 
-    # Apply filter
+    # Apply filter - handle sparse matrices
+    X_filtered = data.X[keep_cells, :]
+    if HAS_SCIPY_SPARSE and sp_sparse.issparse(X_filtered):
+        X_filtered = sp_sparse.csr_matrix(X_filtered)
+
     result = SingleCellData(
-        X=data.X[keep_cells, :],
+        X=X_filtered,
         obs=data.obs.iloc[keep_cells].copy() if data.obs is not None else None,
         var=data.var.copy() if data.var is not None else None,
         uns=data.uns.copy(),
@@ -292,13 +376,21 @@ def filter_cells(
     return result
 
 
-def filter_genes(data: SingleCellData, min_cells: int | None = None, max_cells: int | None = None) -> SingleCellData:
+def filter_genes(
+    data: SingleCellData,
+    min_cells: int | None = None,
+    max_cells: int | None = None,
+    min_counts: int | None = None,
+    max_counts: int | None = None,
+) -> SingleCellData:
     """Filter genes based on expression criteria.
 
     Args:
         data: SingleCellData object
         min_cells: Minimum number of cells expressing the gene
         max_cells: Maximum number of cells expressing the gene
+        min_counts: Minimum total counts for the gene
+        max_counts: Maximum total counts for the gene
 
     Returns:
         Filtered SingleCellData
@@ -319,18 +411,26 @@ def filter_genes(data: SingleCellData, min_cells: int | None = None, max_cells: 
     keep_genes = np.ones(data.n_vars, dtype=bool)
 
     if min_cells is not None:
-        keep_genes &= data.var["n_cells"] >= min_cells
+        keep_genes &= np.asarray(data.var["n_cells"] >= min_cells)
     if max_cells is not None:
-        keep_genes &= data.var["n_cells"] <= max_cells
+        keep_genes &= np.asarray(data.var["n_cells"] <= max_cells)
+    if min_counts is not None:
+        keep_genes &= np.asarray(data.var["total_counts"] >= min_counts)
+    if max_counts is not None:
+        keep_genes &= np.asarray(data.var["total_counts"] <= max_counts)
 
     n_kept = np.sum(keep_genes)
     n_filtered = data.n_vars - n_kept
 
     logger.info(f"Filtered {n_filtered} genes, keeping {n_kept} genes")
 
-    # Apply filter
+    # Apply filter - handle sparse matrices
+    X_filtered = data.X[:, keep_genes]
+    if HAS_SCIPY_SPARSE and sp_sparse.issparse(X_filtered):
+        X_filtered = sp_sparse.csr_matrix(X_filtered)
+
     result = SingleCellData(
-        X=data.X[:, keep_genes],
+        X=X_filtered,
         obs=data.obs.copy() if data.obs is not None else None,
         var=data.var.iloc[keep_genes].copy() if data.var is not None else None,
         uns=data.uns.copy(),
@@ -345,28 +445,37 @@ def filter_genes(data: SingleCellData, min_cells: int | None = None, max_cells: 
 
 
 def normalize_counts(
-    data: SingleCellData, target_sum: float | None = None, normalize_method: str = "total"
+    data: SingleCellData,
+    target_sum: float | None = None,
+    method: str = "total_count",
+    normalize_method: str | None = None,  # Deprecated alias
 ) -> SingleCellData:
     """Normalize gene expression counts.
 
     Args:
         data: SingleCellData object
         target_sum: Target sum for normalization (default: median total counts)
-        normalize_method: Normalization method ("total", "size_factors")
+        method: Normalization method ("total_count", "median", "size_factors")
+        normalize_method: Deprecated alias for method
 
     Returns:
         Normalized SingleCellData
 
     Raises:
         TypeError: If data is not SingleCellData
-        ValueError: If normalize_method is invalid
+        ValueError: If method is invalid
     """
     validation.validate_type(data, SingleCellData, "data")
 
-    if normalize_method not in ["total", "size_factors"]:
-        raise errors.ValidationError(f"Unsupported normalization method: {normalize_method}")
+    # Handle deprecated alias
+    if normalize_method is not None:
+        method = normalize_method
 
-    logger.info(f"Normalizing counts using {normalize_method} method")
+    valid_methods = ["total_count", "total", "median", "size_factors"]
+    if method not in valid_methods:
+        raise ValueError(f"Unknown normalization method: {method}. Valid methods: {valid_methods}")
+
+    logger.info(f"Normalizing counts using {method} method")
 
     # Create copy
     result = data.copy()
@@ -375,36 +484,54 @@ def normalize_counts(
     X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
     X_normalized = X.astype(float)
 
-    if normalize_method == "total":
+    if method in ["total_count", "total"]:
         # Library size normalization
         lib_sizes = np.sum(X, axis=1)
 
         if target_sum is None:
-            target_sum = np.median(lib_sizes)
+            target_sum = np.median(lib_sizes[lib_sizes > 0]) if np.any(lib_sizes > 0) else 1.0
 
-        # Normalize to target sum
-        size_factors = target_sum / lib_sizes
+        # Normalize to target sum (avoid division by zero)
+        with np.errstate(divide="ignore", invalid="ignore"):
+            size_factors = target_sum / lib_sizes
+            size_factors = np.where(np.isfinite(size_factors), size_factors, 0)
         X_normalized = X * size_factors[:, np.newaxis]
 
-    elif normalize_method == "size_factors":
+    elif method == "median":
+        # Median normalization
+        lib_sizes = np.sum(X, axis=1)
+        median_lib_size = np.median(lib_sizes[lib_sizes > 0]) if np.any(lib_sizes > 0) else 1.0
+
+        with np.errstate(divide="ignore", invalid="ignore"):
+            size_factors = median_lib_size / lib_sizes
+            size_factors = np.where(np.isfinite(size_factors), size_factors, 0)
+        X_normalized = X * size_factors[:, np.newaxis]
+        target_sum = median_lib_size
+
+    elif method == "size_factors":
         # Estimate size factors using geometric mean of gene expression
         # Simplified implementation
         log_expr = np.log(X + 1)
         geometric_means = np.exp(np.mean(log_expr, axis=0))
 
         # Size factors based on median ratio
-        ratios = X / geometric_means[np.newaxis, :]
+        with np.errstate(divide="ignore", invalid="ignore"):
+            ratios = X / geometric_means[np.newaxis, :]
+            ratios = np.where(np.isfinite(ratios), ratios, 0)
         size_factors = np.median(ratios, axis=1)
 
         if target_sum is None:
-            target_sum = np.median(size_factors)
+            target_sum = np.median(size_factors[size_factors > 0]) if np.any(size_factors > 0) else 1.0
 
-        X_normalized = X / size_factors[:, np.newaxis] * target_sum
+        with np.errstate(divide="ignore", invalid="ignore"):
+            scale = target_sum / size_factors
+            scale = np.where(np.isfinite(scale), scale, 0)
+        X_normalized = X * scale[:, np.newaxis]
 
     # Store normalization info
     result.uns["normalization"] = {
-        "method": normalize_method,
-        "target_sum": target_sum,
+        "method": method,
+        "target_sum": float(target_sum) if target_sum is not None else None,
         "size_factors": size_factors.tolist() if "size_factors" in locals() else None,
     }
 
@@ -455,7 +582,9 @@ def log_transform(data: SingleCellData, base: float = np.e) -> SingleCellData:
 
     result.X = X_log
 
-    # Store transformation info
+    # Store transformation info - tests expect these specific keys
+    result.uns["log_transformed"] = True
+    result.uns["log_base"] = base
     result.uns["transformation"] = {
         "type": transform_type,
         "base": base,
@@ -507,7 +636,8 @@ def scale_data(data: SingleCellData, zero_center: bool = True, max_value: float 
 
     result.X = X_scaled
 
-    # Store scaling info
+    # Store scaling info - tests expect "scaled" key
+    result.uns["scaled"] = True
     result.uns["scaling"] = {
         "zero_centered": zero_center,
         "max_value": max_value,

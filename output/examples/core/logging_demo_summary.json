@@ -18,22 +18,22 @@
       "CRITICAL"
     ],
     "sample_log_entries": [
-      "2026-01-18 11:57:31 | INFO | example_logger | Operation completed in 0.000 seconds\n",
-      "2026-01-18 11:57:31 | INFO | example_logger | Operation completed in 0.000 seconds\n",
-      "2026-01-18 11:57:31 | INFO | example_logger | Operation completed in 0.000 seconds\n",
-      "2026-01-18 11:57:31 | INFO | example_logger | .2f\n",
-      "2026-01-18 11:57:31 | INFO | example_logger | Found 2500 motif occurrences\n"
+      "2026-02-03 08:43:13 | INFO | example_logger | Operation completed in 0.000 seconds\n",
+      "2026-02-03 08:43:13 | INFO | example_logger | Operation completed in 0.000 seconds\n",
+      "2026-02-03 08:43:13 | INFO | example_logger | Operation completed in 0.000 seconds\n",
+      "2026-02-03 08:43:13 | INFO | example_logger | .2f\n",
+      "2026-02-03 08:43:13 | INFO | example_logger | Found 2500 motif occurrences\n"
     ],
     "timestamp": "2024-12-26T10:00:00Z",
-    "total_log_lines": 115,
+    "total_log_lines": 851,
     "workflow_simulation": {
       "performance_operations": {
-        "gc_content_calculation": 4.00543212890625e-05,
-        "motif_finding": 2.09808349609375e-05,
-        "sequence_loading": 3.0994415283203125e-06
+        "gc_content_calculation": 1.621246337890625e-05,
+        "motif_finding": 7.867813110351562e-06,
+        "sequence_loading": 1.9073486328125e-06
       },
       "steps_completed": 5,
-      "total_workflow_time": 0.6137349605560303
+      "total_workflow_time": 0.6125099658966064
     }
   }
 }

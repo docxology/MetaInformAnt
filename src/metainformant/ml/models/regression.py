@@ -35,19 +35,84 @@ except ImportError:
 
 
 class BiologicalRegressor:
-    """Wrapper for biological data regression with evaluation metrics."""
+    """Wrapper for biological data regression with evaluation metrics.
 
-    def __init__(self, model: Any, model_type: str = "unknown"):
+    Can be initialized in two ways:
+    1. Algorithm-based: BiologicalRegressor(algorithm="linear", random_state=42)
+    2. Model-based: BiologicalRegressor(model=sklearn_model, model_type="rf")
+    """
+
+    _ALGORITHM_MAP = {
+        "linear": lambda **kw: LinearRegression(**{k: v for k, v in kw.items() if k != "random_state"}) if HAS_SKLEARN else None,
+        "random_forest": lambda **kw: RandomForestRegressor(**kw) if HAS_SKLEARN else None,
+        "gradient_boosting": lambda **kw: GradientBoostingRegressor(**kw) if HAS_SKLEARN else None,
+        "ridge": lambda **kw: Ridge(**kw) if HAS_SKLEARN else None,
+        "lasso": lambda **kw: Lasso(**kw) if HAS_SKLEARN else None,
+        "svm": lambda **kw: SVR(**{k: v for k, v in kw.items() if k != "random_state"}) if HAS_SKLEARN else None,
+    }
+
+    def __init__(
+        self,
+        model: Any = None,
+        model_type: str = "unknown",
+        algorithm: str | None = None,
+        random_state: int | None = None,
+        **params: Any,
+    ):
         """Initialize biological regressor.
 
         Args:
-            model: Trained sklearn model
-            model_type: Type of model (rf, gb, linear, etc.)
+            model: Pre-built sklearn model (model-based init)
+            model_type: Type of model when using model-based init
+            algorithm: Algorithm name for algorithm-based init
+                       ("linear", "random_forest", "gradient_boosting", "ridge", "lasso", "svm")
+            random_state: Random state for reproducibility
+            **params: Additional parameters for the sklearn model
         """
-        self.model = model
-        self.model_type = model_type
+        self.random_state = random_state
+        self.params = params
         self.feature_names: Optional[List[str]] = None
-        self.is_trained = False
+        self._is_fitted = False
+
+        if algorithm is not None:
+            self.algorithm = algorithm
+            self.model_type = algorithm
+            if not HAS_SKLEARN:
+                raise ImportError("scikit-learn required for regression")
+            factory = self._ALGORITHM_MAP.get(algorithm)
+            if factory is None:
+                raise ValueError(f"Unknown algorithm: {algorithm}")
+            model_params = {**params}
+            if random_state is not None:
+                model_params["random_state"] = random_state
+            self.model = factory(**model_params)
+        elif model is not None:
+            self.algorithm = model_type
+            self.model_type = model_type
+            self.model = model
+        else:
+            # Default: linear regression
+            self.algorithm = "linear"
+            self.model_type = "linear"
+            if HAS_SKLEARN:
+                self.model = LinearRegression()
+            else:
+                self.model = None
+
+    @property
+    def is_fitted(self) -> bool:
+        """Whether the model has been fitted."""
+        return self._is_fitted
+
+    @property
+    def is_trained(self) -> bool:
+        """Alias for is_fitted."""
+        return self._is_fitted
+
+    @is_trained.setter
+    def is_trained(self, value: bool) -> None:
+        """Setter for backward compatibility."""
+        self._is_fitted = value
 
     def fit(self, X: np.ndarray, y: np.ndarray, feature_names: Optional[List[str]] = None) -> BiologicalRegressor:
         """Fit the regressor.
@@ -65,7 +130,7 @@ class BiologicalRegressor:
 
         self.model.fit(X, y)
         self.feature_names = feature_names
-        self.is_trained = True
+        self._is_fitted = True
 
         logger.info(f"Trained {self.model_type} regressor with {X.shape[1]} features")
         return self
@@ -79,8 +144,8 @@ class BiologicalRegressor:
         Returns:
             Predicted values
         """
-        if not self.is_trained:
-            raise ValueError("Model not trained")
+        if not self._is_fitted:
+            raise ValueError("Model not fitted")
         return self.model.predict(X)
 
     def evaluate(self, X: np.ndarray, y: np.ndarray, detailed: bool = True) -> Dict[str, Any]:
@@ -94,8 +159,8 @@ class BiologicalRegressor:
         Returns:
             Dictionary with evaluation metrics
         """
-        if not self.is_trained:
-            raise ValueError("Model not trained")
+        if not self._is_fitted:
+            raise ValueError("Model not fitted")
 
         y_pred = self.predict(X)
 
@@ -187,44 +252,46 @@ def train_regressor(X: np.ndarray, y: np.ndarray, method: str = "rf", **kwargs: 
 
 
 def evaluate_regressor(
-    regressor: "BiologicalRegressor", X: np.ndarray, y: np.ndarray, test_size: float = 0.2, random_state: int = 42
+    regressor: "BiologicalRegressor", X: np.ndarray, y: np.ndarray, **kwargs: Any
 ) -> Dict[str, Any]:
-    """Evaluate a trained regressor on test data.
+    """Evaluate a trained regressor on data.
+
+    If the regressor is already fitted, evaluates on the provided data directly.
+    Otherwise fits on a train split and evaluates on a test split.
 
     Args:
-        regressor: Trained BiologicalRegressor
+        regressor: BiologicalRegressor (fitted or unfitted)
         X: Feature matrix
         y: Target values
-        test_size: Fraction of data to use for testing
-        random_state: Random seed for reproducibility
+        **kwargs: Optional test_size and random_state for unfitted models
 
     Returns:
         Dictionary with evaluation metrics and predictions
     """
-    from sklearn.model_selection import train_test_split
     from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 
-    # Split data
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+    if not regressor.is_fitted:
+        from sklearn.model_selection import train_test_split
 
-    # Fit on training data
-    regressor.fit(X_train, y_train)
+        test_size = kwargs.get("test_size", 0.2)
+        random_state = kwargs.get("random_state", 42)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
+        regressor.fit(X_train, y_train)
+        y_pred = regressor.predict(X_test)
+        y_eval = y_test
+    else:
+        y_pred = regressor.predict(X)
+        y_eval = y
 
-    # Predict on test data
-    y_pred = regressor.predict(X_test)
-
-    # Calculate metrics
-    mse = mean_squared_error(y_test, y_pred)
-    r2 = r2_score(y_test, y_pred)
-    mae = mean_absolute_error(y_test, y_pred)
+    mse = mean_squared_error(y_eval, y_pred)
+    r2 = r2_score(y_eval, y_pred)
+    mae = mean_absolute_error(y_eval, y_pred)
 
     results = {
         "mse": mse,
         "r2_score": r2,
         "mae": mae,
         "predictions": y_pred.tolist(),
-        "actual_values": y_test.tolist(),
-        "test_size": len(X_test),
     }
 
     logger.info(f"Regressor evaluation: MSE={mse:.4f}, R²={r2:.4f}")

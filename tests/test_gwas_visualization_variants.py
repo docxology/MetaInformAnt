@@ -84,8 +84,6 @@ def test_missingness_plot_invalid_params(tmp_path: Path) -> None:
     # Test with None output path
     with pytest.raises(ValueError, match="output_path.*cannot be empty"):
         missingness_plot("dummy.vcf", None)
-    assert result["status"] == "skipped"
-    assert "message" in result
 
 
 def test_transition_transversion_plot(tmp_path: Path) -> None:

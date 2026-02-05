@@ -137,7 +137,7 @@
         "fay_wu_h": {
           "interpretation": "Detects recent positive selection",
           "significance": "Negative values suggest recent selective sweeps",
-          "statistic": 0.14311111111111113
+          "statistic": -0.3766666666666667
         },
         "fu_li_d_star": {
           "interpretation": "Tests for recent population growth or selection",

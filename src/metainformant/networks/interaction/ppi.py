@@ -727,6 +727,46 @@ class ProteinNetwork:
             return False
         return protein in self.graph
 
+    def add_interaction(self, protein1: str, protein2: str, **kwargs: Any) -> None:
+        """Add an interaction between two proteins.
+
+        Args:
+            protein1: First protein identifier
+            protein2: Second protein identifier
+            **kwargs: Additional edge attributes (e.g., weight, score)
+        """
+        if not HAS_NETWORKX:
+            raise ImportError("networkx required for adding interactions")
+        self.graph.add_edge(protein1, protein2, **kwargs)
+
+    def add_protein_metadata(self, protein: str, **metadata: Any) -> None:
+        """Add metadata to a protein node.
+
+        Args:
+            protein: Protein identifier
+            **metadata: Metadata key-value pairs to add
+        """
+        if not HAS_NETWORKX:
+            raise ImportError("networkx required for adding metadata")
+        if protein not in self.graph:
+            self.graph.add_node(protein)
+        self.graph.nodes[protein].update(metadata)
+
+    def get_protein_metadata(self, protein: str) -> Dict[str, Any]:
+        """Get metadata for a protein node.
+
+        Args:
+            protein: Protein identifier
+
+        Returns:
+            Dictionary of protein metadata
+        """
+        if not HAS_NETWORKX:
+            return {}
+        if protein not in self.graph:
+            return {}
+        return dict(self.graph.nodes[protein])
+
 
 def predict_interactions(
     target_proteins: List[str],

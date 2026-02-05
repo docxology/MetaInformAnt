@@ -11,6 +11,8 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
+import numpy as np
+
 from metainformant.core import io, logging
 from metainformant.information import analysis, syntactic, semantic, continuous, estimation
 

@@ -725,6 +725,7 @@ def calculate_duplication_metrics(duplication_levels: Dict[int, int]) -> Dict[st
     if total_reads > 0:
         metrics["duplication_rate"] = (metrics["duplicate_reads"] / total_reads) * 100
         metrics["uniqueness_rate"] = (metrics["unique_reads"] / total_reads) * 100
+        metrics["unique_rate"] = metrics["uniqueness_rate"]
 
     # Weighted duplication level
     weighted_sum = sum(level * count for level, count in duplication_levels.items())
@@ -783,6 +784,9 @@ def calculate_gc_metrics(gc_content: List[float]) -> Dict[str, Any]:
 
     metrics["distribution"] = distribution
 
+    # GC bias: deviation from expected 50% GC content
+    metrics["gc_bias"] = abs(metrics["mean_gc"] - 50.0)
+
     return metrics
 
 
@@ -819,6 +823,11 @@ def calculate_length_metrics(lengths: List[int]) -> Dict[str, Any]:
         most_common = length_counts.most_common(5)
         metrics["most_common_lengths"] = [{"length": length, "count": count} for length, count in most_common]
 
+    # Short and long read percentages
+    total = len(length_array)
+    metrics["pct_short_reads"] = float(np.sum(length_array < 50) / total * 100)
+    metrics["pct_long_reads"] = float(np.sum(length_array > 1000) / total * 100)
+
     return metrics
 
 
@@ -826,7 +835,7 @@ def calculate_quality_metrics(quality_scores: List[float]) -> Dict[str, Any]:
     """Calculate quality score metrics.
 
     Args:
-        quality_scores: List of quality scores
+        quality_scores: List of quality scores (flat or nested per-read lists)
 
     Returns:
         Dictionary with quality metrics
@@ -834,20 +843,23 @@ def calculate_quality_metrics(quality_scores: List[float]) -> Dict[str, Any]:
     if not quality_scores:
         return {}
 
+    # Flatten nested lists (e.g., per-read quality score arrays)
     score_array = np.array(quality_scores)
+    flat_scores = score_array.flatten()
 
+    total = len(flat_scores)
     metrics = {
-        "mean_quality": float(np.mean(score_array)),
-        "median_quality": float(np.median(score_array)),
-        "min_quality": float(np.min(score_array)),
-        "max_quality": float(np.max(score_array)),
-        "std_quality": float(np.std(score_array)),
-        "total_scores": len(quality_scores),
+        "mean_quality": float(np.mean(flat_scores)),
+        "median_quality": float(np.median(flat_scores)),
+        "min_quality": float(np.min(flat_scores)),
+        "max_quality": float(np.max(flat_scores)),
+        "std_quality": float(np.std(flat_scores)),
+        "total_scores": total,
     }
 
     # Quality distribution
     bins = [0, 10, 20, 25, 30, 35, 40, 50]
-    hist, bin_edges = np.histogram(score_array, bins=bins)
+    hist, bin_edges = np.histogram(flat_scores, bins=bins)
 
     distribution = {}
     for i, count in enumerate(hist):
@@ -855,19 +867,23 @@ def calculate_quality_metrics(quality_scores: List[float]) -> Dict[str, Any]:
         bin_end = bin_edges[i + 1]
         distribution[f"{int(bin_start)}-{int(bin_end)}"] = {
             "count": int(count),
-            "percentage": (count / len(quality_scores)) * 100,
+            "percentage": (count / total) * 100,
         }
 
     metrics["distribution"] = distribution
 
     # Quality categories
-    low_quality = sum(1 for score in quality_scores if score < 20)
-    medium_quality = sum(1 for score in quality_scores if 20 <= score < 30)
-    high_quality = sum(1 for score in quality_scores if score >= 30)
+    low_quality = int(np.sum(flat_scores < 20))
+    medium_quality = int(np.sum((flat_scores >= 20) & (flat_scores < 30)))
+    high_quality = int(np.sum(flat_scores >= 30))
 
-    metrics["low_quality_pct"] = (low_quality / len(quality_scores)) * 100
-    metrics["medium_quality_pct"] = (medium_quality / len(quality_scores)) * 100
-    metrics["high_quality_pct"] = (high_quality / len(quality_scores)) * 100
+    metrics["low_quality_pct"] = (low_quality / total) * 100
+    metrics["medium_quality_pct"] = (medium_quality / total) * 100
+    metrics["high_quality_pct"] = (high_quality / total) * 100
+
+    # Standard quality thresholds
+    metrics["pct_q20"] = float(np.sum(flat_scores >= 20) / total * 100)
+    metrics["pct_q30"] = float(np.sum(flat_scores >= 30) / total * 100)
 
     return metrics
 
@@ -882,7 +898,7 @@ def calculate_complexity_metrics(sequences: List[str]) -> Dict[str, Any]:
         Dictionary with complexity metrics
     """
     if not sequences:
-        return {"error": "No sequences provided"}
+        return {}
 
     metrics = {
         "total_sequences": len(sequences),
@@ -937,5 +953,20 @@ def calculate_complexity_metrics(sequences: List[str]) -> Dict[str, Any]:
         avg_gc = sum(gc_contents) / len(gc_contents)
         gc_complexity = 1 - abs(avg_gc - 0.5) * 2  # Higher when closer to 0.5
         metrics["gc_complexity"] = gc_complexity
+
+    # Per-sequence complexity based on unique character ratio
+    per_seq_complexity = []
+    low_complexity_count = 0
+    for seq in sequences:
+        if seq:
+            unique_chars = len(set(seq.upper()))
+            seq_complexity = unique_chars / len(seq) if len(seq) > 0 else 0
+            per_seq_complexity.append(seq_complexity)
+            if seq_complexity < 0.5:
+                low_complexity_count += 1
+
+    if per_seq_complexity:
+        metrics["mean_complexity"] = sum(per_seq_complexity) / len(per_seq_complexity)
+        metrics["low_complexity_rate"] = (low_complexity_count / len(sequences)) * 100
 
     return metrics

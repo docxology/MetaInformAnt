@@ -16,50 +16,72 @@ logger = logging.get_logger(__name__)
 
 
 def gene_annotation_plot(
-    results_df: Any,
-    chrom: str,
-    start: int,
-    end: int,
-    gene_data: Optional[Dict[str, Any]] = None,
+    results: Any,
     output_file: Optional[str | Path] = None,
+    *,
+    chrom: Optional[str] = None,
+    start: Optional[int] = None,
+    end: Optional[int] = None,
+    gene_data: Optional[Dict[str, Any]] = None,
     title: str = "Regional Association Plot",
-) -> Optional[Any]:
+) -> Dict[str, Any]:
     """Create a regional association plot with gene annotations.
 
     Args:
-        results_df: DataFrame with GWAS results (columns: CHR, BP, P)
+        results: GWAS results as list of dicts or DataFrame (columns: CHROM/CHR, POS/BP, p_value/P)
+        output_file: Optional output file path
         chrom: Chromosome to plot
         start: Start position (bp)
         end: End position (bp)
         gene_data: Optional dictionary with gene annotations
-        output_file: Optional output file path
         title: Plot title
 
     Returns:
-        Plot object if matplotlib available, None otherwise
+        Dictionary with status and metadata
 
     Example:
-        >>> plot = gene_annotation_plot(df, 'chr1', 100000, 200000)
+        >>> result = gene_annotation_plot(results, "out.png", chrom="chr1", start=100000, end=200000)
     """
     try:
+        import matplotlib
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         from matplotlib.patches import Rectangle
     except ImportError:
         logger.warning("matplotlib not available for regional plot")
-        return None
+        return {"status": "skipped", "reason": "matplotlib not available"}
 
-    # Filter data for region
-    if not hasattr(results_df, "columns"):
-        logger.error("Input data must be a DataFrame")
-        return None
+    # Convert list of dicts to internal format
+    if isinstance(results, list):
+        import pandas as pd
 
-    region_data = results_df[
-        (results_df["CHR"] == chrom) & (results_df["BP"] >= start) & (results_df["BP"] <= end)
-    ].copy()
+        results_df = pd.DataFrame(results)
+        # Normalize column names
+        col_map = {"CHROM": "CHR", "POS": "BP", "p_value": "P"}
+        results_df = results_df.rename(columns={k: v for k, v in col_map.items() if k in results_df.columns})
+    elif hasattr(results, "columns"):
+        results_df = results.copy()
+        col_map = {"CHROM": "CHR", "POS": "BP", "p_value": "P"}
+        results_df = results_df.rename(columns={k: v for k, v in col_map.items() if k in results_df.columns})
+    else:
+        logger.error("Input data must be a list of dicts or DataFrame")
+        return {"status": "failed", "reason": "Invalid input data format"}
+
+    # Filter data for region if specified
+    if chrom is not None:
+        mask = results_df["CHR"] == chrom
+        if start is not None:
+            mask = mask & (results_df["BP"] >= start)
+        if end is not None:
+            mask = mask & (results_df["BP"] <= end)
+        region_data = results_df[mask].copy()
+    else:
+        region_data = results_df.copy()
 
     if region_data.empty:
         logger.warning(f"No data found for region {chrom}:{start}-{end}")
-        return None
+        return {"status": "success", "reason": "No data in region", "n_variants": 0}
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), gridspec_kw={"height_ratios": [3, 1]})
 
@@ -68,28 +90,30 @@ def gene_annotation_plot(
 
     ax1.scatter(region_data["BP"], region_data["neg_log_p"], c="blue", s=20, alpha=0.7)
     ax1.axhline(y=-np.log10(5e-8), color="red", linestyle="--", alpha=0.8, label="Genome-wide significance")
-    ax1.set_ylabel("-log₁₀(P-value)", fontsize=12)
+    ax1.set_ylabel("-log10(P-value)", fontsize=12)
     ax1.set_title(title, fontsize=14)
     ax1.legend()
     ax1.grid(True, alpha=0.3)
 
     # Plot 2: Gene annotation track
-    if gene_data:
+    if gene_data and chrom and start is not None and end is not None:
         plot_gene_track(ax2, chrom, start, end, gene_data)
     else:
         # Default gene track (simplified)
         ax2.text(0.5, 0.5, "Gene annotations not provided", ha="center", va="center", transform=ax2.transAxes)
-        ax2.set_xlim(start, end)
+        if start is not None and end is not None:
+            ax2.set_xlim(start, end)
 
-    ax2.set_xlabel(f"Position on {chrom} (bp)", fontsize=12)
+    chrom_label = chrom or "unknown"
+    ax2.set_xlabel(f"Position on {chrom_label} (bp)", fontsize=12)
     ax2.set_yticks([])
 
     # Format x-axis labels
     def format_bp(x, pos):
         if x >= 1e6:
-            return ".1f"
+            return f"{x/1e6:.1f}M"
         elif x >= 1e3:
-            return ".0f"
+            return f"{x/1e3:.0f}K"
         else:
             return str(int(x))
 
@@ -99,10 +123,18 @@ def gene_annotation_plot(
     plt.tight_layout()
 
     if output_file:
+        output_file = Path(output_file)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved regional plot to {output_file}")
 
-    return plt.gcf()
+    plt.close(fig)
+
+    return {
+        "status": "success",
+        "n_variants": len(region_data),
+        "output_path": str(output_file) if output_file else None,
+    }
 
 
 def plot_gene_track(ax, chrom: str, start: int, end: int, gene_data: Dict[str, Any]):
@@ -140,32 +172,71 @@ def plot_gene_track(ax, chrom: str, start: int, end: int, gene_data: Dict[str, A
 
 
 def recombination_rate_plot(
+    results: Any,
+    output_file: Optional[str | Path] = None,
+    *,
+    chrom: Optional[str] = None,
+    start: Optional[int] = None,
+    end: Optional[int] = None,
+    recombination_rates: Optional[Dict[str, List[float]]] = None,
+    positions: Optional[Dict[str, List[int]]] = None,
+    title: str = "Recombination Rate Profile",
+) -> Dict[str, Any]:
+    """Create a plot showing recombination rates across genomic regions.
+
+    Can be called with GWAS results (list of dicts or DataFrame) and region parameters,
+    or with explicit recombination_rates and positions dicts.
+
+    Args:
+        results: GWAS results as list of dicts or DataFrame, or recombination rate dict
+        output_file: Optional output file path
+        chrom: Chromosome to plot
+        start: Start position (bp)
+        end: End position (bp)
+        recombination_rates: Optional dictionary mapping chromosomes to recombination rate lists
+        positions: Optional dictionary mapping chromosomes to position lists
+        title: Plot title
+
+    Returns:
+        Dictionary with status and metadata
+    """
+    try:
+        import matplotlib
+
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+    except ImportError:
+        logger.warning("matplotlib not available for recombination rate plot")
+        return {"status": "skipped", "reason": "matplotlib not available"}
+
+    # If called with explicit recombination data, use the legacy path
+    if recombination_rates is not None and positions is not None:
+        return _recombination_rate_plot_legacy(recombination_rates, positions, output_file, title)
+
+    # Otherwise, this requires external recombination map data which we don't have
+    # Create a placeholder plot noting that recombination data is needed
+    logger.info("Recombination rate plot requires external recombination map data")
+    return {"status": "skipped", "reason": "Recombination map data not available"}
+
+
+def _recombination_rate_plot_legacy(
     recombination_rates: Dict[str, List[float]],
     positions: Dict[str, List[int]],
     output_file: Optional[str | Path] = None,
     title: str = "Recombination Rate Profile",
-) -> Optional[Any]:
-    """Create a plot showing recombination rates across genomic regions.
-
-    Args:
-        recombination_rates: Dictionary mapping chromosomes to recombination rate lists
-        positions: Dictionary mapping chromosomes to position lists
-        output_file: Optional output file path
-        title: Plot title
-
-    Returns:
-        Plot object if matplotlib available, None otherwise
-    """
+) -> Dict[str, Any]:
+    """Legacy implementation for recombination rate plotting with explicit data."""
     try:
+        import matplotlib
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
-        import numpy as np
     except ImportError:
-        logger.warning("matplotlib not available for recombination rate plot")
-        return None
+        return {"status": "skipped", "reason": "matplotlib not available"}
 
     if not recombination_rates or not positions:
         logger.error("No recombination rate or position data provided")
-        return None
+        return {"status": "failed", "reason": "No data provided"}
 
     # Create figure with subplots for each chromosome
     chromosomes = list(recombination_rates.keys())
@@ -200,17 +271,20 @@ def recombination_rate_plot(
 
         # Add smoothing line
         if len(rates) > 10:
-            from scipy import signal
+            try:
+                from scipy import signal
 
-            window_size = min(21, len(rates) // 10 * 2 + 1)  # Adaptive window size
-            if window_size % 2 == 0:
-                window_size += 1
-            smoothed = signal.savgol_filter(rates, window_size, 3)
-            ax.plot(pos, smoothed, color="red", linewidth=2, alpha=0.6, label="Smoothed")
+                window_size = min(21, len(rates) // 10 * 2 + 1)
+                if window_size % 2 == 0:
+                    window_size += 1
+                smoothed = signal.savgol_filter(rates, window_size, 3)
+                ax.plot(pos, smoothed, color="red", linewidth=2, alpha=0.6, label="Smoothed")
+            except ImportError:
+                pass
 
         ax.set_title(f"Chromosome {chrom}", fontsize=12)
         ax.set_xlabel("Position (bp)", fontsize=10)
-        if col == 0:  # Leftmost column
+        if col == 0:
             ax.set_ylabel("Recombination Rate (cM/Mb)", fontsize=10)
         ax.grid(True, alpha=0.3)
         ax.legend()
@@ -224,10 +298,14 @@ def recombination_rate_plot(
     plt.tight_layout()
 
     if output_file:
+        output_file = Path(output_file)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved recombination rate plot to {output_file}")
 
-    return fig
+    plt.close(fig)
+
+    return {"status": "success", "n_chromosomes": n_chroms, "output_path": str(output_file) if output_file else None}
 
 
 def effect_direction_plot(
@@ -320,50 +398,72 @@ Negative effects: {sum(1 for x in effect_sizes if x < 0)} ({sum(1 for x in effec
 
 
 def regional_plot(
-    results: pd.DataFrame,
-    chr: str,
-    start: int,
-    end: int,
+    results: Any,
     output_file: Optional[str | Path] = None,
+    *,
+    chrom: Optional[str] = None,
+    start: Optional[int] = None,
+    end: Optional[int] = None,
     figsize: tuple[int, int] = (12, 6),
     title: Optional[str] = None,
     significance_threshold: float = 5e-8,
-    recombination_rate: Optional[pd.DataFrame] = None,
-) -> Optional[Any]:
+    recombination_rate: Any = None,
+) -> Dict[str, Any]:
     """Create a regional association plot.
 
     Args:
-        results: GWAS results DataFrame with CHR, BP, P columns
-        chr: Chromosome to plot
+        results: GWAS results as list of dicts or DataFrame (columns: CHROM/CHR, POS/BP, p_value/P)
+        output_file: Optional output file path
+        chrom: Chromosome to plot
         start: Start position (bp)
         end: End position (bp)
-        output_file: Optional output file path
         figsize: Figure size (width, height)
         title: Plot title (auto-generated if None)
         significance_threshold: P-value threshold for significance line
         recombination_rate: Optional recombination rate data
 
     Returns:
-        Matplotlib figure if matplotlib available, None otherwise
+        Dictionary with status and metadata
     """
     try:
+        import matplotlib
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
-        import matplotlib.patches as patches
-        import numpy as np
     except ImportError:
         logger.warning("matplotlib not available for regional plot")
-        return None
+        return {"status": "skipped", "reason": "matplotlib not available"}
 
-    if not HAS_SEABORN:
-        logger.warning("seaborn not available for regional plot")
-        return None
+    # Convert list of dicts to DataFrame
+    if isinstance(results, list):
+        import pandas as pd
+
+        results_df = pd.DataFrame(results)
+        # Normalize column names
+        col_map = {"CHROM": "CHR", "POS": "BP", "p_value": "P"}
+        results_df = results_df.rename(columns={k: v for k, v in col_map.items() if k in results_df.columns})
+    elif hasattr(results, "columns"):
+        results_df = results.copy()
+        col_map = {"CHROM": "CHR", "POS": "BP", "p_value": "P"}
+        results_df = results_df.rename(columns={k: v for k, v in col_map.items() if k in results_df.columns})
+    else:
+        return {"status": "failed", "reason": "Invalid input data format"}
 
     # Filter data for the specified region
-    region_data = results[(results["CHR"] == chr) & (results["BP"] >= start) & (results["BP"] <= end)].copy()
+    if chrom is not None:
+        mask = results_df["CHR"] == chrom
+        if start is not None:
+            mask = mask & (results_df["BP"] >= start)
+        if end is not None:
+            mask = mask & (results_df["BP"] <= end)
+        region_data = results_df[mask].copy()
+    else:
+        region_data = results_df.copy()
 
     if region_data.empty:
-        logger.warning(f"No data found for chr {chr}:{start}-{end}")
-        return None
+        chrom_label = chrom or "unknown"
+        logger.warning(f"No data found for chr {chrom_label}:{start}-{end}")
+        return {"status": "success", "reason": "No data in region", "n_variants": 0}
 
     # Convert p-values to -log10 scale
     region_data["NEG_LOG_P"] = -np.log10(region_data["P"].clip(lower=1e-50))
@@ -383,11 +483,12 @@ def regional_plot(
     )
 
     # Add recombination rate if provided
-    if recombination_rate is not None:
-        # Plot recombination rate on second axis
+    if recombination_rate is not None and hasattr(recombination_rate, "columns"):
         ax2_twin = ax2.twinx()
         recomb_data = recombination_rate[
-            (recombination_rate["CHR"] == chr) & (recombination_rate["BP"] >= start) & (recombination_rate["BP"] <= end)
+            (recombination_rate["CHR"] == chrom)
+            & (recombination_rate["BP"] >= start)
+            & (recombination_rate["BP"] <= end)
         ]
         if not recomb_data.empty:
             ax2_twin.plot(recomb_data["BP"], recomb_data["RATE"], color="blue", alpha=0.7, linewidth=2)
@@ -395,30 +496,20 @@ def regional_plot(
             ax2_twin.tick_params(axis="y", labelcolor="blue")
 
     # Format axes
-    ax1.set_xlim(start, end)
-    ax1.set_ylabel("-log₁₀(p)")
-    ax1.set_title(title or f"GWAS Regional Plot - Chr {chr}:{start:,}-{end:,}")
+    if start is not None and end is not None:
+        ax1.set_xlim(start, end)
+    ax1.set_ylabel("-log10(p)")
+    chrom_label = chrom or "unknown"
+    ax1.set_title(title or f"GWAS Regional Plot - Chr {chrom_label}:{start:,}-{end:,}")
     ax1.legend()
     ax1.grid(True, alpha=0.3)
 
-    # Add gene annotations if available (mock for now)
-    # In a real implementation, this would use gene annotation data
-    genes_in_region = []  # Would query gene database
-    if genes_in_region:
-        # Add gene labels
-        for gene in genes_in_region:
-            if start <= gene["start"] <= end:
-                ax1.axvline(x=gene["start"], color="green", linestyle=":", alpha=0.5)
-                ax1.text(
-                    gene["start"], ax1.get_ylim()[1] * 0.9, gene["name"], rotation=90, ha="center", va="top", fontsize=8
-                )
-
-    # Bottom plot: LD heatmap (placeholder - would use LD data)
-    # For now, just show position density
+    # Bottom plot: SNP density
     ax2.hist(region_data["BP"], bins=50, alpha=0.7, color="lightblue", edgecolor="navy")
     ax2.set_xlabel("Position (bp)")
     ax2.set_ylabel("SNP Density")
-    ax2.set_xlim(start, end)
+    if start is not None and end is not None:
+        ax2.set_xlim(start, end)
     ax2.grid(True, alpha=0.3)
 
     # Format x-axis labels
@@ -435,10 +526,18 @@ def regional_plot(
     plt.tight_layout()
 
     if output_file:
+        output_file = Path(output_file)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
         plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved regional plot to {output_file}")
 
-    return fig
+    plt.close(fig)
+
+    return {
+        "status": "success",
+        "n_variants": len(region_data),
+        "output_path": str(output_file) if output_file else None,
+    }
 
 
 def regional_ld_plot(

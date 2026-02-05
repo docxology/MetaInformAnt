@@ -14,6 +14,44 @@ from metainformant.core import io, logging
 logger = logging.get_logger(__name__)
 
 
+class AttrDict(dict):
+    """Dictionary that allows attribute-style access.
+
+    Nested dicts are automatically converted to AttrDict on access,
+    allowing chained attribute access like ``cfg.genome.accession``.
+    Missing keys return ``None`` instead of raising ``KeyError``.
+    """
+
+    def __getattr__(self, name: str) -> Any:
+        try:
+            value = self[name]
+            # Convert nested dicts to AttrDict on access
+            if isinstance(value, dict) and not isinstance(value, AttrDict):
+                value = AttrDict(value)
+                self[name] = value
+            return value
+        except KeyError:
+            return None
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        self[name] = value
+
+    def __delattr__(self, name: str) -> None:
+        try:
+            del self[name]
+        except KeyError:
+            raise AttributeError(name)
+
+
+def _to_attrdict(obj: Any) -> Any:
+    """Recursively convert dicts to AttrDict."""
+    if isinstance(obj, dict) and not isinstance(obj, AttrDict):
+        return AttrDict({k: _to_attrdict(v) for k, v in obj.items()})
+    elif isinstance(obj, list):
+        return [_to_attrdict(item) for item in obj]
+    return obj
+
+
 def create_gwas_config_template(output_path: str | Path) -> None:
     """Create a GWAS configuration template file.
 
@@ -77,30 +115,69 @@ def create_gwas_config_template(output_path: str | Path) -> None:
 def validate_config_parameters(config: Dict[str, Any]) -> List[str]:
     """Validate GWAS configuration parameters.
 
+    Accepts both flat format (``vcf_file``, ``phenotype_file``, ``output_dir``)
+    and nested YAML format (``variants.vcf_files``, ``samples.phenotype_file``,
+    ``work_dir`` / ``output.results_dir``).
+
+    File existence checks are skipped since paths may not exist yet at config
+    validation time.
+
     Args:
-        config: Configuration dictionary
+        config: Configuration dictionary (flat or nested)
 
     Returns:
         List of validation error messages (empty if valid)
     """
     errors = []
 
-    # Required parameters
-    required_params = ["vcf_file", "phenotype_file", "output_dir"]
-    for param in required_params:
-        if param not in config:
-            errors.append(f"Missing required parameter: {param}")
+    # ---- Required parameters (accept both flat and nested alternatives) ----
 
-    # File paths
-    if "vcf_file" in config:
-        vcf_path = Path(config["vcf_file"])
-        if not vcf_path.exists():
-            errors.append(f"VCF file does not exist: {vcf_path}")
+    # VCF requirement: vcf_file OR variants.vcf_files OR variants.calling OR variants section
+    has_vcf = "vcf_file" in config
+    if not has_vcf:
+        variants = config.get("variants", {})
+        if isinstance(variants, dict):
+            vcf_files = variants.get("vcf_files")
+            if vcf_files and isinstance(vcf_files, list) and len(vcf_files) > 0:
+                has_vcf = True
+            # Also accept variant calling config as an alternative source
+            calling = variants.get("calling", {})
+            if isinstance(calling, dict) and calling:
+                has_vcf = True
+            # Accept if variants section exists at all (files may be produced later)
+            if variants:
+                has_vcf = True
+    if not has_vcf:
+        # Also accept vcf_path (used by workflow module)
+        if "vcf_path" in config:
+            has_vcf = True
+    if not has_vcf:
+        errors.append("Missing required parameter: vcf_file (or variants.vcf_files)")
 
-    if "phenotype_file" in config:
-        pheno_path = Path(config["phenotype_file"])
-        if not pheno_path.exists():
-            errors.append(f"Phenotype file does not exist: {pheno_path}")
+    # Phenotype requirement: phenotype_file OR samples.phenotype_file
+    has_pheno = "phenotype_file" in config
+    if not has_pheno:
+        samples = config.get("samples", {})
+        if isinstance(samples, dict) and samples.get("phenotype_file"):
+            has_pheno = True
+    if not has_pheno:
+        if "phenotype_path" in config:
+            has_pheno = True
+    if not has_pheno:
+        errors.append("Missing required parameter: phenotype_file (or samples.phenotype_file)")
+
+    # Output dir requirement: output_dir OR work_dir OR output.results_dir
+    has_output = "output_dir" in config or "work_dir" in config
+    if not has_output:
+        output = config.get("output", {})
+        if isinstance(output, dict) and output.get("results_dir"):
+            has_output = True
+    if not has_output:
+        errors.append("Missing required parameter: output_dir (or work_dir or output.results_dir)")
+
+    # NOTE: File existence checks are intentionally skipped here.
+    # Paths may not exist yet when loading config before workflow execution.
+    # Use validate_input_files() for runtime file existence validation.
 
     # Numerical parameters
     if "maf_threshold" in config:
@@ -185,14 +262,17 @@ def merge_config_defaults(config: Dict[str, Any]) -> Dict[str, Any]:
     return merged
 
 
-def load_gwas_config(config_path: str | Path) -> Dict[str, Any]:
+def load_gwas_config(config_path: str | Path) -> AttrDict:
     """Load and validate GWAS configuration.
+
+    Returns an :class:`AttrDict` so that nested sections can be accessed via
+    attribute syntax (e.g. ``cfg.genome.accession``).
 
     Args:
         config_path: Path to configuration file
 
     Returns:
-        Validated configuration dictionary
+        Validated configuration as AttrDict (supports both dict and attribute access)
 
     Raises:
         FileNotFoundError: If config file doesn't exist
@@ -219,7 +299,9 @@ def load_gwas_config(config_path: str | Path) -> Dict[str, Any]:
         raise ValueError(f"Configuration validation failed:\n" + "\n".join(f"- {error}" for error in errors))
 
     logger.info(f"Loaded and validated GWAS configuration from {config_path}")
-    return config
+
+    # Convert to AttrDict recursively for attribute-style access
+    return _to_attrdict(config)
 
 
 def save_gwas_config(config: Dict[str, Any], output_path: str | Path) -> None:

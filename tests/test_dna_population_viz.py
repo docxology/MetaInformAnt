@@ -6,6 +6,15 @@ from pathlib import Path
 
 import pytest
 
+try:
+    import seaborn  # noqa: F401
+
+    _seaborn_available = True
+except ImportError:
+    _seaborn_available = False
+
+requires_seaborn = pytest.mark.skipif(not _seaborn_available, reason="seaborn not installed")
+
 from metainformant.dna.population.visualization import (
     plot_allele_frequency_spectrum,
     plot_bootstrap_distribution,
@@ -122,6 +131,7 @@ class TestPlotPCAResults:
             plot_pca_results(pca_result)
 
 
+@requires_seaborn
 class TestPlotKinshipMatrix:
     """Test kinship matrix plotting."""
 
@@ -306,6 +316,7 @@ def test_plot_pi_vs_theta():
     assert fig is not None
 
 
+@requires_seaborn
 def test_plot_statistic_correlation_matrix():
     """Test statistic correlation matrix plot."""
     stats = {
@@ -318,6 +329,7 @@ def test_plot_statistic_correlation_matrix():
     assert fig is not None
 
 
+@requires_seaborn
 def test_plot_fst_matrix():
     """Test Fst matrix plot."""
     fst_matrix = [[0.0, 0.1, 0.2], [0.1, 0.0, 0.15], [0.2, 0.15, 0.0]]

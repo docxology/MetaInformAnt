@@ -106,3 +106,4 @@ coverage.xml
 # Timelock
 .timelock/
 *.timelock.*
+*.gz

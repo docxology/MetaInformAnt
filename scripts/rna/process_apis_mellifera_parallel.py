@@ -25,7 +25,7 @@ from datetime import datetime, timedelta
 
 # Configuration
 WORK_DIR = Path("output/amalgkit/apis_mellifera_all/work")
-FASTQ_DIR = Path("output/amalgkit/apis_mellifera_all/fastq/getfastq")
+FASTQ_DIR = Path("/Volumes/blue/data/apis_mellifera")  # External drive for downloads
 QUANT_DIR = WORK_DIR / "quant"
 INDEX_FILE = WORK_DIR / "index/Apis_mellifera_transcripts.idx"
 METADATA_FILE = WORK_DIR / "metadata/metadata_selected.tsv"
@@ -33,10 +33,16 @@ PROGRESS_FILE = WORK_DIR / "parallel_progress.json"
 LOG_FILE = WORK_DIR / "parallel_processing.log"
 
 # Parallel processing settings
-NUM_WORKERS = 8  # Number of parallel workers (increased from 4 with more disk space)
+NUM_WORKERS = 10  # Number of parallel workers (maximized - external drive has 1.8TB)
 THREADS_PER_SAMPLE = 2  # Threads for fasterq-dump and kallisto per sample
 DISK_CHECK_INTERVAL = 10  # Check disk every N samples
-MIN_FREE_GB = 20  # Minimum free disk space in GB
+MIN_FREE_GB = 50  # Minimum free disk space in GB
+MIN_SRA_BYTES = 500 * 1024  # 500KB min - tiny samples fail kallisto
+MAX_SRA_BYTES = 3 * 1024**3  # 3GB max - start with smaller samples to understand scaling
+
+# Skip problematic sample prefixes that have abnormally slow extraction
+# SRR340* = PRJNA1277852, SRR260* = PRJNA1017469
+SKIP_PREFIXES = ("SRR340", "SRR260", "SRR345", "SRR351", "SRR353")
 
 # Ensure directories exist
 FASTQ_DIR.mkdir(parents=True, exist_ok=True)
@@ -55,9 +61,9 @@ logger = logging.getLogger(__name__)
 
 
 def get_free_disk_gb() -> float:
-    """Get free disk space in GB."""
+    """Get free disk space in GB on the FASTQ download directory."""
     import os
-    stat = os.statvfs(WORK_DIR)
+    stat = os.statvfs(FASTQ_DIR)
     return (stat.f_frsize * stat.f_bavail) / (1024**3)
 
 
@@ -92,7 +98,7 @@ def download_sample(sample_id: str, sample_dir: Path) -> tuple[bool, str]:
         cmd, 
         capture_output=True, 
         text=True,
-        timeout=3600  # 1 hour timeout
+        timeout=7200  # 2 hour timeout for large files
     )
     
     if result.returncode != 0:
@@ -126,7 +132,7 @@ def extract_fastq(sample_id: str, sample_dir: Path) -> tuple[bool, str]:
         cmd,
         capture_output=True,
         text=True,
-        timeout=3600  # 1 hour timeout
+        timeout=7200  # 2 hour timeout for large files
     )
     
     if result.returncode != 0:
@@ -197,7 +203,7 @@ def cleanup_sample(sample_dir: Path) -> None:
 
 
 def process_single_sample(args: tuple) -> dict:
-    """Process a single sample end-to-end. Returns result dict."""
+    """Process a single sample end-to-end. Returns result dict with per-stage timing."""
     sample_id, index_file = args
     sample_dir = FASTQ_DIR / sample_id
     sample_dir.mkdir(parents=True, exist_ok=True)
@@ -206,6 +212,7 @@ def process_single_sample(args: tuple) -> dict:
         "sample_id": sample_id,
         "success": False,
         "steps": {},
+        "timing": {},  # Per-stage timing in seconds
         "error": None,
         "duration": 0
     }
@@ -214,7 +221,9 @@ def process_single_sample(args: tuple) -> dict:
     
     try:
         # Step 1: Download
+        t0 = time.time()
         ok, msg = download_sample(sample_id, sample_dir)
+        result["timing"]["download"] = time.time() - t0
         result["steps"]["download"] = msg
         if not ok:
             result["error"] = f"Download: {msg}"
@@ -222,7 +231,9 @@ def process_single_sample(args: tuple) -> dict:
             return result
         
         # Step 2: Extract
+        t0 = time.time()
         ok, msg = extract_fastq(sample_id, sample_dir)
+        result["timing"]["extract"] = time.time() - t0
         result["steps"]["extract"] = msg
         if not ok:
             result["error"] = f"Extract: {msg}"
@@ -230,7 +241,9 @@ def process_single_sample(args: tuple) -> dict:
             return result
         
         # Step 3: Quantify
+        t0 = time.time()
         ok, msg = quantify_sample(sample_id, sample_dir, index_file)
+        result["timing"]["quantify"] = time.time() - t0
         result["steps"]["quantify"] = msg
         if not ok:
             result["error"] = f"Quantify: {msg}"
@@ -285,17 +298,53 @@ def main():
     # Load samples
     with open(METADATA_FILE, "r") as f:
         reader = csv.DictReader(f, delimiter="\t")
-        all_samples = [row.get("run", "") for row in reader if row.get("run")]
+        
+        # Filter by size
+        all_samples = []  # List of (sample_id, size_bytes) tuples
+        skipped_large = 0
+        
+        for row in reader:
+            sample_id = row.get("run")
+            if not sample_id:
+                continue
+            
+            # Skip problematic prefixes
+            if sample_id.startswith(SKIP_PREFIXES):
+                continue
+                
+            # Check size
+            try:
+                size_str = row.get("size", "0")
+                size_bytes = float(size_str) if size_str else 0
+                
+                # Skip too small (fail kallisto)
+                if size_bytes < MIN_SRA_BYTES:
+                    continue
+                
+                if size_bytes > MAX_SRA_BYTES:
+                    skipped_large += 1
+                    logger.warning(f"Skipping {sample_id}: size {size_bytes/1024**3:.1f}GB > {MAX_SRA_BYTES/1024**3:.1f}GB limit")
+                    continue
+                    
+                all_samples.append((sample_id, size_bytes))
+            except (ValueError, TypeError):
+                # If size can't be parsed, add with size 0
+                all_samples.append((sample_id, 0))
     
-    logger.info(f"Loaded {len(all_samples)} samples from metadata")
+    # Sort by size (smallest first) for timing analysis
+    all_samples.sort(key=lambda x: x[1])
+    logger.info(f"Loaded {len(all_samples)} samples, sorted by size (smallest first)")
+    logger.info(f"Skipped {skipped_large} large samples > {MAX_SRA_BYTES/1024**3:.1f}GB")
     
     # Get already processed
     processed = get_processed_samples()
     logger.info(f"Already processed: {len(processed)} samples")
     
-    # Filter to unprocessed
-    to_process = [s for s in all_samples if s not in processed]
+    # Filter to unprocessed (all_samples is list of (sample_id, size_bytes) tuples)
+    to_process = [(s, sz) for s, sz in all_samples if s not in processed]
     logger.info(f"Remaining to process: {len(to_process)} samples")
+    if to_process:
+        logger.info(f"Size range: {to_process[0][1]/1024**2:.1f}MB - {to_process[-1][1]/1024**2:.1f}MB")
     
     if not to_process:
         logger.info("All samples already processed!")
@@ -310,8 +359,9 @@ def main():
     logger.info(f"Starting parallel processing with {NUM_WORKERS} workers")
     logger.info(f"Threads per sample: {THREADS_PER_SAMPLE}")
     
-    # Create work items
-    work_items = [(s, INDEX_FILE) for s in to_process]
+    # Create work items: (sample_id, index_file) - size kept for logging
+    sample_sizes = {s: sz for s, sz in to_process}  # Map for size lookup
+    work_items = [(s, INDEX_FILE) for s, sz in to_process]
     
     try:
         with ProcessPoolExecutor(max_workers=NUM_WORKERS) as executor:
@@ -328,10 +378,19 @@ def main():
                     
                     if result["success"]:
                         success_count += 1
+                        size_mb = sample_sizes.get(sample_id, 0) / 1024**2
+                        t = result.get("timing", {})
+                        dl_t = t.get("download", 0)
+                        ex_t = t.get("extract", 0)
+                        qt_t = t.get("quantify", 0)
                         logger.info(
                             f"[{i}/{len(to_process)}] ✓ {sample_id} "
-                            f"({result['duration']:.1f}s)"
+                            f"({result['duration']:.1f}s, {size_mb:.1f}MB) "
+                            f"[dl:{dl_t:.0f}s ex:{ex_t:.0f}s qt:{qt_t:.0f}s]"
                         )
+                        # Flush log handlers for real-time visibility
+                        for handler in logger.handlers:
+                            handler.flush()
                     else:
                         fail_count += 1
                         failed_samples.append(result)
@@ -339,9 +398,12 @@ def main():
                             f"[{i}/{len(to_process)}] ✗ {sample_id}: "
                             f"{result['error']}"
                         )
+                        # Flush log handlers for real-time visibility
+                        for handler in logger.handlers:
+                            handler.flush()
                     
-                    # Progress update every 50 samples
-                    if i % 50 == 0:
+                    # Progress update every 10 samples for better visibility
+                    if i % 10 == 0:
                         elapsed = time.time() - start_time
                         rate = success_count / (elapsed / 3600) if elapsed > 0 else 0
                         remaining = len(to_process) - i

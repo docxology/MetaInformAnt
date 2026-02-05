@@ -17,7 +17,12 @@ logger = logging.get_logger(__name__)
 
 
 def add_temporal_noise(
-    sequence: EventSequence, noise_level: float = 0.1, rng: random.Random | None = None
+    sequence: EventSequence,
+    noise_level: float = 0.1,
+    rng: random.Random | None = None,
+    max_days_shift: float | None = None,
+    random_seed: int | None = None,
+    **kwargs: Any,
 ) -> EventSequence:
     """Add temporal noise to event timestamps.
 
@@ -25,12 +30,21 @@ def add_temporal_noise(
         sequence: Input event sequence
         noise_level: Fraction of total duration to use as noise scale
         rng: Random number generator (optional)
+        max_days_shift: Maximum days to shift (alias for noise_level as days)
+        random_seed: Random seed for reproducibility (alternative to rng)
+        **kwargs: Additional parameters (ignored)
 
     Returns:
         New EventSequence with added noise
     """
+    # Handle parameter aliases
+    if random_seed is not None and rng is None:
+        rng = random.Random(random_seed)
     if rng is None:
         rng = random.Random()
+    if max_days_shift is not None:
+        # Convert max_days_shift to noise_level (assuming timestamps are in days)
+        noise_level = max_days_shift / 365.0  # Rough conversion
 
     if not sequence.events:
         return sequence
@@ -301,12 +315,15 @@ def validate_sequence(sequence: EventSequence) -> Dict[str, Any]:
 
 
 def generate_cohort_sequences(
-    n_sequences: int,
+    n_sequences: int = 10,
     avg_events_per_sequence: int = 10,
     event_types: Optional[List[str]] = None,
     domains: Optional[List[str]] = None,
     start_year: int = 1980,
     end_year: int = 2020,
+    n_cohorts: int | None = None,
+    random_seed: int | None = None,
+    random_state: int | None = None,
     **kwargs: Any,
 ) -> List[EventSequence]:
     """Generate synthetic cohort sequences for testing and simulation.
@@ -318,6 +335,9 @@ def generate_cohort_sequences(
         domains: List of possible domains
         start_year: Start year for event timestamps
         end_year: End year for event timestamps
+        n_cohorts: Alias for n_sequences (backward compatibility)
+        random_seed: Random seed for reproducibility
+        random_state: Alias for random_seed (sklearn convention)
         **kwargs: Additional generation parameters
 
     Returns:
@@ -325,6 +345,14 @@ def generate_cohort_sequences(
     """
     import random
     from datetime import datetime, timedelta
+
+    # Handle parameter aliases
+    if n_cohorts is not None:
+        n_sequences = n_cohorts
+    if random_state is not None and random_seed is None:
+        random_seed = random_state
+    if random_seed is not None:
+        random.seed(random_seed)
 
     # Default event types and domains
     if event_types is None:
@@ -494,6 +522,8 @@ def generate_event_chain(
     n_events: int,
     transition_matrix: Optional[Dict[str, Dict[str, float]]] = None,
     event_types: Optional[List[str]] = None,
+    random_seed: int | None = None,
+    random_state: int | None = None,
     **kwargs: Any,
 ) -> List[str]:
     """Generate a causally linked sequence of events using a Markov chain.
@@ -503,12 +533,20 @@ def generate_event_chain(
         n_events: Number of events to generate
         transition_matrix: Dictionary of transition probabilities
         event_types: List of possible event types
+        random_seed: Random seed for reproducibility
+        random_state: Alias for random_seed (sklearn convention)
         **kwargs: Additional parameters
 
     Returns:
         List of event types in sequence
     """
     import random
+
+    # Handle parameter aliases
+    if random_state is not None and random_seed is None:
+        random_seed = random_state
+    if random_seed is not None:
+        random.seed(random_seed)
 
     if event_types is None:
         event_types = [
@@ -744,7 +782,8 @@ def generate_synthetic_life_events(
         # Fill remaining events with random events
         while len(events) < n_events:
             event_type = random.choice(event_types)
-            if event_type not in used_events:
+            # Allow duplicate event types once all unique types are exhausted
+            if event_type not in used_events or len(used_events) >= len(event_types):
                 event_year = current_year + random.randint(0, 5)
                 event_month = random.randint(1, 12)
                 event_day = random.randint(1, 28)

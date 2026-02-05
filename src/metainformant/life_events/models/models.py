@@ -24,14 +24,43 @@ class EventSequencePredictor:
     Supports multiple model types: embedding-based, simple statistical, and LSTM models.
     """
 
-    def __init__(self, model_type: str = "embedding", embedding_dim: int = 100, random_seed: int = 42):
+    def __init__(
+        self,
+        model_type: str = "embedding",
+        embedding_dim: int = 100,
+        random_seed: int = 42,
+        # Parameter aliases for compatibility
+        task_type: str | None = None,
+        embedding: int | None = None,
+        random_state: int | None = None,
+        **kwargs: Any,
+    ):
         """Initialize predictor.
 
         Args:
             model_type: Type of model ('embedding', 'simple', 'lstm')
             embedding_dim: Dimensionality for embeddings
             random_seed: Random seed for reproducibility
+            task_type: Alias for model_type (backward compatibility)
+            embedding: Alias for embedding_dim (backward compatibility)
+            random_state: Alias for random_seed (sklearn convention)
+            **kwargs: Additional parameters (ignored)
         """
+        # Handle parameter aliases
+        if task_type is not None:
+            model_type = task_type
+        if embedding is not None:
+            embedding_dim = embedding
+        if random_state is not None:
+            random_seed = random_state
+
+        # Map task_type values to model_type values for compatibility
+        model_type_mapping = {
+            "classification": "embedding",
+            "regression": "embedding",
+        }
+        model_type = model_type_mapping.get(model_type, model_type)
+
         self.model_type = model_type
         self.embedding_dim = embedding_dim
         self.random_seed = random_seed
@@ -45,6 +74,25 @@ class EventSequencePredictor:
         self.reverse_vocab = {}
 
         np.random.seed(random_seed)
+
+    def _extract_events(self, seq: Any) -> List[str]:
+        """Extract event strings from a sequence, handling both EventSequence objects and lists.
+
+        Args:
+            seq: Either an EventSequence object or a list of event strings
+
+        Returns:
+            List of event type strings
+        """
+        if isinstance(seq, list):
+            # Plain list of event strings
+            return seq
+        elif hasattr(seq, "events"):
+            # EventSequence object - extract event_type from each event
+            return [e.event_type if hasattr(e, "event_type") else str(e) for e in seq.events]
+        else:
+            # Try to iterate
+            return [str(e) for e in seq]
 
     def fit(
         self, sequences: List[Any], outcomes: Union[List[int], List[float]], task: str = "classification"
@@ -114,14 +162,17 @@ class EventSequencePredictor:
         Args:
             path: Output path
         """
+        # Convert numpy arrays in embeddings to lists for JSON serialization
+        embeddings_serializable = {k: v.tolist() if hasattr(v, "tolist") else v for k, v in self.embeddings.items()}
+
         model_data = {
             "model_type": self.model_type,
             "embedding_dim": self.embedding_dim,
             "random_seed": self.random_seed,
             "is_fitted": self.is_fitted,
-            "embeddings": self.embeddings,
+            "embeddings": embeddings_serializable,
             "event_vocab": self.event_vocab,
-            "reverse_vocab": self.reverse_vocab,
+            "reverse_vocab": {str(k): v for k, v in self.reverse_vocab.items()},  # Ensure keys are strings
         }
 
         # Save classifier/regressor if available
@@ -155,9 +206,11 @@ class EventSequencePredictor:
         )
 
         model.is_fitted = model_data["is_fitted"]
-        model.embeddings = model_data["embeddings"]
+        # Convert lists back to numpy arrays for embeddings
+        model.embeddings = {k: np.array(v) if isinstance(v, list) else v for k, v in model_data["embeddings"].items()}
         model.event_vocab = model_data["event_vocab"]
-        model.reverse_vocab = model_data["reverse_vocab"]
+        # Convert string keys back to int for reverse_vocab if needed
+        model.reverse_vocab = {int(k) if k.isdigit() else k: v for k, v in model_data["reverse_vocab"].items()}
 
         # Load classifier/regressor if available
         if "classifier" in model_data:
@@ -170,11 +223,12 @@ class EventSequencePredictor:
 
     def _fit_embedding_model(self, sequences: List[Any], outcomes: Union[List[int], List[float]], task: str) -> None:
         """Fit embedding-based model using learned embeddings and linear model."""
-        # Build vocabulary
+        # Build vocabulary - handle both EventSequence objects and plain lists
         all_events = set()
         for seq in sequences:
-            for event in seq.events:
-                all_events.add(event.event_type)
+            events = self._extract_events(seq)
+            for event in events:
+                all_events.add(event)
 
         self.event_vocab = {event: i for i, event in enumerate(all_events)}
         self.reverse_vocab = {i: event for event, i in self.event_vocab.items()}
@@ -186,8 +240,9 @@ class EventSequencePredictor:
         # Compute sequence features (average embeddings)
         X = []
         for seq in sequences:
-            if seq.events:
-                event_embeddings = [self.embeddings.get(e.event_type, np.zeros(self.embedding_dim)) for e in seq.events]
+            events = self._extract_events(seq)
+            if events:
+                event_embeddings = [self.embeddings.get(e, np.zeros(self.embedding_dim)) for e in events]
                 avg_embedding = np.mean(event_embeddings, axis=0)
             else:
                 avg_embedding = np.zeros(self.embedding_dim)
@@ -267,7 +322,8 @@ class EventSequencePredictor:
         # Simple model based on sequence length
         self.sequence_length_model = {}
         for seq, outcome in zip(sequences, outcomes):
-            length = len(seq.events)
+            events = self._extract_events(seq)
+            length = len(events)
             if length not in self.sequence_length_model:
                 self.sequence_length_model[length] = []
             self.sequence_length_model[length].append(outcome)
@@ -281,8 +337,9 @@ class EventSequencePredictor:
         # Compute features
         X = []
         for seq in sequences:
-            if seq.events:
-                event_embeddings = [self.embeddings.get(e.event_type, np.zeros(self.embedding_dim)) for e in seq.events]
+            events = self._extract_events(seq)
+            if events:
+                event_embeddings = [self.embeddings.get(e, np.zeros(self.embedding_dim)) for e in events]
                 avg_embedding = np.mean(event_embeddings, axis=0)
             else:
                 avg_embedding = np.zeros(self.embedding_dim)
@@ -306,7 +363,8 @@ class EventSequencePredictor:
         """Make predictions using simple model."""
         predictions = []
         for seq in sequences:
-            length = len(seq.events)
+            events = self._extract_events(seq)
+            length = len(events)
             prediction = self.sequence_length_model.get(length, 0.0)
             predictions.append(prediction)
 

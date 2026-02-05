@@ -25,11 +25,15 @@ class AntWikiScraperConfig:
 
     def __init__(
         self,
-        base_url: str = "https://www.antwiki.org",
-        delay_between_requests: float = 1.0,
-        timeout: int = 30,
+        base_url: str = "https://www.antwiki.org/wiki/",
+        delay_between_requests: float | None = None,
+        timeout: int | None = None,
         max_retries: int = 3,
         user_agent: str = "MetaInformant/1.0 (research@metainformant.org)",
+        delay_seconds: float | None = None,
+        timeout_seconds: int | None = None,
+        check_robots: bool = True,
+        output_dir: Any = None,
     ):
         """Initialize scraper configuration.
 
@@ -39,18 +43,50 @@ class AntWikiScraperConfig:
             timeout: Request timeout in seconds
             max_retries: Maximum number of retries for failed requests
             user_agent: User agent string for requests
+            delay_seconds: Alias for delay_between_requests
+            timeout_seconds: Alias for timeout
+            check_robots: Whether to check robots.txt
+            output_dir: Default output directory
         """
-        self.base_url = base_url.rstrip("/")
-        self.delay_between_requests = delay_between_requests
-        self.timeout = timeout
+        self.base_url = base_url
+
+        # Handle parameter aliases
+        if delay_seconds is not None:
+            self._delay = float(delay_seconds)
+        elif delay_between_requests is not None:
+            self._delay = float(delay_between_requests)
+        else:
+            self._delay = 2.0
+
+        if timeout_seconds is not None:
+            self._timeout = int(timeout_seconds)
+        elif timeout is not None:
+            self._timeout = int(timeout)
+        else:
+            self._timeout = 30
+
+        self.delay_between_requests = self._delay
+        self.timeout = self._timeout
         self.max_retries = max_retries
         self.user_agent = user_agent
+        self.check_robots = check_robots
+        self.output_dir = output_dir
 
         # Validate configuration
-        validation.validate_type(delay_between_requests, (int, float), "delay_between_requests")
-        validation.validate_range(delay_between_requests, min_val=0.1, name="delay_between_requests")
-        validation.validate_range(timeout, min_val=1, name="timeout")
+        validation.validate_type(self._delay, (int, float), "delay_between_requests")
+        validation.validate_range(self._delay, min_val=0.1, name="delay_between_requests")
+        validation.validate_range(self._timeout, min_val=1, name="timeout")
         validation.validate_range(max_retries, min_val=0, name="max_retries")
+
+    @property
+    def delay_seconds(self) -> float:
+        """Alias for delay_between_requests."""
+        return self._delay
+
+    @property
+    def timeout_seconds(self) -> int:
+        """Alias for timeout."""
+        return self._timeout
 
 
 class AntWikiScraper:
@@ -100,6 +136,9 @@ class AntWikiScraper:
                 elif response.status_code == 404:
                     logger.warning(f"Page not found: {url}")
                     return None
+                elif response.status_code == 403:
+                    logger.warning(f"HTTP 403 Forbidden for {url}")
+                    response.raise_for_status()
                 elif response.status_code >= 500:
                     logger.warning(f"Server error {response.status_code} for {url}")
                     if attempt < self.config.max_retries:
@@ -107,7 +146,10 @@ class AntWikiScraper:
                         continue
                 else:
                     logger.warning(f"HTTP {response.status_code} for {url}")
+                    response.raise_for_status()
 
+            except requests.HTTPError:
+                raise  # Let HTTP errors propagate immediately (403, etc.)
             except requests.RequestException as e:
                 logger.warning(f"Request failed for {url}: {e}")
                 if attempt < self.config.max_retries:
@@ -120,56 +162,79 @@ class AntWikiScraper:
         """Add delay between requests to be respectful to the server."""
         time.sleep(self.config.delay_between_requests)
 
-    def scrape_species_page(self, species_url: str) -> Optional[Dict[str, Any]]:
+    def scrape_species_page(self, species_name_or_url: str) -> Optional[Dict[str, Any]]:
         """Scrape a single species page from AntWiki.
 
         Args:
-            species_url: URL of the species page
+            species_name_or_url: Species name (e.g. "Camponotus_pennsylvanicus") or full URL
 
         Returns:
             Dictionary with scraped data, or None if scraping failed
         """
+        # Build full URL if only species name given
+        if species_name_or_url.startswith("http"):
+            species_url = species_name_or_url
+        elif self.config.base_url.endswith("/"):
+            species_url = f"{self.config.base_url}{species_name_or_url}"
+        else:
+            species_url = f"{self.config.base_url}/{species_name_or_url}"
+
         if species_url in self.scraped_urls:
             logger.debug(f"Already scraped: {species_url}")
             return None
 
         soup = self._make_request(species_url)
         if not soup:
-            return None
+            raise errors.NetworkError(f"Failed to fetch species page: {species_url}")
 
         self.scraped_urls.add(species_url)
         self._respectful_delay()
 
         try:
+            # Derive species name from input or title
+            if not species_name_or_url.startswith("http"):
+                display_name = species_name_or_url.replace("_", " ")
+            else:
+                display_name = None
+
             # Extract species information
-            data = {
+            data: Dict[str, Any] = {
                 "url": species_url,
                 "data_source": "antwiki_scraper",
                 "scraped_at": time.time(),
+                "measurements": {},
+                "traits": [],
+                "description": "",
+                "taxonomy": {},
+                "distribution": {},
+                "images": [],
             }
 
             # Extract species name from title
             title_elem = soup.find("title")
             if title_elem:
                 title_text = title_elem.get_text().strip()
-                # Extract species name from title like "Camponotus pennsylvanicus - AntWiki"
                 if " - AntWiki" in title_text:
                     species_name = title_text.replace(" - AntWiki", "").strip()
+                    data["species"] = species_name
                     data["species_name"] = species_name
-
-                    # Try to extract genus
                     parts = species_name.split()
                     if len(parts) >= 2:
                         data["genus"] = parts[0]
 
+            if display_name and "species" not in data:
+                data["species"] = display_name
+                data["species_name"] = display_name
+
             # Extract taxonomic information
             taxonomy = self._extract_taxonomy(soup)
-            data.update(taxonomy)
+            data["taxonomy"] = taxonomy
 
             # Extract morphological data
             morphology = self._extract_morphology(soup)
             if morphology:
                 data["morphology"] = morphology
+                data["measurements"] = morphology
 
             # Extract behavioral data
             behavior = self._extract_behavior(soup)
@@ -185,6 +250,20 @@ class AntWikiScraper:
             distribution = self._extract_distribution(soup)
             if distribution:
                 data["distribution"] = distribution
+
+            # Extract description
+            desc_elem = soup.find("div", {"class": "mw-parser-output"})
+            if desc_elem:
+                paragraphs = desc_elem.find_all("p", limit=3)
+                data["description"] = " ".join(p.get_text().strip() for p in paragraphs)
+
+            # Extract images
+            img_elems = soup.find_all("img", src=re.compile(r"\.(jpg|jpeg|png|gif)", re.IGNORECASE))
+            data["images"] = [img.get("src", "") for img in img_elems[:10]]
+
+            # Extract traits from behavioral and ecological data
+            if behavior:
+                data["traits"].extend(v for v in behavior.values() if isinstance(v, str))
 
             # Calculate confidence score based on data completeness
             data["confidence_score"] = self._calculate_confidence_score(data)
@@ -420,7 +499,10 @@ class AntWikiScraper:
             if limit and len(self.scraped_urls) >= limit:
                 break
 
-            url = f"{self.config.base_url}/{species}"
+            if self.config.base_url.endswith("/"):
+                url = f"{self.config.base_url}{species}"
+            else:
+                url = f"{self.config.base_url}/{species}"
             yield url
 
     def bulk_scrape_species(self, species_urls: List[str], output_dir: str | Path) -> List[Dict[str, Any]]:
@@ -462,21 +544,153 @@ class AntWikiScraper:
         logger.info(f"Successfully scraped {successful}/{len(species_urls)} species pages")
         return results
 
+    def _fetch_page(self, url: str) -> str:
+        """Fetch a page and return raw HTML string.
+
+        Args:
+            url: URL to fetch
+
+        Returns:
+            HTML string
+
+        Raises:
+            NetworkError: If request fails
+        """
+        for attempt in range(self.config.max_retries + 1):
+            try:
+                logger.debug(f"Fetching {url} (attempt {attempt + 1})")
+                response = self.session.get(url, timeout=self.config.timeout)
+                response.raise_for_status()
+                self._respectful_delay()
+                return response.text
+            except requests.HTTPError as e:
+                raise errors.NetworkError(f"HTTP error fetching {url}: {e}") from e
+            except requests.RequestException as e:
+                if attempt < self.config.max_retries:
+                    time.sleep(2**attempt)
+                    continue
+                raise errors.NetworkError(f"Failed to fetch {url}: {e}") from e
+        raise errors.NetworkError(f"Failed to fetch {url} after {self.config.max_retries + 1} attempts")
+
+    def extract_measurements(self, html: str) -> Dict[str, Any]:
+        """Extract measurements from HTML string.
+
+        Args:
+            html: Raw HTML string
+
+        Returns:
+            Dictionary of measurements
+        """
+        soup = BeautifulSoup(html, "html.parser")
+        return self._extract_morphology(soup)
+
+    def extract_traits(self, html: str) -> List[str]:
+        """Extract traits from HTML string.
+
+        Args:
+            html: Raw HTML string
+
+        Returns:
+            List of trait strings
+        """
+        soup = BeautifulSoup(html, "html.parser")
+        behavior = self._extract_behavior(soup)
+        traits = [v for v in behavior.values() if isinstance(v, str)]
+        return traits
+
+    def extract_taxonomy(self, html: str) -> Dict[str, Any]:
+        """Extract taxonomy from HTML string.
+
+        Args:
+            html: Raw HTML string
+
+        Returns:
+            Dictionary of taxonomic information
+        """
+        soup = BeautifulSoup(html, "html.parser")
+        return self._extract_taxonomy(soup)
+
+    def get_species_list(self, limit: Optional[int] = None) -> List[str]:
+        """Get list of species names from AntWiki.
+
+        Args:
+            limit: Maximum number of species to return
+
+        Returns:
+            List of species name strings
+        """
+        return list(self.scrape_species_list(limit=limit))
+
+    def scrape_all_species(
+        self, output_dir: str | Path | None = None, limit: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """Scrape all species and save to output directory.
+
+        Args:
+            output_dir: Directory to save results
+            limit: Maximum number of species to scrape
+
+        Returns:
+            Statistics dictionary with total, completed, failed counts
+        """
+        if output_dir is None:
+            output_dir = self.config.output_dir
+        if output_dir is None:
+            raise ValueError("No output directory specified")
+
+        output_dir = Path(output_dir)
+        species_dir = output_dir / "species"
+        species_dir.mkdir(parents=True, exist_ok=True)
+
+        species_urls = list(self.scrape_species_list(limit=limit))
+        results = []
+        failed = 0
+
+        for url in species_urls:
+            try:
+                data = self.scrape_species_page(url)
+                if data:
+                    species_name = data.get("species_name", data.get("species", "unknown")).replace(" ", "_")
+                    output_file = species_dir / f"{species_name}.json"
+                    io.dump_json(data, output_file, indent=2)
+                    results.append(data)
+                else:
+                    failed += 1
+            except Exception as e:
+                logger.error(f"Failed to scrape {url}: {e}")
+                failed += 1
+
+        # Save combined file
+        all_species_file = output_dir / "all_species.json"
+        io.dump_json(results, all_species_file, indent=2)
+
+        stats = {
+            "total": len(species_urls),
+            "completed": len(results),
+            "failed": failed,
+        }
+
+        logger.info(f"Scraped {stats['completed']}/{stats['total']} species")
+        return stats
+
     def close(self) -> None:
         """Close the scraper session."""
         self.session.close()
         logger.info("AntWiki scraper session closed")
 
 
-def load_scraper_config(config_path: str | Path) -> AntWikiScraperConfig:
-    """Load scraper configuration from file.
+def load_scraper_config(config_path: str | Path | None = None) -> AntWikiScraperConfig:
+    """Load scraper configuration from file, or return defaults.
 
     Args:
-        config_path: Path to configuration file
+        config_path: Path to configuration file (optional; returns defaults if None)
 
     Returns:
         AntWikiScraperConfig object
     """
+    if config_path is None:
+        return AntWikiScraperConfig()
+
     config_path = validation.validate_path_exists(Path(config_path))
 
     try:
@@ -484,7 +698,7 @@ def load_scraper_config(config_path: str | Path) -> AntWikiScraperConfig:
         return AntWikiScraperConfig(**config_data)
     except Exception as e:
         logger.error(f"Failed to load scraper config from {config_path}: {e}")
-        raise errors.FileIOError(f"Failed to load scraper config: {e}") from e
+        raise errors.IOError(f"Failed to load scraper config: {e}") from e
 
 
 def create_default_scraper_config(output_path: str | Path) -> None:

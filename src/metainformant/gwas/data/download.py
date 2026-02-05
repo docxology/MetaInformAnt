@@ -688,8 +688,7 @@ def download_variant_data(study_accession: str, output_dir: str | Path, data_typ
             # Create a README explaining how to obtain VCF files
             readme_file = vcf_dir / "README.md"
             with open(readme_file, "w") as f:
-                f.write(
-                    f"""# VCF Data for {study_accession}
+                f.write(f"""# VCF Data for {study_accession}
 
 This study contains GWAS variants that may be available in dbSNP or other repositories.
 
@@ -703,8 +702,7 @@ Study information:
 - Accession: {study_accession}
 - Trait: {trait}
 - Publication: https://pubmed.ncbi.nlm.nih.gov/{pubmed_id}/
-"""
-                )
+""")
 
             downloaded_files.append(vcf_dir)
             logger.info(f"Created VCF directory structure at {vcf_dir}")

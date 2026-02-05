@@ -441,7 +441,9 @@ def effect_size_plot(results: List[Dict[str, Any]], output_path: Optional[Union[
     # Histogram of effect sizes
     ax1.hist(effect_sizes, bins=50, edgecolor="black", alpha=0.7, color="steelblue")
     ax1.axvline(x=0, color="red", linestyle="--", alpha=0.7, label="Null effect")
-    ax1.axvline(x=np.mean(effect_sizes), color="green", linestyle="-", alpha=0.7, label=f"Mean: {np.mean(effect_sizes):.4f}")
+    ax1.axvline(
+        x=np.mean(effect_sizes), color="green", linestyle="-", alpha=0.7, label=f"Mean: {np.mean(effect_sizes):.4f}"
+    )
     ax1.set_xlabel("Effect Size (Beta)")
     ax1.set_ylabel("Frequency")
     ax1.set_title("Effect Size Distribution")
@@ -588,8 +590,7 @@ def functional_enrichment_plot(
         logger.warning("No significant variants found for enrichment analysis")
         # Create a simple summary plot instead
         fig, ax = plt.subplots(figsize=(8, 6))
-        ax.text(0.5, 0.5, "No genome-wide significant variants\n(p < 5e-8)",
-                ha="center", va="center", fontsize=14)
+        ax.text(0.5, 0.5, "No genome-wide significant variants\n(p < 5e-8)", ha="center", va="center", fontsize=14)
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         ax.axis("off")

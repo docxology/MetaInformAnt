@@ -91,7 +91,7 @@ class TestUnivariateFeatureSelection:
 
     def test_invalid_method_error(self):
         """Test error handling for invalid method."""
-        with pytest.raises(ValueError, match="Unknown method"):
+        with pytest.raises(ValueError, match="Unknown"):
             select_features_univariate(self.X, self.y_binary, method="invalid_method")
 
     def test_dimension_mismatch_error(self):

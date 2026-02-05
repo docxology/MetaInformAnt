@@ -598,9 +598,7 @@ def search_sra_for_organism(organism: str, max_results: int = 100, email: str | 
     try:
         from Bio import Entrez
     except ImportError:
-        raise ImportError(
-            "biopython is required for SRA search. Install with: uv pip install biopython"
-        )
+        raise ImportError("biopython is required for SRA search. Install with: uv pip install biopython")
 
     if not email:
         email = os.environ.get("NCBI_EMAIL", "metainformant@example.com")

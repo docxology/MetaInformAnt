@@ -147,7 +147,7 @@ class AntWikiRecord:
         }
 
 
-def load_antwiki_json(path: str | Path, validate: bool = True) -> List[AntWikiRecord]:
+def load_antwiki_json(path: str | Path, validate: bool = True) -> List[Dict[str, Any]]:
     """Load AntWiki data from JSON file.
 
     Args:
@@ -155,60 +155,56 @@ def load_antwiki_json(path: str | Path, validate: bool = True) -> List[AntWikiRe
         validate: Whether to validate records during loading
 
     Returns:
-        List of AntWikiRecord objects
+        List of dictionaries, one per record
 
     Raises:
         FileNotFoundError: If file doesn't exist
-        ValueError: If JSON is invalid or records fail validation
+        ValueError: If JSON is malformed
+        errors.ValidationError: If validate=True and records fail validation
     """
-    path = validation.validate_path_exists(Path(path))
+    path = Path(path)
+    if not path.exists():
+        raise FileNotFoundError(f"File not found: {path}")
 
     logger.info(f"Loading AntWiki data from {path}")
 
+    # Load JSON data
     try:
-        # Load JSON data
         data = io.load_json(path)
-
-        # Handle different JSON structures
-        if isinstance(data, dict):
-            # Single record or wrapped data
-            if "records" in data:
-                records_data = data["records"]
-            elif "species" in data:
-                records_data = data["species"]
-            else:
-                # Assume it's a single record
-                records_data = [data]
-        elif isinstance(data, list):
-            # List of records
-            records_data = data
-        else:
-            raise ValueError("Invalid AntWiki JSON structure")
-
-        # Convert to AntWikiRecord objects
-        records = []
-        for i, record_data in enumerate(records_data):
-            try:
-                record = AntWikiRecord(record_data)
-                if validate:
-                    _validate_antwiki_record(record)
-                records.append(record)
-            except Exception as e:
-                if validate:
-                    logger.warning(f"Skipping invalid record {i}: {e}")
-                    continue
-                else:
-                    raise ValueError(f"Invalid record {i}: {e}") from e
-
-        logger.info(f"Successfully loaded {len(records)} AntWiki records")
-        return records
-
-    except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON in {path}: {e}")
-        raise ValueError(f"Invalid JSON format: {e}") from e
     except Exception as e:
-        logger.error(f"Error loading AntWiki data from {path}: {e}")
-        raise errors.FileIOError(f"Failed to load AntWiki data: {e}") from e
+        raise ValueError(f"Invalid JSON format in {path}: {e}") from e
+
+    # Handle different JSON structures
+    if isinstance(data, dict):
+        if "records" in data:
+            records_data = data["records"]
+        else:
+            # Treat as single record
+            records_data = [data]
+    elif isinstance(data, list):
+        records_data = data
+    else:
+        raise errors.ValidationError("Invalid AntWiki JSON structure: expected list or dict")
+
+    if not validate:
+        logger.info(f"Successfully loaded {len(records_data)} AntWiki records")
+        return list(records_data)
+
+    # Validate records
+    validated = []
+    for i, record in enumerate(records_data):
+        if not isinstance(record, dict):
+            raise errors.ValidationError(f"Record {i} is not a dictionary")
+        if "species" not in record and "species_name" not in record:
+            raise errors.ValidationError(f"Record {i} missing 'species' field")
+        if "measurements" in record and not isinstance(record["measurements"], dict):
+            raise errors.ValidationError(f"Record {i}: 'measurements' must be a dict")
+        if "traits" in record and not isinstance(record["traits"], list):
+            raise errors.ValidationError(f"Record {i}: 'traits' must be a list")
+        validated.append(record)
+
+    logger.info(f"Successfully loaded {len(validated)} AntWiki records")
+    return validated
 
 
 def _validate_antwiki_record(record: AntWikiRecord) -> None:

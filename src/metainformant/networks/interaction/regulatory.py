@@ -788,6 +788,44 @@ class GeneRegulatoryNetwork:
             return False
         return gene in self.graph
 
+    def add_regulation(self, tf: str, target: str, **kwargs: Any) -> None:
+        """Add a regulatory interaction from TF to target.
+
+        Args:
+            tf: Transcription factor identifier
+            target: Target gene identifier
+            **kwargs: Additional edge attributes (e.g., weight, confidence)
+        """
+        if not HAS_NETWORKX:
+            raise ImportError("networkx required for adding regulation")
+
+        # Add edge
+        self.graph.add_edge(tf, target, type="regulates", **kwargs)
+
+        # Update mappings
+        if tf not in self.tf_targets:
+            self.tf_targets[tf] = []
+        if target not in self.tf_targets[tf]:
+            self.tf_targets[tf].append(target)
+
+        if target not in self.target_tfs:
+            self.target_tfs[target] = []
+        if tf not in self.target_tfs[target]:
+            self.target_tfs[target].append(tf)
+
+    def add_gene_metadata(self, gene: str, **metadata: Any) -> None:
+        """Add metadata to a gene node.
+
+        Args:
+            gene: Gene identifier
+            **metadata: Metadata key-value pairs to add
+        """
+        if not HAS_NETWORKX:
+            raise ImportError("networkx required for adding metadata")
+        if gene not in self.graph:
+            self.graph.add_node(gene)
+        self.graph.nodes[gene].update(metadata)
+
 
 def infer_grn(
     expression_data: Any,

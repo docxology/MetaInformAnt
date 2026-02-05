@@ -216,7 +216,6 @@ __all__ = [
     "plot_transition_network",
     # Utilities
     "temporal_patterns",
-    "utils",
     "add_temporal_noise",
     "get_event_statistics",
     "load_sequences_from_json",

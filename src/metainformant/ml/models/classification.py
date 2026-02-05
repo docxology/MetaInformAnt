@@ -37,19 +37,82 @@ except ImportError:
 
 
 class BiologicalClassifier:
-    """Wrapper for biological data classification with evaluation metrics."""
+    """Wrapper for biological data classification with evaluation metrics.
 
-    def __init__(self, model: Any, model_type: str = "unknown"):
+    Can be initialized in two ways:
+    1. Algorithm-based: BiologicalClassifier(algorithm="random_forest", random_state=42)
+    2. Model-based: BiologicalClassifier(model=sklearn_model, model_type="rf")
+    """
+
+    _ALGORITHM_MAP = {
+        "random_forest": lambda **kw: RandomForestClassifier(**kw) if HAS_SKLEARN else None,
+        "svm": lambda **kw: __import__("sklearn.svm", fromlist=["SVC"]).SVC(probability=True, **kw) if HAS_SKLEARN else None,
+        "logistic_regression": lambda **kw: LogisticRegression(max_iter=1000, **kw) if HAS_SKLEARN else None,
+        "gradient_boosting": lambda **kw: GradientBoostingClassifier(**kw) if HAS_SKLEARN else None,
+    }
+
+    def __init__(
+        self,
+        model: Any = None,
+        model_type: str = "unknown",
+        algorithm: str | None = None,
+        random_state: int | None = None,
+        **params: Any,
+    ):
         """Initialize biological classifier.
 
         Args:
-            model: Trained sklearn model
-            model_type: Type of model (rf, gb, lr, etc.)
+            model: Pre-built sklearn model (model-based init)
+            model_type: Type of model when using model-based init
+            algorithm: Algorithm name for algorithm-based init
+                       ("random_forest", "svm", "logistic_regression", "gradient_boosting")
+            random_state: Random state for reproducibility
+            **params: Additional parameters for the sklearn model
         """
-        self.model = model
-        self.model_type = model_type
+        self.random_state = random_state
+        self.params = params
         self.feature_names: Optional[List[str]] = None
-        self.is_trained = False
+        self._is_fitted = False
+
+        if algorithm is not None:
+            # Algorithm-based initialization
+            self.algorithm = algorithm
+            self.model_type = algorithm
+            if not HAS_SKLEARN:
+                raise ImportError("scikit-learn required for classification")
+            factory = self._ALGORITHM_MAP.get(algorithm)
+            if factory is None:
+                raise ValueError(f"Unknown algorithm: {algorithm}")
+            model_params = {**params}
+            if random_state is not None:
+                model_params["random_state"] = random_state
+            self.model = factory(**model_params)
+        elif model is not None:
+            # Model-based initialization
+            self.algorithm = model_type
+            self.model_type = model_type
+            self.model = model
+        else:
+            # Default: random forest
+            self.algorithm = "random_forest"
+            self.model_type = "random_forest"
+            if HAS_SKLEARN:
+                rf_params = {**params}
+                if random_state is not None:
+                    rf_params["random_state"] = random_state
+                self.model = RandomForestClassifier(**rf_params)
+            else:
+                self.model = None
+
+    @property
+    def is_fitted(self) -> bool:
+        """Whether the model has been fitted."""
+        return self._is_fitted
+
+    @property
+    def is_trained(self) -> bool:
+        """Alias for is_fitted."""
+        return self._is_fitted
 
     def fit(self, X: np.ndarray, y: np.ndarray, feature_names: Optional[List[str]] = None) -> BiologicalClassifier:
         """Fit the classifier.
@@ -67,7 +130,7 @@ class BiologicalClassifier:
 
         self.model.fit(X, y)
         self.feature_names = feature_names
-        self.is_trained = True
+        self._is_fitted = True
 
         logger.info(f"Trained {self.model_type} classifier with {X.shape[1]} features")
         return self
@@ -81,8 +144,8 @@ class BiologicalClassifier:
         Returns:
             Predicted labels
         """
-        if not self.is_trained:
-            raise ValueError("Model not trained")
+        if not self._is_fitted:
+            raise ValueError("Model not fitted")
         return self.model.predict(X)
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
@@ -94,12 +157,27 @@ class BiologicalClassifier:
         Returns:
             Class probabilities
         """
-        if not self.is_trained:
-            raise ValueError("Model not trained")
+        if not self._is_fitted:
+            raise ValueError("Model not fitted")
         if hasattr(self.model, "predict_proba"):
             return self.model.predict_proba(X)
         else:
             raise AttributeError(f"Model {self.model_type} does not support probability prediction")
+
+    def get_feature_importance(self) -> np.ndarray:
+        """Get feature importance from the fitted model.
+
+        Returns:
+            Array of feature importance values
+        """
+        if not self._is_fitted:
+            raise ValueError("Model not fitted")
+        if hasattr(self.model, "feature_importances_"):
+            return self.model.feature_importances_
+        elif hasattr(self.model, "coef_"):
+            return np.abs(self.model.coef_).mean(axis=0) if self.model.coef_.ndim > 1 else np.abs(self.model.coef_)
+        else:
+            raise AttributeError(f"Model {self.model_type} does not support feature importance")
 
     def evaluate(self, X: np.ndarray, y: np.ndarray, detailed: bool = True) -> Dict[str, Any]:
         """Evaluate classifier performance.
@@ -112,8 +190,8 @@ class BiologicalClassifier:
         Returns:
             Dictionary with evaluation metrics
         """
-        if not self.is_trained:
-            raise ValueError("Model not trained")
+        if not self._is_fitted:
+            raise ValueError("Model not fitted")
 
         y_pred = self.predict(X)
 
@@ -223,11 +301,19 @@ def evaluate_classifier(
     else:
         raise ValueError("Must provide either (X_test, y_test) or (X, y)")
 
-    return classifier.evaluate(X_eval, y_eval, detailed=True)
+    results = classifier.evaluate(X_eval, y_eval, detailed=True)
+    results["predictions"] = classifier.predict(X_eval).tolist()
+    return results
 
 
 def cross_validate_biological(
-    X: np.ndarray, y: np.ndarray, method: str = "rf", cv_folds: int = 5, random_state: int | None = None, **kwargs: Any
+    X: np.ndarray,
+    y: np.ndarray,
+    method: str = "rf",
+    cv_folds: int = 5,
+    random_state: int | None = None,
+    algorithm: str | None = None,
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """Perform cross-validation for biological data classification.
 
@@ -252,6 +338,11 @@ def cross_validate_biological(
     """
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for cross-validation")
+
+    # Allow algorithm as alias for method (map full names to short codes)
+    if algorithm is not None:
+        _algo_to_method = {"random_forest": "rf", "gradient_boosting": "gb", "logistic_regression": "lr"}
+        method = _algo_to_method.get(algorithm, algorithm)
 
     # Select classifier
     if method == "rf":
@@ -311,6 +402,12 @@ def cross_validate_biological(
         "class_distribution": np.bincount(y).tolist(),
         "cross_validation": cv_results,
     }
+
+    # Add top-level accuracy keys for convenience
+    acc_cv = cv_results.get("accuracy")
+    if acc_cv and isinstance(acc_cv, dict):
+        results["accuracy"] = acc_cv["mean"]
+        results["mean_accuracy"] = acc_cv["mean"]
 
     logger.info(
         f"Completed {cv_folds}-fold CV for {method} classifier: "

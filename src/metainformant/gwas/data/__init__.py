@@ -1,7 +1,7 @@
 """GWAS data retrieval and download utilities.
 
 This module provides functions for downloading reference genomes, variant databases,
-and SRA sequencing data for GWAS analysis.
+SRA sequencing data, and genome annotation for GWAS analysis.
 """
 
 from metainformant.gwas.data.download import (
@@ -9,6 +9,13 @@ from metainformant.gwas.data.download import (
     download_reference_genome,
     download_variant_data,
     download_variant_database,
+)
+from metainformant.gwas.data.genome import (
+    AMEL_HAV3_CHROMOSOMES,
+    AMEL_HAV3_CHROM_SIZES,
+    get_chromosome_order,
+    normalize_chromosome_name,
+    parse_gff3_genes,
 )
 from metainformant.gwas.data.sra_download import (
     batch_download_sra,
@@ -30,6 +37,12 @@ __all__ = [
     "download_variant_database",
     "download_annotation",
     "download_variant_data",
+    # Genome mapping
+    "AMEL_HAV3_CHROMOSOMES",
+    "AMEL_HAV3_CHROM_SIZES",
+    "normalize_chromosome_name",
+    "get_chromosome_order",
+    "parse_gff3_genes",
     # SRA downloads
     "download_sra_experiment",
     "download_sra_biosample",

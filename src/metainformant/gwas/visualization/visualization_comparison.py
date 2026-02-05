@@ -563,93 +563,101 @@ def calculate_method_power(method_results: Dict[str, Any]) -> Dict[str, Dict[str
 
 
 def miami_plot(
-    study1_results: Any,
-    study2_results: Any,
-    study1_name: str = "Study 1",
-    study2_name: str = "Study 2",
+    trait1_results: Any,
+    trait2_results: Any,
     output_file: Optional[str | Path] = None,
+    trait1_name: str = "Trait 1",
+    trait2_name: str = "Trait 2",
     significance_threshold: float = 5e-8,
-) -> Optional[Any]:
+    **kwargs: Any,
+) -> Dict[str, Any]:
     """Create a Miami plot comparing two GWAS studies.
 
     Args:
-        study1_results: Results from first GWAS study (DataFrame)
-        study2_results: Results from second GWAS study (DataFrame)
-        study1_name: Name for first study
-        study2_name: Name for second study
+        trait1_results: Results from first GWAS study (DataFrame or list of dicts)
+        trait2_results: Results from second GWAS study (DataFrame or list of dicts)
         output_file: Optional output file path
+        trait1_name: Name for first trait
+        trait2_name: Name for second trait
         significance_threshold: P-value threshold for significance
+        **kwargs: Additional keyword arguments
 
     Returns:
-        Plot object if matplotlib available, None otherwise
-
-    Example:
-        >>> plot = miami_plot(df1, df2, "European", "African")
+        Dictionary with status and metadata
     """
     try:
         import matplotlib.pyplot as plt
-        import matplotlib.patches as patches
+        import pandas as pd
     except ImportError:
-        logger.warning("matplotlib not available for Miami plot")
-        return None
+        return {"status": "failed", "error": "matplotlib or pandas not available"}
 
-    # Validate input data
-    if not hasattr(study1_results, "columns") or not hasattr(study2_results, "columns"):
-        logger.error("Input data must be DataFrames with appropriate columns")
-        return None
+    try:
+        # Convert list-of-dicts to DataFrame if needed
+        if isinstance(trait1_results, list):
+            trait1_df = pd.DataFrame(trait1_results)
+        else:
+            trait1_df = trait1_results
 
-    required_cols = ["CHR", "BP", "P"]
-    for df, name in [(study1_results, study1_name), (study2_results, study2_name)]:
-        missing_cols = [col for col in required_cols if col not in df.columns]
-        if missing_cols:
-            logger.error(f"Missing required columns in {name}: {missing_cols}")
-            return None
+        if isinstance(trait2_results, list):
+            trait2_df = pd.DataFrame(trait2_results)
+        else:
+            trait2_df = trait2_results
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+        # Validate non-empty
+        if trait1_df.empty or trait2_df.empty:
+            return {"status": "failed", "error": "One or both trait result sets are empty"}
 
-    # Color scheme for chromosomes
-    chrom_colors = ["#1f77b4", "#ff7f0e"]  # Blue, Orange
-    chroms = sorted(study1_results["CHR"].unique())
+        # Normalize column names: accept CHROM->CHR, POS->BP, p_value->P
+        for df in [trait1_df, trait2_df]:
+            if "CHROM" in df.columns and "CHR" not in df.columns:
+                df.rename(columns={"CHROM": "CHR"}, inplace=True)
+            if "POS" in df.columns and "BP" not in df.columns:
+                df.rename(columns={"POS": "BP"}, inplace=True)
+            if "p_value" in df.columns and "P" not in df.columns:
+                df.rename(columns={"p_value": "P"}, inplace=True)
 
-    # Plot study 1 (top panel)
-    plot_manhattan_with_colors(ax1, study1_results, chrom_colors, significance_threshold, chroms)
-    ax1.set_title(f"{study1_name} GWAS Results", fontsize=14)
-    ax1.set_ylabel("-log₁₀(P-value)", fontsize=12)
+        required_cols = ["CHR", "BP", "P"]
+        for df, name in [(trait1_df, trait1_name), (trait2_df, trait2_name)]:
+            missing_cols = [col for col in required_cols if col not in df.columns]
+            if missing_cols:
+                return {"status": "failed", "error": f"Missing required columns in {name}: {missing_cols}"}
 
-    # Plot study 2 (bottom panel, inverted)
-    plot_manhattan_with_colors(ax2, study2_results, chrom_colors, significance_threshold, chroms)
-    ax2.invert_yaxis()  # Flip the y-axis
-    ax2.set_title(f"{study2_name} GWAS Results", fontsize=14)
-    ax2.set_ylabel("-log₁₀(P-value)", fontsize=12)
-    ax2.set_xlabel("Chromosome Position", fontsize=12)
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
 
-    # Add chromosome labels
-    chrom_positions = []
-    chrom_labels = []
-    current_pos = 0
+        # Color scheme for chromosomes
+        chrom_colors = ["#1f77b4", "#ff7f0e"]
+        chroms = sorted(trait1_df["CHR"].unique())
 
-    for chrom in chroms:
-        chrom_data = study1_results[study1_results["CHR"] == chrom]
-        if not chrom_data.empty:
-            chrom_start = current_pos
-            chrom_end = current_pos + chrom_data["BP"].max()
-            chrom_center = (chrom_start + chrom_end) / 2
-            chrom_positions.append(chrom_center)
-            chrom_labels.append(str(chrom))
-            current_pos = chrom_end
+        # Plot trait 1 (top panel)
+        plot_manhattan_with_colors(ax1, trait1_df, chrom_colors, significance_threshold, chroms)
+        ax1.set_title(f"{trait1_name} GWAS Results", fontsize=14)
+        ax1.set_ylabel("-log10(P-value)", fontsize=12)
 
-    plt.xticks(chrom_positions, chrom_labels)
+        # Plot trait 2 (bottom panel, inverted)
+        plot_manhattan_with_colors(ax2, trait2_df, chrom_colors, significance_threshold, chroms)
+        ax2.invert_yaxis()
+        ax2.set_title(f"{trait2_name} GWAS Results", fontsize=14)
+        ax2.set_ylabel("-log10(P-value)", fontsize=12)
+        ax2.set_xlabel("Chromosome Position", fontsize=12)
 
-    # Overall title
-    fig.suptitle(f"Miami Plot: {study1_name} vs {study2_name}", fontsize=16, y=0.95)
+        fig.suptitle(f"Miami Plot: {trait1_name} vs {trait2_name}", fontsize=16, y=0.95)
+        plt.tight_layout()
 
-    plt.tight_layout()
+        if output_file:
+            plt.savefig(str(output_file), dpi=300, bbox_inches="tight")
+            logger.info(f"Saved Miami plot to {output_file}")
 
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches="tight")
-        logger.info(f"Saved Miami plot to {output_file}")
+        plt.close(fig)
 
-    return plt.gcf()
+        return {
+            "status": "success",
+            "trait1_variants": len(trait1_df),
+            "trait2_variants": len(trait2_df),
+            "output_file": str(output_file) if output_file else None,
+        }
+
+    except Exception as e:
+        return {"status": "failed", "error": str(e)}
 
 
 def plot_manhattan_with_colors(ax, results_df, colors, threshold, chroms):
@@ -679,211 +687,277 @@ def plot_manhattan_with_colors(ax, results_df, colors, threshold, chroms):
 
 
 def multi_trait_manhattan(
-    trait_results: Dict[str, Dict[str, Any]],
+    trait_results: Dict[str, Any],
     output_file: Optional[str | Path] = None,
     significance_threshold: float = 5e-8,
     title: str = "Multi-Trait Manhattan Plot",
-) -> Optional[Any]:
+    **kwargs: Any,
+) -> Dict[str, Any]:
     """Create Manhattan plots for multiple traits side-by-side.
 
     Args:
-        trait_results: Dictionary mapping trait names to GWAS results
+        trait_results: Dictionary mapping trait names to GWAS results (DataFrame or list of dicts)
         output_file: Optional output file path
         significance_threshold: P-value threshold for significance line
         title: Plot title
+        **kwargs: Additional keyword arguments
 
     Returns:
-        Plot object if matplotlib available, None otherwise
+        Dictionary with status and metadata
     """
     try:
         import matplotlib.pyplot as plt
         import pandas as pd
     except ImportError:
-        logger.warning("matplotlib or pandas not available for multi-trait Manhattan plot")
-        return None
+        return {"status": "failed", "error": "matplotlib or pandas not available"}
 
-    if not trait_results:
-        logger.error("No trait results provided")
-        return None
+    try:
+        if not trait_results:
+            return {"status": "failed", "error": "No trait results provided"}
 
-    n_traits = len(trait_results)
-    if n_traits > 6:
-        logger.warning(f"Many traits ({n_traits}), plot may be crowded")
+        n_traits = len(trait_results)
+        if n_traits < 2:
+            return {"status": "failed", "error": f"Need at least 2 traits for multi-trait plot, got {n_traits}"}
 
-    # Create subplots
-    n_cols = min(3, n_traits)
-    n_rows = (n_traits + n_cols - 1) // n_cols
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 4 * n_rows), squeeze=False, sharey=True)
-    fig.suptitle(title, fontsize=16, y=0.95)
+        if n_traits > 6:
+            logger.warning(f"Many traits ({n_traits}), plot may be crowded")
 
-    # Colors for chromosomes
-    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b"]
+        # Create subplots
+        n_cols = min(3, n_traits)
+        n_rows = (n_traits + n_cols - 1) // n_cols
+        fig, axes = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 4 * n_rows), squeeze=False, sharey=True)
+        fig.suptitle(title, fontsize=16, y=0.95)
 
-    trait_names = list(trait_results.keys())
+        # Colors for chromosomes
+        colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b"]
 
-    for i, trait_name in enumerate(trait_names):
-        row = i // n_cols
-        col = i % n_cols
-        ax = axes[row, col]
+        trait_names = list(trait_results.keys())
 
-        results = trait_results[trait_name]
+        for i, trait_name in enumerate(trait_names):
+            row = i // n_cols
+            col = i % n_cols
+            ax = axes[row, col]
 
-        # Convert to DataFrame if needed
-        if isinstance(results, dict):
-            if "results" in results:
-                df = results["results"]
-            else:
-                # Assume it's a dict with required columns
+            results = trait_results[trait_name]
+
+            # Convert to DataFrame if needed
+            if isinstance(results, list):
                 df = pd.DataFrame(results)
-        elif hasattr(results, "to_dict"):  # DataFrame-like
-            df = results
-        else:
-            logger.error(f"Unsupported results format for trait {trait_name}")
-            continue
+            elif isinstance(results, dict):
+                if "results" in results:
+                    df = results["results"]
+                else:
+                    df = pd.DataFrame(results)
+            elif hasattr(results, "to_dict"):  # DataFrame-like
+                df = results
+            else:
+                logger.error(f"Unsupported results format for trait {trait_name}")
+                continue
 
-        if df.empty:
-            ax.text(0.5, 0.5, f"No data for\n{trait_name}", ha="center", va="center", transform=ax.transAxes)
-            continue
+            if df.empty:
+                ax.text(0.5, 0.5, f"No data for\n{trait_name}", ha="center", va="center", transform=ax.transAxes)
+                continue
 
-        # Ensure required columns exist
-        required_cols = ["CHR", "BP", "P"]
-        missing_cols = [col for col in required_cols if col not in df.columns]
-        if missing_cols:
-            logger.error(f"Missing required columns {missing_cols} for trait {trait_name}")
-            continue
+            # Normalize column names: accept CHROM->CHR, POS->BP, p_value->P
+            if "CHROM" in df.columns and "CHR" not in df.columns:
+                df = df.rename(columns={"CHROM": "CHR"})
+            if "POS" in df.columns and "BP" not in df.columns:
+                df = df.rename(columns={"POS": "BP"})
+            if "p_value" in df.columns and "P" not in df.columns:
+                df = df.rename(columns={"p_value": "P"})
 
-        # Get unique chromosomes and sort
-        chroms = sorted(df["CHR"].unique(), key=lambda x: int(x) if str(x).isdigit() else float("inf"))
+            # Ensure required columns exist
+            required_cols = ["CHR", "BP", "P"]
+            missing = [c for c in required_cols if c not in df.columns]
+            if missing:
+                logger.error(f"Missing required columns {missing} for trait {trait_name}")
+                continue
 
-        # Plot Manhattan for this trait
-        plot_manhattan_with_colors(ax, df, colors, significance_threshold, chroms)
+            # Get unique chromosomes and sort
+            chroms = sorted(df["CHR"].unique(), key=lambda x: int(x) if str(x).isdigit() else float("inf"))
 
-        ax.set_title(f"{trait_name}", fontsize=12, pad=10)
-        if col == 0:  # Leftmost column
-            ax.set_ylabel("-log₁₀(p-value)", fontsize=10)
-        ax.set_xlabel("Chromosome", fontsize=10)
+            # Plot Manhattan for this trait
+            plot_manhattan_with_colors(ax, df, colors, significance_threshold, chroms)
 
-        # Set chromosome labels at chromosome centers
-        current_pos = 0
-        chrom_centers = []
-        chrom_names = []
+            ax.set_title(f"{trait_name}", fontsize=12, pad=10)
+            if col == 0:
+                ax.set_ylabel("-log10(p-value)", fontsize=10)
+            ax.set_xlabel("Chromosome", fontsize=10)
 
-        for chrom in chroms:
-            chrom_data = df[df["CHR"] == chrom]
-            if not chrom_data.empty:
-                chrom_start = current_pos
-                chrom_end = current_pos + chrom_data["BP"].max()
-                chrom_centers.append((chrom_start + chrom_end) / 2)
-                chrom_names.append(str(chrom))
-                current_pos = chrom_end
+            # Set chromosome labels at chromosome centers
+            current_pos = 0
+            chrom_centers = []
+            chrom_names = []
 
-        if chrom_centers:
-            ax.set_xticks(chrom_centers)
-            ax.set_xticklabels(chrom_names, rotation=45, ha="right")
+            for chrom in chroms:
+                chrom_data = df[df["CHR"] == chrom]
+                if not chrom_data.empty:
+                    chrom_start = current_pos
+                    chrom_end = current_pos + chrom_data["BP"].max()
+                    chrom_centers.append((chrom_start + chrom_end) / 2)
+                    chrom_names.append(str(chrom))
+                    current_pos = chrom_end
 
-    # Hide unused subplots
-    for i in range(n_traits, n_rows * n_cols):
-        row = i // n_cols
-        col = i % n_cols
-        axes[row, col].set_visible(False)
+            if chrom_centers:
+                ax.set_xticks(chrom_centers)
+                ax.set_xticklabels(chrom_names, rotation=45, ha="right")
 
-    plt.tight_layout()
+        # Hide unused subplots
+        for i in range(n_traits, n_rows * n_cols):
+            row = i // n_cols
+            col = i % n_cols
+            axes[row, col].set_visible(False)
 
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches="tight")
-        logger.info(f"Saved multi-trait Manhattan plot to {output_file}")
+        plt.tight_layout()
 
-    return fig
+        if output_file:
+            plt.savefig(str(output_file), dpi=300, bbox_inches="tight")
+            logger.info(f"Saved multi-trait Manhattan plot to {output_file}")
+
+        plt.close(fig)
+
+        return {
+            "status": "success",
+            "num_traits": n_traits,
+            "output_file": str(output_file) if output_file else None,
+        }
+
+    except Exception as e:
+        return {"status": "failed", "error": str(e)}
 
 
 def cross_cohort_forest(
-    cohort_results: Dict[str, Dict[str, Any]],
-    trait_name: str,
+    cohort_results: Dict[str, Any],
     output_file: Optional[str | Path] = None,
+    variant_id: Optional[str] = None,
+    trait_name: str = "",
     title: str = "Cross-Cohort Forest Plot",
-) -> Optional[Any]:
+    **kwargs: Any,
+) -> Dict[str, Any]:
     """Create a forest plot comparing effect sizes across cohorts.
 
     Args:
         cohort_results: Dictionary mapping cohort names to GWAS results
-        trait_name: Name of the trait being analyzed
         output_file: Optional output file path
+        variant_id: Optional variant identifier for the forest plot
+        trait_name: Name of the trait being analyzed
         title: Plot title
+        **kwargs: Additional keyword arguments
 
     Returns:
-        Plot object if matplotlib available, None otherwise
+        Dictionary with status and metadata. Returns skipped status when
+        cohort data contains raw variant lists rather than pre-computed
+        effect sizes, as full meta-analysis is not yet implemented.
     """
+    if not cohort_results:
+        return {"status": "failed", "error": "No cohort results provided"}
+
+    # Check if cohort data contains pre-computed effect sizes or raw variant lists
+    # If raw variant lists, return skipped since meta-analysis is not yet implemented
+    has_precomputed = False
+    for cohort_name, results in cohort_results.items():
+        if isinstance(results, dict) and "effect_size" in results:
+            has_precomputed = True
+            break
+        if isinstance(results, list):
+            # Raw variant list -- meta-analysis not implemented
+            return {
+                "status": "skipped",
+                "message": "Meta-analysis forest plot not yet implemented for raw variant data",
+                "variant_id": variant_id,
+                "num_cohorts": len(cohort_results),
+            }
+
+    if not has_precomputed:
+        return {
+            "status": "skipped",
+            "message": "No pre-computed effect sizes found in cohort data",
+            "variant_id": variant_id,
+            "num_cohorts": len(cohort_results),
+        }
+
     try:
         import matplotlib.pyplot as plt
-        import numpy as np
     except ImportError:
-        logger.warning("matplotlib not available for cross-cohort forest plot")
-        return None
+        return {"status": "failed", "error": "matplotlib not available"}
 
-    if not cohort_results:
-        logger.error("No cohort results provided")
-        return None
+    try:
+        fig, ax = plt.subplots(figsize=(10, len(cohort_results) * 0.5 + 2))
 
-    fig, ax = plt.subplots(figsize=(10, len(cohort_results) * 0.5 + 2))
+        cohorts = list(cohort_results.keys())
+        effect_sizes = []
+        errors = []
+        valid_cohorts = []
 
-    cohorts = list(cohort_results.keys())
-    effect_sizes = []
-    errors = []
-    valid_cohorts = []
+        for cohort in cohorts:
+            results = cohort_results[cohort]
+            if isinstance(results, dict) and "effect_size" in results:
+                effect_sizes.append(results["effect_size"])
+                if "ci_lower" in results and "ci_upper" in results:
+                    error_lower = results["effect_size"] - results["ci_lower"]
+                    error_upper = results["ci_upper"] - results["effect_size"]
+                    errors.append([error_lower, error_upper])
+                else:
+                    errors.append([0.1, 0.1])
+                valid_cohorts.append(cohort)
 
-    # Extract effect sizes and confidence intervals
-    for cohort in cohorts:
-        results = cohort_results[cohort]
-        if isinstance(results, dict) and "effect_size" in results:
-            effect_sizes.append(results["effect_size"])
-            # Calculate error bars (assume 95% CI if available)
-            if "ci_lower" in results and "ci_upper" in results:
-                error_lower = results["effect_size"] - results["ci_lower"]
-                error_upper = results["ci_upper"] - results["effect_size"]
-                errors.append([error_lower, error_upper])
-            else:
-                # Default error bars
-                errors.append([0.1, 0.1])
-            valid_cohorts.append(cohort)
-        else:
-            logger.warning(f"No effect size found for cohort {cohort}")
+        if not valid_cohorts:
+            plt.close(fig)
+            return {"status": "failed", "error": "No valid effect sizes found"}
 
-    if not valid_cohorts:
-        logger.error("No valid effect sizes found")
-        return None
+        y_positions = range(len(valid_cohorts))
+        for i, (cohort, effect_size, error) in enumerate(zip(valid_cohorts, effect_sizes, errors)):
+            ax.errorbar(
+                effect_size,
+                i,
+                xerr=np.array(error).reshape(2, 1),
+                fmt="o",
+                color="blue",
+                capsize=3,
+                markersize=6,
+            )
 
-    # Plot forest plot
-    y_positions = range(len(valid_cohorts))
+        ax.axvline(x=0, color="red", linestyle="--", alpha=0.7, label="No effect")
+        overall_effect = np.mean(effect_sizes)
+        ax.axvline(
+            x=overall_effect,
+            color="green",
+            linestyle="-",
+            alpha=0.7,
+            label=f"Overall effect: {overall_effect:.3f}",
+        )
 
-    # Plot error bars
-    for i, (cohort, effect_size, error) in enumerate(zip(valid_cohorts, effect_sizes, errors)):
-        ax.errorbar(effect_size, i, xerr=np.array(error).reshape(2, 1), fmt="o", color="blue", capsize=3, markersize=6)
+        ax.set_yticks(list(y_positions))
+        ax.set_yticklabels(valid_cohorts)
+        ax.set_xlabel("Effect Size", fontsize=12)
+        plot_title = f"{title} - {trait_name}" if trait_name else title
+        if variant_id:
+            plot_title += f" ({variant_id})"
+        ax.set_title(plot_title, fontsize=14, pad=20)
+        ax.grid(True, alpha=0.3, axis="x")
+        ax.legend()
 
-    # Add vertical line at zero effect
-    ax.axvline(x=0, color="red", linestyle="--", alpha=0.7, label="No effect")
+        for i, (effect_size, error) in enumerate(zip(effect_sizes, errors)):
+            ax.text(effect_size + max(error) + 0.01, i, f"{effect_size:.3f}", va="center", fontsize=9)
 
-    # Add vertical line at overall effect (simple average)
-    overall_effect = np.mean(effect_sizes)
-    ax.axvline(x=overall_effect, color="green", linestyle="-", alpha=0.7, label=f"Overall effect: {overall_effect:.3f}")
+        plt.tight_layout()
 
-    ax.set_yticks(y_positions)
-    ax.set_yticklabels(valid_cohorts)
-    ax.set_xlabel("Effect Size", fontsize=12)
-    ax.set_title(f"{title} - {trait_name}", fontsize=14, pad=20)
-    ax.grid(True, alpha=0.3, axis="x")
-    ax.legend()
+        if output_file:
+            plt.savefig(str(output_file), dpi=300, bbox_inches="tight")
+            logger.info(f"Saved cross-cohort forest plot to {output_file}")
 
-    # Add effect size values as text
-    for i, (effect_size, error) in enumerate(zip(effect_sizes, errors)):
-        ax.text(effect_size + max(error) + 0.01, i, f"{effect_size:.3f}", va="center", fontsize=9)
+        plt.close(fig)
 
-    plt.tight_layout()
+        return {
+            "status": "success",
+            "num_cohorts": len(valid_cohorts),
+            "overall_effect": float(overall_effect),
+            "variant_id": variant_id,
+            "output_file": str(output_file) if output_file else None,
+        }
 
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches="tight")
-        logger.info(f"Saved cross-cohort forest plot to {output_file}")
-
-    return fig
+    except Exception as e:
+        return {"status": "failed", "error": str(e)}
 
 
 def concordance_plot(
@@ -891,6 +965,8 @@ def concordance_plot(
     study2_results: list[dict],
     output_path: Optional[str | Path] = None,
     figsize: tuple[int, int] = (8, 8),
+    title: Optional[str] = None,
+    **kwargs: Any,
 ) -> dict[str, Any]:
     """Create a concordance plot comparing two GWAS studies.
 
@@ -899,10 +975,14 @@ def concordance_plot(
         study2_results: Results from second study
         output_path: Path to save the plot
         figsize: Figure size
+        title: Optional plot title
+        **kwargs: Additional keyword arguments
 
     Returns:
         Dictionary with plot status and metadata
     """
+    import math
+
     try:
         import matplotlib.pyplot as plt
 
@@ -911,37 +991,62 @@ def concordance_plot(
         HAS_MATPLOTLIB = False
 
     if not HAS_MATPLOTLIB:
-        return {"status": "error", "message": "matplotlib not available"}
+        return {"status": "failed", "error": "matplotlib not available"}
 
     try:
-        # Extract p-values from both studies
-        p_values1 = []
-        p_values2 = []
-
-        # Create SNP ID to p-value mapping for both studies
-        snp_to_p1 = {}
-        snp_to_p2 = {}
+        # Create SNP ID to data mapping for both studies
+        snp_to_data1: Dict[str, Dict[str, Any]] = {}
+        snp_to_data2: Dict[str, Dict[str, Any]] = {}
 
         for result in study1_results:
             snp_id = result.get("ID", f"{result.get('CHROM')}:{result.get('POS')}")
-            p_val = result.get("p_value", result.get("P", 1.0))
-            snp_to_p1[snp_id] = p_val
+            snp_to_data1[snp_id] = result
 
         for result in study2_results:
             snp_id = result.get("ID", f"{result.get('CHROM')}:{result.get('POS')}")
-            p_val = result.get("p_value", result.get("P", 1.0))
-            snp_to_p2[snp_id] = p_val
+            snp_to_data2[snp_id] = result
 
         # Find overlapping SNPs
-        common_snps = set(snp_to_p1.keys()) & set(snp_to_p2.keys())
+        common_snps = set(snp_to_data1.keys()) & set(snp_to_data2.keys())
 
         if not common_snps:
-            return {"status": "error", "message": "No overlapping SNPs found"}
+            return {"status": "failed", "error": "No overlapping SNPs found"}
 
-        # Get p-values for common SNPs
-        for snp in common_snps:
-            p_values1.append(-math.log10(max(snp_to_p1[snp], 1e-300)))
-            p_values2.append(-math.log10(max(snp_to_p2[snp], 1e-300)))
+        # Extract p-values and betas for common SNPs
+        p_values1 = []
+        p_values2 = []
+        betas1 = []
+        betas2 = []
+
+        for snp in sorted(common_snps):
+            d1 = snp_to_data1[snp]
+            d2 = snp_to_data2[snp]
+
+            p1 = d1.get("p_value", d1.get("P", 1.0))
+            p2 = d2.get("p_value", d2.get("P", 1.0))
+            p_values1.append(-math.log10(max(p1, 1e-300)))
+            p_values2.append(-math.log10(max(p2, 1e-300)))
+
+            b1 = d1.get("beta", d1.get("BETA"))
+            b2 = d2.get("beta", d2.get("BETA"))
+            if b1 is not None and b2 is not None:
+                betas1.append(b1)
+                betas2.append(b2)
+
+        n = len(common_snps)
+
+        # Calculate correlation (use betas if available, else p-values)
+        correlation = None
+        if len(betas1) >= 2:
+            arr1 = np.array(betas1, dtype=float)
+            arr2 = np.array(betas2, dtype=float)
+            if np.std(arr1) > 0 and np.std(arr2) > 0:
+                correlation = float(np.corrcoef(arr1, arr2)[0, 1])
+        if correlation is None and len(p_values1) >= 2:
+            arr1 = np.array(p_values1, dtype=float)
+            arr2 = np.array(p_values2, dtype=float)
+            if np.std(arr1) > 0 and np.std(arr2) > 0:
+                correlation = float(np.corrcoef(arr1, arr2)[0, 1])
 
         # Create plot
         fig, ax = plt.subplots(figsize=figsize)
@@ -952,24 +1057,31 @@ def concordance_plot(
         max_val = max(max(p_values1), max(p_values2))
         ax.plot([0, max_val], [0, max_val], "r--", alpha=0.7, label="Perfect concordance")
 
-        ax.set_xlabel("Study 1 -log₁₀(p)")
-        ax.set_ylabel("Study 2 -log₁₀(p)")
-        ax.set_title(f"GWAS Concordance Plot\n{n:,} overlapping SNPs")
+        ax.set_xlabel("Study 1 -log10(p)")
+        ax.set_ylabel("Study 2 -log10(p)")
+        plot_title = title if title else f"GWAS Concordance Plot\n{n:,} overlapping SNPs"
+        ax.set_title(plot_title)
         ax.legend()
         ax.grid(True, alpha=0.3)
 
         plt.tight_layout()
 
         if output_path:
-            plt.savefig(output_path, dpi=300, bbox_inches="tight")
+            plt.savefig(str(output_path), dpi=300, bbox_inches="tight")
 
-        return {
+        plt.close(fig)
+
+        result: Dict[str, Any] = {
             "status": "success",
-            "n_overlapping_snps": len(common_snps),
-            "study1_snps": len(snp_to_p1),
-            "study2_snps": len(snp_to_p2),
+            "n_overlapping_snps": n,
+            "study1_snps": len(snp_to_data1),
+            "study2_snps": len(snp_to_data2),
             "output_path": str(output_path) if output_path else None,
         }
+        if correlation is not None:
+            result["correlation"] = correlation
+
+        return result
 
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "failed", "error": str(e)}

@@ -14,6 +14,7 @@ from metainformant.core import logging
 # Import numpy with graceful fallback
 try:
     import numpy as np
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
@@ -245,8 +246,94 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
 
         return beta, se, t_stat, p_value, r_squared
 
-    # For multiple predictors, return simplified result
-    return 0.1, 0.05, 2.0, 0.05, 0.5
+    # Multiple predictors: use numpy OLS if available, otherwise pure-python fallback
+    if HAS_NUMPY:
+        X_arr = np.array(X, dtype=float)
+        y_arr = np.array(y, dtype=float)
+        # OLS via least squares: beta = (X'X)^-1 X'y
+        try:
+            beta_vec, residuals_arr, rank, sv = np.linalg.lstsq(X_arr, y_arr, rcond=None)
+        except np.linalg.LinAlgError:
+            return 0.0, 0.0, 0.0, 1.0, 0.0
+
+        # Predicted values and residuals
+        y_pred_arr = X_arr @ beta_vec
+        resid = y_arr - y_pred_arr
+        p = len(beta_vec)  # number of predictors including intercept
+        dof = n - p
+        if dof <= 0:
+            return 0.0, 0.0, 0.0, 1.0, 0.0
+
+        mse = float(np.sum(resid**2) / dof)
+
+        # Variance-covariance matrix of beta
+        try:
+            XtX_inv = np.linalg.inv(X_arr.T @ X_arr)
+        except np.linalg.LinAlgError:
+            return 0.0, 0.0, 0.0, 1.0, 0.0
+
+        beta_cov = mse * XtX_inv
+
+        # Genotype coefficient is at index 1 (after intercept)
+        beta = float(beta_vec[1])
+        se = float(math.sqrt(max(beta_cov[1, 1], 0.0)))
+
+        # R-squared
+        y_mean = float(np.mean(y_arr))
+        ss_tot = float(np.sum((y_arr - y_mean) ** 2))
+        ss_res = float(np.sum(resid**2))
+        r_squared = 1.0 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
+
+        # t-statistic and p-value
+        t_stat = beta / se if se > 0 else 0.0
+
+        # Use scipy t-distribution if available, otherwise normal approximation
+        try:
+            from scipy import stats as scipy_stats
+
+            p_value = float(2 * scipy_stats.t.sf(abs(t_stat), dof))
+        except ImportError:
+            p_value = 2 * (1 - _normal_cdf(abs(t_stat)))
+
+        return beta, se, t_stat, p_value, r_squared
+
+    # Pure-python fallback for multiple predictors without numpy
+    # Use Gaussian elimination (reuse existing _solve_linear_system)
+    k = len(X[0])
+    # Compute X'X
+    XtX = [[sum(X[s][i] * X[s][j] for s in range(n)) for j in range(k)] for i in range(k)]
+    # Compute X'y
+    Xty = [sum(X[s][i] * y[s] for s in range(n)) for i in range(k)]
+    beta_vec_pp = _solve_linear_system(XtX, Xty)
+    if beta_vec_pp is None:
+        return 0.0, 0.0, 0.0, 1.0, 0.0
+
+    # Predicted and residuals
+    y_pred_pp = [sum(X[s][j] * beta_vec_pp[j] for j in range(k)) for s in range(n)]
+    resid_pp = [y[s] - y_pred_pp[s] for s in range(n)]
+    dof_pp = n - k
+    if dof_pp <= 0:
+        return 0.0, 0.0, 0.0, 1.0, 0.0
+
+    mse_pp = sum(r**2 for r in resid_pp) / dof_pp
+
+    # Inverse of X'X for standard errors
+    XtX_inv_pp = _matrix_inverse(XtX)
+    if XtX_inv_pp is None:
+        return 0.0, 0.0, 0.0, 1.0, 0.0
+
+    beta = beta_vec_pp[1]
+    se = math.sqrt(max(mse_pp * XtX_inv_pp[1][1], 0.0))
+
+    y_mean_pp = sum(y) / n
+    ss_tot_pp = sum((yi - y_mean_pp) ** 2 for yi in y)
+    ss_res_pp = sum(r**2 for r in resid_pp)
+    r_squared = 1.0 - (ss_res_pp / ss_tot_pp) if ss_tot_pp > 0 else 0.0
+
+    t_stat = beta / se if se > 0 else 0.0
+    p_value = 2 * (1 - _normal_cdf(abs(t_stat)))
+
+    return beta, se, t_stat, p_value, r_squared
 
 
 def _logistic_regression_with_stats(X: Any, y: Any, max_iter: int) -> Tuple[float, float, float, float]:

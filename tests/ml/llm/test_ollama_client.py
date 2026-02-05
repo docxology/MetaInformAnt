@@ -26,9 +26,17 @@ def client() -> OllamaClient:
 
 @pytest.fixture
 def check_ollama(client: OllamaClient):
-    """Skip tests if Ollama is not available."""
+    """Skip tests if Ollama is not available or model is not installed."""
     if not client.is_available():
         pytest.skip("Ollama server not available")
+    # Also check that the specific model is installed
+    try:
+        models = client.list_models()
+        model_names = [m.name for m in models]
+        if not any(client.config.model in name for name in model_names):
+            pytest.skip(f"Model {client.config.model} not installed on Ollama server")
+    except Exception:
+        pytest.skip("Could not verify model availability")
 
 
 class TestOllamaClient:

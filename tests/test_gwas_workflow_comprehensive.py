@@ -25,9 +25,7 @@ samples:
 association:
   model: linear
   trait: height
-""".format(
-        work_dir=str(tmp_path / "output")
-    )
+""".format(work_dir=str(tmp_path / "output"))
     config_file.write_text(config_content)
 
     config = load_gwas_config(config_file)

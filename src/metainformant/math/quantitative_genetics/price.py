@@ -27,8 +27,9 @@ def price_equation(fitness: List[float], parent: List[float], offspring: List[fl
     if len(fitness) != len(parent) or len(parent) != len(offspring):
         raise ValueError("All input lists must have the same length")
 
+    # Handle empty inputs gracefully
     if not fitness or not parent or not offspring:
-        raise ValueError("Input lists cannot be empty")
+        return (0.0, 0.0, 0.0)
 
     # Calculate means
     fitness_mean = statistics.mean(fitness)

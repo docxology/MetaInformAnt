@@ -40,9 +40,18 @@ class MultiOmicsData:
 
     def __init__(
         self,
-        data: Dict[str, pd.DataFrame],
+        data: Dict[str, pd.DataFrame] | None = None,
         sample_ids: List[str] | None = None,
         feature_ids: Dict[str, List[str]] | None = None,
+        # Legacy aliases for individual omics types
+        genomics: pd.DataFrame | None = None,
+        transcriptomics: pd.DataFrame | None = None,
+        proteomics: pd.DataFrame | None = None,
+        epigenomics: pd.DataFrame | None = None,
+        metabolomics: pd.DataFrame | None = None,
+        dna_data: pd.DataFrame | None = None,
+        rna_data: pd.DataFrame | None = None,
+        protein_data: pd.DataFrame | None = None,
     ):
         """Initialize multi-omics data container.
 
@@ -50,7 +59,34 @@ class MultiOmicsData:
             data: Dictionary mapping omics type to data matrix
             sample_ids: Common sample identifiers
             feature_ids: Feature identifiers for each omics type
+            genomics: DNA/genomics data (legacy parameter)
+            transcriptomics: RNA data (legacy parameter)
+            proteomics: Protein data (legacy parameter)
+            epigenomics: Epigenetic data (legacy parameter)
+            metabolomics: Metabolomics data (legacy parameter)
+            dna_data: Alias for genomics
+            rna_data: Alias for transcriptomics
+            protein_data: Alias for proteomics
         """
+        # Handle legacy parameters
+        if data is None:
+            data = {}
+
+        # Add legacy parameters to data dict
+        legacy_mapping = {
+            "genomics": genomics or dna_data,
+            "transcriptomics": transcriptomics or rna_data,
+            "proteomics": proteomics or protein_data,
+            "epigenomics": epigenomics,
+            "metabolomics": metabolomics,
+        }
+        for key, value in legacy_mapping.items():
+            if value is not None and key not in data:
+                data[key] = value
+
+        if not data:
+            raise ValueError("No omics data provided")
+
         self.data = data.copy()
         self.sample_ids = sample_ids
         self.feature_ids = feature_ids or {}

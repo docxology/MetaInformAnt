@@ -91,9 +91,55 @@ class BiologicalNetwork:
         """Get the number of edges in the network."""
         return self.graph.number_of_edges()
 
+    def size(self, weight: str | None = None) -> int | float:
+        """Return the number of edges or total of all edge weights.
+
+        Args:
+            weight: Edge attribute to use as weight. If None, returns number of edges.
+
+        Returns:
+            Number of edges or sum of edge weights.
+        """
+        return self.graph.size(weight=weight)
+
     def is_directed(self) -> bool:
         """Check if the network is directed."""
         return self.graph.is_directed()
+
+    # Delegate common NetworkX methods to the underlying graph
+    def __iter__(self):
+        """Iterate over nodes."""
+        return iter(self.graph)
+
+    def __contains__(self, node):
+        """Check if node is in network."""
+        return node in self.graph
+
+    def __len__(self):
+        """Return number of nodes."""
+        return len(self.graph)
+
+    def nodes(self, data=False):
+        """Return a NodeView of the graph."""
+        return self.graph.nodes(data=data)
+
+    def edges(self, data=False, default=None):
+        """Return an EdgeView of the graph."""
+        return self.graph.edges(data=data, default=default)
+
+    def neighbors(self, node):
+        """Return neighbors of a node."""
+        return self.graph.neighbors(node)
+
+    def degree(self, node=None, weight=None):
+        """Return degree of nodes."""
+        if node is None:
+            return self.graph.degree(weight=weight)
+        return self.graph.degree(node, weight=weight)
+
+    def adj(self):
+        """Return adjacency object."""
+        return self.graph.adj
 
     def __len__(self) -> int:
         """Get the number of nodes in the network."""

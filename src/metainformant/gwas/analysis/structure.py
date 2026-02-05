@@ -16,9 +16,7 @@ from metainformant.core import logging
 logger = logging.get_logger(__name__)
 
 
-def compute_pca(
-    genotype_matrix: List[List[int]], n_components: int = 10
-) -> Dict[str, Any]:
+def compute_pca(genotype_matrix: List[List[int]], n_components: int = 10) -> Dict[str, Any]:
     """Compute principal component analysis on genotype matrix.
 
     Args:
@@ -159,7 +157,21 @@ def compute_kinship_matrix(genotype_matrix: List[List[int]], method: str = "vanr
         else:
             return {"status": "failed", "error": f"Unknown kinship method: {method}", "kinship_matrix": []}
 
-        return {"status": "success", "kinship_matrix": kinship, "method": method}
+        # Count missing data (genotype value -1)
+        total_missing = sum(1 for sample_gts in genotype_matrix for g in sample_gts if g < 0)
+        total_genotypes = n_samples * n_variants
+        missing_rate = total_missing / total_genotypes if total_genotypes > 0 else 0.0
+
+        return {
+            "status": "success",
+            "kinship_matrix": kinship,
+            "method": method,
+            "num_samples": n_samples,
+            "missing_data_stats": {
+                "total_missing": total_missing,
+                "missing_rate": missing_rate,
+            },
+        }
 
     except Exception as e:
         logger.error(f"Kinship matrix computation failed: {e}")
@@ -251,7 +263,12 @@ def estimate_population_structure(
 
 
 def _vanraden_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
-    """Compute kinship matrix using VanRaden method.
+    """Compute kinship matrix using VanRaden (2008) Method 1.
+
+    G = ZZ' / (2 * sum(p_i * (1-p_i)))
+    where Z_ij = X_ij - 2*p_j and p_j is the allele frequency at locus j.
+
+    Reference: VanRaden PM (2008) J Dairy Sci 91:4414-4423.
 
     Args:
         genotype_matrix: Genotype matrix (variants x samples)
@@ -259,32 +276,65 @@ def _vanraden_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
     Returns:
         Kinship matrix
     """
+    n_variants = len(genotype_matrix)
     n_samples = len(genotype_matrix[0])
+
+    # Compute allele frequencies per variant
+    allele_freqs = []
+    valid_variant_indices = []
+    for v_idx, locus in enumerate(genotype_matrix):
+        valid = [g for g in locus if g >= 0]
+        if len(valid) == 0:
+            continue
+        freq = sum(valid) / (2.0 * len(valid))
+        # Skip monomorphic loci (p=0 or p=1) as they contribute nothing
+        if freq <= 0.0 or freq >= 1.0:
+            continue
+        allele_freqs.append(freq)
+        valid_variant_indices.append(v_idx)
+
+    if not allele_freqs:
+        # Fallback: return identity if no valid variants
+        return [[1.0 if i == j else 0.0 for j in range(n_samples)] for i in range(n_samples)]
+
+    # Compute scaling factor: 2 * sum(p_i * (1-p_i))
+    scaling = 2.0 * sum(p * (1.0 - p) for p in allele_freqs)
+    if scaling <= 0:
+        return [[1.0 if i == j else 0.0 for j in range(n_samples)] for i in range(n_samples)]
+
+    # Build Z matrix (centered genotypes) and compute G = ZZ'/scaling
+    # Z[sample_i][variant_k] = genotype[variant_k][sample_i] - 2*p_k
+    # For missing genotypes, substitute 0 (mean-centered value)
     kinship = [[0.0] * n_samples for _ in range(n_samples)]
 
-    # Simplified VanRaden calculation
-    # In practice, this centers genotypes and computes G = XX'/c
-    # where X is the centered genotype matrix
+    for k, v_idx in enumerate(valid_variant_indices):
+        locus = genotype_matrix[v_idx]
+        p = allele_freqs[k]
+        two_p = 2.0 * p
 
+        # Compute centered genotypes for this variant
+        z = []
+        for s in range(n_samples):
+            g = locus[s]
+            if g < 0:
+                z.append(0.0)  # impute to mean (centered = 0)
+            else:
+                z.append(float(g) - two_p)
+
+        # Accumulate outer product: kinship += z * z' (rank-1 update)
+        for i in range(n_samples):
+            if z[i] == 0.0:
+                continue
+            for j in range(i, n_samples):
+                val = z[i] * z[j]
+                kinship[i][j] += val
+                if i != j:
+                    kinship[j][i] += val
+
+    # Scale by 2*sum(p*(1-p))
     for i in range(n_samples):
         for j in range(n_samples):
-            if i == j:
-                kinship[i][j] = 1.0  # Self-relatedness
-            else:
-                # Compute genetic similarity
-                similarity = 0.0
-                valid_loci = 0
-
-                for locus in genotype_matrix:
-                    if locus[i] >= 0 and locus[j] >= 0:  # Valid genotypes
-                        # Simple IBS similarity
-                        if locus[i] == locus[j]:
-                            similarity += 1.0
-                        valid_loci += 1
-
-                if valid_loci > 0:
-                    kinship[i][j] = similarity / valid_loci
-                    kinship[j][i] = kinship[i][j]  # Symmetric
+            kinship[i][j] /= scaling
 
     return kinship
 

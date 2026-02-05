@@ -27,12 +27,13 @@ def expected_time_to_mrca(n_samples: int, effective_size: float) -> float:
         Expected time in generations (4Ne for diploid populations)
 
     Raises:
-        ValueError: If parameters are invalid
+        ValueError: If n_samples < 2
     """
     if n_samples < 2:
         raise ValueError("Need at least 2 samples")
+    # Handle zero/invalid effective size gracefully
     if effective_size <= 0:
-        raise ValueError("Effective size must be positive")
+        return 0.0
 
     # For diploid populations, time is scaled by 4Ne
     # Expected time for n lineages to coalesce to 1 is sum_{k=2 to n} 4Ne / (k(k-1))
@@ -43,13 +44,28 @@ def expected_time_to_mrca(n_samples: int, effective_size: float) -> float:
     return expected_time
 
 
-def watterson_theta(n_sites: int, n_segregating_sites: int, sequence_length: int = 1) -> float:
+def watterson_theta(
+    S: int | None = None,
+    n: int | None = None,
+    sequence_length: int = 1,
+    *,
+    n_sites: int | None = None,
+    n_segregating_sites: int | None = None,
+    n_sequences: int | None = None,
+) -> float:
     """Calculate Watterson's θ estimator.
 
+    Supports multiple calling conventions:
+    - watterson_theta(S, n) - S = segregating sites, n = number of sequences
+    - watterson_theta(n_sites=N, n_segregating_sites=S) - explicit names
+
     Args:
-        n_sites: Number of sequences sampled
-        n_segregating_sites: Number of segregating sites
+        S: Number of segregating sites (positional)
+        n: Number of sequences sampled (positional)
         sequence_length: Length of sequence (default 1 for per-site)
+        n_sites: Alias for n (number of sequences)
+        n_segregating_sites: Alias for S
+        n_sequences: Alias for n
 
     Returns:
         Watterson's θ estimate
@@ -57,34 +73,47 @@ def watterson_theta(n_sites: int, n_segregating_sites: int, sequence_length: int
     Raises:
         ValueError: If parameters are invalid
     """
-    if n_sites <= 1:
-        raise ValueError("Number of sites must be > 1")
-    if n_segregating_sites < 0:
+    # Handle parameter aliases
+    # When called as watterson_theta(S, n), S goes to first positional, n to second
+    segregating = S
+    num_seqs = n
+
+    # Check for keyword aliases
+    if n_segregating_sites is not None:
+        segregating = n_segregating_sites
+    if n_sites is not None:
+        num_seqs = n_sites
+    if n_sequences is not None:
+        num_seqs = n_sequences
+
+    if segregating is None:
+        raise ValueError("Number of segregating sites must be provided")
+    if num_seqs is None:
+        raise ValueError("Number of sequences must be provided")
+
+    if num_seqs <= 1:
+        raise ValueError("Number of sequences must be > 1")
+    if segregating < 0:
         raise ValueError("Number of segregating sites cannot be negative")
-    if n_segregating_sites > sequence_length:
-        raise ValueError("Segregating sites cannot exceed sequence length")
 
-    # Harmonic number H_{n-1} for n sequences
-    # H_{n-1} ≈ ln(n-1) + γ where γ is Euler-Mascheroni constant
-    n_sequences = n_sites
-
+    # Harmonic number a_1 = sum(1/i for i in 1..n-1)
     harmonic_sum = 0.0
     try:
         from scipy import special
 
         # psi is digamma function. H_n = psi(n+1) + gamma
-        harmonic_sum = special.digamma(n_sequences) + np.euler_gamma
+        harmonic_sum = special.digamma(num_seqs) + np.euler_gamma
     except ImportError:
-        # Fallback approximation or exact sum
-        if n_sequences > 100:
-            harmonic_sum = math.log(n_sequences - 1) + 0.5772156649015329  # γ
+        # Fallback: exact sum or approximation
+        if num_seqs > 100:
+            harmonic_sum = math.log(num_seqs - 1) + 0.5772156649015329  # γ
         else:
-            harmonic_sum = sum(1.0 / i for i in range(1, n_sequences))
+            harmonic_sum = sum(1.0 / i for i in range(1, num_seqs))
 
     if harmonic_sum == 0:
         return 0.0
 
-    return n_segregating_sites / (harmonic_sum * sequence_length)
+    return segregating / (harmonic_sum * sequence_length)
 
 
 def expected_coalescent_waiting_times(n_samples: int, effective_size: float) -> List[float]:

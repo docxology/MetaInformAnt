@@ -64,20 +64,24 @@ def select_features_univariate(
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for feature selection")
 
+    # Validate input dimensions
+    if len(y) != X.shape[0]:
+        raise ValueError(f"y length must match X samples: {len(y)} != {X.shape[0]}")
+
     # Import statistical tests
-    if method == "f_classif":
+    if method in ("f_classif", "f_score"):
         from sklearn.feature_selection import f_classif
 
         score_func = f_classif
-    elif method == "chi2":
+    elif method in ("chi2", "chi_squared"):
         from sklearn.feature_selection import chi2
 
         score_func = chi2
-    elif method == "mutual_info_classif":
+    elif method in ("mutual_info_classif", "mutual_info"):
         from sklearn.feature_selection import mutual_info_classif
 
         score_func = mutual_info_classif
-    elif method == "f_regression":
+    elif method in ("f_regression", "f_score_regression"):
         from sklearn.feature_selection import f_regression
 
         score_func = f_regression

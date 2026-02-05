@@ -14,15 +14,22 @@ from metainformant.core import logging
 logger = logging.get_logger(__name__)
 
 
-def fst_from_allele_freqs(pop1_freqs: List[float], pop2_freqs: List[float]) -> float:
+def fst_from_allele_freqs(
+    pop1_freqs: List[float], pop2_freqs: List[float] | None = None
+) -> float:
     """Calculate F_ST from allele frequencies between two populations.
 
     F_ST measures the genetic differentiation between populations.
     Values range from 0 (no differentiation) to 1 (complete differentiation).
 
+    Can be called with:
+    - Single list: fst_from_allele_freqs([p1, p2]) where p1, p2 are allele frequencies
+      in populations 1 and 2 for a single locus
+    - Two lists: fst_from_allele_freqs(pop1_freqs, pop2_freqs) for multiple loci
+
     Args:
-        pop1_freqs: Allele frequencies for population 1
-        pop2_freqs: Allele frequencies for population 2 (same length as pop1_freqs)
+        pop1_freqs: Allele frequencies for population 1, or [p1, p2] for single locus
+        pop2_freqs: Allele frequencies for population 2 (same length as pop1_freqs), or None
 
     Returns:
         F_ST value between 0 and 1
@@ -31,12 +38,34 @@ def fst_from_allele_freqs(pop1_freqs: List[float], pop2_freqs: List[float]) -> f
         ValueError: If frequency arrays have different lengths or invalid values
 
     Examples:
+        >>> # Single locus mode
+        >>> fst = fst_from_allele_freqs([0.2, 0.8])
+        >>> print(f"F_ST: {fst:.3f}")
+
+        >>> # Multiple loci mode
         >>> pop1 = [0.6, 0.4, 0.8]  # Allele frequencies for 3 loci in pop 1
         >>> pop2 = [0.3, 0.7, 0.2]  # Allele frequencies for 3 loci in pop 2
         >>> fst = fst_from_allele_freqs(pop1, pop2)
         >>> print(f"F_ST: {fst:.3f}")
-        F_ST: 0.333
     """
+    # Check for single-locus mode: [p1, p2]
+    if pop2_freqs is None:
+        if len(pop1_freqs) != 2:
+            raise ValueError("Single-list mode requires exactly 2 allele frequencies [p1, p2]")
+        p1, p2 = pop1_freqs
+        # Single locus F_ST calculation
+        # Mean allele frequency across populations
+        p_bar = (p1 + p2) / 2
+        # Mean heterozygosity within subpopulations
+        Hs = (2 * p1 * (1 - p1) + 2 * p2 * (1 - p2)) / 2
+        # Total heterozygosity (using mean frequency)
+        Ht = 2 * p_bar * (1 - p_bar)
+
+        if Ht == 0:
+            return 0.0
+        return max(0.0, min(1.0, (Ht - Hs) / Ht))
+
+    # Multi-locus mode
     if len(pop1_freqs) != len(pop2_freqs):
         raise ValueError("Population frequency arrays must have same length")
 

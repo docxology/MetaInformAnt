@@ -14,15 +14,48 @@ from metainformant.core import logging
 logger = logging.get_logger(__name__)
 
 
-def ld_coefficients(genotypes: List[List[int]]) -> Dict[str, float]:
+def ld_coefficients(
+    pA_or_genotypes: float | List[List[int]],
+    pa: float | None = None,
+    pB: float | None = None,
+    pb: float | None = None,
+    pAB: float | None = None,
+) -> Dict[str, float] | Tuple[float, float]:
     """Calculate linkage disequilibrium coefficients.
 
+    Can be called with either:
+    - Allele frequencies: ld_coefficients(pA, pa, pB, pb, pAB) -> (D, D')
+    - Genotypes: ld_coefficients(genotypes) -> dict with D, D', r²
+
     Args:
-        genotypes: 2D list of genotypes [sample][locus]
+        pA_or_genotypes: Either allele frequency for A or 2D list of genotypes
+        pa: Allele frequency for a (if using frequency mode)
+        pB: Allele frequency for B (if using frequency mode)
+        pb: Allele frequency for b (if using frequency mode)
+        pAB: Haplotype frequency for AB (if using frequency mode)
 
     Returns:
-        Dictionary with LD coefficients (D, D', r²)
+        If using frequencies: Tuple of (D, D')
+        If using genotypes: Dictionary with LD coefficients (D, D_prime, r_squared)
     """
+    # Check if we're in frequency mode
+    if pa is not None and pB is not None and pb is not None and pAB is not None:
+        pA = pA_or_genotypes
+        # Calculate D = P(AB) - P(A)*P(B)
+        D = pAB - pA * pB
+
+        # Calculate D' = D / D_max
+        if D >= 0:
+            D_max = min(pA * pb, pa * pB)
+        else:
+            D_max = min(pA * pB, pa * pb)
+
+        D_prime = D / D_max if D_max > 0 else 0
+
+        return D, D_prime
+
+    # Otherwise use genotype mode
+    genotypes = pA_or_genotypes
     if len(genotypes) < 2 or len(genotypes[0]) != 2:
         raise ValueError("Need at least 2 samples with 2 loci each")
 

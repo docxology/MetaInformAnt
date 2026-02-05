@@ -19,17 +19,6 @@ from .io import (
     fastq,
 )
 
-# Optional imports with graceful fallbacks
-try:
-    from .analysis import contamination
-except ImportError:
-    contamination = None
-
-try:
-    from .analysis import metrics
-except ImportError:
-    metrics = None
-
 # Type checking imports
 from typing import TYPE_CHECKING
 
@@ -42,4 +31,7 @@ __all__ = [
     "io",
     # Analysis
     "contamination",
+    "metrics",
+    # IO
+    "fastq",
 ]

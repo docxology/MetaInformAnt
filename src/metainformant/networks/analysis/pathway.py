@@ -641,6 +641,41 @@ class PathwayNetwork:
         """Get pathway genes by name."""
         return self.get_pathway(pathway_name)
 
+    def add_pathway(self, name: str, genes: List[str]) -> None:
+        """Add a pathway to the network.
+
+        Args:
+            name: Pathway name/identifier
+            genes: List of genes in the pathway
+        """
+        self.pathways[name] = genes
+
+    def remove_pathway(self, name: str) -> bool:
+        """Remove a pathway from the network.
+
+        Args:
+            name: Pathway name/identifier
+
+        Returns:
+            True if pathway was removed, False if not found
+        """
+        if name in self.pathways:
+            del self.pathways[name]
+            return True
+        return False
+
+    def add_gene_to_pathway(self, pathway_name: str, gene: str) -> None:
+        """Add a gene to an existing pathway.
+
+        Args:
+            pathway_name: Name of the pathway
+            gene: Gene to add
+        """
+        if pathway_name not in self.pathways:
+            self.pathways[pathway_name] = []
+        if gene not in self.pathways[pathway_name]:
+            self.pathways[pathway_name].append(gene)
+
 
 def pathway_enrichment(
     gene_list: List[str],

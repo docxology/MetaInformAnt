@@ -662,3 +662,138 @@ def simpson_diversity(abundances: List[float]) -> float:
         0.75
     """
     return calculate_single_diversity(abundances, "simpson")
+
+
+def species_richness_simple(abundances: List[float]) -> int:
+    """Calculate species richness (count of non-zero abundances).
+
+    Args:
+        abundances: List of species abundances
+
+    Returns:
+        Number of species with non-zero abundance
+
+    Example:
+        >>> species_richness_simple([1, 2, 0, 3])
+        3
+    """
+    if not abundances:
+        return 0
+    return sum(1 for a in abundances if a > 0)
+
+
+# Alias for simpler interface
+def species_richness(abundances: List[float] | List[List[float]] | Dict[str, List[float]]) -> int | List[int] | Dict[str, int]:
+    """Calculate species richness.
+
+    Supports both simple list input (returns int) and complex inputs (original behavior).
+
+    Args:
+        abundances: List of species abundances (simple) or complex data structure
+
+    Returns:
+        Species richness count(s)
+    """
+    # Simple list case - return integer count
+    if isinstance(abundances, list) and (not abundances or not isinstance(abundances[0], list)):
+        return species_richness_simple(abundances)
+    # Complex case - delegate to original function
+    from metainformant.ecology.analysis.community import species_richness as _original_species_richness
+    return _original_species_richness(abundances)
+
+
+def pielou_evenness(abundances: List[float]) -> float:
+    """Calculate Pielou's evenness index.
+
+    J = H / ln(S) where H is Shannon diversity and S is species richness.
+
+    Args:
+        abundances: List of species abundances
+
+    Returns:
+        Pielou's evenness index (0 to 1)
+
+    Example:
+        >>> pielou_evenness([1, 1, 1, 1])
+        1.0
+    """
+    if not abundances:
+        return 0.0
+
+    S = species_richness_simple(abundances)
+    if S <= 1:
+        return 1.0 if S == 1 else 0.0
+
+    H = shannon_diversity(abundances)
+    H_max = math.log(S)
+
+    if H_max == 0:
+        return 0.0
+
+    return H / H_max
+
+
+def chao1_estimator(abundances: List[float]) -> float:
+    """Estimate species richness using Chao1 estimator.
+
+    Chao1 = S_obs + f1^2 / (2*f2)  when f2 > 0
+    Chao1 = S_obs + f1*(f1-1) / 2  when f2 = 0
+
+    where:
+        S_obs = observed species richness
+        f1 = number of singletons (species with abundance 1)
+        f2 = number of doubletons (species with abundance 2)
+
+    Args:
+        abundances: List of species abundances
+
+    Returns:
+        Estimated total species richness
+
+    Example:
+        >>> chao1_estimator([10, 8, 6, 4, 2, 1, 1, 1])
+        12.5
+    """
+    if not abundances:
+        return 0.0
+
+    S_obs = species_richness_simple(abundances)
+    if S_obs == 0:
+        return 0.0
+
+    f1 = sum(1 for a in abundances if a == 1)  # Singletons
+    f2 = sum(1 for a in abundances if a == 2)  # Doubletons
+
+    if f2 > 0:
+        return S_obs + (f1 ** 2) / (2 * f2)
+    else:
+        # Bias-corrected form when f2 = 0
+        return S_obs + (f1 * (f1 - 1)) / 2
+
+
+def community_metrics(abundances: List[float]) -> Dict[str, float]:
+    """Calculate comprehensive community ecology metrics.
+
+    Args:
+        abundances: List of species abundances
+
+    Returns:
+        Dictionary with all community metrics:
+            - shannon: Shannon diversity index
+            - simpson: Simpson diversity index (1-D)
+            - richness: Species richness
+            - pielou: Pielou's evenness
+            - chao1: Chao1 estimated richness
+
+    Example:
+        >>> metrics = community_metrics([10, 8, 6, 4, 2, 1, 1, 1])
+        >>> metrics['richness']
+        8
+    """
+    return {
+        "shannon": shannon_diversity(abundances),
+        "simpson": simpson_diversity(abundances),
+        "richness": species_richness_simple(abundances),
+        "pielou": pielou_evenness(abundances),
+        "chao1": chao1_estimator(abundances),
+    }

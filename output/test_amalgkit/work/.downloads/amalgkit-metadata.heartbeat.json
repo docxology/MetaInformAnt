@@ -3,7 +3,7 @@
   "destination": "output/test_amalgkit/work/metadata",
   "errors": [],
   "eta_seconds": null,
-  "last_update": "2026-01-23T16:23:51Z",
+  "last_update": "2026-02-03T16:50:01Z",
   "progress": {
     "current": 0,
     "percent": 0.0,
@@ -12,7 +12,7 @@
   },
   "progress_percent": 0.0,
   "speed_mbps": 0.0,
-  "started_at": "2026-01-23T16:23:50Z",
+  "started_at": "2026-02-03T16:50:00Z",
   "status": "failed",
   "step": "amalgkit metadata",
   "total_bytes": null,

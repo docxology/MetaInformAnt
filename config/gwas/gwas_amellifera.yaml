@@ -138,13 +138,35 @@ structure:
   kinship_method: vanraden
 
 # =============================================================================
+# LD PRUNING
+# =============================================================================
+# LD pruning before PCA to remove correlated SNPs
+ld_pruning:
+  enabled: true
+  window_size: 50      # variants per window
+  step_size: 5         # step between windows
+  r2_threshold: 0.2    # R-squared threshold for pruning
+
+# =============================================================================
+# HAPLODIPLOIDY
+# =============================================================================
+# Apis mellifera is haplodiploid: males (drones) are haploid
+# Detect and flag/exclude haploid samples from diploid-only analyses
+haplodiploidy:
+  enabled: true
+  het_threshold: 0.05          # max heterozygosity rate for haploid classification
+  exclude_haploid: true        # exclude haploid samples from GWAS
+  report_ploidy: true          # include ploidy report in QC output
+
+# =============================================================================
 # ASSOCIATION TESTING
 # =============================================================================
 association:
   # Statistical model: linear, logistic, or mixed
   # Linear for continuous traits (honey production, colony size)
   # Logistic for binary traits (disease resistance, behavioral traits)
-  model: linear
+  # Mixed for population-structure-corrected analysis (recommended)
+  model: mixed
 
   # Trait name (column name in phenotype file)
   # Examples: varroa_resistance, hygienic_behavior, honey_yield, overwinter_survival
@@ -182,6 +204,15 @@ correction:
   alpha: 0.05
 
 # =============================================================================
+# ANNOTATION
+# =============================================================================
+# SNP-to-gene annotation using Amel_HAv3.1 GFF3
+annotation:
+  enabled: true
+  gff3_file: output/gwas/amellifera/genome/genomic.gff
+  window_kb: 50        # search window for nearest gene (kilobases)
+
+# =============================================================================
 # OUTPUT
 # =============================================================================
 output:
@@ -193,4 +224,9 @@ output:
 
   # Output format: json, tsv, or plink
   format: tsv
+
+  # Summary statistics output
+  summary_stats: true
+  significant_hits: true
+  significance_threshold: 5.0e-8
 

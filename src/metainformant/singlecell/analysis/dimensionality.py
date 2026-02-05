@@ -43,7 +43,12 @@ from metainformant.singlecell.data.preprocessing import SingleCellData
 
 
 def pca_reduction(
-    data: SingleCellData, n_components: int = 50, random_state: int | None = None, scale_data: bool = True
+    data: SingleCellData,
+    n_components: int = 50,
+    random_state: int | None = None,
+    scale_data: bool = True,
+    *,
+    use_hvgs: bool = False,
 ) -> SingleCellData:
     """Perform PCA dimensionality reduction on single-cell data.
 
@@ -52,6 +57,7 @@ def pca_reduction(
         n_components: Number of principal components to compute
         random_state: Random seed for reproducibility
         scale_data: Whether to scale data before PCA
+        use_hvgs: Whether using only highly variable genes
 
     Returns:
         SingleCellData with PCA coordinates added
@@ -86,14 +92,16 @@ def pca_reduction(
     pca = PCA(n_components=n_components, random_state=random_state)
     X_pca = pca.fit_transform(X_scaled)
 
-    # Store PCA results
+    # Store PCA results in obsm (standard location)
+    result.obsm = result.obsm if hasattr(result, "obsm") and result.obsm is not None else {}
+    result.obsm["X_pca"] = X_pca
+
+    # Also add PCA coordinates to obs for convenience
     pca_coords = pd.DataFrame(
         X_pca,
         index=result.obs.index if result.obs is not None else None,
         columns=[f"PC{i+1}" for i in range(n_components)],
     )
-
-    # Add to obs or create new structure
     if result.obs is None:
         result.obs = pca_coords
     else:
@@ -107,11 +115,15 @@ def pca_reduction(
     result.uns["pca"] = {
         "n_components": n_components,
         "explained_variance_ratio": explained_variance.tolist(),
+        "variance_ratio": explained_variance.tolist(),  # Alias
+        "variance": explained_variance.tolist(),  # Alias
         "cumulative_explained_variance": cumulative_variance.tolist(),
+        "cumulative_variance": cumulative_variance.tolist(),  # Alias
         "singular_values": pca.singular_values_.tolist(),
         "components_shape": pca.components_.shape,
         "random_state": random_state,
         "scaled": scale_data,
+        "use_hvgs": use_hvgs,
     }
 
     # Store components for gene loadings
@@ -155,13 +167,25 @@ def tsne_reduction(
     validation.validate_range(n_components, min_val=2, max_val=3, name="n_components")
     validation.validate_range(perplexity, min_val=5.0, max_val=50.0, name="perplexity")
 
-    logger.info(f"Performing t-SNE with {n_components} components, perplexity={perplexity}")
-
     # Create copy
     result = data.copy()
 
     # Get expression matrix
     X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
+
+    # Automatically adjust perplexity if too high for dataset size
+    n_samples = X.shape[0]
+    actual_perplexity = perplexity
+    if perplexity >= n_samples:
+        actual_perplexity = max(1.0, n_samples - 1)
+        logger.warning(f"perplexity reduced from {perplexity} to {actual_perplexity} (must be < n_samples={n_samples})")
+
+    logger.info(f"Performing t-SNE with {n_components} components, perplexity={actual_perplexity}")
+
+    # Ensure max_iter is at least 250 (sklearn's minimum)
+    actual_max_iter = max(250, max_iter)
+    if actual_max_iter != max_iter:
+        logger.warning(f"max_iter increased from {max_iter} to {actual_max_iter} (sklearn minimum)")
 
     # For large datasets, use PCA initialization
     if X.shape[0] > 5000:
@@ -175,10 +199,10 @@ def tsne_reduction(
     # Perform t-SNE
     tsne = TSNE(
         n_components=n_components,
-        perplexity=perplexity,
+        perplexity=actual_perplexity,
         random_state=random_state,
         learning_rate=learning_rate,
-        max_iter=max_iter,
+        max_iter=actual_max_iter,
         init="pca" if X.shape[0] <= 5000 else "random",
     )
 
@@ -198,12 +222,23 @@ def tsne_reduction(
         for col in tsne_coords.columns:
             result.obs[col] = tsne_coords[col]
 
+    # Store in obsm as well (standard location)
+    result.obsm = result.obsm if hasattr(result, "obsm") and result.obsm is not None else {}
+    result.obsm["X_tsne"] = X_tsne
+
     # Store t-SNE metadata
     result.uns["tsne"] = {
         "n_components": n_components,
-        "perplexity": perplexity,
+        "params": {
+            "n_components": n_components,
+            "perplexity": actual_perplexity,
+            "learning_rate": learning_rate,
+            "max_iter": actual_max_iter,
+            "n_iter": actual_max_iter,  # Alias for max_iter (consistent with param name)
+        },
+        "perplexity": actual_perplexity,
         "learning_rate": learning_rate,
-        "max_iter": max_iter,
+        "max_iter": actual_max_iter,
         "random_state": random_state,
         "kl_divergence": float(tsne.kl_divergence_) if hasattr(tsne, "kl_divergence_") else None,
         "n_iter": tsne.n_iter_ if hasattr(tsne, "n_iter_") else None,
@@ -220,6 +255,8 @@ def umap_reduction(
     min_dist: float = 0.1,
     random_state: int | None = None,
     metric: str = "euclidean",
+    *,
+    n_epochs: int | None = None,
 ) -> SingleCellData:
     """Perform UMAP dimensionality reduction on single-cell data.
 
@@ -230,6 +267,7 @@ def umap_reduction(
         min_dist: Minimum distance parameter
         random_state: Random seed for reproducibility
         metric: Distance metric
+        n_epochs: Number of training epochs (optional)
 
     Returns:
         SingleCellData with UMAP coordinates added
@@ -256,9 +294,17 @@ def umap_reduction(
     X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # Perform UMAP
-    reducer = umap.UMAP(
-        n_components=n_components, n_neighbors=n_neighbors, min_dist=min_dist, random_state=random_state, metric=metric
-    )
+    umap_kwargs = {
+        "n_components": n_components,
+        "n_neighbors": n_neighbors,
+        "min_dist": min_dist,
+        "random_state": random_state,
+        "metric": metric,
+    }
+    if n_epochs is not None:
+        umap_kwargs["n_epochs"] = n_epochs
+
+    reducer = umap.UMAP(**umap_kwargs)
 
     X_umap = reducer.fit_transform(X)
 
@@ -766,7 +812,12 @@ def run_umap(
 
 
 def compute_pca(
-    data: SingleCellData, n_components: int = 50, random_state: int | None = None, scale_data: bool = True
+    data: SingleCellData,
+    n_components: int = 50,
+    random_state: int | None = None,
+    scale_data: bool = True,
+    *,
+    use_hvgs: bool = False,
 ) -> SingleCellData:
     """Compute PCA dimensionality reduction (alias for pca_reduction).
 
@@ -775,11 +826,14 @@ def compute_pca(
         n_components: Number of components
         random_state: Random seed
         scale_data: Whether to scale data
+        use_hvgs: Whether to use only highly variable genes
 
     Returns:
         SingleCellData with PCA results
     """
-    return pca_reduction(data, n_components, random_state, scale_data)
+    # Note: use_hvgs is just a flag - the data should already have HVGs marked
+    # This parameter exists for API compatibility
+    return pca_reduction(data, n_components, random_state, scale_data, use_hvgs=use_hvgs)
 
 
 def compute_tsne(
@@ -789,6 +843,8 @@ def compute_tsne(
     random_state: int | None = None,
     learning_rate: float = 200.0,
     max_iter: int = 1000,
+    *,
+    n_iter: int | None = None,
 ) -> SingleCellData:
     """Compute t-SNE dimensionality reduction (alias for tsne_reduction).
 
@@ -799,10 +855,14 @@ def compute_tsne(
         random_state: Random seed
         learning_rate: Learning rate
         max_iter: Maximum iterations
+        n_iter: Alias for max_iter
 
     Returns:
         SingleCellData with t-SNE results
     """
+    # Handle alias
+    if n_iter is not None:
+        max_iter = n_iter
     return tsne_reduction(data, n_components, perplexity, random_state, learning_rate, max_iter)
 
 
@@ -813,6 +873,8 @@ def compute_umap(
     min_dist: float = 0.1,
     random_state: int | None = None,
     metric: str = "euclidean",
+    *,
+    n_epochs: int | None = None,
 ) -> SingleCellData:
     """Compute UMAP dimensionality reduction (alias for umap_reduction).
 
@@ -823,15 +885,21 @@ def compute_umap(
         min_dist: Minimum distance
         random_state: Random seed
         metric: Distance metric
+        n_epochs: Number of training epochs (optional)
 
     Returns:
         SingleCellData with UMAP results
     """
-    return umap_reduction(data, n_components, n_neighbors, min_dist, random_state, metric)
+    return umap_reduction(data, n_components, n_neighbors, min_dist, random_state, metric, n_epochs=n_epochs)
 
 
 def compute_neighbors(
-    data: SingleCellData, n_neighbors: int = 15, metric: str = "euclidean", use_rep: str = "X_pca"
+    data: SingleCellData,
+    n_neighbors: int = 15,
+    metric: str = "euclidean",
+    use_rep: str = "X_pca",
+    *,
+    n_pcs: int | None = None,
 ) -> SingleCellData:
     """Compute neighbor graph for single-cell data.
 
@@ -840,6 +908,7 @@ def compute_neighbors(
         n_neighbors: Number of neighbors
         metric: Distance metric
         use_rep: Representation to use for neighbor calculation
+        n_pcs: Number of principal components to use (optional)
 
     Returns:
         SingleCellData with neighbor graph
@@ -852,8 +921,13 @@ def compute_neighbors(
     # Get the representation to use
     if use_rep == "X_pca" and hasattr(data, "obsm") and "X_pca" in data.obsm:
         X = data.obsm["X_pca"]
+        # Limit to n_pcs if specified
+        if n_pcs is not None and X.shape[1] > n_pcs:
+            X = X[:, :n_pcs]
     elif hasattr(data, "X"):
         X = data.X
+        if hasattr(X, "toarray"):
+            X = X.toarray()
     else:
         raise ValueError(f"Representation {use_rep} not found in data")
 
@@ -863,10 +937,26 @@ def compute_neighbors(
 
     distances, indices = nbrs.kneighbors(X)
 
+    # Build connectivity matrix (sparse)
+    from scipy import sparse
+
+    n_cells = X.shape[0]
+    rows = np.repeat(np.arange(n_cells), n_neighbors)
+    cols = indices.flatten()
+    # Connectivity: convert distances to similarities using Gaussian kernel
+    # sigma = median distance
+    median_dist = np.median(distances[distances > 0]) if np.any(distances > 0) else 1.0
+    data_flat = np.exp(-(distances.flatten() ** 2) / (2 * median_dist**2))
+    connectivities = sparse.csr_matrix((data_flat, (rows, cols)), shape=(n_cells, n_cells))
+
+    # Symmetrize the connectivity matrix (average of A and A.T)
+    connectivities = (connectivities + connectivities.T) / 2
+
     # Store results
     data.uns["neighbors"] = {
         "indices": indices,
         "distances": distances,
+        "connectivities": connectivities,
         "params": {"n_neighbors": n_neighbors, "metric": metric, "use_rep": use_rep},
     }
 
@@ -955,17 +1045,30 @@ def compute_diffusion_map(
     return data
 
 
-def select_hvgs(data: SingleCellData, n_top_genes: int = 2000, flavor: str = "seurat") -> SingleCellData:
+def select_hvgs(
+    data: SingleCellData,
+    n_top_genes: int = 2000,
+    flavor: str | None = None,
+    *,
+    method: str | None = None,
+) -> SingleCellData:
     """Select highly variable genes from single-cell data.
 
     Args:
         data: SingleCellData object
         n_top_genes: Number of top variable genes to select
-        flavor: Method for HVG selection ('seurat', 'cell_ranger', 'seurat_v3')
+        flavor: Method for HVG selection ('seurat', 'cell_ranger', 'seurat_v3', 'variance')
+        method: Alias for flavor
 
     Returns:
         SingleCellData with highly variable genes marked
     """
+    # Handle parameter alias
+    if method is not None and flavor is None:
+        flavor = method
+    if flavor is None:
+        flavor = "seurat"
+
     if not hasattr(data, "X") or data.X is None:
         raise ValueError("Data must contain expression matrix X")
 
@@ -993,19 +1096,34 @@ def select_hvgs(data: SingleCellData, n_top_genes: int = 2000, flavor: str = "se
 
             # Simple linear fit
             coeffs = np.polyfit(log_means, log_vars, 1)
-            predicted_vars = 10 ** (coeffs[0] * np.log10(gene_means) + coeffs[1])
+
+            # Only apply to genes with non-zero mean
+            predicted_vars = np.zeros(n_genes)
+            predicted_vars[nonzero_mask] = 10 ** (coeffs[0] * np.log10(gene_means[nonzero_mask]) + coeffs[1])
+
+            # For zero-mean genes, set predicted variance to small value
+            predicted_vars[~nonzero_mask] = 1e-10
 
             # Calculate standardized variance
-            standardized_vars = gene_vars / predicted_vars
+            standardized_vars = gene_vars / np.maximum(predicted_vars, 1e-10)
 
-            # Select top genes by standardized variance
+            # Select top genes by standardized variance (only consider valid genes)
             valid_mask = gene_means > 0
             valid_std_vars = standardized_vars[valid_mask]
             sorted_indices = np.argsort(valid_std_vars)[::-1]
 
             # Map back to original gene indices
             valid_gene_indices = np.where(valid_mask)[0]
-            top_indices = valid_gene_indices[sorted_indices[:n_top_genes]]
+            n_valid = min(n_top_genes, len(valid_gene_indices))
+            top_indices = valid_gene_indices[sorted_indices[:n_valid]]
+
+            # If we need more, add zero-mean genes by variance
+            if n_valid < n_top_genes:
+                zero_mean_indices = np.where(~valid_mask)[0]
+                zero_mean_vars = gene_vars[~valid_mask]
+                remaining = n_top_genes - n_valid
+                additional = zero_mean_indices[np.argsort(zero_mean_vars)[::-1][:remaining]]
+                top_indices = np.concatenate([top_indices, additional])
 
     elif flavor == "cell_ranger":
         # Cell Ranger-style HVG selection
@@ -1021,21 +1139,48 @@ def select_hvgs(data: SingleCellData, n_top_genes: int = 2000, flavor: str = "se
         # Select top genes by CV²
         top_indices = np.argsort(cv_squared)[::-1][:n_top_genes]
 
+    elif flavor == "variance":
+        # Simple variance-based selection
+        gene_vars = np.var(X, axis=0)
+        top_indices = np.argsort(gene_vars)[::-1][:n_top_genes]
+
     else:
-        raise ValueError(f"Unknown flavor: {flavor}. Use 'seurat' or 'cell_ranger'")
+        raise ValueError(f"Unknown HVG selection method: {flavor}. Use 'seurat', 'cell_ranger', or 'variance'")
 
     # Mark highly variable genes
     highly_variable = np.zeros(n_genes, dtype=bool)
     highly_variable[top_indices] = True
 
+    # Calculate gene statistics for all methods
+    gene_means_all = np.mean(X, axis=0)
+    gene_vars_all = np.var(X, axis=0)
+    # Dispersions as coefficient of variation
+    gene_means_safe = np.maximum(gene_means_all, 1e-10)
+    dispersions = gene_vars_all / (gene_means_safe**2)
+    # Normalized variance (z-score of variance)
+    var_mean = np.mean(gene_vars_all)
+    var_std = np.std(gene_vars_all)
+    if var_std > 0:
+        variances_norm = (gene_vars_all - var_mean) / var_std
+    else:
+        variances_norm = np.zeros_like(gene_vars_all)
+
     if hasattr(data, "var") and data.var is not None:
         data.var["highly_variable"] = highly_variable
+        data.var["means"] = gene_means_all
+        data.var["variances"] = gene_vars_all
+        data.var["variances_norm"] = variances_norm
+        data.var["dispersions"] = dispersions
     else:
         # Create var dataframe if it doesn't exist
         import pandas as pd
 
         var_df = pd.DataFrame(index=range(n_genes))
         var_df["highly_variable"] = highly_variable
+        var_df["means"] = gene_means_all
+        var_df["variances"] = gene_vars_all
+        var_df["variances_norm"] = variances_norm
+        var_df["dispersions"] = dispersions
         data.var = var_df
 
     data.uns["hvg"] = {"flavor": flavor, "n_top_genes": n_top_genes, "n_selected": len(top_indices)}

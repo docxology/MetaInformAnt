@@ -7,7 +7,6 @@ a local Ollama server for text generation and chat completions.
 from __future__ import annotations
 
 import json
-import logging
 import time
 from dataclasses import dataclass
 from typing import Callable, Iterator, Optional, Any
@@ -15,9 +14,11 @@ from typing import Callable, Iterator, Optional, Any
 import urllib.request
 import urllib.error
 
+from metainformant.core import logging
+
 from .config import OllamaConfig
 
-logger = logging.getLogger(__name__)
+logger = logging.get_logger(__name__)
 
 
 @dataclass

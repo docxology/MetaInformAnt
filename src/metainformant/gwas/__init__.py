@@ -15,15 +15,20 @@ from . import workflow  # Workflow orchestration (depends on all)
 
 # Import modules from subpackages for backward compatibility and ease of use
 from .analysis import (
+    annotation,
     association,
     calling,
     correction,
+    ld_pruning,
+    mixed_model,
     quality,
     structure,
+    summary_stats,
 )
 from .data import (
     config,
     download,
+    genome,
     sra_download,
 )
 from .workflow import workflow as workflow_module
@@ -43,14 +48,19 @@ from .visualization import (
 )
 
 # Direct imports of commonly used functions
+from .analysis.annotation import annotate_variants_with_genes, classify_variant_location
 from .analysis.association import association_test_linear, association_test_logistic
 from .analysis.calling import check_bcftools_available
 from .analysis.correction import bonferroni_correction, fdr_correction, genomic_control
+from .analysis.ld_pruning import ld_prune
+from .analysis.mixed_model import association_test_mixed, run_mixed_model_gwas
 from .analysis.quality import apply_qc_filters, parse_vcf_full, extract_variant_regions
 from .analysis.structure import compute_kinship_matrix, compute_pca, estimate_population_structure
+from .analysis.summary_stats import write_summary_statistics, write_significant_hits, create_results_summary
 
 from .data.config import load_gwas_config
 from .data.download import download_reference_genome, download_variant_data
+from .data.genome import normalize_chromosome_name, AMEL_HAV3_CHROMOSOMES, AMEL_HAV3_CHROM_SIZES
 
 # Visualization aliases
 from .visualization.general import qq_plot, manhattan_plot, kinship_heatmap
@@ -88,9 +98,28 @@ __all__ = [
     "extract_variant_regions",
     "structure",
     "compute_pca",
+    "compute_kinship_matrix",
     "estimate_population_structure",
     "association",
     "correction",
+    # New analysis modules
+    "annotation",
+    "annotate_variants_with_genes",
+    "classify_variant_location",
+    "ld_pruning",
+    "ld_prune",
+    "mixed_model",
+    "association_test_mixed",
+    "run_mixed_model_gwas",
+    "summary_stats",
+    "write_summary_statistics",
+    "write_significant_hits",
+    "create_results_summary",
+    # Genome mapping
+    "genome",
+    "normalize_chromosome_name",
+    "AMEL_HAV3_CHROMOSOMES",
+    "AMEL_HAV3_CHROM_SIZES",
     # Data acquisition
     "download",
     "download_variant_data",

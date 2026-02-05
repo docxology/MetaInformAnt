@@ -74,6 +74,90 @@ class GWASWorkflowConfig:
         return cls(**config_dict)
 
 
+def _normalize_config(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize nested YAML config format to flat workflow format.
+
+    Maps nested structure like:
+        variants.vcf_files[0] -> vcf_path
+        samples.phenotype_file -> phenotype_path
+        qc.* -> quality_control.*
+        association.model -> model
+        association.trait -> trait
+
+    Args:
+        config: Configuration dictionary (may be nested or flat)
+
+    Returns:
+        Normalized flat configuration dictionary
+    """
+    normalized = dict(config)
+
+    # Map variants.vcf_files[0] -> vcf_path
+    if "vcf_path" not in normalized:
+        variants = normalized.get("variants", {})
+        if isinstance(variants, dict):
+            vcf_files = variants.get("vcf_files", [])
+            if vcf_files and isinstance(vcf_files, list):
+                normalized["vcf_path"] = vcf_files[0]
+
+    # Map samples.phenotype_file -> phenotype_path
+    if "phenotype_path" not in normalized:
+        samples = normalized.get("samples", {})
+        if isinstance(samples, dict):
+            pheno = samples.get("phenotype_file")
+            if pheno:
+                normalized["phenotype_path"] = pheno
+
+    # Map qc.* -> quality_control.*
+    if "quality_control" not in normalized:
+        qc = normalized.get("qc", {})
+        if isinstance(qc, dict) and qc:
+            qc_mapped = {}
+            if "min_maf" in qc:
+                qc_mapped["min_maf"] = qc["min_maf"]
+            if "max_missing" in qc:
+                qc_mapped["max_missing"] = qc["max_missing"]
+            if "hwe_pval" in qc:
+                qc_mapped["min_hwe_p"] = qc["hwe_pval"]
+            if "min_qual" in qc:
+                qc_mapped["min_qual"] = qc["min_qual"]
+            if "exclude_indels" in qc:
+                qc_mapped["exclude_indels"] = qc["exclude_indels"]
+            if "min_call_rate" in qc:
+                qc_mapped["min_call_rate"] = qc["min_call_rate"]
+            normalized["quality_control"] = qc_mapped
+
+    # Map association.model -> model
+    if "model" not in normalized:
+        assoc = normalized.get("association", {})
+        if isinstance(assoc, dict):
+            if "model" in assoc:
+                normalized["model"] = assoc["model"]
+            if "trait" in assoc:
+                normalized["trait"] = assoc["trait"]
+            if "covariates" in assoc:
+                normalized["covariates"] = assoc["covariates"]
+            if "min_sample_size" in assoc:
+                normalized["min_sample_size"] = assoc["min_sample_size"]
+            if "relatedness_matrix" in assoc:
+                normalized["relatedness_matrix"] = assoc["relatedness_matrix"]
+
+    # Map output.results_dir -> output_dir
+    if "output_dir" not in normalized:
+        output = normalized.get("output", {})
+        if isinstance(output, dict):
+            if "results_dir" in output:
+                normalized["output_dir"] = output["results_dir"]
+
+    # Map correction section
+    if "correction" not in normalized or not isinstance(normalized.get("correction"), dict):
+        corr = config.get("correction", {})
+        if isinstance(corr, dict) and corr:
+            normalized["correction"] = corr
+
+    return normalized
+
+
 def load_gwas_config(config_file: Union[str, Path]) -> Dict[str, Any]:
     """Load GWAS configuration from YAML/TOML/JSON file.
 
@@ -120,22 +204,33 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
     """
     logger.info("Starting GWAS workflow execution")
 
+    # Normalize nested YAML config to flat format
+    config = _normalize_config(config)
+
     if check:
         logger.info("Running in check mode - validating configuration only")
         # Validate configuration
         errors = validate_gwas_config(config)
         if errors:
-            return {"success": False, "errors": errors, "config_valid": False}
-        return {"success": True, "errors": [], "config_valid": True}
+            return {"status": "invalid", "success": False, "errors": errors, "config_valid": False, "config": config}
+        return {"status": "validated", "success": True, "errors": [], "config_valid": True, "config": config}
 
     # Execute workflow steps
-    results = {"success": True, "steps_completed": [], "errors": [], "outputs": {}}
+    results: Dict[str, Any] = {
+        "success": True,
+        "status": "running",
+        "steps_completed": [],
+        "steps": [],
+        "errors": [],
+        "outputs": {},
+    }
 
     try:
         # Step 1: Load and validate data
         logger.info("Step 1: Loading and validating data")
         vcf_data = parse_vcf_full(config["vcf_path"])
         results["steps_completed"].append("data_loading")
+        results["steps"].append("data_loading")
 
         # Step 2: Apply QC filters
         logger.info("Step 2: Applying quality control filters")
@@ -143,6 +238,7 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
         qc_result = apply_qc_filters(vcf_data, qc_config)
         filtered_data = qc_result.get("filtered_data", vcf_data)
         results["steps_completed"].append("quality_control")
+        results["steps"].append("quality_control")
 
         # Step 3: Population structure analysis
         logger.info("Step 3: Analyzing population structure")
@@ -150,6 +246,7 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
         pca_result = compute_pca(genotype_matrix)
         kinship_matrix = compute_kinship_matrix(genotype_matrix)
         results["steps_completed"].append("population_structure")
+        results["steps"].append("population_structure")
 
         # Step 4: Association testing
         logger.info("Step 4: Performing association testing")
@@ -165,6 +262,7 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
             association_results.append(result)
 
         results["steps_completed"].append("association_testing")
+        results["steps"].append("association_testing")
         results["outputs"]["association_results"] = association_results
 
         # Step 5: Multiple testing correction
@@ -172,58 +270,94 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
         p_values = [r["p_value"] for r in association_results]
         corrected_results = fdr_correction(p_values)
         results["steps_completed"].append("multiple_testing_correction")
+        results["steps"].append("multiple_testing_correction")
 
         # Step 6: Generate plots
         logger.info("Step 6: Generating visualization plots")
         plot_results = generate_all_plots(
             association_results,
-            config.get("output_dir", config["work_dir"]),
-            pca_file=Path(config["work_dir"]) / "pca_results.npy",
-            kinship_file=Path(config["work_dir"]) / "kinship_matrix.npy",
+            config.get("output_dir", config.get("work_dir", ".")),
+            pca_file=Path(config.get("work_dir", ".")) / "pca_results.npy",
+            kinship_file=Path(config.get("work_dir", ".")) / "kinship_matrix.npy",
             vcf_file=Path(config["vcf_path"]),
         )
         results["steps_completed"].append("visualization")
+        results["steps"].append("visualization")
         results["outputs"]["plots"] = plot_results
 
+        results["status"] = "completed"
         logger.info("GWAS workflow completed successfully")
 
     except Exception as e:
         logger.error(f"GWAS workflow failed: {e}")
         results["success"] = False
+        results["status"] = "failed"
+        results["error"] = str(e)
         results["errors"].append(str(e))
 
     return results
 
 
-def validate_gwas_config(config: Dict[str, Any]) -> List[str]:
+def validate_gwas_config(config: Dict[str, Any], *, check_files: bool = False) -> List[str]:
     """Validate GWAS configuration.
 
+    Validates config structure and required fields.  File existence checks are
+    skipped by default (set ``check_files=True`` to enable them) since files
+    may not exist yet at config-validation time.
+
     Args:
-        config: Configuration dictionary to validate
+        config: Configuration dictionary to validate (nested or flat)
+        check_files: If True, also verify that referenced files exist on disk
 
     Returns:
         List of validation error messages
     """
+    # Normalize first so nested configs pass validation
+    normalized = _normalize_config(config)
     errors = []
 
-    # Required fields
-    required_fields = ["work_dir", "vcf_path", "phenotype_path"]
-    for field in required_fields:
-        if field not in config:
-            errors.append(f"Missing required field: {field}")
+    # Required: work_dir (or output_dir)
+    has_work_dir = "work_dir" in normalized or "output_dir" in normalized
+    if not has_work_dir:
+        # Check original config for output.results_dir
+        output_section = config.get("output", {})
+        if isinstance(output_section, dict) and output_section.get("results_dir"):
+            has_work_dir = True
+    if not has_work_dir:
+        errors.append("Missing required field: work_dir")
 
-    # Check file paths
-    if "vcf_path" in config and not Path(config["vcf_path"]).exists():
-        errors.append(f"VCF file not found: {config['vcf_path']}")
+    # Required: vcf_path (after normalization) OR variants section present
+    has_vcf = "vcf_path" in normalized
+    if not has_vcf:
+        variants = config.get("variants", {})
+        if isinstance(variants, dict) and variants:
+            has_vcf = True
+    if not has_vcf:
+        errors.append("Missing required field: vcf_path (or variants section)")
 
-    if "phenotype_path" in config and not Path(config["phenotype_path"]).exists():
-        errors.append(f"Phenotype file not found: {config['phenotype_path']}")
+    # Required: phenotype_path (after normalization) OR samples section present
+    has_pheno = "phenotype_path" in normalized
+    if not has_pheno:
+        samples = config.get("samples", {})
+        if isinstance(samples, dict) and samples.get("phenotype_file"):
+            has_pheno = True
+    if not has_pheno:
+        errors.append("Missing required field: phenotype_path (or samples.phenotype_file)")
 
-    # Check work directory
-    if "work_dir" in config:
-        work_dir = Path(config["work_dir"])
-        if work_dir.exists() and not work_dir.is_dir():
-            errors.append(f"work_dir exists but is not a directory: {work_dir}")
+    # Optional file existence checks (only when explicitly requested)
+    if check_files:
+        if "vcf_path" in normalized and not Path(normalized["vcf_path"]).exists():
+            errors.append(f"VCF file not found: {normalized['vcf_path']}")
+
+        if "phenotype_path" in normalized and not Path(normalized["phenotype_path"]).exists():
+            errors.append(f"Phenotype file not found: {normalized['phenotype_path']}")
+
+    # Check work directory (if it exists, it should be a directory)
+    work_dir_val = normalized.get("work_dir")
+    if work_dir_val:
+        work_dir_path = Path(work_dir_val)
+        if work_dir_path.exists() and not work_dir_path.is_dir():
+            errors.append(f"work_dir exists but is not a directory: {work_dir_path}")
 
     return errors
 
@@ -392,10 +526,18 @@ def _load_phenotypes(phenotype_path: str | Path, trait: str | None = None) -> Li
 
 
 # Import required functions from GWAS modules
-from metainformant.gwas.analysis.quality import parse_vcf_full, apply_qc_filters
+from metainformant.gwas.analysis.quality import parse_vcf_full, apply_qc_filters, check_haplodiploidy
 from metainformant.gwas.analysis.structure import compute_pca, compute_kinship_matrix
 from metainformant.gwas.analysis.association import association_test_linear
-from metainformant.gwas.analysis.correction import fdr_correction
+from metainformant.gwas.analysis.correction import fdr_correction, bonferroni_correction
+from metainformant.gwas.analysis.ld_pruning import ld_prune
+from metainformant.gwas.analysis.mixed_model import association_test_mixed, run_mixed_model_gwas
+from metainformant.gwas.analysis.summary_stats import (
+    write_summary_statistics,
+    write_significant_hits,
+    create_results_summary,
+)
+from metainformant.gwas.analysis.annotation import annotate_variants_with_genes
 from metainformant.gwas.visualization.general import generate_all_plots
 
 
@@ -407,10 +549,14 @@ def run_gwas(
 ) -> Dict[str, Any]:
     """Run complete GWAS workflow.
 
+    Supports linear, logistic, and mixed model association testing.
+    Integrates LD pruning, haplodiploidy checking, summary statistics output,
+    and SNP-to-gene annotation.
+
     Args:
         vcf_path: Path to VCF file
         phenotype_path: Path to phenotype file
-        config: GWAS configuration dictionary
+        config: GWAS configuration dictionary (flat or nested YAML format)
         output_dir: Output directory (optional)
 
     Returns:
@@ -424,6 +570,9 @@ def run_gwas(
     from pathlib import Path
 
     logger.info("Starting GWAS workflow")
+
+    # Normalize nested YAML config to flat format
+    config = _normalize_config(config)
 
     # Validate inputs
     vcf_path = Path(vcf_path)
@@ -442,11 +591,11 @@ def run_gwas(
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-    results = {"config": config, "output_dir": str(output_dir), "steps_completed": [], "results": {}}
+    results: Dict[str, Any] = {"config": config, "output_dir": str(output_dir), "steps_completed": [], "results": {}}
 
     try:
         # Step 1: Load and parse VCF
-        logger.info("Parsing VCF file")
+        logger.info("Step 1: Parsing VCF file")
         vcf_data = parse_vcf_full(vcf_path)
         results["steps_completed"].append("parse_vcf")
         results["results"]["vcf_summary"] = {
@@ -455,7 +604,7 @@ def run_gwas(
         }
 
         # Step 2: Apply QC filters
-        logger.info("Applying QC filters")
+        logger.info("Step 2: Applying QC filters")
         qc_config = config.get("quality_control", {})
         qc_result = apply_qc_filters(vcf_data, qc_config)
         filtered_data = qc_result.get("filtered_data", vcf_data)
@@ -466,18 +615,83 @@ def run_gwas(
             "samples_after_qc": len(filtered_data.get("samples", [])),
         }
 
-        # Step 3: Population structure analysis
-        logger.info("Computing population structure")
-        genotypes = filtered_data.get("genotypes", [])
-        if genotypes:
-            pca_result = compute_pca(genotypes, n_components=min(10, len(genotypes)))
-            kinship_matrix = compute_kinship_matrix(genotypes)
+        # Step 2b: Haplodiploidy check (optional, for haplodiploid species)
+        haplodiploidy_config = config.get("haplodiploidy", {})
+        if isinstance(haplodiploidy_config, dict) and haplodiploidy_config.get("enabled", False):
+            logger.info("Step 2b: Checking haplodiploidy")
+            het_threshold = haplodiploidy_config.get("het_threshold", 0.05)
+            haplo_result = check_haplodiploidy(filtered_data, het_threshold=het_threshold)
+            results["results"]["haplodiploidy"] = haplo_result
+            results["steps_completed"].append("haplodiploidy_check")
+
+            # Optionally exclude haploid samples
+            if haplodiploidy_config.get("exclude_haploid", False) and haplo_result["haploid_samples"]:
+                diploid_indices = haplo_result["diploid_samples"]
+                genotypes_by_sample = filtered_data.get("genotypes", [])
+                if genotypes_by_sample and diploid_indices:
+                    filtered_data = dict(filtered_data)
+                    filtered_data["genotypes"] = [genotypes_by_sample[i] for i in diploid_indices]
+                    old_samples = filtered_data.get("samples", [])
+                    if old_samples:
+                        filtered_data["samples"] = [old_samples[i] for i in diploid_indices]
+                    logger.info(f"Excluded {haplo_result['n_haploid']} haploid samples")
+
+        # Get genotypes (samples x variants format)
+        genotypes_by_sample = filtered_data.get("genotypes", [])
+
+        # Transpose to variants x samples for analysis functions
+        if genotypes_by_sample and genotypes_by_sample[0]:
+            n_samples = len(genotypes_by_sample)
+            n_variants = len(genotypes_by_sample[0])
+            genotypes_by_variant = [[genotypes_by_sample[s][v] for s in range(n_samples)] for v in range(n_variants)]
+        else:
+            genotypes_by_variant = []
+            n_samples = 0
+            n_variants = 0
+
+        # Step 3: LD pruning (optional, for PCA)
+        ld_config = config.get("ld_pruning", {})
+        ld_pruned_indices = None
+        if isinstance(ld_config, dict) and ld_config.get("enabled", False) and genotypes_by_variant:
+            logger.info("Step 3: LD pruning before PCA")
+            ld_pruned_indices = ld_prune(
+                genotypes_by_variant,
+                window_size=ld_config.get("window_size", 50),
+                step_size=ld_config.get("step_size", 5),
+                r2_threshold=ld_config.get("r2_threshold", 0.2),
+            )
+            ld_pruned_genotypes = [genotypes_by_variant[i] for i in ld_pruned_indices]
+            results["steps_completed"].append("ld_pruning")
+            results["results"]["ld_pruning"] = {
+                "variants_before": n_variants,
+                "variants_after": len(ld_pruned_indices),
+            }
+        else:
+            ld_pruned_genotypes = genotypes_by_variant
+
+        # Step 4: Population structure analysis (PCA on LD-pruned, kinship on all)
+        logger.info("Step 4: Computing population structure")
+        kinship_result = None
+        if genotypes_by_sample:
+            # PCA on LD-pruned genotypes (transposed back to samples x variants)
+            if ld_pruned_genotypes:
+                pca_genotypes_by_sample = [
+                    [ld_pruned_genotypes[v][s] for v in range(len(ld_pruned_genotypes))] for s in range(n_samples)
+                ]
+            else:
+                pca_genotypes_by_sample = genotypes_by_sample
+
+            pca_result = compute_pca(pca_genotypes_by_sample, n_components=min(10, n_samples))
+
+            # Kinship on all genotypes (not LD-pruned)
+            kinship_result = compute_kinship_matrix(genotypes_by_sample)
+
             results["steps_completed"].append("population_structure")
             results["results"]["pca"] = pca_result
-            results["results"]["kinship"] = kinship_matrix
+            results["results"]["kinship"] = kinship_result
 
-        # Step 4: Load phenotypes
-        logger.info("Loading phenotypes")
+        # Step 5: Load phenotypes
+        logger.info("Step 5: Loading phenotypes")
         trait_name = config.get("trait", config.get("trait_name"))
         phenotypes = _load_phenotypes(phenotype_path, trait=trait_name)
         results["steps_completed"].append("load_phenotypes")
@@ -486,35 +700,123 @@ def run_gwas(
             "trait_name": trait_name or "unknown",
         }
 
-        # Step 5: Association testing
-        logger.info("Running association tests")
+        # Align sample counts
+        min_samples = min(len(phenotypes), n_samples) if genotypes_by_variant else 0
+        if min_samples > 0 and len(phenotypes) != n_samples:
+            logger.warning(
+                f"Sample count mismatch: {n_samples} genotyped, {len(phenotypes)} phenotyped. "
+                f"Using first {min_samples} samples."
+            )
+            phenotypes = phenotypes[:min_samples]
+
+        # Step 6: Association testing
+        model = config.get("model", "linear")
+        logger.info(f"Step 6: Running {model} association tests")
         assoc_results = []
-        if genotypes and phenotypes:
-            for i, genotype in enumerate(genotypes):
-                try:
-                    result = association_test_linear(genotype, phenotypes)
-                    result["variant_id"] = f"variant_{i}"
-                    assoc_results.append(result)
-                except Exception as e:
-                    logger.warning(f"Association test failed for variant {i}: {e}")
+
+        if genotypes_by_variant and phenotypes:
+            if model == "mixed":
+                # Mixed model GWAS
+                if kinship_result and kinship_result.get("status") == "success":
+                    kinship_matrix = kinship_result["kinship_matrix"]
+                    assoc_results = run_mixed_model_gwas(
+                        genotype_matrix=genotypes_by_variant,
+                        phenotypes=phenotypes[:min_samples],
+                        kinship_matrix=kinship_matrix,
+                        variant_info=filtered_data.get("variants"),
+                    )
+                else:
+                    logger.warning("Kinship matrix unavailable, falling back to linear model")
+                    model = "linear"
+
+            if model in ("linear", "logistic"):
+                # Linear/logistic model: test each variant
+                from metainformant.gwas.analysis.association import association_test_logistic
+
+                for i, genotype in enumerate(genotypes_by_variant):
+                    try:
+                        geno_trimmed = genotype[:min_samples]
+                        pheno_trimmed = phenotypes[:min_samples]
+
+                        if model == "logistic":
+                            result = association_test_logistic(geno_trimmed, [int(p) for p in pheno_trimmed])
+                        else:
+                            result = association_test_linear(geno_trimmed, pheno_trimmed)
+
+                        result["variant_id"] = f"variant_{i}"
+                        if filtered_data.get("variants") and i < len(filtered_data["variants"]):
+                            vinfo = filtered_data["variants"][i]
+                            result["chrom"] = vinfo.get("chrom", "")
+                            result["pos"] = vinfo.get("pos", 0)
+                        assoc_results.append(result)
+                    except Exception as e:
+                        logger.warning(f"Association test failed for variant {i}: {e}")
 
         results["steps_completed"].append("association_testing")
         results["results"]["association_results"] = assoc_results
 
-        # Step 6: Multiple testing correction
-        logger.info("Applying multiple testing correction")
+        # Step 7: Multiple testing correction
+        logger.info("Step 7: Applying multiple testing correction")
         if assoc_results:
             p_values = [r.get("p_value", 1.0) for r in assoc_results]
-            _, q_values = fdr_correction(p_values)
+            fdr_result = fdr_correction(p_values)
+
+            if isinstance(fdr_result, dict):
+                q_values = fdr_result.get("adjusted_p_values", [])
+            else:
+                _, q_values = fdr_result
 
             for i, q_val in enumerate(q_values):
                 if i < len(assoc_results):
                     assoc_results[i]["q_value"] = q_val
 
+            bonf_result = bonferroni_correction(p_values)
+            if isinstance(bonf_result, dict):
+                for i, is_sig in enumerate(bonf_result.get("significant", [])):
+                    if i < len(assoc_results):
+                        assoc_results[i]["bonferroni_significant"] = is_sig
+
         results["steps_completed"].append("multiple_testing_correction")
 
-        # Step 7: Generate plots
-        logger.info("Generating visualization plots")
+        # Step 8: Write summary statistics
+        logger.info("Step 8: Writing summary statistics")
+        if assoc_results and filtered_data.get("variants"):
+            variant_info = filtered_data["variants"]
+            try:
+                stats_path = output_dir / "summary_statistics.tsv"
+                write_summary_statistics(assoc_results, variant_info, stats_path)
+                results["steps_completed"].append("summary_statistics")
+                results["results"]["summary_stats_path"] = str(stats_path)
+
+                # Write significant hits
+                sig_path = output_dir / "significant_hits.tsv"
+                threshold = config.get("significance_threshold", 5e-8)
+                write_significant_hits(assoc_results, variant_info, sig_path, threshold=threshold)
+
+                # Write JSON summary
+                summary_path = output_dir / "results_summary.json"
+                summary = create_results_summary(assoc_results, summary_path, threshold=threshold)
+                results["results"]["summary"] = summary
+            except Exception as e:
+                logger.warning(f"Summary statistics writing failed: {e}")
+
+        # Step 9: SNP-to-gene annotation (optional)
+        annotation_config = config.get("annotation", {})
+        if isinstance(annotation_config, dict) and annotation_config.get("enabled", False):
+            gff_path = annotation_config.get("gff3_file")
+            if gff_path and Path(gff_path).exists():
+                logger.info("Step 9: Annotating variants with genes")
+                try:
+                    window_kb = annotation_config.get("window_kb", 50)
+                    annotate_variants_with_genes(assoc_results, gff_path, window_kb=window_kb)
+                    results["steps_completed"].append("annotation")
+                except Exception as e:
+                    logger.warning(f"Variant annotation failed: {e}")
+            else:
+                logger.info("Step 9: Skipping annotation (GFF3 file not found)")
+
+        # Step 10: Generate plots
+        logger.info("Step 10: Generating visualization plots")
         try:
             plot_results = generate_all_plots(
                 association_results=str(output_dir / "association_results.json"),
@@ -533,6 +835,5 @@ def run_gwas(
         results["status"] = "failed"
         results["error"] = str(e)
         logger.error(f"GWAS workflow failed: {e}")
-        # Return results instead of re-raising to allow caller to inspect error
 
     return results
