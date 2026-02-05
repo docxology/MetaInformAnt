@@ -37,15 +37,14 @@ jobs:
       with:
         version: "latest"
         enable-cache: true
-        cache-dependency-glob: "uv.lock"
+        cache-dependency-glob: "**/pyproject.toml"
 
     - name: Set up Python ${{ matrix.python-version }}
       run: uv python install ${{ matrix.python-version }}
 
     - name: Install build dependencies
       run: |
-        uv add --dev build twine
-        uv add --dev --group test  # For build validation tests
+        uv pip install build twine
 
     - name: Build package
       run: |

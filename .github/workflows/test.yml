@@ -54,7 +54,7 @@ jobs:
       with:
         version: "latest"
         enable-cache: true
-        cache-dependency-glob: "uv.lock"
+        cache-dependency-glob: "**/pyproject.toml"
 
     - name: Set up Python ${{ matrix.python-version }}
       run: uv python install ${{ matrix.python-version }}
@@ -187,7 +187,7 @@ jobs:
       with:
         version: "latest"
         enable-cache: true
-        cache-dependency-glob: "uv.lock"
+        cache-dependency-glob: "**/pyproject.toml"
 
     - name: Set up Python 3.12
       run: uv python install 3.12
@@ -218,37 +218,29 @@ jobs:
 
   fat-filesystem-test:
     runs-on: ubuntu-latest
-    container:
-      image: ubuntu:latest
-      options: --tmpfs /tmp:rw,noexec,nosuid,size=100m
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
     - name: Install uv
-      uses: actions/checkout@v4
+      uses: astral-sh/setup-uv@v3
       with:
-        repository: astral-sh/uv
-        path: uv-install
+        version: "latest"
 
-    - name: Set up uv
-      run: |
-        cd uv-install
-        cargo build --release
-        sudo cp target/release/uv /usr/local/bin/
+    - name: Set up Python 3.12
+      run: uv python install 3.12
 
     - name: Create FAT-like filesystem simulation
       run: |
-        # Simulate FAT filesystem limitations
-        sudo mkdir -p /tmp/fat_test
-        sudo mount -t tmpfs -o size=1g,nr_inodes=1000 tmpfs /tmp/fat_test
-        cd /tmp/fat_test
-        git clone ${{ github.server_url }}/${{ github.repository }} .
+        # Simulate FAT filesystem limitations using tmpfs
+        sudo mkdir -p /mnt/fat_test
+        sudo mount -t tmpfs -o size=1g,nr_inodes=1000 tmpfs /mnt/fat_test
+        sudo cp -a . /mnt/fat_test/
 
     - name: Test on simulated FAT filesystem
       run: |
-        cd /tmp/fat_test
-        bash scripts/package/setup.sh
+        cd /mnt/fat_test
+        bash scripts/package/setup.sh --skip-tests
         bash scripts/package/test.sh --mode fast
 
   summary:

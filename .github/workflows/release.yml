@@ -68,13 +68,13 @@ jobs:
       with:
         version: "latest"
         enable-cache: true
-        cache-dependency-glob: "uv.lock"
+        cache-dependency-glob: "**/pyproject.toml"
 
     - name: Set up Python 3.12
       run: uv python install 3.12
 
     - name: Install build dependencies
-      run: uv add --dev build twine
+      run: uv pip install build twine
 
     - name: Build distribution packages
       run: bash scripts/package/build.sh --check
@@ -115,7 +115,7 @@ jobs:
 
     - name: Install documentation dependencies
       run: |
-        uv add --dev sphinx sphinx-autodoc-typehints myst-parser nbsphinx
+        uv pip install sphinx sphinx-autodoc-typehints myst-parser nbsphinx
 
     - name: Build documentation
       run: bash scripts/package/uv_docs.sh build
