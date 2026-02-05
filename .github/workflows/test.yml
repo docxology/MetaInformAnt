@@ -236,7 +236,7 @@ jobs:
         # Copy only essential source files (exclude .git, output, .venv, etc.)
         sudo mkdir -p /mnt/fat_test
         sudo mount -t tmpfs -o size=2g,nr_inodes=10000 tmpfs /mnt/fat_test
-        rsync -a --exclude='.git' --exclude='output' --exclude='.venv' --exclude='.uv-cache' --exclude='node_modules' . /mnt/fat_test/
+        rsync -rl --exclude='.git' --exclude='output' --exclude='.venv' --exclude='.uv-cache' --exclude='node_modules' . /mnt/fat_test/
 
     - name: Test on simulated FAT filesystem
       run: |
