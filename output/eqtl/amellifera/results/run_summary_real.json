@@ -1,0 +1,14 @@
+{
+  "analysis_type": "Real A. mellifera eQTL Analysis",
+  "start_time": "2026-02-05T12:41:00.635974",
+  "end_time": "2026-02-05T12:42:51.652618",
+  "elapsed_seconds": 111.016644,
+  "expression_source": "output/amalgkit/apis_mellifera_all/work/quant",
+  "n_samples": 187,
+  "n_genes": 1000,
+  "n_variants": 3000,
+  "n_tests": 293450,
+  "n_significant": 0,
+  "n_egenes": 0,
+  "note": "Expression data is REAL from A. mellifera RNA-seq; genotypes are synthetic"
+}

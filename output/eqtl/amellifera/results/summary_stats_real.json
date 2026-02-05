@@ -1,0 +1,11 @@
+{
+  "n_tests": 293450,
+  "n_egenes": 0,
+  "n_eqtls": 0,
+  "fdr_threshold": 0.05,
+  "mean_effect_size": 110.56264832660707,
+  "species": "Apis mellifera",
+  "n_samples": 187,
+  "n_genes_tested": 1000,
+  "data_source": "Real RNA-seq from ENA/NCBI"
+}

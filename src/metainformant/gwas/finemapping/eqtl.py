@@ -95,14 +95,22 @@ def cis_eqtl_scan(
         if len(cis_variants) == 0:
             continue
 
-        gene_expr = expr.loc[gene_id].values
+        gene_expr = expr.loc[gene_id]
+        # Handle potential duplicate indices
+        if isinstance(gene_expr, pd.DataFrame):
+            gene_expr = gene_expr.iloc[0]
+        gene_expr = gene_expr.values
 
         for _, var_row in cis_variants.iterrows():
             var_id = var_row["variant_id"]
             if var_id not in geno.index:
                 continue
 
-            var_geno = geno.loc[var_id].values
+            var_geno = geno.loc[var_id]
+            # Handle potential duplicate indices
+            if isinstance(var_geno, pd.DataFrame):
+                var_geno = var_geno.iloc[0]
+            var_geno = var_geno.values
 
             # Filter by MAF
             maf = _compute_maf(var_geno)
@@ -297,8 +305,15 @@ def eqtl_effect_sizes(
         if gene_id not in expr.index or var_id not in geno.index:
             continue
 
-        gene_expr = expr.loc[gene_id].values
-        var_geno = geno.loc[var_id].values
+        gene_expr = expr.loc[gene_id]
+        if isinstance(gene_expr, pd.DataFrame):
+            gene_expr = gene_expr.iloc[0]
+        gene_expr = gene_expr.values
+        
+        var_geno = geno.loc[var_id]
+        if isinstance(var_geno, pd.DataFrame):
+            var_geno = var_geno.iloc[0]
+        var_geno = var_geno.values
 
         beta, se, pval = _linear_regression(gene_expr, var_geno)
         r2 = _compute_r_squared(gene_expr, var_geno)
@@ -385,6 +400,10 @@ def _linear_regression(
     y: np.ndarray, x: np.ndarray
 ) -> tuple[float, float, float]:
     """Simple linear regression returning beta, SE, p-value."""
+    # Ensure 1D arrays
+    y = np.asarray(y).flatten()
+    x = np.asarray(x).flatten()
+    
     valid = ~(np.isnan(y) | np.isnan(x))
     if valid.sum() < 3:
         return np.nan, np.nan, 1.0
