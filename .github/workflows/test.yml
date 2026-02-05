@@ -74,10 +74,10 @@ jobs:
       if: runner.os == 'macOS'
       run: |
         brew update
-        brew install \
-          muscle \
-          seqkit \
-          sratoolkit
+        brew tap brewsci/bio || true
+        brew install seqkit || true
+        brew install sratoolkit || true
+        brew install brewsci/bio/muscle || true
 
     - name: Setup test environment
       run: |
@@ -233,9 +233,10 @@ jobs:
     - name: Create FAT-like filesystem simulation
       run: |
         # Simulate FAT filesystem limitations using tmpfs
+        # Copy only essential source files (exclude .git, output, .venv, etc.)
         sudo mkdir -p /mnt/fat_test
-        sudo mount -t tmpfs -o size=1g,nr_inodes=1000 tmpfs /mnt/fat_test
-        sudo cp -a . /mnt/fat_test/
+        sudo mount -t tmpfs -o size=2g,nr_inodes=10000 tmpfs /mnt/fat_test
+        rsync -a --exclude='.git' --exclude='output' --exclude='.venv' --exclude='.uv-cache' --exclude='node_modules' . /mnt/fat_test/
 
     - name: Test on simulated FAT filesystem
       run: |

@@ -42,9 +42,10 @@ jobs:
     - name: Set up Python ${{ matrix.python-version }}
       run: uv python install ${{ matrix.python-version }}
 
-    - name: Install build dependencies
+    - name: Install build tools
       run: |
-        uv pip install build twine
+        uv tool install build
+        uv tool install twine
 
     - name: Build package
       run: |
