@@ -1,0 +1,14 @@
+{
+	"n_targets": 28355,
+	"n_bootstraps": 0,
+	"n_processed": 9643772,
+	"n_pseudoaligned": 5952419,
+	"n_unique": 3048601,
+	"p_pseudoaligned": 61.7,
+	"p_unique": 31.6,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Thu Feb  5 12:51:32 2026",
+	"call": "kallisto quant -i output/amalgkit/apis_mellifera_all/work/index/Apis_mellifera_transcripts.idx -o output/amalgkit/apis_mellifera_all/work/quant/ERR3632874 -t 2 /Volumes/blue/data/apis_mellifera/ERR3632874/ERR3632874_1.fastq.gz /Volumes/blue/data/apis_mellifera/ERR3632874/ERR3632874_2.fastq.gz"
+}

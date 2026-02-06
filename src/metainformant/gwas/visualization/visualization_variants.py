@@ -371,7 +371,7 @@ def missingness_plot(
             error_msg = f"VCF parsing failed: file not found: {vcf_path}"
             logger.error(error_msg)
             return {"status": "failed", "error": error_msg}
-        # Try to parse VCF - placeholder for real parsing
+        # Parse VCF using basic parser
         try:
             # Attempt basic VCF reading
             vcf_data = _parse_vcf_basic(vcf_file)

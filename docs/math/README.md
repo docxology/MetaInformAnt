@@ -1,10 +1,18 @@
 # MATH
 
 ## Overview
-Functionality for math.
+Mathematical biology and theoretical modeling module for METAINFORMANT.
 
 ## 📦 Contents
-
+- **[core/](core/)**
+- **[decision_theory/](decision_theory/)**
+- **[epidemiology/](epidemiology/)**
+- **[evolutionary_dynamics/](evolutionary_dynamics/)**
+- **[perception/](perception/)**
+- **[population_genetics/](population_genetics/)**
+- **[quantitative_genetics/](quantitative_genetics/)**
+- `[__init__.py](__init__.py)`
+- `[coalescent.py](coalescent.py)`
 
 ## 📊 Structure
 
@@ -17,5 +25,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.math import ...
+from metainformant.metainformant.math import ...
 ```

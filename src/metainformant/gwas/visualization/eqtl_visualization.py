@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import matplotlib.pyplot as plt
+
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
@@ -117,14 +118,14 @@ def plot_eqtl_boxplot(
     # Create boxplot
     data = [groups[0], groups[1], groups[2]]
     labels = ["0/0 (Ref)", "0/1 (Het)", "1/1 (Alt)"]
-    
+
     # Filter empty groups
     valid_data = [(d, l) for d, l in zip(data, labels) if len(d) > 0]
     if valid_data:
         data, labels = zip(*valid_data)
         bp = ax.boxplot(data, labels=labels, patch_artist=True)
-        
-        colors = ["#4CAF50", "#FFC107", "#F44336"][:len(data)]
+
+        colors = ["#4CAF50", "#FFC107", "#F44336"][: len(data)]
         for patch, color in zip(bp["boxes"], colors):
             patch.set_facecolor(color)
             patch.set_alpha(0.6)
@@ -172,10 +173,7 @@ def plot_locuszoom_eqtl(
         logger.warning("matplotlib not available for plotting")
         return None
 
-    fig, (ax1, ax2) = plt.subplots(
-        2, 1, figsize=kwargs.get("figsize", (12, 8)),
-        height_ratios=[3, 1], sharex=True
-    )
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=kwargs.get("figsize", (12, 8)), height_ratios=[3, 1], sharex=True)
 
     # Filter to gene region
     if "position" not in results.columns:
@@ -197,8 +195,14 @@ def plot_locuszoom_eqtl(
 
     ax1.scatter(positions, log_pval, c=colors, s=50, alpha=0.7, edgecolors="black", linewidth=0.5)
     ax1.scatter(
-        positions.iloc[lead_idx], log_pval.iloc[lead_idx],
-        c="purple", s=150, marker="D", edgecolors="black", linewidth=2, zorder=10
+        positions.iloc[lead_idx],
+        log_pval.iloc[lead_idx],
+        c="purple",
+        s=150,
+        marker="D",
+        edgecolors="black",
+        linewidth=2,
+        zorder=10,
     )
 
     # Significance line
@@ -271,14 +275,38 @@ def plot_eqtl_summary(
         )
         axes[1].set_title("Significance Rate")
 
-    # Effect size distribution (placeholder)
-    axes[2].text(
-        0.5, 0.5, f"Mean |β|: {summary_stats.get('mean_effect_size', 0):.3f}",
-        ha="center", va="center", fontsize=14, transform=axes[2].transAxes
-    )
+    # Effect size distribution
+    effect_sizes = summary_stats.get("effect_sizes")
+    if effect_sizes is not None and len(effect_sizes) > 0:
+        axes[2].hist(
+            np.abs(effect_sizes),
+            bins=min(30, max(5, len(effect_sizes) // 5)),
+            color="#2196F3",
+            alpha=0.7,
+            edgecolor="black",
+        )
+        axes[2].axvline(
+            np.mean(np.abs(effect_sizes)),
+            color="red",
+            linestyle="--",
+            label=f"Mean |β|: {np.mean(np.abs(effect_sizes)):.3f}",
+        )
+        axes[2].set_xlabel("|Effect Size (β)|")
+        axes[2].set_ylabel("Count")
+        axes[2].legend(fontsize=8)
+    else:
+        axes[2].text(
+            0.5,
+            0.5,
+            f"Mean |β|: {summary_stats.get('mean_effect_size', 0):.3f}",
+            ha="center",
+            va="center",
+            fontsize=14,
+            transform=axes[2].transAxes,
+        )
+        axes[2].set_xticks([])
+        axes[2].set_yticks([])
     axes[2].set_title("Effect Size")
-    axes[2].set_xticks([])
-    axes[2].set_yticks([])
 
     plt.tight_layout()
 

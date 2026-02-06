@@ -1,10 +1,13 @@
 # SINGLECELL
 
 ## Overview
-Functionality for singlecell.
+Single-cell analysis module for METAINFORMANT.
 
 ## 📦 Contents
-- **[config/](config/)**
+- **[analysis/](analysis/)**
+- **[data/](data/)**
+- **[visualization/](visualization/)**
+- `[__init__.py](__init__.py)`
 
 ## 📊 Structure
 
@@ -17,5 +20,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.singlecell import ...
+from metainformant.metainformant.singlecell import ...
 ```

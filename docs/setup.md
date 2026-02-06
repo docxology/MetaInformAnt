@@ -5,7 +5,7 @@ Environment management uses `uv` with Python 3.11+.
 ## Quick Setup
 
 ```bash
-git clone https://github.com/q/metainformant.git
+git clone https://github.com/docxology/metainformant.git
 cd metainformant
 bash scripts/package/setup.sh --ncbi-email "you@example.com"
 # Default setup installs dev + scientific dependencies + amalgkit

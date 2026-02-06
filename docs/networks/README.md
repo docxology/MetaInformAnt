@@ -1,10 +1,12 @@
 # NETWORKS
 
 ## Overview
-Functionality for networks.
+Network analysis module for METAINFORMANT.
 
 ## 📦 Contents
-
+- **[analysis/](analysis/)**
+- **[interaction/](interaction/)**
+- `[__init__.py](__init__.py)`
 
 ## 📊 Structure
 
@@ -17,5 +19,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.networks import ...
+from metainformant.metainformant.networks import ...
 ```

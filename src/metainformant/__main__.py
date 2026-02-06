@@ -136,6 +136,11 @@ def _list_modules() -> None:
         ("phenotype", "Phenotypic trait analysis"),
         ("ecology", "Ecological and community analysis"),
         ("epigenome", "Epigenomic data analysis"),
+        ("longread", "Long-read sequencing analysis (ONT, PacBio)"),
+        ("structural_variants", "Structural variant detection and analysis"),
+        ("spatial", "Spatial transcriptomics analysis"),
+        ("metagenomics", "Microbiome and metagenomic analysis"),
+        ("pharmacogenomics", "Clinical pharmacogenomic variant analysis"),
         ("menu", "Interactive menu and discovery system"),
     ]
 

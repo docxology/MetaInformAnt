@@ -46,4 +46,3 @@ __all__ = [
     "eqtl_effect_sizes",
     "eqtl_summary_stats",
 ]
-

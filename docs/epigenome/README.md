@@ -1,10 +1,14 @@
 # EPIGENOME
 
 ## Overview
-Functionality for epigenome.
+Epigenome analysis module for METAINFORMANT.
 
 ## 📦 Contents
-
+- **[analysis/](analysis/)**
+- **[assays/](assays/)**
+- **[visualization/](visualization/)**
+- **[workflow/](workflow/)**
+- `[__init__.py](__init__.py)`
 
 ## 📊 Structure
 
@@ -17,5 +21,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.epigenome import ...
+from metainformant.metainformant.epigenome import ...
 ```

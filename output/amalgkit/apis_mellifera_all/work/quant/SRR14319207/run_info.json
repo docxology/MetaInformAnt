@@ -1,0 +1,14 @@
+{
+	"n_targets": 28355,
+	"n_bootstraps": 0,
+	"n_processed": 19920416,
+	"n_pseudoaligned": 16689681,
+	"n_unique": 10583380,
+	"p_pseudoaligned": 83.8,
+	"p_unique": 53.1,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Thu Feb  5 18:41:01 2026",
+	"call": "kallisto quant -i output/amalgkit/apis_mellifera_all/work/index/Apis_mellifera_transcripts.idx -o output/amalgkit/apis_mellifera_all/work/quant/SRR14319207 -t 2 --single -l 200 -s 30 /Volumes/blue/data/apis_mellifera/SRR14319207/SRR14319207.fastq.gz"
+}

@@ -1,10 +1,17 @@
 # CORE
 
 ## Overview
-Functionality for core.
+Core utilities for METAINFORMANT bioinformatics toolkit.
 
 ## 📦 Contents
-
+- **[data/](data/)**
+- **[engine/](engine/)**
+- **[execution/](execution/)**
+- **[io/](io/)**
+- **[output/](output/)**
+- **[ui/](ui/)**
+- **[utils/](utils/)**
+- `[__init__.py](__init__.py)`
 
 ## 📊 Structure
 
@@ -17,5 +24,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.core import ...
+from metainformant.metainformant.core import ...
 ```

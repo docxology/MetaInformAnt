@@ -1,10 +1,15 @@
 # LIFE_EVENTS
 
 ## Overview
-Functionality for life_events.
+Life events and trajectory analysis module for METAINFORMANT.
 
 ## 📦 Contents
-
+- **[analysis/](analysis/)**
+- **[core/](core/)**
+- **[models/](models/)**
+- **[visualization/](visualization/)**
+- **[workflow/](workflow/)**
+- `[__init__.py](__init__.py)`
 
 ## 📊 Structure
 
@@ -17,5 +22,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.life_events import ...
+from metainformant.metainformant.life_events import ...
 ```

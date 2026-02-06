@@ -1,0 +1,14 @@
+{
+	"n_targets": 28355,
+	"n_bootstraps": 0,
+	"n_processed": 8918526,
+	"n_pseudoaligned": 2008300,
+	"n_unique": 1215262,
+	"p_pseudoaligned": 22.5,
+	"p_unique": 13.6,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Thu Feb  5 14:10:16 2026",
+	"call": "kallisto quant -i output/amalgkit/apis_mellifera_all/work/index/Apis_mellifera_transcripts.idx -o output/amalgkit/apis_mellifera_all/work/quant/ERR413299 -t 2 --single -l 200 -s 30 /Volumes/blue/data/apis_mellifera/ERR413299/ERR413299.fastq.gz"
+}

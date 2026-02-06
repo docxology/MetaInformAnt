@@ -6,7 +6,7 @@ This example demonstrates genome-wide association study (GWAS) statistical analy
 Usage:
     python examples/gwas/example_association.py
 
-Output:
+Expected output:
     output/examples/gwas/association_results.json
 """
 
@@ -17,8 +17,8 @@ from pathlib import Path
 import numpy as np
 
 from metainformant.core import io
-from metainformant.gwas.association import association_test_linear, association_test_logistic
-from metainformant.gwas.correction import bonferroni_correction, fdr_correction
+from metainformant.gwas.analysis.association import association_test_linear, association_test_logistic
+from metainformant.gwas.analysis.correction import bonferroni_correction, fdr_correction
 
 
 def main():
@@ -119,22 +119,21 @@ def main():
 
     # Bonferroni correction
     bonferroni_result = bonferroni_correction(linear_p_values, alpha=0.05)
-    bonferroni_rejected = bonferroni_result["significant_indices"]
+    bonferroni_rejected = bonferroni_result["significant"]
     bonferroni_threshold = bonferroni_result["corrected_alpha"]
 
     # FDR correction (Benjamini-Hochberg)
     fdr_result = fdr_correction(linear_p_values, alpha=0.05)
-    fdr_rejected = fdr_result["significant_indices"]
-    fdr_thresholds = [fdr_result["alpha"]] * len(linear_p_values)
+    fdr_rejected = fdr_result["significant"]
 
     correction_results = {
         "bonferroni": {
             "alpha_threshold": bonferroni_threshold,
-            "significant_snps": sum(bonferroni_rejected),
+            "significant_snps": int(sum(bonferroni_rejected)),
             "significant_indices": [i for i, rej in enumerate(bonferroni_rejected) if rej],
         },
         "fdr": {
-            "significant_snps": sum(fdr_rejected),
+            "significant_snps": int(sum(fdr_rejected)),
             "significant_indices": [i for i, rej in enumerate(fdr_rejected) if rej],
         },
     }
@@ -207,7 +206,9 @@ def main():
     print("\n7. Creating comprehensive association analysis results...")
 
     association_results = {
-        "gwas_association_testing_demo": {
+        "example": "gwas_association_testing",
+        "domain": "gwas",
+        "results": {
             "timestamp": "2024-12-26T10:00:00Z",
             "dataset": {
                 "n_samples": n_samples,
@@ -248,7 +249,7 @@ def main():
                 "Consider statistical power in study design",
                 "Validate significant associations",
             ],
-        }
+        },
     }
 
     results_file = output_dir / "association_results.json"

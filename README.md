@@ -291,7 +291,7 @@ graph TD
 
 ```bash
 # Clone repository
-git clone https://github.com/q/metainformant.git
+git clone https://github.com/docxology/metainformant.git
 cd metainformant
 
 # Automated setup with uv (recommended - handles FAT filesystems automatically)
@@ -925,7 +925,7 @@ Contributions are welcome! Please:
 3. Update documentation
 4. Use informative commit messages
 
-## Recent Improvements (December 2025)
+## Recent Improvements
 
 ### Performance Enhancements
 - **Intelligent Caching**: Automatic caching for expensive computations (Tajima's constants, entropy calculations)
@@ -960,7 +960,7 @@ If you use METAINFORMANT in your research, please cite this repository:
   author = {MetaInformAnt Development Team},
   title = {MetaInformAnt: Comprehensive Bioinformatics Toolkit},
   year = {2025},
-  url = {https://github.com/q/MetaInformAnt},
+  url = {https://github.com/docxology/MetaInformAnt},
   version = {0.2.0}
 }
 ```
@@ -971,9 +971,9 @@ This project is licensed under the Apache License, Version 2.0 - see [LICENSE](L
 
 ## Contact
 
-- **Repository**: https://github.com/q/MetaInformAnt
-- **Issues**: https://github.com/q/MetaInformAnt/issues
-- **Documentation**: https://github.com/q/MetaInformAnt/blob/main/docs/
+- **Repository**: https://github.com/docxology/MetaInformAnt
+- **Issues**: https://github.com/docxology/MetaInformAnt/issues
+- **Documentation**: https://github.com/docxology/MetaInformAnt/blob/main/docs/
 
 ## Acknowledgments
 

@@ -1,10 +1,18 @@
 # PHENOTYPE
 
 ## Overview
-Functionality for phenotype.
+Phenotype module for MetaInformAnt.
 
 ## 📦 Contents
-
+- **[analysis/](analysis/)**
+- **[behavior/](behavior/)**
+- **[chemical/](chemical/)**
+- **[data/](data/)**
+- **[electronic/](electronic/)**
+- **[morphological/](morphological/)**
+- **[sonic/](sonic/)**
+- **[visualization/](visualization/)**
+- `[__init__.py](__init__.py)`
 
 ## 📊 Structure
 
@@ -17,5 +25,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.phenotype import ...
+from metainformant.metainformant.phenotype import ...
 ```

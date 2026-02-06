@@ -35,6 +35,8 @@ Modules:
 - longread: Long-read sequencing analysis (ONT, PacBio)
 - structural_variants: Structural variant detection and analysis
 - spatial: Spatial transcriptomics analysis
+- metagenomics: Microbiome and metagenomic analysis
+- pharmacogenomics: Clinical pharmacogenomic variant analysis
 """
 
 from __future__ import annotations
@@ -58,10 +60,12 @@ from . import (
     longread,
     math,
     menu,
+    metagenomics,
     ml,
     multiomics,
     networks,
     ontology,
+    pharmacogenomics,
     phenotype,
     protein,
     quality,
@@ -101,6 +105,9 @@ __all__ = [
     "spatial",
     "structural_variants",
     "simulation",
+    # Clinical & environmental modules
+    "metagenomics",
+    "pharmacogenomics",
     # Annotation & metadata modules
     "ontology",
     "phenotype",

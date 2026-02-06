@@ -524,10 +524,25 @@ def write_filtered_vcf(filtered_data: Dict[str, Any], output_path: Union[str, Pa
 
     logger.info(f"Writing filtered VCF to {output_path}")
 
-    # This is a placeholder implementation
-    # Full implementation would reconstruct VCF format from filtered data
     with open(output_path, "w") as f:
         f.write("##fileformat=VCFv4.2\n")
+
+        # Write metadata headers from original VCF data
+        metadata = filtered_data.get("metadata", {})
+        for key, value in metadata.items():
+            # Skip fileformat since we already wrote it
+            if key.lower() == "fileformat":
+                continue
+            f.write(f"##{key}={value}\n")
+
+        # Write standard VCF header definitions if not already present
+        if "INFO" not in metadata:
+            f.write('##INFO=<ID=.,Number=.,Type=String,Description="Variant information">\n')
+        if "FORMAT" not in metadata:
+            f.write('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n')
+        if "FILTER" not in metadata:
+            f.write('##FILTER=<ID=PASS,Description="All filters passed">\n')
+
         f.write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT")
         for sample in filtered_data.get("samples", []):
             f.write(f"\t{sample}")

@@ -1,10 +1,13 @@
 # SIMULATION
 
 ## Overview
-Functionality for simulation.
+Evolutionary and Population Genetics Simulation module for METAINFORMANT.
 
 ## 📦 Contents
-
+- **[models/](models/)**
+- **[visualization/](visualization/)**
+- **[workflow/](workflow/)**
+- `[__init__.py](__init__.py)`
 
 ## 📊 Structure
 
@@ -17,5 +20,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.simulation import ...
+from metainformant.metainformant.simulation import ...
 ```

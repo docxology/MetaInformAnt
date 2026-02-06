@@ -18,7 +18,7 @@ Get started with metainformant in minutes.
 
 ```bash
 # Clone repository
-git clone https://github.com/q/metainformant.git
+git clone https://github.com/docxology/metainformant.git
 cd metainformant
 
 # Run automated setup script (installs dev + scientific deps + amalgkit by default)
@@ -35,7 +35,7 @@ source /tmp/metainformant_venv/bin/activate
 
 ```bash
 # Clone repository
-git clone https://github.com/q/metainformant.git
+git clone https://github.com/docxology/metainformant.git
 cd metainformant
 
 # Install uv if not already installed
@@ -377,7 +377,7 @@ chmod +x scripts/**/*.sh
 
 - **Documentation**: See [docs/](docs/) directory for comprehensive guides
 - **Examples**: Check [scripts/](scripts/) for working examples
-- **Issues**: Report issues at https://github.com/q/metainformant/issues
+- **Issues**: Report issues at https://github.com/docxology/metainformant/issues
 
 ---
 

@@ -215,18 +215,7 @@ Some fallback implementations are acceptable when they:
 
 This policy ensures METAINFORMANT provides **genuine functionality** at every level. Users can rely on all documented features actually working, and developers can trust that the codebase contains real implementations that perform meaningful computations.
 
-**Remember: If you can't implement it with real algorithms and real data, consider whether the functionality should exist at all.**</content>
-</xai:function_call">The file docs/NO_MOCKING_POLICY.md has been created.
-
-When you're done with your current set of changes to this file, you should call the read_lints tool with the specific file path and fix any newly introduced errors. 
-
-<xai:function_call name="todo_write">
-<parameter name="merge">true
-
-
-
-
-
+**Remember: If you can't implement it with real algorithms and real data, consider whether the functionality should exist at all.**
 
 
 

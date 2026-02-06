@@ -1,10 +1,19 @@
 # DNA
 
 ## Overview
-Functionality for dna.
+DNA sequence analysis and genomics module for METAINFORMANT.
 
 ## 📦 Contents
-
+- **[alignment/](alignment/)**
+- **[expression/](expression/)**
+- **[external/](external/)**
+- **[integration/](integration/)**
+- **[io/](io/)**
+- **[phylogeny/](phylogeny/)**
+- **[population/](population/)**
+- **[sequence/](sequence/)**
+- **[variation/](variation/)**
+- `[__init__.py](__init__.py)`
 
 ## 📊 Structure
 
@@ -17,5 +26,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.dna import ...
+from metainformant.metainformant.dna import ...
 ```

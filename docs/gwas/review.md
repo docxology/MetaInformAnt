@@ -97,16 +97,19 @@ This document provides a review of the METAINFORMANT GWAS module, assessing end-
 - Integrate with workflow downstream steps
 
 #### 2. Variant Download Functionality
-**Status**: ⚠️ **PARTIAL**
+**Status**: ✅ **FIXED** (February 2026)
 
-**Current State**: 
-- `download_variant_data()` exists but is a placeholder
-- Returns "not yet implemented" status
+**Current State**:
+- `download_variant_data()` provides dbSNP download via real FTP and a README guide for study-level VCF
+- `_download_from_ftp()` replaced with real NCBI FTP download using ftplib
+- Annotation download has FTP fallback when NCBI Datasets API fails
+- SRA download raises proper errors instead of returning empty directories
 - Configuration support exists for dbSNP, 1000 Genomes, custom sources
 
-**Impact**: 
-- Users cannot download variant data from public databases
-- Must provide pre-existing VCF files or call variants from BAM/CRAM
+**Resolution**:
+- Real FTP downloads for genomes and annotations via NCBI FTP
+- Proper error handling with `RuntimeError` on failure instead of silent empty dirs
+- Fixed broken import path (`core.io.io.io.download` → `core.io.download`)
 
 **Recommendation**: 
 - Implement basic HTTP/FTP VCF download for custom URLs

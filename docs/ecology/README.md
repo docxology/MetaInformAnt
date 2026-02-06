@@ -1,10 +1,12 @@
 # ECOLOGY
 
 ## Overview
-Functionality for ecology.
+Ecology and community analysis module for METAINFORMANT.
 
 ## 📦 Contents
-
+- **[analysis/](analysis/)**
+- **[visualization/](visualization/)**
+- `[__init__.py](__init__.py)`
 
 ## 📊 Structure
 
@@ -17,5 +19,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.ecology import ...
+from metainformant.metainformant.ecology import ...
 ```

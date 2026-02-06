@@ -68,9 +68,7 @@ def cis_eqtl_scan(
     results = []
 
     # Ensure sample alignment
-    common_samples = list(
-        set(expression_matrix.columns) & set(genotype_matrix.columns)
-    )
+    common_samples = list(set(expression_matrix.columns) & set(genotype_matrix.columns))
     if len(common_samples) < 10:
         logger.warning(f"Only {len(common_samples)} common samples found")
         return pd.DataFrame()
@@ -121,15 +119,17 @@ def cis_eqtl_scan(
             beta, se, pval = _linear_regression(gene_expr, var_geno)
             distance = int(var_row["position"] - tss)
 
-            results.append({
-                "gene_id": gene_id,
-                "variant_id": var_id,
-                "beta": beta,
-                "se": se,
-                "pvalue": pval,
-                "distance": distance,
-                "maf": maf,
-            })
+            results.append(
+                {
+                    "gene_id": gene_id,
+                    "variant_id": var_id,
+                    "beta": beta,
+                    "se": se,
+                    "pvalue": pval,
+                    "distance": distance,
+                    "maf": maf,
+                }
+            )
 
     result_df = pd.DataFrame(results)
     logger.info(f"cis-eQTL scan complete: {len(result_df)} tests")
@@ -164,9 +164,7 @@ def trans_eqtl_scan(
     logger.info("Starting trans-eQTL scan")
 
     results = []
-    common_samples = list(
-        set(expression_matrix.columns) & set(genotype_matrix.columns)
-    )
+    common_samples = list(set(expression_matrix.columns) & set(genotype_matrix.columns))
     expr = expression_matrix[common_samples]
     geno = genotype_matrix[common_samples]
 
@@ -199,15 +197,17 @@ def trans_eqtl_scan(
             beta, se, pval = _linear_regression(gene_expr, var_geno)
 
             if pval < pvalue_threshold:
-                results.append({
-                    "gene_id": gene_id,
-                    "variant_id": var_id,
-                    "beta": beta,
-                    "se": se,
-                    "pvalue": pval,
-                    "is_trans": True,
-                    "maf": maf,
-                })
+                results.append(
+                    {
+                        "gene_id": gene_id,
+                        "variant_id": var_id,
+                        "beta": beta,
+                        "se": se,
+                        "pvalue": pval,
+                        "is_trans": True,
+                        "maf": maf,
+                    }
+                )
 
     result_df = pd.DataFrame(results)
     logger.info(f"trans-eQTL scan complete: {len(result_df)} significant hits")
@@ -242,9 +242,7 @@ def conditional_eqtl(
     lead_geno = genotype_matrix.loc[lead_variant_id].values
 
     if test_variant_ids is None:
-        test_variant_ids = [
-            v for v in genotype_matrix.index if v != lead_variant_id
-        ]
+        test_variant_ids = [v for v in genotype_matrix.index if v != lead_variant_id]
 
     results = []
     for var_id in test_variant_ids:
@@ -254,20 +252,20 @@ def conditional_eqtl(
         var_geno = genotype_matrix.loc[var_id].values
 
         # Residualize expression on lead variant
-        _, _, lead_resid = _linear_regression_residuals(
-            expression_vector, lead_geno
-        )
+        _, _, lead_resid = _linear_regression_residuals(expression_vector, lead_geno)
 
         # Test residuals vs this variant
         beta, se, pval = _linear_regression(lead_resid, var_geno)
 
-        results.append({
-            "variant_id": var_id,
-            "conditioned_on": lead_variant_id,
-            "beta": beta,
-            "se": se,
-            "pvalue": pval,
-        })
+        results.append(
+            {
+                "variant_id": var_id,
+                "conditioned_on": lead_variant_id,
+                "beta": beta,
+                "se": se,
+                "pvalue": pval,
+            }
+        )
 
     return pd.DataFrame(results)
 
@@ -291,9 +289,7 @@ def eqtl_effect_sizes(
             - r_squared: Variance explained
             - mean_expr_by_genotype: Mean expression per genotype class
     """
-    common_samples = list(
-        set(expression_matrix.columns) & set(genotype_matrix.columns)
-    )
+    common_samples = list(set(expression_matrix.columns) & set(genotype_matrix.columns))
     expr = expression_matrix[common_samples]
     geno = genotype_matrix[common_samples]
 
@@ -309,7 +305,7 @@ def eqtl_effect_sizes(
         if isinstance(gene_expr, pd.DataFrame):
             gene_expr = gene_expr.iloc[0]
         gene_expr = gene_expr.values
-        
+
         var_geno = geno.loc[var_id]
         if isinstance(var_geno, pd.DataFrame):
             var_geno = var_geno.iloc[0]
@@ -325,15 +321,17 @@ def eqtl_effect_sizes(
             if mask.sum() > 0:
                 means[f"mean_expr_gt{gt}"] = np.mean(gene_expr[mask])
 
-        results.append({
-            "gene_id": gene_id,
-            "variant_id": var_id,
-            "beta": beta,
-            "se": se,
-            "pvalue": pval,
-            "r_squared": r2,
-            **means,
-        })
+        results.append(
+            {
+                "gene_id": gene_id,
+                "variant_id": var_id,
+                "beta": beta,
+                "se": se,
+                "pvalue": pval,
+                "r_squared": r2,
+                **means,
+            }
+        )
 
     return pd.DataFrame(results)
 
@@ -356,9 +354,10 @@ def eqtl_summary_stats(
 
     # FDR correction
     from scipy import stats
+
     pvals = cis_results["pvalue"].values
     _, fdr_pvals = stats.false_discovery_control(pvals, method="bh"), None
-    
+
     # Simple Benjamini-Hochberg
     n = len(pvals)
     sorted_idx = np.argsort(pvals)
@@ -367,7 +366,7 @@ def eqtl_summary_stats(
     for i, p in enumerate(sorted_pvals):
         fdr[sorted_idx[i]] = p * n / (i + 1)
     fdr = np.minimum.accumulate(fdr[::-1])[::-1]
-    
+
     significant = fdr < fdr_threshold
 
     n_egenes = cis_results.loc[significant, "gene_id"].nunique()
@@ -396,14 +395,12 @@ def _compute_maf(genotypes: np.ndarray) -> float:
     return min(af, 1 - af)
 
 
-def _linear_regression(
-    y: np.ndarray, x: np.ndarray
-) -> tuple[float, float, float]:
+def _linear_regression(y: np.ndarray, x: np.ndarray) -> tuple[float, float, float]:
     """Simple linear regression returning beta, SE, p-value."""
     # Ensure 1D arrays
     y = np.asarray(y).flatten()
     x = np.asarray(x).flatten()
-    
+
     valid = ~(np.isnan(y) | np.isnan(x))
     if valid.sum() < 3:
         return np.nan, np.nan, 1.0
@@ -432,6 +429,7 @@ def _linear_regression(
     if se > 0 and not np.isnan(se):
         t_stat = beta / se
         from scipy import stats
+
         pval = 2 * stats.t.sf(abs(t_stat), n - 2)
     else:
         pval = 1.0
@@ -439,9 +437,7 @@ def _linear_regression(
     return float(beta), float(se), float(pval)
 
 
-def _linear_regression_residuals(
-    y: np.ndarray, x: np.ndarray
-) -> tuple[float, float, np.ndarray]:
+def _linear_regression_residuals(y: np.ndarray, x: np.ndarray) -> tuple[float, float, np.ndarray]:
     """Linear regression returning beta, SE, and residuals."""
     valid = ~(np.isnan(y) | np.isnan(x))
     y_v, x_v = y.copy(), x.copy()

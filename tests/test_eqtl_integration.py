@@ -138,6 +138,7 @@ class TestIntegrationConverters:
     def test_from_rna_expression_basic(self):
         """Test RNA expression data conversion."""
         import pandas as pd
+
         from metainformant.multiomics.analysis.integration import from_rna_expression
 
         expression_df = pd.DataFrame(
@@ -158,6 +159,7 @@ class TestIntegrationConverters:
     def test_from_dna_variants_basic(self):
         """Test DNA variant data conversion."""
         import pandas as pd
+
         from metainformant.multiomics.analysis.integration import from_dna_variants
 
         vcf_df = pd.DataFrame(
@@ -182,32 +184,26 @@ class TestMultiOmicsData:
     def test_multiomics_data_init(self):
         """Test MultiOmicsData initialization."""
         import pandas as pd
+
         from metainformant.multiomics.analysis.integration import MultiOmicsData
 
-        rna_data = pd.DataFrame(
-            {"s1": [1, 2], "s2": [3, 4]}, index=["g1", "g2"]
-        )
-        protein_data = pd.DataFrame(
-            {"s1": [0.5, 1.0], "s2": [1.5, 2.0]}, index=["p1", "p2"]
-        )
+        rna_data = pd.DataFrame({"s1": [1, 2], "s2": [3, 4]}, index=["g1", "g2"])
+        protein_data = pd.DataFrame({"s1": [0.5, 1.0], "s2": [1.5, 2.0]}, index=["p1", "p2"])
 
         mo = MultiOmicsData(rna_data=rna_data, protein_data=protein_data)
 
         assert mo is not None
         # Check that data was stored (attribute names may vary)
-        assert hasattr(mo, 'data') or hasattr(mo, 'rna_data') or hasattr(mo, '_rna_data')
+        assert hasattr(mo, "data") or hasattr(mo, "rna_data") or hasattr(mo, "_rna_data")
 
     def test_get_common_samples(self):
         """Test getting common samples across omics."""
         import pandas as pd
+
         from metainformant.multiomics.analysis.integration import MultiOmicsData
 
-        rna_data = pd.DataFrame(
-            {"s1": [1, 2], "s2": [3, 4], "s3": [5, 6]}, index=["g1", "g2"]
-        )
-        protein_data = pd.DataFrame(
-            {"s1": [0.5, 1.0], "s2": [1.5, 2.0]}, index=["p1", "p2"]
-        )
+        rna_data = pd.DataFrame({"s1": [1, 2], "s2": [3, 4], "s3": [5, 6]}, index=["g1", "g2"])
+        protein_data = pd.DataFrame({"s1": [0.5, 1.0], "s2": [1.5, 2.0]}, index=["p1", "p2"])
 
         mo = MultiOmicsData(rna_data=rna_data, protein_data=protein_data)
         common = mo.get_common_samples()
@@ -226,6 +222,7 @@ class TestCisEqtlScan:
     def test_cis_eqtl_scan_basic(self):
         """Test basic cis-eQTL scan."""
         import pandas as pd
+
         from metainformant.gwas.finemapping.eqtl import cis_eqtl_scan
 
         # Create minimal test data
@@ -237,16 +234,20 @@ class TestCisEqtlScan:
             {"s1": [0, 1], "s2": [1, 2], "s3": [0, 0]},
             index=["var1", "var2"],
         )
-        gene_pos = pd.DataFrame({
-            "gene_id": ["gene1", "gene2"],
-            "chrom": ["1", "1"],
-            "tss_position": [100000, 200000],
-        })
-        var_pos = pd.DataFrame({
-            "variant_id": ["var1", "var2"],
-            "chrom": ["1", "1"],
-            "position": [105000, 195000],
-        })
+        gene_pos = pd.DataFrame(
+            {
+                "gene_id": ["gene1", "gene2"],
+                "chrom": ["1", "1"],
+                "tss_position": [100000, 200000],
+            }
+        )
+        var_pos = pd.DataFrame(
+            {
+                "variant_id": ["var1", "var2"],
+                "chrom": ["1", "1"],
+                "position": [105000, 195000],
+            }
+        )
 
         result = cis_eqtl_scan(
             expression_matrix=expression,
@@ -262,23 +263,31 @@ class TestCisEqtlScan:
     def test_cis_eqtl_scan_empty(self):
         """Test cis-eQTL scan with no overlapping samples."""
         import pandas as pd
+
         from metainformant.gwas.finemapping.eqtl import cis_eqtl_scan
 
         expression = pd.DataFrame({"a": [1.0]}, index=["gene1"])
         genotypes = pd.DataFrame({"b": [0]}, index=["var1"])
-        gene_pos = pd.DataFrame({
-            "gene_id": ["gene1"],
-            "chrom": ["1"],
-            "tss_position": [100000],
-        })
-        var_pos = pd.DataFrame({
-            "variant_id": ["var1"],
-            "chrom": ["1"],
-            "position": [105000],
-        })
+        gene_pos = pd.DataFrame(
+            {
+                "gene_id": ["gene1"],
+                "chrom": ["1"],
+                "tss_position": [100000],
+            }
+        )
+        var_pos = pd.DataFrame(
+            {
+                "variant_id": ["var1"],
+                "chrom": ["1"],
+                "position": [105000],
+            }
+        )
 
         result = cis_eqtl_scan(
-            expression, genotypes, gene_pos, var_pos,
+            expression,
+            genotypes,
+            gene_pos,
+            var_pos,
             maf_threshold=0.0,
         )
 
@@ -291,6 +300,7 @@ class TestEqtlEffectSizes:
     def test_effect_sizes_basic(self):
         """Test effect size calculation."""
         import pandas as pd
+
         from metainformant.gwas.finemapping.eqtl import eqtl_effect_sizes
 
         expression = pd.DataFrame(
@@ -301,10 +311,12 @@ class TestEqtlEffectSizes:
             {"s1": [0, 1], "s2": [2, 0], "s3": [1, 2]},
             index=["var1", "var2"],
         )
-        associations = pd.DataFrame({
-            "gene_id": ["gene1"],
-            "variant_id": ["var1"],
-        })
+        associations = pd.DataFrame(
+            {
+                "gene_id": ["gene1"],
+                "variant_id": ["var1"],
+            }
+        )
 
         result = eqtl_effect_sizes(expression, genotypes, associations)
 
@@ -318,14 +330,17 @@ class TestEqtlSummaryStats:
     def test_summary_stats_basic(self):
         """Test summary statistics generation."""
         import pandas as pd
+
         from metainformant.gwas.finemapping.eqtl import eqtl_summary_stats
 
-        results = pd.DataFrame({
-            "gene_id": ["g1", "g1", "g2"],
-            "variant_id": ["v1", "v2", "v3"],
-            "beta": [0.5, 0.1, 0.8],
-            "pvalue": [0.001, 0.5, 0.0001],
-        })
+        results = pd.DataFrame(
+            {
+                "gene_id": ["g1", "g1", "g2"],
+                "variant_id": ["v1", "v2", "v3"],
+                "beta": [0.5, 0.1, 0.8],
+                "pvalue": [0.001, 0.5, 0.0001],
+            }
+        )
 
         summary = eqtl_summary_stats(results, fdr_threshold=0.1)
 
@@ -335,10 +350,10 @@ class TestEqtlSummaryStats:
     def test_summary_stats_empty(self):
         """Test summary statistics with empty input."""
         import pandas as pd
+
         from metainformant.gwas.finemapping.eqtl import eqtl_summary_stats
 
         results = pd.DataFrame()
         summary = eqtl_summary_stats(results)
 
         assert summary["n_tests"] == 0
-

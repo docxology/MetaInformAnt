@@ -1,0 +1,14 @@
+{
+	"n_targets": 28355,
+	"n_bootstraps": 0,
+	"n_processed": 9785423,
+	"n_pseudoaligned": 4684161,
+	"n_unique": 2919767,
+	"p_pseudoaligned": 47.9,
+	"p_unique": 29.8,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Thu Feb  5 15:27:37 2026",
+	"call": "kallisto quant -i output/amalgkit/apis_mellifera_all/work/index/Apis_mellifera_transcripts.idx -o output/amalgkit/apis_mellifera_all/work/quant/ERR528752 -t 2 --single -l 200 -s 30 /Volumes/blue/data/apis_mellifera/ERR528752/ERR528752.fastq.gz"
+}

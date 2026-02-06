@@ -1,10 +1,13 @@
 # VISUALIZATION
 
 ## Overview
-Functionality for visualization.
+Visualization and plotting utilities module for METAINFORMANT.
 
 ## 📦 Contents
-
+- **[analysis/](analysis/)**
+- **[genomics/](genomics/)**
+- **[plots/](plots/)**
+- `[__init__.py](__init__.py)`
 
 ## 📊 Structure
 
@@ -17,5 +20,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.visualization import ...
+from metainformant.metainformant.visualization import ...
 ```

@@ -1,0 +1,14 @@
+{
+	"n_targets": 28355,
+	"n_bootstraps": 0,
+	"n_processed": 9997780,
+	"n_pseudoaligned": 2412841,
+	"n_unique": 1492513,
+	"p_pseudoaligned": 24.1,
+	"p_unique": 14.9,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Thu Feb  5 15:23:04 2026",
+	"call": "kallisto quant -i output/amalgkit/apis_mellifera_all/work/index/Apis_mellifera_transcripts.idx -o output/amalgkit/apis_mellifera_all/work/quant/ERR413300 -t 2 --single -l 200 -s 30 /Volumes/blue/data/apis_mellifera/ERR413300/ERR413300.fastq.gz"
+}

@@ -1,10 +1,13 @@
 # ML
 
 ## Overview
-Functionality for ml.
+Machine learning module for METAINFORMANT.
 
 ## 📦 Contents
-
+- **[evaluation/](evaluation/)**
+- **[features/](features/)**
+- **[models/](models/)**
+- `[__init__.py](__init__.py)`
 
 ## 📊 Structure
 
@@ -17,5 +20,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.ml import ...
+from metainformant.metainformant.ml import ...
 ```

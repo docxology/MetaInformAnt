@@ -605,15 +605,113 @@ def generate_all_plots(
 
     logger.info(f"Generating all GWAS plots in {output_dir}")
 
-    plots_generated = {}
+    plots_generated: Dict[str, Any] = {}
 
-    # Placeholder - would generate actual plots
-    plot_types = ["manhattan", "qq", "pca", "kinship"]
-    for plot_type in plot_types:
-        plot_path = output_dir / f"{plot_type}_plot.png"
-        plots_generated[plot_type] = str(plot_path)
-        logger.info(f"Generated {plot_type} plot: {plot_path}")
+    # Load association results from file or use directly
+    results_data: List[Dict[str, Any]] = []
+    association_path = Path(association_results) if isinstance(association_results, (str, Path)) else None
 
+    if association_path and association_path.exists():
+        import csv
+        import json
+
+        suffix = association_path.suffix.lower()
+        if suffix == ".json":
+            with open(association_path) as fh:
+                loaded = json.load(fh)
+                results_data = loaded if isinstance(loaded, list) else loaded.get("results", [])
+        elif suffix in (".tsv", ".txt"):
+            with open(association_path, newline="") as fh:
+                reader = csv.DictReader(fh, delimiter="\t")
+                for row in reader:
+                    entry: Dict[str, Any] = {}
+                    for k, v in row.items():
+                        try:
+                            entry[k] = float(v)
+                        except (ValueError, TypeError):
+                            entry[k] = v
+                    results_data.append(entry)
+        elif suffix == ".csv":
+            with open(association_path, newline="") as fh:
+                reader = csv.DictReader(fh)
+                for row in reader:
+                    entry = {}
+                    for k, v in row.items():
+                        try:
+                            entry[k] = float(v)
+                        except (ValueError, TypeError):
+                            entry[k] = v
+                    results_data.append(entry)
+
+    # Manhattan plot
+    if results_data:
+        try:
+            manhattan_path = output_dir / "manhattan_plot.png"
+            fig = manhattan_plot(
+                results_data, output_path=manhattan_path, significance_threshold=significance_threshold
+            )
+            if fig is not None:
+                plots_generated["manhattan"] = str(manhattan_path)
+                plt.close(fig)
+        except Exception as e:
+            logger.warning(f"Manhattan plot failed: {e}")
+
+        # Q-Q plot
+        try:
+            p_vals = [
+                r.get("p_value", r.get("pval", r.get("pvalue")))
+                for r in results_data
+                if r.get("p_value", r.get("pval", r.get("pvalue"))) is not None
+            ]
+            if p_vals:
+                qq_path = output_dir / "qq_plot.png"
+                fig = qq_plot(p_vals, output_path=qq_path)
+                if fig is not None:
+                    plots_generated["qq"] = str(qq_path)
+                    plt.close(fig)
+        except Exception as e:
+            logger.warning(f"Q-Q plot failed: {e}")
+
+    # PCA plot
+    if pca_file:
+        try:
+            import json as _json
+
+            pca_path_obj = Path(pca_file)
+            if pca_path_obj.exists():
+                with open(pca_path_obj) as fh:
+                    pca_data = _json.load(fh)
+                components = pca_data.get("components", [])
+                variance = pca_data.get("variance", [])
+                loadings = pca_data.get("loadings", [])
+                explained_var = pca_data.get("explained_variance", [])
+                pca_output = output_dir / "pca_plot.png"
+                fig = pca_plot((components, variance, loadings), output_path=pca_output, explained_var=explained_var)
+                if fig is not None:
+                    plots_generated["pca"] = str(pca_output)
+                    plt.close(fig)
+        except Exception as e:
+            logger.warning(f"PCA plot failed: {e}")
+
+    # Kinship heatmap
+    if kinship_file:
+        try:
+            import json as _json
+
+            kinship_path_obj = Path(kinship_file)
+            if kinship_path_obj.exists():
+                with open(kinship_path_obj) as fh:
+                    kinship_data = _json.load(fh)
+                matrix = kinship_data if isinstance(kinship_data, list) else kinship_data.get("matrix", [])
+                kinship_output = output_dir / "kinship_plot.png"
+                fig = kinship_heatmap(matrix, output_path=kinship_output)
+                if fig is not None:
+                    plots_generated["kinship"] = str(kinship_output)
+                    plt.close(fig)
+        except Exception as e:
+            logger.warning(f"Kinship heatmap failed: {e}")
+
+    logger.info(f"Generated {len(plots_generated)} plots: {list(plots_generated.keys())}")
     return plots_generated
 
 

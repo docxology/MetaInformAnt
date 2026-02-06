@@ -1,10 +1,12 @@
 {
-  "gwas_visualization_demo": {
+  "domain": "gwas",
+  "example": "gwas_visualization",
+  "results": {
     "chromosome_statistics": [
       {
         "chromosome": "chr1",
         "gw_significant": 16,
-        "mean_beta": -0.0004824507688178525,
+        "mean_beta": -0.00048245076881785296,
         "median_p": 0.4941079505334861,
         "min_p": 7.998257479850652e-10,
         "n_snps": 1000,
@@ -13,7 +15,7 @@
       {
         "chromosome": "chr2",
         "gw_significant": 5,
-        "mean_beta": 0.0027116945421269,
+        "mean_beta": 0.0027116945421269004,
         "median_p": 0.5164742420690536,
         "min_p": 4.711726122608859e-09,
         "n_snps": 1000,
@@ -22,7 +24,7 @@
       {
         "chromosome": "chr3",
         "gw_significant": 13,
-        "mean_beta": -0.0022548515684308237,
+        "mean_beta": -0.002254851568430824,
         "median_p": 0.5005023584324544,
         "min_p": 8.983485431455831e-17,
         "n_snps": 1000,
@@ -31,9 +33,9 @@
       {
         "chromosome": "chr4",
         "gw_significant": 10,
-        "mean_beta": -0.002706631602823483,
+        "mean_beta": -0.0027066316028234835,
         "median_p": 0.4764732949722048,
-        "min_p": 4.1876480289275023e-16,
+        "min_p": 4.187648028927502e-16,
         "n_snps": 1000,
         "suggestive": 0
       },
@@ -63,15 +65,15 @@
     "effect_size_analysis": {
       "significant_effects": {
         "gw_sig_count": 50,
-        "gw_sig_mean_beta": 0.029600128718600578,
-        "gw_sig_median_beta": -0.00613266557057815
+        "gw_sig_mean_beta": 0.029600128718600568,
+        "gw_sig_median_beta": -0.0061326655705781635
       },
       "summary_stats": {
         "max_beta": 0.8329328203626433,
-        "mean_beta": -0.0006137976566405249,
+        "mean_beta": -0.0006137976566405252,
         "median_beta": -0.001780663690973956,
         "min_beta": -0.8372016416891769,
-        "std_beta": 0.10593163720276197
+        "std_beta": 0.10593163720276202
       }
     },
     "gwas_visualization_best_practices": [
@@ -92,7 +94,7 @@
     ],
     "plots_generated": {
       "manhattan_plot": {
-        "error": "manhattan_plot() got an unexpected keyword argument 'suggestive_threshold'"
+        "error": "manhattan_plot() got an unexpected keyword argument 'title'"
       },
       "qq_plot": {
         "error": "qq_plot() got an unexpected keyword argument 'title'"

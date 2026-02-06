@@ -1,10 +1,12 @@
 # QUALITY
 
 ## Overview
-Functionality for quality.
+Quality control analysis module for METAINFORMANT.
 
 ## 📦 Contents
-
+- **[analysis/](analysis/)**
+- **[io/](io/)**
+- `[__init__.py](__init__.py)`
 
 ## 📊 Structure
 
@@ -17,5 +19,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.quality import ...
+from metainformant.metainformant.quality import ...
 ```

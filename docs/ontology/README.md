@@ -1,10 +1,16 @@
 # ONTOLOGY
 
 ## Overview
-Functionality for ontology.
+Gene ontology and functional annotation module for METAINFORMANT.
 
 ## 📦 Contents
-
+- `[__init__.py](__init__.py)`
+- `[go.py](go.py)`
+- `[obo.py](obo.py)`
+- `[query.py](query.py)`
+- `[serialize.py](serialize.py)`
+- `[types.py](types.py)`
+- `[visualization.py](visualization.py)`
 
 ## 📊 Structure
 
@@ -17,5 +23,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.ontology import ...
+from metainformant.metainformant.ontology import ...
 ```

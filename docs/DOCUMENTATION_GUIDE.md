@@ -153,7 +153,7 @@ Source code documentation mirrors the `src/metainformant/` structure:
 - **Documentation Issues**: Check for broken links or outdated content
 - **Code Questions**: Reference source code READMEs and docstrings
 - **Workflow Help**: See domain-specific workflow documentation
-- **Bug Reports**: https://github.com/q/metainformant/issues
+- **Bug Reports**: https://github.com/docxology/metainformant/issues
 
 ---
 

@@ -1,10 +1,13 @@
 # INFORMATION
 
 ## Overview
-Functionality for information.
+Information theory analysis module for METAINFORMANT.
 
 ## 📦 Contents
-
+- **[integration/](integration/)**
+- **[metrics/](metrics/)**
+- **[workflow/](workflow/)**
+- `[__init__.py](__init__.py)`
 
 ## 📊 Structure
 
@@ -17,5 +20,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.information import ...
+from metainformant.metainformant.information import ...
 ```

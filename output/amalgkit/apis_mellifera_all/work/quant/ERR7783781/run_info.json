@@ -1,0 +1,14 @@
+{
+	"n_targets": 28355,
+	"n_bootstraps": 0,
+	"n_processed": 18412214,
+	"n_pseudoaligned": 954067,
+	"n_unique": 292785,
+	"p_pseudoaligned": 5.2,
+	"p_unique": 1.6,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Thu Feb  5 14:15:58 2026",
+	"call": "kallisto quant -i output/amalgkit/apis_mellifera_all/work/index/Apis_mellifera_transcripts.idx -o output/amalgkit/apis_mellifera_all/work/quant/ERR7783781 -t 2 --single -l 200 -s 30 /Volumes/blue/data/apis_mellifera/ERR7783781/ERR7783781.fastq.gz"
+}

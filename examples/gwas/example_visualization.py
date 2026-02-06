@@ -6,7 +6,7 @@ This example demonstrates genome-wide association study (GWAS) visualization tec
 Usage:
     python examples/gwas/example_visualization.py
 
-Output:
+Expected output:
     output/examples/gwas/gwas_plots.json
 """
 
@@ -219,7 +219,9 @@ def main():
     print("\n7. Creating comprehensive visualization analysis...")
 
     visualization_results = {
-        "gwas_visualization_demo": {
+        "example": "gwas_visualization",
+        "domain": "gwas",
+        "results": {
             "timestamp": "2024-12-26T10:00:00Z",
             "dataset_summary": {
                 "total_snps": len(gwas_results),
@@ -248,7 +250,7 @@ def main():
                 "Effect sizes help prioritize variants for follow-up",
                 "Chromosome-specific patterns may indicate technical artifacts",
             ],
-        }
+        },
     }
 
     results_file = output_dir / "gwas_plots.json"

@@ -96,25 +96,63 @@ def _download_from_ncbi_datasets(accession: str, output_dir: Path) -> Path:
 
 
 def _download_from_ftp(accession: str, output_dir: Path) -> Path:
-    """Download genome from NCBI FTP."""
-    # Construct FTP URL
-    if accession.startswith("GCF_"):
-        ftp_url = (
-            f"ftp://ftp.ncbi.nlm.nih.gov/genomes/all/{accession[4:7]}/{accession[7:10]}/{accession[10:13]}/{accession}"
-        )
-    else:
-        # GenBank accession
-        ftp_url = (
-            f"ftp://ftp.ncbi.nlm.nih.gov/genomes/all/{accession[4:7]}/{accession[7:10]}/{accession[10:13]}/{accession}"
-        )
+    """Download genome from NCBI FTP using ftplib.
 
-    # For now, simulate download (real implementation would use ftplib or wget)
+    Constructs the NCBI FTP directory path from the accession, lists the
+    remote directory to find the assembly folder, and downloads the genomic
+    FASTA (.fna.gz) and GFF3 annotation (.gff.gz) files.
+
+    Args:
+        accession: Genome accession (e.g., "GCF_003254395.2")
+        output_dir: Parent output directory
+
+    Returns:
+        Path to the directory containing downloaded files
+
+    Raises:
+        RuntimeError: If the accession directory is not found on the FTP server
+    """
+    import ftplib
+
+    # Extract the 9-digit numeric portion after the prefix (e.g. "003254395")
+    prefix = accession[:3]  # "GCF" or "GCA"
+    digits = accession.split("_")[1].split(".")[0]  # "003254395"
+    ftp_dir = f"/genomes/all/{prefix}/{digits[:3]}/{digits[3:6]}/{digits[6:9]}"
+
     genome_dir = output_dir / accession
     genome_dir.mkdir(exist_ok=True)
 
-    # Create placeholder files
-    (genome_dir / "genome.fasta").write_text(f">Genome {accession}\nATCG\n")
-    (genome_dir / "annotation.gff").write_text(f"# Annotation for {accession}\n")
+    ftp = ftplib.FTP("ftp.ncbi.nlm.nih.gov")
+    ftp.login()
+
+    try:
+        ftp.cwd(ftp_dir)
+
+        # The assembly directory includes a name suffix, e.g.
+        # GCF_003254395.2_Amel_HAv3.1 — find it by prefix match
+        dirs = ftp.nlst()
+        target_dir = next((d for d in dirs if d.startswith(accession)), None)
+        if not target_dir:
+            raise RuntimeError(f"No directory found for {accession} on NCBI FTP at {ftp_dir}")
+
+        ftp.cwd(target_dir)
+        files = ftp.nlst()
+
+        # Download genomic FASTA and GFF3 annotation
+        for suffix in ("_genomic.fna.gz", "_genomic.gff.gz"):
+            matching = [f for f in files if f.endswith(suffix) and "_from_genomic" not in f and "_rna_from" not in f]
+            if matching:
+                filename = matching[0]
+                local_path = genome_dir / filename
+                if local_path.exists():
+                    logger.info(f"File already exists: {local_path}")
+                    continue
+                logger.info(f"Downloading {filename} from NCBI FTP...")
+                with open(local_path, "wb") as out_file:
+                    ftp.retrbinary(f"RETR {filename}", out_file.write)
+                logger.info(f"Downloaded {filename}")
+    finally:
+        ftp.quit()
 
     return genome_dir
 
@@ -328,14 +366,15 @@ def download_sra_run(sra_accession: str, output_dir: str | Path, threads: int = 
     except Exception as e:
         logger.warning(f"SRA toolkit download failed: {e}")
 
-    # Create placeholder
-    logger.warning(f"All SRA download methods failed for {sra_accession}")
-    return run_dir
+    raise RuntimeError(
+        f"All SRA download methods failed for {sra_accession}. "
+        "Ensure either ENA FTP is accessible or SRA toolkit (fastq-dump) is installed."
+    )
 
 
 def _download_sra_from_ena(accession: str, output_dir: Path, threads: int) -> Path:
     """Download SRA data from ENA."""
-    from metainformant.core.io.io.io.download import download_with_progress
+    from metainformant.core.io.download import download_with_progress
 
     # ENA URL pattern (FTP). We keep the original behavior but add heartbeat + retry.
     ena_url = f"ftp://ftp.sra.ebi.ac.uk/vol1/fastq/{accession[:6]}/{accession}"
@@ -605,13 +644,50 @@ def download_annotation(accession: str, output_dir: str | Path) -> Path:
         return extract_dir
 
     except Exception as e:
-        logger.warning(f"Annotation download failed: {e}")
+        logger.warning(f"NCBI Datasets annotation download failed: {e}, trying FTP fallback")
 
-        # Create placeholder
-        annotation_dir = output_dir / f"{accession}_annotation"
-        annotation_dir.mkdir(exist_ok=True)
+        # FTP fallback: download GFF3 annotation directly
+        try:
+            import ftplib
 
-        return annotation_dir
+            prefix = accession[:3]
+            digits = accession.split("_")[1].split(".")[0]
+            ftp_dir = f"/genomes/all/{prefix}/{digits[:3]}/{digits[3:6]}/{digits[6:9]}"
+
+            annotation_dir = output_dir / f"{accession}_annotation"
+            annotation_dir.mkdir(exist_ok=True)
+
+            ftp = ftplib.FTP("ftp.ncbi.nlm.nih.gov")
+            ftp.login()
+            try:
+                ftp.cwd(ftp_dir)
+                dirs = ftp.nlst()
+                target_dir = next((d for d in dirs if d.startswith(accession)), None)
+                if not target_dir:
+                    raise RuntimeError(f"No directory found for {accession} on NCBI FTP")
+
+                ftp.cwd(target_dir)
+                files = ftp.nlst()
+
+                gff_files = [f for f in files if f.endswith("_genomic.gff.gz") and "_from_genomic" not in f]
+                if gff_files:
+                    filename = gff_files[0]
+                    local_path = annotation_dir / filename
+                    logger.info(f"Downloading annotation {filename} from NCBI FTP...")
+                    with open(local_path, "wb") as out_file:
+                        ftp.retrbinary(f"RETR {filename}", out_file.write)
+                    logger.info(f"Downloaded annotation {filename}")
+                else:
+                    raise RuntimeError(f"No GFF annotation file found for {accession} on NCBI FTP")
+            finally:
+                ftp.quit()
+
+            return annotation_dir
+
+        except Exception as ftp_err:
+            raise RuntimeError(
+                f"All annotation download methods failed for {accession}: " f"API error: {e}, FTP error: {ftp_err}"
+            )
 
 
 def download_variant_data(study_accession: str, output_dir: str | Path, data_type: str = "vcf") -> Path:

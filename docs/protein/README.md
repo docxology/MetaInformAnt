@@ -1,10 +1,14 @@
 # PROTEIN
 
 ## Overview
-Functionality for protein.
+Protein sequence and structure analysis module for METAINFORMANT.
 
 ## 📦 Contents
-
+- **[database/](database/)**
+- **[sequence/](sequence/)**
+- **[structure/](structure/)**
+- **[visualization/](visualization/)**
+- `[__init__.py](__init__.py)`
 
 ## 📊 Structure
 
@@ -17,5 +21,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.protein import ...
+from metainformant.metainformant.protein import ...
 ```

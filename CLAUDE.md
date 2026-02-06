@@ -107,7 +107,7 @@ from metainformant.core import io, paths, config
 from metainformant.core.utils.logging import get_logger
 
 # File I/O (auto-creates dirs, gzip-aware)
-data = io.load_json("config/example.yaml")
+data = io.load_yaml("config/workflow.yaml")
 io.dump_json(result, "output/module/result.json")
 
 # Path handling with security validation
