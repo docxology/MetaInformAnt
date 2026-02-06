@@ -53,7 +53,7 @@ jobs:
           echo "is_prerelease=false" >> $GITHUB_OUTPUT
         fi
 
-        echo "Version: $VERSION, Prerelease: ${{ steps.get_version.outputs.is_prerelease }}"
+        echo "Version: $VERSION"
 
   build-release:
     runs-on: ubuntu-latest
@@ -168,6 +168,7 @@ jobs:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
       run: |
+        pip install twine
         twine upload --repository testpypi dist/*
 
   publish-production:
@@ -193,6 +194,7 @@ jobs:
         TWINE_USERNAME: __token__
         TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
       run: |
+        pip install twine
         twine upload dist/*
 
     - name: Create GitHub release assets

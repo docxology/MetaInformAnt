@@ -251,7 +251,7 @@ jobs:
 
   summary:
     runs-on: ubuntu-latest
-    needs: [test, test-infrastructure, quality-checks]
+    needs: [test, test-infrastructure, quality-checks, test-examples, fat-filesystem-test]
     if: always()
     steps:
     - name: Test Summary
@@ -260,6 +260,8 @@ jobs:
         echo "- Test jobs: ${{ needs.test.result }}"
         echo "- Infrastructure tests: ${{ needs.test-infrastructure.result }}"
         echo "- Quality checks: ${{ needs.quality-checks.result }}"
+        echo "- Example tests: ${{ needs.test-examples.result }}"
+        echo "- FAT filesystem test: ${{ needs.fat-filesystem-test.result }}"
 
         if [[ "${{ needs.test.result }}" != "success" ]] || \
            [[ "${{ needs.test-infrastructure.result }}" != "success" ]] || \
