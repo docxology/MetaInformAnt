@@ -169,8 +169,8 @@ check_pytest_deps() {
     if ! uv run python -c "import pytest; print('pytest available')" >/dev/null 2>&1; then
         print_status "ERROR" "pytest not available"
         if [[ $FIX_MODE -eq 1 ]]; then
-            print_status "INFO" "Syncing test-fast dependencies..."
-            uv sync --group test-fast
+            print_status "INFO" "Installing dev dependencies..."
+            uv pip install -e ".[dev]"
             if uv run python -c "import pytest" >/dev/null 2>&1; then
                 print_status "FIXED" "pytest installed"
             else
@@ -202,20 +202,8 @@ check_pytest_deps() {
         if ! uv run python -c "import $plugin" >/dev/null 2>&1; then
             print_status "ERROR" "$plugin not available"
             if [[ $FIX_MODE -eq 1 ]]; then
-                case "$test_type" in
-                    "fast")
-                        uv sync --group test-fast
-                        ;;
-                    "network")
-                        uv sync --group test-network
-                        ;;
-                    "external")
-                        uv sync --group test-external
-                        ;;
-                    "all")
-                        uv sync --group test-all
-                        ;;
-                esac
+                # Install all dev dependencies - they include all test plugins
+                uv pip install -e ".[dev]"
                 if uv run python -c "import $plugin" >/dev/null 2>&1; then
                     print_status "FIXED" "$plugin installed"
                 else

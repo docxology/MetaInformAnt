@@ -748,19 +748,49 @@ except ImportError:
 
 
 def run_pca(
-    data: SingleCellData, n_components: int = 50, random_state: int | None = None, scale_data: bool = True
-) -> SingleCellData:
-    """Alias for pca_reduction - run PCA dimensionality reduction.
+    data: SingleCellData | None = None,
+    n_components: int = 50,
+    random_state: int | None = None,
+    scale_data: bool = True,
+    *,
+    expression_matrix: np.ndarray | None = None,
+) -> SingleCellData | Dict[str, Any]:
+    """Run PCA dimensionality reduction.
 
     Args:
-        data: SingleCellData object
+        data: SingleCellData object (preferred)
         n_components: Number of components
         random_state: Random seed
         scale_data: Whether to scale data
+        expression_matrix: Raw expression matrix (alternative input, returns dict)
 
     Returns:
-        SingleCellData with PCA results
+        SingleCellData with PCA results if data provided, or dict if expression_matrix provided
     """
+    # Handle expression_matrix input (returns dict format for test compatibility)
+    if expression_matrix is not None:
+        from sklearn.decomposition import PCA as SklearnPCA
+
+        X = expression_matrix
+        n_comp = min(n_components, X.shape[0], X.shape[1])
+
+        if scale_data:
+            X_scaled = (X - X.mean(axis=0)) / (X.std(axis=0) + 1e-10)
+        else:
+            X_scaled = X
+
+        pca = SklearnPCA(n_components=n_comp, random_state=random_state)
+        embedding = pca.fit_transform(X_scaled)
+
+        return {
+            "embedding": embedding,
+            "components": pca.components_.T,  # (n_features, n_components)
+            "explained_variance": pca.explained_variance_ratio_,
+        }
+
+    # Handle SingleCellData input (original behavior)
+    if data is None:
+        raise ValueError("Either data or expression_matrix must be provided")
     return pca_reduction(data, n_components, random_state, scale_data)
 
 

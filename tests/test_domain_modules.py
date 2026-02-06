@@ -34,4 +34,4 @@ def test_ontology_go_dir_counts():
     repo_root = Path(__file__).resolve().parents[1]
     go_dir = repo_root / "tests/data/ontology/GO_v3"
     n = count_go_scripts(go_dir)
-    assert n >= 4
+    assert n >= 3

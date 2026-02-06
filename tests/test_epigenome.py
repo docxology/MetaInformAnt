@@ -14,7 +14,7 @@ def test_read_bedgraph_parses_minimal_file():
     assert len(df) == 3
     # Ensure dtypes are as expected
     assert pd.api.types.is_integer_dtype(df["start"]) and pd.api.types.is_integer_dtype(df["end"])
-    assert pd.api.types.is_numeric_dtype(df["value"]) and df["chrom"].dtype == object
+    assert pd.api.types.is_numeric_dtype(df["value"]) and pd.api.types.is_string_dtype(df["chrom"])
 
 
 def test_compute_methylation_beta_and_summary():
@@ -28,6 +28,6 @@ def test_compute_methylation_beta_and_summary():
     summary = summarize_beta_by_chromosome(df)
     # Expect both chromosomes from the fixture to be present
     assert set(summary.index.tolist()) == {"chr1", "chr2"}
-    # Means should be finite numbers
-    assert pd.notnull(summary.loc["chr1"]).all()
-    assert pd.notnull(summary.loc["chr2"]).all()
+    # Means should be finite numbers (std may be NaN if only 1 sample)
+    assert pd.notnull(summary.loc["chr1", "mean"])
+    assert pd.notnull(summary.loc["chr2", "mean"])

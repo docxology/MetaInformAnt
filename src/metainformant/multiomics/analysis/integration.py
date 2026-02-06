@@ -7,6 +7,7 @@ analysis, and other integrative approaches.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
@@ -44,6 +45,7 @@ class MultiOmicsData:
         data: Dict[str, pd.DataFrame] | None = None,
         sample_ids: List[str] | None = None,
         feature_ids: Dict[str, List[str]] | None = None,
+        metadata: pd.DataFrame | None = None,
         # Legacy aliases for individual omics types
         genomics: pd.DataFrame | None = None,
         transcriptomics: pd.DataFrame | None = None,
@@ -74,10 +76,11 @@ class MultiOmicsData:
             data = {}
 
         # Add legacy parameters to data dict
+        # Use explicit is not None checks to avoid DataFrame truth value ambiguity
         legacy_mapping = {
-            "genomics": genomics or dna_data,
-            "transcriptomics": transcriptomics or rna_data,
-            "proteomics": proteomics or protein_data,
+            "genomics": genomics if genomics is not None else dna_data,
+            "transcriptomics": transcriptomics if transcriptomics is not None else rna_data,
+            "proteomics": proteomics if proteomics is not None else protein_data,
             "epigenomics": epigenomics,
             "metabolomics": metabolomics,
         }
@@ -91,73 +94,140 @@ class MultiOmicsData:
         self.data = data.copy()
         self.sample_ids = sample_ids
         self.feature_ids = feature_ids or {}
-        self.metadata = {}
+        self._metadata = metadata if metadata is not None else pd.DataFrame()
 
-        # Validate data compatibility
-        self._validate_data()
+        # Validate data compatibility and align samples
+        self._validate_and_align_data()
 
-    def _validate_data(self) -> None:
-        """Validate data compatibility across omics types."""
+    def _validate_and_align_data(self) -> None:
+        """Validate data compatibility and align samples across omics types."""
         if not self.data:
             raise ValueError("No omics data provided")
 
-        # Check sample alignment
-        sample_counts = {}
-        for omics_type, df in self.data.items():
-            if self.sample_ids is None:
-                sample_counts[omics_type] = len(df.columns)
-            else:
-                if len(df.columns) != len(self.sample_ids):
-                    raise ValueError(f"Sample count mismatch for {omics_type}")
-
-        if self.sample_ids is None and len(set(sample_counts.values())) > 1:
-            logger.warning("Different sample counts across omics types - ensure proper alignment")
-
-    def get_common_samples(self) -> List[str]:
-        """Get samples present in all omics types."""
-        if not self.data:
-            return []
-
+        # Get common samples across all omics types (samples are in index/rows)
         common_samples = None
-        for df in self.data.values():
-            samples = set(df.columns)
+        for omics_type, df in self.data.items():
+            samples = set(df.index)
             if common_samples is None:
                 common_samples = samples
             else:
                 common_samples = common_samples.intersection(samples)
 
-        return sorted(list(common_samples)) if common_samples else []
+        if common_samples is None or len(common_samples) == 0:
+            raise ValueError("No common samples found across omics datasets")
+
+        # Align all data to common samples
+        common_samples_sorted = sorted(list(common_samples))
+        for omics_type in self.data:
+            self.data[omics_type] = self.data[omics_type].loc[common_samples_sorted]
+
+        self.sample_ids = common_samples_sorted
+
+        # Align metadata if present
+        if isinstance(self._metadata, pd.DataFrame) and not self._metadata.empty:
+            metadata_samples = set(self._metadata.index)
+            common_metadata = metadata_samples.intersection(set(common_samples_sorted))
+            if common_metadata:
+                self._metadata = self._metadata.loc[sorted(list(common_metadata))]
+
+    @property
+    def n_samples(self) -> int:
+        """Get number of samples common across all layers."""
+        return len(self.sample_ids) if self.sample_ids else 0
+
+    @property
+    def samples(self) -> List[str]:
+        """Get list of common sample IDs."""
+        return list(self.sample_ids) if self.sample_ids else []
+
+    @property
+    def layer_names(self) -> List[str]:
+        """Get list of omics layer names."""
+        return list(self.data.keys())
+
+    @property
+    def metadata(self) -> Optional[pd.DataFrame]:
+        """Get sample metadata DataFrame."""
+        if isinstance(self._metadata, pd.DataFrame) and not self._metadata.empty:
+            return self._metadata
+        return None
+
+    def get_layer(self, layer_name: str) -> pd.DataFrame:
+        """Get data for a specific omics layer.
+
+        Args:
+            layer_name: Name of the omics layer
+
+        Returns:
+            DataFrame with samples in rows, features in columns
+
+        Raises:
+            KeyError: If layer not found
+        """
+        if layer_name not in self.data:
+            raise KeyError(f"Layer '{layer_name}' not available. Available layers: {self.layer_names}")
+        return self.data[layer_name]
+
+    def get_common_samples(self) -> List[str]:
+        """Get samples present in all omics types."""
+        return self.samples
 
     def subset_samples(self, sample_ids: List[str]) -> "MultiOmicsData":
         """Create subset with specified samples."""
         subset_data = {}
+        available_samples = [s for s in sample_ids if s in self.samples]
         for omics_type, df in self.data.items():
-            available_samples = [s for s in sample_ids if s in df.columns]
-            if available_samples:
-                subset_data[omics_type] = df[available_samples]
+            subset_data[omics_type] = df.loc[available_samples]
 
-        return MultiOmicsData(subset_data, sample_ids=available_samples, feature_ids=self.feature_ids)
+        return MultiOmicsData(data=subset_data, sample_ids=available_samples, feature_ids=self.feature_ids)
+
+    def subset_features(self, feature_dict: Dict[str, List[str]]) -> "MultiOmicsData":
+        """Create subset with specified features per layer.
+
+        Args:
+            feature_dict: Dictionary mapping layer names to list of features to keep
+
+        Returns:
+            New MultiOmicsData with subset features
+        """
+        subset_data = {}
+        for omics_type, df in self.data.items():
+            if omics_type in feature_dict:
+                # Subset to specified features
+                features = [f for f in feature_dict[omics_type] if f in df.columns]
+                subset_data[omics_type] = df[features]
+            else:
+                # Keep all features for this layer
+                subset_data[omics_type] = df.copy()
+
+        return MultiOmicsData(data=subset_data, sample_ids=self.sample_ids, feature_ids=self.feature_ids)
 
     def add_metadata(self, key: str, value: Any) -> None:
         """Add metadata to the dataset."""
-        self.metadata[key] = value
+        if not isinstance(self._metadata, pd.DataFrame) or self._metadata.empty:
+            self._metadata = pd.DataFrame(index=self.samples)
+        self._metadata[key] = value
 
     def get_metadata(self, key: str) -> Any:
         """Get metadata value."""
-        return self.metadata.get(key)
+        if isinstance(self._metadata, pd.DataFrame) and key in self._metadata.columns:
+            return self._metadata[key]
+        return None
 
 
 def integrate_omics_data(
+    data: Optional[Dict[str, Union[pd.DataFrame, str, Path]]] = None,
     dna_data: pd.DataFrame | None = None,
     rna_data: pd.DataFrame | None = None,
     protein_data: pd.DataFrame | None = None,
     epigenome_data: pd.DataFrame | None = None,
     metabolomics_data: pd.DataFrame | None = None,
     **kwargs,
-) -> Dict[str, Any]:
+) -> "MultiOmicsData":
     """Integrate data from multiple omics types.
 
     Args:
+        data: Dictionary mapping omics type to data (DataFrame or file path)
         dna_data: DNA-related data (variants, copy number, etc.)
         rna_data: RNA expression data
         protein_data: Protein abundance data
@@ -166,11 +236,30 @@ def integrate_omics_data(
         **kwargs: Additional integration parameters
 
     Returns:
-        Dictionary containing integrated results and metadata
+        MultiOmicsData object with integrated data
 
     Raises:
         ValueError: If no data provided or incompatible data shapes
     """
+    # Handle dict input
+    if data is not None:
+        # Process dict - load files if needed
+        processed_data = {}
+        for key, value in data.items():
+            if isinstance(value, (str, Path)):
+                # Load from file
+                path = Path(value)
+                if path.suffix == ".csv":
+                    processed_data[key] = pd.read_csv(path, index_col=0)
+                elif path.suffix == ".parquet":
+                    processed_data[key] = pd.read_parquet(path)
+                else:
+                    raise errors.ValidationError(f"Unsupported file format: {path.suffix}")
+            else:
+                processed_data[key] = value
+        return MultiOmicsData(data=processed_data, **kwargs)
+
+    # Handle legacy individual params
     omics_data = {
         "dna": dna_data,
         "rna": rna_data,
@@ -187,81 +276,27 @@ def integrate_omics_data(
 
     logger.info(f"Integrating {len(available_omics)} omics types: {list(available_omics.keys())}")
 
-    # Validate data compatibility
-    _validate_omics_data_compatibility(available_omics)
-
-    # Store original shapes and metadata
-    metadata = {
-        "n_omics_types": len(available_omics),
-        "omics_types": list(available_omics.keys()),
-        "original_shapes": {k: v.shape for k, v in available_omics.items()},
-        "n_samples": None,
-        "n_features": {k: v.shape[1] for k, v in available_omics.items()},
-    }
-
-    # Determine common samples
-    sample_intersection = None
-    for data in available_omics.values():
-        current_samples = set(data.index if hasattr(data, "index") else range(data.shape[0]))
-        if sample_intersection is None:
-            sample_intersection = current_samples
-        else:
-            sample_intersection = sample_intersection.intersection(current_samples)
-
-    if not sample_intersection:
-        raise errors.ValidationError("No common samples found across omics datasets")
-
-    metadata["n_samples"] = len(sample_intersection)
-    metadata["common_samples"] = sorted(list(sample_intersection))
-
-    # Align data to common samples
-    aligned_data = {}
-    for omics_type, data in available_omics.items():
-        if hasattr(data, "index"):
-            # pandas DataFrame
-            aligned_data[omics_type] = data.loc[list(sample_intersection)]
-        else:
-            # numpy array - assume samples are in same order
-            sample_indices = [
-                i
-                for i, sample in enumerate(data.index if hasattr(data, "index") else range(data.shape[0]))
-                if sample in sample_intersection
-            ]
-            aligned_data[omics_type] = data[sample_indices]
-
-    # Perform multi-omics integration
-    integration_method = kwargs.get("method", "correlation")
-    integrated_results = {}
-
-    if integration_method == "correlation":
-        integrated_results = _integrate_by_correlation(aligned_data, **kwargs)
-    elif integration_method == "joint_pca":
-        integrated_results = joint_pca(aligned_data, **kwargs)
-    elif integration_method == "joint_nmf":
-        integrated_results = joint_nmf(aligned_data, **kwargs)
-    elif integration_method == "cca":
-        integrated_results = canonical_correlation(aligned_data, **kwargs)
-    else:
-        raise errors.ValidationError(f"Unsupported integration method: {integration_method}")
-
-    # Add metadata to results
-    integrated_results["metadata"] = metadata
-    integrated_results["integration_method"] = integration_method
-
-    logger.info(f"Multi-omics integration completed using {integration_method}")
-    return integrated_results
+    return MultiOmicsData(data=available_omics, **kwargs)
 
 
-def joint_pca(multiomics_data: Dict[str, pd.DataFrame], n_components: int = 50, **kwargs) -> Dict[str, Any]:
+def joint_pca(
+    multiomics_data: Union["MultiOmicsData", Dict[str, pd.DataFrame]],
+    n_components: int = 50,
+    standardize: bool = True,
+    layer_weights: Optional[Dict[str, float]] = None,
+    **kwargs,
+) -> Tuple[np.ndarray, Dict[str, np.ndarray], np.ndarray]:
     """Perform joint PCA across multiple omics datasets.
 
     Args:
-        multiomics_data: Dictionary of omics datasets
+        multiomics_data: MultiOmicsData object or dictionary of omics datasets
         n_components: Number of joint components
+        standardize: Whether to standardize the data
+        layer_weights: Optional weights for each layer
         **kwargs: Additional PCA parameters
 
     Returns:
-        Dictionary with joint PCA results
+        Tuple of (embeddings, loadings_dict, explained_variance_ratio)
 
     Raises:
         ImportError: If scikit-learn not available
@@ -270,61 +305,78 @@ def joint_pca(multiomics_data: Dict[str, pd.DataFrame], n_components: int = 50, 
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn is required for joint PCA. " "Install with: uv pip install scikit-learn")
 
-    validation.validate_range(n_components, min_val=2, name="n_components")
+    validation.validate_range(n_components, min_val=1, name="n_components")
+
+    # Handle MultiOmicsData input
+    if hasattr(multiomics_data, "data"):
+        data_dict = multiomics_data.data
+    else:
+        data_dict = multiomics_data
 
     logger.info(f"Performing joint PCA with {n_components} components")
 
+    # Apply layer weights if specified
+    weighted_data = {}
+    for layer_name, df in data_dict.items():
+        weight = layer_weights.get(layer_name, 1.0) if layer_weights else 1.0
+        weighted_data[layer_name] = df * weight
+
     # Concatenate all datasets horizontally (features from different omics)
-    concatenated_data = pd.concat(list(multiomics_data.values()), axis=1)
+    concatenated_data = pd.concat(list(weighted_data.values()), axis=1)
 
     # Handle missing values
     concatenated_data = concatenated_data.fillna(concatenated_data.mean())
 
-    # Scale data
-    scaler = StandardScaler()
-    scaled_data = scaler.fit_transform(concatenated_data)
+    # Scale data if requested
+    if standardize:
+        scaler = StandardScaler()
+        scaled_data = scaler.fit_transform(concatenated_data)
+    else:
+        scaled_data = concatenated_data.values
 
     # Perform PCA
-    pca = PCA(n_components=min(n_components, scaled_data.shape[1]), **kwargs)
-    pca_scores = pca.fit_transform(scaled_data)
+    n_comp = min(n_components, scaled_data.shape[1], scaled_data.shape[0])
+    pca = PCA(n_components=n_comp, **kwargs)
+    embeddings = pca.fit_transform(scaled_data)
 
     # Create component loadings for each omics type
     loadings = {}
     feature_start = 0
 
-    for omics_type, data in multiomics_data.items():
-        n_features = data.shape[1]
+    for omics_type, df in data_dict.items():
+        n_features = df.shape[1]
         loadings[omics_type] = pca.components_[:, feature_start : feature_start + n_features].T
         feature_start += n_features
 
-    results = {
-        "pca_scores": pca_scores,
-        "pca_loadings": pca.components_,
-        "omics_loadings": loadings,
-        "explained_variance_ratio": pca.explained_variance_ratio_,
-        "cumulative_explained_variance": np.cumsum(pca.explained_variance_ratio_),
-        "singular_values": pca.singular_values_,
-    }
+    variance = pca.explained_variance_ratio_
 
     logger.info(
-        f"Joint PCA completed: {len(results['explained_variance_ratio'])} components explain {results['cumulative_explained_variance'][-1]:.1%} variance"
+        f"Joint PCA completed: {len(variance)} components explain {np.sum(variance):.1%} variance"
     )
-    return results
+
+    return embeddings, loadings, variance
 
 
 def joint_nmf(
-    multiomics_data: Dict[str, pd.DataFrame], n_components: int = 50, max_iter: int = 200, **kwargs
-) -> Dict[str, Any]:
+    multiomics_data: Union["MultiOmicsData", Dict[str, pd.DataFrame]],
+    n_components: int = 50,
+    max_iter: int = 200,
+    regularization: float = 0.0,
+    random_state: Optional[int] = None,
+    **kwargs,
+) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
     """Perform joint NMF across multiple omics datasets.
 
     Args:
-        multiomics_data: Dictionary of omics datasets
+        multiomics_data: MultiOmicsData object or dictionary of omics datasets
         n_components: Number of joint components
         max_iter: Maximum iterations for NMF
+        regularization: L2 regularization strength
+        random_state: Random seed for reproducibility
         **kwargs: Additional NMF parameters
 
     Returns:
-        Dictionary with joint NMF results
+        Tuple of (W matrix, H_dict) where H_dict maps layer names to component loadings
 
     Raises:
         ImportError: If scikit-learn not available
@@ -333,13 +385,19 @@ def joint_nmf(
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn is required for joint NMF. " "Install with: uv pip install scikit-learn")
 
-    validation.validate_range(n_components, min_val=2, name="n_components")
+    validation.validate_range(n_components, min_val=1, name="n_components")
     validation.validate_range(max_iter, min_val=10, name="max_iter")
+
+    # Handle MultiOmicsData input
+    if hasattr(multiomics_data, "data"):
+        data_dict = multiomics_data.data
+    else:
+        data_dict = multiomics_data
 
     logger.info(f"Performing joint NMF with {n_components} components")
 
     # Concatenate all datasets
-    concatenated_data = pd.concat(list(multiomics_data.values()), axis=1)
+    concatenated_data = pd.concat(list(data_dict.values()), axis=1)
 
     # Check for negative values
     if (concatenated_data < 0).any().any():
@@ -349,62 +407,82 @@ def joint_nmf(
     concatenated_data = concatenated_data.fillna(concatenated_data.mean())
 
     # Perform NMF
-    nmf = NMF(n_components=min(n_components, concatenated_data.shape[1]), max_iter=max_iter, **kwargs)
+    n_comp = min(n_components, concatenated_data.shape[1])
+    nmf = NMF(
+        n_components=n_comp,
+        max_iter=max_iter,
+        alpha_H=regularization,
+        alpha_W=regularization,
+        random_state=random_state,
+        **kwargs,
+    )
     W = nmf.fit_transform(concatenated_data.values)
-    H = nmf.components_
+    H_full = nmf.components_
 
     # Split H matrix by omics type
-    omics_components = {}
+    H = {}
     feature_start = 0
 
-    for omics_type, data in multiomics_data.items():
+    for omics_type, data in data_dict.items():
         n_features = data.shape[1]
-        omics_components[omics_type] = H[:, feature_start : feature_start + n_features]
+        H[omics_type] = H_full[:, feature_start : feature_start + n_features]
         feature_start += n_features
 
-    results = {
-        "W_matrix": W,  # Sample factors
-        "H_matrix": H,  # Feature factors
-        "omics_components": omics_components,
-        "reconstruction_error": nmf.reconstruction_err_,
-        "n_iter": nmf.n_iter_,
-    }
-
-    logger.info(f"Joint NMF completed: reconstruction error = {results['reconstruction_error']:.4f}")
-    return results
+    logger.info(f"Joint NMF completed: reconstruction error = {nmf.reconstruction_err_:.4f}")
+    return W, H
 
 
-def canonical_correlation(multiomics_data: Dict[str, pd.DataFrame], n_components: int = 10, **kwargs) -> Dict[str, Any]:
+def canonical_correlation(
+    multiomics_data: Union["MultiOmicsData", Dict[str, pd.DataFrame]],
+    layers: Optional[Tuple[str, str]] = None,
+    n_components: int = 10,
+    **kwargs,
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Perform canonical correlation analysis between omics datasets.
 
     Args:
-        multiomics_data: Dictionary of omics datasets (requires exactly 2 datasets)
+        multiomics_data: MultiOmicsData object or dictionary of omics datasets
+        layers: Tuple of (layer1, layer2) to correlate. Required if more than 2 layers.
         n_components: Number of canonical components
         **kwargs: Additional CCA parameters
 
     Returns:
-        Dictionary with CCA results
+        Tuple of (X_c, Y_c, X_weights, Y_weights, correlations)
 
     Raises:
         ImportError: If scikit-learn not available
-        ValueError: If not exactly 2 datasets provided
+        ValueError: If layers not specified and not exactly 2 datasets provided
     """
     if not HAS_SKLEARN:
         raise ImportError(
             "scikit-learn is required for canonical correlation analysis. " "Install with: uv pip install scikit-learn"
         )
 
-    if len(multiomics_data) != 2:
-        raise errors.ValidationError("CCA requires exactly 2 omics datasets")
+    # Handle MultiOmicsData input
+    if hasattr(multiomics_data, "data"):
+        data_dict = multiomics_data.data
+    else:
+        data_dict = multiomics_data
+
+    # Determine layers to use
+    if layers is None:
+        if len(data_dict) != 2:
+            raise errors.ValidationError("CCA requires exactly 2 omics datasets or layers tuple specified")
+        omics_types = list(data_dict.keys())
+    else:
+        omics_types = list(layers)
+        # Check layers exist
+        for layer in omics_types:
+            if layer not in data_dict:
+                raise ValueError(f"Layer {layer} not found in data. Available: {list(data_dict.keys())}")
 
     validation.validate_range(n_components, min_val=1, name="n_components")
 
-    omics_types = list(multiomics_data.keys())
     logger.info(f"Performing CCA between {omics_types[0]} and {omics_types[1]}")
 
     # Get the two datasets
-    X = multiomics_data[omics_types[0]].values
-    Y = multiomics_data[omics_types[1]].values
+    X = data_dict[omics_types[0]].values
+    Y = data_dict[omics_types[1]].values
 
     # Handle missing values
     X = np.nan_to_num(X, nan=np.nanmean(X))
@@ -416,20 +494,19 @@ def canonical_correlation(multiomics_data: Dict[str, pd.DataFrame], n_components
     Y_scaled = scaler.fit_transform(Y)
 
     # Perform CCA
-    cca = CCA(n_components=min(n_components, X_scaled.shape[1], Y_scaled.shape[1]), **kwargs)
+    n_comp = min(n_components, X_scaled.shape[1], Y_scaled.shape[1])
+    cca = CCA(n_components=n_comp, **kwargs)
     X_c, Y_c = cca.fit_transform(X_scaled, Y_scaled)
 
-    results = {
-        "cca_scores_X": X_c,
-        "cca_scores_Y": Y_c,
-        "cca_coefficients_X": cca.x_weights_,
-        "cca_coefficients_Y": cca.y_weights_,
-        "canonical_correlations": cca.score(X_scaled, Y_scaled),
-        "omics_types": omics_types,
-    }
+    # Compute canonical correlations for each component
+    correlations = []
+    for i in range(X_c.shape[1]):
+        corr = np.corrcoef(X_c[:, i], Y_c[:, i])[0, 1]
+        correlations.append(abs(corr))
+    correlations = np.array(correlations)
 
-    logger.info(f"CCA completed: {len(results['canonical_correlations'])} components")
-    return results
+    logger.info(f"CCA completed: {len(correlations)} components")
+    return X_c, Y_c, cca.x_weights_, cca.y_weights_, correlations
 
 
 def from_dna_variants(vcf_data: pd.DataFrame, **kwargs) -> pd.DataFrame:

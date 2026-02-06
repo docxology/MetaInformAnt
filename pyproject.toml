@@ -27,6 +27,8 @@ dependencies = [
     "pytest-timeout>=2.4.0",
     "beautifulsoup4>=4.12.0",
     "scipy>=1.11.0",
+    "networkx>=3.2",  # Network analysis - required for Networks module
+    "scikit-learn>=1.3.0",  # ML - required for multiomics integration
 ]
 
 [project.optional-dependencies]
@@ -100,6 +102,8 @@ dev = [
     "isort>=5.13.0",
     "flake8>=7.0.0",
     "mypy>=1.8.0",
+    "bandit>=1.7.0",  # Security linting
+    "safety>=3.0.0",  # Dependency vulnerability scanning
     "pre-commit>=3.6.0",
     "sphinx>=7.2.0",  # Documentation
     "sphinx-rtd-theme>=2.0.0",  # Read the Docs theme
@@ -107,6 +111,8 @@ dev = [
     "myst-parser>=2.0.0",  # Markdown support in docs
     "jupyter>=1.0.0",  # For example notebooks
     "nbsphinx>=0.9.0",  # Jupyter notebook integration
+    "twine>=5.0.0",  # Package publishing
+    "build>=1.0.0",  # Package building
 ]
 
 # Database and external data

@@ -446,19 +446,23 @@ class TestSingleCellEdgeCases:
     @pytest.mark.skipif(not PREPROCESSING_AVAILABLE, reason="preprocessing not available")
     def test_empty_matrix(self):
         """Test handling of empty matrices."""
+        import warnings
+
         import pandas as pd
 
         empty_matrix = np.array([]).reshape(0, 5)
         empty_obs = pd.DataFrame(index=[])
         empty_var = pd.DataFrame(index=[f"Gene_{i}" for i in range(5)])
 
-        # Should handle gracefully
+        # Should handle gracefully - suppress warnings for edge cases
         try:
-            data = SingleCellData(X=empty_matrix, obs=empty_obs, var=empty_var)
-            filtered_data = filter_cells(data, min_genes=1)
-            assert filtered_data.X.shape == (0, 5)
-            assert len(filtered_data.obs) == 0
-        except (ValueError, IndexError):
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", RuntimeWarning)
+                data = SingleCellData(X=empty_matrix, obs=empty_obs, var=empty_var)
+                filtered_data = filter_cells(data, min_genes=1)
+                assert filtered_data.X.shape == (0, 5)
+                assert len(filtered_data.obs) == 0
+        except (ValueError, IndexError, RuntimeWarning):
             # Acceptable to raise error for empty data
             pass
 

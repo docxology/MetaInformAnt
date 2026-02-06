@@ -159,6 +159,25 @@ class GenomicTrack:
 
         logger.info(f"Normalized track values using {method} method")
 
+    def to_dataframe(self) -> "pd.DataFrame":
+        """Convert track data to a pandas DataFrame.
+
+        Returns:
+            DataFrame with columns: chrom, start, end, value
+        """
+        import pandas as pd
+
+        rows = []
+        for chromosome, features in self.data.items():
+            for feature in features:
+                rows.append({
+                    "chrom": chromosome,
+                    "start": feature["start"],
+                    "end": feature["end"],
+                    "value": feature["value"],
+                })
+        return pd.DataFrame(rows)
+
 
 def load_bed_track(path: str | Path, name: str = "", description: str = "") -> GenomicTrack:
     """Load a BED format track.
@@ -262,9 +281,19 @@ def load_bedgraph_track(path: str | Path, name: str = "", description: str = "")
     logger.info(f"Loaded BEDgraph track with {track.get_total_features()} features")
     return track
 
+def read_bedgraph(path: str | Path, name: str = "", description: str = "") -> "pd.DataFrame":
+    """Read a BEDgraph file and return as DataFrame.
 
-# Alias for backward compatibility
-read_bedgraph = load_bedgraph_track
+    Args:
+        path: Path to BEDgraph file
+        name: Track name (ignored)
+        description: Track description (ignored)
+
+    Returns:
+        DataFrame with columns: chrom, start, end, value
+    """
+    track = load_bedgraph_track(path, name, description)
+    return track.to_dataframe()
 
 
 def load_bigwig_track(

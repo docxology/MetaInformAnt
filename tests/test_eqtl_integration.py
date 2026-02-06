@@ -187,8 +187,13 @@ class TestMultiOmicsData:
 
         from metainformant.multiomics.analysis.integration import MultiOmicsData
 
-        rna_data = pd.DataFrame({"s1": [1, 2], "s2": [3, 4]}, index=["g1", "g2"])
-        protein_data = pd.DataFrame({"s1": [0.5, 1.0], "s2": [1.5, 2.0]}, index=["p1", "p2"])
+        # Samples in rows (index), features in columns
+        rna_data = pd.DataFrame(
+            {"g1": [1, 3], "g2": [2, 4]}, index=["s1", "s2"]
+        )
+        protein_data = pd.DataFrame(
+            {"p1": [0.5, 1.5], "p2": [1.0, 2.0]}, index=["s1", "s2"]
+        )
 
         mo = MultiOmicsData(rna_data=rna_data, protein_data=protein_data)
 
@@ -202,8 +207,13 @@ class TestMultiOmicsData:
 
         from metainformant.multiomics.analysis.integration import MultiOmicsData
 
-        rna_data = pd.DataFrame({"s1": [1, 2], "s2": [3, 4], "s3": [5, 6]}, index=["g1", "g2"])
-        protein_data = pd.DataFrame({"s1": [0.5, 1.0], "s2": [1.5, 2.0]}, index=["p1", "p2"])
+        # Samples in rows, features in columns; rna has s1,s2,s3, protein has s1,s2
+        rna_data = pd.DataFrame(
+            {"g1": [1, 3, 5], "g2": [2, 4, 6]}, index=["s1", "s2", "s3"]
+        )
+        protein_data = pd.DataFrame(
+            {"p1": [0.5, 1.5], "p2": [1.0, 2.0]}, index=["s1", "s2"]
+        )
 
         mo = MultiOmicsData(rna_data=rna_data, protein_data=protein_data)
         common = mo.get_common_samples()
