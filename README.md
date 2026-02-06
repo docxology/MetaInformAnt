@@ -1,33 +1,38 @@
-# METAINFORMANT
+# 🐜 METAINFORMANT
 
-Bioinformatics toolkit for multi-omic analysis.
+**Comprehensive bioinformatics toolkit for multi-omic analysis**
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Modules](https://img.shields.io/badge/modules-25-green.svg)](src/metainformant/)
+[![Files](https://img.shields.io/badge/files-343-brightgreen.svg)](src/metainformant/)
+
+---
 
 ## Overview
 
-METAINFORMANT analyzes biological data across genomics, transcriptomics, proteomics, epigenomics, and systems biology. Built with Python, it provides bioinformatics research tools.
+METAINFORMANT provides production-ready bioinformatics analysis across genomics, transcriptomics, proteomics, epigenomics, and systems biology. Built with Python 3.11+ and [`uv`](https://astral.sh/uv) for fast dependency management.
 
-### **Key Achievements:**
+### 📊 At a Glance
 
-- ✅ **Import Errors Reduced**: ~225 → 63 (**72% improvement**)
-- ✅ **Test Suite Status**: 24 passing tests, 87% collection success
-- ✅ **All Major Modules**: **FULLY IMPLEMENTED AND OPERATIONAL**
-- ✅ **End-to-End Pipelines**: **WORKING ACROSS ALL DOMAINS**
-- ✅ **Scientific Rigor**: **Established methods and proper validation**
+| Metric | Value |
+|--------|-------|
+| **Modules** | 25 specialized analysis modules |
+| **Python Files** | 343 implementation files |
+| **Plot Types** | 57+ visualization methods |
+| **Documentation** | 130+ README files |
 
-### **Production-Ready Capabilities:**
+### 🔬 Core Capabilities
 
-- **Core Infrastructure**: Complete I/O, config, logging, parallel processing
-- **DNA Analysis**: Sequences, population genetics, phylogenetics, alignment
-- **RNA Analysis**: Complete Amalgkit integration, robust SRA downloads, automated genome indexing
-- **GWAS Pipeline**: Association testing, QC, visualization, variant calling
-- **Systems Biology**: PPI networks, pathway analysis, multi-omics integration
-- **Machine Learning**: Classification, regression, feature selection
-- **Quality Control**: FASTQ analysis, contamination detection
-- **Visualization**: 12 specialized plotting modules across all domains
+| Domain | Features |
+|--------|----------|
+| **DNA** | Sequences, alignment, phylogenetics, population genetics, variant analysis |
+| **RNA** | Amalgkit integration, SRA downloads, Kallisto quantification, industrial-scale pipelines |
+| **GWAS** | Association testing, fine-mapping, eQTL analysis, colocalization, visualization |
+| **Multi-omics** | Cross-omic integration, joint PCA, correlation analysis |
+| **ML** | Classification, regression, feature selection, LLM integration |
+| **Visualization** | Manhattan plots, heatmaps, networks, animations, publication-ready output |
 
 ### System Architecture
 
