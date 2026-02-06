@@ -117,11 +117,14 @@ jobs:
 
     - name: Install development dependencies
       run: |
+        uv venv
+        source .venv/bin/activate
         uv pip install -e ".[dev]"
         mkdir -p docs/_build docs/_static docs/_templates
 
     - name: Build documentation
       run: |
+        source .venv/bin/activate
         if [ -f "scripts/package/uv_docs.sh" ]; then
           bash scripts/package/uv_docs.sh build || echo "Documentation build skipped"
         else
@@ -130,6 +133,7 @@ jobs:
 
     - name: Build PDF documentation (optional)
       run: |
+        source .venv/bin/activate
         # Try to build PDF if LaTeX is available
         if command -v pdflatex &> /dev/null; then
           bash scripts/package/uv_docs.sh build --format pdf || true
