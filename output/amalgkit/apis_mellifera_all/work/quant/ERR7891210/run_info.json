@@ -1,0 +1,14 @@
+{
+	"n_targets": 28355,
+	"n_bootstraps": 0,
+	"n_processed": 20200988,
+	"n_pseudoaligned": 9233125,
+	"n_unique": 5714648,
+	"p_pseudoaligned": 45.7,
+	"p_unique": 28.3,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Fri Feb  6 19:01:45 2026",
+	"call": "kallisto quant -i output/amalgkit/apis_mellifera_all/work/index/Apis_mellifera_transcripts.idx -o output/amalgkit/apis_mellifera_all/work/quant/ERR7891210 -t 2 /Volumes/blue/data/apis_mellifera/ERR7891210/ERR7891210_1.fastq.gz /Volumes/blue/data/apis_mellifera/ERR7891210/ERR7891210_2.fastq.gz"
+}
