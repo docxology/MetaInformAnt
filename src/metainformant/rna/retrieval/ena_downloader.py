@@ -424,7 +424,10 @@ def download_sra_samples(
     """
     base_out_dir = Path(base_out_dir)
     getfastq_dir = base_out_dir / "getfastq"
-    getfastq_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        getfastq_dir.mkdir(parents=True, exist_ok=True)
+    except FileExistsError:
+        pass
 
     # Get sample info and optionally sort
     if sort_by_size or max_size_bytes:

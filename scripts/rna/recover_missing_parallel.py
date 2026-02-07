@@ -1,3 +1,4 @@
+import argparse
 import concurrent.futures
 import os
 import shutil
@@ -5,15 +6,26 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import List, Tuple
 
 # Ensure src is in path
 sys.path.append(str(Path(__file__).parent.parent.parent / "src"))
 try:
-    from metainformant.rna.retrieval.ena_downloader import download_sra_samples
+    from metainformant.rna.retrieval.ena_downloader import (
+        download_sra_samples, 
+        get_ena_sample_info,
+        parse_size,
+        format_size
+    )
 except ImportError:
     # Fallback if running from root
     sys.path.append(str(Path.cwd() / "src"))
-    from metainformant.rna.retrieval.ena_downloader import download_sra_samples
+    from metainformant.rna.retrieval.ena_downloader import (
+        download_sra_samples,
+        get_ena_sample_info,
+        parse_size,
+        format_size
+    )
 
 
 def get_missing_samples(list_file):
@@ -24,6 +36,11 @@ def get_missing_samples(list_file):
 def create_single_metadata(sra_id, full_metadata_path, work_dir):
     """Create a temporary metadata file containing only the target SRA."""
     out_path = work_dir / f"metadata_{sra_id}.tsv"
+    
+    # Check if metadata file exists
+    if not full_metadata_path.exists():
+        print(f"[{sra_id}] Metadata file not found: {full_metadata_path}")
+        return None
 
     with open(full_metadata_path) as f_in, open(out_path, "w") as f_out:
         # Read header
@@ -70,8 +87,6 @@ def run_quant_single(sra_id, work_dir, fastq_dir, genome_dir, index_dir, full_me
         if try_path.exists():
             amalgkit_exe = str(try_path)
         else:
-            # Fallback for when running via python directly? wrapper script?
-            # We know it is installed now.
             amalgkit_exe = "amalgkit"
 
     cmd = [
@@ -104,7 +119,6 @@ def run_quant_single(sra_id, work_dir, fastq_dir, genome_dir, index_dir, full_me
         return True
     except subprocess.CalledProcessError as e:
         print(f"[{sra_id}] [FAIL] Quant failed. See logs: {log_file}")
-        # Clean up temp metadata even on fail
         single_metadata.unlink(missing_ok=True)
         return False
 
@@ -112,11 +126,9 @@ def run_quant_single(sra_id, work_dir, fastq_dir, genome_dir, index_dir, full_me
 def cleanup_single(sra_id, work_dir):
     """Delete files for this specific sample."""
     sample_dir = work_dir / "getfastq" / sra_id
-    print(f"[{sra_id}] Cleaning up {sample_dir}...")
     if sample_dir.exists():
         try:
             shutil.rmtree(sample_dir)
-            print(f"[{sra_id}] Cleanup complete.")
         except Exception as e:
             print(f"[{sra_id}] Cleanup failed: {e}")
 
@@ -127,13 +139,22 @@ def process_sample(sra_id, args):
     genome_dir = Path(args.genome_dir)
     index_dir = Path(args.index_dir)
     metadata_file = work_dir / "metadata" / "metadata.tsv"
-
+    
+    # Parse constraints
+    max_size_bytes = parse_size(args.max_size) if args.max_size else None
+    
     print(f"\n[{sra_id}] Starting pipeline...")
 
-    # 1. Download
+    # 1. Download with new best practices (size limit, timeout, fallback)
     try:
-        # Always call downloader. It handles resumption (-C -) and MD5 checks.
-        download_sra_samples([sra_id], work_dir)
+        download_sra_samples(
+            [sra_id], 
+            work_dir,
+            max_size_bytes=max_size_bytes,
+            timeout=args.timeout,
+            sort_by_size=False,  # Sorting handled at batch level
+            use_fallback=args.fallback
+        )
     except Exception as e:
         print(f"[{sra_id}] Download crashed: {e}")
         return False
@@ -153,9 +174,13 @@ def process_sample(sra_id, args):
     return success
 
 
-def main():
-    import argparse
+def get_size_info(sra_id):
+    """Helper for parallel size fetching."""
+    info = get_ena_sample_info(sra_id)
+    return (sra_id, info.size_bytes if info else float('inf'))
 
+
+def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--file", required=True, help="List of missing samples")
     parser.add_argument("--max-workers", type=int, default=3)
@@ -163,6 +188,12 @@ def main():
     parser.add_argument("--fastq-dir", help="Deprecated.")
     parser.add_argument("--genome-dir", required=True)
     parser.add_argument("--index-dir", required=True)
+    
+    # New options
+    parser.add_argument("--max-size", help="Skip samples larger than this")
+    parser.add_argument("--timeout", type=int, default=600, help="Download timeout")
+    parser.add_argument("--sort-by-size", action="store_true", help="Process smallest first")
+    parser.add_argument("--fallback", action="store_true", help="Use fallback sources")
 
     args = parser.parse_args()
 
@@ -170,6 +201,31 @@ def main():
     print(f"Total samples to process: {len(all_samples)}")
     print(f"Parallel Workers: {args.max_workers}")
 
+    # Parallel Sorting Phase
+    if args.sort_by_size:
+        print("Sorting samples by size (checking ENA in parallel)...")
+        sample_sizes = []
+        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+            future_to_id = {executor.submit(get_size_info, sra_id): sra_id for sra_id in all_samples}
+            for i, future in enumerate(concurrent.futures.as_completed(future_to_id)):
+                if (i+1) % 50 == 0:
+                    print(f"Checked size for {i+1}/{len(all_samples)} samples...")
+                try:
+                    sample_sizes.append(future.result())
+                except Exception:
+                    sample_sizes.append((future_to_id[future], float('inf')))
+        
+        # Sort smallest first
+        sample_sizes.sort(key=lambda x: x[1])
+        all_samples = [s[0] for s in sample_sizes]
+        print(f"Sorted {len(all_samples)} samples by size.")
+
+    # Pre-create directories to avoid race conditions
+    work_dir = Path(args.work_dir)
+    (work_dir / "getfastq").mkdir(parents=True, exist_ok=True)
+    (work_dir / "logs").mkdir(parents=True, exist_ok=True)
+    
+    # Execution Phase
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.max_workers) as executor:
         futures = {executor.submit(process_sample, sra_id, args): sra_id for sra_id in all_samples}
 
