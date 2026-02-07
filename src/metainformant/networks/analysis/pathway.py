@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Set
 
 from metainformant.core import logging
 
@@ -510,6 +510,22 @@ class PathwayNetwork:
         self.name = name
         self.pathways = pathways or {}
         self.metadata = {}
+        self.pathway_metadata: Dict[str, Dict[str, Any]] = {}
+
+    @property
+    def gene_pathways(self) -> Dict[str, Set[str]]:
+        """Return mapping of gene names to set of pathway names containing them.
+
+        Returns:
+            Dictionary mapping gene names to sets of pathway names
+        """
+        result: Dict[str, Set[str]] = {}
+        for pathway_name, genes in self.pathways.items():
+            for gene in genes:
+                if gene not in result:
+                    result[gene] = set()
+                result[gene].add(pathway_name)
+        return result
 
     @classmethod
     def load_from_database(cls, filepath: str | Path, format: str = "json") -> "PathwayNetwork":
@@ -645,14 +661,17 @@ class PathwayNetwork:
         """Get pathway genes by name."""
         return self.get_pathway(pathway_name)
 
-    def add_pathway(self, name: str, genes: List[str]) -> None:
+    def add_pathway(self, name: str, genes: List[str], metadata: Optional[Dict[str, Any]] = None) -> None:
         """Add a pathway to the network.
 
         Args:
             name: Pathway name/identifier
             genes: List of genes in the pathway
+            metadata: Optional metadata dictionary for the pathway
         """
         self.pathways[name] = genes
+        if metadata:
+            self.pathway_metadata[name] = metadata
 
     def remove_pathway(self, name: str) -> bool:
         """Remove a pathway from the network.
@@ -679,6 +698,94 @@ class PathwayNetwork:
             self.pathways[pathway_name] = []
         if gene not in self.pathways[pathway_name]:
             self.pathways[pathway_name].append(gene)
+
+    def get_pathway_genes(self, pathway_name: str) -> set:
+        """Get the set of genes in a specific pathway.
+
+        Args:
+            pathway_name: Name of the pathway
+
+        Returns:
+            Set of genes in the pathway
+        """
+        genes = self.pathways.get(pathway_name, [])
+        return set(genes)
+
+    def get_gene_pathways(self, gene: str) -> set:
+        """Get the set of pathways containing a specific gene.
+
+        Args:
+            gene: Gene name
+
+        Returns:
+            Set of pathway names containing the gene
+        """
+        return {name for name, genes in self.pathways.items() if gene in genes}
+
+    def pathway_similarity(self, pathway1: str, pathway2: str) -> float:
+        """Calculate Jaccard similarity between two pathways.
+
+        Args:
+            pathway1: Name of first pathway
+            pathway2: Name of second pathway
+
+        Returns:
+            Jaccard similarity coefficient (0.0 to 1.0)
+        """
+        genes1 = set(self.pathways.get(pathway1, []))
+        genes2 = set(self.pathways.get(pathway2, []))
+        if not genes1 or not genes2:
+            return 0.0
+        intersection = len(genes1 & genes2)
+        union = len(genes1 | genes2)
+        return intersection / union if union > 0 else 0.0
+
+    def get_statistics(self) -> Dict[str, Any]:
+        """Get summary statistics for the pathway network.
+
+        Returns:
+            Dictionary with pathway network statistics
+        """
+        if not self.pathways:
+            return {
+                "num_pathways": 0,
+                "num_genes": 0,
+                "avg_pathway_size": 0,
+                "max_pathway_size": 0,
+                "min_pathway_size": 0,
+            }
+        sizes = [len(genes) for genes in self.pathways.values()]
+        all_genes: set = set()
+        for genes in self.pathways.values():
+            all_genes.update(genes)
+        return {
+            "num_pathways": len(self.pathways),
+            "num_genes": len(all_genes),
+            "avg_pathway_size": sum(sizes) / len(sizes),
+            "max_pathway_size": max(sizes),
+            "min_pathway_size": min(sizes),
+        }
+
+    def find_overlapping_pathways(self, pathway_name: str) -> Dict[str, Dict[str, Any]]:
+        """Find pathways that share genes with the given pathway.
+
+        Args:
+            pathway_name: Name of the target pathway
+
+        Returns:
+            Dictionary mapping overlapping pathway names to overlap info
+        """
+        if pathway_name not in self.pathways:
+            return {}
+        target_genes = set(self.pathways[pathway_name])
+        overlapping: Dict[str, Dict[str, Any]] = {}
+        for name, genes in self.pathways.items():
+            if name == pathway_name:
+                continue
+            shared = target_genes & set(genes)
+            if shared:
+                overlapping[name] = {"shared_genes": shared, "overlap_size": len(shared)}
+        return overlapping
 
 
 def pathway_enrichment(
@@ -785,6 +892,7 @@ def pathway_enrichment(
             "p_value": p_value,
             "enrichment_ratio": enrichment_ratio,
             "overlap_genes": list(overlap),
+            "overlapping_genes": list(overlap),
             "expected_overlap": expected_overlap,
         }
 
@@ -860,6 +968,14 @@ def load_pathway_database(pathway_data: Dict[str, Any], name: str = "loaded_path
 
     network = PathwayNetwork(name=name, pathways=pathways)
 
+    # Store per-pathway metadata (non-gene keys from dict-format entries)
+    source_dict = pathway_data.get("pathways", pathway_data)
+    for pathway_id, pathway_info in source_dict.items():
+        if isinstance(pathway_info, dict):
+            meta = {k: v for k, v in pathway_info.items() if k != "genes"}
+            if meta:
+                network.pathway_metadata[pathway_id] = meta
+
     # Add metadata if available
     if "metadata" in pathway_data:
         network.metadata.update(pathway_data["metadata"])
@@ -869,6 +985,73 @@ def load_pathway_database(pathway_data: Dict[str, Any], name: str = "loaded_path
         network.metadata["source"] = pathway_data["source"]
 
     return network
+
+
+def pathway_similarity(path1: set, path2: set, method: str = "jaccard") -> float:
+    """Calculate similarity between two gene sets.
+
+    Args:
+        path1: First set of genes
+        path2: Second set of genes
+        method: Similarity method ('jaccard', 'overlap', 'dice')
+
+    Returns:
+        Similarity score (0.0 to 1.0)
+
+    Raises:
+        ValueError: If unknown similarity method
+    """
+    if not path1 or not path2:
+        return 0.0
+    intersection = len(path1 & path2)
+    if method == "jaccard":
+        union = len(path1 | path2)
+        return intersection / union if union > 0 else 0.0
+    elif method == "overlap":
+        min_size = min(len(path1), len(path2))
+        return intersection / min_size if min_size > 0 else 0.0
+    elif method == "dice":
+        return (2 * intersection) / (len(path1) + len(path2)) if (len(path1) + len(path2)) > 0 else 0.0
+    else:
+        raise ValueError(f"Unknown similarity method: {method}")
+
+
+def pathway_activity_score(
+    pathway_network: "PathwayNetwork",
+    pathway_id: str,
+    expression: Dict[str, float],
+    method: str = "mean",
+) -> float:
+    """Calculate pathway activity score based on gene expression.
+
+    Args:
+        pathway_network: PathwayNetwork instance containing pathway definitions
+        pathway_id: Pathway identifier
+        expression: Dictionary mapping gene names to expression values
+        method: Aggregation method ('mean', 'max', 'sum', 'median')
+
+    Returns:
+        Pathway activity score
+
+    Raises:
+        ValueError: If unknown method
+    """
+    genes = pathway_network.get_pathway_genes(pathway_id)
+    if not genes:
+        return 0.0
+    values = [expression[g] for g in genes if g in expression]
+    if not values:
+        return 0.0
+    if method == "mean":
+        return sum(values) / len(values)
+    elif method == "max":
+        return max(values)
+    elif method == "sum":
+        return sum(values)
+    elif method == "median":
+        return sorted(values)[len(values) // 2]
+    else:
+        raise ValueError(f"Unknown method: {method}")
 
 
 def network_enrichment_analysis(

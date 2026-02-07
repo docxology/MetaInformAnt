@@ -103,9 +103,36 @@ class BiologicalNetwork:
         """Get the number of nodes in the network."""
         return self.graph.number_of_nodes()
 
+    def num_nodes(self) -> int:
+        """Get the number of nodes in the network."""
+        return self.graph.number_of_nodes()
+
     def number_of_edges(self) -> int:
         """Get the number of edges in the network."""
         return self.graph.number_of_edges()
+
+    def num_edges(self) -> int:
+        """Get the number of edges in the network."""
+        return self.graph.number_of_edges()
+
+    def has_edge(self, source: str, target: str) -> bool:
+        """Check if an edge exists between two nodes."""
+        return self.graph.has_edge(source, target)
+
+    def get_edge_weight(self, source: str, target: str, weight_key: str = "weight") -> float:
+        """Get the weight of an edge.
+
+        Args:
+            source: Source node ID
+            target: Target node ID
+            weight_key: Key for weight attribute
+
+        Returns:
+            Edge weight value, or 1.0 if not found
+        """
+        if self.graph.has_edge(source, target):
+            return self.graph[source][target].get(weight_key, 1.0)
+        return 0.0
 
     def size(self, weight: str | None = None) -> int | float:
         """Return the number of edges or total of all edge weights.

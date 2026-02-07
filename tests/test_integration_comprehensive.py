@@ -248,7 +248,7 @@ class TestBioinformaticsWorkflow:
 
         # Canonical correlation between layers
         X_can, Y_can, X_weights, Y_weights, correlations = canonical_correlation(
-            omics_data, layer_pair=("transcriptomics", "proteomics"), n_components=3  # Reduced from 5
+            omics_data, layers=("transcriptomics", "proteomics"), n_components=3  # Reduced from 5
         )
 
         assert X_can.shape == (n_samples, 3)
@@ -330,8 +330,10 @@ class TestBioinformaticsWorkflow:
         n_sites = 15
 
         # Simulate counts using negative binomial
+        means = np.full(n_species, 50.0)
+        dispersions = np.full(n_species, 0.5)
         abundance_data = simulate_counts_negative_binomial(
-            num_genes=n_species, num_samples=n_sites, mean_expression=50.0, rng=np.random.RandomState(456)
+            n_samples=n_sites, n_features=n_species, means=means, dispersions=dispersions
         )
 
         # Convert to species abundance matrix

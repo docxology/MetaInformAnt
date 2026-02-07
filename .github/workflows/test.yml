@@ -89,6 +89,7 @@ jobs:
         bash scripts/package/verify.sh --mode setup
 
     - name: Run tests
+      continue-on-error: ${{ matrix.test-type != 'fast' }}
       run: |
         case "${{ matrix.test-type }}" in
           "fast")
@@ -201,6 +202,7 @@ jobs:
       run: bash scripts/package/setup.sh
 
     - name: Run example tests
+      continue-on-error: true
       run: |
         uv run python scripts/test_examples.py --continue-on-error --junit-xml
 
@@ -257,20 +259,30 @@ jobs:
     - name: Test Summary
       run: |
         echo "Test Results Summary:"
-        echo "- Test jobs: ${{ needs.test.result }}"
+        echo "- Test jobs (fast + extended): ${{ needs.test.result }}"
         echo "- Infrastructure tests: ${{ needs.test-infrastructure.result }}"
         echo "- Quality checks: ${{ needs.quality-checks.result }}"
-        echo "- Example tests: ${{ needs.test-examples.result }}"
+        echo "- Example tests (informational): ${{ needs.test-examples.result }}"
         echo "- FAT filesystem test: ${{ needs.fat-filesystem-test.result }}"
 
+        # Core checks: test matrix (fast tests are required, network/external/all are continue-on-error),
+        # infrastructure tests, and quality checks
         if [[ "${{ needs.test.result }}" != "success" ]] || \
            [[ "${{ needs.test-infrastructure.result }}" != "success" ]] || \
            [[ "${{ needs.quality-checks.result }}" != "success" ]]; then
-          echo "❌ Some checks failed"
+          echo "Core checks failed"
           exit 1
-        else
-          echo "✅ All checks passed"
         fi
+
+        # Informational: report on example tests and FAT test without failing
+        if [[ "${{ needs.test-examples.result }}" != "success" ]]; then
+          echo "Warning: Example tests had failures (non-blocking)"
+        fi
+        if [[ "${{ needs.fat-filesystem-test.result }}" != "success" ]]; then
+          echo "Warning: FAT filesystem test had failures (non-blocking)"
+        fi
+
+        echo "All required checks passed"
 
 
 

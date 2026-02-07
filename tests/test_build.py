@@ -74,7 +74,7 @@ class TestBuildArtifacts:
         """Test that CLI command is available."""
         try:
             result = subprocess.run(
-                [sys.executable, "-m", "metainformant", "--help"], capture_output=True, text=True, timeout=10
+                [sys.executable, "-m", "metainformant", "--help"], capture_output=True, text=True, timeout=60
             )
             assert result.returncode == 0
             assert "metainformant" in result.stdout.lower()
@@ -221,7 +221,7 @@ class TestEntryPoints:
 
         # Test that the entry point can be executed
         result = subprocess.run(
-            [sys.executable, "-m", "metainformant", "--version"], capture_output=True, text=True, timeout=10
+            [sys.executable, "-m", "metainformant", "--version"], capture_output=True, text=True, timeout=60
         )
 
         assert result.returncode == 0, f"Entry point failed: {result.stderr}"

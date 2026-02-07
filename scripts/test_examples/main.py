@@ -31,8 +31,8 @@ class ExampleTester:
         self.parallel = parallel
         self.max_workers = max_workers or min(4, os.cpu_count() or 1)  # Default to 4 or CPU count
         self.results: List[Dict[str, Any]] = []
-        self.examples_dir = Path("examples")
-        self.repo_root = Path(__file__).parent.parent.parent
+        self.repo_root = Path(__file__).parent.parent.parent.resolve()
+        self.examples_dir = self.repo_root / "examples"
 
     def run_all_examples(self) -> Dict[str, Any]:
         """Run all discovered examples and return results."""

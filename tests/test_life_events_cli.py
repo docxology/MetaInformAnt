@@ -25,6 +25,18 @@ from metainformant.life_events import (
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = REPO_ROOT / "src"
 
+# Check if life-events CLI subcommand is available
+_cli_check = subprocess.run(
+    [sys.executable, "-m", "metainformant", "--help"],
+    capture_output=True, text=True, timeout=60,
+)
+_has_life_events_cli = "life-events" in _cli_check.stdout
+
+pytestmark = pytest.mark.skipif(
+    not _has_life_events_cli,
+    reason="life-events CLI subcommand not registered",
+)
+
 
 def _get_cli_env() -> dict[str, str]:
     """Get environment variables for CLI invocation."""

@@ -552,21 +552,72 @@ class GeneRegulatoryNetwork:
     networks, including transcription factor-target relationships and regulatory motifs.
     """
 
-    def __init__(self, graph: Optional[Any] = None, name: str = ""):
+    def __init__(self, name_or_graph: Any = "", name: str = "", **kwargs: Any):
         """Initialize a gene regulatory network.
 
         Args:
-            graph: NetworkX DiGraph object (optional)
-            name: Name of the network
+            name_or_graph: Name string or NetworkX DiGraph for backward compatibility
+            name: Name of the network (used when name_or_graph is a graph)
         """
-        if graph is None and HAS_NETWORKX:
-            self.graph = nx.DiGraph()
+        if isinstance(name_or_graph, str):
+            self.name = name_or_graph or name
+            if HAS_NETWORKX:
+                self.graph = nx.DiGraph()
+            else:
+                self.graph = None
         else:
-            self.graph = graph
-        self.name = name
+            # Backward compat: first arg is a graph
+            self.graph = name_or_graph
+            self.name = name
+            if self.graph is None and HAS_NETWORKX:
+                self.graph = nx.DiGraph()
         self.metadata = {}
         self.tf_targets = {}  # Map of transcription factors to their targets
         self.target_tfs = {}  # Map of targets to their regulators
+        self._gene_metadata: Dict[str, Dict[str, Any]] = {}
+
+    @property
+    def regulations(self) -> List[Tuple[str, str, Dict[str, Any]]]:
+        """Get all regulatory interactions as tuples."""
+        result = []
+        if HAS_NETWORKX and self.graph is not None:
+            for tf, target, data in self.graph.edges(data=True):
+                meta = dict(data)
+                # Map internal keys to expected keys
+                if "regulation_type" in meta:
+                    meta["type"] = meta.pop("regulation_type")
+                if "weight" in meta:
+                    meta["strength"] = meta.get("weight", 0.0)
+                result.append((tf, target, meta))
+        return result
+
+    @property
+    def genes(self) -> List[str]:
+        """Get all genes in the network."""
+        if HAS_NETWORKX and self.graph is not None:
+            return list(self.graph.nodes())
+        all_genes: set[str] = set()
+        for tf, targets in self.tf_targets.items():
+            all_genes.add(tf)
+            all_genes.update(targets)
+        return list(all_genes)
+
+    @property
+    def transcription_factors(self) -> List[str]:
+        """Get all transcription factors."""
+        return list(self.tf_targets.keys())
+
+    @property
+    def gene_metadata(self) -> Dict[str, Dict[str, Any]]:
+        """Get gene metadata dictionary."""
+        if HAS_NETWORKX and self.graph is not None:
+            result: Dict[str, Dict[str, Any]] = {}
+            for node, data in self.graph.nodes(data=True):
+                if data:
+                    result[node] = dict(data)
+            result.update(self._gene_metadata)
+            return result
+        return self._gene_metadata
 
     @classmethod
     def from_tf_target_file(cls, filepath: Union[str, Path], name: str = "") -> "GeneRegulatoryNetwork":
@@ -653,12 +704,17 @@ class GeneRegulatoryNetwork:
         """
         return list(self.tf_targets.keys())
 
-    def get_targets(self) -> List[str]:
-        """Get list of all target genes in the network.
+    def get_targets(self, tf: Optional[str] = None) -> List[str]:
+        """Get target genes, optionally for a specific TF.
+
+        Args:
+            tf: If provided, get targets of this specific TF. Otherwise get all targets.
 
         Returns:
             List of target gene identifiers
         """
+        if tf is not None:
+            return self.get_tf_targets(tf)
         return list(self.target_tfs.keys())
 
     def get_tf_targets(self, tf: str) -> List[str]:
@@ -800,8 +856,10 @@ class GeneRegulatoryNetwork:
         if not HAS_NETWORKX:
             raise ImportError("networkx required for adding regulation")
 
-        # Add edge
-        self.graph.add_edge(tf, target, type="regulates", **kwargs)
+        # Add edge (only set default type if not provided in kwargs)
+        if "type" not in kwargs:
+            kwargs["type"] = "regulates"
+        self.graph.add_edge(tf, target, **kwargs)
 
         # Update mappings
         if tf not in self.tf_targets:
@@ -826,6 +884,100 @@ class GeneRegulatoryNetwork:
         if gene not in self.graph:
             self.graph.add_node(gene)
         self.graph.nodes[gene].update(metadata)
+        if gene not in self._gene_metadata:
+            self._gene_metadata[gene] = {}
+        self._gene_metadata[gene].update(metadata)
+
+    def add_transcription_factor(self, gene_id: str, **kwargs: Any) -> None:
+        """Register a gene as a transcription factor.
+
+        Args:
+            gene_id: Gene identifier
+            **kwargs: Additional metadata (tf_family, etc.)
+        """
+        if gene_id not in self.tf_targets:
+            self.tf_targets[gene_id] = []
+        if HAS_NETWORKX and self.graph is not None:
+            if gene_id not in self.graph:
+                self.graph.add_node(gene_id)
+            self.graph.nodes[gene_id].update(kwargs)
+            self.graph.nodes[gene_id]["is_tf"] = True
+        if gene_id not in self._gene_metadata:
+            self._gene_metadata[gene_id] = {}
+        self._gene_metadata[gene_id].update(kwargs)
+        self._gene_metadata[gene_id]["is_tf"] = True
+
+    def get_regulators(self, target: str) -> List[str]:
+        """Get regulators of a target gene. Alias for get_target_regulators."""
+        return self.get_target_regulators(target)
+
+    def filter_by_confidence(self, threshold: float) -> "GeneRegulatoryNetwork":
+        """Filter regulations by confidence/weight threshold.
+
+        Args:
+            threshold: Minimum confidence value
+
+        Returns:
+            New GeneRegulatoryNetwork with filtered regulations
+        """
+        filtered = GeneRegulatoryNetwork(name=f"{self.name}_filtered")
+        if HAS_NETWORKX and self.graph is not None:
+            for tf, target, data in self.graph.edges(data=True):
+                confidence = data.get("confidence", data.get("weight", 1.0))
+                if confidence >= threshold:
+                    filtered.add_regulation(tf, target, **data)
+        return filtered
+
+    def filter_by_regulation_type(self, reg_type: str) -> "GeneRegulatoryNetwork":
+        """Filter regulations by type.
+
+        Args:
+            reg_type: Regulation type to keep (e.g., 'activation', 'repression')
+
+        Returns:
+            New GeneRegulatoryNetwork with filtered regulations
+        """
+        filtered = GeneRegulatoryNetwork(name=f"{self.name}_{reg_type}")
+        if HAS_NETWORKX and self.graph is not None:
+            for tf, target, data in self.graph.edges(data=True):
+                edge_type = data.get("regulation_type", data.get("type", ""))
+                if edge_type == reg_type:
+                    filtered.add_regulation(tf, target, **data)
+        return filtered
+
+    def get_network_statistics(self) -> Dict[str, Any]:
+        """Get comprehensive network statistics.
+
+        Returns:
+            Dictionary with network statistics
+        """
+        stats: Dict[str, Any] = {
+            "n_regulations": len(self),
+            "n_genes": len(self.genes),
+            "n_transcription_factors": len(self.transcription_factors),
+            "n_targets": len(self.target_tfs),
+        }
+        if HAS_NETWORKX and self.graph is not None:
+            stats["density"] = nx.density(self.graph)
+            stats["n_nodes"] = len(self.graph.nodes())
+            stats["n_edges"] = len(self.graph.edges())
+        return stats
+
+    def to_biological_network(self) -> Any:
+        """Convert to a BiologicalNetwork instance.
+
+        Returns:
+            BiologicalNetwork instance
+        """
+        from metainformant.networks.analysis.graph import BiologicalNetwork
+
+        bio_net = BiologicalNetwork()
+        if HAS_NETWORKX and self.graph is not None:
+            for node in self.graph.nodes():
+                bio_net.add_node(node)
+            for tf, target, data in self.graph.edges(data=True):
+                bio_net.add_edge(tf, target, **data)
+        return bio_net
 
 
 def infer_grn(
@@ -865,6 +1017,10 @@ def infer_grn(
     # Create network
     network = GeneRegulatoryNetwork(name=f"GRN_{method}")
 
+    # Add all genes as nodes so they appear even without edges
+    for gene in gene_names:
+        network.graph.add_node(gene)
+
     # Infer regulatory relationships based on method
     if method == "correlation":
         # Use correlation to infer regulatory relationships
@@ -881,6 +1037,11 @@ def infer_grn(
             tf_indices = np.where(gene_variance >= variance_threshold)[0]
             tf_genes = [gene_names[i] for i in tf_indices]
 
+        # Pre-register all TF genes
+        for tf in tf_genes:
+            if tf not in network.tf_targets:
+                network.tf_targets[tf] = []
+
         # Add regulatory edges
         for i, tf in enumerate(tf_genes):
             if tf not in gene_names:
@@ -888,7 +1049,7 @@ def infer_grn(
             tf_idx = gene_names.index(tf)
 
             for j, target in enumerate(gene_names):
-                if i == j:  # Skip self-regulation
+                if tf == target:  # Skip self-regulation
                     continue
 
                 correlation = abs(corr_matrix[tf_idx, j])
@@ -1001,6 +1162,94 @@ def regulatory_motifs(grn: GeneRegulatoryNetwork) -> List[Dict[str, Any]]:
                     motifs.append({"motif_type": "mutual_regulation", "genes": [tf1, tf2], "confidence": 0.9})
 
     return motifs
+
+
+def detect_regulatory_cascades(
+    grn: GeneRegulatoryNetwork,
+    max_length: int = 5,
+    min_confidence: float = 0.0,
+) -> List[Dict[str, Any]]:
+    """Detect regulatory cascades in a gene regulatory network.
+
+    Args:
+        grn: GeneRegulatoryNetwork instance
+        max_length: Maximum cascade length
+        min_confidence: Minimum confidence threshold
+
+    Returns:
+        List of cascade dictionaries
+    """
+    cascades: List[Dict[str, Any]] = []
+    if not HAS_NETWORKX or grn.graph is None:
+        return cascades
+
+    for source in grn.get_transcription_factors():
+        for target in grn.graph.nodes():
+            if source != target:
+                try:
+                    paths = list(nx.all_simple_paths(grn.graph, source, target, cutoff=max_length))
+                    for path in paths:
+                        if len(path) >= 3:
+                            # Check confidence along path
+                            valid = True
+                            if min_confidence > 0:
+                                for i in range(len(path) - 1):
+                                    edge_data = grn.graph.get_edge_data(path[i], path[i + 1])
+                                    conf = (
+                                        edge_data.get("confidence", edge_data.get("weight", 1.0))
+                                        if edge_data
+                                        else 0.0
+                                    )
+                                    if conf < min_confidence:
+                                        valid = False
+                                        break
+                            if valid:
+                                cascades.append(
+                                    {
+                                        "genes": path,
+                                        "length": len(path) - 1,
+                                        "type": "regulatory_cascade",
+                                    }
+                                )
+                except (nx.NetworkXNoPath, nx.NodeNotFound):
+                    continue
+    return cascades
+
+
+def validate_regulation(
+    grn: GeneRegulatoryNetwork,
+    regulator: str,
+    target: str,
+    min_confidence: float = 0.0,
+) -> Dict[str, Any]:
+    """Validate a specific regulatory interaction.
+
+    Args:
+        grn: GeneRegulatoryNetwork instance
+        regulator: Regulator gene
+        target: Target gene
+        min_confidence: Minimum confidence threshold
+
+    Returns:
+        Validation result dictionary
+    """
+    result: Dict[str, Any] = {
+        "regulator": regulator,
+        "target": target,
+        "exists": False,
+        "confidence": 0.0,
+        "valid": False,
+    }
+
+    if HAS_NETWORKX and grn.graph is not None and grn.graph.has_edge(regulator, target):
+        edge_data = grn.graph.get_edge_data(regulator, target)
+        confidence = edge_data.get("confidence", edge_data.get("weight", 1.0))
+        result["exists"] = True
+        result["confidence"] = confidence
+        result["valid"] = confidence >= min_confidence
+        result["edge_data"] = dict(edge_data) if edge_data else {}
+
+    return result
 
 
 def pathway_regulation_analysis(grn: GeneRegulatoryNetwork, pathway_genes: List[str]) -> Dict[str, Any]:
