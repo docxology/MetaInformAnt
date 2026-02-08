@@ -8,6 +8,7 @@ computational methods without any mocking.
 
 from __future__ import annotations
 
+import random
 import tempfile
 from pathlib import Path
 
@@ -366,12 +367,12 @@ class TestBioinformaticsWorkflow:
         # Simulate genetic sequences for species
         species_sequences = {}
         for species_idx in range(min(5, n_species)):  # Just first 5 species
-            base_sequence = generate_random_dna(50, rng=np.random.RandomState(species_idx + 100))
+            base_sequence = generate_random_dna(50, rng=random.Random(species_idx + 100))
 
             # Add mutations for population diversity
             mutated_sequences = []
             for _ in range(3):  # 3 individuals per species
-                mutated = mutate_sequence(base_sequence, n_mut=2, rng=np.random.RandomState(species_idx * 10 + _))
+                mutated = mutate_sequence(base_sequence, n_mut=2, rng=random.Random(species_idx * 10 + _))
                 mutated_sequences.append(mutated)
 
             species_sequences[f"Species_{species_idx}"] = mutated_sequences
@@ -519,18 +520,20 @@ class TestScalabilityAndPerformance:
         n_nodes = 10  # Very small for reliable execution
         node_names = [f"Node_{i}" for i in range(n_nodes)]
 
-        network = create_network(node_names)
+        # Create edges for a ring network
+        edges = [(node_names[i], node_names[(i + 1) % n_nodes]) for i in range(n_nodes)]
+        network = create_network(edges)
 
-        # Add a few edges to create a connected network
-        edges = [(0, 1), (1, 2), (2, 3), (3, 4), (4, 5), (5, 6), (6, 7), (7, 8), (8, 9), (0, 9)]
-        for i, j in edges:
+        # Add a few more weighted edges
+        extra_edges = [(0, 5), (2, 7), (3, 8)]
+        for i, j in extra_edges:
             weight = np.random.uniform(0.1, 1.0)
-            network.add_edge(node_names[i], node_names[j], weight)
+            network.add_edge(node_names[i], node_names[j], weight=weight)
 
         # Should handle small networks
         metrics = network_metrics(network)
         assert metrics["num_nodes"] == n_nodes
-        assert metrics["num_edges"] == len(edges)
+        assert metrics["num_edges"] == len(edges) + len(extra_edges)
 
         # Skip community detection for now as it's too slow
         # communities = detect_communities(network, method="greedy", seed=42)
