@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from metainformant.dna import sequences
+from metainformant.dna.sequence import core as sequences
 
 
 def test_reverse_complement_and_gc_content() -> None:

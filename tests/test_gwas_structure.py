@@ -7,7 +7,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas import compute_kinship_matrix, compute_pca, estimate_population_structure, parse_vcf_full
+from metainformant.gwas.analysis.quality import parse_vcf_full
+from metainformant.gwas.analysis.structure import compute_kinship_matrix, compute_pca, estimate_population_structure
 
 
 def test_compute_pca_basic() -> None:

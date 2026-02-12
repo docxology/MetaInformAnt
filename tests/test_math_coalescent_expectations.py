@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from metainformant.math import expected_segregating_sites
+from metainformant.math.population_genetics.coalescent import expected_segregating_sites
 
 
 def test_expected_segregating_sites():

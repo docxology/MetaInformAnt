@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.gwas import apply_qc_filters, parse_vcf_full
+from metainformant.gwas.analysis.quality import apply_qc_filters, parse_vcf_full
 
 
 def test_parse_vcf_full_basic(tmp_path: Path) -> None:

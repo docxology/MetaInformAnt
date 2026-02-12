@@ -1,4 +1,4 @@
-from metainformant.dna import composition
+from metainformant.dna.sequence import composition
 
 
 def test_gc_skew_and_cumulative() -> None:

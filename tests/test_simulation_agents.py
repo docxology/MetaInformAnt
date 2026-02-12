@@ -27,7 +27,7 @@ import numpy as np
 import pytest
 
 from metainformant.core.utils.errors import ValidationError
-from metainformant.simulation import (
+from metainformant.simulation.models.agents import (
     Agent,
     Ecosystem,
     add_agent,

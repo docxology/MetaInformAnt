@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization.visualization_finemapping import (
+from metainformant.gwas.visualization.interactive.finemapping import (
     compute_credible_set,
     conditional_analysis_plot,
     credible_set_plot,

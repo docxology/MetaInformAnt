@@ -1,8 +1,15 @@
 # Tissue Mapping Configuration
 # Maps canonical tissue names to their synonyms/variants
 # Used by tissue_normalizer.py to create standardized tissue values
+# Covers: Apis mellifera, Pogonomyrmex barbatus, Camponotus floridanus,
+#         Harpegnathos saltator, Solenopsis invicta, Monomorium pharaonis,
+#         Ooceraea biroi, Temnothorax spp., Acromyrmex echinatior,
+#         Atta cephalotes, Lasius neglectus, Myrmica rubra,
+#         Vollenhovia emeryi, Wasmannia auropunctata
 
+# ──────────────────────────────────────────────
 # Brain and neural tissues
+# ──────────────────────────────────────────────
 brain:
   - brain
   - Brain
@@ -15,6 +22,10 @@ brain:
   - honeybee brain
   - brain (pool of 4 brains)
   - 5 pooled brains
+  - Whole cleanly-dissected brains
+  - central brain
+  - Whole individual brain
+  - hypothalamus
 
 optic_lobe:
   - optic lobe
@@ -34,6 +45,7 @@ mushroom_body:
   - Mushroom body
   - mushroom bodies
   - Mushroom bodies
+  - Mushroom Bodies
   - Mushroom bodies (brain region)
   - mushroom bodies (MB) region of the brain
   - mushroom body (dissected from brain)
@@ -45,280 +57,19 @@ antenna:
   - Antenna
   - antennae
   - Antennae
+  - 4 pairs of antennae
+  - workers antennae
+  - Antennal Clubs
 
+# ──────────────────────────────────────────────
 # Body regions
+# ──────────────────────────────────────────────
 whole_body:
   - whole body
   - Whole Body
   - Whole body
   - whole bee
-  - whole
-  - Whole
-  - whole body homogenates
-  - whole organism
-  - whole animal
-  - 10 pooled whole bodies
-  - Whole adult female
-  - total
-  - total body
-  - Intact insect body
-  - whole insect
-
-head:
-  - head
-  - Head
-  - head tissue
-  - heads
-  - entire worker head
-  - Larval Head
-
-thorax:
-  - thorax
-  - Thorax
-  - thorax tissue
-  - thorax and abdomen
-  - Flight muscle and thoracic exoskeleton
-
-abdomen:
-  - abdomen
-  - Abdomen
-  - Whole abdomen
-  - abdominal tissue
-  - abdomen(gut removed)
-  - Eviscerated abdomen with attached fat bodies and inactive ovaries
-  - Eviscerated abdomen with attached fat bodies and active ovaries
-  - Eviscerated abdomen and fat body
-  - abdominal integument
-
-# Digestive system
-gut:
-  - gut
-  - Gut
-  - Gut tissue
-  - midgut
-  - Midgut
-  - hindgut
-  - Hindgut
-  - intestine
-  - Intestine
-  - digestive tract
-  - Intestinal tissue
-  - ileum
-  - Pooled pylori from 7 honey bees
-  - Apis mellifera rectum
-  - midgut organization
-
-# Fat and metabolic tissues  
-fat_body:
-  - fat body
-  - Fat body
-  - Fat-body
-  - fat-body
-  - fatbody
-
-# Reproductive tissues
-ovary:
-  - ovary
-  - Ovary
-  - ovaries
-  - Ovaries
-  - ovarian tissue
-
-testes:
-  - testes
-  - Testes
-  - testis
-  - Testis
-
-spermatheca:
-  - spermatheca
-  - Spermatheca
-
-# Hemolymph and circulatory
-hemolymph:
-  - hemolymph
-  - Hemolymph
-  - haemolymph
-
-# Glands
-hypopharyngeal_gland:
-  - hypopharyngeal gland
-  - Hypopharyngeal gland
-  - hypopharyngeal glands
-  - HPG
-
-mandibular_gland:
-  - mandibular gland
-  - Mandibular gland
-  - mandibular glands
-
-venom_gland:
-  - venom gland
-  - Venom gland
-  - poison gland
-
-# Flight tissues
-flight_muscle:
-  - flight muscle
-  - Flight muscle
-  - thoracic muscle
-  - wing muscle
-
-wing:
-  - wing
-  - Wing
-  - wings
-  - Wings
-  - wings and thoracic dorsum
-
-# Larval stages
-larva:
-  - larva
-  - Larva
-  - larvae
-  - Larvae
-  - Whole larvae
-  - whole larvae
-  - larval tissue
-
-pupa:
-  - pupa
-  - Pupa
-  - pupae
-  - Pupae
-
-embryo:
-  - embryo
-  - Embryo
-  - embryos
-  - egg
-
-# Cuticle and external
-cuticle:
-  - cuticle
-  - Cuticle
-  - exoskeleton
-
-# Additional body parts
-leg:
-  - leg
-  - Leg
-  - legs
-
-eye:
-  - eye
-  - Eye
-  - eyes
-  - eyes from dark eye single bee
-  - eyes white white eye single bee
-
-mouthparts:
-  - mouthparts
-  - Mouthparts
-  - tentacles
-
-muscle:
-  - muscle
-  - Muscle
-  - muscles
-
-# Additional glands
-nasonov_gland:
-  - nasonov gland
-  - Nasonov gland
-
-sting_gland:
-  - sting gland
-  - Sting Gland
-  - Venom system
-
-# Additional reproductive
-semen:
-  - semen
-  - Semen
-  - Spermetheca_virgin
-  - Spermethecia_mated
-
-gonad:
-  - gonad
-  - Gonadal
-  - gonadal
-
-germline:
-  - germline
-  - Germline
-  - Drone germline
-  - Queen germline
-  - germ cells
-
-# Additional digestive
-malpighian_tubule:
-  - malpighian tubule
-  - Malpighian tubule
-  - Malpighian tubules
-  - ventriculus
-  - Ventriculus
-  - larval gut
-
-# Neural ganglia
-thoracic_ganglia:
-  - thoracic ganglia
-  - Second Thoracic Ganglia
-  - 2nd Thoracic Ganglia
-
-# Larval and developmental additions
-larva:
-  - larva
-  - Larva
-  - larvae
-  - Larvae
-  - Whole larvae
-  - whole larvae
-  - larval tissue
-  - Whole larva
-  - larvae body
-  - whole body larvae
-  - larvea
-  - whole larva body
-  - whole larvae inoculated with C6 rep 1
-  - whole larvae inoculated with C6 rep 2
-  - whole larvae inoculated with C6 rep 3
-  - whole larvae inoculated with B8 rep 1
-  - whole larvae inoculated with B8 rep 2
-  - whole larvae inoculated with B8 rep 3
-
-pupa:
-  - pupa
-  - Pupa
-  - pupae
-  - Pupae
-  - RNA of the whole pupae
-
-embryo:
-  - embryo
-  - Embryo
-  - embryos
-  - egg
-  - whole embryos
-  - drone embryo
-  - worker embryo
-
-# Wing additions
-wing:
-  - wing
-  - Wing
-  - wings
-  - Wings
-  - wings and thoracic dorsum
-  - Membranous wings
-  - wing disc
-
-# Additional whole body synonyms
-whole_body:
-  - whole body
-  - Whole Body
-  - Whole body
-  - whole bee
+  - Whole bee
   - whole
   - Whole
   - whole body homogenates
@@ -367,16 +118,27 @@ whole_body:
   - Whole_Body_28
   - unknow
   - tissue
+  - Whole body sample
+  - whole ant
+  - worker
+  - gyne
+  - Pool of 405 workers and 107 brood
+  - Pool of 500 workers and 56 brood
+  - Pool of 500 workers and 65 brood
+  - Pool of 527 workers and 22 brood
+  - Pool of 550 workers
+  - "Pool of 433 workers, one queen and 75 brood"
+  # New ant species tissue values (2026-02-09)
+  - Head-Thorax
+  - head-thorax
+  - body of worker
+  - whole adult
+  - whole adult (non-reproductive worker)
+  - whole queen
+  - Whole body of male
+  - Whole body of queen
+  - Whole body of worker
 
-# Antenna additions
-antenna:
-  - antenna
-  - Antenna
-  - antennae
-  - Antennae
-  - 4 pairs of antennae
-
-# Head additions
 head:
   - head
   - Head
@@ -385,9 +147,12 @@ head:
   - entire worker head
   - Larval Head
   - head and thorax
-  - head,chest
+  - "head,chest"
+  - gyne heads
+  - large worker heads
+  - small worker heads
+  - head+antennae
 
-# Thorax additions
 thorax:
   - thorax
   - Thorax
@@ -397,12 +162,13 @@ thorax:
   - bee thorax
   - Drone thorax
   - Queen thorax
+  - mesosoma
 
-# Abdomen additions
 abdomen:
   - abdomen
   - Abdomen
   - Whole abdomen
+  - whole abdomen
   - abdominal tissue
   - abdomen(gut removed)
   - Eviscerated abdomen with attached fat bodies and inactive ovaries
@@ -410,8 +176,44 @@ abdomen:
   - Eviscerated abdomen and fat body
   - abdominal integument
   - Eviscerated abdomen with attached fat bodies
+  - gaster
+  - whole body except abdomen  # partial — maps to abdomen-removed category
 
-# Ovary additions
+# ──────────────────────────────────────────────
+# Digestive system
+# ──────────────────────────────────────────────
+gut:
+  - gut
+  - Gut
+  - Gut tissue
+  - midgut
+  - Midgut
+  - hindgut
+  - Hindgut
+  - intestine
+  - Intestine
+  - digestive tract
+  - Intestinal tissue
+  - ileum
+  - Pooled pylori from 7 honey bees
+  - Apis mellifera rectum
+  - midgut organization
+
+# ──────────────────────────────────────────────
+# Fat and metabolic tissues
+# ──────────────────────────────────────────────
+fat_body:
+  - fat body
+  - Fat body
+  - Fat-body
+  - fat-body
+  - fatbody
+  - Fatbody
+  - pooled fat bodies
+
+# ──────────────────────────────────────────────
+# Reproductive tissues
+# ──────────────────────────────────────────────
 ovary:
   - ovary
   - Ovary
@@ -420,7 +222,6 @@ ovary:
   - ovarian tissue
   - larvae ovary
 
-# Testes additions
 testes:
   - testes
   - Testes
@@ -428,30 +229,236 @@ testes:
   - Testis
   - Testicles
 
-# Gland additions
+spermatheca:
+  - spermatheca
+  - Spermatheca
+
+# ──────────────────────────────────────────────
+# Hemolymph and circulatory
+# ──────────────────────────────────────────────
+hemolymph:
+  - hemolymph
+  - Hemolymph
+  - haemolymph
+
+# ──────────────────────────────────────────────
+# Glands
+# ──────────────────────────────────────────────
 hypopharyngeal_gland:
   - hypopharyngeal gland
   - Hypopharyngeal gland
+  - Hypopharyngeal Gland
   - hypopharyngeal glands
   - HPG
   - Hypopharyngeal gland tissue
   - Hypopharyngeal glands tissue
   - gland
 
+mandibular_gland:
+  - mandibular gland
+  - Mandibular gland
+  - Mandibular Gland
+  - mandibular glands
+
+venom_gland:
+  - venom gland
+  - Venom gland
+  - poison gland
+
+# ──────────────────────────────────────────────
+# Flight tissues
+# ──────────────────────────────────────────────
+flight_muscle:
+  - flight muscle
+  - Flight muscle
+  - thoracic muscle
+  - wing muscle
+
+wing:
+  - wing
+  - Wing
+  - wings
+  - Wings
+  - wings and thoracic dorsum
+  - Membranous wings
+  - wing disc
+
+# ──────────────────────────────────────────────
+# Developmental stages
+# ──────────────────────────────────────────────
+larva:
+  - larva
+  - Larva
+  - larvae
+  - Larvae
+  - Whole larvae
+  - whole larvae
+  - larval tissue
+  - Whole larva
+  - larvae body
+  - whole body larvae
+  - larvea
+  - whole larva body
+  - whole larvae inoculated with C6 rep 1
+  - whole larvae inoculated with C6 rep 2
+  - whole larvae inoculated with C6 rep 3
+  - whole larvae inoculated with B8 rep 1
+  - whole larvae inoculated with B8 rep 2
+  - whole larvae inoculated with B8 rep 3
+
+pupa:
+  - pupa
+  - Pupa
+  - pupae
+  - Pupae
+  - RNA of the whole pupae
+  - whole pupa
+
+embryo:
+  - embryo
+  - Embryo
+  - embryos
+  - egg
+  - Egg
+  - eggs
+  - whole eggs
+  - whole embryos
+  - drone embryo
+  - worker embryo
+  - embryo1
+  - embryo2
+  - embryo3
+  - embryo4
+  - embryo5
+  - embryo6
+  - embryo7
+  - embryo8
+  - embryo9
+
+# ──────────────────────────────────────────────
+# Cuticle and external
+# ──────────────────────────────────────────────
+cuticle:
+  - cuticle
+  - Cuticle
+  - exoskeleton
+
+# ──────────────────────────────────────────────
+# Additional body parts
+# ──────────────────────────────────────────────
+leg:
+  - leg
+  - Leg
+  - legs
+
+eye:
+  - eye
+  - Eye
+  - eyes
+  - eyes from dark eye single bee
+  - eyes white white eye single bee
+
+mouthparts:
+  - mouthparts
+  - Mouthparts
+  - tentacles
+
+muscle:
+  - muscle
+  - Muscle
+  - muscles
+
+# ──────────────────────────────────────────────
+# Additional glands
+# ──────────────────────────────────────────────
+nasonov_gland:
+  - nasonov gland
+  - Nasonov gland
+
+sting_gland:
+  - sting gland
+  - Sting Gland
+  - Venom system
+
+# ──────────────────────────────────────────────
+# Additional reproductive
+# ──────────────────────────────────────────────
+semen:
+  - semen
+  - Semen
+  - Spermetheca_virgin
+  - Spermethecia_mated
+
+gonad:
+  - gonad
+  - Gonadal
+  - gonadal
+
+germline:
+  - germline
+  - Germline
+  - Drone germline
+  - Queen germline
+  - germ cells
+  - germline capsule
+
+# ──────────────────────────────────────────────
+# Additional digestive
+# ──────────────────────────────────────────────
+malpighian_tubule:
+  - malpighian tubule
+  - Malpighian tubule
+  - Malpighian tubules
+  - ventriculus
+  - Ventriculus
+  - larval gut
+
+# ──────────────────────────────────────────────
+# Neural ganglia
+# ──────────────────────────────────────────────
+thoracic_ganglia:
+  - thoracic ganglia
+  - Second Thoracic Ganglia
+  - 2nd Thoracic Ganglia
+
+# ──────────────────────────────────────────────
+# Symbiont-associated
+# ──────────────────────────────────────────────
+bacteriocyte:
+  - bacteriocytes
+  - bacteriocyte
+
+# ──────────────────────────────────────────────
 # Cell culture
+# ──────────────────────────────────────────────
 cell_culture:
   - Ame-711 cells
   - cell line
   - cells
+  - astrocyte cultures
 
+# ──────────────────────────────────────────────
 # Excluded/not applicable
+# ──────────────────────────────────────────────
 not_applicable:
   - not applicable
+  - Not applicable
   - N/A
   - NA
   - virus augmented bee lysate
+  - missing
+  - laboratory
+  - Laboratory
+  - lab stock
+  - soil
+  - top of mound prior to mating flight
+  - Acorn Nest
+  - "branches, twigs, crevices"
+  - "Lab in Centre for social evolution, Copenhagen, Denmark"
 
+# ──────────────────────────────────────────────
 # Royal jelly (secretion, not tissue)
+# ──────────────────────────────────────────────
 royal_jelly:
   - royal jelly
   - Royal jelly

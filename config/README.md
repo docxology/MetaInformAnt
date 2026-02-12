@@ -7,20 +7,27 @@ Configuration files for METAINFORMANT workflows including RNA-seq, GWAS, and mul
 ```
 config/
 ├── amalgkit/           # RNA-seq workflow configurations
-│   ├── amalgkit_pbarbatus_all.yaml    # Pogonomyrmex barbatus (active)
+│   ├── amalgkit_pbarbatus.yaml    # Pogonomyrmex barbatus (active)
 │   ├── amalgkit_template.yaml         # Template for new species
 │   └── amalgkit_test.yaml             # Test configuration
+├── eqtl/              # eQTL analysis configurations
 ├── gwas/               # GWAS workflow configurations
 │   ├── gwas_pbarbatus.yaml            # P. barbatus GWAS config
 │   └── gwas_template.yaml             # Template for new GWAS
-├── archive/            # Inactive/deprecated configurations
-├── config_base/        # Base configuration templates
+├── life_events/        # Life events module configurations
+│   └── life_events_template.yaml
+├── longread/           # Long-read sequencing configurations
+├── multiomics/         # Multi-omics integration configurations
+│   └── multiomics_template.yaml
+├── ncbi/               # NCBI API configurations
+│   └── ncbi.yaml
+├── networks/           # Network analysis configurations
+│   └── networks_template.yaml
 ├── phenotype/          # Phenotype analysis configurations
-├── ncbi.yaml           # NCBI API settings
-├── life_events_template.yaml
-├── multiomics_template.yaml
-├── networks_template.yaml
-└── singlecell_template.yaml
+├── singlecell/         # Single-cell analysis configurations
+│   └── singlecell_template.yaml
+├── archive/            # Inactive/deprecated configurations
+└── config_base/        # Base configuration templates
 ```
 
 ## Quick Start
@@ -29,10 +36,10 @@ config/
 
 ```bash
 # Using CLI
-uv run metainformant rna run-config --config config/amalgkit/amalgkit_pbarbatus_all.yaml
+uv run metainformant rna run-config --config config/amalgkit/amalgkit_pbarbatus.yaml
 
 # Using script
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus_all.yaml
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml
 ```
 
 ### Run GWAS Workflow
@@ -119,7 +126,7 @@ All configuration parameters can be overridden via environment variables:
 from metainformant.core.config import load_mapping_from_file, apply_env_overrides
 
 # Load with environment overrides
-config = load_mapping_from_file("config/amalgkit/amalgkit_pbarbatus_all.yaml")
+config = load_mapping_from_file("config/amalgkit/amalgkit_pbarbatus.yaml")
 config = apply_env_overrides(config, prefix="AK")
 ```
 
@@ -127,13 +134,13 @@ config = apply_env_overrides(config, prefix="AK")
 
 | Species | Config | NCBI Assembly |
 |---------|--------|---------------|
-| *Pogonomyrmex barbatus* | `amalgkit_pbarbatus_all.yaml` | GCF_000187915.1 |
+| *Pogonomyrmex barbatus* | `amalgkit_pbarbatus.yaml` | GCF_000187915.1 |
 
-See `config/archive/README.md` for archived species configurations.
+See `config/amalgkit/` for all species configurations (22 ant species + honeybee).
 
 ## NCBI Configuration
 
-The `ncbi.yaml` file contains API settings:
+The `config/ncbi/ncbi.yaml` file contains API settings:
 
 ```yaml
 email: "your.email@example.com"  # Required for NCBI API

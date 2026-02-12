@@ -1,0 +1,93 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Cardiocondyla obscurior
+# NCBI Taxonomy ID: 286306
+# Assembly: GCF_019399895.1 (Cobs3.1)
+# Assembly Level: Chromosome
+# Sequencing: PacBio + Hi-C
+# Annotation: GCF_019399895.1-RS_2024_12
+# Annotation Release: RS_2024_12
+# Notes: Tramp ant, male dimorphism, chromosome-level
+# RNA-seq Samples Available: 167
+# Generated: 2026-02-09
+
+# Paths are resolved relative to repository root
+work_dir: blue/amalgkit/cardiocondyla_obscurior/work
+log_dir: blue/amalgkit/cardiocondyla_obscurior/logs
+threads: 12
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Cardiocondyla_obscurior
+
+taxon_id: 286306
+
+# Reference genome configuration — shared genome directory
+genome:
+  accession: GCF_019399895.1
+  assembly_name: Cobs3.1
+  annotation_release: RS_2024_12
+  dest_dir: blue/amalgkit/shared/genome/Cardiocondyla_obscurior
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/019/399/895/GCF_019399895.1_Cobs3.1/
+  files:
+    genomic_fasta: GCF_019399895.1_Cobs3.1_genomic.fna.gz
+    transcriptome_fasta: GCF_019399895.1_Cobs3.1_rna_from_genomic.fna.gz
+    cds_fasta: GCF_019399895.1_Cobs3.1_cds_from_genomic.fna.gz
+    protein_fasta: GCF_019399895.1_Cobs3.1_protein.faa.gz
+    annotation_gff: GCF_019399895.1_Cobs3.1_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: blue/amalgkit/cardiocondyla_obscurior/work
+    search_string: '"Cardiocondyla obscurior"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: blue/amalgkit/cardiocondyla_obscurior/fastq/getfastq
+  select:
+    max_sample: 999999
+    mark_missing_rank: none
+    priority: "completeness"
+    redo: no
+  getfastq:
+    out_dir: blue/amalgkit/cardiocondyla_obscurior/fastq
+    threads: 8
+    jobs: 4
+    redo: no
+    aws: yes
+    gcp: no
+    ncbi: no
+    pfd: no
+    fastp: no
+    max_bp: 50000000
+  quant:
+    out_dir: blue/amalgkit/cardiocondyla_obscurior/work
+    threads: 6
+    redo: no
+    build_index: no
+    keep_fastq: no
+    index_dir: blue/amalgkit/shared/genome/Cardiocondyla_obscurior/index
+    fasta_dir: blue/amalgkit/shared/genome/Cardiocondyla_obscurior
+  merge:
+    out: blue/amalgkit/cardiocondyla_obscurior/merged/merged_abundance.tsv
+    out_dir: blue/amalgkit/cardiocondyla_obscurior/merged
+  cstmm:
+    out_dir: blue/amalgkit/cardiocondyla_obscurior/work
+    orthogroup_table: ""
+  curate:
+    out_dir: blue/amalgkit/cardiocondyla_obscurior/work
+  csca:
+    out_dir: blue/amalgkit/cardiocondyla_obscurior/work
+    orthogroup_table: ""
+  sanity: {}

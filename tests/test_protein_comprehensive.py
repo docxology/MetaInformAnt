@@ -598,7 +598,7 @@ class TestOrchestration:
     """Tests for protein orchestration workflows."""
 
     def test_analyze_protein_sequence(self):
-        from metainformant.protein.orchestration import analyze_protein_sequence
+        from metainformant.protein.workflow.orchestration import analyze_protein_sequence
 
         result = analyze_protein_sequence("MKTIIALSY", name="test_protein")
         assert result["name"] == "test_protein"
@@ -608,21 +608,21 @@ class TestOrchestration:
         assert result["physicochemical"]["molecular_weight"] > 0
 
     def test_analyze_sequence_with_ss(self):
-        from metainformant.protein.orchestration import analyze_protein_sequence
+        from metainformant.protein.workflow.orchestration import analyze_protein_sequence
 
         result = analyze_protein_sequence("MKTIIALSY", predict_ss=True)
         assert "secondary_structure" in result
         assert len(result["secondary_structure"]["prediction"]) == 9
 
     def test_analyze_sequence_with_motifs(self):
-        from metainformant.protein.orchestration import analyze_protein_sequence
+        from metainformant.protein.workflow.orchestration import analyze_protein_sequence
 
         result = analyze_protein_sequence("MKTIIALSY", find_motifs=["MKT", "AL"])
         assert "motifs" in result
         assert 0 in result["motifs"]["MKT"]
 
     def test_batch_analyze(self):
-        from metainformant.protein.orchestration import batch_analyze_sequences
+        from metainformant.protein.workflow.orchestration import batch_analyze_sequences
 
         seqs = {"p1": "MKTIIALSY", "p2": "ACDEFGHIK"}
         results = batch_analyze_sequences(seqs)
@@ -631,7 +631,7 @@ class TestOrchestration:
         assert results["p1"]["length"] == 9
 
     def test_comparative_analysis(self):
-        from metainformant.protein.orchestration import comparative_analysis
+        from metainformant.protein.workflow.orchestration import comparative_analysis
 
         seqs = {"p1": "ACDEFG", "p2": "ACDGFG", "p3": "ACDEFG"}
         results = comparative_analysis(seqs, use_blosum=False)
@@ -640,21 +640,21 @@ class TestOrchestration:
         assert "msa" in results
 
     def test_comparative_analysis_blosum(self):
-        from metainformant.protein.orchestration import comparative_analysis
+        from metainformant.protein.workflow.orchestration import comparative_analysis
 
         seqs = {"p1": "ACDEFG", "p2": "ACDGFG"}
         results = comparative_analysis(seqs, use_blosum=True)
         assert "pairwise_alignments" in results
 
     def test_comparative_analysis_single(self):
-        from metainformant.protein.orchestration import comparative_analysis
+        from metainformant.protein.workflow.orchestration import comparative_analysis
 
         seqs = {"p1": "ACDEFG"}
         results = comparative_analysis(seqs)
         assert "error" in results
 
     def test_analyze_from_fasta(self, tmp_path: Path):
-        from metainformant.protein.orchestration import analyze_from_fasta
+        from metainformant.protein.workflow.orchestration import analyze_from_fasta
         from metainformant.protein.sequence.sequences import write_fasta
 
         seqs = {"prot1": "MKTIIALSY", "prot2": "ACDEFGHIK"}
@@ -668,7 +668,7 @@ class TestOrchestration:
 
     def test_analyze_short_sequence(self):
         """Short sequences should not crash hydropathy."""
-        from metainformant.protein.orchestration import analyze_protein_sequence
+        from metainformant.protein.workflow.orchestration import analyze_protein_sequence
 
         result = analyze_protein_sequence("MK", name="short")
         assert result["hydropathy"] == []

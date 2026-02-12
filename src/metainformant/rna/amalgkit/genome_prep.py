@@ -16,7 +16,7 @@ import urllib.request
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 

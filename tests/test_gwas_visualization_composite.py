@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization.visualization_composite import (
+from metainformant.gwas.visualization.interactive.composite import (
     gwas_summary_panel,
     population_structure_panel,
     top_hit_detail_panel,

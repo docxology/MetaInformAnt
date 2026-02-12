@@ -8,24 +8,10 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.life_events import (
-    Event,
-    EventSequence,
-    plot_domain_distribution,
-    plot_domain_timeline,
-    plot_embedding_clusters,
-    plot_event_cooccurrence,
-    plot_event_frequency_heatmap,
-    plot_intervention_effects,
-    plot_outcome_distribution,
-    plot_population_comparison,
-    plot_prediction_accuracy,
-    plot_sequence_length_distribution,
-    plot_sequence_similarity,
-    plot_temporal_density,
-    plot_temporal_patterns,
-    plot_transition_network,
-)
+from metainformant.life_events.core.events import Event, EventSequence
+from metainformant.life_events.visualization.network import plot_transition_network
+from metainformant.life_events.visualization.statistical import plot_embedding_clusters, plot_event_cooccurrence, plot_event_frequency_heatmap, plot_intervention_effects, plot_outcome_distribution, plot_population_comparison, plot_prediction_accuracy, plot_sequence_length_distribution, plot_sequence_similarity
+from metainformant.life_events.visualization.timeline import plot_domain_distribution, plot_domain_timeline, plot_temporal_density, plot_temporal_patterns
 
 
 @pytest.fixture

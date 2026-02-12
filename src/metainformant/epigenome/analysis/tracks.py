@@ -13,7 +13,10 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
 
-from metainformant.core import errors, io, logging, validation
+from metainformant.core.data import validation
+from metainformant.core.utils import errors
+from metainformant.core.utils import logging
+from metainformant.core import io
 
 logger = logging.get_logger(__name__)
 
@@ -170,12 +173,14 @@ class GenomicTrack:
         rows = []
         for chromosome, features in self.data.items():
             for feature in features:
-                rows.append({
-                    "chrom": chromosome,
-                    "start": feature["start"],
-                    "end": feature["end"],
-                    "value": feature["value"],
-                })
+                rows.append(
+                    {
+                        "chrom": chromosome,
+                        "start": feature["start"],
+                        "end": feature["end"],
+                        "value": feature["value"],
+                    }
+                )
         return pd.DataFrame(rows)
 
 
@@ -280,6 +285,7 @@ def load_bedgraph_track(path: str | Path, name: str = "", description: str = "")
     logger.info(f"Loaded BEDgraph track with {track.get_total_features()} features")
     logger.info(f"Loaded BEDgraph track with {track.get_total_features()} features")
     return track
+
 
 def read_bedgraph(path: str | Path, name: str = "", description: str = "") -> "pd.DataFrame":
     """Read a BEDgraph file and return as DataFrame.

@@ -10,7 +10,7 @@ import shutil
 import subprocess
 from typing import Any, Dict, List, Tuple
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 

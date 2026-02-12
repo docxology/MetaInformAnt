@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.rna import environment
+from metainformant.rna.core import environment
 
 
 class TestEnvironmentChecks:

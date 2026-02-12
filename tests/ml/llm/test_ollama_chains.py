@@ -5,17 +5,18 @@ These tests use real Ollama API calls - no mocks.
 
 import pytest
 
-from metainformant.ml.llm.ollama import (
+from metainformant.ml.llm.ollama.chains import (
     Chain,
+    ChainResult,
     ConversationChain,
     MapReduceChain,
-    OllamaClient,
-    OllamaConfig,
-    PromptTemplate,
+    PromptChain,
     SequentialChain,
     TransformChain,
 )
-from metainformant.ml.llm.ollama.chains import ChainResult, PromptChain
+from metainformant.ml.llm.ollama.client import OllamaClient
+from metainformant.ml.llm.ollama.config import OllamaConfig
+from metainformant.ml.llm.ollama.prompts import PromptTemplate
 
 
 @pytest.fixture

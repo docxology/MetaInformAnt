@@ -6,7 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.gwas import execute_gwas_workflow, load_gwas_config
+from metainformant.gwas.data.config import load_gwas_config
+from metainformant.gwas.workflow.workflow_execution import execute_gwas_workflow
 
 
 def test_load_pbarbatus_config() -> None:

@@ -1,13 +1,8 @@
 from __future__ import annotations
 
-from metainformant.math import (
-    equilibrium_heterozygosity_infinite_alleles,
-    heterozygosity_decay,
-    inbreeding_coefficient,
-    island_model_update,
-    mutation_selection_balance_dominant,
-    mutation_selection_balance_recessive,
-)
+from metainformant.math.decision_theory.ddm import island_model_update
+from metainformant.math.population_genetics.core import heterozygosity_decay, inbreeding_coefficient, mutation_selection_balance_dominant, mutation_selection_balance_recessive
+from metainformant.math.population_genetics.statistics import equilibrium_heterozygosity_infinite_alleles
 
 
 def test_heterozygosity_and_inbreeding_drift():

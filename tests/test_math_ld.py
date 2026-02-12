@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from metainformant.math import ld_coefficients, r_squared
+from metainformant.math.core.utilities import r_squared
+from metainformant.math.population_genetics.ld import ld_coefficients
 
 
 def test_ld_coefficients_and_r2():

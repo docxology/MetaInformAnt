@@ -382,7 +382,7 @@ def _update_download_progress(manager: WorkflowManager) -> None:
 def _rna_getfastq_phase(manager: BasePipelineManager, items: List[PipelineItem]) -> None:
     """Phase handler: run amalgkit getfastq on downloaded samples."""
     assert isinstance(manager, WorkflowManager)
-    from metainformant.rna.amalgkit import run_amalgkit
+    from metainformant.rna.amalgkit.amalgkit import run_amalgkit
 
     downloaded = [manager.samples[item.item_id] for item in items]
 
@@ -430,7 +430,7 @@ def _rna_getfastq_phase(manager: BasePipelineManager, items: List[PipelineItem])
 def _rna_quant_phase(manager: BasePipelineManager, items: List[PipelineItem]) -> None:
     """Phase handler: run amalgkit quant on extracted samples."""
     assert isinstance(manager, WorkflowManager)
-    from metainformant.rna.amalgkit import run_amalgkit
+    from metainformant.rna.amalgkit.amalgkit import run_amalgkit
 
     extracted = [manager.samples[item.item_id] for item in items]
 

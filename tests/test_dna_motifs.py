@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from metainformant.dna import motifs
+from metainformant.dna.sequence import motifs
 
 
 def test_find_motif_positions_exact() -> None:

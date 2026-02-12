@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.dna import alignment
+from metainformant.dna.alignment import pairwise as alignment
 
 
 class TestDNAAlignment:

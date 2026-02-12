@@ -18,5 +18,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.phenotype.sonic import ...
+from metainformant.phenotype.sonic import ...
 ```

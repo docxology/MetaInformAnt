@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from metainformant.ontology.go import count_go_scripts
+from metainformant.ontology.core.go import count_go_scripts
 from metainformant.phenotype.data.antwiki import load_antwiki_json
 from metainformant.protein.sequence.proteomes import read_taxon_ids
 from metainformant.rna.engine.pipeline import summarize_curate_tables

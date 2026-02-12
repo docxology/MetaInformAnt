@@ -10,29 +10,14 @@ import math
 
 import pytest
 
-from metainformant.math import (
-    basic_reproduction_number,
-    ddm_analytic_accuracy,
-    ddm_mean_decision_time,
-    expected_pairwise_diversity,
-    expected_time_to_mrca,
-    fixation_probability,
-    hardy_weinberg_genotype_freqs,
-    herd_immunity_threshold,
-    heterozygosity_decay,
-    inbreeding_coefficient,
-    kin_selection_response,
-    logistic_map,
-    lotka_volterra_step,
-    mutation_update,
-    price_equation,
-    selection_differential,
-    selection_gradient,
-    selection_update,
-    sir_step,
-    tajimas_D,
-    watterson_theta,
-)
+from metainformant.math.decision_theory.ddm import ddm_analytic_accuracy, ddm_mean_decision_time
+from metainformant.math.epidemiology.models import basic_reproduction_number, herd_immunity_threshold, sir_step
+from metainformant.math.evolutionary_dynamics.core import logistic_map, lotka_volterra_step
+from metainformant.math.population_genetics.coalescent import expected_pairwise_diversity, expected_time_to_mrca, tajimas_D, watterson_theta
+from metainformant.math.population_genetics.core import hardy_weinberg_genotype_freqs, heterozygosity_decay, inbreeding_coefficient
+from metainformant.math.population_genetics.selection import kin_selection_response, mutation_update, selection_differential, selection_gradient, selection_update
+from metainformant.math.population_genetics.statistics import fixation_probability
+from metainformant.math.quantitative_genetics.price import price_equation
 
 
 class TestPriceEquation:

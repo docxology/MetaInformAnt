@@ -9,14 +9,14 @@
 # =============================================================================
 
 # NOTE: All paths are resolved relative to repository root.
-# This allows configs to work whether the repo is on /home/q/... or /media/q/ext6/...
+# This allows configs to work across different machines and mount points.
 # Absolute paths are also supported and will be used as-is.
 
 # Working directory for all intermediate files
-work_dir: output/amalgkit/my_species/work
+work_dir: blue/amalgkit/my_species/work
 
 # Logging directory (defaults to work_dir/logs if not specified)
-log_dir: output/amalgkit/my_species/logs
+log_dir: blue/amalgkit/my_species/logs
 
 # Number of threads to use for parallel processing
 threads: 6
@@ -47,7 +47,7 @@ genome:
   accession: GCF_000001405.40  # Human GRCh38.p14
 
   # Local destination directory for genome files
-  dest_dir: output/amalgkit/my_species/genome
+  dest_dir: blue/amalgkit/my_species/genome
 
   # Files to download from NCBI (see: https://www.ncbi.nlm.nih.gov/datasets/docs/v2/)
   include:
@@ -113,7 +113,7 @@ steps:
   # -------------------------------------------------------------------------
   metadata:
     # Output directory for metadata files
-    out_dir: output/amalgkit/my_species/work
+    out_dir: blue/amalgkit/my_species/work
 
     # NCBI search string (auto-generated if not specified)
     # Format: '"Species name"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
@@ -136,9 +136,9 @@ steps:
   integrate:
     # Directory containing local FASTQ files (optional)
     # IMPORTANT: Must point to the getfastq subdirectory created by getfastq step
-    # If getfastq used out_dir: output/amalgkit/my_species/fastq,
-    # then fastq_dir should be: output/amalgkit/my_species/fastq/getfastq
-    fastq_dir: output/amalgkit/my_species/fastq/getfastq
+    # If getfastq used out_dir: blue/amalgkit/my_species/fastq,
+    # then fastq_dir should be: blue/amalgkit/my_species/fastq/getfastq
+    fastq_dir: blue/amalgkit/my_species/fastq/getfastq
 
     # Specific sample IDs to integrate (optional)
     # id: SRR123456
@@ -174,7 +174,7 @@ steps:
   # -------------------------------------------------------------------------
   getfastq:
     # Output directory for FASTQ files
-    out_dir: output/amalgkit/my_species/fastq
+    out_dir: blue/amalgkit/my_species/fastq
 
     # Re-download behavior:
     #   - redo: no (default) - Skip already-downloaded SRA files, only download missing ones
@@ -226,7 +226,7 @@ steps:
     # CRITICAL: out_dir should be work_dir (not separate quant_dir)
     # This allows quant to find getfastq output in {out_dir}/getfastq/
     # Quantification results will be in {out_dir}/quant/{sample_id}/abundance.tsv
-    out_dir: output/amalgkit/my_species/work
+    out_dir: blue/amalgkit/my_species/work
 
     # Pre-built transcriptome index (if not using genome above)
     # Index location: {out_dir}/index/{Scientific_Name}_transcripts.idx
@@ -249,17 +249,17 @@ steps:
   # -------------------------------------------------------------------------
   merge:
     # Output file for merged expression matrix
-    out: output/amalgkit/my_species/merged/expression_matrix.tsv
+    out: blue/amalgkit/my_species/merged/expression_matrix.tsv
 
     # Alternative: specify output directory
-    # out_dir: output/amalgkit/my_species/merged
+    # out_dir: blue/amalgkit/my_species/merged
 
   # -------------------------------------------------------------------------
   # CSTMM: Cross-species TMM normalization
   # -------------------------------------------------------------------------
   cstmm:
     # Output directory for normalization results
-    out_dir: output/amalgkit/my_species/cstmm
+    out_dir: blue/amalgkit/my_species/cstmm
 
     # Ortholog group table for cross-species comparison
     # orthogroup_table: path/to/orthogroups.tsv
@@ -269,10 +269,10 @@ steps:
   # -------------------------------------------------------------------------
   curate:
     # Output directory for curation results
-    out_dir: output/amalgkit/my_species/curate
+    out_dir: blue/amalgkit/my_species/curate
 
     # Input directory with expression data
-    # input_dir: output/amalgkit/my_species/merged
+    # input_dir: blue/amalgkit/my_species/merged
 
     # Sample grouping for curation
     # sample_group: tissue
@@ -288,7 +288,7 @@ steps:
   # -------------------------------------------------------------------------
   csca:
     # Output directory for correlation analysis
-    out_dir: output/amalgkit/my_species/csca
+    out_dir: blue/amalgkit/my_species/csca
 
     # Sample grouping variable
     # sample_group: tissue

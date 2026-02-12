@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 from typing import Iterable, List, Sequence, Tuple
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 

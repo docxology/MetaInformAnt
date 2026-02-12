@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.rna import genome_prep
+from metainformant.rna.amalgkit import genome_prep
 
 
 class TestFindRnaFastaInGenomeDir:

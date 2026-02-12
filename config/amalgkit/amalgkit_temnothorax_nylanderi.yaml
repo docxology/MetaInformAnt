@@ -1,0 +1,93 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Temnothorax nylanderi
+# NCBI Taxonomy ID: 102681
+# Assembly: GCF_030848795.1 (tnyl_v1.0)
+# Assembly Level: Contig
+# Sequencing: N/A
+# Annotation: GCF_030848795.1-RS_2025_02
+# Annotation Release: RS_2025_02
+# Notes: European acorn ant, social immunity research
+# RNA-seq Samples Available: 166
+# Generated: 2026-02-09
+
+# Paths are resolved relative to repository root
+work_dir: blue/amalgkit/temnothorax_nylanderi/work
+log_dir: blue/amalgkit/temnothorax_nylanderi/logs
+threads: 12
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Temnothorax_nylanderi
+
+taxon_id: 102681
+
+# Reference genome configuration — shared genome directory
+genome:
+  accession: GCF_030848795.1
+  assembly_name: tnyl_v1.0
+  annotation_release: RS_2025_02
+  dest_dir: blue/amalgkit/shared/genome/Temnothorax_nylanderi
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/030/848/795/GCF_030848795.1_tnyl_v1.0/
+  files:
+    genomic_fasta: GCF_030848795.1_tnyl_v1.0_genomic.fna.gz
+    transcriptome_fasta: GCF_030848795.1_tnyl_v1.0_rna_from_genomic.fna.gz
+    cds_fasta: GCF_030848795.1_tnyl_v1.0_cds_from_genomic.fna.gz
+    protein_fasta: GCF_030848795.1_tnyl_v1.0_protein.faa.gz
+    annotation_gff: GCF_030848795.1_tnyl_v1.0_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: blue/amalgkit/temnothorax_nylanderi/work
+    search_string: '"Temnothorax nylanderi"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: blue/amalgkit/temnothorax_nylanderi/fastq/getfastq
+  select:
+    max_sample: 999999
+    mark_missing_rank: none
+    priority: "completeness"
+    redo: no
+  getfastq:
+    out_dir: blue/amalgkit/temnothorax_nylanderi/fastq
+    threads: 8
+    jobs: 4
+    redo: no
+    aws: yes
+    gcp: no
+    ncbi: no
+    pfd: no
+    fastp: no
+    max_bp: 50000000
+  quant:
+    out_dir: blue/amalgkit/temnothorax_nylanderi/work
+    threads: 6
+    redo: no
+    build_index: no
+    keep_fastq: no
+    index_dir: blue/amalgkit/shared/genome/Temnothorax_nylanderi/index
+    fasta_dir: blue/amalgkit/shared/genome/Temnothorax_nylanderi
+  merge:
+    out: blue/amalgkit/temnothorax_nylanderi/merged/merged_abundance.tsv
+    out_dir: blue/amalgkit/temnothorax_nylanderi/merged
+  cstmm:
+    out_dir: blue/amalgkit/temnothorax_nylanderi/work
+    orthogroup_table: ""
+  curate:
+    out_dir: blue/amalgkit/temnothorax_nylanderi/work
+  csca:
+    out_dir: blue/amalgkit/temnothorax_nylanderi/work
+    orthogroup_table: ""
+  sanity: {}

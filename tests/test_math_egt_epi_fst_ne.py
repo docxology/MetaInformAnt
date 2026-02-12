@@ -1,15 +1,9 @@
 from __future__ import annotations
 
-from metainformant.math import (
-    basic_reproduction_number,
-    effective_size_sex_ratio,
-    fst_from_allele_freqs,
-    fst_from_heterozygosity,
-    harmonic_mean_effective_size,
-    replicator_derivative,
-    replicator_step,
-    sir_step,
-)
+from metainformant.math.epidemiology.models import basic_reproduction_number, sir_step
+from metainformant.math.evolutionary_dynamics.core import replicator_derivative, replicator_step
+from metainformant.math.population_genetics.effective_size import effective_size_sex_ratio, harmonic_mean_effective_size
+from metainformant.math.population_genetics.fst import fst_from_allele_freqs, fst_from_heterozygosity
 
 
 def test_replicator_step_and_derivative():

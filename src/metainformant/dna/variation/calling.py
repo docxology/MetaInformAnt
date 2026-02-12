@@ -12,7 +12,7 @@ import math
 from collections import defaultdict
 from typing import Any, Dict, List, Optional, Tuple
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 

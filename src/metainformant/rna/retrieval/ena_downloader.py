@@ -11,10 +11,10 @@ MD5 verification, resume-capable downloads, and implements best practices:
 Example usage:
     >>> from metainformant.rna.retrieval.ena_downloader import download_sra_samples
     >>> download_sra_samples(["SRR12345"], Path("output/fastq"))
-    
+
     # With best practices options:
     >>> download_sra_samples(
-    ...     ["SRR12345", "SRR67890"], 
+    ...     ["SRR12345", "SRR67890"],
     ...     Path("output/fastq"),
     ...     max_size_bytes=5 * 1024**3,  # 5GB
     ...     timeout=1800,  # 30 min
@@ -37,7 +37,7 @@ from typing import List, Optional, Tuple
 
 import requests
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
@@ -54,6 +54,7 @@ DEFAULT_MAX_SIZE = 10 * GB  # 10 GB
 @dataclass
 class SampleInfo:
     """Information about an SRA sample including size and download URLs."""
+
     sra_id: str
     size_bytes: int
     ena_ftp_urls: List[Tuple[str, str]]  # (url, md5) tuples
@@ -64,10 +65,10 @@ class SampleInfo:
 
 def parse_size(size_str: str) -> int:
     """Parse human-readable size string to bytes.
-    
+
     Args:
         size_str: Size like "500MB", "5GB", "1024KB"
-        
+
     Returns:
         Size in bytes
     """
@@ -135,11 +136,11 @@ def get_ena_sample_info(sra_id: str) -> Optional[SampleInfo]:
         # Parse FTP URLs
         ena_ftp_urls: List[Tuple[str, str]] = []
         ena_http_urls: List[Tuple[str, str]] = []
-        
+
         if "fastq_ftp" in row and row["fastq_ftp"]:
             ftps = row["fastq_ftp"].split(";")
             md5s = row.get("fastq_md5", "").split(";") if row.get("fastq_md5") else [""] * len(ftps)
-            
+
             for ftp, md5 in zip(ftps, md5s):
                 if not ftp.startswith(("ftp://", "http://", "https://")):
                     ftp_url = f"ftp://{ftp}"
@@ -170,7 +171,7 @@ def get_ena_sample_info(sra_id: str) -> Optional[SampleInfo]:
 
 def get_ena_links(sra_id: str) -> List[Tuple[str, str]]:
     """Query ENA to get FASTQ download links and MD5 checksums.
-    
+
     Legacy function for backwards compatibility.
 
     Args:
@@ -217,11 +218,7 @@ def clean_stagnant_file(file_path: Path) -> None:
 
 
 def download_file(
-    url: str, 
-    dest_path: Path, 
-    expected_md5: str = "", 
-    retries: int = 3,
-    timeout: int = DEFAULT_TIMEOUT
+    url: str, dest_path: Path, expected_md5: str = "", retries: int = 3, timeout: int = DEFAULT_TIMEOUT
 ) -> bool:
     """Download file using curl with retries and optional MD5 verification.
 
@@ -242,13 +239,20 @@ def download_file(
             cmd = [
                 "curl",
                 "-L",
-                "-C", "-",  # Resume
-                "-o", str(dest_path),
-                "--retry", "2",
-                "--retry-delay", "5",
-                "--connect-timeout", "60",
-                "--max-time", str(timeout),
-                "--keepalive-time", "60",
+                "-C",
+                "-",  # Resume
+                "-o",
+                str(dest_path),
+                "--retry",
+                "2",
+                "--retry-delay",
+                "5",
+                "--connect-timeout",
+                "60",
+                "--max-time",
+                str(timeout),
+                "--keepalive-time",
+                "60",
                 "-f",  # Fail on HTTP errors
                 url,
             ]
@@ -281,26 +285,22 @@ def download_file(
     return False
 
 
-def download_with_fallback(
-    sample_info: SampleInfo,
-    sample_dir: Path,
-    timeout: int = DEFAULT_TIMEOUT
-) -> bool:
+def download_with_fallback(sample_info: SampleInfo, sample_dir: Path, timeout: int = DEFAULT_TIMEOUT) -> bool:
     """Download sample FASTQ files with multi-source fallback.
-    
+
     Tries sources in order: ENA FTP → ENA HTTP → NCBI SRA
-    
+
     Args:
         sample_info: SampleInfo with all URL options
         sample_dir: Directory to save files
         timeout: Timeout per file in seconds
-        
+
     Returns:
         True if all files downloaded successfully
     """
     sra_id = sample_info.sra_id
     sample_dir.mkdir(parents=True, exist_ok=True)
-    
+
     # Strategy 1: ENA FTP (fastest, with MD5)
     if sample_info.ena_ftp_urls:
         logger.info(f"[{sra_id}] Trying ENA FTP...")
@@ -314,7 +314,7 @@ def download_with_fallback(
         if success:
             return True
         logger.warning(f"[{sra_id}] ENA FTP failed, trying HTTP...")
-    
+
     # Strategy 2: ENA HTTP (backup)
     if sample_info.ena_http_urls:
         logger.info(f"[{sra_id}] Trying ENA HTTP...")
@@ -328,18 +328,21 @@ def download_with_fallback(
         if success:
             return True
         logger.warning(f"[{sra_id}] ENA HTTP failed, trying NCBI...")
-    
+
     # Strategy 3: NCBI SRA (no MD5, requires fasterq-dump)
     if sample_info.ncbi_urls:
         logger.info(f"[{sra_id}] Trying NCBI SRA with fasterq-dump...")
         try:
             cmd = [
                 "fasterq-dump",
-                "--outdir", str(sample_dir),
-                "--temp", str(sample_dir),
-                "--threads", "2",
+                "--outdir",
+                str(sample_dir),
+                "--temp",
+                str(sample_dir),
+                "--threads",
+                "2",
                 "--progress",
-                sra_id
+                sra_id,
             ]
             result = subprocess.run(cmd, capture_output=True, timeout=timeout)
             if result.returncode == 0:
@@ -349,62 +352,59 @@ def download_with_fallback(
                 return True
         except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
             logger.warning(f"[{sra_id}] NCBI fasterq-dump failed: {e}")
-    
+
     return False
 
 
-def sort_samples_by_size(
-    sra_ids: List[str],
-    max_size_bytes: Optional[int] = None
-) -> List[SampleInfo]:
+def sort_samples_by_size(sra_ids: List[str], max_size_bytes: Optional[int] = None) -> List[SampleInfo]:
     """Query sizes and sort samples from smallest to largest.
-    
+
     Args:
         sra_ids: List of SRA IDs to process
         max_size_bytes: Maximum file size to include (None = no limit)
-        
+
     Returns:
         List of SampleInfo sorted by size, filtered by max_size
     """
     logger.info(f"Querying sizes for {len(sra_ids)} samples...")
-    
+
     samples: List[SampleInfo] = []
     skipped_large = 0
     skipped_error = 0
-    
+
     for i, sra_id in enumerate(sra_ids):
         if (i + 1) % 50 == 0:
             logger.info(f"  Progress: {i + 1}/{len(sra_ids)}")
-        
+
         info = get_ena_sample_info(sra_id)
         if info is None:
             skipped_error += 1
             continue
-            
+
         if max_size_bytes and info.size_bytes > max_size_bytes:
             logger.debug(f"[{sra_id}] Skipping: {format_size(info.size_bytes)} > {format_size(max_size_bytes)}")
             skipped_large += 1
             continue
-            
+
         samples.append(info)
-    
+
     # Sort by size
     samples.sort(key=lambda x: x.size_bytes)
-    
+
     logger.info(f"Sample summary: {len(samples)} to download, {skipped_large} too large, {skipped_error} errors")
     if samples:
         logger.info(f"Size range: {format_size(samples[0].size_bytes)} - {format_size(samples[-1].size_bytes)}")
-    
+
     return samples
 
 
 def download_sra_samples(
-    sra_ids: List[str], 
+    sra_ids: List[str],
     base_out_dir: Path,
     max_size_bytes: Optional[int] = None,
     timeout: int = DEFAULT_TIMEOUT,
     sort_by_size: bool = False,
-    use_fallback: bool = False
+    use_fallback: bool = False,
 ) -> Tuple[int, int]:
     """Download FASTQ files for a list of SRA samples from ENA.
 
@@ -442,7 +442,7 @@ def download_sra_samples(
 
     success_count = 0
     fail_count = 0
-    
+
     total_size = sum(s.size_bytes for s in samples)
     logger.info(f"Starting download of {len(samples)} samples ({format_size(total_size)} total)")
 
@@ -451,7 +451,7 @@ def download_sra_samples(
         logger.info(f"[{i+1}/{len(samples)}] Processing {sra_id} ({format_size(sample.size_bytes)})...")
 
         sample_dir = getfastq_dir / sra_id
-        
+
         if use_fallback:
             sample_success = download_with_fallback(sample, sample_dir, timeout)
         else:
@@ -460,10 +460,10 @@ def download_sra_samples(
                 logger.warning(f"[{sra_id}] No ENA links, skipping.")
                 fail_count += 1
                 continue
-                
+
             sample_dir.mkdir(exist_ok=True)
             sample_success = True
-            
+
             for url, md5 in sample.ena_ftp_urls:
                 fname = Path(url).name
                 dest = sample_dir / fname
@@ -508,31 +508,20 @@ Examples:
   python -m metainformant.rna.retrieval.ena_downloader \\
     --file samples.txt --out output/ --max-size 5GB --timeout 1800 \\
     --sort-by-size --fallback
-        """
+        """,
     )
     parser.add_argument("--ids", nargs="+", help="List of SRA IDs to download")
     parser.add_argument("--file", help="File containing SRA IDs (one per line)")
     parser.add_argument("--out", required=True, help="Output base directory")
-    parser.add_argument(
-        "--max-size", 
-        help="Maximum file size (e.g., 500MB, 5GB). Larger samples skipped."
-    )
+    parser.add_argument("--max-size", help="Maximum file size (e.g., 500MB, 5GB). Larger samples skipped.")
     parser.add_argument(
         "--timeout",
         type=int,
         default=DEFAULT_TIMEOUT,
-        help=f"Download timeout per file in seconds (default: {DEFAULT_TIMEOUT})"
+        help=f"Download timeout per file in seconds (default: {DEFAULT_TIMEOUT})",
     )
-    parser.add_argument(
-        "--sort-by-size",
-        action="store_true",
-        help="Process smallest samples first"
-    )
-    parser.add_argument(
-        "--fallback",
-        action="store_true", 
-        help="Enable fallback to NCBI/AWS when ENA fails"
-    )
+    parser.add_argument("--sort-by-size", action="store_true", help="Process smallest samples first")
+    parser.add_argument("--fallback", action="store_true", help="Enable fallback to NCBI/AWS when ENA fails")
 
     args = parser.parse_args()
 
@@ -554,12 +543,12 @@ Examples:
     max_size_bytes = parse_size(args.max_size) if args.max_size else None
 
     success, failed = download_sra_samples(
-        id_list, 
+        id_list,
         Path(args.out),
         max_size_bytes=max_size_bytes,
         timeout=args.timeout,
         sort_by_size=args.sort_by_size,
-        use_fallback=args.fallback
+        use_fallback=args.fallback,
     )
     return 0 if failed == 0 else 1
 

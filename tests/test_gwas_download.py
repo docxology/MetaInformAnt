@@ -6,7 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.gwas import download_reference_genome, download_variant_data, extract_variant_regions
+from metainformant.gwas.data.download import download_reference_genome, download_variant_data
+from metainformant.gwas.analysis.quality import extract_variant_regions
 
 
 @pytest.mark.slow

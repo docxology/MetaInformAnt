@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.ontology.query import (
+from metainformant.ontology.query.query import (
     ancestors,
     clear_cache,
     common_ancestors,
@@ -21,7 +21,7 @@ from metainformant.ontology.query import (
     set_cache_enabled,
     subgraph,
 )
-from metainformant.ontology.types import Ontology, Term
+from metainformant.ontology.core.types import Ontology, Term
 
 
 class TestAncestors:

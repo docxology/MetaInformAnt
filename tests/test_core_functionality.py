@@ -29,7 +29,7 @@ from metainformant.dna.sequence.composition import gc_skew, melting_temperature
 from metainformant.ecology.analysis.community import shannon_diversity, simpson_diversity
 
 # Test math functions that don't need external dependencies
-from metainformant.math import hardy_weinberg_genotype_freqs
+from metainformant.math.population_genetics.core import hardy_weinberg_genotype_freqs
 
 # Test simulation functions (those that work with standard random)
 from metainformant.simulation.models.sequences import generate_random_dna

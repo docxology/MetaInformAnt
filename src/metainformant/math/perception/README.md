@@ -19,5 +19,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.math.perception import ...
+from metainformant.math.perception import ...
 ```

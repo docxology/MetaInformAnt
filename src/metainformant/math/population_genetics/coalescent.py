@@ -12,7 +12,7 @@ from typing import Any, Dict
 
 import numpy as np
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 

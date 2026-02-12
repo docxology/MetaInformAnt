@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization.visualization_variants import (
+from metainformant.gwas.visualization.genomic.variants import (
     hwe_deviation_plot,
     maf_distribution,
     missingness_plot,

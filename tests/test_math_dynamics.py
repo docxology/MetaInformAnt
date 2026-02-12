@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from metainformant.math import logistic_map, lotka_volterra_step
+from metainformant.math.evolutionary_dynamics.core import logistic_map, lotka_volterra_step
 
 
 def test_logistic_map_basic():

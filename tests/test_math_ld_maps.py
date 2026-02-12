@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from metainformant.math import expected_r2_from_Ne_c, haldane_c_to_d, haldane_d_to_c, kosambi_c_to_d, kosambi_d_to_c
+from metainformant.math.population_genetics.ld import haldane_c_to_d, haldane_d_to_c, kosambi_c_to_d, kosambi_d_to_c
+from metainformant.math.population_genetics.statistics import expected_r2_from_Ne_c
 
 
 def test_haldane_and_kosambi_mapping_functions():

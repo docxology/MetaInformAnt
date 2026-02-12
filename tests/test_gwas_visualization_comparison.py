@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization.visualization_comparison import (
+from metainformant.gwas.visualization.statistical.comparison import (
     concordance_plot,
     cross_cohort_forest,
     miami_plot,

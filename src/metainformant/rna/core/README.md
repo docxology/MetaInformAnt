@@ -21,5 +21,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.rna.core import ...
+from metainformant.rna.core import ...
 ```

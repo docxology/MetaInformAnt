@@ -1,0 +1,93 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Nylanderia fulva
+# NCBI Taxonomy ID: 613905
+# Assembly: GCF_005281655.2 (TAMU_Nfulva_1.1)
+# Assembly Level: Scaffold
+# Sequencing: Illumina
+# Annotation: NCBI Nylanderia fulva Annotation Release 100
+# Annotation Release: 100
+# Notes: Tawny crazy ant, invasive
+# RNA-seq Samples Available: 40
+# Generated: 2026-02-09
+
+# Paths are resolved relative to repository root
+work_dir: blue/amalgkit/nylanderia_fulva/work
+log_dir: blue/amalgkit/nylanderia_fulva/logs
+threads: 12
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Nylanderia_fulva
+
+taxon_id: 613905
+
+# Reference genome configuration — shared genome directory
+genome:
+  accession: GCF_005281655.2
+  assembly_name: TAMU_Nfulva_1.1
+  annotation_release: 100
+  dest_dir: blue/amalgkit/shared/genome/Nylanderia_fulva
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/005/281/655/GCF_005281655.2_TAMU_Nfulva_1.1/
+  files:
+    genomic_fasta: GCF_005281655.2_TAMU_Nfulva_1.1_genomic.fna.gz
+    transcriptome_fasta: GCF_005281655.2_TAMU_Nfulva_1.1_rna_from_genomic.fna.gz
+    cds_fasta: GCF_005281655.2_TAMU_Nfulva_1.1_cds_from_genomic.fna.gz
+    protein_fasta: GCF_005281655.2_TAMU_Nfulva_1.1_protein.faa.gz
+    annotation_gff: GCF_005281655.2_TAMU_Nfulva_1.1_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: blue/amalgkit/nylanderia_fulva/work
+    search_string: '"Nylanderia fulva"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: blue/amalgkit/nylanderia_fulva/fastq/getfastq
+  select:
+    max_sample: 999999
+    mark_missing_rank: none
+    priority: "completeness"
+    redo: no
+  getfastq:
+    out_dir: blue/amalgkit/nylanderia_fulva/fastq
+    threads: 8
+    jobs: 4
+    redo: no
+    aws: yes
+    gcp: no
+    ncbi: no
+    pfd: no
+    fastp: no
+    max_bp: 50000000
+  quant:
+    out_dir: blue/amalgkit/nylanderia_fulva/work
+    threads: 6
+    redo: no
+    build_index: no
+    keep_fastq: no
+    index_dir: blue/amalgkit/shared/genome/Nylanderia_fulva/index
+    fasta_dir: blue/amalgkit/shared/genome/Nylanderia_fulva
+  merge:
+    out: blue/amalgkit/nylanderia_fulva/merged/merged_abundance.tsv
+    out_dir: blue/amalgkit/nylanderia_fulva/merged
+  cstmm:
+    out_dir: blue/amalgkit/nylanderia_fulva/work
+    orthogroup_table: ""
+  curate:
+    out_dir: blue/amalgkit/nylanderia_fulva/work
+  csca:
+    out_dir: blue/amalgkit/nylanderia_fulva/work
+    orthogroup_table: ""
+  sanity: {}

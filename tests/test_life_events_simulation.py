@@ -4,14 +4,8 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from metainformant.life_events import (
-    Event,
-    EventSequence,
-    add_temporal_noise,
-    generate_cohort_sequences,
-    generate_event_chain,
-    generate_synthetic_life_events,
-)
+from metainformant.life_events.core.events import Event, EventSequence
+from metainformant.life_events.core.utils import add_temporal_noise, generate_cohort_sequences, generate_event_chain, generate_synthetic_life_events
 
 
 def test_generate_event_chain(tmp_path):

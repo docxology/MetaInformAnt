@@ -62,9 +62,6 @@ def test_waiting_times_and_tajimas_D_stability():
     assert tajimas_D(0, 0.0, 10) == 0.0
 
 
-from metainformant.math import expected_time_to_mrca, expected_total_branch_length
-
-
 def test_expected_time_to_mrca_simple():
     # n=2: sum_{k=2}^2 1/(k(k-1)) = 1/2 => 4N * 1/2 = 2N
     assert abs(expected_time_to_mrca(2, 1000) - 2000.0) < 1e-9

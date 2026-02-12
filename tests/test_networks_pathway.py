@@ -39,7 +39,8 @@ class TestPathwayNetwork:
         )
 
         self.pathway_net.add_pathway(
-            "pathway_003", ["GENE7", "GENE8"],
+            "pathway_003",
+            ["GENE7", "GENE8"],
         )
 
     def test_pathway_network_initialization(self):
@@ -332,9 +333,7 @@ class TestNetworkEnrichmentAnalysis:
 
     def test_network_enrichment_basic(self):
         """Test basic network enrichment analysis."""
-        results = network_enrichment_analysis(
-            gene_list=self.test_genes, pathway_network=self.pathway_network
-        )
+        results = network_enrichment_analysis(gene_list=self.test_genes, pathway_network=self.pathway_network)
 
         # Should return enrichment results (pathway_id -> result dict)
         assert isinstance(results, dict)

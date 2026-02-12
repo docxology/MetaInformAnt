@@ -10,10 +10,11 @@ Production-ready amalgkit RNA-seq workflow configurations for automated transcri
 |------|-------------|
 | `amalgkit_template.yaml` | **Reference**: 400+ line template with all options documented |
 | `amalgkit_test.yaml` | Minimal test configuration for validation |
-| `amalgkit_pbarbatus_5sample.yaml` | 5-sample quick test |
-| `amalgkit_pbarbatus_25sample.yaml` | 25-sample robustness validation |
-| `amalgkit_pbarbatus_all.yaml` | **Production**: Full 110-sample P. barbatus dataset |
-| `amalgkit_pogonomyrmex_barbatus.yaml` | Species-specific reference config |
+| `amalgkit_pbarbatus.yaml` | **Production**: Full P. barbatus dataset (95/110 quantified) |
+| `amalgkit_apis_mellifera_all.yaml` | **Production**: Full A. mellifera dataset (~7,270 samples) |
+| `amalgkit_cross_species.yaml` | Cross-species TMM normalization config |
+| `tissue_mapping.yaml` | Canonical tissue name synonyms for normalization |
+| `tissue_patches.yaml` | Per-bioproject/sample tissue overrides |
 
 ## Configuration Structure
 
@@ -68,6 +69,16 @@ genome:
 steps:
   quant:
     index_dir: output/amalgkit/shared/genome/Pogonomyrmex_barbatus/index
+```
+
+### Metadata Filtering
+
+Filter to RNA-Seq + Illumina to prevent genomic samples leaking in:
+
+```yaml
+steps:
+  metadata:
+    search_string: '"Species"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
 ```
 
 ## Adding New Species

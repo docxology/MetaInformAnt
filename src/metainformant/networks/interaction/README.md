@@ -1,23 +1,33 @@
-# INTERACTION
+# Networks Interaction
 
-## Overview
-Functionality for interaction.
+Protein-protein interaction (PPI) networks and gene regulatory network construction and analysis.
 
-## 📦 Contents
-- `[__init__.py](__init__.py)`
-- `[ppi.py](ppi.py)`
-- `[regulatory.py](regulatory.py)`
+## Contents
 
-## 📊 Structure
+| File | Purpose |
+|------|---------|
+| `ppi.py` | PPI network loading, hub detection, clustering, and interaction prediction |
+| `regulatory.py` | Gene regulatory network inference and analysis |
 
-```mermaid
-graph TD
-    interaction[interaction]
-    style interaction fill:#f9f,stroke:#333,stroke-width:2px
-```
+## Key Functions
+
+| Function | Description |
+|----------|-------------|
+| `load_ppi_network()` | Load PPI network from TSV or other formats |
+| `construct_ppi_network_from_interactions()` | Build network from interaction tuples |
+| `ppi_network_analysis()` | Degree distribution, centrality, and topology metrics |
+| `find_ppi_hubs()` | Identify highly connected hub proteins |
+| `ppi_network_clustering()` | Cluster PPI network into functional modules |
+| `ProteinNetwork` | Class with interaction prediction (similarity, correlation, ML) |
+| `predict_interactions()` | Predict novel protein-protein interactions |
+| `save_ppi_network()` | Export network to TSV or other formats |
 
 ## Usage
-Import module:
+
 ```python
-from metainformant.metainformant.networks.interaction import ...
+from metainformant.networks.interaction.ppi import load_ppi_network, ppi_network_analysis
+
+network = load_ppi_network("data/ppi_interactions.tsv")
+stats = ppi_network_analysis(network)
+hubs = find_ppi_hubs(network, top_n=20)
 ```

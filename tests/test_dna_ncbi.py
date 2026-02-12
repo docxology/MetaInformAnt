@@ -6,7 +6,7 @@ import importlib.util
 
 import pytest
 
-from metainformant.dna import ncbi
+from metainformant.dna.external import ncbi
 
 
 def _check_ncbi_datasets_installed() -> bool:

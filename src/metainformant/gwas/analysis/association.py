@@ -9,7 +9,7 @@ from __future__ import annotations
 import math
 from typing import Any, Dict, List, Optional, Tuple
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 # Import numpy with graceful fallback
 try:

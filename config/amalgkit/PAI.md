@@ -16,9 +16,8 @@
 
 | Config | Samples | Status |
 |--------|---------|--------|
-| `amalgkit_pbarbatus_all.yaml` | 110 | ✅ Complete (95 valid) |
-| `amalgkit_pbarbatus_25sample.yaml` | 25 | Test |
-| `amalgkit_pbarbatus_5sample.yaml` | 5 | Test |
+| `amalgkit_pbarbatus.yaml` | ~110 | ✅ Complete (95 valid) |
+| `amalgkit_apis_mellifera_all.yaml` | ~7,270 | 🔄 In Progress |
 
 ## 📝 Maintenance Notes
 
@@ -26,10 +25,11 @@
 - **Disk Strategy**: Stream-and-clean (minimal persistent footprint)
 - **Critical Settings**: `redo: no` for production runs (idempotent)
 - **Shared Resources**: Genome/index in `output/amalgkit/shared/`
+- **Metadata Filtering**: Always use `AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]`
 
 ## 🔄 AI Workflows
 
-- **Modification**: Test changes with 5-sample config first
 - **New Species**: Copy `amalgkit_template.yaml`, adjust paths/taxon
 - **Recovery**: Use `scripts/rna/recover_missing_parallel.py` for failed samples
+- **Tissue Patches**: Add new bioproject annotations to `tissue_patches.yaml`
 - **Documentation**: Update this file and `README.md` when adding configs

@@ -12,7 +12,10 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 
-from metainformant.core import errors, io, logging, validation
+from metainformant.core.data import validation
+from metainformant.core.utils import errors
+from metainformant.core.utils import logging
+from metainformant.core import io
 
 logger = logging.get_logger(__name__)
 

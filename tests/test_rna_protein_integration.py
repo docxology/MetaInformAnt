@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.rna import protein_integration
+from metainformant.rna.analysis import protein_integration
 
 
 class TestCalculateTranslationEfficiency:

@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization.visualization_effects import (
+from metainformant.gwas.visualization.statistical.effects import (
     allelic_series_plot,
     effect_direction_plot,
     effect_size_forest_plot,

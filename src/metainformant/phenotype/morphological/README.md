@@ -19,5 +19,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.phenotype.morphological import ...
+from metainformant.phenotype.morphological import ...
 ```

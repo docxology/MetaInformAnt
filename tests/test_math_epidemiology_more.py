@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from metainformant.math import effective_reproduction_number, sis_step
+from metainformant.math.epidemiology.models import effective_reproduction_number, sis_step
 
 
 def test_sis_step_and_effective_R():

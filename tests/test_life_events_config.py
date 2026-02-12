@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 
 from metainformant.core.io.io import dump_json
-from metainformant.life_events import LifeEventsWorkflowConfig, load_life_events_config
+from metainformant.life_events.core.config import LifeEventsWorkflowConfig, load_life_events_config
 
 
 def test_load_life_events_config_basic(tmp_path: Path) -> None:

@@ -1,0 +1,93 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Acromyrmex echinatior
+# NCBI Taxonomy ID: 103372
+# Assembly: GCF_000204515.1 (Aech_3.9)
+# Assembly Level: Scaffold
+# Sequencing: Illumina
+# Annotation: NCBI Acromyrmex echinatior Annotation Release 100
+# Annotation Release: 100
+# Notes: Leafcutter ant
+# RNA-seq Samples Available: 48
+# Generated: 2026-02-09
+
+# Paths are resolved relative to repository root
+work_dir: blue/amalgkit/acromyrmex_echinatior/work
+log_dir: blue/amalgkit/acromyrmex_echinatior/logs
+threads: 12
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Acromyrmex_echinatior
+
+taxon_id: 103372
+
+# Reference genome configuration — shared genome directory
+genome:
+  accession: GCF_000204515.1
+  assembly_name: Aech_3.9
+  annotation_release: 100
+  dest_dir: blue/amalgkit/shared/genome/Acromyrmex_echinatior
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/204/515/GCF_000204515.1_Aech_3.9/
+  files:
+    genomic_fasta: GCF_000204515.1_Aech_3.9_genomic.fna.gz
+    transcriptome_fasta: GCF_000204515.1_Aech_3.9_rna_from_genomic.fna.gz
+    cds_fasta: GCF_000204515.1_Aech_3.9_cds_from_genomic.fna.gz
+    protein_fasta: GCF_000204515.1_Aech_3.9_protein.faa.gz
+    annotation_gff: GCF_000204515.1_Aech_3.9_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: blue/amalgkit/acromyrmex_echinatior/work
+    search_string: '"Acromyrmex echinatior"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: blue/amalgkit/acromyrmex_echinatior/fastq/getfastq
+  select:
+    max_sample: 999999
+    mark_missing_rank: none
+    priority: "completeness"
+    redo: no
+  getfastq:
+    out_dir: blue/amalgkit/acromyrmex_echinatior/fastq
+    remove_sra: yes
+    threads: 12
+    jobs: 4
+    redo: no
+    aws: yes
+    gcp: no
+    ncbi: no
+    pfd: no
+    fastp: no
+  quant:
+    out_dir: blue/amalgkit/acromyrmex_echinatior/work
+    threads: 6
+    redo: no
+    build_index: no
+    keep_fastq: no
+    index_dir: blue/amalgkit/shared/genome/Acromyrmex_echinatior/index
+    fasta_dir: blue/amalgkit/shared/genome/Acromyrmex_echinatior
+  merge:
+    out: blue/amalgkit/acromyrmex_echinatior/merged/merged_abundance.tsv
+    out_dir: blue/amalgkit/acromyrmex_echinatior/merged
+  cstmm:
+    out_dir: blue/amalgkit/acromyrmex_echinatior/work
+    orthogroup_table: ""
+  curate:
+    out_dir: blue/amalgkit/acromyrmex_echinatior/work
+  csca:
+    out_dir: blue/amalgkit/acromyrmex_echinatior/work
+    orthogroup_table: ""
+  sanity: {}

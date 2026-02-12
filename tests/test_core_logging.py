@@ -6,7 +6,7 @@ import logging
 
 import pytest
 
-from metainformant.core import logging as core_logging
+from metainformant.core.utils import logging as core_logging
 
 
 def test_get_logger_returns_configured_logger() -> None:

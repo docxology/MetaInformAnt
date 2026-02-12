@@ -20,5 +20,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.gwas.data import ...
+from metainformant.gwas.data import ...
 ```

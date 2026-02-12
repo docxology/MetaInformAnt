@@ -2,22 +2,11 @@ from __future__ import annotations
 
 import math
 
-from metainformant.math import (
-    correlation,
-    covariance,
-    delta_mean_trait,
-    expectation,
-    price_equation,
-    relative_fitness,
-    selection_differential,
-    selection_gradient,
-    selection_intensity,
-    standard_deviation,
-    variance,
-    weighted_correlation,
-    weighted_covariance,
-    weighted_variance,
-)
+from metainformant.math.core.utilities import correlation, covariance
+from metainformant.math.population_genetics.statistics import variance
+from metainformant.math.population_genetics.selection import relative_fitness, selection_differential, selection_gradient, selection_intensity
+from metainformant.math.population_genetics.statistics import standard_deviation
+from metainformant.math.quantitative_genetics.price import delta_mean_trait, expectation, price_equation, weighted_correlation, weighted_covariance, weighted_variance
 
 
 def test_expectation_and_variance_basic():

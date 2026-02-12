@@ -13,7 +13,7 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any, Callable, Iterator, Optional
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 from .config import OllamaConfig
 

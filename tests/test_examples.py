@@ -137,10 +137,7 @@ class TestExamples:
             lines = [line for line in content.split("\n") if line.strip()]
 
             # Check for module docstring (first non-empty line should be docstring or import)
-            has_docstring = any(
-                line.strip().startswith('"""') or line.strip().startswith("'''")
-                for line in lines[:5]
-            )
+            has_docstring = any(line.strip().startswith('"""') or line.strip().startswith("'''") for line in lines[:5])
             assert has_docstring, f"Missing module docstring in {example_file}"
 
     def test_example_output_consistency(self, example_test_runner):
@@ -208,6 +205,7 @@ class TestExamples:
             readme = domain_dir / "README.md"
             if not readme.exists():
                 import warnings
+
                 warnings.warn(f"Domain {domain} missing README.md", stacklevel=2)
 
     @pytest.mark.parametrize(

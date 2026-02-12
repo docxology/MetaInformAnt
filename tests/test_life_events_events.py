@@ -6,7 +6,7 @@ from datetime import datetime
 
 import pytest
 
-from metainformant.life_events import Event, EventDatabase, EventSequence
+from metainformant.life_events.core.events import Event, EventDatabase, EventSequence
 
 
 def test_event_creation():

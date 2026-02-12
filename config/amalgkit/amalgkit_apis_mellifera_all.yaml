@@ -10,8 +10,8 @@
 # SRA Metadata: 7,270 RNA-seq samples (filtered: removed 15 metagenomic from PRJNA1364028)
 
 # Paths are resolved relative to repository root
-work_dir: output/amalgkit/apis_mellifera_all/work
-log_dir: output/amalgkit/apis_mellifera_all/logs
+work_dir: blue/amalgkit/apis_mellifera_all/work
+log_dir: blue/amalgkit/apis_mellifera_all/logs
 threads: 12
 
 auto_install_amalgkit: true
@@ -31,7 +31,7 @@ genome:
   accession: GCF_003254395.2
   assembly_name: Amel_HAv3.1
   annotation_release: 104
-  dest_dir: output/amalgkit/shared/genome/Apis_mellifera
+  dest_dir: blue/amalgkit/shared/genome/Apis_mellifera
   include:
     - genome
     - gff3
@@ -49,18 +49,18 @@ genome:
 # Per-step parameters
 steps:
   metadata:
-    out_dir: output/amalgkit/apis_mellifera_all/work
+    out_dir: blue/amalgkit/apis_mellifera_all/work
     search_string: '"Apis mellifera"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
     redo: no  # Reuse existing metadata if available
   integrate:
-    fastq_dir: output/amalgkit/apis_mellifera_all/fastq/getfastq
+    fastq_dir: blue/amalgkit/apis_mellifera_all/fastq/getfastq
   select:
     max_sample: 999999  # No artificial limit - process all available samples
     mark_missing_rank: none
     priority: "completeness"
     redo: no  # Reuse existing selection
   getfastq:
-    out_dir: output/amalgkit/apis_mellifera_all/fastq
+    out_dir: blue/amalgkit/apis_mellifera_all/fastq
     threads: 8
     jobs: 4
     redo: no  # CRITICAL: Skip already-downloaded samples
@@ -71,22 +71,22 @@ steps:
     fastp: no
     max_bp: 50000000  # Downsampling for speed (50M bp per sample)
   quant:
-    out_dir: output/amalgkit/apis_mellifera_all/work
+    out_dir: blue/amalgkit/apis_mellifera_all/work
     threads: 6
     redo: no  # CRITICAL: Skip already-quantified samples
     build_index: yes  # Build kallisto index on first run
     keep_fastq: no  # Delete FASTQs after quantification (stream-and-clean)
-    index_dir: output/amalgkit/shared/genome/Apis_mellifera/index
-    fasta_dir: output/amalgkit/shared/genome/Apis_mellifera
+    index_dir: blue/amalgkit/shared/genome/Apis_mellifera/index
+    fasta_dir: blue/amalgkit/shared/genome/Apis_mellifera
   merge:
-    out: output/amalgkit/apis_mellifera_all/merged/merged_abundance.tsv
-    out_dir: output/amalgkit/apis_mellifera_all/merged
+    out: blue/amalgkit/apis_mellifera_all/merged/merged_abundance.tsv
+    out_dir: blue/amalgkit/apis_mellifera_all/merged
   cstmm:
-    out_dir: output/amalgkit/apis_mellifera_all/work
+    out_dir: blue/amalgkit/apis_mellifera_all/work
     orthogroup_table: ""
   curate:
-    out_dir: output/amalgkit/apis_mellifera_all/work
+    out_dir: blue/amalgkit/apis_mellifera_all/work
   csca:
-    out_dir: output/amalgkit/apis_mellifera_all/work
+    out_dir: blue/amalgkit/apis_mellifera_all/work
     orthogroup_table: ""
   sanity: {}

@@ -1,16 +1,8 @@
 """Core UI utilities for METAINFORMANT.
 
-This module provides terminal user interface components for workflow visualization.
-"""
-
+This module provides terminal user interface components for workflow visualization."""
 from __future__ import annotations
 
-from .tui import (
-    ProgressState,
-    TerminalInterface,
-)
+from . import tui
 
-__all__ = [
-    "ProgressState",
-    "TerminalInterface",
-]
+__all__ = ['tui']

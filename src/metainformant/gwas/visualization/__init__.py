@@ -1,16 +1,12 @@
-"""GWAS visualization modules."""
+"""GWAS visualization modules.
 
-from metainformant.gwas.visualization.general import (
-    kinship_heatmap,
-    manhattan_plot,
-    qq_plot,
-)
-from metainformant.gwas.visualization.utils import detect_p_value_key, safe_log10_p
+Organized into subpackages:
+- population/: Population structure and geographic visualizations
+- statistical/: Statistical analysis and comparison plots
+- genomic/: Genome-wide, regional, LD, and variant visualizations
+- interactive/: Interactive plots, composite panels, fine-mapping, phenotype, suite"""
+from __future__ import annotations
 
-__all__ = [
-    "detect_p_value_key",
-    "kinship_heatmap",
-    "manhattan_plot",
-    "qq_plot",
-    "safe_log10_p",
-]
+from . import config, eqtl_visualization, general, genomic, interactive, population, statistical, utils
+
+__all__ = ['config', 'eqtl_visualization', 'general', 'genomic', 'interactive', 'population', 'statistical', 'utils']

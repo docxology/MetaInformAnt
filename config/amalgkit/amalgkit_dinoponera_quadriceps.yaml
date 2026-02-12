@@ -1,0 +1,93 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Dinoponera quadriceps
+# NCBI Taxonomy ID: 609295
+# Assembly: GCF_001313825.1 (ASM131382v1)
+# Assembly Level: Scaffold
+# Sequencing: Illumina
+# Annotation: NCBI Dinoponera quadriceps Annotation Release 100
+# Annotation Release: 100
+# Notes: Giant queenless ant, largest known ant species
+# RNA-seq Samples Available: 13
+# Generated: 2026-02-09
+
+# Paths are resolved relative to repository root
+work_dir: blue/amalgkit/dinoponera_quadriceps/work
+log_dir: blue/amalgkit/dinoponera_quadriceps/logs
+threads: 12
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Dinoponera_quadriceps
+
+taxon_id: 609295
+
+# Reference genome configuration — shared genome directory
+genome:
+  accession: GCF_001313825.1
+  assembly_name: ASM131382v1
+  annotation_release: 100
+  dest_dir: blue/amalgkit/shared/genome/Dinoponera_quadriceps
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/001/313/825/GCF_001313825.1_ASM131382v1/
+  files:
+    genomic_fasta: GCF_001313825.1_ASM131382v1_genomic.fna.gz
+    transcriptome_fasta: GCF_001313825.1_ASM131382v1_rna_from_genomic.fna.gz
+    cds_fasta: GCF_001313825.1_ASM131382v1_cds_from_genomic.fna.gz
+    protein_fasta: GCF_001313825.1_ASM131382v1_protein.faa.gz
+    annotation_gff: GCF_001313825.1_ASM131382v1_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: blue/amalgkit/dinoponera_quadriceps/work
+    search_string: '"Dinoponera quadriceps"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: blue/amalgkit/dinoponera_quadriceps/fastq/getfastq
+  select:
+    max_sample: 999999
+    mark_missing_rank: none
+    priority: "completeness"
+    redo: no
+  getfastq:
+    out_dir: blue/amalgkit/dinoponera_quadriceps/fastq
+    threads: 8
+    jobs: 4
+    redo: no
+    aws: yes
+    gcp: no
+    ncbi: no
+    pfd: no
+    fastp: no
+    max_bp: 50000000
+  quant:
+    out_dir: blue/amalgkit/dinoponera_quadriceps/work
+    threads: 6
+    redo: no
+    build_index: no
+    keep_fastq: no
+    index_dir: blue/amalgkit/shared/genome/Dinoponera_quadriceps/index
+    fasta_dir: blue/amalgkit/shared/genome/Dinoponera_quadriceps
+  merge:
+    out: blue/amalgkit/dinoponera_quadriceps/merged/merged_abundance.tsv
+    out_dir: blue/amalgkit/dinoponera_quadriceps/merged
+  cstmm:
+    out_dir: blue/amalgkit/dinoponera_quadriceps/work
+    orthogroup_table: ""
+  curate:
+    out_dir: blue/amalgkit/dinoponera_quadriceps/work
+  csca:
+    out_dir: blue/amalgkit/dinoponera_quadriceps/work
+    orthogroup_table: ""
+  sanity: {}

@@ -5,13 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.core import (
-    create_sample_config,
-    download_and_process_data,
-    io,
-    run_config_based_workflow,
-    validate_config_file,
-)
+from metainformant.core.execution.workflow import create_sample_config, download_and_process_data, run_config_based_workflow, validate_config_file
+from metainformant.core import io
 
 
 class TestConfigBasedProcessing:

@@ -16,7 +16,9 @@ import numpy as np
 from matplotlib.axes import Axes
 from matplotlib.patches import Circle, FancyBboxPatch, Rectangle
 
-from metainformant.core import logging, paths, validation
+from metainformant.core.data import validation
+from metainformant.core.io import paths
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 

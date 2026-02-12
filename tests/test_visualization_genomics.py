@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.visualization.genomics import (
+from metainformant.visualization.genomics.genomics import (
     chromosome_ideogram,
     circular_manhattan_plot,
     coverage_plot,

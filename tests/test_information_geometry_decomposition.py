@@ -12,28 +12,16 @@ import math
 import numpy as np
 import pytest
 
-from metainformant.information.metrics.decomposition import (
+from metainformant.information.metrics.advanced.decomposition import (
     co_information,
-    dual_total_correlation,
-    o_information,
     partial_information_decomposition,
     redundant_information,
     synergistic_information,
     unique_information,
 )
-from metainformant.information.metrics.geometry import (
-    channel_capacity,
-    entropy_power_inequality,
-    exponential_family_entropy,
-    fisher_rao_distance,
-    hellinger_distance,
-    information_bottleneck,
-    information_dimension,
-    information_projection,
-    natural_gradient,
-    rate_distortion_function,
-    statistical_divergence,
-)
+from metainformant.information.metrics.advanced.fisher_rao import fisher_rao_distance
+from metainformant.information.metrics.advanced.information_projection import information_projection
+from metainformant.information.metrics.core.syntactic import mutual_information
 
 # ============================================================
 # Fisher-Rao Distance Tests
@@ -405,7 +393,6 @@ class TestCoInformation:
         x = list(rng.choice(["A", "B"], size=200))
         y = x.copy()  # Perfect correlation
         ci = co_information([x, y])
-        from metainformant.information import mutual_information
 
         mi = mutual_information(x, y)
         assert ci == pytest.approx(mi, abs=0.01)
@@ -517,7 +504,6 @@ class TestRedundantInformation:
         target = list(rng.choice([0, 1], size=500))
         red = redundant_information([target, target], target)
         # Redundancy should equal MI between target and itself
-        from metainformant.information import mutual_information
 
         mi = mutual_information(target, target)
         assert red == pytest.approx(mi, abs=0.01)

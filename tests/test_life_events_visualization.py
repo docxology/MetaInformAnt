@@ -8,13 +8,13 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.life_events import Event, EventSequence
+from metainformant.life_events.core.events import Event, EventSequence
 
 
 def test_plot_event_timeline(tmp_path):
     """Test event timeline plotting."""
     try:
-        from metainformant.life_events import plot_event_timeline
+        from metainformant.life_events.visualization.timeline import plot_event_timeline
     except ImportError:
         pytest.skip("Visualization functions require matplotlib")
 
@@ -36,7 +36,8 @@ def test_plot_event_timeline(tmp_path):
 def test_plot_event_embeddings(tmp_path):
     """Test event embeddings plotting."""
     try:
-        from metainformant.life_events import learn_event_embeddings, plot_event_embeddings
+        from metainformant.life_events.models.embeddings import learn_event_embeddings
+        from metainformant.life_events.visualization.statistical import plot_event_embeddings
     except ImportError:
         pytest.skip("Visualization functions require matplotlib")
 
@@ -57,7 +58,8 @@ def test_plot_event_embeddings(tmp_path):
 def test_plot_event_embeddings_3d(tmp_path):
     """Test 3D event embeddings plotting."""
     try:
-        from metainformant.life_events import learn_event_embeddings, plot_event_embeddings
+        from metainformant.life_events.models.embeddings import learn_event_embeddings
+        from metainformant.life_events.visualization.statistical import plot_event_embeddings
     except ImportError:
         pytest.skip("Visualization functions require matplotlib")
 
@@ -77,7 +79,7 @@ def test_plot_event_embeddings_3d(tmp_path):
 def test_plot_attention_heatmap(tmp_path):
     """Test attention heatmap plotting."""
     try:
-        from metainformant.life_events import plot_attention_heatmap
+        from metainformant.life_events.visualization.statistical import plot_attention_heatmap
     except ImportError:
         pytest.skip("Visualization functions require matplotlib")
 
@@ -101,7 +103,7 @@ def test_plot_attention_heatmap(tmp_path):
 def test_plot_prediction_importance(tmp_path):
     """Test prediction importance plotting."""
     try:
-        from metainformant.life_events import plot_prediction_importance
+        from metainformant.life_events.visualization.statistical import plot_prediction_importance
     except ImportError:
         pytest.skip("Visualization functions require matplotlib")
 
@@ -122,7 +124,7 @@ def test_plot_prediction_importance(tmp_path):
 def test_plot_prediction_importance_empty():
     """Test prediction importance plotting with empty dict."""
     try:
-        from metainformant.life_events import plot_prediction_importance
+        from metainformant.life_events.visualization.statistical import plot_prediction_importance
     except ImportError:
         pytest.skip("Visualization functions require matplotlib")
 

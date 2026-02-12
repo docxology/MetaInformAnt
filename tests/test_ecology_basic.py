@@ -2,7 +2,7 @@
 
 import pytest
 
-from metainformant.ecology import community
+from metainformant.ecology.analysis import community
 
 
 class TestCommunityEcology:

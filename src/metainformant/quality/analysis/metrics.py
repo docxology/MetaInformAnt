@@ -16,7 +16,9 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from metainformant.core import errors, logging, validation
+from metainformant.core.data import validation
+from metainformant.core.utils import errors
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 

@@ -465,7 +465,7 @@ def download_file(url: str, dest_path: str | Path, *, chunk_size: int = 8192, ti
     Returns:
         True if download successful, False otherwise
     """
-    from metainformant.core import logging as core_logging
+    from metainformant.core.utils import logging as core_logging
 
     logger = core_logging.get_logger(__name__)
 
@@ -508,7 +508,7 @@ def download_json(url: str, *, timeout: int = 30) -> Any:
     """
     import requests
 
-    from metainformant.core import logging as core_logging
+    from metainformant.core.utils import logging as core_logging
 
     logger = core_logging.get_logger(__name__)
 
@@ -539,7 +539,7 @@ def download_text(url: str, *, timeout: int = 30) -> str | None:
     """
     import requests
 
-    from metainformant.core import logging as core_logging
+    from metainformant.core.utils import logging as core_logging
 
     logger = core_logging.get_logger(__name__)
 
@@ -566,7 +566,7 @@ def download_csv(url: str, *, timeout: int = 30, **kwargs) -> Any:
     Returns:
         DataFrame or None if failed
     """
-    from metainformant.core import logging as core_logging
+    from metainformant.core.utils import logging as core_logging
 
     logger = core_logging.get_logger(__name__)
 
@@ -597,7 +597,7 @@ def batch_download(urls: list[str], dest_dir: str | Path, *, timeout: int = 30) 
     Returns:
         Dictionary mapping URLs to success status
     """
-    from metainformant.core import logging as core_logging
+    from metainformant.core.utils import logging as core_logging
 
     logger = core_logging.get_logger(__name__)
 

@@ -12,7 +12,8 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
-from metainformant.core import io, logging
+from metainformant.core.utils import logging
+from metainformant.core import io
 
 logger = logging.get_logger(__name__)
 

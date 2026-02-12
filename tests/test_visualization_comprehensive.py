@@ -25,7 +25,7 @@ class TestThemes:
     """Tests for themes module."""
 
     def test_list_themes(self):
-        from metainformant.visualization.themes import list_themes
+        from metainformant.visualization.config.themes import list_themes
 
         themes = list_themes()
         assert isinstance(themes, list)
@@ -37,7 +37,7 @@ class TestThemes:
         assert "colorblind" in themes
 
     def test_get_theme(self):
-        from metainformant.visualization.themes import get_theme
+        from metainformant.visualization.config.themes import get_theme
 
         params = get_theme("publication")
         assert isinstance(params, dict)
@@ -45,13 +45,13 @@ class TestThemes:
         assert params["figure.dpi"] == 300
 
     def test_get_theme_unknown_raises(self):
-        from metainformant.visualization.themes import get_theme
+        from metainformant.visualization.config.themes import get_theme
 
         with pytest.raises(KeyError, match="Unknown theme"):
             get_theme("nonexistent_theme")
 
     def test_apply_and_reset_theme(self):
-        from metainformant.visualization.themes import apply_theme, reset_theme
+        from metainformant.visualization.config.themes import apply_theme, reset_theme
 
         original_dpi = matplotlib.rcParams["figure.dpi"]
         apply_theme("publication")
@@ -61,7 +61,7 @@ class TestThemes:
         assert matplotlib.rcParams["figure.dpi"] != 300 or original_dpi == 300
 
     def test_theme_context_manager(self):
-        from metainformant.visualization.themes import theme
+        from metainformant.visualization.config.themes import theme
 
         original_dpi = matplotlib.rcParams["figure.dpi"]
         with theme("poster"):
@@ -70,7 +70,7 @@ class TestThemes:
         assert matplotlib.rcParams["figure.dpi"] == original_dpi
 
     def test_register_custom_theme(self):
-        from metainformant.visualization.themes import get_theme, register_theme
+        from metainformant.visualization.config.themes import get_theme, register_theme
 
         register_theme("custom_test", {"figure.dpi": 999})
         params = get_theme("custom_test")
@@ -86,46 +86,46 @@ class TestPalettes:
     """Tests for palettes module."""
 
     def test_chromosome_palette_default(self):
-        from metainformant.visualization.palettes import chromosome_palette
+        from metainformant.visualization.config.palettes import chromosome_palette
 
         colors = chromosome_palette()
         assert len(colors) == 25  # 22 autosomes + X, Y, MT
 
     def test_chromosome_palette_specific(self):
-        from metainformant.visualization.palettes import chromosome_palette
+        from metainformant.visualization.config.palettes import chromosome_palette
 
         colors = chromosome_palette(["1", "2", "X"])
         assert len(colors) == 3
         assert all(c.startswith("#") for c in colors)
 
     def test_categorical_wong(self):
-        from metainformant.visualization.palettes import categorical
+        from metainformant.visualization.config.palettes import categorical
 
         colors = categorical(5, palette="wong")
         assert len(colors) == 5
         assert all(c.startswith("#") for c in colors)
 
     def test_categorical_fallback_large_n(self):
-        from metainformant.visualization.palettes import categorical
+        from metainformant.visualization.config.palettes import categorical
 
         colors = categorical(15, palette="wong")  # more than 8
         assert len(colors) == 15
 
     def test_expression_gradient(self):
-        from metainformant.visualization.palettes import expression_gradient
+        from metainformant.visualization.config.palettes import expression_gradient
 
         cmap = expression_gradient(256)
         assert hasattr(cmap, "__call__")
 
     def test_significance_palette(self):
-        from metainformant.visualization.palettes import significance_palette
+        from metainformant.visualization.config.palettes import significance_palette
 
         palette = significance_palette()
         assert "highly_significant" in palette
         assert "not_significant" in palette
 
     def test_significance_color(self):
-        from metainformant.visualization.palettes import significance_color
+        from metainformant.visualization.config.palettes import significance_color
 
         assert significance_color(0.0001) == "#D32F2F"
         assert significance_color(0.005) == "#FF9800"
@@ -133,19 +133,19 @@ class TestPalettes:
         assert significance_color(0.1) == "#9E9E9E"
 
     def test_heatmap_cmap_valid(self):
-        from metainformant.visualization.palettes import heatmap_cmap
+        from metainformant.visualization.config.palettes import heatmap_cmap
 
         cmap = heatmap_cmap("expression")
         assert cmap is not None
 
     def test_heatmap_cmap_invalid_raises(self):
-        from metainformant.visualization.palettes import heatmap_cmap
+        from metainformant.visualization.config.palettes import heatmap_cmap
 
         with pytest.raises(KeyError):
             heatmap_cmap("invalid_name")
 
     def test_alternating_pair(self):
-        from metainformant.visualization.palettes import alternating_pair
+        from metainformant.visualization.config.palettes import alternating_pair
 
         colors = alternating_pair(2)
         assert len(colors) == 4  # 2 pairs
@@ -160,7 +160,7 @@ class TestComposite:
     """Tests for composite dashboard functions."""
 
     def test_multi_panel(self, tmp_path: Path):
-        from metainformant.visualization.composite import multi_panel
+        from metainformant.visualization.dashboards.composite import multi_panel
 
         def plot_func(ax, data=None):
             ax.plot([1, 2, 3], [1, 2, 3])
@@ -176,7 +176,7 @@ class TestComposite:
         plt.close(fig)
 
     def test_genomic_overview(self, tmp_path: Path):
-        from metainformant.visualization.composite import genomic_overview
+        from metainformant.visualization.dashboards.composite import genomic_overview
 
         data = {
             "pca_data": np.random.randn(50, 2),
@@ -191,7 +191,7 @@ class TestComposite:
         plt.close(fig)
 
     def test_qc_summary(self, tmp_path: Path):
-        from metainformant.visualization.composite import qc_summary
+        from metainformant.visualization.dashboards.composite import qc_summary
 
         qc_data = {
             "read_lengths": np.random.normal(150, 10, 500).astype(int),
@@ -215,7 +215,7 @@ class TestInteractive:
     """Tests for interactive plot wrappers."""
 
     def test_interactive_scatter_fallback(self, tmp_path: Path):
-        from metainformant.visualization.interactive import interactive_scatter
+        from metainformant.visualization.dashboards.interactive import interactive_scatter
 
         df = pd.DataFrame({"x": [1, 2, 3], "y": [4, 5, 6]})
         output = tmp_path / "scatter.png"
@@ -224,7 +224,7 @@ class TestInteractive:
         assert result is not None
 
     def test_interactive_heatmap(self, tmp_path: Path):
-        from metainformant.visualization.interactive import interactive_heatmap
+        from metainformant.visualization.dashboards.interactive import interactive_heatmap
 
         data = np.random.randn(5, 5)
         output = tmp_path / "heatmap.png"
@@ -232,7 +232,7 @@ class TestInteractive:
         assert result is not None
 
     def test_interactive_volcano(self, tmp_path: Path):
-        from metainformant.visualization.interactive import interactive_volcano
+        from metainformant.visualization.dashboards.interactive import interactive_volcano
 
         df = pd.DataFrame(
             {
@@ -246,7 +246,7 @@ class TestInteractive:
         assert result is not None
 
     def test_interactive_manhattan(self, tmp_path: Path):
-        from metainformant.visualization.interactive import interactive_manhattan
+        from metainformant.visualization.dashboards.interactive import interactive_manhattan
 
         df = pd.DataFrame(
             {
@@ -461,32 +461,37 @@ class TestMainExports:
     """Test that main visualization package exports new modules."""
 
     def test_themes_exported(self):
-        from metainformant.visualization import apply_theme, list_themes, theme, themes
+        from metainformant.visualization.config import config
+        from metainformant.visualization.config.themes import apply_theme, list_themes, theme
 
-        assert themes is not None
+        assert config is not None
         assert callable(list_themes)
         assert callable(apply_theme)
         assert callable(theme)
 
     def test_palettes_exported(self):
-        from metainformant.visualization import WONG, categorical, chromosome_palette, palettes
+        from metainformant.visualization.config import config
+        from metainformant.visualization.config.palettes import categorical, chromosome_palette
+        from metainformant.visualization import WONG
 
-        assert palettes is not None
+        assert config is not None
         assert callable(chromosome_palette)
         assert callable(categorical)
         assert isinstance(WONG, list)
 
     def test_composite_exported(self):
-        from metainformant.visualization import composite, genomic_overview, multi_panel, qc_summary
+        from metainformant.visualization.dashboards.composite import genomic_overview, multi_panel, qc_summary
+        from metainformant.visualization import dashboards
 
-        assert composite is not None
+        assert dashboards is not None
         assert callable(multi_panel)
         assert callable(genomic_overview)
         assert callable(qc_summary)
 
     def test_interactive_exported(self):
-        from metainformant.visualization import interactive, interactive_scatter, interactive_volcano
+        from metainformant.visualization.dashboards.interactive import interactive_scatter, interactive_volcano
+        from metainformant.visualization import dashboards
 
-        assert interactive is not None
+        assert dashboards is not None
         assert callable(interactive_scatter)
         assert callable(interactive_volcano)

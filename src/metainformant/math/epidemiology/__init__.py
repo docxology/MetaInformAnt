@@ -1,17 +1,6 @@
-from .models import (
-    basic_reproduction_number,
-    effective_reproduction_number,
-    herd_immunity_threshold,
-    seir_step,
-    sir_step,
-    sis_step,
-)
+"""Epidemiology subpackage."""
+from __future__ import annotations
 
-__all__ = [
-    "basic_reproduction_number",
-    "effective_reproduction_number",
-    "herd_immunity_threshold",
-    "sir_step",
-    "seir_step",
-    "sis_step",
-]
+from . import models
+
+__all__ = ['models']

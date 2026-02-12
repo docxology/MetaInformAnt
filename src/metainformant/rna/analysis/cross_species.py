@@ -47,7 +47,7 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 

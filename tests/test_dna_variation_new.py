@@ -14,7 +14,7 @@ from typing import Any, Dict, List
 
 import pytest
 
-from metainformant.dna import variants
+from metainformant.dna.variation import variants
 from metainformant.dna.variation import mutations
 
 # ---------------------------------------------------------------------------

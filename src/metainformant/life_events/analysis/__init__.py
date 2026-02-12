@@ -1,11 +1,6 @@
-from .interpretability import (
-    event_importance,
-    feature_attribution,
-    shapley_values,
-)
+"""Analysis subpackage."""
+from __future__ import annotations
 
-__all__ = [
-    "event_importance",
-    "shapley_values",
-    "feature_attribution",
-]
+from . import interpretability
+
+__all__ = ['interpretability']

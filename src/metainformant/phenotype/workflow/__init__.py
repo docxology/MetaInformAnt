@@ -1,5 +1,6 @@
 """Phenotype workflow orchestration module."""
+from __future__ import annotations
 
-from .pipeline import PhenotypePipeline, PipelineConfig, PipelineResult
+from . import pipeline
 
-__all__ = ["PhenotypePipeline", "PipelineConfig", "PipelineResult"]
+__all__ = ['pipeline']

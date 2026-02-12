@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from metainformant.math import expected_pairwise_diversity, tajima_constants, tajimas_D
+from metainformant.math.population_genetics.coalescent import expected_pairwise_diversity, tajima_constants, tajimas_D
 
 
 def test_expected_pairwise_diversity_and_tajima_constants():

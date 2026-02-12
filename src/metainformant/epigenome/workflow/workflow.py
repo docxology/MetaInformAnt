@@ -11,7 +11,13 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 
-from metainformant.core import config, errors, io, logging, paths, validation, workflow
+from metainformant.core.data import validation
+from metainformant.core.utils import errors
+from metainformant.core.execution import workflow
+from metainformant.core.io import paths
+from metainformant.core.utils import config
+from metainformant.core.utils import logging
+from metainformant.core import io
 
 logger = logging.get_logger(__name__)
 

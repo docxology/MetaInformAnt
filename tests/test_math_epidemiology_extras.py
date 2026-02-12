@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from metainformant.math import herd_immunity_threshold, seir_step
+from metainformant.math.epidemiology.models import herd_immunity_threshold, seir_step
 
 
 def test_seir_step_and_herd_immunity_threshold():

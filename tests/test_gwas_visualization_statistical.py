@@ -7,12 +7,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization.visualization_statistical import (
+from metainformant.gwas.visualization.statistical.statistical import (
     lambda_gc_plot,
     power_plot,
 )
-from metainformant.gwas.visualization.visualization_statistical import qq_plot as qq_plot_statistical
-from metainformant.gwas.visualization.visualization_statistical import (
+from metainformant.gwas.visualization.statistical.statistical import qq_plot as qq_plot_statistical
+from metainformant.gwas.visualization.statistical.statistical import (
     qq_plot_stratified,
     volcano_plot,
 )

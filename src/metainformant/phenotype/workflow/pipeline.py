@@ -12,7 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Union
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 from metainformant.core.utils.errors import ValidationError
 
 logger = logging.get_logger(__name__)

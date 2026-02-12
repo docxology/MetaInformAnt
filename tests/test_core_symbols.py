@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.core import symbols
+from metainformant.core.utils import symbols
 
 
 class TestIndexFunctions:

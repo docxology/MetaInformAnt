@@ -883,19 +883,18 @@ class TestTopLevelImports:
         assert hasattr(phenotype, "integration")
 
     def test_key_classes_importable(self):
-        from metainformant.phenotype import (
-            AcousticSignal,
-            BehaviorSequence,
-            ChemicalProfile,
-            Compound,
-            Ethogram,
-            Measurement,
-            MorphometricProfile,
+        from metainformant.phenotype.behavior.ethogram import Ethogram
+        from metainformant.phenotype.behavior.sequence import BehaviorSequence
+        from metainformant.phenotype.chemical.compound import Compound
+        from metainformant.phenotype.chemical.profile import ChemicalProfile
+        from metainformant.phenotype.electronic.tracking import TrackingPoint, Trajectory
+        from metainformant.phenotype.morphological.measurement import Measurement
+        from metainformant.phenotype.morphological.profile import MorphometricProfile
+        from metainformant.phenotype.sonic.signal import AcousticSignal
+        from metainformant.phenotype.workflow.pipeline import (
             PhenotypePipeline,
             PipelineConfig,
             PipelineResult,
-            TrackingPoint,
-            Trajectory,
         )
 
         assert all(

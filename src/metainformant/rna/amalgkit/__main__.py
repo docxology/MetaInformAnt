@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 from typing import List, Optional
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 

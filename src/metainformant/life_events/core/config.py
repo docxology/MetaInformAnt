@@ -9,7 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from metainformant.core import config as core_config
+from metainformant.core.utils import config as core_config
+from metainformant.core.utils import logging
 
 
 @dataclass
@@ -177,8 +178,6 @@ def save_config(config: LifeEventsWorkflowConfig, output_file: str | Path) -> No
             json.dump(config_dict, f, indent=2)
     else:
         raise ValueError(f"Unsupported config format: {output_file}")
-
-    from metainformant.core import logging
 
     logger = logging.get_logger(__name__)
     logger.info(f"Saved configuration to {output_file}")

@@ -10,7 +10,8 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from metainformant.core import io, logging
+from metainformant.core.utils import logging
+from metainformant.core import io
 from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
 
 logger = logging.get_logger(__name__)

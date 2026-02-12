@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.rna.progress_tracker import ProgressTracker, get_tracker
+from metainformant.rna.engine.progress_tracker import ProgressTracker, get_tracker
 
 
 class TestProgressTracker:
@@ -147,7 +147,7 @@ class TestGetTracker:
     def test_get_tracker_custom_paths(self, tmp_path: Path):
         """Test get_tracker with custom paths."""
         # Reset global tracker instance to test custom paths
-        import metainformant.rna.progress_tracker as pt_module
+        import metainformant.rna.engine.progress_tracker as pt_module
 
         pt_module._tracker_instance = None
 

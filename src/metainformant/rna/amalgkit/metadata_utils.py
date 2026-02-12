@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 

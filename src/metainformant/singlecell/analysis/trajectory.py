@@ -13,7 +13,9 @@ import numpy as np
 import pandas as pd
 from scipy import sparse
 
-from metainformant.core import errors, logging, validation
+from metainformant.core.data import validation
+from metainformant.core.utils import errors
+from metainformant.core.utils import logging
 
 # Optional scientific dependencies
 try:

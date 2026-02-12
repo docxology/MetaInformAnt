@@ -11,7 +11,8 @@ import re
 from pathlib import Path
 from typing import Dict, Iterator, List, Tuple, Union
 
-from metainformant.core import io, logging
+from metainformant.core.utils import errors, logging
+from metainformant.core import io
 
 logger = logging.get_logger(__name__)
 
@@ -558,8 +559,6 @@ def dna_complementarity_score(seq1: str, seq2: str) -> float:
         Complementarity score (0.0 to 1.0)
     """
     if len(seq1) != len(seq2):
-        from metainformant.core import errors
-
         raise errors.ValidationError("Sequences must be the same length")
 
     complement_map = str.maketrans("ATCG", "TAGC")

@@ -25,8 +25,8 @@ from metainformant.gwas import (
 )
 from metainformant.gwas.association import association_test_linear, association_test_logistic
 from metainformant.gwas.correction import bonferroni_correction, fdr_correction, genomic_control
-from metainformant.gwas.visualization_population import kinship_heatmap, pca_plot
-from metainformant.gwas.visualization_variants import maf_distribution
+from metainformant.gwas.visualization.population.population import kinship_heatmap, pca_plot
+from metainformant.gwas.visualization.genomic.variants import maf_distribution
 
 print("=" * 80)
 print("P. BARBATUS FULL-SCALE GWAS - ALL VARIANTS, ALL TRAITS")

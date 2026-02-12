@@ -10,7 +10,7 @@ import random
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 from metainformant.life_events.core.events import Event, EventSequence
 
 logger = logging.get_logger(__name__)

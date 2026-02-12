@@ -2,7 +2,8 @@ from pathlib import Path
 
 import pandas as pd
 
-from metainformant.epigenome import compute_beta_values, load_cpg_table, read_bedgraph, summarize_beta_by_chromosome
+from metainformant.epigenome.analysis.tracks import read_bedgraph
+from metainformant.epigenome.assays.methylation import compute_beta_values, load_cpg_table, summarize_beta_by_chromosome
 
 
 def test_read_bedgraph_parses_minimal_file():

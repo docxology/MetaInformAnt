@@ -8,12 +8,13 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.life_events import Event, EventSequence, get_event_statistics, validate_sequence
+from metainformant.life_events.core.events import Event, EventSequence
+from metainformant.life_events.core.utils import get_event_statistics, validate_sequence
 
 
 def test_load_sequences_from_json_database_format(tmp_path):
     """Test loading sequences from database format JSON."""
-    from metainformant.life_events import load_sequences_from_json
+    from metainformant.life_events.core.utils import load_sequences_from_json
 
     data = {
         "sequences": [
@@ -44,7 +45,7 @@ def test_load_sequences_from_json_database_format(tmp_path):
 
 def test_load_sequences_from_json_list_format(tmp_path):
     """Test loading sequences from list format JSON."""
-    from metainformant.life_events import load_sequences_from_json
+    from metainformant.life_events.core.utils import load_sequences_from_json
 
     data = [
         {
@@ -66,7 +67,7 @@ def test_load_sequences_from_json_list_format(tmp_path):
 
 def test_load_sequences_from_json_not_found():
     """Test loading from non-existent file."""
-    from metainformant.life_events import load_sequences_from_json
+    from metainformant.life_events.core.utils import load_sequences_from_json
 
     with pytest.raises(FileNotFoundError):
         load_sequences_from_json("nonexistent.json")
@@ -101,7 +102,7 @@ def test_validate_sequence_no_events():
 
 def test_convert_sequences_to_tokens():
     """Test converting sequences to token format."""
-    from metainformant.life_events import convert_sequences_to_tokens
+    from metainformant.life_events.core.utils import convert_sequences_to_tokens
 
     sequences = [
         EventSequence(

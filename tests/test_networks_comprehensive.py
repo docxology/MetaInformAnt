@@ -50,7 +50,7 @@ from metainformant.networks.analysis.pathway import (
     pathway_enrichment,
     pathway_enrichment_analysis,
 )
-from metainformant.networks.config import (
+from metainformant.networks.config.config import (
     CommunityDetectionConfig,
     GRNConfig,
     NetworkConfig,
@@ -68,7 +68,7 @@ from metainformant.networks.interaction.regulatory import (
     infer_grn,
     regulatory_motifs,
 )
-from metainformant.networks.workflow import NetworkWorkflow
+from metainformant.networks.workflow.workflow import NetworkWorkflow
 
 # ---------------------------------------------------------------------------
 # Helpers

@@ -9,46 +9,9 @@ Example:
     >>> config = OllamaConfig(model="smollm2:135m-instruct-q4_K_S")
     >>> client = OllamaClient(config)
     >>> response = client.generate("Explain DNA in one sentence.")
-    >>> print(response.text)
-"""
-
+    >>> print(response.text)"""
 from __future__ import annotations
 
-from .chains import (
-    Chain,
-    ChainResult,
-    ConversationChain,
-    MapReduceChain,
-    PromptChain,
-    RouterChain,
-    SequentialChain,
-    TransformChain,
-)
-from .client import OllamaClient
-from .config import OllamaConfig
-from .prompts import (
-    ChatMessage,
-    PromptTemplate,
-    SystemPrompt,
-    build_bioinformatics_prompt,
-)
+from . import chains, client, config, prompts
 
-__all__ = [
-    # Core
-    "OllamaClient",
-    "OllamaConfig",
-    # Prompts
-    "PromptTemplate",
-    "SystemPrompt",
-    "ChatMessage",
-    "build_bioinformatics_prompt",
-    # Chains
-    "Chain",
-    "ChainResult",
-    "PromptChain",
-    "SequentialChain",
-    "MapReduceChain",
-    "RouterChain",
-    "TransformChain",
-    "ConversationChain",
-]
+__all__ = ['chains', 'client', 'config', 'prompts']

@@ -1,0 +1,93 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Monomorium pharaonis
+# NCBI Taxonomy ID: 307658
+# Assembly: GCF_013373865.1 (ASM1337386v2)
+# Assembly Level: Chromosome
+# Sequencing: PacBio + Hi-C
+# Annotation: NCBI Monomorium pharaonis Annotation Release 102
+# Annotation Release: 102
+# Notes: Pharaoh ant, chromosome-level assembly
+# RNA-seq Samples Available: 370
+# Generated: 2026-02-09
+
+# Paths are resolved relative to repository root
+work_dir: blue/amalgkit/monomorium_pharaonis/work
+log_dir: blue/amalgkit/monomorium_pharaonis/logs
+threads: 12
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Monomorium_pharaonis
+
+taxon_id: 307658
+
+# Reference genome configuration — shared genome directory
+genome:
+  accession: GCF_013373865.1
+  assembly_name: ASM1337386v2
+  annotation_release: 102
+  dest_dir: blue/amalgkit/shared/genome/Monomorium_pharaonis
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/013/373/865/GCF_013373865.1_ASM1337386v2/
+  files:
+    genomic_fasta: GCF_013373865.1_ASM1337386v2_genomic.fna.gz
+    transcriptome_fasta: GCF_013373865.1_ASM1337386v2_rna_from_genomic.fna.gz
+    cds_fasta: GCF_013373865.1_ASM1337386v2_cds_from_genomic.fna.gz
+    protein_fasta: GCF_013373865.1_ASM1337386v2_protein.faa.gz
+    annotation_gff: GCF_013373865.1_ASM1337386v2_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: blue/amalgkit/monomorium_pharaonis/work
+    search_string: '"Monomorium pharaonis"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: blue/amalgkit/monomorium_pharaonis/fastq/getfastq
+  select:
+    max_sample: 999999
+    mark_missing_rank: none
+    priority: "completeness"
+    redo: no
+  getfastq:
+    out_dir: blue/amalgkit/monomorium_pharaonis/fastq
+    threads: 8
+    jobs: 4
+    redo: no
+    aws: yes
+    gcp: no
+    ncbi: no
+    pfd: no
+    fastp: no
+    max_bp: 50000000
+  quant:
+    out_dir: blue/amalgkit/monomorium_pharaonis/work
+    threads: 6
+    redo: no
+    build_index: no
+    keep_fastq: no
+    index_dir: blue/amalgkit/shared/genome/Monomorium_pharaonis/index
+    fasta_dir: blue/amalgkit/shared/genome/Monomorium_pharaonis
+  merge:
+    out: blue/amalgkit/monomorium_pharaonis/merged/merged_abundance.tsv
+    out_dir: blue/amalgkit/monomorium_pharaonis/merged
+  cstmm:
+    out_dir: blue/amalgkit/monomorium_pharaonis/work
+    orthogroup_table: ""
+  curate:
+    out_dir: blue/amalgkit/monomorium_pharaonis/work
+  csca:
+    out_dir: blue/amalgkit/monomorium_pharaonis/work
+    orthogroup_table: ""
+  sanity: {}

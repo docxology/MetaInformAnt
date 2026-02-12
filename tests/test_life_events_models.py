@@ -7,14 +7,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.life_events import (
-    EnsemblePredictor,
-    EventSequencePredictor,
-    GRUSequenceModel,
-    LSTMSequenceModel,
-    MultiTaskPredictor,
-    SurvivalPredictor,
-)
+from metainformant.life_events.models.predictor import EnsemblePredictor, EventSequencePredictor
+from metainformant.life_events.models.sequence_models import GRUSequenceModel, LSTMSequenceModel
+from metainformant.life_events.models.statistical_models import MultiTaskPredictor, SurvivalPredictor
 
 
 def test_event_sequence_predictor_embedding_classification():

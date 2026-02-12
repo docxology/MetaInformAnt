@@ -1,21 +1,5 @@
-# .DISCOVERY_CACHE
+# Discovery Cache
 
-## Overview
-Functionality for .discovery_cache.
+Cache directory for module discovery results. Stores auto-generated metadata about available METAINFORMANT modules to speed up repeated discovery operations.
 
-## 📦 Contents
-
-
-## 📊 Structure
-
-```mermaid
-graph TD
-    .discovery_cache[.discovery_cache]
-    style .discovery_cache fill:#f9f,stroke:#333,stroke-width:2px
-```
-
-## Usage
-Import module:
-```python
-from metainformant.metainformant.core.output..discovery_cache import ...
-```
+This directory is auto-managed by the core discovery engine and does not contain user-editable files.

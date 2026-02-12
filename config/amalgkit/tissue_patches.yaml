@@ -63,6 +63,16 @@ bioprojects:
   PRJNA122153: pupa            # Zemach et al. 2010 Science - DNA from entire pupae
   PRJNA478161: brain           # Algorithm benchmarking using SRP013261 = honeybee brain transcriptome
   PRJNA594208: brain           # BioSample explicitly named 'mC_brain_honey_bee'
+  # --- Pogonomyrmex barbatus patches ---
+  PRJNA777360: whole_body      # "Population genomics of Pogonomyrmex" - "worker"/"gyne" are castes, whole-organism DNA
+  PRJNA1177438: whole_body     # "UCE sequencing for Pogonomyrmex phylogenomics" - whole ant, DNA-based
+  PRJNA1072056: whole_body     # "Phylogenomics of ant genus Manica" - whole organism, DNA-based
+  PRJNA236391: brain           # "Caste-specific transcriptomic signatures" - brain RNA-seq (Simola et al.)
+  PRJNA1279095: ovary          # "Transcriptomic responses of queen/worker ovaries" - ovary confirmed
+  # --- New ant species patches (2026-02-09) ---
+  PRJNA255520: brain           # Dinoponera quadriceps - "adult brain" confirmed in source_name
+  PRJNA432981: whole_body      # Odontomachus brunneus - mixed developmental stages (whole adults, eggs, larvae, pupae, queens)
+  PRJDB6378: brain             # Formica exsecta - brain tissue dissections
 
 # Per-biosample overrides
 # Format: biosample_accession: canonical_tissue

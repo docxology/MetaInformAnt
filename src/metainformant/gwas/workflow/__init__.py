@@ -1,10 +1,6 @@
 """GWAS workflow orchestration."""
+from __future__ import annotations
 
-from metainformant.gwas.workflow.workflow import (
-    GWASWorkflowConfig,
-    execute_gwas_workflow,
-    load_gwas_config,
-    run_gwas,
-)
+from . import workflow, workflow_config, workflow_execution
 
-__all__ = ["GWASWorkflowConfig", "execute_gwas_workflow", "load_gwas_config", "run_gwas"]
+__all__ = ['workflow', 'workflow_config', 'workflow_execution']

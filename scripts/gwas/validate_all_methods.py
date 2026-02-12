@@ -517,7 +517,7 @@ def main() -> int:
     # 14. Fine-Mapping
     # =========================================================================
     print("\n--- 14. FINE-MAPPING ---")
-    from metainformant.gwas.visualization.visualization_finemapping import compute_credible_set
+    from metainformant.gwas.visualization.interactive.finemapping import compute_credible_set
 
     try:
         if assoc_for_downstream:
@@ -655,7 +655,7 @@ def main() -> int:
     try:
         import numpy as np
 
-        from metainformant.gwas.visualization.visualization_population import pca_plot
+        from metainformant.gwas.visualization.population.population import pca_plot
 
         if pca_result and pca_result.get("status") == "success":
             pca_data = {
@@ -685,7 +685,7 @@ def main() -> int:
 
     # Volcano
     try:
-        from metainformant.gwas.visualization.visualization_statistical import volcano_plot
+        from metainformant.gwas.visualization.statistical.statistical import volcano_plot
 
         result = volcano_plot(results=assoc_for_downstream, output_path=str(plots_dir / "volcano.png"))
         ok = (plots_dir / "volcano.png").exists()
@@ -695,7 +695,7 @@ def main() -> int:
 
     # Variant density
     try:
-        from metainformant.gwas.visualization.visualization_variants import variant_density_plot
+        from metainformant.gwas.visualization.genomic.variants import variant_density_plot
 
         var_dicts = [{"CHROM": r.get("chrom", ""), "POS": r.get("pos", 0)} for r in assoc_for_downstream]
         result = variant_density_plot(var_dicts, output_file=str(plots_dir / "density.png"))
@@ -706,7 +706,7 @@ def main() -> int:
 
     # MAF distribution
     try:
-        from metainformant.gwas.visualization.visualization_variants import maf_distribution
+        from metainformant.gwas.visualization.genomic.variants import maf_distribution
 
         mafs = [min(abs(r.get("beta", 0.0)), 0.5) for r in assoc_for_downstream]
         result = maf_distribution(mafs, output_file=str(plots_dir / "maf.png"))
@@ -717,7 +717,7 @@ def main() -> int:
 
     # Power plot
     try:
-        from metainformant.gwas.visualization.visualization_statistical import power_plot
+        from metainformant.gwas.visualization.statistical.statistical import power_plot
 
         result = power_plot(
             sample_sizes=[20, 40, 60, 80],
@@ -733,7 +733,7 @@ def main() -> int:
     try:
         import numpy as np
 
-        from metainformant.gwas.visualization.visualization_composite import (
+        from metainformant.gwas.visualization.interactive.composite import (
             gwas_summary_panel,
             population_structure_panel,
         )

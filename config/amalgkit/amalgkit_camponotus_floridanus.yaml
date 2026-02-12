@@ -1,0 +1,93 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Camponotus floridanus
+# NCBI Taxonomy ID: 104421
+# Assembly: GCF_003227725.1 (Cflo_v7.5)
+# Assembly Level: Scaffold
+# Sequencing: Illumina + PacBio
+# Annotation: NCBI Camponotus floridanus Annotation Release 102
+# Annotation Release: 102
+# Notes: Florida carpenter ant, epigenetics model
+# RNA-seq Samples Available: 367
+# Generated: 2026-02-09
+
+# Paths are resolved relative to repository root
+work_dir: blue/amalgkit/camponotus_floridanus/work
+log_dir: blue/amalgkit/camponotus_floridanus/logs
+threads: 12
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Camponotus_floridanus
+
+taxon_id: 104421
+
+# Reference genome configuration — shared genome directory
+genome:
+  accession: GCF_003227725.1
+  assembly_name: Cflo_v7.5
+  annotation_release: 102
+  dest_dir: blue/amalgkit/shared/genome/Camponotus_floridanus
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/227/725/GCF_003227725.1_Cflo_v7.5/
+  files:
+    genomic_fasta: GCF_003227725.1_Cflo_v7.5_genomic.fna.gz
+    transcriptome_fasta: GCF_003227725.1_Cflo_v7.5_rna_from_genomic.fna.gz
+    cds_fasta: GCF_003227725.1_Cflo_v7.5_cds_from_genomic.fna.gz
+    protein_fasta: GCF_003227725.1_Cflo_v7.5_protein.faa.gz
+    annotation_gff: GCF_003227725.1_Cflo_v7.5_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: blue/amalgkit/camponotus_floridanus/work
+    search_string: '"Camponotus floridanus"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: blue/amalgkit/camponotus_floridanus/fastq/getfastq
+  select:
+    max_sample: 999999
+    mark_missing_rank: none
+    priority: "completeness"
+    redo: no
+  getfastq:
+    out_dir: blue/amalgkit/camponotus_floridanus/fastq
+    threads: 8
+    jobs: 4
+    redo: no
+    aws: yes
+    gcp: no
+    ncbi: no
+    pfd: no
+    fastp: no
+    max_bp: 50000000
+  quant:
+    out_dir: blue/amalgkit/camponotus_floridanus/work
+    threads: 6
+    redo: no
+    build_index: no
+    keep_fastq: no
+    index_dir: blue/amalgkit/shared/genome/Camponotus_floridanus/index
+    fasta_dir: blue/amalgkit/shared/genome/Camponotus_floridanus
+  merge:
+    out: blue/amalgkit/camponotus_floridanus/merged/merged_abundance.tsv
+    out_dir: blue/amalgkit/camponotus_floridanus/merged
+  cstmm:
+    out_dir: blue/amalgkit/camponotus_floridanus/work
+    orthogroup_table: ""
+  curate:
+    out_dir: blue/amalgkit/camponotus_floridanus/work
+  csca:
+    out_dir: blue/amalgkit/camponotus_floridanus/work
+    orthogroup_table: ""
+  sanity: {}

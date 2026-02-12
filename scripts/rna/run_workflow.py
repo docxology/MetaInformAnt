@@ -6,16 +6,16 @@ to run complete workflows for single species.
 
 Usage:
     # Run full workflow for a species
-    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml
 
     # Run specific steps
-    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
+    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --steps getfastq quant merge
 
     # Check status
-    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --status
 
     # Cleanup unquantified samples
-    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --cleanup-unquantified
+    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --cleanup-unquantified
 """
 
 from __future__ import annotations
@@ -338,9 +338,9 @@ def main() -> int:
 
         cfg = load_workflow_config(config_path)
 
-        # Skip robust pre-download if max_bp limit is set (to avoid downloading too much)
-        getfastq_params = cfg.extra_config.get("steps", {}).get("getfastq", {})
-        has_size_limit = "max_bp" in getfastq_params
+        # DISABLED: robust pre-download uses curl with s3:// URLs which fails.
+        # amalgkit getfastq has its own working HTTP fallback download logic.
+        has_size_limit = True  # Force skip
 
         if not has_size_limit:
             metadata_path = cfg.work_dir / "metadata" / "metadata_selected.tsv"

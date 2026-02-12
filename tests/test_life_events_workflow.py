@@ -8,15 +8,9 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.life_events import (
-    Event,
-    EventSequence,
-    LifeEventsWorkflowConfig,
-    analyze_life_course,
-    compare_populations,
-    intervention_analysis,
-    load_life_events_config,
-)
+from metainformant.life_events.core.config import LifeEventsWorkflowConfig, load_life_events_config
+from metainformant.life_events.core.events import Event, EventSequence
+from metainformant.life_events.workflow.workflow import analyze_life_course, compare_populations, intervention_analysis
 
 
 def test_analyze_life_course_basic(tmp_path):
@@ -341,7 +335,7 @@ def test_analyze_life_course_saves_model(tmp_path):
     assert model_file.exists()
 
     # Verify model can be loaded
-    from metainformant.life_events import EventSequencePredictor
+    from metainformant.life_events.models.predictor import EventSequencePredictor
 
     loaded = EventSequencePredictor.load_model(model_file)
     assert loaded.is_fitted

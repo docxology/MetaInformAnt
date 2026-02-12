@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.dna import consensus
+from metainformant.dna.sequence import consensus
 
 
 def test_consensus_majority_ignores_gaps() -> None:

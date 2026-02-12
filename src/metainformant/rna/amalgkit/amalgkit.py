@@ -26,7 +26,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 from metainformant.core.io.download import (
     monitor_subprocess_directory_growth,
     monitor_subprocess_file_count,

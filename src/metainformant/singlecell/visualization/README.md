@@ -1,22 +1,30 @@
-# VISUALIZATION
+# Single-Cell Visualization
 
-## Overview
-Functionality for visualization.
+Plotting functions for single-cell RNA-seq data including embeddings, marker expression, trajectory, and QC visualizations.
 
-## 📦 Contents
-- `[__init__.py](__init__.py)`
-- `[visualization.py](visualization.py)`
+## Contents
 
-## 📊 Structure
+| File | Purpose |
+|------|---------|
+| `visualization.py` | UMAP, t-SNE, PCA plots, marker dotplots, trajectory, and QC figures |
 
-```mermaid
-graph TD
-    visualization[visualization]
-    style visualization fill:#f9f,stroke:#333,stroke-width:2px
-```
+## Key Functions
+
+| Function | Description |
+|----------|-------------|
+| `plot_umap()` | UMAP embedding colored by cluster, gene, or metadata |
+| `plot_tsne()` | t-SNE embedding visualization |
+| `plot_pca()` | PCA scatter plot for single-cell data |
+| `plot_trajectory()` | Trajectory with pseudotime coloring |
+| `plot_marker_expression()` | Dotplot, heatmap, or violin for marker genes |
+| `plot_qc_metrics()` | QC violin plots for gene counts, UMIs, mito fraction |
+| `plot_cluster_comparison()` | Side-by-side cluster composition comparison |
 
 ## Usage
-Import module:
+
 ```python
-from metainformant.metainformant.singlecell.visualization import ...
+from metainformant.singlecell.visualization.visualization import plot_umap, plot_marker_expression
+
+plot_umap(data, color="cluster", output_path="output/umap.png")
+plot_marker_expression(data, marker_genes=["CD4", "CD8A"], method="dotplot")
 ```

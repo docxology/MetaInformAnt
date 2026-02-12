@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from metainformant.ontology.obo import parse_obo
+from metainformant.ontology.core.obo import parse_obo
 
 
 def test_parse_obo_minimal_fields() -> None:

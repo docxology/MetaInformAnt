@@ -15,16 +15,8 @@ import time as time_mod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 from metainformant.rna.engine.sra_extraction import extract_sra_directly, manual_integration_fallback
-from metainformant.rna.engine.workflow_cleanup import (
-    check_disk_space,
-    check_disk_space_or_fail,
-    cleanup_after_quant,
-    cleanup_incorrectly_placed_sra_files,
-    cleanup_temp_files,
-    filter_metadata_for_unquantified,
-)
 
 if TYPE_CHECKING:
     from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, WorkflowStepResult

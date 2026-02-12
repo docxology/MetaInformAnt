@@ -33,7 +33,10 @@ class TestBuildArtifacts:
     def test_core_modules_importable(self):
         """Test that core modules can be imported."""
         try:
-            from metainformant.core import config, io, logging, paths
+            from metainformant.core.io import paths
+            from metainformant.core.utils import config
+            from metainformant.core.utils import logging
+            from metainformant.core import io
 
             assert True  # Import successful
         except ImportError as e:
@@ -47,7 +50,7 @@ class TestBuildArtifacts:
             "protein.structure",
             "gwas.analysis",
             "epigenome.analysis",
-            "ontology.go",
+            "ontology.core.go",
             "phenotype.analysis",
             "ecology.analysis",
             "math.population_genetics",

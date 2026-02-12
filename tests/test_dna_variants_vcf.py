@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from metainformant.dna import variants
+from metainformant.dna.variation import variants
 
 
 def test_parse_vcf_minimal(tmp_path: Path) -> None:

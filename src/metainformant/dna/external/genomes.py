@@ -15,7 +15,9 @@ from urllib.parse import urlparse
 
 import requests
 
-from metainformant.core import io, logging, paths
+from metainformant.core.io import paths
+from metainformant.core.utils import logging
+from metainformant.core import io
 
 logger = logging.get_logger(__name__)
 

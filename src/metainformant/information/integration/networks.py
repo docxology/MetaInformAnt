@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
@@ -778,7 +778,7 @@ def information_graph_distance(graph1: Any, graph2: Any, method: str = "entropy"
         probs2 = [dist2.get(d, 0) / total2 for d in all_degrees]
 
         # Calculate Jensen-Shannon divergence
-        from metainformant.information import syntactic
+        from metainformant.information.metrics.core import syntactic
 
         jsd = syntactic.jensen_shannon_divergence(probs1, probs2)
 

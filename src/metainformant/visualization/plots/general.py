@@ -30,7 +30,8 @@ import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
 
-from metainformant.core import logging, paths
+from metainformant.core.io import paths
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 

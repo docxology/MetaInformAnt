@@ -672,15 +672,15 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
     plots_dir.mkdir(parents=True, exist_ok=True)
 
     from metainformant.gwas.visualization.general import kinship_heatmap, manhattan_plot, qq_plot
-    from metainformant.gwas.visualization.visualization_population import (
+    from metainformant.gwas.visualization.population.population import (
         pca_plot,
         pca_scree_plot,
     )
-    from metainformant.gwas.visualization.visualization_statistical import (
+    from metainformant.gwas.visualization.statistical.statistical import (
         power_plot,
         volcano_plot,
     )
-    from metainformant.gwas.visualization.visualization_variants import (
+    from metainformant.gwas.visualization.genomic.variants import (
         maf_distribution,
         variant_density_plot,
     )

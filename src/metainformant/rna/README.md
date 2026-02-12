@@ -54,7 +54,7 @@ graph TD
 from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, execute_workflow
 
 # Load configuration
-config = AmalgkitWorkflowConfig.load("config/amalgkit/amalgkit_pbarbatus_all.yaml")
+config = AmalgkitWorkflowConfig.load("config/amalgkit/amalgkit_pbarbatus.yaml")
 
 # Execute workflow
 result = execute_workflow(config, steps=["getfastq", "quant", "merge"])

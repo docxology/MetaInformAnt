@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.dna import fastq
+from metainformant.dna.io import fastq
 
 
 def test_average_phred_by_position(tmp_path: Path) -> None:

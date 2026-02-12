@@ -1,23 +1,36 @@
-# DATA
+# Single-Cell Data
 
-## Overview
-Functionality for data.
+Data loading, preprocessing, QC filtering, normalization, and batch integration for single-cell RNA-seq datasets.
 
-## 📦 Contents
-- `[__init__.py](__init__.py)`
-- `[integration.py](integration.py)`
-- `[preprocessing.py](preprocessing.py)`
+## Contents
 
-## 📊 Structure
+| File | Purpose |
+|------|---------|
+| `integration.py` | Batch correction: BBKNN, Harmony, Scanorama, MNN, ComBat |
+| `preprocessing.py` | SingleCellData class, QC metrics, filtering, normalization, HVG selection |
 
-```mermaid
-graph TD
-    data[data]
-    style data fill:#f9f,stroke:#333,stroke-width:2px
-```
+## Key Classes and Functions
+
+| Symbol | Description |
+|--------|-------------|
+| `SingleCellData` | Core data container for count matrix, metadata, and embeddings |
+| `load_count_matrix()` | Load from h5ad, CSV, or MTX format |
+| `calculate_qc_metrics()` | Compute mitochondrial %, gene counts, total UMIs |
+| `filter_cells()` | Remove low-quality cells by QC thresholds |
+| `filter_genes()` | Remove lowly expressed genes |
+| `normalize_counts()` | Library size normalization |
+| `identify_highly_variable_genes()` | Select HVGs for downstream analysis |
+| `harmony_integration()` | Harmony batch correction on PCA space |
+| `bbknn_integration()` | Batch-balanced kNN graph construction |
+| `scanorama_integration()` | Scanorama batch integration across datasets |
 
 ## Usage
-Import module:
+
 ```python
-from metainformant.metainformant.singlecell.data import ...
+from metainformant.singlecell.data.preprocessing import load_count_matrix, filter_cells
+from metainformant.singlecell.data.integration import harmony_integration
+
+data = load_count_matrix("data/counts.h5ad")
+data = filter_cells(data, min_genes=200, max_mito_pct=20.0)
+data = harmony_integration(data, batch_key="sample")
 ```

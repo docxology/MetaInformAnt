@@ -8,21 +8,17 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.life_events import (
-    Event,
-    EventSequence,
-    EventSequencePredictor,
-    LifeEventsWorkflowConfig,
-    analyze_life_course,
-    learn_event_embeddings,
-    load_life_events_config,
-    sequence_embeddings,
-)
+from metainformant.life_events.core.config import LifeEventsWorkflowConfig, load_life_events_config
+from metainformant.life_events.core.events import Event, EventSequence
+from metainformant.life_events.core.utils import sequence_embeddings
+from metainformant.life_events.models.embeddings import learn_event_embeddings
+from metainformant.life_events.models.predictor import EventSequencePredictor
+from metainformant.life_events.workflow.workflow import analyze_life_course
 
 
 def test_integration_with_ml_module():
     """Test integration with ML module."""
-    from metainformant.ml import BiologicalClassifier
+    from metainformant.ml.models.classification import BiologicalClassifier
 
     sequences = [
         ["health:diagnosis", "occupation:job_change"],
@@ -49,7 +45,7 @@ def test_integration_with_ml_module():
 def test_integration_with_phenotype_module():
     """Test integration with phenotype module."""
     try:
-        from metainformant.phenotype import extract_phenotypes_from_events
+        from metainformant.phenotype.analysis.life_course import extract_phenotypes_from_events
     except ImportError:
         pytest.skip("Phenotype integration not available")
 
@@ -72,10 +68,8 @@ def test_integration_with_phenotype_module():
 def test_integration_with_visualization_module():
     """Test integration with visualization module."""
     try:
-        from metainformant.life_events import learn_event_embeddings, plot_event_embeddings
-        from metainformant.ml.features.features.features.features.features.features.features.features.dimensionality import (
-            biological_embedding,
-        )
+        from metainformant.life_events.models.embeddings import learn_event_embeddings
+        from metainformant.life_events.visualization.statistical import plot_event_embeddings
     except ImportError:
         pytest.skip("Visualization integration not available")
 
@@ -114,7 +108,7 @@ def test_integration_workflow_with_ml(tmp_path):
 
 def test_integration_embedding_to_classifier():
     """Test embedding to classifier pipeline."""
-    from metainformant.ml import BiologicalClassifier
+    from metainformant.ml.models.classification import BiologicalClassifier
 
     sequences = [
         ["health:diagnosis", "occupation:job_change"],

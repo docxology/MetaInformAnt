@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.core import discovery
+from metainformant.core.execution import discovery
 
 
 class TestDiscoverFunctions:

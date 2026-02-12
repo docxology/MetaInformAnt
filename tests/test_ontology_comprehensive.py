@@ -9,10 +9,10 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.ontology.go import load_go_obo, write_go_summary
-from metainformant.ontology.obo import parse_obo
-from metainformant.ontology.query import ancestors, descendants, subgraph
-from metainformant.ontology.types import Ontology, Term
+from metainformant.ontology.core.go import load_go_obo, write_go_summary
+from metainformant.ontology.core.obo import parse_obo
+from metainformant.ontology.query.query import ancestors, descendants, subgraph
+from metainformant.ontology.core.types import Ontology, Term
 
 
 class TestOntologyTypes:

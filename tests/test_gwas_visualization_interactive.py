@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 
 import pytest
 
-from metainformant.gwas.visualization.visualization_interactive import (
+from metainformant.gwas.visualization.interactive.interactive import (
     interactive_manhattan,
     interactive_pca,
     interactive_volcano,

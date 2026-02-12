@@ -8,7 +8,7 @@ from typing import Any, Dict
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization.visualization_geography import (
+from metainformant.gwas.visualization.population.geography import (
     allele_frequency_map,
     population_count_map,
     sample_map,

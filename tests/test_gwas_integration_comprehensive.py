@@ -17,6 +17,38 @@ from typing import Any, Dict, List
 import numpy as np
 import pytest
 
+from metainformant.gwas.analysis.association import association_test_linear
+from metainformant.gwas.analysis.correction import bonferroni_correction, fdr_correction
+from metainformant.gwas.analysis.heritability import (
+    estimate_heritability,
+    heritability_bar_chart,
+    partition_heritability_by_chromosome,
+)
+from metainformant.gwas.analysis.structure import compute_kinship_matrix, compute_pca
+from metainformant.gwas.data.metadata import (
+    get_geographic_coordinates,
+    get_population_labels,
+    load_sample_metadata,
+    merge_metadata_with_phenotypes,
+    validate_metadata,
+)
+from metainformant.gwas.visualization.config import THEMES, PlotStyle, apply_style, get_style
+from metainformant.gwas.visualization.genomic.ld import compute_ld_decay, ld_decay_plot, ld_heatmap_region
+from metainformant.gwas.visualization.interactive.composite import (
+    gwas_summary_panel,
+    population_structure_panel,
+)
+from metainformant.gwas.visualization.interactive.finemapping import compute_credible_set, credible_set_plot
+from metainformant.gwas.visualization.interactive.interactive import interactive_manhattan
+from metainformant.gwas.visualization.interactive.phenotype import (
+    genotype_phenotype_boxplot,
+    phenotype_correlation_matrix,
+    phenotype_distribution,
+    phenotype_pca_correlation,
+    top_hits_genotype_phenotype,
+)
+from metainformant.gwas.visualization.population.geography import population_count_map, sample_map
+
 # ---------------------------------------------------------------------------
 # Helpers to generate synthetic data independent of the VCF fixture system
 # ---------------------------------------------------------------------------
@@ -247,14 +279,7 @@ class TestModuleImports:
     """Verify all GWAS sub-modules and key exports are importable."""
 
     def test_metadata_module(self) -> None:
-        from metainformant.gwas.data.metadata import (
-            get_geographic_coordinates,
-            get_population_labels,
-            load_sample_metadata,
-            merge_metadata_with_phenotypes,
-            validate_metadata,
-        )
-
+        """Test metadata module imports."""
         assert callable(load_sample_metadata)
         assert callable(validate_metadata)
         assert callable(get_population_labels)
@@ -262,25 +287,13 @@ class TestModuleImports:
         assert callable(merge_metadata_with_phenotypes)
 
     def test_heritability_module(self) -> None:
-        from metainformant.gwas.analysis.heritability import (
-            estimate_heritability,
-            heritability_bar_chart,
-            partition_heritability_by_chromosome,
-        )
-
+        """Test heritability module imports."""
         assert callable(estimate_heritability)
         assert callable(partition_heritability_by_chromosome)
         assert callable(heritability_bar_chart)
 
     def test_visualization_phenotype_module(self) -> None:
-        from metainformant.gwas.visualization.visualization_phenotype import (
-            genotype_phenotype_boxplot,
-            phenotype_correlation_matrix,
-            phenotype_distribution,
-            phenotype_pca_correlation,
-            top_hits_genotype_phenotype,
-        )
-
+        """Test visualization phenotype module imports."""
         assert callable(phenotype_distribution)
         assert callable(phenotype_correlation_matrix)
         assert callable(genotype_phenotype_boxplot)
@@ -288,7 +301,7 @@ class TestModuleImports:
         assert callable(phenotype_pca_correlation)
 
     def test_visualization_ld_module(self) -> None:
-        from metainformant.gwas.visualization.visualization_ld import (
+        from metainformant.gwas.visualization.genomic.ld import (
             compute_ld_decay,
             ld_decay_plot,
             ld_heatmap_region,
@@ -299,7 +312,7 @@ class TestModuleImports:
         assert callable(ld_heatmap_region)
 
     def test_visualization_composite_module(self) -> None:
-        from metainformant.gwas.visualization.visualization_composite import (
+        from metainformant.gwas.visualization.interactive.composite import (
             gwas_summary_panel,
             population_structure_panel,
             top_hit_detail_panel,
@@ -310,7 +323,7 @@ class TestModuleImports:
         assert callable(top_hit_detail_panel)
 
     def test_visualization_geography_module(self) -> None:
-        from metainformant.gwas.visualization.visualization_geography import (
+        from metainformant.gwas.visualization.population.geography import (
             allele_frequency_map,
             population_count_map,
             sample_map,
@@ -321,7 +334,7 @@ class TestModuleImports:
         assert callable(population_count_map)
 
     def test_visualization_interactive_module(self) -> None:
-        from metainformant.gwas.visualization.visualization_interactive import (
+        from metainformant.gwas.visualization.interactive.interactive import (
             interactive_manhattan,
             interactive_pca,
             interactive_volcano,
@@ -332,7 +345,7 @@ class TestModuleImports:
         assert callable(interactive_volcano)
 
     def test_visualization_finemapping_module(self) -> None:
-        from metainformant.gwas.visualization.visualization_finemapping import (
+        from metainformant.gwas.visualization.interactive.finemapping import (
             compute_credible_set,
             conditional_analysis_plot,
             credible_set_plot,
@@ -633,7 +646,7 @@ class TestFullPipelineSynthetic:
     # -- Fine-mapping (credible sets) --------------------------------------
 
     def test_credible_set_computation(self, assoc_results: List[Dict[str, Any]]) -> None:
-        from metainformant.gwas.visualization.visualization_finemapping import compute_credible_set
+        from metainformant.gwas.visualization.interactive.finemapping import compute_credible_set
 
         cs = compute_credible_set(assoc_results, credible_level=0.95)
         assert cs["status"] == "success"
@@ -654,7 +667,7 @@ class TestFullPipelineSynthetic:
         sample_ids: List[str],
         pop_labels: Dict[str, str],
     ) -> None:
-        from metainformant.gwas.visualization.visualization_phenotype import phenotype_distribution
+        from metainformant.gwas.visualization.interactive.phenotype import phenotype_distribution
 
         out = tmp_path / "pheno_dist.png"
         result = phenotype_distribution(
@@ -677,7 +690,7 @@ class TestFullPipelineSynthetic:
         phenotypes: List[float],
         phenotypes_second_trait: List[float],
     ) -> None:
-        from metainformant.gwas.visualization.visualization_phenotype import phenotype_correlation_matrix
+        from metainformant.gwas.visualization.interactive.phenotype import phenotype_correlation_matrix
 
         out = tmp_path / "corr_matrix.png"
         traits = {
@@ -699,7 +712,7 @@ class TestFullPipelineSynthetic:
         phenotypes: List[float],
         assoc_results: List[Dict[str, Any]],
     ) -> None:
-        from metainformant.gwas.visualization.visualization_phenotype import genotype_phenotype_boxplot
+        from metainformant.gwas.visualization.interactive.phenotype import genotype_phenotype_boxplot
 
         # Find the top hit by p-value
         sorted_results = sorted(
@@ -728,7 +741,7 @@ class TestFullPipelineSynthetic:
         positions: List[int],
         chromosomes: List[int],
     ) -> None:
-        from metainformant.gwas.visualization.visualization_ld import compute_ld_decay, ld_decay_plot
+        from metainformant.gwas.visualization.genomic.ld import compute_ld_decay, ld_decay_plot
 
         decay = compute_ld_decay(
             genotypes_by_variant=genotypes_by_variant,
@@ -754,7 +767,7 @@ class TestFullPipelineSynthetic:
         genotypes_by_variant: List[List[int]],
         positions: List[int],
     ) -> None:
-        from metainformant.gwas.visualization.visualization_ld import ld_heatmap_region
+        from metainformant.gwas.visualization.genomic.ld import ld_heatmap_region
 
         # Use first 15 variants for a manageable heatmap
         out = tmp_path / "ld_heatmap.png"
@@ -778,7 +791,7 @@ class TestFullPipelineSynthetic:
         pop_labels: Dict[str, str],
     ) -> None:
         from metainformant.gwas.analysis.structure import compute_pca
-        from metainformant.gwas.visualization.visualization_population import pca_multi_panel
+        from metainformant.gwas.visualization.population.population_pca import pca_multi_panel
 
         pca_result = compute_pca(genotype_matrix, n_components=5)
         assert pca_result["status"] == "success"
@@ -809,7 +822,7 @@ class TestFullPipelineSynthetic:
         genotype_matrix: List[List[int]],
     ) -> None:
         from metainformant.gwas.analysis.structure import compute_kinship_matrix, compute_pca
-        from metainformant.gwas.visualization.visualization_composite import gwas_summary_panel
+        from metainformant.gwas.visualization.interactive.composite import gwas_summary_panel
 
         pca_result = compute_pca(genotype_matrix, n_components=3)
         kinship_result = compute_kinship_matrix(genotype_matrix)
@@ -839,7 +852,7 @@ class TestFullPipelineSynthetic:
         pop_labels: Dict[str, str],
     ) -> None:
         from metainformant.gwas.analysis.structure import compute_kinship_matrix, compute_pca
-        from metainformant.gwas.visualization.visualization_composite import population_structure_panel
+        from metainformant.gwas.visualization.interactive.composite import population_structure_panel
 
         pca_result = compute_pca(genotype_matrix, n_components=5)
         kinship_result = compute_kinship_matrix(genotype_matrix)
@@ -868,7 +881,7 @@ class TestFullPipelineSynthetic:
         tmp_path: Path,
         assoc_results: List[Dict[str, Any]],
     ) -> None:
-        from metainformant.gwas.visualization.visualization_interactive import interactive_manhattan
+        from metainformant.gwas.visualization.interactive.interactive import interactive_manhattan
 
         out = tmp_path / "manhattan.html"
         result = interactive_manhattan(
@@ -889,7 +902,7 @@ class TestFullPipelineSynthetic:
         tmp_path: Path,
         assoc_results: List[Dict[str, Any]],
     ) -> None:
-        from metainformant.gwas.visualization.visualization_interactive import interactive_volcano
+        from metainformant.gwas.visualization.interactive.interactive import interactive_volcano
 
         out = tmp_path / "volcano.html"
         result = interactive_volcano(
@@ -911,7 +924,7 @@ class TestFullPipelineSynthetic:
         pop_labels: Dict[str, str],
     ) -> None:
         from metainformant.gwas.analysis.structure import compute_pca
-        from metainformant.gwas.visualization.visualization_interactive import interactive_pca
+        from metainformant.gwas.visualization.interactive.interactive import interactive_pca
 
         pca_result = compute_pca(genotype_matrix, n_components=5)
         meta = {sid: {"population": pop_labels[sid]} for sid in sample_ids}
@@ -938,7 +951,7 @@ class TestFullPipelineSynthetic:
         tmp_path: Path,
         metadata_dict: Dict[str, Dict[str, Any]],
     ) -> None:
-        from metainformant.gwas.visualization.visualization_geography import sample_map
+        from metainformant.gwas.visualization.population.geography import sample_map
 
         out = tmp_path / "sample_map.png"
         result = sample_map(
@@ -959,7 +972,7 @@ class TestFullPipelineSynthetic:
         tmp_path: Path,
         metadata_dict: Dict[str, Dict[str, Any]],
     ) -> None:
-        from metainformant.gwas.visualization.visualization_geography import population_count_map
+        from metainformant.gwas.visualization.population.geography import population_count_map
 
         out = tmp_path / "pop_count_map.png"
         result = population_count_map(
@@ -978,7 +991,7 @@ class TestFullPipelineSynthetic:
         tmp_path: Path,
         assoc_results: List[Dict[str, Any]],
     ) -> None:
-        from metainformant.gwas.visualization.visualization_finemapping import credible_set_plot
+        from metainformant.gwas.visualization.interactive.finemapping import credible_set_plot
 
         out = tmp_path / "credible_set.png"
         result = credible_set_plot(
@@ -998,7 +1011,7 @@ class TestFullPipelineSynthetic:
         tmp_path: Path,
         assoc_results: List[Dict[str, Any]],
     ) -> None:
-        from metainformant.gwas.visualization.visualization_finemapping import compute_credible_set, pip_vs_ld_plot
+        from metainformant.gwas.visualization.interactive.finemapping import compute_credible_set, pip_vs_ld_plot
 
         cs = compute_credible_set(assoc_results)
         pips = cs["pips"]
@@ -1063,7 +1076,7 @@ class TestFullPipelineSynthetic:
         phenotypes: List[float],
     ) -> None:
         from metainformant.gwas.analysis.structure import compute_pca
-        from metainformant.gwas.visualization.visualization_phenotype import phenotype_pca_correlation
+        from metainformant.gwas.visualization.interactive.phenotype import phenotype_pca_correlation
 
         pca_result = compute_pca(genotype_matrix, n_components=3)
         assert pca_result["status"] == "success"
@@ -1166,14 +1179,14 @@ class TestFullPipelineSynthetic:
         assert 0.0 <= h2["h2"] <= 1.0
 
         # 6. Credible sets (fine-mapping)
-        from metainformant.gwas.visualization.visualization_finemapping import compute_credible_set
+        from metainformant.gwas.visualization.interactive.finemapping import compute_credible_set
 
         cs = compute_credible_set(assoc_results)
         assert cs["status"] == "success"
         assert cs["credible_set_size"] > 0
 
         # 7. Phenotype distribution
-        from metainformant.gwas.visualization.visualization_phenotype import phenotype_distribution
+        from metainformant.gwas.visualization.interactive.phenotype import phenotype_distribution
 
         pheno_dist_path = out_dir / "pheno_dist.png"
         pd_result = phenotype_distribution(phenotypes, output_file=pheno_dist_path, trait_name="Varroa")
@@ -1181,7 +1194,7 @@ class TestFullPipelineSynthetic:
         assert pheno_dist_path.exists()
 
         # 8. Correlation matrix
-        from metainformant.gwas.visualization.visualization_phenotype import phenotype_correlation_matrix
+        from metainformant.gwas.visualization.interactive.phenotype import phenotype_correlation_matrix
 
         corr_path = out_dir / "corr.png"
         corr_result = phenotype_correlation_matrix(
@@ -1192,7 +1205,7 @@ class TestFullPipelineSynthetic:
         assert corr_path.exists()
 
         # 9. Genotype-phenotype boxplot for top hit
-        from metainformant.gwas.visualization.visualization_phenotype import genotype_phenotype_boxplot
+        from metainformant.gwas.visualization.interactive.phenotype import genotype_phenotype_boxplot
 
         sorted_assoc = sorted(enumerate(assoc_results), key=lambda x: x[1].get("p_value", 1.0))
         top_idx = sorted_assoc[0][0]
@@ -1207,7 +1220,7 @@ class TestFullPipelineSynthetic:
         assert box_path.exists()
 
         # 10. LD decay
-        from metainformant.gwas.visualization.visualization_ld import compute_ld_decay, ld_decay_plot
+        from metainformant.gwas.visualization.genomic.ld import compute_ld_decay, ld_decay_plot
 
         decay = compute_ld_decay(genotypes_by_variant, positions, max_distance=200_000, n_bins=20)
         ld_path = out_dir / "ld_decay.png"
@@ -1216,7 +1229,7 @@ class TestFullPipelineSynthetic:
         assert ld_path.exists()
 
         # 11. PCA multi-panel
-        from metainformant.gwas.visualization.visualization_population import pca_multi_panel
+        from metainformant.gwas.visualization.population.population_pca import pca_multi_panel
 
         pca_panel_path = out_dir / "pca_multi.png"
         meta_for_panel = {sid: {"population": pop_labels[sid]} for sid in sample_ids}
@@ -1233,7 +1246,7 @@ class TestFullPipelineSynthetic:
         assert pca_panel_path.exists()
 
         # 12. GWAS summary panel (composite)
-        from metainformant.gwas.visualization.visualization_composite import gwas_summary_panel
+        from metainformant.gwas.visualization.interactive.composite import gwas_summary_panel
 
         summary_path = out_dir / "summary.png"
         summary_result = gwas_summary_panel(
@@ -1249,7 +1262,7 @@ class TestFullPipelineSynthetic:
         assert summary_path.exists()
 
         # 13. Interactive Manhattan (HTML)
-        from metainformant.gwas.visualization.visualization_interactive import interactive_manhattan
+        from metainformant.gwas.visualization.interactive.interactive import interactive_manhattan
 
         manhattan_path = out_dir / "manhattan.html"
         manhattan_result = interactive_manhattan(assoc_results, output_file=manhattan_path)
@@ -1257,7 +1270,7 @@ class TestFullPipelineSynthetic:
         assert manhattan_path.exists()
 
         # 14. Sample geography map
-        from metainformant.gwas.visualization.visualization_geography import sample_map
+        from metainformant.gwas.visualization.population.geography import sample_map
 
         map_path = out_dir / "sample_map.png"
         map_result = sample_map(metadata=metadata_dict, output_file=map_path)

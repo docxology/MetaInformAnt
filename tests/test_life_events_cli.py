@@ -13,13 +13,10 @@ import numpy as np
 import pytest
 
 from metainformant.core.io.io import dump_json
-from metainformant.life_events import (
-    Event,
-    EventSequence,
-    EventSequencePredictor,
-    analyze_life_course,
-    load_sequences_from_json,
-)
+from metainformant.life_events.core.events import Event, EventSequence
+from metainformant.life_events.core.utils import load_sequences_from_json
+from metainformant.life_events.models.predictor import EventSequencePredictor
+from metainformant.life_events.workflow.workflow import analyze_life_course
 
 # Get the repository root directory
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -28,7 +25,9 @@ SRC_DIR = REPO_ROOT / "src"
 # Check if life-events CLI subcommand is available
 _cli_check = subprocess.run(
     [sys.executable, "-m", "metainformant", "--help"],
-    capture_output=True, text=True, timeout=60,
+    capture_output=True,
+    text=True,
+    timeout=60,
 )
 _has_life_events_cli = "life-events" in _cli_check.stdout
 

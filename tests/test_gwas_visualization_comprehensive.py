@@ -15,17 +15,19 @@ from metainformant.gwas import visualization
 
 # Test specialized visualization modules
 try:
-    from metainformant.gwas import (
-        visualization_comparison,
-        visualization_effects,
-        visualization_enhanced,
-        visualization_genome,
-        visualization_population,
-        visualization_regional,
-        visualization_statistical,
-        visualization_suite,
-        visualization_variants,
-    )
+    from metainformant.gwas.visualization.statistical import comparison as visualization_comparison
+    from metainformant.gwas.visualization.statistical import effects as visualization_effects
+    from metainformant.gwas.visualization.genomic import genome as visualization_genome
+    from metainformant.gwas.visualization.population import population as visualization_population
+    from metainformant.gwas.visualization.genomic import regional as visualization_regional
+    from metainformant.gwas.visualization.statistical import statistical as visualization_statistical
+    from metainformant.gwas.visualization.interactive import suite as visualization_suite
+    from metainformant.gwas.visualization.genomic import variants as visualization_variants
+    # visualization_enhanced does not have a new canonical path; keep trying old import
+    try:
+        from metainformant.gwas import visualization_enhanced
+    except ImportError:
+        visualization_enhanced = None  # type: ignore[assignment]
 except ImportError:
     # If modules don't exist, skip tests
     pytest.skip("GWAS visualization modules not available", allow_module_level=True)
@@ -198,7 +200,7 @@ class TestVisualization:
         ]
         output_path = tmp_path / "enhanced.png"
         # Test any enhanced plotting function
-        if hasattr(visualization_enhanced, "enhanced_manhattan_plot"):
+        if visualization_enhanced is not None and hasattr(visualization_enhanced, "enhanced_manhattan_plot"):
             result = visualization_enhanced.enhanced_manhattan_plot(results, output_path)
             assert isinstance(result, dict)
 

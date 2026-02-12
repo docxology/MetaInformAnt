@@ -996,15 +996,13 @@ class TestModuleImports:
         assert hasattr(structural_variants, "visualization")
 
     def test_import_top_level_functions(self) -> None:
-        from metainformant.structural_variants import (
-            annotate_gene_overlap,
-            call_structural_variants,
-            detect_cnv_from_depth,
-            filter_by_quality,
-            merge_callsets,
-            predict_functional_impact,
-            refine_breakpoints,
-        )
+        from metainformant.structural_variants.annotation.functional_impact import predict_functional_impact
+        from metainformant.structural_variants.annotation.overlap import annotate_gene_overlap
+        from metainformant.structural_variants.detection.breakpoints import refine_breakpoints
+        from metainformant.structural_variants.detection.cnv import detect_cnv_from_depth
+        from metainformant.structural_variants.detection.sv_calling import call_structural_variants
+        from metainformant.structural_variants.filtering.merge import merge_callsets
+        from metainformant.structural_variants.filtering.quality_filter import filter_by_quality
 
         assert callable(detect_cnv_from_depth)
         assert callable(call_structural_variants)

@@ -7,12 +7,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization.visualization_genome import (
+from metainformant.gwas.visualization.genomic.genome import (
     chromosome_ideogram,
     circular_manhattan_plot,
     genome_wide_ld_heatmap,
 )
-from metainformant.gwas.visualization.visualization_genome import manhattan_plot as manhattan_plot_genome
+from metainformant.gwas.visualization.genomic.genome import manhattan_plot as manhattan_plot_genome
 
 
 def test_manhattan_plot_genome_basic(tmp_path: Path) -> None:

@@ -4,12 +4,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from metainformant.gwas.visualization.visualization_regional import (
+from metainformant.gwas.visualization.genomic.regional import (
     gene_annotation_plot,
     recombination_rate_plot,
     regional_ld_plot,
 )
-from metainformant.gwas.visualization.visualization_regional import regional_plot as regional_plot_detailed
+from metainformant.gwas.visualization.genomic.regional import regional_plot as regional_plot_detailed
 
 
 def test_regional_plot_detailed(tmp_path: Path) -> None:

@@ -5,7 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.dna import msa, sequences
+from metainformant.dna.alignment import msa
+from metainformant.dna.sequence import core as sequences
 
 
 @pytest.mark.external_tool

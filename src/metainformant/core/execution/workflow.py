@@ -13,7 +13,8 @@ from collections import deque
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 
-from metainformant.core import config, io
+from metainformant.core.utils import config
+from metainformant.core import io
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)

@@ -13,8 +13,11 @@ from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
-from metainformant.core import io, logging
-from metainformant.information.metrics import analysis, continuous, estimation, semantic, syntactic
+from metainformant.core.utils import logging
+from metainformant.core import io
+from metainformant.information.metrics import analysis
+from metainformant.information.metrics.core import continuous, estimation, syntactic
+from metainformant.information.metrics.advanced import semantic
 
 logger = logging.get_logger(__name__)
 

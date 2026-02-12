@@ -13,7 +13,11 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 
-from metainformant.core import errors, io, logging, paths, validation
+from metainformant.core.data import validation
+from metainformant.core.utils import errors
+from metainformant.core.io import paths
+from metainformant.core.utils import logging
+from metainformant.core import io
 
 # Import scipy.sparse for sparse matrix support
 try:

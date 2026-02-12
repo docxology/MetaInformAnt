@@ -20,7 +20,7 @@ import random
 import numpy as np
 import pytest
 
-from metainformant.core import errors
+from metainformant.core.utils import errors
 from metainformant.simulation.models.rna import (
     add_technical_noise,
     simulate_bulk_rnaseq,

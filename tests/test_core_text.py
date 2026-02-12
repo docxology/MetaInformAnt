@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.core import text as core_text
+from metainformant.core.utils import text as core_text
 
 
 class TestSlugify:

@@ -7,7 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.rna import amalgkit, workflow
+from metainformant.rna.amalgkit import amalgkit
+from metainformant.rna.engine import workflow
 
 
 class TestAmalgkitIntegration:

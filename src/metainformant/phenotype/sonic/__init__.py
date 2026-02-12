@@ -1,9 +1,8 @@
-"""
-Sonic phenotype analysis module.
+"""Sonic phenotype analysis module.
 
-This module provides tools for analyzing acoustic and vibrational signals.
-"""
+This module provides tools for analyzing acoustic and vibrational signals."""
+from __future__ import annotations
 
-from .signal import AcousticSignal
+from . import signal
 
-__all__ = ["AcousticSignal"]
+__all__ = ['signal']

@@ -5,11 +5,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from metainformant.life_events import (
-    domain_specific_embeddings,
-    learn_event_embeddings,
-    sequence_embeddings,
-)
+from metainformant.life_events.core.utils import sequence_embeddings
+from metainformant.life_events.models.embeddings import domain_specific_embeddings, learn_event_embeddings
 
 
 def test_learn_event_embeddings_basic():
@@ -211,7 +208,7 @@ def test_domain_specific_embeddings_empty_domain():
 
 def test_learn_event_embeddings_validation():
     """Test all validation checks in learn_event_embeddings."""
-    from metainformant.life_events import learn_event_embeddings
+    from metainformant.life_events.models.embeddings import learn_event_embeddings
 
     # Test empty sequences
     with pytest.raises(ValueError, match="cannot be empty"):
@@ -242,7 +239,7 @@ def test_learn_event_embeddings_validation():
 
 def test_learn_event_embeddings_verbose(capsys):
     """Test verbose mode output."""
-    from metainformant.life_events import learn_event_embeddings
+    from metainformant.life_events.models.embeddings import learn_event_embeddings
 
     sequences = [
         ["health:diagnosis", "occupation:job_change"],
@@ -261,7 +258,7 @@ def test_predict_with_missing_events_in_vocab():
     """Test prediction with out-of-vocabulary events."""
     import numpy as np
 
-    from metainformant.life_events import EventSequencePredictor
+    from metainformant.life_events.models.predictor import EventSequencePredictor
 
     # Train on specific vocabulary
     train_sequences = [
@@ -291,12 +288,9 @@ def test_workflow_config_priority(tmp_path):
     """Test that config_obj takes priority over config_path."""
     from datetime import datetime
 
-    from metainformant.life_events import (
-        Event,
-        EventSequence,
-        LifeEventsWorkflowConfig,
-        analyze_life_course,
-    )
+    from metainformant.life_events.core.config import LifeEventsWorkflowConfig
+    from metainformant.life_events.core.events import Event, EventSequence
+    from metainformant.life_events.workflow.workflow import analyze_life_course
 
     events1 = [Event("degree", datetime(2010, 6, 1), "education")]
     sequences = [EventSequence(person_id="person_001", events=events1)]
@@ -325,7 +319,7 @@ def test_config_env_override_edge_cases(tmp_path):
     """Test invalid environment variable values."""
     import os
 
-    from metainformant.life_events import load_life_events_config
+    from metainformant.life_events.core.config import load_life_events_config
 
     config_file = tmp_path / "test_config.yaml"
     config_file.write_text(

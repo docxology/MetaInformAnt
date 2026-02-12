@@ -20,7 +20,8 @@ from pathlib import Path
 from typing import Any, Iterable, Protocol
 from urllib.parse import urlparse
 
-from metainformant.core import logging, progress
+from metainformant.core.utils import logging
+from metainformant.core.utils import progress
 
 logger = logging.get_logger(__name__)
 

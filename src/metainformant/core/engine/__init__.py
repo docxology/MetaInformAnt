@@ -6,27 +6,9 @@ This module provides:
   workflows with TUI visualization.
 - RNA-seq backward-compatible types (``WorkflowManager``, ``SampleStage``,
   ``SampleState``) that wrap the generic pipeline for the download -> getfastq
-  -> quant workflow.
-"""
+  -> quant workflow."""
+from __future__ import annotations
 
-from metainformant.core.engine.workflow_manager import (  # Generic pipeline primitives; Backward-compatible RNA-seq types
-    BasePipelineManager,
-    PipelineItem,
-    PipelinePhase,
-    SampleStage,
-    SampleState,
-    Stage,
-    WorkflowManager,
-)
+from . import workflow_manager
 
-__all__ = [
-    # Generic pipeline primitives
-    "BasePipelineManager",
-    "PipelineItem",
-    "PipelinePhase",
-    "Stage",
-    # Backward-compatible RNA-seq types
-    "WorkflowManager",
-    "SampleStage",
-    "SampleState",
-]
+__all__ = ['workflow_manager']

@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from metainformant.core.io.io import dump_json, write_delimited
-from metainformant.rna import monitoring
+from metainformant.rna.engine import monitoring
 
 
 class TestCountQuantifiedSamples:

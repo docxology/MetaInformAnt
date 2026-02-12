@@ -4,28 +4,44 @@
 
 YAML configurations for the **amalgkit** RNA-seq data integration pipeline. These configs control the full workflow: metadata retrieval → FASTQ download → transcript quantification → expression matrix generation → quality curation.
 
-## 📦 Configuration Files
+## 📦 Species Inventory (23 Species)
 
-| File | Purpose | Status |
-|------|---------|--------|
-| `amalgkit_template.yaml` | Full reference template with all options documented | Reference |
-| `amalgkit_test.yaml` | Minimal config for testing | Test |
-| `amalgkit_pbarbatus_5sample.yaml` | 5-sample test run | Test |
-| `amalgkit_pbarbatus_25sample.yaml` | 25-sample validation run | Test |
-| `amalgkit_pbarbatus_all.yaml` | **Production**: All 110 P. barbatus samples | ✅ Complete |
-| `amalgkit_pogonomyrmex_barbatus.yaml` | Full species configuration template | Reference |
-| `amalgkit_apis_mellifera_all.yaml` | **Production**: All ~7,242 A. mellifera samples | 🔄 In Progress |
-| `amalgkit_faq.md` | FAQ with common errors and solutions | Reference |
+Configuration files for **22 ant species** plus *Apis mellifera*. All use NCBI RefSeq accessions with verified annotations.
 
-## 🏆 Production Run Results
+| Species | Code | Accession | Config File | Status |
+|---|---|---|---|---|
+| *Acromyrmex echinatior* | `acromyrmex_echinatior` | GCF_000204515.1 | `amalgkit_acromyrmex_echinatior.yaml` | ✅ Verified |
+| *Anoplolepis gracilipes* | `anoplolepis_gracilipes` | GCF_047496725.1 | `amalgkit_anoplolepis_gracilipes.yaml` | ✅ Verified |
+| *Apis mellifera* | `apis_mellifera` | GCF_003254395.2 | `amalgkit_apis_mellifera_all.yaml` | ✅ Verified |
+| *Atta cephalotes* | `atta_cephalotes` | GCF_000143395.1 | `amalgkit_atta_cephalotes.yaml` | ✅ Verified |
+| *Camponotus floridanus* | `camponotus_floridanus` | GCF_003227725.1 | `amalgkit_camponotus_floridanus.yaml` | ✅ Verified |
+| *Cardiocondyla obscurior* | `cardiocondyla_obscurior` | GCF_019399895.1 | `amalgkit_cardiocondyla_obscurior.yaml` | ✅ Verified |
+| *Dinoponera quadriceps* | `dinoponera_quadriceps` | GCF_001313825.1 | `amalgkit_dinoponera_quadriceps.yaml` | ✅ Verified |
+| *Formica exsecta* | `formica_exsecta` | GCF_003651465.1 | `amalgkit_formica_exsecta.yaml` | ✅ Verified |
+| *Harpegnathos saltator* | `harpegnathos_saltator` | GCF_003227715.2 | `amalgkit_harpegnathos_saltator.yaml` | ✅ Verified |
+| *Linepithema humile* | `linepithema_humile` | GCF_040581485.1 | `amalgkit_linepithema_humile.yaml` | ✅ Verified |
+| *Monomorium pharaonis* | `monomorium_pharaonis` | GCF_013373865.1 | `amalgkit_monomorium_pharaonis.yaml` | ✅ Verified |
+| *Nylanderia fulva* | `nylanderia_fulva` | GCF_005281655.2 | `amalgkit_nylanderia_fulva.yaml` | ✅ Verified |
+| *Odontomachus brunneus* | `odontomachus_brunneus` | GCF_010583005.1 | `amalgkit_odontomachus_brunneus.yaml` | ✅ Verified |
+| *Ooceraea biroi* | `ooceraea_biroi` | GCF_003672135.1 | `amalgkit_ooceraea_biroi.yaml` | ✅ Verified |
+| *Pogonomyrmex barbatus* | `pbarbatus` | GCF_000187915.1 | `amalgkit_pbarbatus.yaml` | ✅ Verified |
+| *Solenopsis invicta* | `solenopsis_invicta` | GCF_016802725.1 | `amalgkit_solenopsis_invicta.yaml` | ✅ Verified |
+| *Temnothorax americanus* | `temnothorax_americanus` | GCF_048541705.1 | `amalgkit_temnothorax_americanus.yaml` | ✅ Verified |
+| *Temnothorax curvispinosus* | `temnothorax_curvispinosus` | GCF_003070985.1 | `amalgkit_temnothorax_curvispinosus.yaml` | ✅ Verified |
+| *Temnothorax longispinosus* | `temnothorax_longispinosus` | GCF_030848805.1 | `amalgkit_temnothorax_longispinosus.yaml` | ✅ Verified |
+| *Temnothorax nylanderi* | `temnothorax_nylanderi` | GCF_030848795.1 | `amalgkit_temnothorax_nylanderi.yaml` | ✅ Verified |
+| *Vollenhovia emeryi* | `vollenhovia_emeryi` | GCF_000949405.1 | `amalgkit_vollenhovia_emeryi.yaml` | ✅ Verified |
+| *Wasmannia auropunctata* | `wasmannia_auropunctata` | GCF_000956235.1 | `amalgkit_wasmannia_auropunctata.yaml` | ✅ Verified |
 
-**P. barbatus Complete Dataset** (`amalgkit_pbarbatus_all.yaml`):
+## 🧪 Template & Test
 
-- **Samples quantified**: 95/110 (valid abundance files)
-- **Expression matrices**: TPM, counts, effective length
-- **Output location**: `output/amalgkit/pbarbatus_all/`
+| File | Purpose |
+|---|---|
+| `amalgkit_template.yaml` | Full reference template |
+| `amalgkit_test.yaml` | Minimal test configuration |
+| `amalgkit_cross_species.yaml` | Cross-species TMM normalization |
 
-## 📊 Workflow Steps
+## 📊 Workflow Overview
 
 ```mermaid
 graph LR
@@ -41,21 +57,21 @@ graph LR
 ### Run Complete Workflow
 
 ```bash
-python scripts/rna/run_amalgkit_workflow.py --config config/amalgkit/amalgkit_pbarbatus_all.yaml
+python scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml
 ```
 
 ### Step-by-Step Execution
 
 ```bash
 # Download and quantify
-amalgkit getfastq --config config/amalgkit/amalgkit_pbarbatus_all.yaml
-amalgkit quant --out_dir output/amalgkit/pbarbatus_all/work
+amalgkit getfastq --config config/amalgkit/amalgkit_pbarbatus.yaml
+amalgkit quant --out_dir output/amalgkit/pbarbatus/work
 
 # Merge results
-amalgkit merge --out_dir output/amalgkit/pbarbatus_all/work
+amalgkit merge --out_dir output/amalgkit/pbarbatus/work
 
 # Quality curation
-amalgkit curate --out_dir output/amalgkit/pbarbatus_all/work
+amalgkit curate --out_dir output/amalgkit/pbarbatus/work
 ```
 
 ## ⚙️ Key Configuration Options
@@ -70,8 +86,10 @@ species_list:
   - Pogonomyrmex_barbatus
 taxon_id: 144034
 
-# Critical step settings
+# Metadata filtering (prevents genomic samples leaking in)
 steps:
+  metadata:
+    search_string: '"Species"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
   getfastq:
     redo: no          # Skip already-downloaded samples
     keep_fastq: no    # Delete FASTQs after quant (saves disk)
@@ -95,5 +113,4 @@ This allows processing 100+ samples with only ~50GB free disk space.
 
 - [Amalgkit Documentation](https://github.com/kfuku52/amalgkit)
 - [Amalgkit FAQ](./amalgkit_faq.md) - Common errors and solutions
-- [Workflow Knowledge Base](/.gemini/antigravity/knowledge/metainformant_rna_workflow/)
 - [RNA Scripts](../../../scripts/rna/)

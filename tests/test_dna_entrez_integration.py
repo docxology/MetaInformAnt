@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from metainformant.dna import entrez
+from metainformant.dna.external import entrez
 
 
 def _check_online(url: str) -> bool:

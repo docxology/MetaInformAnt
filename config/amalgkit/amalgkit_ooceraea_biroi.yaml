@@ -1,0 +1,93 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Ooceraea biroi
+# NCBI Taxonomy ID: 2015173
+# Assembly: GCF_003672135.1 (Obir_v5.4)
+# Assembly Level: Chromosome
+# Sequencing: PacBio + Illumina + Hi-C
+# Annotation: NCBI Ooceraea biroi Annotation Release 100
+# Annotation Release: 100
+# Notes: Clonal raider ant, parthenogenetic reproduction
+# RNA-seq Samples Available: 276
+# Generated: 2026-02-09
+
+# Paths are resolved relative to repository root
+work_dir: blue/amalgkit/ooceraea_biroi/work
+log_dir: blue/amalgkit/ooceraea_biroi/logs
+threads: 12
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Ooceraea_biroi
+
+taxon_id: 2015173
+
+# Reference genome configuration — shared genome directory
+genome:
+  accession: GCF_003672135.1
+  assembly_name: Obir_v5.4
+  annotation_release: 100
+  dest_dir: blue/amalgkit/shared/genome/Ooceraea_biroi
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/672/135/GCF_003672135.1_Obir_v5.4/
+  files:
+    genomic_fasta: GCF_003672135.1_Obir_v5.4_genomic.fna.gz
+    transcriptome_fasta: GCF_003672135.1_Obir_v5.4_rna_from_genomic.fna.gz
+    cds_fasta: GCF_003672135.1_Obir_v5.4_cds_from_genomic.fna.gz
+    protein_fasta: GCF_003672135.1_Obir_v5.4_protein.faa.gz
+    annotation_gff: GCF_003672135.1_Obir_v5.4_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: blue/amalgkit/ooceraea_biroi/work
+    search_string: '"Ooceraea biroi"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: blue/amalgkit/ooceraea_biroi/fastq/getfastq
+  select:
+    max_sample: 999999
+    mark_missing_rank: none
+    priority: "completeness"
+    redo: no
+  getfastq:
+    out_dir: blue/amalgkit/ooceraea_biroi/fastq
+    threads: 8
+    jobs: 4
+    redo: no
+    aws: yes
+    gcp: no
+    ncbi: no
+    pfd: no
+    fastp: no
+    max_bp: 50000000
+  quant:
+    out_dir: blue/amalgkit/ooceraea_biroi/work
+    threads: 6
+    redo: no
+    build_index: no
+    keep_fastq: no
+    index_dir: blue/amalgkit/shared/genome/Ooceraea_biroi/index
+    fasta_dir: blue/amalgkit/shared/genome/Ooceraea_biroi
+  merge:
+    out: blue/amalgkit/ooceraea_biroi/merged/merged_abundance.tsv
+    out_dir: blue/amalgkit/ooceraea_biroi/merged
+  cstmm:
+    out_dir: blue/amalgkit/ooceraea_biroi/work
+    orthogroup_table: ""
+  curate:
+    out_dir: blue/amalgkit/ooceraea_biroi/work
+  csca:
+    out_dir: blue/amalgkit/ooceraea_biroi/work
+    orthogroup_table: ""
+  sanity: {}

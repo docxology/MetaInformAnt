@@ -217,7 +217,7 @@ def load_ncbi_config():
     """Load NCBI configuration from config file if NCBI_EMAIL not in environment.
 
     This fixture runs automatically for all tests and ensures NCBI_EMAIL
-    is set from config/ncbi.yaml if not already set in environment.
+    is set from config/ncbi/ncbi.yaml if not already set in environment.
     """
     if "NCBI_EMAIL" not in os.environ:
         try:
@@ -225,7 +225,7 @@ def load_ncbi_config():
 
             from metainformant.core.utils.config import load_mapping_from_file
 
-            config_path = Path(__file__).parent.parent / "config" / "ncbi.yaml"
+            config_path = Path(__file__).parent.parent / "config" / "ncbi" / "ncbi.yaml"
             if config_path.exists():
                 config = load_mapping_from_file(config_path)
                 email = config.get("email", "").strip()
@@ -404,61 +404,6 @@ def pytest_addoption(parser):
     parser.addoption(
         "--run-slow", action="store_true", default=False, help="Run slow tests (by default they are skipped)"
     )
-
-
-# Fixtures for common test data files
-@pytest.fixture(scope="session")
-def sample_fasta_content() -> str:
-    """Sample FASTA content for testing."""
-    return """>seq1
-ATCGATCGATCG
->seq2
-GGCCAAGGCCAA
->seq3
-TTAACCGGTTAA
-"""
-
-
-@pytest.fixture(scope="session")
-def sample_fastq_content() -> str:
-    """Sample FASTQ content for testing."""
-    return """@read1
-ATCGATCGATCG
-+
-IIIIIIIIIIII
-@read2
-GGCCAAGGCCAA
-+
-JJJJJJJJJJJJ
-@read3
-TTAACCGGTTAA
-+
-KKKKKKKKKKKK
-"""
-
-
-@pytest.fixture(scope="session")
-def sample_vcf_content() -> str:
-    """Sample VCF content for testing."""
-    return """##fileformat=VCFv4.3
-##INFO=<ID=DP,Number=1,Type=Integer,Description="Total Depth">
-##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">
-#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	Sample1
-chr1	100	.	A	G	60	PASS	DP=30	GT	0/1
-chr1	200	.	C	T	80	PASS	DP=40	GT	1/1
-"""
-
-
-@pytest.fixture(scope="session")
-def sample_pdb_content() -> str:
-    """Sample PDB content for testing."""
-    return """HEADER    TEST PROTEIN                            01-JAN-24   TEST
-ATOM      1  N   ALA A   1      20.154  16.967  18.250  1.00 10.00           N
-ATOM      2  CA  ALA A   1      19.030  17.850  18.740  1.00 10.00           C
-ATOM      3  C   ALA A   1      18.540  18.749  17.650  1.00 10.00           C
-ATOM      4  O   ALA A   1      18.980  18.889  16.520  1.00 10.00           O
-END
-"""
 
 
 # Performance testing utilities

@@ -1,16 +1,6 @@
 """GWAS analysis modules."""
+from __future__ import annotations
 
-from metainformant.gwas.analysis.association import (
-    association_test_linear,
-    association_test_logistic,
-)
-from metainformant.gwas.analysis.correction import bonferroni_correction, fdr_correction
-from metainformant.gwas.analysis.utils import compute_r_squared
+from . import annotation, association, calling, correction, heritability, ld_pruning, mixed_model, quality, structure, summary_stats, utils
 
-__all__ = [
-    "association_test_linear",
-    "association_test_logistic",
-    "bonferroni_correction",
-    "compute_r_squared",
-    "fdr_correction",
-]
+__all__ = ['annotation', 'association', 'calling', 'correction', 'heritability', 'ld_pruning', 'mixed_model', 'quality', 'structure', 'summary_stats', 'utils']

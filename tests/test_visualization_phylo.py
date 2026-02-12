@@ -14,7 +14,7 @@ def test_plot_phylo_tree_smoke():
     except ImportError:
         pytest.skip("networkx required for phylogenetic tree plotting")
 
-    from metainformant.visualization import plot_phylo_tree
+        from metainformant.visualization.genomics.trees import plot_phylo_tree
 
     # small 3-tip tree
     names = ["A", "B", "C"]

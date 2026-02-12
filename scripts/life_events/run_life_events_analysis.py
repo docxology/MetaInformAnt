@@ -7,7 +7,7 @@ and comprehensive visualization.
 
 Usage:
     python3 scripts/life_events/run_life_events_analysis.py --synthetic --n-sequences 100
-    python3 scripts/life_events/run_life_events_analysis.py --input data/life_events/sequences.json --config config/life_events_template.yaml
+    python3 scripts/life_events/run_life_events_analysis.py --input data/life_events/sequences.json --config config/life_events/life_events_template.yaml
     python3 scripts/life_events/run_life_events_analysis.py --help
 """
 
@@ -37,7 +37,7 @@ Examples:
   %(prog)s --synthetic --n-sequences 100 --generate-outcomes
 
   # Analyze existing sequences with config file
-  %(prog)s --input data/life_events/sequences.json --config config/life_events_template.yaml
+  %(prog)s --input data/life_events/sequences.json --config config/life_events/life_events_template.yaml
 
   # Run with custom embedding parameters
   %(prog)s --synthetic --embedding-dim 200 --window-size 10 --epochs 20

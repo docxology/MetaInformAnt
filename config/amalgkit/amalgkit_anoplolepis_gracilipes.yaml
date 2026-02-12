@@ -1,0 +1,93 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Anoplolepis gracilipes
+# NCBI Taxonomy ID: 354296
+# Assembly: GCF_047496725.1 (ASM4749672v1)
+# Assembly Level: Chromosome
+# Sequencing: PacBio + Hi-C
+# Annotation: GCF_047496725.1-RS_2025_04
+# Annotation Release: RS_2025_04
+# Notes: Yellow crazy ant, invasive, chromosome-level
+# RNA-seq Samples Available: 12
+# Generated: 2026-02-09
+
+# Paths are resolved relative to repository root
+work_dir: blue/amalgkit/anoplolepis_gracilipes/work
+log_dir: blue/amalgkit/anoplolepis_gracilipes/logs
+threads: 12
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Anoplolepis_gracilipes
+
+taxon_id: 354296
+
+# Reference genome configuration — shared genome directory
+genome:
+  accession: GCF_047496725.1
+  assembly_name: ASM4749672v1
+  annotation_release: RS_2025_04
+  dest_dir: blue/amalgkit/shared/genome/Anoplolepis_gracilipes
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/047/496/725/GCF_047496725.1_ASM4749672v1/
+  files:
+    genomic_fasta: GCF_047496725.1_ASM4749672v1_genomic.fna.gz
+    transcriptome_fasta: GCF_047496725.1_ASM4749672v1_rna_from_genomic.fna.gz
+    cds_fasta: GCF_047496725.1_ASM4749672v1_cds_from_genomic.fna.gz
+    protein_fasta: GCF_047496725.1_ASM4749672v1_protein.faa.gz
+    annotation_gff: GCF_047496725.1_ASM4749672v1_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: blue/amalgkit/anoplolepis_gracilipes/work
+    search_string: '"Anoplolepis gracilipes"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: blue/amalgkit/anoplolepis_gracilipes/fastq/getfastq
+  select:
+    max_sample: 999999
+    mark_missing_rank: none
+    priority: "completeness"
+    redo: no
+  getfastq:
+    out_dir: blue/amalgkit/anoplolepis_gracilipes/fastq
+    threads: 8
+    jobs: 4
+    redo: no
+    aws: yes
+    gcp: no
+    ncbi: no
+    pfd: no
+    fastp: no
+    max_bp: 50000000
+  quant:
+    out_dir: blue/amalgkit/anoplolepis_gracilipes/work
+    threads: 6
+    redo: no
+    build_index: no
+    keep_fastq: no
+    index_dir: blue/amalgkit/shared/genome/Anoplolepis_gracilipes/index
+    fasta_dir: blue/amalgkit/shared/genome/Anoplolepis_gracilipes
+  merge:
+    out: blue/amalgkit/anoplolepis_gracilipes/merged/merged_abundance.tsv
+    out_dir: blue/amalgkit/anoplolepis_gracilipes/merged
+  cstmm:
+    out_dir: blue/amalgkit/anoplolepis_gracilipes/work
+    orthogroup_table: ""
+  curate:
+    out_dir: blue/amalgkit/anoplolepis_gracilipes/work
+  csca:
+    out_dir: blue/amalgkit/anoplolepis_gracilipes/work
+    orthogroup_table: ""
+  sanity: {}

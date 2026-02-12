@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from metainformant.math import effective_size_from_family_size_variance
+from metainformant.math.population_genetics.statistics import effective_size_from_family_size_variance
 
 
 def test_effective_size_from_family_size_variance():

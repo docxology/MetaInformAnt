@@ -5,7 +5,7 @@ This module provides functions for transcribing DNA to RNA.
 
 from __future__ import annotations
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 

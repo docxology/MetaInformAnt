@@ -2,7 +2,7 @@
 
 import pytest
 
-from metainformant.math import popgen
+from metainformant.math import population_genetics as popgen
 
 
 class TestMath:
@@ -10,7 +10,7 @@ class TestMath:
 
     def test_correlation_coefficient(self):
         """Test Pearson correlation coefficient calculation."""
-        from metainformant.math import correlation_coefficient
+        from metainformant.math.core.utilities import correlation_coefficient
 
         # Perfect positive correlation
         x = [1, 2, 3, 4, 5]
@@ -30,7 +30,7 @@ class TestMath:
 
     def test_linear_regression(self):
         """Test linear regression calculation."""
-        from metainformant.math import linear_regression
+        from metainformant.math.core.utilities import linear_regression
 
         # Simple linear relationship: y = 2x + 1
         x = [1, 2, 3, 4, 5]
@@ -44,7 +44,7 @@ class TestMath:
 
     def test_fisher_exact_test(self):
         """Test Fisher's exact test calculation."""
-        from metainformant.math import fisher_exact_test
+        from metainformant.math.core.utilities import fisher_exact_test
 
         # 2x2 contingency table
         a, b, c, d = 10, 5, 3, 12
@@ -55,7 +55,7 @@ class TestMath:
 
     def test_shannon_entropy(self):
         """Test Shannon entropy calculation."""
-        from metainformant.math import shannon_entropy
+        from metainformant.math.core.utilities import shannon_entropy
 
         # Uniform distribution
         uniform = [0.25, 0.25, 0.25, 0.25]
@@ -69,7 +69,7 @@ class TestMath:
 
     def test_jensen_shannon_divergence(self):
         """Test Jensen-Shannon divergence calculation."""
-        from metainformant.math import jensen_shannon_divergence
+        from metainformant.math.core.utilities import jensen_shannon_divergence
 
         # Identical distributions
         p = [0.3, 0.7]
@@ -126,7 +126,7 @@ class TestMath:
 
     def test_input_validation(self):
         """Test input validation for all new functions."""
-        from metainformant.math import correlation_coefficient, jensen_shannon_divergence, linear_regression
+        from metainformant.math.core.utilities import correlation_coefficient, jensen_shannon_divergence, linear_regression
 
         # Test invalid correlation inputs
         with pytest.raises(ValueError):
@@ -145,7 +145,7 @@ class TestMath:
 
     def test_mathematical_consistency(self):
         """Test mathematical consistency of calculations."""
-        from metainformant.math import correlation_coefficient, linear_regression
+        from metainformant.math.core.utilities import correlation_coefficient, linear_regression
 
         # Test that correlation and regression are consistent
         x = [1, 2, 3, 4, 5]
@@ -180,7 +180,7 @@ class TestMath:
 
     def test_numerical_stability(self):
         """Test numerical stability of calculations."""
-        from metainformant.math import correlation_coefficient, linear_regression
+        from metainformant.math.core.utilities import correlation_coefficient, linear_regression
 
         # Test with very small values
         x_small = [1e-10, 2e-10, 3e-10]

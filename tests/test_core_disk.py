@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.core import disk
+from metainformant.core.io import disk
 
 
 class TestDiskUsage:

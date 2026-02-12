@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.ontology.types import Ontology, Term
+from metainformant.ontology.core.types import Ontology, Term
 
 
 class TestTerm:

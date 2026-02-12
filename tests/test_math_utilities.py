@@ -15,13 +15,7 @@ import math
 import numpy as np
 import pytest
 
-from metainformant.math import (
-    correlation_coefficient,
-    fisher_exact_test,
-    jensen_shannon_divergence,
-    linear_regression,
-    shannon_entropy,
-)
+from metainformant.math.core.utilities import correlation_coefficient, fisher_exact_test, jensen_shannon_divergence, linear_regression, shannon_entropy
 
 
 class TestCorrelationCoefficient:

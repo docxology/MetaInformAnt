@@ -8,7 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization.visualization_ld import (
+from metainformant.gwas.visualization.genomic.ld import (
     compute_ld_decay,
     ld_decay_plot,
     ld_heatmap_region,

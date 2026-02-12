@@ -14,7 +14,9 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 
-from metainformant.core import errors, logging, validation
+from metainformant.core.data import validation
+from metainformant.core.utils import errors
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
@@ -350,9 +352,7 @@ def joint_pca(
 
     variance = pca.explained_variance_ratio_
 
-    logger.info(
-        f"Joint PCA completed: {len(variance)} components explain {np.sum(variance):.1%} variance"
-    )
+    logger.info(f"Joint PCA completed: {len(variance)} components explain {np.sum(variance):.1%} variance")
 
     return embeddings, loadings, variance
 

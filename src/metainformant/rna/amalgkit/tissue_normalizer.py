@@ -13,7 +13,7 @@ from typing import Dict, List, Optional, Set
 import pandas as pd
 import yaml
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
@@ -83,6 +83,9 @@ def build_synonym_lookup(mapping: Dict[str, List[str]]) -> Dict[str, str]:
 def normalize_tissue(raw_value: str, synonym_lookup: Dict[str, str], default: str = "unknown") -> str:
     """Normalize a single tissue value to canonical form.
 
+    Uses exact match first, then prefix-based fallback for long-form
+    descriptions (e.g. "fat body of 1 queen; kept in a group..." → fat_body).
+
     Args:
         raw_value: Original tissue value from metadata
         synonym_lookup: Dict mapping synonyms to canonical names
@@ -97,7 +100,18 @@ def normalize_tissue(raw_value: str, synonym_lookup: Dict[str, str], default: st
     # Clean and lowercase for lookup
     cleaned = str(raw_value).lower().strip()
 
-    return synonym_lookup.get(cleaned, "")
+    # Exact match
+    result = synonym_lookup.get(cleaned, "")
+    if result:
+        return result
+
+    # Prefix-based fallback: check if value starts with a known synonym
+    # Sort by length (longest first) to prefer more specific matches
+    for synonym, canonical in sorted(synonym_lookup.items(), key=lambda x: -len(x[0])):
+        if cleaned.startswith(synonym) and len(synonym) >= 3:
+            return canonical
+
+    return ""
 
 
 def apply_tissue_normalization(

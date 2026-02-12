@@ -1,0 +1,92 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Pogonomyrmex barbatus (red harvester ant)
+# NCBI Taxonomy ID: 144034
+# Assembly: GCF_000187915.1 (Pbar_UMD_V03)
+# Assembly Level: Scaffold (454 pyrosequencing)
+# Annotation Release: 101
+# RNA-seq Samples: ~110 (95/110 quantified in production run)
+# Status: ✅ COMPLETE - expression matrices generated 2026-01-24
+# Generated: 2026-02-09
+
+# Paths are resolved relative to repository root
+work_dir: blue/amalgkit/pbarbatus/work
+log_dir: blue/amalgkit/pbarbatus/logs
+threads: 12
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Pogonomyrmex_barbatus
+
+taxon_id: 144034
+
+# Reference genome configuration - shared genome directory
+genome:
+  accession: GCF_000187915.1
+  assembly_name: Pbar_UMD_V03
+  annotation_release: 101
+  dest_dir: blue/amalgkit/shared/genome/Pogonomyrmex_barbatus
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/187/915/GCF_000187915.1_Pbar_UMD_V03/
+  files:
+    genomic_fasta: GCF_000187915.1_Pbar_UMD_V03_genomic.fna.gz
+    transcriptome_fasta: GCF_000187915.1_Pbar_UMD_V03_rna_from_genomic.fna.gz
+    cds_fasta: GCF_000187915.1_Pbar_UMD_V03_cds_from_genomic.fna.gz
+    protein_fasta: GCF_000187915.1_Pbar_UMD_V03_protein.faa.gz
+    annotation_gff: GCF_000187915.1_Pbar_UMD_V03_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: blue/amalgkit/pbarbatus/work
+    # Filter to RNA-Seq + Illumina (prevents genomic/UCE samples leaking in)
+    search_string: '"Pogonomyrmex barbatus"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no  # Reuse existing metadata if available
+  integrate:
+    fastq_dir: blue/amalgkit/pbarbatus/fastq/getfastq
+  select:
+    max_sample: 999999  # No artificial limit - process all available samples
+    mark_missing_rank: none
+    priority: "completeness"
+    redo: no  # Reuse existing selection
+  getfastq:
+    out_dir: blue/amalgkit/pbarbatus/fastq
+    threads: 8
+    jobs: 4
+    redo: no  # CRITICAL: Skip already-downloaded samples
+    aws: yes
+    gcp: no   # DISABLED: GCP has lite files (no sequence data) for this species
+    ncbi: no  # DISABLED: NCBI has lite files (no sequence data)
+    pfd: no   # parallel-fastq-dump not installed
+    fastp: no
+    max_bp: 50000000  # Downsampling for speed (50M bp per sample)
+  quant:
+    out_dir: blue/amalgkit/pbarbatus/work
+    threads: 6
+    redo: no  # CRITICAL: Skip already-quantified samples
+    build_index: no  # Use existing index
+    keep_fastq: no  # Delete FASTQs after quantification (stream-and-clean)
+    index_dir: blue/amalgkit/shared/genome/Pogonomyrmex_barbatus/index
+    fasta_dir: blue/amalgkit/shared/genome/Pogonomyrmex_barbatus
+  merge:
+    out: blue/amalgkit/pbarbatus/merged/merged_abundance.tsv
+    out_dir: blue/amalgkit/pbarbatus/merged
+  cstmm:
+    out_dir: blue/amalgkit/pbarbatus/work
+    orthogroup_table: ""
+  curate:
+    out_dir: blue/amalgkit/pbarbatus/work
+  csca:
+    out_dir: blue/amalgkit/pbarbatus/work
+    orthogroup_table: ""
+  sanity: {}

@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization.visualization_population import (
+from metainformant.gwas.visualization.population.population import (
     admixture_plot,
     kinship_clustermap,
     kinship_dendrogram,

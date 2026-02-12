@@ -38,7 +38,9 @@ class TestGeneRegulatoryNetwork:
         ]
 
         for regulator, target, reg_type, strength, confidence in regulations:
-            self.grn.add_regulation(regulator, target, regulation_type=reg_type, weight=strength, confidence=confidence, evidence="ChIP-seq")
+            self.grn.add_regulation(
+                regulator, target, regulation_type=reg_type, weight=strength, confidence=confidence, evidence="ChIP-seq"
+            )
 
         # Mark transcription factors
         self.grn.add_transcription_factor("TF1", tf_family="bHLH")

@@ -2,7 +2,7 @@
 
 ## Scope
 
-Root source directory containing the metainformant Python package. This is the package distribution root with the main `metainformant/` module containing all 19 domain-specific bioinformatics modules.
+Root source directory containing the metainformant Python package. This is the package distribution root with the main `metainformant/` module containing all 25 domain-specific bioinformatics modules.
 
 ## Architecture
 
@@ -26,7 +26,7 @@ src/
 ## Data Structures
 
 ### Package Components
-- **metainformant/**: Main Python package with 19 domain modules
+- **metainformant/**: Main Python package with 25 domain modules
 - **metainformant.egg-info/**: Generated package metadata for pip/uv installation
 
 ### Module Organization

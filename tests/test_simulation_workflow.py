@@ -17,7 +17,7 @@ from typing import Any, Dict, List, Tuple
 import pytest
 
 from metainformant.core.utils.errors import ConfigError, ValidationError
-from metainformant.simulation import (
+from metainformant.simulation.workflow.workflow import (
     SimulationConfig,
     calibrate_simulation_parameters,
     create_simulation_config,

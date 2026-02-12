@@ -1,11 +1,9 @@
-"""
-Behavioral phenotype analysis module.
+"""Behavioral phenotype analysis module.
 
 This module provides tools for defining ethograms, analyzing behavioral sequences,
-and calculating time budgets and transition matrices.
-"""
+and calculating time budgets and transition matrices."""
+from __future__ import annotations
 
-from .ethogram import Ethogram
-from .sequence import BehaviorSequence
+from . import ethogram, sequence
 
-__all__ = ["Ethogram", "BehaviorSequence"]
+__all__ = ['ethogram', 'sequence']

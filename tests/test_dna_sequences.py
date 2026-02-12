@@ -2,7 +2,7 @@
 
 import pytest
 
-from metainformant.dna import sequences
+from metainformant.dna.sequence import core as sequences
 
 
 class TestDNASequences:

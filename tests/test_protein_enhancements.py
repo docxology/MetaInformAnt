@@ -371,7 +371,7 @@ class TestCompareStructures:
     """Tests for structure comparison orchestration."""
 
     def test_compare_two_structures(self, tmp_path):
-        from metainformant.protein.orchestration import compare_structures
+        from metainformant.protein.workflow.orchestration import compare_structures
 
         pdb_a = tmp_path / "a.pdb"
         pdb_b = tmp_path / "b.pdb"
@@ -384,7 +384,7 @@ class TestCompareStructures:
         assert result["rmsd_aligned"] >= 0.0
 
     def test_compare_structures_no_align(self, tmp_path):
-        from metainformant.protein.orchestration import compare_structures
+        from metainformant.protein.workflow.orchestration import compare_structures
 
         pdb_a = tmp_path / "a.pdb"
         pdb_b = tmp_path / "b.pdb"
@@ -395,7 +395,7 @@ class TestCompareStructures:
         assert "rmsd_simple" in result
 
     def test_compare_different_lengths(self, tmp_path):
-        from metainformant.protein.orchestration import compare_structures
+        from metainformant.protein.workflow.orchestration import compare_structures
 
         pdb_a = tmp_path / "short.pdb"
         pdb_b = tmp_path / "long.pdb"
@@ -408,7 +408,7 @@ class TestCompareStructures:
         assert result["n_ca_atoms_b"] == 15
 
     def test_compare_contact_comparison(self, tmp_path):
-        from metainformant.protein.orchestration import compare_structures
+        from metainformant.protein.workflow.orchestration import compare_structures
 
         pdb_a = tmp_path / "a.pdb"
         pdb_b = tmp_path / "b.pdb"
@@ -423,7 +423,7 @@ class TestCompareStructures:
         assert 0.0 <= cc["jaccard_similarity"] <= 1.0
 
     def test_compare_per_residue_distance(self, tmp_path):
-        from metainformant.protein.orchestration import compare_structures
+        from metainformant.protein.workflow.orchestration import compare_structures
 
         pdb_a = tmp_path / "a.pdb"
         pdb_b = tmp_path / "b.pdb"
@@ -440,7 +440,7 @@ class TestAssessAlphaFoldQuality:
     """Tests for AlphaFold quality assessment pipeline."""
 
     def test_assess_alphafold_quality(self, tmp_path):
-        from metainformant.protein.orchestration import assess_alphafold_quality
+        from metainformant.protein.workflow.orchestration import assess_alphafold_quality
 
         pdb = tmp_path / "af_model.pdb"
         _write_test_pdb(pdb, n_residues=20)
@@ -451,7 +451,7 @@ class TestAssessAlphaFoldQuality:
         assert result["quality_rating"] in ("very_high", "confident", "low", "very_low")
 
     def test_assess_quality_structural_stats(self, tmp_path):
-        from metainformant.protein.orchestration import assess_alphafold_quality
+        from metainformant.protein.workflow.orchestration import assess_alphafold_quality
 
         pdb = tmp_path / "af_model.pdb"
         _write_test_pdb(pdb, n_residues=15)
@@ -467,7 +467,7 @@ class TestFullProteinAnalysis:
     """Tests for combined sequence+structure analysis."""
 
     def test_full_analysis_sequence_only(self):
-        from metainformant.protein.orchestration import full_protein_analysis
+        from metainformant.protein.workflow.orchestration import full_protein_analysis
 
         result = full_protein_analysis(
             "MKLVFEQHINDASSTWYCGP",
@@ -482,7 +482,7 @@ class TestFullProteinAnalysis:
         assert result["summary"]["has_structure"] is False
 
     def test_full_analysis_with_structure(self, tmp_path):
-        from metainformant.protein.orchestration import full_protein_analysis
+        from metainformant.protein.workflow.orchestration import full_protein_analysis
 
         pdb = tmp_path / "structure.pdb"
         _write_test_pdb(pdb, n_residues=10)
@@ -497,7 +497,7 @@ class TestFullProteinAnalysis:
         assert "structure_analysis" in result
 
     def test_full_analysis_summary_keys(self):
-        from metainformant.protein.orchestration import full_protein_analysis
+        from metainformant.protein.workflow.orchestration import full_protein_analysis
 
         result = full_protein_analysis("ACDEFGHIKLM")
         summary = result["summary"]
@@ -510,7 +510,7 @@ class TestBatchCompareStructures:
     """Tests for batch structure comparison."""
 
     def test_batch_compare_three_structures(self, tmp_path):
-        from metainformant.protein.orchestration import batch_compare_structures
+        from metainformant.protein.workflow.orchestration import batch_compare_structures
 
         paths = []
         for name in ("a", "b", "c"):
@@ -526,7 +526,7 @@ class TestBatchCompareStructures:
         assert len(result["rmsd_matrix"][0]) == 3
 
     def test_batch_compare_single_structure(self, tmp_path):
-        from metainformant.protein.orchestration import batch_compare_structures
+        from metainformant.protein.workflow.orchestration import batch_compare_structures
 
         p = tmp_path / "only.pdb"
         _write_test_pdb(p, n_residues=5)
@@ -535,7 +535,7 @@ class TestBatchCompareStructures:
         assert "error" in result
 
     def test_batch_rmsd_matrix_symmetry(self, tmp_path):
-        from metainformant.protein.orchestration import batch_compare_structures
+        from metainformant.protein.workflow.orchestration import batch_compare_structures
 
         paths = []
         for name in ("x", "y"):

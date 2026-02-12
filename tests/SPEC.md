@@ -2,7 +2,7 @@
 
 ## Scope
 
-Comprehensive pytest test suite for METAINFORMANT. Contains real-implementation tests covering all 19 domain modules with strict adherence to the NO MOCKING policy. Tests validate functionality using actual algorithms, real file I/O, and genuine API calls.
+Comprehensive pytest test suite for METAINFORMANT. Contains real-implementation tests covering all 25 domain modules with strict adherence to the NO MOCKING policy. Tests validate functionality using actual algorithms, real file I/O, and genuine API calls.
 
 ## Architecture
 

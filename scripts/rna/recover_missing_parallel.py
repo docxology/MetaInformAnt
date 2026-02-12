@@ -97,7 +97,7 @@ def run_quant_single(sra_id, work_dir, fastq_dir, genome_dir, index_dir, full_me
         "--metadata",
         str(single_metadata),
         "--threads",
-        "4",
+        "2",
         "--index_dir",
         str(index_dir),
         "--fasta_dir",
@@ -112,7 +112,7 @@ def run_quant_single(sra_id, work_dir, fastq_dir, genome_dir, index_dir, full_me
         log_file = work_dir / "logs" / f"quant_{sra_id}.log"
         log_file.parent.mkdir(exist_ok=True)
         with open(log_file, "w") as log:
-            subprocess.run(cmd, check=True, env=env, stdout=log, stderr=subprocess.STDOUT)
+            subprocess.run(cmd, check=True, env=env, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL)
         print(f"[{sra_id}] Quant finished.")
         # Clean up temp metadata
         single_metadata.unlink(missing_ok=True)

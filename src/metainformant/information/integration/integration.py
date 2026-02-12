@@ -12,16 +12,15 @@ from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
 # Import information theory functions
 try:
-    from metainformant.information.metrics.syntactic import (
+    from metainformant.information.metrics.core.syntactic import (
         mutual_information,
         shannon_entropy,
-        shannon_entropy_from_counts,
     )
 
     HAS_SYNTACTIC = True
@@ -30,7 +29,7 @@ except ImportError:
     logger.warning("Syntactic information functions not available")
 
 try:
-    from metainformant.information.metrics.analysis import information_profile
+    from metainformant.information.metrics.analysis.analysis import information_profile
 
     HAS_ANALYSIS = True
 except ImportError:

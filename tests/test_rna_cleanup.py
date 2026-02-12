@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.rna import cleanup
+from metainformant.rna.core import cleanup
 
 
 class TestFindPartialDownloads:

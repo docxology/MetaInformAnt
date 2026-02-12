@@ -8,7 +8,8 @@ from pathlib import Path
 import pytest
 
 from metainformant.core.io.io import dump_json, ensure_directory, write_tsv
-from metainformant.gwas import execute_gwas_workflow, load_gwas_config
+from metainformant.gwas.data.config import load_gwas_config
+from metainformant.gwas.workflow.workflow_execution import execute_gwas_workflow
 
 
 def test_gwas_workflow_config_only(tmp_path: Path) -> None:

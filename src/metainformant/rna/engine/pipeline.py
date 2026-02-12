@@ -9,7 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 from metainformant.rna.core.configs import RNAPipelineConfig
 
 logger = logging.get_logger(__name__)

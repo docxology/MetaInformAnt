@@ -13,7 +13,7 @@ from typing import Any, Dict, List
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization.visualization_phenotype import (
+from metainformant.gwas.visualization.interactive.phenotype import (
     genotype_phenotype_boxplot,
     phenotype_correlation_matrix,
     phenotype_distribution,

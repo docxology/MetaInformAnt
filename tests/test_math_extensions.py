@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from metainformant.math import ld_decay_r2, realized_heritability, watterson_theta
+from metainformant.math.population_genetics.coalescent import watterson_theta
+from metainformant.math.population_genetics.ld import ld_decay_r2
+from metainformant.math.quantitative_genetics.core import realized_heritability
 
 
 def test_ld_decay_and_watterson_theta_and_realized_h2():

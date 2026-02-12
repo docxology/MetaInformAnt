@@ -1,0 +1,93 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Atta cephalotes
+# NCBI Taxonomy ID: 12957
+# Assembly: GCF_000143395.1 (Attacep1.0)
+# Assembly Level: Scaffold
+# Sequencing: Sanger + 454
+# Annotation: NCBI Atta cephalotes Annotation Release 100
+# Annotation Release: 100
+# Notes: Leafcutter ant, fungus-growing
+# RNA-seq Samples Available: 239
+# Generated: 2026-02-09
+
+# Paths are resolved relative to repository root
+work_dir: blue/amalgkit/atta_cephalotes/work
+log_dir: blue/amalgkit/atta_cephalotes/logs
+threads: 12
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Atta_cephalotes
+
+taxon_id: 12957
+
+# Reference genome configuration — shared genome directory
+genome:
+  accession: GCF_000143395.1
+  assembly_name: Attacep1.0
+  annotation_release: 100
+  dest_dir: blue/amalgkit/shared/genome/Atta_cephalotes
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/143/395/GCF_000143395.1_Attacep1.0/
+  files:
+    genomic_fasta: GCF_000143395.1_Attacep1.0_genomic.fna.gz
+    transcriptome_fasta: GCF_000143395.1_Attacep1.0_rna_from_genomic.fna.gz
+    cds_fasta: GCF_000143395.1_Attacep1.0_cds_from_genomic.fna.gz
+    protein_fasta: GCF_000143395.1_Attacep1.0_protein.faa.gz
+    annotation_gff: GCF_000143395.1_Attacep1.0_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: blue/amalgkit/atta_cephalotes/work
+    search_string: '"Atta cephalotes"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: blue/amalgkit/atta_cephalotes/fastq/getfastq
+  select:
+    max_sample: 999999
+    mark_missing_rank: none
+    priority: "completeness"
+    redo: no
+  getfastq:
+    out_dir: blue/amalgkit/atta_cephalotes/fastq
+    threads: 8
+    jobs: 4
+    redo: no
+    aws: yes
+    gcp: no
+    ncbi: no
+    pfd: no
+    fastp: no
+    max_bp: 50000000
+  quant:
+    out_dir: blue/amalgkit/atta_cephalotes/work
+    threads: 6
+    redo: no
+    build_index: no
+    keep_fastq: no
+    index_dir: blue/amalgkit/shared/genome/Atta_cephalotes/index
+    fasta_dir: blue/amalgkit/shared/genome/Atta_cephalotes
+  merge:
+    out: blue/amalgkit/atta_cephalotes/merged/merged_abundance.tsv
+    out_dir: blue/amalgkit/atta_cephalotes/merged
+  cstmm:
+    out_dir: blue/amalgkit/atta_cephalotes/work
+    orthogroup_table: ""
+  curate:
+    out_dir: blue/amalgkit/atta_cephalotes/work
+  csca:
+    out_dir: blue/amalgkit/atta_cephalotes/work
+    orthogroup_table: ""
+  sanity: {}

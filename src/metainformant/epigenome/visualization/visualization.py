@@ -17,7 +17,9 @@ from matplotlib.axes import Axes
 from matplotlib.collections import PatchCollection
 from matplotlib.patches import Rectangle
 
-from metainformant.core import logging, paths, validation
+from metainformant.core.data import validation
+from metainformant.core.io import paths
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 

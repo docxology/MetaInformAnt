@@ -1,0 +1,93 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Vollenhovia emeryi
+# NCBI Taxonomy ID: 411798
+# Assembly: GCF_000949405.1 (V.emery_V1.0)
+# Assembly Level: Scaffold
+# Sequencing: Illumina
+# Annotation: NCBI Vollenhovia emeryi Annotation Release 100
+# Annotation Release: 100
+# Notes: Asian ant species, reproductive polymorphism
+# RNA-seq Samples Available: 15
+# Generated: 2026-02-09
+
+# Paths are resolved relative to repository root
+work_dir: blue/amalgkit/vollenhovia_emeryi/work
+log_dir: blue/amalgkit/vollenhovia_emeryi/logs
+threads: 12
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Vollenhovia_emeryi
+
+taxon_id: 411798
+
+# Reference genome configuration — shared genome directory
+genome:
+  accession: GCF_000949405.1
+  assembly_name: V.emery_V1.0
+  annotation_release: 100
+  dest_dir: blue/amalgkit/shared/genome/Vollenhovia_emeryi
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/949/405/GCF_000949405.1_V.emery_V1.0/
+  files:
+    genomic_fasta: GCF_000949405.1_V.emery_V1.0_genomic.fna.gz
+    transcriptome_fasta: GCF_000949405.1_V.emery_V1.0_rna_from_genomic.fna.gz
+    cds_fasta: GCF_000949405.1_V.emery_V1.0_cds_from_genomic.fna.gz
+    protein_fasta: GCF_000949405.1_V.emery_V1.0_protein.faa.gz
+    annotation_gff: GCF_000949405.1_V.emery_V1.0_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: blue/amalgkit/vollenhovia_emeryi/work
+    search_string: '"Vollenhovia emeryi"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: blue/amalgkit/vollenhovia_emeryi/fastq/getfastq
+  select:
+    max_sample: 999999
+    mark_missing_rank: none
+    priority: "completeness"
+    redo: no
+  getfastq:
+    out_dir: blue/amalgkit/vollenhovia_emeryi/fastq
+    threads: 8
+    jobs: 4
+    redo: no
+    aws: yes
+    gcp: no
+    ncbi: no
+    pfd: no
+    fastp: no
+    max_bp: 50000000
+  quant:
+    out_dir: blue/amalgkit/vollenhovia_emeryi/work
+    threads: 6
+    redo: no
+    build_index: no
+    keep_fastq: no
+    index_dir: blue/amalgkit/shared/genome/Vollenhovia_emeryi/index
+    fasta_dir: blue/amalgkit/shared/genome/Vollenhovia_emeryi
+  merge:
+    out: blue/amalgkit/vollenhovia_emeryi/merged/merged_abundance.tsv
+    out_dir: blue/amalgkit/vollenhovia_emeryi/merged
+  cstmm:
+    out_dir: blue/amalgkit/vollenhovia_emeryi/work
+    orthogroup_table: ""
+  curate:
+    out_dir: blue/amalgkit/vollenhovia_emeryi/work
+  csca:
+    out_dir: blue/amalgkit/vollenhovia_emeryi/work
+    orthogroup_table: ""
+  sanity: {}

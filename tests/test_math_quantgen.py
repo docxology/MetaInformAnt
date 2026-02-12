@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from metainformant.math import breeders_equation_response, lande_equation_response, narrow_sense_heritability
+from metainformant.math.population_genetics.selection import breeders_equation_response
+from metainformant.math.quantitative_genetics.core import lande_equation_response, narrow_sense_heritability
 
 
 def test_narrow_sense_heritability_bounds():

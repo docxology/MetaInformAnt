@@ -1,6 +1,6 @@
 """Tests for DNA restriction site finding."""
 
-from metainformant.dna import restriction
+from metainformant.dna.sequence import restriction
 
 
 def test_find_restriction_sites_simple() -> None:

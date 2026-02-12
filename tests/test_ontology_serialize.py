@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.ontology.serialize import load_ontology, save_ontology
-from metainformant.ontology.types import Ontology, Term
+from metainformant.ontology.query.serialize import load_ontology, save_ontology
+from metainformant.ontology.core.types import Ontology, Term
 
 
 class TestSerialization:

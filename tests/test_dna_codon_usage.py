@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.dna import codon
+from metainformant.dna.expression import codon
 
 
 def test_codon_usage_counts_and_freqs() -> None:

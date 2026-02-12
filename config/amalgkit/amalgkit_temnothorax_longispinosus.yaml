@@ -1,0 +1,93 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Temnothorax longispinosus
+# NCBI Taxonomy ID: 300112
+# Assembly: GCF_030848805.1 (Tlon_JGU_v1)
+# Assembly Level: Chromosome
+# Sequencing: PacBio HiFi
+# Annotation: GCF_030848805.1-RS_2025_02
+# Annotation Release: RS_2025_02
+# Notes: Chromosome-level assembly, social parasite host
+# RNA-seq Samples Available: 508
+# Generated: 2026-02-09
+
+# Paths are resolved relative to repository root
+work_dir: blue/amalgkit/temnothorax_longispinosus/work
+log_dir: blue/amalgkit/temnothorax_longispinosus/logs
+threads: 12
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Temnothorax_longispinosus
+
+taxon_id: 300112
+
+# Reference genome configuration — shared genome directory
+genome:
+  accession: GCF_030848805.1
+  assembly_name: Tlon_JGU_v1
+  annotation_release: RS_2025_02
+  dest_dir: blue/amalgkit/shared/genome/Temnothorax_longispinosus
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/030/848/805/GCF_030848805.1_Tlon_JGU_v1/
+  files:
+    genomic_fasta: GCF_030848805.1_Tlon_JGU_v1_genomic.fna.gz
+    transcriptome_fasta: GCF_030848805.1_Tlon_JGU_v1_rna_from_genomic.fna.gz
+    cds_fasta: GCF_030848805.1_Tlon_JGU_v1_cds_from_genomic.fna.gz
+    protein_fasta: GCF_030848805.1_Tlon_JGU_v1_protein.faa.gz
+    annotation_gff: GCF_030848805.1_Tlon_JGU_v1_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: blue/amalgkit/temnothorax_longispinosus/work
+    search_string: '"Temnothorax longispinosus"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: blue/amalgkit/temnothorax_longispinosus/fastq/getfastq
+  select:
+    max_sample: 999999
+    mark_missing_rank: none
+    priority: "completeness"
+    redo: no
+  getfastq:
+    out_dir: blue/amalgkit/temnothorax_longispinosus/fastq
+    threads: 8
+    jobs: 4
+    redo: no
+    aws: yes
+    gcp: no
+    ncbi: no
+    pfd: no
+    fastp: no
+    max_bp: 50000000
+  quant:
+    out_dir: blue/amalgkit/temnothorax_longispinosus/work
+    threads: 6
+    redo: no
+    build_index: no
+    keep_fastq: no
+    index_dir: blue/amalgkit/shared/genome/Temnothorax_longispinosus/index
+    fasta_dir: blue/amalgkit/shared/genome/Temnothorax_longispinosus
+  merge:
+    out: blue/amalgkit/temnothorax_longispinosus/merged/merged_abundance.tsv
+    out_dir: blue/amalgkit/temnothorax_longispinosus/merged
+  cstmm:
+    out_dir: blue/amalgkit/temnothorax_longispinosus/work
+    orthogroup_table: ""
+  curate:
+    out_dir: blue/amalgkit/temnothorax_longispinosus/work
+  csca:
+    out_dir: blue/amalgkit/temnothorax_longispinosus/work
+    orthogroup_table: ""
+  sanity: {}

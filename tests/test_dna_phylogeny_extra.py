@@ -6,7 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.dna import phylogeny, sequences
+from metainformant.dna.sequence import core as sequences
+from metainformant.dna import phylogeny
 
 
 @pytest.mark.slow

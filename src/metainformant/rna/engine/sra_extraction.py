@@ -13,7 +13,7 @@ import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 if TYPE_CHECKING:
     from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig

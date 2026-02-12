@@ -1,15 +1,6 @@
 """Phenotype integration with other -omics modules."""
+from __future__ import annotations
 
-from .cross_omic import (
-    multi_phenotype_integration,
-    phenotype_environment_interaction,
-    phenotype_genotype_association,
-    trait_expression_correlation,
-)
+from . import cross_omic
 
-__all__ = [
-    "phenotype_genotype_association",
-    "trait_expression_correlation",
-    "multi_phenotype_integration",
-    "phenotype_environment_interaction",
-]
+__all__ = ['cross_omic']

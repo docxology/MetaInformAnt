@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from metainformant.gwas import compute_kinship_matrix
+from metainformant.gwas.analysis.structure import compute_kinship_matrix
 
 
 class TestKinshipMatrixProperties:

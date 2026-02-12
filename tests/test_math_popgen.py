@@ -4,13 +4,10 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.math import (
-    fixation_probability,
-    hardy_weinberg_genotype_freqs,
-    mutation_update,
-    popgen,
-    selection_update,
-)
+from metainformant.math.population_genetics.core import hardy_weinberg_genotype_freqs
+from metainformant.math.population_genetics.selection import mutation_update, selection_update
+from metainformant.math.population_genetics.statistics import fixation_probability
+from metainformant.math import population_genetics as popgen
 
 
 class TestMathPopgen:
