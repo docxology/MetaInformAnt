@@ -5,7 +5,7 @@ This document provides a comprehensive verification checklist for the complete e
 ## Pre-Execution Verification ✅
 
 ### Configuration Files
-- [x] `amalgkit_pogonomyrmex_barbatus.yaml` - Loads successfully, 11 steps configured
+- [x] `amalgkit_pbarbatus.yaml` - Loads successfully, 11 steps configured
 - [x] `amalgkit_template.yaml` - Template loads successfully
 - [x] `amalgkit_test.yaml` - Test config loads successfully
 - [x] All paths resolve correctly relative to repo root
@@ -176,7 +176,7 @@ This document provides a comprehensive verification checklist for the complete e
 
 ### Check Overall Status
 ```bash
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --status --detailed
 ```
 
 ### Monitor Downloads
@@ -217,7 +217,7 @@ Once workflow completes, verify:
 
 ```bash
 # Final status check
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --status --detailed
 
 # Verify all outputs
 ls -lh output/amalgkit/pogonomyrmex_barbatus/merged/merged_abundance.tsv

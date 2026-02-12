@@ -247,8 +247,8 @@ plt.savefig("protein_analysis.png", dpi=300, bbox_inches='tight')
 ## Related Documentation
 
 - **[Protein Analysis](../protein/)**: Core protein analysis functions
-- **[Structure Analysis](../protein/structure_analysis.md)**: 3D structure algorithms
-- **[Sequence Analysis](../protein/sequences.md)**: Sequence processing utilities
+- **[Structure Analysis](../protein/index.md)**: 3D structure algorithms
+- **[Sequence Analysis](../protein/proteomes.md)**: Sequence processing utilities
 - **[Visualization Integration](integration.md)**: Cross-module visualization patterns
 
 This module provides comprehensive protein visualization capabilities integrated with METAINFORMANT's protein analysis workflows.

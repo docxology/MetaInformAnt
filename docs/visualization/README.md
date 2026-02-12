@@ -4,10 +4,12 @@
 Visualization and plotting utilities module for METAINFORMANT.
 
 ## 📦 Contents
-- **[analysis/](analysis/)**
-- **[genomics/](genomics/)**
-- **[plots/](plots/)**
-- `[__init__.py](__init__.py)`
+- **[analysis/](analysis/)** — Statistical, quality, and dimensionality reduction plots
+- **[genomics/](genomics/)** — Genomics-specific visualizations (expression, trees, networks)
+- **[plots/](plots/)** — Core plotting functions (basic, specialized, animations)
+- **[config/](config/)** — Color palettes and theme configuration
+- **[dashboards/](dashboards/)** — Composite and interactive dashboard layouts
+- **[interactive_dashboards/](interactive_dashboards/)** — Interactive web-based dashboards
 
 ## 📊 Structure
 
@@ -20,5 +22,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.visualization import ...
+from metainformant.visualization import ...
 ```

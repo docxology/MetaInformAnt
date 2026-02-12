@@ -251,7 +251,7 @@ pytest tests/test_gwas_config_amellifera.py -v
 
 ## Related Documentation
 
-- [GWAS Configuration Template](../config/gwas_template.yaml)
+- [GWAS Configuration Template](../../config/gwas/gwas_template.yaml)
 - [GWAS Workflow Documentation](./workflow.md)
 - [GWAS Configuration Guide](./config.md)
 

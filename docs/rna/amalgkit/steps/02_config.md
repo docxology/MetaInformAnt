@@ -492,8 +492,8 @@ Default `config_name` is `base`.
 
 ## See Also
 
-- **Previous Step**: [`metadata.md`](metadata.md) - Retrieving SRA metadata
-- **Next Step**: [`select.md`](select.md) - Selecting samples with configs
+- **Previous Step**: [`01_metadata.md`](01_metadata.md) - Retrieving SRA metadata
+- **Next Step**: [`03_select.md`](03_select.md) - Selecting samples with configs
 - **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
 - **Testing**: `tests/test_rna_amalgkit_steps.py::test_config_basic_execution`
 

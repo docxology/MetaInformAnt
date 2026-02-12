@@ -22,6 +22,7 @@ METAINFORMANT provides a unified orchestrator script for RNA-seq workflows:
    - All 11 amalgkit steps in correct order
 
 **DEPRECATED**: The following scripts have been removed:
+
 - `workflow_ena_integrated.py` - Use `run_workflow.py` instead
 - `batch_download_species.py` - Use `run_workflow.py` with `num_download_workers` in config
 - `run_multi_species.py` - Use `run_workflow.py` separately for each species config
@@ -48,6 +49,7 @@ METAINFORMANT provides a unified orchestrator script for RNA-seq workflows:
 **Best for**: All end-to-end RNA-seq workflows
 
 **Features**:
+
 - Complete end-to-end execution via `execute_workflow()`
 - Automatic genome setup (if genome config exists)
 - Per-sample processing: download → quantify → delete FASTQ
@@ -57,24 +59,26 @@ METAINFORMANT provides a unified orchestrator script for RNA-seq workflows:
 - ENA-based downloads (100% reliability)
 
 **Usage**:
+
 ```bash
 # Full end-to-end workflow (all steps)
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml
 
 # Specific steps only
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --steps getfastq quant merge
 
 # Check status
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --status
 
 # Detailed status
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --status --detailed
 
 # Cleanup unquantified samples
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --cleanup-unquantified
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --cleanup-unquantified
 ```
 
 **Configuration for parallel downloads**:
+
 ```yaml
 steps:
   getfastq:
@@ -93,11 +97,13 @@ steps:
 ### Migration
 
 **Old approach** (removed):
+
 ```bash
 python3 scripts/rna/workflow_ena_integrated.py --config config.yaml
 ```
 
 **New approach** (recommended):
+
 ```bash
 python3 scripts/rna/run_workflow.py config.yaml
 ```
@@ -137,18 +143,34 @@ steps:
 
 ## Multi-Species Processing
 
-**DEPRECATED**: This section describes functionality that has been consolidated into `run_workflow.py`.
+**Current Recommendation**: Use the new `orchestrate_species.py` script for robust, resumable multi-species processing.
 
-**Current Recommendation**: Use `run_workflow.py` separately for each species config. For multiple species, run it separately for each species, either sequentially or in parallel.
+### New Multi-Species Orchestrator
+
+**Script**: `scripts/rna/orchestrate_species.py`
+
+**Usage**:
+
+```bash
+uv run python scripts/rna/orchestrate_species.py --config config/amalgkit/cross_species.yaml
+```
+
+**Features**:
+
+- **Sequential/Robust**: Runs species one by one, ensuring isolation.
+- **Resumable**: Skips completed steps automatically.
+- **Centralized Logging**: Keeps logs organized in `output/amalgkit/logs/`.
 
 ### Migration
 
 **Old approach** (removed):
+
 ```bash
 python3 scripts/rna/run_multi_species.py
 ```
 
 **New approach** (recommended):
+
 ```bash
 # Run separately for each species
 python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml
@@ -157,6 +179,7 @@ python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species3.yaml
 ```
 
 **For parallel execution** (multiple species at once):
+
 ```bash
 # Run in background for each species
 nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml > logs/species1.log 2>&1 &
@@ -207,11 +230,13 @@ python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species2.yaml
 ### Migration
 
 **Old approach** (removed):
+
 ```bash
 python3 scripts/rna/batch_download_species.py --total-threads 24
 ```
 
 **New approach** (recommended):
+
 ```yaml
 # Configure parallel downloads in each species config file:
 steps:
@@ -221,12 +246,14 @@ steps:
 ```
 
 Then run `run_workflow.py` separately for each species:
+
 ```bash
 python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml
 python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species2.yaml
 ```
 
 For multiple species, run workflows in parallel using `nohup` or `screen`:
+
 ```bash
 # Run in background for each species
 nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml > logs/species1.log 2>&1 &
@@ -285,14 +312,14 @@ This workflow ensures maximum disk efficiency - only one sample's FASTQ files ex
 For processing individual samples manually (e.g., testing or recovery):
 
 ```python
-from metainformant.rna.steps.quant import quantify_sample
-from metainformant.rna.steps.getfastq import delete_sample_fastqs
+from metainformant.rna.engine.workflow_steps import quantify_sample
+from metainformant.rna.engine.sra_extraction import delete_sample_fastqs
 from metainformant.rna.workflow import load_workflow_config
 from metainformant.core.io import read_delimited
 from pathlib import Path
 
 # Load config and metadata
-cfg = load_workflow_config("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
+cfg = load_workflow_config("config/amalgkit/amalgkit_pbarbatus.yaml")
 metadata_file = cfg.work_dir / "metadata" / "metadata.tsv"
 rows = list(read_delimited(metadata_file, delimiter="\t"))
 sample_rows = [row for row in rows if row.get("run") == "SRR14740514"]
@@ -322,7 +349,7 @@ if success and abundance_path and abundance_path.exists():
 ```bash
 python3 scripts/rna/test_quantify_sample.py \
     --sample SRR14740514 \
-    --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+    --config config/amalgkit/amalgkit_pbarbatus.yaml
 ```
 
 ### Batch Cleanup
@@ -333,11 +360,12 @@ The `cleanup_unquantified_samples()` function processes all downloaded but unqua
 from metainformant.rna.orchestration import cleanup_unquantified_samples
 from pathlib import Path
 
-config_path = Path("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
+config_path = Path("config/amalgkit/amalgkit_pbarbatus.yaml")
 quantified, failed = cleanup_unquantified_samples(config_path)
 ```
 
 This function:
+
 - Finds all samples with FASTQ files but no quantification results
 - Quantifies each sample using `quantify_sample()`
 - Deletes FASTQ files after successful quantification using `delete_sample_fastqs()`
@@ -383,6 +411,7 @@ See [API.md](API.md#orchestration-functions) for complete function documentation
 ## When to Use run_workflow.py
 
 Use `run_workflow.py` for:
+
 - ✅ All end-to-end RNA-seq workflows
 - ✅ Single-species processing (recommended)
 - ✅ Production workflows requiring maximum reliability
@@ -406,21 +435,25 @@ Use `run_workflow.py` for:
 
 ### Common Issues
 
-**Downloads failing**: 
+**Downloads failing**:
+
 - Check network connectivity
 - Verify NCBI_EMAIL is set
 - Check that `num_download_workers` is configured in config file
 
 **Disk space issues**:
+
 - Use `--cleanup-unquantified` to cleanup downloaded but unquantified samples
 - Use `--cleanup-partial` to remove partial downloads
 - Reduce `num_download_workers` if disk space is limited
 
 **Virtual environment issues**:
+
 - Scripts automatically detect and activate venv (`.venv` or `/tmp/metainformant_venv`)
 - If issues persist, manually activate: `source .venv/bin/activate`
 
 **Performance issues**:
+
 - Adjust `num_download_workers` in config file based on bandwidth and CPU
 - Monitor resource usage: `python3 scripts/rna/run_workflow.py <config> --status`
 - Check active processes: `ps aux | grep "run_workflow\|amalgkit" | grep -v grep`
@@ -434,6 +467,7 @@ Use `run_workflow.py` for:
 ## See Also
 
 ### Documentation
+
 - **[API Reference](API.md#orchestration-functions)** - Complete function documentation
 - **[Function Index](amalgkit/FUNCTIONS.md)** - Quick function lookup
 - **[Workflow Guide](workflow.md)** - Workflow planning and execution
@@ -441,7 +475,7 @@ Use `run_workflow.py` for:
 - **[Main Index](README.md)** - RNA domain master index
 
 ### Related
+
 - **Source Scripts**: `scripts/rna/` - Implementation details
 - **Module Documentation**: `src/metainformant/rna/README.md` - API reference
 - **Examples**: [EXAMPLES.md](EXAMPLES.md) - Real-world usage examples
-

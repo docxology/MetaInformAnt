@@ -20,5 +20,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.simulation import ...
+from metainformant.simulation import ...
 ```

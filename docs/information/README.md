@@ -4,10 +4,10 @@
 Information theory analysis module for METAINFORMANT.
 
 ## 📦 Contents
-- **[integration/](integration/)**
-- **[metrics/](metrics/)**
-- **[workflow/](workflow/)**
-- `[__init__.py](__init__.py)`
+- **[integration/](integration/)** — Cross-module information integration
+- **[metrics/](metrics/)** — Information metrics (`core/`, `advanced/`, `analysis/` subpackages)
+- **[network_info/](network_info/)** — Network information analysis
+- **[workflow/](workflow/)** — Information theory workflows
 
 ## 📊 Structure
 
@@ -20,5 +20,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.information import ...
+from metainformant.information import ...
 ```

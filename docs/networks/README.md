@@ -4,9 +4,11 @@
 Network analysis module for METAINFORMANT.
 
 ## 📦 Contents
-- **[analysis/](analysis/)**
-- **[interaction/](interaction/)**
-- `[__init__.py](__init__.py)`
+- **[analysis/](analysis/)** — Graph algorithms, community detection, pathway analysis
+- **[interaction/](interaction/)** — Protein-protein and regulatory interactions
+- **[regulatory/](regulatory/)** — Gene regulatory network analysis
+- **[config/](config/)** — Network analysis configuration
+- **[workflow/](workflow/)** — Network analysis workflows
 
 ## 📊 Structure
 
@@ -19,5 +21,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.networks import ...
+from metainformant.networks import ...
 ```

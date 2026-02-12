@@ -80,8 +80,7 @@ steps:
     index_dir: blue/amalgkit/shared/genome/Ooceraea_biroi/index
     fasta_dir: blue/amalgkit/shared/genome/Ooceraea_biroi
   merge:
-    out: blue/amalgkit/ooceraea_biroi/merged/merged_abundance.tsv
-    out_dir: blue/amalgkit/ooceraea_biroi/merged
+    out_dir: blue/amalgkit/ooceraea_biroi/work
   cstmm:
     out_dir: blue/amalgkit/ooceraea_biroi/work
     orthogroup_table: ""

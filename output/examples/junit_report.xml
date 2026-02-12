@@ -1,0 +1,124 @@
+<?xml version="1.0" ?>
+<testsuites name="METAINFORMANT Examples" tests="31" failures="9" time="78.36446285247803">
+  <testsuite name="examples" tests="31" failures="9" time="78.36446285247803">
+    <testcase name="core/example_config.py" classname="examples.core" time="2.492765188217163">
+      <failure message="Non-zero exit code: 1" type="failed">2026-02-07 15:57:32 | WARNING | metainformant.life_events.workflow.workflow | Life events ML components not available
+2026-02-07 15:57:32 | WARNING | metainformant.ml.features.dimensionality | umap-learn not available, UMAP disabled
+Traceback (most recent call last):
+  File "/Users/mini/Documents/GitHub/metainformant/examples/core/example_config.py", line 18, in &lt;module&gt;
+    from metainformant.core.config import apply_env_overrides, load_mapping_from_file
+ModuleNotFoundError: No module named 'metainformant.core.config'
+</failure>
+    </testcase>
+    <testcase name="core/example_io.py" classname="examples.core" time="2.4882099628448486">
+      <failure message="Non-zero exit code: 1" type="failed">2026-02-07 15:57:34 | WARNING | metainformant.life_events.workflow.workflow | Life events ML components not available
+2026-02-07 15:57:34 | WARNING | metainformant.ml.features.dimensionality | umap-learn not available, UMAP disabled
+Traceback (most recent call last):
+  File "/Users/mini/Documents/GitHub/metainformant/examples/core/example_io.py", line 182, in &lt;module&gt;
+    main()
+    ~~~~^^
+  File "/Users/mini/Documents/GitHub/metainformant/examples/core/example_io.py", line 107, in main
+    loaded_jsonl_gz = list(io.read_jsonl(jsonl_gz_file))
+  File "/Users/mini/Documents/GitHub/metainformant/src/metainformant/core/io/io.py", line 238, in read_jsonl
+    for line in fh:
+                ^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2_1/Frameworks/Python.framework/Versions/3.14/lib/python3.14/gzip.py", line 360, in read1
+    return self._buffer.read1(size)
+           ~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/opt/homebrew/Cellar/python@3.14/3.14.2_1/Frameworks/Python.framework/Versions/3.14/lib</failure>
+    </testcase>
+    <testcase name="core/example_logging.py" classname="examples.core" time="2.778212308883667"/>
+    <testcase name="core/example_paths.py" classname="examples.core" time="2.2242588996887207"/>
+    <testcase name="core/example_workflow.py" classname="examples.core" time="2.240784168243408"/>
+    <testcase name="dna/example_alignment.py" classname="examples.dna" time="2.3478000164031982">
+      <failure message="Non-zero exit code: 1" type="failed">2026-02-07 15:57:44 | WARNING | metainformant.life_events.workflow.workflow | Life events ML components not available
+2026-02-07 15:57:44 | WARNING | metainformant.ml.features.dimensionality | umap-learn not available, UMAP disabled
+Traceback (most recent call last):
+  File "/Users/mini/Documents/GitHub/metainformant/examples/dna/example_alignment.py", line 287, in &lt;module&gt;
+    main()
+    ~~~~^^
+  File "/Users/mini/Documents/GitHub/metainformant/examples/dna/example_alignment.py", line 73, in main
+    "aligned_seq1": alignment_result.aligned_seq1,
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'AlignmentResult' object has no attribute 'aligned_seq1'
+</failure>
+    </testcase>
+    <testcase name="dna/example_phylogeny.py" classname="examples.dna" time="2.3036510944366455"/>
+    <testcase name="dna/example_population.py" classname="examples.dna" time="2.2644851207733154"/>
+    <testcase name="dna/example_sequences.py" classname="examples.dna" time="2.300572156906128">
+      <failure message="Non-zero exit code: 1" type="failed">2026-02-07 15:57:51 | WARNING | metainformant.life_events.workflow.workflow | Life events ML components not available
+2026-02-07 15:57:51 | WARNING | metainformant.ml.features.dimensionality | umap-learn not available, UMAP disabled
+Traceback (most recent call last):
+  File "/Users/mini/Documents/GitHub/metainformant/examples/dna/example_sequences.py", line 294, in &lt;module&gt;
+    main()
+    ~~~~^^
+  File "/Users/mini/Documents/GitHub/metainformant/examples/dna/example_sequences.py", line 85, in main
+    counts = sequences.kmer_counts(sequence, k)
+             ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'metainformant.dna.sequence.core' has no attribute 'kmer_counts'
+</failure>
+    </testcase>
+    <testcase name="ecology/example_community.py" classname="examples.ecology" time="2.15236496925354">
+      <failure message="Non-zero exit code: 1" type="failed">2026-02-07 15:57:53 | WARNING | metainformant.life_events.workflow.workflow | Life events ML components not available
+2026-02-07 15:57:53 | WARNING | metainformant.ml.features.dimensionality | umap-learn not available, UMAP disabled
+Traceback (most recent call last):
+  File "/Users/mini/Documents/GitHub/metainformant/examples/ecology/example_community.py", line 20, in &lt;module&gt;
+    from metainformant.ecology.community import community_metrics
+ModuleNotFoundError: No module named 'metainformant.ecology.community'
+</failure>
+    </testcase>
+    <testcase name="epigenome/example_methylation.py" classname="examples.epigenome" time="2.2023420333862305"/>
+    <testcase name="gwas/example_association.py" classname="examples.gwas" time="2.346161127090454"/>
+    <testcase name="gwas/example_visualization.py" classname="examples.gwas" time="2.2759859561920166"/>
+    <testcase name="information/example_entropy.py" classname="examples.information" time="2.195204019546509">
+      <failure message="Non-zero exit code: 1" type="failed">2026-02-07 15:58:02 | WARNING | metainformant.life_events.workflow.workflow | Life events ML components not available
+2026-02-07 15:58:02 | WARNING | metainformant.ml.features.dimensionality | umap-learn not available, UMAP disabled
+Traceback (most recent call last):
+  File "/Users/mini/Documents/GitHub/metainformant/examples/information/example_entropy.py", line 18, in &lt;module&gt;
+    from metainformant.information.syntactic import shannon_entropy, shannon_entropy_from_counts
+ModuleNotFoundError: No module named 'metainformant.information.syntactic'
+</failure>
+    </testcase>
+    <testcase name="integration/example_complete_workflow.py" classname="examples.integration" time="4.604586839675903"/>
+    <testcase name="integration/example_dna_rna.py" classname="examples.integration" time="2.257960081100464"/>
+    <testcase name="integration/example_multiomics.py" classname="examples.integration" time="2.1655800342559814"/>
+    <testcase name="life_events/example_events.py" classname="examples.life_events" time="2.1908860206604004"/>
+    <testcase name="math/example_dynamics.py" classname="examples.math" time="2.1710400581359863"/>
+    <testcase name="ml/example_pipeline.py" classname="examples.ml" time="2.493520975112915">
+      <failure message="Non-zero exit code: 1" type="failed">2026-02-07 15:58:18 | WARNING | metainformant.life_events.workflow.workflow | Life events ML components not available
+2026-02-07 15:58:18 | WARNING | metainformant.ml.features.dimensionality | umap-learn not available, UMAP disabled
+Traceback (most recent call last):
+  File "/Users/mini/Documents/GitHub/metainformant/examples/ml/example_pipeline.py", line 20, in &lt;module&gt;
+    from metainformant.ml.classification import cross_validate_biological, train_ensemble_classifier
+ModuleNotFoundError: No module named 'metainformant.ml.classification'
+</failure>
+    </testcase>
+    <testcase name="multiomics/example_integration.py" classname="examples.multiomics" time="2.1821370124816895"/>
+    <testcase name="networks/example_networks.py" classname="examples.networks" time="2.117065906524658">
+      <failure message="Non-zero exit code: 1" type="failed">2026-02-07 15:58:22 | WARNING | metainformant.life_events.workflow.workflow | Life events ML components not available
+2026-02-07 15:58:22 | WARNING | metainformant.ml.features.dimensionality | umap-learn not available, UMAP disabled
+Traceback (most recent call last):
+  File "/Users/mini/Documents/GitHub/metainformant/examples/networks/example_networks.py", line 18, in &lt;module&gt;
+    from metainformant.networks.graph import centrality_measures, create_network
+ModuleNotFoundError: No module named 'metainformant.networks.graph'
+</failure>
+    </testcase>
+    <testcase name="ontology/example_go.py" classname="examples.ontology" time="2.3468968868255615"/>
+    <testcase name="phenotype/example_traits.py" classname="examples.phenotype" time="2.1437628269195557"/>
+    <testcase name="protein/example_sequences.py" classname="examples.protein" time="2.1591339111328125"/>
+    <testcase name="quality/example_qc.py" classname="examples.quality" time="2.2929091453552246"/>
+    <testcase name="rna/example_amalgkit.py" classname="examples.rna" time="2.8888449668884277">
+      <failure message="Non-zero exit code: 1" type="failed">2026-02-07 15:58:34 | WARNING | metainformant.life_events.workflow.workflow | Life events ML components not available
+2026-02-07 15:58:34 | WARNING | metainformant.ml.features.dimensionality | umap-learn not available, UMAP disabled
+Traceback (most recent call last):
+  File "/Users/mini/Documents/GitHub/metainformant/examples/rna/example_amalgkit.py", line 19, in &lt;module&gt;
+    from metainformant.rna.workflow import AmalgkitWorkflowConfig, plan_workflow
+ModuleNotFoundError: No module named 'metainformant.rna.workflow'
+</failure>
+    </testcase>
+    <testcase name="rna/example_quantification.py" classname="examples.rna" time="3.2364768981933594"/>
+    <testcase name="simulation/example_simulation.py" classname="examples.simulation" time="4.377941846847534"/>
+    <testcase name="singlecell/example_scrna.py" classname="examples.singlecell" time="2.690319299697876"/>
+    <testcase name="visualization/example_plots.py" classname="examples.visualization" time="3.432603120803833"/>
+  </testsuite>
+</testsuites>

@@ -217,10 +217,49 @@ def clean_stagnant_file(file_path: Path) -> None:
             logger.warning(f"Error deleting {file_path}: {e}")
 
 
+def verify_gzip_integrity(file_path: Path) -> bool:
+    """Verify integrity of a gzip file using gzip -t.
+
+    Args:
+        file_path: Path to the gzip file
+
+    Returns:
+        True if integrity check passes, False otherwise
+    """
+    if not file_path.exists():
+        return False
+
+    # Only verify .gz files
+    if not file_path.name.endswith(".gz"):
+        return True
+
+    try:
+        # Run gzip -t (test)
+        # We use subprocess because the gzip module in Python creates a GzipFile object
+        # which reads the file header, but fully verifying the integrity via strict
+        # CRC check of the entire file is often faster/more reliable with the system tool.
+        # Also, python's gzip module might be slower for large files.
+        cmd = ["gzip", "-t", str(file_path)]
+        subprocess.run(cmd, check=True, capture_output=True)
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # Fallback to python gzip module if system gzip is missing or fails
+        import gzip
+
+        try:
+            with gzip.open(file_path, "rb") as f:
+                while f.read(1024 * 1024):
+                    pass
+            return True
+        except Exception as e:
+            logger.warning(f"Gzip integrity check failed for {file_path}: {e}")
+            return False
+
+
 def download_file(
     url: str, dest_path: Path, expected_md5: str = "", retries: int = 3, timeout: int = DEFAULT_TIMEOUT
 ) -> bool:
-    """Download file using curl with retries and optional MD5 verification.
+    """Download file using curl with retries, MD5, and gzip verification.
 
     Args:
         url: URL to download from
@@ -230,9 +269,12 @@ def download_file(
         timeout: Max time in seconds for the download
 
     Returns:
-        True if download succeeded (and MD5 verified if provided), False otherwise
+        True if download succeeded (and verifications passed), False otherwise
     """
     logger.info(f"Downloading {url} -> {dest_path}")
+
+    # Ensure parent directory exists
+    dest_path.parent.mkdir(parents=True, exist_ok=True)
 
     for attempt in range(1, retries + 1):
         try:
@@ -260,22 +302,29 @@ def download_file(
             subprocess.run(cmd, check=True, capture_output=True)
 
             if dest_path.exists():
+                # 1. MD5 Verification
                 if expected_md5:
                     logger.info(f"Verifying MD5 for {dest_path.name}...")
                     current_md5 = calculate_md5(dest_path)
-                    if current_md5 == expected_md5:
-                        logger.info(f"[OK] {dest_path.name} verified.")
-                        return True
-                    else:
+                    if current_md5 != expected_md5:
                         logger.warning(
                             f"[FAIL] MD5 mismatch (Attempt {attempt}/{retries}). "
                             f"Expected {expected_md5}, got {current_md5}"
                         )
                         clean_stagnant_file(dest_path)
-                else:
-                    # No MD5 to verify, assume success
-                    logger.info(f"[OK] {dest_path.name} downloaded (no MD5 verification).")
-                    return True
+                        continue
+                    logger.info(f"[OK] MD5 verified: {dest_path.name}")
+
+                # 2. Gzip Integrity Verification
+                if dest_path.name.endswith(".gz"):
+                    logger.info(f"Verifying gzip integrity for {dest_path.name}...")
+                    if not verify_gzip_integrity(dest_path):
+                        logger.warning(f"[FAIL] Gzip integrity check failed (Attempt {attempt}/{retries}).")
+                        clean_stagnant_file(dest_path)
+                        continue
+                    logger.info(f"[OK] Gzip integrity verified: {dest_path.name}")
+
+                return True
 
         except subprocess.CalledProcessError as e:
             logger.warning(f"[FAIL] Download failed (Attempt {attempt}/{retries}). Exit: {e.returncode}")

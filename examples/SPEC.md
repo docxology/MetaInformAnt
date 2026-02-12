@@ -2,7 +2,7 @@
 
 ## Scope
 
-Working example scripts demonstrating METAINFORMANT functionality. Contains real, executable code examples for all 19 domain modules. Examples use actual implementations, produce real outputs, and make genuine API calls when required.
+Working example scripts demonstrating METAINFORMANT functionality. Contains real, executable code examples for all 25 domain modules. Examples use actual implementations, produce real outputs, and make genuine API calls when required.
 
 ## Architecture
 

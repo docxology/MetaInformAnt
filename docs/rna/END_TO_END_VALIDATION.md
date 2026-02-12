@@ -12,7 +12,7 @@ python3 -c "
 from pathlib import Path
 from metainformant.rna.workflow import apply_step_defaults, load_workflow_config, plan_workflow
 
-cfg = load_workflow_config('config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml')
+cfg = load_workflow_config('config/amalgkit/amalgkit_pbarbatus.yaml')
 apply_step_defaults(cfg)
 steps = plan_workflow(cfg)
 print(f'✅ {len(steps)} steps planned for cfloridanus')
@@ -119,16 +119,16 @@ done
 python3 scripts/rna/run_workflow.py --list-configs
 
 # Show exact step order + the exact amalgkit commands that will run
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --plan
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --plan
 
 # Run with per-step stage progress bars
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --check
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --check
 
 # Walk through each stage (press Enter before each stage)
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --walk
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --walk
 
 # Show exact command before each stage runs
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --show-commands --check
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --show-commands --check
 ```
 
 ## Validated Species (24 total)
@@ -186,7 +186,7 @@ python3 -c "
 from pathlib import Path
 from metainformant.rna.workflow import load_workflow_config, plan_workflow
 
-cfg = load_workflow_config('config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml')
+cfg = load_workflow_config('config/amalgkit/amalgkit_pbarbatus.yaml')
 steps = plan_workflow(cfg)
 print(f'✅ {len(steps)} steps planned')
 "

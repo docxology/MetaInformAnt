@@ -28,7 +28,7 @@ def quant(
 ) -> subprocess.CompletedProcess[str]
 
 # Step runner (low-level)
-from metainformant.rna.steps.quant import run_quant
+from metainformant.rna.engine.workflow_steps import run_quant
 
 def run_quant(
     params: Mapping[str, Any] | None = None,
@@ -581,8 +581,8 @@ The workflow automatically deletes FASTQ files after successful quantification t
 When using the METAINFORMANT workflow (`execute_workflow()` or `run_workflow.py`), FASTQ files are automatically deleted after quantification:
 
 1. **Download**: Sample FASTQ files are downloaded via `getfastq`
-2. **Quantify**: Sample is quantified using `quantify_sample()` from `metainformant.rna.steps.quant`
-3. **Delete**: FASTQ files are automatically deleted using `delete_sample_fastqs()` from `metainformant.rna.steps.getfastq`
+2. **Quantify**: Sample is quantified using `quantify_sample()` from `metainformant.rna.engine.workflow_steps`
+3. **Delete**: FASTQ files are automatically deleted using `delete_sample_fastqs()` from `metainformant.rna.engine.sra_extraction`
 
 This per-sample workflow ensures maximum disk efficiency - only one sample's FASTQ files exist at any time.
 
@@ -591,8 +591,8 @@ This per-sample workflow ensures maximum disk efficiency - only one sample's FAS
 For manual processing or recovery of individual samples:
 
 ```python
-from metainformant.rna.steps.quant import quantify_sample
-from metainformant.rna.steps.getfastq import delete_sample_fastqs
+from metainformant.rna.engine.workflow_steps import quantify_sample
+from metainformant.rna.engine.sra_extraction import delete_sample_fastqs
 from pathlib import Path
 
 # Quantify sample
@@ -614,7 +614,7 @@ if success and abundance_path and abundance_path.exists():
 ```bash
 python3 scripts/rna/test_quantify_sample.py \
     --sample SRR14740514 \
-    --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+    --config config/amalgkit/amalgkit_pbarbatus.yaml
 ```
 
 This script:
@@ -631,7 +631,7 @@ The `cleanup_unquantified_samples()` function in `metainformant.rna.orchestratio
 from metainformant.rna.orchestration import cleanup_unquantified_samples
 from pathlib import Path
 
-config_path = Path("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
+config_path = Path("config/amalgkit/amalgkit_pbarbatus.yaml")
 quantified, failed = cleanup_unquantified_samples(config_path)
 ```
 
@@ -809,8 +809,8 @@ steps:
 ## See Also
 
 ### Related Steps
-- **[getfastq.md](getfastq.md)** - Previous: Download FASTQ files
-- **[merge.md](merge.md)** - Next: Merge quantification results
+- **[04_getfastq.md](04_getfastq.md)** - Previous: Download FASTQ files
+- **[07_merge.md](07_merge.md)** - Next: Merge quantification results
 
 ### Documentation
 - **[API Reference](../../API.md#quant)** - Complete function documentation

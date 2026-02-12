@@ -30,7 +30,7 @@ Run these commands to verify everything is working:
 
 ```bash
 # 1. Check workflow status
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --status
 
 # 2. Check active processes
 ps aux | grep -E "amalgkit|fasterq-dump|run_workflow" | grep -v grep
@@ -53,16 +53,16 @@ tail -100 output/amalgkit/pogonomyrmex_barbatus/logs/workflow_final_*.log 2>/dev
 ## Code Verification (Already Complete)
 
 ✅ **Automatic SRA-to-FASTQ Conversion**
-- Location: `src/metainformant/rna/steps/getfastq.py::run()` (lines 274-295)
+- Location: `src/metainformant/rna/engine/sra_extraction.py::run()` (lines 274-295)
 - Status: Implemented and working
 
 ✅ **Wrapper Script for amalgkit**
-- Location: `src/metainformant/rna/steps/process_samples.py::_download_worker()` (lines 259-270)
+- Location: `src/metainformant/rna/engine/pipeline.py::_download_worker()` (lines 259-270)
 - Status: Implemented and working
 - Wrapper file: `output/amalgkit/pogonomyrmex_barbatus/fastq/temp/fasterq-dump` exists
 
 ✅ **Direct Binary Detection**
-- Location: `src/metainformant/rna/steps/getfastq.py::convert_sra_to_fastq()` (lines 578-614)
+- Location: `src/metainformant/rna/engine/sra_extraction.py::convert_sra_to_fastq()` (lines 578-614)
 - Status: Implemented and working
 
 ✅ **Documentation**
@@ -71,7 +71,7 @@ tail -100 output/amalgkit/pogonomyrmex_barbatus/logs/workflow_final_*.log 2>/dev
 - Technical docs: `docs/rna/amalgkit/steps/EXTRACTION_FIXES.md` - Complete
 
 ✅ **Configuration**
-- `config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml` - AWS-only enabled
+- `config/amalgkit/amalgkit_pbarbatus.yaml` - AWS-only enabled
 
 ✅ **No Linter Errors**
 - All code passes linting

@@ -12,7 +12,8 @@ Ontology visualization includes specialized plots for gene ontology (GO) analysi
 
 #### GO DAG Visualization
 ```python
-from metainformant.ontology import go, visualization as ont_viz
+from metainformant.ontology.core import go
+from metainformant.ontology.visualization import visualization as ont_viz
 import networkx as nx
 
 # Load GO ontology
@@ -105,7 +106,8 @@ fig = ont_viz.create_interactive_go_network(go_graph, output_path="go_network.ht
 
 ### With GO Enrichment Analysis
 ```python
-from metainformant.ontology import go, visualization as ont_viz
+from metainformant.ontology.core import go
+from metainformant.ontology.visualization import visualization as ont_viz
 
 # Perform GO enrichment
 gene_list = ['gene1', 'gene2', 'gene3']  # Your genes of interest
@@ -120,7 +122,9 @@ ax = ont_viz.plot_go_enrichment_barplot(results)
 
 ### With Semantic Similarity
 ```python
-from metainformant.ontology import go, query, visualization as ont_viz
+from metainformant.ontology.core import go
+from metainformant.ontology.query import query
+from metainformant.ontology.visualization import visualization as ont_viz
 
 # Load ontology and compute IC
 go_graph = go.load_go_obo("go.obo")
@@ -140,7 +144,8 @@ ax = ont_viz.plot_semantic_similarity_matrix(similarity_matrix, terms)
 
 ### With Functional Annotations
 ```python
-from metainformant.ontology import go, visualization as ont_viz
+from metainformant.ontology.core import go
+from metainformant.ontology.visualization import visualization as ont_viz
 
 # Create annotation matrix
 genes = ['gene1', 'gene2', 'gene3']
@@ -205,7 +210,9 @@ ic_cmap = 'viridis'  # Blue to yellow colormap
 
 ### Complete Ontology Analysis Workflow
 ```python
-from metainformant.ontology import go, query, visualization as ont_viz
+from metainformant.ontology.core import go
+from metainformant.ontology.query import query
+from metainformant.ontology.visualization import visualization as ont_viz
 import numpy as np
 
 # Load ontology

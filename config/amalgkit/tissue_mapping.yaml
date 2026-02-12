@@ -28,12 +28,14 @@ brain:
   - hypothalamus
 
 optic_lobe:
+  - optic_lobe
   - optic lobe
   - optic lobes
   - optic lobes (OL) region of the brain
   - OL
 
 antennal_lobe:
+  - antennal_lobe
   - antennal lobe
   - antennal lobes
   - Antennal Lobes
@@ -41,6 +43,7 @@ antennal_lobe:
   - AL
 
 mushroom_body:
+  - mushroom_body
   - mushroom body
   - Mushroom body
   - mushroom bodies
@@ -65,6 +68,7 @@ antenna:
 # Body regions
 # ──────────────────────────────────────────────
 whole_body:
+  - whole_body
   - whole body
   - Whole Body
   - Whole body
@@ -203,6 +207,7 @@ gut:
 # Fat and metabolic tissues
 # ──────────────────────────────────────────────
 fat_body:
+  - fat_body
   - fat body
   - Fat body
   - Fat-body
@@ -245,6 +250,7 @@ hemolymph:
 # Glands
 # ──────────────────────────────────────────────
 hypopharyngeal_gland:
+  - hypopharyngeal_gland
   - hypopharyngeal gland
   - Hypopharyngeal gland
   - Hypopharyngeal Gland
@@ -255,12 +261,14 @@ hypopharyngeal_gland:
   - gland
 
 mandibular_gland:
+  - mandibular_gland
   - mandibular gland
   - Mandibular gland
   - Mandibular Gland
   - mandibular glands
 
 venom_gland:
+  - venom_gland
   - venom gland
   - Venom gland
   - poison gland
@@ -269,6 +277,7 @@ venom_gland:
 # Flight tissues
 # ──────────────────────────────────────────────
 flight_muscle:
+  - flight_muscle
   - flight muscle
   - Flight muscle
   - thoracic muscle
@@ -372,10 +381,12 @@ muscle:
 # Additional glands
 # ──────────────────────────────────────────────
 nasonov_gland:
+  - nasonov_gland
   - nasonov gland
   - Nasonov gland
 
 sting_gland:
+  - sting_gland
   - sting gland
   - Sting Gland
   - Venom system
@@ -406,6 +417,7 @@ germline:
 # Additional digestive
 # ──────────────────────────────────────────────
 malpighian_tubule:
+  - malpighian_tubule
   - malpighian tubule
   - Malpighian tubule
   - Malpighian tubules
@@ -417,6 +429,7 @@ malpighian_tubule:
 # Neural ganglia
 # ──────────────────────────────────────────────
 thoracic_ganglia:
+  - thoracic_ganglia
   - thoracic ganglia
   - Second Thoracic Ganglia
   - 2nd Thoracic Ganglia
@@ -425,13 +438,14 @@ thoracic_ganglia:
 # Symbiont-associated
 # ──────────────────────────────────────────────
 bacteriocyte:
-  - bacteriocytes
   - bacteriocyte
+  - bacteriocytes
 
 # ──────────────────────────────────────────────
 # Cell culture
 # ──────────────────────────────────────────────
 cell_culture:
+  - cell_culture
   - Ame-711 cells
   - cell line
   - cells
@@ -441,6 +455,7 @@ cell_culture:
 # Excluded/not applicable
 # ──────────────────────────────────────────────
 not_applicable:
+  - not_applicable
   - not applicable
   - Not applicable
   - N/A
@@ -460,6 +475,7 @@ not_applicable:
 # Royal jelly (secretion, not tissue)
 # ──────────────────────────────────────────────
 royal_jelly:
+  - royal_jelly
   - royal jelly
   - Royal jelly
   - royal jelly RNA

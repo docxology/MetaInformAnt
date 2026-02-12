@@ -13,7 +13,7 @@ Comprehensive bioinformatics toolkit for multi-omic analysis. Domain-driven, mod
 
 ```
 metainformant/
-├── src/metainformant/     # Source code (19 domain modules)
+├── src/metainformant/     # Source code (25 domain modules)
 │   ├── core/              # Shared infrastructure (I/O, config, logging)
 │   ├── dna/               # Genomic analysis, alignment, population genetics
 │   ├── rna/               # Transcriptomic workflows, Amalgkit integration
@@ -23,7 +23,7 @@ metainformant/
 │   ├── networks/          # Biological networks, community detection
 │   ├── multiomics/        # Multi-omic data integration
 │   ├── singlecell/        # Single-cell RNA-seq analysis
-│   ├── visualization/     # 57+ plot types, publication-quality output
+│   ├── visualization/     # 70+ plot types, publication-quality output
 │   ├── quality/           # QC metrics, contamination detection
 │   ├── ml/                # Machine learning pipelines
 │   ├── math/              # Population genetics theory, coalescent
@@ -32,7 +32,13 @@ metainformant/
 │   ├── phenotype/         # Trait analysis, curation
 │   ├── ecology/           # Community diversity
 │   ├── simulation/        # Synthetic data generation
-│   └── life_events/       # Event sequence analysis
+│   ├── life_events/       # Event sequence analysis
+│   ├── menu/              # Interactive menu and discovery system
+│   ├── longread/          # PacBio/Nanopore long-read analysis
+│   ├── metagenomics/      # Microbiome and metagenomic analysis
+│   ├── spatial/           # Spatial transcriptomics
+│   ├── structural_variants/ # CNV/SV detection and annotation
+│   └── pharmacogenomics/  # Clinical variant analysis
 ├── scripts/               # Thin wrapper orchestrators
 ├── tests/                 # Pytest test suite (real implementations only)
 ├── docs/                  # Documentation by domain

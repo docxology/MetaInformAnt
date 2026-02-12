@@ -46,25 +46,25 @@ See existing configurations for examples.
 **Full end-to-end workflow** (recommended):
 
 ```bash
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml
 ```
 
 **Check status**:
 
 ```bash
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --status
 ```
 
 **Specific steps only**:
 
 ```bash
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --steps getfastq quant merge
 ```
 
 **Inspect step order and commands**:
 
 ```bash
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --plan
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --plan
 ```
 
 ### 4. Validate Results
@@ -108,7 +108,7 @@ if not ok:
     print(f"Amalgkit not available: {help_text}")
 
 # Load and run workflow
-config = workflow.load_workflow_config("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
+config = workflow.load_workflow_config("config/amalgkit/amalgkit_pbarbatus.yaml")
 steps = workflow.plan_workflow(config)
 results = workflow.execute_workflow(config)
 ```

@@ -19,7 +19,7 @@ Usage: bash scripts/setup.sh [--skip-amalgkit] [--with-deps] [--with-all] [--wit
 
 Options:
   --skip-amalgkit       Skip AMALGKIT installation (installed by default for RNA workflows)
-  --with-deps           Install external CLI deps (seqkit, sra-tools, kallisto, R); pip install parallel-fastq-dump
+  --with-deps           Install external CLI deps (seqkit, sra-tools, kallisto, R); uv pip install parallel-fastq-dump
   --with-all            Install all optional dependencies (database, networks, scraping, etc.) - scientific deps installed by default
   --with-scraping       Install scraping dependencies (cloudscraper) for web scraping functionality
   --ncbi-email EMAIL    Export NCBI_EMAIL for this session and write to output/setup/ncbi_email.txt

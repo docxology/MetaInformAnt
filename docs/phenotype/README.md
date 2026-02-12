@@ -25,5 +25,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.phenotype import ...
+from metainformant.phenotype import ...
 ```

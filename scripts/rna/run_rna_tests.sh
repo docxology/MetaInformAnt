@@ -20,7 +20,7 @@ if python3 -c "import pytest_cov" 2>/dev/null; then
 else
     COV_OPTS=""
     echo "⚠ Coverage reporting disabled (pytest-cov not installed)"
-    echo "  Install with: pip install pytest-cov"
+    echo "  Install with: uv pip install pytest-cov"
 fi
 
 echo ""

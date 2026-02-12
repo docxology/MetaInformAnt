@@ -4,13 +4,10 @@
 Gene ontology and functional annotation module for METAINFORMANT.
 
 ## 📦 Contents
-- `[__init__.py](__init__.py)`
-- `[go.py](go.py)`
-- `[obo.py](obo.py)`
-- `[query.py](query.py)`
-- `[serialize.py](serialize.py)`
-- `[types.py](types.py)`
-- `[visualization.py](visualization.py)`
+- `core/` — GO ontology loading, OBO parsing, type definitions (`go.py`, `obo.py`, `types.py`)
+- `query/` — Ontology querying and serialization (`query.py`, `serialize.py`)
+- `visualization/` — Ontology visualization (`visualization.py`)
+- `pathway_enrichment/` — Pathway enrichment analysis
 
 ## 📊 Structure
 
@@ -23,5 +20,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.ontology import ...
+from metainformant.ontology import ...
 ```

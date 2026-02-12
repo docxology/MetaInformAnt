@@ -292,7 +292,7 @@ def run_metadata(
     check: bool = False,
 ) -> subprocess.CompletedProcess[str]
 
-# Implementation reality (src/metainformant/rna/steps/metadata.py):
+# Implementation reality (src/metainformant/rna/engine/workflow_steps.py):
 def run(
     params: Mapping[str, Any] | None = None,
     *,
@@ -477,7 +477,7 @@ def ensure_cli_available(*, auto_install: bool = False) -> tuple[bool, str, dict
 All file I/O operations use `metainformant.core.io`:
 
 ```python
-# From src/metainformant/rna/progress_tracker.py
+# From src/metainformant/rna/engine/progress_tracker.py
 from ...core.io import read_delimited, load_json, dump_json, write_delimited
 from ...core.logging import get_logger
 

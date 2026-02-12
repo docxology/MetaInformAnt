@@ -54,8 +54,8 @@ uv run metainformant --modules               # List available modules
 
 **Note:** Module functionality is accessed via Python imports, not CLI subcommands:
 ```python
-from metainformant.dna import sequences
-from metainformant.rna.workflow import orchestrator
+from metainformant.dna.sequence import core, composition
+from metainformant.rna.engine import workflow
 from metainformant.gwas.analysis import association
 ```
 

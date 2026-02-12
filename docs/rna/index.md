@@ -21,7 +21,7 @@ flowchart LR
 
 See: [amalgkit/README.md](amalgkit/README.md), [workflow.md](workflow.md), [CONFIGURATION.md](CONFIGURATION.md).
 
-Advanced: step runners in `metainformant.rna.steps` provide a stable call surface per subcommand.
+Advanced: step runners in `metainformant.rna.engine.workflow_steps` provide a stable call surface per subcommand.
 See: [Step Documentation](amalgkit/steps/README.md)
 
 Notes

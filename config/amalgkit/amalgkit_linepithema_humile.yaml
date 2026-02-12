@@ -80,13 +80,14 @@ steps:
     index_dir: blue/amalgkit/shared/genome/Linepithema_humile/index
     fasta_dir: blue/amalgkit/shared/genome/Linepithema_humile
   merge:
-    out: blue/amalgkit/linepithema_humile/merged/merged_abundance.tsv
-    out_dir: blue/amalgkit/linepithema_humile/merged
+    out_dir: blue/amalgkit/linepithema_humile/work
   cstmm:
     out_dir: blue/amalgkit/linepithema_humile/work
     orthogroup_table: ""
   curate:
     out_dir: blue/amalgkit/linepithema_humile/work
+    batch_effect_alg: "no"
+    clip_negative: "no"
   csca:
     out_dir: blue/amalgkit/linepithema_humile/work
     orthogroup_table: ""

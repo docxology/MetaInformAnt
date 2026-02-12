@@ -144,7 +144,7 @@ output/ant_discovery/
 └── configs/
     ├── amalgkit_camponotus_floridanus.yaml
     ├── amalgkit_solenopsis_invicta.yaml
-    ├── amalgkit_pogonomyrmex_barbatus.yaml
+    ├── amalgkit_pbarbatus.yaml
     ├── amalgkit_monomorium_pharaonis.yaml
     └── ... (all discovered species)
 ```

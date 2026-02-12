@@ -105,7 +105,7 @@ def build_cli_args(
         elif "work_dir" in params:
             args.extend(["--out_dir", str(params["work_dir"])])
 
-        if "threads" in params:
+        if "threads" in params and subcommand not in ("merge", "sanity", "select", "curate", "cstmm", "csca"):
             args.extend(["--threads", str(params["threads"])])
 
         # skip_keys should check both underscores and hyphens
@@ -138,6 +138,9 @@ def build_cli_args(
             "fastp_print",
             "build_index",
             "overwrite",
+            "skip_curation",
+            "clip_negative",
+            "maintain_zero",
         }
 
         for key, value in params.items():
@@ -145,7 +148,7 @@ def build_cli_args(
                 continue
 
             # Skip arguments not supported by specific subcommands
-            if subcommand in ("merge", "sanity", "select", "curate") and key in ("out", "threads", "priority", "redo"):
+            if subcommand in ("merge", "sanity", "select", "curate", "cstmm", "csca") and key in ("out", "threads", "priority", "redo"):
                 continue
 
             # Amalgkit 0.12.20+ generally uses underscores for its CLI flags.
@@ -158,7 +161,7 @@ def build_cli_args(
                 elif value:
                     args.append(f"--{cli_key}")
             elif isinstance(value, (int, float)):
-                if key == "threads" and subcommand in ("merge", "metadata", "config", "sanity", "select", "curate"):
+                if key == "threads" and subcommand in ("merge", "metadata", "config", "sanity", "select", "curate", "cstmm", "csca"):
                     continue
                 args.extend([f"--{cli_key}", str(value)])
             elif isinstance(value, list):
@@ -189,7 +192,7 @@ def build_cli_args(
 
     # Handle AmalgkitParams object
     args.extend(["--out_dir", str(params.work_dir)])
-    if subcommand not in ("merge", "metadata", "config"):
+    if subcommand not in ("merge", "metadata", "config", "sanity", "select", "curate", "cstmm", "csca"):
         args.extend(["--threads", str(params.threads)])
 
     if params.species_list and subcommand not in ("integrate", "config", "merge", "metadata", "getfastq", "quant"):
@@ -251,11 +254,64 @@ def check_cli_available() -> Tuple[bool, str]:
         return False, f"Error checking amalgkit CLI: {e}"
 
 
-def ensure_cli_available(*, auto_install: bool = False) -> Tuple[bool, str, Dict | None]:
-    """Ensure amalgkit CLI is available, optionally installing it.
+def validate_amalgkit_version(min_version: str = "0.4.0") -> Tuple[bool, str]:
+    """Validate that the installed amalgkit version meets requirements.
+
+    Args:
+        min_version: Minimum required version string (e.g. "0.4.0")
+
+    Returns:
+        Tuple of (valid, message)
+    """
+    try:
+        result = subprocess.run(["amalgkit", "--version"], capture_output=True, text=True, timeout=5)
+        if result.returncode != 0:
+            return False, f"Version check failed: {result.stderr}"
+
+        # Output format is typically "amalgkit 0.4.1"
+        output = result.stdout.strip()
+        if not output:
+            return False, "Empty version output"
+
+        # Parse version
+        parts = output.split()
+        if len(parts) < 2:
+            return False, f"Unexpected version format: {output}"
+
+        current_version = parts[1]
+
+        # Simple semantic version comparison
+        # We assume X.Y.Z format
+        try:
+            current_parts = [int(x) for x in current_version.split(".")]
+            min_parts = [int(x) for x in min_version.split(".")]
+
+            # Pad with zeros if needed
+            while len(current_parts) < 3:
+                current_parts.append(0)
+            while len(min_parts) < 3:
+                min_parts.append(0)
+
+            if tuple(current_parts) >= tuple(min_parts):
+                return True, f"Version {current_version} meets requirement >={min_version}"
+            else:
+                return False, f"Version {current_version} is older than required {min_version}"
+
+        except ValueError:
+            # Fallback for non-standard version strings
+            logger.warning(f"Could not parse version string: {current_version}")
+            return True, f"Could not parse version {current_version}, assuming compatible"
+
+    except (subprocess.SubprocessError, OSError, TimeoutError) as e:
+        return False, f"Version check error: {e}"
+
+
+def ensure_cli_available(*, auto_install: bool = False, min_version: str = "0.4.0") -> Tuple[bool, str, Dict | None]:
+    """Ensure amalgkit CLI is available and meets version requirements.
 
     Args:
         auto_install: Whether to attempt automatic installation
+        min_version: Minimum required version
 
     Returns:
         Tuple of (success, message, version_info)
@@ -263,31 +319,48 @@ def ensure_cli_available(*, auto_install: bool = False) -> Tuple[bool, str, Dict
     available, message = check_cli_available()
 
     if available:
-        # Try to get version info
+        # Check version
+        valid_version, version_msg = validate_amalgkit_version(min_version)
+        if not valid_version:
+             logger.warning(f"Amalgkit version issue: {version_msg}")
+             # If auto_install is True, we might want to upgrade?
+             # For now, just warn but allow strict checks to fail if needed by caller
+             # But if we really need a feature, we should fail.
+             # However, existing logic returns True if available.
+             # Let's verify if we should try to upgrade.
+             if auto_install:
+                 logger.info("Attempting upgrade due to version mismatch...")
+                 # Proceed to install block
+             else:
+                 return False, f"Amalgkit available but version mismatch: {version_msg}", {"version": "unknown", "valid": False}
+
+        # Get version info again for return
         try:
             result = subprocess.run(["amalgkit", "--version"], capture_output=True, text=True, timeout=5)
-            version_info = {"version": result.stdout.strip()} if result.returncode == 0 else None
-        except (subprocess.SubprocessError, OSError, TimeoutError):
-            version_info = None
+            current_version = result.stdout.strip().split()[-1] if result.stdout.strip() else "unknown"
+            version_info = {"version": current_version, "valid": valid_version}
+        except Exception:
+            version_info = {"version": "unknown", "valid": False}
 
-        return True, message, version_info
-
+        if valid_version:
+            return True, message, version_info
+    
     if not auto_install:
         return False, message, None
 
     # Attempt automatic installation using UV package manager
-    logger.info("Attempting to install amalgkit via UV package manager...")
+    logger.info("Attempting to install/upgrade amalgkit via UV package manager...")
     try:
         # Use UV package manager (per METAINFORMANT policy)
         # Note: subprocess is imported at module level
         install_result = subprocess.run(
-            ["uv", "pip", "install", "amalgkit"], capture_output=True, text=True, timeout=300
+            ["uv", "pip", "install", "--upgrade", "amalgkit"], capture_output=True, text=True, timeout=300
         )
 
         if install_result.returncode == 0:
-            logger.info("Successfully installed amalgkit via UV")
+            logger.info("Successfully installed/upgraded amalgkit via UV")
             # Verify installation after install
-            return ensure_cli_available(auto_install=False)
+            return ensure_cli_available(auto_install=False, min_version=min_version)
         else:
             error_msg = install_result.stderr if install_result.stderr else "Installation failed with no error message"
             logger.error(f"UV installation of amalgkit failed: {error_msg}")
@@ -318,14 +391,24 @@ def run_amalgkit(
 
     logger.info(f"Running amalgkit command: {' '.join(command)}")
 
-    # Extract custom keys to avoid passing them to subprocess.run/Popen twice
+    # Extract custom keys
     cwd = kwargs.pop("cwd", None) or kwargs.pop("work_dir", None)
     log_dir = kwargs.pop("log_dir", None)
-    step_name = kwargs.pop("step_name", None)
-    monitor = kwargs.pop("monitor", None)
+    params_monitor = kwargs.pop("monitor", None)  # Rename to avoid conflict if any
     heartbeat_interval = int(kwargs.pop("heartbeat_interval", 5))
     show_progress = bool(kwargs.pop("show_progress", True))
 
+    # Determine monitoring strategy
+    monitor = False
+    if params_monitor is None:
+        # Default monitoring for long-running steps
+        monitor = subcommand in {"metadata", "integrate", "getfastq", "quant", "merge", "cstmm", "curate", "csca"}
+    else:
+        monitor = bool(params_monitor)
+
+    # Setup file handles if logging requested
+    stdout_fh = None
+    stderr_fh = None
     if log_dir:
         import time
 
@@ -338,35 +421,23 @@ def run_amalgkit(
         stderr_fh = open(stderr_log, "w")
 
     try:
-        # Default behavior stays the same unless monitoring is enabled.
-        # Enable monitoring for long-running steps by default.
-        if monitor is None:
-            monitor = subcommand in {"metadata", "integrate", "getfastq", "quant", "merge", "cstmm", "curate", "csca"}
-
+        # Environmental setup
+        env = os.environ.copy()
+        
+        # Monitor Branch
         if monitor and isinstance(params, dict):
             out_dir_val = params.get("out_dir")
             metadata_val = params.get("metadata")
             if out_dir_val:
                 out_dir = Path(str(out_dir_val))
                 hb_path = out_dir / ".downloads" / f"amalgkit-{subcommand}.heartbeat.json"
-
+                
+                # Determine watch directory
                 watch_dir = out_dir
-                if subcommand == "getfastq":
-                    watch_dir = out_dir / "getfastq"
-                elif subcommand == "quant":
-                    watch_dir = out_dir / "quant"
-                elif subcommand == "metadata":
-                    watch_dir = out_dir / "metadata"
-                elif subcommand == "merge":
-                    watch_dir = out_dir / "merge"
-                elif subcommand == "cstmm":
-                    watch_dir = out_dir / "cstmm"
-                elif subcommand == "curate":
-                    watch_dir = out_dir / "curate"
-                elif subcommand == "csca":
-                    watch_dir = out_dir / "csca"
+                if subcommand in {"getfastq", "quant", "metadata", "merge", "cstmm", "curate", "csca"}:
+                    watch_dir = out_dir / subcommand
 
-                # Best-effort total estimations
+                # Metadata estimation
                 meta_path: Path | None = None
                 if metadata_val:
                     meta_path = Path(str(metadata_val))
@@ -380,17 +451,16 @@ def run_amalgkit(
                     if subcommand == "getfastq":
                         total_bytes = _estimate_total_bytes_from_metadata(meta_path)
 
-                env = os.environ.copy()
-                # Check tqdm compatibility
-                try:
-                    import tqdm
-
-                    if tuple(map(int, tqdm.__version__.split("."))) < (4, 60, 0):
-                        env["AMALGKIT_PROGRESS"] = "false"
-                except (ImportError, ValueError, AttributeError):
-                    pass
-
+                # Special env vars for getfastq
                 if subcommand == "getfastq":
+                    # Check tqdm compatibility
+                    try:
+                        import tqdm
+                        if tuple(map(int, tqdm.__version__.split("."))) < (4, 60, 0):
+                            env["AMALGKIT_PROGRESS"] = "false"
+                    except (ImportError, ValueError, AttributeError):
+                        pass
+
                     repo_root = Path(__file__).resolve().parent.parent.parent.parent
                     tmp_dir = repo_root / ".tmp" / "fasterq-dump"
                     tmp_dir.mkdir(parents=True, exist_ok=True)
@@ -406,11 +476,17 @@ def run_amalgkit(
                 if log_dir:
                     proc_kwargs["stdout"] = stdout_fh
                     proc_kwargs["stderr"] = stderr_fh
+                else:
+                    # If monitoring but not logging to file, we might capture or let it stream
+                    # For monitoring functions to work, they often expect to manage the process
+                    # But if we don't pass capturing, output goes to console
+                    pass
 
                 proc = subprocess.Popen(command, **proc_kwargs)
 
+                # Call appropriate monitoring function
                 if subcommand == "quant":
-                    rc = monitor_subprocess_sample_progress(
+                    monitor_subprocess_sample_progress(
                         process=proc,
                         watch_dir=watch_dir,
                         heartbeat_path=hb_path,
@@ -422,7 +498,7 @@ def run_amalgkit(
                     )
                 elif subcommand == "metadata":
                     expected = ["metadata.tsv", "metadata_original.tsv", "pivot_selected.tsv", "pivot_qualified.tsv"]
-                    rc = monitor_subprocess_file_count(
+                    monitor_subprocess_file_count(
                         process=proc,
                         watch_dir=watch_dir,
                         heartbeat_path=hb_path,
@@ -441,7 +517,7 @@ def run_amalgkit(
                             else ["tables"] if subcommand == "curate" else ["csca.tsv"]
                         )
                     )
-                    rc = monitor_subprocess_file_count(
+                    monitor_subprocess_file_count(
                         process=proc,
                         watch_dir=watch_dir,
                         heartbeat_path=hb_path,
@@ -451,7 +527,8 @@ def run_amalgkit(
                         desc=f"amalgkit {subcommand}",
                     )
                 else:
-                    rc, _ = monitor_subprocess_directory_growth(
+                    # Default: Directory growth (getfastq, integrate, etc)
+                    monitor_subprocess_directory_growth(
                         process=proc,
                         watch_dir=watch_dir,
                         heartbeat_path=hb_path,
@@ -460,8 +537,23 @@ def run_amalgkit(
                         show_progress=show_progress,
                         desc=f"amalgkit {subcommand}",
                     )
-        # Non-monitored path
+                
+                # Wait for process to complete if monitor function didn't (most do)
+                if proc.poll() is None:
+                    proc.wait()
+                    
+                # Create a CompletedProcess to return
+                # We can't get stdout/stderr if they were streamed/logged, but that's expected
+                return subprocess.CompletedProcess(
+                    args=command,
+                    returncode=proc.returncode,
+                    stdout="" if log_dir else "Output monitored/streamed",
+                    stderr="" if log_dir else "Output monitored/streamed"
+                )
+
+        # Non-monitored execution
         proc_kwargs = kwargs.copy()
+        proc_kwargs["env"] = env  # Use safe env
         if cwd:
             proc_kwargs["cwd"] = cwd
 
@@ -469,22 +561,41 @@ def run_amalgkit(
             proc_kwargs["stdout"] = stdout_fh
             proc_kwargs["stderr"] = stderr_fh
         else:
-            if "capture_output" not in proc_kwargs:
+            if "capture_output" not in proc_kwargs and "stdout" not in proc_kwargs:
                 proc_kwargs["capture_output"] = True
                 proc_kwargs["text"] = True
 
         result = subprocess.run(command, **proc_kwargs)
-        if log_dir:
-            stdout_fh.close()
-            stderr_fh.close()
+        
+        # Log failure info if captured
+        if result.returncode != 0:
+            logger.warning(f"amalgkit {subcommand} failed with code {result.returncode}")
+            if result.stderr:
+                # Log last few lines of stderr
+                lines = result.stderr.strip().splitlines()
+                start_line = max(0, len(lines) - 20)
+                for line in lines[start_line:]:
+                    logger.warning(f"  [stderr] {line}")
+            if result.stdout:
+                 # Log last few lines of stdout if potentially relevant
+                lines = result.stdout.strip().splitlines()
+                start_line = max(0, len(lines) - 10)
+                for line in lines[start_line:]:
+                    logger.info(f"  [stdout] {line}")
+
         return result
 
     except Exception as e:
         logger.error(f"Error running amalgkit {subcommand}: {e}")
-        # Return failed process if check=False, otherwise re-raise if it was a budget error
+        # Return failed process if check=False, otherwise re-raise
         if kwargs.get("check"):
             raise
         return subprocess.CompletedProcess(args=command, returncode=1, stdout="", stderr=str(e))
+    finally:
+        if stdout_fh:
+            stdout_fh.close()
+        if stderr_fh:
+            stderr_fh.close()
 
 
 def _estimate_total_bytes_from_metadata(metadata_path: Path) -> int | None:
@@ -600,6 +711,75 @@ def select(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any)
     return run_amalgkit("select", params, **kwargs)
 
 
+def _run_getfastq_via_metainformant(
+    params: AmalgkitParams | Dict[str, Any] | None, **kwargs: Any
+) -> subprocess.CompletedProcess[str]:
+    """Run getfastq using internal ena_downloader (metainformant backend)."""
+    from metainformant.rna.retrieval import ena_downloader
+
+    # Extract parameters
+    p_dict = params.to_dict() if isinstance(params, AmalgkitParams) else (params or {})
+    work_dir = Path(kwargs.get("work_dir") or p_dict.get("work_dir") or ".")
+    
+    # Locate metadata
+    metadata_path = None
+    if p_dict.get("metadata"):
+        metadata_path = Path(p_dict["metadata"])
+    else:
+        metadata_path = _infer_metadata_path_from_out_dir(work_dir)
+
+    if not metadata_path or not metadata_path.exists():
+        return subprocess.CompletedProcess(
+            args=["internal_ena_downloader"], returncode=1, stderr="Metadata file not found"
+        )
+
+    # Parse run IDs
+    run_ids = []
+    try:
+        with open(metadata_path, "r", encoding="utf-8") as fh:
+            reader = csv.DictReader(fh, delimiter="\t")
+            if "run" in (reader.fieldnames or []):
+                for row in reader:
+                    if row.get("run"):
+                        run_ids.append(row["run"])
+    except Exception as e:
+        return subprocess.CompletedProcess(
+            args=["internal_ena_downloader"], returncode=1, stderr=f"Error reading metadata: {e}"
+        )
+
+    if not run_ids:
+         return subprocess.CompletedProcess(
+            args=["internal_ena_downloader"], returncode=0, stderr="No run IDs found in metadata"
+        )
+
+    getfastq_dir = work_dir / "getfastq"
+    getfastq_dir.mkdir(parents=True, exist_ok=True)
+    
+    logger.info(f"Downloading {len(run_ids)} samples using metainformant backend to {getfastq_dir}")
+    
+    # We pass work_dir as base_out_dir so it creates proper structure
+    success_count, fail_count = ena_downloader.download_sra_samples(
+        sra_ids=run_ids,
+        base_out_dir=work_dir, 
+        sort_by_size=True,
+        use_fallback=True
+    )
+    
+    if fail_count > 0:
+         logger.warning(f"ENA/SRA download completed with {fail_count} failures")
+         if success_count == 0:
+             return subprocess.CompletedProcess(
+                args=["internal_ena_downloader"], returncode=1, stderr="All downloads failed"
+            )
+
+    return subprocess.CompletedProcess(
+        args=["internal_ena_downloader"], 
+        returncode=0, 
+        stdout=f"Downloaded {success_count} samples, {fail_count} failed",
+        stderr=""
+    )
+
+
 def getfastq(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
     """Run amalgkit getfastq command with retry logic.
 
@@ -610,6 +790,13 @@ def getfastq(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: An
     Returns:
         CompletedProcess instance
     """
+    # Check backend
+    p_dict = params.to_dict() if isinstance(params, AmalgkitParams) else (params or {})
+    backend = p_dict.get("backend", "amalgkit")
+    
+    if backend == "metainformant":
+        return _run_getfastq_via_metainformant(params, **kwargs)
+
     # Check if parallel execution is requested
     jobs = 1
     if isinstance(params, dict):

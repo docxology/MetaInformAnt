@@ -21,5 +21,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.epigenome import ...
+from metainformant.epigenome import ...
 ```

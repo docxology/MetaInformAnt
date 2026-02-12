@@ -136,11 +136,13 @@ print_status "SUCCESS" "Package build completed successfully"
 cat << EOF
 
 Build completed! Next steps:
-1. Test installation: pip install $OUTPUT_DIR/metainformant-*.whl
+1. Test installation: uv pip install $OUTPUT_DIR/metainformant-*.whl
 2. Test functionality: python -c "import metainformant; print('Import successful')"
 3. Upload to PyPI: twine upload $OUTPUT_DIR/*
 
-For development testing:
-- Test in clean environment: python -m venv test_env && source test_env/bin/activate
-- Install and test: pip install $OUTPUT_DIR/metainformant-*.whl && python -c "import metainformant"
+To verify:
+- Create venv: uv venv .test_venv && source .test_venv/bin/activate
+- Install: uv pip install $OUTPUT_DIR/metainformant-*.whl
+- Test: python -c 'import metainformant; print(metainformant.__version__)'
+- Clean: rm -rf .test_venv
 EOF

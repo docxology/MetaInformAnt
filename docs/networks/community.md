@@ -157,7 +157,7 @@ communities = detect_communities(
 
 ```python
 from metainformant.networks import ppi, community
-from metainformant.ontology import go
+from metainformant.ontology.core import go
 
 # Load PPI network
 protein_network = ppi.load_string_network()

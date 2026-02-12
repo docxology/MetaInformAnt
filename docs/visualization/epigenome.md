@@ -304,7 +304,7 @@ state_colors = {
 
 - **[Epigenome Analysis](../epigenome/)**: Core epigenetic analysis functions
 - **[Methylation Analysis](../epigenome/methylation.md)**: DNA methylation workflows
-- **[ChIP-seq Analysis](../epigenome/chipseq.md)**: Histone modification analysis
+- **[ChIP-seq Analysis](../epigenome/chip_seq.md)**: Histone modification analysis
 - **[Visualization Integration](integration.md)**: Cross-module visualization patterns
 
 This module provides comprehensive epigenetic visualization capabilities integrated with METAINFORMANT's epigenomic analysis workflows.

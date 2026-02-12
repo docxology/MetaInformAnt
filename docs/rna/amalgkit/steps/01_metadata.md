@@ -26,7 +26,7 @@ def metadata(
 ) -> subprocess.CompletedProcess[str]
 
 # Step runner (low-level)
-from metainformant.rna.steps.metadata import run_metadata
+from metainformant.rna.engine.workflow_steps import run_metadata
 
 def run_metadata(
     params: Mapping[str, Any] | None = None,
@@ -483,8 +483,8 @@ filters:
 ## See Also
 
 ### Related Steps
-- **[config.md](config.md)** - Next: Generate configuration files
-- **[select.md](select.md)** - Next: Filter samples by quality
+- **[02_config.md](02_config.md)** - Next: Generate configuration files
+- **[03_select.md](03_select.md)** - Next: Filter samples by quality
 
 ### Documentation
 - **[API Reference](../../API.md#metadata)** - Complete function documentation

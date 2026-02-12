@@ -89,7 +89,7 @@ Calculate simplified Tajima's D statistic for departure from neutral equilibrium
 
 **Returns**: Simplified Tajima's D statistic (float)
 
-**Note**: This is a simplified version. For publication-quality analysis with proper variance calculation, use `metainformant.math.coalescent.tajimas_D()`.
+**Note**: This is a simplified version. For publication-quality analysis with proper variance calculation, use `metainformant.math.population_genetics.coalescent.tajimas_D()`.
 
 **Interpretation**:
 - D > 0: Suggests balancing selection or population contraction
@@ -225,7 +225,7 @@ For more advanced population genetics calculations, combine with `math.popgen`:
 
 ```python
 from metainformant.dna import population
-from metainformant.math.coalescent import tajimas_D
+from metainformant.math.population_genetics.coalescent import tajimas_D
 
 # Calculate observed statistics
 seqs = ["AAAA", "AAAT", "AATT"]
@@ -256,7 +256,7 @@ pi = population.nucleotide_diversity(sequences)
 
 1. **Sequence Length**: Functions that process multiple sequences truncate to the shortest length if sequences differ.
 
-2. **Tajima's D**: The `tajimas_d()` function is a simplified version. For statistical testing, use `metainformant.math.coalescent.tajimas_D()`.
+2. **Tajima's D**: The `tajimas_d()` function is a simplified version. For statistical testing, use `metainformant.math.population_genetics.coalescent.tajimas_D()`.
 
 3. **Genotype Encoding**: Allele frequency functions assume binary encoding (0/1). Ensure your data is properly encoded.
 

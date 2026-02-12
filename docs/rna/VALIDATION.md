@@ -357,7 +357,7 @@ from metainformant.rna.workflow import load_workflow_config
 from metainformant.rna.validation import validate_all_samples
 
 species_configs = [
-    "config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml",
+    "config/amalgkit/amalgkit_pbarbatus.yaml",
     "config/amalgkit/amalgkit_camponotus_floridanus.yaml",
 ]
 

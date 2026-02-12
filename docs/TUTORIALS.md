@@ -241,7 +241,7 @@ for fastq_file in fastq_files:
 #### Expression Quantification
 
 ```python
-from metainformant.rna.steps import quant
+from metainformant.rna.engine.workflow_steps import quant
 
 # Quantify gene expression (would use real BAM files)
 # This is a demonstration of the API

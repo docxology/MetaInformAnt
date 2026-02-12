@@ -5,7 +5,7 @@ The ontology module provides comprehensive tools for working with Gene Ontology 
 ## Loading GO Ontologies
 
 ```python
-from metainformant.ontology import load_go_obo, validate_go_ontology, write_go_summary
+from metainformant.ontology.core.go import load_go_obo, validate_go_ontology, write_go_summary
 
 # Load GO ontology from OBO file
 onto = load_go_obo("data/go-basic.obo")
@@ -22,7 +22,7 @@ summary_path = write_go_summary(onto)
 ## GO Term Queries
 
 ```python
-from metainformant.ontology import (
+from metainformant.ontology.core.go import (
     ancestors, descendants, common_ancestors,
     path_to_root, distance, find_term_by_name,
     filter_by_namespace, get_roots, get_leaves
@@ -49,7 +49,7 @@ The module includes utilities for counting GO annotation scripts:
 
 ```python
 from pathlib import Path
-from metainformant.ontology.go import count_go_scripts
+from metainformant.ontology.core.go import count_go_scripts
 
 n = count_go_scripts(Path("tests/data/ontology/GO_v3"))
 print(f"Found {n} GO annotation scripts")

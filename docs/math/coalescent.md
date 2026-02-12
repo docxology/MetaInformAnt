@@ -5,7 +5,7 @@ Functions: `expected_time_to_mrca`, `expected_total_branch_length`, `expected_pa
 Example
 
 ```python
-from metainformant.math import coalescent as coal
+from metainformant.math.population_genetics import coalescent as coal
 
 Tmrca = coal.expected_time_to_mrca(10, 1e5)
 L = coal.expected_total_branch_length(10, 1e5)
@@ -41,7 +41,7 @@ Functions
 Examples
 
 ```python
-from metainformant.math.coalescent import (
+from metainformant.math.population_genetics.coalescent import (
     expected_time_to_mrca, expected_total_branch_length,
     expected_sfs_counts, watterson_theta, expected_segregating_sites,
 )

@@ -21,5 +21,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.protein import ...
+from metainformant.protein import ...
 ```

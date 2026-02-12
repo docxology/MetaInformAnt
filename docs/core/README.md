@@ -24,5 +24,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.core import ...
+from metainformant.core import ...
 ```

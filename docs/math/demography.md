@@ -208,7 +208,7 @@ Bottlenecks dramatically reduce effective population size because:
 
 ```python
 from metainformant.math.demography import exponential_growth_effective_size
-from metainformant.math.coalescent import expected_segregating_sites
+from metainformant.math.population_genetics.coalescent import expected_segregating_sites
 
 # Calculate expected diversity under demographic model
 ne = exponential_growth_effective_size(10000, 0.1, 100)
@@ -250,6 +250,6 @@ ne_model = bottleneck_effective_size(10000, 100, 5)
 ## See Also
 
 - [`math.effective_size`](effective_size.md) - Effective population size estimators
-- [`math.coalescent`](coalescent.md) - Coalescent theory and expected diversity
+- [`math.population_genetics.coalescent`](coalescent.md) - Coalescent theory and expected diversity
 - [`math.popgen`](../math/popgen.md) - Population genetics models
 

@@ -1,7 +1,7 @@
 # Amalgkit Test Coverage Report
 
 **Date**: November 2025 (Updated)  
-**Module**: `metainformant.rna.amalgkit`, `metainformant.rna.steps`, and `metainformant.rna.workflow`
+**Module**: `metainformant.rna.amalgkit`, `metainformant.rna.engine.workflow_steps`, and `metainformant.rna.workflow`
 
 ## Executive Summary
 
@@ -43,7 +43,7 @@
 
 **Total**: 11 step wrapper functions, all tested ✅
 
-### 2. Step Runners Module (`src/metainformant/rna/steps/`)
+### 2. Step Runners Module (`src/metainformant/rna/engine/workflow_steps.py`)
 
 #### Step Runner Modules
 
@@ -228,7 +228,7 @@ All step runners: 100% coverage
 ### Module Documentation
 ✅ `src/metainformant/rna/amalgkit.py`: Complete module docstring  
 ✅ `src/metainformant/rna/workflow.py`: Complete module docstring  
-✅ `src/metainformant/rna/steps/*.py`: All step runners documented  
+✅ `src/metainformant/rna/engine/workflow_steps.py`: All step runners documented
 ✅ All public functions have comprehensive docstrings  
 ✅ All step wrapper functions documented
 
@@ -372,7 +372,7 @@ uv pip install pytest-cov
 export PYTHONPATH=src
 pytest tests/test_rna_*.py --cov=src/metainformant/rna/workflow \
   --cov=src/metainformant/rna/amalgkit \
-  --cov=src/metainformant/rna/steps \
+  --cov=src/metainformant/rna/engine \
   --cov-report=html --cov-report=term-missing
 ```
 

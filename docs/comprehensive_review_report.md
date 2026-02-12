@@ -9,8 +9,9 @@
 ## Executive Summary
 
 This comprehensive review examined:
+
 - **19 cursor rules files** (all modules + README)
-- **70+ documentation files** across 19 domains
+- **70+ documentation files** across 25 domains
 - **Root-level documentation** (README, QUICKSTART, AGENTS)
 - **Configuration files** and templates
 - **Cross-references** and navigation
@@ -28,6 +29,7 @@ This comprehensive review examined:
 **Status**: All 19 modules have complete cursor rules files.
 
 **Files Reviewed**:
+
 - ✅ `cursorrules/core.cursorrules` - Complete
 - ✅ `cursorrules/dna.cursorrules` - Complete
 - ✅ `cursorrules/rna.cursorrules` - Complete
@@ -67,26 +69,31 @@ All cursor rules files follow a consistent structure:
 ### 1.3 Key Requirements Compliance ✅
 
 #### Package Management
+
 - ✅ **All files** emphasize `uv` usage
 - ✅ **No direct `pip` usage** in any cursor rules
 - ✅ Consistent patterns: `uv venv`, `uv pip install`, `uv run`, `uv sync`
 
 #### I/O Operations
+
 - ✅ **All files** require `metainformant.core.io` for JSON/CSV/TSV
 - ✅ **All files** prohibit direct `import json` or `import csv`
 - ✅ Clear examples showing correct patterns
 
 #### Path Handling
+
 - ✅ **All files** require `metainformant.core.paths` utilities
 - ✅ Consistent use of `paths.expand_and_resolve()` and `paths.is_within()`
 - ✅ Security checks documented
 
 #### Testing Policy
+
 - ✅ **All files** include NO_MOCKING_POLICY
 - ✅ Clear examples of real implementation testing
 - ✅ Graceful skipping patterns for unavailable dependencies
 
 #### Output Paths
+
 - ✅ **All files** match main `.cursorrules` specifications
 - ✅ Consistent naming: `output/<domain>/<analysis_type>/`
 
@@ -119,11 +126,13 @@ All prefixes correctly documented and consistent:
 ### 1.5 Minor Issues Found
 
 #### Issue 1: Section Naming Consistency (Minor)
+
 - **Location**: `cursorrules/dna.cursorrules` line 245
 - **Issue**: Uses "Output Paths" section name (correct)
 - **Status**: ✅ Actually consistent - all files use "Output Paths"
 
 #### Issue 2: Core Output Paths Section (Minor)
+
 - **Location**: `cursorrules/core.cursorrules` line 108
 - **Issue**: Output paths section exists but could be more prominent
 - **Status**: ✅ Present and correct - section at line 108-112
@@ -139,6 +148,7 @@ All prefixes correctly documented and consistent:
 **Status**: All 19 modules have comprehensive documentation.
 
 **Documentation Files Verified**:
+
 - ✅ `docs/index.md` - Complete hierarchical index
 - ✅ `docs/README.md` - Comprehensive overview
 - ✅ `docs/DOCUMENTATION_GUIDE.md` - Navigation guide
@@ -149,7 +159,8 @@ All prefixes correctly documented and consistent:
 - ✅ `docs/UV_SETUP.md` - UV setup guide
 - ✅ `docs/DISK_SPACE_MANAGEMENT.md` - Disk space guide
 
-**Domain Documentation** (19 domains):
+**Domain Documentation** (25 domains):
+
 - ✅ All domains have `README.md` or `index.md`
 - ✅ All domains have `AGENTS.md` where applicable
 - ✅ Core documentation files present for all major submodules
@@ -157,6 +168,7 @@ All prefixes correctly documented and consistent:
 ### 2.2 Navigation and Cross-References ✅
 
 **Index Files**:
+
 - ✅ `docs/index.md` - Lists all 19 modules
 - ✅ `docs/README.md` - Complete module listing
 - ✅ `docs/DOCUMENTATION_GUIDE.md` - All modules in domain list
@@ -164,6 +176,7 @@ All prefixes correctly documented and consistent:
 - ✅ `docs/architecture.md` - All modules in architecture diagram
 
 **Cross-References**:
+
 - ✅ Internal links use correct relative paths
 - ✅ File references match actual locations
 - ✅ Module references use correct paths
@@ -172,17 +185,20 @@ All prefixes correctly documented and consistent:
 ### 2.3 Documentation Quality ✅
 
 **Structure**:
+
 - ✅ Consistent organization across all domains
 - ✅ Clear hierarchy: README → index → topic-specific docs
 - ✅ Logical grouping of related topics
 
 **Content**:
+
 - ✅ Comprehensive coverage of functionality
 - ✅ Practical code examples
 - ✅ Clear explanations of biological context
 - ✅ Integration patterns documented
 
 **Code Examples**:
+
 - ✅ Use correct imports (`metainformant.core.io`, `metainformant.core.paths`)
 - ✅ Write to `output/` by default
 - ✅ Use `uv` for package management
@@ -191,7 +207,9 @@ All prefixes correctly documented and consistent:
 ### 2.4 Minor Issues Found
 
 #### Issue 1: Direct `import json` in Documentation (Minor)
+
 **Locations**:
+
 - `docs/rna/WORKFLOW_EXECUTION_SUMMARY.md` line 261
 - `docs/rna/DISCOVERY.md` line 360
 - `docs/rna/COMPLETE_SETUP_VERIFICATION.md` line 228
@@ -202,7 +220,9 @@ All prefixes correctly documented and consistent:
 **Recommendation**: Update to use `metainformant.core.io` for consistency, or add note that these are quick examples.
 
 #### Issue 2: `pip install` Without `uv` Prefix (Minor)
+
 **Locations**:
+
 - `docs/life_events/README.md` lines 1507, 1514
 - `docs/information/README.md` line 656
 
@@ -219,6 +239,7 @@ All prefixes correctly documented and consistent:
 ### 3.1 README.md ✅
 
 **Completeness**:
+
 - ✅ All 19 modules listed
 - ✅ Module descriptions accurate
 - ✅ CLI examples for all modules
@@ -227,6 +248,7 @@ All prefixes correctly documented and consistent:
 - ✅ Links to documentation correct
 
 **Quality**:
+
 - ✅ Clear project overview
 - ✅ Quick start instructions
 - ✅ Feature highlights
@@ -235,6 +257,7 @@ All prefixes correctly documented and consistent:
 ### 3.2 QUICKSTART.md ✅
 
 **Completeness**:
+
 - ✅ Installation instructions (all use `uv`)
 - ✅ Basic usage examples for all major modules
 - ✅ CLI command examples
@@ -242,6 +265,7 @@ All prefixes correctly documented and consistent:
 - ✅ Links to detailed documentation
 
 **Quality**:
+
 - ✅ Step-by-step instructions
 - ✅ Runnable code examples
 - ✅ Clear prerequisites
@@ -250,12 +274,14 @@ All prefixes correctly documented and consistent:
 ### 3.3 AGENTS.md ✅
 
 **Completeness**:
+
 - ✅ Lists all module AGENTS.md files
 - ✅ AI contributions documented
 - ✅ Development process explained
 - ✅ Quality control measures
 
 **Quality**:
+
 - ✅ Clear attribution
 - ✅ Ethical considerations
 - ✅ Best practices documented
@@ -263,6 +289,7 @@ All prefixes correctly documented and consistent:
 ### 3.4 .cursorrules (Root) ✅
 
 **Completeness**:
+
 - ✅ All 19 modules' output paths specified
 - ✅ Environment variable prefixes documented
 - ✅ Testing policy clearly stated
@@ -271,6 +298,7 @@ All prefixes correctly documented and consistent:
 - ✅ Path handling rules clear
 
 **Quality**:
+
 - ✅ Well-organized sections
 - ✅ Clear examples
 - ✅ Cross-references to module rules
@@ -282,14 +310,16 @@ All prefixes correctly documented and consistent:
 ### 4.1 Configuration Structure ✅
 
 **Files Reviewed**:
+
 - ✅ `config/README.md` - Configuration overview
 - ✅ `config/AGENTS.md` - AI contributions
 - ✅ `config/amalgkit/*.yaml` - RNA workflow configs
 - ✅ `config/gwas/*.yaml` - GWAS workflow configs
 - ✅ `config/*_template.yaml` - Template files
-- ✅ `config/ncbi.yaml` - NCBI configuration
+- ✅ `config/ncbi/ncbi.yaml` - NCBI configuration
 
 **Structure**:
+
 - ✅ Consistent YAML format
 - ✅ Environment variable overrides documented
 - ✅ Examples are accurate
@@ -297,13 +327,15 @@ All prefixes correctly documented and consistent:
 
 ### 4.2 Configuration Examples ✅
 
-**RNA Configuration** (`config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml`):
+**RNA Configuration** (`config/amalgkit/amalgkit_pbarbatus.yaml`):
+
 - ✅ Correct structure
 - ✅ All required fields present
 - ✅ Step-specific parameters documented
 - ✅ Genome configuration accurate
 
 **GWAS Configuration** (`config/gwas/gwas_template.yaml`):
+
 - ✅ Comprehensive template
 - ✅ All workflow steps configurable
 - ✅ Clear documentation comments
@@ -318,6 +350,7 @@ All prefixes correctly documented and consistent:
 **Status**: All internal links verified and correct.
 
 **Verified**:
+
 - ✅ Links between `docs/index.md` and domain docs
 - ✅ Links in `docs/cli.md` to domain documentation
 - ✅ Links in `docs/architecture.md` to modules
@@ -330,6 +363,7 @@ All prefixes correctly documented and consistent:
 **Status**: All file references match actual locations.
 
 **Verified**:
+
 - ✅ Module references use correct paths
 - ✅ Documentation links in code are accurate
 - ✅ Configuration file references correct
@@ -342,20 +376,24 @@ All prefixes correctly documented and consistent:
 ### 6.1 Code Examples ✅
 
 **Imports**:
+
 - ✅ Use `metainformant.core.io` for I/O
 - ✅ Use `metainformant.core.paths` for paths
 - ✅ Use `metainformant.core.logging` for logging
 - ✅ Use `metainformant.core.config` for configuration
 
 **Package Management**:
+
 - ✅ All examples use `uv` commands
 - ✅ Correct syntax: `uv venv`, `uv pip install`, `uv run`
 
 **Output Paths**:
+
 - ✅ All examples write to `output/` by default
 - ✅ Paths match cursor rules specifications
 
 **Type Hints**:
+
 - ✅ Examples include type hints
 - ✅ Use `from __future__ import annotations`
 
@@ -364,6 +402,7 @@ All prefixes correctly documented and consistent:
 **Status**: Function signatures in documentation match actual implementations.
 
 **Verified**:
+
 - ✅ Configuration loading functions
 - ✅ I/O operation functions
 - ✅ Workflow execution functions
@@ -374,6 +413,7 @@ All prefixes correctly documented and consistent:
 **Status**: Configuration structures match actual config classes.
 
 **Verified**:
+
 - ✅ `AmalgkitWorkflowConfig` structure
 - ✅ `GWASWorkflowConfig` structure
 - ✅ `LifeEventsWorkflowConfig` structure
@@ -388,6 +428,7 @@ All prefixes correctly documented and consistent:
 **Status**: Module names consistent across all files.
 
 **Verified**:
+
 - ✅ Consistent naming: `dna`, `rna`, `gwas`, `protein`, etc.
 - ✅ No variations or abbreviations
 - ✅ Matches source code structure
@@ -397,6 +438,7 @@ All prefixes correctly documented and consistent:
 **Status**: Environment variable prefixes consistent.
 
 **Verified**:
+
 - ✅ All prefixes match `.cursorrules` specifications
 - ✅ Examples use correct prefixes
 - ✅ Documentation consistent
@@ -406,6 +448,7 @@ All prefixes correctly documented and consistent:
 **Status**: Output paths consistent between cursor rules and documentation.
 
 **Verified**:
+
 - ✅ All paths match main `.cursorrules` specifications
 - ✅ Documentation examples use correct paths
 - ✅ Configuration files use correct paths
@@ -415,6 +458,7 @@ All prefixes correctly documented and consistent:
 **Status**: Dependencies listed consistently.
 
 **Verified**:
+
 - ✅ Required dependencies documented
 - ✅ Optional dependencies clearly marked
 - ✅ External tools documented
@@ -424,6 +468,7 @@ All prefixes correctly documented and consistent:
 **Status**: Integration patterns match between files.
 
 **Verified**:
+
 - ✅ Module relationships consistent
 - ✅ Dependency chains accurate
 - ✅ Integration examples match
@@ -433,6 +478,7 @@ All prefixes correctly documented and consistent:
 **Status**: Testing policies consistent (NO_MOCKING_POLICY).
 
 **Verified**:
+
 - ✅ All cursor rules include NO_MOCKING_POLICY
 - ✅ Documentation consistent
 - ✅ Examples show real implementations
@@ -442,6 +488,7 @@ All prefixes correctly documented and consistent:
 **Status**: Package management consistent (`uv` everywhere).
 
 **Verified**:
+
 - ✅ All cursor rules emphasize `uv`
 - ✅ Documentation uses `uv` commands
 - ✅ Examples use `uv` syntax
@@ -451,6 +498,7 @@ All prefixes correctly documented and consistent:
 **Status**: Code style consistent (Python 3.11+, type hints).
 
 **Verified**:
+
 - ✅ Type hints throughout
 - ✅ `from __future__ import annotations`
 - ✅ Union types: `str | Path | None`
@@ -464,6 +512,7 @@ All prefixes correctly documented and consistent:
 **Status**: Comprehensive coverage across all modules.
 
 **Coverage**:
+
 - ✅ All modules have complete documentation
 - ✅ Major functions have examples
 - ✅ Configuration options documented
@@ -475,6 +524,7 @@ All prefixes correctly documented and consistent:
 ### 8.2 Gaps Identified
 
 **Minor Gaps** (Non-Critical):
+
 1. Some domain READMEs could include more cross-module integration examples
 2. Some topic-specific docs could include more troubleshooting information
 3. Some modules could benefit from more detailed API reference sections
@@ -490,6 +540,7 @@ All prefixes correctly documented and consistent:
 **Status**: All code examples are syntactically correct.
 
 **Verified**:
+
 - ✅ Python syntax valid
 - ✅ Import statements correct
 - ✅ Function calls valid
@@ -500,6 +551,7 @@ All prefixes correctly documented and consistent:
 **Status**: Imports are accurate and follow patterns.
 
 **Verified**:
+
 - ✅ Use `metainformant.core.io` for I/O
 - ✅ Use `metainformant.core.paths` for paths
 - ✅ Use `metainformant.core.logging` for logging
@@ -510,6 +562,7 @@ All prefixes correctly documented and consistent:
 **Status**: Paths use correct conventions.
 
 **Verified**:
+
 - ✅ Use `Path` objects from `pathlib`
 - ✅ Write to `output/` by default
 - ✅ Use `paths.expand_and_resolve()` for user paths
@@ -520,6 +573,7 @@ All prefixes correctly documented and consistent:
 **Status**: I/O operations use `metainformant.core.io`.
 
 **Verified**:
+
 - ✅ Use `io.load_json()`, `io.dump_json()`
 - ✅ Use `io.read_jsonl()`, `io.write_jsonl()`
 - ✅ Use `io.load_csv()`, `io.write_csv()`
@@ -530,6 +584,7 @@ All prefixes correctly documented and consistent:
 **Status**: Package management commands use `uv`.
 
 **Verified**:
+
 - ✅ `uv venv` for virtual environments
 - ✅ `uv pip install` for installing packages
 - ✅ `uv run` for executing commands
@@ -626,6 +681,7 @@ The METAINFORMANT codebase demonstrates exceptional documentation quality with:
 ### 12.3 Minor Issues
 
 Only 2 minor documentation issues found (non-critical):
+
 - 4 instances of `import json` in documentation (acceptable for quick examples)
 - 2 instances of `pip install` without `uv` prefix (easy to fix)
 
@@ -640,8 +696,3 @@ The codebase documentation and cursor rules are **production-ready** and demonst
 **Review Completed**: 2025-01-27  
 **Reviewer**: AI Code Assistant  
 **Next Review**: Recommended in 6 months or after major changes
-
-
-
-
-

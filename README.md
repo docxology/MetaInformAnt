@@ -6,7 +6,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Modules](https://img.shields.io/badge/modules-25-green.svg)](src/metainformant/)
-[![Files](https://img.shields.io/badge/files-343-brightgreen.svg)](src/metainformant/)
+[![Files](https://img.shields.io/badge/files-560-brightgreen.svg)](src/metainformant/)
 
 ---
 
@@ -19,9 +19,9 @@ METAINFORMANT provides production-ready bioinformatics analysis across genomics,
 | Metric | Value |
 |--------|-------|
 | **Modules** | 25 specialized analysis modules |
-| **Python Files** | 343 implementation files |
-| **Plot Types** | 57+ visualization methods |
-| **Documentation** | 130+ README files |
+| **Python Files** | 560 implementation files |
+| **Plot Types** | 70+ visualization methods |
+| **Documentation** | 240+ README files |
 
 ### 🔬 Core Capabilities
 
@@ -272,7 +272,7 @@ graph TD
 - **Statistical & ML Methods**: GWAS, population genetics, machine learning pipelines
 - **Single-Cell Genomics**: Complete scRNA-seq analysis workflows
 - **Network Analysis**: Biological networks, pathways, community detection algorithms
-- **Visualization Suite**: 14 specialized plotting modules with 57+ plot types and publication-quality output
+- **Visualization Suite**: 14 specialized plotting modules with 70+ plot types and publication-quality output
 - **Modular Architecture**: Individual modules or complete end-to-end workflows
 - **Comprehensive Documentation**: 70+ README files with technical specifications
 - **Implementation Testing**: Real methods in tests, no mocks or stubs
@@ -370,7 +370,7 @@ See `scripts/core/run_demo.py` for the workflow demonstration. Outputs are saved
 | **Protein** | [protein/](src/metainformant/protein/) | ✅ **Complete** | Sequences, structures, AlphaFold, UniProt, functional analysis |
 | **GWAS** | [gwas/](src/metainformant/gwas/) | ✅ **Complete** | Association testing, QC, population structure, visualization |
 | **Math** | [math/](src/metainformant/math/) | ✅ **Complete** | Population genetics, coalescent, selection, epidemiology |
-| **Visualization** | [visualization/](src/metainformant/visualization/) | ✅ **Complete** | 57+ plot types, animations, publication-quality output |
+| **Visualization** | [visualization/](src/metainformant/visualization/) | ✅ **Complete** | 70+ plot types, animations, publication-quality output |
 | **Ontology** | [ontology/](src/metainformant/ontology/) | ✅ **Complete** | GO analysis, semantic similarity, functional annotation |
 | **Quality** | [quality/](src/metainformant/quality/) | ✅ **Complete** | FASTQ analysis, validation, contamination detection |
 
@@ -398,30 +398,30 @@ All modules live in [`src/metainformant/`](src/metainformant/) with documentatio
 | Module | Files | Description | Key Components | Docs |
 |--------|-------|-------------|----------------|------|
 | **Core Infrastructure** |||||
-| [`core/`](src/metainformant/core/) | 26 | Shared utilities, I/O, logging, config, parallel processing, caching | [`io.py`](src/metainformant/core/io.py), [`config.py`](src/metainformant/core/config.py), [`parallel.py`](src/metainformant/core/parallel.py) | [README](src/metainformant/core/README.md) |
+| [`core/`](src/metainformant/core/) | 26 | Shared utilities, I/O, logging, config, parallel processing, caching | [`io/`](src/metainformant/core/io/), [`data/`](src/metainformant/core/data/), [`execution/`](src/metainformant/core/execution/) | [README](src/metainformant/core/README.md) |
 | **Molecular Analysis** |||||
-| [`dna/`](src/metainformant/dna/) | 27 | DNA sequences, alignment, phylogenetics, population genetics, variants | [`sequences.py`](src/metainformant/dna/sequences.py), [`alignment/`](src/metainformant/dna/alignment/), [`population/`](src/metainformant/dna/population/) | [README](src/metainformant/dna/README.md) |
-| [`rna/`](src/metainformant/rna/) | 29 | RNA-seq workflows, amalgkit integration, expression quantification | [`amalgkit/`](src/metainformant/rna/amalgkit/), [`engine/`](src/metainformant/rna/engine/), [`workflow.py`](src/metainformant/rna/workflow.py) | [README](src/metainformant/rna/README.md) |
-| [`protein/`](src/metainformant/protein/) | 17 | Protein sequences, structure analysis, AlphaFold, UniProt integration | [`sequences.py`](src/metainformant/protein/sequences.py), [`structure/`](src/metainformant/protein/structure/) | [README](src/metainformant/protein/README.md) |
-| [`epigenome/`](src/metainformant/epigenome/) | 8 | Methylation analysis, ChIP-seq, ATAC-seq, chromatin accessibility | [`methylation.py`](src/metainformant/epigenome/methylation.py), [`chipseq.py`](src/metainformant/epigenome/chipseq.py) | [README](src/metainformant/epigenome/README.md) |
+| [`dna/`](src/metainformant/dna/) | 27 | DNA sequences, alignment, phylogenetics, population genetics, variants | [`sequence/`](src/metainformant/dna/sequence/), [`alignment/`](src/metainformant/dna/alignment/), [`population/`](src/metainformant/dna/population/) | [README](src/metainformant/dna/README.md) |
+| [`rna/`](src/metainformant/rna/) | 29 | RNA-seq workflows, amalgkit integration, expression quantification | [`amalgkit/`](src/metainformant/rna/amalgkit/), [`engine/`](src/metainformant/rna/engine/), [`analysis/`](src/metainformant/rna/analysis/) | [README](src/metainformant/rna/README.md) |
+| [`protein/`](src/metainformant/protein/) | 17 | Protein sequences, structure analysis, AlphaFold, UniProt integration | [`sequence/`](src/metainformant/protein/sequence/), [`structure/`](src/metainformant/protein/structure/), [`database/`](src/metainformant/protein/database/) | [README](src/metainformant/protein/README.md) |
+| [`epigenome/`](src/metainformant/epigenome/) | 8 | Methylation analysis, ChIP-seq, ATAC-seq, chromatin accessibility | [`assays/`](src/metainformant/epigenome/assays/), [`chromatin_state/`](src/metainformant/epigenome/chromatin_state/), [`peak_calling/`](src/metainformant/epigenome/peak_calling/) | [README](src/metainformant/epigenome/README.md) |
 | **Statistical & ML** |||||
 | [`gwas/`](src/metainformant/gwas/) | 39 | GWAS, fine-mapping, eQTL analysis, colocalization, visualization | [`finemapping/`](src/metainformant/gwas/finemapping/), [`visualization/`](src/metainformant/gwas/visualization/), [`analysis/`](src/metainformant/gwas/analysis/) | [README](src/metainformant/gwas/README.md) |
-| [`math/`](src/metainformant/math/) | 20 | Population genetics theory, coalescent, selection, epidemiology | [`popgen/`](src/metainformant/math/popgen/), [`coalescent/`](src/metainformant/math/coalescent/) | [README](src/metainformant/math/README.md) |
-| [`ml/`](src/metainformant/ml/) | 12 | Machine learning pipelines, classification, regression, features | [`classification.py`](src/metainformant/ml/classification.py), [`features/`](src/metainformant/ml/features/), [`llm/`](src/metainformant/ml/llm/) | [README](src/metainformant/ml/README.md) |
-| [`information/`](src/metainformant/information/) | 14 | Information theory, Shannon entropy, mutual information, semantic similarity | [`entropy.py`](src/metainformant/information/entropy.py), [`integration/`](src/metainformant/information/integration/) | [README](src/metainformant/information/README.md) |
+| [`math/`](src/metainformant/math/) | 20 | Population genetics theory, coalescent, selection, epidemiology | [`population_genetics/`](src/metainformant/math/population_genetics/), [`epidemiology/`](src/metainformant/math/epidemiology/), [`evolutionary_dynamics/`](src/metainformant/math/evolutionary_dynamics/) | [README](src/metainformant/math/README.md) |
+| [`ml/`](src/metainformant/ml/) | 12 | Machine learning pipelines, classification, regression, features | [`models/`](src/metainformant/ml/models/), [`features/`](src/metainformant/ml/features/), [`llm/`](src/metainformant/ml/llm/) | [README](src/metainformant/ml/README.md) |
+| [`information/`](src/metainformant/information/) | 14 | Information theory, Shannon entropy, mutual information, semantic similarity | [`metrics/`](src/metainformant/information/metrics/), [`integration/`](src/metainformant/information/integration/) | [README](src/metainformant/information/README.md) |
 | **Systems Biology** |||||
 | [`networks/`](src/metainformant/networks/) | 9 | Biological networks, graph algorithms, community detection, pathways | [`analysis/`](src/metainformant/networks/analysis/), [`interaction/`](src/metainformant/networks/interaction/) | [README](src/metainformant/networks/README.md) |
 | [`multiomics/`](src/metainformant/multiomics/) | 6 | Multi-omic integration, joint PCA, cross-omic correlation | [`analysis/`](src/metainformant/multiomics/analysis/), [`methods/`](src/metainformant/multiomics/methods/) | [README](src/metainformant/multiomics/README.md) |
-| [`singlecell/`](src/metainformant/singlecell/) | 9 | scRNA-seq preprocessing, clustering, differential expression | [`preprocessing.py`](src/metainformant/singlecell/preprocessing.py), [`clustering.py`](src/metainformant/singlecell/clustering.py) | [README](src/metainformant/singlecell/README.md) |
-| [`simulation/`](src/metainformant/simulation/) | 7 | Synthetic data, agent-based models, sequence simulation, ecosystems | [`sequences.py`](src/metainformant/simulation/sequences.py), [`ecosystems.py`](src/metainformant/simulation/ecosystems.py) | [README](src/metainformant/simulation/README.md) |
+| [`singlecell/`](src/metainformant/singlecell/) | 9 | scRNA-seq preprocessing, clustering, differential expression | [`data/`](src/metainformant/singlecell/data/), [`analysis/`](src/metainformant/singlecell/analysis/), [`visualization/`](src/metainformant/singlecell/visualization/) | [README](src/metainformant/singlecell/README.md) |
+| [`simulation/`](src/metainformant/simulation/) | 7 | Synthetic data, agent-based models, sequence simulation, ecosystems | [`models/`](src/metainformant/simulation/models/), [`workflow/`](src/metainformant/simulation/workflow/), [`benchmark/`](src/metainformant/simulation/benchmark/) | [README](src/metainformant/simulation/README.md) |
 | **Annotation & Metadata** |||||
-| [`ontology/`](src/metainformant/ontology/) | 7 | Gene Ontology, functional annotation, semantic similarity | [`go.py`](src/metainformant/ontology/go.py), [`query.py`](src/metainformant/ontology/query.py) | [README](src/metainformant/ontology/README.md) |
-| [`phenotype/`](src/metainformant/phenotype/) | 15 | Phenotypic data curation, AntWiki integration, trait analysis | [`life_course.py`](src/metainformant/phenotype/life_course.py), [`antwiki/`](src/metainformant/phenotype/antwiki/) | [README](src/metainformant/phenotype/README.md) |
-| [`ecology/`](src/metainformant/ecology/) | 7 | Community diversity, environmental correlations, species matrices | [`community.py`](src/metainformant/ecology/community.py), [`environmental.py`](src/metainformant/ecology/environmental.py) | [README](src/metainformant/ecology/README.md) |
+| [`ontology/`](src/metainformant/ontology/) | 7 | Gene Ontology, functional annotation, semantic similarity | [`core/`](src/metainformant/ontology/core/), [`query/`](src/metainformant/ontology/query/), [`visualization/`](src/metainformant/ontology/visualization/) | [README](src/metainformant/ontology/README.md) |
+| [`phenotype/`](src/metainformant/phenotype/) | 15 | Phenotypic data curation, AntWiki integration, trait analysis | [`analysis/`](src/metainformant/phenotype/analysis/), [`data/`](src/metainformant/phenotype/data/), [`behavior/`](src/metainformant/phenotype/behavior/) | [README](src/metainformant/phenotype/README.md) |
+| [`ecology/`](src/metainformant/ecology/) | 7 | Community diversity, environmental correlations, species matrices | [`analysis/`](src/metainformant/ecology/analysis/), [`phylogenetic/`](src/metainformant/ecology/phylogenetic/), [`visualization/`](src/metainformant/ecology/visualization/) | [README](src/metainformant/ecology/README.md) |
 | [`life_events/`](src/metainformant/life_events/) | 9 | Life course analysis, event sequences, temporal embeddings | [`models/`](src/metainformant/life_events/models/), [`workflow/`](src/metainformant/life_events/workflow/) | [README](src/metainformant/life_events/README.md) |
 | **Utilities** |||||
-| [`quality/`](src/metainformant/quality/) | 4 | FASTQ quality assessment, validation, contamination detection | [`fastq.py`](src/metainformant/quality/fastq.py), [`metrics.py`](src/metainformant/quality/metrics.py) | [README](src/metainformant/quality/README.md) |
-| [`visualization/`](src/metainformant/visualization/) | 22 | 57+ plot types, heatmaps, networks, animations, publication-ready | [`heatmap.py`](src/metainformant/visualization/heatmap.py), [`networks.py`](src/metainformant/visualization/networks.py), [`animate.py`](src/metainformant/visualization/animate.py) | [README](src/metainformant/visualization/README.md) |
+| [`quality/`](src/metainformant/quality/) | 4 | FASTQ quality assessment, validation, contamination detection | [`io/`](src/metainformant/quality/io/), [`analysis/`](src/metainformant/quality/analysis/), [`reporting/`](src/metainformant/quality/reporting/) | [README](src/metainformant/quality/README.md) |
+| [`visualization/`](src/metainformant/visualization/) | 22 | 70+ plot types, heatmaps, networks, animations, publication-ready | [`plots/`](src/metainformant/visualization/plots/), [`genomics/`](src/metainformant/visualization/genomics/), [`analysis/`](src/metainformant/visualization/analysis/) | [README](src/metainformant/visualization/README.md) |
 | **Specialized Domains** |||||
 | [`longread/`](src/metainformant/longread/) | 19 | Long-read sequencing (PacBio, ONT), assembly, error correction | [`assembly/`](src/metainformant/longread/assembly/), [`quality/`](src/metainformant/longread/quality/) | [README](src/metainformant/longread/README.md) |
 | [`metagenomics/`](src/metainformant/metagenomics/) | 11 | Metagenomic analysis, taxonomic profiling, functional annotation | [`taxonomy/`](src/metainformant/metagenomics/taxonomy/), [`functional/`](src/metainformant/metagenomics/functional/) | [README](src/metainformant/metagenomics/README.md) |
@@ -430,7 +430,7 @@ All modules live in [`src/metainformant/`](src/metainformant/) with documentatio
 | [`structural_variants/`](src/metainformant/structural_variants/) | 9 | SV detection, CNV analysis, breakpoint resolution | [`detection/`](src/metainformant/structural_variants/detection/) | [README](src/metainformant/structural_variants/README.md) |
 | [`menu/`](src/metainformant/menu/) | 4 | Interactive CLI menu system, workflow navigation | [`ui/`](src/metainformant/menu/ui/) | [README](src/metainformant/menu/README.md) |
 
-**Total: 25 modules, 343 Python files**
+**Total: 25 modules, 560 Python files**
 
 ## Documentation
 
@@ -471,7 +471,7 @@ uv run metainformant dna fetch --assembly GCF_000001405.40
 uv run metainformant dna align --input data/sequences.fasta --output output/dna/alignment
 uv run metainformant dna variants --input data/variants.vcf --format vcf --output output/dna/variants
 uv run metainformant rna run --work-dir output/rna --threads 8 --species Apis_mellifera
-uv run metainformant rna run-config --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+uv run metainformant rna run-config --config config/amalgkit/amalgkit_pbarbatus.yaml
 uv run metainformant protein taxon-ids --file data/taxon_ids.txt
 uv run metainformant protein rmsd-ca --pdb-a data/structure1.pdb --pdb-b data/structure2.pdb
 uv run metainformant gwas run --config config/gwas/gwas_template.yaml
@@ -549,13 +549,13 @@ for step, result in results.items():
 
 ```bash
 # End-to-end workflow for a single species (recommended)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml
 
 # Check status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --status
 
 # Alternative: Bash-based orchestrator
-bash scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+bash scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit/amalgkit_pbarbatus.yaml
 ```
 
 ### GWAS Analysis
@@ -685,7 +685,8 @@ peaks = chipseq.call_peaks("data/chipseq.bam", "data/control.bam")
 ### Ontology Analysis
 
 ```python
-from metainformant.ontology import go, query
+from metainformant.ontology.core import go
+from metainformant.ontology.query import query
 
 # Load Gene Ontology
 go_graph = go.load_obo("data/go.obo")

@@ -34,7 +34,7 @@ amalgkit getfastq \
 ### Python API
 
 ```python
-from metainformant.rna.steps.getfastq import run
+from metainformant.rna.engine.sra_extraction import run
 
 result = run(
     params={
@@ -397,7 +397,7 @@ The METAINFORMANT wrapper provides additional functionality beyond stock amalgki
 ### Robust SRA Download with Retries
 
 ```python
-# From src/metainformant/rna/steps/getfastq.py
+# From src/metainformant/rna/engine/sra_extraction.py
 # Automatic retry logic for failed downloads:
 # 1. NEW (Jan 2026): Checks for "LITE" files and uses `curl` to fetch full SRA objects directly from AWS Open Data (`https://sra-pub-run-odp.s3.amazonaws.com/...`).
 #    - This bypasses `prefetch`/`sra-tools` entirely for the download phase.
@@ -422,7 +422,7 @@ steps:
     accelerate: true  # Automatically sets aws, gcp, ncbi to 'yes'
 ```
 
-This is processed by `src/metainformant/rna/steps/getfastq.py` before calling amalgkit:
+This is processed by `src/metainformant/rna/engine/sra_extraction.py` before calling amalgkit:
 
 ```python
 # Extract accelerate flag and apply to amalgkit params
@@ -438,7 +438,7 @@ if accelerate_enabled:
 METAINFORMANT sets robust defaults for production workflows:
 
 ```python
-# From src/metainformant/rna/steps/getfastq.py::_inject_robust_defaults()
+# From src/metainformant/rna/engine/sra_extraction.py::_inject_robust_defaults()
 # PFD: Auto-enabled if parallel-fastq-dump is available, otherwise disabled
 # fastp: Defaults to False (set to True in config to enable quality filtering)
 # accelerate: Defaults to True (enables AWS/GCP/NCBI sources)
@@ -470,7 +470,7 @@ execute_workflow(cfg)
 
 ```python
 # Automatically detects missing FASTQs and downloads only those
-# See: src/metainformant/rna/steps/getfastq.py::_retry_missing_srrs()
+# See: src/metainformant/rna/engine/sra_extraction.py::_retry_missing_srrs()
 ```
 
 ## Automatic SRA-to-FASTQ Conversion
@@ -652,25 +652,25 @@ grep "SRR123456" output/amalgkit/work/metadata/metadata.tsv | grep -i "lite"
        #!/bin/bash
        exec /usr/bin/fasterq-dump --size-check off "$@"
        ```
-   - **Code Location**: `src/metainformant/rna/steps/process_samples.py::_download_worker()` (lines 259-270)
+   - **Code Location**: `src/metainformant/rna/engine/pipeline.py::_download_worker()` (lines 259-270)
 
 2. **Direct Binary Detection for Manual Conversion**:
-   - **Location**: `src/metainformant/rna/steps/getfastq.py::convert_sra_to_fastq()`
+   - **Location**: `src/metainformant/rna/engine/sra_extraction.py::convert_sra_to_fastq()`
    - **Purpose**: Ensures direct calls to `convert_sra_to_fastq()` use the real `fasterq-dump` binary, not the wrapper
    - **Implementation**:
      - Checks system locations first (`/usr/bin/fasterq-dump`, `/usr/local/bin/fasterq-dump`)
      - Filters out wrapper scripts (checks if "temp" is in the path)
      - Explicitly passes `--size-check off` to the real binary
-   - **Code Location**: `src/metainformant/rna/steps/getfastq.py::convert_sra_to_fastq()` (lines 578-614)
+   - **Code Location**: `src/metainformant/rna/engine/sra_extraction.py::convert_sra_to_fastq()` (lines 578-614)
 
 3. **Automatic SRA-to-FASTQ Conversion**:
-   - **Location**: `src/metainformant/rna/steps/getfastq.py::run()`
+   - **Location**: `src/metainformant/rna/engine/sra_extraction.py::run()`
    - **Purpose**: Automatically converts SRA files to FASTQ when SRA files exist but FASTQ files are missing
    - **Implementation**:
      - Detects samples with SRA files but no FASTQ files
      - Automatically calls `convert_sra_to_fastq()` for each sample
      - Logs success/failure for each conversion attempt
-   - **Code Location**: `src/metainformant/rna/steps/getfastq.py::run()` (lines 274-295)
+   - **Code Location**: `src/metainformant/rna/engine/sra_extraction.py::run()` (lines 274-295)
 
 4. **LITE SRA File Handling**:
    - **Location**: Configuration files and workflow validation
@@ -680,8 +680,8 @@ grep "SRR123456" output/amalgkit/work/metadata/metadata.tsv | grep -i "lite"
      - Use AWS only when LITE files are detected
      - Validation detects 0-read cases and marks downloads as failed
    - **Code Location**: 
-     - Configuration: `config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml`
-     - Validation: `src/metainformant/rna/steps/process_samples.py::_download_worker()` (lines 315-327)
+     - Configuration: `config/amalgkit/amalgkit_pbarbatus.yaml`
+     - Validation: `src/metainformant/rna/engine/pipeline.py::_download_worker()` (lines 315-327)
 
 **Workflow Integration**:
 
@@ -730,7 +730,7 @@ output/amalgkit/pogonomyrmex_barbatus/fastq/temp/fasterq-dump --help
 # Test direct conversion
 python3 -c "
 from pathlib import Path
-from metainformant.rna.steps.getfastq import convert_sra_to_fastq
+from metainformant.rna.engine.sra_extraction import convert_sra_to_fastq
 success, msg, files = convert_sra_to_fastq(
     'SRR123456',
     Path('path/to/SRR123456.sra'),
@@ -968,7 +968,7 @@ execute_workflow(cfg)  # getfastq runs automatically after select
 The METAINFORMANT workflow adds automatic retry logic:
 
 ```python
-# From src/metainformant/rna/steps/getfastq.py
+# From src/metainformant/rna/engine/sra_extraction.py
 # Features:
 # - 3 retries per sample
 # - Fallback to prefetch+fasterq-dump if parallel-fastq-dump fails

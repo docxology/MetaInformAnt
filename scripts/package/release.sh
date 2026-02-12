@@ -294,7 +294,7 @@ fi
 
 echo "Next steps:"
 echo "1. Review changes: git log --oneline -5"
-echo "2. Test manually: pip install dist/metainformant-*.whl"
+echo "2. Test manually: uv pip install dist/metainformant-*.whl"
 echo "3. Create GitHub release with tag v$NEW_VERSION"
 if [[ "$PUSH_CHANGES" != "true" ]]; then
     echo "4. Push changes: git push origin main && git push origin v$NEW_VERSION"

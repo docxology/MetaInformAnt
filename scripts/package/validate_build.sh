@@ -278,7 +278,7 @@ if [[ "$VALIDATION_PASSED" == "true" ]]; then
     echo
     echo "Your build artifacts are ready for:"
     echo "• PyPI upload: twine upload $DIST_DIR/*"
-    echo "• Local testing: pip install $DIST_DIR/*.whl"
+    echo "• Local testing: uv pip install $DIST_DIR/*.whl"
     echo "• Distribution: Copy $DIST_DIR/* to your distribution channel"
     echo
     print_status "INFO" "Build validation completed successfully"

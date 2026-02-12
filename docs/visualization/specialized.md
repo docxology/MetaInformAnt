@@ -169,7 +169,8 @@ fig = spec_viz.plot_sankey_diagram(workflow_flows)
 
 ### With Ontology Analysis
 ```python
-from metainformant.ontology import go, visualization as ont_viz
+from metainformant.ontology.core import go
+from metainformant.ontology.visualization import visualization as ont_viz
 from metainformant.visualization import specialized as spec_viz
 
 # GO enrichment results

@@ -211,7 +211,7 @@ def run_metadata(
 ) -> subprocess.CompletedProcess[str]
 ```
 
-**Module**: `metainformant.rna.steps.metadata`
+**Module**: `metainformant.rna.engine.workflow_steps`
 
 **Purpose**: Execute metadata retrieval step with explicit directory control.
 
@@ -229,7 +229,7 @@ def run_integrate(
 ) -> subprocess.CompletedProcess[str]
 ```
 
-**Module**: `metainformant.rna.steps.integrate`
+**Module**: `metainformant.rna.engine.workflow_steps`
 
 ---
 
@@ -245,7 +245,7 @@ def run_config(
 ) -> subprocess.CompletedProcess[str]
 ```
 
-**Module**: `metainformant.rna.steps.config`
+**Module**: `metainformant.rna.engine.workflow_steps`
 
 ---
 
@@ -261,7 +261,7 @@ def run_select(
 ) -> subprocess.CompletedProcess[str]
 ```
 
-**Module**: `metainformant.rna.steps.select`
+**Module**: `metainformant.rna.engine.workflow_steps`
 
 ---
 
@@ -277,7 +277,7 @@ def run_getfastq(
 ) -> subprocess.CompletedProcess[str]
 ```
 
-**Module**: `metainformant.rna.steps.getfastq`
+**Module**: `metainformant.rna.engine.sra_extraction`
 
 **Note**: Includes robust retry logic and fallback mechanisms for failed downloads.
 
@@ -295,7 +295,7 @@ def run_quant(
 ) -> subprocess.CompletedProcess[str]
 ```
 
-**Module**: `metainformant.rna.steps.quant`
+**Module**: `metainformant.rna.engine.workflow_steps`
 
 ---
 
@@ -311,7 +311,7 @@ def run_merge(
 ) -> subprocess.CompletedProcess[str]
 ```
 
-**Module**: `metainformant.rna.steps.merge`
+**Module**: `metainformant.rna.engine.workflow_steps`
 
 ---
 
@@ -327,7 +327,7 @@ def run_cstmm(
 ) -> subprocess.CompletedProcess[str]
 ```
 
-**Module**: `metainformant.rna.steps.cstmm`
+**Module**: `metainformant.rna.engine.workflow_steps`
 
 ---
 
@@ -343,7 +343,7 @@ def run_curate(
 ) -> subprocess.CompletedProcess[str]
 ```
 
-**Module**: `metainformant.rna.steps.curate`
+**Module**: `metainformant.rna.engine.workflow_steps`
 
 ---
 
@@ -359,7 +359,7 @@ def run_csca(
 ) -> subprocess.CompletedProcess[str]
 ```
 
-**Module**: `metainformant.rna.steps.csca`
+**Module**: `metainformant.rna.engine.workflow_steps`
 
 ---
 
@@ -375,7 +375,7 @@ def run_sanity(
 ) -> subprocess.CompletedProcess[str]
 ```
 
-**Module**: `metainformant.rna.steps.sanity`
+**Module**: `metainformant.rna.engine.workflow_steps`
 
 ---
 
@@ -920,7 +920,7 @@ def quantify_sample(
 ) -> tuple[bool, str, Path | None]
 ```
 
-**Module**: `metainformant.rna.steps.quant`
+**Module**: `metainformant.rna.engine.workflow_steps`
 
 **Purpose**: Quantify a single sample using amalgkit quant.
 
@@ -941,7 +941,7 @@ def convert_sra_to_fastq(
 ) -> tuple[bool, str, list[Path]]
 ```
 
-**Module**: `metainformant.rna.steps.getfastq`
+**Module**: `metainformant.rna.engine.sra_extraction`
 
 **Purpose**: Convert a local SRA file to FASTQ format. Prefers `parallel-fastq-dump` (works better with local files) and falls back to `fasterq-dump` if needed. Automatically compresses output FASTQ files.
 
@@ -971,7 +971,7 @@ def delete_sample_fastqs(
 ) -> None
 ```
 
-**Module**: `metainformant.rna.steps.getfastq`
+**Module**: `metainformant.rna.engine.sra_extraction`
 
 **Purpose**: Delete FASTQ files for a specific sample.
 
@@ -994,7 +994,7 @@ def run_download_quant_workflow(
 ) -> dict[str, Any]
 ```
 
-**Module**: `metainformant.rna.steps.process_samples`
+**Module**: `metainformant.rna.engine.pipeline`
 
 **Purpose**: Unified function for download-quantify-delete workflows. Supports both sequential and parallel processing modes.
 

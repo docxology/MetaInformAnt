@@ -11,8 +11,7 @@ Mathematical biology and theoretical modeling module for METAINFORMANT.
 - **[perception/](perception/)**
 - **[population_genetics/](population_genetics/)**
 - **[quantitative_genetics/](quantitative_genetics/)**
-- `[__init__.py](__init__.py)`
-- `[coalescent.py](coalescent.py)`
+- **[bayesian/](bayesian/)** — Bayesian inference methods
 
 ## 📊 Structure
 
@@ -25,5 +24,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.math import ...
+from metainformant.math import ...
 ```

@@ -100,27 +100,29 @@ python -c "import metainformant; print(metainformant.__version__)"
 ### DNA Analysis
 
 ```python
-from metainformant.dna import sequences, composition
+from metainformant.dna.sequence.core import read_fasta
+from metainformant.dna.sequence.composition import gc_content
 
 # Read FASTA file
-seqs = sequences.read_fasta("data/sequences.fasta")
+seqs = read_fasta("data/sequences.fasta")
 
 # Calculate GC content
 for name, seq in seqs.items():
-    gc = composition.gc_content(seq)
+    gc = gc_content(seq)
     print(f"{name}: GC content = {gc:.2%}")
 ```
 
 ### Protein Analysis
 
 ```python
-from metainformant.protein import sequences, alignment
+from metainformant.protein.sequence.sequences import read_fasta
+from metainformant.protein.sequence.alignment import global_align
 
 # Read protein sequences
-proteins = sequences.read_fasta("data/proteins.fasta")
+proteins = read_fasta("data/proteins.fasta")
 
 # Pairwise alignment
-align_result = alignment.global_align(proteins["seq1"], proteins["seq2"])
+align_result = global_align(proteins["seq1"], proteins["seq2"])
 print(f"Alignment score: {align_result.score}")
 ```
 
@@ -138,7 +140,7 @@ print(f"Total reads: {qc_report['total_reads']}")
 ### Visualization
 
 ```python
-from metainformant.visualization import lineplot
+from metainformant.visualization.plots.basic import lineplot
 import matplotlib.pyplot as plt
 
 # Create a simple line plot
@@ -156,10 +158,10 @@ plt.savefig("output/example_plot.png", dpi=300)
 python -c "from metainformant.rna import check_cli_available; print(check_cli_available())"
 
 # Run end-to-end workflow for a single species (recommended)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml
 
 # Check workflow status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --status
 
 # Or use CLI
 uv run metainformant rna run --work-dir output/rna --threads 8 --species Apis_mellifera
@@ -177,7 +179,7 @@ uv run metainformant dna variants --input data/variants.vcf --format vcf --outpu
 
 # RNA analysis (see RNA-seq Workflow section above for more details)
 uv run metainformant rna run --work-dir output/rna --threads 8 --species Apis_mellifera
-uv run metainformant rna run-config --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+uv run metainformant rna run-config --config config/amalgkit/amalgkit_pbarbatus.yaml
 
 # Protein analysis
 uv run metainformant protein taxon-ids --file data/taxon_ids.txt

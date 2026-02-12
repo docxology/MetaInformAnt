@@ -79,8 +79,7 @@ steps:
     index_dir: blue/amalgkit/shared/genome/Apis_mellifera/index
     fasta_dir: blue/amalgkit/shared/genome/Apis_mellifera
   merge:
-    out: blue/amalgkit/apis_mellifera_all/merged/merged_abundance.tsv
-    out_dir: blue/amalgkit/apis_mellifera_all/merged
+    out_dir: blue/amalgkit/apis_mellifera_all/work
   cstmm:
     out_dir: blue/amalgkit/apis_mellifera_all/work
     orthogroup_table: ""

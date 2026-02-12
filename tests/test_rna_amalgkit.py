@@ -2,6 +2,7 @@
 
 import json
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -28,6 +29,39 @@ class TestAmalgkitIntegration:
             assert "AMALGKIT" in help_text.upper()
         else:
             assert len(help_text) > 0  # Should have error message
+
+    def test_validate_amalgkit_version_valid(self):
+        """Test version validation with valid version."""
+        # Mock subprocess to return a valid version
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value.returncode = 0
+            mock_run.return_value.stdout = "amalgkit 0.5.0\n"
+            
+            valid, msg = amalgkit.validate_amalgkit_version("0.4.0")
+            assert valid is True
+            assert "meets requirement" in msg
+
+    def test_validate_amalgkit_version_invalid(self):
+        """Test version validation with invalid version."""
+        with patch("subprocess.run") as mock_run:
+            mock_run.return_value.returncode = 0
+            mock_run.return_value.stdout = "amalgkit 0.3.9\n"
+            
+            valid, msg = amalgkit.validate_amalgkit_version("0.4.0")
+            assert valid is False
+            assert "older than required" in msg
+
+    def test_ensure_cli_available_with_version(self):
+        """Test ensure_cli_available with version check."""
+        with patch("metainformant.rna.amalgkit.amalgkit.check_cli_available", return_value=(True, "ok")):
+             with patch("metainformant.rna.amalgkit.amalgkit.validate_amalgkit_version", return_value=(True, "valid")):
+                 with patch("subprocess.run") as mock_run:
+                     mock_run.return_value.returncode = 0
+                     mock_run.return_value.stdout = "amalgkit 0.5.0"
+                     
+                     success, msg, info = amalgkit.ensure_cli_available(min_version="0.4.0")
+                     assert success is True
+                     assert info["valid"] is True
 
     def test_build_cli_args_basic(self):
         """Test basic CLI argument building."""
@@ -202,7 +236,7 @@ class TestAmalgkitStepRunners:
 
     def test_metadata_runner(self):
         """Test metadata step runner."""
-        from metainformant.rna.amalgkit import metadata as runner
+        from metainformant.rna.amalgkit.amalgkit import metadata as runner
 
         params = {
             "out_dir": str(self.test_dir / "work"),
@@ -218,7 +252,7 @@ class TestAmalgkitStepRunners:
 
     def test_config_runner(self):
         """Test config step runner."""
-        from metainformant.rna.amalgkit import config as runner
+        from metainformant.rna.amalgkit.amalgkit import config as runner
 
         params = {"out_dir": str(self.test_dir / "work"), "threads": 2}
 
@@ -477,7 +511,7 @@ class TestAmalgkitWrapperRobustness:
 
     def test_step_runner_error_handling(self):
         """Test error handling in step runners."""
-        from metainformant.rna.amalgkit import metadata as runner
+        from metainformant.rna.amalgkit.amalgkit import metadata as runner
 
         params = {"out_dir": str(self.test_dir / "work"), "search_string": "invalid search"}
 

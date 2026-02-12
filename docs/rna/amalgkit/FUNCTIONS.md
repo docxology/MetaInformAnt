@@ -22,7 +22,7 @@ High-level wrappers for amalgkit CLI subcommands.
 
 ## Step Runner Functions
 
-Amalgkit steps are invoked via CLI wrappers in `metainformant.rna.amalgkit`. Legacy per-step runner modules under `metainformant.rna.steps.*` are not part of the current implementation.
+Amalgkit steps are invoked via CLI wrappers in `metainformant.rna.amalgkit`. Step execution logic lives in `metainformant.rna.engine.workflow_steps`, FASTQ retrieval in `metainformant.rna.engine.sra_extraction`, and pipeline orchestration in `metainformant.rna.engine.pipeline`.
 
 ## Workflow Functions
 
@@ -83,10 +83,10 @@ Sample-level processing pipelines.
 
 | Function | Module | Description | Documentation |
 |----------|--------|-------------|---------------|
-| `quantify_sample` | `metainformant.rna.steps.quant` | Quantify single sample | [API.md](../API.md#quantify_sample) |
-| `convert_sra_to_fastq` | `metainformant.rna.steps.getfastq` | Convert SRA to FASTQ | [API.md](../API.md#convert_sra_to_fastq) |
-| `delete_sample_fastqs` | `metainformant.rna.steps.getfastq` | Delete sample FASTQs | [API.md](../API.md#delete_sample_fastqs) |
-| `run_download_quant_workflow` | `metainformant.rna.steps.process_samples` | Unified download-quantify workflow (sequential/parallel) | [API.md](../API.md#run_download_quant_workflow) |
+| `quantify_sample` | `metainformant.rna.engine.workflow_steps` | Quantify single sample | [API.md](../API.md#quantify_sample) |
+| `convert_sra_to_fastq` | `metainformant.rna.engine.sra_extraction` | Convert SRA to FASTQ | [API.md](../API.md#convert_sra_to_fastq) |
+| `delete_sample_fastqs` | `metainformant.rna.engine.sra_extraction` | Delete sample FASTQs | [API.md](../API.md#delete_sample_fastqs) |
+| `run_download_quant_workflow` | `metainformant.rna.engine.pipeline` | Unified download-quantify workflow (sequential/parallel) | [API.md](../API.md#run_download_quant_workflow) |
 
 ## Monitoring Functions
 

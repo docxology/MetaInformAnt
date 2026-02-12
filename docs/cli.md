@@ -1,5 +1,9 @@
 # CLI
 
+> **Note:** Most module functionality is accessed via Python imports, not the CLI.
+> Currently implemented CLI commands: `--version`, `--modules`, `--help`, `protein` subcommands, `rna` subcommands, and `gwas` subcommands.
+> Commands listed below for other modules (ontology, phenotype, networks, multiomics, singlecell, quality, simulation, visualization, epigenome, ecology, ml, information, life-events) represent **planned CLI features** not yet implemented.
+
 Entry: `uv run python -m metainformant` or `uv run metainformant`.
 
 ```text
@@ -7,9 +11,9 @@ uv run metainformant setup --with-amalgkit --ncbi-email "you@example.com"
 uv run metainformant dna fetch --assembly GCF_000001405.40
 uv run metainformant rna plan --work-dir output/amalgkit/work --threads 8 --species Apis_mellifera
 uv run metainformant rna plan-species --work-dir output/amalgkit/work --threads 8 --taxon-id 7460 --tissue brain --tissue muscle
-uv run metainformant rna plan-config --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+uv run metainformant rna plan-config --config config/amalgkit/amalgkit_pbarbatus.yaml
 uv run metainformant rna run  --work-dir output/amalgkit/work --threads 8 --species Apis_mellifera --check
-uv run metainformant rna run-config --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --check
+uv run metainformant rna run-config --config config/amalgkit/amalgkit_pbarbatus.yaml --check
 uv run metainformant gwas run --config config/gwas/gwas_template.yaml
 uv run metainformant gwas run --config config/gwas/gwas_template.yaml --check
 uv run metainformant protein taxon-ids --file tests/data/protein/taxon_id_list.txt
@@ -103,8 +107,8 @@ Many workflows support configuration files for complex parameter sets:
 
 - **RNA workflows**: Use `config/amalgkit/*.yaml` files (see [RNA Workflow](./rna/workflow.md))
 - **GWAS workflows**: Use `config/gwas/*.yaml` files (see [GWAS Workflow](./gwas/workflow.md))
-- **Network analysis**: Template available at `config/networks_template.yaml`
-- **Multi-omics**: Template available at `config/multiomics_template.yaml`
-- **Single-cell**: Template available at `config/singlecell_template.yaml`
+- **Network analysis**: Template available at `config/networks/networks_template.yaml`
+- **Multi-omics**: Template available at `config/multiomics/multiomics_template.yaml`
+- **Single-cell**: Template available at `config/singlecell/singlecell_template.yaml`
 
 See [Configuration Management](./core/config.md) for details on using configuration files and environment variable overrides.

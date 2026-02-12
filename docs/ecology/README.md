@@ -19,5 +19,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.ecology import ...
+from metainformant.ecology import ...
 ```

@@ -22,5 +22,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.life_events import ...
+from metainformant.life_events import ...
 ```

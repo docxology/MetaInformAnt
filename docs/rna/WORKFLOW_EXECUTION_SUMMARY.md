@@ -5,7 +5,7 @@ This document provides a comprehensive summary of the complete end-to-end amalgk
 ## Workflow Configuration
 
 **Species**: Pogonomyrmex barbatus  
-**Config File**: `config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml`  
+**Config File**: `config/amalgkit/amalgkit_pbarbatus.yaml`  
 **NCBI Taxonomy ID**: 144034  
 **Genome Assembly**: GCF_000187915.1 (Pbar_UMD_V03)  
 **Total Samples**: 83 RNA-seq samples
@@ -15,13 +15,13 @@ This document provides a comprehensive summary of the complete end-to-end amalgk
 ### 1. Configuration Verification ✅
 
 All three configuration files verified:
-- `amalgkit_pogonomyrmex_barbatus.yaml`: 11 steps configured, genome config validated
+- `amalgkit_pbarbatus.yaml`: 11 steps configured, genome config validated
 - `amalgkit_template.yaml`: Template loads successfully
 - `amalgkit_test.yaml`: Test config loads successfully
 
 **Verification Command**:
 ```bash
-python3 -c "import sys; sys.path.insert(0, 'src'); from metainformant.rna.workflow import load_workflow_config; cfg = load_workflow_config('config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml'); print('✓ Config loaded')"
+python3 -c "import sys; sys.path.insert(0, 'src'); from metainformant.rna.workflow import load_workflow_config; cfg = load_workflow_config('config/amalgkit/amalgkit_pbarbatus.yaml'); print('✓ Config loaded')"
 ```
 
 ### 2. Environment Validation ✅
@@ -54,7 +54,7 @@ python3 scripts/rna/check_environment.py
 ### Execution Command
 
 ```bash
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml
 ```
 
 ### Automatic Steps Executed
@@ -155,7 +155,7 @@ The workflow automatically executes all steps in the correct order:
 
 ### Check Status
 ```bash
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --status --detailed
 ```
 
 ### Monitor Manifest
@@ -250,7 +250,7 @@ Once the workflow completes, verify:
 
 ```bash
 # Check final status
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --status --detailed
 
 # Verify all outputs exist
 ls -lh output/amalgkit/pogonomyrmex_barbatus/merged/merged_abundance.tsv

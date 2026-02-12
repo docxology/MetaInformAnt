@@ -135,7 +135,7 @@ N download workers (parallel):
 Both modes are implemented in a single function: `run_download_quant_workflow()` in `process_samples.py`. The `num_workers` parameter controls the mode:
 
 ```python
-from metainformant.rna.steps import run_download_quant_workflow
+from metainformant.rna.engine.pipeline import run_download_quant_workflow
 
 # Sequential mode
 stats = run_download_quant_workflow(
@@ -221,7 +221,7 @@ scripts/rna/run_workflow.py
     ↓
 src/metainformant/rna/workflow.py
     ↓
-src/metainformant/rna/steps/*.py
+src/metainformant/rna/engine/workflow_steps.py
     ↓
 src/metainformant/rna/amalgkit.py
     ↓

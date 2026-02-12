@@ -562,8 +562,8 @@ steps:
 
 ## See Also
 
-- **Previous Step**: [`cstmm.md`](cstmm.md) - Cross-species TMM normalization
-- **Previous Step**: [`curate.md`](curate.md) - Quality control
+- **Previous Step**: [`08_cstmm.md`](08_cstmm.md) - Cross-species TMM normalization
+- **Previous Step**: [`09_curate.md`](09_curate.md) - Quality control
 - **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
 
 ---

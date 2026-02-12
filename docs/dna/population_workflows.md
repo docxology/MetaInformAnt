@@ -116,7 +116,7 @@ print(f"Interpretation: {results['interpretation']}")
 
 ```python
 from metainformant.dna.population_analysis import calculate_summary_statistics
-from metainformant.math.coalescent import tajimas_D, wattersons_theta
+from metainformant.math.population_genetics.coalescent import tajimas_D, wattersons_theta
 
 # Calculate basic statistics
 sequences = ["AAAA", "AAAT", "AATT"]
@@ -244,7 +244,7 @@ from metainformant.dna.population import (
     segregating_sites,
     hudson_fst,
 )
-from metainformant.math.coalescent import expected_segregating_sites
+from metainformant.math.population_genetics.coalescent import expected_segregating_sites
 
 def custom_diversity_analysis(sequences):
     """Custom workflow combining multiple statistics."""
@@ -303,7 +303,7 @@ all_results = analyze_multiple_populations(populations)
 ## See Also
 
 - [`dna.population`](population.md) - Core population genetics functions
-- [`math.coalescent`](../math/coalescent.md) - Coalescent theory and advanced statistics
+- [`math.population_genetics.coalescent`](../math/coalescent.md) - Coalescent theory and advanced statistics
 - [`math.fst`](../math/fst.md) - F-statistics and population differentiation
 - [`gwas.structure`](../gwas/structure.md) - Population structure analysis
 

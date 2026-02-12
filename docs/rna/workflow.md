@@ -11,7 +11,7 @@ flowchart TB
     subgraph "RNA Orchestration"
         CLIcliInterfaceMetainformantRna[CLI Interface_metainformant rna] --> ScriptsscriptOrchestratorsScripts/rna/run*.py[Script Orchestrators_scripts/rna/run_*.py]
         Scripts --> WorkflowexecuteAmalgkitWorkflowRna.workflow[execute_amalgkit_workflow_rna.workflow]
-        Workflow --> StepsstepFunctionsRna.steps.run*[Step Functions_rna.steps.run_*]
+        Workflow --> StepsstepFunctionsRna.engine.workflow_steps.run*[Step Functions_rna.engine.workflow_steps.run_*]
     end
 
     subgraph "Workflow Components"
@@ -329,16 +329,16 @@ Production workflows use script orchestrators:
 ```bash
 # Complete species workflow
 python3 scripts/rna/run_workflow.py \
-    --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+    --config config/amalgkit/amalgkit_pbarbatus.yaml
 
 # Check status
 python3 scripts/rna/run_workflow.py \
-    --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml \
+    --config config/amalgkit/amalgkit_pbarbatus.yaml \
     --status
 
 # Cleanup and retry failed samples
 python3 scripts/rna/run_workflow.py \
-    --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml \
+    --config config/amalgkit/amalgkit_pbarbatus.yaml \
     --cleanup-unquantified
 ```
 

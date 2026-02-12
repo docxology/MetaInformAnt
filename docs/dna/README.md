@@ -26,5 +26,5 @@ graph TD
 ## Usage
 Import module:
 ```python
-from metainformant.metainformant.dna import ...
+from metainformant.dna import ...
 ```

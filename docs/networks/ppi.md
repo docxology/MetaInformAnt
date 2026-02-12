@@ -124,7 +124,7 @@ yeast_two_hybrid_only = filter_by_confidence(
 Analyze functional enrichment of protein modules:
 
 ```python
-from metainformant.ontology import go
+from metainformant.ontology.core import go
 
 # Get protein modules (from community detection)
 modules = community.detect_communities(ppi_network, method='leiden')
@@ -197,7 +197,7 @@ print(f"Found {len(partners)} interaction partners of differentially expressed p
 ```python
 from metainformant.protein import proteomes
 from metainformant.networks import ppi
-from metainformant.ontology import go
+from metainformant.ontology.core import go
 
 # Load protein annotations
 annotations = proteomes.load_annotations("protein_annotations.tsv")
