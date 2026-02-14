@@ -2,7 +2,6 @@
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -15,53 +14,84 @@ class TestAmalgkitIntegration:
 
     def setup_method(self):
         """Setup test environment."""
-        self.test_dir = Path("output/test_amalgkit")
+        self.test_dir = Path("output/test_amalgkit_integration")
         self.test_dir.mkdir(parents=True, exist_ok=True)
+        self.work_dir = self.test_dir / "work"
+        self.params = amalgkit.AmalgkitParams(
+            work_dir=self.work_dir, threads=4, species_list=["A", "B"]
+        )
 
-    def test_check_cli_available(self):
-        """Test CLI availability checking."""
-        ok, help_text = amalgkit.check_cli_available()
-        assert isinstance(ok, bool)
-        assert isinstance(help_text, str)
-
-        if ok:
-            assert len(help_text) > 20  # Reduced threshold for various environments
-            assert "AMALGKIT" in help_text.upper()
+    def test_check_cli_available_real(self):
+        """Test CLI availability checking using actual environment."""
+        # This test just verifies it runs without crashing and returns a bool/str pair
+        available, message = amalgkit.check_cli_available()
+        assert isinstance(available, bool)
+        assert isinstance(message, str)
+        if available:
+            assert "available" in message
         else:
-            assert len(help_text) > 0  # Should have error message
+            assert "not found" in message or "error" in message
 
-    def test_validate_amalgkit_version_valid(self):
-        """Test version validation with valid version."""
-        # Mock subprocess to return a valid version
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value.returncode = 0
-            mock_run.return_value.stdout = "amalgkit 0.5.0\n"
+    def test_parse_and_check_version_valid(self):
+        """Test version parsing with valid version strings (unit test)."""
+        # Valid cases
+        valid, msg = amalgkit.parse_and_check_version("amalgkit 0.4.0", "0.4.0")
+        assert valid, f"Should be valid: {msg}"
+        
+        valid, msg = amalgkit.parse_and_check_version("amalgkit 0.5.0", "0.4.0")
+        assert valid
+        
+        valid, msg = amalgkit.parse_and_check_version("amalgkit 1.0.0", "0.4.0")
+        assert valid
+
+    def test_parse_and_check_version_invalid(self):
+        """Test version parsing with invalid version strings (unit test)."""
+        # Old version
+        valid, msg = amalgkit.parse_and_check_version("amalgkit 0.3.9", "0.4.0")
+        assert not valid
+        assert "older" in msg
+
+        # Malformed
+        valid, msg = amalgkit.parse_and_check_version("amalgkit", "0.4.0")
+        assert not valid
+        assert "Unexpected" in msg
+
+        # Empty
+        valid, msg = amalgkit.parse_and_check_version("", "0.4.0")
+        assert not valid
+        assert "Empty" in msg
+
+    def test_ensure_cli_available_with_dummy_executable(self, tmp_path, monkeypatch):
+        """Test ensure_cli_available using a dummy executable in PATH."""
+        # Create a dummy amalgkit script
+        dummy_dir = tmp_path / "bin"
+        dummy_dir.mkdir()
+        dummy_script = dummy_dir / "amalgkit"
+        
+        # Write a script that behaves like amalgkit --version
+        with open(dummy_script, "w") as f:
+            f.write("#!/bin/sh\n")
+            f.write('if [ "$1" = "--version" ]; then\n')
+            f.write('  echo "amalgkit 0.5.0"\n')
+            f.write('elif [ "$1" = "--help" ]; then\n')
+            f.write('  echo "Usage: amalgkit ..."\n')
+            f.write("fi\n")
             
-            valid, msg = amalgkit.validate_amalgkit_version("0.4.0")
-            assert valid is True
-            assert "meets requirement" in msg
-
-    def test_validate_amalgkit_version_invalid(self):
-        """Test version validation with invalid version."""
-        with patch("subprocess.run") as mock_run:
-            mock_run.return_value.returncode = 0
-            mock_run.return_value.stdout = "amalgkit 0.3.9\n"
+        dummy_script.chmod(0o755)
+        
+        # Modify PATH to include dummy script
+        import os
+        old_path = os.environ.get("PATH", "")
+        new_path = f"{dummy_dir}:{old_path}"
+        
+        monkeypatch.setenv("PATH", new_path)
             
-            valid, msg = amalgkit.validate_amalgkit_version("0.4.0")
-            assert valid is False
-            assert "older than required" in msg
-
-    def test_ensure_cli_available_with_version(self):
-        """Test ensure_cli_available with version check."""
-        with patch("metainformant.rna.amalgkit.amalgkit.check_cli_available", return_value=(True, "ok")):
-             with patch("metainformant.rna.amalgkit.amalgkit.validate_amalgkit_version", return_value=(True, "valid")):
-                 with patch("subprocess.run") as mock_run:
-                     mock_run.return_value.returncode = 0
-                     mock_run.return_value.stdout = "amalgkit 0.5.0"
-                     
-                     success, msg, info = amalgkit.ensure_cli_available(min_version="0.4.0")
-                     assert success is True
-                     assert info["valid"] is True
+        # Should invoke our dummy script
+        success, msg, info = amalgkit.ensure_cli_available(min_version="0.4.0")
+        
+        assert success
+        assert info["valid"] is True
+        assert info["version"] == "0.5.0"
 
     def test_build_cli_args_basic(self):
         """Test basic CLI argument building."""

@@ -7,7 +7,7 @@ Production-ready amalgkit RNA-seq workflow configurations for automated transcri
 ## Contents
 
 | File | Description |
-|------|-------------|
+| :--- | :--- |
 | `amalgkit_template.yaml` | **Reference**: 400+ line template with all options documented |
 | `amalgkit_test.yaml` | Minimal test configuration for validation |
 | `amalgkit_pbarbatus.yaml` | **Production**: Full P. barbatus dataset (95/110 quantified) |
@@ -86,8 +86,14 @@ steps:
 1. Copy `amalgkit_template.yaml` → `amalgkit_{species}.yaml`
 2. Update `species_list`, `taxon_id`, and `genome.accession`
 3. Adjust paths: `work_dir`, `log_dir`, `genome.dest_dir`
-4. Test with small sample subset first (use `max_sample: 5`)
-5. Scale to full dataset after validation
+4. **Validation**: Run `python3 scripts/rna/validate_configs.py` to ensure schema compliance.
+5. Test with small sample subset first (use `max_sample: 5`)
+6. Scale to full dataset after validation
+
+## Validation and Testing
+
+- **Config Validation**: usage of `scripts/rna/validate_configs.py` is mandatory for all new configurations.
+- **Zero-Mock Policy**: All Amalgkit tests strictly adhere to the Zero-Mock policy, ensuring real functional verification of the CLI and environment.
 
 ## Environment Overrides
 

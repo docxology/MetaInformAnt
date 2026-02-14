@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 4065469100,
+  "destination": "output/amalgkit/apis_mellifera_all/fastq/getfastq",
+  "errors": [],
+  "eta_seconds": 0.0,
+  "last_update": "2026-02-14T19:43:35Z",
+  "progress": {
+    "current": 4065469100,
+    "percent": 100.0,
+    "total": 2054185442,
+    "type": "directory_size"
+  },
+  "progress_percent": 100.0,
+  "speed_mbps": 15.357908841265322,
+  "started_at": "2026-02-14T19:39:22Z",
+  "status": "running",
+  "step": "amalgkit getfastq",
+  "total_bytes": 2054185442,
+  "url": "['amalgkit', 'getfastq', '--out_dir', 'output/amalgkit/apis_mellifera_all/fastq', '--threads', '16', '--redo', 'no', '--aws', 'yes', '--gcp', 'no', '--ncbi', 'yes', '--pfd', 'yes', '--fastp', 'no', '--max_bp', '50000000', '--metadata', 'output/amalgkit/apis_mellifera_all/work/metadata/metadata_chunk_0.tsv']"
+}

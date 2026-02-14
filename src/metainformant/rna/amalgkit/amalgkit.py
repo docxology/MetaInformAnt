@@ -254,6 +254,50 @@ def check_cli_available() -> Tuple[bool, str]:
         return False, f"Error checking amalgkit CLI: {e}"
 
 
+def parse_and_check_version(version_output: str, min_version: str = "0.4.0") -> Tuple[bool, str]:
+    """Parse version string and check against minimum requirement.
+
+    Args:
+        version_output: Output from 'amalgkit --version' (e.g. "amalgkit 0.4.1")
+        min_version: Minimum required version
+
+    Returns:
+        Tuple of (valid, message)
+    """
+    output = version_output.strip()
+    if not output:
+        return False, "Empty version output"
+
+    # Parse version
+    parts = output.split()
+    if len(parts) < 2:
+        return False, f"Unexpected version format: {output}"
+
+    current_version = parts[1]
+
+    # Simple semantic version comparison
+    # We assume X.Y.Z format
+    try:
+        current_parts = [int(x) for x in current_version.split(".")]
+        min_parts = [int(x) for x in min_version.split(".")]
+
+        # Pad with zeros if needed
+        while len(current_parts) < 3:
+            current_parts.append(0)
+        while len(min_parts) < 3:
+            min_parts.append(0)
+
+        if tuple(current_parts) >= tuple(min_parts):
+            return True, f"Version {current_version} meets requirement >={min_version}"
+        else:
+            return False, f"Version {current_version} is older than required {min_version}"
+
+    except ValueError:
+        # Fallback for non-standard version strings
+        logger.warning(f"Could not parse version string: {current_version}")
+        return True, f"Could not parse version {current_version}, assuming compatible"
+
+
 def validate_amalgkit_version(min_version: str = "0.4.0") -> Tuple[bool, str]:
     """Validate that the installed amalgkit version meets requirements.
 
@@ -268,39 +312,7 @@ def validate_amalgkit_version(min_version: str = "0.4.0") -> Tuple[bool, str]:
         if result.returncode != 0:
             return False, f"Version check failed: {result.stderr}"
 
-        # Output format is typically "amalgkit 0.4.1"
-        output = result.stdout.strip()
-        if not output:
-            return False, "Empty version output"
-
-        # Parse version
-        parts = output.split()
-        if len(parts) < 2:
-            return False, f"Unexpected version format: {output}"
-
-        current_version = parts[1]
-
-        # Simple semantic version comparison
-        # We assume X.Y.Z format
-        try:
-            current_parts = [int(x) for x in current_version.split(".")]
-            min_parts = [int(x) for x in min_version.split(".")]
-
-            # Pad with zeros if needed
-            while len(current_parts) < 3:
-                current_parts.append(0)
-            while len(min_parts) < 3:
-                min_parts.append(0)
-
-            if tuple(current_parts) >= tuple(min_parts):
-                return True, f"Version {current_version} meets requirement >={min_version}"
-            else:
-                return False, f"Version {current_version} is older than required {min_version}"
-
-        except ValueError:
-            # Fallback for non-standard version strings
-            logger.warning(f"Could not parse version string: {current_version}")
-            return True, f"Could not parse version {current_version}, assuming compatible"
+        return parse_and_check_version(result.stdout, min_version)
 
     except (subprocess.SubprocessError, OSError, TimeoutError) as e:
         return False, f"Version check error: {e}"

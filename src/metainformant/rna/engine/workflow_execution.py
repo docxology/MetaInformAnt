@@ -53,12 +53,20 @@ def _execute_streaming_mode(
     """
     logger.info(f"ENTERING STREAMING MODE: Processing remaining steps in chunks of {chunk_size} samples")
 
-    # Identify which steps are per-chunk (getfastq, integrate, quant) and which are post-process (merge, etc)
+    # Identify which steps are per-chunk (getfastq, quant) and which are post-process (merge, etc)
+    # NOTE: 'integrate' is SKIPPED in streaming mode because amalgkit's integrate.py does a flat
+    # os.listdir() scan for .fastq files, but getfastq places files in per-sample subdirectories
+    # (e.g., getfastq/SRR123/SRR123.amalgkit.fastq.gz). The integrate step is designed for
+    # enriching metadata with private FASTQ files — it's not needed when getfastq already manages
+    # the download-extract-name pipeline and metadata is already complete.
     chunk_steps = []
     post_process_steps = []
 
     for name, params in steps_remaining:
-        if name in ("getfastq", "integrate", "quant"):
+        if name == "integrate":
+            logger.info("Skipping 'integrate' step in streaming mode (incompatible with per-sample subdirectory layout)")
+            continue
+        elif name in ("getfastq", "quant"):
             chunk_steps.append((name, params))
         else:
             post_process_steps.append((name, params))
@@ -76,13 +84,15 @@ def _execute_streaming_mode(
     num_chunks = math.ceil(total_samples / chunk_size)
 
     all_step_results = []
-    success = True
 
     # Chunk loop
     for chunk_idx in range(num_chunks):
         start_idx = chunk_idx * chunk_size
         end_idx = min((chunk_idx + 1) * chunk_size, total_samples)
         chunk_samples = samples[start_idx:end_idx]
+
+        # Reset success per-chunk so one failed chunk doesn't cascade to all subsequent chunks
+        chunk_success = True
 
         logger.info(f"Processing chunk {chunk_idx+1}/{num_chunks} (Samples {start_idx+1}-{end_idx})")
 
@@ -138,23 +148,27 @@ def _execute_streaming_mode(
 
                 if result.returncode != 0:
                     logger.error(f"  Step {step_name} failed for chunk {chunk_idx}")
-                    success = False
+                    chunk_success = False
                     if check:
                         return WorkflowExecutionResult(all_step_results, False, len(all_step_results), 0, 1)
-                    # Break chunk loop to prevents cascading failures
+                    # Break inner step loop to prevent cascading failures within this chunk
                     break
             except Exception as e:
                 logger.error(f"  Exception in {step_name} chunk {chunk_idx}: {e}")
                 all_step_results.append(WorkflowStepResult(f"{step_name}_chunk{chunk_idx}", 1, False, str(e)))
-                success = False
+                chunk_success = False
 
-        # Aggressive cleanup after chunk
-        logger.info(f"  Cleaning up chunk {chunk_idx} FASTQ files...")
-        chunk_ids = [row.get("run", "") for row in chunk_samples]
-        cleanup_fastqs(config, chunk_ids)
+        # Aggressive cleanup after chunk (ONLY IF SUCCESSFUL)
+        if chunk_success:
+            logger.info(f"  Cleaning up chunk {chunk_idx} FASTQ files...")
+            chunk_ids = [row.get("run", "") for row in chunk_samples]
+            cleanup_fastqs(config, chunk_ids)
+        else:
+            logger.warning(f"  Skipping cleanup for chunk {chunk_idx} due to failure. FASTQ files preserved for debugging.")
 
     # After all chunks, run post-process steps (merge, etc)
-    if success or not check:
+    overall_success = all(s.success for s in all_step_results) if all_step_results else True
+    if overall_success or not check:
         logger.info("Streaming chunks completed. processing post-chunk steps...")
         for step_name, step_params in post_process_steps:
             logger.info(f"Step: {step_name}")
@@ -171,7 +185,7 @@ def _execute_streaming_mode(
 
     return WorkflowExecutionResult(
         steps_executed=all_step_results,
-        success=success and all(s.return_code == 0 for s in all_step_results),
+        success=all(s.return_code == 0 for s in all_step_results) if all_step_results else True,
         total_steps=len(all_step_results),
         successful_steps=sum(1 for s in all_step_results if s.success),
         failed_steps=sum(1 for s in all_step_results if not s.success),
@@ -510,18 +524,22 @@ def execute_workflow(
                         f"Streaming detection - Remaining: {remaining_count}, Free: {free_gb:.2f}GB, Need: {estimated_need:.2f}GB"
                     )
 
-                    if remaining_count > 5 and estimated_need > (free_gb * 0.8):
-                        logger.warning(
-                            f"Insufficient disk space for all-at-once processing: "
-                            f"Need ~{estimated_need:.1f}GB, have {free_gb:.1f}GB. "
-                            f"Switching to STREAMING MODE (chunk size 5)."
-                        )
+                    if (remaining_count > 5 and estimated_need > (free_gb * 0.8)) or kwargs.get("stream", False):
+                        chunk_size = kwargs.get("chunk_size", 5)
+                        if kwargs.get("stream", False):
+                            logger.info(f"Streaming mode forced with chunk size {chunk_size}")
+                        else:
+                            logger.warning(
+                                f"Insufficient disk space for all-at-once processing: "
+                                f"Need ~{estimated_need:.1f}GB, have {free_gb:.1f}GB. "
+                                f"Switching to STREAMING MODE (chunk size {chunk_size})."
+                            )
 
                         streaming_result = _execute_streaming_mode(
                             config,
                             steps_planned[i - 1 :],
                             unquantified_metadata,
-                            chunk_size=5,
+                            chunk_size=chunk_size,
                             step_functions=step_functions,
                             check=check,
                             walk=walk,

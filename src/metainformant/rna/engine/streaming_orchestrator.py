@@ -26,7 +26,9 @@ from metainformant.rna.amalgkit.tissue_normalizer import apply_tissue_normalizat
 # Determine project root if possible, or use relative paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
 CONFIG_DIR = PROJECT_ROOT / "config/amalgkit"
-LOG_DIR = PROJECT_ROOT / "blue/amalgkit"
+# Use local output for logs to avoid TCC/Permission issues on external volumes
+LOG_DIR = PROJECT_ROOT / "output/amalgkit"
+print(f"DEBUG: LOG_DIR is {LOG_DIR}")
 
 logger = log_utils.get_logger(__name__)
 
@@ -207,8 +209,12 @@ class StreamingPipelineOrchestrator:
 
     def verify_genome_index(self, config_path: Path, species_name: str) -> bool:
         """Verify Kallisto index exists."""
-        with open(config_path) as f:
-            cfg = yaml.safe_load(f)
+        try:
+            with open(config_path) as f:
+                cfg = yaml.safe_load(f)
+        except Exception as e:
+            logger.error(f"Failed to load config {config_path}: {e}")
+            return False
             
         index_dir = cfg.get('genome', {}).get('index_dir', '')
         search_dirs = [
@@ -217,10 +223,35 @@ class StreamingPipelineOrchestrator:
             f"blue/amalgkit/shared/genome/{species_name}/index",
         ]
         
+        logger.info(f"Verifying index for {species_name}...")
         for d in search_dirs:
-            if d and Path(d).exists() and any(Path(d).glob("*.idx")):
-                logger.info(f"Genome index found in {d}")
-                return True
+            if not d:
+                continue
+                
+            path_obj = Path(d)
+            abs_path = path_obj.resolve() if path_obj.exists() else path_obj.absolute()
+            
+            logger.info(f"  Checking {d} -> {abs_path}")
+            
+            if not path_obj.exists():
+                logger.warning(f"  Path does not exist: {d}")
+                continue
+                
+            # Check permissions by attempting listdir
+            try:
+                files = list(path_obj.glob("*.idx"))
+                if files:
+                    logger.info(f"  Genome index found in {d}: {[f.name for f in files]}")
+                    return True
+                else:
+                    logger.warning(f"  Path exists but no .idx files found in {d}")
+                    try:
+                        contents = os.listdir(d) 
+                        logger.info(f"  Directory contents: {contents[:5]}...")
+                    except Exception as e:
+                        logger.error(f"  Failed to list directory {d}: {e}")
+            except Exception as e:
+                logger.error(f"  Permission/Error accessing {d}: {e}")
                 
         logger.error(f"No genome index found for {species_name}")
         return False

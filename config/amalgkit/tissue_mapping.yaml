@@ -13,6 +13,9 @@
 brain:
   - brain
   - Brain
+  - brains
+  - Single Brain
+  - non-visual brain (central brain, Br)
   - whole brain
   - Whole brain
   - brain tissue
@@ -60,6 +63,7 @@ antenna:
   - Antenna
   - antennae
   - Antennae
+  - antenae
   - 4 pairs of antennae
   - workers antennae
   - Antennal Clubs
@@ -76,6 +80,8 @@ whole_body:
   - Whole bee
   - whole
   - Whole
+  - bee
+  - male
   - whole body homogenates
   - whole organism
   - whole animal
@@ -209,6 +215,8 @@ gut:
 fat_body:
   - fat_body
   - fat body
+  - Abdominal fat body
+  - Abdominal fat body (Fb)
   - Fat body
   - Fat-body
   - fat-body
@@ -222,6 +230,8 @@ fat_body:
 ovary:
   - ovary
   - Ovary
+  - ovary (Ov)
+  - Single Ovary
   - ovaries
   - Ovaries
   - ovarian tissue

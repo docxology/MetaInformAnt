@@ -366,7 +366,7 @@ See `scripts/core/run_demo.py` for the workflow demonstration. Outputs are saved
 |----------|--------|--------|--------------|
 | **Core** | [core/](src/metainformant/core/) | ✅ **Complete** | I/O, config, logging, parallel, cache, validation, workflow orchestration |
 | **DNA** | [dna/](src/metainformant/dna/) | ✅ **Complete** | Sequences, alignment, phylogeny, population genetics, variant analysis |
-| **RNA** | [rna/](src/metainformant/rna/) | ✅ **Complete** | AMALGKIT integration, workflow orchestration, expression quantification |
+| **RNA** | [rna/](src/metainformant/rna/) | ✅ **Complete & Verified** | AMALGKIT integration, workflow orchestration, expression quantification |
 | **Protein** | [protein/](src/metainformant/protein/) | ✅ **Complete** | Sequences, structures, AlphaFold, UniProt, functional analysis |
 | **GWAS** | [gwas/](src/metainformant/gwas/) | ✅ **Complete** | Association testing, QC, population structure, visualization |
 | **Math** | [math/](src/metainformant/math/) | ✅ **Complete** | Population genetics, coalescent, selection, epidemiology |

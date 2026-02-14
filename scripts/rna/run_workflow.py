@@ -197,6 +197,17 @@ def main() -> int:
         action="store_true",
         help="Force re-execution of all specified steps",
     )
+    parser.add_argument(
+        "--stream",
+        action="store_true",
+        help="Force streaming mode (chunked processing) regardless of disk space",
+    )
+    parser.add_argument(
+        "--chunk-size",
+        type=int,
+        default=5,
+        help="Number of samples to process per chunk in streaming mode (use 1 for maximum robustness)",
+    )
 
     args = parser.parse_args()
 
@@ -381,6 +392,8 @@ def main() -> int:
         progress=not args.no_progress,
         show_commands=args.show_commands,
         redo=args.redo,
+        stream=args.stream,
+        chunk_size=args.chunk_size,
     )
 
     if results["success"]:

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "metainformant"
-version = "0.2.0"
+version = "0.2.2"
 description = "Comprehensive bioinformatics toolkit for multi-domain analysis"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -29,6 +29,8 @@ dependencies = [
     "scipy>=1.11.0",
     "networkx>=3.2",  # Network analysis - required for Networks module
     "scikit-learn>=1.3.0",  # ML - required for multiomics integration
+    "psutil>=7.2.1",
+    "rich>=14.2.0",
 ]
 
 [project.optional-dependencies]
@@ -63,6 +65,12 @@ networks = [
     "python-louvain>=0.16",  # Community detection
     "cdlib>=0.3.0",  # Community discovery library
     # "graph-tool",  # High-performance graph analysis (system dependent - install manually if needed)
+]
+
+# Terminal User Interface
+tui = [
+    "psutil>=5.9.0",
+    "rich>=13.0.0",
 ]
 
 # Single-cell analysis

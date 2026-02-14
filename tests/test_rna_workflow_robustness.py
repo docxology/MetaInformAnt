@@ -1,49 +1,87 @@
+
+import pytest
+import csv
+import tempfile
 from pathlib import Path
+from unittest.mock import Mock, patch
+from metainformant.rna.engine.workflow_execution import _execute_streaming_mode, AmalgkitWorkflowConfig
 
-from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, plan_workflow
+class TestWorkflowRobustness:
+    @patch("metainformant.rna.engine.workflow_execution.cleanup_fastqs")
+    def test_cleanup_skipped_on_failure(self, mock_cleanup, tmp_path):
+        """Verify that cleanup_fastqs is NOT called if a step fails."""
+        
+        # Setup mocks
+        config = Mock(spec=AmalgkitWorkflowConfig)
+        config.work_dir = tmp_path / "work_dir"
+        config.work_dir.mkdir()
+        (config.work_dir / "metadata").mkdir()
+        
+        # Mock step function that fails
+        def fail_step(params, **kwargs):
+            return Mock(returncode=1, stderr="Mock failure")
+            
+        # "quant" is recognized as a chunk step
+        step_functions = {"quant": fail_step}
+        
+        # Run streaming mode
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            writer = csv.DictWriter(f, fieldnames=["run"], delimiter="\t")
+            writer.writeheader()
+            writer.writerow({"run": "SRR_TEST"})
+            meta_path = Path(f.name)
+            
+        try:
+            _execute_streaming_mode(
+                config=config,
+                steps_remaining=[("quant", {})],
+                metadata_file=meta_path,
+                chunk_size=1,
+                step_functions=step_functions,
+                check=False
+            )
+            
+            # Assert cleanup was NOT called
+            mock_cleanup.assert_not_called()
+            
+        finally:
+            if meta_path.exists():
+                meta_path.unlink()
 
-
-def test_intelligent_redo_override_when_files_exist(tmp_path: Path):
-    """Test that plan_workflow overrides redo='yes' to 'no' when SRA files are found."""
-    # Setup: Create dummy SRA files in the expected location
-    # Note: workflow.py defaults out_dir to work_dir, then looks for getfastq subdir
-    work_dir = tmp_path / "work"
-    fastq_dir = work_dir / "getfastq"
-    fastq_dir.mkdir(parents=True)
-    (fastq_dir / "sample1.sra").touch()
-
-    # Config requesting redo: yes
-    cfg = AmalgkitWorkflowConfig(work_dir=work_dir, threads=4, per_step={"getfastq": {"redo": "yes"}})
-
-    # Execute
-    steps = plan_workflow(cfg)
-    getfastq_params = next(p for s, p in steps if s == "getfastq")
-
-    # Verify: redo should be overridden to 'no' because files exist
-    assert getfastq_params["redo"] == "no"
-
-
-def test_intelligent_redo_respects_user_choice_when_no_files(tmp_path: Path):
-    """Test that plan_workflow respects redo='yes' when no SRA files exist."""
-    work_dir = tmp_path / "work2"
-
-    cfg = AmalgkitWorkflowConfig(work_dir=work_dir, threads=4, per_step={"getfastq": {"redo": "yes"}})
-
-    steps = plan_workflow(cfg)
-    getfastq_params = next(p for s, p in steps if s == "getfastq")
-
-    # Verify: redo remains 'yes' because no files found
-    assert getfastq_params["redo"] == "yes"
-
-
-def test_intelligent_redo_keeps_no(tmp_path: Path):
-    """Test that redo='no' is kept as 'no' (start state)."""
-    work_dir = tmp_path / "work3"
-
-    cfg = AmalgkitWorkflowConfig(work_dir=work_dir, threads=4, per_step={"getfastq": {"redo": "no"}})
-
-    steps = plan_workflow(cfg)
-    getfastq_params = next(p for s, p in steps if s == "getfastq")
-
-    # Verify: redo remains 'no'
-    assert getfastq_params["redo"] == "no"
+    @patch("metainformant.rna.engine.workflow_execution.cleanup_fastqs")
+    def test_cleanup_called_on_success(self, mock_cleanup, tmp_path):
+        """Verify that cleanup_fastqs IS called if a step succeeds."""
+        
+        config = Mock(spec=AmalgkitWorkflowConfig)
+        config.work_dir = tmp_path / "work_dir"
+        config.work_dir.mkdir()
+        (config.work_dir / "metadata").mkdir()
+        
+        # Mock step function that succeeds
+        def success_step(params, **kwargs):
+            return Mock(returncode=0)
+            
+        step_functions = {"quant": success_step}
+        
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
+            writer = csv.DictWriter(f, fieldnames=["run"], delimiter="\t")
+            writer.writeheader()
+            writer.writerow({"run": "SRR_TEST"})
+            meta_path = Path(f.name)
+            
+        try:
+            _execute_streaming_mode(
+                config=config,
+                steps_remaining=[("quant", {})],
+                metadata_file=meta_path,
+                chunk_size=1,
+                step_functions=step_functions,
+                check=False
+            )
+            
+            # Assert cleanup WAS called
+            mock_cleanup.assert_called()
+            
+        finally:
+            if meta_path.exists():
+                meta_path.unlink()

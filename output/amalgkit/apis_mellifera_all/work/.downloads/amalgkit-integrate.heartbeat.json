@@ -1,0 +1,14 @@
+{
+  "bytes_downloaded": 13475964901,
+  "destination": "output/amalgkit/apis_mellifera_all/work",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-02-14T19:13:47Z",
+  "progress_percent": null,
+  "speed_mbps": 9210.047973225453,
+  "started_at": "2026-02-14T19:13:46Z",
+  "status": "failed",
+  "step": "amalgkit integrate",
+  "total_bytes": null,
+  "url": "['amalgkit', 'integrate', '--out_dir', 'output/amalgkit/apis_mellifera_all/work', '--threads', '12', '--fastq_dir', 'output/amalgkit/apis_mellifera_all/fastq/getfastq', '--metadata', 'output/amalgkit/apis_mellifera_all/work/metadata/metadata_chunk_11.tsv']"
+}

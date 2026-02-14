@@ -54,24 +54,26 @@ graph LR
 
 ## 🚀 Usage
 
-### Run Complete Workflow
+## Configuration Validation
+
+To ensure all species configurations maintain consistency with the template and schema, use the validation script:
 
 ```bash
-python scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml
+python3 scripts/rna/validate_configs.py
 ```
 
-### Step-by-Step Execution
+This script checks for:
+
+- Required top-level keys
+- Valid genome configuration structure
+- Explicit `pfd` (parallel-fastq-dump) settings
+- Deprecated or problematic flags
+
+## Usage
 
 ```bash
-# Download and quantify
-amalgkit getfastq --config config/amalgkit/amalgkit_pbarbatus.yaml
-amalgkit quant --out_dir output/amalgkit/pbarbatus/work
-
-# Merge results
-amalgkit merge --out_dir output/amalgkit/pbarbatus/work
-
-# Quality curation
-amalgkit curate --out_dir output/amalgkit/pbarbatus/work
+# Basic usage
+amalgkit metadata --config config/amalgkit/amalgkit_{species}.yaml
 ```
 
 ## ⚙️ Key Configuration Options
