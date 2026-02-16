@@ -6,6 +6,7 @@ Workflow execution, monitoring, and orchestration for RNA-seq pipelines.
 
 | File | Purpose |
 |------|---------|
+| [`streaming_orchestrator.py`](streaming_orchestrator.py) | **Production pipeline** — multi-species, parallel, ENA-first |
 | [`workflow.py`](workflow.py) | Main workflow execution engine (~147KB) |
 | [`monitoring.py`](monitoring.py) | Real-time progress monitoring |
 | [`discovery.py`](discovery.py) | Species and sample discovery |
@@ -14,6 +15,16 @@ Workflow execution, monitoring, and orchestration for RNA-seq pipelines.
 | [`progress_tracker.py`](progress_tracker.py) | Progress state persistence |
 
 ## 🔑 Key Classes
+
+### streaming_orchestrator.py
+
+- `StreamingPipelineOrchestrator` - Multi-species end-to-end pipeline
+  - `run_all()` - Process all species sequentially
+  - `process_species()` - Download + quantify with ThreadPoolExecutor
+  - `process_single_sample()` - Download → quant → cleanup per sample
+  - ENA-first download with NCBI SRA fallback
+  - Per-sample 2-hour timeout, automatic skip on failure
+  - Downstream steps: merge → curate → sanity (30-min timeout)
 
 ### workflow.py
 

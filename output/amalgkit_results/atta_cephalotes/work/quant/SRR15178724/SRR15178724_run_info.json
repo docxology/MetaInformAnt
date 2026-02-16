@@ -1,0 +1,14 @@
+{
+	"n_targets": 10868,
+	"n_bootstraps": 0,
+	"n_processed": 23760471,
+	"n_pseudoaligned": 8133537,
+	"n_unique": 7881754,
+	"p_pseudoaligned": 34.2,
+	"p_unique": 33.2,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Wed Feb 11 19:48:11 2026",
+	"call": "kallisto quant --threads 1 --index blue/amalgkit/atta_cephalotes/work/index/Atta_cephalotes_transcripts.idx -o blue/amalgkit/atta_cephalotes/work/quant/SRR15178724 --single -l 200 -s 20.0 blue/amalgkit/atta_cephalotes/work/getfastq/SRR15178724/SRR15178724.fastq.gz"
+}

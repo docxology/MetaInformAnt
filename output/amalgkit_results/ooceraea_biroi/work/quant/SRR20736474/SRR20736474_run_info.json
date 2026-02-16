@@ -1,0 +1,14 @@
+{
+	"n_targets": 27138,
+	"n_bootstraps": 0,
+	"n_processed": 22305321,
+	"n_pseudoaligned": 17394646,
+	"n_unique": 6926088,
+	"p_pseudoaligned": 78.0,
+	"p_unique": 31.1,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Thu Feb 12 02:58:25 2026",
+	"call": "kallisto quant --threads 1 --index blue/amalgkit/ooceraea_biroi/work/index/Ooceraea_biroi_transcripts.idx -o blue/amalgkit/ooceraea_biroi/work/quant/SRR20736474 --single -l 200 -s 20.0 blue/amalgkit/ooceraea_biroi/work/getfastq/SRR20736474/SRR20736474.fastq.gz"
+}

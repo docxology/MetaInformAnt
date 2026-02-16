@@ -1,0 +1,14 @@
+{
+	"n_targets": 23833,
+	"n_bootstraps": 0,
+	"n_processed": 21826995,
+	"n_pseudoaligned": 13341449,
+	"n_unique": 3399803,
+	"p_pseudoaligned": 61.1,
+	"p_unique": 15.6,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Wed Feb 11 02:21:10 2026",
+	"call": "kallisto quant --threads 2 --index blue/amalgkit/cardiocondyla_obscurior/work/index/Cardiocondyla_obscurior_transcripts.idx -o blue/amalgkit/cardiocondyla_obscurior/work/quant/SRR2033892 --single -l 200 -s 20.0 blue/amalgkit/cardiocondyla_obscurior/work/getfastq/SRR2033892/SRR2033892.fastq.gz"
+}

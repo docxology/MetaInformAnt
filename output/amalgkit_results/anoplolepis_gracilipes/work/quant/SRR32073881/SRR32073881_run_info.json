@@ -1,0 +1,14 @@
+{
+	"n_targets": 28081,
+	"n_bootstraps": 0,
+	"n_processed": 36106579,
+	"n_pseudoaligned": 23139439,
+	"n_unique": 10242365,
+	"p_pseudoaligned": 64.1,
+	"p_unique": 28.4,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Sat Feb 14 12:11:52 2026",
+	"call": "kallisto quant --threads 1 -i blue/amalgkit/anoplolepis_gracilipes/work/index/Anoplolepis_gracilipes_transcripts.idx -o blue/amalgkit/anoplolepis_gracilipes/work/quant/SRR32073881 blue/amalgkit/anoplolepis_gracilipes/work/getfastq/SRR32073881/SRR32073881_1.fastq.gz blue/amalgkit/anoplolepis_gracilipes/work/getfastq/SRR32073881/SRR32073881_2.fastq.gz"
+}

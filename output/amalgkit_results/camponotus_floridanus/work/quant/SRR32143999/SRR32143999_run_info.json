@@ -1,0 +1,14 @@
+{
+	"n_targets": 26118,
+	"n_bootstraps": 0,
+	"n_processed": 12258473,
+	"n_pseudoaligned": 8510736,
+	"n_unique": 4993656,
+	"p_pseudoaligned": 69.4,
+	"p_unique": 40.7,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Thu Feb 12 14:17:16 2026",
+	"call": "kallisto quant --threads 1 -i blue/amalgkit/camponotus_floridanus/work/index/Camponotus_floridanus_transcripts.idx -o blue/amalgkit/camponotus_floridanus/work/quant/SRR32143999 blue/amalgkit/camponotus_floridanus/work/getfastq/SRR32143999/SRR32143999_1.fastq.gz blue/amalgkit/camponotus_floridanus/work/getfastq/SRR32143999/SRR32143999_2.fastq.gz"
+}

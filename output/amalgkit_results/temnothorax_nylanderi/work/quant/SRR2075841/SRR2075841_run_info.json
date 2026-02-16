@@ -1,0 +1,14 @@
+{
+	"n_targets": 35393,
+	"n_bootstraps": 0,
+	"n_processed": 19877745,
+	"n_pseudoaligned": 17674982,
+	"n_unique": 7551956,
+	"p_pseudoaligned": 88.9,
+	"p_unique": 38.0,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Wed Feb 11 10:09:58 2026",
+	"call": "kallisto quant --threads 2 -i blue/amalgkit/temnothorax_nylanderi/work/index/Temnothorax_nylanderi_transcripts.idx -o blue/amalgkit/temnothorax_nylanderi/work/quant/SRR2075841 blue/amalgkit/temnothorax_nylanderi/work/getfastq/SRR2075841/SRR2075841_1.fastq.gz blue/amalgkit/temnothorax_nylanderi/work/getfastq/SRR2075841/SRR2075841_2.fastq.gz"
+}

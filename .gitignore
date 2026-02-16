@@ -108,5 +108,19 @@ coverage.xml
 *.timelock.*
 *.gz
 
-# Local data directory
+# ======================================================================
+# Amalgkit pipeline results
+# ======================================================================
+
+# blue/ is a symlink to /Volumes/blue/data — git won't follow symlinks.
+# Use scripts/rna/sync_quant_results.py to sync results to output/amalgkit_results/
 blue/
+
+# Allow synced amalgkit results (quant, curate, sanity, metadata)
+!output/amalgkit_results/
+!output/amalgkit_results/**/*.tsv
+!output/amalgkit_results/**/*.h5
+!output/amalgkit_results/**/*.json
+!output/amalgkit_results/**/*.pdf
+!output/amalgkit_results/**/*.txt
+

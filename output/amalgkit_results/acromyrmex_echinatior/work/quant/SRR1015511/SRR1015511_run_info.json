@@ -1,0 +1,14 @@
+{
+	"n_targets": 22059,
+	"n_bootstraps": 0,
+	"n_processed": 4092450,
+	"n_pseudoaligned": 2893643,
+	"n_unique": 1989150,
+	"p_pseudoaligned": 70.7,
+	"p_unique": 48.6,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Wed Feb 11 05:46:12 2026",
+	"call": "kallisto quant --threads 2 -i blue/amalgkit/acromyrmex_echinatior/work/index/Acromyrmex_echinatior_transcripts.idx -o blue/amalgkit/acromyrmex_echinatior/work/quant/SRR1015511 blue/amalgkit/acromyrmex_echinatior/work/getfastq/SRR1015511/SRR1015511_1.fastq.gz blue/amalgkit/acromyrmex_echinatior/work/getfastq/SRR1015511/SRR1015511_2.fastq.gz"
+}

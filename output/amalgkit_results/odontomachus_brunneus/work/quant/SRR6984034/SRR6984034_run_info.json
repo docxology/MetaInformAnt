@@ -1,0 +1,14 @@
+{
+	"n_targets": 32233,
+	"n_bootstraps": 0,
+	"n_processed": 38129150,
+	"n_pseudoaligned": 27874804,
+	"n_unique": 15112777,
+	"p_pseudoaligned": 73.1,
+	"p_unique": 39.6,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Sat Feb 14 23:57:26 2026",
+	"call": "kallisto quant --threads 1 -i blue/amalgkit/odontomachus_brunneus/work/index/Odontomachus_brunneus_transcripts.idx -o blue/amalgkit/odontomachus_brunneus/work/quant/SRR6984034 blue/amalgkit/odontomachus_brunneus/work/getfastq/SRR6984034/SRR6984034_1.fastq.gz blue/amalgkit/odontomachus_brunneus/work/getfastq/SRR6984034/SRR6984034_2.fastq.gz"
+}

@@ -1,0 +1,14 @@
+{
+	"n_targets": 34412,
+	"n_bootstraps": 0,
+	"n_processed": 41998781,
+	"n_pseudoaligned": 35085447,
+	"n_unique": 9688091,
+	"p_pseudoaligned": 83.5,
+	"p_unique": 23.1,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Thu Feb 12 21:09:25 2026",
+	"call": "kallisto quant --threads 1 -i blue/amalgkit/solenopsis_invicta/work/index/Solenopsis_invicta_transcripts.idx -o blue/amalgkit/solenopsis_invicta/work/quant/SRR24105831 blue/amalgkit/solenopsis_invicta/work/getfastq/SRR24105831/SRR24105831_1.fastq.gz blue/amalgkit/solenopsis_invicta/work/getfastq/SRR24105831/SRR24105831_2.fastq.gz"
+}

@@ -1,0 +1,14 @@
+{
+	"n_targets": 27847,
+	"n_bootstraps": 0,
+	"n_processed": 27169740,
+	"n_pseudoaligned": 21684361,
+	"n_unique": 15962406,
+	"p_pseudoaligned": 79.8,
+	"p_unique": 58.8,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Wed Feb 11 06:35:06 2026",
+	"call": "kallisto quant --threads 2 -i blue/amalgkit/nylanderia_fulva/work/index/Nylanderia_fulva_transcripts.idx -o blue/amalgkit/nylanderia_fulva/work/quant/SRR8528657 blue/amalgkit/nylanderia_fulva/work/getfastq/SRR8528657/SRR8528657_1.fastq.gz blue/amalgkit/nylanderia_fulva/work/getfastq/SRR8528657/SRR8528657_2.fastq.gz"
+}

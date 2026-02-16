@@ -1,0 +1,14 @@
+{
+	"n_targets": 24706,
+	"n_bootstraps": 0,
+	"n_processed": 9991753,
+	"n_pseudoaligned": 7773220,
+	"n_unique": 4424355,
+	"p_pseudoaligned": 77.8,
+	"p_unique": 44.3,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Wed Feb 11 05:54:37 2026",
+	"call": "kallisto quant --threads 2 -i blue/amalgkit/formica_exsecta/work/index/Formica_exsecta_transcripts.idx -o blue/amalgkit/formica_exsecta/work/quant/DRR118172 blue/amalgkit/formica_exsecta/work/getfastq/DRR118172/DRR118172_1.fastq.gz blue/amalgkit/formica_exsecta/work/getfastq/DRR118172/DRR118172_2.fastq.gz"
+}

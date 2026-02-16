@@ -1,0 +1,14 @@
+{
+	"n_targets": 26253,
+	"n_bootstraps": 0,
+	"n_processed": 6105591,
+	"n_pseudoaligned": 4764744,
+	"n_unique": 3023032,
+	"p_pseudoaligned": 78.0,
+	"p_unique": 49.5,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Wed Feb 11 06:11:38 2026",
+	"call": "kallisto quant --threads 2 -i blue/amalgkit/wasmannia_auropunctata/work/index/Wasmannia_auropunctata_transcripts.idx -o blue/amalgkit/wasmannia_auropunctata/work/quant/DRR029071 blue/amalgkit/wasmannia_auropunctata/work/getfastq/DRR029071/DRR029071_1.fastq.gz blue/amalgkit/wasmannia_auropunctata/work/getfastq/DRR029071/DRR029071_2.fastq.gz"
+}

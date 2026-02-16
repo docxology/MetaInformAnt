@@ -1,0 +1,14 @@
+{
+	"n_targets": 33634,
+	"n_bootstraps": 0,
+	"n_processed": 13828997,
+	"n_pseudoaligned": 12848479,
+	"n_unique": 6778885,
+	"p_pseudoaligned": 92.9,
+	"p_unique": 49.0,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Wed Feb 11 11:41:18 2026",
+	"call": "kallisto quant --threads 2 -i blue/amalgkit/linepithema_humile/work/index/Linepithema_humile_transcripts.idx -o blue/amalgkit/linepithema_humile/work/quant/SRR1948104 blue/amalgkit/linepithema_humile/work/getfastq/SRR1948104/SRR1948104_1.fastq.gz blue/amalgkit/linepithema_humile/work/getfastq/SRR1948104/SRR1948104_2.fastq.gz"
+}

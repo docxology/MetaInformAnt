@@ -1,0 +1,14 @@
+{
+	"n_targets": 29510,
+	"n_bootstraps": 0,
+	"n_processed": 4000000,
+	"n_pseudoaligned": 3099293,
+	"n_unique": 1772192,
+	"p_pseudoaligned": 77.5,
+	"p_unique": 44.3,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Wed Feb 11 08:47:37 2026",
+	"call": "kallisto quant --threads 2 -i blue/amalgkit/temnothorax_curvispinosus/work/index/Temnothorax_curvispinosus_transcripts.idx -o blue/amalgkit/temnothorax_curvispinosus/work/quant/SRR5309612 blue/amalgkit/temnothorax_curvispinosus/work/getfastq/SRR5309612/SRR5309612_1.fastq.gz blue/amalgkit/temnothorax_curvispinosus/work/getfastq/SRR5309612/SRR5309612_2.fastq.gz"
+}

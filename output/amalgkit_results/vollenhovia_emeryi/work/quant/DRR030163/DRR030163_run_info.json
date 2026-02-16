@@ -1,0 +1,14 @@
+{
+	"n_targets": 27527,
+	"n_bootstraps": 0,
+	"n_processed": 36049328,
+	"n_pseudoaligned": 27297062,
+	"n_unique": 18281344,
+	"p_pseudoaligned": 75.7,
+	"p_unique": 50.7,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Sat Feb 14 13:59:24 2026",
+	"call": "kallisto quant --threads 1 -i blue/amalgkit/vollenhovia_emeryi/work/index/Vollenhovia_emeryi_transcripts.idx -o blue/amalgkit/vollenhovia_emeryi/work/quant/DRR030163 blue/amalgkit/vollenhovia_emeryi/work/getfastq/DRR030163/DRR030163_1.fastq.gz blue/amalgkit/vollenhovia_emeryi/work/getfastq/DRR030163/DRR030163_2.fastq.gz"
+}

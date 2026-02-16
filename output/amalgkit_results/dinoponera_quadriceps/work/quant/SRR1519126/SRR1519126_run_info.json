@@ -1,0 +1,14 @@
+{
+	"n_targets": 23683,
+	"n_bootstraps": 0,
+	"n_processed": 27855297,
+	"n_pseudoaligned": 18272040,
+	"n_unique": 10008093,
+	"p_pseudoaligned": 65.6,
+	"p_unique": 35.9,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Sat Feb 14 12:30:57 2026",
+	"call": "kallisto quant --threads 1 -i blue/amalgkit/dinoponera_quadriceps/work/index/Dinoponera_quadriceps_transcripts.idx -o blue/amalgkit/dinoponera_quadriceps/work/quant/SRR1519126 blue/amalgkit/dinoponera_quadriceps/work/getfastq/SRR1519126/SRR1519126_1.fastq.gz blue/amalgkit/dinoponera_quadriceps/work/getfastq/SRR1519126/SRR1519126_2.fastq.gz"
+}

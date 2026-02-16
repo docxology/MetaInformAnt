@@ -1,0 +1,14 @@
+{
+	"n_targets": 33338,
+	"n_bootstraps": 0,
+	"n_processed": 21759674,
+	"n_pseudoaligned": 17065750,
+	"n_unique": 6914629,
+	"p_pseudoaligned": 78.4,
+	"p_unique": 31.8,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Tue Feb 10 20:55:19 2026",
+	"call": "kallisto quant --threads 2 -i blue/amalgkit/temnothorax_americanus/work/index/Temnothorax_americanus_transcripts.idx -o blue/amalgkit/temnothorax_americanus/work/quant/SRR8138673 blue/amalgkit/temnothorax_americanus/work/getfastq/SRR8138673/SRR8138673_1.fastq.gz blue/amalgkit/temnothorax_americanus/work/getfastq/SRR8138673/SRR8138673_2.fastq.gz"
+}
