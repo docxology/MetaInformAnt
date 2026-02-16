@@ -100,7 +100,7 @@ flowchart TB
 ```mermaid
 graph TD
     ArawBiologicalData[Raw Biological Data] --> BdataIngestion[Data Ingestion]
-    B --> C{Data Type}
+    BdataIngestion --> C{Data Type}
 
     C -->|DNA| D[dnaModule]
     C -->|RNA| E[rnaModule]
@@ -110,14 +110,14 @@ graph TD
     C -->|Environmental| I[ecologyModule]
 
     D --> JqualityControl[Quality Control]
-    E --> J
-    F --> J
-    G --> J
-    H --> J
-    I --> J
+    E --> JqualityControl
+    F --> JqualityControl
+    G --> JqualityControl
+    H --> JqualityControl
+    I --> JqualityControl
 
-    J --> KcoreProcessing[Core Processing]
-    K --> L{Analysis Type}
+    JqualityControl --> KcoreProcessing[Core Processing]
+    KcoreProcessing --> L{Analysis Type}
 
     L -->|Statistical| M[gwasModule]
     L -->|ML| N[mlModule]
@@ -128,16 +128,16 @@ graph TD
     L -->|Simulation| S[simulationModule]
 
     M --> TresultsIntegration[Results Integration]
-    N --> T
-    O --> T
-    P --> T
-    Q --> T
-    R --> T
-    S --> T
+    N --> TresultsIntegration
+    O --> TresultsIntegration
+    P --> TresultsIntegration
+    Q --> TresultsIntegration
+    R --> TresultsIntegration
+    S --> TresultsIntegration
 
-    T --> U[Visualization]
+    TresultsIntegration --> U[Visualization]
     U --> VpublicationFigures[Publication Figures]
-    V --> WscientificInsights[Scientific Insights]
+    VpublicationFigures --> WscientificInsights[Scientific Insights]
 
     subgraph "Primary Data Types"
         X[Genomic] -.-> D
@@ -156,10 +156,10 @@ graph TD
     end
 
     subgraph "Output Formats"
-        HHmanhattanPlots[Manhattan Plots] -.-> V
-        II[Heatmaps] -.-> V
-        JJnetworkGraphs[Network Graphs] -.-> V
-        KK[Animations] -.-> V
+        HHmanhattanPlots[Manhattan Plots] -.-> VpublicationFigures
+        II[Heatmaps] -.-> VpublicationFigures
+        JJnetworkGraphs[Network Graphs] -.-> VpublicationFigures
+        KK[Animations] -.-> VpublicationFigures
     end
 ```
 
@@ -167,51 +167,51 @@ graph TD
 
 ```mermaid
 graph TD
-    Amulti-omicDatasets[Multi-Omic Datasets] --> BsampleAlignment[Sample Alignment]
-    B --> CbatchEffectCorrection[Batch Effect Correction]
+    Amultiomics["Multi-Omic Datasets"] --> BsampleAlignment[Sample Alignment]
+    BsampleAlignment --> CbatchEffectCorrection[Batch Effect Correction]
 
-    C --> D{Integration Strategy}
+    CbatchEffectCorrection --> D{Integration Strategy}
     D -->|Early| EconcatenatedMatrix[Concatenated Matrix]
     D -->|Late| FseparateModels[Separate Models]
-    D -->|Intermediate| G[Meta-Analysis]
+    D -->|Intermediate| G["Meta-Analysis"]
 
-    E --> HjointDimensionalityReduction[Joint Dimensionality Reduction]
-    F --> IindividualAnalysis[Individual Analysis]
+    EconcatenatedMatrix --> HjointDimensionalityReduction[Joint Dimensionality Reduction]
+    FseparateModels --> IindividualAnalysis[Individual Analysis]
     G --> JresultIntegration[Result Integration]
 
-    H --> KunifiedClustering[Unified Clustering]
-    I --> LindividualClustering[Individual Clustering]
-    J --> MconsensusClustering[Consensus Clustering]
+    HjointDimensionalityReduction --> KunifiedClustering[Unified Clustering]
+    IindividualAnalysis --> LindividualClustering[Individual Clustering]
+    JresultIntegration --> MconsensusClustering[Consensus Clustering]
 
-    K --> NfunctionalEnrichment[Functional Enrichment]
-    L --> N
-    M --> N
+    KunifiedClustering --> NfunctionalEnrichment[Functional Enrichment]
+    LindividualClustering --> NfunctionalEnrichment
+    MconsensusClustering --> NfunctionalEnrichment
 
-    N --> OpathwayAnalysis[Pathway Analysis]
-    O --> PnetworkConstruction[Network Construction]
+    NfunctionalEnrichment --> OpathwayAnalysis[Pathway Analysis]
+    OpathwayAnalysis --> PnetworkConstruction[Network Construction]
 
-    P --> QbiologicalInterpretation[Biological Interpretation]
-    Q --> RsystemsBiologyInsights[Systems Biology Insights]
+    PnetworkConstruction --> QbiologicalInterpretation[Biological Interpretation]
+    QbiologicalInterpretation --> RsystemsBiologyInsights[Systems Biology Insights]
 
     subgraph "Omic Layers"
-        S[Genomics] -.-> A
-        T[Transcriptomics] -.-> A
-        U[Proteomics] -.-> A
-        V[Metabolomics] -.-> A
-        W[Epigenomics] -.-> A
+        S[Genomics] -.-> Amultiomics
+        T[Transcriptomics] -.-> Amultiomics
+        U[Proteomics] -.-> Amultiomics
+        V[Metabolomics] -.-> Amultiomics
+        W[Epigenomics] -.-> Amultiomics
     end
 
     subgraph "Integration Methods"
-        X[MOFA] -.-> H
-        YjointPca[Joint PCA] -.-> H
-        ZsimilarityNetworks[Similarity Networks] -.-> H
+        X[MOFA] -.-> HjointDimensionalityReduction
+        YjointPca[Joint PCA] -.-> HjointDimensionalityReduction
+        ZsimilarityNetworks[Similarity Networks] -.-> HjointDimensionalityReduction
     end
 
     subgraph "Biological Outputs"
-        AAgeneModules[Gene Modules] -.-> Q
-        BBregulatoryNetworks[Regulatory Networks] -.-> Q
-        CCdiseasePathways[Disease Pathways] -.-> Q
-        DD[Biomarkers] -.-> Q
+        AAgeneModules[Gene Modules] -.-> QbiologicalInterpretation
+        BBregulatoryNetworks[Regulatory Networks] -.-> QbiologicalInterpretation
+        CCdiseasePathways[Disease Pathways] -.-> QbiologicalInterpretation
+        DD[Biomarkers] -.-> QbiologicalInterpretation
     end
 ```
 
@@ -220,49 +220,49 @@ graph TD
 ```mermaid
 graph TD
     AdataProcessingPipeline[Data Processing Pipeline] --> BinputValidation[Input Validation]
-    B --> CtypeChecking[Type Checking]
-    C --> DschemaValidation[Schema Validation]
+    BinputValidation --> CtypeChecking[Type Checking]
+    CtypeChecking --> DschemaValidation[Schema Validation]
 
-    D --> EprocessingLogic[Processing Logic]
-    E --> FerrorHandling[Error Handling]
-    F --> GrecoveryMechanisms[Recovery Mechanisms]
+    DschemaValidation --> EprocessingLogic[Processing Logic]
+    EprocessingLogic --> FerrorHandling[Error Handling]
+    FerrorHandling --> GrecoveryMechanisms[Recovery Mechanisms]
 
-    G --> HoutputValidation[Output Validation]
-    H --> IresultVerification[Result Verification]
-    I --> JqualityMetrics[Quality Metrics]
+    GrecoveryMechanisms --> HoutputValidation[Output Validation]
+    HoutputValidation --> IresultVerification[Result Verification]
+    IresultVerification --> JqualityMetrics[Quality Metrics]
 
-    J --> K{Acceptable Quality?}
+    JqualityMetrics --> K{Acceptable Quality?}
     K -->|Yes| LpipelineSuccess[Pipeline Success]
     K -->|No| MqualityIssues[Quality Issues]
 
-    M --> NdiagnosticAnalysis[Diagnostic Analysis]
-    N --> OerrorClassification[Error Classification]
+    MqualityIssues --> NdiagnosticAnalysis[Diagnostic Analysis]
+    NdiagnosticAnalysis --> OerrorClassification[Error Classification]
 
-    O --> P{Recoverable?}
+    OerrorClassification --> P{Recoverable?}
     P -->|Yes| QdataCorrection[Data Correction]
     P -->|No| RpipelineFailure[Pipeline Failure]
 
-    Q --> E
-    L --> SvalidatedResults[Validated Results]
-    R --> TerrorReporting[Error Reporting]
+    QdataCorrection --> EprocessingLogic
+    LpipelineSuccess --> SvalidatedResults[Validated Results]
+    RpipelineFailure --> TerrorReporting[Error Reporting]
 
     subgraph "Validation Layers"
-        UdataIntegrity[Data Integrity] -.-> B
-        VbusinessLogic[Business Logic] -.-> E
-        WstatisticalValidity[Statistical Validity] -.-> H
+        UdataIntegrity[Data Integrity] -.-> BinputValidation
+        VbusinessLogic[Business Logic] -.-> EprocessingLogic
+        WstatisticalValidity[Statistical Validity] -.-> HoutputValidation
     end
 
     subgraph "Quality Controls"
-        XunitTests[Unit Tests] -.-> F
-        YintegrationTests[Integration Tests] -.-> I
-        ZperformanceBenchmarks[Performance Benchmarks] -.-> J
+        XunitTests[Unit Tests] -.-> FerrorHandling
+        YintegrationTests[Integration Tests] -.-> IresultVerification
+        ZperformanceBenchmarks[Performance Benchmarks] -.-> JqualityMetrics
     end
 
     subgraph "Error Types"
-        AAdataErrors[Data Errors] -.-> O
-        BBlogicErrors[Logic Errors] -.-> O
-        CCsystemErrors[System Errors] -.-> O
-        DDexternalErrors[External Errors] -.-> O
+        AAdataErrors[Data Errors] -.-> OerrorClassification
+        BBlogicErrors[Logic Errors] -.-> OerrorClassification
+        CCsystemErrors[System Errors] -.-> OerrorClassification
+        DDexternalErrors[External Errors] -.-> OerrorClassification
     end
 ```
 
@@ -978,7 +978,7 @@ If you use METAINFORMANT in your research, please cite this repository:
   title = {MetaInformAnt: Comprehensive Bioinformatics Toolkit},
   year = {2025},
   url = {https://github.com/docxology/MetaInformAnt},
-  version = {0.2.0}
+  version = {0.2.2}
 }
 ```
 
@@ -1000,4 +1000,4 @@ This project is licensed under the Apache License, Version 2.0 - see [LICENSE](L
 
 ---
 
-**Status**: Active Development | **Version**: 0.2.0 | **Python**: 3.11+ | **License**: Apache 2.0
+**Status**: Active Development | **Version**: 0.2.2 | **Python**: 3.11+ | **License**: Apache 2.0

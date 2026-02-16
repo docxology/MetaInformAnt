@@ -30,21 +30,32 @@ Tests are organized by module, mirroring `src/metainformant/` structure:
 
 | Prefix | Module | Count |
 |--------|--------|-------|
-| `test_core_*` | Core utilities | 18 |
-| `test_dna_*` | DNA analysis | 28 |
-| `test_rna_*` | RNA workflows | 32 |
-| `test_gwas_*` | GWAS pipeline | 20 |
-| `test_protein_*` | Protein analysis | 16 |
+| `test_core_*` | Core utilities | 24 |
+| `test_dna_*` | DNA analysis | 26 |
+| `test_rna_*` | RNA workflows | 28 |
+| `test_gwas_*` | GWAS pipeline | 30 |
+| `test_protein_*` | Protein analysis | 11 |
 | `test_visualization_*` | Plotting | 14 |
-| `test_math_*` | Math/popgen | 22 |
-| `test_life_events_*` | Life events | 14 |
+| `test_math_*` | Math/popgen | 14 |
+| `test_life_events_*` | Life events | 11 |
+| `test_phenotype_*` | Phenotype | 8 |
 | `test_networks_*` | Networks | 6 |
-| `test_ml_*` | Machine learning | 2 |
-| `test_ontology_*` | Ontology/GO | 6 |
-| `test_singlecell_*` | Single-cell | 3 |
-| `test_information_*` | Information theory | 2 |
-| `test_multiomics_*` | Multi-omics | 3 |
-| Others | Integration, etc. | ~20 |
+| `test_ml_*` | Machine learning | 6 |
+| `test_ontology_*` | Ontology/GO | 7 |
+| `test_singlecell_*` | Single-cell | 7 |
+| `test_spatial_*` | Spatial | 7 |
+| `test_information_*` | Information theory | 4 |
+| `test_multiomics_*` | Multi-omics | 5 |
+| `test_ecology_*` | Ecology | 5 |
+| `test_epigenome_*` | Epigenome | 5 |
+| `test_metagenomics_*` | Metagenomics | 6 |
+| `test_longread_*` | Long-read | 6 |
+| `test_pharmacogenomics_*` | Pharmacogenomics | 5 |
+| `test_quality_*` | Quality | 4 |
+| `test_menu_*` | Menu/CLI | 4 |
+| `test_simulation_*` | Simulation | 3 |
+| `test_structural_*` | Structural variants | 3 |
+| Others | Domain, integration | ~1 |
 
 ## Test Modes
 
@@ -67,6 +78,7 @@ Tests are organized by module, mirroring `src/metainformant/` structure:
 ```
 
 Run specific markers:
+
 ```bash
 pytest -m "network" tests/        # Only network tests
 pytest -m "not slow" tests/       # Skip slow tests

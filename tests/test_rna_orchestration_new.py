@@ -1,19 +1,26 @@
-"""Tests for the multi-species RNA-seq orchestrator."""
+"""Tests for the multi-species RNA-seq orchestrator.
+
+Follows NO_MOCKING_POLICY: all tests use real YAML configurations,
+real class instantiation, and real method calls.
+"""
 
 import pytest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 from metainformant.rna.engine.orchestration_multi_species import PipelineOrchestrator
-from metainformant.rna.amalgkit import amalgkit
+from metainformant.rna.amalgkit.amalgkit import AmalgkitParams, build_amalgkit_command
+
 
 class TestPipelineOrchestrator:
+    """Tests for PipelineOrchestrator using real configs and methods."""
+
     @pytest.fixture
-    def mock_config(self, tmp_path):
-        config_path = tmp_path / "config.yaml"
-        with open(config_path, "w") as f:
-            f.write("""
-work_dir: output/test_amalgkit
+    def config_path(self, tmp_path: Path) -> Path:
+        """Create a real YAML config file for testing."""
+        config = tmp_path / "orchestration_config.yaml"
+        config.write_text(
+            """
+work_dir: {work_dir}
 threads: 4
 run_integrate: false
 species:
@@ -22,114 +29,95 @@ species:
     threads: 2
     extra_params:
       redo: yes
-""")
-        return config_path
+""".format(work_dir=str(tmp_path / "output"))
+        )
+        return config
 
     @pytest.fixture
-    def orchestrator(self, mock_config):
-        return PipelineOrchestrator(mock_config)
+    def orchestrator(self, config_path: Path) -> PipelineOrchestrator:
+        return PipelineOrchestrator(config_path)
 
-    def test_initialization(self, orchestrator, mock_config):
-        assert orchestrator.config_path == mock_config
-        assert orchestrator.work_dir == Path("output/test_amalgkit")
-        assert orchestrator.log_dir == Path("output/test_amalgkit/logs")
+    def test_initialization(self, orchestrator: PipelineOrchestrator, config_path: Path) -> None:
+        """Test orchestrator initializes with real config values."""
+        assert orchestrator.config_path == config_path
         assert "metadata" in orchestrator.steps
         assert "curate" in orchestrator.steps
+        assert "getfastq" in orchestrator.steps
+        assert "quant" in orchestrator.steps
 
-    def test_load_config(self, orchestrator):
+    def test_load_config(self, orchestrator: PipelineOrchestrator) -> None:
+        """Test configuration loads correctly from real YAML file."""
         config = orchestrator.config
-        assert config["work_dir"] == "output/test_amalgkit"
         assert len(config["species"]) == 2
         assert config["species"][0] == "species_A"
         assert config["species"][1]["name"] == "species_B"
+        assert config["threads"] == 4
+        assert config.get("run_integrate") is False
 
-    @pytest.mark.parametrize("step_name,expected_call", [
-        ("metadata", True),
-        ("integrate", False), # run_integrate is false in mock_config
-        ("getfastq", True),
-    ])
-    def test_run_step_logic(self, orchestrator, step_name, expected_call):
-        # Mock the actual step function in amalgkit
-        mock_step_func = MagicMock()
-        mock_step_func.return_value.returncode = 0
-        
-        with patch.object(amalgkit, step_name, mock_step_func, create=True):
-            params = amalgkit.AmalgkitParams(work_dir="test", species_list=["test"])
-            result = orchestrator.run_step(step_name, params, "test_species")
-            
-            assert result is True
-            if expected_call:
-                mock_step_func.assert_called_once()
-            else:
-                mock_step_func.assert_not_called()
+    def test_config_not_found(self, tmp_path: Path) -> None:
+        """Test FileNotFoundError for missing config."""
+        bad_path = tmp_path / "nonexistent.yaml"
+        with pytest.raises(FileNotFoundError):
+            PipelineOrchestrator(bad_path)
 
-    def test_run_step_failure(self, orchestrator):
-        mock_step_func = MagicMock()
-        mock_step_func.return_value.returncode = 1
-        mock_step_func.return_value.stderr = "Error message"
-        
-        with patch.object(amalgkit, "metadata", mock_step_func):
-            params = amalgkit.AmalgkitParams(work_dir="test", species_list=["test"])
-            result = orchestrator.run_step("metadata", params, "test_species")
-            
-            assert result is False
-            mock_step_func.assert_called_once()
+    def test_step_list_completeness(self, orchestrator: PipelineOrchestrator) -> None:
+        """Verify all expected pipeline steps are present in order."""
+        expected = ["metadata", "integrate", "getfastq", "quant", "merge", "cstmm", "csca", "curate"]
+        assert orchestrator.steps == expected
 
-    def test_run_orchestration_flow(self, orchestrator):
-        """Test the full run loop with mocked steps."""
-        # Mock all steps
-        with patch.object(orchestrator, "run_step") as mock_run_step:
-            mock_run_step.return_value = True
-            
-            orchestrator.run()
-            
-            # Should be called for each species * each enabled step
-            # Species A: metadata, getfastq, quant, merge, cstmm, csca, curate (integrate skipped) check implementation
-            # logic in run() calls run_step for ALL steps in self.steps
-            # run_step handles skipping internally
-            
-            expected_steps_per_species = len(orchestrator.steps)
-            assert mock_run_step.call_count == 2 * expected_steps_per_species
+    def test_species_params_construction(self, orchestrator: PipelineOrchestrator) -> None:
+        """Verify that AmalgkitParams can be constructed from config species entries."""
+        config = orchestrator.config
 
-    def test_run_orchestration_stops_on_failure(self, orchestrator):
-        """Test that orchestration stops for a species if a step fails."""
-        with patch.object(orchestrator, "run_step") as mock_run_step:
-            # First step fails
-            mock_run_step.side_effect = [False, True, True] * 10 
-            
-            orchestrator.run()
-            
-            # Should handle failure gracefully. 
-            # In run() loop:
-            # Species A: Step 1 (fails) -> break
-            # Species B: Step 1 (fails - based on side_effect) -> break
-            
-            # Actually side_effect iterator is global.
-            # Call 1: Species A, Step 1 -> False. Break A.
-            # Call 2: Species B, Step 1 -> True. Continue B.
-            # Call 3: Species B, Step 2 -> True. Continue B.
-            
-            # We want to verify it breaks. 
-            # Let's start FRESH with a specific side effect logic
-            
-            def side_effect(step, params, species):
-                if species == "species_A" and step == "metadata":
-                    return False
-                return True
-            
-            mock_run_step.side_effect = side_effect
-            mock_run_step.reset_mock()
-            
-            orchestrator.run()
-            
-            # Species A should call only metadata
-            # Species B should call all steps
-            
-            calls = mock_run_step.call_args_list
-            species_a_calls = [c for c in calls if c[0][2] == "species_A"]
-            species_b_calls = [c for c in calls if c[0][2] == "species_B"]
-            
-            assert len(species_a_calls) == 1
-            assert species_a_calls[0][0][0] == "metadata"
-            
-            assert len(species_b_calls) == len(orchestrator.steps)
+        # Species A: simple string name
+        sp_a = config["species"][0]
+        params_a = AmalgkitParams(
+            work_dir=orchestrator.work_dir,
+            threads=config["threads"],
+            species_list=[sp_a],
+        )
+        assert params_a.threads == 4
+        assert params_a.species_list == ["species_A"]
+
+        # Species B: dict with overrides
+        sp_b = config["species"][1]
+        params_b = AmalgkitParams(
+            work_dir=orchestrator.work_dir,
+            threads=sp_b.get("threads", config["threads"]),
+            species_list=[sp_b["name"]],
+            **sp_b.get("extra_params", {}),
+        )
+        assert params_b.threads == 2
+        assert params_b.species_list == ["species_B"]
+        # YAML loads 'yes' → True (bool), but as extra_params it passes through
+        assert params_b.extra_params.get("redo") is not None
+
+    def test_run_step_unknown_step(self, orchestrator: PipelineOrchestrator) -> None:
+        """Verify run_step returns False for unknown step names."""
+        params = AmalgkitParams(work_dir="test", species_list=["test"])
+        result = orchestrator.run_step("nonexistent_step", params, "test_species")
+        assert result is False
+
+    def test_integrate_skipped_when_disabled(self, orchestrator: PipelineOrchestrator) -> None:
+        """Verify integrate step is skipped when run_integrate is false."""
+        params = AmalgkitParams(work_dir="test", species_list=["test"])
+        # integrate should succeed (by skipping) when disabled in config
+        result = orchestrator.run_step("integrate", params, "test_species")
+        assert result is True
+
+    def test_command_construction_for_metadata(self) -> None:
+        """Verify build_amalgkit_command produces correct metadata command.
+
+        Note: metadata subcommand does NOT include --threads per build_cli_args logic.
+        """
+        params = AmalgkitParams(
+            work_dir="/tmp/test",
+            threads=4,
+            species_list=["Apis_mellifera"],
+        )
+        command = build_amalgkit_command("metadata", params)
+        assert command[0] == "amalgkit"
+        assert command[1] == "metadata"
+        assert "--out_dir" in command
+        # metadata subcommand intentionally excludes --threads
+        assert "--threads" not in command

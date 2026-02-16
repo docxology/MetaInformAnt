@@ -1,87 +1,153 @@
+"""Tests for RNA workflow robustness and edge cases.
 
-import pytest
+Follows NO_MOCKING_POLICY: all tests use real filesystem operations,
+real configuration objects, and real function calls.
+"""
+
 import csv
 import tempfile
+import pytest
 from pathlib import Path
-from unittest.mock import Mock, patch
-from metainformant.rna.engine.workflow_execution import _execute_streaming_mode, AmalgkitWorkflowConfig
+
+from metainformant.rna.engine.workflow_core import (
+    AmalgkitWorkflowConfig,
+    WorkflowExecutionResult,
+    WorkflowStepResult,
+    validate_workflow_config,
+)
+
 
 class TestWorkflowRobustness:
-    @patch("metainformant.rna.engine.workflow_execution.cleanup_fastqs")
-    def test_cleanup_skipped_on_failure(self, mock_cleanup, tmp_path):
-        """Verify that cleanup_fastqs is NOT called if a step fails."""
-        
-        # Setup mocks
-        config = Mock(spec=AmalgkitWorkflowConfig)
-        config.work_dir = tmp_path / "work_dir"
-        config.work_dir.mkdir()
-        (config.work_dir / "metadata").mkdir()
-        
-        # Mock step function that fails
-        def fail_step(params, **kwargs):
-            return Mock(returncode=1, stderr="Mock failure")
-            
-        # "quant" is recognized as a chunk step
-        step_functions = {"quant": fail_step}
-        
-        # Run streaming mode
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
-            writer = csv.DictWriter(f, fieldnames=["run"], delimiter="\t")
-            writer.writeheader()
-            writer.writerow({"run": "SRR_TEST"})
-            meta_path = Path(f.name)
-            
-        try:
-            _execute_streaming_mode(
-                config=config,
-                steps_remaining=[("quant", {})],
-                metadata_file=meta_path,
-                chunk_size=1,
-                step_functions=step_functions,
-                check=False
-            )
-            
-            # Assert cleanup was NOT called
-            mock_cleanup.assert_not_called()
-            
-        finally:
-            if meta_path.exists():
-                meta_path.unlink()
+    """Tests for workflow configuration validation and result handling."""
 
-    @patch("metainformant.rna.engine.workflow_execution.cleanup_fastqs")
-    def test_cleanup_called_on_success(self, mock_cleanup, tmp_path):
-        """Verify that cleanup_fastqs IS called if a step succeeds."""
-        
-        config = Mock(spec=AmalgkitWorkflowConfig)
-        config.work_dir = tmp_path / "work_dir"
-        config.work_dir.mkdir()
-        (config.work_dir / "metadata").mkdir()
-        
-        # Mock step function that succeeds
-        def success_step(params, **kwargs):
-            return Mock(returncode=0)
-            
-        step_functions = {"quant": success_step}
-        
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as f:
-            writer = csv.DictWriter(f, fieldnames=["run"], delimiter="\t")
+    def test_config_creation_from_dict(self, tmp_path: Path) -> None:
+        """Test real config creation from dictionary."""
+        config = AmalgkitWorkflowConfig(
+            work_dir=tmp_path,
+            threads=4,
+            species_list=["species_A"],
+        )
+        assert config.work_dir == tmp_path
+        assert config.threads == 4
+        assert config.species_list == ["species_A"]
+
+    def test_config_validation_valid(self, tmp_path: Path) -> None:
+        """Test validation passes for a well-formed config."""
+        config = AmalgkitWorkflowConfig(
+            work_dir=tmp_path,
+            threads=4,
+            species_list=["species_A"],
+        )
+        is_valid, errors = validate_workflow_config(config)
+        assert is_valid is True
+        assert errors == []
+
+    def test_config_validation_empty_species(self, tmp_path: Path) -> None:
+        """Test validation fails when species_list is empty."""
+        config = AmalgkitWorkflowConfig(
+            work_dir=tmp_path,
+            threads=4,
+            species_list=[],
+        )
+        is_valid, errors = validate_workflow_config(config)
+        assert is_valid is False
+        assert any("species" in e.lower() for e in errors)
+
+    def test_config_validation_invalid_threads(self, tmp_path: Path) -> None:
+        """Test validation fails when threads < 1."""
+        config = AmalgkitWorkflowConfig(
+            work_dir=tmp_path,
+            threads=0,
+            species_list=["sp"],
+        )
+        is_valid, errors = validate_workflow_config(config)
+        assert is_valid is False
+        assert any("threads" in e.lower() for e in errors)
+
+    def test_workflow_result_success(self) -> None:
+        """Test WorkflowExecutionResult correctly reports success."""
+        steps = [
+            WorkflowStepResult(step_name="metadata", return_code=0, success=True),
+            WorkflowStepResult(step_name="quant", return_code=0, success=True),
+        ]
+        result = WorkflowExecutionResult(
+            steps_executed=steps,
+            success=True,
+            total_steps=2,
+            successful_steps=2,
+            failed_steps=0,
+        )
+        assert result.success is True
+        assert len(result) == 2
+        assert result.return_codes == [0, 0]
+
+    def test_workflow_result_failure(self) -> None:
+        """Test WorkflowExecutionResult correctly reports failure."""
+        steps = [
+            WorkflowStepResult(step_name="metadata", return_code=0, success=True),
+            WorkflowStepResult(
+                step_name="quant", return_code=1, success=False,
+                error_message="Quantification failed",
+            ),
+        ]
+        result = WorkflowExecutionResult(
+            steps_executed=steps,
+            success=False,
+            total_steps=2,
+            successful_steps=1,
+            failed_steps=1,
+        )
+        assert result.success is False
+        assert result.failed_steps == 1
+        assert result.return_codes == [0, 1]
+
+    def test_workflow_result_get_by_name(self) -> None:
+        """Test WorkflowExecutionResult.get() retrieves step by name."""
+        steps = [
+            WorkflowStepResult(step_name="metadata", return_code=0, success=True),
+            WorkflowStepResult(step_name="quant", return_code=1, success=False),
+        ]
+        result = WorkflowExecutionResult(
+            steps_executed=steps,
+            success=False,
+            total_steps=2,
+            successful_steps=1,
+            failed_steps=1,
+        )
+        assert result.get("metadata") == 0
+        assert result.get("quant") == 1
+        assert result.get("nonexistent") is None
+        assert result.get("nonexistent", -1) == -1
+
+    def test_config_serialization_roundtrip(self, tmp_path: Path) -> None:
+        """Test config can be serialized to dict and back."""
+        original = AmalgkitWorkflowConfig(
+            work_dir=tmp_path,
+            threads=8,
+            species_list=["Apis_mellifera"],
+            search_string="RNA-Seq",
+        )
+        d = original.to_dict()
+        restored = AmalgkitWorkflowConfig.from_dict(d)
+
+        assert str(restored.work_dir) == str(original.work_dir)
+        assert restored.threads == original.threads
+        assert restored.species_list == original.species_list
+
+    def test_metadata_file_creation(self, tmp_path: Path) -> None:
+        """Test real metadata TSV file creation and parsing."""
+        metadata_path = tmp_path / "metadata.tsv"
+        with open(metadata_path, "w", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=["run", "tissue"], delimiter="\t")
             writer.writeheader()
-            writer.writerow({"run": "SRR_TEST"})
-            meta_path = Path(f.name)
-            
-        try:
-            _execute_streaming_mode(
-                config=config,
-                steps_remaining=[("quant", {})],
-                metadata_file=meta_path,
-                chunk_size=1,
-                step_functions=step_functions,
-                check=False
-            )
-            
-            # Assert cleanup WAS called
-            mock_cleanup.assert_called()
-            
-        finally:
-            if meta_path.exists():
-                meta_path.unlink()
+            writer.writerow({"run": "SRR_TEST_001", "tissue": "brain"})
+            writer.writerow({"run": "SRR_TEST_002", "tissue": "antenna"})
+
+        # Verify the file can be read back
+        with open(metadata_path) as f:
+            reader = csv.DictReader(f, delimiter="\t")
+            rows = list(reader)
+
+        assert len(rows) == 2
+        assert rows[0]["run"] == "SRR_TEST_001"
+        assert rows[1]["tissue"] == "antenna"

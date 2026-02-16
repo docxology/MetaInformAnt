@@ -12,7 +12,7 @@ src/
     ├── rna/                # RNA-seq workflows
     ├── protein/            # Protein analysis
     ├── gwas/               # GWAS pipeline
-    ├── visualization/      # Plotting (57+ types)
+    ├── visualization/      # Plotting (70+ types)
     ├── networks/           # Biological networks
     ├── singlecell/         # scRNA-seq
     ├── multiomics/         # Multi-omic integration
@@ -25,6 +25,11 @@ src/
     ├── ecology/            # Community ecology
     ├── epigenome/          # Methylation, ChIP-seq
     ├── simulation/         # Synthetic data
+    ├── longread/           # Long-read sequencing
+    ├── metagenomics/       # Metagenomic analysis
+    ├── pharmacogenomics/   # Pharmacogenomic analysis
+    ├── spatial/            # Spatial transcriptomics
+    ├── structural_variants/ # Structural variant analysis
     ├── quality/            # QC metrics
     └── menu/               # Interactive CLI
 ```

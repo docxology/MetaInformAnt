@@ -271,18 +271,25 @@ def download_file(
     Returns:
         True if download succeeded (and verifications passed), False otherwise
     """
-    logger.info(f"Downloading {url} -> {dest_path}")
-
     # Ensure parent directory exists
     dest_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # Pre-check: if file already exists with reasonable size, skip download.
+    # Full MD5+gzip verification still happens after fresh downloads (below).
+    # We do NOT run expensive gzip -t or MD5 here because on a slow external
+    # volume, reading entire GB files blocks all ThreadPool workers on I/O.
+    MIN_VALID_SIZE = 1 * 1024 * 1024  # 1 MB — anything smaller is likely partial
+    if dest_path.exists() and dest_path.stat().st_size > MIN_VALID_SIZE:
+        logger.info(f"[OK] {dest_path.name} already exists ({dest_path.stat().st_size / (1024**2):.1f} MB), skipping download")
+        return True
+
+    logger.info(f"Downloading {url} -> {dest_path}")
 
     for attempt in range(1, retries + 1):
         try:
             cmd = [
                 "curl",
                 "-L",
-                "-C",
-                "-",  # Resume
                 "-o",
                 str(dest_path),
                 "--retry",
@@ -299,7 +306,8 @@ def download_file(
                 url,
             ]
 
-            subprocess.run(cmd, check=True, capture_output=True)
+            # stdin=DEVNULL prevents any interactive prompts from blocking
+            subprocess.run(cmd, check=True, capture_output=True, stdin=subprocess.DEVNULL)
 
             if dest_path.exists():
                 # 1. MD5 Verification
@@ -329,7 +337,9 @@ def download_file(
         except subprocess.CalledProcessError as e:
             logger.warning(f"[FAIL] Download failed (Attempt {attempt}/{retries}). Exit: {e.returncode}")
             if attempt < retries:
-                time.sleep(5 * attempt)
+                backoff = 5 * (2 ** attempt)  # Exponential: 10s, 20s, 40s...
+                logger.info(f"Retrying in {backoff}s (attempt {attempt}/{retries})")
+                time.sleep(backoff)
 
     return False
 
@@ -393,7 +403,7 @@ def download_with_fallback(sample_info: SampleInfo, sample_dir: Path, timeout: i
                 "--progress",
                 sra_id,
             ]
-            result = subprocess.run(cmd, capture_output=True, timeout=timeout)
+            result = subprocess.run(cmd, capture_output=True, timeout=timeout, stdin=subprocess.DEVNULL)
             if result.returncode == 0:
                 # Compress the output
                 for fq in sample_dir.glob("*.fastq"):

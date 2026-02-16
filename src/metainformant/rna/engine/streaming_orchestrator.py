@@ -22,6 +22,10 @@ from typing import List, Dict, Any, Optional, Tuple
 from metainformant.core.utils import logging as log_utils
 from metainformant.rna.amalgkit import amalgkit
 from metainformant.rna.amalgkit.tissue_normalizer import apply_tissue_normalization
+from metainformant.rna.retrieval.ena_downloader import (
+    get_ena_sample_info,
+    download_with_fallback,
+)
 
 # Determine project root if possible, or use relative paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
@@ -69,43 +73,58 @@ class StreamingPipelineOrchestrator:
             return []
 
     def download_fastq(self, srr_id: str, out_dir: Path) -> bool:
-        """Download FASTQ files directly from ENA using curl."""
-        urls = self.query_ena_fastq_urls(srr_id)
-        if not urls:
-            return False
+        """Download FASTQ files with multi-source fallback.
 
+        Tries sources in order: ENA FTP → ENA HTTP → NCBI SRA (fasterq-dump).
+        Each source includes retries with exponential backoff, MD5 verification,
+        and gzip integrity checking.
+
+        Args:
+            srr_id: SRA accession ID (e.g., SRR12345)
+            out_dir: Base directory for downloads (sample subdir created automatically)
+
+        Returns:
+            True if all FASTQ files downloaded successfully, False otherwise.
+        """
         sample_dir = out_dir / srr_id
         sample_dir.mkdir(parents=True, exist_ok=True)
 
-        # Check if already downloaded
-        existing_fq = list(sample_dir.glob("*.fastq.gz"))
-        if len(existing_fq) >= len(urls) and len(existing_fq) > 0:
-            return True
+        # Get sample info with all download source URLs
+        sample_info = get_ena_sample_info(srr_id)
+        if sample_info is None:
+            logger.error(f"Could not resolve download URLs for {srr_id}")
+            return False
 
-        success = True
-        for url in urls:
-            fname = url.split('/')[-1]
-            fpath = sample_dir / fname
-            if fpath.exists() and fpath.stat().st_size > 0:
-                continue
-            
-            try:
-                # Use curl for robust downloading
-                cmd = ["curl", "-L", "-f", "-o", str(fpath), "--retry", "3",
-                       "--retry-delay", "5", "-s", "--show-error", url]
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=7200)
-                
-                if result.returncode != 0:
-                    logger.error(f"Download failed for {fname}: {result.stderr}")
-                    fpath.unlink(missing_ok=True)
-                    success = False
-                else:
-                    sz_gb = fpath.stat().st_size / (1024**3)
-                    logger.info(f"Downloaded {fname}: {sz_gb:.2f} GB")
-            except Exception as e:
-                logger.error(f"Download exception for {fname}: {e}")
-                fpath.unlink(missing_ok=True)
-                success = False
+        n_sources = sum([
+            bool(sample_info.ena_ftp_urls),
+            bool(sample_info.ena_http_urls),
+            bool(sample_info.ncbi_urls),
+        ])
+        logger.info(
+            f"Downloading {srr_id}: {n_sources} source(s) available "
+            f"(FTP={'yes' if sample_info.ena_ftp_urls else 'no'}, "
+            f"HTTP={'yes' if sample_info.ena_http_urls else 'no'}, "
+            f"NCBI={'yes' if sample_info.ncbi_urls else 'no'})"
+        )
+
+        # Use the existing multi-source fallback: ENA FTP → ENA HTTP → NCBI SRA
+        success = download_with_fallback(
+            sample_info=sample_info,
+            sample_dir=sample_dir,
+            timeout=7200,  # 2 hours max per file
+        )
+
+        if success:
+            # Log file sizes
+            for fq in sample_dir.glob("*.fastq.gz"):
+                sz_gb = fq.stat().st_size / (1024**3)
+                logger.info(f"Downloaded {fq.name}: {sz_gb:.2f} GB")
+        else:
+            logger.error(f"All download sources failed for {srr_id}")
+            # Clean up partial files
+            for f in sample_dir.iterdir():
+                if f.is_file():
+                    f.unlink(missing_ok=True)
 
         return success
 
@@ -195,7 +214,7 @@ class StreamingPipelineOrchestrator:
         
         # Download
         if not self.download_fastq(srr_id, fastq_dir):
-            result["error"] = "ENA Download Failed"
+            result["error"] = "Download Failed (all sources: ENA FTP/HTTP, NCBI)"
             return result
         result["downloaded"] = True
         
@@ -352,24 +371,35 @@ class StreamingPipelineOrchestrator:
         
         quantified_count = 0
         
+        # Per-sample timeout: 2h for download + quant combined
+        SAMPLE_TIMEOUT = 7200
+        
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-            futures = []
+            future_to_srr = {}
             for i, (_, row) in enumerate(filtered.iterrows()):
                 srr = row[srr_col]
                 batch_idx = i + 1
-                futures.append(executor.submit(
+                f = executor.submit(
                     self.process_single_sample, 
                     srr, batch_idx, fastq_dir, config_path, species_name, threads_per_worker
-                ))
+                )
+                future_to_srr[f] = srr
                 
-            for future in concurrent.futures.as_completed(futures):
-                res = future.result()
-                if res["quantified"]:
-                    quantified_count += 1
-                    status = "Skipped (Done)" if res.get("skipped") else "Done"
-                    logger.info(f"sample {res['srr']}: {status}")
-                elif res["error"]:
-                    logger.warning(f"sample {res['srr']}: Failed ({res['error']})")
+            for future in concurrent.futures.as_completed(future_to_srr):
+                srr = future_to_srr[future]
+                try:
+                    res = future.result(timeout=SAMPLE_TIMEOUT)
+                    if res["quantified"]:
+                        quantified_count += 1
+                        status = "Skipped (Done)" if res.get("skipped") else "Done"
+                        logger.info(f"sample {res['srr']}: {status}")
+                    elif res["error"]:
+                        logger.warning(f"sample {res['srr']}: Failed ({res['error']})")
+                except concurrent.futures.TimeoutError:
+                    logger.error(f"sample {srr}: TIMEOUT after {SAMPLE_TIMEOUT}s — skipping")
+                    future.cancel()
+                except Exception as e:
+                    logger.error(f"sample {srr}: Unexpected error — {e}")
 
         # Downstream Steps
         if quantified_count > 0:
@@ -382,13 +412,21 @@ class StreamingPipelineOrchestrator:
                            "--config", str(config_path), "--no-progress", 
                            "--steps", "merge", "curate", "sanity"]
                     
-                    result = subprocess.run(cmd, stdout=f, stderr=subprocess.STDOUT)
+                    result = subprocess.run(
+                        cmd, stdout=f, stderr=subprocess.STDOUT,
+                        timeout=1800,  # 30-minute timeout for downstream steps
+                    )
                 
                 if result.returncode == 0:
                     logger.info("  ✓ Downstream steps complete!")
                 else:
                     logger.error(f"  ⚠ Downstream steps had errors. See: {workflow_log}")
 
+            except subprocess.TimeoutExpired:
+                logger.error(
+                    f"  ⚠ Downstream steps timed out after 30 minutes for {species_name}. "
+                    f"See: {workflow_log}"
+                )
             except Exception as e:
                 logger.error(f"Failed to run downstream steps: {e}")
             

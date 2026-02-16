@@ -7,6 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 METAINFORMANT is a bioinformatics toolkit for multi-omic analysis (genomics, transcriptomics, proteomics, epigenomics, systems biology). Python 3.11+.
 
 **Critical Rules:**
+
 - **NO MOCKING**: Real implementations only. Never return dummy/placeholder data. See `docs/NO_MOCKING_POLICY.md`
 - **UV Only**: Use `uv` for all package operations (never `pip`)
 - **Output to `output/`**: All execution outputs go to `output/` directory
@@ -53,6 +54,7 @@ uv run metainformant --modules               # List available modules
 ```
 
 **Note:** Module functionality is accessed via Python imports, not CLI subcommands:
+
 ```python
 from metainformant.dna.sequence import core, composition
 from metainformant.rna.engine import workflow
@@ -74,7 +76,7 @@ src/metainformant/
 ├── networks/       # Biological networks, community detection
 ├── multiomics/     # Multi-omic integration
 ├── singlecell/     # scRNA-seq analysis
-├── visualization/  # 80+ plot types
+├── visualization/  # 70+ plot types
 ├── quality/        # QC metrics
 ├── ml/             # Machine learning pipelines
 ├── math/           # Population genetics theory, coalescent
@@ -151,6 +153,7 @@ def test_api_integration() -> None:
 ```
 
 **Test Markers:**
+
 - `@pytest.mark.slow` - Long-running
 - `@pytest.mark.network` - Real API calls
 - `@pytest.mark.external_tool` - CLI tools (amalgkit, muscle)
@@ -166,6 +169,7 @@ def test_api_integration() -> None:
 ## External Dependencies
 
 Optional tools for workflows:
+
 - **amalgkit**: `uv pip install amalgkit`
 - **SRA Toolkit**: `apt-get install sra-toolkit`
 - **samtools/bcftools/bwa**: `apt-get install samtools bcftools bwa`

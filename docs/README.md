@@ -36,6 +36,12 @@ METAINFORMANT documentation organized by biological domain.
 | Epigenome | [epigenome/](epigenome/) | Methylation, ChIP-seq |
 | Simulation | [simulation/](simulation/) | Synthetic data |
 | Quality | [quality/](quality/) | QC metrics |
+| Longread | [longread/](longread/) | Long-read sequencing |
+| Metagenomics | [metagenomics/](metagenomics/) | Metagenomic analysis |
+| Pharmacogenomics | [pharmacogenomics/](pharmacogenomics/) | Drug-gene interactions |
+| Spatial | [spatial/](spatial/) | Spatial transcriptomics |
+| Structural Variants | [structural_variants/](structural_variants/) | SV detection |
+| Menu | [menu/](menu/) | Interactive CLI system |
 
 ## Key Guides
 

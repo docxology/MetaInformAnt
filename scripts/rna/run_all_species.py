@@ -47,9 +47,9 @@ SPECIES_ORDER = [
 ]
 
 DEFAULTS = {
-    "max_gb": 5.0,
+    "max_gb": 100.0,
     "workers": 16,
-    "threads": 12,
+    "threads": 16,
 }
 
 def main():

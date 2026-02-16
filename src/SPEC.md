@@ -11,6 +11,7 @@ Root source directory containing the metainformant Python package. This is the p
 - **Package Layout**: src-layout (src/metainformant/)
 
 ### Directory Structure
+
 ```
 src/
 ├── metainformant/          # Main package directory
@@ -19,18 +20,21 @@ src/
 │   ├── core/               # Core infrastructure
 │   ├── dna/                # DNA analysis
 │   ├── rna/                # RNA analysis
-│   └── {module}/           # 16 additional domain modules
+│   └── {module}/           # 22 additional domain modules
 └── metainformant.egg-info/ # Package metadata (generated)
 ```
 
 ## Data Structures
 
 ### Package Components
+
 - **metainformant/**: Main Python package with 25 domain modules
 - **metainformant.egg-info/**: Generated package metadata for pip/uv installation
 
 ### Module Organization
+
 The metainformant package contains domain-driven modules:
+
 - Core: core/
 - Genomics: dna/, rna/, gwas/, epigenome/
 - Proteomics: protein/
@@ -42,6 +46,7 @@ The metainformant package contains domain-driven modules:
 ## Interface
 
 ### Package Installation
+
 ```bash
 # Editable install for development
 uv pip install -e .
@@ -51,6 +56,7 @@ uv pip install -e ".[dev,scientific,ml,networks]"
 ```
 
 ### Importing
+
 ```python
 # Import from metainformant package
 from metainformant.core import io, config, logging
@@ -62,6 +68,7 @@ python -m metainformant --help
 ```
 
 ### Development Conventions
+
 - All source code resides in src/metainformant/
 - Use absolute imports from metainformant.*
 - Each module has its own SPEC.md documenting internals

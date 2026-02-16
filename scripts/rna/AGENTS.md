@@ -1,9 +1,11 @@
 # Agent Directives: scripts/rna
 
 ## Role
+
 RNA-seq analysis and amalgkit workflow scripts.
 
 ## Key Scripts
+
 - `run_workflow.py` - Main amalgkit workflow runner
 - `run_workflow_tui.py` - TUI-based workflow runner
 - `check_environment.py` - Verify environment setup
@@ -22,6 +24,7 @@ RNA-seq analysis and amalgkit workflow scripts.
 - `run_rna_tests.sh` - RNA test runner
 
 ## Usage
+
 ```bash
 # Run workflow
 uv run python scripts/rna/run_workflow.py --config config/amalgkit/species.yaml
@@ -29,3 +32,18 @@ uv run python scripts/rna/run_workflow.py --config config/amalgkit/species.yaml
 # Check environment
 uv run python scripts/rna/check_environment.py
 ```
+
+## 📋 Code Quality Policy
+
+All scripts **MUST** be:
+
+1. **Functional** — Real implementations only. No stubs or placeholders.
+2. **Modular** — Use `argparse` for all CLI arguments. No hardcoded paths.
+3. **Tested** — Integration tests covering all scripts. No mocks.
+4. **Documented** — Docstrings, `--help` output, and README entries.
+
+## 🚫 NO_MOCKING_POLICY
+
+> **NEVER use `unittest.mock`, `pytest-mock`, `MagicMock`, or `patch` in tests.**
+
+Use real filesystem operations, real configs, and real function calls. See `tests/NO_MOCKING_POLICY.md`.
