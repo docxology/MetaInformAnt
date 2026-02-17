@@ -192,7 +192,7 @@ def normalize_data(data):
 
 ## Reference
 
-See main `.cursorrules` for:
+See Global Project Rules (root `.cursorrules`) for:
 - Common directory structure and path handling
 - Configuration patterns with env overrides
 - Testing policy (NO_MOCKING_POLICY)
@@ -201,7 +201,7 @@ See main `.cursorrules` for:
 
 ## Testing
 
-- **STRICTLY NO MOCKING**: Test real implementations only (see main `.cursorrules` NO_MOCKING_POLICY)
+- **STRICTLY NO MOCKING**: Test real implementations only (see Global Project Rules (root `.cursorrules`) NO_MOCKING_POLICY)
 - Skip tests if scanpy/anndata unavailable using `@pytest.mark.external_tool`
 - Test with real expression matrices from `data/`
 - Write test outputs to `output/singlecell/test/` using `tmp_path` fixture

@@ -156,7 +156,7 @@ model_dir = paths.expand_and_resolve("output/ml/models/")
 
 ## Reference
 
-See main `.cursorrules` for:
+See Global Project Rules (root `.cursorrules`) for:
 - Common directory structure and path handling
 - Configuration patterns with env overrides
 - Testing policy (NO_MOCKING_POLICY)
@@ -165,7 +165,7 @@ See main `.cursorrules` for:
 
 ## Testing
 
-- **STRICTLY NO MOCKING**: Test real implementations only (see main `.cursorrules` NO_MOCKING_POLICY)
+- **STRICTLY NO MOCKING**: Test real implementations only (see Global Project Rules (root `.cursorrules`) NO_MOCKING_POLICY)
 - Test with real biological datasets from `data/`
 - Write test outputs to `output/ml/test/` using `tmp_path` fixture
 - Test model serialization/deserialization

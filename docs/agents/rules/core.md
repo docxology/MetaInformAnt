@@ -1,14 +1,17 @@
 # Core Module Rules (`metainformant.core`)
 
 ## Purpose
+
 Shared utilities across all domains. Foundation for all other modules.
 
 ## Dependencies
+
 - **Required**: Standard library only
 - **Optional**: Handled defensively (try/except imports)
 
 ## Source Structure
-```
+
+```text
 src/metainformant/core/
 ├── data/
 │   ├── db.py, validation.py
@@ -28,6 +31,7 @@ src/metainformant/core/
 ```
 
 ## Package Management
+
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Use `uv venv` to create virtual environments
 - Use `uv pip install` for installing packages
@@ -40,12 +44,14 @@ src/metainformant/core/
 ## Key Submodules
 
 ### Configuration (`config`)
+
 - Configuration loading from YAML/TOML/JSON
 - Environment variable overrides
 - Type-safe config classes
 - Database configuration (PostgreSQL)
 
 **Patterns**:
+
 ```python
 from metainformant.core.config import load_mapping_from_file, apply_env_overrides
 
@@ -54,6 +60,7 @@ config = apply_env_overrides(raw, prefix="MODULE")
 ```
 
 ### I/O (`io`)
+
 - JSON/JSONL/CSV/TSV operations
 - Gzip-aware file operations
 - Atomic writes for data integrity
@@ -62,6 +69,7 @@ config = apply_env_overrides(raw, prefix="MODULE")
 **CRITICAL**: All modules MUST use `metainformant.core.io` for file I/O. Never use direct `import json` or `import csv` in domain modules.
 
 **Patterns**:
+
 ```python
 from metainformant.core import io
 
@@ -81,6 +89,7 @@ with io.open_text_auto("data/large_file.txt.gz") as f:
 ```
 
 **❌ PROHIBITED**:
+
 ```python
 import json  # ❌ WRONG - use metainformant.core.io instead
 import csv   # ❌ WRONG - use metainformant.core.io instead
@@ -90,11 +99,13 @@ json.dump(data, f)   # ❌ WRONG
 ```
 
 ### Paths (`paths`)
+
 - Path expansion and resolution
 - Containment checks (security)
 - Safe path validation
 
 **Patterns**:
+
 ```python
 from metainformant.core import paths
 from pathlib import Path
@@ -109,10 +120,12 @@ if paths.is_within(user_path, base_dir):
 ```
 
 ### Logging (`logging`)
+
 - Structured logging with consistent formatting
 - Module-specific loggers
 
 **Patterns**:
+
 ```python
 from metainformant.core.logging import get_logger
 
@@ -122,6 +135,7 @@ logger.error("Error occurred", exc_info=True)
 ```
 
 ### Cache (`cache`)
+
 - JSON-based caching with TTL
 - Cache under `output/` directory
 
@@ -132,51 +146,62 @@ logger.error("Error occurred", exc_info=True)
 - Logs: `output/core/logs/`
 
 ### Parallel (`parallel`)
+
 - Thread-based parallel processing
 - Preserves order of results
 
 ### Errors (`errors`)
+
 - Custom error types
 - Biological context in error messages
 
 ### Progress (`progress`)
+
 - Progress tracking utilities
 - Integration with long-running operations
 
 ### Validation (`validation`)
+
 - Data validation utilities
 - Type checking and format validation
 
 ### Workflow (`workflow`)
+
 - Workflow orchestration functions
 - Config-based workflow execution
 
 ### Database (`db`)
+
 - Optional database client helpers (PostgreSQL)
 - Database connection management
 - Query utilities
 
 ### Disk (`disk`)
+
 - Disk space and file system utilities
 - Disk usage monitoring
 - File system operations
 
 ### Hash (`hash`)
+
 - Content and file hashing functions
 - Checksum generation
 - File integrity verification
 
 ### Discovery (`discovery`)
+
 - Symbolic mapping and context discovery utilities
 - Code discovery and analysis
 - Symbol resolution
 
 ### Symbols (`symbols`)
+
 - Symbol indexing and cross-referencing utilities
 - Symbol management
 - Cross-module symbol resolution
 
 ### Text (`text`)
+
 - Text normalization and manipulation utilities
 - Text processing functions
 - String manipulation helpers
@@ -184,6 +209,7 @@ logger.error("Error occurred", exc_info=True)
 ## Patterns
 
 ### Defensive Imports
+
 ```python
 try:
     import optional_library
@@ -197,16 +223,19 @@ def function():
 ```
 
 ### Pure Functions
+
 - Prefer pure functions with minimal side effects
 - Functions should be testable in isolation
 - Side effects limited to I/O operations
 
 ### Error Handling
+
 - Use `metainformant.core.errors` types
 - Provide clear, actionable error messages
 - Include biological context when relevant
 
 ### Type Hints
+
 - Comprehensive type hints throughout
 - Use `from __future__ import annotations` for forward references
 - Union types: `str | Path | None`
@@ -214,7 +243,7 @@ def function():
 ## Testing
 
 - Core utilities must have comprehensive tests
-- **STRICTLY NO MOCKING**: Test real implementations only (see main `.cursorrules` NO_MOCKING_POLICY)
+- **STRICTLY NO MOCKING**: Test real implementations only (see Global Project Rules (root `.cursorrules`) NO_MOCKING_POLICY)
 - Use `tmp_path` fixture for test outputs
 - Write test artifacts to `output/` only
 - No `unittest.mock`, `@patch`, `MagicMock`, or function replacement
@@ -225,11 +254,12 @@ def function():
 - Each submodule should have clear docstrings
 - Examples in docstrings should use `output/` paths
 - Document optional dependencies and their availability
-- Reference module-specific cursorrules for domain patterns
+- Reference module-specific rule files for domain patterns
 
 ## Integration with Other Modules
 
 All other modules depend on `core` utilities:
+
 - Import core utilities: `from metainformant.core import io, paths, logging, config`
 - Use core utilities for all I/O, logging, and path operations
 - Do not reimplement core functionality in domain modules
@@ -238,10 +268,10 @@ All other modules depend on `core` utilities:
 
 ## Reference
 
-See main `.cursorrules` for:
+See Global Project Rules (root `.cursorrules`) for:
+
 - Common directory structure and path handling
 - Configuration patterns with env overrides
 - Testing policy (NO_MOCKING_POLICY)
 - Import patterns and code style
 - Documentation guidelines
-

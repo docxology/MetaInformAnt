@@ -397,7 +397,7 @@ python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrm
 
 ## Testing
 
-- **STRICTLY NO MOCKING**: Test real implementations only (see main `.cursorrules` NO_MOCKING_POLICY)
+- **STRICTLY NO MOCKING**: Test real implementations only (see Global Project Rules (root `.cursorrules`) NO_MOCKING_POLICY)
 - Skip tests if `amalgkit` not available using `@pytest.mark.external_tool`
 - Use real config files from `config/amalgkit/`
 - Write test outputs to `output/amalgkit/test/` using `tmp_path` fixture
@@ -424,7 +424,7 @@ def test_amalgkit_integration(tmp_path: Path):
 
 ## Reference
 
-See main `.cursorrules` for:
+See Global Project Rules (root `.cursorrules`) for:
 - Common directory structure and path handling
 - Configuration patterns with env overrides
 - Testing policy (NO_MOCKING_POLICY)
