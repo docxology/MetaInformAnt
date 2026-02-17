@@ -59,12 +59,9 @@ build/
 *.sam
 
 # Other large output files
-*.h5
 *.hdf5
 *.npz
 *.npy
-*.csv
-*.tsv
 *.xlsx
 *.xls
 
@@ -114,7 +111,6 @@ coverage.xml
 
 # blue/ is a symlink to /Volumes/blue/data — git won't follow symlinks.
 # Use scripts/rna/sync_quant_results.py to sync results to output/amalgkit_results/
-blue/
 
 # Allow synced amalgkit results (quant, curate, sanity, metadata)
 !output/amalgkit_results/

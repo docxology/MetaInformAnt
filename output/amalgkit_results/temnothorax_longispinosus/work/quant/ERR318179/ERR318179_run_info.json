@@ -1,0 +1,14 @@
+{
+	"n_targets": 33866,
+	"n_bootstraps": 0,
+	"n_processed": 4000000,
+	"n_pseudoaligned": 3348433,
+	"n_unique": 1593189,
+	"p_pseudoaligned": 83.7,
+	"p_unique": 39.8,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Tue Feb 17 03:28:41 2026",
+	"call": "kallisto quant --threads 1 -i blue/amalgkit/temnothorax_longispinosus/work/index/Temnothorax_longispinosus_transcripts.idx -o blue/amalgkit/temnothorax_longispinosus/work/quant/ERR318179 blue/amalgkit/temnothorax_longispinosus/work/getfastq/ERR318179/ERR318179_1.fastq.gz blue/amalgkit/temnothorax_longispinosus/work/getfastq/ERR318179/ERR318179_2.fastq.gz"
+}

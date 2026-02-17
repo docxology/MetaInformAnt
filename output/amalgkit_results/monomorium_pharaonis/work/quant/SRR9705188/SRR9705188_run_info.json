@@ -1,0 +1,14 @@
+{
+	"n_targets": 33795,
+	"n_bootstraps": 0,
+	"n_processed": 19900075,
+	"n_pseudoaligned": 11959358,
+	"n_unique": 8813659,
+	"p_pseudoaligned": 60.1,
+	"p_unique": 44.3,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Mon Feb 16 17:55:11 2026",
+	"call": "kallisto quant --threads 1 --index blue/amalgkit/monomorium_pharaonis/work/index/Monomorium_pharaonis_transcripts.idx -o blue/amalgkit/monomorium_pharaonis/work/quant/SRR9705188 --single -l 200 -s 20.0 blue/amalgkit/monomorium_pharaonis/work/getfastq/SRR9705188/SRR9705188.fastq.gz"
+}
