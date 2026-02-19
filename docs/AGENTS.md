@@ -1,10 +1,13 @@
 # Agent Directives: docs
 
 ## Role
+
 Documentation agent context for METAINFORMANT's technical documentation.
 
 ## Directory Structure
+
 Documentation is organized by module domain:
+
 - `core/` - Core infrastructure (I/O, config, paths, logging, parallel, caching)
 - `dna/` - DNA sequence analysis (alignment, phylogeny, population genetics)
 - `rna/` - RNA-seq and amalgkit workflow documentation
@@ -29,9 +32,11 @@ Documentation is organized by module domain:
 - `longread/` - Long-read sequencing (PacBio/Nanopore, modified bases, assembly)
 - `spatial/` - Spatial transcriptomics (Visium, MERFISH, Xenium)
 - `pharmacogenomics/` - Clinical variants (CPIC, PharmGKB, ACMG, star alleles)
+- `metabolomics/` - Metabolomics (mass spectrometry, pathway mapping, metabolite-gene integration)
 - `menu/` - Interactive menu and discovery system
 
 ## Key Root Files
+
 - `architecture.md` - System architecture overview
 - `cli.md` - Command-line interface documentation
 - `testing.md` - Testing guidelines and patterns
@@ -46,21 +51,25 @@ Documentation is organized by module domain:
 ## Rules and Constraints
 
 ### Documentation Standards
+
 - Use Markdown format for all documentation
 - Include code examples that are REAL and RUNNABLE
 - Keep documentation synchronized with code
 - Cross-reference related documentation
 
 ### File Organization
+
 - `index.md` - Entry point for each domain subdirectory
 - `workflow.md` - Workflow documentation when applicable
 - Module-specific `.md` files for detailed API documentation
 
 ### Update Policy
+
 - NEVER create new root-level documentation files
 - Update existing docs or add to appropriate `docs/{domain}/` subdirectory
 - Keep documentation DRY (Don't Repeat Yourself)
 
 ## Sphinx Integration
+
 - `conf.py` - Sphinx configuration for documentation generation
 - Run `bash scripts/package/uv_docs.sh` to build documentation

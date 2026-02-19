@@ -8,8 +8,8 @@ Core utilities for METAINFORMANT bioinformatics toolkit.
 - **Component Type**: Source Code
 
 ## 💾 Data Structures
-- **Modules**: 1 Python modules
-- **Key Concepts**: Refer to Pydantic models in source.
+- **Sub-packages**: data, engine, execution, io, ui, utils
+- **Key Concepts**: I/O, logging, config, execution engine, UI
 
 ## 🔌 API Definition
 ### Exports

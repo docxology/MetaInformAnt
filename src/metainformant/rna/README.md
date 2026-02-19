@@ -26,13 +26,15 @@ graph TD
 
 ## 📦 Submodules
 
-| Module | Purpose |
-|--------|---------|
-| [`engine/`](engine/) | Workflow execution, monitoring, orchestration |
-| [`amalgkit/`](amalgkit/) | Amalgkit tool wrapper and API |
-| [`core/`](core/) | Configuration, models, utilities |
-| [`retrieval/`](retrieval/) | SRA/ENA data retrieval |
-| [`analysis/`](analysis/) | Expression matrix analysis |
+| Module                               | Purpose                                       |
+|--------------------------------------|-----------------------------------------------|
+| [`engine/`](engine/)                 | Workflow execution, monitoring, orchestration |
+| [`amalgkit/`](amalgkit/)             | Amalgkit tool wrapper and API                 |
+| [`core/`](core/)                     | Configuration, models, utilities              |
+| [`retrieval/`](retrieval/)           | SRA/ENA data retrieval                        |
+| [`analysis/`](analysis/)             | Expression matrix analysis                    |
+| [`deconvolution/`](deconvolution/)   | Cell-type deconvolution from bulk RNA-seq     |
+| [`splicing/`](splicing/)             | Alternative splicing analysis                 |
 
 ## 🔑 Key Classes
 
@@ -62,14 +64,40 @@ result = execute_workflow(config, steps=["getfastq", "quant", "merge"])
 
 ## 📊 Workflow Steps
 
-| Step | Description |
-|------|-------------|
-| `metadata` | Fetch sample metadata from NCBI |
-| `select` | Filter to valid RNA-seq samples |
-| `getfastq` | Download SRA → extract FASTQ |
-| `quant` | Quantify with kallisto |
-| `merge` | Combine abundance files |
-| `curate` | Quality control and filtering |
+| Step       | Description                         |
+|------------|-------------------------------------|
+| `metadata` | Fetch sample metadata from NCBI     |
+| `select`   | Filter to valid RNA-seq samples     |
+| `getfastq` | Download SRA → extract FASTQ        |
+| `quant`    | Quantify with kallisto              |
+| `merge`    | Combine abundance files             |
+| `curate`   | Quality control and filtering       |
+
+## 🌐 High-Throughput ENA Pipeline
+
+For large-scale species (e.g., *Apis mellifera*), we use a specialized ENA-first strategy:
+
+- **Script**: `scripts/rna/process_apis_mellifera_ena.py`
+- **Method**: Direct FTP/HTTP downloads of `.fastq.gz` from European Nucleotide Archive (ENA).
+- **Benefit**: Bypasses the slow `prefetch` + `fasterq-dump` extraction bottleneck.
+- **Performance**: Capable of 20+ concurrent workers; ~10x speedup over SRA Toolkit.
+
+## 🧬 Index Complexity Management
+
+For genomes with high repetitive content (e.g., *Harpegnathos saltator*), standard `kallisto index` may stall.
+
+**Symptoms**:
+
+- `kallisto quant` processes hang indefinitely with 100% CPU.
+- `Max EC size` > 3000 in index stats.
+
+**Solution (`scripts/rna/fix_harpegnathos_index.py`)**:
+
+1. Filter input FASTA to remove `XR_` and `NR_` (non-coding RNA) transcripts.
+2. Remove transcripts < 200bp.
+3. Rebuild index.
+
+*This strategy solved the Harpegnathos stall (Max EC: ~3015) by reducing index size and complexity.*
 
 ## 🧬 GWAS Integration
 
@@ -77,7 +105,7 @@ RNA expression data can be integrated with GWAS variants for eQTL analysis:
 
 ```python
 from metainformant.multiomics.analysis import integration
-from metainformant.gwas.finemapping import eqtl_coloc
+from metainformant.gwas.finemapping.colocalization import eqtl_coloc
 
 # Prepare expression data for integration
 rna_data = integration.from_rna_expression(

@@ -1,0 +1,34 @@
+# Cursor Rules for rna Module (AK_)
+
+## 🧠 Context & Intent
+- **Domain**: rna
+- **Path**: `src/metainformant/rna/`
+- **Config Prefix**: `AK_` (e.g., `AK_THREADS`)
+
+## 🧱 Directory Structure
+- **Source**: `src/metainformant/rna/`
+- **Tests**: `tests/test_rna_*.py`
+- **Docs**: `docs/rna/`
+- **Output**: `output/rna/` (Default for all artifacts)
+
+## ⚙️ Configuration
+- Use `metainformant.core.config` to load config.
+- Support env checks with `AK_` prefix.
+- Example:
+  ```python
+  config = load_domain_config("config/rna/default.yaml", prefix="AK")
+  ```
+
+## 🧪 Testing (ZERO MOCK POLICY)
+- **STRICTLY NO MOCKS**: Use real implementations only.
+- **External Tools**: Skip if not found (don't mock).
+- **Network**: Use real API calls with `@pytest.mark.network`.
+- **Output**: Write all test artifacts to `output/` via `tmp_path`.
+
+## 📦 Dependencies
+- Manage via `uv`: `uv add`, `uv remove`.
+- Import pattern:
+  ```python
+  from metainformant.core import io, logging
+  from metainformant.rna import utils
+  ```

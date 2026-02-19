@@ -31,7 +31,8 @@ ollama pull smollm2:135m-instruct-q4_K_S
 ### Basic Generation
 
 ```python
-from metainformant.ml.llm.ollama import OllamaClient, OllamaConfig
+from metainformant.ml.llm.ollama.client import OllamaClient
+from metainformant.ml.llm.ollama.config import OllamaConfig
 
 # Default config uses smollm2 for fast responses
 client = OllamaClient()
@@ -57,7 +58,7 @@ client = OllamaClient(config)
 ### Chat Conversations
 
 ```python
-from metainformant.ml.llm.ollama import ChatMessage
+from metainformant.ml.llm.ollama.prompts import ChatMessage
 
 messages = [
     ChatMessage("system", "You are a molecular biology expert."),
@@ -90,7 +91,7 @@ print()  # Newline after streaming
 ### Prompt Templates
 
 ```python
-from metainformant.ml.llm.ollama import PromptTemplate
+from metainformant.ml.llm.ollama.prompts import PromptTemplate
 
 template = PromptTemplate(
     "Analyze the {organism} gene {gene_name}. "
@@ -105,11 +106,8 @@ response = client.generate(prompt)
 ### Chain Workflows
 
 ```python
-from metainformant.ml.llm.ollama import (
-    SequentialChain,
-    PromptChain,
-    PromptTemplate,
-)
+from metainformant.ml.llm.ollama.chains import SequentialChain, PromptChain
+from metainformant.ml.llm.ollama.prompts import PromptTemplate
 
 # Multi-step analysis pipeline
 extract = PromptChain(PromptTemplate("Extract key points from: {item}"))

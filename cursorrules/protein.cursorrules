@@ -1,0 +1,34 @@
+# Cursor Rules for protein Module (PROT_)
+
+## 🧠 Context & Intent
+- **Domain**: protein
+- **Path**: `src/metainformant/protein/`
+- **Config Prefix**: `PROT_` (e.g., `PROT_THREADS`)
+
+## 🧱 Directory Structure
+- **Source**: `src/metainformant/protein/`
+- **Tests**: `tests/test_protein_*.py`
+- **Docs**: `docs/protein/`
+- **Output**: `output/protein/` (Default for all artifacts)
+
+## ⚙️ Configuration
+- Use `metainformant.core.config` to load config.
+- Support env checks with `PROT_` prefix.
+- Example:
+  ```python
+  config = load_domain_config("config/protein/default.yaml", prefix="PROT")
+  ```
+
+## 🧪 Testing (ZERO MOCK POLICY)
+- **STRICTLY NO MOCKS**: Use real implementations only.
+- **External Tools**: Skip if not found (don't mock).
+- **Network**: Use real API calls with `@pytest.mark.network`.
+- **Output**: Write all test artifacts to `output/` via `tmp_path`.
+
+## 📦 Dependencies
+- Manage via `uv`: `uv add`, `uv remove`.
+- Import pattern:
+  ```python
+  from metainformant.core import io, logging
+  from metainformant.protein import utils
+  ```

@@ -248,7 +248,7 @@ def run_workflow(self, check: bool = False) -> Dict[str, Any]:
 ### Logging Integration
 
 ```python
-from metainformant.core.logging import get_logger
+from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 

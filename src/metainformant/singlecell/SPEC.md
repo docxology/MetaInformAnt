@@ -8,8 +8,8 @@ Single-cell analysis module for METAINFORMANT.
 - **Component Type**: Source Code
 
 ## 💾 Data Structures
-- **Modules**: 1 Python modules
-- **Key Concepts**: Refer to Pydantic models in source.
+- **Sub-packages**: analysis, celltyping, data, differential, doublet, velocity, visualization
+- **Key Concepts**: scRNA-seq analysis, clustering, celltyping, doublet detection, RNA velocity
 
 ## 🔌 API Definition
 ### Exports

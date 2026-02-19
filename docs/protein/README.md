@@ -14,8 +14,23 @@ Protein sequence and structure analysis module for METAINFORMANT.
 
 ```mermaid
 graph TD
-    protein[protein]
-    style protein fill:#f9f,stroke:#333,stroke-width:2px
+    subgraph "Protein Module"
+        DB[database/] --> |uniprot.py| UP[UniProt Record Fetching]
+        DB --> |interpro.py| IP[InterPro Domain Lookup]
+
+        ST[structure/] --> |analysis.py| AN[Contact Maps, Domain ID]
+        ST --> |alphafold.py| AF[AlphaFold Model Retrieval]
+        ST --> |pdb.py| PD[PDB Parsing]
+        ST --> |contacts.py| CO[Residue Contacts]
+        ST --> |secondary.py| SS[Secondary Structure]
+
+        SQ[sequence/] --> |sequences.py| FA[FASTA Read/Write]
+        SQ --> |alignment.py| AL[Sequence Alignment]
+        SQ --> |proteomes.py| PR[Proteome Downloads]
+
+        FN[function/] --> |prediction.py| FP[Function Prediction]
+        DO[domains/] --> |detection.py| DD[Domain Detection]
+    end
 ```
 
 ## Usage

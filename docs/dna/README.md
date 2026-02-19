@@ -19,8 +19,26 @@ DNA sequence analysis and genomics module for METAINFORMANT.
 
 ```mermaid
 graph TD
-    dna[dna]
-    style dna fill:#f9f,stroke:#333,stroke-width:2px
+    subgraph "DNA Module"
+        SE[sequence/] --> |core.py| RW[FASTA Read/Write]
+        SE --> |composition.py| GC[GC Content, Tm, Skew]
+        SE --> |kmer.py| KM[K-mer Counting]
+        SE --> |motifs.py| MO[Motif Search]
+
+        AL[alignment/] --> |distances.py| DI[Jukes-Cantor, Kimura]
+        AL --> |msa.py| MS[Multiple Sequence Alignment]
+        AL --> |pairwise.py| PW[Pairwise Alignment]
+
+        PH[phylogeny/] --> |tree.py| TR[NJ, UPGMA, Bootstrap]
+
+        PO[population/] --> |analysis.py| FS[Fst, Selection Tests]
+        PO --> |core.py| PG[Allele Frequencies]
+
+        VA[variation/] --> |variants.py| VC[VCF Parsing]
+        VA --> |mutations.py| MU[Mutation Models]
+
+        EX[external/] --> |ncbi.py| NC[NCBI/Entrez APIs]
+    end
 ```
 
 ## Usage

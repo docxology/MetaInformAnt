@@ -15,8 +15,25 @@ Life events and trajectory analysis module for METAINFORMANT.
 
 ```mermaid
 graph TD
-    life_events[life_events]
-    style life_events fill:#f9f,stroke:#333,stroke-width:2px
+    subgraph "Life Events Module"
+        CE[core/events.py] --> |Event, EventSequence| DS[Data Structures]
+        CE --> |EventDatabase| DB[Event Storage]
+        CC[core/config.py] --> CF[Configuration]
+
+        ME[models/embeddings.py] --> |learn_event_embeddings| EM[Word2Vec-style Embeddings]
+        ME --> |biological_embedding| BE[Domain Embeddings]
+
+        AI[analysis/interpretability.py] --> |attention_weights| AW[Model Interpretation]
+
+        SV[survival/time_to_event.py] --> |kaplan_meier_estimator| KM[Kaplan-Meier]
+        SV --> |cox_ph_model| COX[Cox PH]
+        SV --> |competing_risks| CR[Competing Risks]
+
+        WF[workflow/workflow.py] --> |analyze_life_course| LC[Life Course Analysis]
+        WF --> |compare_populations| CP[Population Comparison]
+
+        VZ[visualization/] --> VP[Event Plots]
+    end
 ```
 
 ## Usage

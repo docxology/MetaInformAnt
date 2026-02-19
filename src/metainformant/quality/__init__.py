@@ -6,6 +6,6 @@ contamination detection, sequencing metrics, and FastQ file handling.
 
 from __future__ import annotations
 
-from . import analysis, io, reporting
+from . import analysis, batch, io, reporting
 
-__all__ = ["analysis", "io", "reporting"]
+__all__ = ["analysis", "batch", "io", "reporting"]

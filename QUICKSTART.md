@@ -66,6 +66,7 @@ bash scripts/package/setup.sh
 ```
 
 **Manual Setup** (if needed):
+
 ```bash
 # Navigate to repository
 cd /path/to/metainformant
@@ -267,24 +268,32 @@ MetaInformAnt follows a clean directory policy:
 Some workflows require external tools:
 
 ### RNA Analysis
+
 - **amalgkit**: RNA-seq workflow orchestration
+
   ```bash
   # Install via UV (automatic with setup.sh --with-amalgkit)
   uv pip install amalgkit
   ```
 
 ### GWAS Analysis
+
 - **SRA Toolkit**: For downloading sequencing data
+
   ```bash
   sudo apt-get install sra-toolkit
   ```
+
 - **BWA, samtools, bcftools**: For alignment and variant calling
+
   ```bash
   sudo apt-get install bwa samtools bcftools
   ```
 
 ### Sequence Alignment
+
 - **MUSCLE or ClustalO**: For multiple sequence alignment
+
   ```bash
   sudo apt-get install muscle clustalo
   ```
@@ -304,11 +313,13 @@ echo 'export NCBI_EMAIL="your.email@example.com"' >> ~/.bashrc
 ## Next Steps
 
 ### Documentation
+
 - **[Documentation Guide](docs/DOCUMENTATION_GUIDE.md)** - Complete navigation guide
 - **[Architecture Overview](docs/architecture.md)** - System design
 - **[Testing Guide](docs/testing.md)** - Running tests
 
 ### Module-Specific Guides
+
 - **[Core Utilities](docs/core/README.md)** - Shared infrastructure and utilities
 - **[DNA Analysis](docs/dna/index.md)** - Sequence analysis workflows
 - **[RNA-seq](docs/rna/index.md)** - Transcriptomics pipelines
@@ -328,8 +339,16 @@ echo 'export NCBI_EMAIL="your.email@example.com"' >> ~/.bashrc
 - **[Network Analysis](docs/networks/index.md)** - Biological network analysis
 - **[Machine Learning](docs/ml/index.md)** - ML methods
 - **[Multi-Omics](docs/multiomics/index.md)** - Multi-omic data integration
+- **[Long-Read](docs/longread/index.md)** - PacBio/Nanopore long-read analysis
+- **[Metagenomics](docs/metagenomics/index.md)** - Metagenomic and microbiome analysis
+- **[Structural Variants](docs/structural_variants/index.md)** - SV/CNV detection
+- **[Spatial](docs/spatial/index.md)** - Spatial transcriptomics
+- **[Pharmacogenomics](docs/pharmacogenomics/index.md)** - Drug-gene interactions
+- **[Metabolomics](docs/metabolomics/index.md)** - MS data processing, pathway mapping
+- **[Menu](docs/menu/index.md)** - Interactive CLI navigation
 
 ### Workflow Scripts
+
 - **[Scripts README](scripts/README.md)** - All available scripts
 - **[RNA Workflows](scripts/rna/README.md)** - RNA-seq pipelines
 - **[GWAS Workflows](scripts/gwas/)** - Genome-wide studies
@@ -353,23 +372,27 @@ bash scripts/package/uv_docs.sh
 ## Troubleshooting
 
 ### Virtual Environment Not Activated
+
 ```bash
 source .venv/bin/activate
 ```
 
 ### Missing Dependencies
+
 ```bash
 # Reinstall all dependencies with uv
 uv pip install -e . --python .venv/bin/python3
 ```
 
 ### Import Errors
+
 ```bash
 # Ensure package is installed in development mode with uv
 uv pip install -e . --python .venv/bin/python3
 ```
 
 ### Permission Errors
+
 ```bash
 # Make scripts executable
 chmod +x scripts/**/*.sh
@@ -379,7 +402,7 @@ chmod +x scripts/**/*.sh
 
 - **Documentation**: See [docs/](docs/) directory for comprehensive guides
 - **Examples**: Check [scripts/](scripts/) for working examples
-- **Issues**: Report issues at https://github.com/docxology/metainformant/issues
+- **Issues**: Report issues at <https://github.com/docxology/metainformant/issues>
 
 ---
 

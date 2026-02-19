@@ -13,7 +13,8 @@ from typing import Any
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import logging, paths, validation
+from metainformant.core import paths, validation
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 

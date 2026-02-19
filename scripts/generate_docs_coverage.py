@@ -100,7 +100,7 @@ Specialized agent context for the `{name}` component.
 ## ⚠️ Rules & Constraints
 - **Imports**: Prefer absolute imports from `metainformant`.
 - **I/O**: Use `metainformant.core.io` for all file operations.
-- **Logging**: Use `metainformant.core.logging`.
+- **Logging**: Use `metainformant.core.utils.logging`.
 """,
     "README.md": """# {name_capitalized}
 

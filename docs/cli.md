@@ -2,7 +2,7 @@
 
 > **Note:** Most module functionality is accessed via Python imports, not the CLI.
 > Currently implemented CLI commands: `--version`, `--modules`, `--help`, `protein` subcommands, `rna` subcommands, and `gwas` subcommands.
-> Commands listed below for other modules (ontology, phenotype, networks, multiomics, singlecell, quality, simulation, visualization, epigenome, ecology, ml, information, life-events) represent **planned CLI features** not yet implemented.
+> Commands listed below for other modules (ontology, phenotype, networks, multiomics, singlecell, quality, simulation, visualization, epigenome, ecology, ml, information, life-events, longread, metagenomics, structural-variants, spatial, pharmacogenomics, metabolomics, menu) represent **planned CLI features** not yet implemented.
 
 Entry: `uv run python -m metainformant` or `uv run metainformant`.
 
@@ -37,6 +37,13 @@ uv run metainformant information profile --sequences data/sequences.fasta --k 2 
 uv run metainformant life-events embed --input data/event_sequences.json --output output/life_events/embeddings --embedding-dim 100
 uv run metainformant life-events predict --events data/event_sequences.json --model output/life_events/model.pkl --output output/life_events/predictions
 uv run metainformant life-events interpret --model output/life_events/model.pkl --sequences data/event_sequences.json --output output/life_events/interpretation
+uv run metainformant longread run --input data/reads.fastq --output output/longread --assembler flye
+uv run metainformant metagenomics run --input data/metagenome.fastq --output output/metagenomics --profile
+uv run metainformant structural-variants run --bam data/aligned.bam --output output/structural_variants --detect-sv
+uv run metainformant spatial run --input data/spatial_counts.h5ad --output output/spatial --tissue-map
+uv run metainformant pharmacogenomics run --vcf data/variants.vcf --output output/pharmacogenomics --drug-interactions
+uv run metainformant metabolomics run --input data/mzml/sample.mzML --output output/metabolomics --identify
+uv run metainformant menu
 uv run metainformant tests -q
 ```
 
@@ -82,6 +89,19 @@ Subcommands
 - **life-events embed**: learns event embeddings from life course event sequences (see [Life Events](./life_events/index.md))
 - **life-events predict**: predicts life outcomes from event sequences using pre-trained models
 - **life-events interpret**: interprets model predictions and provides feature importance analysis
+- **longread run**: long-read sequencing analysis workflow (assembly, error correction, quality metrics)
+  - Options: `--input` (required, FASTQ/FASTA), `--output` (default: output/longread), `--assembler` (flye/canu), `--error-correct`
+- **metagenomics run**: metagenomic analysis workflow (taxonomic profiling, functional annotation, community analysis)
+  - Options: `--input` (required, FASTQ), `--output` (default: output/metagenomics), `--profile`, `--functional`, `--diversity`
+- **structural-variants run**: structural variant detection workflow (SV/CNV calling, breakpoint resolution)
+  - Options: `--bam` (required, aligned BAM), `--output` (default: output/structural_variants), `--detect-sv`, `--detect-cnv`
+- **spatial run**: spatial transcriptomics workflow (tissue mapping, spatial statistics, neighborhood analysis)
+  - Options: `--input` (required, count matrix), `--output` (default: output/spatial), `--tissue-map`, `--spatial-stats`
+- **pharmacogenomics run**: pharmacogenomics workflow (drug-gene interactions, variant interpretation)
+  - Options: `--vcf` (required, variant file), `--output` (default: output/pharmacogenomics), `--drug-interactions`, `--star-alleles`
+- **metabolomics run**: metabolomics analysis workflow (MS data processing, metabolite identification, pathway mapping)
+  - Options: `--input` (required, mzML/mzXML), `--output` (default: output/metabolomics), `--identify`, `--pathway-map`
+- **menu**: launches interactive CLI menu for workflow discovery and navigation
 - **tests**: runs the repo tests (see [Testing](./testing.md))
 
 ```mermaid

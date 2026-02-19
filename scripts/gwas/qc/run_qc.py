@@ -16,7 +16,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 from metainformant.gwas import apply_qc_filters
 
 # logging.setup_logging()

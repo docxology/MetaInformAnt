@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
 from metainformant.core.utils.logging import get_logger
+from metainformant.core.utils.watchdog import ProcessWatchdog
 from metainformant.rna.retrieval.ena_downloader import ENADownloader
 
 logger = get_logger(__name__)
@@ -39,6 +40,8 @@ class StreamingPipeline:
         workers: int = 4,
         threads_per_sample: int = 2,
         dry_run: bool = False,
+        use_watchdog: bool = False,
+        watchdog_timeout: int = 3600,
     ):
         """
         Initialize the pipeline.
@@ -51,6 +54,8 @@ class StreamingPipeline:
             workers: Number of parallel downloads/quantifications.
             threads_per_sample: CPU threads for Kallisto per sample.
             dry_run: If True, simulate actions without executing.
+            use_watchdog: ProcessWatchdog to kill stalled processes (0 CPU).
+            watchdog_timeout: Seconds of inactivity before kill.
         """
         self.species = species
         self.index_file = Path(index_file)
@@ -59,6 +64,8 @@ class StreamingPipeline:
         self.workers = workers
         self.threads = threads_per_sample
         self.dry_run = dry_run
+        self.use_watchdog = use_watchdog
+        self.watchdog_timeout = watchdog_timeout
         
         # Computed paths
         self.quant_dir = self.work_dir / "quant"
@@ -105,13 +112,52 @@ class StreamingPipeline:
              # Estimated fragment length for single-end
              cmd.extend(["--single", "-l", "200", "-s", "30", str(fastq_files[0])])
 
+        proc = None
+        watchdog = None
+        
         try:
-            res = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
-            if res.returncode != 0:
-                return False, f"Kallisto failed: {res.stderr[:200]}"
+            # Start process using Popen interaction to allow monitoring
+            proc = subprocess.Popen(
+                cmd, 
+                stdout=subprocess.PIPE, 
+                stderr=subprocess.PIPE, 
+                text=True
+            )
+            
+            # Start Watchdog if enabled
+            if self.use_watchdog:
+                watchdog = ProcessWatchdog(
+                    pid=proc.pid, 
+                    cpu_threshold=1.0, 
+                    timeout_seconds=self.watchdog_timeout,
+                    on_stall=ProcessWatchdog.kill_process_tree
+                )
+                watchdog.start()
+            
+            # Wait for completion (simulates subprocess.run)
+            stdout, stderr = proc.communicate(timeout=7200) # Hard timeout 2h just in case
+            
+            if proc.returncode != 0:
+                # Check if it was killed by watchdog/signal?
+                if proc.returncode == -9 or proc.returncode == -15:
+                    return False, "Killed (likely by Watchdog)"
+                return False, f"Kallisto failed: {stderr[:200] if stderr else 'No stderr'}"
+            
             return True, "Quantified"
+
+        except subprocess.TimeoutExpired:
+            if proc:
+                ProcessWatchdog.kill_process_tree(proc.pid)
+            return False, "Hard Timeout (2h)"
+        
         except Exception as e:
+            if proc:
+                ProcessWatchdog.kill_process_tree(proc.pid)
             return False, str(e)
+            
+        finally:
+            if watchdog:
+                watchdog.stop()
 
     def process_one(self, sample_id: str) -> Dict:
         """
@@ -174,16 +220,13 @@ class StreamingPipeline:
         """Run the pipeline for a list of samples."""
         total = len(sample_ids)
         logger.info(f"Starting pipeline for {total} samples with {self.workers} workers.")
+        logger.info(f"Watchdog: {'Enabled' if self.use_watchdog else 'Disabled'} (Timeout: {self.watchdog_timeout}s)")
         
         if self.dry_run:
             logger.info("[DRY RUN] Simulating processing for first 5 samples only.")
             sample_ids = sample_ids[:5]
 
         # Use ProcessPoolExecutor for true parallelism
-        # Note: self.process_one must be picklable. 
-        # Since it's an instance method, pickle sends 'self'. 
-        # This is fine as long as 'self' state is picklable (paths, ints, bools are fine).
-        
         with ProcessPoolExecutor(max_workers=self.workers) as executor:
             future_to_sample = {
                 executor.submit(self.process_one, sid): sid 

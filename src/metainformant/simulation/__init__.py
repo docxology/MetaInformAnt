@@ -7,6 +7,6 @@ and sequence generation.
 
 from __future__ import annotations
 
-from . import benchmark, models, visualization, workflow
+from . import benchmark, methylation, models, visualization, workflow
 
-__all__ = ["benchmark", "models", "visualization", "workflow"]
+__all__ = ["benchmark", "methylation", "models", "visualization", "workflow"]

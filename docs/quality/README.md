@@ -12,8 +12,19 @@ Quality control analysis module for METAINFORMANT.
 
 ```mermaid
 graph TD
-    quality[quality]
-    style quality fill:#f9f,stroke:#333,stroke-width:2px
+    subgraph "Quality Module"
+        IO[io/] --> |fastq.py| FQ[FASTQ Parsing & Filtering]
+
+        A[analysis/] --> |metrics.py| QM[Quality Scoring & Metrics]
+        A --> |contamination.py| CD[Contamination Detection]
+
+        R[reporting/] --> |multiqc_integration.py| MQ[MultiQC Integration]
+    end
+
+    FQ --> QM
+    FQ --> CD
+    QM --> MQ
+    CD --> MQ
 ```
 
 ## Usage

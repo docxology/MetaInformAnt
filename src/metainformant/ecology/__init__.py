@@ -7,6 +7,6 @@ ecology, macroecology, and ecological visualization.
 
 from __future__ import annotations
 
-from . import analysis, phylogenetic, visualization
+from . import analysis, phylogenetic, traits, visualization
 
-__all__ = ["analysis", "phylogenetic", "visualization"]
+__all__ = ["analysis", "phylogenetic", "traits", "visualization"]

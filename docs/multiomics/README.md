@@ -33,7 +33,7 @@ graph TD
 Combine genetic variants with gene expression to identify regulatory mechanisms:
 
 ```python
-from metainformant.gwas.finemapping import eqtl_coloc
+from metainformant.gwas.finemapping.colocalization import eqtl_coloc
 from metainformant.multiomics.analysis import integration
 
 # Prepare expression data for integration

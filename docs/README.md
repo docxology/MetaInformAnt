@@ -41,6 +41,7 @@ METAINFORMANT documentation organized by biological domain.
 | Pharmacogenomics | [pharmacogenomics/](pharmacogenomics/) | Drug-gene interactions |
 | Spatial | [spatial/](spatial/) | Spatial transcriptomics |
 | Structural Variants | [structural_variants/](structural_variants/) | SV detection |
+| Metabolomics | [metabolomics/](metabolomics/) | Mass spectrometry, pathways |
 | Menu | [menu/](menu/) | Interactive CLI system |
 
 ## Key Guides

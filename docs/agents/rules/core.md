@@ -127,7 +127,7 @@ if paths.is_within(user_path, base_dir):
 **Patterns**:
 
 ```python
-from metainformant.core.logging import get_logger
+from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 logger.info("Operation started")
@@ -260,7 +260,7 @@ def function():
 
 All other modules depend on `core` utilities:
 
-- Import core utilities: `from metainformant.core import io, paths, logging, config`
+- Import core utilities: `from metainformant.core import io, paths, config` and `from metainformant.core.utils import logging`
 - Use core utilities for all I/O, logging, and path operations
 - Do not reimplement core functionality in domain modules
 - **NEVER** use direct `json` or `csv` imports - always use `metainformant.core.io`

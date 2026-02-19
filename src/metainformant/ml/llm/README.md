@@ -20,7 +20,8 @@ This module provides composable interfaces to local LLM backends, with Ollama as
 ## Quick Start
 
 ```python
-from metainformant.ml.llm import OllamaClient, OllamaConfig
+from metainformant.ml.llm.ollama.client import OllamaClient
+from metainformant.ml.llm.ollama.config import OllamaConfig
 
 # Initialize with default config (uses smollm2 for fast responses)
 client = OllamaClient()
@@ -30,7 +31,7 @@ response = client.generate("Explain the central dogma of molecular biology.")
 print(response.text)
 
 # Chat conversation
-from metainformant.ml.llm import ChatMessage
+from metainformant.ml.llm.ollama.prompts import ChatMessage
 messages = [
     ChatMessage("system", "You are a bioinformatics expert."),
     ChatMessage("user", "What is a FASTA file?"),
@@ -54,8 +55,8 @@ The module works with any Ollama-compatible model. Recommended models:
 Build complex workflows with composable chains:
 
 ```python
-from metainformant.ml.llm import SequentialChain, PromptTemplate
-from metainformant.ml.llm.ollama import PromptChain
+from metainformant.ml.llm.ollama.chains import SequentialChain, PromptChain
+from metainformant.ml.llm.ollama.prompts import PromptTemplate
 
 # Create a multi-step analysis chain
 extract_chain = PromptChain(PromptTemplate("Extract key findings: {text}"))

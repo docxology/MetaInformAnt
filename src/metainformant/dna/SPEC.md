@@ -8,8 +8,8 @@ DNA sequence analysis and genomics module for METAINFORMANT.
 - **Component Type**: Source Code
 
 ## 💾 Data Structures
-- **Modules**: 1 Python modules
-- **Key Concepts**: Refer to Pydantic models in source.
+- **Sub-packages**: analysis, assembly, io, methylation, sequence, structural, variants, visualization, workflow
+- **Key Concepts**: Sequence analysis, variant calling, assembly, methylation
 
 ## 🔌 API Definition
 ### Exports

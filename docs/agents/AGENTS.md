@@ -32,6 +32,7 @@ Each Rule file contains domain-specific guidelines:
 - `rules/structural_variants.md` - Structural variant detection patterns
 - `rules/spatial.md` - Spatial transcriptomics patterns
 - `rules/pharmacogenomics.md` - Clinical pharmacogenomics patterns
+- `rules/metabolomics.md` - Metabolomics analysis patterns
 - `rules/menu.md` - Interactive menu system patterns
 
 ## Usage
@@ -48,7 +49,7 @@ These rules are automatically loaded by the Agent when working in the correspond
 All rules enforce:
 
 - Use `metainformant.core.io` for file operations
-- Use `metainformant.core.logging` for logging
+- Use `metainformant.core.utils.logging` for logging
 - Write outputs to `output/` directory
 - Use absolute imports from `metainformant`
 - Never use mocks in tests

@@ -8,8 +8,8 @@ Life events and trajectory analysis module for METAINFORMANT.
 - **Component Type**: Source Code
 
 ## 💾 Data Structures
-- **Modules**: 1 Python modules
-- **Key Concepts**: Refer to Pydantic models in source.
+- **Sub-packages**: analysis, core, models, survival, visualization, workflow
+- **Key Concepts**: Life event tracking, survival analysis, trajectory modeling
 
 ## 🔌 API Definition
 ### Exports

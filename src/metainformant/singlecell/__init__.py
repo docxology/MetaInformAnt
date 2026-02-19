@@ -8,6 +8,6 @@ velocity estimation.
 
 from __future__ import annotations
 
-from . import analysis, celltyping, data, differential, velocity, visualization
+from . import analysis, celltyping, data, differential, doublet, velocity, visualization
 
-__all__ = ["analysis", "celltyping", "data", "differential", "velocity", "visualization"]
+__all__ = ["analysis", "celltyping", "data", "differential", "doublet", "velocity", "visualization"]

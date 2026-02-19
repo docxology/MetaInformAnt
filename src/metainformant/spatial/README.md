@@ -39,6 +39,7 @@ graph TD
 | [`communication/`](communication/) | Ligand-receptor interaction scoring and communication networks |
 | [`deconvolution/`](deconvolution/) | Advanced cell type deconvolution with reference profiles and niche ID |
 | [`integration/`](integration/) | scRNA-seq to spatial mapping, label transfer, gene imputation |
+| [`niche/`](niche/) | Tissue niche identification via spatial smoothing and K-Means clustering |
 | [`visualization/`](visualization/) | Spatial scatter plots, tissue overlays, expression maps |
 
 ## Key Capabilities

@@ -224,7 +224,7 @@ def run_step_name(config: Dict[str, Any], **kwargs) -> Dict[str, Any]:
 - Return `{"status": "failed", "errors": ["error message"]}` on failure
 - Use `{"status": "skipped", "reason": "reason message"}` for conditional skips
 - Include `warnings` for non-fatal issues
-- Log progress with `metainformant.core.logging`
+- Log progress with `metainformant.core.utils.logging`
 
 ### Result Structure
 

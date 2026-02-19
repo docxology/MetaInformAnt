@@ -8,8 +8,8 @@ Phenotype module for MetaInformAnt.
 - **Component Type**: Source Code
 
 ## 💾 Data Structures
-- **Modules**: 1 Python modules
-- **Key Concepts**: Refer to Pydantic models in source.
+- **Sub-packages**: analysis, behavior, chemical, data, electronic, gwas_integration, integration, morphological, sonic, visualization, workflow
+- **Key Concepts**: Morphology, behavior, chemical profiles, acoustic, electronic tracking
 
 ## 🔌 API Definition
 ### Exports

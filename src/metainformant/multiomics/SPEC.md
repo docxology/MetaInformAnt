@@ -8,8 +8,8 @@ Multi-omics integration module for METAINFORMANT.
 - **Component Type**: Source Code
 
 ## 💾 Data Structures
-- **Modules**: 1 Python modules
-- **Key Concepts**: Refer to Pydantic models in source.
+- **Sub-packages**: analysis, methods, pathways, survival, visualization
+- **Key Concepts**: Multi-omic integration, pathway analysis, survival
 
 ## 🔌 API Definition
 ### Exports

@@ -12,7 +12,7 @@ class TestEqtlColoc:
 
     def test_eqtl_coloc_basic(self):
         """Test basic eQTL colocalization with matching signals."""
-        from metainformant.gwas.finemapping import eqtl_coloc
+        from metainformant.gwas.finemapping.colocalization import eqtl_coloc
 
         # Create synthetic data with shared causal variant
         gwas_z = [0.5, 1.2, 3.5, 1.0, 0.3]  # Peak at index 2
@@ -29,7 +29,7 @@ class TestEqtlColoc:
 
     def test_eqtl_coloc_no_signal(self):
         """Test eQTL colocalization with no shared signal."""
-        from metainformant.gwas.finemapping import eqtl_coloc
+        from metainformant.gwas.finemapping.colocalization import eqtl_coloc
 
         # Signals at different locations
         gwas_z = [3.5, 0.5, 0.5, 0.5, 0.5]  # Peak at index 0
@@ -48,7 +48,7 @@ class TestEqtlColoc:
 
     def test_eqtl_coloc_empty_input(self):
         """Test eQTL colocalization with empty input."""
-        from metainformant.gwas.finemapping import eqtl_coloc
+        from metainformant.gwas.finemapping.colocalization import eqtl_coloc
 
         result = eqtl_coloc(
             gwas_z=[],
@@ -60,7 +60,7 @@ class TestEqtlColoc:
 
     def test_eqtl_coloc_mismatched_lengths(self):
         """Test eQTL colocalization with mismatched input lengths."""
-        from metainformant.gwas.finemapping import eqtl_coloc
+        from metainformant.gwas.finemapping.colocalization import eqtl_coloc
 
         result = eqtl_coloc(
             gwas_z=[1.0, 2.0, 3.0],
@@ -76,7 +76,7 @@ class TestMultiTraitColoc:
 
     def test_multi_trait_coloc_two_traits(self):
         """Test multi-trait colocalization with two traits."""
-        from metainformant.gwas.finemapping import multi_trait_coloc
+        from metainformant.gwas.finemapping.colocalization import multi_trait_coloc
 
         z_scores = {
             "trait1": [0.5, 1.2, 3.5, 1.0, 0.3],
@@ -89,7 +89,7 @@ class TestMultiTraitColoc:
 
     def test_multi_trait_coloc_three_traits(self):
         """Test multi-trait colocalization with three traits."""
-        from metainformant.gwas.finemapping import multi_trait_coloc
+        from metainformant.gwas.finemapping.colocalization import multi_trait_coloc
 
         z_scores = {
             "trait1": [0.5, 1.2, 3.5, 1.0, 0.3],
@@ -107,7 +107,7 @@ class TestComputeClpp:
 
     def test_compute_clpp_basic(self):
         """Test CLPP computation with matching PIPs."""
-        from metainformant.gwas.finemapping import compute_clpp
+        from metainformant.gwas.finemapping.colocalization import compute_clpp
 
         # PIPs that suggest shared causal variant at index 2
         pip_1 = [0.05, 0.1, 0.7, 0.1, 0.05]
@@ -121,7 +121,7 @@ class TestComputeClpp:
 
     def test_compute_clpp_no_shared(self):
         """Test CLPP computation with no shared causal."""
-        from metainformant.gwas.finemapping import compute_clpp
+        from metainformant.gwas.finemapping.colocalization import compute_clpp
 
         pip_1 = [0.8, 0.1, 0.05, 0.03, 0.02]  # Peak at 0
         pip_2 = [0.02, 0.03, 0.05, 0.1, 0.8]  # Peak at 4

@@ -30,6 +30,7 @@ graph TD
 | [`analysis/`](analysis/) | `leiden_clustering`, `compute_pca`, `compute_umap`, `compute_diffusion_pseudotime` |
 | [`celltyping/`](celltyping/) | Automated cell type annotation from marker genes |
 | [`differential/`](differential/) | Differential expression testing between clusters |
+| [`doublet/`](doublet/) | Simulation-based doublet detection (Scrublet-style KNN scoring) |
 | [`velocity/`](velocity/) | RNA velocity estimation for dynamic trajectories |
 | [`visualization/`](visualization/) | `plot_umap`, trajectory plots, QC visualizations |
 

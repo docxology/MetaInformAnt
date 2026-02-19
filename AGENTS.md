@@ -14,7 +14,9 @@ METAINFORMANT is developed with assistance from various AI agents and language m
 ## AI Agents Used
 
 ### Primary Development Agent
+
 **Code Assistant Agent** - Cursor's AI coding assistant
+
 - **Model**: grok-code-fast-1
 - **Purpose**: Real-time code assistance, file editing, and project management
 - **Capabilities**:
@@ -27,7 +29,9 @@ METAINFORMANT is developed with assistance from various AI agents and language m
   - Integration of scientific computing libraries
 
 ### Documentation Enhancement
+
 **Documentation Agent** - Specialized for technical writing
+
 - **Model**: GPT-4 based
 - **Purpose**: README creation, API documentation, and user guides
 - **Capabilities**:
@@ -37,7 +41,9 @@ METAINFORMANT is developed with assistance from various AI agents and language m
   - Tutorial and guide writing
 
 ### Code Review Agent
+
 **Static Analysis Agent** - Automated code quality assessment
+
 - **Model**: Custom rule-based system with ML components
 - **Purpose**: Code quality, security, and performance analysis
 - **Capabilities**:
@@ -49,6 +55,7 @@ METAINFORMANT is developed with assistance from various AI agents and language m
 ## AI Integration Workflow
 
 ### Development Process
+
 1. **Requirements Analysis**: AI agents analyze project requirements and existing codebase
 2. **Code Generation**: Automated implementation of new features and modules
 3. **Documentation**: Simultaneous creation of documentation
@@ -56,6 +63,7 @@ METAINFORMANT is developed with assistance from various AI agents and language m
 5. **Review**: AI-assisted code review and quality assurance
 
 ### Quality Assurance
+
 - **Automated Testing**: AI-generated test suites
 - **Performance Monitoring**: AI analysis of computational bottlenecks
 - **Security Scanning**: Automated vulnerability detection and remediation
@@ -64,18 +72,21 @@ METAINFORMANT is developed with assistance from various AI agents and language m
 ## AI-Generated Content
 
 ### Code Components
+
 - **Algorithm Implementations**: Mathematical and statistical algorithms
 - **Data Processing Pipelines**: Efficient data handling and transformation
 - **API Interfaces**: Consistent and well-documented interfaces
 - **Error Handling**: Robust error detection and recovery mechanisms
 
 ### Documentation Components
+
 - **Module READMEs**: Comprehensive module documentation
 - **API References**: Detailed function and class documentation
 - **Usage Examples**: Practical code examples and tutorials
 - **Architecture Documentation**: System design and component relationships
 
 ### Test Components
+
 - **Unit Tests**: Individual function and method testing
 - **Integration Tests**: Cross-module functionality validation
 - **Performance Tests**: Benchmarking and scalability testing
@@ -88,6 +99,7 @@ This section provides technical documentation of all implemented functions acros
 ### Core Infrastructure Functions
 
 **Configuration Management** (`metainformant.core.config`):
+
 - `load_mapping_from_file(config_path: str | Path) -> dict[str, Any]`
 - `apply_env_overrides(config: Mapping[str, Any], *, prefix: str = "AK") -> dict[str, Any]`
 - `merge_configs(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]`
@@ -98,6 +110,7 @@ This section provides technical documentation of all implemented functions acros
 - `list_config_templates(repo_root: str | Path | None = None) -> list[dict[str, Any]]`
 
 **I/O Operations** (`metainformant.core.io`):
+
 - `load_json(path: str | Path) -> Any`
 - `dump_json(obj: Any, path: str | Path, *, indent: int | None = None, atomic: bool = True) -> None`
 - `read_jsonl(path: str | Path) -> Iterator[dict[str, Any]]`
@@ -110,6 +123,7 @@ This section provides technical documentation of all implemented functions acros
 - `download_json(url: str, *, timeout: int = 30) -> Any`
 
 **Path Management** (`metainformant.core.paths`):
+
 - `expand_and_resolve(path: str | Path) -> Path`
 - `is_within(path: str | Path, parent: str | Path) -> bool`
 - `prepare_file_path(file_path: Path) -> None`
@@ -124,12 +138,14 @@ This section provides technical documentation of all implemented functions acros
 - `get_module_output_base(module_name: str) -> Path`
 - `list_output_structure(repo_root: str | Path | None = None) -> dict[str, Any]`
 
-**Logging Framework** (`metainformant.core.logging`):
+**Logging Framework** (`metainformant.core.utils.logging`):
+
 - `get_logger(name: str) -> logging.Logger`
 - `setup_logging(level: str = "INFO", format: str = "default") -> None`
 - `log_with_metadata(logger: logging.Logger, message: str, metadata: dict[str, Any]) -> None`
 
 **Discovery and Symbol Indexing** (`metainformant.core.discovery`, `metainformant.core.symbols`):
+
 - `discover_functions(repo_root: str | Path, module_filter: str | None = None) -> list[FunctionInfo]`
 - `discover_configs(repo_root: str | Path, domain: str | None = None) -> list[ConfigInfo]`
 - `discover_output_patterns(repo_root: str | Path) -> dict[str, list[str]]`
@@ -146,12 +162,14 @@ This section provides technical documentation of all implemented functions acros
 - `fuzzy_find_symbol(symbol_name: str, symbol_type: str = "function", repo_root: str | Path | None = None, threshold: float = 0.6) -> list[tuple[str, float]]`
 
 **Workflow Management** (`metainformant.core.workflow`):
+
 - `download_and_process_data(url: str, processor: Callable, output_dir: str | Path) -> Any`
 - `validate_config_file(config_path: str | Path) -> tuple[bool, list[str]]`
 - `create_sample_config(output_path: str | Path, sample_type: str = "basic") -> None`
 - `run_config_based_workflow(config_path: str | Path, **kwargs) -> dict[str, Any]`
 
 **Validation Utilities** (`metainformant.core.validation`):
+
 - `validate_type(value: Any, expected_type: type | tuple[type, ...], name: str = "value") -> None`
 - `validate_range(value: float, min_val: float | None = None, max_val: float | None = None, name: str = "value") -> None`
 - `validate_path_exists(path: str | Path, name: str = "path") -> Path`
@@ -163,6 +181,7 @@ This section provides technical documentation of all implemented functions acros
 - `validate_schema(data: dict[str, Any], schema: dict[str, Any], name: str = "data") -> None`
 
 **Caching System** (`metainformant.core.cache`):
+
 - `JsonCache(cache_dir: str | Path, ttl_seconds: int = 3600)`
 - `JsonCache.get(key: str) -> Any`
 - `JsonCache.set(key: str, value: Any) -> None`
@@ -170,27 +189,32 @@ This section provides technical documentation of all implemented functions acros
 - `JsonCache.cleanup_expired() -> None`
 
 **Parallel Processing** (`metainformant.core.parallel`):
+
 - `ParallelProcessor(max_workers: int | None = None)`
 - `ParallelProcessor.map(func: Callable, items: Iterable) -> list`
 - `ParallelProcessor.submit(func: Callable, *args, **kwargs) -> concurrent.futures.Future`
 - `run_parallel(func: Callable, items: Iterable, max_workers: int | None = None) -> list`
 
 **Progress Tracking** (`metainformant.core.progress`):
+
 - `ProgressTracker(total: int | None = None, desc: str = "")`
 - `ProgressTracker.update(n: int = 1) -> None`
 - `ProgressTracker.close() -> None`
 
 **Workflow Engine** (`metainformant.core.engine`):
+
 - `WorkflowManager(config_path: Path, max_threads: int = 5)`
 - `WorkflowManager.add_sample(sample_id: str, sra_url: str, dest_path: Path) -> None`
 - `WorkflowManager.run() -> dict[str, bool]`
 
 **Hashing Utilities** (`metainformant.core.hash`):
+
 - `compute_file_hash(path: str | Path, algorithm: str = "sha256") -> str`
 - `compute_content_hash(content: str | bytes, algorithm: str = "sha256") -> str`
 - `verify_file_integrity(path: str | Path, expected_hash: str, algorithm: str = "sha256") -> bool`
 
 **Text Processing** (`metainformant.core.text`):
+
 - `normalize_whitespace(s: str) -> str`
 - `slugify(s: str) -> str`
 - `safe_filename(name: str) -> str`
@@ -207,6 +231,7 @@ This section provides technical documentation of all implemented functions acros
 DNA sequence analysis, alignment, population genetics, phylogenetics, and genomic data retrieval.
 
 **Sequence Processing** (`metainformant.dna.sequences`):
+
 - `read_fasta(path: str | Path) -> Dict[str, str]`
 - `reverse_complement(seq: str) -> str`
 - `gc_content(seq: str) -> float`
@@ -230,11 +255,13 @@ DNA sequence analysis, alignment, population genetics, phylogenetics, and genomi
 - `find_stop_codons(seq: str) -> list[int]`
 
 **Composition Analysis** (`metainformant.dna.composition`):
+
 - `gc_skew(seq: str) -> float`
 - `cumulative_gc_skew(seq: str) -> List[float]`
 - `melting_temperature(seq: str) -> float`
 
 **Sequence Alignment** (`metainformant.dna.alignment`):
+
 - `global_align(seq1: str, seq2: str, match: int = 1, mismatch: int = -1, gap: int = -2) -> AlignmentResult`
 - `local_align(seq1: str, seq2: str) -> AlignmentResult`
 - `calculate_alignment_identity(alignment: AlignmentResult) -> float`
@@ -242,6 +269,7 @@ DNA sequence analysis, alignment, population genetics, phylogenetics, and genomi
 - `alignment_statistics(alignment: AlignmentResult) -> dict[str, float]`
 
 **Population Genetics** (`metainformant.dna.population`):
+
 - `allele_frequencies(genotype_matrix: Sequence[Sequence[int]]) -> list[float]`
 - `observed_heterozygosity(genotypes: Iterable[tuple[int, int]]) -> float`
 - `nucleotide_diversity(seqs: Sequence[str]) -> float`
@@ -254,11 +282,13 @@ DNA sequence analysis, alignment, population genetics, phylogenetics, and genomi
 - `wattersons_theta(seqs: Sequence[str]) -> float`
 
 **Population Analysis** (`metainformant.dna.population_analysis`):
+
 - `calculate_summary_statistics(sequences: Sequence[str] | None = None, genotype_matrix: Sequence[Sequence[int]] | None = None, populations: Sequence[int] | None = None) -> dict[str, Any]`
 - `compare_populations(pop1_data: dict[str, Any], pop2_data: dict[str, Any]) -> dict[str, Any]`
 - `neutrality_test_suite(sequences: Sequence[str]) -> dict[str, Any]`
 
 **Phylogenetic Analysis** (`metainformant.dna.phylogeny`):
+
 - `neighbor_joining_tree(id_to_seq: Dict[str, str]) -> Tree`
 - `upgma_tree(id_to_seq: Dict[str, str]) -> Tree`
 - `to_newick(tree) -> str`
@@ -268,6 +298,7 @@ DNA sequence analysis, alignment, population genetics, phylogenetics, and genomi
 - `nj_tree_from_kmer(id_to_seq: Dict[str, str], *, k: int = 3, metric: str = "cosine") -> Tree`
 
 **DNA Variation** (`metainformant.dna.variation`):
+
 - `parse_vcf(path: str | Path) -> dict[str, Any]`
 - `filter_variants_by_quality(vcf_data: dict[str, Any], min_qual: float = 20.0) -> dict[str, Any]`
 - `filter_variants_by_maf(vcf_data: dict[str, Any], min_maf: float = 0.01) -> dict[str, Any]`
@@ -277,18 +308,21 @@ DNA sequence analysis, alignment, population genetics, phylogenetics, and genomi
 - `simulate_sequence_evolution(sequence: str, generations: int, mutation_rate: float) -> str`
 
 **DNA Integration** (`metainformant.dna.integration`):
+
 - `find_open_reading_frames(dna_sequence: str) -> list[tuple[int, int, str]]`
 - `predict_transcription_start_sites(dna_sequence: str) -> list[tuple[int, float]]`
 - `correlate_dna_with_rna_expression(dna_features: dict[str, Any], rna_features: dict[str, Any]) -> dict[str, Any]`
 - `integrate_dna_rna_data(dna_data: dict[str, Any], rna_data: dict[str, Any]) -> dict[str, Any]`
 
 **DNA I/O** (`metainformant.dna.io`):
+
 - `read_fastq(path: str | Path) -> dict[str, tuple[str, str]]`
 - `write_fastq(sequences: dict[str, tuple[str, str]], path: str | Path) -> None`
 - `assess_quality(fastq_path: str | Path) -> dict[str, Any]`
 - `trim_reads(fastq_path: str | Path, output_path: str | Path) -> None`
 
 **Genomic Data Retrieval** (`metainformant.dna.ncbi`, `metainformant.dna.genomes`):
+
 - `download_genome_package(accession: str, output_dir: str | Path, include: list[str] | None = None) -> Path`
 - `download_genome_package_best_effort(accession: str, output_dir: str | Path, include: list[str] | None = None, ftp_url: str | None = None) -> Path`
 - `validate_accession(accession: str) -> bool`
@@ -299,6 +333,7 @@ DNA sequence analysis, alignment, population genetics, phylogenetics, and genomi
 RNA transcriptomic analysis with amalgkit integration for workflow orchestration.
 
 **Amalgkit Integration** (`metainformant.rna.amalgkit`):
+
 - `AmalgkitWorkflowConfig(work_dir: Path, threads: int, species_list: list[str])`
 - `plan_workflow(config: AmalgkitWorkflowConfig) -> list[tuple[str, AmalgkitParams]]`
 - `execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False, walk: bool = False, progress: bool = True, show_commands: bool = False) -> list[int]`
@@ -324,6 +359,7 @@ RNA transcriptomic analysis with amalgkit integration for workflow orchestration
 Complete genome-wide association study workflow with quality control, association testing, and visualization.
 
 **GWAS Workflow** (`metainformant.gwas`):
+
 - `GWASWorkflowConfig(work_dir: Path, threads: int, ...)`
 - `load_gwas_config(config_file: str | Path) -> GWASWorkflowConfig`
 - `execute_gwas_workflow(config: GWASWorkflowConfig, *, check: bool = False) -> dict[str, Any]`
@@ -354,15 +390,18 @@ Complete genome-wide association study workflow with quality control, associatio
 Classification, regression, feature selection, and model validation for biological data.
 
 **Classification** (`metainformant.ml.classification`):
+
 - `train_classifier(X: np.ndarray, y: np.ndarray, method: str = "rf", **kwargs) -> sklearn.base.BaseEstimator`
 - `cross_validate_classifier(model: sklearn.base.BaseEstimator, X: np.ndarray, y: np.ndarray, cv: int = 5) -> dict[str, float]`
 - `predict_with_confidence(model: sklearn.base.BaseEstimator, X: np.ndarray) -> tuple[np.ndarray, np.ndarray]`
 
 **Feature Selection** (`metainformant.ml.features`):
+
 - `extract_features(data: np.ndarray, method: str = "pca", n_components: int = 50) -> np.ndarray`
 - `select_features(X: np.ndarray, y: np.ndarray, method: str = "mutual_info", k: int = 100) -> tuple[np.ndarray, np.ndarray]`
 
 **Regression** (`metainformant.ml.regression`):
+
 - `train_regressor(X: np.ndarray, y: np.ndarray, method: str = "rf", **kwargs) -> sklearn.base.BaseEstimator`
 - `cross_validate_regressor(model: sklearn.base.BaseEstimator, X: np.ndarray, y: np.ndarray, cv: int = 5) -> dict[str, float]`
 
@@ -371,6 +410,7 @@ Classification, regression, feature selection, and model validation for biologic
 Comprehensive syntactic and semantic information measures with analysis workflows.
 
 **Syntactic Information** (`metainformant.information.syntactic`):
+
 - `shannon_entropy(probs: Sequence[float], base: float = 2.0) -> float`
 - `shannon_entropy_from_counts(counts: Sequence[int] | dict[Any, int]) -> float`
 - `joint_entropy(x: Sequence[Any], y: Sequence[Any], base: float = 2.0) -> float`
@@ -388,6 +428,7 @@ Comprehensive syntactic and semantic information measures with analysis workflow
 - `information_coefficient(x: Sequence[Any], y: Sequence[Any], base: float = 2.0) -> float`
 
 **Semantic Information** (`metainformant.information.semantic`):
+
 - `information_content(term_frequencies: dict[str, int], term: str, total_terms: int | None = None) -> float`
 - `information_content_from_annotations(annotations: dict[str, set[str]], term: str) -> float`
 - `semantic_entropy(term_annotations: dict[str, set[str]], base: float = 2.0) -> float`
@@ -395,30 +436,35 @@ Comprehensive syntactic and semantic information measures with analysis workflow
 - `semantic_similarity_matrix(terms: list[str], term_ic: dict[str, float], hierarchy: dict[str, set[str]], method: str = "resnik") -> np.ndarray`
 
 **Analysis Functions** (`metainformant.information.analysis`):
+
 - `information_profile(sequences: list[str], k: int = 1) -> dict[str, Any]`
 - `information_signature(data: np.ndarray | list[list[float]], method: str = "entropy") -> dict[str, Any]`
 - `analyze_sequence_information(sequence: str, k_values: list[int] | None = None) -> dict[str, Any]`
 - `compare_sequences_information(seq1: str, seq2: str, k: int = 1) -> dict[str, Any]`
 
 **Continuous Information Theory** (`metainformant.information.continuous`):
+
 - `differential_entropy(samples: np.ndarray, method: str = "histogram", bins: int | None = None) -> float`
 - `mutual_information_continuous(x: np.ndarray, y: np.ndarray, method: str = "histogram", bins: int | None = None) -> float`
 - `kl_divergence_continuous(p_samples: np.ndarray, q_samples: np.ndarray, method: str = "histogram", bins: int | None = None) -> float`
 - `entropy_estimation(samples: np.ndarray, method: str = "histogram", bins: int | None = None) -> float`
 
 **Estimation Methods** (`metainformant.information.estimation`):
+
 - `entropy_estimator(counts: dict[Any, int] | list[int], method: str = "plugin", bias_correction: bool = True) -> float`
 - `mutual_information_estimator(x: list[Any], y: list[Any], method: str = "plugin", bias_correction: bool = True) -> float`
 - `kl_divergence_estimator(p: list[Any], q: list[Any], method: str = "plugin", bias_correction: bool = True) -> float`
 - `bias_correction(entropy: float, sample_size: int, alphabet_size: int) -> float`
 
 **Workflow Functions** (`metainformant.information.workflows`):
+
 - `batch_entropy_analysis(sequences: list[str], k: int = 1, output_dir: Path | None = None) -> dict[str, Any]`
 - `information_workflow(sequences: list[str], k_values: list[int] | None = None, output_dir: Path | None = None) -> dict[str, Any]`
 - `compare_datasets(dataset1: list[str], dataset2: list[str], k: int = 1, output_dir: Path | None = None) -> dict[str, Any]`
 - `information_report(results: dict[str, Any], output_path: Path | None = None) -> None`
 
 **Network Information** (`metainformant.information.networks`):
+
 - `network_entropy(graph: Any, attribute: str | None = None) -> float`
 - `information_flow(graph: Any, source_nodes: list[str] | None = None, target_nodes: list[str] | None = None) -> dict[str, Any]`
 
@@ -427,14 +473,17 @@ Comprehensive syntactic and semantic information measures with analysis workflow
 Biological network construction, community detection, centrality measures, and pathway analysis.
 
 **Graph Construction** (`metainformant.networks.graph`):
+
 - `create_network(edges: List[Tuple[str, str]], directed: bool = False) -> networkx.Graph`
 - `load_network(path: str | Path, format: str = "edgelist") -> networkx.Graph`
 
 **Community Detection** (`metainformant.networks.community`):
+
 - `louvain_communities(graph: networkx.Graph) -> List[List[str]]`
 - `leiden_communities(graph: networkx.Graph) -> List[List[str]]`
 
 **Centrality Measures** (`metainformant.networks.centrality`):
+
 - `degree_centrality(graph: networkx.Graph) -> Dict[str, float]`
 - `betweenness_centrality(graph: networkx.Graph) -> Dict[str, float]`
 
@@ -443,11 +492,13 @@ Biological network construction, community detection, centrality measures, and p
 Plotting, animations, heatmaps, and specialized biological visualizations.
 
 **Plotting API** (`metainformant.visualization.plots`):
+
 - `lineplot(x: np.ndarray = None, y: np.ndarray = None, ax: matplotlib.axes.Axes = None) -> matplotlib.axes.Axes`
 - `scatterplot(x: np.ndarray, y: np.ndarray, ax: matplotlib.axes.Axes = None) -> matplotlib.axes.Axes`
 - `heatmap(data: np.ndarray, cmap: str = "viridis", ax: matplotlib.axes.Axes = None) -> matplotlib.axes.Axes`
 
 **Genomics Visualization** (`metainformant.visualization.genomics`):
+
 - `manhattan_plot(results: pd.DataFrame, significance_threshold: float = 5e-8) -> Axes`
 - `volcano_plot(results: pd.DataFrame, p_col: str, lfc_col: str) -> Axes`
 - `regional_plot(results: pd.DataFrame, chrom: str, start: int, end: int) -> Axes`
@@ -455,6 +506,7 @@ Plotting, animations, heatmaps, and specialized biological visualizations.
 - `plot_expression_heatmap(counts_matrix: pd.DataFrame) -> Axes`
 
 **Statistical Analysis Visualization** (`metainformant.visualization.analysis`):
+
 - `histogram(data: np.ndarray, bins: int = 30) -> Axes`
 - `box_plot(data: list[np.ndarray], labels: list[str]) -> Axes`
 - `correlation_heatmap(corr_matrix: pd.DataFrame) -> Axes`
@@ -463,6 +515,7 @@ Plotting, animations, heatmaps, and specialized biological visualizations.
 - `plot_quality_metrics(metrics: dict[str, Any]) -> Axes`
 
 **Animation System** (`metainformant.visualization.animation`):
+
 - `animate_time_series(data: np.ndarray, interval: int = 200) -> Tuple[matplotlib.figure.Figure, matplotlib.animation.FuncAnimation]`
 
 ### Quality Control Functions
@@ -470,6 +523,7 @@ Plotting, animations, heatmaps, and specialized biological visualizations.
 FASTQ analysis, quality assessment, and data validation across all data types.
 
 **FASTQ Analysis** (`metainformant.quality.fastq`):
+
 - `assess_quality(fastq_path: str | Path) -> Dict[str, Any]`
 - `filter_reads(fastq_path: str | Path, min_quality: int = 20) -> Iterator[str]`
 
@@ -478,6 +532,7 @@ FASTQ analysis, quality assessment, and data validation across all data types.
 Gene Ontology integration, semantic similarity, and functional annotation.
 
 **Gene Ontology** (`metainformant.ontology.go`):
+
 - `load_obo(obo_path: str | Path) -> networkx.DiGraph`
 - `get_ancestors(graph: networkx.DiGraph, term: str) -> Set[str]`
 - `semantic_similarity(graph: networkx.DiGraph, term1: str, term2: str, method: str = "resnik") -> float`
@@ -487,6 +542,7 @@ Gene Ontology integration, semantic similarity, and functional annotation.
 Life course phenotype analysis, trait curation, and AntWiki integration.
 
 **Life Course Analysis** (`metainformant.phenotype.life_course`):
+
 - `EventSequence(person_id: str, events: List[Event])`
 - `analyze_life_course(sequences: List[EventSequence], outcomes: List[str] = None) -> Dict[str, Any]`
 
@@ -495,6 +551,7 @@ Life course phenotype analysis, trait curation, and AntWiki integration.
 Community diversity analysis, biodiversity metrics, and ecological statistics.
 
 **Community Analysis** (`metainformant.ecology.community`):
+
 - `calculate_diversity(species_matrix: np.ndarray, method: str = "shannon") -> np.ndarray`
 - `species_richness(community_data: np.ndarray) -> int`
 
@@ -503,13 +560,16 @@ Community diversity analysis, biodiversity metrics, and ecological statistics.
 Population genetics theory, coalescent models, selection analysis, and evolutionary dynamics.
 
 **Population Genetics** (`metainformant.math.popgen`):
+
 - `hardy_weinberg_allele_freqs(p: float, q: float) -> Tuple[float, float, float]`
 - `fst_from_freqs(freq1: np.ndarray, freq2: np.ndarray) -> float`
 
 **Coalescent Theory** (`metainformant.math.coalescent`):
+
 - `simulate_coalescent(n_samples: int, Ne: float = 10000) -> Tree`
 
 **Statistical Utilities** (`metainformant.math`):
+
 - `correlation_coefficient(x: list[float], y: list[float]) -> float`
 - `linear_regression(x: list[float], y: list[float]) -> tuple[float, float, float]`
 - `fisher_exact_test(a: int, b: int, c: int, d: int) -> tuple[float, float]`
@@ -521,11 +581,13 @@ Population genetics theory, coalescent models, selection analysis, and evolution
 Single-cell RNA-seq preprocessing, clustering, dimensionality reduction, and trajectory inference.
 
 **Preprocessing** (`metainformant.singlecell.preprocessing`):
+
 - `load_h5ad(path: str | Path) -> anndata.AnnData`
 - `filter_cells(adata: anndata.AnnData, min_genes: int = 200) -> anndata.AnnData`
 - `normalize(adata: anndata.AnnData, method: str = "total") -> anndata.AnnData`
 
 **Clustering** (`metainformant.singlecell.clustering`):
+
 - `leiden(adata: anndata.AnnData, resolution: float = 0.5) -> np.ndarray`
 
 ### Epigenome Functions
@@ -533,6 +595,7 @@ Single-cell RNA-seq preprocessing, clustering, dimensionality reduction, and tra
 DNA methylation analysis, ChIP-seq, ATAC-seq, and chromatin accessibility analysis.
 
 **Methylation Analysis** (`metainformant.epigenome.methylation`):
+
 - `load_bedgraph(path: str | Path) -> pd.DataFrame`
 - `find_dmr(methylation_data: pd.DataFrame, threshold: float = 0.3) -> pd.DataFrame`
 
@@ -541,6 +604,7 @@ DNA methylation analysis, ChIP-seq, ATAC-seq, and chromatin accessibility analys
 Cross-platform data integration, harmonization, and joint analysis.
 
 **Data Integration** (`metainformant.multiomics.integration`):
+
 - `integrate_omics_data(**omics_datasets) -> Dict[str, Any]`
 - `joint_pca(multiomics_data: Dict[str, Any], n_components: int = 50) -> Dict[str, np.ndarray]`
 
@@ -549,6 +613,7 @@ Cross-platform data integration, harmonization, and joint analysis.
 Life course event analysis, temporal sequence modeling, and outcome prediction.
 
 **Event Embeddings** (`metainformant.life_events.embeddings`):
+
 - `train_event_embeddings(events: List[EventSequence], embedding_dim: int = 100) -> Dict[str, np.ndarray]`
 - `predict_sequence(model, sequence: EventSequence, horizon: int = 1) -> List[str]`
 
@@ -557,25 +622,94 @@ Life course event analysis, temporal sequence modeling, and outcome prediction.
 Synthetic data generation for sequences, ecosystems, and biological systems.
 
 **Sequence Simulation** (`metainformant.simulation.sequences`):
+
 - `simulate_sequences(n_sequences: int, length: int, mutation_rate: float = 0.01) -> List[str]`
 - `evolve_sequence(sequence: str, generations: int, mutation_rate: float = 0.001) -> str`
 
 **Ecosystem Simulation** (`metainformant.simulation.ecosystems`):
+
 - `simulate_community(n_species: int, interactions: str = "random") -> networkx.Graph`
+
+### Long-Read Functions
+
+PacBio/Nanopore long-read sequencing analysis, assembly, and error correction.
+
+**Assembly** (`metainformant.longread.assembly`):
+
+- `assemble_reads(reads_path: str, assembler: str = "flye") -> Dict[str, Any]`
+- `error_correct(reads_path: str, method: str = "medaka") -> str`
+
+### Metagenomics Functions
+
+Metagenomic analysis, taxonomic profiling, and functional annotation.
+
+**Taxonomy** (`metainformant.metagenomics.taxonomy`):
+
+- `classify_reads(reads_path: str, db_path: str) -> Dict[str, float]`
+- `profile_community(reads_path: str) -> Dict[str, Any]`
+
+### Structural Variants Functions
+
+SV/CNV detection, breakpoint resolution, and annotation.
+
+**Detection** (`metainformant.structural_variants.detection`):
+
+- `detect_svs(bam_path: str, reference: str) -> List[Dict[str, Any]]`
+- `annotate_svs(variants: List[Dict], annotations_db: str) -> List[Dict[str, Any]]`
+
+### Spatial Transcriptomics Functions
+
+Spatial gene expression analysis, tissue mapping, and spatial statistics.
+
+**Analysis** (`metainformant.spatial.analysis`):
+
+- `load_spatial_data(path: str) -> Dict[str, Any]`
+- `compute_spatial_stats(data: Dict, method: str = "moran") -> Dict[str, float]`
+
+### Pharmacogenomics Functions
+
+Drug-gene interaction analysis and clinical variant interpretation.
+
+**Interactions** (`metainformant.pharmacogenomics.interactions`):
+
+- `lookup_drug_gene(variant_id: str, db: str = "pharmgkb") -> List[Dict[str, Any]]`
+- `assign_star_alleles(genotype_data: Dict) -> Dict[str, str]`
+
+### Metabolomics Functions
+
+Metabolite identification, MS data processing, and pathway mapping.
+
+**Analysis** (`metainformant.metabolomics.analysis`):
+
+- `process_mzml(path: str) -> Dict[str, Any]`
+- `identify_metabolites(features: Dict, db: str = "hmdb") -> List[Dict[str, Any]]`
+- `map_pathways(metabolites: List[str]) -> Dict[str, List[str]]`
+
+### Menu Functions
+
+Interactive CLI menu system for workflow discovery and navigation.
+
+**UI** (`metainformant.menu.ui`):
+
+- `launch_menu() -> None`
+- `list_workflows() -> List[Dict[str, str]]`
 
 ## Ethical Considerations
 
 ### Transparency
+
 - All AI-generated content is clearly documented and attributed
 - Development process maintains human oversight and final approval
 - AI assistance enhances but does not replace human expertise
 
 ### Quality Control
+
 - Human developers review and validate all AI-generated code
 - Automated testing ensures reliability of AI-assisted implementations
 - Peer review processes maintain code quality standards
 
 ### Intellectual Property
+
 - AI assistance is used as a tool to enhance human creativity
 - All final code and documentation reflect human expertise and judgment
 - Project maintains full ownership of all generated content
@@ -583,18 +717,21 @@ Synthetic data generation for sequences, ecosystems, and biological systems.
 ## Best Practices
 
 ### AI Integration Guidelines
+
 1. **Human Oversight**: All AI-generated content requires human review
 2. **Transparency**: Clearly mark AI-assisted sections in documentation
 3. **Validation**: Comprehensive testing of AI-generated code
 4. **Ethical Use**: Responsible application of AI technologies
 
 ### Development Standards
+
 - **Code Quality**: AI-generated code must meet project standards
 - **Documentation**: All AI content must be accurate
 - **Testing**: AI-generated features require thorough validation
 - **Maintenance**: AI-assisted code must be maintainable by human developers
 
 ### Cursor Rules Compliance
+
 - **Follow `.cursorrules`**: All AI agents must adhere to the main `.cursorrules` file
 - **Module-Specific Rules**: Consult `cursorrules/<module>.cursorrules` for domain-specific patterns
 - **See `cursorrules/README.md`**: For guidance on using modular cursorrules
@@ -612,6 +749,7 @@ Synthetic data generation for sequences, ecosystems, and biological systems.
 **As of January 2026, METAINFORMANT is a fully operational, production-ready bioinformatics toolkit with comprehensive capabilities across all biological domains.**
 
 #### **Quantitative Success Metrics:**
+
 - ✅ **Import Errors Reduced**: ~225 → 63 (**72% improvement**)
 - ✅ **Test Suite Status**: 24 passing tests, 87% collection success
 - ✅ **Core Functionality**: **FULLY OPERATIONAL**
@@ -619,6 +757,7 @@ Synthetic data generation for sequences, ecosystems, and biological systems.
 - ✅ **Module Coverage**: **COMPREHENSIVE ACROSS ALL DOMAINS**
 
 #### **Production-Ready Modules (All Fully Implemented):**
+
 - ✅ **Core Infrastructure**: Complete I/O, config, logging, parallel processing, caching
 - ✅ **DNA Analysis**: Sequences, FASTQ processing, population genetics, phylogenetics
 - ✅ **RNA Analysis**: Complete Amalgkit integration and workflow orchestration
@@ -639,6 +778,7 @@ Synthetic data generation for sequences, ecosystems, and biological systems.
 - ✅ **Visualization**: 12 specialized plotting modules across all domains
 
 #### **Remaining Work (Optional - Non-Critical):**
+
 - **63 import errors** representing specialized functions that don't impact core functionality
 - **Advanced visualization functions** (specialized plots, animations)
 - **Domain-specific utilities** (helper functions, format converters)
@@ -651,28 +791,36 @@ Synthetic data generation for sequences, ecosystems, and biological systems.
 ## Recent Enhancements (2025-2026)
 
 ### UV Package Management Integration
+
 **Code Assistant Agent** implemented:
+
 - Complete UV toolchain integration across all modules
 - Virtual environment setup and dependency management
 - Cross-platform environment consistency and reproducibility
 - Package installation workflows with `uv venv`, `uv pip install`, `uv run`
 
 ### Enhanced Core Infrastructure
+
 **Code Assistant Agent** enhanced:
+
 - **Parallel Processing**: Improved thread management and CPU utilization
 - **Caching System**: TTL-based JSON caching with thread safety
 - **Error Handling**: Comprehensive retry mechanisms and context-aware errors
 - **Text Processing**: Enhanced biological sequence handling and normalization
 
 ### Scientific Literature Integration
+
 **Documentation Agent** added:
+
 - **Algorithm Citations**: 200+ references to peer-reviewed publications
 - **Biological Context**: Interpretation guidelines for all statistical methods
 - **Quality Standards**: Data validation and analysis best practices
 - **Benchmarking Results**: Performance comparisons against established tools
 
 ### Production Workflow Validation
+
 **Code Assistant Agent** validated:
+
 - **RNA Workflows**: 20,000+ samples processed across 5 ant species
 - **GWAS Pipelines**: Complete end-to-end variant-to-association workflows
 - **Multi-omics Integration**: Cross-platform data harmonization and analysis
@@ -681,12 +829,14 @@ Synthetic data generation for sequences, ecosystems, and biological systems.
 ## Future AI Integration
 
 ### Planned Enhancements
+
 - **Automated Refactoring**: AI-assisted code modernization and optimization
 - **Performance Optimization**: AI-driven computational bottleneck identification
 - **Documentation Updates**: Automated documentation synchronization with code
 - **Testing Expansion**: AI-generated comprehensive test coverage
 
 ### Research Integration
+
 - **Algorithm Research**: AI assistance in implementing cutting-edge bioinformatics methods
 - **Method Validation**: Automated validation against scientific literature
 - **Literature Integration**: AI-assisted incorporation of new research findings
@@ -701,6 +851,7 @@ Note: The `output/` directory is **strictly ephemeral** and contains **only prog
 ## Contact and Support
 
 For questions about AI integration in METAINFORMANT:
+
 - **Project Maintainers**: Primary human oversight and decision-making
 - **Development Team**: Human developers responsible for all final implementations
 - **Community**: Open source community for feedback and contributions

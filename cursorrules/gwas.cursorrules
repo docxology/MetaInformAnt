@@ -1,0 +1,34 @@
+# Cursor Rules for gwas Module (GWAS_)
+
+## 🧠 Context & Intent
+- **Domain**: gwas
+- **Path**: `src/metainformant/gwas/`
+- **Config Prefix**: `GWAS_` (e.g., `GWAS_THREADS`)
+
+## 🧱 Directory Structure
+- **Source**: `src/metainformant/gwas/`
+- **Tests**: `tests/test_gwas_*.py`
+- **Docs**: `docs/gwas/`
+- **Output**: `output/gwas/` (Default for all artifacts)
+
+## ⚙️ Configuration
+- Use `metainformant.core.config` to load config.
+- Support env checks with `GWAS_` prefix.
+- Example:
+  ```python
+  config = load_domain_config("config/gwas/default.yaml", prefix="GWAS")
+  ```
+
+## 🧪 Testing (ZERO MOCK POLICY)
+- **STRICTLY NO MOCKS**: Use real implementations only.
+- **External Tools**: Skip if not found (don't mock).
+- **Network**: Use real API calls with `@pytest.mark.network`.
+- **Output**: Write all test artifacts to `output/` via `tmp_path`.
+
+## 📦 Dependencies
+- Manage via `uv`: `uv add`, `uv remove`.
+- Import pattern:
+  ```python
+  from metainformant.core import io, logging
+  from metainformant.gwas import utils
+  ```

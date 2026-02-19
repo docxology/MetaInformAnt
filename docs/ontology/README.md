@@ -13,8 +13,22 @@ Gene ontology and functional annotation module for METAINFORMANT.
 
 ```mermaid
 graph TD
-    ontology[ontology]
-    style ontology fill:#f9f,stroke:#333,stroke-width:2px
+    subgraph "Ontology Module"
+        C[core/] --> GO[GO Loading & Enrichment]
+        C --> OBO[OBO Format Parsing]
+
+        Q[query/] --> QR[Ancestor/Descendant Traversal]
+        Q --> S[Save/Load OBO & JSON]
+
+        PE[pathway_enrichment/] --> EN[ORA, GSEA, FDR Correction]
+
+        V[visualization/] --> VZ[DAG Plots, Enrichment Charts]
+    end
+
+    OBO --> GO
+    GO --> QR
+    EN --> QR
+    VZ --> GO
 ```
 
 ## Usage

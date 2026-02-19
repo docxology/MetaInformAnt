@@ -63,6 +63,9 @@ metrics = network_metrics(G)
 |--------|---------|
 | [`analysis/`](analysis/) | Graph construction, community detection, pathway enrichment, topology |
 | [`interaction/`](interaction/) | PPI network loading, regulatory network inference and motif analysis |
+| [`config/`](config/) | Network analysis configuration and parameter management |
+| [`regulatory/`](regulatory/) | Gene regulatory network models and inference |
+| [`workflow/`](workflow/) | Network analysis pipeline orchestration |
 
 ## Quick Start
 

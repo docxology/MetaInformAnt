@@ -331,7 +331,7 @@ All errors include descriptive messages and context.
 
 ## Logging
 
-The module uses structured logging via `metainformant.core.logging`:
+The module uses structured logging via `metainformant.core.utils.logging`:
 
 - **INFO**: Major operations (loading data, starting analysis)
 - **DEBUG**: Detailed information (file paths, data shapes)

@@ -138,11 +138,11 @@ import os
 os.environ["CORE_LOG_LEVEL"] = "DEBUG"
 
 # Configure root logger
-from metainformant.core.logging import configure_logging_from_env
+from metainformant.core.utils.logging import configure_logging_from_env
 configure_logging_from_env()
 
 # Or use get_logger_with_level which reads env automatically
-from metainformant.core.logging import get_logger_with_level
+from metainformant.core.utils.logging import get_logger_with_level
 logger = get_logger_with_level("my.module")  # Uses CORE_LOG_LEVEL if set
 ```
 

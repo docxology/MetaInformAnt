@@ -16,6 +16,7 @@ Statistical methods for GWAS: association tests, multiple testing correction, VC
 | `calling.py` | Variant calling via bcftools, GATK, FreeBayes; VCF merging/indexing |
 | `annotation.py` | Variant-to-gene annotation and functional location classification |
 | `summary_stats.py` | Summary statistics output, significant hit extraction, lambda GC |
+| `utils.py` | Shared analysis utilities and helper functions |
 
 ## Key Functions
 

@@ -1,0 +1,34 @@
+# Cursor Rules for longread Module (LR_)
+
+## 🧠 Context & Intent
+- **Domain**: longread
+- **Path**: `src/metainformant/longread/`
+- **Config Prefix**: `LR_` (e.g., `LR_THREADS`)
+
+## 🧱 Directory Structure
+- **Source**: `src/metainformant/longread/`
+- **Tests**: `tests/test_longread_*.py`
+- **Docs**: `docs/longread/`
+- **Output**: `output/longread/` (Default for all artifacts)
+
+## ⚙️ Configuration
+- Use `metainformant.core.config` to load config.
+- Support env checks with `LR_` prefix.
+- Example:
+  ```python
+  config = load_domain_config("config/longread/default.yaml", prefix="LR")
+  ```
+
+## 🧪 Testing (ZERO MOCK POLICY)
+- **STRICTLY NO MOCKS**: Use real implementations only.
+- **External Tools**: Skip if not found (don't mock).
+- **Network**: Use real API calls with `@pytest.mark.network`.
+- **Output**: Write all test artifacts to `output/` via `tmp_path`.
+
+## 📦 Dependencies
+- Manage via `uv`: `uv add`, `uv remove`.
+- Import pattern:
+  ```python
+  from metainformant.core import io, logging
+  from metainformant.longread import utils
+  ```

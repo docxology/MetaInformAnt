@@ -379,7 +379,7 @@ All prefixes correctly documented and consistent:
 
 - ✅ Use `metainformant.core.io` for I/O
 - ✅ Use `metainformant.core.paths` for paths
-- ✅ Use `metainformant.core.logging` for logging
+- ✅ Use `metainformant.core.utils.logging` for logging
 - ✅ Use `metainformant.core.config` for configuration
 
 **Package Management**:
@@ -554,7 +554,7 @@ All prefixes correctly documented and consistent:
 
 - ✅ Use `metainformant.core.io` for I/O
 - ✅ Use `metainformant.core.paths` for paths
-- ✅ Use `metainformant.core.logging` for logging
+- ✅ Use `metainformant.core.utils.logging` for logging
 - ✅ Use `metainformant.core.config` for configuration
 
 ### 9.3 Paths ✅

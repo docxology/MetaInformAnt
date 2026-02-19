@@ -20,45 +20,55 @@ METAINFORMANT is a comprehensive bioinformatics toolkit designed for multi-omic 
 graph TB
     %% Core Infrastructure Layer
     subgraph "Core Infrastructure"
-        COREcoreUtilitiesConfig•Io•LoggingParallel•Paths•CacheWorkflow•Validation[Core Utilities_config • io • logging_parallel • paths • cache_workflow • validation]
+        CORE["Core Utilities<br/>config | io | logging | parallel | paths | cache | workflow | validation"]
     end
 
     %% Data Processing Layer
     subgraph "Data Processing"
-        DNAdnaModuleSequences•AlignmentPhylogeny•Population[DNA Module_sequences • alignment_phylogeny • population]
-        RNArnaModuleAmalgkit•QuantificationTranscriptomics•Workflow[RNA Module_amalgkit • quantification_transcriptomics • workflow]
-        PROTEINproteinModuleSequences•StructureAlphafold•Analysis[Protein Module_sequences • structure_AlphaFold • analysis]
-        EPIGENOMEepigenomeModuleMethylation•Chip-seqAtac-seq•Chromatin[Epigenome Module_methylation • ChIP-seq_ATAC-seq • chromatin]
+        DNA["DNA Analysis<br/>sequences | alignment | phylogeny | population"]
+        RNA["RNA Analysis<br/>amalgkit | quantification | transcriptomics | workflow"]
+        PROTEIN["Protein Analysis<br/>sequences | structure | AlphaFold | analysis"]
+        EPIGENOME["Epigenome Analysis<br/>methylation | ChIP-seq | ATAC-seq | chromatin"]
     end
 
     %% Analysis Layer
     subgraph "Analysis Methods"
-        GWASgwasModuleAssociation•QcPopulation•Visualization[GWAS Module_association • QC_population • visualization]
-        MATHmathModulePopulationGeneticsCoalescent•Selection[Math Module_population genetics_coalescent • selection]
-        MLmlModuleClassification•RegressionFeatureSelection[ML Module_classification • regression_feature selection]
-        INFOinfoTheoryModuleEntropy•Mi•SimilaritySemanticMeasures[Info Theory Module_entropy • MI • similarity_semantic measures]
+        GWAS["GWAS Analysis<br/>association | QC | population | visualization"]
+        MATH["Mathematical Biology<br/>population genetics | coalescent | selection"]
+        ML["Machine Learning<br/>classification | regression | feature selection"]
+        INFO["Information Theory<br/>entropy | MI | similarity | semantic measures"]
     end
 
     %% Systems Biology Layer
     subgraph "Systems Biology"
-        NETWORKSnetworksModulePpi•PathwaysCommunityDetection[Networks Module_PPI • pathways_community detection]
-        MULTIOMICSmulti-omicsModuleIntegration•HarmonizationJointAnalysis[Multi-Omics Module_integration • harmonization_joint analysis]
-        SINGLECELLsingle-cellModulePreprocessing•ClusteringTrajectory•De[Single-Cell Module_preprocessing • clustering_trajectory • DE]
-        SIMULATIONsimulationModuleSequences•EcosystemsAgent-based•Evolution[Simulation Module_sequences • ecosystems_agent-based • evolution]
+        NETWORKS["Network Analysis<br/>PPI | pathways | community detection"]
+        MULTIOMICS["Multi-Omics Integration<br/>integration | harmonization | joint analysis"]
+        SINGLECELL["Single-Cell Analysis<br/>preprocessing | clustering | trajectory | DE"]
+        SIMULATION["Simulation<br/>sequences | ecosystems | agent-based | evolution"]
     end
 
     %% Knowledge Layer
     subgraph "Knowledge & Metadata"
-        ONTOLOGYontologyModuleGo•FunctionalAnnotationSemanticSimilarity[Ontology Module_GO • functional annotation_semantic similarity]
-        PHENOTYPEphenotypeModuleTraits•LifeCourseAntwiki•Curation[Phenotype Module_traits • life course_AntWiki • curation]
-        ECOLOGYecologyModuleCommunities•DiversityEnvironmentalAnalysis[Ecology Module_communities • diversity_environmental analysis]
-        LIFEEVENTSlifeEventsModuleSequences•EmbeddingsTemporalPrediction[Life Events Module_sequences • embeddings_temporal prediction]
+        ONTOLOGY["Ontology<br/>GO | functional annotation | semantic similarity"]
+        PHENOTYPE["Phenotype Analysis<br/>traits | life course | AntWiki | curation"]
+        ECOLOGY["Ecology<br/>communities | diversity | environmental analysis"]
+        LIFEEVENTS["Life Events<br/>sequences | embeddings | temporal prediction"]
     end
 
-    %% Utilities Layer
     subgraph "Utilities"
-        QUALITYqualityModuleFastq•AssemblyMetrics•Validation[Quality Module_FASTQ • assembly_metrics • validation]
-        VISUALIZATIONvisualizationModulePlots•AnimationsTrees•Networks[Visualization Module_plots • animations_trees • networks]
+        QUALITY["Quality Control<br/>FASTQ | assembly | metrics | validation"]
+        VISUALIZATION["Visualization<br/>plots | animations | trees | networks"]
+    end
+
+    %% Specialized Domains Layer
+    subgraph "Specialized Domains"
+        LONGREAD["Long-Read Sequencing<br/>PacBio | ONT | assembly | error correction"]
+        METAGENOMICS["Metagenomics<br/>taxonomy | functional | community"]
+        SV["Structural Variants<br/>detection | CNV | breakpoints"]
+        SPATIAL["Spatial Transcriptomics<br/>tissue mapping | spatial stats"]
+        PHARMA["Pharmacogenomics<br/>drug-gene | pharmacokinetics | variants"]
+        METAB["Metabolomics<br/>MS processing | pathway mapping"]
+        MENU["Menu System<br/>interactive CLI | workflow navigation"]
     end
 
     %% Data Flow
@@ -80,6 +90,13 @@ graph TB
     CORE --> LIFEEVENTS
     CORE --> QUALITY
     CORE --> VISUALIZATION
+    CORE --> LONGREAD
+    CORE --> METAGENOMICS
+    CORE --> SV
+    CORE --> SPATIAL
+    CORE --> PHARMA
+    CORE --> METAB
+    CORE --> MENU
 
     DNA --> RNA
     DNA --> PROTEIN
@@ -100,8 +117,8 @@ graph TB
     INFO --> ONTOLOGY
     NETWORKS --> MULTIOMICS
     SINGLECELL --> MULTIOMICS
-    QUALITY --> allAnalysisModulesallAnalysisModules[All Analysis Modules]
-    VISUALIZATION --> ALL_MODULES
+    QUALITY --> ALL["All Analysis Modules"]
+    VISUALIZATION --> ALL
 
     %% External Dependencies
     RNA -.->|"Amalgkit CLI"| RNA
@@ -110,13 +127,13 @@ graph TB
     GWAS -.->|"bcftools, GATK"| GWAS
 
     %% Data Sources
-    NCBI(ncbiGenomes)[(NCBI Genomes)] --> DNA
-    SRA(sraSequences)[(SRA Sequences)] --> RNA
+    NCBI[("NCBI Genomes")] --> DNA
+    SRA[("SRA Sequences")] --> RNA
     SRA --> SINGLECELL
     SRA --> GWAS
-    PDB(pdbStructures)[(PDB Structures)] --> PROTEIN
-    GEO(geoExpression)[(GEO Expression)] --> RNA
-    GO(geneOntology)[(Gene Ontology)] --> ONTOLOGY
+    PDB[("PDB Structures")] --> PROTEIN
+    GEO[("GEO Expression")] --> RNA
+    GO[("Gene Ontology")] --> ONTOLOGY
 
     %% Styling
 
@@ -126,6 +143,7 @@ graph TB
     class NETWORKS,MULTIOMICS,SINGLECELL,SIMULATION systems
     class ONTOLOGY,PHENOTYPE,ECOLOGY,LIFEEVENTS knowledge
     class QUALITY,VISUALIZATION utility
+    class LONGREAD,METAGENOMICS,SV,SPATIAL,PHARMA,METAB,MENU specialized
     class NCBI,SRA,PDB,GEO,GO external
 ```
 
@@ -133,57 +151,57 @@ graph TB
 
 ```mermaid
 graph TD
-    ArawBiologicalData[Raw Biological Data] --> BingestionLayer[Ingestion Layer]
-    B --> CformatDetection[Format Detection]
-    C --> DdataValidation[Data Validation]
+    A["Raw Biological Data"] --> B["Ingestion Layer"]
+    B --> C["Format Detection"]
+    C --> D["Data Validation"]
 
     D --> E{Data Type}
-    E -->|Genomic| FdnaProcessingPipeline[DNA Processing Pipeline]
-    E -->|Transcriptomic| GrnaProcessingPipeline[RNA Processing Pipeline]
-    E -->|Proteomic| HproteinProcessingPipeline[Protein Processing Pipeline]
-    E -->|Epigenomic| IepigenomeProcessingPipeline[Epigenome Processing Pipeline]
+    E -->|Genomic| F["DNA Processing Pipeline"]
+    E -->|Transcriptomic| G["RNA Processing Pipeline"]
+    E -->|Proteomic| H["Protein Processing Pipeline"]
+    E -->|Epigenomic| I["Epigenome Processing Pipeline"]
 
-    F --> JqualityControl[Quality Control]
+    F --> J["Quality Control"]
     G --> J
     H --> J
     I --> J
 
-    J --> KfeatureExtraction[Feature Extraction]
-    K --> LstatisticalAnalysis[Statistical Analysis]
+    J --> K["Feature Extraction"]
+    K --> L["Statistical Analysis"]
 
     L --> M{Integration Strategy}
-    M -->|Single-omic| NindividualAnalysis[Individual Analysis]
-    M -->|Multi-omic| OjointAnalysis[Joint Analysis]
+    M -->|Single-omic| N["Individual Analysis"]
+    M -->|Multi-omic| O["Joint Analysis"]
 
-    N --> Pdomain-specificResults[Domain-Specific Results]
-    O --> Qsystems-levelResults[Systems-Level Results]
+    N --> P["Domain-Specific Results"]
+    O --> Q["Systems-Level Results"]
 
-    P --> R[Visualization]
+    P --> R["Visualization"]
     Q --> R
 
-    R --> SpublicationFigures[Publication Figures]
-    S --> TscientificInsights[Scientific Insights]
+    R --> S["Publication Figures"]
+    S --> T["Scientific Insights"]
 
 
     subgraph "Data Sources"
-        U[NCBI] -.-> F
-        V[SRA] -.-> G
-        W[PDB] -.-> H
-        X[ENCODE] -.-> I
+        U["NCBI"] -.-> F
+        V["SRA"] -.-> G
+        W["PDB"] -.-> H
+        X["ENCODE"] -.-> I
     end
 
     subgraph "Processing Stages"
-        Y[Normalization] -.-> K
-        Z[Transformation] -.-> K
-        AA[Filtering] -.-> K
-        BB[Scaling] -.-> K
+        Y["Normalization"] -.-> K
+        Z["Transformation"] -.-> K
+        AA["Filtering"] -.-> K
+        BB["Scaling"] -.-> K
     end
 
     subgraph "Analysis Types"
-        CCdifferentialExpression[Differential Expression] -.-> L
-        DDassociationTesting[Association Testing] -.-> L
-        EEnetworkInference[Network Inference] -.-> L
-        FF[Clustering] -.-> L
+        CC["Differential Expression"] -.-> L
+        DD["Association Testing"] -.-> L
+        EE["Network Inference"] -.-> L
+        FF["Clustering"] -.-> L
     end
 ```
 
@@ -191,46 +209,46 @@ graph TD
 
 ```mermaid
 graph TD
-    AmoduleInterfaces[Module Interfaces] --> BstandardizedApis[Standardized APIs]
-    B --> CdataFormatStandards[Data Format Standards]
+    A["Module Interfaces"] --> B["Standardized APIs"]
+    B --> C["Data Format Standards"]
 
-    C --> DinteroperabilityLayer[Interoperability Layer]
-    D --> Ecross-moduleCommunication[Cross-Module Communication]
+    C --> D["Interoperability Layer"]
+    D --> E["Cross-Module Communication"]
 
     E --> F{Integration Pattern}
-    F -->|Pipeline| GsequentialProcessing[Sequential Processing]
-    F -->|Workflow| HorchestratedExecution[Orchestrated Execution]
-    F -->|Joint| IsimultaneousAnalysis[Simultaneous Analysis]
+    F -->|Pipeline| G["Sequential Processing"]
+    F -->|Workflow| H["Orchestrated Execution"]
+    F -->|Joint| I["Simultaneous Analysis"]
 
-    G --> JresultAggregation[Result Aggregation]
+    G --> J["Result Aggregation"]
     H --> J
     I --> J
 
-    J --> KunifiedOutput[Unified Output]
-    K --> LqualityAssurance[Quality Assurance]
+    J --> K["Unified Output"]
+    K --> L["Quality Assurance"]
 
-    L --> MfinalResults[Final Results]
+    L --> M["Final Results"]
 
 
     subgraph "API Standards"
-        NfunctionSignatures[Function Signatures] -.-> B
-        OparameterTypes[Parameter Types] -.-> B
-        PreturnFormats[Return Formats] -.-> B
-        QerrorHandling[Error Handling] -.-> B
+        N["Function Signatures"] -.-> B
+        O["Parameter Types"] -.-> B
+        P["Return Formats"] -.-> B
+        Q["Error Handling"] -.-> B
     end
 
     subgraph "Data Standards"
-        RfastaFormat[FASTA Format] -.-> C
-        ScountMatrices[Count Matrices] -.-> C
-        TpandasDataframes[Pandas DataFrames] -.-> C
-        UnetworkxGraphs[NetworkX Graphs] -.-> C
+        R["FASTA Format"] -.-> C
+        S["Count Matrices"] -.-> C
+        T["Pandas DataFrames"] -.-> C
+        U["NetworkX Graphs"] -.-> C
     end
 
     subgraph "Integration Mechanisms"
-        VcoreUtilities[Core Utilities] -.-> D
-        WconfigFiles[Config Files] -.-> D
-        XworkflowOrchestration[Workflow Orchestration] -.-> D
-        YeventSystem[Event System] -.-> D
+        V["Core Utilities"] -.-> D
+        W["Config Files"] -.-> D
+        X["Workflow Orchestration"] -.-> D
+        Y["Event System"] -.-> D
     end
 ```
 
@@ -238,51 +256,51 @@ graph TD
 
 ```mermaid
 graph TD
-    AcodeDevelopment[Code Development] --> BstaticAnalysis[Static Analysis]
-    B --> CtypeChecking[Type Checking]
-    C --> D[Linting]
+    A["Code Development"] --> B["Static Analysis"]
+    B --> C["Type Checking"]
+    C --> D["Linting"]
 
-    D --> EunitTesting[Unit Testing]
-    E --> FintegrationTesting[Integration Testing]
-    F --> GperformanceTesting[Performance Testing]
+    D --> E["Unit Testing"]
+    E --> F["Integration Testing"]
+    F --> G["Performance Testing"]
 
-    G --> H[Documentation]
-    H --> I[Validation]
+    G --> H["Documentation"]
+    H --> I["Validation"]
 
     I --> J{Standards Met?}
-    J -->|Yes| KreleaseReady[Release Ready]
-    J -->|No| LissueResolution[Issue Resolution]
+    J -->|Yes| K["Release Ready"]
+    J -->|No| L["Issue Resolution"]
 
     L --> A
 
-    K --> M[Deployment]
+    K --> M["Deployment"]
 
 
     subgraph "Code Quality"
-        N[mypy] -.-> C
-        O[ruff] -.-> D
-        P[black] -.-> D
-        Q[isort] -.-> D
+        N["mypy"] -.-> C
+        O["ruff"] -.-> D
+        P["black"] -.-> D
+        Q["isort"] -.-> D
     end
 
     subgraph "Testing Framework"
-        R[pytest] -.-> E
-        SrealData[Real Data] -.-> E
-        TnoMocks[No Mocks] -.-> E
-        U[Integration] -.-> F
+        R["pytest"] -.-> E
+        S["Real Data"] -.-> E
+        T["No Mocks"] -.-> E
+        U["Integration"] -.-> F
     end
 
     subgraph "Performance"
-        V[Benchmarks] -.-> G
-        WmemoryProfiling[Memory Profiling] -.-> G
-        XscalabilityTests[Scalability Tests] -.-> G
+        V["Benchmarks"] -.-> G
+        W["Memory Profiling"] -.-> G
+        X["Scalability Tests"] -.-> G
     end
 
     subgraph "Documentation"
-        YreadmeFiles[README Files] -.-> H
-        ZapiDocs[API Docs] -.-> H
-        AA[Examples] -.-> H
-        BB[Guides] -.-> H
+        Y["README Files"] -.-> H
+        Z["API Docs"] -.-> H
+        AA["Examples"] -.-> H
+        BB["Guides"] -.-> H
     end
 ```
 
@@ -291,9 +309,9 @@ graph TD
 ```mermaid
 flowchart LR
   subgraph CLI
-    Ametainformant.Main\nargparseCli[metainformant.__main__\nargparse CLI]
+    A["metainformant.__main__<br/>argparse CLI"]
   end
-  subgraph CorecoreUtilities[Core Utilities]
+  subgraph Core["Core Utilities"]
     C1[config]
     C2[io]
     C3[logging]
@@ -318,13 +336,13 @@ flowchart LR
     R2[workflow]
     R3[configs]
   end
-  subgraph GWASgenome-wideAssociation[Genome-Wide Association]
+  subgraph GWAS["Genome-Wide Association"]
     G1[quality]
     G2[structure]
     G3[association]
     G4[visualization]
   end
-  subgraph SingleCellsingle-cellGenomics[Single-Cell Genomics]
+  subgraph SingleCell["Single-Cell Genomics"]
     SC1[preprocessing]
     SC2[dimensionality]
     SC3[clustering]
@@ -332,7 +350,7 @@ flowchart LR
     SC5[visualization]
     SC6[integration]
   end
-  subgraph QualityqualityControl[Quality Control]
+  subgraph Quality["Quality Control"]
     Q1[fastq]
   end
   subgraph Simulation
@@ -350,25 +368,48 @@ flowchart LR
     V2[plots]
     V3[animations]
   end
-  subgraph InformationinformationTheory[Information Theory]
+  subgraph Information["Information Theory"]
     I1[entropy]
     I2[mutual-information]
     I3[profile]
   end
-  subgraph LifeEventslifeEvents[Life Events]
+  subgraph LifeEvents["Life Events"]
     L1[embed]
     L2[predict]
     L3[interpret]
   end
-  subgraph Other
-    O1[protein]
-    O2[ontology]
-    O3[phenotype]
-    O4[epigenome]
-    O5[ecology]
-    O6[ml]
-    O7[multiomics]
-    O8[networks]
+  subgraph Protein["Protein Analysis"]
+    O1["protein"]
+  end
+  subgraph Ontology["Ontology"]
+    O2["ontology"]
+  end
+  subgraph Phenotype["Phenotype Analysis"]
+    O3["phenotype"]
+  end
+  subgraph Epigenome["Epigenome Analysis"]
+    O4["epigenome"]
+  end
+  subgraph Ecology["Ecology"]
+    O5["ecology"]
+  end
+  subgraph ML["Machine Learning"]
+    O6["ml"]
+  end
+  subgraph MultiOmics["Multi-Omics Integration"]
+    O7["multiomics"]
+  end
+  subgraph Networks["Network Analysis"]
+    O8["networks"]
+  end
+  subgraph Specialized["Specialized Domains"]
+    SP1["longread"]
+    SP2["metagenomics"]
+    SP3["structural_variants"]
+    SP4["spatial"]
+    SP5["pharmacogenomics"]
+    SP6["metabolomics"]
+    SP7["menu"]
   end
   A --> D1 & D2 & D3 & D4 & D5
   A --> R1 & R2
@@ -381,6 +422,7 @@ flowchart LR
   A --> I1 & I2 & I3
   A --> L1 & L2 & L3
   A --> O1 & O2 & O3 & O4 & O5 & O6 & O7 & O8
+  A --> SP1 & SP2 & SP3 & SP4 & SP5 & SP6 & SP7
   C1 -.-> A
   C2 -.-> A
   C1 -.-> D1
@@ -416,7 +458,9 @@ Guidelines:
 ## Module Relationships and Dependencies
 
 ### Core Dependencies
+
 All modules depend on `core` utilities:
+
 - **config**: Configuration loading and environment variable handling
 - **io**: File I/O operations (JSON, CSV, TSV, compressed formats)
 - **logging**: Structured logging across all modules
@@ -426,6 +470,7 @@ All modules depend on `core` utilities:
 ### Domain Module Dependencies
 
 #### Core Module
+
 - **Purpose**: Shared infrastructure and utilities for all modules
 - **Depends on**: None (base module)
 - **Used by**: All modules (infrastructure layer)
@@ -442,91 +487,109 @@ All modules depend on `core` utilities:
 - **Integrates with**: All domain modules as the foundation layer
 
 #### DNA Module
+
 - **Depends on**: `core` (all utilities)
 - **Used by**: `gwas`, `rna` (for genomic coordinates), `information` (sequence analysis)
 - **Integrates with**: `visualization` (phylogenetic trees), `math.popgen` (population genetics theory)
 
 #### RNA Module
+
 - **Depends on**: `core`, `dna` (for genomic coordinates)
 - **Used by**: `multiomics` (transcriptomics integration)
 - **Integrates with**: External `amalgkit` CLI tool
 
 #### GWAS Module
+
 - **Depends on**: `core`, `dna.variants`, `dna.population`, `math.popgen`, `ml.regression`
 - **Used by**: `multiomics` (genomics integration)
 - **Integrates with**: `visualization` (Manhattan plots, Q-Q plots), external tools (bcftools, GATK)
 
 #### Protein Module
+
 - **Depends on**: `core`
 - **Used by**: `networks` (protein-protein interactions), `multiomics` (proteomics integration)
 - **Integrates with**: External databases (UniProt, InterPro, AlphaFold, PDB)
 
 #### Single-Cell Module
+
 - **Depends on**: `core`, `rna` (expression data), `ml.dimensionality`
 - **Used by**: `multiomics` (single-cell omics integration), `information` (single-cell information analysis)
 - **Integrates with**: External tools (scanpy, anndata) when available
 
 #### Multi-Omics Module
+
 - **Depends on**: `core`, `dna`, `rna`, `protein`, `singlecell`, `ml.dimensionality`
 - **Used by**: Workflow orchestration scripts
 - **Integrates with**: All omics modules for cross-platform integration
 
 #### Networks Module
+
 - **Depends on**: `core`, `protein` (PPI networks), `ontology` (functional annotation)
 - **Used by**: `multiomics` (network-based integration)
 - **Integrates with**: `visualization` (network plots)
 
 #### Information Theory Module
+
 - **Depends on**: `core`
 - **Used by**: All modules (can analyze any biological data)
 - **Integrates with**: `dna`, `rna`, `singlecell`, `multiomics` (cross-module integration functions)
 
 #### Life Events Module
+
 - **Depends on**: `core`
 - **Used by**: `phenotype` (life course phenotype extraction)
 - **Integrates with**: `ml` (sequence models), `visualization` (event timeline plots)
 
 #### Phenotype Module
+
 - **Depends on**: `core`, `life_events` (optional, for life course integration)
 - **Used by**: `gwas` (phenotype-genotype associations)
 - **Integrates with**: `ontology` (trait functional annotation)
 
 #### Quality Module
+
 - **Depends on**: `core`, `dna.fastq`
 - **Used by**: `rna` (FASTQ quality control), `gwas` (variant QC)
 - **Integrates with**: External tools (FastQC) when available
 
 #### Math Module
+
 - **Depends on**: `core`
 - **Used by**: `dna.population` (population genetics theory), `gwas` (statistical models)
 - **Integrates with**: Domain modules for theoretical analysis
 
 #### Visualization Module
+
 - **Depends on**: `core` (optional matplotlib/seaborn)
 - **Used by**: All modules (plotting support)
 - **Integrates with**: Domain-specific visualization (phylogenetic trees, network graphs)
 
 #### ML Module
+
 - **Depends on**: `core`
 - **Used by**: `gwas` (regression models), `singlecell` (dimensionality reduction), `life_events` (sequence models)
 - **Integrates with**: Domain modules for biological data preprocessing
 
 #### Ontology Module
+
 - **Depends on**: `core`
 - **Used by**: `networks` (functional enrichment), `phenotype` (trait annotation)
 - **Integrates with**: External databases (Gene Ontology)
 
 #### Epigenome Module
+
 - **Depends on**: `core`, `dna` (for genomic coordinates)
 - **Used by**: `multiomics` (epigenomics integration)
 - **Integrates with**: `visualization` (methylation plots)
 
 #### Ecology Module
+
 - **Depends on**: `core`
 - **Used by**: Workflow scripts
 - **Integrates with**: `math` (diversity calculations)
 
 #### Simulation Module
+
 - **Depends on**: `core`
 - **Used by**: All modules (for generating synthetic test data)
 - **Key Components**:
@@ -535,9 +598,52 @@ All modules depend on `core` utilities:
   - **agents**: Agent-based modeling and ecosystem simulation
 - **Integrates with**: All modules for testing and validation purposes
 
+#### Long-Read Module
+
+- **Depends on**: `core`, `dna` (for genomic coordinates), `quality` (read QC)
+- **Used by**: `multiomics` (long-read integration), `structural_variants` (SV detection from long reads)
+- **Integrates with**: External tools (minimap2, Flye, Canu) when available
+
+#### Metagenomics Module
+
+- **Depends on**: `core`, `dna` (for sequence analysis), `quality` (read QC)
+- **Used by**: `ecology` (microbiome community analysis), `multiomics` (metagenomic integration)
+- **Integrates with**: External tools (Kraken2, MetaPhlAn) when available
+
+#### Structural Variants Module
+
+- **Depends on**: `core`, `dna` (for genomic coordinates and variant analysis)
+- **Used by**: `gwas` (SV-GWAS association), `multiomics` (structural variant integration)
+- **Integrates with**: External tools (Delly, Manta) when available
+
+#### Spatial Module
+
+- **Depends on**: `core`, `singlecell` (for expression data), `visualization` (spatial plots)
+- **Used by**: `multiomics` (spatial multi-omics integration)
+- **Integrates with**: External tools (Squidpy, SpatialDE) when available
+
+#### Pharmacogenomics Module
+
+- **Depends on**: `core`, `dna.variants` (for variant interpretation), `gwas` (association data)
+- **Used by**: Clinical analysis workflows
+- **Integrates with**: External databases (PharmGKB, CPIC) when available
+
+#### Metabolomics Module
+
+- **Depends on**: `core`
+- **Used by**: `multiomics` (metabolomic integration), `networks` (metabolic pathways)
+- **Integrates with**: External tools (MZmine, XCMS) when available
+
+#### Menu Module
+
+- **Depends on**: `core` (all utilities)
+- **Used by**: CLI entry point for interactive navigation
+- **Integrates with**: All domain modules for workflow discovery
+
 ### Common Integration Patterns
 
 #### Multi-Omics Integration Workflow
+
 ```
 DNA (genomics) → Multi-Omics
 RNA (transcriptomics) → Multi-Omics  
@@ -548,6 +654,7 @@ Single-Cell → Multi-Omics
 ```
 
 #### Genotype-Phenotype Association
+
 ```
 DNA (variants) → GWAS
 Phenotype (traits) → GWAS
@@ -556,6 +663,7 @@ Phenotype (traits) → GWAS
 ```
 
 #### Functional Annotation Pipeline
+
 ```
 DNA/RNA/Protein (sequences) → Ontology
 Networks (modules) → Ontology
@@ -564,6 +672,7 @@ Networks (modules) → Ontology
 ```
 
 #### Quality Control Pipeline
+
 ```
 DNA (FASTQ) → Quality
 RNA (FASTQ) → Quality

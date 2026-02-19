@@ -82,6 +82,7 @@ The `Agent` class supports energy-based interactions, reproduction with mutation
 | Module | Purpose |
 |--------|---------|
 | [`models/`](models/) | Core generators: `sequences`, `popgen`, `rna`, `agents` |
+| [`methylation/`](methylation/) | Methylation pattern simulation |
 | [`workflow/`](workflow/) | `SimulationConfig`, `run_simulation_workflow`, calibration |
 | [`visualization/`](visualization/) | `plot_sequence_evolution`, `plot_population_dynamics_simulation`, animations |
 | [`benchmark/`](benchmark/) | Performance benchmarking utilities |

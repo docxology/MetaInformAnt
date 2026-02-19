@@ -8,16 +8,22 @@ Genome-Wide Association Studies analysis, fine-mapping, and variant-expression i
 graph TD
     subgraph "GWAS Module"
         A[analysis/] --> |association.py| AS[Association Testing]
-        A --> |lmm.py| LM[Linear Mixed Models]
-        
-        F[finemapping/] --> |colocalization.py| CO[Colocalization]
-        F --> |susie.py| SU[SuSiE Fine-mapping]
-        
-        D[data/] --> |vcf.py| VCF[VCF Parsing]
-        D --> |plink.py| PL[PLINK I/O]
-        
-        V[visualization/] --> VIS[Manhattan, QQ Plots]
-        
+        A --> |mixed_model.py| LM[EMMA Mixed Models]
+        A --> |quality.py| QC[VCF Parsing & QC]
+        A --> |structure.py| ST[PCA & Kinship]
+
+        F[finemapping/] --> |credible_sets.py| CS[Credible Sets & SuSiE]
+        F --> |colocalization.py| CO[Colocalization]
+        F --> |eqtl.py| EQ[eQTL Analysis]
+
+        D[data/] --> |download.py| DL[Reference Genome & SRA Downloads]
+        D --> |genome.py| GN[Chromosome Mapping & GFF3]
+        D --> |metadata.py| MD[Sample Metadata]
+
+        H[heritability/] --> |estimation.py| HE[LDSC, GREML, HE Regression]
+
+        V[visualization/] --> VIS[Manhattan, QQ, Interactive Plots]
+
         W[workflow/] --> WF[Pipeline Orchestration]
     end
 ```
@@ -27,7 +33,7 @@ graph TD
 ### Fine-Mapping & Colocalization
 
 ```python
-from metainformant.gwas.finemapping import (
+from metainformant.gwas.finemapping.colocalization import (
     eqtl_coloc,        # GWAS-eQTL colocalization
     multi_trait_coloc, # Multi-trait analysis
     compute_clpp,      # CLPP method
@@ -77,7 +83,7 @@ The GWAS module integrates with RNA-seq via the multiomics module:
 
 ```python
 from metainformant.multiomics.analysis import integration
-from metainformant.gwas.finemapping import eqtl_coloc
+from metainformant.gwas.finemapping.colocalization import eqtl_coloc
 
 # Convert GWAS and expression data to common format
 dna_data = integration.from_dna_variants(gwas_sumstats)

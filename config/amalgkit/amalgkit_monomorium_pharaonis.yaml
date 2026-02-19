@@ -32,7 +32,7 @@ genome:
   accession: GCF_013373865.1
   assembly_name: ASM1337386v2
   annotation_release: 102
-  dest_dir: blue/amalgkit/shared/genome/Monomorium_pharaonis
+  dest_dir: /Volumes/blue/data/amalgkit/shared/genome/Monomorium_pharaonis
   include:
     - genome
     - gff3
@@ -77,8 +77,8 @@ steps:
     redo: no
     build_index: no
     keep_fastq: no
-    index_dir: blue/amalgkit/shared/genome/Monomorium_pharaonis/index
-    fasta_dir: blue/amalgkit/shared/genome/Monomorium_pharaonis
+    index_dir: /Volumes/blue/data/amalgkit/shared/genome/Monomorium_pharaonis/index
+    fasta_dir: /Volumes/blue/data/amalgkit/shared/genome/Monomorium_pharaonis
   merge:
     out: blue/amalgkit/monomorium_pharaonis/merged/merged_abundance.tsv
     out_dir: blue/amalgkit/monomorium_pharaonis/merged

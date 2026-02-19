@@ -13,7 +13,7 @@ Specialized agent context for the `rna` component.
 
 - **Imports**: Prefer absolute imports from `metainformant`.
 - **I/O**: Use `metainformant.core.io` for all file operations.
-- **Logging**: Use `metainformant.core.logging`.
+- **Logging**: Use `metainformant.core.utils.logging`.
 
 ## 📋 Code Quality Policy
 

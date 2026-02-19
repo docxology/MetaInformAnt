@@ -35,86 +35,21 @@ Modules:
 - longread: Long-read sequencing analysis (ONT, PacBio)
 - structural_variants: Structural variant detection and analysis
 - spatial: Spatial transcriptomics analysis
+- metabolomics: Metabolite identification and pathway analysis
 - metagenomics: Microbiome and metagenomic analysis
 - pharmacogenomics: Clinical pharmacogenomic variant analysis
 """
 
 from __future__ import annotations
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"  # Bumped for engine refactor
 __author__ = "MetaInformAnt Development Team"
 __license__ = "Apache License 2.0"
 
-# Type checking imports
-from typing import TYPE_CHECKING
-
-# Import all domain modules for easy access
-from . import (
-    core,
-    dna,
-    ecology,
-    epigenome,
-    gwas,
-    information,
-    life_events,
-    longread,
-    math,
-    menu,
-    metagenomics,
-    ml,
-    multiomics,
-    networks,
-    ontology,
-    pharmacogenomics,
-    phenotype,
-    protein,
-    quality,
-    rna,
-    simulation,
-    singlecell,
-    spatial,
-    structural_variants,
-    visualization,
-)
-
-if TYPE_CHECKING:
-    pass
-
-__all__ = [
-    # Package metadata
-    "__version__",
-    "__author__",
-    "__license__",
-    # Core infrastructure (always available)
-    "core",
-    # Molecular analysis modules
-    "dna",
-    "rna",
-    "protein",
-    "epigenome",
-    "longread",
-    # Statistical & ML modules
-    "gwas",
-    "math",
-    "ml",
-    "information",
-    # Systems biology modules
-    "networks",
-    "multiomics",
-    "singlecell",
-    "spatial",
-    "structural_variants",
-    "simulation",
-    # Clinical & environmental modules
-    "metagenomics",
-    "pharmacogenomics",
-    # Annotation & metadata modules
-    "ontology",
-    "phenotype",
-    "ecology",
-    "life_events",
-    # Utilities
-    "quality",
-    "visualization",
-    "menu",
-]
+# Lazy loading or explicit imports only.
+# Top-level imports of heavy submodules are removed to prevent circular dependencies
+# and reduce startup time.
+#
+# Users should import submodules directly:
+#   from metainformant import rna
+#   import metainformant.gwas as gwas

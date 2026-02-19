@@ -77,7 +77,7 @@ RNA expression data can be integrated with GWAS variants for eQTL analysis:
 
 ```python
 from metainformant.multiomics.analysis import integration
-from metainformant.gwas.finemapping import eqtl_coloc
+from metainformant.gwas.finemapping.colocalization import eqtl_coloc
 
 # Prepare expression data for integration
 rna_data = integration.from_rna_expression(

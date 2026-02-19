@@ -2,7 +2,7 @@
 
 ## Scope
 
-Technical documentation for METAINFORMANT, organized by domain module. Contains architecture guides, API documentation, tutorials, and reference materials for all 19 bioinformatics modules. Built with Sphinx for HTML generation.
+Technical documentation for METAINFORMANT, organized by domain module. Contains architecture guides, API documentation, tutorials, and reference materials for all 27 bioinformatics modules. Built with Sphinx for HTML generation.
 
 ## Architecture
 
@@ -11,6 +11,7 @@ Technical documentation for METAINFORMANT, organized by domain module. Contains 
 - **Build System**: Sphinx with markdown support
 
 ### Directory Structure
+
 ```
 docs/
 ├── conf.py                  # Sphinx configuration
@@ -32,6 +33,7 @@ docs/
 ## Data Structures
 
 ### Documentation Types
+
 - **index.md**: Entry points for domains and subdirectories
 - **API.md**: Function signatures, parameters, return types
 - **ARCHITECTURE.md**: Module design and component relationships
@@ -40,15 +42,20 @@ docs/
 - **FAQ.md**: Common questions and troubleshooting
 
 ### Domain Subdirectories
+
 Each module has a corresponding docs subdirectory:
+
 - core/, dna/, rna/, gwas/, protein/, epigenome/
 - networks/, multiomics/, singlecell/, visualization/
 - quality/, ml/, math/, information/, ontology/
 - phenotype/, ecology/, simulation/, life_events/
+- longread/, metagenomics/, structural_variants/
+- spatial/, pharmacogenomics/, metabolomics/, menu/
 
 ## Interface
 
 ### Building Documentation
+
 ```bash
 # Build HTML documentation
 bash scripts/package/uv_docs.sh
@@ -57,13 +64,19 @@ bash scripts/package/uv_docs.sh
 ```
 
 ### Adding Documentation
+
 1. Create or update files in appropriate `docs/{module}/` subdirectory
 2. Use Markdown format with code examples
 3. Cross-reference related documentation
 4. Include REAL, RUNNABLE code examples
 
 ### Documentation Standards
+
 - Markdown format for all documentation
 - Code examples must be real and executable
 - Keep documentation synchronized with source code
 - Never create new root-level files (update existing or add to subdirectories)
+
+## 🧪 Testing Policy
+
+- **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

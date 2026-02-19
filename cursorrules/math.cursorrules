@@ -1,0 +1,34 @@
+# Cursor Rules for math Module (MATH_)
+
+## 🧠 Context & Intent
+- **Domain**: math
+- **Path**: `src/metainformant/math/`
+- **Config Prefix**: `MATH_` (e.g., `MATH_THREADS`)
+
+## 🧱 Directory Structure
+- **Source**: `src/metainformant/math/`
+- **Tests**: `tests/test_math_*.py`
+- **Docs**: `docs/math/`
+- **Output**: `output/math/` (Default for all artifacts)
+
+## ⚙️ Configuration
+- Use `metainformant.core.config` to load config.
+- Support env checks with `MATH_` prefix.
+- Example:
+  ```python
+  config = load_domain_config("config/math/default.yaml", prefix="MATH")
+  ```
+
+## 🧪 Testing (ZERO MOCK POLICY)
+- **STRICTLY NO MOCKS**: Use real implementations only.
+- **External Tools**: Skip if not found (don't mock).
+- **Network**: Use real API calls with `@pytest.mark.network`.
+- **Output**: Write all test artifacts to `output/` via `tmp_path`.
+
+## 📦 Dependencies
+- Manage via `uv`: `uv add`, `uv remove`.
+- Import pattern:
+  ```python
+  from metainformant.core import io, logging
+  from metainformant.math import utils
+  ```

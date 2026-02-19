@@ -322,7 +322,7 @@ Visualization (NEW):
 
 **Internal Dependencies**:
 - ✅ `metainformant.core.io` - File operations
-- ✅ `metainformant.core.logging` - Logging framework
+- ✅ `metainformant.core.utils.logging` - Logging framework
 - ✅ `metainformant.core.config` - Config management
 - ✅ `metainformant.dna` - Sequence utilities (future)
 - ✅ `metainformant.visualization` - Base plotting (shared utilities)

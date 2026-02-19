@@ -1,0 +1,34 @@
+# Cursor Rules for metabolomics Module (METAB_)
+
+## 🧠 Context & Intent
+- **Domain**: metabolomics
+- **Path**: `src/metainformant/metabolomics/`
+- **Config Prefix**: `METAB_` (e.g., `METAB_THREADS`)
+
+## 🧱 Directory Structure
+- **Source**: `src/metainformant/metabolomics/`
+- **Tests**: `tests/test_metabolomics_*.py`
+- **Docs**: `docs/metabolomics/`
+- **Output**: `output/metabolomics/` (Default for all artifacts)
+
+## ⚙️ Configuration
+- Use `metainformant.core.config` to load config.
+- Support env checks with `METAB_` prefix.
+- Example:
+  ```python
+  config = load_domain_config("config/metabolomics/default.yaml", prefix="METAB")
+  ```
+
+## 🧪 Testing (ZERO MOCK POLICY)
+- **STRICTLY NO MOCKS**: Use real implementations only.
+- **External Tools**: Skip if not found (don't mock).
+- **Network**: Use real API calls with `@pytest.mark.network`.
+- **Output**: Write all test artifacts to `output/` via `tmp_path`.
+
+## 📦 Dependencies
+- Manage via `uv`: `uv add`, `uv remove`.
+- Import pattern:
+  ```python
+  from metainformant.core import io, logging
+  from metainformant.metabolomics import utils
+  ```

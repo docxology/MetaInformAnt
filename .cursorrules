@@ -35,6 +35,7 @@
 - **Structural Variants**: `output/structural_variants/<analysis_type>/` (e.g., `detection/`, `annotation/`)
 - **Spatial**: `output/spatial/<analysis_type>/` (e.g., `clustering/`, `deconvolution/`, `integration/`)
 - **Pharmacogenomics**: `output/pharmacogenomics/<analysis_type>/` (e.g., `alleles/`, `clinical/`, `reports/`)
+- **Metabolomics**: `output/metabolomics/<analysis_type>/` (e.g., `identification/`, `quantification/`, `pathways/`)
 
 ## Path and I/O
 
@@ -177,6 +178,7 @@ with io.open_text_auto("data/large_file.txt.gz") as f:
 - **Structural Variants Module**: Use prefix `SV_` (e.g., `SV_THREADS`, `SV_WORK_DIR`)
 - **Spatial Module**: Use prefix `SPATIAL_` (e.g., `SPATIAL_THREADS`, `SPATIAL_WORK_DIR`)
 - **Pharmacogenomics Module**: Use prefix `PHARMA_` (e.g., `PHARMA_THREADS`, `PHARMA_DB_PATH`)
+- **Metabolomics Module**: Use prefix `METAB_` (e.g., `METAB_THREADS`, `METAB_WORK_DIR`)
 
 ### Configuration File Structure
 ```yaml
@@ -212,7 +214,7 @@ def load_domain_config(config_file: str | Path, prefix: str = "DOMAIN") -> Domai
 - RNA: `AmalgkitWorkflowConfig` with prefix `"AK"`
 - GWAS: `GWASWorkflowConfig` with prefix `"GWAS"`
 - Life Events: `LifeEventsWorkflowConfig` with prefix `"LE"`
-- Other modules: Follow pattern `{MODULE}_` prefix (e.g., `DNA_`, `PROT_`, `EPI_`, `ONT_`, `PHEN_`, `ECO_`, `MATH_`, `INFO_`, `VIZ_`, `SIM_`, `SC_`, `QC_`, `NET_`, `ML_`, `MULTI_`, `LR_`, `META_`, `SV_`, `SPATIAL_`, `PHARMA_`)
+- Other modules: Follow pattern `{MODULE}_` prefix (e.g., `DNA_`, `PROT_`, `EPI_`, `ONT_`, `PHEN_`, `ECO_`, `MATH_`, `INFO_`, `VIZ_`, `SIM_`, `SC_`, `QC_`, `NET_`, `ML_`, `MULTI_`, `LR_`, `META_`, `SV_`, `SPATIAL_`, `PHARMA_`, `METAB_`)
 
 ## Code Quality Policy (STRICTLY NO MOCKS/FAKES/PLACEHOLDERS)
 
@@ -319,6 +321,7 @@ Module-specific rules are organized in the `cursorrules/` directory. Each module
 - `cursorrules/spatial.cursorrules` - Spatial transcriptomics (Visium, MERFISH, Xenium)
 - `cursorrules/pharmacogenomics.cursorrules` - Clinical pharmacogenomics
 - `cursorrules/menu.cursorrules` - Interactive menu and discovery system
+- `cursorrules/metabolomics.cursorrules` - Metabolomics analysis
 
 **See `cursorrules/README.md` for detailed information about the modular structure.**
 
@@ -518,6 +521,9 @@ Each module should have:
 - **Pharmacogenomics → GWAS**: Variant data from association studies
 - **Pharmacogenomics → DNA**: Genomic coordinates and variant calling
 - **Pharmacogenomics → Phenotype**: Clinical phenotype data
+- **Metabolomics → Multi-Omics**: Metabolite-gene integration
+- **Metabolomics → Networks**: Metabolic pathway networks
+- **Metabolomics → Quality**: QC for mass spectrometry data
 
 ### Workflow Patterns
 ```python

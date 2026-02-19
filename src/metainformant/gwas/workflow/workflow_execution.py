@@ -32,6 +32,11 @@ from metainformant.gwas.analysis.ld_pruning import ld_prune
 from metainformant.gwas.analysis.mixed_model import association_test_mixed, run_mixed_model_gwas
 from metainformant.gwas.analysis.quality import apply_qc_filters, check_haplodiploidy, parse_vcf_full
 from metainformant.gwas.analysis.structure import compute_kinship_matrix, compute_pca
+from metainformant.gwas.analysis.summary_stats import (
+    create_results_summary,
+    write_significant_hits,
+    write_summary_statistics,
+)
 from metainformant.gwas.data.metadata import get_population_labels, load_sample_metadata, validate_metadata
 from metainformant.gwas.visualization.config import apply_style, style_from_config
 from metainformant.gwas.visualization.general import generate_all_plots

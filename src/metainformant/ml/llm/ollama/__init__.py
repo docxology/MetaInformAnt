@@ -5,7 +5,8 @@ for local large language model inference. It supports text generation,
 chat conversations, streaming, and composable chain patterns.
 
 Example:
-    >>> from metainformant.ml.llm.ollama import OllamaClient, OllamaConfig
+    >>> from metainformant.ml.llm.ollama.client import OllamaClient
+    >>> from metainformant.ml.llm.ollama.config import OllamaConfig
     >>> config = OllamaConfig(model="smollm2:135m-instruct-q4_K_S")
     >>> client = OllamaClient(config)
     >>> response = client.generate("Explain DNA in one sentence.")

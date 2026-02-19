@@ -82,6 +82,7 @@ score = calculate_quality_score(qc_data, data_type="fastq")
 |--------|---------|
 | [`io/`](io/) | FASTQ parsing (`FastqRecord`, `read_fastq_records`), filtering |
 | [`analysis/`](analysis/) | Quality metrics (`calculate_quality_score`) and contamination (`ContaminationDetector`) |
+| [`batch/`](batch/) | Batch effect detection (PVCA, silhouette) and ComBat-like correction |
 | [`reporting/`](reporting/) | MultiQC integration and report generation |
 
 ## Quick Start

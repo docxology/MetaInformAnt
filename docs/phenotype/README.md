@@ -18,8 +18,29 @@ Phenotype module for MetaInformAnt.
 
 ```mermaid
 graph TD
-    phenotype[phenotype]
-    style phenotype fill:#f9f,stroke:#333,stroke-width:2px
+    subgraph "Phenotype Module"
+        D[data/] --> |scraper.py| SC[AntWiki Web Scraping]
+        D --> |antwiki.py| AW[AntWiki Record Loading]
+
+        A[analysis/] --> |life_course.py| LC[Life Course Trajectories]
+
+        B[behavior/] --> BH[Behavioral Phenotypes]
+        C[chemical/] --> CH[Chemical Profiles]
+        MO[morphological/] --> MR[Morphometric Measurements]
+        SO[sonic/] --> SN[Acoustic Phenotypes]
+        EL[electronic/] --> EE[Electronic Phenotyping]
+
+        V[visualization/] --> |visualization.py| VZ[Trait Plots & Networks]
+        W[workflow/] --> |pipeline.py| PL[PhenotypePipeline]
+
+        GI[gwas_integration/] --> GW[GWAS-Phenotype Linking]
+        IN[integration/] --> IT[Cross-Domain Integration]
+    end
+
+    D --> A
+    A --> V
+    A --> W
+    GI --> IT
 ```
 
 ## Usage

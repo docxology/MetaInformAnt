@@ -171,7 +171,7 @@ def generate_all_plots(
         # Generate Manhattan plot
         manhattan_file = output_dir / "manhattan_plot.png"
         try:
-            from .general import manhattan_plot
+            from ..general import manhattan_plot
 
             plot = manhattan_plot(records, output_path=manhattan_file, significance_threshold=significance_threshold)
             if plot:
@@ -183,7 +183,7 @@ def generate_all_plots(
         # Generate Q-Q plot
         qq_file = output_dir / "qq_plot.png"
         try:
-            from .general import qq_plot
+            from ..general import qq_plot
 
             p_values = df[p_col].dropna().values
             plot = qq_plot(p_values.tolist(), output_path=qq_file)
@@ -195,7 +195,7 @@ def generate_all_plots(
 
         # Generate regional plots for top hits
         try:
-            from .general import regional_plot
+            from ..general import regional_plot
 
             top_hits = df.nsmallest(5, p_col)
 
@@ -215,7 +215,7 @@ def generate_all_plots(
         if "BETA" in df.columns:
             effect_file = output_dir / "effect_size_plot.png"
             try:
-                from .general import effect_size_plot
+                from ..general import effect_size_plot
 
                 plot = effect_size_plot(records, output_path=effect_file)
                 if plot:
@@ -230,7 +230,7 @@ def generate_all_plots(
                 pca_file_data = np.load(pca_file)
                 pca_plot_file = output_dir / "pca_plot.png"
 
-                from .general import pca_plot
+                from ..general import pca_plot
 
                 plot = pca_plot(pca_file_data, output_path=pca_plot_file)
                 if plot:
@@ -245,7 +245,7 @@ def generate_all_plots(
                 kinship_data = np.load(kinship_file)
                 kinship_plot_file = output_dir / "kinship_heatmap.png"
 
-                from .general import kinship_heatmap
+                from ..general import kinship_heatmap
 
                 plot = kinship_heatmap(kinship_data, output_path=kinship_plot_file)
                 if plot:

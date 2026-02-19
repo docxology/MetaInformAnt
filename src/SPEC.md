@@ -2,7 +2,7 @@
 
 ## Scope
 
-Root source directory containing the metainformant Python package. This is the package distribution root with the main `metainformant/` module containing all 25 domain-specific bioinformatics modules.
+Root source directory containing the metainformant Python package. This is the package distribution root with the main `metainformant/` module containing 25 domain-specific bioinformatics modules plus `core/` infrastructure.
 
 ## Architecture
 
@@ -20,7 +20,7 @@ src/
 │   ├── core/               # Core infrastructure
 │   ├── dna/                # DNA analysis
 │   ├── rna/                # RNA analysis
-│   └── {module}/           # 22 additional domain modules
+│   └── {module}/           # 24 additional domain modules
 └── metainformant.egg-info/ # Package metadata (generated)
 ```
 
@@ -28,7 +28,7 @@ src/
 
 ### Package Components
 
-- **metainformant/**: Main Python package with 25 domain modules
+- **metainformant/**: Main Python package with 25 domain modules + core
 - **metainformant.egg-info/**: Generated package metadata for pip/uv installation
 
 ### Module Organization
@@ -36,9 +36,10 @@ src/
 The metainformant package contains domain-driven modules:
 
 - Core: core/
-- Genomics: dna/, rna/, gwas/, epigenome/
+- Genomics: dna/, rna/, gwas/, epigenome/, longread/, structural_variants/
 - Proteomics: protein/
-- Systems Biology: networks/, multiomics/, singlecell/
+- Systems Biology: networks/, multiomics/, singlecell/, spatial/
+- Multi-omics: metabolomics/, metagenomics/, pharmacogenomics/
 - Analysis: quality/, ml/, math/, information/
 - Annotation: ontology/, phenotype/
 - Specialized: ecology/, simulation/, life_events/, visualization/, menu/
@@ -59,7 +60,8 @@ uv pip install -e ".[dev,scientific,ml,networks]"
 
 ```python
 # Import from metainformant package
-from metainformant.core import io, config, logging
+from metainformant.core import io, utils
+from metainformant.core.utils import logging, config
 from metainformant.dna import sequence, alignment
 from metainformant.rna import workflow, analysis
 

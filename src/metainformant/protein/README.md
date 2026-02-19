@@ -73,10 +73,10 @@ model_path = fetch_alphafold_model("P12345", out_dir=Path("output/structures"))
 
 ```python
 from metainformant.protein.sequence.sequences import read_fasta
-from metainformant.protein.sequence.alignment import align_sequences
+from metainformant.protein.sequence.alignment import global_align
 
 proteins = read_fasta("data/proteome.fasta")
-alignment = align_sequences(list(proteins.values()))
+alignment = global_align(list(proteins.values())[0], list(proteins.values())[1])
 ```
 
 ## Quick Start

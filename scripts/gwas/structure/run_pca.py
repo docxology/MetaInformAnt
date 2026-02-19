@@ -14,7 +14,7 @@ import numpy as np
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 from metainformant.gwas import compute_pca, parse_vcf_full
 
 # logging.setup_logging()

@@ -5,7 +5,7 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Modules](https://img.shields.io/badge/modules-25-green.svg)](src/metainformant/)
+[![Modules](https://img.shields.io/badge/modules-26-green.svg)](src/metainformant/)
 [![Files](https://img.shields.io/badge/files-560-brightgreen.svg)](src/metainformant/)
 
 ---
@@ -18,7 +18,7 @@ METAINFORMANT provides production-ready bioinformatics analysis across genomics,
 
 | Metric | Value |
 |--------|-------|
-| **Modules** | 25 specialized analysis modules |
+| **Modules** | 26 specialized analysis modules |
 | **Python Files** | 560 implementation files |
 | **Plot Types** | 70+ visualization methods |
 | **Documentation** | 240+ README files |
@@ -38,41 +38,51 @@ METAINFORMANT provides production-ready bioinformatics analysis across genomics,
 
 ```mermaid
 flowchart TB
-    subgraph coreInfra[coreInfrastructure]
-        CORE[coreUtilities]
+    subgraph coreInfra["Core Infrastructure"]
+        CORE["Core Utilities"]
     end
 
-    subgraph molecular[molecularAnalysis]
-        DNA[dnaAnalysis]
-        RNA[rnaAnalysis]
-        PROT[proteinAnalysis]
-        EPI[epigenomeAnalysis]
+    subgraph molecular["Molecular Analysis"]
+        DNA["DNA Analysis"]
+        RNA["RNA Analysis"]
+        PROT["Protein Analysis"]
+        EPI["Epigenome Analysis"]
     end
 
-    subgraph statsML[statisticalAndML]
-        GWAS[gwasAnalysis]
-        MATH[mathAnalysis]
-        ML[machineLearning]
-        INFO[informationAnalysis]
+    subgraph statsML["Statistical and ML"]
+        GWAS["GWAS Analysis"]
+        MATH["Mathematical Biology"]
+        ML["Machine Learning"]
+        INFO["Information Theory"]
     end
 
-    subgraph systems[systemsBiology]
-        NET[networksAnalysis]
-        MULTI[multiomicsAnalysis]
-        SC[singlecellAnalysis]
-        SIM[simulationAnalysis]
+    subgraph systems["Systems Biology"]
+        NET["Network Analysis"]
+        MULTI["Multi-Omics Integration"]
+        SC["Single-Cell Analysis"]
+        SIM["Simulation"]
     end
 
-    subgraph annotation[annotationAndMetadata]
-        ONT[ontologyAnalysis]
-        PHEN[phenotypeAnalysis]
-        ECO[ecologyAnalysis]
-        LE[lifeEventsAnalysis]
+    subgraph annotation["Annotation and Metadata"]
+        ONT["Ontology"]
+        PHEN["Phenotype Analysis"]
+        ECO["Ecology"]
+        LE["Life Events"]
     end
 
-    subgraph utilities[utilities]
-        QUAL[qualityControl]
-        VIZ[visualization]
+    subgraph utilities["Utilities"]
+        QUAL["Quality Control"]
+        VIZ["Visualization"]
+    end
+
+    subgraph specialized["Specialized Domains"]
+        LR["Long-Read Sequencing"]
+        METAG["Metagenomics"]
+        SV["Structural Variants"]
+        SPATIAL["Spatial Transcriptomics"]
+        PHARMA["Pharmacogenomics"]
+        METAB["Metabolomics"]
+        MENU["Menu System"]
     end
 
     CORE --> DNA
@@ -93,73 +103,80 @@ flowchart TB
     CORE --> LE
     CORE --> QUAL
     CORE --> VIZ
+    CORE --> LR
+    CORE --> METAG
+    CORE --> SV
+    CORE --> SPATIAL
+    CORE --> PHARMA
+    CORE --> METAB
+    CORE --> MENU
 ```
 
 ### Data Flow and Integration Architecture
 
 ```mermaid
 graph TD
-    ArawBiologicalData[Raw Biological Data] --> BdataIngestion[Data Ingestion]
-    BdataIngestion --> C{Data Type}
+    A["Raw Biological Data"] --> B["Data Ingestion"]
+    B --> C{Data Type}
 
-    C -->|DNA| D[dnaModule]
-    C -->|RNA| E[rnaModule]
-    C -->|Protein| F[proteinModule]
-    C -->|Epigenome| G[epigenomeModule]
-    C -->|Phenotype| H[phenotypeModule]
-    C -->|Environmental| I[ecologyModule]
+    C -->|DNA| D["DNA Module"]
+    C -->|RNA| E["RNA Module"]
+    C -->|Protein| F["Protein Module"]
+    C -->|Epigenome| G["Epigenome Module"]
+    C -->|Phenotype| H["Phenotype Module"]
+    C -->|Environmental| I["Ecology Module"]
 
-    D --> JqualityControl[Quality Control]
-    E --> JqualityControl
-    F --> JqualityControl
-    G --> JqualityControl
-    H --> JqualityControl
-    I --> JqualityControl
+    D --> J["Quality Control"]
+    E --> J
+    F --> J
+    G --> J
+    H --> J
+    I --> J
 
-    JqualityControl --> KcoreProcessing[Core Processing]
-    KcoreProcessing --> L{Analysis Type}
+    J --> K["Core Processing"]
+    K --> L{Analysis Type}
 
-    L -->|Statistical| M[gwasModule]
-    L -->|ML| N[mlModule]
-    L -->|Information| O[informationModule]
-    L -->|Networks| P[networksModule]
-    L -->|Systems| Q[multiomicsModule]
-    L -->|Singlecell| R[singlecellModule]
-    L -->|Simulation| S[simulationModule]
+    L -->|Statistical| M["GWAS Module"]
+    L -->|ML| N["ML Module"]
+    L -->|Information| O["Information Module"]
+    L -->|Networks| P["Networks Module"]
+    L -->|Systems| Q["Multi-Omics Module"]
+    L -->|Singlecell| R["Single-Cell Module"]
+    L -->|Simulation| S["Simulation Module"]
 
-    M --> TresultsIntegration[Results Integration]
-    N --> TresultsIntegration
-    O --> TresultsIntegration
-    P --> TresultsIntegration
-    Q --> TresultsIntegration
-    R --> TresultsIntegration
-    S --> TresultsIntegration
+    M --> T["Results Integration"]
+    N --> T
+    O --> T
+    P --> T
+    Q --> T
+    R --> T
+    S --> T
 
-    TresultsIntegration --> U[Visualization]
-    U --> VpublicationFigures[Publication Figures]
-    VpublicationFigures --> WscientificInsights[Scientific Insights]
+    T --> U["Visualization"]
+    U --> V["Publication Figures"]
+    V --> W["Scientific Insights"]
 
     subgraph "Primary Data Types"
-        X[Genomic] -.-> D
-        Y[Transcriptomic] -.-> E
-        Z[Proteomic] -.-> F
-        AA[Epigenetic] -.-> G
+        X["Genomic"] -.-> D
+        Y["Transcriptomic"] -.-> E
+        Z["Proteomic"] -.-> F
+        AA["Epigenetic"] -.-> G
     end
 
     subgraph "Analysis Workflows"
-        BBpopulationGenetics[Population Genetics] -.-> M
-        CCfeatureSelection[Feature Selection] -.-> N
-        DDmutualInformation[Mutual Information] -.-> O
-        EEcommunityDetection[Community Detection] -.-> P
-        FFjointPca[Joint PCA] -.-> Q
-        GGtrajectoryAnalysis[Trajectory Analysis] -.-> R
+        BB["Population Genetics"] -.-> M
+        CC["Feature Selection"] -.-> N
+        DD["Mutual Information"] -.-> O
+        EE["Community Detection"] -.-> P
+        FF["Joint PCA"] -.-> Q
+        GG["Trajectory Analysis"] -.-> R
     end
 
     subgraph "Output Formats"
-        HHmanhattanPlots[Manhattan Plots] -.-> VpublicationFigures
-        II[Heatmaps] -.-> VpublicationFigures
-        JJnetworkGraphs[Network Graphs] -.-> VpublicationFigures
-        KK[Animations] -.-> VpublicationFigures
+        HH["Manhattan Plots"] -.-> V
+        II["Heatmaps"] -.-> V
+        JJ["Network Graphs"] -.-> V
+        KK["Animations"] -.-> V
     end
 ```
 
@@ -167,51 +184,51 @@ graph TD
 
 ```mermaid
 graph TD
-    Amultiomics["Multi-Omic Datasets"] --> BsampleAlignment[Sample Alignment]
-    BsampleAlignment --> CbatchEffectCorrection[Batch Effect Correction]
+    A["Multi-Omic Datasets"] --> B["Sample Alignment"]
+    B --> C["Batch Effect Correction"]
 
-    CbatchEffectCorrection --> D{Integration Strategy}
-    D -->|Early| EconcatenatedMatrix[Concatenated Matrix]
-    D -->|Late| FseparateModels[Separate Models]
+    C --> D{Integration Strategy}
+    D -->|Early| E["Concatenated Matrix"]
+    D -->|Late| F["Separate Models"]
     D -->|Intermediate| G["Meta-Analysis"]
 
-    EconcatenatedMatrix --> HjointDimensionalityReduction[Joint Dimensionality Reduction]
-    FseparateModels --> IindividualAnalysis[Individual Analysis]
-    G --> JresultIntegration[Result Integration]
+    E --> H["Joint Dimensionality Reduction"]
+    F --> I["Individual Analysis"]
+    G --> J["Result Integration"]
 
-    HjointDimensionalityReduction --> KunifiedClustering[Unified Clustering]
-    IindividualAnalysis --> LindividualClustering[Individual Clustering]
-    JresultIntegration --> MconsensusClustering[Consensus Clustering]
+    H --> K["Unified Clustering"]
+    I --> L["Individual Clustering"]
+    J --> M["Consensus Clustering"]
 
-    KunifiedClustering --> NfunctionalEnrichment[Functional Enrichment]
-    LindividualClustering --> NfunctionalEnrichment
-    MconsensusClustering --> NfunctionalEnrichment
+    K --> N["Functional Enrichment"]
+    L --> N
+    M --> N
 
-    NfunctionalEnrichment --> OpathwayAnalysis[Pathway Analysis]
-    OpathwayAnalysis --> PnetworkConstruction[Network Construction]
+    N --> O["Pathway Analysis"]
+    O --> P["Network Construction"]
 
-    PnetworkConstruction --> QbiologicalInterpretation[Biological Interpretation]
-    QbiologicalInterpretation --> RsystemsBiologyInsights[Systems Biology Insights]
+    P --> Q["Biological Interpretation"]
+    Q --> R["Systems Biology Insights"]
 
     subgraph "Omic Layers"
-        S[Genomics] -.-> Amultiomics
-        T[Transcriptomics] -.-> Amultiomics
-        U[Proteomics] -.-> Amultiomics
-        V[Metabolomics] -.-> Amultiomics
-        W[Epigenomics] -.-> Amultiomics
+        S["Genomics"] -.-> A
+        T["Transcriptomics"] -.-> A
+        U["Proteomics"] -.-> A
+        V["Metabolomics"] -.-> A
+        W["Epigenomics"] -.-> A
     end
 
     subgraph "Integration Methods"
-        X[MOFA] -.-> HjointDimensionalityReduction
-        YjointPca[Joint PCA] -.-> HjointDimensionalityReduction
-        ZsimilarityNetworks[Similarity Networks] -.-> HjointDimensionalityReduction
+        X["MOFA"] -.-> H
+        Y["Joint PCA"] -.-> H
+        Z["Similarity Networks"] -.-> H
     end
 
     subgraph "Biological Outputs"
-        AAgeneModules[Gene Modules] -.-> QbiologicalInterpretation
-        BBregulatoryNetworks[Regulatory Networks] -.-> QbiologicalInterpretation
-        CCdiseasePathways[Disease Pathways] -.-> QbiologicalInterpretation
-        DD[Biomarkers] -.-> QbiologicalInterpretation
+        AA["Gene Modules"] -.-> Q
+        BB["Regulatory Networks"] -.-> Q
+        CC["Disease Pathways"] -.-> Q
+        DD["Biomarkers"] -.-> Q
     end
 ```
 
@@ -219,50 +236,50 @@ graph TD
 
 ```mermaid
 graph TD
-    AdataProcessingPipeline[Data Processing Pipeline] --> BinputValidation[Input Validation]
-    BinputValidation --> CtypeChecking[Type Checking]
-    CtypeChecking --> DschemaValidation[Schema Validation]
+    A["Data Processing Pipeline"] --> B["Input Validation"]
+    B --> C["Type Checking"]
+    C --> D["Schema Validation"]
 
-    DschemaValidation --> EprocessingLogic[Processing Logic]
-    EprocessingLogic --> FerrorHandling[Error Handling]
-    FerrorHandling --> GrecoveryMechanisms[Recovery Mechanisms]
+    D --> E["Processing Logic"]
+    E --> F["Error Handling"]
+    F --> G["Recovery Mechanisms"]
 
-    GrecoveryMechanisms --> HoutputValidation[Output Validation]
-    HoutputValidation --> IresultVerification[Result Verification]
-    IresultVerification --> JqualityMetrics[Quality Metrics]
+    G --> H["Output Validation"]
+    H --> I["Result Verification"]
+    I --> J["Quality Metrics"]
 
-    JqualityMetrics --> K{Acceptable Quality?}
-    K -->|Yes| LpipelineSuccess[Pipeline Success]
-    K -->|No| MqualityIssues[Quality Issues]
+    J --> K{Acceptable Quality?}
+    K -->|Yes| L["Pipeline Success"]
+    K -->|No| M["Quality Issues"]
 
-    MqualityIssues --> NdiagnosticAnalysis[Diagnostic Analysis]
-    NdiagnosticAnalysis --> OerrorClassification[Error Classification]
+    M --> N["Diagnostic Analysis"]
+    N --> O["Error Classification"]
 
-    OerrorClassification --> P{Recoverable?}
-    P -->|Yes| QdataCorrection[Data Correction]
-    P -->|No| RpipelineFailure[Pipeline Failure]
+    O --> P{Recoverable?}
+    P -->|Yes| Q["Data Correction"]
+    P -->|No| R["Pipeline Failure"]
 
-    QdataCorrection --> EprocessingLogic
-    LpipelineSuccess --> SvalidatedResults[Validated Results]
-    RpipelineFailure --> TerrorReporting[Error Reporting]
+    Q --> E
+    L --> S["Validated Results"]
+    R --> T["Error Reporting"]
 
     subgraph "Validation Layers"
-        UdataIntegrity[Data Integrity] -.-> BinputValidation
-        VbusinessLogic[Business Logic] -.-> EprocessingLogic
-        WstatisticalValidity[Statistical Validity] -.-> HoutputValidation
+        U["Data Integrity"] -.-> B
+        V["Business Logic"] -.-> E
+        W["Statistical Validity"] -.-> H
     end
 
     subgraph "Quality Controls"
-        XunitTests[Unit Tests] -.-> FerrorHandling
-        YintegrationTests[Integration Tests] -.-> IresultVerification
-        ZperformanceBenchmarks[Performance Benchmarks] -.-> JqualityMetrics
+        X["Unit Tests"] -.-> F
+        Y["Integration Tests"] -.-> I
+        Z["Performance Benchmarks"] -.-> J
     end
 
     subgraph "Error Types"
-        AAdataErrors[Data Errors] -.-> OerrorClassification
-        BBlogicErrors[Logic Errors] -.-> OerrorClassification
-        CCsystemErrors[System Errors] -.-> OerrorClassification
-        DDexternalErrors[External Errors] -.-> OerrorClassification
+        AA["Data Errors"] -.-> O
+        BB["Logic Errors"] -.-> O
+        CC["System Errors"] -.-> O
+        DD["External Errors"] -.-> O
     end
 ```
 
@@ -389,6 +406,18 @@ See `scripts/core/run_demo.py` for the workflow demonstration. Outputs are saved
 | **Simulation** | [simulation/](src/metainformant/simulation/) | 🟡 **Partial** | Sequence simulation, ecosystems | 71% |
 | **Information** | [information/](src/metainformant/information/) | 🟡 **Partial** | Entropy, mutual information | 80% |
 
+### 🔬 **Specialized Domain Modules**
+
+| Category | Module | Status | Key Features | Coverage |
+|----------|--------|--------|--------------|----------|
+| **Long-Read** | [longread/](src/metainformant/longread/) | 🟡 **Partial** | PacBio/ONT sequencing, assembly, error correction | 65% |
+| **Metagenomics** | [metagenomics/](src/metainformant/metagenomics/) | 🟡 **Partial** | Taxonomic profiling, functional annotation | 60% |
+| **Structural Variants** | [structural_variants/](src/metainformant/structural_variants/) | 🟡 **Partial** | SV/CNV detection, breakpoint resolution | 55% |
+| **Spatial** | [spatial/](src/metainformant/spatial/) | 🟡 **Partial** | Spatial transcriptomics, tissue mapping | 50% |
+| **Pharmacogenomics** | [pharmacogenomics/](src/metainformant/pharmacogenomics/) | 🟡 **Partial** | Drug-gene interactions, variant interpretation | 55% |
+| **Metabolomics** | [metabolomics/](src/metainformant/metabolomics/) | 🟡 **Partial** | MS data processing, pathway mapping | 50% |
+| **Menu** | [menu/](src/metainformant/menu/) | 🟡 **Partial** | Interactive CLI menu, workflow navigation | 70% |
+
 ## Module Overview
 
 ### Complete Module Reference
@@ -430,7 +459,7 @@ All modules live in [`src/metainformant/`](src/metainformant/) with documentatio
 | [`structural_variants/`](src/metainformant/structural_variants/) | 9 | SV detection, CNV analysis, breakpoint resolution | [`detection/`](src/metainformant/structural_variants/detection/) | [README](src/metainformant/structural_variants/README.md) |
 | [`menu/`](src/metainformant/menu/) | 4 | Interactive CLI menu system, workflow navigation | [`ui/`](src/metainformant/menu/ui/) | [README](src/metainformant/menu/README.md) |
 
-**Total: 25 modules, 560 Python files**
+**Total: 26 modules, 560 Python files**
 
 ## Documentation
 

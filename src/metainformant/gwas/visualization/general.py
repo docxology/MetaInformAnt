@@ -93,10 +93,10 @@ def manhattan_plot(
         p_val = result.get("p_value", result.get("pval", 1.0))
 
         # Convert p-value to -log10 scale
-        if p_val > 0:
+        if isinstance(p_val, (int, float)) and p_val > 0:
             neg_log_p = -math.log10(p_val)
         else:
-            neg_log_p = 50  # Cap very small p-values
+            neg_log_p = 50  # Cap very small p-values or invalid ones
 
         # Handle chromosome positioning
         if chrom not in chrom_offsets:

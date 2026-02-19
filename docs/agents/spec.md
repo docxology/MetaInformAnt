@@ -62,6 +62,7 @@ Each `.md` file is a markdown file containing:
 | structural_variants.md | CNV/SV detection and annotation |
 | spatial.md | Spatial transcriptomics |
 | pharmacogenomics.md | Clinical pharmacogenomics |
+| metabolomics.md | Metabolomics analysis |
 | menu.md | Interactive menu system |
 
 ## Interface
@@ -76,7 +77,7 @@ All cursorrules enforce these project-wide standards:
 
 ```text
 - Use metainformant.core.io for file operations
-- Use metainformant.core.logging for logging
+- Use metainformant.core.utils.logging for logging
 - Write outputs to output/ directory
 - Use absolute imports from metainformant
 - Never use mocks in tests
@@ -91,3 +92,7 @@ All cursorrules enforce these project-wide standards:
 3. Define required utility usage
 4. Include common patterns and anti-patterns
 5. Reference related rule files
+
+## 🧪 Testing Policy
+
+- **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

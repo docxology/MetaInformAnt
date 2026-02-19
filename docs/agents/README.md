@@ -28,6 +28,7 @@ This directory contains module-specific agent rules for the METAINFORMANT projec
 - **`rules/structural_variants.md`**: CNV/SV detection and annotation
 - **`rules/spatial.md`**: Spatial transcriptomics (Visium, MERFISH, Xenium)
 - **`rules/pharmacogenomics.md`**: Clinical pharmacogenomics
+- **`rules/metabolomics.md`**: Metabolomics analysis
 - **`rules/menu.md`**: Interactive menu and discovery system
 
 ## Usage

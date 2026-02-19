@@ -12,8 +12,28 @@ Ecology and community analysis module for METAINFORMANT.
 
 ```mermaid
 graph TD
-    ecology[ecology]
-    style ecology fill:#f9f,stroke:#333,stroke-width:2px
+    subgraph "Ecology Module"
+        AC[analysis/community.py] --> |calculate_diversity| DIV[Shannon, Simpson, Richness]
+
+        AO[analysis/ordination.py] --> |pcoa| PCO[Principal Coordinates]
+        AO --> |nmds| NM[Non-metric MDS]
+        AO --> |cca| CC[Canonical Correspondence]
+
+        AI[analysis/indicators.py] --> |indval| IV[Indicator Species]
+        AI --> |permanova| PA[PERMANOVA]
+        AI --> |anosim| AN[ANOSIM]
+        AI --> |simper| SP[SIMPER]
+
+        AF[analysis/functional.py] --> |functional_richness| FR[FRic, FEve, FDiv]
+        AF --> |raos_quadratic_entropy| RQ[Rao's Q]
+
+        AM[analysis/macroecology.py] --> |fit_logseries| SAD[SAD Models]
+        AM --> |species_area_power| SAR[Species-Area]
+
+        PH[phylogenetic/diversity.py] --> PD[Phylogenetic Diversity]
+
+        VZ[visualization/] --> VP[Community Plots]
+    end
 ```
 
 ## Usage

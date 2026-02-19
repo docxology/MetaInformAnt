@@ -8,8 +8,8 @@ Protein sequence and structure analysis module for METAINFORMANT.
 - **Component Type**: Source Code
 
 ## 💾 Data Structures
-- **Modules**: 1 Python modules
-- **Key Concepts**: Refer to Pydantic models in source.
+- **Sub-packages**: database, domains, function, sequence, structure, visualization, workflow
+- **Key Concepts**: Protein structure, domains, function prediction, sequence analysis
 
 ## 🔌 API Definition
 ### Exports

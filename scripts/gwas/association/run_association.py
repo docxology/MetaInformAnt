@@ -14,7 +14,7 @@ import pandas as pd
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent / "src"))
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 from metainformant.gwas import parse_vcf_full
 from metainformant.gwas.association import association_test_linear, association_test_logistic
 from metainformant.gwas.correction import bonferroni_correction, fdr_correction

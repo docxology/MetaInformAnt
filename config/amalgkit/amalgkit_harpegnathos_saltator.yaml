@@ -32,7 +32,7 @@ genome:
   accession: GCF_003227715.2
   assembly_name: Hsal_v8.6
   annotation_release: 102
-  dest_dir: blue/amalgkit/shared/genome/Harpegnathos_saltator
+  dest_dir: /Volumes/blue/data/amalgkit/shared/genome/Harpegnathos_saltator
   include:
     - genome
     - gff3
@@ -77,8 +77,8 @@ steps:
     redo: no
     build_index: no
     keep_fastq: no
-    index_dir: blue/amalgkit/shared/genome/Harpegnathos_saltator/index
-    fasta_dir: blue/amalgkit/shared/genome/Harpegnathos_saltator
+    index_dir: /Volumes/blue/data/amalgkit/shared/genome/Harpegnathos_saltator/index
+    fasta_dir: /Volumes/blue/data/amalgkit/shared/genome/Harpegnathos_saltator
   merge:
     out: blue/amalgkit/harpegnathos_saltator/merged/merged_abundance.tsv
     out_dir: blue/amalgkit/harpegnathos_saltator/merged

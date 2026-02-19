@@ -53,9 +53,7 @@ graph TD
 
 | Module | Purpose |
 |--------|---------|
-| [`metrics/core/`](metrics/core/) | Syntactic entropy, MI, KL divergence, continuous measures, estimators |
-| [`metrics/advanced/`](metrics/advanced/) | Fisher-Rao geometry, channel capacity, decomposition, semantic similarity |
-| [`metrics/analysis/`](metrics/analysis/) | Information profiles and advanced analysis pipelines |
+| [`metrics/`](metrics/) | Information-theoretic measures organized into `core/` (syntactic, continuous, estimation), `advanced/` (geometry, channel, decomposition, semantic), and `analysis/` (information profiles) |
 | [`network_info/`](network_info/) | Transfer entropy, Granger causality, information flow networks |
 | [`integration/`](integration/) | Cross-omic information integration (DNA, RNA, single-cell) |
 | [`workflow/`](workflow/) | Batch entropy analysis and end-to-end pipelines |

@@ -8,8 +8,8 @@ Information theory analysis module for METAINFORMANT.
 - **Component Type**: Source Code
 
 ## 💾 Data Structures
-- **Modules**: 1 Python modules
-- **Key Concepts**: Refer to Pydantic models in source.
+- **Sub-packages**: integration, metrics, network_info, workflow
+- **Key Concepts**: Information theory metrics, mutual information, entropy
 
 ## 🔌 API Definition
 ### Exports

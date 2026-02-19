@@ -68,6 +68,7 @@ print(response.text, response.tokens_per_second)
 | [`evaluation/`](evaluation/) | Model scoring, cross-validation, metrics |
 | [`interpretability/`](interpretability/) | SHAP values, feature importance analysis |
 | [`automl/`](automl/) | Automated model selection and hyperparameter tuning |
+| [`deep_learning/`](deep_learning/) | Pure-NumPy 1D CNN for biological sequence classification and regression |
 | [`llm/`](llm/) | Local LLM inference via `OllamaClient` (generate, chat, streaming) |
 
 ## Quick Start

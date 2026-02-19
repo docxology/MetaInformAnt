@@ -8,8 +8,8 @@ Interactive menu and CLI interface for METAINFORMANT.
 - **Component Type**: Source Code
 
 ## 💾 Data Structures
-- **Modules**: 1 Python modules
-- **Key Concepts**: Refer to Pydantic models in source.
+- **Sub-packages**: core, ui
+- **Key Concepts**: Interactive CLI menus, configuration UI
 
 ## 🔌 API Definition
 ### Exports

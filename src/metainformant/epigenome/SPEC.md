@@ -8,8 +8,8 @@ Epigenome analysis module for METAINFORMANT.
 - **Component Type**: Source Code
 
 ## 💾 Data Structures
-- **Modules**: 1 Python modules
-- **Key Concepts**: Refer to Pydantic models in source.
+- **Sub-packages**: analysis, assays, chromatin_state, peak_calling, visualization, workflow
+- **Key Concepts**: ChIP-seq, ATAC-seq, chromatin states, peak calling
 
 ## 🔌 API Definition
 ### Exports

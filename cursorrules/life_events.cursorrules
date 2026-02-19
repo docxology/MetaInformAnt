@@ -1,0 +1,34 @@
+# Cursor Rules for life_events Module (LE_)
+
+## 🧠 Context & Intent
+- **Domain**: life_events
+- **Path**: `src/metainformant/life_events/`
+- **Config Prefix**: `LE_` (e.g., `LE_THREADS`)
+
+## 🧱 Directory Structure
+- **Source**: `src/metainformant/life_events/`
+- **Tests**: `tests/test_life_events_*.py`
+- **Docs**: `docs/life_events/`
+- **Output**: `output/life_events/` (Default for all artifacts)
+
+## ⚙️ Configuration
+- Use `metainformant.core.config` to load config.
+- Support env checks with `LE_` prefix.
+- Example:
+  ```python
+  config = load_domain_config("config/life_events/default.yaml", prefix="LE")
+  ```
+
+## 🧪 Testing (ZERO MOCK POLICY)
+- **STRICTLY NO MOCKS**: Use real implementations only.
+- **External Tools**: Skip if not found (don't mock).
+- **Network**: Use real API calls with `@pytest.mark.network`.
+- **Output**: Write all test artifacts to `output/` via `tmp_path`.
+
+## 📦 Dependencies
+- Manage via `uv`: `uv add`, `uv remove`.
+- Import pattern:
+  ```python
+  from metainformant.core import io, logging
+  from metainformant.life_events import utils
+  ```

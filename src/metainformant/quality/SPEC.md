@@ -8,8 +8,8 @@ Quality control analysis module for METAINFORMANT.
 - **Component Type**: Source Code
 
 ## 💾 Data Structures
-- **Modules**: 1 Python modules
-- **Key Concepts**: Refer to Pydantic models in source.
+- **Sub-packages**: analysis, batch, io, reporting
+- **Key Concepts**: QC metrics, batch effect detection/correction, FASTQ parsing
 
 ## 🔌 API Definition
 ### Exports

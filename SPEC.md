@@ -13,7 +13,7 @@ Comprehensive bioinformatics toolkit for multi-omic analysis. Domain-driven, mod
 
 ```
 metainformant/
-├── src/metainformant/     # Source code (25 domain modules)
+├── src/metainformant/     # Source code (25 domain modules + core)
 │   ├── core/              # Shared infrastructure (I/O, config, logging)
 │   ├── dna/               # Genomic analysis, alignment, population genetics
 │   ├── rna/               # Transcriptomic workflows, Amalgkit integration
@@ -38,7 +38,8 @@ metainformant/
 │   ├── metagenomics/      # Microbiome and metagenomic analysis
 │   ├── spatial/           # Spatial transcriptomics
 │   ├── structural_variants/ # CNV/SV detection and annotation
-│   └── pharmacogenomics/  # Clinical variant analysis
+│   ├── pharmacogenomics/  # Clinical variant analysis
+│   └── metabolomics/      # Metabolite identification, MS data, pathway mapping
 ├── scripts/               # Thin wrapper orchestrators
 ├── tests/                 # Pytest test suite (real implementations only)
 ├── docs/                  # Documentation by domain
@@ -50,31 +51,38 @@ metainformant/
 ## Architectural Patterns
 
 ### 1. Sequential Failover (I/O)
+
 Prioritize local data sources before remote acquisition (NCBI, SRA).
 
 ### 2. Thin Wrapper Orchestration
+
 Scripts in `scripts/` are thin wrappers around core methods. Business logic resides in `src/`.
 
 ### 3. Configuration with Environment Overrides
+
 YAML configs in `config/` can be overridden via environment variables with domain prefixes (`AK_`, `GWAS_`, `DNA_`, etc.).
 
 ### 4. Output Isolation
+
 All program-generated results go to `output/`. Never create documentation or reports in `output/`.
 
 ## Implementation Standards
 
 ### Testing Policy
+
 - **No Mocking**: Tests use real implementations with actual file I/O and API calls
 - **Graceful Skips**: When external dependencies unavailable, skip with clear messages
 - **Markers**: `@pytest.mark.network`, `@pytest.mark.external_tool`, `@pytest.mark.slow`
 
 ### Code Quality
+
 - Python 3.11+ minimum
 - Black formatting (120 char lines)
 - mypy type checking (strict)
 - All functions must have type hints
 
 ### Documentation
+
 - Module README.md: User-facing documentation and examples
 - docs/<domain>/: Extended guides and tutorials
 
@@ -89,6 +97,7 @@ Raw Data (FASTQ/VCF) → Preprocessing & QC → Domain Analysis → Multi-Omic I
 ## Cross-Module Communication
 
 Modules communicate via:
+
 - Standard Python protocols
 - Shared data structures (`pandas` DataFrames, `numpy` arrays)
 - Core infrastructure (`metainformant.core`) for I/O, config, and logging

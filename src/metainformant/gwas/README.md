@@ -8,15 +8,21 @@ Genome-Wide Association Studies analysis, fine-mapping, and variant-expression i
 graph TD
     subgraph "GWAS Module"
         A[analysis/] --> |association.py| AS[Association Testing]
-        A --> |lmm.py| LM[Linear Mixed Models]
+        A --> |mixed_model.py| LM[EMMA Mixed Models]
+        A --> |quality.py| QC[VCF Parsing & QC]
+        A --> |structure.py| ST[PCA & Kinship]
         
-        F[finemapping/] --> |colocalization.py| CO[Colocalization]
-        F --> |susie.py| SU[SuSiE Fine-mapping]
+        F[finemapping/] --> |credible_sets.py| CS[Credible Sets & SuSiE]
+        F --> |colocalization.py| CO[Colocalization]
+        F --> |eqtl.py| EQ[eQTL Analysis]
         
-        D[data/] --> |vcf.py| VCF[VCF Parsing]
-        D --> |plink.py| PL[PLINK I/O]
+        D[data/] --> |download.py| DL[Reference Genome & SRA Downloads]
+        D --> |genome.py| GN[Chromosome Mapping & GFF3]
+        D --> |metadata.py| MD[Sample Metadata]
         
-        V[visualization/] --> VIS[Manhattan, QQ Plots]
+        H[heritability/] --> |estimation.py| HE[LDSC, GREML, HE Regression]
+        
+        V[visualization/] --> VIS[Manhattan, QQ, Interactive Plots]
         
         W[workflow/] --> WF[Pipeline Orchestration]
     end
@@ -27,7 +33,7 @@ graph TD
 ### Fine-Mapping & Colocalization
 
 ```python
-from metainformant.gwas.finemapping import (
+from metainformant.gwas.finemapping.colocalization import (
     eqtl_coloc,        # GWAS-eQTL colocalization
     multi_trait_coloc, # Multi-trait analysis
     compute_clpp,      # CLPP method
@@ -47,18 +53,20 @@ result = eqtl_coloc(
 
 | Function | Purpose |
 |----------|---------|
-| `run_gwas()` | Full GWAS pipeline |
-| `logistic_regression()` | Case-control associations |
-| `linear_regression()` | Quantitative trait analysis |
-| `lmm_association()` | Mixed models for population structure |
+| `run_gwas()` | Full GWAS pipeline (via `workflow.workflow`) |
+| `association_test_linear()` | Linear regression for quantitative traits |
+| `association_test_logistic()` | Logistic regression for case-control |
+| `association_test_mixed()` | EMMA mixed model with kinship correction |
 
 ### Data I/O
 
 | Function | Purpose |
 |----------|---------|
-| `read_vcf()` | Parse VCF variant files |
-| `read_plink()` | Load PLINK bed/bim/fam |
-| `write_sumstats()` | Export summary statistics |
+| `parse_vcf_full()` | Parse VCF files into genotype/variant dicts (via `analysis.quality`) |
+| `download_reference_genome()` | Download reference genome from NCBI |
+| `download_variant_database()` | Download dbSNP / 1000 Genomes data |
+| `normalize_chromosome_name()` | Chromosome name normalization (NCBI acc, chr, roman) |
+| `parse_gff3_genes()` | Parse GFF3 gene annotations |
 
 ## 📦 Submodules
 
@@ -77,7 +85,7 @@ The GWAS module integrates with RNA-seq via the multiomics module:
 
 ```python
 from metainformant.multiomics.analysis import integration
-from metainformant.gwas.finemapping import eqtl_coloc
+from metainformant.gwas.finemapping.colocalization import eqtl_coloc
 
 # Convert GWAS and expression data to common format
 dna_data = integration.from_dna_variants(gwas_sumstats)

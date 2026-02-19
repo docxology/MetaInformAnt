@@ -8,8 +8,8 @@ Machine learning module for METAINFORMANT.
 - **Component Type**: Source Code
 
 ## 💾 Data Structures
-- **Modules**: 1 Python modules
-- **Key Concepts**: Refer to Pydantic models in source.
+- **Sub-packages**: automl, deep_learning, evaluation, features, interpretability, llm, models
+- **Key Concepts**: AutoML, deep learning, LLM, feature selection, model evaluation
 
 ## 🔌 API Definition
 ### Exports

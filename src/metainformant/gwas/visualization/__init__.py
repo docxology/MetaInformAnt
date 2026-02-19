@@ -8,5 +8,11 @@ Organized into subpackages:
 from __future__ import annotations
 
 from . import config, eqtl_visualization, general, genomic, interactive, population, statistical, utils
+from .general import manhattan_plot, qq_plot
+from .utils import detect_p_value_key, safe_log10_p
 
-__all__ = ['config', 'eqtl_visualization', 'general', 'genomic', 'interactive', 'population', 'statistical', 'utils']
+__all__ = [
+    'config', 'eqtl_visualization', 'general', 'genomic', 'interactive',
+    'population', 'statistical', 'utils',
+    'manhattan_plot', 'qq_plot', 'detect_p_value_key', 'safe_log10_p',
+]

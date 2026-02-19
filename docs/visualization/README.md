@@ -15,8 +15,33 @@ Visualization and plotting utilities module for METAINFORMANT.
 
 ```mermaid
 graph TD
-    visualization[visualization]
-    style visualization fill:#f9f,stroke:#333,stroke-width:2px
+    subgraph "Visualization Module"
+        P[plots/] --> |basic.py| BA[Line, Scatter, Bar, Heatmap]
+        P --> |general.py| GN[Volcano, Manhattan, PCA, QQ]
+        P --> |specialized.py| SP[Domain-Specific Plots]
+        P --> |multidim.py| MD[Multi-Dimensional Plots]
+        P --> |animations.py| AN[Animated Plots]
+
+        G[genomics/] --> |expression.py| EX[Expression Heatmaps]
+        G --> |genomics.py| GM[Manhattan, Volcano, Ideogram]
+        G --> |networks.py| NW[Network Graphs]
+        G --> |trees.py| TR[Phylogenetic Trees]
+
+        A[analysis/] --> |statistical.py| ST[Histogram, Boxplot, ROC]
+        A --> |dimred.py| DR[PCA, UMAP, t-SNE Plots]
+        A --> |quality.py| QA[Quality Assessment Plots]
+
+        D[dashboards/] --> |composite.py| CM[Multi-Panel Layouts]
+        D --> |interactive.py| IN[Interactive Plotly Plots]
+
+        CF[config/] --> |themes.py| TH[Theme Management]
+        CF --> |palettes.py| PL[Color Palettes]
+    end
+
+    CF --> P
+    CF --> G
+    P --> D
+    G --> D
 ```
 
 ## Usage

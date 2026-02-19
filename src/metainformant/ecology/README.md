@@ -78,6 +78,7 @@ simpson = calculate_diversity([[10, 20, 30, 40]], method="simpson")
 |--------|---------|
 | [`analysis/`](analysis/) | Community diversity, ordination, indicators, functional traits, macroecology |
 | [`phylogenetic/`](phylogenetic/) | Phylogenetic diversity metrics |
+| [`traits/`](traits/) | Trait-based ecology: CWM, functional richness (FRic), evenness (FEve), divergence (FDiv), Rao's Q |
 | [`visualization/`](visualization/) | Community ecology plots |
 
 ## Quick Start

@@ -53,6 +53,7 @@ graph TD
         H4networks/,Multiomics/,Singlecell/,Simulation/[networks/, multiomics/, singlecell/, simulation/] -.-> D4
         H5ontology/,Phenotype/,Ecology/,LifeEvents/[ontology/, phenotype/, ecology/, life_events/] -.-> D5
         H6quality/,Visualization/[quality/, visualization/] -.-> D6
+        H7longread/,Metagenomics/,Structural_variants/,Spatial/,Pharmacogenomics/,Metabolomics/,Menu/[longread/, metagenomics/, structural_variants/, spatial/, pharmacogenomics/, metabolomics/, menu/] -.-> D4
     end
 
     subgraph "Key Documents"
@@ -86,6 +87,13 @@ graph TD
 | **Life Events** | [life_events](life_events/) | Temporal event analysis | Life course modeling, embeddings |
 | **Quality** | [quality](quality/) | Data quality assessment | FASTQ analysis, assembly validation |
 | **Visualization** | [visualization](visualization/) | Plotting and graphics | 20+ specialized plotting modules |
+| **Long-Read** | [longread](longread/) | Long-read sequencing | PacBio/ONT, assembly, error correction |
+| **Metagenomics** | [metagenomics](metagenomics/) | Metagenomic analysis | Taxonomic profiling, functional annotation |
+| **Structural Variants** | [structural_variants](structural_variants/) | SV/CNV analysis | Detection, breakpoint resolution |
+| **Spatial** | [spatial](spatial/) | Spatial transcriptomics | Tissue mapping, spatial statistics |
+| **Pharmacogenomics** | [pharmacogenomics](pharmacogenomics/) | Clinical genomics | Drug-gene interactions, variant interpretation |
+| **Metabolomics** | [metabolomics](metabolomics/) | Metabolomic analysis | MS data processing, pathway mapping |
+| **Menu** | [menu](menu/) | Interactive navigation | CLI menu system, workflow discovery |
 
 ## Data Flow Architecture
 
@@ -232,6 +240,13 @@ api/quality
 api/visualization
 api/simulation
 api/life_events
+api/longread
+api/metagenomics
+api/structural_variants
+api/spatial
+api/pharmacogenomics
+api/metabolomics
+api/menu
 ```
 
 ### Module Documentation
@@ -257,6 +272,13 @@ quality/index
 visualization/index
 simulation/index
 life_events/index
+longread/index
+metagenomics/index
+structural_variants/index
+spatial/index
+pharmacogenomics/index
+metabolomics/index
+menu/index
 ```
 
 ### Development
@@ -275,6 +297,7 @@ api_design
 ## Key Features
 
 ### 🔬 **Comprehensive Domain Coverage**
+
 - **DNA Analysis**: Sequence composition, alignments, phylogenetics, population genetics
 - **RNA Analysis**: Transcriptome quantification, differential expression, cross-species analysis
 - **Protein Analysis**: Structure prediction, domain analysis, functional annotation
@@ -283,18 +306,21 @@ api_design
 - **Systems Biology**: Network analysis, pathway enrichment, multi-omics integration
 
 ### 🚀 **Production Ready**
+
 - **Real Implementations**: No mocks or fakes - actual external API calls and tool integration
 - **Scalable**: Parallel processing, memory-efficient algorithms for large datasets
 - **Robust**: Comprehensive error handling and validation
 - **Tested**: Extensive test suite with real-world validation
 
 ### 🛠 **Developer Friendly**
+
 - **Type Hints**: Full type annotation throughout codebase
 - **Documentation**: Comprehensive docstrings and API documentation
 - **CLI**: Intuitive command-line interface with subcommands
 - **Modular**: Clean separation of concerns, easy to extend
 
 ### 📊 **Research Grade**
+
 - **Scientific Rigor**: Algorithms validated against established methods
 - **Reproducible**: Version-controlled configurations and deterministic workflows
 - **Standards Compliant**: Follows bioinformatics best practices and data formats
@@ -359,16 +385,25 @@ graph TB
     VIZ --> Core
     SIM --> Core
     LE --> Core
+    LR[longreadAnalysis] --> Core
+    METAG[metagenomicsAnalysis] --> Core
+    SVA[structuralVariants] --> Core
+    SPAT[spatialTranscriptomics] --> Core
+    PHARM[pharmacogenomics] --> Core
+    METAB[metabolomics] --> Core
+    MENUX[menuSystem] --> Core
 ```
 
 ## Getting Help
 
 ### Community Support
+
 - **GitHub Issues**: Report bugs and request features
 - **Discussions**: Ask questions and share ideas
 - **Documentation**: Comprehensive guides and API reference
 
 ### Development
+
 - **Contributing Guide**: How to contribute to METAINFORMANT
 - **Development Setup**: Setting up development environment
 - **Testing Guide**: Running and writing tests

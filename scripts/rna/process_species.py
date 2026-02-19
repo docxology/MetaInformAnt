@@ -36,6 +36,9 @@ def parse_args():
     parser.add_argument("--workers", type=int, default=8, help="Number of parallel workers")
     parser.add_argument("--dry-run", action="store_true", help="Print actions without executing")
     
+    parser.add_argument("--watchdog", action="store_true", help="Enable stalled process watchdog")
+    parser.add_argument("--watchdog-timeout", type=int, default=3600, help="Watchdog stall timeout in seconds")
+    
     # Optional overrides
     parser.add_argument("--work-dir", help="Override working directory")
     parser.add_argument("--index-file", help="Override index file path")
@@ -126,7 +129,9 @@ def main():
         work_dir=paths["work_dir"],
         fastq_dir=paths["fastq_dir"],
         workers=args.workers,
-        dry_run=args.dry_run
+        dry_run=args.dry_run,
+        use_watchdog=args.watchdog,
+        watchdog_timeout=args.watchdog_timeout
     )
 
     # Load Samples

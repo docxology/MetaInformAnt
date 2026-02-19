@@ -61,6 +61,27 @@ For detailed usage of specific modules, import them directly in Python:
     rmsd_parser.add_argument("--pdb-a", required=True, help="Path to first PDB file")
     rmsd_parser.add_argument("--pdb-b", required=True, help="Path to second PDB file")
 
+    # Quality subcommands
+    quality_parser = subparsers.add_parser("quality", help="Quality control commands")
+    quality_sub = quality_parser.add_subparsers(dest="quality_command")
+
+    batch_parser = quality_sub.add_parser("batch-detect", help="Detect batch effects in a dataset")
+    batch_parser.add_argument("--data", required=True, help="Path to CSV data matrix (samples × features)")
+    batch_parser.add_argument("--batches", required=True, help="Path to batch labels file (one per line)")
+    batch_parser.add_argument("--alpha", type=float, default=0.05, help="Significance threshold")
+
+    # RNA subcommands
+    rna_parser = subparsers.add_parser("rna", help="RNA-seq analysis commands")
+    rna_sub = rna_parser.add_subparsers(dest="rna_command")
+
+    rna_info_parser = rna_sub.add_parser("info", help="Show module capabilities")
+
+    # GWAS subcommands
+    gwas_parser = subparsers.add_parser("gwas", help="GWAS analysis commands")
+    gwas_sub = gwas_parser.add_subparsers(dest="gwas_command")
+
+    gwas_info_parser = gwas_sub.add_parser("info", help="Show module capabilities")
+
     args = parser.parse_args()
 
     if args.modules:
@@ -69,6 +90,15 @@ For detailed usage of specific modules, import them directly in Python:
 
     if args.command == "protein":
         return _handle_protein(args)
+
+    if args.command == "quality":
+        return _handle_quality(args)
+
+    if args.command == "rna":
+        return _handle_rna(args)
+
+    if args.command == "gwas":
+        return _handle_gwas(args)
 
     # If no arguments provided, show help
     if len(sys.argv) == 1:
@@ -114,6 +144,54 @@ def _handle_protein(args: argparse.Namespace) -> int:
     return 1
 
 
+def _handle_quality(args: argparse.Namespace) -> int:
+    """Handle quality subcommands."""
+    import numpy as np
+
+    cmd = args.quality_command
+
+    if cmd == "batch-detect":
+        from .quality.batch.detection import detect_batch_effects
+
+        data = np.loadtxt(args.data, delimiter=",", skiprows=1)
+        batch_labels = Path(args.batches).read_text().strip().split("\n")
+        report = detect_batch_effects(data, batch_labels, alpha=args.alpha)
+        print(f"Samples: {report.n_samples}, Batches: {report.n_batches}")
+        print(f"Batch variance: {report.pvca_variance['batch']:.3f}")
+        print(f"Silhouette score: {report.silhouette_score:.3f}")
+        print(f"Severity: {report.severity}")
+        print(f"Significant features: {report.n_significant_features}")
+        return 0
+
+    return 1
+
+
+def _handle_rna(args: argparse.Namespace) -> int:
+    """Handle RNA subcommands."""
+    cmd = args.rna_command
+
+    if cmd == "info":
+        print("RNA-seq Analysis Module")
+        print("Sub-packages: amalgkit, analysis, core, deconvolution, engine, retrieval, splicing")
+        print("Import: from metainformant import rna")
+        return 0
+
+    return 1
+
+
+def _handle_gwas(args: argparse.Namespace) -> int:
+    """Handle GWAS subcommands."""
+    cmd = args.gwas_command
+
+    if cmd == "info":
+        print("GWAS Analysis Module")
+        print("Sub-packages: analysis, data, finemapping, heritability, visualization")
+        print("Import: from metainformant import gwas")
+        return 0
+
+    return 1
+
+
 def _list_modules() -> None:
     """List all available modules."""
     modules = [
@@ -141,6 +219,7 @@ def _list_modules() -> None:
         ("spatial", "Spatial transcriptomics analysis"),
         ("metagenomics", "Microbiome and metagenomic analysis"),
         ("pharmacogenomics", "Clinical pharmacogenomic variant analysis"),
+        ("metabolomics", "Metabolite identification and pathway analysis"),
         ("menu", "Interactive menu and discovery system"),
     ]
 
