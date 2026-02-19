@@ -9,6 +9,6 @@
 	"kallisto_version": "0.51.1",
 	"index_version": 13,
 	"k-mer length": 31,
-	"start_time": "Fri Feb 13 03:37:58 2026",
-	"call": "kallisto quant --threads 1 --index blue/amalgkit/monomorium_pharaonis/work/index/Monomorium_pharaonis_transcripts.idx -o blue/amalgkit/monomorium_pharaonis/work/quant/DRR032206 --single -l 200 -s 20.0 blue/amalgkit/monomorium_pharaonis/work/getfastq/DRR032206/DRR032206.fastq.gz"
+	"start_time": "Tue Feb 17 22:56:20 2026",
+	"call": "kallisto quant --threads 2 --index /Volumes/blue/data/amalgkit/shared/genome/Monomorium_pharaonis/index/Monomorium_pharaonis_transcripts.idx -o /Volumes/blue/data/amalgkit/monomorium_pharaonis/work/quant/DRR032206 --single -l 200 -s 20.0 /Volumes/blue/data/amalgkit/monomorium_pharaonis/work/getfastq/DRR032206/DRR032206.amalgkit.fastq.gz"
 }

@@ -1,14 +1,14 @@
 {
 	"n_targets": 33795,
 	"n_bootstraps": 0,
-	"n_processed": 7479576,
-	"n_pseudoaligned": 1846997,
-	"n_unique": 1221524,
-	"p_pseudoaligned": 24.7,
-	"p_unique": 16.3,
+	"n_processed": 14994460,
+	"n_pseudoaligned": 3716422,
+	"n_unique": 2457035,
+	"p_pseudoaligned": 24.8,
+	"p_unique": 16.4,
 	"kallisto_version": "0.51.1",
 	"index_version": 13,
 	"k-mer length": 31,
-	"start_time": "Mon Feb 16 07:02:59 2026",
-	"call": "kallisto quant --threads 1 --index blue/amalgkit/monomorium_pharaonis/work/index/Monomorium_pharaonis_transcripts.idx -o blue/amalgkit/monomorium_pharaonis/work/quant/SRR9705174 --single -l 200 -s 20.0 blue/amalgkit/monomorium_pharaonis/work/getfastq/SRR9705174/SRR9705174.fastq.gz"
+	"start_time": "Wed Feb 18 16:01:25 2026",
+	"call": "kallisto quant --threads 2 --index /Volumes/blue/data/amalgkit/shared/genome/Monomorium_pharaonis/index/Monomorium_pharaonis_transcripts.idx -o /Volumes/blue/data/amalgkit/monomorium_pharaonis/work/quant/SRR9705174 --single -l 200 -s 20.0 /Volumes/blue/data/amalgkit/monomorium_pharaonis/work/getfastq/SRR9705174/SRR9705174.amalgkit.fastq.gz"
 }

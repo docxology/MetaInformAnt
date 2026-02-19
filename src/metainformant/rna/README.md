@@ -10,17 +10,18 @@ graph TD
         E[engine/] --> |workflow.py| W[Workflow Execution]
         E --> |monitoring.py| M[Progress Monitoring]
         E --> |discovery.py| D[Species Discovery]
+        E --> |streaming_orchestrator.py| SO[Multi-Species Pipeline]
         
         A[amalgkit/] --> |amalgkit.py| AK[Amalgkit Wrapper]
         A --> |genome_prep.py| G[Genome Preparation]
-        A --> |metadata_*.py| MD[Metadata Handling]
+        A --> |metadata_filter.py| MD[Metadata Handling]
         
-        C[core/] --> |config.py| CF[Configuration]
-        C --> |models.py| MO[Data Models]
+        C[core/] --> |configs.py| CF[Configuration]
+        C --> |cleanup.py| CL[Cleanup Utilities]
         
-        R[retrieval/] --> |sra_client.py| SRA[SRA Download]
+        R[retrieval/] --> |ena_downloader.py| ENA[ENA Download]
         
-        AN[analysis/] --> |expression.py| EX[Expression Analysis]
+        AN[analysis/] --> |expression_core.py| EX[Expression Analysis]
     end
 ```
 
@@ -30,9 +31,9 @@ graph TD
 |--------------------------------------|-----------------------------------------------|
 | [`engine/`](engine/)                 | Workflow execution, monitoring, orchestration |
 | [`amalgkit/`](amalgkit/)             | Amalgkit tool wrapper and API                 |
-| [`core/`](core/)                     | Configuration, models, utilities              |
-| [`retrieval/`](retrieval/)           | SRA/ENA data retrieval                        |
-| [`analysis/`](analysis/)             | Expression matrix analysis                    |
+| [`core/`](core/)                     | Configuration, cleanup, dependencies          |
+| [`retrieval/`](retrieval/)           | ENA FASTQ data retrieval                      |
+| [`analysis/`](analysis/)             | Expression matrix analysis, QC, validation    |
 | [`deconvolution/`](deconvolution/)   | Cell-type deconvolution from bulk RNA-seq     |
 | [`splicing/`](splicing/)             | Alternative splicing analysis                 |
 
@@ -40,15 +41,18 @@ graph TD
 
 ### Workflow Engine
 
-- `AmalgkitWorkflowConfig` - Workflow configuration from YAML
-- `WorkflowExecutor` - Step-by-step execution with retries
-- `ProgressTracker` - Real-time progress state management
+- `AmalgkitWorkflowConfig` — Workflow configuration loaded from YAML
+- `StreamingPipelineOrchestrator` — Multi-species ENA-first orchestrator
+- `StreamingPipeline` — Per-sample download→quant→cleanup pipeline
+- `ProgressTracker` — Real-time progress state management
 
 ### Amalgkit Wrapper
 
-- `AmalgkitRunner` - CLI command builder and executor
-- `GenomePreparator` - Reference genome download and indexing
-- `MetadataFilter` - Sample selection and filtering
+- `AmalgkitParams` — Typed parameter container for amalgkit CLI calls
+- `build_amalgkit_command()` — CLI command builder
+- `run_amalgkit()` — Execute any amalgkit step
+- `GenomePreparator` — Reference genome download and Kallisto indexing
+- `TissueNormalizer` — Tissue label normalization via mappings
 
 ## 🚀 Usage
 

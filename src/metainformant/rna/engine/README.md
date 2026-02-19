@@ -7,12 +7,20 @@ Workflow execution, monitoring, and orchestration for RNA-seq pipelines.
 | File | Purpose |
 |------|---------|
 | [`streaming_orchestrator.py`](streaming_orchestrator.py) | **Production pipeline** — multi-species, parallel, ENA-first |
-| [`workflow.py`](workflow.py) | Main workflow execution engine (~147KB) |
+| [`orchestrator.py`](orchestrator.py) | Per-sample `StreamingPipeline` (download→quant→cleanup) |
+| [`orchestration.py`](orchestration.py) | Single-species workflow orchestration |
+| [`orchestration_multi_species.py`](orchestration_multi_species.py) | Multi-species `PipelineOrchestrator` |
+| [`workflow.py`](workflow.py) | Re-export hub for workflow_core, workflow_planning, workflow_execution |
+| [`workflow_core.py`](workflow_core.py) | Config classes, validation, sample config creation |
+| [`workflow_planning.py`](workflow_planning.py) | Workflow planning, step defaults, genome prep |
+| [`workflow_execution.py`](workflow_execution.py) | Workflow execution engine, streaming mode |
+| [`workflow_steps.py`](workflow_steps.py) | Individual step implementations |
+| [`workflow_cleanup.py`](workflow_cleanup.py) | Disk cleanup, temp file removal |
 | [`monitoring.py`](monitoring.py) | Real-time progress monitoring |
-| [`discovery.py`](discovery.py) | Species and sample discovery |
-| [`orchestration.py`](orchestration.py) | Multi-step workflow orchestration |
+| [`discovery.py`](discovery.py) | Species and sample discovery via NCBI |
 | [`pipeline.py`](pipeline.py) | Pipeline abstraction |
 | [`progress_tracker.py`](progress_tracker.py) | Progress state persistence |
+| [`sra_extraction.py`](sra_extraction.py) | SRA data extraction utilities |
 
 ## 🔑 Key Classes
 

@@ -8,6 +8,38 @@ This subpackage provides the workflow execution engine including:
 - High-level orchestration"""
 from __future__ import annotations
 
-from . import discovery, monitoring, orchestration, pipeline, progress_tracker, sra_extraction, workflow, workflow_cleanup, workflow_core, workflow_execution, workflow_planning, workflow_steps
+from . import (
+    discovery,
+    monitoring,
+    orchestration,
+    orchestration_multi_species,
+    orchestrator,
+    pipeline,
+    progress_tracker,
+    sra_extraction,
+    streaming_orchestrator,
+    workflow,
+    workflow_cleanup,
+    workflow_core,
+    workflow_execution,
+    workflow_planning,
+    workflow_steps,
+)
 
-__all__ = ['discovery', 'monitoring', 'orchestration', 'pipeline', 'progress_tracker', 'sra_extraction', 'workflow', 'workflow_cleanup', 'workflow_core', 'workflow_execution', 'workflow_planning', 'workflow_steps']
+__all__ = [
+    'discovery',
+    'monitoring',
+    'orchestration',
+    'orchestration_multi_species',
+    'orchestrator',
+    'pipeline',
+    'progress_tracker',
+    'sra_extraction',
+    'streaming_orchestrator',
+    'workflow',
+    'workflow_cleanup',
+    'workflow_core',
+    'workflow_execution',
+    'workflow_planning',
+    'workflow_steps',
+]
