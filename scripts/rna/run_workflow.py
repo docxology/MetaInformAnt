@@ -24,34 +24,8 @@ import argparse
 import sys
 from pathlib import Path
 
-# Import setup utilities (must be before other imports)
-sys.path.insert(0, str(Path(__file__).parent))
-from _setup_utils import check_environment_or_exit, ensure_venv_activated
-
-# Suppress optional dependency warnings until venv is ready
-from metainformant.core.utils.optional_deps import enable_optional_warnings, suppress_optional_warnings
-
-suppress_optional_warnings()
-
-# Auto-setup and activate venv
-ensure_venv_activated(auto_setup=True)
-check_environment_or_exit(auto_setup=True)
-
-# Now enable warnings since venv should be active
-enable_optional_warnings()
-
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-
-from metainformant.core.utils.logging import get_logger
-from metainformant.rna.core.cleanup import cleanup_partial_downloads, fix_abundance_naming_for_species
-from metainformant.rna.engine.monitoring import analyze_species_status, check_workflow_progress
-from metainformant.rna.engine.orchestration import (
-    cleanup_unquantified_samples,
-    run_workflow_for_species,
-)
-
-logger = get_logger("run_workflow")
+# Defer heavy imports to main() for fast --help response
+logger = None  # Initialized lazily in main()
 
 REPO_ROOT = Path(__file__).parent.parent.parent.resolve()
 
@@ -211,38 +185,59 @@ def main() -> int:
 
     args = parser.parse_args()
 
+    # ── Early-exit paths that don't need heavy imports ──────────────────────
+    raw_config = args.config or args.config_pos
+    if args.list_configs or raw_config is None:
+        files = _discover_species_config_files()
+        hint = _invocation_hint()
+        if args.list_configs:
+            if not files:
+                print(f"No configs found under: {REPO_ROOT / 'config' / 'amalgkit'}", file=sys.stderr)
+                return 2
+            print("Available configs:", file=sys.stderr)
+            for p in files:
+                print(f"  - {p.relative_to(REPO_ROOT)}", file=sys.stderr)
+            print(f"Example:\n  {hint} config/amalgkit/<file>.yaml --plan", file=sys.stderr)
+            return 0
+
+        # No config provided
+        if not files:
+            print("No config provided, and no configs were found under `config/amalgkit/`.", file=sys.stderr)
+            print(f"Tip: create one under `config/amalgkit/` or pass `--config <path>`.", file=sys.stderr)
+            return 2
+        print("No config provided. Available configs:", file=sys.stderr)
+        for p in files:
+            print(f"  - {p.relative_to(REPO_ROOT)}", file=sys.stderr)
+        print(f"Next:\n  {hint} config/amalgkit/<file>.yaml --plan\n  {hint} config/amalgkit/<file>.yaml --check", file=sys.stderr)
+        return 0
+
+    # ── Deferred heavy imports (after argparse so --help is fast) ──────────
+    sys.path.insert(0, str(Path(__file__).parent))
+    from _setup_utils import check_environment_or_exit, ensure_venv_activated
+
+    from metainformant.core.utils.optional_deps import enable_optional_warnings, suppress_optional_warnings
+
+    suppress_optional_warnings()
+    ensure_venv_activated(auto_setup=True)
+    check_environment_or_exit(auto_setup=True)
+    enable_optional_warnings()
+
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+
+    from metainformant.core.utils.logging import get_logger
+    from metainformant.rna.core.cleanup import cleanup_partial_downloads, fix_abundance_naming_for_species
+    from metainformant.rna.engine.monitoring import analyze_species_status, check_workflow_progress
+    from metainformant.rna.engine.orchestration import (
+        cleanup_unquantified_samples,
+        run_workflow_for_species,
+    )
+
+    global logger
+    logger = get_logger("run_workflow")
+
     # Process steps argument - split comma-separated values
     if args.steps:
         args.steps = [step.strip() for s in args.steps for step in s.split(",") if step.strip()]
-
-    if args.list_configs:
-        files = _discover_species_config_files()
-        if not files:
-            logger.error(f"No configs found under: {REPO_ROOT / 'config' / 'amalgkit'}")
-            return 2
-        logger.info("Available configs:")
-        for p in files:
-            logger.info(f"  - {p.relative_to(REPO_ROOT)}")
-        logger.info("Example:")
-        logger.info(f"  {_invocation_hint()} config/amalgkit/<file>.yaml --plan")
-        return 0
-
-    raw_config = args.config or args.config_pos
-    if raw_config is None:
-        # Default no-args behavior: show available configs and how to run them.
-        # This keeps the command useful without accidentally starting a long workflow.
-        files = _discover_species_config_files()
-        if not files:
-            logger.error("No config provided, and no configs were found under `config/amalgkit/`.")
-            logger.info(f"Tip: create one under `config/amalgkit/` or pass `--config <path>`.")
-            return 2
-        logger.info("No config provided. Available configs:")
-        for p in files:
-            logger.info(f"  - {p.relative_to(REPO_ROOT)}")
-        logger.info("Next:")
-        logger.info(f"  {_invocation_hint()} config/amalgkit/<file>.yaml --plan")
-        logger.info(f"  {_invocation_hint()} config/amalgkit/<file>.yaml --check")
-        return 0
 
     config_path = _resolve_config_path(raw_config)
     if not config_path.exists():

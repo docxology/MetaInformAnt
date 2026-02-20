@@ -1007,7 +1007,7 @@ If you use METAINFORMANT in your research, please cite this repository:
   title = {MetaInformAnt: Comprehensive Bioinformatics Toolkit},
   year = {2025},
   url = {https://github.com/docxology/MetaInformAnt},
-  version = {0.2.2}
+  version = {0.2.6}
 }
 ```
 
@@ -1029,4 +1029,4 @@ This project is licensed under the Apache License, Version 2.0 - see [LICENSE](L
 
 ---
 
-**Status**: Active Development | **Version**: 0.2.2 | **Python**: 3.11+ | **License**: Apache 2.0
+**Status**: Active Development | **Version**: 0.2.6 | **Python**: 3.11+ | **License**: Apache 2.0

@@ -62,7 +62,14 @@ def pca_reduction(
         raise ImportError("scikit-learn is required for PCA. " "Install with: uv pip install scikit-learn")
 
     validation.validate_type(data, SingleCellData, "data")
-    validation.validate_range(n_components, min_val=2, max_val=min(data.n_obs, data.n_vars), name="n_components")
+
+    # Auto-clamp n_components to the maximum possible value
+    max_components = min(data.n_obs - 1, data.n_vars)
+    if n_components > max_components:
+        logger.info(f"Clamping n_components from {n_components} to {max_components} (max possible)")
+        n_components = max_components
+    if n_components < 1:
+        raise ValueError("n_components must be at least 1")
 
     logger.info(f"Performing PCA with {n_components} components")
 

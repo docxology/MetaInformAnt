@@ -1,0 +1,14 @@
+{
+	"n_targets": 29315,
+	"n_bootstraps": 0,
+	"n_processed": 23590156,
+	"n_pseudoaligned": 19185948,
+	"n_unique": 12633123,
+	"p_pseudoaligned": 81.3,
+	"p_unique": 53.6,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Wed Feb 18 04:57:23 2026",
+	"call": "kallisto quant --threads 2 -i /Volumes/blue/data/amalgkit/shared/genome/Harpegnathos_saltator/index/Harpegnathos_saltator_transcripts.idx -o /Volumes/blue/data/amalgkit/harpegnathos_saltator/work/quant/SRR21423731 /Volumes/blue/data/amalgkit/harpegnathos_saltator/work/getfastq/SRR21423731/SRR21423731_1.amalgkit.fastq.gz /Volumes/blue/data/amalgkit/harpegnathos_saltator/work/getfastq/SRR21423731/SRR21423731_2.amalgkit.fastq.gz"
+}

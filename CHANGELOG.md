@@ -5,6 +5,44 @@ All notable changes to METAINFORMANT are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.6] - 2026-02-20
+
+### Fixed
+
+- t-SNE perplexity auto-adjustment: threshold corrected to `(n_samples-1)/3` per sklearn
+- `compute_diffusion_map`: removed `sigma=1.0` from `eigsh` that caused singular matrix crash; added diagonal regularization and dense fallback
+- `compute_neighbors`: `n_pcs` now stored in neighbor params for downstream inspection
+- Disk space: cleaned `.uv-cache` (476M) and ran `git gc --prune=all` (315MB recovered)
+
+## [0.2.5] - 2026-02-20
+
+### Changed
+
+- Version bump to 0.2.5 reflecting accumulated test hardening
+- CHANGELOG updated with v0.2.3–v0.2.4 entries
+- ENA mention added to `scripts/rna/AGENTS.md`
+
+## [0.2.4] - 2026-02-20
+
+### Fixed
+
+- `SingleCellData` diffusion map: `len(data)` → `data.n_obs` (TypeError fix)
+- `ENADownloader` re-exported from `rna.retrieval.__init__`
+- RNA test config YAML paths corrected (`blue/` → `output/`)
+- `run_workflow.py` startup: deferred heavy imports for fast `--help` (<1s)
+- Early-exit for no-args/`--list-configs` before heavy imports
+
+## [0.2.3] - 2026-02-20
+
+### Fixed
+
+- **Protein**: 20 relative → absolute imports in `orchestration.py`; `read_taxon_ids` return type `List[str]`
+- **Visualization**: 7 plot function re-exports; config self-reference; 22 analysis re-exports; phylo import fix; `WONG` palette constant
+- **Quality**: 6 standalone contamination functions rewritten with per-sequence-index returns; `per_base_quality` quantiles guard for <2 data points; `generate_contamination_report` METAINFORMANT header
+- **RNA**: `calculate_md5`, `clean_stagnant_file`, `verify_gzip_integrity` implemented in `ena_downloader.py`
+- **Phenotype**: `extract_phenotypes_from_events`, `aggregate_temporal_phenotypes`, `map_events_to_traits` rewritten for `life_events.core.events` compatibility; `Measurement`/`MorphometricProfile` re-exported from `morphological/__init__`; backward-compat `career_changes`/`health_score` keys
+- **Singlecell**: PCA `n_components` auto-clamp to `min(n_samples-1, n_features)`
+
 ## [0.2.2] - 2026-02
 
 ### Added

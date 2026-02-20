@@ -120,3 +120,8 @@ coverage.xml
 !output/amalgkit_results/**/*.pdf
 !output/amalgkit_results/**/*.txt
 
+
+# Generated verification outputs
+gwas_verification/
+check_numpy.py
+

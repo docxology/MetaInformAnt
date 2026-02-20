@@ -2,7 +2,7 @@
 
 ## Role
 
-RNA-seq analysis and amalgkit workflow scripts.
+RNA-seq analysis, ENA (European Nucleotide Archive) download, and amalgkit workflow scripts.
 
 ## Key Scripts
 

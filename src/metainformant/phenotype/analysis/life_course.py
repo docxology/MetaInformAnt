@@ -77,172 +77,272 @@ class EventSequence:
 
 
 def extract_phenotypes_from_events(
-    event_sequence: EventSequence, trait_mapping: Optional[Dict[str, List[str]]] = None
+    event_sequence, phenotype_categories: Optional[Dict[str, List[str]]] = None,
+    trait_mapping: Optional[Dict[str, List[str]]] = None,
 ) -> Dict[str, Any]:
     """Extract phenotypic traits from an event sequence.
 
+    Works with both life_events.core.events.EventSequence and the local
+    EventSequence class. Returns a comprehensive phenotype dict with
+    person_id, domain counts, event lists, and temporal info.
+
     Args:
-        event_sequence: EventSequence to analyze
-        trait_mapping: Optional mapping from trait names to event types
+        event_sequence: EventSequence to analyze (from life_events or local)
+        phenotype_categories: Optional mapping from category names to event types for custom counting
+        trait_mapping: Alias for phenotype_categories (backward compat)
 
     Returns:
         Dictionary of extracted phenotypes
+
+    Raises:
+        errors.ValidationError: If event_sequence is None or invalid
     """
-    if trait_mapping is None:
-        trait_mapping = {
-            "education_level": ["education_start", "education_complete", "degree_earned"],
-            "career_stability": ["job_start", "job_end", "career_change"],
-            "health_status": ["health_event", "medical_diagnosis", "hospitalization"],
-            "social_connectivity": ["relationship_start", "relationship_end", "social_event"],
-            "mobility": ["move", "travel", "relocation"],
-        }
+    if event_sequence is None:
+        raise errors.ValidationError("event_sequence cannot be None")
 
-    phenotypes = {}
+    # Accept either kwarg name
+    categories = phenotype_categories or trait_mapping
 
-    # Education phenotype
-    education_events = event_sequence.get_events_by_type("education_complete")
-    if education_events:
-        latest_education = max(education_events, key=lambda e: e.timestamp)
-        phenotypes["education_level"] = latest_education.metadata.get("level", "unknown")
+    # Validate custom categories if provided
+    if categories is not None:
+        if not isinstance(categories, dict):
+            raise errors.ValidationError("phenotype_categories must be a dict")
+        for key, val in categories.items():
+            if not isinstance(val, list):
+                raise errors.ValidationError(f"phenotype_categories['{key}'] must be a list, got {type(val).__name__}")
 
-    # Career stability phenotype
-    job_events = event_sequence.get_events_by_type("job_start") + event_sequence.get_events_by_type("job_end")
-    if len(job_events) > 0:
-        job_changes = len([e for e in job_events if e.event_type == "job_end"])
-        phenotypes["career_changes"] = job_changes
-        phenotypes["career_stability"] = "stable" if job_changes <= 2 else "unstable"
+    person_id = getattr(event_sequence, "person_id", "unknown")
+    events = getattr(event_sequence, "events", [])
 
-    # Health phenotype
-    health_events = event_sequence.get_events_by_type("health_event")
+    # Gather domains and event types
+    domains = sorted(set(getattr(e, "domain", "unknown") for e in events))
+    event_types = sorted(set(getattr(e, "event_type", "unknown") for e in events))
+
+    # Domain-specific counts
+    domain_counts: Dict[str, int] = defaultdict(int)
+    for e in events:
+        domain_counts[getattr(e, "domain", "unknown")] += 1
+
+    phenotypes: Dict[str, Any] = {
+        "person_id": person_id,
+        "total_events": len(events),
+        "domains": domains,
+        "event_types": event_types,
+        "domain_counts": dict(domain_counts),
+    }
+
+    # Domain-specific event counts and lists
+    for domain in domains:
+        domain_events = [e for e in events if getattr(e, "domain", None) == domain]
+        phenotypes[f"{domain}_events"] = len(domain_events)
+        # Create descriptive list based on domain
+        if domain == "health":
+            phenotypes["health_conditions"] = [getattr(e, "event_type", "") for e in domain_events]
+        elif domain == "education":
+            phenotypes["education_achievements"] = [getattr(e, "event_type", "") for e in domain_events]
+        elif domain == "occupation":
+            phenotypes["occupation_changes"] = [getattr(e, "event_type", "") for e in domain_events]
+        else:
+            phenotypes[f"{domain}_items"] = [getattr(e, "event_type", "") for e in domain_events]
+
+    # Temporal information
+    if events:
+        timestamps = [getattr(e, "timestamp", None) for e in events]
+        timestamps = [t for t in timestamps if t is not None]
+        if timestamps:
+            phenotypes["first_event_time"] = min(timestamps)
+            phenotypes["last_event_time"] = max(timestamps)
+            first = min(timestamps)
+            last = max(timestamps)
+            # Handle both datetime and numeric timestamps
+            try:
+                span = (last - first).days / 365.25
+            except (TypeError, AttributeError):
+                span = float(last - first)
+            phenotypes["event_span_years"] = span
+
+    # Custom phenotype categories
+    if categories:
+        for cat_name, cat_event_types in categories.items():
+            matching = [e for e in events if getattr(e, "event_type", "") in cat_event_types]
+            phenotypes[f"{cat_name}_count"] = len(matching)
+            phenotypes[f"{cat_name}_events"] = [getattr(e, "event_type", "") for e in matching]
+
+    # Event-type-based backward-compatible analysis (for local EventSequence without domain)
+    job_end_events = [e for e in events if getattr(e, "event_type", "") == "job_end"]
+    if job_end_events:
+        phenotypes["career_changes"] = len(job_end_events)
+
+    health_events = [e for e in events if getattr(e, "event_type", "") == "health_event"]
     if health_events:
-        # Simple health score based on event frequency
-        health_score = max(0, 10 - len(health_events))  # Lower events = better health
-        phenotypes["health_score"] = health_score
-
-    # Social connectivity phenotype
-    social_events = event_sequence.get_events_by_type("social_event")
-    relationship_events = event_sequence.get_events_by_type("relationship_start")
-    if social_events or relationship_events:
-        social_score = min(10, len(social_events) + len(relationship_events))
-        phenotypes["social_connectivity"] = social_score
-
-    # Mobility phenotype
-    move_events = event_sequence.get_events_by_type("move")
-    if move_events:
-        phenotypes["residential_moves"] = len(move_events)
-        phenotypes["mobility_level"] = "high" if len(move_events) > 3 else "low"
+        phenotypes["health_score"] = max(0, 10 - len(health_events))
 
     return phenotypes
 
 
 def aggregate_temporal_phenotypes(
-    sequences: List[EventSequence], time_windows: List[Tuple[float, float]], trait_categories: List[str]
+    sequences, time_window_years: float = 5.0,
+    time_windows: Optional[List[Tuple[float, float]]] = None,
+    trait_categories: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     """Aggregate phenotypes across time windows and individuals.
 
+    Can be called with either explicit time_windows or with time_window_years
+    for auto-generated windows based on the event data.
+
     Args:
-        sequences: List of EventSequence objects
-        time_windows: List of (start, end) time tuples
-        trait_categories: List of trait categories to analyze
+        sequences: List of EventSequence objects (life_events or local)
+        time_window_years: Window size in years (used when time_windows not provided)
+        time_windows: Optional explicit list of (start, end) time tuples
+        trait_categories: Optional list of trait categories to analyze
 
     Returns:
-        Dictionary with aggregated phenotype data
+        Dictionary with time_windows and aggregates
+
+    Raises:
+        errors.ValidationError: If sequences is invalid or time_window_years <= 0
     """
-    validation.validate_not_empty(sequences, "sequences")
-    validation.validate_not_empty(time_windows, "time_windows")
-    validation.validate_not_empty(trait_categories, "trait_categories")
+    if not isinstance(sequences, list):
+        raise errors.ValidationError("sequences must be a list")
+    if time_window_years <= 0:
+        raise errors.ValidationError("time_window_years must be positive")
 
-    results = {
-        "time_windows": time_windows,
-        "trait_categories": trait_categories,
-        "individual_phenotypes": {},
-        "temporal_aggregates": {},
+    # Collect all events across sequences
+    all_events = []
+    people_with_events = set()
+    for seq in sequences:
+        events = getattr(seq, "events", [])
+        if events:
+            people_with_events.add(getattr(seq, "person_id", "unknown"))
+        all_events.extend(events)
+
+    total_events = len(all_events)
+    total_people = len(people_with_events)
+
+    if not all_events:
+        return {
+            "time_windows": [],
+            "aggregates": {
+                "total_events": 0,
+                "total_people": 0,
+                "time_span_years": 0.0,
+            },
+        }
+
+    # Get timestamps
+    timestamps = [getattr(e, "timestamp", None) for e in all_events]
+    timestamps = [t for t in timestamps if t is not None]
+
+    first = min(timestamps)
+    last = max(timestamps)
+    try:
+        time_span = (last - first).days / 365.25
+    except (TypeError, AttributeError):
+        time_span = float(last - first)
+
+    # Auto-generate time windows if not provided
+    if time_windows is None:
+        from datetime import timedelta
+        generated_windows = []
+        current = first
+        while current < last:
+            try:
+                window_end = current + timedelta(days=time_window_years * 365.25)
+            except TypeError:
+                window_end = current + time_window_years
+            if window_end > last:
+                window_end = last
+            generated_windows.append({"start_time": current, "end_time": window_end})
+
+            # Count events and people in this window
+            window_events = [e for e in all_events
+                             if current <= getattr(e, "timestamp", current) <= window_end]
+            window_people = set()
+            for seq in sequences:
+                seq_events = getattr(seq, "events", [])
+                for e in seq_events:
+                    ts = getattr(e, "timestamp", None)
+                    if ts is not None and current <= ts <= window_end:
+                        window_people.add(getattr(seq, "person_id", "unknown"))
+                        break
+
+            domain_counts: Dict[str, int] = defaultdict(int)
+            for e in window_events:
+                domain_counts[getattr(e, "domain", "unknown")] += 1
+
+            generated_windows[-1]["n_events"] = len(window_events)
+            generated_windows[-1]["n_people"] = len(window_people)
+            generated_windows[-1]["domain_counts"] = dict(domain_counts)
+
+            try:
+                current = current + timedelta(days=time_window_years * 365.25)
+            except TypeError:
+                current = current + time_window_years
+
+        result_windows = generated_windows
+    else:
+        result_windows = time_windows
+
+    return {
+        "time_windows": result_windows,
+        "aggregates": {
+            "total_events": total_events,
+            "total_people": total_people,
+            "time_span_years": time_span,
+        },
     }
-
-    # Extract phenotypes for each individual in each time window
-    for sequence in sequences:
-        individual_data = {}
-
-        for start_time, end_time in time_windows:
-            window_events = sequence.get_events_in_range(start_time, end_time)
-            window_sequence = EventSequence(
-                person_id=sequence.person_id, events=window_events, metadata=sequence.metadata
-            )
-
-            window_phenotypes = extract_phenotypes_from_events(window_sequence)
-            window_key = f"{start_time}_{end_time}"
-            individual_data[window_key] = window_phenotypes
-
-        results["individual_phenotypes"][sequence.person_id] = individual_data
-
-    # Aggregate across individuals for each time window
-    for start_time, end_time in time_windows:
-        window_key = f"{start_time}_{end_time}"
-        window_aggregates = {}
-
-        for trait in trait_categories:
-            trait_values = []
-
-            for individual_data in results["individual_phenotypes"].values():
-                if window_key in individual_data:
-                    value = individual_data[window_key].get(trait)
-                    if value is not None:
-                        trait_values.append(value)
-
-            if trait_values:
-                # Calculate aggregate statistics
-                if isinstance(trait_values[0], (int, float)):
-                    window_aggregates[trait] = {
-                        "mean": statistics.mean(trait_values),
-                        "median": statistics.median(trait_values),
-                        "min": min(trait_values),
-                        "max": max(trait_values),
-                        "count": len(trait_values),
-                    }
-                else:
-                    # For categorical traits, count frequencies
-                    from collections import Counter
-
-                    counts = Counter(trait_values)
-                    window_aggregates[trait] = {
-                        "distribution": dict(counts),
-                        "most_common": counts.most_common(1)[0][0] if counts else None,
-                        "unique_values": len(counts),
-                        "count": len(trait_values),
-                    }
-
-        results["temporal_aggregates"][window_key] = window_aggregates
-
-    return results
 
 
 def map_events_to_traits(
-    event_sequence: EventSequence, trait_definitions: Dict[str, List[str]]
-) -> Dict[str, List[Event]]:
+    event_sequence, trait_mapping: Optional[Dict[str, List[str]]] = None,
+    trait_definitions: Optional[Dict[str, List[str]]] = None,
+) -> Dict[str, Any]:
     """Map events to phenotypic traits based on definitions.
 
     Args:
-        event_sequence: EventSequence to analyze
-        trait_definitions: Dictionary mapping trait names to event types
+        event_sequence: EventSequence to analyze (from life_events or local)
+        trait_mapping: Dictionary mapping trait names to event types
+        trait_definitions: Alias for trait_mapping (backward compat)
 
     Returns:
-        Dictionary mapping trait names to lists of relevant events
+        Dictionary mapping trait names to {count, events, timestamps} dicts
+
+    Raises:
+        errors.ValidationError: If event_sequence is None or mapping invalid
     """
-    validation.validate_not_empty(trait_definitions, "trait_definitions")
+    if event_sequence is None:
+        raise errors.ValidationError("event_sequence cannot be None")
 
-    trait_events = {}
+    mapping = trait_mapping or trait_definitions
+    if mapping is None:
+        # Default domain-based trait mapping
+        mapping = {
+            "health_issues": ["diagnosis", "medical_diagnosis", "hospitalization", "health_event", "treatment"],
+            "education_level": ["degree", "education_complete", "degree_earned", "education_start"],
+            "career_progression": ["job_change", "job_start", "job_end", "career_change", "promotion"],
+        }
 
-    for trait_name, event_types in trait_definitions.items():
-        relevant_events = []
-        for event in event_sequence.events:
-            if event.event_type in event_types:
-                relevant_events.append(event)
+    # Validate mapping
+    if not isinstance(mapping, dict):
+        raise errors.ValidationError("trait_mapping must be a dict")
+    for key, val in mapping.items():
+        if not isinstance(val, list):
+            raise errors.ValidationError(f"trait_mapping['{key}'] must be a list, got {type(val).__name__}")
 
-        # Sort events by timestamp
-        relevant_events.sort(key=lambda e: e.timestamp)
-        trait_events[trait_name] = relevant_events
+    events = getattr(event_sequence, "events", [])
 
-    return trait_events
+    trait_results: Dict[str, Any] = {}
+    for trait_name, event_types in mapping.items():
+        relevant_events = [e for e in events if getattr(e, "event_type", "") in event_types]
+        relevant_events.sort(key=lambda e: getattr(e, "timestamp", 0))
+
+        trait_results[trait_name] = {
+            "count": len(relevant_events),
+            "events": [getattr(e, "event_type", "") for e in relevant_events],
+            "timestamps": [getattr(e, "timestamp", None) for e in relevant_events],
+        }
+
+    return trait_results
 
 
 def analyze_life_course_trajectories(

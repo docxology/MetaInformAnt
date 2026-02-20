@@ -88,8 +88,6 @@ def tsne_reduction(
         raise ImportError("t-SNE requires scikit-learn")
 
     validation.validate_type(data, SingleCellData, "data")
-    validation.validate_range(n_components, min_val=2, max_val=3, name="n_components")
-    validation.validate_range(perplexity, min_val=5.0, max_val=50.0, name="perplexity")
 
     # Create copy
     result = data.copy()
@@ -97,12 +95,15 @@ def tsne_reduction(
     # Get expression matrix
     X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
-    # Automatically adjust perplexity if too high for dataset size
+    # Automatically adjust perplexity for dataset size
+    # sklearn requires: perplexity < (n_samples - 1) / 3
     n_samples = X.shape[0]
+    max_perplexity = (n_samples - 1) / 3.0
     actual_perplexity = perplexity
-    if perplexity >= n_samples:
-        actual_perplexity = max(1.0, n_samples - 1)
-        logger.warning(f"perplexity reduced from {perplexity} to {actual_perplexity} (must be < n_samples={n_samples})")
+    if perplexity >= max_perplexity:
+        actual_perplexity = max(1.0, max_perplexity - 0.1)
+        logger.warning(f"perplexity reduced from {perplexity} to {actual_perplexity} "
+                       f"(must be < (n_samples-1)/3 = {max_perplexity:.1f})")
 
     logger.info(f"Performing t-SNE with {n_components} components, perplexity={actual_perplexity}")
 
@@ -693,7 +694,7 @@ def compute_neighbors(
         "indices": indices,
         "distances": distances,
         "connectivities": connectivities,
-        "params": {"n_neighbors": n_neighbors, "metric": metric, "use_rep": use_rep},
+        "params": {"n_neighbors": n_neighbors, "metric": metric, "use_rep": use_rep, "n_pcs": n_pcs},
     }
 
     logger.info(f"Computed neighbor graph with {n_neighbors} neighbors for {len(X)} cells")
@@ -725,7 +726,7 @@ def compute_diffusion_map(
     indices = data.uns["neighbors"]["indices"]
     distances = data.uns["neighbors"]["distances"]
 
-    n_cells = len(data)
+    n_cells = data.n_obs
     # Create adjacency matrix from neighbors
     from scipy import sparse
 
@@ -763,7 +764,19 @@ def compute_diffusion_map(
     # Compute eigenvectors (diffusion components)
     from scipy.sparse.linalg import eigsh
 
-    eigenvalues, eigenvectors = eigsh(diffusion_operator, k=n_components + 1, which="LM", sigma=1.0)
+    # Add small diagonal regularization to avoid singularity
+    n_cells_mat = diffusion_operator.shape[0]
+    diffusion_operator = diffusion_operator + sparse.eye(n_cells_mat) * 1e-6
+
+    try:
+        eigenvalues, eigenvectors = eigsh(diffusion_operator, k=min(n_components + 1, n_cells_mat - 1), which="LM")
+    except (RuntimeError, ValueError) as exc:
+        logger.warning(f"Sparse eigsh failed ({exc}), falling back to dense eigendecomposition")
+        dense = diffusion_operator.toarray() if hasattr(diffusion_operator, "toarray") else diffusion_operator
+        eigenvalues, eigenvectors = np.linalg.eigh(dense)
+        # eigh returns ascending order — take the top (n_components+1)
+        eigenvalues = eigenvalues[-(n_components + 1):][::-1]
+        eigenvectors = eigenvectors[:, -(n_components + 1):][:, ::-1]
 
     # Sort by eigenvalue magnitude (largest first)
     idx = np.argsort(np.abs(eigenvalues))[::-1]
