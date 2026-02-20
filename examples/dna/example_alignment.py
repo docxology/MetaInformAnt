@@ -15,7 +15,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from metainformant.core import io
-from metainformant.dna import alignment
+from metainformant.dna.alignment import pairwise as alignment
 
 
 def main():
@@ -70,8 +70,8 @@ def main():
         global_alignments[f"{seq1_name}_vs_{seq2_name}"] = {
             "sequence1": seq1,
             "sequence2": seq2,
-            "aligned_seq1": alignment_result.aligned_seq1,
-            "aligned_seq2": alignment_result.aligned_seq2,
+            "seq1_aligned": alignment_result.seq1_aligned,
+            "seq2_aligned": alignment_result.seq2_aligned,
             "score": alignment_result.score,
             "identity": alignment.calculate_alignment_identity(alignment_result),
             "conserved_regions": alignment.find_conserved_regions(alignment_result),
@@ -104,8 +104,8 @@ def main():
         local_alignments[f"{seq1_name}_vs_{seq2_name}"] = {
             "sequence1": seq1,
             "sequence2": seq2,
-            "aligned_seq1": alignment_result.aligned_seq1,
-            "aligned_seq2": alignment_result.aligned_seq2,
+            "seq1_aligned": alignment_result.seq1_aligned,
+            "seq2_aligned": alignment_result.seq2_aligned,
             "score": alignment_result.score,
             "identity": alignment.calculate_alignment_identity(alignment_result),
             "conserved_regions": alignment.find_conserved_regions(alignment_result),
@@ -136,15 +136,15 @@ def main():
         result = alignment.global_align(
             test_seq1,
             test_seq2,
-            match_score=scheme["match"],
-            mismatch_score=scheme["mismatch"],
-            gap_score=scheme["gap"],
+            match=scheme["match"],
+            mismatch=scheme["mismatch"],
+            gap=scheme["gap"],
         )
 
         custom_alignments[name] = {
             "scoring_scheme": scheme,
-            "aligned_seq1": result.aligned_seq1,
-            "aligned_seq2": result.aligned_seq2,
+            "seq1_aligned": result.seq1_aligned,
+            "seq2_aligned": result.seq2_aligned,
             "score": result.score,
             "identity": alignment.calculate_alignment_identity(result),
             "statistics": alignment.alignment_statistics(result),

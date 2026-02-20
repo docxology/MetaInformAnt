@@ -15,7 +15,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from metainformant.core import io
-from metainformant.information.syntactic import shannon_entropy, shannon_entropy_from_counts
+from metainformant.information.metrics.core.syntactic import shannon_entropy, shannon_entropy_from_counts
 
 
 def main():

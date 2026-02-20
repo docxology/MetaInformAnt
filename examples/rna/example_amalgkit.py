@@ -15,8 +15,8 @@ from __future__ import annotations
 from pathlib import Path
 
 from metainformant.core import io
-from metainformant.rna.amalgkit import check_cli_available
-from metainformant.rna.workflow import AmalgkitWorkflowConfig, plan_workflow
+from metainformant.rna.amalgkit.amalgkit import check_cli_available
+from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, plan_workflow
 
 
 def main():

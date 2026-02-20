@@ -1,0 +1,469 @@
+{
+  "dna_alignment_analysis": {
+    "alignment_algorithms": {
+      "global_alignment": {
+        "default_parameters": {
+          "gap": -2,
+          "match": 1,
+          "mismatch": -1
+        },
+        "description": "Needleman-Wunsch algorithm for full sequence alignment",
+        "use_case": "Comparing complete sequences of similar length"
+      },
+      "local_alignment": {
+        "default_parameters": {
+          "gap": -2,
+          "match": 1,
+          "mismatch": -1
+        },
+        "description": "Smith-Waterman algorithm for subsequence alignment",
+        "use_case": "Finding conserved regions in dissimilar sequences"
+      }
+    },
+    "functions_demonstrated": [
+      "global_align",
+      "local_align",
+      "calculate_alignment_identity",
+      "find_conserved_regions",
+      "alignment_statistics"
+    ],
+    "key_insights": [
+      "Global alignment works best for similar sequences of equal length",
+      "Local alignment finds conserved regions in dissimilar sequences",
+      "Scoring parameters significantly affect alignment results",
+      "Conserved region analysis helps identify functional motifs",
+      "Alignment statistics provide quantitative comparison measures"
+    ],
+    "results": {
+      "conserved_region_analysis": {
+        "reference_vs_mutated": {
+          "average_region_length": 16.0,
+          "regions": [
+            {
+              "end_position": 15,
+              "gc_content": 8,
+              "length": 16,
+              "sequence": "ATCGATCGATCGATCG",
+              "start_position": 0
+            }
+          ],
+          "total_conserved_bases": 16,
+          "total_regions": 1
+        },
+        "reference_vs_similar": {
+          "average_region_length": 19.0,
+          "regions": [
+            {
+              "end_position": 18,
+              "gc_content": 9,
+              "length": 19,
+              "sequence": "ATCGATCGATCGATCGATC",
+              "start_position": 0
+            }
+          ],
+          "total_conserved_bases": 19,
+          "total_regions": 1
+        },
+        "seq_a_vs_seq_b": {
+          "average_region_length": 35.0,
+          "regions": [
+            {
+              "end_position": 34,
+              "gc_content": 17,
+              "length": 35,
+              "sequence": "ATCGATCGATCGATCGATCGATCGATCGATCGATC",
+              "start_position": 0
+            }
+          ],
+          "total_conserved_bases": 35,
+          "total_regions": 1
+        },
+        "seq_a_vs_seq_c": {
+          "average_region_length": 32.0,
+          "regions": [
+            {
+              "end_position": 31,
+              "gc_content": 16,
+              "length": 32,
+              "sequence": "ATCGATCGATCGATCGATCGATCGATCGATCG",
+              "start_position": 0
+            }
+          ],
+          "total_conserved_bases": 32,
+          "total_regions": 1
+        }
+      },
+      "custom_parameter_alignments": {
+        "lenient": {
+          "identity": 90.0,
+          "score": 34.0,
+          "scoring_scheme": {
+            "gap": -1,
+            "match": 2,
+            "mismatch": -1,
+            "name": "lenient"
+          },
+          "seq1_aligned": "ATCGATCGATCGATCGATCG",
+          "seq2_aligned": "ATCGATCGATCGATCGTTTG",
+          "statistics": {
+            "alignment_length": 20,
+            "alignment_name": "reference_vs_mutated_lenient",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 90.0,
+            "matches": 18,
+            "mismatches": 2,
+            "similarity": 90.0
+          }
+        },
+        "nucleotide_bias": {
+          "identity": 90.0,
+          "score": 14.0,
+          "scoring_scheme": {
+            "gap": -3,
+            "match": 1,
+            "mismatch": -2,
+            "name": "nucleotide_bias"
+          },
+          "seq1_aligned": "ATCGATCGATCGATCGATCG",
+          "seq2_aligned": "ATCGATCGATCGATCGTTTG",
+          "statistics": {
+            "alignment_length": 20,
+            "alignment_name": "reference_vs_mutated_nucleotide_bias",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 90.0,
+            "matches": 18,
+            "mismatches": 2,
+            "similarity": 90.0
+          }
+        },
+        "strict": {
+          "identity": 90.0,
+          "score": 12.0,
+          "scoring_scheme": {
+            "gap": -5,
+            "match": 1,
+            "mismatch": -3,
+            "name": "strict"
+          },
+          "seq1_aligned": "ATCGATCGATCGATCGATCG",
+          "seq2_aligned": "ATCGATCGATCGATCGTTTG",
+          "statistics": {
+            "alignment_length": 20,
+            "alignment_name": "reference_vs_mutated_strict",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 90.0,
+            "matches": 18,
+            "mismatches": 2,
+            "similarity": 90.0
+          }
+        }
+      },
+      "global_alignments": {
+        "reference_vs_mutated": {
+          "conserved_regions": [
+            [
+              "ATCGATCGATCGATCG",
+              0,
+              15
+            ]
+          ],
+          "identity": 90.0,
+          "score": 16.0,
+          "seq1_aligned": "ATCGATCGATCGATCGATCG",
+          "seq2_aligned": "ATCGATCGATCGATCGTTTG",
+          "sequence1": "ATCGATCGATCGATCGATCG",
+          "sequence2": "ATCGATCGATCGATCGTTTG",
+          "statistics": {
+            "alignment_length": 20,
+            "alignment_name": "reference_vs_mutated",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 90.0,
+            "matches": 18,
+            "mismatches": 2,
+            "similarity": 90.0
+          }
+        },
+        "reference_vs_similar": {
+          "conserved_regions": [
+            [
+              "ATCGATCGATCGATCGATC",
+              0,
+              18
+            ]
+          ],
+          "identity": 95.0,
+          "score": 18.0,
+          "seq1_aligned": "ATCGATCGATCGATCGATCG",
+          "seq2_aligned": "ATCGATCGATCGATCGATCA",
+          "sequence1": "ATCGATCGATCGATCGATCG",
+          "sequence2": "ATCGATCGATCGATCGATCA",
+          "statistics": {
+            "alignment_length": 20,
+            "alignment_name": "reference_vs_similar",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 95.0,
+            "matches": 19,
+            "mismatches": 1,
+            "similarity": 95.0
+          }
+        },
+        "seq_a_vs_seq_b": {
+          "conserved_regions": [
+            [
+              "ATCGATCGATCGATCGATCGATCGATCGATCGATC",
+              0,
+              34
+            ]
+          ],
+          "identity": 97.22222222222221,
+          "score": 34.0,
+          "seq1_aligned": "ATCGATCGATCGATCGATCGATCGATCGATCGATCG",
+          "seq2_aligned": "ATCGATCGATCGATCGATCGATCGATCGATCGATCA",
+          "sequence1": "ATCGATCGATCGATCGATCGATCGATCGATCGATCG",
+          "sequence2": "ATCGATCGATCGATCGATCGATCGATCGATCGATCA",
+          "statistics": {
+            "alignment_length": 36,
+            "alignment_name": "seq_a_vs_seq_b",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 97.22222222222221,
+            "matches": 35,
+            "mismatches": 1,
+            "similarity": 97.22222222222221
+          }
+        },
+        "seq_a_vs_seq_c": {
+          "conserved_regions": [
+            [
+              "ATCGATCGATCGATCGATCGATCGATCGATCG",
+              0,
+              31
+            ]
+          ],
+          "identity": 91.66666666666666,
+          "score": 30.0,
+          "seq1_aligned": "ATCGATCGATCGATCGATCGATCGATCGATCGATCG",
+          "seq2_aligned": "ATCGATCGATCGATCGATCGATCGATCGATCGTTTT",
+          "sequence1": "ATCGATCGATCGATCGATCGATCGATCGATCGATCG",
+          "sequence2": "ATCGATCGATCGATCGATCGATCGATCGATCGTTTT",
+          "statistics": {
+            "alignment_length": 36,
+            "alignment_name": "seq_a_vs_seq_c",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 91.66666666666666,
+            "matches": 33,
+            "mismatches": 3,
+            "similarity": 91.66666666666666
+          }
+        }
+      },
+      "local_alignments": {
+        "reference_vs_different": {
+          "conserved_regions": [],
+          "identity": 50.0,
+          "score": 1.0,
+          "seq1_aligned": "GA",
+          "seq2_aligned": "TA",
+          "sequence1": "ATCGATCGATCGATCGATCG",
+          "sequence2": "GCTAGCTAGCTAGCTAGCTA",
+          "statistics": {
+            "alignment_length": 2,
+            "alignment_name": "reference_vs_different",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 50.0,
+            "matches": 1,
+            "mismatches": 1,
+            "similarity": 50.0
+          }
+        },
+        "reference_vs_seq_a": {
+          "conserved_regions": [
+            [
+              "GATCGATCGATCGATCGATCG",
+              0,
+              20
+            ]
+          ],
+          "identity": 100.0,
+          "score": 20.0,
+          "seq1_aligned": "GATCGATCGATCGATCGATCG",
+          "seq2_aligned": "GATCGATCGATCGATCGATCG",
+          "sequence1": "ATCGATCGATCGATCGATCG",
+          "sequence2": "ATCGATCGATCGATCGATCGATCGATCGATCGATCG",
+          "statistics": {
+            "alignment_length": 21,
+            "alignment_name": "reference_vs_seq_a",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 100.0,
+            "matches": 21,
+            "mismatches": 0,
+            "similarity": 100.0
+          }
+        },
+        "seq_a_vs_seq_c": {
+          "conserved_regions": [
+            [
+              "ATCGATCGATCGATCGATCGATCGATCGATCG",
+              1,
+              32
+            ]
+          ],
+          "identity": 96.96969696969697,
+          "score": 32.0,
+          "seq1_aligned": "GATCGATCGATCGATCGATCGATCGATCGATCG",
+          "seq2_aligned": "TATCGATCGATCGATCGATCGATCGATCGATCG",
+          "sequence1": "ATCGATCGATCGATCGATCGATCGATCGATCGATCG",
+          "sequence2": "ATCGATCGATCGATCGATCGATCGATCGATCGTTTT",
+          "statistics": {
+            "alignment_length": 33,
+            "alignment_name": "seq_a_vs_seq_c",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 96.96969696969697,
+            "matches": 32,
+            "mismatches": 1,
+            "similarity": 96.96969696969697
+          }
+        }
+      },
+      "statistics_comparison": {
+        "custom": [
+          {
+            "alignment_length": 20,
+            "alignment_name": "reference_vs_mutated_strict",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 90.0,
+            "matches": 18,
+            "mismatches": 2,
+            "similarity": 90.0
+          },
+          {
+            "alignment_length": 20,
+            "alignment_name": "reference_vs_mutated_lenient",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 90.0,
+            "matches": 18,
+            "mismatches": 2,
+            "similarity": 90.0
+          },
+          {
+            "alignment_length": 20,
+            "alignment_name": "reference_vs_mutated_nucleotide_bias",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 90.0,
+            "matches": 18,
+            "mismatches": 2,
+            "similarity": 90.0
+          }
+        ],
+        "global": [
+          {
+            "alignment_length": 20,
+            "alignment_name": "reference_vs_similar",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 95.0,
+            "matches": 19,
+            "mismatches": 1,
+            "similarity": 95.0
+          },
+          {
+            "alignment_length": 20,
+            "alignment_name": "reference_vs_mutated",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 90.0,
+            "matches": 18,
+            "mismatches": 2,
+            "similarity": 90.0
+          },
+          {
+            "alignment_length": 36,
+            "alignment_name": "seq_a_vs_seq_b",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 97.22222222222221,
+            "matches": 35,
+            "mismatches": 1,
+            "similarity": 97.22222222222221
+          },
+          {
+            "alignment_length": 36,
+            "alignment_name": "seq_a_vs_seq_c",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 91.66666666666666,
+            "matches": 33,
+            "mismatches": 3,
+            "similarity": 91.66666666666666
+          }
+        ],
+        "local": [
+          {
+            "alignment_length": 2,
+            "alignment_name": "reference_vs_different",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 50.0,
+            "matches": 1,
+            "mismatches": 1,
+            "similarity": 50.0
+          },
+          {
+            "alignment_length": 33,
+            "alignment_name": "seq_a_vs_seq_c",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 96.96969696969697,
+            "matches": 32,
+            "mismatches": 1,
+            "similarity": 96.96969696969697
+          },
+          {
+            "alignment_length": 21,
+            "alignment_name": "reference_vs_seq_a",
+            "gap_percentage": 0.0,
+            "gaps": 0,
+            "identity": 100.0,
+            "matches": 21,
+            "mismatches": 0,
+            "similarity": 100.0
+          }
+        ]
+      }
+    },
+    "summary_metrics": {
+      "alignment_types": [
+        "global",
+        "local",
+        "custom_scoring"
+      ],
+      "average_global_identity": 93.47222222222223,
+      "custom_scoring_schemes_tested": 3,
+      "total_alignments_performed": 10,
+      "total_conserved_regions_found": 4,
+      "total_sequences_tested": 7
+    },
+    "test_sequences": {
+      "different": "GCTAGCTAGCTAGCTAGCTA",
+      "mutated": "ATCGATCGATCGATCGTTTG",
+      "reference": "ATCGATCGATCGATCGATCG",
+      "seq_a": "ATCGATCGATCGATCGATCGATCGATCGATCGATCG",
+      "seq_b": "ATCGATCGATCGATCGATCGATCGATCGATCGATCA",
+      "seq_c": "ATCGATCGATCGATCGATCGATCGATCGATCGTTTT",
+      "similar": "ATCGATCGATCGATCGATCA"
+    },
+    "timestamp": "2024-12-26T10:00:00Z"
+  }
+}

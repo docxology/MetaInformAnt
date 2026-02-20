@@ -54,7 +54,14 @@ class BiologicalNetwork:
         else:
             self.graph = nx.Graph(**kwargs)
 
+        self._directed = directed
         self.metadata = kwargs.get("metadata", {})
+
+    @property
+    def directed(self) -> bool:
+        """Whether the network is directed."""
+        return self.graph.is_directed()
+
 
     def add_node(self, node_id: str, **attributes):
         """Add a node to the network.

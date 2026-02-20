@@ -6,6 +6,8 @@ This bypasses the NCBI SRA Toolkit (prefetch/fasterq-dump) bottleneck by
 fetching pre-extracted .fastq.gz files directly via HTTP/FTP.
 """
 
+import gzip
+import hashlib
 import logging
 import shutil
 import subprocess
@@ -17,6 +19,59 @@ from typing import List, Optional, Tuple
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+def calculate_md5(file_path: Path, chunk_size: int = 4096) -> str:
+    """Calculate MD5 checksum of a file.
+
+    Args:
+        file_path: Path to the file.
+        chunk_size: Size of chunks for reading.
+
+    Returns:
+        Hex digest of the MD5 checksum.
+    """
+    md5_hash = hashlib.md5()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(chunk_size), b""):
+            md5_hash.update(chunk)
+    return md5_hash.hexdigest()
+
+
+def clean_stagnant_file(file_path: Path) -> None:
+    """Remove a stagnant/incomplete download file if it exists.
+
+    Args:
+        file_path: Path to the file to remove.
+    """
+    file_path = Path(file_path)
+    if file_path.exists():
+        file_path.unlink()
+        logger.info(f"Cleaned stagnant file: {file_path}")
+
+
+def verify_gzip_integrity(file_path: Path) -> bool:
+    """Verify the integrity of a gzip file.
+
+    Args:
+        file_path: Path to the file to verify.
+
+    Returns:
+        True if the file is valid gzip or not a .gz file, False if corrupted.
+    """
+    file_path = Path(file_path)
+    if not file_path.suffix == ".gz":
+        return True  # Non-gz files are assumed valid
+
+    try:
+        with gzip.open(file_path, "rb") as f:
+            while True:
+                chunk = f.read(8192)
+                if not chunk:
+                    break
+        return True
+    except (gzip.BadGzipFile, OSError, EOFError):
+        return False
 
 class ENADownloader:
     """

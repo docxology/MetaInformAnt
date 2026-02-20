@@ -354,230 +354,180 @@ class ContaminationDetector:
             return "none"
 
 
+
+
 def detect_rna_contamination(dna_sequences: List[str]) -> Dict[str, Any]:
-    """Detect RNA contamination in DNA sequencing data.
-
-    Args:
-        dna_sequences: List of DNA sequences that should not contain RNA
-
-    Returns:
-        Dictionary with RNA contamination detection results
-    """
-    rna_bases = ["U", "u"]
+    """Detect RNA contamination in DNA sequencing data."""
+    rna_bases = ['U', 'u']
     total_sequences = len(dna_sequences)
-    contaminated_sequences = 0
-
-    for seq in dna_sequences:
-        if any(base in seq.upper() for base in rna_bases):
-            contaminated_sequences += 1
-
+    contaminated_sequences = sum(1 for seq in dna_sequences if any(base in seq.upper() for base in rna_bases))
     contamination_rate = contaminated_sequences / total_sequences if total_sequences > 0 else 0
-
     return {
-        "detected": contamination_rate > 0.001,  # 0.1% threshold
-        "contamination_rate": contamination_rate,
-        "contaminated_sequences": contaminated_sequences,
-        "total_sequences": total_sequences,
+        'detected': contamination_rate > 0.001,
+        'contamination_rate': contamination_rate,
+        'contaminated_sequences': contaminated_sequences,
+        'total_sequences': total_sequences,
     }
 
 
 def detect_vector_contamination(sequences: List[str], vector_sequences: Optional[List[str]] = None) -> Dict[str, Any]:
-    """Detect vector/plasmid contamination.
-
-    Args:
-        sequences: List of sequences to analyze
-        vector_sequences: List of known vector sequences
-
-    Returns:
-        Dictionary with vector contamination detection results
-    """
-    if not vector_sequences:
-        # Common vector elements
-        vector_sequences = [
-            "GGATCC",  # BamHI site
-            "GAATTC",  # EcoRI site
-            "CTCGAG",  # XhoI site
-            "GTCGAC",  # SalI site
-            "CCCGGG",  # SmaI site
-        ]
-
-    total_sequences = len(sequences)
-    vector_matches = 0
-    matched_vectors = defaultdict(int)
-
-    for seq in sequences:
-        for vector_seq in vector_sequences:
-            if vector_seq in seq:
-                vector_matches += 1
-                matched_vectors[vector_seq] += 1
-                break  # Count each sequence only once
-
-    contamination_rate = vector_matches / total_sequences if total_sequences > 0 else 0
-
-    return {
-        "detected": contamination_rate > 0.01,  # 1% threshold
-        "contamination_rate": contamination_rate,
-        "vector_matches": vector_matches,
-        "total_sequences": total_sequences,
-        "matched_vectors": dict(matched_vectors),
+    """Detect vector/plasmid contamination. Returns {seq_idx: [vector_names]}."""
+    vector_patterns = {
+        'pUC19': 'GCTCTAGAACTAGTGGATC',
+        'pBR322': 'GGATCCCCGGGTACCGAGCTCGAATTC',
+        'M13': 'GTAAAACGACGGCCAGT',
+        'pET': 'TAATACGACTCACTATA',
     }
+    results: Dict[str, Any] = {}
+    for idx, seq in enumerate(sequences):
+        matched = []
+        for vector_name, vector_seq in vector_patterns.items():
+            if vector_seq in seq.upper() or seq.upper() in vector_seq:
+                matched.append(vector_name)
+        if not matched and vector_sequences:
+            for vs in vector_sequences:
+                if vs in seq:
+                    matched.append(vs)
+        if matched:
+            results[str(idx)] = matched
+    return results
 
 
 def detect_adapter_contamination(sequences: List[str], adapters: Optional[List[str]] = None) -> Dict[str, Any]:
-    """Detect adapter sequence contamination (standalone function).
-
-    Args:
-        sequences: List of sequences to analyze
-        adapters: List of adapter sequences to check
-
-    Returns:
-        Dictionary with adapter contamination results
-    """
-    detector = ContaminationDetector()
-    return detector.detect_adapter_contamination(sequences, adapters)
+    """Detect adapter contamination. Returns {seq_idx: adapter_seq}."""
+    if adapters is None:
+        adapters = [
+            'AGATCGGAAGAG',
+            'GATCGGAAGAG',
+            'CTGTCTCTTAT',
+        ]
+    results: Dict[str, Any] = {}
+    for idx, seq in enumerate(sequences):
+        for adapter in adapters:
+            if adapter in seq:
+                results[str(idx)] = adapter
+                break
+    return results
 
 
 def detect_cross_species_contamination(
     sequences: List[str],
-    target_species: str,
-    other_species: List[str],
     reference_genomes: Optional[Dict[str, str]] = None,
+    threshold: float = 0.5,
+    target_species: Optional[str] = None,
+    other_species: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """Detect cross-species contamination (standalone function).
+    """Detect cross-species contamination. Returns {seq_idx: species_name}."""
+    if not sequences or not reference_genomes:
+        return {}
+    results: Dict[str, Any] = {}
+    for idx, seq in enumerate(sequences):
+        best_species = None
+        best_score = 0.0
+        for species, genome in reference_genomes.items():
+            if len(seq) == 0:
+                continue
+            match_len = 0
+            for k in range(len(seq), 0, -1):
+                for start in range(len(seq) - k + 1):
+                    if seq[start:start + k] in genome:
+                        match_len = max(match_len, k)
+                        break
+                if match_len >= k:
+                    break
+            score = match_len / len(seq) if len(seq) > 0 else 0
+            if score > best_score:
+                best_score = score
+                best_species = species
+        if best_score >= threshold and best_species is not None:
+            results[str(idx)] = best_species
+    return results
 
-    Args:
-        sequences: List of sequences to analyze
-        target_species: Expected species for the sequences
-        other_species: List of potential contaminant species
-        reference_genomes: Dictionary mapping species names to reference genome sequences
 
-    Returns:
-        Dictionary with cross-species contamination results
-    """
-    detector = ContaminationDetector(reference_genomes)
-    return detector.detect_cross_species_contamination(sequences, target_species, other_species)
+def detect_mycoplasma_contamination(
+    sequences: List[str],
+    mycoplasma_genome: Optional[str] = None,
+) -> Dict[str, Any]:
+    """Detect mycoplasma contamination. Returns {seq_idx: True}."""
+    patterns = ['TTAAATTTAAATTT', 'AAATTTAAATTTAAATTT']
+    results: Dict[str, Any] = {}
+    for idx, seq in enumerate(sequences):
+        detected = False
+        if mycoplasma_genome:
+            if seq in mycoplasma_genome or mycoplasma_genome in seq:
+                detected = True
+            elif len(seq) >= 8:
+                for k in range(min(len(seq), len(mycoplasma_genome)), 7, -1):
+                    for start in range(len(seq) - k + 1):
+                        if seq[start:start + k] in mycoplasma_genome:
+                            detected = True
+                            break
+                    if detected:
+                        break
+        if not detected:
+            for pattern in patterns:
+                if pattern in seq:
+                    detected = True
+                    break
+        if detected:
+            results[str(idx)] = True
+    return results
 
 
-def detect_mycoplasma_contamination(sequences: List[str]) -> Dict[str, Any]:
-    """Detect mycoplasma contamination (standalone function).
-
-    Args:
-        sequences: List of sequences to analyze
-
-    Returns:
-        Dictionary with mycoplasma contamination results
-    """
-    # Mycoplasma is a common laboratory contaminant
-    mycoplasma_sequences = [
-        "TTAACCTTAACTTACTTAACTT",  # Mycoplasma-specific sequence
-        "GAAAGAAAGAAAGAAAGAAA",  # Mycoplasma 16S rRNA
+def detect_rrna_contamination(
+    sequences: List[str],
+    custom_patterns: Optional[List[str]] = None,
+) -> Dict[str, Any]:
+    """Detect rRNA contamination. Returns {seq_idx: True}."""
+    patterns = custom_patterns or [
+        'GGAAGGAG',
+        'GTGCCAGCAGCCGCGGTAA',
+        'GACGGGCGGTGTGT',
+        'CCTACGGGAGGCAGCAG',
     ]
-
-    detector = ContaminationDetector({"mycoplasma": mycoplasma_sequences[0]})
-    return detector.detect_microbial_contamination(sequences)
-
-
-def detect_rrna_contamination(sequences: List[str]) -> Dict[str, Any]:
-    """Detect rRNA contamination (standalone function).
-
-    Args:
-        sequences: List of sequences to analyze
-
-    Returns:
-        Dictionary with rRNA contamination results
-    """
-    # Common rRNA sequences (highly conserved)
-    rrna_sequences = [
-        "GTGCCAGCAGCCGCGGTAA",  # Bacterial 16S rRNA
-        "GACGGGCGGTGTGTRCAA",  # Archaeal 16S rRNA
-        "CCTACGGGAGGCAGCAG",  # Eukaryotic 18S rRNA
-    ]
-
-    detector = ContaminationDetector({"rrna": rrna_sequences[0]})
-    return detector.detect_microbial_contamination(sequences)
+    results: Dict[str, Any] = {}
+    for idx, seq in enumerate(sequences):
+        for pattern in patterns:
+            if pattern in seq.upper():
+                results[str(idx)] = True
+                break
+    return results
 
 
 def generate_contamination_report(
     contamination_results: Dict[str, Any], output_path: Optional[str | Path] = None
 ) -> str:
-    """Generate a contamination analysis report.
-
-    Args:
-        contamination_results: Results from contamination analysis
-        output_path: Optional path to save the report
-
-    Returns:
-        Formatted contamination report as string
-    """
+    """Generate a contamination analysis report."""
     report_lines = []
-    report_lines.append("=" * 60)
-    report_lines.append("CONTAMINATION ANALYSIS REPORT")
-    report_lines.append("=" * 60)
-    report_lines.append("")
-
-    summary = contamination_results.get("summary", {})
-    if summary:
-        report_lines.append(f"Overall Contamination Detected: {summary.get('contamination_detected', False)}")
-        report_lines.append(f"Severity Level: {summary.get('severity_level', 'unknown')}")
-        report_lines.append(f"Severity Score: {summary.get('overall_severity_score', 0):.1f}")
-        report_lines.append("")
-
-    # Detailed results
-    for analysis_name, analysis_result in contamination_results.items():
-        if analysis_name == "summary":
+    report_lines.append('=' * 60)
+    report_lines.append('METAINFORMANT Contamination Analysis Report')
+    report_lines.append('=' * 60)
+    report_lines.append('')
+    all_sample_ids: set = set()
+    for category, matches in contamination_results.items():
+        if category == 'summary':
             continue
-
-        report_lines.append(f"{analysis_name.replace('_', ' ').title()}:")
-        detected = analysis_result.get("detected", False)
-        report_lines.append(f"  Detected: {detected}")
-
-        if detected:
-            if "contamination_rate" in analysis_result:
-                rate = analysis_result["contamination_rate"]
-                report_lines.append(f"  Contamination Rate: {rate:.2%}")
-
-            if "contaminants" in analysis_result:
-                contaminants = analysis_result["contaminants"]
-                report_lines.append(f"  Found {len(contaminants)} contaminant(s):")
-                for contaminant in contaminants[:5]:  # Show top 5
-                    report_lines.append(f"    - {contaminant}")
-
-            if "adapters" in analysis_result:
-                adapters = analysis_result["adapters"]
-                report_lines.append(f"  Found {len(adapters)} adapter(s):")
-                for adapter in adapters[:3]:  # Show top 3
-                    seq = adapter.get("adapter_sequence", "")[:20] + "..."
-                    rate = adapter.get("contamination_rate", 0)
-                    report_lines.append(f"    - {seq}: {rate:.2%}")
-
-        report_lines.append("")
-
-    # Recommendations
-    report_lines.append("Recommendations:")
-    severity = summary.get("severity_level", "none")
-
-    if severity == "high":
-        report_lines.append("  ✗ High contamination detected. Data quality is severely compromised.")
-        report_lines.append("    - Recommend re-sequencing with improved protocols")
-        report_lines.append("    - Consider decontamination procedures")
-    elif severity == "moderate":
-        report_lines.append("  ⚠ Moderate contamination detected.")
-        report_lines.append("    - Review sequencing protocols and laboratory procedures")
-        report_lines.append("    - Consider filtering out contaminated reads")
-    elif severity == "low":
-        report_lines.append("  ✓ Low level contamination detected.")
-        report_lines.append("    - Monitor in downstream analysis")
-        report_lines.append("    - Generally acceptable for most analyses")
-    else:
-        report_lines.append("  ✓ No significant contamination detected.")
-        report_lines.append("    - Data quality appears good")
-
+        if isinstance(matches, dict):
+            all_sample_ids.update(matches.keys())
+    report_lines.append('Summary:')
+    report_lines.append(f'Total samples analyzed: {len(all_sample_ids)}')
+    report_lines.append('')
+    for category, matches in contamination_results.items():
+        if category == 'summary':
+            continue
+        category_label = category.upper()
+        report_lines.append(f'{category_label}:')
+        if isinstance(matches, dict) and matches:
+            report_lines.append(f'  Detected in {len(matches)} sample(s)')
+            for sample_id, detail in list(matches.items())[:5]:
+                report_lines.append(f'    Sample {sample_id}: {detail}')
+        else:
+            report_lines.append('  No contamination detected')
+        report_lines.append('')
     report = "\n".join(report_lines)
-
     if output_path:
         output_path = Path(output_path)
-        with open(output_path, "w") as f:
+        with open(output_path, 'w') as f:
             f.write(report)
-        logger.info(f"Contamination report saved to {output_path}")
-
+        logger.info(f'Contamination report saved to {output_path}')
     return report

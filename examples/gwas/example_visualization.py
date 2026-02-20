@@ -19,7 +19,7 @@ import numpy as np
 import pandas as pd
 
 from metainformant.core import io
-from metainformant.gwas.visualization import manhattan_plot, qq_plot
+from metainformant.gwas.visualization.general import manhattan_plot, qq_plot
 
 
 def main():

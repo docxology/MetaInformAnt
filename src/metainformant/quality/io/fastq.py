@@ -213,18 +213,22 @@ def per_base_quality(records: List[FastqRecord]) -> Dict[str, Any]:
     for pos in range(max_length):
         pos_qualities = [row[pos] for row in quality_matrix if row[pos] is not None]
         if pos_qualities:
-            positions.append(
-                {
-                    "position": pos + 1,
-                    "mean": statistics.mean(pos_qualities),
-                    "median": statistics.median(pos_qualities),
-                    "lower_quartile": statistics.quantiles(pos_qualities, n=4)[0],
-                    "upper_quartile": statistics.quantiles(pos_qualities, n=4)[2],
-                    "min": min(pos_qualities),
-                    "max": max(pos_qualities),
-                    "count": len(pos_qualities),
-                }
-            )
+            entry = {
+                "position": pos + 1,
+                "mean": statistics.mean(pos_qualities),
+                "median": statistics.median(pos_qualities),
+                "min": min(pos_qualities),
+                "max": max(pos_qualities),
+                "count": len(pos_qualities),
+            }
+            if len(pos_qualities) >= 2:
+                quartiles = statistics.quantiles(pos_qualities, n=4)
+                entry["lower_quartile"] = quartiles[0]
+                entry["upper_quartile"] = quartiles[2]
+            else:
+                entry["lower_quartile"] = pos_qualities[0]
+                entry["upper_quartile"] = pos_qualities[0]
+            positions.append(entry)
 
     return {"positions": positions}
 

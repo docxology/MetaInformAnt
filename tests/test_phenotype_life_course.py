@@ -10,7 +10,11 @@ import pytest
 try:
     from metainformant.core.utils.errors import ValidationError
     from metainformant.life_events.core.events import Event, EventSequence
-    from metainformant.phenotype.analysis.life_course import extract_phenotypes_from_events
+    from metainformant.phenotype.analysis.life_course import (
+        aggregate_temporal_phenotypes,
+        extract_phenotypes_from_events,
+        map_events_to_traits,
+    )
 
     LIFE_EVENTS_AVAILABLE = True
 except ImportError:

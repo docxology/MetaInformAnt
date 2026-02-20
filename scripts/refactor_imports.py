@@ -197,11 +197,11 @@ def process_file(filepath):
 
 
 def main():
-    root_dir = "src/metainformant"
-    for root, dirs, files in os.walk(root_dir):
-        for file in files:
-            if file.endswith(".py"):
-                process_file(os.path.join(root, file))
+    for root_dir in ["src/metainformant", "examples", "tests"]:
+        for root, dirs, files in os.walk(root_dir):
+            for file in files:
+                if file.endswith(".py"):
+                    process_file(os.path.join(root, file))
 
 
 if __name__ == "__main__":

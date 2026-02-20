@@ -15,7 +15,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from metainformant.core import io
-from metainformant.networks.graph import centrality_measures, create_network
+from metainformant.networks.analysis.graph import centrality_measures, create_network
 
 
 def main():
@@ -38,16 +38,8 @@ def main():
 
     print(f"✓ Creating network with {len(edges)} interactions")
 
-    # Build network - extract unique nodes from edges
-    nodes = set()
-    for edge in edges:
-        nodes.add(edge[0])
-        nodes.add(edge[1])
-    network = create_network(list(nodes), directed=False)
-
-    # Add edges to network
-    for node1, node2 in edges:
-        network.add_edge(node1, node2)
+    # Build network
+    network = create_network(edges, directed=False)
 
     # Calculate centrality measures
     all_centrality = centrality_measures(network)
@@ -55,9 +47,9 @@ def main():
 
     analysis_results = {
         "network_stats": {
-            "nodes": network.num_nodes(),
-            "edges": network.num_edges(),
-            "average_degree": sum(len(network.get_neighbors(node)) for node in network.nodes) / network.num_nodes(),
+            "nodes": network.number_of_nodes(),
+            "edges": network.number_of_edges(),
+            "average_degree": sum(len(list(network.neighbors(node))) for node in network.nodes) / network.number_of_nodes(),
         },
         "centrality_measures": centrality,
     }

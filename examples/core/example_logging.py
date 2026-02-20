@@ -15,7 +15,7 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from metainformant.core import logging
+from metainformant.core.utils import logging
 
 
 def main():

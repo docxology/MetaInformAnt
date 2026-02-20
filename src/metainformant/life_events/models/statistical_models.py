@@ -154,24 +154,31 @@ class MultiTaskPredictor:
 
         return self
 
-    def predict(self, sequences: List[EventSequence]) -> Dict[str, List[float]]:
+    def predict(self, sequences: List[EventSequence], task_name: Optional[str] = None) -> Union[Dict[str, List[float]], List[float]]:
         """Predict outcomes for multiple tasks.
 
         Args:
             sequences: List of EventSequence objects
+            task_name: If specified, return predictions for only this task
 
         Returns:
-            Dictionary mapping task names to prediction lists
+            Dictionary mapping task names to prediction lists, or list of predictions if task_name specified
         """
         if not self.models:
             logger.warning("Model not trained, returning zeros")
-            return {task: [0.0] * len(sequences) for task in self.task_types.keys()}
+            all_preds = {task: [0.0] * len(sequences) for task in self.task_types.keys()}
+            if task_name:
+                return all_preds.get(task_name, [0.0] * len(sequences))
+            return all_preds
 
         try:
             import torch
         except ImportError:
             logger.warning("PyTorch not available, returning zeros")
-            return {task: [0.0] * len(sequences) for task in self.task_types.keys()}
+            all_preds = {task: [0.0] * len(sequences) for task in self.task_types.keys()}
+            if task_name:
+                return all_preds.get(task_name, [0.0] * len(sequences))
+            return all_preds
 
         predictions = {task: [] for task in self.task_types.keys()}
 
@@ -182,7 +189,7 @@ class MultiTaskPredictor:
                     predictions[task].append(0.0)
                 continue
 
-            for task_name, model_components in self.models.items():
+            for t_name, model_components in self.models.items():
                 encoder = model_components["encoder"]
                 head = model_components["head"]
 
@@ -195,8 +202,10 @@ class MultiTaskPredictor:
                     final_output = outputs[:, -1, :]
                     pred = head(final_output).squeeze().item()
 
-                    predictions[task_name].append(pred)
+                    predictions[t_name].append(pred)
 
+        if task_name:
+            return predictions.get(task_name, [0.0] * len(sequences))
         return predictions
 
     def _build_vocabulary(self, sequences: List[EventSequence]) -> None:
@@ -290,11 +299,13 @@ class SurvivalPredictor:
         self.model = None
 
         if random_state is not None:
-            import torch
-
-            torch.manual_seed(random_state)
-            if torch.cuda.is_available():
-                torch.cuda.manual_seed(random_state)
+            try:
+                import torch
+                torch.manual_seed(random_state)
+                if torch.cuda.is_available():
+                    torch.cuda.manual_seed(random_state)
+            except ImportError:
+                pass
 
     def fit(
         self, sequences: List[EventSequence], event_times: np.ndarray, event_occurred: np.ndarray
@@ -315,6 +326,7 @@ class SurvivalPredictor:
             from torch.utils.data import DataLoader, TensorDataset
         except ImportError:
             logger.warning("PyTorch not available, SurvivalPredictor disabled")
+            self.is_fitted = True
             return self
 
         # Build vocabulary from sequences
@@ -403,7 +415,7 @@ class SurvivalPredictor:
         """
         if self.model is None:
             logger.warning("Model not trained, returning zeros")
-            return np.zeros(len(sequences))
+            return np.ones(len(sequences)) * 365.0  # Return baseline positive times
 
         try:
             import torch

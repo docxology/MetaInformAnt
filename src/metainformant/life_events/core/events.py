@@ -136,6 +136,17 @@ class EventSequence:
         """Get list of unique domains."""
         return list(set(e.domain for e in self.events))
 
+    def get_events_by_type(self, event_type: str) -> List[Event]:
+        """Get all events of a specific type.
+
+        Args:
+            event_type: Event type to filter by
+
+        Returns:
+            List of events matching the specified type
+        """
+        return [e for e in self.events if e.event_type == event_type]
+
     def to_dataframe(self) -> pd.DataFrame:
         """Convert sequence to pandas DataFrame."""
         data = []

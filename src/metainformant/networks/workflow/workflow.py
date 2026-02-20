@@ -52,7 +52,7 @@ class NetworkWorkflow:
         Returns:
             self for method chaining
         """
-        from .analysis.graph import BiologicalNetwork, add_edges_from_correlation, create_network
+        from metainformant.networks.analysis.graph import BiologicalNetwork, add_edges_from_correlation, create_network
 
         if edges is not None:
             graph = create_network(edges, directed=self.config.network.directed)
@@ -75,7 +75,7 @@ class NetworkWorkflow:
             network = BiologicalNetwork(directed=self.config.network.directed)
 
         if self.config.network.remove_isolates:
-            from .analysis.graph import remove_isolated_nodes
+            from metainformant.networks.analysis.graph import remove_isolated_nodes
 
             remove_isolated_nodes(network.graph)
 
@@ -93,7 +93,7 @@ class NetworkWorkflow:
         if "network" not in self.results:
             raise RuntimeError("Must call build_network() before detect_communities()")
 
-        from .analysis.community import compare_community_methods, detect_communities, evaluate_communities
+        from metainformant.networks.analysis.community import compare_community_methods, detect_communities, evaluate_communities
 
         network = self.results["network"]
         cfg = self.config.community
@@ -133,7 +133,7 @@ class NetworkWorkflow:
         if "network" not in self.results:
             raise RuntimeError("Must call build_network() before analyze_metrics()")
 
-        from .analysis.graph import centrality_measures, network_metrics
+        from metainformant.networks.analysis.graph import centrality_measures, network_metrics
 
         network = self.results["network"]
         self.results["metrics"] = network_metrics(network.graph)
@@ -159,7 +159,7 @@ class NetworkWorkflow:
         Returns:
             self for method chaining
         """
-        from .analysis.pathway import load_pathway_database, pathway_enrichment
+        from metainformant.networks.analysis.pathway import load_pathway_database, pathway_enrichment
 
         cfg = self.config.pathway
 
@@ -204,7 +204,7 @@ class NetworkWorkflow:
         exported = {}
 
         if "network" in self.results:
-            from .analysis.graph import export_network
+            from metainformant.networks.analysis.graph import export_network
 
             network_file = out_dir / f"network.{self.config.export_format}"
             export_network(

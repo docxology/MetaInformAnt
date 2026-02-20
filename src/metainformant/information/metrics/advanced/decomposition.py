@@ -26,6 +26,7 @@ import numpy as np
 
 from metainformant.core.data import validation
 from metainformant.core.utils import logging
+from metainformant.information.metrics.core.syntactic import mutual_information, shannon_entropy
 
 logger = logging.get_logger(__name__)
 

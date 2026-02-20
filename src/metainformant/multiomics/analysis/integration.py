@@ -91,7 +91,17 @@ class MultiOmicsData:
                 data[key] = value
 
         if not data:
-            raise ValueError("No omics data provided")
+            raise ValueError("At least one omics layer must be provided")
+
+        # Validate data types
+        for key, value in data.items():
+            if not isinstance(value, pd.DataFrame):
+                raise TypeError(f"Data for '{key}' must be pandas DataFrame, got {type(value).__name__}")
+
+        # Validate non-empty features
+        for key, value in data.items():
+            if value.shape[1] == 0:
+                raise ValueError(f"Layer '{key}' has no features")
 
         self.data = data.copy()
         self.sample_ids = sample_ids
@@ -117,6 +127,19 @@ class MultiOmicsData:
 
         if common_samples is None or len(common_samples) == 0:
             raise ValueError("No common samples found across omics datasets")
+
+        # Warn if samples don't fully overlap
+        import warnings
+        all_samples = set()
+        for df in self.data.values():
+            all_samples.update(df.index)
+        if len(common_samples) < len(all_samples):
+            warnings.warn(
+                f"Only {len(common_samples)} samples are common across all layers "
+                f"(out of {len(all_samples)} total unique samples)",
+                UserWarning,
+                stacklevel=3,
+            )
 
         # Align all data to common samples
         common_samples_sorted = sorted(list(common_samples))
@@ -174,6 +197,14 @@ class MultiOmicsData:
         """Get samples present in all omics types."""
         return self.samples
 
+    def __getattr__(self, name: str) -> Any:
+        """Allow direct attribute access to layers by name (e.g., .transcriptomics)."""
+        if name.startswith("_"):
+            raise AttributeError(name)
+        if hasattr(self, "data") and name in self.data:
+            return self.data[name]
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
     def subset_samples(self, sample_ids: List[str]) -> "MultiOmicsData":
         """Create subset with specified samples."""
         subset_data = {}
@@ -181,7 +212,14 @@ class MultiOmicsData:
         for omics_type, df in self.data.items():
             subset_data[omics_type] = df.loc[available_samples]
 
-        return MultiOmicsData(data=subset_data, sample_ids=available_samples, feature_ids=self.feature_ids)
+        # Subset metadata too
+        subset_metadata = None
+        if isinstance(self._metadata, pd.DataFrame) and not self._metadata.empty:
+            meta_available = [s for s in available_samples if s in self._metadata.index]
+            if meta_available:
+                subset_metadata = self._metadata.loc[meta_available]
+
+        return MultiOmicsData(data=subset_data, sample_ids=available_samples, feature_ids=self.feature_ids, metadata=subset_metadata)
 
     def subset_features(self, feature_dict: Dict[str, List[str]]) -> "MultiOmicsData":
         """Create subset with specified features per layer.
@@ -253,12 +291,25 @@ def integrate_omics_data(
                 path = Path(value)
                 if path.suffix == ".csv":
                     processed_data[key] = pd.read_csv(path, index_col=0)
+                elif path.suffix == ".tsv":
+                    processed_data[key] = pd.read_csv(path, sep="\t", index_col=0)
                 elif path.suffix == ".parquet":
                     processed_data[key] = pd.read_parquet(path)
                 else:
                     raise errors.ValidationError(f"Unsupported file format: {path.suffix}")
             else:
                 processed_data[key] = value
+
+        # Load metadata from file if it's a path
+        if "metadata" in kwargs and isinstance(kwargs["metadata"], (str, Path)):
+            meta_path = Path(kwargs["metadata"])
+            if meta_path.suffix == ".csv":
+                kwargs["metadata"] = pd.read_csv(meta_path, index_col=0)
+            elif meta_path.suffix == ".tsv":
+                kwargs["metadata"] = pd.read_csv(meta_path, sep="\t", index_col=0)
+            elif meta_path.suffix == ".parquet":
+                kwargs["metadata"] = pd.read_parquet(meta_path)
+
         return MultiOmicsData(data=processed_data, **kwargs)
 
     # Handle legacy individual params
@@ -435,7 +486,9 @@ def joint_nmf(
 def canonical_correlation(
     multiomics_data: Union["MultiOmicsData", Dict[str, pd.DataFrame]],
     layers: Optional[Tuple[str, str]] = None,
+    layer_pair: Optional[Tuple[str, str]] = None,
     n_components: int = 10,
+    regularization: float = 0.0,
     **kwargs,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Perform canonical correlation analysis between omics datasets.
@@ -464,7 +517,9 @@ def canonical_correlation(
     else:
         data_dict = multiomics_data
 
-    # Determine layers to use
+    # Determine layers to use - support both 'layers' and 'layer_pair' kwargs
+    if layers is None and layer_pair is not None:
+        layers = layer_pair
     if layers is None:
         if len(data_dict) != 2:
             raise errors.ValidationError("CCA requires exactly 2 omics datasets or layers tuple specified")

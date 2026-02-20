@@ -16,14 +16,14 @@ from metainformant.core import io
 logger = logging.get_logger(__name__)
 
 
-def read_taxon_ids(file_path: Union[str, Path]) -> List[int]:
+def read_taxon_ids(file_path: Union[str, Path]) -> List[str]:
     """Read taxonomy IDs from a file.
 
     Args:
         file_path: Path to file containing taxonomy IDs
 
     Returns:
-        List of taxonomy IDs as integers
+        List of taxonomy IDs as strings
 
     Raises:
         FileNotFoundError: If the file doesn't exist
@@ -42,7 +42,7 @@ def read_taxon_ids(file_path: Union[str, Path]) -> List[int]:
                     # Extract taxonomy ID (could be just numbers or with prefixes)
                     match = re.search(r"\b(\d+)\b", line)
                     if match:
-                        taxon_ids.append(int(match.group(1)))
+                        taxon_ids.append(match.group(1))
 
     except Exception as e:
         raise ValueError(f"Error reading taxonomy IDs from {file_path}: {e}")

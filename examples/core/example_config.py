@@ -14,8 +14,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from metainformant.core import io, paths
-from metainformant.core.config import apply_env_overrides, load_mapping_from_file
+from metainformant.core.io import io
+from metainformant.core.io import paths
+from metainformant.core.utils.config import apply_env_overrides, load_mapping_from_file
 
 
 def main():

@@ -15,7 +15,8 @@ from __future__ import annotations
 import tempfile
 from pathlib import Path
 
-from metainformant.core import io, paths
+from metainformant.core.io import io
+from metainformant.core.io import paths
 
 
 def main():

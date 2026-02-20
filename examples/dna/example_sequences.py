@@ -15,7 +15,40 @@ from __future__ import annotations
 from pathlib import Path
 
 from metainformant.core import io
-from metainformant.dna import sequences
+from metainformant.dna.sequence import core as seq_core
+from metainformant.dna.sequence import composition as seq_comp
+from metainformant.dna.sequence import kmer as seq_kmer
+from metainformant.dna.sequence import motifs as seq_motifs
+from metainformant.dna.alignment import pairwise as seq_align
+
+class _Sequences:
+    pass
+
+sequences = _Sequences()
+sequences.read_fasta = getattr(seq_core, 'read_fasta', None)
+sequences.sequence_length = getattr(seq_core, 'sequence_length', None)
+sequences.validate_dna_sequence = getattr(seq_core, 'validate_dna_sequence', None)
+sequences.reverse_complement = getattr(seq_core, 'reverse_complement', None)
+sequences.dna_complementarity_score = getattr(seq_align, 'dna_complementarity_score', getattr(seq_core, 'dna_complementarity_score', None))
+
+sequences.gc_content = getattr(seq_core, 'gc_content', None)
+sequences.calculate_sequence_complexity = getattr(seq_core, 'calculate_sequence_complexity', None)
+sequences.calculate_sequence_entropy = getattr(seq_core, 'calculate_sequence_entropy', None)
+sequences.calculate_gc_skew = getattr(seq_core, 'calculate_gc_skew', None)
+sequences.calculate_at_skew = getattr(seq_core, 'calculate_at_skew', None)
+sequences.detect_sequence_bias = getattr(seq_core, 'detect_sequence_bias', None)
+sequences.find_palindromes = getattr(seq_core, 'find_palindromes', None)
+sequences.calculate_melting_temperature = getattr(seq_core, 'calculate_melting_temperature', None)
+
+sequences.kmer_counts = getattr(seq_kmer, 'count_kmers', None)
+sequences.kmer_frequencies = getattr(seq_kmer, 'kmer_frequencies', None)
+
+sequences.find_motifs = getattr(seq_core, 'find_motifs', None)
+sequences.find_repeats = getattr(seq_core, 'find_repeats', None)
+sequences.find_orfs = getattr(seq_core, 'find_orfs', None)
+sequences.calculate_codon_usage = getattr(seq_core, 'calculate_codon_usage', None)
+sequences.find_start_codons = getattr(seq_core, 'find_start_codons', None)
+sequences.find_stop_codons = getattr(seq_core, 'find_stop_codons', None)
 
 
 def main():

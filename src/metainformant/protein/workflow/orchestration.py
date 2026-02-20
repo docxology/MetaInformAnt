@@ -36,7 +36,7 @@ def analyze_protein_sequence(
     Returns:
         Dictionary with all analysis results
     """
-    from .sequence.sequences import (
+    from metainformant.protein.sequence.sequences import (
         amino_acid_composition,
         aromaticity,
         charge_at_ph,
@@ -84,7 +84,7 @@ def analyze_protein_sequence(
 
     # Secondary structure prediction
     if predict_ss:
-        from .structure.secondary import (
+        from metainformant.protein.structure.secondary import (
             calculate_ss_composition,
             identify_ss_elements,
             predict_secondary_structure,
@@ -99,7 +99,7 @@ def analyze_protein_sequence(
 
     # Motif search
     if find_motifs:
-        from .sequence.sequences import find_motifs as search_motifs
+        from metainformant.protein.sequence.sequences import find_motifs as search_motifs
 
         results["motifs"] = search_motifs(sequence, find_motifs)
 
@@ -122,7 +122,7 @@ def analyze_protein_structure(
     """
     import numpy as np
 
-    from .structure.io import parse_pdb_file
+    from metainformant.protein.structure.io import parse_pdb_file
 
     pdb_path = Path(pdb_path)
     logger.info(f"Running structure analysis on {pdb_path.name}")
@@ -142,7 +142,7 @@ def analyze_protein_structure(
     }
 
     # Structural statistics
-    from .structure.general import (
+    from metainformant.protein.structure.general import (
         calculate_center_of_mass,
         calculate_radius_of_gyration,
         calculate_structural_statistics,
@@ -154,14 +154,14 @@ def analyze_protein_structure(
 
     # Contact analysis
     if compute_contacts:
-        from .structure.analysis import calculate_contact_map
+        from metainformant.protein.structure.analysis import calculate_contact_map
 
         contact_map = calculate_contact_map(coords, threshold=8.0)
         results["contact_map_shape"] = contact_map.shape
         results["n_contacts"] = int(np.sum(contact_map) / 2)
 
     # Sequence extraction
-    from .structure.pdb import get_pdb_sequence
+    from metainformant.protein.structure.pdb import get_pdb_sequence
 
     chains = set(a.get("chain_id", "A") for a in atoms)
     results["chains"] = {}
@@ -222,11 +222,11 @@ def comparative_analysis(
     # Pairwise alignments
     pairwise = {}
     if use_blosum:
-        from .sequence.alignment import matrix_align
+        from metainformant.protein.sequence.alignment import matrix_align
 
         align_fn = matrix_align
     else:
-        from .sequence.alignment import global_align
+        from metainformant.protein.sequence.alignment import global_align
 
         align_fn = global_align
 
@@ -250,7 +250,7 @@ def comparative_analysis(
             identity_matrix[j][i] = ident
 
     # MSA
-    from .sequence.alignment import multi_sequence_alignment
+    from metainformant.protein.sequence.alignment import multi_sequence_alignment
 
     msa = multi_sequence_alignment(seqs)
 
@@ -277,7 +277,7 @@ def analyze_from_fasta(
     Returns:
         Dictionary with all analysis results
     """
-    from .sequence.sequences import read_fasta
+    from metainformant.protein.sequence.sequences import read_fasta
 
     fasta_path = Path(fasta_path)
     logger.info(f"Loading sequences from {fasta_path}")
@@ -316,7 +316,7 @@ def compare_structures(
     """
     import numpy as np
 
-    from .structure.io import parse_pdb_file
+    from metainformant.protein.structure.io import parse_pdb_file
 
     pdb_path_a = Path(pdb_path_a)
     pdb_path_b = Path(pdb_path_b)
@@ -353,7 +353,7 @@ def compare_structures(
     ca_b_common = ca_b[:n_common]
 
     if align:
-        from .structure.general import align_structures_kabsch
+        from metainformant.protein.structure.general import align_structures_kabsch
 
         aligned_b, rotation, rmsd = align_structures_kabsch(ca_a_common, ca_b_common)
         results["rmsd_aligned"] = float(rmsd)
@@ -362,7 +362,7 @@ def compare_structures(
         # Per-residue distance after alignment
         per_res_dist = np.linalg.norm(ca_a_common - aligned_b, axis=1)
     else:
-        from .structure.general import compute_rmsd_simple
+        from metainformant.protein.structure.general import compute_rmsd_simple
 
         rmsd = compute_rmsd_simple(ca_a_common, ca_b_common)
         results["rmsd_simple"] = float(rmsd)
@@ -377,7 +377,7 @@ def compare_structures(
     }
 
     # Contact map comparison
-    from .structure.analysis import calculate_contact_map
+    from metainformant.protein.structure.analysis import calculate_contact_map
 
     contact_a = calculate_contact_map(ca_a_common, threshold=8.0)
     contact_b = calculate_contact_map(ca_b_common, threshold=8.0)
@@ -419,17 +419,17 @@ def assess_alphafold_quality(
     results: Dict[str, Any] = {"path": str(pdb_path)}
 
     # Parse confidence scores (pLDDT from B-factor column)
-    from .structure.alphafold import get_alphafold_structure_quality, parse_alphafold_confidence
+    from metainformant.protein.structure.alphafold import get_alphafold_structure_quality, parse_alphafold_confidence
 
     quality = get_alphafold_structure_quality(pdb_path)
     results["confidence"] = quality
 
     # Structure statistics
-    from .structure.general import (
+    from metainformant.protein.structure.general import (
         calculate_radius_of_gyration,
         calculate_structural_statistics,
     )
-    from .structure.io import parse_pdb_file
+    from metainformant.protein.structure.io import parse_pdb_file
 
     structure = parse_pdb_file(pdb_path)
     atoms = structure.get("atoms", [])
@@ -439,8 +439,8 @@ def assess_alphafold_quality(
         results["structural_stats"] = calculate_structural_statistics(coords)
 
         # Extract sequence and predict secondary structure
-        from .structure.pdb import get_pdb_sequence
-        from .structure.secondary import calculate_ss_composition, predict_secondary_structure
+        from metainformant.protein.structure.pdb import get_pdb_sequence
+        from metainformant.protein.structure.secondary import calculate_ss_composition, predict_secondary_structure
 
         sequence = get_pdb_sequence(structure)
         if sequence:

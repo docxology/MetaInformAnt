@@ -232,19 +232,17 @@ def fix_imports_in_file(file_path: Path) -> int:
 
 def main():
     """Fix all test imports."""
-    tests_dir = Path("tests")
-    if not tests_dir.exists():
-        print("tests/ directory not found")
-        return
-
     total_replacements = 0
     files_updated = 0
 
-    for py_file in tests_dir.rglob("*.py"):
-        replacements = fix_imports_in_file(py_file)
-        if replacements > 0:
-            total_replacements += replacements
-            files_updated += 1
+    for target_dir in [Path("tests"), Path("examples")]:
+        if not target_dir.exists():
+            continue
+        for py_file in target_dir.rglob("*.py"):
+            replacements = fix_imports_in_file(py_file)
+            if replacements > 0:
+                total_replacements += replacements
+                files_updated += 1
 
     print(f"\nTotal: {files_updated} files updated, {total_replacements} replacements")
 

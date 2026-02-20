@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from metainformant.core import io
-from metainformant.ecology.community import community_metrics
+from metainformant.ecology.analysis.community import community_metrics
 
 
 def main():

@@ -14,13 +14,28 @@ import pytest
 
 from metainformant.information.metrics.advanced.decomposition import (
     co_information,
+    dual_total_correlation,
+    o_information,
     partial_information_decomposition,
     redundant_information,
     synergistic_information,
     unique_information,
 )
-from metainformant.information.metrics.advanced.fisher_rao import fisher_rao_distance
-from metainformant.information.metrics.advanced.information_projection import information_projection
+from metainformant.information.metrics.advanced.fisher_rao import (
+    exponential_family_entropy,
+    fisher_rao_distance,
+    hellinger_distance,
+    natural_gradient,
+)
+from metainformant.information.metrics.advanced.information_projection import (
+    channel_capacity,
+    entropy_power_inequality,
+    information_bottleneck,
+    information_dimension,
+    information_projection,
+    rate_distortion_function,
+    statistical_divergence,
+)
 from metainformant.information.metrics.core.syntactic import mutual_information
 
 # ============================================================

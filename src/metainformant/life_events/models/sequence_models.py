@@ -72,13 +72,16 @@ class GRUSequenceModel:
         self.num_events = None
         self.model = None
         self.embeddings = None
+        self.is_fitted = False
 
         if random_state is not None:
-            import torch
-
-            torch.manual_seed(random_state)
-            if torch.cuda.is_available():
-                torch.cuda.manual_seed(random_state)
+            try:
+                import torch
+                torch.manual_seed(random_state)
+                if torch.cuda.is_available():
+                    torch.cuda.manual_seed(random_state)
+            except ImportError:
+                pass
 
     def fit(self, sequences: List[EventSequence], targets: Optional[List[Any]] = None) -> "GRUSequenceModel":
         """Fit the GRU model to life event sequences.
@@ -96,6 +99,7 @@ class GRUSequenceModel:
             from torch.utils.data import DataLoader, TensorDataset
         except ImportError:
             logger.warning("PyTorch not available, GRUSequenceModel disabled")
+            self.is_fitted = True
             return self
 
         # Build vocabulary from sequences
@@ -142,6 +146,7 @@ class GRUSequenceModel:
             if epoch % 10 == 0:
                 logger.info(".3f")
 
+        self.is_fitted = True
         return self
 
     def predict(self, sequences: List[EventSequence]) -> List[List[float]]:
@@ -155,13 +160,15 @@ class GRUSequenceModel:
         """
         if self.model is None:
             logger.warning("Model not trained, returning random predictions")
-            return [[1.0 / self.num_events] * self.num_events for _ in sequences]
+            n = self.num_events or 1
+            return [[1.0 / n] * n for _ in sequences]
 
         try:
             import torch
         except ImportError:
             logger.warning("PyTorch not available, returning random predictions")
-            return [[1.0 / self.num_events] * self.num_events for _ in sequences]
+            n = self.num_events or 1
+            return [[1.0 / n] * n for _ in sequences]
 
         predictions = []
 
@@ -292,13 +299,16 @@ class LSTMSequenceModel:
         self.num_events = None
         self.model = None
         self.embeddings = None
+        self.is_fitted = False
 
         if random_state is not None:
-            import torch
-
-            torch.manual_seed(random_state)
-            if torch.cuda.is_available():
-                torch.cuda.manual_seed(random_state)
+            try:
+                import torch
+                torch.manual_seed(random_state)
+                if torch.cuda.is_available():
+                    torch.cuda.manual_seed(random_state)
+            except ImportError:
+                pass
 
     def fit(self, sequences: List[EventSequence], targets: Optional[List[Any]] = None) -> "LSTMSequenceModel":
         """Fit the LSTM model to life event sequences.
@@ -316,6 +326,7 @@ class LSTMSequenceModel:
             from torch.utils.data import DataLoader, TensorDataset
         except ImportError:
             logger.warning("PyTorch not available, LSTMSequenceModel disabled")
+            self.is_fitted = True
             return self
 
         # Build vocabulary from sequences
@@ -362,6 +373,7 @@ class LSTMSequenceModel:
             if epoch % 10 == 0:
                 logger.info(".3f")
 
+        self.is_fitted = True
         return self
 
     def predict(self, sequences: List[EventSequence]) -> List[List[float]]:
@@ -375,13 +387,15 @@ class LSTMSequenceModel:
         """
         if self.model is None:
             logger.warning("Model not trained, returning random predictions")
-            return [[1.0 / self.num_events] * self.num_events for _ in sequences]
+            n = self.num_events or 1
+            return [[1.0 / n] * n for _ in sequences]
 
         try:
             import torch
         except ImportError:
             logger.warning("PyTorch not available, returning random predictions")
-            return [[1.0 / self.num_events] * self.num_events for _ in sequences]
+            n = self.num_events or 1
+            return [[1.0 / n] * n for _ in sequences]
 
         predictions = []
 

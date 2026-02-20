@@ -15,7 +15,22 @@ from __future__ import annotations
 from pathlib import Path
 
 from metainformant.core import io
-from metainformant.dna import population
+from metainformant.dna.population import core as pop_core
+from metainformant.dna.population import analysis as pop_anal
+
+class _Population:
+    pass
+
+population = _Population()
+population.nucleotide_diversity = getattr(pop_core, 'nucleotide_diversity', None)
+population.wattersons_theta = getattr(pop_core, 'wattersons_theta', None)
+population.segregating_sites = getattr(pop_core, 'segregating_sites', None)
+population.allele_frequencies = getattr(pop_core, 'allele_frequencies', None)
+population.tajimas_d = getattr(pop_core, 'tajimas_d', None)
+population.fu_and_li_d_star_from_sequences = getattr(pop_core, 'fu_and_li_d_star_from_sequences', None)
+population.fu_and_li_f_star_from_sequences = getattr(pop_core, 'fu_and_li_f_star_from_sequences', None)
+population.fay_wu_h_from_sequences = getattr(pop_core, 'fay_wu_h_from_sequences', None)
+population.hudson_fst = getattr(pop_core, 'hudson_fst', None)
 
 
 def main():

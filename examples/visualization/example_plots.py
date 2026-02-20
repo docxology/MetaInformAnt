@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from metainformant.core import io
-from metainformant.visualization.plots import lineplot
+from metainformant.visualization.plots.basic import lineplot
 
 
 def main():

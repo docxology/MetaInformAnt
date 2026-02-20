@@ -92,10 +92,7 @@
           "description": "Step 1 in amalgkit pipeline",
           "parameters": {
             "out_dir": "output/examples/rna/amalgkit_work",
-            "species": [
-              "test_species"
-            ],
-            "threads": 2
+            "work_dir": "output/examples/rna/amalgkit_work"
           },
           "step_name": "metadata"
         },
@@ -103,10 +100,7 @@
           "description": "Step 2 in amalgkit pipeline",
           "parameters": {
             "out_dir": "output/examples/rna/amalgkit_work",
-            "species": [
-              "test_species"
-            ],
-            "threads": 2
+            "work_dir": "output/examples/rna/amalgkit_work"
           },
           "step_name": "config"
         },
@@ -114,10 +108,7 @@
           "description": "Step 3 in amalgkit pipeline",
           "parameters": {
             "out_dir": "output/examples/rna/amalgkit_work",
-            "species": [
-              "test_species"
-            ],
-            "threads": 2
+            "work_dir": "output/examples/rna/amalgkit_work"
           },
           "step_name": "select"
         }

@@ -17,7 +17,7 @@ from pathlib import Path
 import numpy as np
 
 from metainformant.core import io
-from metainformant.ml.classification import cross_validate_biological, train_ensemble_classifier
+from metainformant.ml.models.classification import cross_validate_biological, train_ensemble_classifier
 
 
 def main():
@@ -38,8 +38,7 @@ def main():
 
     # Train classifier
     print("\nTraining classifier...")
-    models = train_ensemble_classifier(X, y, algorithms=["random_forest"])
-    model = models["random_forest"]
+    model = train_ensemble_classifier(X, y, algorithms=["random_forest"])
 
     # Cross-validation
     cv_results = cross_validate_biological(X, y, algorithm="random_forest", cv_folds=5)

@@ -44,145 +44,158 @@ class EventSequencePredictor:
             model_type: Type of model ('embedding', 'simple', 'lstm')
             embedding_dim: Dimensionality for embeddings
             random_seed: Random seed for reproducibility
-            task_type: Alias for model_type (backward compatibility)
+            task_type: Task type ('classification' or 'regression')
             embedding: Alias for embedding_dim (backward compatibility)
             random_state: Alias for random_seed (sklearn convention)
             **kwargs: Additional parameters (ignored)
         """
-        # Handle parameter aliases
-        if task_type is not None:
-            model_type = task_type
         if embedding is not None:
             embedding_dim = embedding
         if random_state is not None:
             random_seed = random_state
 
-        # Map task_type values to model_type values for compatibility
-        model_type_mapping = {
-            "classification": "embedding",
-            "regression": "embedding",
-        }
-        model_type = model_type_mapping.get(model_type, model_type)
-
+        # Store task_type separately — do NOT conflate with model_type
+        self.task_type = task_type  # 'classification', 'regression', or None
         self.model_type = model_type
         self.embedding_dim = embedding_dim
         self.random_seed = random_seed
         self.is_fitted = False
 
         # Model components
-        self.embeddings = {}
-        self.classifier = None
-        self.regressor = None
-        self.event_vocab = {}
-        self.reverse_vocab = {}
+        self.embeddings: Dict[str, np.ndarray] = {}
+        self.classifier: Optional[Dict[str, np.ndarray]] = None
+        self.regressor: Optional[Dict[str, np.ndarray]] = None
+        self.event_vocab: Dict[str, int] = {}
+        self.reverse_vocab: Dict[int, str] = {}
+        self.classes_: Optional[np.ndarray] = None
+        self.sequence_length_model: Optional[Dict[int, float]] = None
 
         np.random.seed(random_seed)
 
     def _extract_events(self, seq: Any) -> List[str]:
-        """Extract event strings from a sequence, handling both EventSequence objects and lists.
-
-        Args:
-            seq: Either an EventSequence object or a list of event strings
-
-        Returns:
-            List of event type strings
-        """
+        """Extract event strings from a sequence."""
         if isinstance(seq, list):
-            # Plain list of event strings
             return seq
         elif hasattr(seq, "events"):
-            # EventSequence object - extract event_type from each event
             return [e.event_type if hasattr(e, "event_type") else str(e) for e in seq.events]
         else:
-            # Try to iterate
             return [str(e) for e in seq]
 
     def fit(
-        self, sequences: List[Any], outcomes: Union[List[int], List[float]], task: str = "classification"
+        self,
+        sequences: List[Any],
+        outcomes: Union[List[int], List[float]],
+        task: str | None = None,
+        event_embeddings: Optional[Dict[str, np.ndarray]] = None,
     ) -> EventSequencePredictor:
         """Fit the model to training data.
 
         Args:
-            sequences: List of EventSequence objects
+            sequences: List of EventSequence objects or lists of event strings
             outcomes: Target outcomes (classes for classification, values for regression)
-            task: Task type ('classification' or 'regression')
+            task: Task type ('classification' or 'regression'). Overrides task_type.
+            event_embeddings: Optional pre-computed event embeddings.
 
         Returns:
             Self for method chaining
         """
+        # Determine task type from arguments or init parameter
+        if task is None:
+            task = self.task_type or "classification"
+        self.task_type = task
+
         if self.model_type == "embedding":
-            self._fit_embedding_model(sequences, outcomes, task)
+            self._fit_embedding_model(sequences, outcomes, task, event_embeddings=event_embeddings)
         elif self.model_type == "simple":
             self._fit_simple_model(sequences, outcomes, task)
         else:
             raise ValueError(f"Unsupported model type: {self.model_type}")
 
         self.is_fitted = True
+        # Store unique classes for classification tasks (sklearn convention)
+        if task == "classification":
+            self.classes_ = np.unique(outcomes)
         logger.info(f"Fitted {self.model_type} model for {task}")
         return self
 
     def predict(self, sequences: List[Any]) -> Union[np.ndarray, List[float]]:
         """Make predictions for new sequences.
 
-        Args:
-            sequences: List of EventSequence objects
-
-        Returns:
-            Predicted outcomes
+        For classification, returns class labels. For regression, returns values.
         """
         if not self.is_fitted:
             raise ValueError("Model must be fitted before prediction")
 
         if self.model_type == "embedding":
-            return self._predict_embedding(sequences)
+            raw = self._predict_embedding_raw(sequences)
         elif self.model_type == "simple":
-            return self._predict_simple(sequences)
+            raw = self._predict_simple(sequences)
         else:
             raise ValueError(f"Unsupported model type: {self.model_type}")
 
-    def predict_proba(self, sequences: List[Any]) -> Optional[np.ndarray]:
+        # For classification, convert raw scores to class labels
+        if self.task_type == "classification" and self.classes_ is not None and self.classifier is not None:
+            probs = 1.0 / (1.0 + np.exp(-np.clip(raw, -500, 500)))
+            predictions = np.where(probs >= 0.5, self.classes_[-1], self.classes_[0])
+            return predictions
+
+        return raw
+
+    def predict_proba(self, sequences: List[Any]) -> np.ndarray:
         """Predict class probabilities (classification only).
 
         Args:
             sequences: List of EventSequence objects
 
         Returns:
-            Probability array or None if not applicable
-        """
-        if not self.is_fitted or self.classifier is None:
-            return None
+            Probability array
 
-        # Compute class probabilities using logistic function on predictions
-        predictions = self.predict(sequences)
-        # Apply sigmoid to get probabilities
-        probs = 1.0 / (1.0 + np.exp(-predictions))
-        # Return probabilities for both classes
+        Raises:
+            ValueError: If task is not classification
+        """
+        if self.task_type != "classification":
+            raise ValueError("predict_proba is only available for classification tasks")
+        if not self.is_fitted or self.classifier is None:
+            raise ValueError("Model must be fitted for classification before calling predict_proba")
+
+        raw = self._predict_embedding_raw(sequences)
+        probs = 1.0 / (1.0 + np.exp(-np.clip(raw, -500, 500)))
         return np.column_stack([1.0 - probs, probs])
 
     def save_model(self, path: str | Path) -> None:
         """Save model to disk.
 
-        Args:
-            path: Output path
+        Raises:
+            ValueError: If model is not fitted
         """
-        # Convert numpy arrays in embeddings to lists for JSON serialization
+        if not self.is_fitted:
+            raise ValueError("Model must be fitted before saving")
+
         embeddings_serializable = {k: v.tolist() if hasattr(v, "tolist") else v for k, v in self.embeddings.items()}
 
-        model_data = {
+        model_data: Dict[str, Any] = {
             "model_type": self.model_type,
+            "task_type": self.task_type or "classification",
             "embedding_dim": self.embedding_dim,
             "random_seed": self.random_seed,
             "is_fitted": self.is_fitted,
-            "embeddings": embeddings_serializable,
+            "event_embeddings": embeddings_serializable,
+            "vocab": self.event_vocab,
             "event_vocab": self.event_vocab,
-            "reverse_vocab": {str(k): v for k, v in self.reverse_vocab.items()},  # Ensure keys are strings
+            "reverse_vocab": {str(k): v for k, v in self.reverse_vocab.items()},
         }
 
-        # Save classifier/regressor if available
+        if self.classes_ is not None:
+            model_data["classes_"] = self.classes_.tolist()
+
         if self.classifier is not None:
-            model_data["classifier"] = pickle.dumps(self.classifier).hex()
+            model_data["classifier"] = {
+                k: v.tolist() if hasattr(v, "tolist") else v for k, v in self.classifier.items()
+            }
         if self.regressor is not None:
-            model_data["regressor"] = pickle.dumps(self.regressor).hex()
+            model_data["regressor"] = {
+                k: v.tolist() if hasattr(v, "tolist") else v for k, v in self.regressor.items()
+            }
 
         with open(path, "w") as f:
             json.dump(model_data, f, indent=2)
@@ -193,40 +206,74 @@ class EventSequencePredictor:
     def load_model(cls, path: str | Path) -> EventSequencePredictor:
         """Load model from disk.
 
-        Args:
-            path: Model file path
-
-        Returns:
-            Loaded model
+        Raises:
+            FileNotFoundError: If path doesn't exist
+            ValueError: If JSON is invalid or required fields are missing
         """
-        with open(path, "r") as f:
-            model_data = json.load(f)
+        path = Path(path)
+        if not path.exists():
+            raise FileNotFoundError(f"Model file not found: {path}")
+
+        try:
+            with open(path, "r") as f:
+                model_data = json.load(f)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Failed to parse model file: {e}")
+
+        # Validate required fields
+        required_fields = {"model_type", "is_fitted"}
+        missing = required_fields - set(model_data.keys())
+        if missing:
+            raise ValueError(f"Model file missing fields: {missing}")
+
+        if not model_data.get("is_fitted", False):
+            raise ValueError("Cannot load unfitted model")
 
         model = cls(
             model_type=model_data["model_type"],
-            embedding_dim=model_data["embedding_dim"],
-            random_seed=model_data["random_seed"],
+            embedding_dim=model_data.get("embedding_dim", 100),
+            random_seed=model_data.get("random_seed", 42),
+            task_type=model_data.get("task_type"),
         )
 
         model.is_fitted = model_data["is_fitted"]
-        # Convert lists back to numpy arrays for embeddings
-        model.embeddings = {k: np.array(v) if isinstance(v, list) else v for k, v in model_data["embeddings"].items()}
-        model.event_vocab = model_data["event_vocab"]
-        # Convert string keys back to int for reverse_vocab if needed
-        model.reverse_vocab = {int(k) if k.isdigit() else k: v for k, v in model_data["reverse_vocab"].items()}
+        model.task_type = model_data.get("task_type", "classification")
 
-        # Load classifier/regressor if available
+        # Load embeddings
+        embeddings_data = model_data.get("event_embeddings", model_data.get("embeddings", {}))
+        model.embeddings = {k: np.array(v) if isinstance(v, list) else v for k, v in embeddings_data.items()}
+
+        model.event_vocab = model_data.get("vocab", model_data.get("event_vocab", {}))
+        model.reverse_vocab = {int(k) if k.isdigit() else k: v for k, v in model_data.get("reverse_vocab", {}).items()}
+
+        if "classes_" in model_data:
+            model.classes_ = np.array(model_data["classes_"])
+
+        # Load classifier/regressor
         if "classifier" in model_data:
-            model.classifier = pickle.loads(bytes.fromhex(model_data["classifier"]))
+            clf_data = model_data["classifier"]
+            if isinstance(clf_data, dict):
+                model.classifier = {k: np.array(v) if isinstance(v, list) else v for k, v in clf_data.items()}
+            else:
+                model.classifier = pickle.loads(bytes.fromhex(clf_data))
         if "regressor" in model_data:
-            model.regressor = pickle.loads(bytes.fromhex(model_data["regressor"]))
+            reg_data = model_data["regressor"]
+            if isinstance(reg_data, dict):
+                model.regressor = {k: np.array(v) if isinstance(v, list) else v for k, v in reg_data.items()}
+            else:
+                model.regressor = pickle.loads(bytes.fromhex(reg_data))
 
         logger.info(f"Loaded model from {path}")
         return model
 
-    def _fit_embedding_model(self, sequences: List[Any], outcomes: Union[List[int], List[float]], task: str) -> None:
-        """Fit embedding-based model using learned embeddings and linear model."""
-        # Build vocabulary - handle both EventSequence objects and plain lists
+    def _fit_embedding_model(
+        self,
+        sequences: List[Any],
+        outcomes: Union[List[int], List[float]],
+        task: str,
+        event_embeddings: Optional[Dict[str, np.ndarray]] = None,
+    ) -> None:
+        """Fit embedding-based model."""
         all_events = set()
         for seq in sequences:
             events = self._extract_events(seq)
@@ -236,95 +283,77 @@ class EventSequencePredictor:
         self.event_vocab = {event: i for i, event in enumerate(all_events)}
         self.reverse_vocab = {i: event for event, i in self.event_vocab.items()}
 
-        # Initialize embeddings with small random values
-        for event in all_events:
-            self.embeddings[event] = np.random.normal(0, 0.1, self.embedding_dim)
+        # Use pre-computed or randomly initialized embeddings
+        if event_embeddings:
+            for event in all_events:
+                if event in event_embeddings:
+                    self.embeddings[event] = event_embeddings[event]
+                else:
+                    self.embeddings[event] = np.random.normal(0, 0.1, self.embedding_dim)
+        else:
+            for event in all_events:
+                self.embeddings[event] = np.random.normal(0, 0.1, self.embedding_dim)
 
         # Compute sequence features (average embeddings)
         X = []
         for seq in sequences:
             events = self._extract_events(seq)
             if events:
-                event_embeddings = [self.embeddings.get(e, np.zeros(self.embedding_dim)) for e in events]
-                avg_embedding = np.mean(event_embeddings, axis=0)
+                event_embs = [self.embeddings.get(e, np.zeros(self.embedding_dim)) for e in events]
+                avg_embedding = np.mean(event_embs, axis=0)
             else:
                 avg_embedding = np.zeros(self.embedding_dim)
             X.append(avg_embedding)
         X = np.array(X)
         y = np.array(outcomes)
 
-        # Train linear model using gradient descent
         if task == "classification":
-            # Logistic regression weights
             self.classifier = self._train_logistic_regression(X, y)
         else:
-            # Linear regression weights
             self.regressor = self._train_linear_regression(X, y)
 
     def _train_logistic_regression(
         self, X: np.ndarray, y: np.ndarray, lr: float = 0.01, epochs: int = 100
     ) -> Dict[str, np.ndarray]:
-        """Train logistic regression model using gradient descent.
-
-        Args:
-            X: Feature matrix (n_samples, n_features)
-            y: Binary labels (n_samples,)
-            lr: Learning rate
-            epochs: Number of training epochs
-
-        Returns:
-            Dictionary with weights and bias
-        """
+        """Train logistic regression model using gradient descent."""
         n_samples, n_features = X.shape
         weights = np.zeros(n_features)
         bias = 0.0
 
         for _ in range(epochs):
-            # Forward pass
             linear = np.dot(X, weights) + bias
             predictions = 1.0 / (1.0 + np.exp(-np.clip(linear, -500, 500)))
-
-            # Compute gradients
             error = predictions - y
             dw = (1.0 / n_samples) * np.dot(X.T, error)
             db = (1.0 / n_samples) * np.sum(error)
-
-            # Update parameters
             weights -= lr * dw
             bias -= lr * db
 
-        return {"weights": weights, "bias": bias}
+        return {"weights": weights, "bias": np.float64(bias)}
 
     def _train_linear_regression(self, X: np.ndarray, y: np.ndarray) -> Dict[str, np.ndarray]:
-        """Train linear regression model using closed-form solution.
-
-        Args:
-            X: Feature matrix (n_samples, n_features)
-            y: Target values (n_samples,)
-
-        Returns:
-            Dictionary with weights and bias
-        """
-        # Add bias term
+        """Train linear regression model using closed-form solution."""
         X_bias = np.column_stack([np.ones(X.shape[0]), X])
-
-        # Closed-form solution: w = (X^T X)^(-1) X^T y
-        # Use pseudo-inverse for numerical stability
         try:
             XTX = np.dot(X_bias.T, X_bias)
             XTy = np.dot(X_bias.T, y)
-            # Add small regularization for stability
             XTX += 1e-6 * np.eye(XTX.shape[0])
             weights_full = np.linalg.solve(XTX, XTy)
         except np.linalg.LinAlgError:
-            # Fallback to pseudo-inverse
             weights_full = np.dot(np.linalg.pinv(X_bias), y)
 
         return {"weights": weights_full[1:], "bias": weights_full[0]}
 
     def _fit_simple_model(self, sequences: List[Any], outcomes: Union[List[int], List[float]], task: str) -> None:
         """Fit simple statistical model."""
-        # Simple model based on sequence length
+        # Build vocab for simple model
+        all_events = set()
+        for seq in sequences:
+            events = self._extract_events(seq)
+            for event in events:
+                all_events.add(event)
+        self.event_vocab = {event: i for i, event in enumerate(all_events)}
+
         self.sequence_length_model = {}
         for seq, outcome in zip(sequences, outcomes):
             events = self._extract_events(seq)
@@ -333,82 +362,80 @@ class EventSequencePredictor:
                 self.sequence_length_model[length] = []
             self.sequence_length_model[length].append(outcome)
 
-        # Compute averages
         for length in self.sequence_length_model:
             self.sequence_length_model[length] = np.mean(self.sequence_length_model[length])
 
-    def _predict_embedding(self, sequences: List[Any]) -> Union[np.ndarray, List[float]]:
-        """Make predictions using trained embedding model."""
-        # Compute features
+        # For simple classification, store a basic classifier reference
+        if task == "classification":
+            self.classifier = {"type": "simple", "model": self.sequence_length_model}
+
+    def _predict_embedding_raw(self, sequences: List[Any]) -> np.ndarray:
+        """Make raw (un-thresholded) predictions using trained embedding model."""
         X = []
         for seq in sequences:
             events = self._extract_events(seq)
             if events:
-                event_embeddings = [self.embeddings.get(e, np.zeros(self.embedding_dim)) for e in events]
-                avg_embedding = np.mean(event_embeddings, axis=0)
+                event_embs = [self.embeddings.get(e, np.zeros(self.embedding_dim)) for e in events]
+                avg_embedding = np.mean(event_embs, axis=0)
             else:
                 avg_embedding = np.zeros(self.embedding_dim)
             X.append(avg_embedding)
         X = np.array(X)
 
-        # Make predictions using trained model
-        if self.classifier is not None and isinstance(self.classifier, dict):
-            # Logistic regression prediction (returns log-odds for predict_proba)
+        if self.classifier is not None and isinstance(self.classifier, dict) and "weights" in self.classifier:
             linear = np.dot(X, self.classifier["weights"]) + self.classifier["bias"]
             return linear
         elif self.regressor is not None and isinstance(self.regressor, dict):
-            # Linear regression prediction
             predictions = np.dot(X, self.regressor["weights"]) + self.regressor["bias"]
             return predictions
         else:
-            # Fallback: use embedding magnitude as prediction
             return np.array([np.linalg.norm(x) for x in X])
 
-    def _predict_simple(self, sequences: List[Any]) -> Union[np.ndarray, List[float]]:
+    def _predict_simple(self, sequences: List[Any]) -> np.ndarray:
         """Make predictions using simple model."""
         predictions = []
         for seq in sequences:
             events = self._extract_events(seq)
             length = len(events)
-            prediction = self.sequence_length_model.get(length, 0.0)
+            if self.sequence_length_model:
+                prediction = self.sequence_length_model.get(length, 0.0)
+            else:
+                prediction = 0.0
             predictions.append(prediction)
-
         return np.array(predictions)
 
 
 class EnsemblePredictor:
     """Ensemble predictor combining multiple models for improved performance."""
 
-    def __init__(self, models: List[EventSequencePredictor], weights: Optional[List[float]] = None):
+    def __init__(
+        self,
+        models: List[EventSequencePredictor],
+        weights: Optional[List[float]] = None,
+        task_type: str | None = None,
+    ):
         """Initialize ensemble.
 
         Args:
             models: List of trained EventSequencePredictor models
             weights: Weights for each model (uniform if None)
+            task_type: Task type for the ensemble
         """
         self.models = models
         self.weights = weights or [1.0 / len(models)] * len(models)
         self.is_fitted = all(model.is_fitted for model in models)
+        self.task_type = task_type
 
     def predict(self, sequences: List[Any]) -> np.ndarray:
-        """Make ensemble predictions.
-
-        Args:
-            sequences: List of EventSequence objects
-
-        Returns:
-            Ensemble predictions
-        """
+        """Make ensemble predictions."""
         if not self.is_fitted:
             raise ValueError("All models must be fitted")
 
-        # Get predictions from each model
         all_predictions = []
         for model in self.models:
             preds = model.predict(sequences)
             all_predictions.append(preds)
 
-        # Weighted average
         all_predictions = np.array(all_predictions)
         weights = np.array(self.weights)
 

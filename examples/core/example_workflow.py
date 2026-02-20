@@ -16,7 +16,9 @@ import time
 from pathlib import Path
 from typing import Any, Dict
 
-from metainformant.core import io, logging, workflow
+from metainformant.core.io import io
+from metainformant.core.utils import logging
+from metainformant.core.execution import workflow
 
 
 def main():

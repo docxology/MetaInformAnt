@@ -15,7 +15,21 @@ from __future__ import annotations
 from pathlib import Path
 
 from metainformant.core import io
-from metainformant.dna import phylogeny
+from metainformant.dna.phylogeny import tree as phylo_tree
+from metainformant.dna.phylogeny import tree_construction as phylo_constr
+from metainformant.dna.phylogeny import tree_analysis as phylo_anal
+
+class _Phylogeny:
+    pass
+
+phylogeny = _Phylogeny()
+phylogeny.to_newick = getattr(phylo_tree, 'to_newick', None)
+phylogeny.to_ascii = getattr(phylo_tree, 'to_ascii', None)
+phylogeny.neighbor_joining_tree = getattr(phylo_constr, 'neighbor_joining_tree', None)
+phylogeny.upgma_tree = getattr(phylo_constr, 'upgma_tree', None)
+phylogeny.nj_tree_from_kmer = getattr(phylo_constr, 'nj_tree_from_kmer', None)
+phylogeny.bootstrap_support = getattr(phylo_constr, 'bootstrap_support', None)
+phylogeny.basic_tree_stats = getattr(phylo_anal, 'basic_tree_stats', None)
 
 
 def main():

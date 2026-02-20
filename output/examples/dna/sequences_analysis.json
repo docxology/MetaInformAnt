@@ -1,0 +1,3143 @@
+{
+  "dna_sequences_analysis": {
+    "analyses_performed": [
+      "sequence_validation",
+      "gc_content_calculation",
+      "reverse_complement",
+      "kmer_analysis",
+      "sequence_complexity",
+      "motif_detection",
+      "orf_finding",
+      "codon_usage",
+      "sequence_bias",
+      "palindrome_detection",
+      "melting_temperature",
+      "complementarity_scoring"
+    ],
+    "functions_demonstrated": [
+      "read_fasta",
+      "reverse_complement",
+      "gc_content",
+      "validate_dna_sequence",
+      "kmer_counts",
+      "kmer_frequencies",
+      "calculate_sequence_complexity",
+      "find_motifs",
+      "find_orfs",
+      "calculate_codon_usage",
+      "detect_sequence_bias",
+      "calculate_gc_skew",
+      "calculate_at_skew",
+      "find_palindromes",
+      "calculate_melting_temperature",
+      "dna_complementarity_score"
+    ],
+    "input_file": "sample_sequences.fasta",
+    "results": {
+      "bias_analysis": {
+        "seq1": {
+          "at_skew": 0.0,
+          "base_bias": {
+            "at_content": 0.5,
+            "gc_content": 0.5,
+            "total_bases": 20
+          },
+          "gc_skew": 0.0,
+          "melting_temperature_celsius": 60,
+          "palindromes": [
+            [
+              "ATCGAT",
+              0,
+              5
+            ],
+            [
+              "ATCGATCGAT",
+              0,
+              9
+            ],
+            [
+              "ATCGATCGATCGAT",
+              0,
+              13
+            ],
+            [
+              "ATCGATCGATCGATCGAT",
+              0,
+              17
+            ],
+            [
+              "TCGA",
+              1,
+              4
+            ],
+            [
+              "TCGATCGA",
+              1,
+              8
+            ],
+            [
+              "TCGATCGATCGA",
+              1,
+              12
+            ],
+            [
+              "TCGATCGATCGATCGA",
+              1,
+              16
+            ],
+            [
+              "CGATCG",
+              2,
+              7
+            ],
+            [
+              "CGATCGATCG",
+              2,
+              11
+            ],
+            [
+              "CGATCGATCGATCG",
+              2,
+              15
+            ],
+            [
+              "CGATCGATCGATCGATCG",
+              2,
+              19
+            ],
+            [
+              "GATC",
+              3,
+              6
+            ],
+            [
+              "GATCGATC",
+              3,
+              10
+            ],
+            [
+              "GATCGATCGATC",
+              3,
+              14
+            ],
+            [
+              "GATCGATCGATCGATC",
+              3,
+              18
+            ],
+            [
+              "ATCGAT",
+              4,
+              9
+            ],
+            [
+              "ATCGATCGAT",
+              4,
+              13
+            ],
+            [
+              "ATCGATCGATCGAT",
+              4,
+              17
+            ],
+            [
+              "TCGA",
+              5,
+              8
+            ],
+            [
+              "TCGATCGA",
+              5,
+              12
+            ],
+            [
+              "TCGATCGATCGA",
+              5,
+              16
+            ],
+            [
+              "CGATCG",
+              6,
+              11
+            ],
+            [
+              "CGATCGATCG",
+              6,
+              15
+            ],
+            [
+              "CGATCGATCGATCG",
+              6,
+              19
+            ],
+            [
+              "GATC",
+              7,
+              10
+            ],
+            [
+              "GATCGATC",
+              7,
+              14
+            ],
+            [
+              "GATCGATCGATC",
+              7,
+              18
+            ],
+            [
+              "ATCGAT",
+              8,
+              13
+            ],
+            [
+              "ATCGATCGAT",
+              8,
+              17
+            ],
+            [
+              "TCGA",
+              9,
+              12
+            ],
+            [
+              "TCGATCGA",
+              9,
+              16
+            ],
+            [
+              "CGATCG",
+              10,
+              15
+            ],
+            [
+              "CGATCGATCG",
+              10,
+              19
+            ],
+            [
+              "GATC",
+              11,
+              14
+            ],
+            [
+              "GATCGATC",
+              11,
+              18
+            ],
+            [
+              "ATCGAT",
+              12,
+              17
+            ],
+            [
+              "TCGA",
+              13,
+              16
+            ],
+            [
+              "CGATCG",
+              14,
+              19
+            ],
+            [
+              "GATC",
+              15,
+              18
+            ]
+          ]
+        },
+        "seq2": {
+          "at_skew": 0.0,
+          "base_bias": {
+            "at_content": 0.5,
+            "gc_content": 0.5,
+            "total_bases": 20
+          },
+          "gc_skew": 0.0,
+          "melting_temperature_celsius": 60,
+          "palindromes": [
+            [
+              "GCTAGC",
+              0,
+              5
+            ],
+            [
+              "GCTAGCTAGC",
+              0,
+              9
+            ],
+            [
+              "GCTAGCTAGCTAGC",
+              0,
+              13
+            ],
+            [
+              "GCTAGCTAGCTAGCTAGC",
+              0,
+              17
+            ],
+            [
+              "CTAG",
+              1,
+              4
+            ],
+            [
+              "CTAGCTAG",
+              1,
+              8
+            ],
+            [
+              "CTAGCTAGCTAG",
+              1,
+              12
+            ],
+            [
+              "CTAGCTAGCTAGCTAG",
+              1,
+              16
+            ],
+            [
+              "TAGCTA",
+              2,
+              7
+            ],
+            [
+              "TAGCTAGCTA",
+              2,
+              11
+            ],
+            [
+              "TAGCTAGCTAGCTA",
+              2,
+              15
+            ],
+            [
+              "TAGCTAGCTAGCTAGCTA",
+              2,
+              19
+            ],
+            [
+              "AGCT",
+              3,
+              6
+            ],
+            [
+              "AGCTAGCT",
+              3,
+              10
+            ],
+            [
+              "AGCTAGCTAGCT",
+              3,
+              14
+            ],
+            [
+              "AGCTAGCTAGCTAGCT",
+              3,
+              18
+            ],
+            [
+              "GCTAGC",
+              4,
+              9
+            ],
+            [
+              "GCTAGCTAGC",
+              4,
+              13
+            ],
+            [
+              "GCTAGCTAGCTAGC",
+              4,
+              17
+            ],
+            [
+              "CTAG",
+              5,
+              8
+            ],
+            [
+              "CTAGCTAG",
+              5,
+              12
+            ],
+            [
+              "CTAGCTAGCTAG",
+              5,
+              16
+            ],
+            [
+              "TAGCTA",
+              6,
+              11
+            ],
+            [
+              "TAGCTAGCTA",
+              6,
+              15
+            ],
+            [
+              "TAGCTAGCTAGCTA",
+              6,
+              19
+            ],
+            [
+              "AGCT",
+              7,
+              10
+            ],
+            [
+              "AGCTAGCT",
+              7,
+              14
+            ],
+            [
+              "AGCTAGCTAGCT",
+              7,
+              18
+            ],
+            [
+              "GCTAGC",
+              8,
+              13
+            ],
+            [
+              "GCTAGCTAGC",
+              8,
+              17
+            ],
+            [
+              "CTAG",
+              9,
+              12
+            ],
+            [
+              "CTAGCTAG",
+              9,
+              16
+            ],
+            [
+              "TAGCTA",
+              10,
+              15
+            ],
+            [
+              "TAGCTAGCTA",
+              10,
+              19
+            ],
+            [
+              "AGCT",
+              11,
+              14
+            ],
+            [
+              "AGCTAGCT",
+              11,
+              18
+            ],
+            [
+              "GCTAGC",
+              12,
+              17
+            ],
+            [
+              "CTAG",
+              13,
+              16
+            ],
+            [
+              "TAGCTA",
+              14,
+              19
+            ],
+            [
+              "AGCT",
+              15,
+              18
+            ]
+          ]
+        },
+        "seq3": {
+          "at_skew": 0.0,
+          "base_bias": {
+            "at_content": 1.0,
+            "gc_content": 0.0,
+            "total_bases": 20
+          },
+          "gc_skew": 0.0,
+          "melting_temperature_celsius": 40,
+          "palindromes": [
+            [
+              "TTTTAAAA",
+              0,
+              7
+            ],
+            [
+              "TTTAAA",
+              1,
+              6
+            ],
+            [
+              "TTAA",
+              2,
+              5
+            ],
+            [
+              "AAAAAATTTTTT",
+              6,
+              17
+            ],
+            [
+              "AAAAATTTTT",
+              7,
+              16
+            ],
+            [
+              "AAAATTTT",
+              8,
+              15
+            ],
+            [
+              "AAATTT",
+              9,
+              14
+            ],
+            [
+              "AATT",
+              10,
+              13
+            ],
+            [
+              "TTAA",
+              16,
+              19
+            ]
+          ]
+        },
+        "seq4": {
+          "at_skew": 0.0,
+          "base_bias": {
+            "at_content": 0.0,
+            "gc_content": 1.0,
+            "total_bases": 20
+          },
+          "gc_skew": 0.0,
+          "melting_temperature_celsius": 80,
+          "palindromes": [
+            [
+              "CGCG",
+              0,
+              3
+            ],
+            [
+              "CGCGCG",
+              0,
+              5
+            ],
+            [
+              "CGCGCGCG",
+              0,
+              7
+            ],
+            [
+              "CGCGCGCGCG",
+              0,
+              9
+            ],
+            [
+              "CGCGCGCGCGCG",
+              0,
+              11
+            ],
+            [
+              "CGCGCGCGCGCGCG",
+              0,
+              13
+            ],
+            [
+              "CGCGCGCGCGCGCGCG",
+              0,
+              15
+            ],
+            [
+              "CGCGCGCGCGCGCGCGCG",
+              0,
+              17
+            ],
+            [
+              "CGCGCGCGCGCGCGCGCGCG",
+              0,
+              19
+            ],
+            [
+              "GCGC",
+              1,
+              4
+            ],
+            [
+              "GCGCGC",
+              1,
+              6
+            ],
+            [
+              "GCGCGCGC",
+              1,
+              8
+            ],
+            [
+              "GCGCGCGCGC",
+              1,
+              10
+            ],
+            [
+              "GCGCGCGCGCGC",
+              1,
+              12
+            ],
+            [
+              "GCGCGCGCGCGCGC",
+              1,
+              14
+            ],
+            [
+              "GCGCGCGCGCGCGCGC",
+              1,
+              16
+            ],
+            [
+              "GCGCGCGCGCGCGCGCGC",
+              1,
+              18
+            ],
+            [
+              "CGCG",
+              2,
+              5
+            ],
+            [
+              "CGCGCG",
+              2,
+              7
+            ],
+            [
+              "CGCGCGCG",
+              2,
+              9
+            ],
+            [
+              "CGCGCGCGCG",
+              2,
+              11
+            ],
+            [
+              "CGCGCGCGCGCG",
+              2,
+              13
+            ],
+            [
+              "CGCGCGCGCGCGCG",
+              2,
+              15
+            ],
+            [
+              "CGCGCGCGCGCGCGCG",
+              2,
+              17
+            ],
+            [
+              "CGCGCGCGCGCGCGCGCG",
+              2,
+              19
+            ],
+            [
+              "GCGC",
+              3,
+              6
+            ],
+            [
+              "GCGCGC",
+              3,
+              8
+            ],
+            [
+              "GCGCGCGC",
+              3,
+              10
+            ],
+            [
+              "GCGCGCGCGC",
+              3,
+              12
+            ],
+            [
+              "GCGCGCGCGCGC",
+              3,
+              14
+            ],
+            [
+              "GCGCGCGCGCGCGC",
+              3,
+              16
+            ],
+            [
+              "GCGCGCGCGCGCGCGC",
+              3,
+              18
+            ],
+            [
+              "CGCG",
+              4,
+              7
+            ],
+            [
+              "CGCGCG",
+              4,
+              9
+            ],
+            [
+              "CGCGCGCG",
+              4,
+              11
+            ],
+            [
+              "CGCGCGCGCG",
+              4,
+              13
+            ],
+            [
+              "CGCGCGCGCGCG",
+              4,
+              15
+            ],
+            [
+              "CGCGCGCGCGCGCG",
+              4,
+              17
+            ],
+            [
+              "CGCGCGCGCGCGCGCG",
+              4,
+              19
+            ],
+            [
+              "GCGC",
+              5,
+              8
+            ],
+            [
+              "GCGCGC",
+              5,
+              10
+            ],
+            [
+              "GCGCGCGC",
+              5,
+              12
+            ],
+            [
+              "GCGCGCGCGC",
+              5,
+              14
+            ],
+            [
+              "GCGCGCGCGCGC",
+              5,
+              16
+            ],
+            [
+              "GCGCGCGCGCGCGC",
+              5,
+              18
+            ],
+            [
+              "CGCG",
+              6,
+              9
+            ],
+            [
+              "CGCGCG",
+              6,
+              11
+            ],
+            [
+              "CGCGCGCG",
+              6,
+              13
+            ],
+            [
+              "CGCGCGCGCG",
+              6,
+              15
+            ],
+            [
+              "CGCGCGCGCGCG",
+              6,
+              17
+            ],
+            [
+              "CGCGCGCGCGCGCG",
+              6,
+              19
+            ],
+            [
+              "GCGC",
+              7,
+              10
+            ],
+            [
+              "GCGCGC",
+              7,
+              12
+            ],
+            [
+              "GCGCGCGC",
+              7,
+              14
+            ],
+            [
+              "GCGCGCGCGC",
+              7,
+              16
+            ],
+            [
+              "GCGCGCGCGCGC",
+              7,
+              18
+            ],
+            [
+              "CGCG",
+              8,
+              11
+            ],
+            [
+              "CGCGCG",
+              8,
+              13
+            ],
+            [
+              "CGCGCGCG",
+              8,
+              15
+            ],
+            [
+              "CGCGCGCGCG",
+              8,
+              17
+            ],
+            [
+              "CGCGCGCGCGCG",
+              8,
+              19
+            ],
+            [
+              "GCGC",
+              9,
+              12
+            ],
+            [
+              "GCGCGC",
+              9,
+              14
+            ],
+            [
+              "GCGCGCGC",
+              9,
+              16
+            ],
+            [
+              "GCGCGCGCGC",
+              9,
+              18
+            ],
+            [
+              "CGCG",
+              10,
+              13
+            ],
+            [
+              "CGCGCG",
+              10,
+              15
+            ],
+            [
+              "CGCGCGCG",
+              10,
+              17
+            ],
+            [
+              "CGCGCGCGCG",
+              10,
+              19
+            ],
+            [
+              "GCGC",
+              11,
+              14
+            ],
+            [
+              "GCGCGC",
+              11,
+              16
+            ],
+            [
+              "GCGCGCGC",
+              11,
+              18
+            ],
+            [
+              "CGCG",
+              12,
+              15
+            ],
+            [
+              "CGCGCG",
+              12,
+              17
+            ],
+            [
+              "CGCGCGCG",
+              12,
+              19
+            ],
+            [
+              "GCGC",
+              13,
+              16
+            ],
+            [
+              "GCGCGC",
+              13,
+              18
+            ],
+            [
+              "CGCG",
+              14,
+              17
+            ],
+            [
+              "CGCGCG",
+              14,
+              19
+            ],
+            [
+              "GCGC",
+              15,
+              18
+            ],
+            [
+              "CGCG",
+              16,
+              19
+            ]
+          ]
+        },
+        "seq5": {
+          "at_skew": 0.0,
+          "base_bias": {
+            "at_content": 0.5,
+            "gc_content": 0.5,
+            "total_bases": 40
+          },
+          "gc_skew": 0.0,
+          "melting_temperature_celsius": 120,
+          "palindromes": [
+            [
+              "ATCGAT",
+              0,
+              5
+            ],
+            [
+              "ATCGATCGAT",
+              0,
+              9
+            ],
+            [
+              "ATCGATCGATCGAT",
+              0,
+              13
+            ],
+            [
+              "ATCGATCGATCGATCGAT",
+              0,
+              17
+            ],
+            [
+              "ATCGATCGATCGATCGATCGAT",
+              0,
+              21
+            ],
+            [
+              "ATCGATCGATCGATCGATCGATCGAT",
+              0,
+              25
+            ],
+            [
+              "ATCGATCGATCGATCGATCGATCGATCGAT",
+              0,
+              29
+            ],
+            [
+              "ATCGATCGATCGATCGATCGATCGATCGATCGAT",
+              0,
+              33
+            ],
+            [
+              "ATCGATCGATCGATCGATCGATCGATCGATCGATCGAT",
+              0,
+              37
+            ],
+            [
+              "TCGA",
+              1,
+              4
+            ],
+            [
+              "TCGATCGA",
+              1,
+              8
+            ],
+            [
+              "TCGATCGATCGA",
+              1,
+              12
+            ],
+            [
+              "TCGATCGATCGATCGA",
+              1,
+              16
+            ],
+            [
+              "TCGATCGATCGATCGATCGA",
+              1,
+              20
+            ],
+            [
+              "TCGATCGATCGATCGATCGATCGA",
+              1,
+              24
+            ],
+            [
+              "TCGATCGATCGATCGATCGATCGATCGA",
+              1,
+              28
+            ],
+            [
+              "TCGATCGATCGATCGATCGATCGATCGATCGA",
+              1,
+              32
+            ],
+            [
+              "TCGATCGATCGATCGATCGATCGATCGATCGATCGA",
+              1,
+              36
+            ],
+            [
+              "CGATCG",
+              2,
+              7
+            ],
+            [
+              "CGATCGATCG",
+              2,
+              11
+            ],
+            [
+              "CGATCGATCGATCG",
+              2,
+              15
+            ],
+            [
+              "CGATCGATCGATCGATCG",
+              2,
+              19
+            ],
+            [
+              "CGATCGATCGATCGATCGATCG",
+              2,
+              23
+            ],
+            [
+              "CGATCGATCGATCGATCGATCGATCG",
+              2,
+              27
+            ],
+            [
+              "CGATCGATCGATCGATCGATCGATCGATCG",
+              2,
+              31
+            ],
+            [
+              "CGATCGATCGATCGATCGATCGATCGATCGATCG",
+              2,
+              35
+            ],
+            [
+              "CGATCGATCGATCGATCGATCGATCGATCGATCGATCG",
+              2,
+              39
+            ],
+            [
+              "GATC",
+              3,
+              6
+            ],
+            [
+              "GATCGATC",
+              3,
+              10
+            ],
+            [
+              "GATCGATCGATC",
+              3,
+              14
+            ],
+            [
+              "GATCGATCGATCGATC",
+              3,
+              18
+            ],
+            [
+              "GATCGATCGATCGATCGATC",
+              3,
+              22
+            ],
+            [
+              "GATCGATCGATCGATCGATCGATC",
+              3,
+              26
+            ],
+            [
+              "GATCGATCGATCGATCGATCGATCGATC",
+              3,
+              30
+            ],
+            [
+              "GATCGATCGATCGATCGATCGATCGATCGATC",
+              3,
+              34
+            ],
+            [
+              "GATCGATCGATCGATCGATCGATCGATCGATCGATC",
+              3,
+              38
+            ],
+            [
+              "ATCGAT",
+              4,
+              9
+            ],
+            [
+              "ATCGATCGAT",
+              4,
+              13
+            ],
+            [
+              "ATCGATCGATCGAT",
+              4,
+              17
+            ],
+            [
+              "ATCGATCGATCGATCGAT",
+              4,
+              21
+            ],
+            [
+              "ATCGATCGATCGATCGATCGAT",
+              4,
+              25
+            ],
+            [
+              "ATCGATCGATCGATCGATCGATCGAT",
+              4,
+              29
+            ],
+            [
+              "ATCGATCGATCGATCGATCGATCGATCGAT",
+              4,
+              33
+            ],
+            [
+              "ATCGATCGATCGATCGATCGATCGATCGATCGAT",
+              4,
+              37
+            ],
+            [
+              "TCGA",
+              5,
+              8
+            ],
+            [
+              "TCGATCGA",
+              5,
+              12
+            ],
+            [
+              "TCGATCGATCGA",
+              5,
+              16
+            ],
+            [
+              "TCGATCGATCGATCGA",
+              5,
+              20
+            ],
+            [
+              "TCGATCGATCGATCGATCGA",
+              5,
+              24
+            ],
+            [
+              "TCGATCGATCGATCGATCGATCGA",
+              5,
+              28
+            ],
+            [
+              "TCGATCGATCGATCGATCGATCGATCGA",
+              5,
+              32
+            ],
+            [
+              "TCGATCGATCGATCGATCGATCGATCGATCGA",
+              5,
+              36
+            ],
+            [
+              "CGATCG",
+              6,
+              11
+            ],
+            [
+              "CGATCGATCG",
+              6,
+              15
+            ],
+            [
+              "CGATCGATCGATCG",
+              6,
+              19
+            ],
+            [
+              "CGATCGATCGATCGATCG",
+              6,
+              23
+            ],
+            [
+              "CGATCGATCGATCGATCGATCG",
+              6,
+              27
+            ],
+            [
+              "CGATCGATCGATCGATCGATCGATCG",
+              6,
+              31
+            ],
+            [
+              "CGATCGATCGATCGATCGATCGATCGATCG",
+              6,
+              35
+            ],
+            [
+              "CGATCGATCGATCGATCGATCGATCGATCGATCG",
+              6,
+              39
+            ],
+            [
+              "GATC",
+              7,
+              10
+            ],
+            [
+              "GATCGATC",
+              7,
+              14
+            ],
+            [
+              "GATCGATCGATC",
+              7,
+              18
+            ],
+            [
+              "GATCGATCGATCGATC",
+              7,
+              22
+            ],
+            [
+              "GATCGATCGATCGATCGATC",
+              7,
+              26
+            ],
+            [
+              "GATCGATCGATCGATCGATCGATC",
+              7,
+              30
+            ],
+            [
+              "GATCGATCGATCGATCGATCGATCGATC",
+              7,
+              34
+            ],
+            [
+              "GATCGATCGATCGATCGATCGATCGATCGATC",
+              7,
+              38
+            ],
+            [
+              "ATCGAT",
+              8,
+              13
+            ],
+            [
+              "ATCGATCGAT",
+              8,
+              17
+            ],
+            [
+              "ATCGATCGATCGAT",
+              8,
+              21
+            ],
+            [
+              "ATCGATCGATCGATCGAT",
+              8,
+              25
+            ],
+            [
+              "ATCGATCGATCGATCGATCGAT",
+              8,
+              29
+            ],
+            [
+              "ATCGATCGATCGATCGATCGATCGAT",
+              8,
+              33
+            ],
+            [
+              "ATCGATCGATCGATCGATCGATCGATCGAT",
+              8,
+              37
+            ],
+            [
+              "TCGA",
+              9,
+              12
+            ],
+            [
+              "TCGATCGA",
+              9,
+              16
+            ],
+            [
+              "TCGATCGATCGA",
+              9,
+              20
+            ],
+            [
+              "TCGATCGATCGATCGA",
+              9,
+              24
+            ],
+            [
+              "TCGATCGATCGATCGATCGA",
+              9,
+              28
+            ],
+            [
+              "TCGATCGATCGATCGATCGATCGA",
+              9,
+              32
+            ],
+            [
+              "TCGATCGATCGATCGATCGATCGATCGA",
+              9,
+              36
+            ],
+            [
+              "CGATCG",
+              10,
+              15
+            ],
+            [
+              "CGATCGATCG",
+              10,
+              19
+            ],
+            [
+              "CGATCGATCGATCG",
+              10,
+              23
+            ],
+            [
+              "CGATCGATCGATCGATCG",
+              10,
+              27
+            ],
+            [
+              "CGATCGATCGATCGATCGATCG",
+              10,
+              31
+            ],
+            [
+              "CGATCGATCGATCGATCGATCGATCG",
+              10,
+              35
+            ],
+            [
+              "CGATCGATCGATCGATCGATCGATCGATCG",
+              10,
+              39
+            ],
+            [
+              "GATC",
+              11,
+              14
+            ],
+            [
+              "GATCGATC",
+              11,
+              18
+            ],
+            [
+              "GATCGATCGATC",
+              11,
+              22
+            ],
+            [
+              "GATCGATCGATCGATC",
+              11,
+              26
+            ],
+            [
+              "GATCGATCGATCGATCGATC",
+              11,
+              30
+            ],
+            [
+              "GATCGATCGATCGATCGATCGATC",
+              11,
+              34
+            ],
+            [
+              "GATCGATCGATCGATCGATCGATCGATC",
+              11,
+              38
+            ],
+            [
+              "ATCGAT",
+              12,
+              17
+            ],
+            [
+              "ATCGATCGAT",
+              12,
+              21
+            ],
+            [
+              "ATCGATCGATCGAT",
+              12,
+              25
+            ],
+            [
+              "ATCGATCGATCGATCGAT",
+              12,
+              29
+            ],
+            [
+              "ATCGATCGATCGATCGATCGAT",
+              12,
+              33
+            ],
+            [
+              "ATCGATCGATCGATCGATCGATCGAT",
+              12,
+              37
+            ],
+            [
+              "TCGA",
+              13,
+              16
+            ],
+            [
+              "TCGATCGA",
+              13,
+              20
+            ],
+            [
+              "TCGATCGATCGA",
+              13,
+              24
+            ],
+            [
+              "TCGATCGATCGATCGA",
+              13,
+              28
+            ],
+            [
+              "TCGATCGATCGATCGATCGA",
+              13,
+              32
+            ],
+            [
+              "TCGATCGATCGATCGATCGATCGA",
+              13,
+              36
+            ],
+            [
+              "CGATCG",
+              14,
+              19
+            ],
+            [
+              "CGATCGATCG",
+              14,
+              23
+            ],
+            [
+              "CGATCGATCGATCG",
+              14,
+              27
+            ],
+            [
+              "CGATCGATCGATCGATCG",
+              14,
+              31
+            ],
+            [
+              "CGATCGATCGATCGATCGATCG",
+              14,
+              35
+            ],
+            [
+              "CGATCGATCGATCGATCGATCGATCG",
+              14,
+              39
+            ],
+            [
+              "GATC",
+              15,
+              18
+            ],
+            [
+              "GATCGATC",
+              15,
+              22
+            ],
+            [
+              "GATCGATCGATC",
+              15,
+              26
+            ],
+            [
+              "GATCGATCGATCGATC",
+              15,
+              30
+            ],
+            [
+              "GATCGATCGATCGATCGATC",
+              15,
+              34
+            ],
+            [
+              "GATCGATCGATCGATCGATCGATC",
+              15,
+              38
+            ],
+            [
+              "ATCGAT",
+              16,
+              21
+            ],
+            [
+              "ATCGATCGAT",
+              16,
+              25
+            ],
+            [
+              "ATCGATCGATCGAT",
+              16,
+              29
+            ],
+            [
+              "ATCGATCGATCGATCGAT",
+              16,
+              33
+            ],
+            [
+              "ATCGATCGATCGATCGATCGAT",
+              16,
+              37
+            ],
+            [
+              "TCGA",
+              17,
+              20
+            ],
+            [
+              "TCGATCGA",
+              17,
+              24
+            ],
+            [
+              "TCGATCGATCGA",
+              17,
+              28
+            ],
+            [
+              "TCGATCGATCGATCGA",
+              17,
+              32
+            ],
+            [
+              "TCGATCGATCGATCGATCGA",
+              17,
+              36
+            ],
+            [
+              "CGATCG",
+              18,
+              23
+            ],
+            [
+              "CGATCGATCG",
+              18,
+              27
+            ],
+            [
+              "CGATCGATCGATCG",
+              18,
+              31
+            ],
+            [
+              "CGATCGATCGATCGATCG",
+              18,
+              35
+            ],
+            [
+              "CGATCGATCGATCGATCGATCG",
+              18,
+              39
+            ],
+            [
+              "GATC",
+              19,
+              22
+            ],
+            [
+              "GATCGATC",
+              19,
+              26
+            ],
+            [
+              "GATCGATCGATC",
+              19,
+              30
+            ],
+            [
+              "GATCGATCGATCGATC",
+              19,
+              34
+            ],
+            [
+              "GATCGATCGATCGATCGATC",
+              19,
+              38
+            ],
+            [
+              "ATCGAT",
+              20,
+              25
+            ],
+            [
+              "ATCGATCGAT",
+              20,
+              29
+            ],
+            [
+              "ATCGATCGATCGAT",
+              20,
+              33
+            ],
+            [
+              "ATCGATCGATCGATCGAT",
+              20,
+              37
+            ],
+            [
+              "TCGA",
+              21,
+              24
+            ],
+            [
+              "TCGATCGA",
+              21,
+              28
+            ],
+            [
+              "TCGATCGATCGA",
+              21,
+              32
+            ],
+            [
+              "TCGATCGATCGATCGA",
+              21,
+              36
+            ],
+            [
+              "CGATCG",
+              22,
+              27
+            ],
+            [
+              "CGATCGATCG",
+              22,
+              31
+            ],
+            [
+              "CGATCGATCGATCG",
+              22,
+              35
+            ],
+            [
+              "CGATCGATCGATCGATCG",
+              22,
+              39
+            ],
+            [
+              "GATC",
+              23,
+              26
+            ],
+            [
+              "GATCGATC",
+              23,
+              30
+            ],
+            [
+              "GATCGATCGATC",
+              23,
+              34
+            ],
+            [
+              "GATCGATCGATCGATC",
+              23,
+              38
+            ],
+            [
+              "ATCGAT",
+              24,
+              29
+            ],
+            [
+              "ATCGATCGAT",
+              24,
+              33
+            ],
+            [
+              "ATCGATCGATCGAT",
+              24,
+              37
+            ],
+            [
+              "TCGA",
+              25,
+              28
+            ],
+            [
+              "TCGATCGA",
+              25,
+              32
+            ],
+            [
+              "TCGATCGATCGA",
+              25,
+              36
+            ],
+            [
+              "CGATCG",
+              26,
+              31
+            ],
+            [
+              "CGATCGATCG",
+              26,
+              35
+            ],
+            [
+              "CGATCGATCGATCG",
+              26,
+              39
+            ],
+            [
+              "GATC",
+              27,
+              30
+            ],
+            [
+              "GATCGATC",
+              27,
+              34
+            ],
+            [
+              "GATCGATCGATC",
+              27,
+              38
+            ],
+            [
+              "ATCGAT",
+              28,
+              33
+            ],
+            [
+              "ATCGATCGAT",
+              28,
+              37
+            ],
+            [
+              "TCGA",
+              29,
+              32
+            ],
+            [
+              "TCGATCGA",
+              29,
+              36
+            ],
+            [
+              "CGATCG",
+              30,
+              35
+            ],
+            [
+              "CGATCGATCG",
+              30,
+              39
+            ],
+            [
+              "GATC",
+              31,
+              34
+            ],
+            [
+              "GATCGATC",
+              31,
+              38
+            ],
+            [
+              "ATCGAT",
+              32,
+              37
+            ],
+            [
+              "TCGA",
+              33,
+              36
+            ],
+            [
+              "CGATCG",
+              34,
+              39
+            ],
+            [
+              "GATC",
+              35,
+              38
+            ]
+          ]
+        }
+      },
+      "complementarity_scores": {
+        "seq1_vs_seq2": 0.0,
+        "seq1_vs_seq3": 0.25,
+        "seq1_vs_seq4": 0.0,
+        "seq1_vs_seq5": null,
+        "seq2_vs_seq3": 0.25,
+        "seq2_vs_seq4": 0.5,
+        "seq2_vs_seq5": null,
+        "seq3_vs_seq4": 0.0,
+        "seq3_vs_seq5": null,
+        "seq4_vs_seq5": null
+      },
+      "complexity_analysis": {
+        "seq1": {
+          "complexity_score": 1.0,
+          "entropy_h1": 2.0,
+          "motifs_found": {
+            "AAAA": [],
+            "ATCG": [
+              0,
+              4,
+              8,
+              12,
+              16
+            ],
+            "CGCG": []
+          },
+          "repeats_found": {
+            "ATC": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              0,
+              4,
+              8,
+              12,
+              16,
+              0,
+              4,
+              8,
+              12,
+              16,
+              0,
+              4,
+              8,
+              12,
+              16,
+              0,
+              4,
+              8,
+              12,
+              16
+            ],
+            "CGA": [
+              2,
+              6,
+              10,
+              14,
+              2,
+              6,
+              10,
+              14,
+              2,
+              6,
+              10,
+              14,
+              2,
+              6,
+              10,
+              14
+            ],
+            "GAT": [
+              3,
+              7,
+              11,
+              15,
+              3,
+              7,
+              11,
+              15,
+              3,
+              7,
+              11,
+              15,
+              3,
+              7,
+              11,
+              15
+            ],
+            "TCG": [
+              1,
+              5,
+              9,
+              13,
+              17,
+              1,
+              5,
+              9,
+              13,
+              17,
+              1,
+              5,
+              9,
+              13,
+              17,
+              1,
+              5,
+              9,
+              13,
+              17,
+              1,
+              5,
+              9,
+              13,
+              17
+            ]
+          }
+        },
+        "seq2": {
+          "complexity_score": 1.0,
+          "entropy_h1": 2.0,
+          "motifs_found": {
+            "AAAA": [],
+            "ATCG": [],
+            "CGCG": []
+          },
+          "repeats_found": {
+            "AGC": [
+              3,
+              7,
+              11,
+              15,
+              3,
+              7,
+              11,
+              15,
+              3,
+              7,
+              11,
+              15,
+              3,
+              7,
+              11,
+              15
+            ],
+            "CTA": [
+              1,
+              5,
+              9,
+              13,
+              17,
+              1,
+              5,
+              9,
+              13,
+              17,
+              1,
+              5,
+              9,
+              13,
+              17,
+              1,
+              5,
+              9,
+              13,
+              17,
+              1,
+              5,
+              9,
+              13,
+              17
+            ],
+            "GCT": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              0,
+              4,
+              8,
+              12,
+              16,
+              0,
+              4,
+              8,
+              12,
+              16,
+              0,
+              4,
+              8,
+              12,
+              16,
+              0,
+              4,
+              8,
+              12,
+              16
+            ],
+            "TAG": [
+              2,
+              6,
+              10,
+              14,
+              2,
+              6,
+              10,
+              14,
+              2,
+              6,
+              10,
+              14,
+              2,
+              6,
+              10,
+              14
+            ]
+          }
+        },
+        "seq3": {
+          "complexity_score": 0.5,
+          "entropy_h1": 1.0,
+          "motifs_found": {
+            "AAAA": [
+              4,
+              8
+            ],
+            "ATCG": [],
+            "CGCG": []
+          },
+          "repeats_found": {
+            "AAA": [
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ],
+            "TAA": [
+              3,
+              17,
+              3,
+              17
+            ],
+            "TTA": [
+              2,
+              16,
+              2,
+              16
+            ],
+            "TTT": [
+              0,
+              1,
+              12,
+              13,
+              14,
+              15,
+              0,
+              1,
+              12,
+              13,
+              14,
+              15,
+              0,
+              1,
+              12,
+              13,
+              14,
+              15,
+              0,
+              1,
+              12,
+              13,
+              14,
+              15,
+              0,
+              1,
+              12,
+              13,
+              14,
+              15,
+              0,
+              1,
+              12,
+              13,
+              14,
+              15
+            ]
+          }
+        },
+        "seq4": {
+          "complexity_score": 0.5,
+          "entropy_h1": 1.0,
+          "motifs_found": {
+            "AAAA": [],
+            "ATCG": [],
+            "CGCG": [
+              0,
+              4,
+              8,
+              12,
+              16
+            ]
+          },
+          "repeats_found": {
+            "CGC": [
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16,
+              0,
+              2,
+              4,
+              6,
+              8,
+              10,
+              12,
+              14,
+              16
+            ],
+            "GCG": [
+              1,
+              3,
+              5,
+              7,
+              9,
+              11,
+              13,
+              15,
+              17,
+              1,
+              3,
+              5,
+              7,
+              9,
+              11,
+              13,
+              15,
+              17,
+              1,
+              3,
+              5,
+              7,
+              9,
+              11,
+              13,
+              15,
+              17,
+              1,
+              3,
+              5,
+              7,
+              9,
+              11,
+              13,
+              15,
+              17,
+              1,
+              3,
+              5,
+              7,
+              9,
+              11,
+              13,
+              15,
+              17,
+              1,
+              3,
+              5,
+              7,
+              9,
+              11,
+              13,
+              15,
+              17,
+              1,
+              3,
+              5,
+              7,
+              9,
+              11,
+              13,
+              15,
+              17,
+              1,
+              3,
+              5,
+              7,
+              9,
+              11,
+              13,
+              15,
+              17,
+              1,
+              3,
+              5,
+              7,
+              9,
+              11,
+              13,
+              15,
+              17
+            ]
+          }
+        },
+        "seq5": {
+          "complexity_score": 1.0,
+          "entropy_h1": 2.0,
+          "motifs_found": {
+            "AAAA": [],
+            "ATCG": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28,
+              32,
+              36
+            ],
+            "CGCG": []
+          },
+          "repeats_found": {
+            "ATC": [
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28,
+              32,
+              36,
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28,
+              32,
+              36,
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28,
+              32,
+              36,
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28,
+              32,
+              36,
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28,
+              32,
+              36,
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28,
+              32,
+              36,
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28,
+              32,
+              36,
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28,
+              32,
+              36,
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28,
+              32,
+              36,
+              0,
+              4,
+              8,
+              12,
+              16,
+              20,
+              24,
+              28,
+              32,
+              36
+            ],
+            "CGA": [
+              2,
+              6,
+              10,
+              14,
+              18,
+              22,
+              26,
+              30,
+              34,
+              2,
+              6,
+              10,
+              14,
+              18,
+              22,
+              26,
+              30,
+              34,
+              2,
+              6,
+              10,
+              14,
+              18,
+              22,
+              26,
+              30,
+              34,
+              2,
+              6,
+              10,
+              14,
+              18,
+              22,
+              26,
+              30,
+              34,
+              2,
+              6,
+              10,
+              14,
+              18,
+              22,
+              26,
+              30,
+              34,
+              2,
+              6,
+              10,
+              14,
+              18,
+              22,
+              26,
+              30,
+              34,
+              2,
+              6,
+              10,
+              14,
+              18,
+              22,
+              26,
+              30,
+              34,
+              2,
+              6,
+              10,
+              14,
+              18,
+              22,
+              26,
+              30,
+              34,
+              2,
+              6,
+              10,
+              14,
+              18,
+              22,
+              26,
+              30,
+              34
+            ],
+            "GAT": [
+              3,
+              7,
+              11,
+              15,
+              19,
+              23,
+              27,
+              31,
+              35,
+              3,
+              7,
+              11,
+              15,
+              19,
+              23,
+              27,
+              31,
+              35,
+              3,
+              7,
+              11,
+              15,
+              19,
+              23,
+              27,
+              31,
+              35,
+              3,
+              7,
+              11,
+              15,
+              19,
+              23,
+              27,
+              31,
+              35,
+              3,
+              7,
+              11,
+              15,
+              19,
+              23,
+              27,
+              31,
+              35,
+              3,
+              7,
+              11,
+              15,
+              19,
+              23,
+              27,
+              31,
+              35,
+              3,
+              7,
+              11,
+              15,
+              19,
+              23,
+              27,
+              31,
+              35,
+              3,
+              7,
+              11,
+              15,
+              19,
+              23,
+              27,
+              31,
+              35,
+              3,
+              7,
+              11,
+              15,
+              19,
+              23,
+              27,
+              31,
+              35
+            ],
+            "TCG": [
+              1,
+              5,
+              9,
+              13,
+              17,
+              21,
+              25,
+              29,
+              33,
+              37,
+              1,
+              5,
+              9,
+              13,
+              17,
+              21,
+              25,
+              29,
+              33,
+              37,
+              1,
+              5,
+              9,
+              13,
+              17,
+              21,
+              25,
+              29,
+              33,
+              37,
+              1,
+              5,
+              9,
+              13,
+              17,
+              21,
+              25,
+              29,
+              33,
+              37,
+              1,
+              5,
+              9,
+              13,
+              17,
+              21,
+              25,
+              29,
+              33,
+              37,
+              1,
+              5,
+              9,
+              13,
+              17,
+              21,
+              25,
+              29,
+              33,
+              37,
+              1,
+              5,
+              9,
+              13,
+              17,
+              21,
+              25,
+              29,
+              33,
+              37,
+              1,
+              5,
+              9,
+              13,
+              17,
+              21,
+              25,
+              29,
+              33,
+              37,
+              1,
+              5,
+              9,
+              13,
+              17,
+              21,
+              25,
+              29,
+              33,
+              37,
+              1,
+              5,
+              9,
+              13,
+              17,
+              21,
+              25,
+              29,
+              33,
+              37
+            ]
+          }
+        }
+      },
+      "kmer_analysis": {
+        "seq1": {
+          "k2": {
+            "counts": {
+              "AT": 5,
+              "CG": 5,
+              "GA": 4,
+              "TC": 5
+            },
+            "frequencies": {
+              "AT": 0.2631578947368421,
+              "CG": 0.2631578947368421,
+              "GA": 0.21052631578947367,
+              "TC": 0.2631578947368421
+            },
+            "most_common": [
+              "AT",
+              5
+            ],
+            "unique_kmers": 4
+          },
+          "k3": {
+            "counts": {
+              "ATC": 5,
+              "CGA": 4,
+              "GAT": 4,
+              "TCG": 5
+            },
+            "frequencies": {
+              "ATC": 0.2777777777777778,
+              "CGA": 0.2222222222222222,
+              "GAT": 0.2222222222222222,
+              "TCG": 0.2777777777777778
+            },
+            "most_common": [
+              "ATC",
+              5
+            ],
+            "unique_kmers": 4
+          },
+          "k4": {
+            "counts": {
+              "ATCG": 5,
+              "CGAT": 4,
+              "GATC": 4,
+              "TCGA": 4
+            },
+            "frequencies": {
+              "ATCG": 0.29411764705882354,
+              "CGAT": 0.23529411764705882,
+              "GATC": 0.23529411764705882,
+              "TCGA": 0.23529411764705882
+            },
+            "most_common": [
+              "ATCG",
+              5
+            ],
+            "unique_kmers": 4
+          }
+        },
+        "seq2": {
+          "k2": {
+            "counts": {
+              "AG": 4,
+              "CT": 5,
+              "GC": 5,
+              "TA": 5
+            },
+            "frequencies": {
+              "AG": 0.21052631578947367,
+              "CT": 0.2631578947368421,
+              "GC": 0.2631578947368421,
+              "TA": 0.2631578947368421
+            },
+            "most_common": [
+              "GC",
+              5
+            ],
+            "unique_kmers": 4
+          },
+          "k3": {
+            "counts": {
+              "AGC": 4,
+              "CTA": 5,
+              "GCT": 5,
+              "TAG": 4
+            },
+            "frequencies": {
+              "AGC": 0.2222222222222222,
+              "CTA": 0.2777777777777778,
+              "GCT": 0.2777777777777778,
+              "TAG": 0.2222222222222222
+            },
+            "most_common": [
+              "GCT",
+              5
+            ],
+            "unique_kmers": 4
+          },
+          "k4": {
+            "counts": {
+              "AGCT": 4,
+              "CTAG": 4,
+              "GCTA": 5,
+              "TAGC": 4
+            },
+            "frequencies": {
+              "AGCT": 0.23529411764705882,
+              "CTAG": 0.23529411764705882,
+              "GCTA": 0.29411764705882354,
+              "TAGC": 0.23529411764705882
+            },
+            "most_common": [
+              "GCTA",
+              5
+            ],
+            "unique_kmers": 4
+          }
+        },
+        "seq3": {
+          "k2": {
+            "counts": {
+              "AA": 8,
+              "AT": 1,
+              "TA": 2,
+              "TT": 8
+            },
+            "frequencies": {
+              "AA": 0.42105263157894735,
+              "AT": 0.05263157894736842,
+              "TA": 0.10526315789473684,
+              "TT": 0.42105263157894735
+            },
+            "most_common": [
+              "TT",
+              8
+            ],
+            "unique_kmers": 4
+          },
+          "k3": {
+            "counts": {
+              "AAA": 6,
+              "AAT": 1,
+              "ATT": 1,
+              "TAA": 2,
+              "TTA": 2,
+              "TTT": 6
+            },
+            "frequencies": {
+              "AAA": 0.3333333333333333,
+              "AAT": 0.05555555555555555,
+              "ATT": 0.05555555555555555,
+              "TAA": 0.1111111111111111,
+              "TTA": 0.1111111111111111,
+              "TTT": 0.3333333333333333
+            },
+            "most_common": [
+              "TTT",
+              6
+            ],
+            "unique_kmers": 6
+          },
+          "k4": {
+            "counts": {
+              "AAAA": 5,
+              "AAAT": 1,
+              "AATT": 1,
+              "ATTT": 1,
+              "TAAA": 1,
+              "TTAA": 2,
+              "TTTA": 2,
+              "TTTT": 4
+            },
+            "frequencies": {
+              "AAAA": 0.29411764705882354,
+              "AAAT": 0.058823529411764705,
+              "AATT": 0.058823529411764705,
+              "ATTT": 0.058823529411764705,
+              "TAAA": 0.058823529411764705,
+              "TTAA": 0.11764705882352941,
+              "TTTA": 0.11764705882352941,
+              "TTTT": 0.23529411764705882
+            },
+            "most_common": [
+              "AAAA",
+              5
+            ],
+            "unique_kmers": 8
+          }
+        },
+        "seq4": {
+          "k2": {
+            "counts": {
+              "CG": 10,
+              "GC": 9
+            },
+            "frequencies": {
+              "CG": 0.5263157894736842,
+              "GC": 0.47368421052631576
+            },
+            "most_common": [
+              "CG",
+              10
+            ],
+            "unique_kmers": 2
+          },
+          "k3": {
+            "counts": {
+              "CGC": 9,
+              "GCG": 9
+            },
+            "frequencies": {
+              "CGC": 0.5,
+              "GCG": 0.5
+            },
+            "most_common": [
+              "CGC",
+              9
+            ],
+            "unique_kmers": 2
+          },
+          "k4": {
+            "counts": {
+              "CGCG": 9,
+              "GCGC": 8
+            },
+            "frequencies": {
+              "CGCG": 0.5294117647058824,
+              "GCGC": 0.47058823529411764
+            },
+            "most_common": [
+              "CGCG",
+              9
+            ],
+            "unique_kmers": 2
+          }
+        },
+        "seq5": {
+          "k2": {
+            "counts": {
+              "AT": 10,
+              "CG": 10,
+              "GA": 9,
+              "TC": 10
+            },
+            "frequencies": {
+              "AT": 0.2564102564102564,
+              "CG": 0.2564102564102564,
+              "GA": 0.23076923076923078,
+              "TC": 0.2564102564102564
+            },
+            "most_common": [
+              "AT",
+              10
+            ],
+            "unique_kmers": 4
+          },
+          "k3": {
+            "counts": {
+              "ATC": 10,
+              "CGA": 9,
+              "GAT": 9,
+              "TCG": 10
+            },
+            "frequencies": {
+              "ATC": 0.2631578947368421,
+              "CGA": 0.23684210526315788,
+              "GAT": 0.23684210526315788,
+              "TCG": 0.2631578947368421
+            },
+            "most_common": [
+              "ATC",
+              10
+            ],
+            "unique_kmers": 4
+          },
+          "k4": {
+            "counts": {
+              "ATCG": 10,
+              "CGAT": 9,
+              "GATC": 9,
+              "TCGA": 9
+            },
+            "frequencies": {
+              "ATCG": 0.2702702702702703,
+              "CGAT": 0.24324324324324326,
+              "GATC": 0.24324324324324326,
+              "TCGA": 0.24324324324324326
+            },
+            "most_common": [
+              "ATCG",
+              10
+            ],
+            "unique_kmers": 4
+          }
+        }
+      },
+      "orf_analysis": {
+        "seq1": {
+          "codon_usage": {},
+          "open_reading_frames": [],
+          "sequence_length_mod3": 2,
+          "start_codons_at": [],
+          "stop_codons_at": []
+        },
+        "seq2": {
+          "codon_usage": {},
+          "open_reading_frames": [],
+          "sequence_length_mod3": 2,
+          "start_codons_at": [],
+          "stop_codons_at": [
+            2,
+            6,
+            10,
+            14
+          ]
+        },
+        "seq3": {
+          "codon_usage": {},
+          "open_reading_frames": [],
+          "sequence_length_mod3": 2,
+          "start_codons_at": [],
+          "stop_codons_at": [
+            3,
+            17
+          ]
+        },
+        "seq4": {
+          "codon_usage": {},
+          "open_reading_frames": [],
+          "sequence_length_mod3": 2,
+          "start_codons_at": [],
+          "stop_codons_at": []
+        },
+        "seq5": {
+          "codon_usage": {},
+          "open_reading_frames": [],
+          "sequence_length_mod3": 1,
+          "start_codons_at": [],
+          "stop_codons_at": []
+        }
+      },
+      "sequence_analysis": {
+        "seq1": {
+          "gc_content": 0.5,
+          "is_valid_dna": true,
+          "length": 20,
+          "original_sequence": "ATCGATCGATCGATCGATCG",
+          "reverse_complement": "CGATCGATCGATCGATCGAT",
+          "reverse_complement_valid": true
+        },
+        "seq2": {
+          "gc_content": 0.5,
+          "is_valid_dna": true,
+          "length": 20,
+          "original_sequence": "GCTAGCTAGCTAGCTAGCTA",
+          "reverse_complement": "TAGCTAGCTAGCTAGCTAGC",
+          "reverse_complement_valid": true
+        },
+        "seq3": {
+          "gc_content": 0.0,
+          "is_valid_dna": true,
+          "length": 20,
+          "original_sequence": "TTTTAAAAAAAATTTTTTAA",
+          "reverse_complement": "TTAAAAAATTTTTTTTAAAA",
+          "reverse_complement_valid": true
+        },
+        "seq4": {
+          "gc_content": 1.0,
+          "is_valid_dna": true,
+          "length": 20,
+          "original_sequence": "CGCGCGCGCGCGCGCGCGCG",
+          "reverse_complement": "CGCGCGCGCGCGCGCGCGCG",
+          "reverse_complement_valid": true
+        },
+        "seq5": {
+          "gc_content": 0.5,
+          "is_valid_dna": true,
+          "length": 40,
+          "original_sequence": "ATCGATCGATCGATCGATCGATCGATCGATCGATCGATCG",
+          "reverse_complement": "CGATCGATCGATCGATCGATCGATCGATCGATCGATCGAT",
+          "reverse_complement_valid": true
+        }
+      }
+    },
+    "sequences_analyzed": 5,
+    "summary_statistics": {
+      "average_gc_content": 0.5,
+      "palindromes_found": 350,
+      "sequences_with_orfs": 0,
+      "total_bases": 120,
+      "total_sequences": 5
+    },
+    "timestamp": "2024-12-26T10:00:00Z"
+  }
+}
