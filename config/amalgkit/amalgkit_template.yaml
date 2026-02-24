@@ -206,7 +206,7 @@ steps:
     #                            # large downloads are temporary. Quantified samples don't need re-download.
 
     # Data source preferences (try in this order)
-    aws: yes                    # Try AWS Open Data Program first
+    aws: no                    # Try AWS Open Data Program first
     ncbi: yes                   # Try NCBI SRA
     gcp: no                     # Try Google Cloud (if available)
 

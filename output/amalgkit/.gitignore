@@ -1,0 +1,26 @@
+# output/amalgkit – data IS committed to the repo per project policy
+# Only exclude large temporary/intermediate files
+
+# FASTQ files: always temporary, deleted after quantification  
+*/fastq/
+**/getfastq/*.fastq.gz
+**/getfastq/*.fastq
+
+# SRA cache files
+**/*.sra
+**/*.sra-lite
+**/*.lock
+
+# Large genome FASTA (the index .idx is smaller, keep it)
+**/genome/*.fna.gz
+**/genome/*.fna
+**/genome/*.faa.gz
+**/genome/*.faa
+**/genome/*.gff.gz
+
+# Keep everything else:
+# - work/quant/*/abundance.tsv  ← per-sample quant results  ✅
+# - work/index/*.idx             ← kallisto index            ✅
+# - work/metadata/*.tsv          ← sample metadata           ✅
+# - merged/*.tsv                 ← expression matrices       ✅
+# - curate/*/                    ← QC outputs + plots        ✅

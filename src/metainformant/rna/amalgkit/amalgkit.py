@@ -148,7 +148,9 @@ def build_cli_args(
                 continue
 
             # Skip arguments not supported by specific subcommands
-            if subcommand in ("merge", "sanity", "select", "curate", "cstmm", "csca") and key in ("out", "threads", "priority", "redo"):
+            if subcommand in ("merge", "sanity", "select", "curate", "cstmm", "csca") and key in ("out", "threads", "priority", "redo", "jobs"):
+                continue
+            if subcommand in ("getfastq", "metadata", "config", "quant") and key == "jobs":
                 continue
 
             # Amalgkit 0.12.20+ generally uses underscores for its CLI flags.
@@ -442,7 +444,8 @@ def run_amalgkit(
             metadata_val = params.get("metadata")
             if out_dir_val:
                 out_dir = Path(str(out_dir_val))
-                hb_path = out_dir / ".downloads" / f"amalgkit-{subcommand}.heartbeat.json"
+                import uuid
+                hb_path = out_dir / ".downloads" / f"amalgkit-{subcommand}-{uuid.uuid4().hex[:8]}.heartbeat.json"
                 
                 # Determine watch directory
                 watch_dir = out_dir

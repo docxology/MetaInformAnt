@@ -9,9 +9,9 @@
 # Generated: 2026-02-09
 
 # Paths are resolved relative to repository root
-work_dir: blue/amalgkit/pbarbatus/work
-log_dir: blue/amalgkit/pbarbatus/logs
-threads: 12
+work_dir: output/amalgkit/pbarbatus/work
+log_dir: output/amalgkit/pbarbatus/logs
+threads: 16
 
 auto_install_amalgkit: true
 
@@ -30,7 +30,7 @@ genome:
   accession: GCF_000187915.1
   assembly_name: Pbar_UMD_V03
   annotation_release: 101
-  dest_dir: blue/amalgkit/shared/genome/Pogonomyrmex_barbatus
+  dest_dir: output/amalgkit/shared/genome/Pogonomyrmex_barbatus
   include:
     - genome
     - gff3
@@ -48,45 +48,46 @@ genome:
 # Per-step parameters
 steps:
   metadata:
-    out_dir: blue/amalgkit/pbarbatus/work
+    out_dir: output/amalgkit/pbarbatus/work
     # Filter to RNA-Seq + Illumina (prevents genomic/UCE samples leaking in)
     search_string: '"Pogonomyrmex barbatus"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
     redo: no  # Reuse existing metadata if available
   integrate:
-    fastq_dir: blue/amalgkit/pbarbatus/fastq/getfastq
+    fastq_dir: output/amalgkit/pbarbatus/fastq/getfastq
   select:
     max_sample: 999999  # No artificial limit - process all available samples
     mark_missing_rank: none
     priority: "completeness"
     redo: no  # Reuse existing selection
   getfastq:
-    out_dir: blue/amalgkit/pbarbatus/fastq
-    threads: 8
-    jobs: 4
+    out_dir: output/amalgkit/pbarbatus/fastq
+    threads: 16
+    jobs: 16
     redo: no  # CRITICAL: Skip already-downloaded samples
     aws: yes
     gcp: no   # DISABLED: GCP has lite files (no sequence data) for this species
     ncbi: no  # DISABLED: NCBI has lite files (no sequence data)
-    pfd: no   # parallel-fastq-dump not installed
+    pfd: yes  # parallel-fastq-dump not installed
     fastp: no
     max_bp: 50000000  # Downsampling for speed (50M bp per sample)
   quant:
-    out_dir: blue/amalgkit/pbarbatus/work
-    threads: 6
+    jobs: 1
+    out_dir: output/amalgkit/pbarbatus/work
+    threads: 16
     redo: no  # CRITICAL: Skip already-quantified samples
     build_index: no  # Use existing index
     keep_fastq: no  # Delete FASTQs after quantification (stream-and-clean)
-    index_dir: blue/amalgkit/shared/genome/Pogonomyrmex_barbatus/index
-    fasta_dir: blue/amalgkit/shared/genome/Pogonomyrmex_barbatus
+    index_dir: output/amalgkit/shared/genome/Pogonomyrmex_barbatus/index
+    fasta_dir: output/amalgkit/shared/genome/Pogonomyrmex_barbatus
   merge:
-    out: blue/amalgkit/pbarbatus/merged/merged_abundance.tsv
-    out_dir: blue/amalgkit/pbarbatus/merged
+    out: output/amalgkit/pbarbatus/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/pbarbatus/merged
   cstmm:
-    out_dir: blue/amalgkit/pbarbatus/work
+    out_dir: output/amalgkit/pbarbatus/work
     orthogroup_table: ""
   curate:
-    out_dir: blue/amalgkit/pbarbatus/work
+    out_dir: output/amalgkit/pbarbatus/work
   csca:
-    out_dir: blue/amalgkit/pbarbatus/work
+    out_dir: output/amalgkit/pbarbatus/work
     orthogroup_table: ""
   sanity: {}

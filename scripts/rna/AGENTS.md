@@ -2,22 +2,21 @@
 
 ## Role
 
-RNA-seq analysis, ENA (European Nucleotide Archive) download, and amalgkit workflow scripts.
+RNA-seq analysis and amalgkit workflow scripts.
 
 ## Key Scripts
 
-- `run_workflow.py` - Main amalgkit workflow runner
+- `run_all_species.sh` - **Primary pipeline** — runs all species sequentially with per-sample concurrency
+- `run_workflow.py` - Single-species amalgkit workflow orchestrator
 - `run_workflow_tui.py` - TUI-based workflow runner
 - `check_environment.py` - Verify environment setup
+- `check_pipeline_status.py` - Per-species progress dashboard
 - `verify_rna.py` - Validate RNA module functionality
-- `verify_fallback.py` - Test fallback mechanisms
 - `setup_genome.py` - Genome preparation for quantification
 - `discover_species.py` - Discover available species
 - `filter_valid_samples.py` - Filter samples for processing
-- `process_samples_sequential.py` - Sequential sample processing
-- `recover_missing_batch.py` - Batch recovery for failed samples
-- `recover_missing_parallel.py` - Parallel recovery processing
 - `validate_all_species_workflow.py` - Cross-species validation
+- `validate_configs.py` - Config YAML validation
 - `_setup_utils.py` - Shared setup utilities
 - `install_r_deps.R` - R dependency installation
 - `install_r_packages.sh` - R package installation script
@@ -26,11 +25,17 @@ RNA-seq analysis, ENA (European Nucleotide Archive) download, and amalgkit workf
 ## Usage
 
 ```bash
-# Run workflow
-uv run python scripts/rna/run_workflow.py --config config/amalgkit/species.yaml
+# Run full pipeline (all species)
+nohup bash scripts/rna/run_all_species.sh > output/amalgkit/run_all_species_incremental.log 2>&1 &
+
+# Run single species
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --stream --chunk-size 6
+
+# Check progress
+.venv/bin/python scripts/package/generate_custom_summary.py
 
 # Check environment
-uv run python scripts/rna/check_environment.py
+python3 scripts/rna/check_environment.py
 ```
 
 ## 📋 Code Quality Policy

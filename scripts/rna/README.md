@@ -8,20 +8,15 @@ Scripts for RNA-seq workflow execution, monitoring, and recovery.
 
 | Script | Purpose |
 |--------|---------|
-| [`run_all_species.py`](run_all_species.py) | **Primary multi-species orchestrator** — streaming ENA-first pipeline |
-| [`run_workflow.py`](run_workflow.py) | Single-species workflow (merge, curate, sanity steps) |
+| [`run_all_species.sh`](run_all_species.sh) | **Primary pipeline** — runs all species sequentially with per-sample concurrency |
+| [`run_workflow.py`](run_workflow.py) | Single-species workflow orchestrator (all steps including merge, curate, sanity) |
 | [`run_workflow_tui.py`](run_workflow_tui.py) | Terminal UI for interactive workflow control |
-| [`process_apis_mellifera.py`](process_apis_mellifera.py) | Sequential processor for A. mellifera samples |
-| [`process_apis_mellifera_parallel.py`](process_apis_mellifera_parallel.py) | NCBI parallel processor (10 workers) with 4-hour timeout |
-| [`process_apis_mellifera_ena.py`](process_apis_mellifera_ena.py) | ENA parallel processor (20 workers) |
-| [`process_samples_sequential.py`](process_samples_sequential.py) | Generic sequential sample processor |
 
 ### Monitoring
 
 | Script | Purpose |
 |--------|---------|
 | [`check_pipeline_status.py`](check_pipeline_status.py) | **Pipeline progress dashboard** — per-species quant completion |
-| [`monitor_apis_mellifera.py`](monitor_apis_mellifera.py) | Real-time progress dashboard with `--watch` mode |
 | [`verify_rna.py`](verify_rna.py) | Comprehensive RNA module verification |
 | [`check_environment.py`](check_environment.py) | Validate dependencies (kallisto, prefetch, etc.) |
 
@@ -29,8 +24,6 @@ Scripts for RNA-seq workflow execution, monitoring, and recovery.
 
 | Script | Purpose |
 |--------|---------|
-| [`recover_missing_batch.py`](recover_missing_batch.py) | Retry failed samples via ENA download |
-| [`recover_missing_parallel.py`](recover_missing_parallel.py) | Parallel retry with multiple workers |
 | [`filter_valid_samples.py`](filter_valid_samples.py) | Filter metadata to valid RNA-seq samples |
 | [`setup_genome.py`](setup_genome.py) | Download and prepare reference genome |
 | [`sync_quant_results.py`](sync_quant_results.py) | **Sync quant results** to git-trackable `output/amalgkit_results/` |
@@ -41,8 +34,7 @@ Scripts for RNA-seq workflow execution, monitoring, and recovery.
 |--------|---------|
 | [`discover_species.py`](discover_species.py) | Query NCBI for species RNA-seq data availability |
 | [`validate_all_species_workflow.py`](validate_all_species_workflow.py) | End-to-end workflow validation |
-| [`verify_fallback.py`](verify_fallback.py) | Test fallback download mechanisms |
-| [`verify_tui.py`](verify_tui.py) | TUI component verification |
+| [`validate_configs.py`](validate_configs.py) | Validate all species config YAML files |
 
 ### Setup
 
@@ -55,57 +47,46 @@ Scripts for RNA-seq workflow execution, monitoring, and recovery.
 
 ## 🚀 Quick Start
 
-### Run Multi-Species Pipeline (Recommended)
+### Run Full Pipeline (Recommended)
 
-The **streaming orchestrator** processes all species end-to-end: download → quant → merge → curate → sanity.
+The pipeline processes all 23 species sequentially. Within each species, samples are processed concurrently (chunk-size 6) with per-sample `getfastq → quant → cleanup`.
 
 ```bash
-# Run all species (8 workers, ENA-first with NCBI fallback)
-nohup uv run --python 3.11 python scripts/rna/run_all_species.py \
-  --workers 8 --threads 8 --max-gb 100 \
-  > output/amalgkit/pipeline.log 2>&1 &
+# Run all species (background)
+nohup bash scripts/rna/run_all_species.sh > output/amalgkit/run_all_species_incremental.log 2>&1 &
 
 # Monitor progress
-tail -f output/amalgkit/pipeline.log
+.venv/bin/python scripts/package/generate_custom_summary.py
+
+# Check active downloads
+ps -fC amalgkit | grep SRR
 
 # Check per-species completion status
-uv run python scripts/rna/check_pipeline_status.py
-
-# Sync results to git-trackable location
-uv run python scripts/rna/sync_quant_results.py
+.venv/bin/python scripts/rna/check_pipeline_status.py
 ```
 
-### A. mellifera (Large Dataset)
-
-For the 7,000+ sample A. mellifera dataset, use the dedicated ENA pipeline:
+### Run Single Species
 
 ```bash
-nohup python scripts/rna/process_apis_mellifera_ena.py &
-tail -f output/amalgkit/apis_mellifera_all/work/ena_parallel_processing.log
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_acromyrmex_echinatior.yaml --stream --chunk-size 6
 ```
-
-| Pipeline | Workers | Time/Sample | Notes |
-|----------|---------|-------------|-------|
-| Streaming (all species) | 8-16 | 2-10 min | ENA-first, auto-fallback |
-| ENA (A. mellifera) | 20 | 0.5-5 min | Pre-extracted FASTQs |
-| NCBI fallback | 10 | 45-60 min | SRA Toolkit required |
 
 ### Check Environment
 
 ```bash
-uv run python scripts/rna/check_environment.py
+python3 scripts/rna/check_environment.py
 ```
 
 ### Discover Species Data
 
 ```bash
-uv run python scripts/rna/discover_species.py --species "Apis mellifera"
+python3 scripts/rna/discover_species.py --species "Apis mellifera"
 ```
 
 ## 📊 Dependencies
 
 - **Python**: 3.11+
-- **External**: kallisto, prefetch, fasterq-dump (SRA Toolkit)
+- **External**: kallisto, fasterq-dump (SRA Toolkit)
 - **Optional**: R (for merge/curate steps)
 
 ## 🔗 Related

@@ -189,7 +189,7 @@ else
 fi
 
 # Create cache directory if needed
-if [[ -n "$UV_CACHE_DIR" ]]; then
+if [[ -n "${UV_CACHE_DIR:-}" ]]; then
   mkdir -p "$UV_CACHE_DIR"
   echo "  → UV cache directory: $UV_CACHE_DIR"
 fi
@@ -259,6 +259,13 @@ if [[ "$WITH_AMALGKIT" -eq 1 ]]; then
       echo "  → ⚠ AMALGKIT installation may have failed - check above for errors"
     fi
   fi
+
+  echo "  → Patching amalgkit to prevent SRA toolkit concurrency locks..."
+  if [[ "$VENV_DIR" == "/tmp/metainformant_venv" ]]; then
+    "$VENV_DIR/bin/python3" scripts/package/patch_amalgkit.py
+  else
+    uv run python scripts/package/patch_amalgkit.py
+  fi
 else
   echo "[4/5] Skipping AMALGKIT install (use --skip-amalgkit to disable, or omit flag to install)"
 fi
@@ -285,28 +292,49 @@ fi
 
 # Optional: install external CLI dependencies
 if [[ "$WITH_DEPS" -eq 1 ]]; then
-  echo "Installing external CLI dependencies (requires Homebrew on macOS)..."
   if command -v brew >/dev/null 2>&1; then
-    # Ensure useful taps are present for bio tools
+    # ── macOS via Homebrew ──────────────────────────────────────────────────
+    echo "Installing external CLI dependencies via Homebrew..."
     brew tap brewsci/bio || true
-    # Install individually to avoid one missing formula aborting the rest
     for pkg in wget curl pigz parallel seqkit samtools kallisto r; do
       echo "brew install $pkg (best-effort)"
       brew install "$pkg" || true
     done
-    # Salmon may live under brewsci/bio
     echo "Attempting to install salmon (best-effort)"
     brew install salmon || brew install brewsci/bio/salmon || true
-    # SRA Toolkit may be packaged as sratoolkit; try formula and cask
     echo "Attempting to install sratoolkit (best-effort)"
     brew install sratoolkit || brew install --cask sratoolkit || true
-    # Ensure Homebrew bin dir is on PATH for this shell
     if [[ -d "/opt/homebrew/bin" ]]; then
       export PATH="/opt/homebrew/bin:$PATH"
     fi
+  elif command -v apt-get >/dev/null 2>&1; then
+    # ── Linux / Debian / Ubuntu / Parrot via apt ─────────────────────────
+    echo "Installing external CLI dependencies via apt (Linux)..."
+    LINUX_DEPS_SCRIPT="$SCRIPT_DIR/install_linux_deps.sh"
+    if [[ -f "$LINUX_DEPS_SCRIPT" ]]; then
+      bash "$LINUX_DEPS_SCRIPT"
+    else
+      # Fallback: inline apt install if script not present
+      echo "  install_linux_deps.sh not found – running inline apt install..."
+      sudo apt-get update -qq
+      for pkg in wget curl pigz parallel seqkit samtools kallisto fastp sra-toolkit r-base r-base-dev; do
+        sudo apt-get install -y "$pkg" 2>/dev/null \
+          && echo "  ✓ $pkg" \
+          || echo "  ⚠ Failed to install $pkg (non-fatal)"
+      done
+      # ncbi-datasets-cli binary (not in apt)
+      if ! command -v datasets >/dev/null 2>&1; then
+        echo "  Installing ncbi-datasets-cli binary..."
+        curl -fsSL "https://ftp.ncbi.nlm.nih.gov/pub/datasets/command-line/v2/linux-amd64/datasets" \
+          -o /usr/local/bin/datasets && chmod +x /usr/local/bin/datasets \
+          && echo "  ✓ ncbi-datasets-cli" || echo "  ⚠ ncbi-datasets-cli install failed"
+      fi
+    fi
   else
-    echo "Homebrew not found; please install wget, curl, pigz, parallel, seqkit, samtools, kallisto, salmon, sratoolkit, and R manually." >&2
+    echo "No supported package manager found (brew/apt)." >&2
+    echo "Please install manually: kallisto, sra-toolkit, fastp, seqkit, samtools, R, wget, curl" >&2
   fi
+
   # Install parallel-fastq-dump as a Python console script into the venv
   if [[ "$VENV_DIR" == "/tmp/metainformant_venv" ]]; then
     uv pip install parallel-fastq-dump --python "$VENV_DIR/bin/python3" || true

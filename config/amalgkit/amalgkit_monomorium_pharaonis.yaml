@@ -11,9 +11,9 @@
 # Generated: 2026-02-09
 
 # Paths are resolved relative to repository root
-work_dir: blue/amalgkit/monomorium_pharaonis/work
-log_dir: blue/amalgkit/monomorium_pharaonis/logs
-threads: 12
+work_dir: output/amalgkit/monomorium_pharaonis/work
+log_dir: output/amalgkit/monomorium_pharaonis/logs
+threads: 16
 
 auto_install_amalgkit: true
 
@@ -32,7 +32,7 @@ genome:
   accession: GCF_013373865.1
   assembly_name: ASM1337386v2
   annotation_release: 102
-  dest_dir: /Volumes/blue/data/amalgkit/shared/genome/Monomorium_pharaonis
+  dest_dir: output/amalgkit/shared/genome/Monomorium_pharaonis
   include:
     - genome
     - gff3
@@ -50,44 +50,45 @@ genome:
 # Per-step parameters
 steps:
   metadata:
-    out_dir: blue/amalgkit/monomorium_pharaonis/work
+    out_dir: output/amalgkit/monomorium_pharaonis/work
     search_string: '"Monomorium pharaonis"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
     redo: no
   integrate:
-    fastq_dir: blue/amalgkit/monomorium_pharaonis/fastq/getfastq
+    fastq_dir: output/amalgkit/monomorium_pharaonis/fastq/getfastq
   select:
     max_sample: 999999
     mark_missing_rank: none
     priority: "completeness"
     redo: no
   getfastq:
-    out_dir: blue/amalgkit/monomorium_pharaonis/fastq
-    threads: 8
-    jobs: 4
+    out_dir: output/amalgkit/monomorium_pharaonis/fastq
+    threads: 16
+    jobs: 16
     redo: no
     aws: yes
     gcp: no
     ncbi: no
-    pfd: no
+    pfd: yes
     fastp: no
     max_bp: 50000000
   quant:
-    out_dir: blue/amalgkit/monomorium_pharaonis/work
-    threads: 6
+    jobs: 1
+    out_dir: output/amalgkit/monomorium_pharaonis/work
+    threads: 16
     redo: no
     build_index: no
     keep_fastq: no
-    index_dir: /Volumes/blue/data/amalgkit/shared/genome/Monomorium_pharaonis/index
-    fasta_dir: /Volumes/blue/data/amalgkit/shared/genome/Monomorium_pharaonis
+    index_dir: output/amalgkit/shared/genome/Monomorium_pharaonis/index
+    fasta_dir: output/amalgkit/shared/genome/Monomorium_pharaonis
   merge:
-    out: blue/amalgkit/monomorium_pharaonis/merged/merged_abundance.tsv
-    out_dir: blue/amalgkit/monomorium_pharaonis/merged
+    out: output/amalgkit/monomorium_pharaonis/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/monomorium_pharaonis/merged
   cstmm:
-    out_dir: blue/amalgkit/monomorium_pharaonis/work
+    out_dir: output/amalgkit/monomorium_pharaonis/work
     orthogroup_table: ""
   curate:
-    out_dir: blue/amalgkit/monomorium_pharaonis/work
+    out_dir: output/amalgkit/monomorium_pharaonis/work
   csca:
-    out_dir: blue/amalgkit/monomorium_pharaonis/work
+    out_dir: output/amalgkit/monomorium_pharaonis/work
     orthogroup_table: ""
   sanity: {}

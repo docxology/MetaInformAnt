@@ -22,7 +22,7 @@ Production-ready amalgkit RNA-seq workflow configurations for automated transcri
 # Core paths (relative to repo root)
 work_dir: output/amalgkit/{species}/work
 log_dir: output/amalgkit/{species}/logs
-threads: 12
+threads: 16
 
 # Species identification
 species_list:

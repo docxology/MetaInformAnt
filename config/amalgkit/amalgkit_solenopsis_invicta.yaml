@@ -11,9 +11,9 @@
 # Generated: 2026-02-09
 
 # Paths are resolved relative to repository root
-work_dir: blue/amalgkit/solenopsis_invicta/work
-log_dir: blue/amalgkit/solenopsis_invicta/logs
-threads: 12
+work_dir: output/amalgkit/solenopsis_invicta/work
+log_dir: output/amalgkit/solenopsis_invicta/logs
+threads: 16
 
 auto_install_amalgkit: true
 
@@ -32,7 +32,7 @@ genome:
   accession: GCF_016802725.1
   assembly_name: UNIL_Sinv_3.0
   annotation_release: 104
-  dest_dir: blue/amalgkit/shared/genome/Solenopsis_invicta
+  dest_dir: output/amalgkit/shared/genome/Solenopsis_invicta
   include:
     - genome
     - gff3
@@ -50,44 +50,45 @@ genome:
 # Per-step parameters
 steps:
   metadata:
-    out_dir: blue/amalgkit/solenopsis_invicta/work
+    out_dir: output/amalgkit/solenopsis_invicta/work
     search_string: '"Solenopsis invicta"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
     redo: no
   integrate:
-    fastq_dir: blue/amalgkit/solenopsis_invicta/fastq/getfastq
+    fastq_dir: output/amalgkit/solenopsis_invicta/fastq/getfastq
   select:
     max_sample: 999999
     mark_missing_rank: none
     priority: "completeness"
     redo: no
   getfastq:
-    out_dir: blue/amalgkit/solenopsis_invicta/fastq
-    threads: 8
-    jobs: 4
+    out_dir: output/amalgkit/solenopsis_invicta/fastq
+    threads: 16
+    jobs: 16
     redo: no
     aws: yes
     gcp: no
     ncbi: no
-    pfd: no
+    pfd: yes
     fastp: no
     max_bp: 50000000
   quant:
-    out_dir: blue/amalgkit/solenopsis_invicta/work
-    threads: 6
+    jobs: 1
+    out_dir: output/amalgkit/solenopsis_invicta/work
+    threads: 16
     redo: no
     build_index: no
     keep_fastq: no
-    index_dir: blue/amalgkit/shared/genome/Solenopsis_invicta/index
-    fasta_dir: blue/amalgkit/shared/genome/Solenopsis_invicta
+    index_dir: output/amalgkit/shared/genome/Solenopsis_invicta/index
+    fasta_dir: output/amalgkit/shared/genome/Solenopsis_invicta
   merge:
-    out: blue/amalgkit/solenopsis_invicta/merged/merged_abundance.tsv
-    out_dir: blue/amalgkit/solenopsis_invicta/merged
+    out: output/amalgkit/solenopsis_invicta/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/solenopsis_invicta/merged
   cstmm:
-    out_dir: blue/amalgkit/solenopsis_invicta/work
+    out_dir: output/amalgkit/solenopsis_invicta/work
     orthogroup_table: ""
   curate:
-    out_dir: blue/amalgkit/solenopsis_invicta/work
+    out_dir: output/amalgkit/solenopsis_invicta/work
   csca:
-    out_dir: blue/amalgkit/solenopsis_invicta/work
+    out_dir: output/amalgkit/solenopsis_invicta/work
     orthogroup_table: ""
   sanity: {}

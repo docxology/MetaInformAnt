@@ -11,9 +11,9 @@
 # Generated: 2026-02-09
 
 # Paths are resolved relative to repository root
-work_dir: blue/amalgkit/temnothorax_nylanderi/work
-log_dir: blue/amalgkit/temnothorax_nylanderi/logs
-threads: 12
+work_dir: output/amalgkit/temnothorax_nylanderi/work
+log_dir: output/amalgkit/temnothorax_nylanderi/logs
+threads: 16
 
 auto_install_amalgkit: true
 
@@ -32,7 +32,7 @@ genome:
   accession: GCF_030848795.1
   assembly_name: tnyl_v1.0
   annotation_release: RS_2025_02
-  dest_dir: blue/amalgkit/shared/genome/Temnothorax_nylanderi
+  dest_dir: output/amalgkit/shared/genome/Temnothorax_nylanderi
   include:
     - genome
     - gff3
@@ -50,44 +50,45 @@ genome:
 # Per-step parameters
 steps:
   metadata:
-    out_dir: blue/amalgkit/temnothorax_nylanderi/work
+    out_dir: output/amalgkit/temnothorax_nylanderi/work
     search_string: '"Temnothorax nylanderi"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
     redo: no
   integrate:
-    fastq_dir: blue/amalgkit/temnothorax_nylanderi/fastq/getfastq
+    fastq_dir: output/amalgkit/temnothorax_nylanderi/fastq/getfastq
   select:
     max_sample: 999999
     mark_missing_rank: none
     priority: "completeness"
     redo: no
   getfastq:
-    out_dir: blue/amalgkit/temnothorax_nylanderi/fastq
-    threads: 8
-    jobs: 4
+    out_dir: output/amalgkit/temnothorax_nylanderi/fastq
+    threads: 16
+    jobs: 16
     redo: no
     aws: yes
     gcp: no
     ncbi: no
-    pfd: no
+    pfd: yes
     fastp: no
     max_bp: 50000000
   quant:
-    out_dir: blue/amalgkit/temnothorax_nylanderi/work
-    threads: 6
+    jobs: 1
+    out_dir: output/amalgkit/temnothorax_nylanderi/work
+    threads: 16
     redo: no
     build_index: no
     keep_fastq: no
-    index_dir: blue/amalgkit/shared/genome/Temnothorax_nylanderi/index
-    fasta_dir: blue/amalgkit/shared/genome/Temnothorax_nylanderi
+    index_dir: output/amalgkit/shared/genome/Temnothorax_nylanderi/index
+    fasta_dir: output/amalgkit/shared/genome/Temnothorax_nylanderi
   merge:
-    out: blue/amalgkit/temnothorax_nylanderi/merged/merged_abundance.tsv
-    out_dir: blue/amalgkit/temnothorax_nylanderi/merged
+    out: output/amalgkit/temnothorax_nylanderi/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/temnothorax_nylanderi/merged
   cstmm:
-    out_dir: blue/amalgkit/temnothorax_nylanderi/work
+    out_dir: output/amalgkit/temnothorax_nylanderi/work
     orthogroup_table: ""
   curate:
-    out_dir: blue/amalgkit/temnothorax_nylanderi/work
+    out_dir: output/amalgkit/temnothorax_nylanderi/work
   csca:
-    out_dir: blue/amalgkit/temnothorax_nylanderi/work
+    out_dir: output/amalgkit/temnothorax_nylanderi/work
     orthogroup_table: ""
   sanity: {}

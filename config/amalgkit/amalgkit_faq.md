@@ -4,21 +4,30 @@ Frequently asked questions and solutions for the amalgkit RNA-seq workflow.
 
 ## 📊 Performance & Optimization
 
-### Q: How many parallel workers should I use?
+### Q: How does the pipeline process samples?
 
-**Recommended: 4 workers** for most systems.
+The pipeline uses **per-sample concurrency** within chunks. Each chunk of 6 samples is processed simultaneously using a `ThreadPoolExecutor`. For each sample, the steps are:
 
-| Workers | Disk Usage | Stability | Rate |
-|---------|------------|-----------|------|
-| 2 | ~20 GB temp | Very stable | ~4/hr |
-| **4** | **~40 GB temp** | **Stable** | **~8/hr** |
-| 8 | ~80 GB temp | Race conditions possible | ~12/hr* |
+1. `getfastq` — Download and extract FASTQ files
+2. `quant` — Quantify with kallisto
+3. `cleanup` — Delete FASTQ files immediately
 
-*8 workers can cause `prefetch` lock file conflicts and disk-limit errors.
+This means as soon as one sample finishes downloading, it starts quantifying while other samples continue downloading.
+
+### Q: How many concurrent samples should I use?
+
+**Recommended: 6 samples per chunk** (default in `run_all_species.sh --chunk-size 6`).
+
+| Chunk Size | Threads/Sample | Disk Usage | Stability |
+|------------|---------------|------------|-----------|
+| 4 | 4 | ~40 GB temp | Very stable |
+| **6** | **2** | **~60 GB temp** | **Stable (default)** |
+| 8 | 2 | ~80 GB temp | May hit disk limits |
+| 16 | 1 | ~160 GB temp | Not recommended |
 
 ### Q: How much disk space do I need?
 
-**Minimum**: 50 GB free for 4 workers
+**Minimum**: 80 GB free for 6 concurrent samples
 
 | Component | Size |
 |-----------|------|
@@ -45,15 +54,15 @@ Frequently asked questions and solutions for the amalgkit RNA-seq workflow.
 
 **Solutions**:
 
-1. Reduce workers (4 → 2)
+1. Reduce chunk size (6 → 4) in `run_all_species.sh`
 2. Free disk space
-3. These samples are logged to `failed_samples.json` for retry
+3. These samples are logged for retry on next run
 
 ### Q: "prefetch failed: path not found"
 
-**Cause**: Race condition with multiple workers accessing same directory.
+**Cause**: Race condition with multiple samples accessing same directory.
 
-**Solution**: Reduce to 4 workers or ensure sequential directory creation.
+**Solution**: Reduce chunk size in `run_all_species.sh` or ensure sequential directory creation.
 
 ### Q: "prefetch failed: Lock file exists"
 
@@ -67,28 +76,28 @@ find output/amalgkit/*/fastq -name "*.lock" -delete
 
 ### Q: "Timeout" errors
 
-**Cause**: Sample download/extraction exceeded 1-hour limit.
+**Cause**: Sample download/extraction exceeded time limit.
 
 **Solutions**:
 
 1. Network issues - retry later
 2. Very large sample (>5 GB) - may need manual download
 
-### Q: Samples stuck in "In Progress" for hours
+### Q: Samples stuck for hours
 
 **Cause**: Process crashed without cleanup.
 
 **Solution**:
 
 ```bash
-# Stop processor
-pkill -f process_apis_mellifera_parallel
+# Stop the pipeline
+pkill -f run_all_species
 
 # Clean orphaned files
 rm -rf output/amalgkit/*/fastq/getfastq/SRR*
 
 # Restart
-nohup uv run python scripts/rna/process_apis_mellifera_parallel.py &
+nohup bash scripts/rna/run_all_species.sh > output/amalgkit/run_all_species_incremental.log 2>&1 &
 ```
 
 ---
@@ -97,35 +106,33 @@ nohup uv run python scripts/rna/process_apis_mellifera_parallel.py &
 
 ### Q: How do I resume after a crash?
 
-The parallel processor automatically resumes:
+The pipeline automatically resumes thanks to `redo: no` in the configs:
 
 ```bash
-uv run python scripts/rna/process_apis_mellifera_parallel.py
+nohup bash scripts/rna/run_all_species.sh > output/amalgkit/run_all_species_incremental.log 2>&1 &
 ```
 
 It scans `quant/` for completed samples and skips them.
 
 ### Q: How do I retry failed samples?
 
-Failed samples are logged to `work/failed_samples.json`. To retry:
-
-1. Check the file for failure reasons
-2. Address the issue (usually disk space)
-3. Restart the processor - it will retry any sample not in `quant/`
+1. Address the issue (usually disk space or network)
+2. Restart the pipeline — it will retry any sample not yet in `quant/`
 
 ### Q: How do I recover from disk full?
 
 ```bash
-# 1. Stop processor
-pkill -f process_apis_mellifera_parallel
+# 1. Stop pipeline
+pkill -f run_all_species
 
 # 2. Clean all temp files
 rm -rf output/amalgkit/*/fastq/getfastq/SRR*
 
 # 3. Check disk
-df -h /Users
+df -h /home
 
-# 4. Restart with fewer workers if needed
+# 4. Restart with smaller chunk if needed (edit run_all_species.sh --chunk-size 4)
+nohup bash scripts/rna/run_all_species.sh > output/amalgkit/run_all_species_incremental.log 2>&1 &
 ```
 
 ---
@@ -134,16 +141,14 @@ df -h /Users
 
 ### Apis mellifera (Honeybee)
 
-- **Total samples**: ~7,242
-- **Estimated time**: 40-50 days at 4 workers
+- **Total samples**: ~7,342
+- **Estimated time**: Very long at current throughput
 - **Large samples**: Some metagenomic samples (PRJNA1364028) are 5-7 GB each
-- **Filtered**: 15 metagenomic samples excluded from processing
 
 ### Pogonomyrmex barbatus (Harvester Ant)
 
 - **Total samples**: 110
-- **Completed**: ✅ 95/110 quantified
-- **Notes**: Some samples failed due to SRA issues, not workflow bugs
+- **Notes**: Some samples may fail due to SRA issues, not workflow bugs
 
 ---
 
@@ -151,22 +156,21 @@ df -h /Users
 
 | Script | Purpose |
 |--------|---------|
-| `process_apis_mellifera_parallel.py` | Main 4-worker parallel processor |
-| `monitor_apis_mellifera.py` | Real-time progress monitoring |
-| `recover_missing_parallel.py` | Retry failed downloads via ENA |
-| `run_workflow.py` | Full amalgkit workflow orchestration |
+| `scripts/rna/run_all_species.sh` | Main pipeline runner (sequential species, concurrent samples) |
+| `scripts/rna/run_workflow.py` | Per-species workflow orchestrator |
+| `scripts/package/generate_custom_summary.py` | Progress monitoring with ETAs |
 
-### Monitoring Commands
+### Running the Pipeline
 
 ```bash
-# One-time check
-uv run python scripts/rna/monitor_apis_mellifera.py
+# Run full pipeline (background)
+nohup bash scripts/rna/run_all_species.sh > output/amalgkit/run_all_species_incremental.log 2>&1 &
 
-# Live monitoring (refreshes every 30s)
-uv run python scripts/rna/monitor_apis_mellifera.py --watch
+# Check progress
+.venv/bin/python scripts/package/generate_custom_summary.py
 
-# Check logs
-tail -50 output/amalgkit/apis_mellifera_all/work/parallel_processing.log
+# Check which processes are active
+ps -fC amalgkit | grep SRR
 ```
 
 ---
@@ -176,8 +180,6 @@ tail -50 output/amalgkit/apis_mellifera_all/work/parallel_processing.log
 ### Safe to delete
 
 - `output/amalgkit/*/fastq/getfastq/SRR*` - temp FASTQ files (always safe after quant)
-- `~/.ollama/models` - if not using local LLMs
-- `~/Downloads/*.dmg` - old installers
 
 ### NOT safe to delete
 
@@ -194,7 +196,7 @@ tail -50 output/amalgkit/apis_mellifera_all/work/parallel_processing.log
 Use the tissue normalization script:
 
 ```bash
-uv run python scripts/rna/normalize_tissue_metadata.py \
+.venv/bin/python scripts/rna/normalize_tissue_metadata.py \
   --input output/amalgkit/apis_mellifera_all/work/metadata/metadata.tsv \
   --mapping config/amalgkit/tissue_mapping.yaml \
   --patches config/amalgkit/tissue_patches.yaml \

@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 15474352,
+  "destination": "output/amalgkit/acromyrmex_echinatior/work/quant",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-02-24T00:43:31Z",
+  "progress": {
+    "current": 0,
+    "percent": 0.0,
+    "total": 1,
+    "type": "sample_count"
+  },
+  "progress_percent": 0.0,
+  "speed_mbps": 0.01879167493490714,
+  "started_at": "2026-02-24T00:30:25Z",
+  "status": "completed",
+  "step": "amalgkit quant",
+  "total_bytes": null,
+  "url": "['amalgkit', 'quant', '--out_dir', 'output/amalgkit/acromyrmex_echinatior/work', '--threads', '2', '--redo', 'no', '--build_index', 'no', '--index_dir', 'output/amalgkit/shared/genome/Acromyrmex_echinatior/index', '--fasta_dir', 'output/amalgkit/shared/genome/Acromyrmex_echinatior', '--metadata', 'output/amalgkit/acromyrmex_echinatior/work/metadata/metadata_chunk_1_sample_SRR7772544.tsv']"
+}

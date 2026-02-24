@@ -46,11 +46,12 @@ Configuration files for **22 ant species** plus *Apis mellifera*. All use NCBI R
 ```mermaid
 graph LR
     A[metadata] --> B[select]
-    B --> C[getfastq]
-    C --> D[quant]
-    D --> E[merge]
-    E --> F[curate]
+    B --> C["getfastq + quant + cleanup<br/>(per-sample, concurrent)"]
+    C --> D[merge]
+    D --> E[curate]
 ```
+
+Samples are processed concurrently within chunks of 6. Each sample flows through `getfastq → quant → cleanup` independently, maximizing CPU/network utilization.
 
 ## 🚀 Usage
 
@@ -72,8 +73,14 @@ This script checks for:
 ## Usage
 
 ```bash
-# Basic usage
-amalgkit metadata --config config/amalgkit/amalgkit_{species}.yaml
+# Run all species sequentially (recommended)
+nohup bash scripts/rna/run_all_species.sh > output/amalgkit/run_all_species_incremental.log 2>&1 &
+
+# Run a single species
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_{species}.yaml --stream --chunk-size 6
+
+# Check progress
+.venv/bin/python scripts/package/generate_custom_summary.py
 ```
 
 ## ⚙️ Key Configuration Options
@@ -81,35 +88,37 @@ amalgkit metadata --config config/amalgkit/amalgkit_{species}.yaml
 ```yaml
 # Basic settings
 work_dir: output/amalgkit/{species}/work
-threads: 12
+threads: 16
 
 # Species
 species_list:
   - Pogonomyrmex_barbatus
 taxon_id: 144034
 
-# Metadata filtering (prevents genomic samples leaking in)
+# Step-specific settings
 steps:
   metadata:
     search_string: '"Species"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
   getfastq:
     redo: no          # Skip already-downloaded samples
-    keep_fastq: no    # Delete FASTQs after quant (saves disk)
+    aws: yes          # Prefer AWS downloads
+    ncbi: no          # Avoid sralite issues
   quant:
     redo: no          # Skip already-quantified samples
+    keep_fastq: no    # Delete FASTQs after quant (saves disk)
     index_dir: ...    # Reuse existing kallisto index
 ```
 
 ## 💾 Disk Management
 
-The workflow uses a **stream-and-clean** pattern:
+The workflow uses a **per-sample stream-and-clean** pattern with concurrent processing:
 
-1. Download sample FASTQs (~2-4 GB each)
-2. Quantify with kallisto (~30 sec)
-3. Delete FASTQs immediately
+1. Download sample FASTQs (~2-15 GB each) — up to 6 samples concurrently
+2. Quantify with kallisto (~30 sec per sample)
+3. Delete FASTQs immediately after successful quantification
 4. Final abundance file: ~2 MB per sample
 
-This allows processing 100+ samples with only ~50GB free disk space.
+This allows processing hundreds of samples with only ~80 GB free disk space.
 
 ## 🔗 Related Resources
 

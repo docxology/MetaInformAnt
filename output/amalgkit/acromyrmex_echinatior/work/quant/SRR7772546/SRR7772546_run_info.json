@@ -1,0 +1,13 @@
+{
+	"n_targets": 22059,
+	"n_bootstraps": 0,
+	"n_processed": 49059369,
+	"n_pseudoaligned": 17607963,
+	"n_unique": 11474962,
+	"p_pseudoaligned": 35.9,
+	"p_unique": 23.4,
+	"kallisto_version": "0.48.0",
+	"index_version": 10,
+	"start_time": "Tue Feb 24 00:09:01 2026",
+	"call": "kallisto quant --threads 1 -i output/amalgkit/shared/genome/Acromyrmex_echinatior/index/Acromyrmex_echinatior_transcripts.idx -o /home/trim/Documents/Git/MetaInformAnt/output/amalgkit/acromyrmex_echinatior/work/quant/SRR7772546 /home/trim/Documents/Git/MetaInformAnt/output/amalgkit/acromyrmex_echinatior/work/getfastq/SRR7772546/SRR7772546_1.amalgkit.fastq.gz /home/trim/Documents/Git/MetaInformAnt/output/amalgkit/acromyrmex_echinatior/work/getfastq/SRR7772546/SRR7772546_2.amalgkit.fastq.gz"
+}

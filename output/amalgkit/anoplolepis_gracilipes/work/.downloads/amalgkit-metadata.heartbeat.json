@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 10931,
+  "destination": "output/amalgkit/anoplolepis_gracilipes/work/metadata",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-02-22T23:10:15Z",
+  "progress": {
+    "current": 1,
+    "percent": 25.0,
+    "total": 4,
+    "type": "file_count"
+  },
+  "progress_percent": 25.0,
+  "speed_mbps": 0.0034722611015828553,
+  "started_at": "2026-02-22T23:10:12Z",
+  "status": "completed",
+  "step": "amalgkit metadata",
+  "total_bytes": null,
+  "url": "['amalgkit', 'metadata', '--out_dir', 'output/amalgkit/anoplolepis_gracilipes/work', '--search_string', '\"Anoplolepis gracilipes\"[Organism] AND \"RNA-Seq\"[Strategy] AND \"Illumina\"[Platform]', '--redo', 'no']"
+}

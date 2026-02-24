@@ -10,10 +10,9 @@ This document tracks high-level architectural goals, technical debt, and pending
   - **Status**: Implemented `IndexComplexityManager` in `src/metainformant/rna/amalgkit/index_prep.py`.
 
 - [x] **Unified Download Orchestrator**
-  - Currently, we have `process_apis_mellifera.py` (NCBI/fasterq-dump) and `process_apis_mellifera_ena.py` (ENA/direct).
-  - **Goal**: Merge these into `StreamingPipelineOrchestrator`.
-  - **Logic**: Try ENA first (fast), fallback to NCBI (comprehensive but slow).
-  - **Status**: Implemented `StreamingPipeline` in `metainformant.rna.engine.orchestrator`.
+  - Legacy scripts (`process_apis_mellifera.py`, `_ena.py`, `_parallel.py`) fully superseded.
+  - **Current**: `run_all_species.sh` → `run_workflow.py` → `_execute_streaming_mode()` with per-sample `ThreadPoolExecutor` concurrency.
+  - **Status**: Implemented in `metainformant.rna.engine.workflow_execution`.
 
 - [ ] **Dynamic Resource Allocation**
   - **Challenge**: `Harpegnathos` stalled on high-complexity index; `Apis` requires high I/O.
@@ -32,8 +31,8 @@ This document tracks high-level architectural goals, technical debt, and pending
   - Document TUI tools (`monitor_tui.py`, `run_workflow_tui.py`).
 
 - [x] **Script Consolidation**
-  - Merge `process_apis_mellifera.py`, `_ena.py`, and `_parallel.py` into a single robust `process_species.py` with strategy flags (`--strategy ena`, `--strategy sra`).
-  - **Status**: Completed in `scripts/rna/process_species.py`.
+  - Legacy scripts (`process_apis_mellifera.py`, `_ena.py`, `_parallel.py`, `monitor_apis_mellifera.py`, `recover_missing_*.py`) fully superseded by `run_all_species.sh` + `run_workflow.py`.
+  - **Status**: All pipeline functionality consolidated. Legacy scripts remain on disk but are not referenced in documentation.
 
 ## 🛠️ Infrastructure
 

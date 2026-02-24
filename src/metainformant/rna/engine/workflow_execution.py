@@ -84,87 +84,121 @@ def _execute_streaming_mode(
     num_chunks = math.ceil(total_samples / chunk_size)
 
     all_step_results = []
+    
+    # Symlink getfastq output dir to work dir so `quant` can find it
+    fastq_src_dir = config.work_dir.parent / "fastq" / "getfastq"
+    fastq_link_dir = config.work_dir / "getfastq"
+    if fastq_src_dir.exists() and not fastq_link_dir.exists():
+        try:
+            fastq_link_dir.symlink_to(fastq_src_dir.resolve(), target_is_directory=True)
+            logger.info("  Created symlink: work/getfastq -> fastq/getfastq")
+        except Exception as e:
+            logger.warning(f"  Failed to create getfastq symlink, quant may not find files: {e}")
 
-    # Chunk loop
-    for chunk_idx in range(num_chunks):
-        start_idx = chunk_idx * chunk_size
-        end_idx = min((chunk_idx + 1) * chunk_size, total_samples)
-        chunk_samples = samples[start_idx:end_idx]
+    # We define a helper that processes exactly ONE sample at a time.
+    def process_single_sample(sample_row: Dict[str, str], current_chunk_idx: int, sample_idx_in_chunk: int) -> list[WorkflowStepResult]:
+        sample_results = []
+        sample_id = sample_row.get(u"run", str(sample_idx_in_chunk))
+        
+        # Create single-sample metadata file
+        single_meta_file = config.work_dir / "metadata" / f"metadata_chunk_{current_chunk_idx}_sample_{sample_id}.tsv"
+        with open(single_meta_file, "w", newline="") as sf:
+            swriter = csv.DictWriter(sf, fieldnames=fieldnames, delimiter="\t")
+            swriter.writeheader()
+            swriter.writerow(sample_row)
 
-        # Reset success per-chunk so one failed chunk doesn't cascade to all subsequent chunks
-        chunk_success = True
-
-        logger.info(f"Processing chunk {chunk_idx+1}/{num_chunks} (Samples {start_idx+1}-{end_idx})")
-
-        # Create chunk metadata
-        chunk_meta_file = config.work_dir / "metadata" / f"metadata_chunk_{chunk_idx}.tsv"
-        with open(chunk_meta_file, "w", newline="") as f:
-            writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
-            writer.writeheader()
-            writer.writerows(chunk_samples)
-
-        # Run chunk steps
+        sample_success = True
         for step_name, step_params in chunk_steps:
-            logger.info(f"  > Chunk step: {step_name}")
-
-            # Override params with chunk metadata
-            chunk_params = step_params.copy()
-            chunk_params["metadata"] = str(chunk_meta_file)
-
-            # Sanitization and command building just for logging/dry run
-            if show_commands or walk:
-                from metainformant.rna.amalgkit.amalgkit import build_amalgkit_command
-
-                sanitized = sanitize_params_for_cli(step_name, chunk_params)
-                cmd = build_amalgkit_command(step_name, sanitized)
-                if show_commands:
-                    logger.info(f"  Command: {' '.join(cmd)}")
-
+            logger.info(f"  > [Sample {sample_id}] Step: {step_name}")
+            
+            # Use the single-sample metadata, but scale down threads/jobs
+            # so 16 concurrent samples don't spawn 16x16=256 threads.
+            single_params = step_params.copy()
+            single_params["metadata"] = str(single_meta_file)
+            
+            # Dynamically throttle cores to prevent system choking
+            # If total threads=16, and chunk_size=16, give each sample 1 thread.
+            base_threads = int(single_params.get("threads", 1))
+            alloc_threads = max(1, base_threads // chunk_size)
+            single_params["threads"] = alloc_threads
+            if "jobs" in single_params:
+                single_params["jobs"] = alloc_threads
+                
             if walk:
-                all_step_results.append(
-                    WorkflowStepResult(step_name=f"{step_name}_chunk{chunk_idx}", return_code=0, success=True)
+                sample_results.append(
+                    WorkflowStepResult(step_name=f"{step_name}_{sample_id}", return_code=0, success=True)
                 )
                 continue
 
-            # Execute
             try:
-                # Add check/fail logic for disk space within the chunk loop too
                 if step_name == "getfastq":
                     _check_disk_space_or_fail(
-                        config.work_dir, min_free_gb=5.0, step_name=f"{step_name} (chunk {chunk_idx})"
+                        config.work_dir, min_free_gb=5.0, step_name=f"{step_name} (sample {sample_id})"
                     )
 
                 step_func = step_functions.get(step_name)
-                # Call step function (returns CompletedProcess)
-                result = step_func(chunk_params)
+                # Ensure the tool output differentiates from other parallel tasks
+                result = step_func(single_params)
 
                 step_res = WorkflowStepResult(
-                    step_name=f"{step_name}_chunk{chunk_idx}",
+                    step_name=f"{step_name}_{sample_id}",
                     return_code=result.returncode,
                     success=result.returncode == 0,
                     error_message=result.stderr if result.returncode != 0 else None,
                 )
-                all_step_results.append(step_res)
+                sample_results.append(step_res)
 
                 if result.returncode != 0:
-                    logger.error(f"  Step {step_name} failed for chunk {chunk_idx}")
-                    chunk_success = False
-                    if check:
-                        return WorkflowExecutionResult(all_step_results, False, len(all_step_results), 0, 1)
-                    # Break inner step loop to prevent cascading failures within this chunk
-                    break
-            except Exception as e:
-                logger.error(f"  Exception in {step_name} chunk {chunk_idx}: {e}")
-                all_step_results.append(WorkflowStepResult(f"{step_name}_chunk{chunk_idx}", 1, False, str(e)))
-                chunk_success = False
+                    logger.error(f"  [Sample {sample_id}] Step {step_name} failed with code {result.returncode}")
+                    if result.stderr:
+                        logger.error(f"  [Sample {sample_id}] STDERR:\n{result.stderr.strip()}")
+                    if result.stdout and not result.stderr:
+                        logger.error(f"  [Sample {sample_id}] STDOUT (no stderr):\n{result.stdout.strip()}")
 
-        # Aggressive cleanup after chunk (ONLY IF SUCCESSFUL)
-        if chunk_success:
-            logger.info(f"  Cleaning up chunk {chunk_idx} FASTQ files...")
-            chunk_ids = [row.get("run", "") for row in chunk_samples]
-            cleanup_fastqs(config, chunk_ids)
+                    sample_success = False
+                    break  # Stop processing this specific sample
+                    
+            except Exception as e:
+                logger.error(f"  [Sample {sample_id}] Exception in {step_name}: {e}")
+                sample_results.append(WorkflowStepResult(f"{step_name}_{sample_id}", 1, False, str(e)))
+                sample_success = False
+                break
+
+        # Only clean up if this specific sample succeeded completely
+        if sample_success:
+            logger.info(f"  [Sample {sample_id}] Success. Cleaning up FASTQ files...")
+            cleanup_fastqs(config, [sample_id])
         else:
-            logger.warning(f"  Skipping cleanup for chunk {chunk_idx} due to failure. FASTQ files preserved for debugging.")
+            logger.warning(f"  [Sample {sample_id}] Failed. Skipping cleanup to preserve FASTQ files for debugging.")
+            
+        return sample_results
+
+    # Continuous pool — as soon as one sample finishes, the next starts immediately.
+    # No chunk barriers; max_workers limits concurrency to chunk_size.
+    import concurrent.futures
+    logger.info(f"Processing ALL {total_samples} samples with max {chunk_size} concurrent workers (no chunk barriers)")
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=chunk_size) as executor:
+        futures = {}
+        for i, sample in enumerate(samples):
+            fut = executor.submit(process_single_sample, sample, 0, i)
+            futures[fut] = sample.get("run", str(i))
+            
+        # Process results as they complete — each finished slot immediately picks up next sample
+        for fut in concurrent.futures.as_completed(futures):
+            sample_id = futures[fut]
+            try:
+                res_list = fut.result()
+                all_step_results.extend(res_list)
+                completed = sum(1 for s in all_step_results if s.success and s.step_name.startswith("quant_"))
+                logger.info(f"  [Pool] {sample_id} done. Progress: {completed}/{total_samples} quantified")
+            except Exception as exc:
+                logger.error(f"  [Pool] {sample_id} raised an unhandled exception: {exc}")
+                all_step_results.append(WorkflowStepResult("async_sample_task", 1, False, str(exc)))
+                
+        # Check if failures should trigger early return
+        if check and any(not s.success for s in all_step_results):
+            return WorkflowExecutionResult(all_step_results, False, len(all_step_results), 0, 1)
 
     # After all chunks, run post-process steps (merge, etc)
     overall_success = all(s.success for s in all_step_results) if all_step_results else True

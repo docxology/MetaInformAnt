@@ -35,17 +35,18 @@ import psutil
 from pathlib import Path
 
 # Configuration - could be dynamic in future
-WORK_DIR = Path("/Volumes/blue/data/amalgkit/apis_mellifera_all/work")
-LOG_FILE = WORK_DIR / "ena_parallel_processing.log"
+WORK_DIR = Path("output/amalgkit")
+LOG_FILE = Path("output/amalgkit/run_all_species_incremental.log")
 
 def get_process_status():
     """Find the active Amalgkit process."""
     for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
         try:
             cmdline = proc.info['cmdline'] or []
-            # Check for our specific script name
-            if any("process_apis_mellifera" in arg for arg in cmdline) or \
-               any("process_species.py" in arg for arg in cmdline):
+            # Check for our pipeline scripts
+            if any("run_all_species" in arg for arg in cmdline) or \
+               any("run_workflow.py" in arg for arg in cmdline) or \
+               any("amalgkit" in arg for arg in cmdline):
                 return {
                     "running": True,
                     "pid": proc.info['pid'],

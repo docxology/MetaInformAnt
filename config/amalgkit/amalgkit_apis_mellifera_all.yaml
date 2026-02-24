@@ -12,7 +12,7 @@
 # Paths are resolved relative to repository root
 work_dir: output/amalgkit/apis_mellifera_all/work
 log_dir: output/amalgkit/apis_mellifera_all/logs
-threads: 12
+threads: 16
 
 auto_install_amalgkit: true
 
@@ -62,15 +62,16 @@ steps:
   getfastq:
     out_dir: output/amalgkit/apis_mellifera_all/fastq
     threads: 16
-    jobs: 4
+    jobs: 16
     redo: no  # CRITICAL: Skip already-downloaded samples
     aws: yes
     gcp: no
-    ncbi: yes
+    ncbi: no
     pfd: yes  # CRITICAL: Required for SRA→FASTQ extraction
     fastp: no
     max_bp: 50000000  # Downsampling for speed (50M bp per sample)
   quant:
+    jobs: 1
     out_dir: output/amalgkit/apis_mellifera_all/work
     threads: 16
     redo: no  # CRITICAL: Skip already-quantified samples

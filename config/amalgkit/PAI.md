@@ -16,20 +16,23 @@
 
 | Config | Samples | Status |
 |--------|---------|--------|
-| `amalgkit_pbarbatus.yaml` | ~110 | ✅ Complete (95 valid) |
-| `amalgkit_apis_mellifera_all.yaml` | ~7,270 | 🔄 In Progress |
+| `amalgkit_acromyrmex_echinatior.yaml` | 48 | 🔄 In Progress |
+| `amalgkit_apis_mellifera_all.yaml` | ~7,342 | ⏳ Queued |
+| All 23 species | Varies | ⏳ Queued (sequential via `run_all_species.sh`) |
 
 ## 📝 Maintenance Notes
 
-- **Dependencies**: `amalgkit>=0.12.20`, `kallisto`, `fastp`
-- **Disk Strategy**: Stream-and-clean (minimal persistent footprint)
-- **Critical Settings**: `redo: no` for production runs (idempotent)
+- **Dependencies**: `amalgkit>=0.12.20`, `kallisto`, `fasterq-dump`
+- **Disk Strategy**: Per-sample stream-and-clean (concurrent within chunks of 6)
+- **Critical Settings**: `redo: no` for production runs (idempotent), `aws: yes`, `ncbi: no`
 - **Shared Resources**: Genome/index in `output/amalgkit/shared/`
+- **Threads**: 16 total, dynamically divided across concurrent samples
 - **Metadata Filtering**: Always use `AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]`
 
 ## 🔄 AI Workflows
 
 - **New Species**: Copy `amalgkit_template.yaml`, adjust paths/taxon
-- **Recovery**: Use `scripts/rna/recover_missing_parallel.py` for failed samples
+- **Recovery**: Re-run `bash scripts/rna/run_all_species.sh` — it auto-resumes via `redo: no`
+- **Monitoring**: `.venv/bin/python scripts/package/generate_custom_summary.py`
 - **Tissue Patches**: Add new bioproject annotations to `tissue_patches.yaml`
 - **Documentation**: Update this file and `README.md` when adding configs

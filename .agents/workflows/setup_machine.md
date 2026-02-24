@@ -1,45 +1,109 @@
 ---
-description: Replicate the MetaInformAnt environment on a new machine
+description: Replicate the MetaInformAnt environment on a new machine (Linux/macOS)
 ---
 # Move Environment to a New Computer
 
-This workflow is specific to replicating the `metainformant` setup onto a new machine, particularly when using a portable drive (like `blue/`).
-
-Because we use `uv`, the process is entirely deterministic, although special consideration must be given to FAT32 or exFAT filesystems which do not support symlinks.
-
 // turbo-all
 
-1. **Clone the Repository** (If not already present on the drive)
+## 1. Install `uv` (Python Package Manager)
 
-   ```bash
-   git clone https://github.com/docxology/metainformant.git
-   cd metainformant
-   ```
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+source $HOME/.local/bin/env
+uv --version
+```
 
-2. **Run Initialization Script**
+## 2. Install System Dependencies
 
-   ```bash
-   bash scripts/package/setup.sh
-   ```
+**Linux (Debian/Ubuntu/Parrot)**:
 
-   *Note: This script automatically detects if the drive uses a FAT filesystem (exFAT/FAT32) and routes the virtual environment to `/tmp/metainformant_venv` and cache to `/tmp/uv-cache` to seamlessly bypass symlink limitations.*
+```bash
+bash scripts/package/install_linux_deps.sh
+```
 
-3. **Activate the Environment**
-   If on standard Ext4/APFS/NTFS:
+This installs: `kallisto`, `sra-toolkit` (fasterq-dump, prefetch), `fastp`, `seqkit`, `samtools`, `pigz`, `parallel`, `r-base`, `ncbi-datasets-cli`, and R packages for the amalgkit curate step.
 
-   ```bash
-   source .venv/bin/activate
-   ```
+**macOS**:
 
-   If on FAT/exFAT:
+```bash
+bash scripts/package/setup.sh --with-deps
+```
 
-   ```bash
-   source /tmp/metainformant_venv/bin/activate
-   ```
+## 3. Run the Python Setup Script
 
-4. **Verify Installation**
+```bash
+bash scripts/package/setup.sh --skip-tests
+```
 
-   ```bash
-   python -c "import metainformant; print('Installation Success:', metainformant.__version__)"
-   uv run pytest tests/ -v
-   ```
+*This script auto-detects FAT/exFAT filesystems and routes the venv to `/tmp/metainformant_venv` if needed.*
+
+## 4. Activate the Virtual Environment
+
+Standard (ext4/NTFS):
+
+```bash
+source .venv/bin/activate
+```
+
+FAT/exFAT filesystem:
+
+```bash
+source /tmp/metainformant_venv/bin/activate
+```
+
+## 5. Set Required Environment Variables
+
+```bash
+# NCBI_EMAIL is required for RNA-seq metadata downloads
+export NCBI_EMAIL="YourEmail@example.com"
+echo 'export NCBI_EMAIL="YourEmail@example.com"' >> ~/.bashrc
+
+# R packages user library (set so amalgkit curate can find them)
+export R_LIBS_USER="$HOME/R/library"
+echo 'export R_LIBS_USER="$HOME/R/library"' >> ~/.bashrc
+```
+
+## 6. Create RNA-seq Output Directory Structure
+
+```bash
+bash scripts/rna/setup_genome_dirs.sh
+```
+
+Creates incremental storage directories for all species under `output/amalgkit/`.
+**Key rule**: Never delete `output/amalgkit/*/work/quant/` — this is where processed quant data accumulates incrementally.
+
+## 7. Verify Installation
+
+```bash
+# Python environment
+python -c "import metainformant; print('✓ metainformant', metainformant.__version__)"
+python -c "import amalgkit; print('✓ amalgkit')"
+
+# External CLI tools
+kallisto version && echo "✓ kallisto"
+fasterq-dump --version 2>&1 | head -1 && echo "✓ fasterq-dump"
+fastp --version 2>&1 | head -1 && echo "✓ fastp"
+datasets version 2>/dev/null && echo "✓ ncbi-datasets-cli"
+R --version | head -1 && echo "✓ R"
+
+# Run fast tests (no network required)
+uv run pytest tests/ -m "not network and not external" -q --tb=short
+```
+
+## 8. Run First RNA-seq Workflow
+
+```bash
+# Check status of a species workflow
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --status
+
+# Start workflow (incremental – resumes from where it left off)
+nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml \
+  > output/amalgkit/pbarbatus_workflow.log 2>&1 &
+echo "Workflow PID: $!"
+```
+
+Monitor progress:
+
+```bash
+tail -f output/amalgkit/pbarbatus_workflow.log
+```
