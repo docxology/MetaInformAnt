@@ -267,6 +267,26 @@ def validate_gwas_config(config: Dict[str, Any], *, check_files: bool = False) -
         if work_dir_path.exists() and not work_dir_path.is_dir():
             errors.append(f"work_dir exists but is not a directory: {work_dir_path}")
 
+    # Validate parameters
+    valid_methods = ["linear", "logistic", "mixed"]
+    method = normalized.get("model")
+    if method and method not in valid_methods:
+        errors.append(f"Invalid association model '{method}'. Must be one of: {valid_methods}")
+
+    valid_corrections = ["bonferroni", "fdr", "genomic_control"]
+    corr_dict = normalized.get("correction")
+    if isinstance(corr_dict, dict):
+        correction = corr_dict.get("method")
+        if correction and correction not in valid_corrections:
+            errors.append(f"Invalid correction method '{correction}'. Must be one of: {valid_corrections}")
+
+    valid_kinship = ["vanraden", "ibs", "astle", "yang"]
+    struct_dict = config.get("structure")
+    if isinstance(struct_dict, dict):
+        kinship = struct_dict.get("kinship_method")
+        if kinship and kinship not in valid_kinship:
+            errors.append(f"Invalid kinship method '{kinship}'. Must be one of: {valid_kinship}")
+
     return errors
 
 

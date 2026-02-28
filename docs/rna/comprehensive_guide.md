@@ -77,7 +77,7 @@ Configuration is managed via YAML files in `config/amalgkit/`.
 
 ```yaml
 work_dir: blue/amalgkit/species_name/work
-threads: 12
+threads: 16
 
 steps:
   getfastq:

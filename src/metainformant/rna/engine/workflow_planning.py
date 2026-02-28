@@ -750,14 +750,22 @@ def verify_getfastq_prerequisites(config: AmalgkitWorkflowConfig, steps_planned:
 
 
 def sanitize_params_for_cli(subcommand: str, params: Dict[str, Any]) -> Dict[str, Any]:
-    """Sanitize parameters for CLI usage.
+    """Sanitize parameters to ensure compatibility with the raw amalgkit CLI tool.
+
+    Critically, the base amalgkit R/CLI tool does not know how to handle arguments
+    introduced purely by the MetaInformAnt Python wrapper (e.g., `num_retries`, 
+    `retry_delay`, `validate_md5`). If these args are passed as `--num_retries 3` 
+    to `amalgkit getfastq`, the underlying parser will fail with `code 2`.
+
+    This function aggressively filters out high-level python orchestration 
+    parameters before passing the sanitized dict downward.
 
     Args:
-        subcommand: Amalgkit subcommand
-        params: Parameter dictionary
+        subcommand: Amalgkit subcommand (e.g. 'getfastq')
+        params: Raw parameter dictionary with high-level orchestrator configs
 
     Returns:
-        Sanitized parameter dictionary
+        Sanitized parameter dictionary strictly accepted by the base amalgkit CLI.
     """
     # Remove or transform parameters that shouldn't go to CLI
     sanitized = params.copy()
@@ -779,10 +787,15 @@ def sanitize_params_for_cli(subcommand: str, params: Dict[str, Any]) -> Dict[str
     # ALWAYS remove work_dir - amalgkit CLI does not accept --work-dir (only --out_dir)
     sanitized.pop("work_dir", None)
 
-    # Remove invalid parameters per subcommand
+    # Remove invalid parameters per subcommand (strips custom wrapper args)
+    # NOTE: apply_step_defaults() injects MetaInformAnt-only defaults (e.g. bootstrap,
+    # fragment_length) that amalgkit CLI does NOT accept. These MUST be stripped here.
     INVALID_PARAMS = {
-        "quant": {"keep_fastq"},  # keep_fastq is not supported by amalgkit CLI
-        "getfastq": {"num_download_workers"},  # Internal worker count alias
+        "quant": {"keep_fastq", "bootstrap", "fragment_length", "fragment_sd"},
+        "getfastq": {"num_download_workers", "num_retries", "retry_delay", "validate_md5"},
+        "merge": {"batch_size", "output_format"},
+        "cstmm": {"normalization", "min_expression"},
+        "csca": {"correlation_method"},
     }
 
     if subcommand in INVALID_PARAMS:

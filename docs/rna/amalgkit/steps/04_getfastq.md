@@ -58,7 +58,7 @@ steps:
     # Note: FASTQ files will be in {out_dir}/getfastq/{SRR_ID}/
     # Example: output/amalgkit/amellifera/fastq/getfastq/SRR12345678/SRR12345678_1.fastq.gz
     metadata: output/amalgkit/amellifera/work/metadata/metadata.tsv  # Row-per-sample format
-    threads: 8
+    threads: 16
     pfd: yes                # Use parallel-fastq-dump (auto-detected if available)
     fastp: yes              # Quality filtering (default: no, set to yes to enable)
     accelerate: true        # Enable cloud acceleration (METAINFORMANT-specific)

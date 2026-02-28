@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 0,
+  "destination": "output/amalgkit/dinoponera_quadriceps/work/curate",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-02-24T22:40:48Z",
+  "progress": {
+    "current": 0,
+    "percent": 0.0,
+    "total": 1,
+    "type": "file_count"
+  },
+  "progress_percent": 0.0,
+  "speed_mbps": 0.0,
+  "started_at": "2026-02-24T22:40:42Z",
+  "status": "failed",
+  "step": "amalgkit curate",
+  "total_bytes": null,
+  "url": "['amalgkit', 'curate', '--out_dir', 'output/amalgkit/dinoponera_quadriceps/work', '--metadata', 'output/amalgkit/dinoponera_quadriceps/merged/metadata.tsv']"
+}

@@ -48,7 +48,7 @@ SPECIES_ORDER = [
 
 DEFAULTS = {
     "max_gb": 100.0,
-    "workers": 16,
+    "workers": 12,
     "threads": 16,
 }
 

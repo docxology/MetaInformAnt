@@ -81,3 +81,23 @@ amalgkit csca --config config/amalgkit/amalgkit_cross_species.yaml
 
 - `cstmm/`: Contains normalized expression values (TMM-FPKM)
 - `csca/`: Contains correlation heatmaps and PCA plots
+
+## Download Mirror Architecture & 16-Worker Strategy
+
+The pipeline utilizes a **Hybrid ENA / AWS Download Architecture** to maximize concurrency without exhausting local disk space.
+
+### The Storage Constraint
+Standard `fasterq-dump` (AWS/NCBI) requires ~25GB of temporary uncompressed `.sra` cache space per sample. Running 16 concurrent workers on AWS would instantly exhaust a 500GB NVMe drive. However, **EBI/ENA** provides pre-compressed `.fastq.gz` files natively via their API (only ~5GB per sample).
+
+### The Hybrid Solution
+The orchestrator (`run_all_species_parallel.py`) intercepts the download phase:
+1. **Primary (ENA)**: A custom script (`scripts/rna/download_ena.py`) queries the ENA API and securely downloads the pre-compressed fastq files.
+2. **Fallback (AWS)**: If a sample is missing from the EBI database, the orchestrator gracefully falls back to `amalgkit getfastq` using the AWS mirror.
+
+By prioritizing ENA, the pipeline safely runs **16 concurrent workers** (1 CPU thread each), fully saturating the internet connection (~36+ MB/s aggregate) while keeping disk usage strictly under ~80GB. 
+
+**Execution Command:**
+Use `--max-workers 16` to launch this maximum-throughput mode:
+```bash
+.venv/bin/python scripts/rna/run_all_species_parallel.py --max-workers 16
+```

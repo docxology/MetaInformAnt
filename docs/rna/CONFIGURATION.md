@@ -178,7 +178,7 @@ steps:
 steps:
   getfastq:
     num_download_workers: 8   # Fewer parallel downloads
-    threads: 12
+    threads: 16
 ```
 
 ### Configuration Parameters
@@ -236,7 +236,7 @@ steps:
 steps:
   getfastq:
     num_download_workers: 8
-    threads: 12
+    threads: 16
 ```
 
 ### Monitoring Download Progress
@@ -427,7 +427,7 @@ python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml
 steps:
   getfastq:
     num_download_workers: 8   # Conservative parallelism
-    threads: 12
+    threads: 16
 ```
 ```bash
 python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml

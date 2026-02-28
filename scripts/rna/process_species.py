@@ -49,7 +49,7 @@ def parse_args():
 def resolve_paths(species: str, args) -> dict:
     """Resolve paths based on species or overrides."""
     # Defaults for internal cluster
-    base_dir = Path("/Volumes/blue/data/amalgkit")
+    base_dir = Path("output/amalgkit")
     
     # 1. Work Dir
     if args.work_dir:
@@ -74,8 +74,8 @@ def resolve_paths(species: str, args) -> dict:
     if args.fastq_dir:
         fastq_dir = Path(args.fastq_dir)
     else:
-        # Default to external drive /Volumes/blue/data/{species}
-        fastq_dir = Path("/Volumes/blue/data") / species
+        # Default to external drive output/amalgkit/{species}
+        fastq_dir = Path("output/amalgkit") / species
 
     return {
         "work_dir": work_dir,

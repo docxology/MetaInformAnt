@@ -36,7 +36,11 @@ def compute_pca(genotype_matrix: List[List[int]], n_components: int = 10) -> Dic
         # Convert to numpy array (impute missing -1 with mean)
         # genotype_matrix is n_samples x n_variants
         X = np.array(genotype_matrix, dtype=float)
-        
+
+        # Guard: empty matrix – return early before any reduction ops
+        if X.size == 0:
+            return {"status": "failed", "error": "Empty genotype matrix", "pcs": [], "explained_variance_ratio": []}
+
         # Handle missing data (-1)
         # For simplicity in this optimization, replace < 0 with 0 (ref) or mean
         # A vectorized mean imputation is better

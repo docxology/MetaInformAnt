@@ -58,7 +58,7 @@ steps:
     # This allows quant to find getfastq output in {out_dir}/getfastq/
     out_dir: output/amalgkit/camponotus_floridanus/work
     build_index: yes  # Automatically build kallisto index
-    threads: 12
+    threads: 16
 ```
 
 ## Automatic Workflow Integration

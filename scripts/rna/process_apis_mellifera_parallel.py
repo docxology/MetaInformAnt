@@ -25,7 +25,7 @@ from pathlib import Path
 
 # Configuration
 WORK_DIR = Path("output/amalgkit/apis_mellifera_all/work")
-FASTQ_DIR = Path("/Volumes/blue/data/apis_mellifera")  # External drive for downloads
+FASTQ_DIR = Path("output/amalgkit/apis_mellifera_all/fastq")  # External drive for downloads
 QUANT_DIR = WORK_DIR / "quant"
 INDEX_FILE = WORK_DIR / "index/Apis_mellifera_transcripts.idx"
 METADATA_FILE = WORK_DIR / "metadata/metadata_selected.tsv"

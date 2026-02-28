@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 # Paths
-GENOME_DIR = Path("/Volumes/blue/data/amalgkit/shared/genome/Harpegnathos_saltator")
+GENOME_DIR = Path("output/amalgkit/shared/genome/Harpegnathos_saltator")
 INPUT_FASTA = GENOME_DIR / "GCF_003227715.2_Hsal_v8.6_rna_from_genomic.fna.gz"
 OUTPUT_FASTA = GENOME_DIR / "Harpegnathos_saltator_filtered.fna"
 OUTPUT_INDEX = GENOME_DIR / "index/Harpegnathos_saltator_filtered.idx"

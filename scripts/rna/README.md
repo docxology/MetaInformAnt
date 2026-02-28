@@ -49,7 +49,7 @@ Scripts for RNA-seq workflow execution, monitoring, and recovery.
 
 ### Run Full Pipeline (Recommended)
 
-The pipeline processes all 23 species sequentially. Within each species, samples are processed concurrently (chunk-size 6) with per-sample `getfastq → quant → cleanup`.
+The pipeline processes all 23 species sequentially. Within each species, samples are processed concurrently (chunk-size 16) with per-sample `getfastq → quant → cleanup`.
 
 ```bash
 # Run all species (background)
@@ -68,7 +68,7 @@ ps -fC amalgkit | grep SRR
 ### Run Single Species
 
 ```bash
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_acromyrmex_echinatior.yaml --stream --chunk-size 6
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_acromyrmex_echinatior.yaml --stream --chunk-size 16
 ```
 
 ### Check Environment

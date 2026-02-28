@@ -1,7 +1,7 @@
 # Personal AI Infrastructure (PAI) - amalgkit
 
 ## 🧠 Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/docs/rna/amalgkit`
+- **Path**: `/home/trim/Documents/Git/MetaInformAnt/docs/rna/amalgkit`
 - **Purpose**: Functionality for amalgkit.
 - **Domain**: rna
 

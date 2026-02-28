@@ -45,7 +45,7 @@ def check_disk_space(path: Path, min_free_gb: float = 10.0) -> Tuple[bool, float
         return True, 100.0  # Assume OK if we can't check
 
 
-def check_disk_space_or_fail(path: Path, min_free_gb: float = 5.0, step_name: str = "") -> float:
+def check_disk_space_or_fail(path: Path, min_free_gb: float = 20.0, step_name: str = "") -> float:
     """Check disk space and raise RuntimeError if insufficient.
 
     Args:
@@ -159,6 +159,7 @@ def cleanup_fastqs(config: AmalgkitWorkflowConfig, sample_ids: List[str]) -> Non
 
         if getfastq_conf_dir:
             paths.append(getfastq_conf_dir / "getfastq" / sample_id)
+            paths.append(getfastq_conf_dir / sample_id)
 
         for p in paths:
             if p.exists() and p.is_dir():
@@ -166,6 +167,21 @@ def cleanup_fastqs(config: AmalgkitWorkflowConfig, sample_ids: List[str]) -> Non
                     shutil.rmtree(p, ignore_errors=True)
                 except Exception:
                     pass  # Best effort cleanup
+
+        # Also clean flat ENA-downloaded files (SRR_1.fastq.gz, SRR_2.fastq.gz, SRR.fastq.gz)
+        # ENA downloads place files directly in fastq/ dir, not in subdirectories
+        flat_dirs = [config.work_dir / "fastq"]
+        if getfastq_conf_dir:
+            flat_dirs.append(getfastq_conf_dir)
+        for flat_dir in flat_dirs:
+            if flat_dir.exists():
+                for pattern in [f"{sample_id}_*.fastq.gz", f"{sample_id}.fastq.gz"]:
+                    for f in flat_dir.glob(pattern):
+                        try:
+                            f.unlink()
+                            logger.debug(f"Cleaned flat ENA file: {f.name}")
+                        except Exception:
+                            pass
 
 
 def get_quantified_samples(config: AmalgkitWorkflowConfig) -> Set[str]:

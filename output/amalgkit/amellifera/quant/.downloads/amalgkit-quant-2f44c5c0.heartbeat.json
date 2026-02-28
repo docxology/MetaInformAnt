@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 1452255223,
+  "destination": "output/amalgkit/amellifera/quant/quant",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-02-28T05:51:45Z",
+  "progress": {
+    "current": 5,
+    "percent": 100.0,
+    "total": 1,
+    "type": "sample_count"
+  },
+  "progress_percent": 100.0,
+  "speed_mbps": 12.26272067455943,
+  "started_at": "2026-02-28T05:49:52Z",
+  "status": "completed",
+  "step": "amalgkit quant",
+  "total_bytes": null,
+  "url": "['amalgkit', 'quant', '--out_dir', 'output/amalgkit/amellifera/quant', '--threads', '1', '--redo', 'no', '--metadata', 'output/amalgkit/amellifera/work/metadata/metadata_xsp_SRR28818530.tsv', '--fasta_dir', 'output/amalgkit/amellifera/genome', '--index_dir', 'output/amalgkit/amellifera/work/index']"
+}

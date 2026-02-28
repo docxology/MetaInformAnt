@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Sync amalgkit quant/curate/sanity/metadata results to a git-trackable location.
 
-The pipeline stores results under blue/ which is a symlink to /Volumes/blue/data.
+The pipeline stores results under blue/ which is a symlink to output/amalgkit.
 Git refuses to track files beyond symlinks, so we rsync the small, valuable
 result files (quant abundances, curate tables, metadata) to output/amalgkit_results/
 which is a real directory git can track.
@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 # Source: real data location (resolves the blue/ symlink)
-SOURCE_BASE = Path("/Volumes/blue/data/amalgkit")
+SOURCE_BASE = Path("output/amalgkit")
 
 # Destination: git-trackable location inside the repo
 DEST_BASE = Path("output/amalgkit_results")
@@ -29,7 +29,7 @@ def sync_species(species_dir: Path, dest_dir: Path, dry_run: bool = False) -> in
     """Sync result directories for one species.
 
     Args:
-        species_dir: Path to species data (e.g., /Volumes/blue/data/amalgkit/acromyrmex_echinatior)
+        species_dir: Path to species data (e.g., output/amalgkit/acromyrmex_echinatior)
         dest_dir: Destination path (e.g., output/amalgkit_results/acromyrmex_echinatior)
         dry_run: If True, only show what would be copied
 

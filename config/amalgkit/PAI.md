@@ -23,7 +23,7 @@
 ## 📝 Maintenance Notes
 
 - **Dependencies**: `amalgkit>=0.12.20`, `kallisto`, `fasterq-dump`
-- **Disk Strategy**: Per-sample stream-and-clean (concurrent within chunks of 6)
+- **Disk Strategy**: Per-sample stream-and-clean (concurrent within chunks of 16)
 - **Critical Settings**: `redo: no` for production runs (idempotent), `aws: yes`, `ncbi: no`
 - **Shared Resources**: Genome/index in `output/amalgkit/shared/`
 - **Threads**: 16 total, dynamically divided across concurrent samples

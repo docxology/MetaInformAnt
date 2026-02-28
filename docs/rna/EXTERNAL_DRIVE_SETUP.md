@@ -275,7 +275,7 @@ RNA-seq workflows can use significant disk space:
 # config/amalgkit/amalgkit_species.yaml
 work_dir: output/amalgkit/species/work
 log_dir: output/amalgkit/species/logs
-threads: 12
+threads: 16
 
 # Automatically handles external drive issues
 auto_install_amalgkit: true

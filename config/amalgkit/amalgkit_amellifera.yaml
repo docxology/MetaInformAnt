@@ -17,7 +17,7 @@ auto_install_amalgkit: true
 
 # Pre-selection filtering rules
 filters:
-  require_tissue: true
+  require_tissue: false
 
 
 # Species configuration

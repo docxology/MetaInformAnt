@@ -5,7 +5,8 @@
 ### Debian/Ubuntu (Recommended)
 ```bash
 sudo apt-get update
-sudo apt-get install -y r-base r-base-dev
+# Note: libcurl4-openssl-dev and libssl-dev are required for Bioconductor packages (sva, RUVSeq)
+sudo apt-get install -y r-base r-base-dev libcurl4-openssl-dev libssl-dev libxml2-dev
 ```
 
 ### Verify Installation
@@ -110,6 +111,11 @@ sudo make install
 - **Required**: Statistical analysis and batch effect correction
 - **Functions**: Outlier detection, normalization, QC metrics
 - **Impact if missing**: Curate step fails completely
+
+### Required R Packages
+Amalgkit relies on the following R dependencies (installed via `scripts/rna/install_r_packages.R`):
+- **CRAN**: `ggplot2`, `Rtsne`, `edgeR`
+- **Bioconductor**: `sva`, `RUVSeq` (Requires system packages: `libcurl4-openssl-dev`, `libssl-dev`, `libxml2-dev`)
 
 ## Post-Installation Verification
 

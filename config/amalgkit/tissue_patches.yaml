@@ -73,10 +73,48 @@ bioprojects:
   PRJNA255520: brain           # Dinoponera quadriceps - "adult brain" confirmed in source_name
   PRJNA432981: whole_body      # Odontomachus brunneus - mixed developmental stages (whole adults, eggs, larvae, pupae, queens)
   PRJDB6378: brain             # Formica exsecta - brain tissue dissections
-
+  # --- Atta cephalotes patch (2026-02-25) ---
+  PRJNA1022160: brain           # Atta cephalotes worker brain neuropeptide/behavior (characterize transcriptional basis of worker behavior)
+  # --- Automated NCBI Batch Patches (2026-02-25) ---
+  PRJEB32903: whole_body       # Acromyrmex echinatior worker caste whole body transcriptome
+  PRJEB2532: whole_body        # Acromyrmex echinatior leaf-cutting ant reference genome
+  PRJEB3394: whole_body        # Differential gene expression following fungal challenge
+  PRJNA327092: whole_body      # Whole-body RNA-seq from Camponotus floridanus workers
+  PRJNA285839: brain           # Epigenetic reprogramming minor scout brains
+  PRJNA161007: whole_body      # Assaying variation between 3 ant castes
+  PRJNA129107: whole_body      # Camponotus floridanus poly(A)+ RNA different specimens
+  PRJNA255520: brain           # Dinoponera quadriceps - first brain methylome
+  
+  # --- Apis mellifera NCBI Batch Patches (2026-02-25) ---
+  PRJNA339620: whole_body      # Honey bee responses to social challenge
+  PRJEB39369: whole_body       # Apis mellifera whole body drone from Edinburgh
+  PRJDB12699: gut              # Honey bee larval and adult microbiome metatranscriptomics
+  PRJEB49136: abdomen          # Honey bee varroa infestation whole abdomen
+  PRJNA1098086: mushroom_body  # Circadian clock and memory sKC-enriched
+  PRJNA656275: brain           # Tissue specific transcription patterns (Brain dissection)
+  PRJDB6980: abdomen           # Sex determination pathway adult abdomen
+  PRJEB45881: pupa             # Cellular heterogeneity honey bee pupal stage
+  PRJNA1165990: gut            # Gut microbiota of overwintering bees
+  PRJNA260604: larva           # Transcriptome of honey bee larvae
+  PRJEB35177: antenna          # RNA-seq of antennal tissue
+  PRJEB5249: whole_body        # Virus transmission whole pupae/adults
+  PRJNA207482: head            # KD dnmt3 RNA-seq on heads
+  PRJNA175445: fat_body        # Honey bee fat body expression
+  PRJNA194157: gut             # Transcriptional profiling of digestive tracts
+  PRJNA104931: brain           # Epigenetic states in honeybee behavioral subcastes brains
+  PRJNA549281: whole_body      # Gene expression in honeybees (General)
+  PRJNA325930: larva           # mRNA profiling of Apis mellifera larvae
+  PRJNA211831: brain           # Transcriptional profiling of Apis mellifera brains
+  PRJDB5532: brain             # Honeybee Hr38 Target gene brains
+  PRJNA1364028: whole_body     # Gene expression profiling of different tissues (Need default)
+  PRJNA1419006: adult          # Impact of pollen nutrition on worker bees
+  PRJNA172020: nervous_system  # Neonicotinoid exposure on honey bees
+  PRJNA162235: brain           # Honeybee Forager Brain RNA-seq 
+  
 # Per-biosample overrides
 # Format: biosample_accession: canonical_tissue
-biosamples: {}
+biosamples:
+  SAMN00849801: brain          # SRR566980 Honeybee Forager Brain RNA-seq (missing bioproject)
 
 # Source documentation for patches
 # Record where tissue information was found

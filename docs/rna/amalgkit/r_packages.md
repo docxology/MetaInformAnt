@@ -62,8 +62,8 @@ amap_available <- require(amap, quietly = TRUE)
 ```
 
 **Location**:
-- Original backup: `/Users/4d/miniforge3/lib/python3.12/site-packages/amalgkit/curate.r.backup`
-- Patched version: `/Users/4d/miniforge3/lib/python3.12/site-packages/amalgkit/curate.r`
+- Original backup: `.venv/lib/python3.13/site-packages/amalgkit/curate.r.backup`
+- Patched version: `.venv/lib/python3.13/site-packages/amalgkit/curate.r`
 
 ## Current Functionality
 

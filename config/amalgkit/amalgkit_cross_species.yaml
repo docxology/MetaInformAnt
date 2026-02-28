@@ -4,7 +4,7 @@
 # Working directory
 work_dir: blue/amalgkit/cross_species/work
 log_dir: blue/amalgkit/cross_species/logs
-threads: 8
+threads: 16
 
 # Species to include
 species_list:

@@ -16,7 +16,7 @@ This means as soon as one sample finishes downloading, it starts quantifying whi
 
 ### Q: How many concurrent samples should I use?
 
-**Recommended: 6 samples per chunk** (default in `run_all_species.sh --chunk-size 6`).
+**Recommended: 16 samples per chunk** (default in `run_all_species.sh --chunk-size 16`).
 
 | Chunk Size | Threads/Sample | Disk Usage | Stability |
 |------------|---------------|------------|-----------|

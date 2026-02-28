@@ -1,0 +1,6 @@
+{"step": "metadata", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1771969940.9725258}
+{"step": "config", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1771969941.7556307}
+{"step": "select", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1771969942.5410583}
+{"step": "metadata", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1771969942.5411227}
+{"step": "config", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1771969942.5411298}
+{"step": "select", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1771969942.5411336}

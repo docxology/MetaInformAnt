@@ -51,7 +51,7 @@ graph LR
     D --> E[curate]
 ```
 
-Samples are processed concurrently within chunks of 6. Each sample flows through `getfastq → quant → cleanup` independently, maximizing CPU/network utilization.
+Samples are processed concurrently within chunks of 16. Each sample flows through `getfastq → quant → cleanup` independently, maximizing CPU/network utilization.
 
 ## 🚀 Usage
 
@@ -77,7 +77,7 @@ This script checks for:
 nohup bash scripts/rna/run_all_species.sh > output/amalgkit/run_all_species_incremental.log 2>&1 &
 
 # Run a single species
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_{species}.yaml --stream --chunk-size 6
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_{species}.yaml --stream --chunk-size 16
 
 # Check progress
 .venv/bin/python scripts/package/generate_custom_summary.py

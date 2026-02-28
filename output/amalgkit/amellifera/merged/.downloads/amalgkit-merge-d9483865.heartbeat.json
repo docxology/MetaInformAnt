@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 0,
+  "destination": "output/amalgkit/amellifera/merged/merge",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-02-27T20:01:40Z",
+  "progress": {
+    "current": 0,
+    "percent": 0.0,
+    "total": 1,
+    "type": "file_count"
+  },
+  "progress_percent": 0.0,
+  "speed_mbps": 0.0,
+  "started_at": "2026-02-27T20:01:34Z",
+  "status": "failed",
+  "step": "amalgkit merge",
+  "total_bytes": null,
+  "url": "['amalgkit', 'merge', '--out_dir', 'output/amalgkit/amellifera/merged', '--batch_size', '100', '--output_format', 'tsv', '--metadata', 'output/amalgkit/amellifera/work/metadata/metadata_selected.tsv']"
+}

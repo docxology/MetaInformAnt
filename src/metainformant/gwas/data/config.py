@@ -197,23 +197,29 @@ def validate_config_parameters(config: Dict[str, Any]) -> List[str]:
             errors.append(f"Significance threshold must be positive: {sig}")
 
     # Choice parameters
-    valid_methods = ["linear", "logistic"]
-    if "association_method" in config:
-        method = config["association_method"]
-        if method not in valid_methods:
-            errors.append(f"Invalid association method '{method}'. Must be one of: {valid_methods}")
+    valid_methods = ["linear", "logistic", "mixed"]
+    method = config.get("association_method")
+    assoc_dict = config.get("association")
+    if not method and isinstance(assoc_dict, dict):
+        method = assoc_dict.get("model")
+    if method and method not in valid_methods:
+        errors.append(f"Invalid association method '{method}'. Must be one of: {valid_methods}")
 
     valid_corrections = ["bonferroni", "fdr", "genomic_control"]
-    if "multiple_testing_correction" in config:
-        correction = config["multiple_testing_correction"]
-        if correction not in valid_corrections:
-            errors.append(f"Invalid correction method '{correction}'. Must be one of: {valid_corrections}")
+    correction = config.get("multiple_testing_correction")
+    corr_dict = config.get("correction")
+    if not correction and isinstance(corr_dict, dict):
+        correction = corr_dict.get("method")
+    if correction and correction not in valid_corrections:
+        errors.append(f"Invalid correction method '{correction}'. Must be one of: {valid_corrections}")
 
-    valid_kinship = ["vanraden", "centered", "normalized"]
-    if "kinship_method" in config:
-        kinship = config["kinship_method"]
-        if kinship not in valid_kinship:
-            errors.append(f"Invalid kinship method '{kinship}'. Must be one of: {valid_kinship}")
+    valid_kinship = ["vanraden", "ibs", "astle", "yang"]
+    kinship = config.get("kinship_method")
+    struct_dict = config.get("structure")
+    if not kinship and isinstance(struct_dict, dict):
+        kinship = struct_dict.get("kinship_method")
+    if kinship and kinship not in valid_kinship:
+        errors.append(f"Invalid kinship method '{kinship}'. Must be one of: {valid_kinship}")
 
     # Threads and memory
     if "threads" in config:

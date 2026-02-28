@@ -509,7 +509,7 @@ uv pip install -e . --python .venv/bin/python3
 ### Downloads Failing
 - Check network connectivity: `ping -c 4 8.8.8.8`
 - Verify NCBI_EMAIL is set: `echo $NCBI_EMAIL`
-- Try reducing threads: set `threads: 8` in the species config, or `export AK_THREADS=8`
+- Try reducing threads: set `threads: 16` in the species config, or `export AK_THREADS=16`
 - Check disk space: `df -h /`
 - Test ENA connectivity: `wget --spider https://www.ebi.ac.uk/ena/`
 

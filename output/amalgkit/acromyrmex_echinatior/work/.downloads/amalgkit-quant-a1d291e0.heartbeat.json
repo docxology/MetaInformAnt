@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 30981262,
+  "destination": "output/amalgkit/acromyrmex_echinatior/work/quant",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-02-25T00:56:56Z",
+  "progress": {
+    "current": 0,
+    "percent": 0.0,
+    "total": 1,
+    "type": "sample_count"
+  },
+  "progress_percent": 0.0,
+  "speed_mbps": 3.673696217797438,
+  "started_at": "2026-02-25T00:56:48Z",
+  "status": "failed",
+  "step": "amalgkit quant",
+  "total_bytes": null,
+  "url": "['amalgkit', 'quant', '--out_dir', 'output/amalgkit/acromyrmex_echinatior/work', '--threads', '1', '--redo', 'no', '--build_index', 'no', '--index_dir', 'output/amalgkit/shared/genome/Acromyrmex_echinatior/index', '--fasta_dir', 'output/amalgkit/shared/genome/Acromyrmex_echinatior', '--bootstrap', '100', '--fragment_length', '200', '--fragment_sd', '20', '--metadata', 'output/amalgkit/acromyrmex_echinatior/work/metadata/metadata_xsp_SRR1015511.tsv']"
+}

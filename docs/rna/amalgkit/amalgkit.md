@@ -19,7 +19,7 @@ The `amalgkit` module provides a Python wrapper for the Amalgkit CLI, enabling s
 nohup bash scripts/rna/run_all_species.sh > output/amalgkit/run_all_species_incremental.log 2>&1 &
 
 # Run a single species
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --stream --chunk-size 6
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --stream --chunk-size 16
 ```
 
 ### Monitoring Progress

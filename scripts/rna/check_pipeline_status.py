@@ -188,7 +188,7 @@ def main():
 
     if not running:
         print("\n  ⚠  No active pipeline processes detected.")
-        print("  To restart:  cd /Volumes/blue/metainformant && uv run python scripts/rna/run_all_species.py")
+        print("  To restart:  cd /home/trim/Documents/Git/MetaInformAnt && .venv/bin/python scripts/rna/run_all_species_parallel.py")
     print()
 
 

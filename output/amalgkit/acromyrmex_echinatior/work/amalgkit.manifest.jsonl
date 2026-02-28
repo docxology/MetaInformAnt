@@ -82,3 +82,9 @@
 {"step": "metadata", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1771951587.7444994}
 {"step": "config", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1771951588.6179407}
 {"step": "select", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1771951589.4793203}
+{"step": "metadata", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1771969810.3445249}
+{"step": "config", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1771969811.1394007}
+{"step": "select", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1771969811.923147}
+{"step": "metadata", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1771969811.9232285}
+{"step": "config", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1771969811.9232392}
+{"step": "select", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1771969811.923246}

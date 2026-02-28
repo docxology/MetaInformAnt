@@ -32,7 +32,7 @@ Create or modify a YAML configuration file in `config/amalgkit/`:
 species: Pogonomyrmex_barbatus
 taxonomy_id: 219557
 work_dir: output/amalgkit/pbarbatus/
-threads: 12
+threads: 16
 
 genome:
   assembly_accession: GCF_000187915.1

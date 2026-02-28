@@ -166,7 +166,7 @@ Here's what a generated configuration looks like:
 
 work_dir: /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/camponotus_floridanus/work
 log_dir: /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/camponotus_floridanus/logs
-threads: 12
+threads: 16
 
 auto_install_amalgkit: true
 

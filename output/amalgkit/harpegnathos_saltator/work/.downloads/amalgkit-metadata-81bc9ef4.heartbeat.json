@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 589645,
+  "destination": "output/amalgkit/harpegnathos_saltator/work/metadata",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-02-26T15:05:13Z",
+  "progress": {
+    "current": 1,
+    "percent": 25.0,
+    "total": 4,
+    "type": "file_count"
+  },
+  "progress_percent": 25.0,
+  "speed_mbps": 0.031229578901718187,
+  "started_at": "2026-02-26T15:04:55Z",
+  "status": "completed",
+  "step": "amalgkit metadata",
+  "total_bytes": null,
+  "url": "['amalgkit', 'metadata', '--out_dir', 'output/amalgkit/harpegnathos_saltator/work', '--search_string', '\"Harpegnathos saltator\"[Organism] AND \"RNA-Seq\"[Strategy] AND \"Illumina\"[Platform]', '--redo', 'no']"
+}

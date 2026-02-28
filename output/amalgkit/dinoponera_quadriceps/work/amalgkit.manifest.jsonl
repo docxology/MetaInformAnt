@@ -1,0 +1,3 @@
+{"step": "metadata", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1771969977.418128}
+{"step": "config", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1771969977.4181404}
+{"step": "select", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1771969977.4181447}

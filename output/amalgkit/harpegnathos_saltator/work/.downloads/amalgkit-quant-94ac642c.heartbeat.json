@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 0,
+  "destination": "output/amalgkit/harpegnathos_saltator/work/quant",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-02-27T19:53:13Z",
+  "progress": {
+    "current": 0,
+    "percent": 0.0,
+    "total": 1,
+    "type": "sample_count"
+  },
+  "progress_percent": 0.0,
+  "speed_mbps": 0.0,
+  "started_at": "2026-02-27T19:53:06Z",
+  "status": "failed",
+  "step": "amalgkit quant",
+  "total_bytes": null,
+  "url": "['amalgkit', 'quant', '--out_dir', 'output/amalgkit/harpegnathos_saltator/work', '--threads', '1', '--redo', 'no', '--build_index', 'no', '--index_dir', 'output/amalgkit/shared/genome/Harpegnathos_saltator/index', '--fasta_dir', 'output/amalgkit/shared/genome/Harpegnathos_saltator', '--metadata', 'output/amalgkit/harpegnathos_saltator/work/metadata/metadata_xsp_SRR20572601.tsv']"
+}

@@ -17,7 +17,9 @@ for cfg in config_files:
         continue
     
     species = os.path.basename(cfg).replace('amalgkit_', '').replace('.yaml', '')
-    metadata_file = f'output/amalgkit/{species}/work/metadata/metadata.tsv'
+    metadata_file = f'output/amalgkit/{species}/work/metadata/metadata_selected.tsv'
+    if not os.path.exists(metadata_file):
+        metadata_file = f'output/amalgkit/{species}/work/metadata/metadata.tsv'
     
     try:
         df = pd.read_csv(metadata_file, sep='\t')

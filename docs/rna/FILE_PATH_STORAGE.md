@@ -61,7 +61,7 @@ config/amalgkit/amalgkit_{species_name}.yaml
 # Base Directories (ALL paths relative to repository root)
 work_dir: output/amalgkit/pogonomyrmex_barbatus/work
 log_dir: output/amalgkit/pogonomyrmex_barbatus/logs
-threads: 12
+threads: 16
 
 # Species Configuration
 species_list:

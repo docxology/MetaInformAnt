@@ -78,7 +78,7 @@ steps:
     out_dir: output/amalgkit/amellifera/work
     metadata: output/amalgkit/amellifera/work/metadata/pivot_qualified.tsv
     index_dir: output/amalgkit/amellifera/work/index
-    threads: 8
+    threads: 16
     clean_fastq: yes
     build_index: yes
     fasta_dir: output/amalgkit/amellifera/work/fasta
@@ -101,7 +101,7 @@ steps:
 steps:
   quant:
     out_dir: output/amalgkit/{species}/work  # ← Use work_dir, not separate quant_dir
-    threads: 12
+    threads: 16
 ```
 
 **Incorrect Configuration** (will fail to find FASTQ files):
@@ -109,7 +109,7 @@ steps:
 steps:
   quant:
     out_dir: output/amalgkit/{species}/quant  # ← WRONG: quant can't find getfastq output
-    threads: 12
+    threads: 16
 ```
 
 ### Optional Parameters
