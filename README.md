@@ -29,7 +29,8 @@ METAINFORMANT provides production-ready bioinformatics analysis across genomics,
 |--------|----------|
 | **DNA** | Sequences, alignment, phylogenetics, population genetics, variant analysis |
 | **RNA** | Amalgkit integration, SRA downloads, Kallisto quantification, industrial-scale pipelines |
-| **GWAS** | Association testing, fine-mapping, eQTL analysis, colocalization, visualization |
+| **GWAS** | Association testing, fine-mapping, visualization, complete GWAS pipelines |
+| **eQTL** | Integration of GWAS variants and Amalgkit RNA-seq expression data |
 | **Multi-omics** | Cross-omic integration, joint PCA, correlation analysis |
 | **ML** | Classification, regression, feature selection, LLM integration |
 | **Visualization** | Manhattan plots, heatmaps, networks, animations, publication-ready output |
@@ -471,6 +472,7 @@ All modules live in [`src/metainformant/`](src/metainformant/) with documentatio
 - **[Technical Specification](SPEC.md)** - Design standards
 - **[Testing Guide](docs/testing.md)** - Comprehensive testing documentation
 - **[CLI Reference](docs/cli.md)** - Command-line interface
+- **[eQTL Integration](docs/eqtl/README.md)** - eQTL pipeline documentation
 
 ### Module Documentation
 
@@ -481,8 +483,9 @@ Each module has documentation in `src/metainformant/<module>/README.md` and `doc
 The [`scripts/`](scripts/) directory contains production-ready workflow orchestrators:
 
 - **Package Management**: Setup, testing, quality control
-- **RNA-seq**: Multi-species workflows, amalgkit integration
-- **GWAS**: Genome-scale association studies
+- **RNA-seq (Amalgkit)**: Multi-species workflows, amalgkit integration
+- **GWAS (Variants)**: Genome-scale association studies
+- **eQTL Integration**: RNA-seq + Variant cross-omics integration pipelines
 - **Module Orchestrators**: ✅ Complete workflow scripts for all domains (core, DNA, RNA, protein, networks, multiomics, single-cell, quality, simulation, visualization, epigenome, ecology, ontology, phenotype, ML, math, gwas, information, life_events)
 
 See [`scripts/README.md`](scripts/README.md) for documentation.
@@ -603,6 +606,18 @@ results = run_gwas(
 
 # Visualize results
 manhattan_plot(results["association_results"], output_path="output/gwas/manhattan.png")
+```
+
+### eQTL Integration Pipeline
+
+The eQTL pipeline bridges the genomic variants from the **GWAS** pipeline with the gene expression matrices provided by the **Amalgkit (RNA)** pipeline.
+
+```bash
+# Run the pipeline leveraging real Amalgkit RNA-seq quantification data
+uv run python scripts/eqtl/run_eqtl_real.py
+
+# Or explore the logic with synthetic data
+uv run python scripts/eqtl/run_eqtl_demo.py
 ```
 
 ### Visualization

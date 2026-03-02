@@ -71,9 +71,16 @@ result = execute_workflow(config, steps=["getfastq", "quant", "merge"])
 | `merge` | Combine abundance files |
 | `curate` | Quality control and filtering |
 
-## 🧬 GWAS Integration
+## 🚀 Full Pipelines
 
-RNA expression data can be integrated with GWAS variants for eQTL analysis:
+The RNA sequence quantification forms one-half of larger multi-omics pipelines:
+
+- **[Amalgkit Total Pipeline](amalgkit/README.md)**: The end-to-end extraction and quantification standard.
+- **[eQTL Integration Pipeline](../eqtl/README.md)**: Maps the Amalgkit RNA expression matrix against [GWAS](../gwas/README.md) DNA variants.
+
+### Direct Multiomics Usage
+
+You can also use the core functions directly for eQTL analysis:
 
 ```python
 from metainformant.multiomics.analysis import integration

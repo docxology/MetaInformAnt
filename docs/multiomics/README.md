@@ -30,7 +30,9 @@ graph TD
 
 ### GWAS-Expression (eQTL) Integration
 
-Combine genetic variants with gene expression to identify regulatory mechanisms:
+The eQTL pipeline connects the **[GWAS Pipeline](../gwas/README.md)** genomic variants with the **[Amalgkit RNA Pipeline](../rna/README.md)** expression abundances. See the **[eQTL Integration Pipeline](../eqtl/README.md)** for end-to-end execution.
+
+You can also use the core functions directly to combine genetic variants with gene expression to identify regulatory mechanisms:
 
 ```python
 from metainformant.gwas.finemapping.colocalization import eqtl_coloc

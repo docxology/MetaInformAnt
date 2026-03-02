@@ -41,6 +41,11 @@ flowchart TD
 
 See: [Sequences](./sequences.md), [Alignment](./alignment.md), [MSA](./msa.md), [Phylogeny](./phylogeny.md), [Population](./population.md).
 
+## 🚀 Full Pipelines
+
+- [GWAS Pipeline](../gwas/README.md)
+- [eQTL Integration Pipeline](../eqtl/README.md)
+
 ## Annotation & Integration
 
 - [Annotation](./annotation.md): Gene Prediction, Feature Annotation, and Functional analysis
