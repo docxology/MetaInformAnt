@@ -1,0 +1,13 @@
+{
+	"n_targets": 28355,
+	"n_bootstraps": 0,
+	"n_processed": 6999266,
+	"n_pseudoaligned": 4979937,
+	"n_unique": 3635178,
+	"p_pseudoaligned": 71.1,
+	"p_unique": 51.9,
+	"kallisto_version": "0.48.0",
+	"index_version": 10,
+	"start_time": "Sun Mar  1 08:17:57 2026",
+	"call": "kallisto quant --threads 1 --index output/amalgkit/amellifera/work/index/Apis_mellifera_transcripts.idx -o /home/trim/Documents/Git/MetaInformAnt/output/amalgkit/amellifera/quant/quant/SRR8121079 --single -l 200 -s 20.0 /home/trim/Documents/Git/MetaInformAnt/output/amalgkit/amellifera/quant/getfastq/SRR8121079/SRR8121079.fastq.gz"
+}

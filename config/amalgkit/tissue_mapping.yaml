@@ -16,6 +16,8 @@ brain:
   - brains
   - Single Brain
   - non-visual brain (central brain, Br)
+  - Non-visual brain
+  - brain (minus optic lobes)
   - whole brain
   - Whole brain
   - brain tissue
@@ -67,6 +69,8 @@ antenna:
   - 4 pairs of antennae
   - workers antennae
   - Antennal Clubs
+  - dorsal half of antennal club
+  - ventral half of antennal club
 
 # ──────────────────────────────────────────────
 # Body regions
@@ -148,6 +152,9 @@ whole_body:
   - Whole body of male
   - Whole body of queen
   - Whole body of worker
+  - Multiple Whole Body
+  - Full bodies
+  - gamergate
 
 head:
   - head
@@ -282,6 +289,11 @@ venom_gland:
   - venom gland
   - Venom gland
   - poison gland
+
+post_pharyngeal_gland:
+  - post_pharyngeal_gland
+  - post-pharyngeal gland
+  - Post-pharyngeal gland
 
 # ──────────────────────────────────────────────
 # Flight tissues
@@ -460,6 +472,7 @@ cell_culture:
   - cell line
   - cells
   - astrocyte cultures
+  - primary neuronal cultures
 
 # ──────────────────────────────────────────────
 # Excluded/not applicable

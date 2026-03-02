@@ -86,6 +86,8 @@ bioprojects:
   PRJNA255520: brain           # Dinoponera quadriceps - first brain methylome
   
   # --- Apis mellifera NCBI Batch Patches (2026-02-25) ---
+  PRJNA896707: whole_body      # Honey bee RNA-seq compiled whole body
+  PRJNA687318: whole_body      # virus augmented whole foragers lysate pool
   PRJNA339620: whole_body      # Honey bee responses to social challenge
   PRJEB39369: whole_body       # Apis mellifera whole body drone from Edinburgh
   PRJDB12699: gut              # Honey bee larval and adult microbiome metatranscriptomics
@@ -110,6 +112,27 @@ bioprojects:
   PRJNA1419006: adult          # Impact of pollen nutrition on worker bees
   PRJNA172020: nervous_system  # Neonicotinoid exposure on honey bees
   PRJNA162235: brain           # Honeybee Forager Brain RNA-seq 
+  
+  # --- Cross-Species Missing BioProject Patches (2026-03-01) ---
+  PRJNA747797: ovary           # Harpegnathos saltator RNA-seq after Kr-h1 knockdown
+  PRJNA722884: brain           # Harpegnathos worker brains
+  PRJNA327090: brain           # Harpegnathos Brain transitions
+  PRJNA327093: brain           # Harpegnathos intra-head injection
+  PRJNA327094: brain           # Harpegnathos worker-gamergate transitions
+  PRJNA327091: head            # Monomorium pharaonis RNA-seq in heads
+  PRJDB3164: whole_body        # Monomorium pharaonis Genome and transcriptome
+  PRJNA1010363: antenna        # Ooceraea biroi odorant receptor choice snRNA-seq
+  PRJNA230648: leg             # Ooceraea biroi c16 legs
+  PRJDB4312: whole_body        # Pogonomyrmex barbatus Worker, small larva
+  PRJDB3493: whole_body        # Pogonomyrmex barbatus developmental stages
+  PRJNA847170: whole_body      # Solenopsis invicta Social supergene
+  PRJNA522069: antenna         # Solenopsis invicta Worker antennal gene expression
+  PRJNA49629: whole_body       # Solenopsis invicta genome project
+  PRJEB76961: whole_body       # Temnothorax Genomic basis of social parasitism
+  PRJEB68328: whole_body       # Temnothorax Genomic basis of adaptation
+  PRJEB4368: whole_body        # Temnothorax Gene expression associated with caste
+  PRJDB3517: whole_body        # Vollenhovia emeryi Genomic and transcriptome study
+  PRJDB3442: whole_body        # Wasmannia auropunctata genome
   
 # Per-biosample overrides
 # Format: biosample_accession: canonical_tissue

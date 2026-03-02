@@ -1,0 +1,13 @@
+{
+	"n_targets": 10868,
+	"n_bootstraps": 0,
+	"n_processed": 21278296,
+	"n_pseudoaligned": 7058365,
+	"n_unique": 6823460,
+	"p_pseudoaligned": 33.2,
+	"p_unique": 32.1,
+	"kallisto_version": "0.48.0",
+	"index_version": 10,
+	"start_time": "Mon Mar  2 04:04:34 2026",
+	"call": "kallisto quant --threads 1 -i output/amalgkit/shared/genome/Atta_cephalotes/index/Atta_cephalotes_transcripts.idx -o /home/trim/Documents/Git/MetaInformAnt/output/amalgkit/atta_cephalotes/work/quant/SRR26290323 /home/trim/Documents/Git/MetaInformAnt/output/amalgkit/atta_cephalotes/work/getfastq/SRR26290323/SRR26290323_1.fastq.gz /home/trim/Documents/Git/MetaInformAnt/output/amalgkit/atta_cephalotes/work/getfastq/SRR26290323/SRR26290323_2.fastq.gz"
+}

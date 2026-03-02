@@ -9,7 +9,7 @@ import pandas as pd
 from pathlib import Path
 
 CONFIG_DIR = Path("config/amalgkit")
-AMALGKIT_DIR = Path("blue/amalgkit")
+AMALGKIT_DIR = Path("output/amalgkit")
 
 def main():
     print(f"{'Species':<30} {'Total':<10} {'Unmapped':<10} {'Status'}")

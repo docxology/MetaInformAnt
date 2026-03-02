@@ -83,6 +83,7 @@ def _download_from_ncbi_datasets(accession: str, output_dir: Path) -> Path:
 
     # Extract zip
     import zipfile
+    import glob
 
     extract_dir = output_dir / accession
     extract_dir.mkdir(exist_ok=True)
@@ -92,6 +93,12 @@ def _download_from_ncbi_datasets(accession: str, output_dir: Path) -> Path:
 
     # Clean up zip
     zip_path.unlink()
+
+    # Validate that we actually got a FASTA file
+    if not glob.glob(str(extract_dir / "**" / "*.fna*"), recursive=True):
+        import shutil
+        shutil.rmtree(extract_dir)
+        raise RuntimeError(f"NCBI Datasets API returned a zip without any .fna files for {accession}")
 
     return extract_dir
 
@@ -378,13 +385,35 @@ def _download_sra_from_ena(accession: str, output_dir: Path, threads: int) -> Pa
     from metainformant.core.io.download import download_with_progress
 
     # ENA URL pattern (FTP). We keep the original behavior but add heartbeat + retry.
-    ena_url = f"ftp://ftp.sra.ebi.ac.uk/vol1/fastq/{accession[:6]}/{accession}"
-
-    patterns = [
-        f"{ena_url}/{accession}.fastq.gz",
-        f"{ena_url}/{accession}_1.fastq.gz",
-        f"{ena_url}/{accession}_2.fastq.gz",
-    ]
+    # Query ENA API for exact FTP links to avoid guessing and 550 errors
+    import requests
+    api_url = f"https://www.ebi.ac.uk/ena/portal/api/filereport?accession={accession}&result=read_run&fields=fastq_ftp&format=json"
+    
+    try:
+        resp = requests.get(api_url, timeout=15)
+        resp.raise_for_status()
+        metadata = resp.json()
+        if not metadata or "fastq_ftp" not in metadata[0]:
+            raise ValueError(f"No fastq_ftp fields returned for {accession}")
+            
+        ftp_links_raw = metadata[0]["fastq_ftp"]
+        # Can be multiple links separated by semicolon (e.g. for paired end)
+        patterns = [f"http://{link}" for link in ftp_links_raw.split(";") if link]
+        
+    except Exception as e:
+        logger.warning(f"Failed to fetch ENA API for {accession}: {e}. Falling back to default patterns.")
+        ena_url = f"http://ftp.sra.ebi.ac.uk/vol1/fastq/{accession[:6]}"
+        if len(accession) > 9:
+            # Simple fallback for 10 or 11 chars
+            if len(accession) == 10: ena_url += f"/00{accession[-1]}"
+            elif len(accession) == 11: ena_url += f"/0{accession[-2:]}"
+        ena_url += f"/{accession}"
+        
+        patterns = [
+            f"{ena_url}/{accession}.fastq.gz",
+            f"{ena_url}/{accession}_1.fastq.gz",
+            f"{ena_url}/{accession}_2.fastq.gz",
+        ]
 
     downloaded_files: list[Path] = []
     last_error: str | None = None
@@ -512,21 +541,36 @@ def _get_project_runs(project_id: str) -> List[str]:
 
             summary_data = summary_response.json()
 
+            # Import re at the module level or locally
+            import re
+            
             run_accessions = []
             if "result" in summary_data:
                 for uid in id_list[:100]:
                     if uid in summary_data["result"]:
                         record = summary_data["result"][uid]
-                        runs = record.get("runs", {}).get("run", [])
-                        if isinstance(runs, list):
-                            for run in runs:
-                                run_acc = run.get("@acc")
+                        if not isinstance(record, dict):
+                            continue
+                        
+                        runs_data = record.get("runs", "")
+                        if isinstance(runs_data, str) and runs_data.strip():
+                            # EUtils returns an XML string inside the JSON for SRA runs
+                            # e.g.: <Run acc="SRR13968413" .../>
+                            matches = re.findall(r'acc="([^"]+)"', runs_data)
+                            for match in matches:
+                                run_accessions.append(match)
+                        elif isinstance(runs_data, dict):
+                            # Fallback in case they ever return structured JSON
+                            runs_list = runs_data.get("run", [])
+                            if isinstance(runs_list, list):
+                                for run in runs_list:
+                                    run_acc = run.get("@acc")
+                                    if run_acc:
+                                        run_accessions.append(run_acc)
+                            elif isinstance(runs_list, dict):
+                                run_acc = runs_list.get("@acc")
                                 if run_acc:
                                     run_accessions.append(run_acc)
-                        elif isinstance(runs, dict):
-                            run_acc = runs.get("@acc")
-                            if run_acc:
-                                run_accessions.append(run_acc)
 
             return run_accessions
 

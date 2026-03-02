@@ -30,27 +30,18 @@ genome:
 # VARIANT DATA SOURCES
 # =============================================================================
 variants:
-  # Option 1: Pre-called VCF file(s) - provide path(s) to existing VCF files
-  # If you have VCF files for P. barbatus samples, list them here:
-  vcf_files:
-    # - data/variants/pbarbatus/sample_set.vcf.gz
-    # - data/variants/pbarbatus/cohort.vcf.gz
-
-  # Option 2: Download from public database (if available for P. barbatus)
-  # download:
-  #   source: dbSNP
-  #   accession: GCF_000187915.1
-
-  # Option 3: Call variants from raw sequencing data (BAM/CRAM)
+  # Option 3: Call variants from raw sequencing data (BAM/CRAM/SRA)
+  # Uses the pipeline's built-in NCBI SRA/ENA downloading and bcftools
   calling:
-    # List of BAM/CRAM file paths (when available)
-    bam_files: []
+    # BioProject or specific SRA run accessions
+    sra_project: PRJNA712959 # Ex: Harvester ant popgen project
+    # Alternately list specific runs:
+    # sra_runs: ["SRR13968412", "SRR13968413"]
     # Reference genome FASTA
     reference: output/gwas/pbarbatus/genome/genomic.fna
     # Calling method: bcftools, gatk, or freebayes
     method: bcftools
 
-  # Destination directory for variant files
   dest_dir: output/gwas/pbarbatus/variants
 
 # =============================================================================
@@ -79,14 +70,8 @@ qc:
 # SAMPLE METADATA
 # =============================================================================
 samples:
-  # List of sample IDs (optional, if not provided, uses all samples in VCF)
-  # sample_list: data/samples/pbarbatus/samples.txt
-
   # Phenotype file (TSV format: sample_id, trait1, trait2, ...)
-  phenotype_file: data/phenotypes/pbarbatus/phenotypes.tsv
-
-  # Covariates file (TSV format: sample_id, age, sex, PC1, PC2, ...)
-  # covariates_file: data/covariates/pbarbatus/covariates.tsv
+  phenotype_file: output/gwas/pbarbatus/phenotypes/phenotypes.tsv
 
 # =============================================================================
 # POPULATION STRUCTURE
@@ -112,7 +97,7 @@ association:
   model: linear
 
   # Trait name (column name in phenotype file)
-  trait: trait1
+  trait: foraging_distance
 
   # Covariates to include in association model
   covariates:
@@ -150,4 +135,3 @@ output:
 
   # Output format: json, tsv, or plink
   format: tsv
-

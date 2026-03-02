@@ -1,8 +1,0 @@
-{
-  "accession": "GCF_000187915.1",
-  "dest_dir": "output/gwas/pbarbatus/genome",
-  "extracted_dir": "output/gwas/pbarbatus/genome/ncbi_dataset_api_extracted",
-  "method": "datasets-api",
-  "return_code": 0,
-  "status": "success"
-}

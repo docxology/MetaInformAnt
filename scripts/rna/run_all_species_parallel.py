@@ -250,6 +250,23 @@ def process_sample(ctx: SpeciesContext, sample_row: Dict[str, str], idx: int) ->
                                 logger.debug(f"  Staged fallback {fq_file.name} → {staging_dir}")
                             except OSError:
                                 pass
+            
+            # Additional validation loop: verify downloaded/staged fastq size
+            if step_name == "getfastq":
+                quant_params = ctx.chunk_step_params.get("quant", {})
+                quant_out_dir = Path(quant_params.get("out_dir", str(ctx.config.work_dir)))
+                staging_dir = quant_out_dir / "getfastq" / sample_id
+                
+                fastq_files = list(staging_dir.glob("*.fastq*"))
+                if not fastq_files:
+                    logger.error(f"  [{ctx.species_name}/{sample_id}] getfastq succeeded but no FASTQ files were found in staging!")
+                    return False
+                
+                for fq in fastq_files:
+                    if fq.stat().st_size < 100:  # Less than 100 bytes is effectively empty/corrupt
+                        logger.error(f"  [{ctx.species_name}/{sample_id}] Corrupt/Empty FASTQ downloaded or staged: {fq.name} ({fq.stat().st_size} bytes)")
+                        return False
+
 
         except Exception as e:
             logger.error(f"  [{ctx.species_name}/{sample_id}] {step_name} exception: {e}")
