@@ -4,6 +4,14 @@ The eQTL (expression Quantitative Trait Loci) Integration Pipeline bridges the g
 
 By analyzing how genetic variants (from VCFs) correlate with gene expression levels (from Amalgkit quantification), this pipeline identifies genetic markers that regulate gene transcription.
 
+## 📖 Documentation
+
+| Doc | Description |
+|-----|-------------|
+| [Pipeline Guide](./pipeline_guide.md) | Step-by-step walkthrough of transcriptome SNP calling |
+| [Configuration Reference](./configuration.md) | All YAML config options |
+| This page | Overview, architecture, and integration scripts |
+
 ## 📊 Pipeline Architecture
 
 ```mermaid

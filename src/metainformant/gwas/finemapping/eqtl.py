@@ -382,6 +382,102 @@ def eqtl_summary_stats(
 
 
 # ---------------------------------------------------------------------------
+# Transcriptome variant loading
+# ---------------------------------------------------------------------------
+
+
+def load_transcriptome_variants(
+    vcf_path: str | Path,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Load variants from the transcriptome SNP calling pipeline into eQTL-ready matrices.
+
+    Reads a VCF (or VCF.gz) produced by ``scripts/eqtl/rna_snp_pipeline.py``
+    and converts it into the genotype matrix and variant positions DataFrames
+    expected by :func:`cis_eqtl_scan`.
+
+    Args:
+        vcf_path: Path to VCF or VCF.gz file (single-sample or multi-sample).
+
+    Returns:
+        Tuple of (genotype_matrix, variant_positions):
+            - genotype_matrix: DataFrame (variants × samples) with dosage values (0/1/2).
+            - variant_positions: DataFrame with columns [variant_id, chrom, position].
+
+    Example:
+        >>> geno, var_pos = load_transcriptome_variants("output/eqtl/amellifera/population/merged.vcf.gz")
+        >>> results = cis_eqtl_scan(expr, geno, gene_pos, var_pos)
+    """
+    import gzip
+    import os
+    from pathlib import Path as _Path
+
+    vcf_path = _Path(vcf_path)
+    if not vcf_path.exists():
+        raise FileNotFoundError(f"VCF not found: {vcf_path}")
+
+    opener = gzip.open if str(vcf_path).endswith(".gz") else open
+
+    samples: list[str] = []
+    variant_ids: list[str] = []
+    chroms: list[str] = []
+    positions: list[int] = []
+    genotype_rows: list[list[int]] = []
+
+    with opener(vcf_path, "rt") as fh:
+        for line in fh:
+            if line.startswith("##"):
+                continue
+            if line.startswith("#CHROM"):
+                parts = line.strip().split("\t")
+                samples = parts[9:]
+                continue
+
+            parts = line.strip().split("\t")
+            if len(parts) < 10:
+                continue
+
+            chrom = parts[0]
+            pos = int(parts[1])
+            vid = parts[2] if parts[2] != "." else f"{chrom}_{pos}"
+            # Only keep SNPs (single-char REF and ALT)
+            ref, alt = parts[3], parts[4]
+            if len(ref) != 1 or len(alt) != 1:
+                continue
+
+            # Parse genotypes from GT field
+            fmt_fields = parts[8].split(":")
+            gt_idx = fmt_fields.index("GT") if "GT" in fmt_fields else 0
+
+            row_dosages: list[int] = []
+            for sample_field in parts[9:]:
+                gt_str = sample_field.split(":")[gt_idx]
+                alleles = gt_str.replace("|", "/").split("/")
+                dosage = sum(int(a) for a in alleles if a != ".")
+                row_dosages.append(dosage)
+
+            variant_ids.append(vid)
+            chroms.append(chrom)
+            positions.append(pos)
+            genotype_rows.append(row_dosages)
+
+    if not variant_ids:
+        logger.warning(f"No SNP variants found in {vcf_path}")
+        return pd.DataFrame(), pd.DataFrame()
+
+    genotype_matrix = pd.DataFrame(genotype_rows, index=variant_ids, columns=samples)
+    variant_positions = pd.DataFrame({
+        "variant_id": variant_ids,
+        "chrom": chroms,
+        "position": positions,
+    })
+
+    logger.info(
+        f"Loaded {len(variant_ids)} SNPs × {len(samples)} samples from {vcf_path.name}"
+    )
+    return genotype_matrix, variant_positions
+
+
+# ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
 
