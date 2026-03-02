@@ -125,3 +125,8 @@ coverage.xml
 gwas_verification/
 check_numpy.py
 
+# Pipeline sentinel files (transient, redundant once quant output exists)
+*.heartbeat.json
+**/.downloads/
+*.safely_removed
+

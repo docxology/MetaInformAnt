@@ -5,7 +5,32 @@ All notable changes to METAINFORMANT are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.7] - 2026-03-01
+
+### Added
+
+- **`scripts/rna/fetch_pending_metadata.py`** — batch metadata fetcher for SRA runs not yet in the pipeline manifest; handles rate limiting and incremental writes
+- **`scripts/rna/find_missing_tissues.py`** — scans all species configs and tissue patches to report bioprojects with incomplete tissue coverage; used for targeted tissue-patch research
+- **`scripts/rna/extract_bioproject_details.py`** — fetches NCBI BioProject title and SRA run counts for a list of accessions; used alongside `find_missing_tissues.py`
+- **`scripts/rna/report_completed.py` / `report_completed.sh`** — reports quantified sample counts per species from disk, distinct from log-based counts; useful for progress monitoring independent of the orchestrator log
+- **`scripts/rna/link_indices.sh`** — symlinks shared kallisto indices across species output dirs to avoid redundant index builds
+- **`scripts/gwas/run_pbarbatus_gwas.py`** — end-to-end GWAS runner for *Pogonomyrmex barbatus*: downloads SRA reads, aligns with BWA, calls variants with BCFtools, and runs association with real phenotype data
+
+### Changed
+
+- **`.gitignore`** — added `*.heartbeat.json`, `**/.downloads/`, and `*.safely_removed` to prevent pipeline sentinel files from polluting git history
+  - `*.heartbeat.json`: transient JSON progress files written during downloads; write-only, never read back, auto-recreated by active jobs
+  - `*.safely_removed`: marker files confirming FASTQ deletion after successful kallisto quantification; redundant given that a non-empty `*_abundance.tsv` is the canonical proof of work
+- **Pipeline housekeeping**: removed 3,898 existing heartbeat files and 3,055 `.safely_removed` markers from disk (∼7k stale sentinel files cleaned up)
+
+### Pipeline Status (as of this release)
+
+- *Apis mellifera*: **2,661 samples quantified** (of 5,715 total; ~3,900 auto-skipped for size >4B bases, pending second pass)
+- *Acromyrmex echinatior*: **3 samples quantified** (pipeline just started)
+- All other 21 species: queued — pipeline processes species sequentially
+
 ## [0.2.6] - 2026-02-20
+
 
 ### Fixed
 
