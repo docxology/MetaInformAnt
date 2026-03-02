@@ -67,14 +67,18 @@ python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --st
 python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --plan
 ```
 
-### 4. Validate Results
+### 4. Monitor and Validate
 
 ```bash
-# Verify workflow completion
-bash scripts/rna/amalgkit/verify_workflow.sh pbarbatus
+# Check quantified sample counts per species
+python3 scripts/rna/report_completed.py
+
+# Check one species via workflow status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --status
 
 # Check output files
-ls output/amalgkit/pbarbatus/
+ls output/amalgkit/pbarbatus/work/quant/ | wc -l
+tail -20 output/amalgkit/run_all_species_incremental.log
 ```
 
 ## Workflow Steps
@@ -149,10 +153,11 @@ See [R_INSTALLATION.md](R_INSTALLATION.md) and [r_packages.md](r_packages.md).
 
 ## Production Tips
 
-1. **Use direct ENA downloads**: 100% reliability vs SRA Toolkit
-2. **Enable immediate processing**: Minimizes disk usage
-3. **Monitor with --status**: Check progress without interrupting
-4. **Verify with verify_workflow.sh**: Comprehensive validation
+1. **ENA direct downloads are the default**: 100% reliability, no LITE file issues
+2. **FASTQs are deleted after quant**: Minimizes disk usage automatically
+3. **Monitor with `report_completed.py`**: Disk-based quantified count per species
+4. **Monitor live log**: `tail -f output/amalgkit/run_all_species_incremental.log`
+5. **Resume safely**: `redo: no` (default) skips already-quantified samples
 
 ---
 

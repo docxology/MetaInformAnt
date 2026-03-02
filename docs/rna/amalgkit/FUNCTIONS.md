@@ -110,13 +110,14 @@ Tool availability and environment validation.
 | Function | Module | Description | Documentation |
 |----------|--------|-------------|---------------|
 | `check_amalgkit` | `metainformant.rna.environment` | Check if amalgkit is available | [API.md](../API.md#check_amalgkit) |
-| `check_sra_toolkit` | `metainformant.rna.environment` | Check if SRA Toolkit is installed | [API.md](../API.md#check_sra_toolkit) |
 | `check_kallisto` | `metainformant.rna.environment` | Check if kallisto is installed | [API.md](../API.md#check_kallisto) |
 | `check_metainformant` | `metainformant.rna.environment` | Check if metainformant package is installed | [API.md](../API.md#check_metainformant) |
 | `check_virtual_env` | `metainformant.rna.environment` | Check if running inside a virtual environment | [API.md](../API.md#check_virtual_env) |
 | `check_rscript` | `metainformant.rna.environment` | Check if Rscript is available | [API.md](../API.md#check_rscript) |
 | `check_dependencies` | `metainformant.rna.environment` | Check all required dependencies | [API.md](../API.md#check_dependencies) |
 | `validate_environment` | `metainformant.rna.environment` | Comprehensive environment validation | [API.md](../API.md#validate_environment) |
+
+> **Note:** SRA Toolkit (`check_sra_toolkit`) is no longer a required dependency. ENA direct wget is the primary download method; SRA Toolkit is an automatic fallback only.
 
 ## Cleanup Functions
 

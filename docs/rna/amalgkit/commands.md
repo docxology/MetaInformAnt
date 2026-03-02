@@ -1,26 +1,20 @@
-# Genome Setup Commands
+# Genome Setup Scripts Reference
 
-This document lists all commands to run the genome setup scripts sequentially.
+Commands to download reference genomes, prepare transcriptomes, and build kallisto indices for all configured species.
 
 ## Quick Reference
 
-### Option 1: Run All Steps Sequentially (Recommended)
+### Option 1: Automated (Recommended)
 
 ```bash
-# Run the complete pipeline script
+# Run complete genome setup for all species
+python3 scripts/rna/orchestrate_genome_setup.py
+
+# Or via bash script
 bash scripts/rna/run_genome_setup.sh
 ```
 
-### Option 2: Use Master Orchestrator
-
-```bash
-# Run everything in one command
-python3 scripts/rna/orchestrate_genome_setup.py
-```
-
-### Option 3: Run Steps Individually
-
-Run each step manually for more control:
+### Option 2: Step-by-Step
 
 ```bash
 # Step 1: Check current status
@@ -29,7 +23,7 @@ python3 scripts/rna/verify_genomes_and_indexes.py
 # Step 2: Download missing genomes
 python3 scripts/rna/download_missing_genomes.py
 
-# Step 3: Prepare transcriptomes
+# Step 3: Prepare transcriptomes (extract RNA FASTA)
 python3 scripts/rna/prepare_transcriptomes.py
 
 # Step 4: Build kallisto indexes
@@ -41,137 +35,76 @@ python3 scripts/rna/verify_genomes_and_indexes.py
 
 ## Detailed Command Reference
 
-### Step 1: Verification
-
-**Check status of all species:**
+### Status Verification
 
 ```bash
+# Check all species
 python3 scripts/rna/verify_genomes_and_indexes.py
-```
 
-**Check specific species:**
-
-```bash
+# Check specific species
 python3 scripts/rna/verify_genomes_and_indexes.py --species camponotus_floridanus
-```
 
-**Custom output location:**
-
-```bash
+# Custom output location
 python3 scripts/rna/verify_genomes_and_indexes.py --output output/my_status.json
 ```
 
-### Step 2: Download Genomes
-
-**Download all missing genomes:**
+### Download Genomes
 
 ```bash
+# All missing genomes
 python3 scripts/rna/download_missing_genomes.py
-```
 
-**Download specific species:**
-
-```bash
+# Specific species
 python3 scripts/rna/download_missing_genomes.py --species camponotus_floridanus
-```
 
-**Dry run (see what would be downloaded):**
-
-```bash
+# Dry run (preview without downloading)
 python3 scripts/rna/download_missing_genomes.py --dry-run
 ```
 
-### Step 3: Prepare Transcriptomes
-
-**Prepare all transcriptomes:**
+### Prepare Transcriptomes
 
 ```bash
+# All transcriptomes
 python3 scripts/rna/prepare_transcriptomes.py
-```
 
-**Prepare specific species:**
-
-```bash
+# Specific species
 python3 scripts/rna/prepare_transcriptomes.py --species camponotus_floridanus
 ```
 
-**Dry run:**
+### Build Kallisto Indexes
 
 ```bash
-python3 scripts/rna/prepare_transcriptomes.py --dry-run
-```
-
-### Step 4: Build Kallisto Indexes
-
-**Build all indexes:**
-
-```bash
+# All indexes
 python3 scripts/rna/build_kallisto_indexes.py
-```
 
-**Build specific species:**
-
-```bash
+# Specific species
 python3 scripts/rna/build_kallisto_indexes.py --species camponotus_floridanus
-```
 
-**Custom k-mer size (for short reads):**
-
-```bash
+# Custom k-mer size (for short reads <100bp)
 python3 scripts/rna/build_kallisto_indexes.py --kmer-size 23
 ```
 
-**Dry run:**
+### Master Orchestrator
 
 ```bash
-python3 scripts/rna/build_kallisto_indexes.py --dry-run
-```
-
-### Step 5: Master Orchestrator
-
-**Run complete pipeline:**
-
-```bash
+# Complete pipeline, all species
 python3 scripts/rna/orchestrate_genome_setup.py
-```
 
-**Run for specific species:**
-
-```bash
+# Single species
 python3 scripts/rna/orchestrate_genome_setup.py --species camponotus_floridanus
-```
 
-**Skip specific steps:**
-
-```bash
-# Skip download step (if genomes already downloaded)
+# Skip specific steps
 python3 scripts/rna/orchestrate_genome_setup.py --skip-download
-
-# Skip preparation step
 python3 scripts/rna/orchestrate_genome_setup.py --skip-prepare
-
-# Skip index building
 python3 scripts/rna/orchestrate_genome_setup.py --skip-build
-
-# Skip initial verification
-python3 scripts/rna/orchestrate_genome_setup.py --skip-verify-initial
-
-# Skip final verification
-python3 scripts/rna/orchestrate_genome_setup.py --skip-verify-final
 ```
 
-**Dry run:**
-
-```bash
-python3 scripts/rna/orchestrate_genome_setup.py --dry-run
-```
-
-## Example Workflow
+## Example Workflows
 
 ### Complete Setup for All Species
 
 ```bash
-# Option A: Automated pipeline script
+# Option A: Automated pipeline
 bash scripts/rna/run_genome_setup.sh
 
 # Option B: Master orchestrator
@@ -188,7 +121,6 @@ python3 scripts/rna/verify_genomes_and_indexes.py
 ### Setup for Single Species
 
 ```bash
-# Complete setup for one species
 python3 scripts/rna/orchestrate_genome_setup.py --species camponotus_floridanus
 
 # Or step-by-step:
@@ -197,65 +129,47 @@ python3 scripts/rna/prepare_transcriptomes.py --species camponotus_floridanus
 python3 scripts/rna/build_kallisto_indexes.py --species camponotus_floridanus
 ```
 
-### Incremental Setup
-
-If you only need to do specific steps:
+### Resuming After Interruption
 
 ```bash
 # Check what's missing
 python3 scripts/rna/verify_genomes_and_indexes.py
 
-# Download only missing genomes
-python3 scripts/rna/download_missing_genomes.py
-
-# Prepare only newly downloaded genomes
-python3 scripts/rna/prepare_transcriptomes.py
-
-# Build only newly prepared transcriptomes
-python3 scripts/rna/build_kallisto_indexes.py
+# Run only missing steps
+python3 scripts/rna/download_missing_genomes.py  # only downloads missing
+python3 scripts/rna/prepare_transcriptomes.py     # only prepares missing
+python3 scripts/rna/build_kallisto_indexes.py     # only builds missing
 ```
 
 ## Output Files
 
-All scripts write JSON result files to `output/`:
+- `output/genome_index_status.json` — verification results
+- `output/genome_download_results.json` — download results
+- `output/transcriptome_preparation_results.json` — preparation results
+- `output/kallisto_index_build_results.json` — index build results
 
-- `output/genome_index_status.json` - Verification results
-- `output/genome_download_results.json` - Download results
-- `output/transcriptome_preparation_results.json` - Preparation results
-- `output/kallisto_index_build_results.json` - Index build results
+Genome files are stored under: `output/amalgkit/<species>/genome/`  
+Kallisto indexes are stored under: `output/amalgkit/<species>/work/index/`
+
+## Kallisto Index Naming Convention
+
+Index files must be named `{Scientific_Name}_transcripts.idx`:
+
+| Species | Expected Index Filename |
+|---------|------------------------|
+| `Apis mellifera` | `Apis_mellifera_transcripts.idx` |
+| `Pogonomyrmex barbatus` | `Pogonomyrmex_barbatus_transcripts.idx` |
 
 ## Troubleshooting
 
-### If a script fails midway
-
-You can resume by running only the failed steps:
-
 ```bash
-# Check current status
+# Check progress during long downloads
 python3 scripts/rna/verify_genomes_and_indexes.py
-
-# Continue from where it left off
-python3 scripts/rna/download_missing_genomes.py  # Only downloads missing
-python3 scripts/rna/prepare_transcriptomes.py     # Only prepares missing
-python3 scripts/rna/build_kallisto_indexes.py     # Only builds missing
-```
-
-### Check progress during long downloads
-
-```bash
-# Check status while downloads are running (in another terminal)
-python3 scripts/rna/verify_genomes_and_indexes.py
-
-# Check download progress files
 cat output/amalgkit/*/genome/download.progress.txt
 ```
 
 ## See Also
 
-- [Genome Setup Guide](genome_setup_guide.md) - Detailed setup instructions
-- [Genome Preparation](genome_preparation.md) - Technical documentation and API reference
-- [Quantification Step](steps/quant.md) - Using kallisto indexes for quantification
-- [Workflow Guide](amalgkit.md) - Complete workflow documentation
-- [Amalgkit README](README.md) - Overview of amalgkit integration
-- [RNA Domain README](../README.md) - RNA domain overview
-
+- [genome_setup_guide.md](genome_setup_guide.md) — Detailed setup guide
+- [genome_preparation.md](genome_preparation.md) — Technical API reference
+- [steps/06_quant.md](steps/06_quant.md) — Using kallisto indexes for quantification

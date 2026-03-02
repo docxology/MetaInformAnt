@@ -574,7 +574,9 @@ Error: Could not find FASTQ files for SRR12345678
 
 ## Automatic FASTQ Cleanup After Quantification
 
-The workflow automatically deletes FASTQ files after successful quantification to free disk space. This behavior is controlled by the `keep_fastq` parameter in the quant configuration.
+FASTQ files are deleted immediately after successful quantification. The `abundance.tsv` file is the canonical proof that a sample completed — no separate marker files are used.
+
+> **Note (v0.2.7):** `.safely_removed` marker files were deleted in v0.2.7 and added to `.gitignore`. They are no longer created.
 
 ### Automatic Cleanup in Workflow
 

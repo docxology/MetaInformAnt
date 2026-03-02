@@ -1,7 +1,6 @@
 # RNA-Seq File Path Storage: Complete Reference
 
-**Date**: November 18, 2025  
-**Purpose**: Comprehensive documentation of where and how ALL file paths are stored for Amalgkit RNA-seq transcriptomic meta-analysis workflows
+**Purpose**: Documents where and how all file paths are stored for Amalgkit RNA-seq workflows in METAINFORMANT.
 
 ---
 
@@ -98,7 +97,8 @@ steps:
   getfastq:
     out_dir: output/amalgkit/pogonomyrmex_barbatus/fastq  # ← Downloaded FASTQs
     threads: 24
-    aws: yes  # Cloud provider for SRA downloads
+    num_download_workers: 16   # Parallel ENA download workers
+    max_bp: 4000000000          # Skip samples >4B bases
   
   quant:
     out_dir: output/amalgkit/pogonomyrmex_barbatus/quant  # ← Quantification results
