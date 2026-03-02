@@ -31,4 +31,4 @@ VCF Format Support:
 
 Note: This is a lightweight parser for basic statistics. For comprehensive VCF analysis, consider specialized libraries like pyvcf or cyvcf2.
 
-Related: Part of variant analysis workflow, complements [population genetics](./population.md) analyses.
+Related: Part of variant analysis workflow, complements [population genetics](./population.md) analyses. For comprehensive **Variant Calling**, see [calling](./calling.md).

@@ -5,6 +5,7 @@ DNA sequence analysis and genomics module for METAINFORMANT.
 
 ## 📦 Contents
 - **[alignment/](alignment/)**
+- **[annotation/](annotation/)**
 - **[expression/](expression/)**
 - **[external/](external/)**
 - **[integration/](integration/)**
@@ -35,9 +36,15 @@ graph TD
         PO --> |core.py| PG[Allele Frequencies]
 
         VA[variation/] --> |variants.py| VC[VCF Parsing]
+        VA --> |calling.py| CA[Variant Calling]
         VA --> |mutations.py| MU[Mutation Models]
 
         EX[external/] --> |ncbi.py| NC[NCBI/Entrez APIs]
+
+        AN[annotation/] --> |gene_*.py| GP[Gene Prediction/Finding]
+        AN --> |functional.py| FA[Functional Annotation]
+
+        IN[integration/] --> |rna.py| RN[DNA/RNA Cross-Omics]
     end
 ```
 
