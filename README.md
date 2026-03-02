@@ -618,6 +618,9 @@ uv run python scripts/eqtl/run_eqtl_real.py
 
 # Or explore the logic with synthetic data
 uv run python scripts/eqtl/run_eqtl_demo.py
+
+# Call SNP variants directly from transcriptome RNA-seq data
+uv run python scripts/eqtl/rna_snp_pipeline.py --species amellifera --n-samples 3
 ```
 
 ### Visualization

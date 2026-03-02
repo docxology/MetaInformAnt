@@ -69,11 +69,25 @@ A fully synthetic pipeline designed for rapid testing, methods development, and 
 uv run python scripts/eqtl/run_eqtl_demo.py
 ```
 
+### 3. Transcriptome SNP Calling (`scripts/eqtl/rna_snp_pipeline.py`)
+
+Extracts SNP variants directly from RNA-seq data by re-downloading FASTQs, aligning with HISAT2, and calling variants with bcftools. Produces per-sample VCFs and population genetics summaries.
+
+```bash
+# With CLI args
+uv run python scripts/eqtl/rna_snp_pipeline.py --species amellifera --n-samples 3
+
+# With YAML config
+uv run python scripts/eqtl/rna_snp_pipeline.py --config config/eqtl/eqtl_amellifera.yaml
+```
+
+See [Pipeline Guide](./pipeline_guide.md) and [Configuration Reference](./configuration.md) for details.
+
 ## 📦 Core Submodules
 
 Under the hood, the eQTL workflows rely on the highly optimized functions located in:
 
-- `metainformant.gwas.finemapping.eqtl`: Core statistical scanning, matrix operations, and effect size calculation.
+- `metainformant.gwas.finemapping.eqtl`: Core statistical scanning, matrix operations, effect size calculation, and `load_transcriptome_variants()` for VCF→matrix conversion.
 - `metainformant.gwas.visualization.eqtl_visualization`: Plotting utilities for volcano plots, summary grids, and genotype/expression boxplots.
 - `metainformant.multiomics.analysis.integration`: Helper functions to convert and harmonize VCFs and expression `DataFrames`.
 

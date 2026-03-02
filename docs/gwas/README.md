@@ -98,6 +98,7 @@ integrated = integration.integrate_omics_data(
 
 ## 🔗 Related
 
+- **[eQTL Integration Pipeline](../eqtl/README.md)** - Maps DNA variants against RNA expression
 - [metainformant.multiomics](../multiomics/) - Multi-omic integration
 - [metainformant.rna](../rna/) - RNA-seq analysis
 - [config/gwas/](../../../config/gwas/) - Configuration files
