@@ -84,7 +84,7 @@ class GCPDeployer:
             "--zone", self.cfg.zone,
             "--machine-type", self.cfg.machine_type,
             "--boot-disk-size", f"{self.cfg.disk_size_gb}GB",
-            "--boot-disk-type", "pd-ssd",
+            "--boot-disk-type", "pd-standard",
             "--image-family", self.cfg.image_family,
             "--image-project", self.cfg.image_project,
             "--metadata-from-file", f"startup-script={startup_script}",
