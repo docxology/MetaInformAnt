@@ -6,8 +6,8 @@ filters out samples exceeding a max size, and writes the result.
 
 Usage:
     python3 scripts/rna/prepare_size_sorted_metadata.py \
-        --input blue/amalgkit/amellifera/work/metadata/metadata_selected.tsv \
-        --output blue/amalgkit/amellifera/work/metadata/metadata.tsv \
+        --input output/amalgkit/amellifera/work/metadata/metadata_selected.tsv \
+        --output output/amalgkit/amellifera/work/metadata/metadata.tsv \
         --max-gb 5.0
 """
 

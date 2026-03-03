@@ -1,5 +1,10 @@
 """Progress tracking for RNA-seq workflows.
 
+.. deprecated::
+    This JSON-based tracker is superseded by :mod:`metainformant.rna.engine.progress_db`
+    which provides SQLite-backed tracking with O(1) queries and thread safety.
+    This module is kept for backward compatibility only.
+
 This module provides utilities for tracking progress and status of RNA-seq analysis workflows.
 """
 

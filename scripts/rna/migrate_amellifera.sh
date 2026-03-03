@@ -2,7 +2,7 @@
 # Migrate legacy amellifera data to new structure
 
 SPECIES="amellifera"
-BASE="blue/amalgkit/$SPECIES"
+BASE="output/amalgkit/$SPECIES"
 OLD_QUANT="$BASE/quant"
 NEW_WORK="$BASE/work"
 NEW_QUANT="$NEW_WORK/quant"

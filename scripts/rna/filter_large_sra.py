@@ -34,7 +34,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         input_file = sys.argv[1]
     else:
-        input_file = "blue/amalgkit/amellifera/work/metadata/metadata_selected.tsv"
+        input_file = "output/amalgkit/amellifera/work/metadata/metadata_selected.tsv"
     
     if os.path.exists(input_file):
         filter_large_sra(input_file)

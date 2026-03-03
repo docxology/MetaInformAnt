@@ -3,7 +3,7 @@
 Amalgkit Pipeline Status Monitor
 ================================
 
-Scans the `blue/amalgkit` directory to report:
+Scans the `output/amalgkit` directory to report:
 - Count of quantified samples per species
 - Completion status of downstream steps (Merge, Curate, Sanity)
 - Active failures or running processes
@@ -18,7 +18,7 @@ from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 import time
 
-AMALGKIT_DIR = Path("blue/amalgkit")
+AMALGKIT_DIR = Path("output/amalgkit")
 SPECIES_ORDER = [
     # Small (<50)
     "anoplolepis_gracilipes", "acromyrmex_echinatior", "formica_exsecta", 

@@ -23,6 +23,7 @@ from metainformant.core.utils import logging as log_utils
 from metainformant.rna.amalgkit import amalgkit
 from metainformant.rna.amalgkit.tissue_normalizer import apply_tissue_normalization
 from metainformant.rna.retrieval.ena_downloader import ENADownloader
+from metainformant.rna.engine.progress_db import ProgressDB
 
 # Determine project root if possible, or use relative paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
@@ -36,10 +37,14 @@ logger = log_utils.get_logger(__name__)
 class StreamingPipelineOrchestrator:
     """Orchestrator for streaming ENA download -> Quant processing."""
 
-    def __init__(self, config_dir: Path = CONFIG_DIR, log_dir: Path = LOG_DIR):
+    def __init__(self, config_dir: Path = CONFIG_DIR, log_dir: Path = LOG_DIR,
+                 db_path: Optional[Path] = None):
         self.config_dir = Path(config_dir)
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
+        
+        # SQLite progress database
+        self.db = ProgressDB(db_path) if db_path else ProgressDB()
         
         # Configure logging to file as well
         timestamp = time.strftime("%Y%m%d_%H%M%S")
@@ -101,17 +106,22 @@ class StreamingPipelineOrchestrator:
 
         return success
 
-    def quant_sample(self, config_path: Path, batch_index: int, species_name: str, threads: int) -> bool:
-        """Run amalgkit quant for a single sample using --batch."""
+    def quant_sample(self, config_path: Path, batch_index: int, species_name: str, threads: int) -> tuple:
+        """Run amalgkit quant for a single sample using --batch.
+        
+        Returns:
+            Tuple of (success: bool, error_msg: str or None).
+        """
         with open(config_path) as f:
             cfg = yaml.safe_load(f)
 
         steps_cfg = cfg.get("steps", {})
         quant_cfg = steps_cfg.get("quant", {})
-        quant_out = quant_cfg.get("out_dir", f"blue/amalgkit/{species_name}/work")
+        # Always use the work dir for quant output so results land in the expected location
+        quant_out = f"output/amalgkit/{species_name}/work"
         
         # Determine metadata path
-        work_dir = Path(f"blue/amalgkit/{species_name}/work")
+        work_dir = Path(f"output/amalgkit/{species_name}/work")
         meta_path = None
         for mp in [work_dir / "metadata/metadata.tsv", work_dir / "metadata/metadata_selected.tsv"]:
             if mp.exists():
@@ -120,7 +130,7 @@ class StreamingPipelineOrchestrator:
         
         if not meta_path:
             logger.error(f"No metadata found for {species_name} batch {batch_index}")
-            return False
+            return False, f"No metadata found for {species_name}"
 
         # Build command
         cmd = [
@@ -144,9 +154,6 @@ class StreamingPipelineOrchestrator:
         if index_dir and Path(index_dir).exists():
             cmd.extend(["--index_dir", index_dir])
         
-        # Amalgkit usually handles fasta_dir via index building, but can pass if needed
-        # fasta_dir = genome_cfg.get("fasta_dir", "")
-        
         log_path = self.log_dir / f"{species_name}_quant.log"
         
         try:
@@ -160,16 +167,35 @@ class StreamingPipelineOrchestrator:
                 if result.stdout: log_f.write(f"-- STDOUT --\n{result.stdout}\n")
                 if result.stderr: log_f.write(f"-- STDERR --\n{result.stderr}\n")
             
-            return result.returncode == 0
+            if result.returncode == 0:
+                return True, None
+            
+            # Extract meaningful error from amalgkit output
+            error_msg = "Quantification Failed"
+            for line in (result.stdout + result.stderr).splitlines():
+                line_lower = line.strip().lower()
+                if any(kw in line_lower for kw in ["error", "exiting", "no sample", "not found", "failed", "exception"]):
+                    error_msg = line.strip()[:120]
+                    break
+            return False, error_msg
+        except subprocess.TimeoutExpired:
+            logger.error(f"Quant timeout batch {batch_index} after 2h")
+            with open(log_path, 'a') as log_f:
+                log_f.write(f"TIMEOUT after 7200s\n")
+            return False, "Quant timeout (>2h)"
         except Exception as e:
             logger.error(f"Quant exception batch {batch_index}: {e}")
             with open(log_path, 'a') as log_f:
                 log_f.write(f"EXCEPTION: {e}\n")
-            return False
+            return False, f"Exception: {e}"
 
     def is_quantified(self, species_name: str, srr_id: str) -> bool:
-        """Check if sample is already quantified."""
-        quant_dir = Path(f"blue/amalgkit/{species_name}/work/quant/{srr_id}")
+        """Check if sample is already quantified (DB-first, filesystem fallback)."""
+        db_state = self.db.get_state(species_name, srr_id)
+        if db_state == "quantified":
+            return True
+        # Filesystem fallback for samples not yet in DB
+        quant_dir = Path(f"output/amalgkit/{species_name}/work/quant/{srr_id}")
         return any(quant_dir.glob("*_abundance.tsv")) if quant_dir.exists() else False
 
     def process_single_sample(self, srr_id: str, batch_idx: int, fastq_dir: Path, 
@@ -186,16 +212,26 @@ class StreamingPipelineOrchestrator:
             return result
         
         # Download
+        self.db.set_state(species_name, srr_id, "downloading")
         if not self.download_fastq(srr_id, fastq_dir):
-            result["error"] = "Download Failed (all sources: ENA FTP/HTTP, NCBI)"
+            error_msg = "Download Failed (all sources: ENA FTP/HTTP, NCBI)"
+            self.db.set_state(species_name, srr_id, "failed", error=error_msg)
+            result["error"] = error_msg
             return result
+        self.db.set_state(species_name, srr_id, "downloaded")
         result["downloaded"] = True
         
         # Quantify
-        success = self.quant_sample(config_path, batch_idx, species_name, threads)
+        self.db.set_state(species_name, srr_id, "quantifying")
+        success, quant_error = self.quant_sample(config_path, batch_idx, species_name, threads)
+        if success:
+            self.db.set_state(species_name, srr_id, "quantified")
+        else:
+            error_msg = quant_error or "Quantification Failed"
+            self.db.set_state(species_name, srr_id, "failed", error=error_msg)
         result["quantified"] = success
         if not success:
-            result["error"] = "Quantification Failed"
+            result["error"] = quant_error or "Quantification Failed"
         
         return result
 
@@ -208,11 +244,21 @@ class StreamingPipelineOrchestrator:
             logger.error(f"Failed to load config {config_path}: {e}")
             return False
             
-        index_dir = cfg.get('genome', {}).get('index_dir', '')
+        # Check multiple possible index locations
+        # 1. From quant config (has the correct capitalized path)
+        quant_index_dir = cfg.get('steps', {}).get('quant', {}).get('index_dir', '')
+        # 2. From genome config dest_dir + /index
+        genome_dest = cfg.get('genome', {}).get('dest_dir', '')
+        genome_index_dir = f"{genome_dest}/index" if genome_dest else ''
+        # 3. Legacy genome.index_dir
+        legacy_index_dir = cfg.get('genome', {}).get('index_dir', '')
+        
         search_dirs = [
-            index_dir,
-            f"blue/amalgkit/{species_name}/work/index",
-            f"blue/amalgkit/shared/genome/{species_name}/index",
+            quant_index_dir,
+            genome_index_dir,
+            legacy_index_dir,
+            f"output/amalgkit/{species_name}/work/index",
+            f"output/amalgkit/shared/genome/{species_name}/index",
         ]
         
         logger.info(f"Verifying index for {species_name}...")
@@ -300,7 +346,7 @@ class StreamingPipelineOrchestrator:
             return False
 
         # Metadata Handling
-        work_dir = Path(f"blue/amalgkit/{species_name}/work")
+        work_dir = Path(f"output/amalgkit/{species_name}/work")
         metadata_path = work_dir / "metadata/metadata.tsv"
         
         if not metadata_path.exists():
@@ -333,11 +379,24 @@ class StreamingPipelineOrchestrator:
             logger.info("No samples to process.")
             return True
 
+        # Register samples in progress DB and reconcile existing results
+        srr_col = "run" if "run" in filtered.columns else "run_accession"
+        all_srr_ids = filtered[srr_col].tolist()
+        self.db.init_species(species_name, all_srr_ids)
+        
+        quant_dir = Path(f"output/amalgkit/{species_name}/work/quant")
+        reconciled = self.db.reconcile(species_name, quant_dir)
+        if reconciled:
+            logger.info(f"Reconciled {reconciled} already-quantified samples from filesystem")
+
+        # Mark all filtered samples as sampled so amalgkit quant processes them
+        filtered["is_sampled"] = "yes"
+        
         # Write sorted metadata for batch processing
         filtered.to_csv(metadata_path, sep="\t", index=False)
         
         # ThreadPool Execution
-        fastq_dir = Path(f"blue/amalgkit/{species_name}/fastq/getfastq")
+        fastq_dir = Path(f"output/amalgkit/{species_name}/fastq/getfastq")
         threads_per_worker = max(1, threads // workers)
         
         srr_col = "run" if "run" in filtered.columns else "run_accession"

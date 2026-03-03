@@ -31,7 +31,7 @@ else:
         print(f"❌ FAILED to read index directory: {e}")
         print("\n⚠️  ACTION REQUIRED: This specific directory seems blocked.")
         print("   If 'blue' was readable but this is not, it might be an extended attribute.")
-        print("   Try: xattr -d com.apple.quarantine blue/amalgkit")
+        print("   Try: xattr -d com.apple.quarantine output/amalgkit")
         sys.exit(1)
 
 # 3. Check write access (creating a temp file)

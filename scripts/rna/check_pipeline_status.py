@@ -4,6 +4,9 @@
 Shows per-species quantification progress, downstream step completion,
 and overall pipeline health at a glance.
 
+Uses the SQLite progress database for instant queries instead of
+scanning potentially huge directories.
+
 Usage:
     # Quick status overview
     python3 scripts/rna/check_pipeline_status.py
@@ -13,6 +16,12 @@ Usage:
 
     # Check a single species
     python3 scripts/rna/check_pipeline_status.py --species solenopsis_invicta
+
+    # Show failed samples
+    python3 scripts/rna/check_pipeline_status.py --failed
+
+    # Generate visual dashboard (PDF + PNG)
+    python3 scripts/rna/check_pipeline_status.py --dashboard
 """
 from __future__ import annotations
 
@@ -24,10 +33,12 @@ from pathlib import Path
 # Bootstrap src path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
 
+from metainformant.rna.engine.progress_db import ProgressDB
+
 # ---------- constants ----------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-DATA_ROOT = Path("blue/amalgkit")
-LOG_DIR = PROJECT_ROOT / "output" / "amalgkit"
+DATA_ROOT = Path("output/amalgkit")
+DB_PATH = DATA_ROOT / "pipeline_progress.db"
 
 SPECIES_ORDER = [
     "anoplolepis_gracilipes",
@@ -54,35 +65,10 @@ SPECIES_ORDER = [
     "amellifera",
 ]
 
+ALL_STATES = ["pending", "downloading", "downloaded", "quantifying", "quantified", "failed"]
+
+
 # ---------- helpers ----------
-
-def count_quantified(species: str) -> int:
-    """Count directories with an abundance file (quant completed)."""
-    quant_dir = DATA_ROOT / species / "work" / "quant"
-    if not quant_dir.exists():
-        return 0
-    return sum(
-        1 for d in quant_dir.iterdir()
-        if d.is_dir() and any(d.glob("*_abundance.tsv"))
-    )
-
-
-def count_total_samples(species: str) -> int | None:
-    """Read metadata to count total samples (if metadata exists)."""
-    meta_path = DATA_ROOT / species / "work" / "metadata" / "metadata.tsv"
-    if not meta_path.exists():
-        return None
-    try:
-        import pandas as pd
-        df = pd.read_csv(meta_path, sep="\t", low_memory=False)
-        return len(df)
-    except Exception:
-        # Fallback: line count minus header
-        try:
-            return sum(1 for _ in open(meta_path)) - 1
-        except Exception:
-            return None
-
 
 def check_downstream(species: str) -> str:
     """Check if merge/curate/sanity outputs exist."""
@@ -103,21 +89,6 @@ def check_downstream(species: str) -> str:
         return "❌ Not run"
 
 
-def get_latest_log_line(species: str) -> str | None:
-    """Get the last meaningful line from the workflow log."""
-    log_path = LOG_DIR / f"{species}_workflow.log"
-    if not log_path.exists():
-        return None
-    try:
-        lines = log_path.read_text().strip().split("\n")
-        for line in reversed(lines):
-            if line.strip():
-                return line.strip()[-100:]  # Last 100 chars
-    except Exception:
-        pass
-    return None
-
-
 def check_process_running() -> bool:
     """Quick check if any pipeline processes are active."""
     try:
@@ -135,61 +106,106 @@ def check_process_running() -> bool:
 
 def main():
     parser = argparse.ArgumentParser(description="Amalgkit pipeline status checker")
-    parser.add_argument("-v", "--verbose", action="store_true", help="Show sample-level detail")
+    parser.add_argument("-v", "--verbose", action="store_true", help="Show per-state breakdown")
     parser.add_argument("--species", type=str, help="Check a single species only")
+    parser.add_argument("--failed", action="store_true", help="Show failed samples")
+    parser.add_argument("--dashboard", action="store_true",
+                        help="Generate visual dashboard PDF+PNG to output/")
     args = parser.parse_args()
 
     # Change to project root so relative paths resolve
     os.chdir(PROJECT_ROOT)
 
+    if not DB_PATH.exists():
+        print("  ⚠  No progress database found. Run the pipeline to initialize it.")
+        print(f"  Expected at: {DB_PATH}")
+        return
+
+    db = ProgressDB(DB_PATH)
+    counts = db.get_counts()
+
     species_list = [args.species] if args.species else SPECIES_ORDER
 
     running = check_process_running()
-    print("=" * 72)
+    print("=" * 80)
     print(f"  Amalgkit Pipeline Status  │  Process: {'🟢 RUNNING' if running else '🔴 STOPPED'}")
-    print("=" * 72)
-    print(f"{'Species':<30} {'Quant':>8} {'Total':>8} {'%':>6}  {'Downstream':<16}")
-    print("-" * 72)
+    print("=" * 80)
 
-    total_quant = 0
-    total_samples = 0
+    if args.verbose:
+        header = f"{'Species':<28}"
+        for s in ALL_STATES:
+            header += f" {s[:7]:>8}"
+        header += f" {'Total':>7}  {'Downstream':<16}"
+        print(header)
+    else:
+        print(f"{'Species':<28} {'Quant':>8} {'Total':>8} {'%':>6}  {'Downstream':<16}")
+    print("-" * 80)
+
+    grand_quant = 0
+    grand_total = 0
+
     for sp in species_list:
-        q = count_quantified(sp)
-        t = count_total_samples(sp)
+        sp_counts = counts.get(sp, {})
+        total = sum(sp_counts.values())
+        quant = sp_counts.get("quantified", 0)
         ds = check_downstream(sp)
 
-        total_quant += q
-        total_samples += t or 0
-
-        pct = f"{100*q/t:.0f}%" if t and t > 0 else "?"
-        t_str = str(t) if t is not None else "?"
-
-        print(f"  {sp:<28} {q:>8} {t_str:>8} {pct:>6}  {ds}")
+        grand_quant += quant
+        grand_total += total
 
         if args.verbose:
-            last_log = get_latest_log_line(sp)
-            if last_log:
-                print(f"    └─ {last_log}")
+            row = f"  {sp:<26}"
+            for s in ALL_STATES:
+                row += f" {sp_counts.get(s, 0):>8}"
+            row += f" {total:>7}  {ds}"
+            print(row)
+        else:
+            pct = f"{100*quant/total:.0f}%" if total > 0 else "-"
+            t_str = str(total) if total > 0 else "-"
+            print(f"  {sp:<26} {quant:>8} {t_str:>8} {pct:>6}  {ds}")
 
-    print("-" * 72)
-    overall_pct = f"{100*total_quant/total_samples:.1f}%" if total_samples > 0 else "?"
-    print(f"  {'TOTAL':<28} {total_quant:>8} {total_samples:>8} {overall_pct:>6}")
-    print("=" * 72)
+    print("-" * 80)
+    overall_pct = f"{100*grand_quant/grand_total:.1f}%" if grand_total > 0 else "?"
+    if args.verbose:
+        row = f"  {'TOTAL':<26}"
+        totals_by_state = {}
+        for sp in species_list:
+            for s in ALL_STATES:
+                totals_by_state[s] = totals_by_state.get(s, 0) + counts.get(sp, {}).get(s, 0)
+        for s in ALL_STATES:
+            row += f" {totals_by_state.get(s, 0):>8}"
+        row += f" {grand_total:>7}"
+        print(row)
+    else:
+        print(f"  {'TOTAL':<26} {grand_quant:>8} {grand_total:>8} {overall_pct:>6}")
+    print("=" * 80)
 
-    # Latest orchestrator log info
-    logs = sorted(LOG_DIR.glob("streaming_orchestrator_*.log"))
-    if logs:
-        latest = logs[-1]
-        mtime = os.path.getmtime(latest)
-        from datetime import datetime
-        age_mins = (datetime.now().timestamp() - mtime) / 60
-        print(f"\n  Latest log: {latest.name}")
-        print(f"  Last modified: {datetime.fromtimestamp(mtime):%Y-%m-%d %H:%M:%S} ({age_mins:.0f} min ago)")
+    # Show failed samples if requested
+    if args.failed:
+        failed = db.get_failed()
+        if failed:
+            print(f"\n  Failed Samples ({len(failed)}):")
+            print(f"  {'Species':<26} {'SRR ID':<16} {'Error':<30} {'When'}")
+            print("  " + "-" * 76)
+            for f in failed[:50]:
+                print(f"  {f['species']:<26} {f['srr_id']:<16} {(f['error'] or '?'):<30} {f['updated_at']}")
+            if len(failed) > 50:
+                print(f"  ... and {len(failed) - 50} more")
+        else:
+            print("\n  No failed samples. 🎉")
 
     if not running:
         print("\n  ⚠  No active pipeline processes detected.")
-        print("  To restart:  cd /home/trim/Documents/Git/MetaInformAnt && .venv/bin/python scripts/rna/run_all_species_parallel.py")
+        print("  To restart:  cd /home/trim/Documents/Git/MetaInformAnt && "
+              ".venv/bin/python scripts/rna/run_all_species.py")
     print()
+
+    db.close()
+
+    # Generate dashboard if requested
+    if args.dashboard:
+        from metainformant.rna.engine.progress_dashboard import generate_dashboard
+        generate_dashboard(db_path=DB_PATH, output_dir=Path("output/amalgkit"))
 
 
 if __name__ == "__main__":

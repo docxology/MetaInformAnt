@@ -169,8 +169,8 @@ def get_species_status(args):
         return base_status
 
     # 1. Downloaded Count (Fastq files)
-    # Location: blue/amalgkit/{species}/fastq/getfastq/{SRR}/{SRR}.fastq.gz
-    # OR blue/amalgkit/{species}/work/getfastq/
+    # Location: output/amalgkit/{species}/fastq/getfastq/{SRR}/{SRR}.fastq.gz
+    # OR output/amalgkit/{species}/work/getfastq/
     # Amalgkit default is usually defined in config.
     # Usually: fastq/getfastq per spec
     # Let's check typical paths

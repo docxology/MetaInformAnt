@@ -1,0 +1,45 @@
+# MetaInformAnt Docker ignore
+# Keep the image small — only include what's needed for the pipeline
+
+# Version control
+.git/
+.gitignore
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+.mypy_cache/
+.pytest_cache/
+.uv-cache/
+.venv/
+
+# Output (mounted as volume, not copied)
+output/
+
+# Tests (not needed for pipeline execution)
+tests/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Notebooks
+notebooks/
+*.ipynb
+
+# Large data files
+*.gz
+*.bam
+*.sam
+*.fastq
