@@ -52,7 +52,7 @@ RUN cd /tmp && \
 
 # ── fastp 0.24.0 ────────────────────────────────────────────────────────
 RUN cd /tmp && \
-    wget -q https://github.com/OpenGene/fastp/releases/download/v0.24.0/fastp && \
+    wget -q http://opengene.org/fastp/fastp && \
     chmod +x fastp && mv fastp /usr/local/bin/
 
 # ── SRA Toolkit (fasterq-dump) ──────────────────────────────────────────
