@@ -76,10 +76,7 @@ COPY config/ ./config/
 
 # Install Python deps
 RUN uv pip install --system -e "." && \
-    cd /tmp && wget -qO amalgkit.tar.gz https://github.com/Kumaoka/amalgkit/archive/refs/heads/master.tar.gz && \
-    mkdir amalgkit && tar -xzf amalgkit.tar.gz -C amalgkit --strip-components=1 && \
-    cd amalgkit && uv pip install --system . && \
-    rm -rf /tmp/amalgkit*
+    uv pip install --system "git+https://github.com/Kumaoka/amalgkit.git"
 
 # ── Output volume ───────────────────────────────────────────────────────
 RUN mkdir -p /app/output/amalgkit
