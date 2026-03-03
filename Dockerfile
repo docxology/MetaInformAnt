@@ -76,7 +76,9 @@ COPY config/ ./config/
 
 # Install Python deps
 RUN uv pip install --system -e "." && \
-    pip install amalgkit
+    cd /tmp && git clone https://github.com/Kumaoka/amalgkit.git && \
+    cd amalgkit && uv pip install --system . && \
+    rm -rf /tmp/amalgkit
 
 # ── Output volume ───────────────────────────────────────────────────────
 RUN mkdir -p /app/output/amalgkit
