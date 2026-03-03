@@ -1,0 +1,13 @@
+{
+	"n_targets": 22059,
+	"n_bootstraps": 0,
+	"n_processed": 6534376,
+	"n_pseudoaligned": 4672541,
+	"n_unique": 3077764,
+	"p_pseudoaligned": 71.5,
+	"p_unique": 47.1,
+	"kallisto_version": "0.48.0",
+	"index_version": 10,
+	"start_time": "Mon Mar  2 11:14:05 2026",
+	"call": "kallisto quant --threads 1 -i /home/trim/Documents/Git/MetaInformAnt/output/amalgkit/acromyrmex_echinatior/work/index/Acromyrmex_echinatior_transcripts.idx -o /home/trim/Documents/Git/MetaInformAnt/output/amalgkit/acromyrmex_echinatior/work/quant/ERR202910 /home/trim/Documents/Git/MetaInformAnt/output/amalgkit/acromyrmex_echinatior/work/getfastq/ERR202910/ERR202910_1.fastq.gz /home/trim/Documents/Git/MetaInformAnt/output/amalgkit/acromyrmex_echinatior/work/getfastq/ERR202910/ERR202910_2.fastq.gz"
+}

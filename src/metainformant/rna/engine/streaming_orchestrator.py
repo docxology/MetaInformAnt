@@ -12,6 +12,7 @@ import logging
 import os
 import subprocess
 import sys
+import threading
 import time
 import urllib.request
 import yaml
@@ -45,6 +46,9 @@ class StreamingPipelineOrchestrator:
         
         # SQLite progress database
         self.db = ProgressDB(db_path) if db_path else ProgressDB()
+        
+        # Lock for filesystem operations (symlink cleanup, directory creation)
+        self._fs_lock = threading.Lock()
         
         # Configure logging to file as well
         timestamp = time.strftime("%Y%m%d_%H%M%S")
@@ -89,12 +93,14 @@ class StreamingPipelineOrchestrator:
         """
         sample_dir = out_dir / srr_id
         # Remove broken symlinks in the path chain (amalgkit preprocessing creates
-        # symlinks like work/getfastq -> /local/path that are invalid inside Docker)
-        for check_path in [out_dir, sample_dir]:
-            if check_path.is_symlink() and not check_path.exists():
-                logger.warning(f"Removing broken symlink: {check_path} -> {os.readlink(check_path)}")
-                check_path.unlink()
-        sample_dir.mkdir(parents=True, exist_ok=True)
+        # symlinks like work/getfastq -> /local/path that are invalid inside Docker).
+        # Use a lock because 28+ threads may race on the same parent directory.
+        with self._fs_lock:
+            for check_path in [out_dir, sample_dir]:
+                if check_path.is_symlink() and not check_path.exists():
+                    logger.warning(f"Removing broken symlink: {check_path} -> {os.readlink(check_path)}")
+                    check_path.unlink()
+            sample_dir.mkdir(parents=True, exist_ok=True)
 
         downloader = ENADownloader(timeout=7200, retries=3)
         success, message, downloaded_files = downloader.download_run(srr_id, sample_dir)
@@ -197,9 +203,12 @@ class StreamingPipelineOrchestrator:
 
     def is_quantified(self, species_name: str, srr_id: str) -> bool:
         """Check if sample is already quantified (DB-first, filesystem fallback)."""
-        db_state = self.db.get_state(species_name, srr_id)
-        if db_state == "quantified":
-            return True
+        try:
+            db_state = self.db.get_state(species_name, srr_id)
+            if db_state == "quantified":
+                return True
+        except Exception:
+            pass  # Fall through to filesystem check on DB errors
         # Filesystem fallback for samples not yet in DB
         quant_dir = Path(f"output/amalgkit/{species_name}/work/quant/{srr_id}")
         return any(quant_dir.glob("*_abundance.tsv")) if quant_dir.exists() else False

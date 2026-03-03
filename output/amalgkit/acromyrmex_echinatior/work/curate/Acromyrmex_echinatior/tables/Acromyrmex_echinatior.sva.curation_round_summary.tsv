@@ -1,0 +1,4 @@
+step	round	reason	num_runs_before	num_runs_after	num_runs_removed	removed_runs
+mapping_rate_zero	0	mapping_rate_below_or_equal_0	21	21	0	
+mapping_rate_cutoff	1	mapping_rate_below_or_equal_20_percent	21	21	0	
+correlation_iter	2	low_within_sample_group_correlation	21	21	0	

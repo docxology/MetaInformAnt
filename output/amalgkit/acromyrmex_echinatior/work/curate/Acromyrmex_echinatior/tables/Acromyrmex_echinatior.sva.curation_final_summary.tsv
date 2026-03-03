@@ -1,0 +1,2 @@
+scientific_name	batch_effect_alg	mapping_rate_cutoff	correlation_threshold	one_outlier_per_iteration	total_runtime_sec	num_total_runs_in_species	num_runs_after_sample_group_filter	num_runs_final_kept	num_runs_final_excluded	final_kept_runs	final_excluded_runs
+Acromyrmex echinatior	sva	0.2	0.3	FALSE	23.257	24	24	21	3	SRR7772543 SRR7772544 SRR7772545 SRR7772546 SRR7772547 SRR7772548 SRR7772549 SRR7772550 SRR7772551 SRR7772554 SRR7772555 SRR7772559 SRR1015531 SRR1015527 SRR1015523 SRR1015519 SRR1015515 SRR1015511 SRR1015507 SRR1015503 SRR1015499	SRR7772552 SRR7772553 SRR7772556

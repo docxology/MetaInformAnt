@@ -140,10 +140,11 @@ class ProgressDB:
 
     def get_state(self, species: str, srr_id: str) -> Optional[str]:
         """Get the current state of a single sample, or None if not tracked."""
-        row = self._conn.execute(
-            "SELECT state FROM samples WHERE species = ? AND srr_id = ?",
-            (species, srr_id),
-        ).fetchone()
+        with self._lock:
+            row = self._conn.execute(
+                "SELECT state FROM samples WHERE species = ? AND srr_id = ?",
+                (species, srr_id),
+            ).fetchone()
         return row[0] if row else None
 
     def get_counts(self, species: Optional[str] = None) -> Dict[str, Dict[str, int]]:
@@ -156,16 +157,17 @@ class ProgressDB:
                 "atta_cephalotes": {"pending": 215, "downloaded": 5, ...},
             }
         """
-        if species:
-            rows = self._conn.execute(
-                "SELECT species, state, COUNT(*) FROM samples "
-                "WHERE species = ? GROUP BY species, state",
-                (species,),
-            ).fetchall()
-        else:
-            rows = self._conn.execute(
-                "SELECT species, state, COUNT(*) FROM samples GROUP BY species, state"
-            ).fetchall()
+        with self._lock:
+            if species:
+                rows = self._conn.execute(
+                    "SELECT species, state, COUNT(*) FROM samples "
+                    "WHERE species = ? GROUP BY species, state",
+                    (species,),
+                ).fetchall()
+            else:
+                rows = self._conn.execute(
+                    "SELECT species, state, COUNT(*) FROM samples GROUP BY species, state"
+                ).fetchall()
 
         result: Dict[str, Dict[str, int]] = {}
         for sp, state, count in rows:
@@ -180,32 +182,35 @@ class ProgressDB:
         Returns::
             {"amellifera": 3154, "atta_cephalotes": 220, ...}
         """
-        rows = self._conn.execute(
-            "SELECT species, COUNT(*) FROM samples GROUP BY species"
-        ).fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT species, COUNT(*) FROM samples GROUP BY species"
+            ).fetchall()
         return {sp: count for sp, count in rows}
 
     def get_samples(self, species: str, state: str) -> List[str]:
         """Get all SRR IDs in a given state for a species."""
-        rows = self._conn.execute(
-            "SELECT srr_id FROM samples WHERE species = ? AND state = ?",
-            (species, state),
-        ).fetchall()
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT srr_id FROM samples WHERE species = ? AND state = ?",
+                (species, state),
+            ).fetchall()
         return [r[0] for r in rows]
 
     def get_failed(self, species: Optional[str] = None) -> List[Dict[str, str]]:
         """Get all failed samples with their error messages."""
-        if species:
-            rows = self._conn.execute(
-                "SELECT species, srr_id, error, updated_at FROM samples "
-                "WHERE state = 'failed' AND species = ? ORDER BY updated_at DESC",
-                (species,),
-            ).fetchall()
-        else:
-            rows = self._conn.execute(
-                "SELECT species, srr_id, error, updated_at FROM samples "
-                "WHERE state = 'failed' ORDER BY species, updated_at DESC",
-            ).fetchall()
+        with self._lock:
+            if species:
+                rows = self._conn.execute(
+                    "SELECT species, srr_id, error, updated_at FROM samples "
+                    "WHERE state = 'failed' AND species = ? ORDER BY updated_at DESC",
+                    (species,),
+                ).fetchall()
+            else:
+                rows = self._conn.execute(
+                    "SELECT species, srr_id, error, updated_at FROM samples "
+                    "WHERE state = 'failed' ORDER BY species, updated_at DESC",
+                ).fetchall()
         return [
             {"species": r[0], "srr_id": r[1], "error": r[2], "updated_at": r[3]}
             for r in rows
