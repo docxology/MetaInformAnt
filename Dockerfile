@@ -76,7 +76,7 @@ COPY config/ ./config/
 
 # Install Python deps
 RUN uv pip install --system -e "." && \
-    uv pip install --system amalgkit
+    pip install amalgkit
 
 # ── Output volume ───────────────────────────────────────────────────────
 RUN mkdir -p /app/output/amalgkit
