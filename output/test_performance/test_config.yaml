@@ -1,1 +1,0 @@
-{"work_dir": "output/test_performance/work", "threads": 4, "species_list": ["Homo sapiens"], "filters": {"require_tissue": true, "min_spots": 1000000, "platform": "Illumina"}, "steps": ["metadata", "config"]}

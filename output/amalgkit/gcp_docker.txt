@@ -1,2 +1,0 @@
-CONTAINER ID   IMAGE          COMMAND                  CREATED        STATUS                    PORTS     NAMES
-545f0c89cc25   56a9d102e952   "/bin/sh -c 'cd /tmp…"   13 hours ago   Exited (8) 13 hours ago             romantic_mendeleev

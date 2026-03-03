@@ -1,8 +1,0 @@
-{
-  "vcf_file": "/home/trim/Documents/Git/MetaInformAnt/output/eqtl/amellifera/samples/SRR21601885/variants.vcf.gz",
-  "n_records": 388,
-  "n_snps": 388,
-  "n_indels": 0,
-  "n_pass": 0,
-  "ts_tv_ratio": 5.81
-}
