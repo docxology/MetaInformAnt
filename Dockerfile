@@ -81,7 +81,8 @@ RUN uv pip install --system -e "." && \
     wget -qO micromamba.tar.bz2 "https://micro.mamba.pm/api/micromamba/linux-64/latest" && \
     tar -xjf micromamba.tar.bz2 bin/micromamba && \
     export MAMBA_ROOT_PREFIX=/opt/conda && \
-    bin/micromamba create -y -p /usr/local -c conda-forge -c bioconda amalgkit && \
+    bin/micromamba create -y -p /opt/conda -c conda-forge -c bioconda amalgkit && \
+    ln -s /opt/conda/bin/amalgkit /usr/local/bin/amalgkit && \
     mv bin/micromamba /usr/local/bin/micromamba && \
     rm -rf /tmp/micromamba* bin
 
