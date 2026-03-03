@@ -801,6 +801,7 @@ def sanitize_params_for_cli(subcommand: str, params: Dict[str, Any]) -> Dict[str
         "merge": {"batch_size", "output_format"},
         "cstmm": {"normalization", "min_expression"},
         "csca": {"correlation_method"},
+        "config": {"config_dir"},
     }
 
     if subcommand in INVALID_PARAMS:
