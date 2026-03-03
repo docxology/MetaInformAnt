@@ -287,7 +287,8 @@ def execute_workflow(
     # Check if we need to prepare reference genome (for quant step)
     has_quant_or_merge = (not steps) or any(s in ("quant", "merge", "index") for s in steps)
     if not steps or has_quant_or_merge:
-        prepare_reference_genome(config)
+        if not prepare_reference_genome(config):
+            raise RuntimeError("prepare_reference_genome failed")
 
     logger.info(f"Starting amalgkit workflow for species: {config.species_list}")
     logger.info(f"Working directory: {config.work_dir}")
