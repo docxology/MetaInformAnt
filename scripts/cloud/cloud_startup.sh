@@ -68,10 +68,14 @@ fi
 cd "$WORK_DIR"
 
 # ── Build Docker image ──────────────────────────────────────────────────
+# ── Build Docker image ──────────────────────────────────────────────────
 echo ""
 echo "▸ Preparing amalgkit dependencies..."
 if [ ! -d "amalgkit_source" ]; then
-    env GIT_TERMINAL_PROMPT=0 git clone -c core.askPass=echo https://github.com/Kumaoka/amalgkit.git amalgkit_source
+    # Force purge any poisoned token managers cached by the root GCP user
+    git config --system --unset credential.helper || true
+    git config --global --unset credential.helper || true
+    env GIT_TERMINAL_PROMPT=0 git clone -c credential.helper= -c core.askPass=echo https://github.com/Kumaoka/amalgkit.git amalgkit_source
 fi
 
 echo "▸ Building Docker image..."
