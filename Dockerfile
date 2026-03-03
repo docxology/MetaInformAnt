@@ -24,6 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
     wget \
+    bzip2 \
     pigz \
     zlib1g-dev \
     libhdf5-dev \
@@ -75,10 +76,14 @@ COPY scripts/ ./scripts/
 COPY config/ ./config/
 
 # Install Python deps
-COPY amalgkit_source/ /app/amalgkit_source/
 RUN uv pip install --system -e "." && \
-    cd /app/amalgkit_source && uv pip install --system . && \
-    rm -rf /app/amalgkit_source
+    cd /tmp && \
+    wget -qO micromamba.tar.bz2 "https://micro.mamba.pm/api/micromamba/linux-64/latest" && \
+    tar -xjf micromamba.tar.bz2 bin/micromamba && \
+    export MAMBA_ROOT_PREFIX=/opt/conda && \
+    bin/micromamba create -y -p /usr/local -c conda-forge -c bioconda amalgkit && \
+    mv bin/micromamba /usr/local/bin/micromamba && \
+    rm -rf /tmp/micromamba* bin
 
 # ── Output volume ───────────────────────────────────────────────────────
 RUN mkdir -p /app/output/amalgkit
