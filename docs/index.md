@@ -210,43 +210,24 @@ metainformant gwas run --config config/gwas_config.yaml
 :maxdepth: 2
 :caption: User Guides
 
-getting_started
-installation
-workflows
-configuration
-troubleshooting
+setup
+DOCUMENTATION_GUIDE
+TUTORIALS
+FAQ
+ERROR_HANDLING
 ```
 
 ### API Reference
 
 ```{toctree}
-:maxdepth: 3
-:caption: API Reference
+:maxdepth: 2
+:caption: Reference
 
-api/core
-api/dna
-api/rna
-api/protein
-api/gwas
-api/epigenome
-api/ontology
-api/phenotype
-api/ecology
-api/math
-api/ml
-api/networks
-api/singlecell
-api/quality
-api/visualization
-api/simulation
-api/life_events
-api/longread
-api/metagenomics
-api/structural_variants
-api/spatial
-api/pharmacogenomics
-api/metabolomics
-api/menu
+architecture
+cli
+ORCHESTRATION
+COMPARISON_GUIDES
+NO_MOCKING_POLICY
 ```
 
 ### Module Documentation
@@ -261,6 +242,7 @@ rna/index
 protein/index
 gwas/index
 epigenome/index
+eqtl/README
 ontology/index
 phenotype/index
 ecology/index
@@ -279,6 +261,7 @@ spatial/index
 pharmacogenomics/index
 metabolomics/index
 menu/index
+agents/rules/index
 ```
 
 ### Development
@@ -287,11 +270,7 @@ menu/index
 :maxdepth: 2
 :caption: Development
 
-contributing
 testing
-ci_cd
-building
-api_design
 ```
 
 ## Key Features

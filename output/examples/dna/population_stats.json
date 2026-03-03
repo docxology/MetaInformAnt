@@ -75,7 +75,7 @@
           "low_vs_high_diversity": {
             "pi_ratio": 16.25,
             "segregating_sites_ratio": 14.0,
-            "theta_ratio": 13.999999999999998
+            "theta_ratio": 14.0
           }
         },
         "neutrality_test_summary": {
@@ -90,15 +90,15 @@
       "diversity_statistics": {
         "high_diversity": {
           "nucleotide_diversity_pi": 0.325,
-          "pi_theta_ratio": 0.04836309523809523,
+          "pi_theta_ratio": 0.04836309523809524,
           "segregating_sites": 14,
-          "wattersons_theta": 6.720000000000001
+          "wattersons_theta": 6.72
         },
         "low_diversity": {
           "nucleotide_diversity_pi": 0.02,
-          "pi_theta_ratio": 0.04166666666666666,
+          "pi_theta_ratio": 0.04166666666666667,
           "segregating_sites": 1,
-          "wattersons_theta": 0.4800000000000001
+          "wattersons_theta": 0.48
         }
       },
       "genotype_analysis": {
@@ -156,7 +156,7 @@
         }
       },
       "population_differentiation": {
-        "fst_value": 0.09100241545893728,
+        "fst_value": 0.09100241545893727,
         "interpretation": {
           "0.0-0.05": "Little genetic differentiation",
           "0.05-0.15": "Moderate genetic differentiation",

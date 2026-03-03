@@ -8,12 +8,15 @@ Documentation agent context for METAINFORMANT's technical documentation.
 
 Documentation is organized by module domain:
 
+- `agents/` - Agent-based modeling and ecosystem simulation documentation
 - `core/` - Core infrastructure (I/O, config, paths, logging, parallel, caching)
 - `dna/` - DNA sequence analysis (alignment, phylogeny, population genetics)
-- `rna/` - RNA-seq and amalgkit workflow documentation
-- `gwas/` - GWAS pipeline (association, QC, visualization)
-- `protein/` - Protein analysis (sequences, structures, AlphaFold, UniProt, InterPro)
+- `ecology/` - Community diversity and ecology
 - `epigenome/` - Epigenomics (methylation, ChIP-seq, ATAC-seq)
+- `eqtl/` - eQTL integration pipeline (expression-genotype association)
+- `gwas/` - GWAS pipeline (association, QC, visualization)
+- `rna/` - RNA-seq and amalgkit workflow documentation
+- `protein/` - Protein analysis (sequences, structures, AlphaFold, UniProt, InterPro)
 - `networks/` - Biological networks (PPI, regulatory, community detection, pathways)
 - `multiomics/` - Multi-omic integration methods
 - `singlecell/` - Single-cell RNA-seq (preprocessing, clustering, trajectory)
@@ -24,7 +27,6 @@ Documentation is organized by module domain:
 - `information/` - Information theory (entropy, mutual information)
 - `ontology/` - Gene Ontology analysis and semantic similarity
 - `phenotype/` - Trait analysis
-- `ecology/` - Community diversity and ecology
 - `simulation/` - Synthetic data generation
 - `life_events/` - Event sequence analysis
 - `metagenomics/` - Microbiome (amplicon, shotgun, functional annotation)

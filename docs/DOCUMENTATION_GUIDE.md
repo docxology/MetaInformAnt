@@ -38,6 +38,7 @@ Each biological domain has its own subdirectory with consistent structure:
 | **DNA** | `docs/dna/` | Sequence analysis, alignment, phylogeny, population genetics |
 | **RNA** | `docs/rna/` | RNA-seq workflows, amalgkit integration |
 | **GWAS** | `docs/gwas/` | Genome-wide association studies |
+| **eQTL** | `docs/eqtl/` | Expression QTL integration pipeline |
 | **Protein** | `docs/protein/` | Protein sequences, structures, databases |
 | **Single-Cell** | `docs/singlecell/` | scRNA-seq preprocessing, clustering, trajectory |
 | **Networks** | `docs/networks/` | Biological networks, community detection |
@@ -53,6 +54,13 @@ Each biological domain has its own subdirectory with consistent structure:
 | **Phenotype** | `docs/phenotype/` | Phenotypic trait analysis |
 | **Epigenome** | `docs/epigenome/` | Methylation, ChIP-seq, ATAC-seq |
 | **Ecology** | `docs/ecology/` | Community analysis, diversity metrics |
+| **Long-read** | `docs/longread/` | PacBio/Nanopore sequencing, assembly |
+| **Metagenomics** | `docs/metagenomics/` | Amplicon, shotgun, functional annotation |
+| **Structural Variants** | `docs/structural_variants/` | CNV/SV detection, annotation, visualization |
+| **Spatial** | `docs/spatial/` | Spatial transcriptomics (Visium, MERFISH, Xenium) |
+| **Pharmacogenomics** | `docs/pharmacogenomics/` | Clinical variants, CPIC, PharmGKB |
+| **Metabolomics** | `docs/metabolomics/` | Mass spectrometry, pathway mapping |
+| **Agents** | `docs/agents/` | Agent-based modeling, ecosystem simulation |
 
 ### Domain Documentation Structure
 
@@ -157,7 +165,7 @@ Source code documentation mirrors the `src/metainformant/` structure:
 
 ---
 
-*This guide provides navigation for documentation organized across 19 biological domains, ensuring comprehensive coverage of METAINFORMANT's bioinformatics capabilities.*
+*This guide provides navigation for documentation organized across 27 biological domains, ensuring coverage of METAINFORMANT's bioinformatics capabilities.*
 
 
 

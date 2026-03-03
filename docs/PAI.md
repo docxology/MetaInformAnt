@@ -1,9 +1,9 @@
 # Personal AI Infrastructure (PAI) - docs
 
 ## 🧠 Context & Intent
-- **Path**: `/Users/mini/Documents/GitHub/metainformant/docs`
-- **Purpose**: Functionality for docs.
-- **Domain**: 
+- **Path**: `docs/`
+- **Purpose**: Technical documentation for all METAINFORMANT modules.
+- **Domain**: Documentation
 
 ## 🏗️ Virtual Hierarchy
 - **Type**: Documentation

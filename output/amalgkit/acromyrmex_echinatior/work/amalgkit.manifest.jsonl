@@ -88,3 +88,9 @@
 {"step": "metadata", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1771969811.9232285}
 {"step": "config", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1771969811.9232392}
 {"step": "select", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1771969811.923246}
+{"step": "merge", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1772466483.3117049}
+{"step": "curate", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1772466483.3117566}
+{"step": "sanity", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1772466483.311763}
+{"step": "merge", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1772480979.7400498}
+{"step": "curate", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1772480979.740068}
+{"step": "sanity", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1772480979.7400744}

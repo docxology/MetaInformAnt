@@ -76,7 +76,7 @@ Configuration is managed via YAML files in `config/amalgkit/`.
 ### Example Species Config
 
 ```yaml
-work_dir: blue/amalgkit/species_name/work
+work_dir: output/amalgkit/species_name/work
 threads: 16
 
 steps:
@@ -88,7 +88,7 @@ steps:
     index_dir: path/to/index
     fasta_dir: path/to/fasta
   merge:
-    out_dir: blue/amalgkit/species_name/work  # IMPORTANT: Must match quant output root
+    out_dir: output/amalgkit/species_name/work  # IMPORTANT: Must match quant output root
 ```
 
 ### Path Resolution
@@ -103,13 +103,13 @@ steps:
 
 * **Cause**: `merge` step looking for input files in the wrong directory structure.
 * **Fix**: Set `merge:out_dir` to the same path as `quant:out_dir` (the `work` directory).
-  * *Incorrect*: `out_dir: blue/amalgkit/species/merged`
-  * *Correct*: `out_dir: blue/amalgkit/species/work`
+  * *Incorrect*: `out_dir: output/amalgkit/species/merged`
+  * *Correct*: `out_dir: output/amalgkit/species/work`
 
 ### `curate` Failures
 
 * **Cause**: R script errors (e.g., missing columns, NA values).
-* **Fix**: Check `blue/amalgkit/species/logs/curate.stderr.log`.
+* **Fix**: Check `output/amalgkit/species/logs/curate.stderr.log`.
   * Use `skip_curation: yes` in config to bypass if curation is non-critical for initial analysis.
 
 ### Download Failures

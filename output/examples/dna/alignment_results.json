@@ -449,7 +449,7 @@
         "local",
         "custom_scoring"
       ],
-      "average_global_identity": 93.47222222222223,
+      "average_global_identity": 93.47222222222221,
       "custom_scoring_schemes_tested": 3,
       "total_alignments_performed": 10,
       "total_conserved_regions_found": 4,

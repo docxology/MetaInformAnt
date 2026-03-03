@@ -1,11 +1,10 @@
 # Resuming Amalgkit on Linux
 
-> **Snapshot**: 2026-02-19 10:36 PST — Mac processes killed, all results synced and committed.
+> **Snapshot**: 2026-03-02 — Pipeline running on Linux with SQLite-backed progress tracking.
 
 ## Prerequisites
 
 - Linux machine with Python 3.11+ and `uv` installed
-- The `blue/` external drive connected and mounted
 - Git clone of MetaInformAnt
 
 ## Quick Start
@@ -15,146 +14,134 @@
 git clone https://github.com/docxology/MetaInformAnt.git
 cd MetaInformAnt
 
-# 2. Update the blue/ symlink to point to your mount point
-rm blue
-ln -s /path/to/your/blue/mount/data blue
-# The drive layout is: blue/ -> <mount>/data/amalgkit/<species>/...
-
-# 3. Install dependencies
+# 2. Install dependencies
 uv sync
 
-# 4. Install amalgkit
-pip install amalgkit  # or: uv pip install amalgkit
+# 3. Install amalgkit
+uv pip install amalgkit
 
-# 5. Verify the data is accessible
-uv run python scripts/maintenance/count_amalgkit_progress.py
+# 4. Check pipeline status (instant, uses SQLite DB)
+uv run python scripts/rna/check_pipeline_status.py -v
 ```
 
-## Pipeline Progress at Transfer Time
+## Pipeline Progress Tracking
 
-| Species | GetFastQ | Quant | Status |
-|---|---|---|---|
-| acromyrmex_echinatior | 24 | 8 | Partial |
-| amellifera | 34 | 3 | Partial |
-| anoplolepis_gracilipes | 14 | 7 | Partial |
-| apis_mellifera_all | 0 | 0 | Metadata only |
-| atta_cephalotes | 354 | 148 | Partial |
-| camponotus_floridanus | 412 | 153 | Partial |
-| cardiocondyla_obscurior | 148 | 51 | Partial |
-| dinoponera_quadriceps | 28 | 2 | Partial |
-| formica_exsecta | 42 | 14 | Partial |
-| harpegnathos_saltator | 14 | 178 | **Needs getfastq** |
-| linepithema_humile | 306 | 109 | Partial |
-| monomorium_pharaonis | 310 | **360** | ✅ **Complete** |
-| nylanderia_fulva | 62 | 31 | Partial |
-| odontomachus_brunneus | 38 | 19 | Partial |
-| ooceraea_biroi | 412 | 206 | Partial |
-| pbarbatus | 36 | 18 | Partial |
-| solenopsis_invicta | 430 | 119 | Partial |
-| temnothorax_americanus | 64 | 32 | Partial |
-| temnothorax_curvispinosus | 86 | 43 | Partial |
-| temnothorax_longispinosus | 548 | 214 | **Was actively downloading** |
-| temnothorax_nylanderi | 60 | 30 | Partial |
-| vollenhovia_emeryi | 30 | 15 | Partial |
-| wasmannia_auropunctata | 52 | 26 | Partial |
+Progress is tracked via an **SQLite database** at `output/amalgkit/pipeline_progress.db`.
+This replaces the old approach of scanning the filesystem for files, which was too slow
+for species like `amellifera` (7,300+ samples).
+
+### Checking Status
+
+```bash
+# Quick overview
+uv run python scripts/rna/check_pipeline_status.py
+
+# Per-state breakdown (pending/downloading/quantifying/quantified/failed)
+uv run python scripts/rna/check_pipeline_status.py -v
+
+# Show failed samples with errors
+uv run python scripts/rna/check_pipeline_status.py --failed
+
+# Check a single species
+uv run python scripts/rna/check_pipeline_status.py --species amellifera
+
+# Generate visual dashboard (PDF + PNG)
+uv run python scripts/rna/check_pipeline_status.py --dashboard
+```
+
+### Sample States
+
+Each sample moves through the following states:
+
+```
+pending → downloading → downloaded → quantifying → quantified
+            ↘ failed       ↘ failed        ↘ failed
+```
+
+### Key Modules
+
+- `src/metainformant/rna/engine/progress_db.py` — `ProgressDB` class (SQLite, thread-safe)
+- `src/metainformant/rna/engine/progress_dashboard.py` — Dashboard visualization (PDF/PNG)
+- `src/metainformant/rna/engine/progress_tracker.py` — **Deprecated** (JSON-based, kept for backward compat)
 
 ## Resume Commands
 
-### Resume getfastq for a species (download FASTQ files)
+### Run the full streaming pipeline
 
 ```bash
-# Generic pattern:
-amalgkit getfastq \
-  --out_dir blue/amalgkit/<SPECIES>/fastq \
-  --metadata blue/amalgkit/<SPECIES>/work/metadata/metadata.tsv \
-  --threads 4 --redo no --aws yes --max_bp 50000000
-
-# Example for Harpegnathos (highest priority — most quant done but few fastq):
-nohup amalgkit getfastq \
-  --out_dir blue/amalgkit/harpegnathos_saltator/fastq \
-  --metadata blue/amalgkit/harpegnathos_saltator/work/metadata/metadata.tsv \
-  --threads 4 --redo no --aws yes --max_bp 50000000 \
-  > blue/amalgkit/harpegnathos_saltator/getfastq.log 2>&1 &
+# Run all 22 species (processes smallest first, streams download → quant → delete)
+uv run python scripts/rna/run_all_species.py --max-gb 6.0 --workers 12 --threads 12
 ```
 
-### Resume quant for a species (quantify with Kallisto)
+The orchestrator automatically:
+- Initializes all samples in the SQLite DB as `pending`
+- Reconciles existing quant results from the filesystem on startup
+- Skips already-quantified samples
+- Records state transitions atomically
+
+### Resume for a single species
 
 ```bash
-# Generic pattern:
-amalgkit quant \
-  --out_dir blue/amalgkit/<SPECIES>/work \
-  --metadata blue/amalgkit/<SPECIES>/work/metadata/metadata.tsv \
-  --threads 4 --redo no --clean_fastq yes \
-  --index_dir /path/to/blue/data/amalgkit/shared/genome/<Species_name>/index \
-  --fasta_dir /path/to/blue/data/amalgkit/shared/genome/<Species_name>
-
-# Example for Temnothorax longispinosus:
-nohup amalgkit quant \
-  --out_dir blue/amalgkit/temnothorax_longispinosus/work \
-  --metadata blue/amalgkit/temnothorax_longispinosus/work/metadata/metadata.tsv \
-  --threads 4 --redo no --clean_fastq yes \
-  > blue/amalgkit/temnothorax_longispinosus/quant.log 2>&1 &
-```
-
-### Run all species in batch
-
-```bash
-# Process each species sequentially (getfastq then quant):
-for species in harpegnathos_saltator temnothorax_longispinosus solenopsis_invicta; do
-  echo "=== Processing $species ==="
-  
-  # getfastq
-  amalgkit getfastq \
-    --out_dir blue/amalgkit/$species/fastq \
-    --metadata blue/amalgkit/$species/work/metadata/metadata.tsv \
-    --threads 4 --redo no --aws yes --max_bp 50000000
-  
-  # quant (update index_dir/fasta_dir per species config)
-  # See config/amalgkit/amalgkit_${species}.yaml for correct paths
-done
+# The pipeline resumes where it left off — just re-run:
+uv run python scripts/rna/run_all_species.py
 ```
 
 ## Config Files
 
 All species configs are in `config/amalgkit/amalgkit_<species>.yaml`. Each config contains:
 
-- `genome.dest_dir`: Path to shared genome directory
+- `work_dir`: Path to working directory (e.g., `output/amalgkit/<species>/work`)
 - `steps.quant.index_dir`: Path to Kallisto index
 - `steps.quant.fasta_dir`: Path to genome FASTA
 - `steps.getfastq.max_bp`: Max base pairs per sample (50M)
 
-**Important**: Update paths in config YAML files if your mount point differs from `/Volumes/blue/data`.
-
-## Syncing Results Back to Git
-
-After processing completes on Linux, sync results back:
-
-```bash
-uv run python scripts/rna/sync_quant_results.py
-git add output/amalgkit_results/
-git commit -m "feat(rna): sync results from Linux processing"
-git push
-```
-
-## Key Directories on blue/
+## Key Directories
 
 ```
-blue/ -> /path/to/mount/data/
-  amalgkit/
-    shared/genome/<Species>/       # Shared genome references + Kallisto indices
-    <species>/
-      fastq/getfastq/<SRR_ID>/     # Downloaded FASTQ files
-      work/
-        metadata/metadata.tsv      # Sample metadata (from SRA)
-        quant/<SRR_ID>/             # Kallisto quantification results
-        logs/                       # Per-sample quant logs
-        curate/                     # Curated expression tables
-        sanity/                     # Sanity check outputs
+output/amalgkit/
+  pipeline_progress.db             # SQLite progress database (instant status queries)
+  <species>/
+    fastq/                         # Downloaded FASTQ files (deleted after quant)
+    work/
+      metadata/metadata.tsv        # Sample metadata (from SRA)
+      index/                       # Kallisto index for this species
+      quant/<SRR_ID>/              # Kallisto quantification results
+      curate/                      # Curated expression tables
+      sanity/                      # Sanity check outputs
 ```
 
 ## Known Issues
 
-1. **Harpegnathos index**: Had duplicate `.idx` files — cleaned to single `Harpegnathos_saltator_transcripts.idx`
-2. **Monomorium DRR029611**: Had extra single-end fastq alongside paired — removed `DRR029611.fastq.gz`
-3. **`--redo no`**: Always use this to skip already-completed samples
-4. **`--clean_fastq yes`**: On `quant` step, deletes fastq after quantification to save disk space
+1. **Size filtering**: Samples exceeding `--max-gb` are skipped during processing
+2. **FASTQ cleanup**: FASTQs are deleted after successful quantification to save disk space
+3. **Failed samples**: Check with `--failed` flag; common causes are corrupt downloads or missing index files
+
+## Cloud Deployment (GCP)
+
+For large-scale processing, deploy the pipeline to a high-core GCP VM:
+
+```bash
+# 1. Install gcloud CLI
+bash scripts/cloud/install_gcloud.sh
+gcloud auth login
+gcloud config set project YOUR_PROJECT_ID
+
+# 2. Deploy (creates VM, installs Docker, starts pipeline)
+python scripts/cloud/deploy_gcp.py deploy --project YOUR_PROJECT_ID
+
+# 3. Monitor
+python scripts/cloud/deploy_gcp.py status --project YOUR_PROJECT_ID
+python scripts/cloud/deploy_gcp.py logs   --project YOUR_PROJECT_ID
+
+# 4. Download results when done
+python scripts/cloud/deploy_gcp.py download --project YOUR_PROJECT_ID
+
+# 5. Tear down
+python scripts/cloud/deploy_gcp.py destroy --project YOUR_PROJECT_ID
+```
+
+**Defaults**: `n2-highcpu-96` (96 cores), 500 GB SSD, spot pricing (~$0.80/hr), 80 workers, 20 GB max sample size.
+
+**Cost estimate**: ~$7-27 for full pipeline (4-8 hours).
+
+See `src/metainformant/cloud/` for the module implementation.

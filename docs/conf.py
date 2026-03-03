@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath('../src'))
 
 # -- Project information -----------------------------------------------------
 project = 'METAINFORMANT'
-copyright = '2024, METAINFORMANT Contributors'
+copyright = '2024-2026, METAINFORMANT Contributors'
 author = 'METAINFORMANT Contributors'
 
 # Get version from pyproject.toml
