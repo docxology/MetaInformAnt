@@ -40,8 +40,8 @@ def build_parser() -> argparse.ArgumentParser:
     deploy = sub.add_parser("deploy", help="Create VM and start pipeline")
     deploy.add_argument("--project", required=True, help="GCP project ID")
     deploy.add_argument("--zone", default="us-central1-a", help="GCP zone")
-    deploy.add_argument("--machine-type", default="n2-highcpu-96",
-                        help="VM machine type (default: n2-highcpu-96)")
+    deploy.add_argument("--machine-type", default="n2-standard-32",
+                        help="VM machine type (default: n2-standard-32)")
     deploy.add_argument("--disk-gb", type=int, default=1000,
                         help="Boot disk size in GB (default: 1000)")
     deploy.add_argument("--spot", action="store_true", default=True,
@@ -50,10 +50,10 @@ def build_parser() -> argparse.ArgumentParser:
                         help="Use on-demand pricing")
     deploy.add_argument("--max-gb", type=float, default=20.0,
                         help="Max sample size in GB (default: 20.0)")
-    deploy.add_argument("--workers", type=int, default=80,
-                        help="Parallel workers (default: 80)")
-    deploy.add_argument("--threads", type=int, default=96,
-                        help="Total threads (default: 96)")
+    deploy.add_argument("--workers", type=int, default=28,
+                        help="Parallel workers (default: 28)")
+    deploy.add_argument("--threads", type=int, default=32,
+                        help="Total threads (default: 32)")
     deploy.add_argument("--name", default="metainformant-pipeline",
                         help="VM instance name")
     deploy.add_argument("--gcs-bucket", default="",
