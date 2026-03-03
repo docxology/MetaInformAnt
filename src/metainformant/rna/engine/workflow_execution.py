@@ -285,7 +285,7 @@ def execute_workflow(
     )
 
     # Check if we need to prepare reference genome (for quant step)
-    has_quant_or_merge = (not steps) or any(s in ("quant", "merge") for s in steps)
+    has_quant_or_merge = (not steps) or any(s in ("quant", "merge", "index") for s in steps)
     if not steps or has_quant_or_merge:
         prepare_reference_genome(config)
 
