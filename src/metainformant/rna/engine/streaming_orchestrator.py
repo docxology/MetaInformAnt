@@ -428,7 +428,7 @@ class StreamingPipelineOrchestrator:
         filtered.to_csv(metadata_path, sep="\t", index=False)
         
         # ThreadPool Execution
-        fastq_dir = Path(f"output/amalgkit/{species_name}/fastq/getfastq")
+        fastq_dir = Path(f"output/amalgkit/{species_name}/work/getfastq")
         threads_per_worker = max(1, threads // workers)
         
         srr_col = "run" if "run" in filtered.columns else "run_accession"
