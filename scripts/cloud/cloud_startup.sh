@@ -69,6 +69,11 @@ cd "$WORK_DIR"
 
 # ── Build Docker image ──────────────────────────────────────────────────
 echo ""
+echo "▸ Preparing amalgkit dependencies..."
+if [ ! -d "amalgkit_source" ]; then
+    git clone --depth 1 https://github.com/Kumaoka/amalgkit.git amalgkit_source
+fi
+
 echo "▸ Building Docker image..."
 docker build -t "$DOCKER_IMAGE" . 2>&1 | tail -5
 echo "  ✓ Image built: $DOCKER_IMAGE"
