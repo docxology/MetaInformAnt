@@ -70,20 +70,6 @@ cd "$WORK_DIR"
 # ── Build Docker image ──────────────────────────────────────────────────
 # ── Build Docker image ──────────────────────────────────────────────────
 echo ""
-echo "▸ Preparing amalgkit dependencies..."
-if [ ! -d "amalgkit_source" ]; then
-    # Bypass all broken GCP git credentials by using python standard HTTP libs
-    python3 -c "
-import urllib.request, zipfile, io, os, shutil
-print('Downloading amalgkit zip...')
-with urllib.request.urlopen('https://github.com/Kumaoka/amalgkit/archive/refs/heads/master.zip') as r:
-    with zipfile.ZipFile(io.BytesIO(r.read())) as z:
-        z.extractall()
-        shutil.move('amalgkit-master', 'amalgkit_source')
-print('Amalgkit source extracted manually.')
-"
-fi
-
 echo "▸ Building Docker image..."
 docker build -t "$DOCKER_IMAGE" . 2>&1 | tail -5
 echo "  ✓ Image built: $DOCKER_IMAGE"
