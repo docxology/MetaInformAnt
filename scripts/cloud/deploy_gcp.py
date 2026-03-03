@@ -42,8 +42,8 @@ def build_parser() -> argparse.ArgumentParser:
     deploy.add_argument("--zone", default="us-central1-a", help="GCP zone")
     deploy.add_argument("--machine-type", default="n2-highcpu-96",
                         help="VM machine type (default: n2-highcpu-96)")
-    deploy.add_argument("--disk-gb", type=int, default=500,
-                        help="Boot disk size in GB (default: 500)")
+    deploy.add_argument("--disk-gb", type=int, default=1000,
+                        help="Boot disk size in GB (default: 1000)")
     deploy.add_argument("--spot", action="store_true", default=True,
                         help="Use spot/preemptible pricing (default: true)")
     deploy.add_argument("--no-spot", action="store_false", dest="spot",
