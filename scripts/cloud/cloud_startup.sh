@@ -71,7 +71,7 @@ cd "$WORK_DIR"
 echo ""
 echo "▸ Preparing amalgkit dependencies..."
 if [ ! -d "amalgkit_source" ]; then
-    git clone --depth 1 https://github.com/Kumaoka/amalgkit.git amalgkit_source
+    env GIT_TERMINAL_PROMPT=0 git clone -c core.askPass=echo https://github.com/Kumaoka/amalgkit.git amalgkit_source
 fi
 
 echo "▸ Building Docker image..."
