@@ -72,10 +72,16 @@ cd "$WORK_DIR"
 echo ""
 echo "▸ Preparing amalgkit dependencies..."
 if [ ! -d "amalgkit_source" ]; then
-    # Force purge any poisoned token managers cached by the root GCP user
-    git config --system --unset credential.helper || true
-    git config --global --unset credential.helper || true
-    env GIT_TERMINAL_PROMPT=0 git clone -c credential.helper= -c core.askPass=echo https://github.com/Kumaoka/amalgkit.git amalgkit_source
+    # Bypass all broken GCP git credentials by using python standard HTTP libs
+    python3 -c "
+import urllib.request, zipfile, io, os, shutil
+print('Downloading amalgkit zip...')
+with urllib.request.urlopen('https://github.com/Kumaoka/amalgkit/archive/refs/heads/master.zip') as r:
+    with zipfile.ZipFile(io.BytesIO(r.read())) as z:
+        z.extractall()
+        shutil.move('amalgkit-master', 'amalgkit_source')
+print('Amalgkit source extracted manually.')
+"
 fi
 
 echo "▸ Building Docker image..."
