@@ -163,6 +163,19 @@ class StreamingPipelineOrchestrator:
         # Add genome/index paths
         genome_cfg = cfg.get("genome", {})
         index_dir = genome_cfg.get("index_dir", "")
+        if not index_dir or not Path(index_dir).exists():
+            # Fallback: check shared genome paths (config name, then species_list names)
+            candidates = [
+                f"output/amalgkit/{species_name}/work/index",
+                f"output/amalgkit/shared/genome/{species_name}/index",
+            ]
+            for sp in cfg.get('species_list', []):
+                candidates.append(f"output/amalgkit/shared/genome/{sp}/index")
+            for candidate in candidates:
+                if Path(candidate).exists() and list(Path(candidate).glob("*.idx")):
+                    index_dir = candidate
+                    logger.info(f"Using fallback index_dir: {index_dir}")
+                    break
         if index_dir and Path(index_dir).exists():
             cmd.extend(["--index_dir", index_dir])
         
@@ -275,6 +288,11 @@ class StreamingPipelineOrchestrator:
             f"output/amalgkit/{species_name}/work/index",
             f"output/amalgkit/shared/genome/{species_name}/index",
         ]
+        
+        # Also check shared paths using species_list names (may differ from config name)
+        # e.g., config name "amellifera" → species_list "Apis_mellifera"
+        for sp in cfg.get('species_list', []):
+            search_dirs.append(f"output/amalgkit/shared/genome/{sp}/index")
         
         logger.info(f"Verifying index for {species_name}...")
         for d in search_dirs:
