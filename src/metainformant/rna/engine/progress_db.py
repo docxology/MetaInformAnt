@@ -106,13 +106,21 @@ class ProgressDB:
         """Atomically transition a sample to a new state."""
         if state not in VALID_STATES:
             raise ValueError(f"Invalid state '{state}'. Must be one of {VALID_STATES}")
-        with self._lock:
-            self._conn.execute(
-                "UPDATE samples SET state = ?, error = ?, updated_at = datetime('now') "
-                "WHERE species = ? AND srr_id = ?",
-                (state, error, species, srr_id),
-            )
-            self._conn.commit()
+        for attempt in range(3):
+            try:
+                with self._lock:
+                    self._conn.execute(
+                        "UPDATE samples SET state = ?, error = ?, updated_at = datetime('now') "
+                        "WHERE species = ? AND srr_id = ?",
+                        (state, error, species, srr_id),
+                    )
+                    self._conn.commit()
+                return
+            except sqlite3.OperationalError:
+                if attempt < 2:
+                    time.sleep(0.1 * (attempt + 1))
+                else:
+                    raise
 
     def bulk_set_state(
         self, species: str, srr_ids: List[str], state: str, error: Optional[str] = None
