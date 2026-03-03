@@ -75,7 +75,9 @@ COPY scripts/ ./scripts/
 COPY config/ ./config/
 
 # Install Python deps
-RUN uv pip install --system -e "." && \
+RUN git config --global url."https://github.com/".insteadOf git@github.com: && \
+    git config --global url."https://".insteadOf git:// && \
+    uv pip install --system -e "." && \
     uv pip install --system "git+https://github.com/Kumaoka/amalgkit.git"
 
 # ── Output volume ───────────────────────────────────────────────────────
