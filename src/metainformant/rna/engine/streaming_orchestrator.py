@@ -88,6 +88,12 @@ class StreamingPipelineOrchestrator:
             True if all FASTQ files downloaded successfully, False otherwise.
         """
         sample_dir = out_dir / srr_id
+        # Remove broken symlinks in the path chain (amalgkit preprocessing creates
+        # symlinks like work/getfastq -> /local/path that are invalid inside Docker)
+        for check_path in [out_dir, sample_dir]:
+            if check_path.is_symlink() and not check_path.exists():
+                logger.warning(f"Removing broken symlink: {check_path} -> {os.readlink(check_path)}")
+                check_path.unlink()
         sample_dir.mkdir(parents=True, exist_ok=True)
 
         downloader = ENADownloader(timeout=7200, retries=3)
