@@ -356,12 +356,12 @@ class StreamingPipelineOrchestrator:
             needs_prep = True
             
         if needs_prep:
-            logger.info(f"Running preprocessing stages (cst -> select -> metadata -> index) for {species_name}...")
+            logger.info(f"Running preprocessing stages (config -> select -> metadata -> index) for {species_name}...")
             prep_cmd = [
                 "python3", "scripts/rna/run_workflow.py",
                 "--config", str(config_path),
                 "--no-progress",
-                "--steps", "cst", "select", "metadata", "index"
+                "--steps", "config", "select", "metadata", "index"
             ]
             try:
                 prep_result = subprocess.run(prep_cmd, capture_output=True, text=True, timeout=7200)
