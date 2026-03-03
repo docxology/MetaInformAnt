@@ -341,21 +341,53 @@ class StreamingPipelineOrchestrator:
         species_name = config_name.replace("amalgkit_", "").replace(".yaml", "")
         logger.info(f"=== Processing {species_name} ===")
         
-        # Verify Index
-        if not self.verify_genome_index(config_path, species_name):
-            return False
-
-        # Metadata Handling
+        # Autonomous Preprocessing Detection
         work_dir = Path(f"output/amalgkit/{species_name}/work")
         metadata_path = work_dir / "metadata/metadata.tsv"
-        
         if not metadata_path.exists():
-            # Try selected metadata
             metadata_path = work_dir / "metadata/metadata_selected.tsv"
-        
+            
+        needs_prep = False
         if not metadata_path.exists():
-            logger.error(f"No metadata found for {species_name}")
-            return False
+            logger.info(f"Metadata missing for {species_name}. Queuing autonomous preprocessing...")
+            needs_prep = True
+        elif not self.verify_genome_index(config_path, species_name):
+            logger.info(f"Genome index missing for {species_name}. Queuing autonomous preprocessing...")
+            needs_prep = True
+            
+        if needs_prep:
+            logger.info(f"Running preprocessing stages (cst -> select -> metadata -> index) for {species_name}...")
+            prep_cmd = [
+                "python3", "scripts/rna/run_workflow.py",
+                "--config", str(config_path),
+                "--no-progress",
+                "--steps", "cst", "select", "metadata", "index"
+            ]
+            try:
+                prep_result = subprocess.run(prep_cmd, capture_output=True, text=True, timeout=7200)
+                if prep_result.returncode != 0:
+                    logger.error(f"Preprocessing failed for {species_name}:\n{prep_result.stderr}\n{prep_result.stdout}")
+                    return False
+                logger.info(f"Preprocessing complete for {species_name}.")
+            except subprocess.TimeoutExpired:
+                logger.error(f"Preprocessing timed out after 2h for {species_name}.")
+                return False
+            except Exception as e:
+                logger.error(f"Preprocessing exception for {species_name}: {e}")
+                return False
+                
+            # Post-prep explicit verification
+            if not self.verify_genome_index(config_path, species_name):
+                logger.error(f"Genome index still missing for {species_name} after successful prep spawn.")
+                return False
+
+            metadata_path = work_dir / "metadata/metadata.tsv"
+            if not metadata_path.exists():
+                metadata_path = work_dir / "metadata/metadata_selected.tsv"
+                
+            if not metadata_path.exists():
+                logger.error(f"No metadata generated for {species_name} after successful prep spawn.")
+                return False
 
         # Apply Normalization Step
         self.run_tissue_normalization(metadata_path)
