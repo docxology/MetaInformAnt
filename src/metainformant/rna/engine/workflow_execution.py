@@ -512,31 +512,8 @@ def execute_workflow(
                 command_str = " ".join(command)
                 logger.info(f"Command: {command_str}")
 
-            # Ensure config symlink exists before select step
-            if step_name == "select":
-                config_base_dir = config.work_dir / "config_base"
-                config_dir = config.work_dir / "config"
-                if config_base_dir.exists() and not (config_dir.exists() or config_dir.is_symlink()):
-                    try:
-                        config_dir.symlink_to(config_base_dir.resolve())
-                        logger.info(
-                            f"Created config symlink before select step: {config_dir} -> {config_base_dir.resolve()}"
-                        )
-                    except Exception as e:
-                        logger.warning(f"Could not create config symlink: {e}")
-                        try:
-                            config_dir.mkdir(parents=True, exist_ok=True)
-                            for config_file in config_base_dir.glob("*.config"):
-                                shutil.copy2(config_file, config_dir / config_file.name)
-                            logger.info(f"Copied config files as fallback")
-                        except Exception as e2:
-                            logger.warning(f"Could not copy config files: {e2}")
-                if (config_dir.exists() or config_dir.is_symlink()) and config_base_dir.exists():
-                    step_params["config_dir"] = str(config_dir.absolute())
-                    logger.debug(f"Using config directory (symlink): {config_dir.absolute()}")
-                elif config_base_dir.exists():
-                    step_params["config_dir"] = str(config_base_dir.absolute())
-                    logger.debug(f"Using config_base directory (fallback): {config_base_dir.absolute()}")
+            # Note: config_dir is purposefully injected in workflow_planning.py to point 
+            # to the global repository config/amalgkit directory and should not be mutated here.
 
             # STREAMING MODE DETECTION
             if step_name == "getfastq" and any(s[0] == "quant" for s in steps_planned):
