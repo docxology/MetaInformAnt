@@ -74,10 +74,29 @@ python scripts/cloud/deploy_gcp.py logs    --project YOUR_PROJECT_ID
 ### 5. Download Results
 
 ```bash
-python scripts/cloud/deploy_gcp.py download --project YOUR_PROJECT_ID
+# Recommended: use the robust download script (docker cp → scp → cleanup)
+bash scripts/cloud/download_results.sh output/amalgkit
+
+# Or via Python CLI:
+python scripts/cloud/deploy_gcp.py download --project YOUR_PROJECT_ID --output output/amalgkit
 ```
 
-### 6. Cleanup
+> **Note:** Only quant output, merged results, and the progress DB are downloaded (~2 MB/sample). Raw FASTQs are NOT transferred.
+
+### 6. Post-Quant Processing (Local)
+
+After downloading results, run downstream analysis locally:
+
+```bash
+# Merge per-sample quant files into species-level count matrices
+python scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_SPECIES.yaml --steps merge curate sanity
+
+# Or run all post-quant steps for all species:
+python scripts/rna/run_all_species.py --max-gb 0 --workers 4 --threads 8
+# (max-gb=0 skips downloads; only runs merge/curate/sanity on existing quant)
+```
+
+### 7. Cleanup
 
 ```bash
 python scripts/cloud/deploy_gcp.py destroy --project YOUR_PROJECT_ID
@@ -103,13 +122,31 @@ src/metainformant/cloud/
 
 scripts/cloud/
 ├── deploy_gcp.py         # CLI orchestrator (deploy/status/logs/download/destroy)
+├── download_results.sh   # Robust 3-step download (docker cp → scp → cleanup)
 ├── install_gcloud.sh     # One-click gcloud CLI installer
 ├── cloud_startup.sh      # VM boot script (Docker + pipeline auto-start)
 ├── prep_genomes.py       # Download transcriptomes + build kallisto indices
 └── vm_setup.sh           # Native tool install (no Docker)
 
+scripts/rna/
+├── run_all_species.py    # Thin orchestrator: species order + args → StreamingPipelineOrchestrator
+└── run_workflow.py       # Single-species workflow runner
+
+tests/
+└── test_cloud.py         # Zero-mock tests for cloud config, deployer, scripts
+
 Dockerfile                # Full pipeline container image
 .dockerignore             # Keeps image small
+```
+
+## End-to-End Workflow
+
+```
+1. Deploy    →  deploy_gcp.py deploy --project ...
+2. Monitor   →  deploy_gcp.py status / logs
+3. Download  →  bash download_results.sh output/amalgkit
+4. Post-quant →  run_workflow.py --steps merge curate sanity
+5. Cleanup   →  deploy_gcp.py destroy
 ```
 
 ## Manual VM Setup (Without Docker)
@@ -131,3 +168,4 @@ python3 scripts/cloud/prep_genomes.py --threads 8
 # Start pipeline
 nohup python3 scripts/rna/run_all_species.py --max-gb 20.0 --workers 24 --threads 32 > output/amalgkit/pipeline.log 2>&1 &
 ```
+
