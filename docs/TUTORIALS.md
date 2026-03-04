@@ -171,7 +171,7 @@ results.sort(key=lambda x: x["p_value"])
 # Show top associations
 print("Top GWAS associations:")
 for i, result in enumerate(results[:5]):
-    print(".2e")
+    print(f"  {result['snp']}: p={result['p_value']:.2e}, beta={result['beta']:.3f}")
 ```
 
 #### Visualization

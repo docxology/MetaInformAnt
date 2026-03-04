@@ -4,6 +4,8 @@ The eQTL (expression Quantitative Trait Loci) Integration Pipeline bridges the g
 
 By analyzing how genetic variants (from VCFs) correlate with gene expression levels (from Amalgkit quantification), this pipeline identifies genetic markers that regulate gene transcription.
 
+> **Note**: eQTL is a **cross-cutting integration pipeline** — it does not have its own `src/metainformant/eqtl/` module. Instead, the core logic lives in `metainformant.gwas.finemapping.eqtl`, `metainformant.gwas.visualization.eqtl_visualization`, and `metainformant.multiomics.analysis.integration`. Scripts are in `scripts/eqtl/`.
+
 ## 📖 Documentation
 
 | Doc | Description |

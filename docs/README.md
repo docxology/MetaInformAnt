@@ -43,6 +43,8 @@ METAINFORMANT documentation organized by biological domain.
 | Structural Variants | [structural_variants/](structural_variants/) | SV detection |
 | Metabolomics | [metabolomics/](metabolomics/) | Mass spectrometry, pathways |
 | Menu | [menu/](menu/) | Interactive CLI system |
+| Cloud | [cloud/](cloud/) | GCP deployment, Docker pipelines |
+| eQTL | [eqtl/](eqtl/) | Expression QTL integration |
 
 ## Key Guides
 

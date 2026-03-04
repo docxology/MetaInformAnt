@@ -1,5 +1,8 @@
 # Documentation Audit Report
 
+> [!WARNING]
+> **Stale Report**: This audit was conducted on December 17, 2025 when the project had ~18 modules. As of March 2026, the project has 28+ modules. The findings below are historical.
+
 **Audit Date**: December 17, 2025  
 **Scope**: Repo-wide documentation review (README.md, AGENTS.md, docs/**/*.md)  
 **Methodology**: Tier 3 - systematic inventory, style analysis, link validation, and code example verification  

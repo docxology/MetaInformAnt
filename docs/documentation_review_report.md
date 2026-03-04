@@ -1,5 +1,8 @@
 # METAINFORMANT Documentation Review Report
 
+> [!WARNING]
+> **Stale Report**: This review was conducted on December 17, 2025 when the project had ~18 modules. As of March 2026, the project has 28+ modules. The findings below are historical and may no longer reflect the current documentation state.
+
 **Date**: December 17, 2025
 **Reviewer**: AI Assistant (grok-code-fast-1)
 **Scope**: Complete repository-wide documentation review for accuracy and completeness

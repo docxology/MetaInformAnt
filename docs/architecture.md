@@ -69,6 +69,7 @@ graph TB
         PHARMA["Pharmacogenomics<br/>drug-gene | pharmacokinetics | variants"]
         METAB["Metabolomics<br/>MS processing | pathway mapping"]
         MENU["Menu System<br/>interactive CLI | workflow navigation"]
+        CLOUD["Cloud Deployment<br/>GCP | Docker | VM lifecycle"]
     end
 
     %% Data Flow
@@ -97,6 +98,7 @@ graph TB
     CORE --> PHARMA
     CORE --> METAB
     CORE --> MENU
+    CORE --> CLOUD
 
     DNA --> RNA
     DNA --> PROTEIN
@@ -410,6 +412,7 @@ flowchart LR
     SP5["pharmacogenomics"]
     SP6["metabolomics"]
     SP7["menu"]
+    SP8["cloud"]
   end
   A --> D1 & D2 & D3 & D4 & D5
   A --> R1 & R2

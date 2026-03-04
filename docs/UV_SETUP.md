@@ -528,6 +528,6 @@ METAINFORMANT's UV setup is **fully automatic** on all filesystems:
 
 ---
 
-*Last Updated: January 2025*  
+*Last Updated: January 2026*  
 *Tested on: ext4, NTFS, exFAT, FAT32 filesystems*
 

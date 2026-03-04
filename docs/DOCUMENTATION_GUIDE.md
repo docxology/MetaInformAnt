@@ -60,6 +60,7 @@ Each biological domain has its own subdirectory with consistent structure:
 | **Spatial** | `docs/spatial/` | Spatial transcriptomics (Visium, MERFISH, Xenium) |
 | **Pharmacogenomics** | `docs/pharmacogenomics/` | Clinical variants, CPIC, PharmGKB |
 | **Metabolomics** | `docs/metabolomics/` | Mass spectrometry, pathway mapping |
+| **Cloud** | `docs/cloud/` | GCP deployment, Docker pipelines, VM lifecycle |
 | **Agents** | `docs/agents/` | Agent-based modeling, ecosystem simulation |
 
 ### Domain Documentation Structure
@@ -165,7 +166,7 @@ Source code documentation mirrors the `src/metainformant/` structure:
 
 ---
 
-*This guide provides navigation for documentation organized across 27 biological domains, ensuring coverage of METAINFORMANT's bioinformatics capabilities.*
+*This guide provides navigation for documentation organized across 29 domains, ensuring coverage of METAINFORMANT's bioinformatics capabilities.*
 
 
 

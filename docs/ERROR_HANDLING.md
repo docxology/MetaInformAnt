@@ -331,10 +331,13 @@ def test_invalid_input():
         function_with_validation(empty_input)
 
 def test_missing_dependency():
-    # Mock import failure
-    with patch.dict('sys.modules', {'scipy': None}):
+    # Skip test if dependency is actually present — verify behaviour when absent
+    # NOTE: we do NOT mock sys.modules; instead we test the error path with real checks
+    if importlib.util.find_spec("scipy") is None:
         with pytest.raises(ImportError, match="scipy required"):
             scipy_dependent_function()
+    else:
+        pytest.skip("scipy is installed — cannot test missing-dep path without mocking")
 ```
 
 ### 7. Module-Specific Guidelines

@@ -346,6 +346,8 @@ echo 'export NCBI_EMAIL="your.email@example.com"' >> ~/.bashrc
 - **[Pharmacogenomics](docs/pharmacogenomics/index.md)** - Drug-gene interactions
 - **[Metabolomics](docs/metabolomics/index.md)** - MS data processing, pathway mapping
 - **[Menu](docs/menu/index.md)** - Interactive CLI navigation
+- **[Cloud](docs/cloud/index.md)** - GCP deployment, Docker pipelines
+- **[eQTL](docs/eqtl/index.md)** - Expression QTL integration pipeline
 
 ### Workflow Scripts
 

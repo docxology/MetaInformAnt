@@ -20,7 +20,7 @@ Documentation is organized by module domain:
 - `networks/` - Biological networks (PPI, regulatory, community detection, pathways)
 - `multiomics/` - Multi-omic integration methods
 - `singlecell/` - Single-cell RNA-seq (preprocessing, clustering, trajectory)
-- `visualization/` - Plotting and visualization (80+ plot types)
+- `visualization/` - Plotting and visualization (70+ plot types)
 - `quality/` - QC metrics and assessment
 - `ml/` - Machine learning pipelines
 - `math/` - Population genetics theory (coalescent, FST, LD, selection)
@@ -35,6 +35,7 @@ Documentation is organized by module domain:
 - `spatial/` - Spatial transcriptomics (Visium, MERFISH, Xenium)
 - `pharmacogenomics/` - Clinical variants (CPIC, PharmGKB, ACMG, star alleles)
 - `metabolomics/` - Metabolomics (mass spectrometry, pathway mapping, metabolite-gene integration)
+- `cloud/` - Cloud deployment (GCP VM lifecycle, Docker pipelines, genome prep)
 - `menu/` - Interactive menu and discovery system
 
 ## Key Root Files

@@ -5,8 +5,8 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Modules](https://img.shields.io/badge/modules-26-green.svg)](src/metainformant/)
-[![Files](https://img.shields.io/badge/files-560-brightgreen.svg)](src/metainformant/)
+[![Modules](https://img.shields.io/badge/modules-28-green.svg)](src/metainformant/)
+[![Files](https://img.shields.io/badge/files-603-brightgreen.svg)](src/metainformant/)
 
 ---
 
@@ -18,10 +18,10 @@ METAINFORMANT provides production-ready bioinformatics analysis across genomics,
 
 | Metric | Value |
 |--------|-------|
-| **Modules** | 26 specialized analysis modules |
-| **Python Files** | 560 implementation files |
+| **Modules** | 28 specialized analysis modules |
+| **Python Files** | 603 implementation files |
 | **Plot Types** | 70+ visualization methods |
-| **Documentation** | 240+ README files |
+| **Documentation** | 310+ README files |
 
 ### 🔬 Core Capabilities
 
@@ -84,6 +84,7 @@ flowchart TB
         PHARMA["Pharmacogenomics"]
         METAB["Metabolomics"]
         MENU["Menu System"]
+        CLOUD["Cloud Deployment"]
     end
 
     CORE --> DNA
@@ -111,6 +112,7 @@ flowchart TB
     CORE --> PHARMA
     CORE --> METAB
     CORE --> MENU
+    CORE --> CLOUD
 ```
 
 ### Data Flow and Integration Architecture
@@ -418,6 +420,9 @@ See `scripts/core/run_demo.py` for the workflow demonstration. Outputs are saved
 | **Pharmacogenomics** | [pharmacogenomics/](src/metainformant/pharmacogenomics/) | 🟡 **Partial** | Drug-gene interactions, variant interpretation | 55% |
 | **Metabolomics** | [metabolomics/](src/metainformant/metabolomics/) | 🟡 **Partial** | MS data processing, pathway mapping | 50% |
 | **Menu** | [menu/](src/metainformant/menu/) | 🟡 **Partial** | Interactive CLI menu, workflow navigation | 70% |
+| **Cloud** | [cloud/](src/metainformant/cloud/) | ✅ **Complete** | GCP VM lifecycle, Docker pipelines, genome prep | 90% |
+| **eQTL** | [gwas/finemapping/eqtl](src/metainformant/gwas/finemapping/) | ✅ **Complete** | Expression-genotype association, cis-eQTL scanning | 85% |
+| **MCP** | [mcp/](src/metainformant/mcp/) | 🟡 **Partial** | Model Context Protocol tool implementations | 40% |
 
 ## Module Overview
 

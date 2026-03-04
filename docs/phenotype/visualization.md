@@ -214,4 +214,4 @@ ax = plot_phenotype_pca(data, output_path="output/phenotype/pca.png")
 
 - `metainformant.phenotype.analysis.life_course` -- life course data sources
 - `metainformant.phenotype.morphological` -- morphometric data classes
-- `metainformant.visualization` -- generic 80+ plot types
+- `metainformant.visualization` -- generic 70+ plot types

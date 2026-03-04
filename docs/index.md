@@ -54,6 +54,7 @@ graph TD
         H5ontology/,Phenotype/,Ecology/,LifeEvents/[ontology/, phenotype/, ecology/, life_events/] -.-> D5
         H6quality/,Visualization/[quality/, visualization/] -.-> D6
         H7longread/,Metagenomics/,Structural_variants/,Spatial/,Pharmacogenomics/,Metabolomics/,Menu/[longread/, metagenomics/, structural_variants/, spatial/, pharmacogenomics/, metabolomics/, menu/] -.-> D4
+        H8cloud/[cloud/] -.-> D6
     end
 
     subgraph "Key Documents"
@@ -86,7 +87,8 @@ graph TD
 | **Ecology** | [ecology](ecology/) | Ecological analysis | Community diversity, environmental data |
 | **Life Events** | [life_events](life_events/) | Temporal event analysis | Life course modeling, embeddings |
 | **Quality** | [quality](quality/) | Data quality assessment | FASTQ analysis, assembly validation |
-| **Visualization** | [visualization](visualization/) | Plotting and graphics | 20+ specialized plotting modules |
+| **Visualization** | [visualization](visualization/) | Plotting and graphics | 70+ specialized plotting modules |
+| **Cloud** | [cloud](cloud/) | Cloud deployment | GCP VM lifecycle, Docker pipelines, genome prep |
 | **Long-Read** | [longread](longread/) | Long-read sequencing | PacBio/ONT, assembly, error correction |
 | **Metagenomics** | [metagenomics](metagenomics/) | Metagenomic analysis | Taxonomic profiling, functional annotation |
 | **Structural Variants** | [structural_variants](structural_variants/) | SV/CNV analysis | Detection, breakpoint resolution |
@@ -159,7 +161,7 @@ METAINFORMANT uses `uv` for Python package management. Install with `uv`, or ins
 uv pip install metainformant
 
 # From source
-git clone https://github.com/your-org/metainformant.git
+git clone https://github.com/docxology/MetaInformAnt.git
 cd metainformant
 uv pip install -e .
 ```
@@ -261,6 +263,7 @@ spatial/index
 pharmacogenomics/index
 metabolomics/index
 menu/index
+cloud/README
 agents/rules/index
 ```
 
@@ -371,6 +374,7 @@ graph TB
     PHARM[pharmacogenomics] --> Core
     METAB[metabolomics] --> Core
     MENUX[menuSystem] --> Core
+    CLOUD[cloudDeployment] --> Core
 ```
 
 ## Getting Help

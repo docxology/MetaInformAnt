@@ -1,6 +1,6 @@
 # Visualization Module
 
-80+ plot types for biological data -- basic charts, statistical plots, genomic visualizations, expression heatmaps, interactive dashboards, and configurable themes.
+70+ plot types for biological data -- basic charts, statistical plots, genomic visualizations, expression heatmaps, interactive dashboards, and configurable themes.
 
 ## Architecture
 
