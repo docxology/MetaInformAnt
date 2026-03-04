@@ -110,24 +110,24 @@ class TestDownloadScript:
 
     def test_download_script_exists(self):
         """download_results.sh exists in scripts/cloud/."""
-        script = Path(__file__).resolve().parent.parent.parent / "scripts" / "cloud" / "download_results.sh"
+        script = Path(__file__).resolve().parent.parent / "scripts" / "cloud" / "download_results.sh"
         assert script.exists(), f"Missing: {script}"
 
     def test_download_script_has_shebang(self):
         """download_results.sh has a proper bash shebang."""
-        script = Path(__file__).resolve().parent.parent.parent / "scripts" / "cloud" / "download_results.sh"
+        script = Path(__file__).resolve().parent.parent / "scripts" / "cloud" / "download_results.sh"
         content = script.read_text()
         assert content.startswith("#!/usr/bin/env bash") or content.startswith("#!/bin/bash")
 
     def test_download_script_uses_docker_cp(self):
         """download_results.sh uses docker cp (not direct scp from container)."""
-        script = Path(__file__).resolve().parent.parent.parent / "scripts" / "cloud" / "download_results.sh"
+        script = Path(__file__).resolve().parent.parent / "scripts" / "cloud" / "download_results.sh"
         content = script.read_text()
         assert "docker cp" in content
 
     def test_download_script_has_cleanup(self):
         """download_results.sh cleans up VM temp files."""
-        script = Path(__file__).resolve().parent.parent.parent / "scripts" / "cloud" / "download_results.sh"
+        script = Path(__file__).resolve().parent.parent / "scripts" / "cloud" / "download_results.sh"
         content = script.read_text()
         assert "rm -rf" in content or "cleanup" in content.lower()
 
@@ -137,12 +137,12 @@ class TestDeployScript:
 
     def test_deploy_script_exists(self):
         """deploy_gcp.py exists in scripts/cloud/."""
-        script = Path(__file__).resolve().parent.parent.parent / "scripts" / "cloud" / "deploy_gcp.py"
+        script = Path(__file__).resolve().parent.parent / "scripts" / "cloud" / "deploy_gcp.py"
         assert script.exists()
 
     def test_deploy_script_importable(self):
         """deploy_gcp.py has a build_parser function."""
-        script_dir = str(Path(__file__).resolve().parent.parent.parent / "scripts" / "cloud")
+        script_dir = str(Path(__file__).resolve().parent.parent / "scripts" / "cloud")
         sys.path.insert(0, script_dir)
         try:
             import deploy_gcp
@@ -153,7 +153,7 @@ class TestDeployScript:
 
     def test_deploy_commands_available(self):
         """All expected subcommands are in the parser."""
-        script_dir = str(Path(__file__).resolve().parent.parent.parent / "scripts" / "cloud")
+        script_dir = str(Path(__file__).resolve().parent.parent / "scripts" / "cloud")
         sys.path.insert(0, script_dir)
         try:
             import importlib
@@ -166,3 +166,4 @@ class TestDeployScript:
                 assert args.command == cmd
         finally:
             sys.path.pop(0)
+
