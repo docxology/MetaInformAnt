@@ -197,24 +197,36 @@ class GCPDeployer:
     def download_results(self, local_dir: str = "output/amalgkit") -> bool:
         """Download pipeline results from the VM.
 
-        Uses gcloud compute scp to recursively copy the output directory.
+        Uses a 2-step approach:
+        1. docker cp from container to VM /tmp/quant_export
+        2. gcloud scp from VM to local machine
         """
         local_path = Path(local_dir)
         local_path.mkdir(parents=True, exist_ok=True)
 
         try:
-            # Download quant results, merged data, and the progress DB
+            # Use the dedicated download script which handles docker→VM→local
+            script_path = Path(__file__).resolve().parent.parent.parent.parent / "scripts" / "cloud" / "download_results.sh"
+            if script_path.exists():
+                subprocess.run(
+                    ["bash", str(script_path), str(local_path)],
+                    check=True, timeout=7200
+                )
+                return True
+            
+            # Fallback: direct scp (works if data is on VM filesystem, not in container)
+            logger.warning("download_results.sh not found, trying direct scp...")
             for subdir in ["*/work/quant", "*/merged", "pipeline_progress.db"]:
                 subprocess.run([
                     "gcloud", "compute", "scp", "--recurse",
                     "--zone", self.cfg.zone,
                     "--project", self.cfg.project,
-                    f"{self.cfg.instance_name}:/opt/MetaInformAnt/output/amalgkit/{subdir}",
+                    f"{self.cfg.instance_name}:/app/output/amalgkit/{subdir}",
                     str(local_path),
                 ], check=False, timeout=3600)
             return True
         except subprocess.TimeoutExpired:
-            logger.error("Download timed out after 1 hour")
+            logger.error("Download timed out after 2 hours")
             return False
 
     def sync_to_gcs(self) -> bool:
