@@ -16,6 +16,7 @@ import shutil
 import subprocess
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -25,6 +26,103 @@ from metainformant.rna.retrieval.ena_downloader import ENADownloader
 
 logger = get_logger(__name__)
 
+
+# ---------------------------------------------------------------------------
+# Resource Profiles — species-specific tuning for workers, threads, timeouts
+# ---------------------------------------------------------------------------
+
+@dataclass
+class ResourceProfile:
+    """Resource allocation profile for pipeline execution.
+
+    Presets:
+        - ``high_mem``: Low concurrency, high threads per sample (complex genomes).
+        - ``high_io``: High concurrency, moderate threads (large sample counts).
+        - ``default``: Balanced settings suitable for most species.
+        - ``minimal``: Conservative settings for constrained environments.
+    """
+
+    name: str = "default"
+    workers: int = 4
+    threads_per_sample: int = 2
+    watchdog_timeout: int = 3600
+    use_watchdog: bool = True
+    description: str = ""
+
+
+# Pre-defined profile presets
+RESOURCE_PROFILES: Dict[str, ResourceProfile] = {
+    "high_mem": ResourceProfile(
+        name="high_mem",
+        workers=2,
+        threads_per_sample=8,
+        watchdog_timeout=7200,
+        use_watchdog=True,
+        description="Complex genomes (e.g., Harpegnathos): low concurrency, high per-sample threads",
+    ),
+    "high_io": ResourceProfile(
+        name="high_io",
+        workers=16,
+        threads_per_sample=2,
+        watchdog_timeout=3600,
+        use_watchdog=True,
+        description="Large datasets (e.g., Apis mellifera): max concurrency, moderate threads",
+    ),
+    "default": ResourceProfile(
+        name="default",
+        workers=4,
+        threads_per_sample=2,
+        watchdog_timeout=3600,
+        use_watchdog=True,
+        description="Balanced settings for typical ant species",
+    ),
+    "minimal": ResourceProfile(
+        name="minimal",
+        workers=2,
+        threads_per_sample=1,
+        watchdog_timeout=1800,
+        use_watchdog=False,
+        description="Resource-constrained environments (CI, small VMs)",
+    ),
+}
+
+# Auto-detection: species name → profile name
+_SPECIES_PROFILE_MAP: Dict[str, str] = {
+    "harpegnathos_saltator": "high_mem",
+    "apis_mellifera": "high_io",
+    "amellifera": "high_io",
+}
+
+
+def get_profile(name: Optional[str] = None, species: Optional[str] = None) -> ResourceProfile:
+    """Return a ``ResourceProfile`` by explicit name or auto-detected from species.
+
+    Args:
+        name: Explicit profile name (``high_mem``, ``high_io``, ``default``, ``minimal``).
+              Takes priority over *species* if both are provided.
+        species: Species name for auto-detection.  Falls back to ``"default"``.
+
+    Returns:
+        A copy of the matching ``ResourceProfile``.
+    """
+    if name and name in RESOURCE_PROFILES:
+        profile = RESOURCE_PROFILES[name]
+    elif species:
+        key = species.lower().replace(" ", "_")
+        mapped = _SPECIES_PROFILE_MAP.get(key, "default")
+        profile = RESOURCE_PROFILES[mapped]
+    else:
+        profile = RESOURCE_PROFILES["default"]
+
+    # Return a fresh copy so callers can mutate freely
+    return ResourceProfile(
+        name=profile.name,
+        workers=profile.workers,
+        threads_per_sample=profile.threads_per_sample,
+        watchdog_timeout=profile.watchdog_timeout,
+        use_watchdog=profile.use_watchdog,
+        description=profile.description,
+    )
 
 class StreamingPipeline:
     """
@@ -37,11 +135,12 @@ class StreamingPipeline:
         index_file: Path,
         work_dir: Path,
         fastq_dir: Path,
-        workers: int = 4,
-        threads_per_sample: int = 2,
+        workers: Optional[int] = None,
+        threads_per_sample: Optional[int] = None,
         dry_run: bool = False,
-        use_watchdog: bool = False,
-        watchdog_timeout: int = 3600,
+        use_watchdog: Optional[bool] = None,
+        watchdog_timeout: Optional[int] = None,
+        profile: Optional[str] = None,
     ):
         """
         Initialize the pipeline.
@@ -52,20 +151,31 @@ class StreamingPipeline:
             work_dir: Main Amalgkit working directory.
             fastq_dir: Temporary directory for FASTQ downloads (high I/O).
             workers: Number of parallel downloads/quantifications.
+                     Defaults to profile setting if not specified.
             threads_per_sample: CPU threads for Kallisto per sample.
+                     Defaults to profile setting if not specified.
             dry_run: If True, simulate actions without executing.
             use_watchdog: ProcessWatchdog to kill stalled processes (0 CPU).
+                     Defaults to profile setting if not specified.
             watchdog_timeout: Seconds of inactivity before kill.
+                     Defaults to profile setting if not specified.
+            profile: Resource profile name ("high_mem", "high_io", "default",
+                     "minimal"). If None, auto-detected from species name.
         """
+        # Resolve resource profile (explicit name > species auto-detect > default)
+        rp = get_profile(name=profile, species=species)
+        logger.info(f"Resource profile: {rp.name} ({rp.description})")
+
         self.species = species
         self.index_file = Path(index_file)
         self.work_dir = Path(work_dir)
         self.fastq_dir = Path(fastq_dir)
-        self.workers = workers
-        self.threads = threads_per_sample
+        self.workers = workers if workers is not None else rp.workers
+        self.threads = threads_per_sample if threads_per_sample is not None else rp.threads_per_sample
         self.dry_run = dry_run
-        self.use_watchdog = use_watchdog
-        self.watchdog_timeout = watchdog_timeout
+        self.use_watchdog = use_watchdog if use_watchdog is not None else rp.use_watchdog
+        self.watchdog_timeout = watchdog_timeout if watchdog_timeout is not None else rp.watchdog_timeout
+        self.profile = rp
         
         # Computed paths
         self.quant_dir = self.work_dir / "quant"

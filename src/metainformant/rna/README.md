@@ -77,14 +77,17 @@ result = execute_workflow(config, steps=["getfastq", "quant", "merge"])
 | `merge`    | Combine abundance files             |
 | `curate`   | Quality control and filtering       |
 
-## 🌐 High-Throughput ENA Pipeline
+## 🌐 Download Strategy: ENA-First with NCBI Fallback
 
-For large-scale species (e.g., *Apis mellifera*), we use a specialized ENA-first strategy:
+All species use a two-tier download strategy managed by the `StreamingPipelineOrchestrator`:
 
-- **Script**: `scripts/rna/process_apis_mellifera_ena.py`
-- **Method**: Direct FTP/HTTP downloads of `.fastq.gz` from European Nucleotide Archive (ENA).
-- **Benefit**: Bypasses the slow `prefetch` + `fasterq-dump` extraction bottleneck.
-- **Performance**: Capable of 20+ concurrent workers; ~10x speedup over SRA Toolkit.
+1. **ENA primary** — Direct FTP/HTTP downloads of `.fastq.gz` from European Nucleotide Archive. Bypasses slow `prefetch` + `fasterq-dump` extraction.
+2. **NCBI fallback** — If ENA download fails, falls back to `fasterq-dump` from NCBI SRA.
+
+- **Entry point**: `scripts/rna/run_workflow.py` → `StreamingPipelineOrchestrator`
+- **Concurrency**: Up to 16 parallel workers with SQLite-backed progress tracking
+- **Scheduling**: Size-ordered (smallest samples first) for maximum throughput
+- **Monitoring**: Real-time TUI via `scripts/rna/monitor_tui.py`
 
 ## 🧬 Index Complexity Management
 
@@ -95,13 +98,13 @@ For genomes with high repetitive content (e.g., *Harpegnathos saltator*), standa
 - `kallisto quant` processes hang indefinitely with 100% CPU.
 - `Max EC size` > 3000 in index stats.
 
-**Solution (`scripts/rna/fix_harpegnathos_index.py`)**:
+**Solution** — `IndexComplexityManager` in `amalgkit/index_prep.py`:
 
-1. Filter input FASTA to remove `XR_` and `NR_` (non-coding RNA) transcripts.
-2. Remove transcripts < 200bp.
-3. Rebuild index.
+1. Automatically filters `XR_` and `NR_` (non-coding RNA) transcripts.
+2. Removes transcripts < 200bp and duplicates.
+3. Rebuilds index with reduced complexity.
 
-*This strategy solved the Harpegnathos stall (Max EC: ~3015) by reducing index size and complexity.*
+*This strategy solved the Harpegnathos stall (Max EC: ~3015) by reducing index size and complexity. It is now applied automatically for any species.*
 
 ## 🧬 GWAS Integration
 

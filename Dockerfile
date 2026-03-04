@@ -57,13 +57,15 @@ RUN cd /tmp && \
     chmod +x fastp && mv fastp /usr/local/bin/
 
 # ── SRA Toolkit (fasterq-dump) ──────────────────────────────────────────
+# The SRA toolkit uses a launcher pattern: fasterq-dump is a wrapper that
+# execs fasterq-dump.VERSION. We must copy ALL binaries to preserve this chain.
 RUN cd /tmp && \
     wget -q https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/3.2.1/sratoolkit.3.2.1-ubuntu64.tar.gz && \
     tar xzf sratoolkit.3.2.1-ubuntu64.tar.gz && \
-    cp sratoolkit.3.2.1-ubuntu64/bin/fasterq-dump /usr/local/bin/ && \
-    cp sratoolkit.3.2.1-ubuntu64/bin/prefetch /usr/local/bin/ && \
-    cp sratoolkit.3.2.1-ubuntu64/bin/vdb-config /usr/local/bin/ && \
-    rm -rf /tmp/sratoolkit*
+    cp -a sratoolkit.3.2.1-ubuntu64/bin/* /usr/local/bin/ && \
+    rm -rf /tmp/sratoolkit* && \
+    mkdir -p /root/.ncbi && \
+    printf '/LIBS/GUID = "%s"\n/libs/cloud/report_instance_identity = "false"\n/repository/user/main/public/root = "/tmp/sra-cache"\n' "$(uuidgen 2>/dev/null || echo 'docker-container')" > /root/.ncbi/user-settings.mkfg
 
 # ── UV for fast Python dependency resolution ────────────────────────────
 RUN pip install uv

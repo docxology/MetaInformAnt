@@ -121,6 +121,38 @@ sequenceDiagram
 
 See: [RNA Workflow](./rna/workflow.md), [DNA](./dna/index.md), [GWAS Workflow](./gwas/workflow.md), [Testing](./testing.md).
 
+## TUI Monitoring Tools
+
+Interactive terminal-based tools for pipeline monitoring and workflow execution:
+
+- **`scripts/rna/monitor_tui.py`** — Real-time dashboard showing per-species pipeline progress, system metrics (CPU, RAM, network I/O), and active command counts. Refresh rate: 5s.
+  ```bash
+  python scripts/rna/monitor_tui.py
+  ```
+- **`scripts/rna/run_workflow_tui.py`** — Full workflow runner with TUI visualization. Runs the complete RNA-seq workflow (download → getfastq → quant) with per-sample progress display.
+  ```bash
+  python scripts/rna/run_workflow_tui.py --config config/amalgkit/amalgkit_pbarbatus.yaml --threads 5
+  ```
+
+## Directory Conventions
+
+The RNA-seq pipeline uses a specific directory hierarchy under each species output:
+
+```text
+output/amalgkit/<species>/
+├── work/            # Amalgkit intermediate files (metadata, selected samples, merge outputs)
+│   ├── metadata/    # Sample metadata from NCBI (metadata_selected.tsv)
+│   ├── getfastq/    # Symlinks to downloaded FASTQ files
+│   ├── quant/       # Kallisto quantification results per sample
+│   ├── merge/       # Combined abundance matrices
+│   └── logs/        # Step-level log files
+├── fastq/           # Raw downloaded FASTQ files (ENA .fastq.gz or SRA extracts)
+│   └── getfastq/    # Per-sample subdirectories with FASTQ pairs
+└── genome/          # Reference genome FASTA + Kallisto index
+```
+
+> **Key distinction**: `work/getfastq/` contains **symlinks** pointing to `fastq/getfastq/` where actual FASTQ data resides. This separation allows cleanup of raw data while preserving workspace structure.
+
 ## Configuration Files
 
 Many workflows support configuration files for complex parameter sets:

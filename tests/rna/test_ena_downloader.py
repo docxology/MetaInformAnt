@@ -10,8 +10,6 @@ import shutil
 import tempfile
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-
 from metainformant.rna.retrieval.ena_downloader import ENADownloader
 
 class TestENADownloader(unittest.TestCase):

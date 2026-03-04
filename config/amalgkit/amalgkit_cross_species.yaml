@@ -1,15 +1,37 @@
 # Amalgkit Cross-Species Configuration
-# Analysis of Apis mellifera and Pogonomyrmex barbatus
+# Comparative transcriptomics across 22 ant/bee species
 
 # Working directory
 work_dir: output/amalgkit/cross_species/work
 log_dir: output/amalgkit/cross_species/logs
 threads: 16
 
-# Species to include
+# All 22 species (21 ants + 1 bee) from the pipeline
 species_list:
-  - Apis_mellifera
+  # ── Ants (21 species, sorted by sample count ascending) ──
+  - Anoplolepis_gracilipes
+  - Acromyrmex_echinatior
+  - Dinoponera_quadriceps
+  - Vollenhovia_emeryi
+  - Odontomachus_brunneus
+  - Formica_exsecta
+  - Temnothorax_americanus
+  - Wasmannia_auropunctata
+  - Nylanderia_fulva
+  - Temnothorax_curvispinosus
   - Pogonomyrmex_barbatus
+  - Cardiocondyla_obscurior
+  - Temnothorax_nylanderi
+  - Linepithema_humile
+  - Atta_cephalotes
+  - Ooceraea_biroi
+  - Camponotus_floridanus
+  - Solenopsis_invicta
+  - Monomorium_pharaonis
+  - Temnothorax_longispinosus
+  - Harpegnathos_saltator
+  # ── Bees ──
+  - Apis_mellifera
 
 # Steps configuration
 steps:
