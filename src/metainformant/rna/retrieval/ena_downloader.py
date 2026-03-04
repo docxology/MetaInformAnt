@@ -171,7 +171,10 @@ class ENADownloader:
                 "curl",
                 "-fsSL",
                 "--retry", str(self.retries),
-                "--retry-delay", "5",
+                "--retry-delay", "10",
+                "--retry-connrefused",
+                "--retry-all-errors",
+                "--connect-timeout", "30",
                 "-o", str(output_file),
                 url
             ]

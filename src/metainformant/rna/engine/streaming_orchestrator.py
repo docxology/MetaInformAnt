@@ -526,19 +526,51 @@ class StreamingPipelineOrchestrator:
                 )
             except Exception as e:
                 logger.error(f"Failed to run downstream steps: {e}")
+        
+        # Species Summary
+        try:
+            counts = self.db.get_counts(species_name)
+            sp_counts = counts.get(species_name, {})
+            total = sum(sp_counts.values())
+            q = sp_counts.get("quantified", 0)
+            f = sp_counts.get("failed", 0)
+            p = sp_counts.get("pending", 0)
+            d = sp_counts.get("downloaded", 0) + sp_counts.get("downloading", 0)
+            pct = (q / total * 100) if total > 0 else 0
+            logger.info(
+                f"┌─── {species_name} Summary ───┐\n"
+                f"│  Quantified: {q}/{total} ({pct:.0f}%)  │\n"
+                f"│  Failed: {f}  Pending: {p}  DL: {d}  │\n"
+                f"└─────────────────────────────────┘"
+            )
+        except Exception:
+            pass
             
         return True
 
     def run_all(self, species_list: List[str], max_gb: float, workers: int, threads: int):
         """Run pipeline for all listed species configurations."""
         results = {}
-        for config_name in species_list:
+        for idx, config_name in enumerate(species_list, 1):
             try:
                 success = self.process_species(config_name, max_gb, workers, threads)
                 results[config_name] = "Success" if success else "Failed"
             except Exception as e:
                 logger.error(f"Fatal error processing {config_name}: {e}")
                 results[config_name] = f"Error: {e}"
+            
+            # Global progress summary
+            try:
+                all_counts = self.db.get_counts()
+                total_q = sum(c.get("quantified", 0) for c in all_counts.values())
+                total_f = sum(c.get("failed", 0) for c in all_counts.values())
+                total_all = sum(sum(c.values()) for c in all_counts.values())
+                logger.info(
+                    f"═══ Pipeline Progress: {idx}/{len(species_list)} species | "
+                    f"{total_q} quantified / {total_all} total ({total_f} failed) ═══"
+                )
+            except Exception:
+                pass
         
         logger.info("Final Results:")
         for k, v in results.items():
