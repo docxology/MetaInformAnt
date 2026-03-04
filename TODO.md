@@ -1,59 +1,95 @@
-# Metainformant Project Master TODO
+# MetaInformAnt — Master TODO
 
-This document tracks high-level architectural goals, technical debt, and pending enhancements, particularly focusing on the industrial-scale Amalgkit integration.
-
-## 🚀 Priority: Amalgkit & RNA-Seq Pipeline Hardening
-
-- [x] **Standardize Index Complexity Filtering**
-  - The `fix_harpegnathos_index.py` script proved essential for `Harpegnathos`.
-  - **Goal**: Create a formal `metainformant.rna.index.filter` module to automatically detect and clean filtering artifacts (ncRNA, duplicates, rRNA) for *any* species.
-  - **Status**: Implemented `IndexComplexityManager` in `src/metainformant/rna/amalgkit/index_prep.py`.
-
-- [x] **Unified Download Orchestrator**
-  - Legacy scripts (`process_apis_mellifera.py`, `_ena.py`, `_parallel.py`) fully superseded.
-  - **Current**: `run_all_species.sh` → `run_workflow.py` → `_execute_streaming_mode()` with per-sample `ThreadPoolExecutor` concurrency.
-  - **Status**: Implemented in `metainformant.rna.engine.workflow_execution`.
-
-- [ ] **Dynamic Resource Allocation**
-  - **Challenge**: `Harpegnathos` stalled on high-complexity index; `Apis` requires high I/O.
-  - **Goal**: Implement resource profiles (e.g., `--profile high_mem` vs `--profile high_io`) in `orchestrator.py`.
-
-## 📚 Documentation & Rules
-
-- [ ] **Entrench "Zero-Mock" Policy**
-  - Ensure all new modules (longread, singlecell) have functional tests interacting with real (or minimized real) data, not mocks.
-  - **verification**: Check `tests/` for any regression to mocking.
-
-- [ ] **Architecture Documentation**
-  - Update `docs/rna/README.md` to reflect the "ENA First" strategy.
-  - **Consolidate Documentation**: `docs/rna/README.md` is a stale duplicate of `src/metainformant/rna/README.md`. Decide on a Single Source of Truth (likely `src/`) and symlink or redirect.
-  - Document the `work/` vs `fastq/` directory structure explicitly to avoid confusion (like the symlink issue).
-  - Document TUI tools (`monitor_tui.py`, `run_workflow_tui.py`).
-
-- [x] **Script Consolidation**
-  - Legacy scripts (`process_apis_mellifera.py`, `_ena.py`, `_parallel.py`, `monitor_apis_mellifera.py`, `recover_missing_*.py`) fully superseded by `run_all_species.sh` + `run_workflow.py`.
-  - **Status**: All pipeline functionality consolidated. Legacy scripts remain on disk but are not referenced in documentation.
-
-## 🛠️ Infrastructure
-
-- [x] **Infrastructure Stability**
-  - **Fix Circular Dependency**: Refactored `src/metainformant/__init__.py` to remove top-level imports.
-  - **Unit Test Harness**: Setup for unblocked unit testing.
-
-- [x] **MCP Tooling for Amalgkit**
-  - Created `src/metainformant/mcp/tools/amalgkit_monitor.py` (verified via dry-run).
-
-- [x] **Error Recovery Automation**
-  - **Goal**: Auto-detect "stalled" processes (0 CPU for >1h) and kill/restart them.
-  - **Mechanism**: Implemented `ProcessWatchdog` in `src/metainformant/core/utils/watchdog.py`.
-  - **Status**: Integrated into `Orchestrator` with `--watchdog` flag. Verified via `tests/core/test_watchdog_integration.py`. <!-- id: 163 -->
-
-## 🔬 Scientific Modules
-
-- [ ] **GWAS Integration**
-  - Verify `gwas` module integration points with `rna` (eQTL analysis).
-  - Ensure `gwas` pipe accepts upstream `amalgkit` quantification tables directly.
+> **Version**: 0.2.7 · **Last Updated**: 2026-03-04
 
 ---
 
-*Last Updated: 2026-02-18*
+## Recent Accomplishments (v0.2.5 → v0.2.7)
+
+- ✅ **GCP Cloud Deployment** — Full `cloud/` module with VM lifecycle management, Docker pipelines, autonomous bootstrapping, genome prep, and micromamba integration
+- ✅ **Streaming Orchestrator** — `streaming_orchestrator.py` with SQLite-backed progress tracking, size-ordered scheduling, and 16-worker concurrency
+- ✅ **Download Resilience** — ENA-first + NCBI `fasterq-dump` fallback, thread-safe symlink handling, concurrent SQLite locking with retry
+- ✅ **Index Complexity Filtering** — `IndexComplexityManager` in `index_prep.py` for automatic ncRNA/duplicate/rRNA cleaning on any species
+- ✅ **Process Watchdog** — `ProcessWatchdog` in `core/utils/watchdog.py` with `--watchdog` flag; auto-kills stalled jobs (0 CPU > 1h)
+- ✅ **Pipeline Housekeeping** — Cleaned ~7k stale sentinel files (heartbeats + `.safely_removed` markers); `.gitignore` hardened
+- ✅ **Script Consolidation** — All legacy scripts physically deleted; fully superseded by `run_workflow.py`
+- ✅ **Dynamic Resource Profiles** — `ResourceProfile` dataclass with 4 presets (`high_mem`, `high_io`, `default`, `minimal`) and species auto-detection in `orchestrator.py`
+- ✅ **MCP Amalgkit Monitor** — `mcp/tools/amalgkit_monitor.py` dry-run verified
+- ✅ **GWAS P. barbatus Runner** — End-to-end real-data GWAS via BWA + BCFtools + SRA reads
+- ✅ **GWAS ↔ RNA Integration** — `gwas/data/expression.py` reads amalgkit `abundance.tsv` directly; `eqtl_coloc` and `from_rna_expression` exported and functional
+- ✅ **Infrastructure Fixes** — Circular dependency removal, t-SNE perplexity correction, diffusion map dense fallback, 72% import-error reduction
+
+### Documentation (completed 2026-03-04)
+
+- ✅ **RNA docs consolidated** — `docs/rna/README.md` → symlink to `src/metainformant/rna/README.md` (single source of truth)
+- ✅ **ENA-first strategy documented** — Updated RNA README with streaming orchestrator architecture and dual-tier download strategy
+- ✅ **TUI tools documented** — Added `monitor_tui.py` and `run_workflow_tui.py` sections to `docs/cli.md`
+- ✅ **Directory conventions documented** — `work/` vs `fastq/` vs `output/` hierarchy with symlink explanation in `docs/cli.md`
+- ✅ **Zero-Mock audit passed** — Only 1 dead mock import found and removed (`tests/rna/test_ena_downloader.py`); no actual mock usage in test suite
+- ✅ **Stale configs verified** — `amalgkit_test.yaml` and `amalgkit_template.yaml` are referenced by tests/scripts and remain valid
+
+---
+
+## 🔬 In Progress: Amalgkit Multi-Species Pipeline (GCP Cloud Run)
+
+### Pipeline Status (GCP VM: `metainformant-pipeline`)
+
+| Species | Samples Quantified | Status |
+|---------|-------------------|--------|
+| *Harpegnathos saltator* | 368 | ✅ Done |
+| *Solenopsis invicta* | 323 | ✅ Done |
+| *Ooceraea biroi* | 217 | ✅ Done |
+| *Temnothorax longispinosus* | 148 | ✅ Done |
+| *Temnothorax nylanderi* | 115 | ✅ Done |
+| *Linepithema humile* | 111 | ✅ Done |
+| *Monomorium pharaonis* | 98 | ✅ Done |
+| *Pogonomyrmex barbatus* | 78 | ✅ Done |
+| *Apis mellifera* | 57+ | 🔄 Active (~5,700 total) |
+| *Temnothorax americanus* | 54 | ✅ Done |
+| 10 other ant species | 182 | ✅ Done |
+| *Cardiocondyla obscurior* | 3 | 🔄 Starting |
+| *Atta/Camponotus* | 0 | ⏳ Metadata deployed |
+| **TOTAL** | **1,751+** | **20/22 species active** |
+
+### Pipeline Tasks
+
+- [x] **Deploy pipeline to GCP** — Docker container with 28 workers, spot pricing
+- [x] **Deploy metadata for blocked species** — Uploaded local `metadata_selected.tsv` for amellifera + 3 species
+- [ ] **Complete Apis mellifera processing** — ~5,700 samples total, ~57 done, ETA ~40h
+- [ ] **Process remaining 2 blocked species** — Atta, Camponotus (metadata deployed, waiting on pipeline loop)
+- [ ] **Download results to local** — `bash scripts/cloud/download_results.sh output/amalgkit`
+- [ ] **Post-quant analysis** — Run `merge`, `curate`, `sanity` steps locally after download
+- [ ] **Cross-species expression matrix** — Generate unified multi-species expression table
+
+---
+
+## 🚀 Upcoming: v0.3.0 Milestones
+
+### Cloud & Scalability
+
+- [ ] **GCP parallel multi-species processing** — Deploy multiple species concurrently on separate VMs instead of sequential local processing
+- [ ] **Auto-scaling disk management** — Monitor and resize GCP disks dynamically during large pipeline runs
+
+### Scientific Analysis
+
+- [ ] **Cross-species comparative transcriptomics** — Downstream analysis of completed multi-species expression matrices (PCA, differential expression, phylogenetic signal)
+- [ ] **Expand GWAS to additional species** — Replicate `run_pbarbatus_gwas.py` pattern for other species with public SRA/variant data
+
+### Module Maturation
+
+- [ ] **Long-read sequencing** (65%) — Complete PacBio/ONT assembly and error correction workflows
+- [ ] **Metagenomics** (60%) — Finish taxonomic profiling and functional annotation pipelines
+- [ ] **Spatial transcriptomics** (50%) — Tissue mapping and spatial statistics integration
+- [ ] **Single-cell** (74%) — Complete trajectory analysis and pseudo-time workflows
+- [ ] **Metabolomics** (50%) — MS data processing and pathway mapping
+
+---
+
+## 🛠️ Technical Debt
+
+- [ ] **Import error backlog** — Reduce remaining ~63 import errors (currently at 72% improvement from baseline)
+- [ ] **Test collection rate** — Push from 87% to 95%+ by fixing remaining collection failures
+
+---
+
+*Next release target: **v0.3.0** — Complete multi-species quantification + cross-species analysis*
