@@ -110,8 +110,56 @@ class StreamingPipelineOrchestrator:
                 sz_gb = fq.stat().st_size / (1024**3)
                 logger.info(f"Downloaded {fq.name}: {sz_gb:.2f} GB")
         else:
-            logger.error(f"Download failed for {srr_id}: {message}")
-            # Clean up partial files
+            logger.warning(f"ENA download failed for {srr_id}: {message}")
+            logger.info(f"Falling back to NCBI fasterq-dump for {srr_id}...")
+            # Clean up any partial ENA downloads
+            for f in sample_dir.iterdir():
+                if f.is_file():
+                    f.unlink(missing_ok=True)
+            
+            # NCBI fasterq-dump fallback
+            try:
+                fqd_cmd = [
+                    "fasterq-dump", srr_id,
+                    "--outdir", str(sample_dir),
+                    "--split-3",
+                    "--threads", "4",
+                    "--skip-technical",
+                ]
+                fqd_result = subprocess.run(
+                    fqd_cmd, capture_output=True, text=True, timeout=7200
+                )
+                if fqd_result.returncode == 0:
+                    # Compress the output FASTQ files
+                    for fq in sample_dir.glob("*.fastq"):
+                        gz_path = fq.with_suffix(".fastq.gz")
+                        subprocess.run(
+                            ["pigz", "-p", "2", str(fq)],
+                            capture_output=True, timeout=1800
+                        )
+                        if gz_path.exists() and gz_path.stat().st_size > 0:
+                            sz_gb = gz_path.stat().st_size / (1024**3)
+                            logger.info(f"Downloaded (NCBI) {gz_path.name}: {sz_gb:.2f} GB")
+                    
+                    # Check if any fastq.gz files now exist
+                    gz_files = list(sample_dir.glob("*.fastq.gz"))
+                    if gz_files:
+                        success = True
+                        logger.info(f"NCBI fallback succeeded for {srr_id}: {len(gz_files)} files")
+                    else:
+                        logger.error(f"NCBI fasterq-dump produced no FASTQ files for {srr_id}")
+                else:
+                    logger.error(
+                        f"NCBI fasterq-dump failed for {srr_id} (exit {fqd_result.returncode}): "
+                        f"{fqd_result.stderr[:200]}"
+                    )
+            except subprocess.TimeoutExpired:
+                logger.error(f"NCBI fasterq-dump timeout for {srr_id} (>2h)")
+            except Exception as e:
+                logger.error(f"NCBI fasterq-dump exception for {srr_id}: {e}")
+        
+        if not success:
+            # Final cleanup on total failure
             for f in sample_dir.iterdir():
                 if f.is_file():
                     f.unlink(missing_ok=True)
