@@ -16,7 +16,25 @@ PROJECT="${GCP_PROJECT:-cryptoptera}"
 ZONE="${GCP_ZONE:-us-central1-a}"
 VM_NAME="${GCP_VM:-metainformant-pipeline}"
 CONTAINER="${CONTAINER_NAME:-metainformant-pipeline}"
-LOCAL_OUTPUT="${1:-output/amalgkit}"
+LOCAL_OUTPUT="output/amalgkit"
+SPECIES=""
+
+while [[ $# -gt 0 ]]; do
+  case $1 in
+    --output)
+      LOCAL_OUTPUT="$2"
+      shift 2
+      ;;
+    --species)
+      SPECIES="$2"
+      shift 2
+      ;;
+    *)
+      echo "Unknown argument: $1"
+      exit 1
+      ;;
+  esac
+done
 
 echo "╔═══════════════════════════════════════════════════╗"
 echo "║  Downloading amalgkit results from GCP            ║"
@@ -40,6 +58,9 @@ gcloud compute ssh "$VM_NAME" \
 
         # Copy all quant directories from container
         for sp_dir in \$(sudo docker exec $CONTAINER ls output/amalgkit/ 2>/dev/null); do
+            if [ -n "$SPECIES" ] && [ "\$sp_dir" != "$SPECIES" ]; then
+                continue
+            fi
             if sudo docker exec $CONTAINER test -d output/amalgkit/\$sp_dir/work/quant; then
                 count=\$(sudo docker exec $CONTAINER ls output/amalgkit/\$sp_dir/work/quant 2>/dev/null | wc -l)
                 if [ \"\$count\" -gt 0 ]; then
@@ -53,6 +74,9 @@ gcloud compute ssh "$VM_NAME" \
         # Also copy progress DB and any merged results
         sudo docker cp $CONTAINER:/app/output/amalgkit/pipeline_progress.db /tmp/quant_export/ 2>/dev/null || true
         for sp_dir in \$(sudo docker exec $CONTAINER ls output/amalgkit/ 2>/dev/null); do
+            if [ -n "$SPECIES" ] && [ "\$sp_dir" != "$SPECIES" ]; then
+                continue
+            fi
             if sudo docker exec $CONTAINER test -d output/amalgkit/\$sp_dir/merged; then
                 sudo mkdir -p /tmp/quant_export/\$sp_dir/
                 sudo docker cp $CONTAINER:/app/output/amalgkit/\$sp_dir/merged /tmp/quant_export/\$sp_dir/ 2>/dev/null || true

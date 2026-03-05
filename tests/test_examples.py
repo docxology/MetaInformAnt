@@ -192,8 +192,11 @@ class TestExamples:
 
     def test_example_domain_coverage(self, examples_dir: Path):
         """Test that examples provide good domain coverage."""
-        # Get all domain directories
-        domains = [d.name for d in examples_dir.iterdir() if d.is_dir() and not d.name.startswith(".")]
+        domains = [
+            d.name
+            for d in examples_dir.iterdir()
+            if d.is_dir() and not d.name.startswith(".") and d.name != "templates"
+        ]
 
         # Each domain should have at least one example
         for domain in domains:

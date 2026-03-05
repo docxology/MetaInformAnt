@@ -78,9 +78,8 @@ antenna:
 whole_body:
   - whole_body
   - whole body
-  - Whole Body
-  - Whole body
-  - whole bee
+adult:
+  - adult
   - Whole bee
   - whole
   - Whole
@@ -455,6 +454,10 @@ thoracic_ganglia:
   - thoracic ganglia
   - Second Thoracic Ganglia
   - 2nd Thoracic Ganglia
+
+nervous_system:
+  - nervous_system
+  - nervous system
 
 # ──────────────────────────────────────────────
 # Symbiont-associated

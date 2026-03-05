@@ -69,7 +69,7 @@ def calculate_single_diversity(abundances: List[float], method: str) -> float:
     # Filter out zero abundances and ensure positive values
     abundances = [max(0, x) for x in abundances if x > 0]
 
-    if not abundances:
+    if len(abundances) == 0:
         return 0.0
 
     total_abundance = sum(abundances)
@@ -118,7 +118,7 @@ def species_richness(
     Returns:
         Species richness count(s)
     """
-    if not community_data:
+    if len(community_data) == 0:
         return 0
 
     # Simple list case (flat list of numbers, not nested)
@@ -154,7 +154,7 @@ def calculate_evenness(abundances: List[float], method: str = "pielou") -> float
     Raises:
         ValueError: If method is not supported
     """
-    if not abundances:
+    if len(abundances) == 0:
         return 0.0
 
     supported_methods = ["pielou", "simpson"]
@@ -199,7 +199,7 @@ def rarefaction_curve(abundances: List[float], max_samples: Optional[int] = None
     # Filter and sort abundances (descending)
     abundances = sorted([int(x) for x in abundances if x > 0], reverse=True)
 
-    if not abundances:
+    if len(abundances) == 0:
         return [(0, 0.0)]
 
     total_individuals = sum(abundances)
@@ -335,7 +335,7 @@ def dominance_diversity_curve(abundances: List[float]) -> List[Tuple[float, floa
     Returns:
         List of (dominance_level, diversity) tuples
     """
-    if not abundances:
+    if len(abundances) == 0:
         return [(0.0, 0.0)]
 
     # Sort in descending order
@@ -697,7 +697,7 @@ def species_richness_simple(abundances: List[float]) -> int:
         >>> species_richness_simple([1, 2, 0, 3])
         3
     """
-    if not abundances:
+    if len(abundances) == 0:
         return 0
     return sum(1 for a in abundances if a > 0)
 
@@ -717,7 +717,7 @@ def pielou_evenness(abundances: List[float]) -> float:
         >>> pielou_evenness([1, 1, 1, 1])
         1.0
     """
-    if not abundances:
+    if len(abundances) == 0:
         return 0.0
 
     S = species_richness_simple(abundances)
@@ -754,7 +754,7 @@ def chao1_estimator(abundances: List[float]) -> float:
         >>> chao1_estimator([10, 8, 6, 4, 2, 1, 1, 1])
         12.5
     """
-    if not abundances:
+    if len(abundances) == 0:
         return 0.0
 
     S_obs = species_richness_simple(abundances)

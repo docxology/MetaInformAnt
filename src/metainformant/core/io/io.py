@@ -260,17 +260,35 @@ def write_jsonl(rows: Iterable[Mapping[str, Any]], path: str | Path, *, atomic: 
 
     try:
         if atomic:
-            temp_path = p.with_suffix(p.suffix + ".tmp")
-            with open_text_auto(temp_path, mode="wt") as fh:
-                for row in rows:
-                    fh.write(json.dumps(dict(row)))
-                    fh.write("\n")
+            # Append .tmp so if the file ends in .gz, it ends in .gz.tmp
+            is_gzipped = p.suffix == ".gz"
+            temp_path = p.with_name(p.name + ".tmp")
+            
+            if is_gzipped:
+                import gzip
+                with gzip.open(temp_path, "wt", encoding="utf-8") as fh:
+                    for row in rows:
+                        fh.write(json.dumps(dict(row)))
+                        fh.write("\n")
+            else:
+                with open_text_auto(temp_path, mode="wt") as fh:
+                    for row in rows:
+                        fh.write(json.dumps(dict(row)))
+                        fh.write("\n")
             temp_path.replace(p)
         else:
-            with open_text_auto(p, mode="wt") as fh:
-                for row in rows:
-                    fh.write(json.dumps(dict(row)))
-                    fh.write("\n")
+            is_gzipped = p.suffix == ".gz"
+            if is_gzipped:
+                import gzip
+                with gzip.open(p, "wt", encoding="utf-8") as fh:
+                    for row in rows:
+                        fh.write(json.dumps(dict(row)))
+                        fh.write("\n")
+            else:
+                with open_text_auto(p, mode="wt") as fh:
+                    for row in rows:
+                        fh.write(json.dumps(dict(row)))
+                        fh.write("\n")
     except Exception as e:
         raise CoreIOError(f"Failed to write JSONL file {path}: {e}") from e
 
