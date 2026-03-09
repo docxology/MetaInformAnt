@@ -22,7 +22,7 @@ AMALGKIT_DIR = Path("output/amalgkit")
 SPECIES_ORDER = [
     # Small (<50)
     "anoplolepis_gracilipes", "acromyrmex_echinatior", "formica_exsecta", 
-    "pbarbatus", "wasmannia_auropunctata", "temnothorax_nylanderi", 
+    "pogonomyrmex_barbatus", "wasmannia_auropunctata", "temnothorax_nylanderi", 
     "nylanderia_fulva", "temnothorax_americanus", "temnothorax_curvispinosus",
     # Medium (<300)
     "cardiocondyla_obscurior", "linepithema_humile", "atta_cephalotes", 

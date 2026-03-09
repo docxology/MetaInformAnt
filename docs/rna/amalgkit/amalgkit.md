@@ -26,10 +26,10 @@ tail -f output/amalgkit/run_all_species_incremental.log
 ### Single Species
 
 ```bash
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Or with stream output and specific steps
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml \
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml \
     --steps getfastq quant merge
 ```
 
@@ -43,7 +43,7 @@ ps aux | grep wget | grep -v grep | wc -l
 python3 scripts/rna/report_completed.py
 
 # Single-species status
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 ```
 
 ## Python API

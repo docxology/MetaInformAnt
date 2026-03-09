@@ -143,7 +143,7 @@ Once R is installed, test the complete workflow:
 ```bash
 # Run merge + curate + sanity for a species
 bash scripts/rna/amalgkit/run_amalgkit.sh \
-    --config config/amalgkit/amalgkit_pbarbatus.yaml \
+    --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml \
     --steps merge,curate,sanity
 ```
 
@@ -174,7 +174,7 @@ If R cannot be installed, you can:
    ```bash
    # Run only merge and sanity
    bash scripts/rna/amalgkit/run_amalgkit.sh \
-       --config config/amalgkit/amalgkit_pbarbatus.yaml \
+       --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml \
        --steps merge,sanity
    ```
 
@@ -256,7 +256,7 @@ python3 scripts/rna/check_r_dependencies.py
 ```bash
 # Run complete workflow with R steps
 bash scripts/rna/amalgkit/run_amalgkit.sh \
-    --config config/amalgkit/amalgkit_pbarbatus.yaml \
+    --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml \
     --steps merge,curate,sanity
 ```
 

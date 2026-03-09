@@ -6,16 +6,16 @@ to run complete workflows for single species.
 
 Usage:
     # Run full workflow for a species
-    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml
+    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
     # Run specific steps
-    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --steps getfastq quant merge
+    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
 
     # Check status
-    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --status
+    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
     # Cleanup unquantified samples
-    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --cleanup-unquantified
+    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --cleanup-unquantified
 """
 
 from __future__ import annotations

@@ -1,0 +1,80 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Bombus terrestris (Buff-tailed bumblebee)
+# NCBI Taxonomy ID: 30195
+# Assembly: GCF_910591885.1 (iyBomTerr1.2)
+# Note: Added for Hymenoptera cross-species tissue comparisons (bumblebee)
+  
+work_dir: output/amalgkit/bombus_terrestris/work
+log_dir: output/amalgkit/bombus_terrestris/logs
+threads: 16
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Bombus_terrestris
+
+# Alternative taxonomy specification
+taxon_id: 30195
+
+# Reference genome configuration
+genome:
+  accession: GCF_910591885.1
+  assembly_name: iyBomTerr1.2
+  dest_dir: output/amalgkit/bombus_terrestris/genome
+
+  # Files to download (based on available NCBI FTP resources)
+  include:
+    - genome           # GCF_910591885.1_iyBomTerr1.2_genomic.fna.gz
+    - gff3            # GCF_910591885.1_iyBomTerr1.2_genomic.gff.gz
+    - rna             # GCF_910591885.1_iyBomTerr1.2_rna_from_genomic.fna.gz
+    - cds             # GCF_910591885.1_iyBomTerr1.2_cds_from_genomic.fna.gz
+    - protein         # GCF_910591885.1_iyBomTerr1.2_protein.faa.gz
+
+  # Direct FTP URL for all genome files
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/910/591/885/GCF_910591885.1_iyBomTerr1.2/
+
+  # Specific important files for transcriptome analysis
+  files:
+    genomic_fasta: GCF_910591885.1_iyBomTerr1.2_genomic.fna.gz
+    transcriptome_fasta: GCF_910591885.1_iyBomTerr1.2_rna_from_genomic.fna.gz
+    cds_fasta: GCF_910591885.1_iyBomTerr1.2_cds_from_genomic.fna.gz
+    protein_fasta: GCF_910591885.1_iyBomTerr1.2_protein.faa.gz
+    annotation_gff: GCF_910591885.1_iyBomTerr1.2_genomic.gff.gz
+
+# Per-step parameters (merged on top of common params)
+steps:
+  metadata:
+    out_dir: output/amalgkit/bombus_terrestris/work
+    search_string: '"Bombus terrestris"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: output/amalgkit/bombus_terrestris/fastq/getfastq
+  config: {}
+  select: {}
+  getfastq:
+    out_dir: output/amalgkit/bombus_terrestris/fastq
+    remove_sra: yes
+    threads: 16
+    pfd: yes
+    redo: no
+  quant:
+    jobs: 1
+    out_dir: output/amalgkit/bombus_terrestris/quant
+    threads: 16
+    redo: no
+    keep_fastq: no
+  merge:
+    out: output/amalgkit/bombus_terrestris/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/bombus_terrestris/merged
+  cstmm:
+    out_dir: output/amalgkit/bombus_terrestris/cstmm
+  curate:
+    out_dir: output/amalgkit/bombus_terrestris/curate
+  csca:
+    out_dir: output/amalgkit/bombus_terrestris/csca
+  sanity: {}

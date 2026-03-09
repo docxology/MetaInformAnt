@@ -11,9 +11,9 @@ uv run metainformant setup --with-amalgkit --ncbi-email "you@example.com"
 uv run metainformant dna fetch --assembly GCF_000001405.40
 uv run metainformant rna plan --work-dir output/amalgkit/work --threads 8 --species Apis_mellifera
 uv run metainformant rna plan-species --work-dir output/amalgkit/work --threads 8 --taxon-id 7460 --tissue brain --tissue muscle
-uv run metainformant rna plan-config --config config/amalgkit/amalgkit_pbarbatus.yaml
+uv run metainformant rna plan-config --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 uv run metainformant rna run  --work-dir output/amalgkit/work --threads 8 --species Apis_mellifera --check
-uv run metainformant rna run-config --config config/amalgkit/amalgkit_pbarbatus.yaml --check
+uv run metainformant rna run-config --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --check
 uv run metainformant gwas run --config config/gwas/gwas_template.yaml
 uv run metainformant gwas run --config config/gwas/gwas_template.yaml --check
 uv run metainformant protein taxon-ids --file tests/data/protein/taxon_id_list.txt
@@ -131,7 +131,7 @@ Interactive terminal-based tools for pipeline monitoring and workflow execution:
   ```
 - **`scripts/rna/run_workflow_tui.py`** — Full workflow runner with TUI visualization. Runs the complete RNA-seq workflow (download → getfastq → quant) with per-sample progress display.
   ```bash
-  python scripts/rna/run_workflow_tui.py --config config/amalgkit/amalgkit_pbarbatus.yaml --threads 5
+  python scripts/rna/run_workflow_tui.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --threads 5
   ```
 
 ## Directory Conventions

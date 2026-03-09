@@ -12,7 +12,7 @@ Key issues encountered and resolved during the first deployment.
 
 ## 2. Genome Indices Must Be Pre-Built
 
-**Problem:** All 22 species failed with `No genome index found`.
+**Problem:** All 28 species failed with `No genome index found`.
 
 **Root cause:** The `streaming_orchestrator.py` assumes pre-built kallisto indices in `output/amalgkit/shared/genome/*/index/`. The orchestrator does NOT download genomes.
 

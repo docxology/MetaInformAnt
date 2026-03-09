@@ -18,7 +18,13 @@ Documentation for all 11 amalgkit processing steps used in METAINFORMANT.
 | 10 | [csca](10_csca.md) | Cross-species correlation analysis | curate output | `csca/` |
 | 11 | [sanity](11_sanity.md) | Validate all outputs | all step outputs | `work/sanity/` |
 
-## Key Notes
+## MetaInformAnt Extensions
+
+In addition to the core amalgkit steps, this repository includes several custom extensions to improve reproducibility and automation:
+
+- **[Tissue Patching](../tissue_patching.md)**: Custom metadata correction system with 99.9% coverage for key species.
+- **[Ortholog Generation](../ortholog_generation.md)**: Fully automated OrthoDB v12 extraction workflow.
+- **[Streaming Orchestration](../../ORCHESTRATION.md)**: ENA-first download strategy with immediate quantification and cleanup.
 
 ### Download Method (Step 4)
 Downloading uses **ENA direct wget** (`scripts/rna/download_ena.py`), **not** the SRA Toolkit. This provides:

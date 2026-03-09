@@ -60,7 +60,7 @@ graph TD
 from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, execute_workflow
 
 # Load configuration
-config = AmalgkitWorkflowConfig.load("config/amalgkit/amalgkit_pbarbatus.yaml")
+config = AmalgkitWorkflowConfig.load("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
 
 # Execute workflow
 result = execute_workflow(config, steps=["getfastq", "quant", "merge"])
@@ -127,6 +127,9 @@ result = eqtl_coloc(
     gene_id="LOC123456"
 )
 ```
+
+- [Orchestration & Performance Guide](docs/rna/ORCHESTRATION.md) — ENA-first amalgkit streaming pipeline
+- [Troubleshooting & Hacks](docs/rna/amalgkit/TROUBLESHOOTING.md) — IO contention & SRA setup fixes
 
 See [metainformant.multiomics](../multiomics/) for comprehensive integration methods.
 

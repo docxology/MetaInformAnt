@@ -1,0 +1,5 @@
+scientific_name	run	bioproject	sample_group	tissue	exclusion
+speciesA	speciesA_SRR1	PRJNA1	brain	brain	no
+speciesA	speciesA_SRR2	PRJNA1	brain	brain	no
+speciesB	speciesB_SRR3	PRJNA2	brain	brain	no
+speciesB	speciesB_SRR4	PRJNA2	brain	brain	no

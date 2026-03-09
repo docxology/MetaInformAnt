@@ -438,6 +438,20 @@ class StreamingPipelineOrchestrator:
             
         if needs_prep:
             logger.info(f"Running preprocessing stages (config -> select -> metadata -> index) for {species_name}...")
+            
+            # Amalgkit ete4 dependency fix: copy the pre-downloaded taxdump to the species workspace
+            ete_dir = work_dir / "downloads" / "ete4"
+            try:
+                ete_dir.mkdir(parents=True, exist_ok=True)
+                taxdump_src = Path("/root/.local/share/ete/taxdump.tar.gz")
+                taxdump_dest = ete_dir / "taxdump.tar.gz"
+                if taxdump_src.exists() and not taxdump_dest.exists():
+                    import shutil
+                    shutil.copy2(taxdump_src, taxdump_dest)
+                    logger.info(f"Seeded NCBI Taxdump locally at {taxdump_dest}")
+            except Exception as e:
+                logger.warning(f"Failed to seed taxdump.tar.gz: {e}")
+                
             prep_cmd = [
                 "python3", "scripts/rna/run_workflow.py",
                 "--config", str(config_path),

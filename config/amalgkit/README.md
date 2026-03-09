@@ -24,7 +24,7 @@ Configuration files for **22 ant species** plus *Apis mellifera*. All use NCBI R
 | *Nylanderia fulva* | `nylanderia_fulva` | GCF_005281655.2 | `amalgkit_nylanderia_fulva.yaml` | ✅ Verified |
 | *Odontomachus brunneus* | `odontomachus_brunneus` | GCF_010583005.1 | `amalgkit_odontomachus_brunneus.yaml` | ✅ Verified |
 | *Ooceraea biroi* | `ooceraea_biroi` | GCF_003672135.1 | `amalgkit_ooceraea_biroi.yaml` | ✅ Verified |
-| *Pogonomyrmex barbatus* | `pbarbatus` | GCF_000187915.1 | `amalgkit_pbarbatus.yaml` | ✅ Verified |
+| *Pogonomyrmex barbatus* | `pbarbatus` | GCF_000187915.1 | `amalgkit_pogonomyrmex_barbatus.yaml` | ✅ Verified |
 | *Solenopsis invicta* | `solenopsis_invicta` | GCF_016802725.1 | `amalgkit_solenopsis_invicta.yaml` | ✅ Verified |
 | *Temnothorax americanus* | `temnothorax_americanus` | GCF_048541705.1 | `amalgkit_temnothorax_americanus.yaml` | ✅ Verified |
 | *Temnothorax curvispinosus* | `temnothorax_curvispinosus` | GCF_003070985.1 | `amalgkit_temnothorax_curvispinosus.yaml` | ✅ Verified |

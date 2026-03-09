@@ -52,7 +52,7 @@ File paths are stored in:
 config/amalgkit/amalgkit_{species_name}.yaml
 ```
 
-**Example**: `config/amalgkit/amalgkit_pbarbatus.yaml`
+**Example**: `config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml`
 
 ### Structure
 
@@ -136,7 +136,7 @@ steps:
 ```python
 from metainformant.rna.workflow import load_workflow_config
 
-config = load_workflow_config("config/amalgkit/amalgkit_pbarbatus.yaml")
+config = load_workflow_config("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
 
 # Config object structure (AmalgkitWorkflowConfig dataclass)
 config.work_dir          # Path: output/amalgkit/pogonomyrmex_barbatus/work
@@ -634,7 +634,7 @@ def test_count_quantified_samples(tmp_path: Path):
 
 ### Example 1: Complete Path Flow for One Sample
 
-**Configuration**: `config/amalgkit/amalgkit_pbarbatus.yaml`
+**Configuration**: `config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml`
 ```yaml
 work_dir: output/amalgkit/pogonomyrmex_barbatus/work
 steps:
@@ -748,7 +748,7 @@ from metainformant.rna.workflow import load_workflow_config
 from pathlib import Path
 
 # Load config
-config = load_workflow_config("config/amalgkit/amalgkit_pbarbatus.yaml")
+config = load_workflow_config("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
 
 # Extract all key paths
 paths = {

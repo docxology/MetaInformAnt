@@ -20,7 +20,7 @@ Documentation for amalgkit RNA-seq workflow integration.
 3. select - Select samples for processing
 4. getfastq - Download FASTQ files
 5. integrate - Prepare genome indices
-6. quant - Quantify expression with Salmon
+6. quant - Quantify expression with Kallisto
 7. merge - Merge sample quantifications
 8. cstmm - Cross-species TMM normalization
 9. curate - Curate and filter results

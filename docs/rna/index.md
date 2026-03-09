@@ -30,6 +30,15 @@ Notes
 - `execute_workflow` writes per-step logs to `work_dir/logs` and a JSONL manifest to `work_dir/amalgkit.manifest.jsonl`
 - To parameterize steps by species/tissues and output layout, see [Configuration Guide](./CONFIGURATION.md#species-profiles)
 
+## MetaInformAnt Extensions ⭐
+
+These tools provide automation and precision beyond the standard `amalgkit` capabilities:
+
+- **[Tissue Patching](amalgkit/tissue_patching.md)**: Metadata correction system (`tissue_patches.yaml`).
+- **[Ortholog Generation](amalgkit/ortholog_generation.md)**: Automated cross-species mapping.
+- **[Streaming Orchestration](ORCHESTRATION.md)**: High-efficiency ENA download/quant pipeline.
+- **[Troubleshooting & Hacks](amalgkit/TROUBLESHOOTING.md)**: Solutions for common bottlenecks.
+
 ## Transcriptomic meta-analysis (concept)
 
 Meta-analysis integrates RNA-seq data across studies to detect robust gene expression patterns with improved power. A typical flow:

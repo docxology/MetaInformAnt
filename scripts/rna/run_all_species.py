@@ -31,7 +31,7 @@ SPECIES_ORDER = [
     "amalgkit_wasmannia_auropunctata.yaml",       #   33 samples
     "amalgkit_nylanderia_fulva.yaml",             #   40 samples
     "amalgkit_temnothorax_curvispinosus.yaml",    #   43 samples
-    "amalgkit_pbarbatus.yaml",                    #   95 samples
+    "amalgkit_pogonomyrmex_barbatus.yaml",                    #   95 samples
     "amalgkit_cardiocondyla_obscurior.yaml",      #  162 samples
     "amalgkit_temnothorax_nylanderi.yaml",        #  166 samples
     "amalgkit_linepithema_humile.yaml",           #  173 samples
@@ -42,14 +42,20 @@ SPECIES_ORDER = [
     "amalgkit_monomorium_pharaonis.yaml",         #  370 samples
     "amalgkit_temnothorax_longispinosus.yaml",    #  508 samples
     "amalgkit_harpegnathos_saltator.yaml",        #  689 samples
-    # ── Bees ──
-    "amalgkit_amellifera.yaml",                   # 3154 samples
+    # ── Bees, Wasps, and Sawflies ──
+    "amalgkit_nasonia_vitripennis.yaml",          # Parasitoid wasp
+    "amalgkit_polistes_canadensis.yaml",          # Paper wasp
+    "amalgkit_polistes_fuscatus.yaml",            # Paper wasp
+    "amalgkit_megachile_rotundata.yaml",          # Alfalfa leafcutter bee
+    "amalgkit_bombus_terrestris.yaml",            # Bumblebee
+    "amalgkit_athalia_rosae.yaml",                # Sawfly
+    "amalgkit_apis_mellifera.yaml",               # 3154 samples (Honey bee)
 ]
 
 DEFAULTS = {
-    "max_gb": 20.0,
+    "max_gb": 65.0,
     "workers": 12,
-    "threads": 12,
+    "threads": 6,
 }
 
 def main():

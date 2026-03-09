@@ -77,14 +77,14 @@ amalgkit --help
 
 ```bash
 # Run a single species end-to-end
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Run all 23 species sequentially (background)
 nohup python3 scripts/rna/run_all_species.py \
   > output/amalgkit/run_all_species_incremental.log 2>&1 &
 
 # Check status
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
 # Monitor live progress
 tail -f output/amalgkit/run_all_species_incremental.log

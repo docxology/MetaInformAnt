@@ -10,7 +10,7 @@ Numbered documentation files (01-11) corresponding to workflow order:
 - `03_select.md` - Sample selection criteria
 - `04_getfastq.md` - FASTQ download process
 - `05_integrate.md` - Genome index preparation
-- `06_quant.md` - Salmon quantification
+- `06_quant.md` - Kallisto quantification
 - `07_merge.md` - Sample merging
 - `08_cstmm.md` - Cross-species normalization
 - `09_curate.md` - Data curation

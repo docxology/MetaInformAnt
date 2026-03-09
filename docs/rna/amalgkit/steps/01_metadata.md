@@ -448,7 +448,7 @@ for species in species_list:
 from metainformant.rna.workflow import load_workflow_config, execute_workflow
 
 # Load configuration
-cfg = load_workflow_config("config/amalgkit_amellifera.yaml")
+cfg = load_workflow_config("config/amalgkit_apis_mellifera.yaml")
 
 # Execute metadata step (automatic in workflow)
 # Run just the metadata stage via the CLI orchestrator:
@@ -465,7 +465,7 @@ cfg = load_workflow_config("config/amalgkit_amellifera.yaml")
 The workflow automatically applies filters after metadata retrieval:
 
 ```yaml
-# config/amalgkit_amellifera.yaml
+# config/amalgkit_apis_mellifera.yaml
 filters:
   require_tissue: true           # Only samples with tissue annotations
   min_spots: 10000000           # Minimum 10M reads

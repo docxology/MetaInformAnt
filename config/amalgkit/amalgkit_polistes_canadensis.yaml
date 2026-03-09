@@ -1,0 +1,74 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Polistes canadensis (Paper wasp)
+# NCBI Taxonomy ID: 91411
+# Assembly: GCF_022905055.1
+# Note: Added for Hymenoptera cross-species tissue comparisons (brain, antenna, ovary)
+
+work_dir: output/amalgkit/polistes_canadensis/work
+log_dir: output/amalgkit/polistes_canadensis/logs
+threads: 16
+
+auto_install_amalgkit: true
+
+filters:
+  require_tissue: false
+
+species_list:
+  - Polistes_canadensis
+
+taxon_id: 91411
+
+genome:
+  accession: GCF_022905055.1
+  dest_dir: output/amalgkit/polistes_canadensis/genome
+
+  # Include standard RefSeq indices
+  include:
+    - genome           
+    - gff3            
+    - rna             
+    - cds             
+    - protein         
+
+  # Hypothetical direct FTP URL using the accession-only symlink format. 
+  # Note: If this fails during prep_genomes.py, update this with the true assembly_name suffix.
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/022/905/055/GCF_022905055.1/
+
+  files:
+    genomic_fasta: GCF_022905055.1_genomic.fna.gz
+    transcriptome_fasta: GCF_022905055.1_rna_from_genomic.fna.gz
+    cds_fasta: GCF_022905055.1_cds_from_genomic.fna.gz
+    protein_fasta: GCF_022905055.1_protein.faa.gz
+    annotation_gff: GCF_022905055.1_genomic.gff.gz
+
+steps:
+  metadata:
+    out_dir: output/amalgkit/polistes_canadensis/work
+    search_string: '"Polistes canadensis"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: output/amalgkit/polistes_canadensis/fastq/getfastq
+  config: {}
+  select: {}
+  getfastq:
+    out_dir: output/amalgkit/polistes_canadensis/fastq
+    remove_sra: yes
+    threads: 16
+    pfd: yes
+    redo: no
+  quant:
+    jobs: 1
+    out_dir: output/amalgkit/polistes_canadensis/quant
+    threads: 16
+    redo: no
+    keep_fastq: no
+  merge:
+    out: output/amalgkit/polistes_canadensis/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/polistes_canadensis/merged
+  cstmm:
+    out_dir: output/amalgkit/polistes_canadensis/cstmm
+  curate:
+    out_dir: output/amalgkit/polistes_canadensis/curate
+  csca:
+    out_dir: output/amalgkit/polistes_canadensis/csca
+  sanity: {}

@@ -116,7 +116,11 @@ class ENADownloader:
 
                 # Second line contains the FTP URLs (semicolon-separated)
                 # Header line is: run_accession	fastq_ftp
-                ftp_field = lines[1].split("\t")[-1]
+                parts = lines[1].split("\t")
+                if len(parts) < 2:
+                    return []
+                
+                ftp_field = parts[1].strip()
                 
                 # Check if field is valid/not empty/not just header
                 if not ftp_field or ftp_field == "fastq_ftp":

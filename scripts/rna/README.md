@@ -17,6 +17,7 @@ Scripts for RNA-seq workflow execution, monitoring, and recovery.
 | Script | Purpose |
 |--------|---------|
 | [`check_pipeline_status.py`](check_pipeline_status.py) | **Pipeline progress dashboard** — per-species quant completion |
+| [`monitor_tui.py`](monitor_tui.py) | Terminal UI for real-time pipeline monitoring |
 | [`verify_rna.py`](verify_rna.py) | Comprehensive RNA module verification |
 | [`check_environment.py`](check_environment.py) | Validate dependencies (kallisto, prefetch, etc.) |
 
@@ -63,6 +64,9 @@ ps -fC amalgkit | grep SRR
 
 # Check per-species completion status
 .venv/bin/python scripts/rna/check_pipeline_status.py
+
+# Safe monitoring (Agent Workflow)
+# See .agents/workflows/monitor_pipeline.md
 ```
 
 ### Run Single Species

@@ -64,11 +64,11 @@ SPECIES_ORDER = [
     "anoplolepis_gracilipes", "acromyrmex_echinatior", "dinoponera_quadriceps",
     "vollenhovia_emeryi", "odontomachus_brunneus", "formica_exsecta",
     "temnothorax_americanus", "wasmannia_auropunctata", "nylanderia_fulva",
-    "temnothorax_curvispinosus", "pbarbatus", "cardiocondyla_obscurior",
+    "temnothorax_curvispinosus", "pogonomyrmex_barbatus", "cardiocondyla_obscurior",
     "temnothorax_nylanderi", "linepithema_humile", "atta_cephalotes",
     "ooceraea_biroi", "camponotus_floridanus", "solenopsis_invicta",
     "monomorium_pharaonis", "temnothorax_longispinosus", "harpegnathos_saltator",
-    "amellifera",
+    "apis_mellifera",
 ]
 
 # Nicer display names (italic genus abbreviation + species)

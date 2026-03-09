@@ -18,7 +18,7 @@ from metainformant.rna.engine.orchestration import run_workflow_for_species
 # Setup logging
 logger = get_logger("verify_fallback")
 
-config_path = Path("config/amalgkit/amalgkit_pbarbatus.yaml")
+config_path = Path("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
 
 logger.info(f"Running direct verification for {config_path}")
 

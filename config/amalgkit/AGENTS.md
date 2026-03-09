@@ -10,7 +10,7 @@ Production-ready amalgkit RNA-seq workflow configurations for automated transcri
 | :--- | :--- |
 | `amalgkit_template.yaml` | **Reference**: 400+ line template with all options documented |
 | `amalgkit_test.yaml` | Minimal test configuration for validation |
-| `amalgkit_pbarbatus.yaml` | **Production**: Full P. barbatus dataset (95/110 quantified) |
+| `amalgkit_pogonomyrmex_barbatus.yaml` | **Production**: Full P. barbatus dataset (95/110 quantified) |
 | `amalgkit_apis_mellifera_all.yaml` | **Production**: Full A. mellifera dataset (~7,270 samples) |
 | `amalgkit_cross_species.yaml` | Cross-species TMM normalization config |
 | `tissue_mapping.yaml` | Canonical tissue name synonyms for normalization |

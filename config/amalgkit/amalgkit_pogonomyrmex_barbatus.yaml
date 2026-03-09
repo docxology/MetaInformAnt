@@ -9,8 +9,8 @@
 # Generated: 2026-02-09
 
 # Paths are resolved relative to repository root
-work_dir: output/amalgkit/pbarbatus/work
-log_dir: output/amalgkit/pbarbatus/logs
+work_dir: output/amalgkit/pogonomyrmex_barbatus/work
+log_dir: output/amalgkit/pogonomyrmex_barbatus/logs
 threads: 16
 
 auto_install_amalgkit: true
@@ -48,19 +48,19 @@ genome:
 # Per-step parameters
 steps:
   metadata:
-    out_dir: output/amalgkit/pbarbatus/work
+    out_dir: output/amalgkit/pogonomyrmex_barbatus/work
     # Filter to RNA-Seq + Illumina (prevents genomic/UCE samples leaking in)
     search_string: '"Pogonomyrmex barbatus"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
     redo: no  # Reuse existing metadata if available
   integrate:
-    fastq_dir: output/amalgkit/pbarbatus/fastq/getfastq
+    fastq_dir: output/amalgkit/pogonomyrmex_barbatus/fastq/getfastq
   select:
     max_sample: 999999  # No artificial limit - process all available samples
     mark_missing_rank: none
     priority: "completeness"
     redo: no  # Reuse existing selection
   getfastq:
-    out_dir: output/amalgkit/pbarbatus/fastq
+    out_dir: output/amalgkit/pogonomyrmex_barbatus/fastq
     threads: 16
     jobs: 16
     redo: no  # CRITICAL: Skip already-downloaded samples
@@ -72,7 +72,7 @@ steps:
     max_bp: 50000000  # Downsampling for speed (50M bp per sample)
   quant:
     jobs: 1
-    out_dir: output/amalgkit/pbarbatus/work
+    out_dir: output/amalgkit/pogonomyrmex_barbatus/work
     threads: 16
     redo: no  # CRITICAL: Skip already-quantified samples
     build_index: no  # Use existing index
@@ -80,14 +80,14 @@ steps:
     index_dir: output/amalgkit/shared/genome/Pogonomyrmex_barbatus/index
     fasta_dir: output/amalgkit/shared/genome/Pogonomyrmex_barbatus
   merge:
-    out: output/amalgkit/pbarbatus/merged/merged_abundance.tsv
-    out_dir: output/amalgkit/pbarbatus/merged
+    out: output/amalgkit/pogonomyrmex_barbatus/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/pogonomyrmex_barbatus/merged
   cstmm:
-    out_dir: output/amalgkit/pbarbatus/work
+    out_dir: output/amalgkit/pogonomyrmex_barbatus/work
     orthogroup_table: ""
   curate:
-    out_dir: output/amalgkit/pbarbatus/work
+    out_dir: output/amalgkit/pogonomyrmex_barbatus/work
   csca:
-    out_dir: output/amalgkit/pbarbatus/work
+    out_dir: output/amalgkit/pogonomyrmex_barbatus/work
     orthogroup_table: ""
   sanity: {}

@@ -5,7 +5,7 @@ This script runs the complete RNA-seq workflow (download → getfastq → quant)
 with a real-time terminal interface showing per-sample progress through each stage.
 
 Usage:
-    python scripts/rna/run_workflow_tui.py --config config/amalgkit/amalgkit_pbarbatus.yaml
+    python scripts/rna/run_workflow_tui.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 """
 
 from __future__ import annotations

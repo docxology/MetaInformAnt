@@ -330,7 +330,7 @@ All prefixes correctly documented and consistent:
 
 ### 4.2 Configuration Examples ✅
 
-**RNA Configuration** (`config/amalgkit/amalgkit_pbarbatus.yaml`):
+**RNA Configuration** (`config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml`):
 
 - ✅ Correct structure
 - ✅ All required fields present

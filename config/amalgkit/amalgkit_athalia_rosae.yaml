@@ -1,0 +1,70 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Athalia rosae (Turnip sawfly)
+# NCBI Taxonomy ID: 37344
+# Assembly: GCF_000515845.1
+# Note: Added for Hymenoptera cross-species tissue comparisons (antenna, brain, ovary, tubules)
+
+work_dir: output/amalgkit/athalia_rosae/work
+log_dir: output/amalgkit/athalia_rosae/logs
+threads: 16
+
+auto_install_amalgkit: true
+
+filters:
+  require_tissue: false
+
+species_list:
+  - Athalia_rosae
+
+taxon_id: 37344
+
+genome:
+  accession: GCF_000515845.1
+  dest_dir: output/amalgkit/athalia_rosae/genome
+
+  include:
+    - genome           
+    - gff3            
+    - rna             
+    - cds             
+    - protein         
+
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/515/845/GCF_000515845.1/
+  files:
+    genomic_fasta: GCF_000515845.1_genomic.fna.gz
+    transcriptome_fasta: GCF_000515845.1_rna_from_genomic.fna.gz
+    cds_fasta: GCF_000515845.1_cds_from_genomic.fna.gz
+    protein_fasta: GCF_000515845.1_protein.faa.gz
+    annotation_gff: GCF_000515845.1_genomic.gff.gz
+
+steps:
+  metadata:
+    out_dir: output/amalgkit/athalia_rosae/work
+    search_string: '"Athalia rosae"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: output/amalgkit/athalia_rosae/fastq/getfastq
+  config: {}
+  select: {}
+  getfastq:
+    out_dir: output/amalgkit/athalia_rosae/fastq
+    remove_sra: yes
+    threads: 16
+    pfd: yes
+    redo: no
+  quant:
+    jobs: 1
+    out_dir: output/amalgkit/athalia_rosae/quant
+    threads: 16
+    redo: no
+    keep_fastq: no
+  merge:
+    out: output/amalgkit/athalia_rosae/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/athalia_rosae/merged
+  cstmm:
+    out_dir: output/amalgkit/athalia_rosae/cstmm
+  curate:
+    out_dir: output/amalgkit/athalia_rosae/curate
+  csca:
+    out_dir: output/amalgkit/athalia_rosae/csca
+  sanity: {}

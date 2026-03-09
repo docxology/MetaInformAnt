@@ -1,0 +1,80 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Nasonia vitripennis (Jewel wasp)
+# NCBI Taxonomy ID: 7425
+# Assembly: GCF_009193385.2 (Nvit_psr_1.1)
+# Note: Added for Hymenoptera cross-species tissue comparisons (parasitoid wasp)
+
+work_dir: output/amalgkit/nasonia_vitripennis/work
+log_dir: output/amalgkit/nasonia_vitripennis/logs
+threads: 16
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Nasonia_vitripennis
+
+# Alternative taxonomy specification
+taxon_id: 7425
+
+# Reference genome configuration
+genome:
+  accession: GCF_009193385.2
+  assembly_name: Nvit_psr_1.1
+  dest_dir: output/amalgkit/nasonia_vitripennis/genome
+
+  # Files to download (based on available NCBI FTP resources)
+  include:
+    - genome           # GCF_009193385.2_Nvit_psr_1.1_genomic.fna.gz
+    - gff3            # GCF_009193385.2_Nvit_psr_1.1_genomic.gff.gz
+    - rna             # GCF_009193385.2_Nvit_psr_1.1_rna_from_genomic.fna.gz
+    - cds             # GCF_009193385.2_Nvit_psr_1.1_cds_from_genomic.fna.gz
+    - protein         # GCF_009193385.2_Nvit_psr_1.1_protein.faa.gz
+
+  # Direct FTP URL for all genome files
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/009/193/385/GCF_009193385.2_Nvit_psr_1.1/
+
+  # Specific important files for transcriptome analysis
+  files:
+    genomic_fasta: GCF_009193385.2_Nvit_psr_1.1_genomic.fna.gz
+    transcriptome_fasta: GCF_009193385.2_Nvit_psr_1.1_rna_from_genomic.fna.gz
+    cds_fasta: GCF_009193385.2_Nvit_psr_1.1_cds_from_genomic.fna.gz
+    protein_fasta: GCF_009193385.2_Nvit_psr_1.1_protein.faa.gz
+    annotation_gff: GCF_009193385.2_Nvit_psr_1.1_genomic.gff.gz
+
+# Per-step parameters (merged on top of common params)
+steps:
+  metadata:
+    out_dir: output/amalgkit/nasonia_vitripennis/work
+    search_string: '"Nasonia vitripennis"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    redo: no
+  integrate:
+    fastq_dir: output/amalgkit/nasonia_vitripennis/fastq/getfastq
+  config: {}
+  select: {}
+  getfastq:
+    out_dir: output/amalgkit/nasonia_vitripennis/fastq
+    remove_sra: yes
+    threads: 16
+    pfd: yes
+    redo: no
+  quant:
+    jobs: 1
+    out_dir: output/amalgkit/nasonia_vitripennis/quant
+    threads: 16
+    redo: no
+    keep_fastq: no
+  merge:
+    out: output/amalgkit/nasonia_vitripennis/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/nasonia_vitripennis/merged
+  cstmm:
+    out_dir: output/amalgkit/nasonia_vitripennis/cstmm
+  curate:
+    out_dir: output/amalgkit/nasonia_vitripennis/curate
+  csca:
+    out_dir: output/amalgkit/nasonia_vitripennis/csca
+  sanity: {}

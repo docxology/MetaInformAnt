@@ -21,15 +21,29 @@ src/metainformant/rna/
 ├── core/                    # Core utilities
 │   ├── configs.py           # Configuration management
 │   └── cleanup.py           # Cleanup and maintenance utilities
-├── engine/                  # Workflow engine
+├── engine/                  # Workflow engine (20 files)
+│   ├── streaming_orchestrator.py  # ⭐ Production orchestrator (ENA-first streaming)
 │   ├── workflow.py          # Main workflow orchestration
+│   ├── workflow_execution.py # Step execution logic
+│   ├── workflow_planning.py  # Workflow planning and step ordering
+│   ├── workflow_steps.py     # Individual step implementations
+│   ├── workflow_core.py      # Core workflow utilities
+│   ├── workflow_cleanup.py   # Cleanup and recovery
 │   ├── orchestration.py     # High-level workflow execution
+│   ├── orchestrator.py      # Orchestrator base class
+│   ├── orchestration_multi_species.py  # Multi-species orchestration
 │   ├── monitoring.py        # Progress tracking and status
+│   ├── progress_db.py       # SQLite progress database (WAL mode)
+│   ├── progress_tracker.py  # Real-time progress state management
+│   ├── progress_dashboard.py # Visual dashboard
 │   ├── pipeline.py          # Pipeline utilities
-│   └── discovery.py         # Species discovery and config generation
+│   ├── discovery.py         # Species discovery and config generation
+│   └── sra_extraction.py    # SRA file extraction utilities
 ├── amalgkit/                # Amalgkit integration
-│   ├── amalgkit.py          # CLI wrapper
-│   ├── genome_prep.py       # Genome preparation utilities
+│   ├── amalgkit.py          # CLI wrapper (run_amalgkit, build_amalgkit_command)
+│   ├── genome_prep.py       # GenomePreparator: reference genome download and indexing
+│   ├── index_prep.py        # IndexComplexityManager: transcript filtering for robust indexing
+│   ├── tissue_normalizer.py # TissueNormalizer: tissue label harmonization
 │   ├── metadata_filter.py   # Metadata filtering
 │   └── metadata_utils.py    # Metadata manipulation
 ├── analysis/                # Analysis functions
@@ -37,21 +51,8 @@ src/metainformant/rna/
 │   └── validation.py        # Pipeline validation
 ├── retrieval/               # Data retrieval
 │   └── ena_downloader.py    # ENA/SRA download utilities
-├── steps/                   # Step implementations
-│   ├── __init__.py          # Step runner registry
-│   ├── metadata.py          # Step 1: Metadata retrieval
-│   ├── config.py            # Step 2: Config generation
-│   ├── select.py            # Step 3: Sample selection
-│   ├── getfastq.py          # Step 4: FASTQ download
-│   ├── integrate.py         # Step 5: FASTQ integration
-│   ├── quant.py             # Step 6: Quantification
-│   ├── merge.py             # Step 7: Result merging
-│   ├── cstmm.py             # Step 8: Cross-species normalization
-│   ├── curate.py            # Step 9: Quality curation
-│   ├── csca.py              # Step 10: Correlation analysis
-│   ├── sanity.py            # Step 11: Final validation
-│   ├── process_samples.py   # Unified download-quantify workflow
-│   └── download_progress.py # Progress tracking
+├── deconvolution/           # Cell-type deconvolution from bulk RNA-seq
+├── splicing/                # Alternative splicing analysis
 └── ...
 ```
 
@@ -76,11 +77,6 @@ src/metainformant/rna/
 
 #### Retrieval (`retrieval/`)
 - **`ena_downloader.py`**: Download FASTQ files from ENA with MD5 verification
-
-#### Step Runners (`steps/`)
-- **11 step modules**: Thin wrappers around `amalgkit` subcommands
-- **`process_samples.py`**: Unified workflow for download-quantify-delete operations
-- Each step is independent and can be run standalone or as part of a workflow
 
 #### Core Utilities (`core/`)
 - **`configs.py`**: Loads and validates workflow configurations
@@ -192,7 +188,7 @@ def run(
 
 ### Step Registry
 
-Steps are registered in `steps/__init__.py`:
+Step runners are registered in `engine/workflow_steps.py`:
 
 ```python
 STEP_RUNNERS: dict[str, Callable[..., object]] = {
@@ -392,12 +388,11 @@ def run(params, *, work_dir=None, log_dir=None, check=False):
     return _new_step(params, work_dir=work_dir, log_dir=log_dir, step_name="new_step", check=check)
 ```
 
-2. **Register in `steps/__init__.py`**:
+2. **Register in `engine/workflow_steps.py`**:
 ```python
 from .new_step import run as run_new_step
 
 STEP_RUNNERS["new_step"] = run_new_step
-__all__.append("run_new_step")
 ```
 
 3. **Add to workflow planning** (if needed):

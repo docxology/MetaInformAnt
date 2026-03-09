@@ -1,0 +1,9 @@
+run	bioproject	sample_group	scientific_name	sp_color	sample_group_color	bp_color
+speciesA_SRR1	PRJNA1	brain	speciesA	#FF6C91	#1B9E77	#D68898
+speciesA_SRR1	PRJNA1	brain	speciesA	#FF6C91	#1B9E77	#D68898
+speciesA_SRR2	PRJNA1	brain	speciesA	#FF6C91	#1B9E77	#D68898
+speciesA_SRR2	PRJNA1	brain	speciesA	#FF6C91	#1B9E77	#D68898
+speciesB_SRR3	PRJNA2	brain	speciesB	#00C1A9	#1B9E77	#1BB0A4
+speciesB_SRR3	PRJNA2	brain	speciesB	#00C1A9	#1B9E77	#1BB0A4
+speciesB_SRR4	PRJNA2	brain	speciesB	#00C1A9	#1B9E77	#1BB0A4
+speciesB_SRR4	PRJNA2	brain	speciesB	#00C1A9	#1B9E77	#1BB0A4

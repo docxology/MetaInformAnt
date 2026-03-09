@@ -1,0 +1,5 @@
+scientific_name	run	amalgkit_group	tissue	exclusion	tmm_library_size	tmm_normalization_factor
+speciesA	speciesA_SRR1	group1	brain	no_cstmm_output	NA	NA
+speciesA	speciesA_SRR2	group1	brain	no_cstmm_output	NA	NA
+speciesB	speciesB_SRR3	group2	brain	no_cstmm_output	NA	NA
+speciesB	speciesB_SRR4	group2	brain	no_cstmm_output	NA	NA

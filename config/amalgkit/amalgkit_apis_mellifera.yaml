@@ -7,8 +7,8 @@
 # Notes: Model organism for social behavior, extensive RNA-seq datasets available
 
 
-work_dir: output/amalgkit/amellifera/work
-log_dir: output/amalgkit/amellifera/logs
+work_dir: output/amalgkit/apis_mellifera/work
+log_dir: output/amalgkit/apis_mellifera/logs
 threads: 16
 
 
@@ -35,7 +35,7 @@ genome:
   accession: GCF_003254395.2
   assembly_name: Amel_HAv3.1
   annotation_release: 104
-  dest_dir: output/amalgkit/amellifera/genome
+  dest_dir: output/amalgkit/apis_mellifera/genome
 
 
   # Files to download (based on available NCBI FTP resources)
@@ -68,17 +68,17 @@ genome:
 steps:
   metadata:
     # Required by amalgkit metadata
-    out_dir: output/amalgkit/amellifera/work
+    out_dir: output/amalgkit/apis_mellifera/work
     # Uses NCBI_EMAIL from environment; override here if needed
     # entrez_email: you@example.com
     search_string: '"Apis mellifera"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
     redo: no
   integrate:
-    fastq_dir: output/amalgkit/amellifera/fastq/getfastq
+    fastq_dir: output/amalgkit/apis_mellifera/fastq/getfastq
   config: {}
   select: {}
   getfastq:
-    out_dir: output/amalgkit/amellifera/fastq
+    out_dir: output/amalgkit/apis_mellifera/fastq
     remove_sra: yes
     threads: 16
     # accelerate: true  # REMOVED: Unsupported flag
@@ -87,18 +87,18 @@ steps:
   quant:
     jobs: 1
     # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
-    out_dir: output/amalgkit/amellifera/quant
+    out_dir: output/amalgkit/apis_mellifera/quant
     threads: 16
     redo: no
     # Delete SRA/FASTQ files after quantification to save space
     keep_fastq: no
   merge:
-    out: output/amalgkit/amellifera/merged/merged_abundance.tsv
-    out_dir: output/amalgkit/amellifera/merged
+    out: output/amalgkit/apis_mellifera/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/apis_mellifera/merged
   cstmm:
-    out_dir: output/amalgkit/amellifera/cstmm
+    out_dir: output/amalgkit/apis_mellifera/cstmm
   curate:
-    out_dir: output/amalgkit/amellifera/curate
+    out_dir: output/amalgkit/apis_mellifera/curate
   csca:
-    out_dir: output/amalgkit/amellifera/csca
+    out_dir: output/amalgkit/apis_mellifera/csca
   sanity: {}

@@ -1,0 +1,9 @@
+scientific_name	run	bioproject	sample_group	tissue	exclusion	within_group_cor_uncorrected	max_nongroup_cor_uncorrected	within_group_cor_corrected	max_nongroup_cor_corrected	PC1_uncorrected	PC2_uncorrected	PC3_uncorrected	PC4_uncorrected	PC5_uncorrected	PC1_corrected	PC2_corrected	PC3_corrected	PC4_corrected	PC5_corrected
+speciesA	speciesA_SRR1	PRJNA1	brain	brain	no	1	NA	1	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA
+speciesA	speciesA_SRR2	PRJNA1	brain	brain	no	1	NA	1	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA
+speciesB	speciesB_SRR3	PRJNA2	brain	brain	no	1	NA	1	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA
+speciesB	speciesB_SRR4	PRJNA2	brain	brain	no	1	NA	1	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA
+speciesA	speciesA_SRR1	PRJNA1	brain	brain	no	1	NA	1	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA
+speciesA	speciesA_SRR2	PRJNA1	brain	brain	no	1	NA	1	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA
+speciesB	speciesB_SRR3	PRJNA2	brain	brain	no	1	NA	1	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA
+speciesB	speciesB_SRR4	PRJNA2	brain	brain	no	1	NA	1	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA	NA

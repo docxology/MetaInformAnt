@@ -33,18 +33,18 @@ SPECIES_COUNTS = {
     "anoplolepis_gracilipes": 2, "acromyrmex_echinatior": 8, "dinoponera_quadriceps": 13,
     "vollenhovia_emeryi": 15, "odontomachus_brunneus": 19, "formica_exsecta": 23,
     "temnothorax_americanus": 32, "wasmannia_auropunctata": 33, "nylanderia_fulva": 40,
-    "temnothorax_curvispinosus": 43, "pbarbatus": 95, "cardiocondyla_obscurior": 162,
+    "temnothorax_curvispinosus": 43, "pogonomyrmex_barbatus": 95, "cardiocondyla_obscurior": 162,
     "temnothorax_nylanderi": 166, "linepithema_humile": 173, "atta_cephalotes": 220,
     "ooceraea_biroi": 237, "camponotus_floridanus": 304, "solenopsis_invicta": 349,
     "monomorium_pharaonis": 370, "temnothorax_longispinosus": 508,
-    "harpegnathos_saltator": 689, "apis_mellifera": 3154, "amellifera": 3154
+    "harpegnathos_saltator": 689, "apis_mellifera": 3154, "apis_mellifera": 3154
 }
 
 SPECIES_ORDER = [
     "anoplolepis_gracilipes", "acromyrmex_echinatior", "dinoponera_quadriceps",
     "vollenhovia_emeryi", "odontomachus_brunneus", "formica_exsecta",
     "temnothorax_americanus", "wasmannia_auropunctata", "nylanderia_fulva",
-    "temnothorax_curvispinosus", "pbarbatus", "cardiocondyla_obscurior",
+    "temnothorax_curvispinosus", "pogonomyrmex_barbatus", "cardiocondyla_obscurior",
     "temnothorax_nylanderi", "linepithema_humile", "atta_cephalotes",
     "ooceraea_biroi", "camponotus_floridanus", "solenopsis_invicta",
     "monomorium_pharaonis", "temnothorax_longispinosus", "harpegnathos_saltator",

@@ -51,10 +51,10 @@ For species managed via `run_workflow.py`:
 
 ```bash
 # High-level status
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
 # With detail per step
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --status --detailed
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
 ```
 
 ## Quick Health Checks

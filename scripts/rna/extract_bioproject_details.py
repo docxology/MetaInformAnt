@@ -9,7 +9,7 @@ missing_bps = {
     "harpegnathos_saltator": ["PRJNA747797", "PRJNA722884", "PRJNA327093", "PRJNA327090", "PRJNA327094"],
     "monomorium_pharaonis": ["PRJNA327091", "PRJDB3164"],
     "ooceraea_biroi": ["PRJNA1010363", "PRJNA230648"],
-    "pbarbatus": ["PRJDB4312", "PRJDB3493"],
+    "pogonomyrmex_barbatus": ["PRJDB4312", "PRJDB3493"],
     "solenopsis_invicta": ["PRJNA847170", "PRJNA522069", "PRJNA49629"],
     "temnothorax_americanus": ["PRJEB76961"],
     "temnothorax_longispinosus": ["PRJEB76961", "PRJEB68328", "PRJEB4368"],

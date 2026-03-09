@@ -69,7 +69,7 @@ pending → downloading → downloaded → quantifying → quantified
 ### Run the full streaming pipeline
 
 ```bash
-# Run all 22 species (processes smallest first, streams download → quant → delete)
+# Run all 28 species (processes smallest first, streams download → quant → delete)
 uv run python scripts/rna/run_all_species.py --max-gb 6.0 --workers 12 --threads 12
 ```
 

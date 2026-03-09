@@ -22,6 +22,10 @@ RNA-seq analysis and amalgkit workflow scripts.
 - `install_r_packages.sh` - R package installation script
 - `run_rna_tests.sh` - RNA test runner
 
+## 🚀 ENA Contributions
+- **ENA-First Strategy**: Robust ENA download logic (`download_ena_robust`) integrated into orchestrators.
+- **Failover**: Automatic failover to `fasterq-dump` from NCBI SRA.
+
 ## Usage
 
 ```bash
@@ -29,7 +33,7 @@ RNA-seq analysis and amalgkit workflow scripts.
 nohup bash scripts/rna/run_all_species.sh > output/amalgkit/run_all_species_incremental.log 2>&1 &
 
 # Run single species
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --stream --chunk-size 16
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --stream --chunk-size 16
 
 # Check progress
 .venv/bin/python scripts/package/generate_custom_summary.py

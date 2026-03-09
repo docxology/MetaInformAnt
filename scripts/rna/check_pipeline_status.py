@@ -51,7 +51,7 @@ SPECIES_ORDER = [
     "wasmannia_auropunctata",
     "nylanderia_fulva",
     "temnothorax_curvispinosus",
-    "pbarbatus",
+    "pogonomyrmex_barbatus",
     "cardiocondyla_obscurior",
     "temnothorax_nylanderi",
     "linepithema_humile",
@@ -62,7 +62,7 @@ SPECIES_ORDER = [
     "monomorium_pharaonis",
     "temnothorax_longispinosus",
     "harpegnathos_saltator",
-    "amellifera",
+    "apis_mellifera",
 ]
 
 ALL_STATES = ["pending", "downloading", "downloaded", "quantifying", "quantified", "failed"]

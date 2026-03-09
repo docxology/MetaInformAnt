@@ -11,6 +11,30 @@ Overview of scripts for running RNA-seq workflows across species.
 
 ---
 
+## Streaming Orchestrator: `streaming_orchestrator.py` ⭐⭐
+
+**Script**: `src/metainformant/rna/engine/streaming_orchestrator.py`  
+**Entry Point**: `python3 -m metainformant.rna.engine.streaming_orchestrator`
+
+This is the **High-Performance Production Orchestrator** designed for massive datasets (7,000+ samples).
+
+### Key Features:
+- **ENA-First Streaming**: Queries ENA Portal API for direct HTTPS links; falls back to NCBI `fasterq-dump` only if necessary.
+- **Zero-Footprint Mode**: Downloads FASTQ -> Quantifies -> Deletes FASTQs immediately.
+- **Concurrent Processing**: Supports 24+ parallel download/quant workers with shared database locking.
+- **SQLite Progress DB**: Robust tracking of `pending`, `downloading`, `quantified`, and `failed` states.
+- **Autonomous Setup**: Automatically detects missing metadata or indices and spawns the `config` -> `select` -> `index` workflow.
+- **Tissue Normalization**: Integrates the [Tissue Patching System](amalgkit/tissue_patching.md) directly into the metadata stream.
+
+```bash
+# Standard high-throughput run
+python3 -m metainformant.rna.engine.streaming_orchestrator \
+    --config amalgkit_pogonomyrmex_barbatus.yaml \
+    --workers 12 --threads 24 --max-gb 10
+```
+
+---
+
 ## Main Orchestrator: `run_workflow.py` ⭐
 
 **Script**: `scripts/rna/run_workflow.py`
@@ -24,20 +48,21 @@ Executes the full 11-step amalgkit pipeline for a single species.
 | Parallel downloads | Configurable via `num_download_workers` in config |
 | Auto-cleanup | Yes — FASTQs deleted after quantification |
 | Status monitoring | `--status`, `--detailed` flags |
+| Quantification | Kallisto |
 
 ```bash
 # Full end-to-end workflow
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Specific steps only
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml \
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml \
     --steps getfastq quant merge
 
 # Check status
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
 # Cleanup downloaded but unquantified samples
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml \
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml \
     --cleanup-unquantified
 ```
 
@@ -60,7 +85,6 @@ steps:
 Runs `run_workflow.py` for all configured species sequentially. This is the main production orchestrator.
 
 ```bash
-# Background, all 23 species, logging to file
 nohup python3 scripts/rna/run_all_species.py \
   > output/amalgkit/run_all_species_incremental.log 2>&1 &
 
@@ -125,7 +149,7 @@ from metainformant.rna.workflow import load_workflow_config
 from metainformant.core.io import read_delimited
 from pathlib import Path
 
-cfg = load_workflow_config("config/amalgkit/amalgkit_pbarbatus.yaml")
+cfg = load_workflow_config("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
 rows = list(read_delimited(cfg.work_dir / "metadata" / "metadata.tsv", delimiter="\t"))
 sample_rows = [r for r in rows if r.get("run") == "SRR14740514"]
 
@@ -152,7 +176,7 @@ from metainformant.rna.orchestration import cleanup_unquantified_samples
 from pathlib import Path
 
 quantified, failed = cleanup_unquantified_samples(
-    Path("config/amalgkit/amalgkit_pbarbatus.yaml")
+    Path("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
 )
 ```
 
@@ -166,6 +190,19 @@ quantified, failed = cleanup_unquantified_samples(
 | Success rate | 100% (ENA-based) |
 | Disk usage | Low (per-sample immediate cleanup) |
 | Parallelism | `num_download_workers` downloads + 1 quant at a time |
+
+---
+
+## Performance Monitoring
+
+For large-scale runs, monitoring progress via the SQLite database can become a bottleneck. Refer to the [Troubleshooting Guide](amalgkit/TROUBLESHOOTING.md) for best practices, including:
+- Using URI-based read-only connections.
+- Copying the database to `/tmp` for intensive status reporting.
+
+For live status, use the specialized monitoring script:
+```bash
+python3 scripts/rna/check_pipeline_status.py
+```
 
 ---
 

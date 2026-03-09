@@ -2,10 +2,9 @@
 
 Tests cover:
 - SpeciesContext.mark_done() thread safety and completion detection
-- discover_configs() with real config directory
 - cleanup_fastqs() handling of flat ENA-downloaded files (bug fix validation)
 - get_quantified_samples() scanning accuracy
-- download_ena.py wget timeout flag
+- sanitize_params_for_cli() stripping MetaInformAnt-only defaults
 
 Uses REAL file operations only -- no mocking, no monkeypatching, no stubs.
 """
@@ -218,87 +217,10 @@ class TestGetQuantifiedSamples:
         assert len(result) == 0
 
 
-# ===========================================================================
-# discover_configs – with real config dir
-# ===========================================================================
-
-class TestDiscoverConfigs:
-    """Tests for discover_configs() using the real config directory."""
-
-    def test_finds_real_configs(self):
-        """discover_configs finds real config files."""
-        # Import the function from the script
-        sys.path.insert(0, str(REPO_ROOT / "scripts" / "rna"))
-        from run_all_species_parallel import discover_configs
-
-        configs = discover_configs()
-
-        assert len(configs) > 0, "Should find at least one config"
-        for cfg in configs:
-            assert cfg.exists()
-            assert cfg.suffix == ".yaml"
-            assert "template" not in cfg.stem.lower()
-            assert "test" not in cfg.stem.lower()
-
-    def test_species_filter(self):
-        """discover_configs respects species filter."""
-        sys.path.insert(0, str(REPO_ROOT / "scripts" / "rna"))
-        from run_all_species_parallel import discover_configs
-
-        configs = discover_configs(species_filter=["amellifera"])
-
-        assert len(configs) == 1
-        assert "amellifera" in configs[0].stem
-
-
-# ===========================================================================
-# download_ena.py – timeout flag
-# ===========================================================================
-
-class TestDownloadEnaTimeout:
-    """Validate wget timeout protection in download_ena.py."""
-
-    def test_wget_command_includes_timeout(self):
-        """Verify download_ena.py uses -T flag for wget timeout."""
-        script = REPO_ROOT / "scripts" / "rna" / "download_ena.py"
-        content = script.read_text()
-        assert "-T" in content, "wget command should include -T timeout flag"
-        assert "300" in content, "Timeout should be set to 300 seconds"
-
-    def test_download_script_help(self):
-        """Verify download_ena.py runs and shows help."""
-        script = REPO_ROOT / "scripts" / "rna" / "download_ena.py"
-        result = subprocess.run(
-            [sys.executable, str(script), "--help"],
-            capture_output=True, text=True, timeout=10
-        )
-        assert result.returncode == 0
-
-
-# ===========================================================================
-# Double-download fix validation
-# ===========================================================================
-
-class TestDoubleDownloadFix:
-    """Validate the double-download bug fix in run_all_species_parallel.py."""
-
-    def test_ena_success_has_continue(self):
-        """After ENA download success log, there must be a 'continue' statement (within staging block)."""
-        script = REPO_ROOT / "scripts" / "rna" / "run_all_species_parallel.py"
-        content = script.read_text()
-        lines = content.splitlines()
-
-        # Find the ENA success log line
-        for i, line in enumerate(lines):
-            if "ENA Direct Download successful" in line:
-                # The continue should appear within the next ~25 lines (after FASTQ staging)
-                window = "\n".join(lines[i + 1 : i + 25])
-                assert "continue  # Skip amalgkit getfastq" in window, (
-                    f"Expected 'continue' within 25 lines after ENA success, got:\n{window}"
-                )
-                return
-
-        pytest.fail("Could not find 'ENA Direct Download successful' line in script")
+# NOTE: TestDiscoverConfigs, TestDownloadEnaTimeout, and TestDoubleDownloadFix
+# were removed because they tested deleted legacy scripts (download_ena.py,
+# run_all_species_parallel.py). Download logic now lives in the streaming
+# orchestrator; config discovery is handled by run_all_species.py.
 
 
 # ===========================================================================

@@ -49,19 +49,13 @@ steps:
 
 ## Generating the Ortholog Table
 
-Use `scripts/rna/create_ortholog_table.py` to generate the table from OrthoDB data:
+Use the automated `scripts/rna/generate_orthologs.py` orchestrator to seamlessly generate the table from OrthoDB v12 datasets. This script handles everything: dynamically parsing all your `config/amalgkit/amalgkit_*.yaml` species config files to collect the `taxon_id`s, securely caching the 5GB OrthoDB records locally (with download resume support), and calculating the specific map.
 
 ```bash
-# Download required files from OrthoDB (https://www.orthodb.org/)
-# - odb12v2_genes.tab.gz
-# - odb12v2_OG2genes.tab.gz
-
-python3 scripts/rna/create_ortholog_table.py \
-  --species-ids 7460 144034 \
-  --genes odb12v2_genes.tab.gz \
-  --og2genes odb12v2_OG2genes.tab.gz \
-  --output output/amalgkit/cross_species/orthologs/orthogroups.tsv
+# Simply run the orchestrator (no manual IDs required)
+python3 scripts/rna/generate_orthologs.py
 ```
+*(By default, this writes `orthogroups.tsv` to `output/amalgkit/cross_species/orthologs/orthogroups.tsv`)*
 
 ## Execution
 

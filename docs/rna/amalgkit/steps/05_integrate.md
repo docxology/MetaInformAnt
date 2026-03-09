@@ -372,7 +372,7 @@ In the METAINFORMANT workflow, `integrate` runs automatically after `getfastq`:
 ```python
 from metainformant.rna.workflow import execute_workflow, load_workflow_config
 
-cfg = load_workflow_config("config/amalgkit_amellifera.yaml")
+cfg = load_workflow_config("config/amalgkit_apis_mellifera.yaml")
 execute_workflow(cfg)  # integrate runs after getfastq automatically
 ```
 

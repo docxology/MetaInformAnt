@@ -22,6 +22,7 @@ graph TD
     C --> C1workflowGuides[Workflow Guides]
     C --> C2bestPractices[Best Practices]
     C --> C3[Troubleshooting]
+    C3 --> C3a[RNA Troubleshooting]
 
     D --> D1coreModules[Core Modules]
     D --> D2molecularAnalysis[Molecular Analysis]
@@ -216,6 +217,7 @@ setup
 DOCUMENTATION_GUIDE
 TUTORIALS
 FAQ
+rna/amalgkit/TROUBLESHOOTING
 ERROR_HANDLING
 ```
 

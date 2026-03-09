@@ -329,16 +329,16 @@ Production workflows use script orchestrators:
 ```bash
 # Complete species workflow
 python3 scripts/rna/run_workflow.py \
-    --config config/amalgkit/amalgkit_pbarbatus.yaml
+    --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Check status
 python3 scripts/rna/run_workflow.py \
-    --config config/amalgkit/amalgkit_pbarbatus.yaml \
+    --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml \
     --status
 
 # Cleanup and retry failed samples
 python3 scripts/rna/run_workflow.py \
-    --config config/amalgkit/amalgkit_pbarbatus.yaml \
+    --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml \
     --cleanup-unquantified
 ```
 

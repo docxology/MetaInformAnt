@@ -6,13 +6,13 @@ to orchestrate complete genome setup pipelines.
 
 Usage:
     # Full genome setup for a species
-    python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml
+    python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
     # Verify status only
-    python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml --verify-only
+    python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --verify-only
 
     # Skip specific steps
-    python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml --skip-download --skip-prepare
+    python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --skip-download --skip-prepare
 """
 
 from __future__ import annotations
