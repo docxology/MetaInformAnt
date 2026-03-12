@@ -25,6 +25,12 @@
 - **Network**: Use real API calls with `@pytest.mark.network`.
 - **Output**: Write all test artifacts to `output/` via `tmp_path`.
 
+## ⚡ Performance & Safety
+- **SQLite Concurrency**: When querying `pipeline_progress.db` during active runs, ALWAYS use read-only mode (`?mode=ro`).
+- **Monitoring**: Prefer `scripts/rna/check_pipeline_status.py` over raw SQL for status reporting to the user.
+- **Disk Management**: Recommend `--cleanup-unquantified` flags when automating large-scale quantify steps.
+- **Troubleshooting**: Consult [docs/rna/amalgkit/TROUBLESHOOTING.md] for known IO and SRA tool issues.
+
 ## 📦 Dependencies
 - Manage via `uv`: `uv add`, `uv remove`.
 - Import pattern:

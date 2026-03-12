@@ -25,6 +25,9 @@
 - **Network**: Use real API calls with `@pytest.mark.network`.
 - **Output**: Write all test artifacts to `output/` via `tmp_path`.
 
+## ⚙️ SQLite Safety
+- **High Load**: When querying SQLite databases during heavy write activity (e.g., active pipelines), ALWAYS use read-only mode (`?mode=ro`) or query a copy of the database to prevent IO deadlocks.
+
 ## 📦 Dependencies
 - Manage via `uv`: `uv add`, `uv remove`.
 - Import pattern:

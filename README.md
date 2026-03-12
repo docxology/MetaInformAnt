@@ -28,7 +28,7 @@ METAINFORMANT provides production-ready bioinformatics analysis across genomics,
 | Domain | Features |
 |--------|----------|
 | **DNA** | Sequences, alignment, phylogenetics, population genetics, variant analysis |
-| **RNA** | Amalgkit integration, SRA downloads, Kallisto quantification, industrial-scale pipelines |
+| **RNA** | Amalgkit integration, ENA/SRA downloads, Kallisto quantification, industrial-scale pipelines (8,300+ samples across 28 species) |
 | **GWAS** | Association testing, fine-mapping, visualization, complete GWAS pipelines |
 | **eQTL** | Integration of GWAS variants and Amalgkit RNA-seq expression data |
 | **Multi-omics** | Cross-omic integration, joint PCA, correlation analysis |
@@ -294,7 +294,7 @@ graph TD
 - **Network Analysis**: Biological networks, pathways, community detection algorithms
 - **Visualization Suite**: 14 specialized plotting modules with 70+ plot types and publication-quality output
 - **Modular Architecture**: Individual modules or complete end-to-end workflows
-- **Comprehensive Documentation**: 70+ README files with technical specifications
+- **Comprehensive Documentation**: 310+ README files with technical specifications
 - **Implementation Testing**: Real methods in tests, no mocks or stubs
 - **Quality Assurance**: Rigorous validation and error handling throughout
 - **Performance Optimization**: Efficient algorithms for large-scale biological data
@@ -465,7 +465,7 @@ All modules live in [`src/metainformant/`](src/metainformant/) with documentatio
 | [`structural_variants/`](src/metainformant/structural_variants/) | 9 | SV detection, CNV analysis, breakpoint resolution | [`detection/`](src/metainformant/structural_variants/detection/) | [README](src/metainformant/structural_variants/README.md) |
 | [`menu/`](src/metainformant/menu/) | 4 | Interactive CLI menu system, workflow navigation | [`ui/`](src/metainformant/menu/ui/) | [README](src/metainformant/menu/README.md) |
 
-**Total: 26 modules, 560 Python files**
+**Total: 26 modules, 603 Python files**
 
 ## Documentation
 
@@ -475,6 +475,12 @@ All modules live in [`src/metainformant/`](src/metainformant/) with documentatio
 - **[Quick Start](QUICKSTART.md)** - Fast setup commands
 - **[Architecture](docs/architecture.md)** - System design
 - **[Technical Specification](SPEC.md)** - Design standards
+### 🧬 Transcriptomics (RNA-seq)
+- [Workflow Guide](docs/rna/index.md) — ENA-first amalgkit streaming pipeline
+- [Troubleshooting](docs/rna/amalgkit/TROUBLESHOOTING.md) — IO contention & SRA setup fixes
+- [Tissue Patching](docs/rna/amalgkit/tissue_patching.md) — Custom metadata correction
+- [Ortholog Generation](docs/rna/amalgkit/ortholog_generation.md) — Automated cross-species mapping
+- [Step Documentation](docs/rna/amalgkit/steps/README.md) — The 11-step amalgkit process
 - **[Testing Guide](docs/testing.md)** - Comprehensive testing documentation
 - **[CLI Reference](docs/cli.md)** - Command-line interface
 - **[eQTL Integration](docs/eqtl/README.md)** - eQTL pipeline documentation
@@ -508,7 +514,7 @@ uv run metainformant dna fetch --assembly GCF_000001405.40
 uv run metainformant dna align --input data/sequences.fasta --output output/dna/alignment
 uv run metainformant dna variants --input data/variants.vcf --format vcf --output output/dna/variants
 uv run metainformant rna run --work-dir output/rna --threads 8 --species Apis_mellifera
-uv run metainformant rna run-config --config config/amalgkit/amalgkit_pbarbatus.yaml
+uv run metainformant rna run-config --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 uv run metainformant protein taxon-ids --file data/taxon_ids.txt
 uv run metainformant protein rmsd-ca --pdb-a data/structure1.pdb --pdb-b data/structure2.pdb
 uv run metainformant gwas run --config config/gwas/gwas_template.yaml
@@ -586,13 +592,13 @@ for step, result in results.items():
 
 ```bash
 # End-to-end workflow for a single species (recommended)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Check status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --status
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
 # Alternative: Bash-based orchestrator
-bash scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit/amalgkit_pbarbatus.yaml
+bash scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 ### GWAS Analysis

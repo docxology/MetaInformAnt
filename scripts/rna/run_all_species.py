@@ -11,6 +11,7 @@ Usage:
 
 import argparse
 import sys
+import os
 from pathlib import Path
 
 # Add src to python path to allow importing metainformant modules
@@ -53,9 +54,9 @@ SPECIES_ORDER = [
 ]
 
 DEFAULTS = {
-    "max_gb": 65.0,
-    "workers": 12,
-    "threads": 6,
+    "max_gb": float(os.environ.get("PIPELINE_MAX_GB", 50.0)),
+    "workers": int(os.environ.get("PIPELINE_WORKERS", 12)),
+    "threads": int(os.environ.get("PIPELINE_THREADS", 6)),
 }
 
 def main():

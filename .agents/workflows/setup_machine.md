@@ -72,7 +72,21 @@ bash scripts/rna/setup_genome_dirs.sh
 Creates incremental storage directories for all species under `output/amalgkit/`.
 **Key rule**: Never delete `output/amalgkit/*/work/quant/` — this is where processed quant data accumulates incrementally.
 
-## 7. Verify Installation
+## 7. Amalgkit & SRA Toolkit Setup
+
+Ensure `fasterq-dump` and `prefetch` are accessible in your environment:
+```bash
+# Example for standard installation
+export PATH=$PATH:/usr/local/ncbi/sra-tools/bin
+```
+
+Pre-download the NCBI taxonomy database to avoid hangs during containerized runs:
+```bash
+# ete4 will look for this in its cache directory
+wget https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz -P ~/.etc/taxonomy/
+```
+
+## 8. Verify Installation
 
 ```bash
 # Python environment
@@ -94,10 +108,10 @@ uv run pytest tests/ -m "not network and not external" -q --tb=short
 
 ```bash
 # Check status of a species workflow
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
 # Start workflow (incremental – resumes from where it left off)
-nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus.yaml \
+nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml \
   > output/amalgkit/pbarbatus_workflow.log 2>&1 &
 echo "Workflow PID: $!"
 ```

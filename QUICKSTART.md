@@ -159,10 +159,10 @@ plt.savefig("output/example_plot.png", dpi=300)
 python -c "from metainformant.rna import check_cli_available; print(check_cli_available())"
 
 # Run end-to-end workflow for a single species (recommended)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Check workflow status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --status
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
 # Or use CLI
 uv run metainformant rna run --work-dir output/rna --threads 8 --species Apis_mellifera
@@ -180,7 +180,7 @@ uv run metainformant dna variants --input data/variants.vcf --format vcf --outpu
 
 # RNA analysis (see RNA-seq Workflow section above for more details)
 uv run metainformant rna run --work-dir output/rna --threads 8 --species Apis_mellifera
-uv run metainformant rna run-config --config config/amalgkit/amalgkit_pbarbatus.yaml
+uv run metainformant rna run-config --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Protein analysis
 uv run metainformant protein taxon-ids --file data/taxon_ids.txt

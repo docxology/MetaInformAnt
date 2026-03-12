@@ -27,6 +27,11 @@ METAINFORMANT is developed with assistance from various AI agents and language m
   - Project structure optimization
   - Multi-omic bioinformatics algorithm implementation
   - Integration of scientific computing libraries
+  - **[RNA-seq Workflow](docs/rna/index.md)**: ENA-first amalgkit pipeline
+  - **[Tissue Patching](docs/rna/amalgkit/tissue_patching.md)**: Metadata correction system
+  - **[Ortholog Generation](docs/rna/amalgkit/ortholog_generation.md)**: Automated cross-species mapping
+  - **[Path Management](docs/rna/ORCHESTRATION.md)**: High-performance processing
+  - **[Troubleshooting](docs/rna/amalgkit/TROUBLESHOOTING.md)**: 2026 performance overhaul (IO contention & SRA setup)
 
 ### Documentation Enhancement
 
@@ -790,9 +795,17 @@ Interactive CLI menu system for workflow discovery and navigation.
 
 ## Recent Enhancements (2025-2026)
 
-### UV Package Management Integration
+### 🚀 2026 amalgkit Performance Overhaul
 
-**Code Assistant Agent** implemented:
+In early 2026, the amalgkit pipeline was scaled to 8,000+ samples. Key learnings integrated into this repository:
+- **IO Isolation**: Live progress databases must be queried in read-only mode to prevent deadlocks during high-throughput quantification.
+- **SRA Reliability**: Automated fallback to `fasterq-dump` and explicit binary path management for NCBI tools.
+- **Environment Stability**: Pre-downloading large taxonomy datasets (`taxdump.tar.gz`) for containerized runs.
+
+#### Developer Cheat Sheet:
+- **Status Checks**: Run `python3 scripts/rna/check_pipeline_status.py` instead of raw SQL.
+- **Diagnostics**: Check `output/amalgkit/<species>/logs/` for per-sample Kallisto failures.
+- **Disk Safety**: Use `--cleanup-unquantified` flags in orchestrators to prevent FASTQ bloat.
 
 - Complete UV toolchain integration across all modules
 - Virtual environment setup and dependency management
@@ -821,10 +834,19 @@ Interactive CLI menu system for workflow discovery and navigation.
 
 **Code Assistant Agent** validated:
 
-- **RNA Workflows**: 20,000+ samples processed across 5 ant species
+- **RNA Workflows**: 8,300+ samples processed across 28 Hymenoptera species
 - **GWAS Pipelines**: Complete end-to-end variant-to-association workflows
 - **Multi-omics Integration**: Cross-platform data harmonization and analysis
 - **Real-world Performance**: Scalability testing on large biological datasets
+
+### Amalgkit Ecosystem and Cloud Deployment
+
+**Code Assistant Agent** implemented and documented:
+
+- **GCP Orchestration**: The massive 8,000+ SRA RNA-seq pipeline executes entirely within the `metainformant-pipeline` Docker container on a Google Cloud VM instance. Future deployments **must use STANDARD VMs and standalone persistent data disks** (`--no-auto-delete`) to prevent unpredictable termination. Refer explicitly to `docs/LINUX_TRANSFER.md` for deployment commands.
+- **Docker Command Constraints**: Standard `gcloud compute ssh` commands must securely pipe through `sudo docker exec` to reach the pipeline binaries. Interactive prompts or missing output can occur if pipelined incorrectly.
+- **SQLite Tracker Mechanics**: Progress tracking uses a Write-Ahead Log (WAL). Reading the live database utilizing python scripts can result in memory deadlocks. Agents should ALWAYS fallback to using the native precompiled `sqlite3` binary on the disk to query `pipeline_progress.db` directly.
+- **Tissue Patching Engine**: Incomplete ENA metadata is rectified via `config/amalgkit/tissue_patches.yaml`. The orchestrator destructively mutates the default `tissue` variable inline before executing `cstmm` and `csca`, effectively resolving cross-species PCA grouping directly.
 
 ## Future AI Integration
 

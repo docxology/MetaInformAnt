@@ -118,30 +118,48 @@ output/amalgkit/
 
 ## Cloud Deployment (GCP)
 
-For large-scale processing, deploy the pipeline to a high-core GCP VM:
+For large-scale processing, deploy the pipeline to a high-core GCP VM. We use a standardized approach that separates the data disk from the compute instance, allowing you to use STANDARD provisioning to prevent unexpected preemptions.
 
+### 1. Create a Persistent 4TB Disk
+Store all your pipeline data on a standalone disk that will not be deleted if the VM is destroyed:
 ```bash
-# 1. Install gcloud CLI
-bash scripts/cloud/install_gcloud.sh
-gcloud auth login
-gcloud config set project YOUR_PROJECT_ID
-
-# 2. Deploy (creates VM, installs Docker, starts pipeline)
-python scripts/cloud/deploy_gcp.py deploy --project YOUR_PROJECT_ID
-
-# 3. Monitor
-python scripts/cloud/deploy_gcp.py status --project YOUR_PROJECT_ID
-python scripts/cloud/deploy_gcp.py logs   --project YOUR_PROJECT_ID
-
-# 4. Download results when done
-python scripts/cloud/deploy_gcp.py download --project YOUR_PROJECT_ID
-
-# 5. Tear down
-python scripts/cloud/deploy_gcp.py destroy --project YOUR_PROJECT_ID
+gcloud compute disks create metainformant-pipeline-data \
+    --size=4096GB \
+    --type=pd-standard \
+    --zone=us-central1-a \
+    --project=YOUR_PROJECT_ID
 ```
 
-**Defaults**: `n2-highcpu-96` (96 cores), 500 GB SSD, spot pricing (~$0.80/hr), 80 workers, 20 GB max sample size.
+### 2. Launch a STANDARD VM (n2-standard-16)
+Attach the existing disk to a new STANDARD instance (`n2-standard-16` provides 16 vCPUs and 64GB RAM):
+```bash
+gcloud compute instances create metainformant-pipeline \
+    --zone=us-central1-a \
+    --project=YOUR_PROJECT_ID \
+    --machine-type=n2-standard-16 \
+    --provisioning-model=STANDARD \
+    --maintenance-policy=MIGRATE \
+    --restart-on-failure \
+    --disk=name=metainformant-pipeline-data,device-name=persistent-disk-0,mode=rw,boot=yes,auto-delete=no \
+    --scopes=default
+```
+*(Note: SPOT instances are significantly cheaper but will be terminated within 24 hours. STANDARD instances guarantee completion without data loss or pipeline interruption).*
 
-**Cost estimate**: ~$7-27 for full pipeline (4-8 hours).
+### 3. Launch the Pipeline Container
+SSH into the instance and run the Docker container. Tune `PIPELINE_WORKERS` to ~1.5x your vCPU count (e.g., 24 workers for 16 cores):
+```bash
+sudo docker run -d \
+    --name metainformant-pipeline-fresh \
+    --restart unless-stopped \
+    -v /opt/MetaInformAnt/output:/app/output \
+    -v /opt/MetaInformAnt/config/amalgkit:/app/config/amalgkit \
+    -e PIPELINE_WORKERS=24 \
+    -e PIPELINE_THREADS=2 \
+    -e PIPELINE_MAX_GB=50.0 \
+    docxology/metainformant-pipeline:latest
+```
 
-See `src/metainformant/cloud/` for the module implementation.
+### 4. Monitor & Teardown
+- **Monitor:** `sudo docker logs --tail 100 -f metainformant-pipeline-fresh`
+- **Teardown Compute:** `gcloud compute instances delete metainformant-pipeline` (leaves data disk intact)
+- **Teardown Disk:** `gcloud compute disks delete metainformant-pipeline-data` (once results are downloaded)

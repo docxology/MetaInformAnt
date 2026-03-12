@@ -58,14 +58,15 @@ RUN cd /tmp && \
 
 # ── SRA Toolkit (fasterq-dump) ──────────────────────────────────────────
 # The SRA toolkit uses a launcher pattern: fasterq-dump is a wrapper that
-# execs fasterq-dump.VERSION. We must copy ALL binaries to preserve this chain.
+# execs fasterq-dump.VERSION. We install it to /opt and add to PATH to preserve its environment.
 RUN cd /tmp && \
     wget -q https://ftp-trace.ncbi.nlm.nih.gov/sra/sdk/3.2.1/sratoolkit.3.2.1-ubuntu64.tar.gz && \
     tar xzf sratoolkit.3.2.1-ubuntu64.tar.gz && \
-    cp -a sratoolkit.3.2.1-ubuntu64/bin/* /usr/local/bin/ && \
+    mv sratoolkit.3.2.1-ubuntu64 /opt/sratoolkit && \
     rm -rf /tmp/sratoolkit* && \
     mkdir -p /root/.ncbi && \
     printf '/LIBS/GUID = "%s"\n/libs/cloud/report_instance_identity = "false"\n/repository/user/main/public/root = "/tmp/sra-cache"\n' "$(uuidgen 2>/dev/null || echo 'docker-container')" > /root/.ncbi/user-settings.mkfg
+ENV PATH="/opt/sratoolkit/bin:${PATH}"
 
 # ── UV for fast Python dependency resolution ────────────────────────────
 RUN pip install uv
@@ -87,6 +88,10 @@ RUN uv pip install --system -e "." && \
     ln -s /opt/conda/bin/amalgkit /usr/local/bin/amalgkit && \
     mv bin/micromamba /usr/local/bin/micromamba && \
     rm -rf /tmp/micromamba* bin
+
+# Pre-download NCBI taxdump for ete4 to prevent pipeline hanging during metadata initialization
+RUN mkdir -p /root/.local/share/ete && \
+    wget -qO /root/.local/share/ete/taxdump.tar.gz https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz
 
 # ── Output volume ───────────────────────────────────────────────────────
 RUN mkdir -p /app/output/amalgkit

@@ -109,6 +109,9 @@ class StreamingPipelineOrchestrator:
             for fq in downloaded_files:
                 sz_gb = fq.stat().st_size / (1024**3)
                 logger.info(f"Downloaded {fq.name}: {sz_gb:.2f} GB")
+                if sz_gb == 0:
+                    logger.error(f"Downloaded file {fq.name} is empty (0.00 GB). Marking as failed.")
+                    success = False
         else:
             logger.warning(f"ENA download failed for {srr_id}: {message}")
             logger.info(f"Falling back to NCBI fasterq-dump for {srr_id}...")
@@ -143,11 +146,12 @@ class StreamingPipelineOrchestrator:
                     
                     # Check if any fastq.gz files now exist
                     gz_files = list(sample_dir.glob("*.fastq.gz"))
-                    if gz_files:
+                    valid_files = [f for f in gz_files if f.stat().st_size > 0]
+                    if valid_files and len(valid_files) == len(gz_files):
                         success = True
-                        logger.info(f"NCBI fallback succeeded for {srr_id}: {len(gz_files)} files")
+                        logger.info(f"NCBI fallback succeeded for {srr_id}: {len(valid_files)} non-empty files")
                     else:
-                        logger.error(f"NCBI fasterq-dump produced no FASTQ files for {srr_id}")
+                        logger.error(f"NCBI fasterq-dump produced empty or no FASTQ files for {srr_id}")
                 else:
                     logger.error(
                         f"NCBI fasterq-dump failed for {srr_id} (exit {fqd_result.returncode}): "

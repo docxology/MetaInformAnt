@@ -230,3 +230,4 @@ python3 scripts/rna/check_pipeline_status.py
 - **[workflow.md](workflow.md)** — Workflow planning and execution
 - **[amalgkit/monitoring.md](amalgkit/monitoring.md)** — Pipeline monitoring
 - **[GETTING_STARTED.md](GETTING_STARTED.md)** — Setup and installation
+- **[LINUX_TRANSFER.md](../LINUX_TRANSFER.md)** — Cloud Standard VM Deployment & Resumption
