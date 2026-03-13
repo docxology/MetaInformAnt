@@ -416,8 +416,10 @@ class StreamingPipelineOrchestrator:
         except Exception as e:
             logger.error(f"Tissue normalization failed: {e}")
 
-    def process_species(self, config_name: str, max_gb: float, workers: int, threads: int) -> bool:
-        """Main processing loop for a species."""
+    def discover_species_tasks(self, config_name: str, max_gb: float, threads: int) -> List[Dict[str, Any]]:
+        """Main processing loop for a species. 
+        Returns a list of tasks instead of executing them immediately.
+        """
         config_path = self.config_dir / config_name
         if not config_path.exists():
             logger.error(f"Config not found: {config_path}")
@@ -508,7 +510,7 @@ class StreamingPipelineOrchestrator:
         
         if filtered.empty:
             logger.info("No samples to process.")
-            return True
+            return []
 
         # Register samples in progress DB and reconcile existing results
         srr_col = "run" if "run" in filtered.columns else "run_accession"
@@ -526,119 +528,140 @@ class StreamingPipelineOrchestrator:
         # Write sorted metadata for batch processing
         filtered.to_csv(metadata_path, sep="\t", index=False)
         
-        # ThreadPool Execution
         fastq_dir = Path(f"output/amalgkit/{species_name}/work/getfastq")
-        threads_per_worker = max(1, threads // workers)
         
-        srr_col = "run" if "run" in filtered.columns else "run_accession"
-        
-        quantified_count = 0
-        
-        # Per-sample timeout: 2h for download + quant combined
-        SAMPLE_TIMEOUT = 7200
-        
-        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-            future_to_srr = {}
-            for i, (_, row) in enumerate(filtered.iterrows()):
-                srr = row[srr_col]
-                batch_idx = i + 1
-                f = executor.submit(
-                    self.process_single_sample, 
-                    srr, batch_idx, fastq_dir, config_path, species_name, threads_per_worker
-                )
-                future_to_srr[f] = srr
-                
-            for future in concurrent.futures.as_completed(future_to_srr):
-                srr = future_to_srr[future]
-                try:
-                    res = future.result(timeout=SAMPLE_TIMEOUT)
-                    if res["quantified"]:
-                        quantified_count += 1
-                        status = "Skipped (Done)" if res.get("skipped") else "Done"
-                        logger.info(f"sample {res['srr']}: {status}")
-                    elif res["error"]:
-                        logger.warning(f"sample {res['srr']}: Failed ({res['error']})")
-                except concurrent.futures.TimeoutError:
-                    logger.error(f"sample {srr}: TIMEOUT after {SAMPLE_TIMEOUT}s — skipping")
-                    future.cancel()
-                except Exception as e:
-                    logger.error(f"sample {srr}: Unexpected error — {e}")
-
-        # Downstream Steps
-        if quantified_count > 0:
-            logger.info("Running downstream steps (merge, curate, sanity)...")
-            workflow_log = self.log_dir / f"{species_name}_workflow.log"
+        tasks = []
+        for i, (_, row) in enumerate(filtered.iterrows()):
+            srr = row[srr_col]
+            batch_idx = i + 1
+            # Check DB to skip appending fully quantified tasks
+            if self.is_quantified(species_name, srr):
+                continue
+            tasks.append({
+                "srr": srr,
+                "batch_idx": batch_idx,
+                "fastq_dir": fastq_dir,
+                "config_path": config_path,
+                "species_name": species_name,
+            })
             
-            try:
-                with open(workflow_log, "w") as f:
-                    cmd = ["python3", "scripts/rna/run_workflow.py", 
-                           "--config", str(config_path), "--no-progress", 
-                           "--steps", "merge", "curate", "sanity"]
-                    
-                    result = subprocess.run(
-                        cmd, stdout=f, stderr=subprocess.STDOUT,
-                        timeout=1800,  # 30-minute timeout for downstream steps
-                    )
-                
-                if result.returncode == 0:
-                    logger.info("  ✓ Downstream steps complete!")
-                else:
-                    logger.error(f"  ⚠ Downstream steps had errors. See: {workflow_log}")
-
-            except subprocess.TimeoutExpired:
-                logger.error(
-                    f"  ⚠ Downstream steps timed out after 30 minutes for {species_name}. "
-                    f"See: {workflow_log}"
-                )
-            except Exception as e:
-                logger.error(f"Failed to run downstream steps: {e}")
-        
-        # Species Summary
-        try:
-            counts = self.db.get_counts(species_name)
-            sp_counts = counts.get(species_name, {})
-            total = sum(sp_counts.values())
-            q = sp_counts.get("quantified", 0)
-            f = sp_counts.get("failed", 0)
-            p = sp_counts.get("pending", 0)
-            d = sp_counts.get("downloaded", 0) + sp_counts.get("downloading", 0)
-            pct = (q / total * 100) if total > 0 else 0
-            logger.info(
-                f"┌─── {species_name} Summary ───┐\n"
-                f"│  Quantified: {q}/{total} ({pct:.0f}%)  │\n"
-                f"│  Failed: {f}  Pending: {p}  DL: {d}  │\n"
-                f"└─────────────────────────────────┘"
-            )
-        except Exception:
-            pass
-            
-        return True
+        return tasks
 
     def run_all(self, species_list: List[str], max_gb: float, workers: int, threads: int):
-        """Run pipeline for all listed species configurations."""
-        results = {}
+        """Run pipeline for all listed species configurations using a GLOBAL concurrent threadpool."""
+        import random
+        from collections import defaultdict
+
+        logger.info("=== Phase 1: Global Task Discovery ===")
+        all_tasks = []
+        species_with_tasks = set()
+        
         for idx, config_name in enumerate(species_list, 1):
             try:
-                success = self.process_species(config_name, max_gb, workers, threads)
-                results[config_name] = "Success" if success else "Failed"
+                tasks = self.discover_species_tasks(config_name, max_gb, threads)
+                if tasks:
+                    all_tasks.extend(tasks)
+                    # We know this species has active computing to do
+                    species_with_tasks.add(config_name.replace("amalgkit_", "").replace(".yaml", ""))
             except Exception as e:
-                logger.error(f"Fatal error processing {config_name}: {e}")
-                results[config_name] = f"Error: {e}"
-            
-            # Global progress summary
-            try:
-                all_counts = self.db.get_counts()
-                total_q = sum(c.get("quantified", 0) for c in all_counts.values())
-                total_f = sum(c.get("failed", 0) for c in all_counts.values())
-                total_all = sum(sum(c.values()) for c in all_counts.values())
-                logger.info(
-                    f"═══ Pipeline Progress: {idx}/{len(species_list)} species | "
-                    f"{total_q} quantified / {total_all} total ({total_f} failed) ═══"
-                )
-            except Exception:
-                pass
+                logger.error(f"Fatal error discovering tasks for {config_name}: {e}")
         
-        logger.info("Final Results:")
-        for k, v in results.items():
-            logger.info(f"{k}: {v}")
+        if not all_tasks:
+            logger.info("No pending tasks discovered across any species. Checking downstream steps...")
+        else:
+            logger.info(f"=== Phase 2: Global Execution ({len(all_tasks)} samples across {len(species_with_tasks)} species) ===")
+            logger.info(f"Spawning global ThreadPoolExecutor with {workers} workers.")
+            
+            # Shuffle tasks to ensure threads are spread across species and outlier samples 
+            # don't clump at the end of the queue.
+            random.shuffle(all_tasks)
+            
+            threads_per_worker = max(1, threads // workers)
+            SAMPLE_TIMEOUT = 7200
+            
+            quantified_by_species: Dict[str, int] = defaultdict(int)
+
+            with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+                future_to_task = {}
+                for task in all_tasks:
+                    f = executor.submit(
+                        self.process_single_sample, 
+                        task["srr"], task["batch_idx"], task["fastq_dir"], 
+                        task["config_path"], task["species_name"], threads_per_worker
+                    )
+                    future_to_task[f] = task
+                    
+                for idx, future in enumerate(concurrent.futures.as_completed(future_to_task), 1):
+                    task = future_to_task[future]
+                    srr = task["srr"]
+                    sp = task["species_name"]
+                    try:
+                        res = future.result(timeout=SAMPLE_TIMEOUT)
+                        if res["quantified"]:
+                            quantified_by_species[sp] += 1
+                            status = "Skipped (Done)" if res.get("skipped") else "Done"
+                            logger.info(f"[{idx}/{len(all_tasks)}] {sp} {srr}: {status}")
+                        elif res["error"]:
+                            logger.warning(f"[{idx}/{len(all_tasks)}] {sp} {srr}: Failed ({res['error']})")
+                    except concurrent.futures.TimeoutError:
+                        logger.error(f"[{idx}/{len(all_tasks)}] {sp} {srr}: TIMEOUT after {SAMPLE_TIMEOUT}s — skipping")
+                        future.cancel()
+                    except Exception as e:
+                        logger.error(f"[{idx}/{len(all_tasks)}] {sp} {srr}: Unexpected error — {e}")
+
+        logger.info("=== Phase 3: Global Downstream Finalization ===")
+        # We run downstream steps for ALL species in the list, just to be safe, because 
+        # previous runs might have quantified samples but crashed before downstream.
+        for config_name in species_list:
+            species_name = config_name.replace("amalgkit_", "").replace(".yaml", "")
+            try:
+                # Check DB to see if we have ANY quantified samples for this species
+                counts = self.db.get_counts(species_name)
+                sp_counts = counts.get(species_name, {})
+                q = sp_counts.get("quantified", 0)
+                if q > 0:
+                    logger.info(f"Running downstream steps for {species_name} ({q} quantified samples)...")
+                    config_path = self.config_dir / config_name
+                    workflow_log = self.log_dir / f"{species_name}_workflow.log"
+                    
+                    try:
+                        with open(workflow_log, "w") as f:
+                            cmd = ["python3", "scripts/rna/run_workflow.py", 
+                                   "--config", str(config_path), "--no-progress", 
+                                   "--steps", "merge", "curate", "sanity"]
+                            
+                            result = subprocess.run(
+                                cmd, stdout=f, stderr=subprocess.STDOUT,
+                                timeout=1800,  # 30-minute timeout
+                            )
+                        
+                        if result.returncode == 0:
+                            logger.info(f"  ✓ {species_name} downstream complete!")
+                        else:
+                            logger.error(f"  ⚠ {species_name} downstream errors. See: {workflow_log}")
+
+                    except subprocess.TimeoutExpired:
+                        logger.error(f"  ⚠ {species_name} downstream timed out after 30m. See: {workflow_log}")
+                    except Exception as e:
+                        logger.error(f"Failed to run downstream steps for {species_name}: {e}")
+            except Exception as e:
+                logger.error(f"Failed checking downstream prerequisites for {species_name}: {e}")
+
+        # Global progress summary mapping
+        logger.info("=== Final Results Summary ===")
+        try:
+            all_counts = self.db.get_counts()
+            for sp, c in all_counts.items():
+                total = sum(c.values())
+                q = c.get("quantified", 0)
+                f = c.get("failed", 0)
+                p = c.get("pending", 0)
+                d = c.get("downloaded", 0) + c.get("downloading", 0)
+                pct = (q / total * 100) if total > 0 else 0
+                logger.info(
+                    f"{sp.ljust(30)} | {q}/{total} ({pct:3.0f}%) | "
+                    f"Fail: {f:3} | Pend: {p:3} | DL: {d:3}"
+                )
+        except Exception:
+            pass
 

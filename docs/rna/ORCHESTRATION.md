@@ -21,17 +21,17 @@ This is the **High-Performance Production Orchestrator** designed for massive da
 ### Key Features:
 - **ENA-First Streaming**: Queries ENA Portal API for direct HTTPS links; falls back to NCBI `fasterq-dump` only if necessary.
 - **Zero-Footprint Mode**: Downloads FASTQ -> Quantifies -> Deletes FASTQs immediately.
-- **Concurrent Processing**: Supports 24+ parallel download/quant workers with shared database locking.
+- **Concurrent Processing**: Supports 24+ parallel download/quant workers using a **Global Threadpool Execution** model. Tasks from all species are pooled together, ensuring slow outlier samples do not stall the cluster.
 - **SQLite Progress DB**: Robust tracking of `pending`, `downloading`, `quantified`, and `failed` states.
 - **Autonomous Setup**: Automatically detects missing metadata or indices and spawns the `config` -> `select` -> `index` workflow.
 - **Tissue Normalization**: Integrates the [Tissue Patching System](amalgkit/tissue_patching.md) directly into the metadata stream.
-- **Robust Error Handling**: Automatically rejects corrupted empty (0.00 GB) ENA downloads and natively parses `PIPELINE_MAX_GB` (default 50GB) to explicitly skip dataset outliers that cause pipeline hangs.
+- **Robust Error Handling**: Automatically rejects corrupted empty (0.00 GB) ENA downloads and enforces `PIPELINE_MAX_GB` (now elevated to **350.0 GB**) to explicitly process mega-species while skipping the absolute largest dataset anomalies.
 
 ```bash
-# Standard high-throughput run
+# Standard 24-core high-throughput run across all species concurrently
 python3 -m metainformant.rna.engine.streaming_orchestrator \
     --config amalgkit_pogonomyrmex_barbatus.yaml \
-    --workers 12 --threads 24 --max-gb 50.0
+    --workers 24 --threads 2 --max-gb 350.0
 ```
 
 ---
@@ -40,7 +40,7 @@ python3 -m metainformant.rna.engine.streaming_orchestrator \
 
 **Script**: `scripts/rna/run_workflow.py`
 
-Executes the full 11-step amalgkit pipeline for a single species.
+Executes the full 11-step amalgkit pipeline for a single species. This is generally superseded for bulk operation by `run_all_species.py` executing the Streaming Pipeline.
 
 | Feature | `run_workflow.py` |
 |---------|------------------|
@@ -83,7 +83,7 @@ steps:
 
 **Script**: `scripts/rna/run_all_species.py`
 
-Runs `run_workflow.py` for all configured species sequentially. This is the main production orchestrator.
+Runs `run_workflow.py` for all configured species sequentially during Phase 1 (Task Discovery), then executes all pending samples concurrently in Phase 2 via the Global Threadpool. This is the main production orchestrator.
 
 ```bash
 nohup python3 scripts/rna/run_all_species.py \

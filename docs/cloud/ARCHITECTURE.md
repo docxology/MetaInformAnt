@@ -40,8 +40,13 @@ Manages VM lifecycle via `subprocess` → `gcloud`:
 The VM runs the same pipeline as locally:
 
 1. **`prep_genomes.py`** — Downloads reference transcriptomes from NCBI FTP and builds kallisto indices
-2. **`run_all_species.py`** — Launches `StreamingPipelineOrchestrator` for all species
-3. **`streaming_orchestrator.py`** — Per-species: metadata → filter → download → quant → merge → curate
+2. **`run_all_species.py`** — Launches `StreamingPipelineOrchestrator` for all 28 species concurrently.
+3. **`streaming_orchestrator.py`** — Phase 1 (Task Discovery/Metadata) -> Phase 2 (Global Threadpool Execution: download → quant) -> Phase 3 (Global Merge → Curate)
+
+### Container Configuration Requirements
+The core pipeline executes within a Docker container (`metainformant:patched`). To ensure data persistence and prevent crash loops, the 4TB persistent data disk **must** be explicitly bind-mounted:
+`-v /opt/MetaInformAnt/output:/app/output`
+Starting the container with named volumes (e.g. `pipeline_data:/app/output`) will mask the underlying 4TB host drive and trigger a catastrophic re-download loop from NCBI.
 
 ## Data Flow
 

@@ -43,12 +43,12 @@ The AI agents orchestrating the project were making millions of high-context aut
 
 To minimize the absolute cost of a run (Cost = Hourly Rate * Total Run Time):
 
-1. **Max-GB Ceiling**: The orchestrator natively utilizes `PIPELINE_MAX_GB` (default `50.0`). Biological sample datasets larger than 50 GB are almost always extreme anomalies, whole-body pooled multiplexes, or sequencing artifacts. They take exponentially longer to quantify (hours instead of minutes) and consume 90% of the compute budget for 0.1% of the biological payload. **Filtering them saves immense money.**
+1. **Max-GB Ceiling**: The orchestrator natively utilizes `PIPELINE_MAX_GB` (now `350.0`). Biological sample datasets larger than 350 GB are almost always extreme anomalies, whole-body pooled multiplexes, or sequencing artifacts. They take exponentially longer to quantify (hours instead of minutes) and consume 90% of the compute budget for 0.1% of the biological payload. **Filtering them saves immense money.**
 2. **0.00 GB FASTQ Protection**: The orchestrator is heavily armored against ENA API "ghost" files. If ENA returns a corrupted `0.00 GB` file, the orchestrator immediately crashes that specific sample gracefully instead of passing it to Kallisto. Passing empty buffers to Kallisto causes silent segmentation faults, stalling the pipeline threads indefinitely while you continue to pay hourly compute rates.
 
 ## Summary
 
 - **Never** use SPOT instances for this pipeline.
 - **Always** use `pd-standard` 4TB disks.
-- **Enforce** the 50GB size limits.
+- **Scale up** to 350GB size limits when required for mega-species.
 - **Monitor** automated API usage carefully.

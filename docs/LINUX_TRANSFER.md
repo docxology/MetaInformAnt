@@ -155,7 +155,7 @@ sudo docker run -d \
     -v /opt/MetaInformAnt/config/amalgkit:/app/config/amalgkit \
     -e PIPELINE_WORKERS=24 \
     -e PIPELINE_THREADS=2 \
-    -e PIPELINE_MAX_GB=50.0 \
+    -e PIPELINE_MAX_GB=350.0 \
     docxology/metainformant-pipeline:latest
 ```
 

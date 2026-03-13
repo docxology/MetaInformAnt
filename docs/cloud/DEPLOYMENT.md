@@ -60,7 +60,7 @@ python scripts/cloud/deploy_gcp.py deploy \
     --project YOUR_PROJECT_ID \
     --machine-type n2-standard-32 \
     --workers 24 --threads 32 \
-    --max-gb 50.0 \
+    --max-gb 350.0 \
     --gcs-bucket my-results-bucket
 ```
 
@@ -166,6 +166,6 @@ wget -qO /usr/local/bin/fastp https://github.com/OpenGene/fastp/releases/downloa
 python3 scripts/cloud/prep_genomes.py --threads 8
 
 # Start pipeline
-nohup python3 scripts/rna/run_all_species.py --max-gb 50.0 --workers 12 --threads 16 > output/amalgkit/pipeline.log 2>&1 &
+nohup python3 scripts/rna/run_all_species.py --max-gb 350.0 --workers 12 --threads 16 > output/amalgkit/pipeline.log 2>&1 &
 ```
 
