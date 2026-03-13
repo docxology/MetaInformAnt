@@ -5,6 +5,7 @@ This directory covers deploying MetaInformAnt pipelines to Google Cloud Platform
 ## Contents
 
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** — Quick start guide, architecture, cost estimates
+- **[ECONOMICS.md](ECONOMICS.md)** — Cost profiles, VM strategies, and billing management
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** — Common issues and solutions
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** — Technical details of the cloud module
 

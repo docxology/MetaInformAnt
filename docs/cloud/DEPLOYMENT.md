@@ -16,7 +16,7 @@ Deploy the MetaInformAnt amalgkit RNA-seq pipeline to Google Cloud Platform for 
                                     │ SSH/SCP
                                     ▼
 ┌─────────────────────────────────────────────────────────────┐
-│  GCP VM (n2-highcpu-32, spot)                               │
+│  GCP VM (n2-standard-16, standard)                          │
 │  ┌──────────────────┐    ┌────────────────────────────┐     │
 │  │ prep_genomes.py  │───▸│ kallisto index (per species)│     │
 │  └──────────────────┘    └────────────────────────────┘     │
@@ -52,15 +52,15 @@ gcloud config set project YOUR_PROJECT_ID
 ### 3. Deploy
 
 ```bash
-# Deploy with defaults (n2-highcpu-32, spot, 24 workers, 32 threads)
+# Deploy with defaults (n2-standard-16, standard, 12 workers, 16 threads)
 python scripts/cloud/deploy_gcp.py deploy --project YOUR_PROJECT_ID
 
 # Or customize:
 python scripts/cloud/deploy_gcp.py deploy \
     --project YOUR_PROJECT_ID \
-    --machine-type n2-highcpu-96 \
-    --workers 80 --threads 96 \
-    --max-gb 20.0 \
+    --machine-type n2-standard-32 \
+    --workers 24 --threads 32 \
+    --max-gb 50.0 \
     --gcs-bucket my-results-bucket
 ```
 
@@ -106,9 +106,9 @@ python scripts/cloud/deploy_gcp.py destroy --project YOUR_PROJECT_ID
 
 | Machine Type | vCPUs | RAM | Spot/hr | On-demand/hr | Est. Total (8hr) |
 |---|---|---|---|---|---|
-| n2-highcpu-32 | 32 | 32 GB | ~$0.30 | ~$1.10 | $2-9 |
-| n2-highcpu-64 | 64 | 64 GB | ~$0.60 | ~$2.20 | $5-18 |
-| n2-highcpu-96 | 96 | 96 GB | ~$0.80 | ~$3.40 | $7-27 |
+| n2-standard-16 (Recommended) | 16 | 64 GB | ~$0.15 | ~$0.65 | $5 |
+| n2-standard-32 | 32 | 128 GB | ~$0.30 | ~$1.30 | $10 |
+| n2-highcpu-64 | 64 | 64 GB | ~$0.60 | ~$2.20 | $18 |
 
 > **Note:** Default vCPU quota is 32 per project. Request a quota increase via the [GCP Console](https://console.cloud.google.com/iam-admin/quotas) for larger machines.
 
@@ -166,6 +166,6 @@ wget -qO /usr/local/bin/fastp https://github.com/OpenGene/fastp/releases/downloa
 python3 scripts/cloud/prep_genomes.py --threads 8
 
 # Start pipeline
-nohup python3 scripts/rna/run_all_species.py --max-gb 20.0 --workers 24 --threads 32 > output/amalgkit/pipeline.log 2>&1 &
+nohup python3 scripts/rna/run_all_species.py --max-gb 50.0 --workers 12 --threads 16 > output/amalgkit/pipeline.log 2>&1 &
 ```
 

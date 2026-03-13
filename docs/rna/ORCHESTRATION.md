@@ -25,12 +25,13 @@ This is the **High-Performance Production Orchestrator** designed for massive da
 - **SQLite Progress DB**: Robust tracking of `pending`, `downloading`, `quantified`, and `failed` states.
 - **Autonomous Setup**: Automatically detects missing metadata or indices and spawns the `config` -> `select` -> `index` workflow.
 - **Tissue Normalization**: Integrates the [Tissue Patching System](amalgkit/tissue_patching.md) directly into the metadata stream.
+- **Robust Error Handling**: Automatically rejects corrupted empty (0.00 GB) ENA downloads and natively parses `PIPELINE_MAX_GB` (default 50GB) to explicitly skip dataset outliers that cause pipeline hangs.
 
 ```bash
 # Standard high-throughput run
 python3 -m metainformant.rna.engine.streaming_orchestrator \
     --config amalgkit_pogonomyrmex_barbatus.yaml \
-    --workers 12 --threads 24 --max-gb 10
+    --workers 12 --threads 24 --max-gb 50.0
 ```
 
 ---
@@ -73,7 +74,7 @@ steps:
   getfastq:
     num_download_workers: 16
     threads: 24
-    max_bp: 4000000000   # skip samples >4B bases
+    max_bp: 50000000000   # skip samples >50B bases (50GB)
 ```
 
 ---

@@ -12,6 +12,7 @@ The cloud module provides a **thin orchestrator** for deploying the amalgkit RNA
 |-------|-------------|
 | [DEPLOYMENT.md](DEPLOYMENT.md) | Step-by-step deployment walkthrough |
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Technical design of the cloud module |
+| [ECONOMICS.md](ECONOMICS.md) | Cost profiles, VM strategies, and billing management |
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Common issues and solutions |
 
 ## Quick Start

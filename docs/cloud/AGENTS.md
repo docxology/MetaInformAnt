@@ -14,7 +14,7 @@ Cloud deployment module documentation agent for METAINFORMANT.
 
 | File | Purpose |
 |------|---------|
-| `cloud_config.py` | `CloudConfig` dataclass — VM type, disk, workers, spot pricing |
+| `cloud_config.py` | `CloudConfig` dataclass — VM type, disk, workers, provisioning type |
 | `gcp_deployer.py` | VM lifecycle via `subprocess` → `gcloud` CLI (no Python SDK) |
 | `deploy_gcp.py` | User-facing CLI: deploy / status / logs / download / destroy |
 | `prep_genomes.py` | Download genomes + build Kallisto indices on VM |

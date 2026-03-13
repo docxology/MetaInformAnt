@@ -16,8 +16,8 @@ src/metainformant/cloud/
 
 Immutable configuration for a GCP VM:
 - `project`: GCP project ID  
-- `machine_type`: e.g. `n2-highcpu-32`
-- `spot`: Use preemptible pricing (default: true)
+- `machine_type`: e.g. `n2-standard-16`
+- `spot`: Use preemptible pricing (default: false, pipeline requires stability)
 - `workers`/`threads`: Pipeline parallelism
 - `gcs_bucket`: Optional result sync target
 
