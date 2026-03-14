@@ -133,3 +133,7 @@ check_numpy.py
 
 # Temporary ignore output/
 output/
+
+# Sub-repositories
+projects/hymenoptera_amalgkit/
+

@@ -1,0 +1,15 @@
+import_path:
+  config: "config/default.yaml"
+  data_raw: "data/raw/"
+  data_processed: "data/processed/"
+  results: "results/"
+  logs: "logs/"
+
+processing:
+  threads: 4
+  filtering_threshold: 10.0
+  normalize: true
+
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
