@@ -449,7 +449,8 @@ class StreamingPipelineOrchestrator:
             ete_dir = work_dir / "downloads" / "ete4"
             try:
                 ete_dir.mkdir(parents=True, exist_ok=True)
-                taxdump_src = Path("/root/.local/share/ete/taxdump.tar.gz")
+                # Seed from the newly hosted persistent location
+                taxdump_src = Path("/app/output/taxdump.tar.gz")
                 taxdump_dest = ete_dir / "taxdump.tar.gz"
                 if taxdump_src.exists() and not taxdump_dest.exists():
                     import shutil
@@ -552,62 +553,53 @@ class StreamingPipelineOrchestrator:
         import random
         from collections import defaultdict
 
-        logger.info("=== Phase 1: Global Task Discovery ===")
-        all_tasks = []
-        species_with_tasks = set()
+        logger.info(f"=== Phase 1 & 2: Incremental Task Discovery & Execution ({workers} workers) ===")
+        threads_per_worker = max(1, threads // workers)
+        SAMPLE_TIMEOUT = 7200
+        quantified_by_species: Dict[str, int] = defaultdict(int)
         
-        for idx, config_name in enumerate(species_list, 1):
-            try:
-                tasks = self.discover_species_tasks(config_name, max_gb, threads)
-                if tasks:
-                    all_tasks.extend(tasks)
-                    # We know this species has active computing to do
-                    species_with_tasks.add(config_name.replace("amalgkit_", "").replace(".yaml", ""))
-            except Exception as e:
-                logger.error(f"Fatal error discovering tasks for {config_name}: {e}")
+        all_futures = {}
+        total_discovered = 0
         
-        if not all_tasks:
-            logger.info("No pending tasks discovered across any species. Checking downstream steps...")
-        else:
-            logger.info(f"=== Phase 2: Global Execution ({len(all_tasks)} samples across {len(species_with_tasks)} species) ===")
-            logger.info(f"Spawning global ThreadPoolExecutor with {workers} workers.")
+        with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
+            for idx, config_name in enumerate(species_list, 1):
+                try:
+                    tasks = self.discover_species_tasks(config_name, max_gb, threads)
+                    if tasks:
+                        # Shuffle locally for this species to distribute long-running tasks
+                        random.shuffle(tasks)
+                        total_discovered += len(tasks)
+                        logger.info(f"Yielding {len(tasks)} tasks for {config_name} into global executor queue. (Total queued: {total_discovered})")
+                        for task in tasks:
+                            f = executor.submit(
+                                self.process_single_sample, 
+                                task["srr"], task["batch_idx"], task["fastq_dir"], 
+                                task["config_path"], task["species_name"], threads_per_worker
+                            )
+                            all_futures[f] = task
+                except Exception as e:
+                    logger.error(f"Fatal error discovering tasks for {config_name}: {e}")
             
-            # Shuffle tasks to ensure threads are spread across species and outlier samples 
-            # don't clump at the end of the queue.
-            random.shuffle(all_tasks)
+            logger.info("=== Phase 1 Complete: All metadata parsed. Phase 2 (Execution) continuing until queue exhaustion. ===")
             
-            threads_per_worker = max(1, threads // workers)
-            SAMPLE_TIMEOUT = 7200
-            
-            quantified_by_species: Dict[str, int] = defaultdict(int)
-
-            with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
-                future_to_task = {}
-                for task in all_tasks:
-                    f = executor.submit(
-                        self.process_single_sample, 
-                        task["srr"], task["batch_idx"], task["fastq_dir"], 
-                        task["config_path"], task["species_name"], threads_per_worker
-                    )
-                    future_to_task[f] = task
-                    
-                for idx, future in enumerate(concurrent.futures.as_completed(future_to_task), 1):
-                    task = future_to_task[future]
-                    srr = task["srr"]
-                    sp = task["species_name"]
-                    try:
-                        res = future.result(timeout=SAMPLE_TIMEOUT)
-                        if res["quantified"]:
-                            quantified_by_species[sp] += 1
-                            status = "Skipped (Done)" if res.get("skipped") else "Done"
-                            logger.info(f"[{idx}/{len(all_tasks)}] {sp} {srr}: {status}")
-                        elif res["error"]:
-                            logger.warning(f"[{idx}/{len(all_tasks)}] {sp} {srr}: Failed ({res['error']})")
-                    except concurrent.futures.TimeoutError:
-                        logger.error(f"[{idx}/{len(all_tasks)}] {sp} {srr}: TIMEOUT after {SAMPLE_TIMEOUT}s — skipping")
-                        future.cancel()
-                    except Exception as e:
-                        logger.error(f"[{idx}/{len(all_tasks)}] {sp} {srr}: Unexpected error — {e}")
+            # Now block until all submitted tasks in the global executor finish
+            for idx, future in enumerate(concurrent.futures.as_completed(all_futures), 1):
+                task = all_futures[future]
+                srr = task["srr"]
+                sp = task["species_name"]
+                try:
+                    res = future.result(timeout=SAMPLE_TIMEOUT)
+                    if res["quantified"]:
+                        quantified_by_species[sp] += 1
+                        status = "Skipped (Done)" if res.get("skipped") else "Done"
+                        logger.info(f"[{idx}/{total_discovered}] {sp} {srr}: {status}")
+                    elif res["error"]:
+                        logger.warning(f"[{idx}/{total_discovered}] {sp} {srr}: Failed ({res['error']})")
+                except concurrent.futures.TimeoutError:
+                    logger.error(f"[{idx}/{total_discovered}] {sp} {srr}: TIMEOUT after {SAMPLE_TIMEOUT}s — skipping")
+                    future.cancel()
+                except Exception as e:
+                    logger.error(f"[{idx}/{total_discovered}] {sp} {srr}: Unexpected error — {e}")
 
         logger.info("=== Phase 3: Global Downstream Finalization ===")
         # We run downstream steps for ALL species in the list, just to be safe, because 
