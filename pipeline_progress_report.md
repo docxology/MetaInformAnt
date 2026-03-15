@@ -1,8 +1,8 @@
 # 📊 MetaInformAnt Pipeline Progress Report
 
-**Telemetry Refreshed:** 2026-03-15 20:30 UTC
+**Telemetry Refreshed:** 2026-03-15 22:00 UTC
 **Orchestration Node:** `metainformant-pipeline` (n2-standard-16)
-**Local Workstation Time:** 2026-03-15 13:31 local
+**Local Workstation Time:** 2026-03-15 14:55 local
 
 ---
 
@@ -10,7 +10,7 @@
 
 | Species | Status | Quantified | Pending | Failed | Total | Downstream |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Apis mellifera** | 🔵 Running | 3,756 | 3,507 | 83 | 7,370 | ❌ Not run |
+| **Apis mellifera** | 🔵 Running | 3,965 | 3,296 | 85 | 7,370 | ❌ Not run |
 | **Camponotus floridanus** | ✅ Complete | 366 | 0 | 1 | 367 | ✅ Success |
 | **Solenopsis invicta** | ✅ Complete | 450 | 0 | 1 | 451 | ✅ Success |
 | **Temnothorax longispinosus** | ✅ Complete | 508 | 0 | 0 | 508 | ✅ Success |
@@ -24,14 +24,14 @@
 | **Temnothorax curvispinosus** | ✅ Complete | 43 | 0 | 0 | 43 | ✅ Success |
 | **Nylanderia fulva** | ✅ Complete | 40 | 0 | 0 | 40 | ✅ Success |
 | **Formica exsecta** | ✅ Complete | 23 | 0 | 0 | 23 | ✅ Success |
-| **Pogonomyrmex barbatus** | ⚠️ Ready | 132 | 0 | 0 | 132 | ⚠️ Queueing |
-| **Ooceraea biroi** | ⚠️ Ready | 274 | 0 | 0 | 274 | ⚠️ Queueing |
-| **Linepithema humile** | ⚠️ Ready | 173 | 0 | 0 | 173 | ⚠️ Queueing |
-| **Temnothorax americanus** | ⚠️ Ready | 331 | 0 | 0 | 331 | ⚠️ Queueing |
-| **Wasmannia auropunctata** | ⚠️ Ready | 33 | 0 | 0 | 33 | ⚠️ Queueing |
-| **Anoplolepis gracilipes** | ⚠️ Ready | 7 | 0 | 0 | 7 | ⚠️ Queueing |
-| **Dinoponera quadriceps** | ⚠️ Ready | 13 | 0 | 0 | 13 | ⚠️ Queueing |
-| **Vollenhovia emeryi** | ⚠️ Ready | 15 | 0 | 0 | 15 | ⚠️ Queueing |
+| **Pogonomyrmex barbatus** | 🟠 Curating | 132 | 0 | 0 | 132 | 🔄 Phase 2 |
+| **Ooceraea biroi** | ⚠️ Ready | 274 | 0 | 0 | 274 | ⚠️ Phase 2 Queue |
+| **Linepithema humile** | ⚠️ Ready | 173 | 0 | 0 | 173 | ⚠️ Phase 2 Queue |
+| **Temnothorax americanus** | ⚠️ Ready | 331 | 0 | 0 | 331 | ⚠️ Phase 2 Queue |
+| **Wasmannia auropunctata** | ⚠️ Ready | 33 | 0 | 0 | 33 | ⚠️ Phase 2 Queue |
+| **Anoplolepis gracilipes** | ⚠️ Ready | 7 | 0 | 0 | 7 | ⚠️ Phase 2 Queue |
+| **Dinoponera quadriceps** | ⚠️ Ready | 13 | 0 | 0 | 13 | ⚠️ Phase 2 Queue |
+| **Vollenhovia emeryi** | ⚠️ Ready | 15 | 0 | 0 | 15 | ⚠️ Phase 2 Queue |
 
 ---
 
@@ -42,13 +42,13 @@ The VM is an `n2-standard-16` with 16 vCPUs (hyperthreaded to 32 logical cores).
 ### Active Process Snapshot
 | PID | Command | Resource | Activity |
 | :--- | :--- | :--- | :--- |
-| **387126** | `kallisto quant` | cpu: 52.4% | Quantifying `SRR20852099` (Apis) |
-| **387042** | `kallisto quant` | cpu: 61.1% | Quantifying `SRR11467471` (Apis) |
-| **386561** | `bg_curate.sh` | cpu: 1.7% | Orchestrating curation backlog |
-| **386802** | `pigz -p 2` | cpu: 104% | Decompressing `SRR...` buffer |
+| **397588** | `kallisto quant` | cpu: 64.4% | Quantifying `SRR893035` (Apis) |
+| **397668** | `kallisto quant` | cpu: 86.2% | Quantifying `SRR8567919` (Apis) |
+| **397441** | `bg_curate_phase2.sh` | cpu: 1.2% | Orchestrating curation Phase 2 |
+| **397502** | `pigz -p 2` | cpu: 104% | Decompressing `SRR...` buffer |
 
-**Overall Saturation:** 🟢 **Peak Performance**
-Quantification velocity has increased to **~127 samples/hour**. All 24 isolated CPU cores are pinned to `apis_mellifera` datasets.
+**Overall Saturation:** 🟢 **Maximum Throughput**
+Quantification velocity is currently **~115-130 samples/hour**. All 24 isolated CPU cores are pinned to `apis_mellifera` datasets.
 
 ---
 
@@ -66,15 +66,15 @@ docker exec metainformant-pipeline-fresh python3 scripts/rna/check_pipeline_stat
 docker exec metainformant-pipeline-fresh ps aux | grep -v grep | grep -E "kallisto|amalgkit|python3|sra|fastq|R"
 ```
 
-### Monitor Downstream Progress (Curation)
+### Monitor Downstream Progress (Phase 2 Curation)
 ```bash
-docker exec metainformant-pipeline-fresh tail -f output/amalgkit/manual_downstream.log
+docker exec metainformant-pipeline-fresh tail -f output/amalgkit/manual_downstream_phase2.log
 ```
 
 ---
 
-## 🔭 4. Performance Assessment (T+20:30 UTC)
+## 🔭 4. Performance Assessment (T+22:00 UTC)
 
-- **Curation Breakthrough**: The R dependency patch has successfully cleared **10 species** from the curation backlog! All species previously marked `⚠️ Merge only` are now **✅ Complete**.
-- **Apis Velocity**: Strong acceleration to **~127 samples/hour**. Currently at `3,756 / 7,370`.
-- **Curation Backlog**: I am now queueing the remaining 8 species (`Pogonomyrmex` through `Vollenhovia`) for their final curation passes, as their quantification is confirmed 100% complete.
+- **Curation Surge**: 13 species are now fully finalized (`✅ Complete`). The R dependency fix has proven incredibly stable.
+- **Apis Acceleration**: `apis_mellifera` has crossed the 50% mark for its final batch, with **3,965 / 7,370** finalized.
+- **Phase 2 Pipeline**: `bg_curate_phase2.sh` is now processing the final 8 species (`Pogonomyrmex` through `Vollenhovia`).
