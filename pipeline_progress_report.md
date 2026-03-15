@@ -69,6 +69,12 @@ Since the previous check exactly 26 minutes ago (12:44 UTC to 13:10 UTC), the Th
 
 ---
 
+### 🔍 Current Activity Assessment (T+31:45)
+- **Quantification Processes (`quant`)**: All 24 isolated CPU cores are fully saturated and dedicated to `apis_mellifera` datasets. The Docker thread pool shows exactly 24 simultaneous streaming instances of `kallisto quant` extracting features from massive FASTQ reads continuously.
+- **Post-Merge Processes (`downstream`)**: The background asynchronous curation engine (`bg_curate.sh`) was spawned safely to handle `merge`, `curate`, and `sanity` for the `⚠️ Merge only` backlog. However, it is currently **stalled** on `odontomachus_brunneus` during the `curate` phase due to an R dependency mismatch (the `Rtsne` package was missing inside the runtime conda environment). We have applied an internal patch to the container to resync these Bioconductor dependencies from `apt` and the curation loop can be restarted safely without interrupting quantification bandwidth.
+
+---
+
 ## ⚙️ 2. Hardware Resource & Thread Pool Tracking
 
 Confirm that CPU saturation and bandwidth are fully utilized by examining the real background processes. This bypasses the shell to show exactly what `multiprocessing` is doing.
