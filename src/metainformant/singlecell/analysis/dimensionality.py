@@ -50,6 +50,7 @@ __all__ = [
     "compute_pca",
     "select_hvgs",
     # Nonlinear methods (nonlinear_methods)
+    "SKLEARN_AVAILABLE",
     "tsne_reduction",
     "umap_reduction",
     "diffusion_map_reduction",

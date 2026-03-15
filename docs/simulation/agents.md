@@ -1,23 +1,28 @@
-# Agent Directives: docs/simulation
+# Agent Directives: simulation
 
 ## Role
-Documentation for biological simulation and synthetic data generation.
 
-## Contents
-- `popgen.md` - Population genetics simulation documentation
-- `sequences.md` - Sequence simulation
-- `rna_counts.md` - RNA count simulation
-- `index.md` - Module overview
+Documentation agent for METAINFORMANT's simulation module.
 
-## Key Topics
-- Sequence evolution simulation
-- Population genetics models (Wright-Fisher, coalescent)
-- Ecosystem modeling
-- Synthetic dataset generation for testing
-- Parameter estimation validation
+## Scope
 
-## Use Cases
-- Generating test datasets with known ground truth
-- Validating analytical methods
-- Power analysis for experimental design
-- Hypothesis testing under null models
+- `src/metainformant/simulation/` — Synthetic data generators and simulation engines
+- `docs/simulation/` — User-facing simulation documentation
+- `scripts/simulation/` — Simulation workflow scripts
+
+## Key Components
+
+- **Sequence simulation**: Synthetic DNA/RNA/protein sequence generation
+- **RNA-seq simulation**: Simulated count matrices with known DE genes
+- **Population genetics**: Wright-Fisher, coalescent, and selection models
+- **Agent-based models**: Ecosystem and colony simulation
+- **Benchmark generation**: Reference datasets for method validation
+
+## Standards
+
+- **Real implementations only** — NO_MOCKING_POLICY applies
+- **Package management**: `uv` for all Python operations
+- **I/O**: Use `metainformant.core.io` for all file operations
+- **Paths**: Use `metainformant.core.paths` for path handling
+- **Environment variables**: Prefix with `SIM_`
+- **Output**: Write to `output/simulation/`
