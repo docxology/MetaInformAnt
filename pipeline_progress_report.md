@@ -1,18 +1,29 @@
-# 🧬 Continuous Orchestration Telemetry
+# 🧬 MetaInformAnt Orchestration: GCP Telemetry Dashboard
+
+This document provides a highly visual, accessible framework for monitoring the end-to-end `amalgkit` RNA-seq pipeline on the GCP compute node. It covers both the current automated progress metrics and precisely **how** you can reproduce these telemetry pulls effortlessly from your local terminal.
 
 > [!TIP]
-> **Live Monitoring from Any Shell**  
-> Retrieve real-time metrics natively against the active container orchestration. The Kubernetes/Docker engine processes scaling and thread concurrency directly off the main VM.
-> ```bash
-> gcloud compute ssh metainformant-pipeline --zone=us-central1-a --project=cryptoptera --tunnel-through-iap --ssh-flag="-q" --command='sudo docker exec metainformant-pipeline-fresh python3 scripts/rna/check_pipeline_status.py -v && echo -e "\n--- THREAD POOL ---\n" && sudo docker top metainformant-pipeline-fresh'
-> ```
+> **Zero-Interruption Monitoring Policy**
+> The commands documented below natively interrogate the active container orchestrator WITHOUT stopping or slowing down the primary ThreadPool. 
 
-## 📊 Operations Matrix: Entire Species Queue
-*Capture Snapshot: 2026-03-15 00:50 UTC*
+---
 
-> [!NOTE]
-> The primary 24-core Python orchestrator prioritizes smaller species first. All available quantitative threads are exclusively locked into dumping and aligning massive `apis_mellifera` clusters.
+## 📈 1. Live Progress Matrix (All Species)
 
+*Last Polled: 2026-03-15 04:54 UTC*
+
+### The Metric Command
+Safely dump the master SQLite pipeline matrix using the bespoke orchestration script inside the running container.
+```bash
+gcloud compute ssh metainformant-pipeline \
+    --zone=us-central1-a \
+    --project=cryptoptera \
+    --tunnel-through-iap \
+    --ssh-flag="-q" \
+    --command='sudo docker exec metainformant-pipeline-fresh python3 scripts/rna/check_pipeline_status.py -v'
+```
+
+### Current Status
 ```text
 ================================================================================
   Amalgkit Pipeline Status  │  Process: 🟢 RUNNING
@@ -40,38 +51,88 @@ Species                       pending  downloa  downloa  quantif  quantif   fail
   monomorium_pharaonis              0        0        0        0      370        0     370  ⚠️  Merge only
   temnothorax_longispinosus         0        0        0        0      508        0     508  ⚠️  Merge only
   harpegnathos_saltator             0        0        0        0      689        0     689  ✅ Complete
-  apis_mellifera                 5984        7        0       17     1331       31    7370  ❌ Not run
+  apis_mellifera                 5892        6        0       29     1414       29    7370  ❌ Not run
 --------------------------------------------------------------------------------
-  TOTAL                          5984        7        0       17     5399       45   11452
+  TOTAL                          5892        6        0       29     5482       43   11452
 ================================================================================
 ```
 
-## 🚀 Throughput & Velocity Accelerators
+### 🐝 Apis Mellifera Velocity Log
+- **T+~65 min** (00:50 UTC Day 3): `1,331 / 7,370` Complete (+178 burst)
+- **T+~4 hours** (04:54 UTC Day 3): `1,414 / 7,370` Complete (+83 huge files reliably burned down through throttled downloads)
 
-The ThreadPool continues to exceed baseline capacity by overlapping NCBI `curl` and `kallisto` streams across the local SSD blocks.
+---
 
-- **Current Apis Mellifera Quantified:** `1,331 / 7,370` Fully Complete
-- **Sustained Massive Velocity:** **+178 extra samples** flawlessly quantified in the final explicit 65-minute window (`1153 -> 1331`).
-- **Asymmetric Curation Engine (NEW):** An asynchronous single-threaded process (`bg_curate.sh`) was safely deployed into the cloud container. It sequentially loops internal `Merge only` species queues applying independent `merge`, `curate`, and `sanity` post-computations underneath the primary load constraints. *(Dependency Update Strategy active: `Rtsne` missing packages are being provisioned to resolve isolated R-language halt)*.
+## ⚙️ 2. Hardware Resource & Thread Pool Tracking
 
-## ⚙️ Concurrency Thread State (Docker ps)
+Confirm that CPU saturation and bandwidth are fully utilized by examining the real background processes. This bypasses the shell to show exactly what `multiprocessing` is doing.
 
-The orchestration relies on absolute core saturation, with all 24 independent python executors running parallel download and pseudoalignment routines, while the single detached script handles legacy merge completions concurrently.
+### The Diagnostic Command
+```bash
+gcloud compute ssh metainformant-pipeline \
+    --zone=us-central1-a \
+    --project=cryptoptera \
+    --tunnel-through-iap \
+    --ssh-flag="-q" \
+    --command='echo -e "\n--- THREAD POOL ---\n" && sudo docker top metainformant-pipeline-fresh'
+```
 
+### Current Status (Docker ps)
 ```text
 UID                 PID                 PPID                C                   STIME               TTY                 TIME                CMD
 root                245176              245157              0                   Mar13               ?                   00:00:00            /bin/bash /app/run_pipeline.sh
-root                245218              245176              0                   Mar13               ?                   00:01:42            python3 scripts/rna/run_all_species.py --max-gb 350.0 --workers 24 --threads 2
+root                245218              245176              0                   Mar13               ?                   00:01:43            python3 scripts/rna/run_all_species.py --max-gb 350.0 --workers 24 --threads 2
 
 < - - - 24 Independent Simultaneous Thread Pools of NCBI & Kallisto - - - >
 
-root                220915              245218              83.0                00:52               ?                   03:20               kallisto quant --threads 1 -i output/amalgkit/apis_mellifera/work/index/Apis_mellifera_transcripts.idx -o /app/output/amalgkit/apis_mellifera/work/quant/SRR14887992 /app/output/amalgkit/apis_mellifera/work/getfastq/SRR14887992/SRR14887992_1.fastq.gz
-root                221022              245218              85.5                00:54               ?                   01:53               kallisto quant --threads 1 -i output/amalgkit/apis_mellifera/work/index/Apis_mellifera_transcripts.idx -o /app/output/amalgkit/apis_mellifera/work/quant/SRR13938899 /app/output/amalgkit/apis_mellifera/work/getfastq/SRR13938899/SRR13938899_1.fastq.gz
-root                221075              245218              2.2                 00:54               ?                   00:02               curl -fsSL --retry 3 --retry-delay 10 --connect-timeout 30 -o output/amalgkit/apis_mellifera/work/getfastq/SRR33762311/SRR33762311_1.fastq.gz http://ftp.sra.ebi.ac.uk/vol1/fastq/SRR337/011/SRR33762311/SRR33762311_1.fastq.gz
-root                221169              245218              83.6                00:55               ?                   01:15               kallisto quant --threads 1 -i output/amalgkit/apis_mellifera/work/index/Apis_mellifera_transcripts.idx -o /app/output/amalgkit/apis_mellifera/work/quant/SRR33381866 /app/output/amalgkit/apis_mellifera/work/getfastq/SRR33381866/SRR33381866_1.fastq.gz
+root                248256              245218              85.1                04:54               ?                   00:37               kallisto quant --threads 1 -i output/amalgkit/apis_mellifera/work/index/Apis_mellifera_transcripts.idx -o /app/output/amalgkit/apis_mellifera/work/quant/SRR893033 /app/output/amalgkit/apis_mellifera/work/getfastq/SRR893033/SRR893033_1.fastq.gz
+root                248197              245218              0.9                 04:53               ?                   00:01               curl -fsSL --retry 3 --retry-delay 10 --connect-timeout 30 -o output/amalgkit/apis_mellifera/work/getfastq/SRR8632766/SRR8632766.fastq.gz http://ftp.sra.ebi.ac.uk/vol1/fastq/SRR863/006/SRR8632766/SRR8632766.fastq.gz
 
 < - - - Background Single-Thread Curation Engine - - - >
 
 root                216051              245176              0                   00:42               ?                   00:00:00            /bin/bash scripts/rna/bg_curate.sh
 root                216196              216051              100                 00:42               ?                   00:00:02            /app/.venv/bin/python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_odontomachus_brunneus.yaml --no-progress --steps merge curate sanity
+```
+
+---
+
+## 🛠️ 3. Spawning Detached Asynchronous Curation (`Merge only` Backlog)
+
+The main 24 cores are entirely dedicated to `apis_mellifera` quantification logic in Phase 1. 
+
+To clear the backlog of `⚠️ Merge only` species cleanly without halting quantification bandwidth, we inject an independent single-thread bash script into the orchestration image.
+
+### The Injection Sequence
+```bash
+# 1. Create a looping bash script locally
+cat << 'EOF' > bg_curate.sh
+#!/bin/bash
+for sp in temnothorax_longispinosus solenopsis_invicta monomorium_pharaonis camponotus_floridanus cardiocondyla_obscurior temnothorax_nylanderi temnothorax_curvispinosus nylanderia_fulva formica_exsecta odontomachus_brunneus; do 
+    echo "Processing $sp"
+    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_${sp}.yaml --no-progress --steps merge curate sanity
+done
+EOF
+
+# 2. Transfer script to the VM host natively via IAP
+gcloud compute scp bg_curate.sh metainformant-pipeline:~/ --zone=us-central1-a --project=cryptoptera --tunnel-through-iap
+
+# 3. Inject and run detached in the orchestrator container
+gcloud compute ssh metainformant-pipeline \
+    --zone=us-central1-a \
+    --project=cryptoptera \
+    --tunnel-through-iap \
+    --ssh-flag="-q" \
+    --command='sudo docker cp ~/bg_curate.sh metainformant-pipeline-fresh:/app/scripts/rna/bg_curate.sh && sudo docker exec metainformant-pipeline-fresh bash -c "chmod +x scripts/rna/bg_curate.sh" && sudo docker exec -d metainformant-pipeline-fresh bash -c "nohup scripts/rna/bg_curate.sh > output/amalgkit/manual_downstream.log 2>&1 &"'
+```
+
+### Checking the Asynchronous Curation Log
+Monitor exactly where the curation engine is failing, passing, or processing at any time.
+
+```bash
+gcloud compute ssh metainformant-pipeline \
+    --zone=us-central1-a \
+    --project=cryptoptera \
+    --tunnel-through-iap \
+    --ssh-flag="-q" \
+    --command='sudo docker exec metainformant-pipeline-fresh tail -n 20 output/amalgkit/manual_downstream.log'
 ```
