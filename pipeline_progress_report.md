@@ -10,7 +10,7 @@ This document provides a highly visual, accessible framework for monitoring the 
 
 ## 📈 1. Live Progress Matrix (All Species)
 
-*Last Polled: 2026-03-15 12:20 UTC*
+*Last Polled: 2026-03-15 12:44 UTC*
 
 ### The Metric Command
 Safely dump the master SQLite pipeline matrix using the bespoke orchestration script inside the running container.
@@ -51,9 +51,11 @@ Species                       pending  downloa  downloa  quantif  quantif   fail
   monomorium_pharaonis              0        0        0        0      370        0     370  ⚠️  Merge only
   temnothorax_longispinosus         0        0        0        0      508        0     508  ⚠️  Merge only
   harpegnathos_saltator             0        0        0        0      689        0     689  ✅ Complete
-  apis_mellifera                 4465        7        0       17     2817       64    7370  ❌ Not run
+  apis_mellifera                 4405        7        0       17     2877       64    7370  ❌ Not run
 --------------------------------------------------------------------------------
-  TOTAL                          4465        7        0       17     6885       78   11452
+  TOTAL                          4405        7        0       17     6945       78   11452
+================================================================================
+```
 ================================================================================
 ```
 
@@ -61,6 +63,7 @@ Species                       pending  downloa  downloa  quantif  quantif   fail
 - **T+~65 min** (00:50 UTC Day 3): `1,331 / 7,370` Complete (+178 burst)
 - **T+~4 hours** (05:07 UTC Day 3): `1,879 / 7,370` Complete (+548 huge files flawlessly processed)
 - **T+~11.5 hours** (12:20 UTC Day 3): `2,817 / 7,370` Complete (+938 natively processed overnight by the 24-core local SSD engine)
+- **T+~12 hours** (12:44 UTC Day 3): `2,877 / 7,370` Complete (+60 heavy SRAs quantified natively trailing 24 minutes)
 
 ---
 
@@ -86,8 +89,8 @@ root                245218              245176              0                   
 
 < - - - 24 Independent Simultaneous Thread Pools of NCBI & Kallisto - - - >
 
-root                297630              245218              67.3                12:15               ?                   06:14               kallisto quant --threads 1 -i output/amalgkit/apis_mellifera/work/index/Apis_mellifera_transcripts.idx -o /app/output/amalgkit/apis_mellifera/work/quant/SRR23183244 /app/output/amalgkit/apis_mellifera/work/getfastq/SRR23183244/SRR23183244_1.fastq.gz
-root                297722              245218              66.6                12:15               ?                   06:00               kallisto quant --threads 1 -i output/amalgkit/apis_mellifera/work/index/Apis_mellifera_transcripts.idx -o /app/output/amalgkit/apis_mellifera/work/quant/SRR4017784 /app/output/amalgkit/apis_mellifera/work/getfastq/SRR4017784/SRR4017784_1.fastq.gz
+root                620405              245218              73.6                12:31               ?                   10:42               kallisto quant --threads 1 -i output/amalgkit/apis_mellifera/work/index/Apis_mellifera_transcripts.idx -o /app/output/amalgkit/apis_mellifera/work/quant/SRR25389643 /app/output/amalgkit/apis_mellifera/work/getfastq/SRR25389643/SRR25389643_1.fastq.gz
+root                620461              245218              66.2                12:31               ?                   09:21               kallisto quant --threads 1 -i output/amalgkit/apis_mellifera/work/index/Apis_mellifera_transcripts.idx -o /app/output/amalgkit/apis_mellifera/work/quant/SRR21972974 /app/output/amalgkit/apis_mellifera/work/getfastq/SRR21972974/SRR21972974_1.fastq.gz
 
 < - - - Background Single-Thread Curation Engine - - - >
 
