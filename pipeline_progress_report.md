@@ -10,7 +10,7 @@ This document provides a highly visual, accessible framework for monitoring the 
 
 ## 📈 1. Live Progress Matrix (All Species)
 
-*Last Polled: 2026-03-15 12:04 UTC*
+*Last Polled: 2026-03-15 12:20 UTC*
 
 ### The Metric Command
 Safely dump the master SQLite pipeline matrix using the bespoke orchestration script inside the running container.
@@ -34,7 +34,7 @@ Species                       pending  downloa  downloa  quantif  quantif   fail
   acromyrmex_echinatior             0        0        0        0       44        0      44  ✅ Complete
   dinoponera_quadriceps             0        0        0        0       13        0      13  ❌ Not run
   vollenhovia_emeryi                0        0        0        0       15        0      15  ❌ Not run
-  odontomachus_brunneus             0        0        0        0       19        0      19  ⚠️  Merge only
+  odontomachus_brunneus             0        0        0        0       19        0      19  ✅ Complete
   formica_exsecta                   0        0        0        0       23        0      23  ⚠️  Merge only
   temnothorax_americanus            0        0        0        0      331        0     331  ❌ Not run
   wasmannia_auropunctata            0        0        0        0       33        0      33  ❌ Not run
@@ -51,16 +51,16 @@ Species                       pending  downloa  downloa  quantif  quantif   fail
   monomorium_pharaonis              0        0        0        0      370        0     370  ⚠️  Merge only
   temnothorax_longispinosus         0        0        0        0      508        0     508  ⚠️  Merge only
   harpegnathos_saltator             0        0        0        0      689        0     689  ✅ Complete
-  apis_mellifera                 4704        5        0       26     2588       47    7370  ❌ Not run
+  apis_mellifera                 4465        7        0       17     2817       64    7370  ❌ Not run
 --------------------------------------------------------------------------------
-  TOTAL                          4704        5        0       26     6656       61   11452
+  TOTAL                          4465        7        0       17     6885       78   11452
 ================================================================================
 ```
 
 ### 🐝 Apis Mellifera Velocity Log
 - **T+~65 min** (00:50 UTC Day 3): `1,331 / 7,370` Complete (+178 burst)
 - **T+~4 hours** (05:07 UTC Day 3): `1,879 / 7,370` Complete (+548 huge files flawlessly processed)
-- **T+~11 hours** (12:04 UTC Day 3): `2,588 / 7,370` Complete (+709 samples processed overnight via the 24-core local SSD engine)
+- **T+~11.5 hours** (12:20 UTC Day 3): `2,817 / 7,370` Complete (+938 natively processed overnight by the 24-core local SSD engine)
 
 ---
 
@@ -86,13 +86,13 @@ root                245218              245176              0                   
 
 < - - - 24 Independent Simultaneous Thread Pools of NCBI & Kallisto - - - >
 
-root                295503              245218              86.3                12:02               ?                   01:13               kallisto quant --threads 1 -i output/amalgkit/apis_mellifera/work/index/Apis_mellifera_transcripts.idx -o /app/output/amalgkit/apis_mellifera/work/quant/SRR19143642 /app/output/amalgkit/apis_mellifera/work/getfastq/SRR19143642/SRR19143642_1.fastq.gz
-root                295579              245218              3.6                 12:04               ?                   00:00               curl -fsSL --retry 3 --retry-delay 10 --connect-timeout 30 -o output/amalgkit/apis_mellifera/work/getfastq/SRR14887961/SRR14887961_1.fastq.gz http://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/061/SRR14887961/SRR14887961_1.fastq.gz
+root                297630              245218              67.3                12:15               ?                   06:14               kallisto quant --threads 1 -i output/amalgkit/apis_mellifera/work/index/Apis_mellifera_transcripts.idx -o /app/output/amalgkit/apis_mellifera/work/quant/SRR23183244 /app/output/amalgkit/apis_mellifera/work/getfastq/SRR23183244/SRR23183244_1.fastq.gz
+root                297722              245218              66.6                12:15               ?                   06:00               kallisto quant --threads 1 -i output/amalgkit/apis_mellifera/work/index/Apis_mellifera_transcripts.idx -o /app/output/amalgkit/apis_mellifera/work/quant/SRR4017784 /app/output/amalgkit/apis_mellifera/work/getfastq/SRR4017784/SRR4017784_1.fastq.gz
 
 < - - - Background Single-Thread Curation Engine - - - >
 
-root                216051              245176              0                   00:42               ?                   00:00:00            /bin/bash scripts/rna/bg_curate.sh
-root                216196              216051              100                 00:42               ?                   00:00:02            /app/.venv/bin/python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_odontomachus_brunneus.yaml --no-progress --steps merge curate sanity
+root                296743              1                   0                   12:12               ?                   00:00:00            /bin/bash scripts/rna/bg_curate.sh
+root                296842              296744              5                   12:13               ?                   00:00:00            /app/.venv/bin/python3 /app/.venv/bin/amalgkit merge --out_dir output/amalgkit/temnothorax_longispinosus/merged --metadata output/amalgkit/temnothorax_longispinosus/work/metadata/metadata_selected.tsv
 ```
 
 ---
