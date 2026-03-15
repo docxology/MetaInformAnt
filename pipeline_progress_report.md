@@ -1,8 +1,8 @@
 # 📊 MetaInformAnt Pipeline Progress Report
 
-**Telemetry Refreshed:** 2026-03-15 22:00 UTC
+**Telemetry Refreshed:** 2026-03-15 22:30 UTC
 **Orchestration Node:** `metainformant-pipeline` (n2-standard-16)
-**Local Workstation Time:** 2026-03-15 14:55 local
+**Local Workstation Time:** 2026-03-15 15:31 local
 
 ---
 
@@ -10,7 +10,7 @@
 
 | Species | Status | Quantified | Pending | Failed | Total | Downstream |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Apis mellifera** | 🔵 Running | 3,965 | 3,296 | 85 | 7,370 | ❌ Not run |
+| **Apis mellifera** | 🔵 Running | 4,042 | 3,219 | 85 | 7,370 | ❌ Not run |
 | **Camponotus floridanus** | ✅ Complete | 366 | 0 | 1 | 367 | ✅ Success |
 | **Solenopsis invicta** | ✅ Complete | 450 | 0 | 1 | 451 | ✅ Success |
 | **Temnothorax longispinosus** | ✅ Complete | 508 | 0 | 0 | 508 | ✅ Success |
@@ -24,10 +24,10 @@
 | **Temnothorax curvispinosus** | ✅ Complete | 43 | 0 | 0 | 43 | ✅ Success |
 | **Nylanderia fulva** | ✅ Complete | 40 | 0 | 0 | 40 | ✅ Success |
 | **Formica exsecta** | ✅ Complete | 23 | 0 | 0 | 23 | ✅ Success |
-| **Pogonomyrmex barbatus** | 🟠 Curating | 132 | 0 | 0 | 132 | 🔄 Phase 2 |
-| **Ooceraea biroi** | ⚠️ Ready | 274 | 0 | 0 | 274 | ⚠️ Phase 2 Queue |
+| **Pogonomyrmex barbatus** | ✅ Complete | 132 | 0 | 0 | 132 | ✅ Success |
+| **Temnothorax americanus** | ✅ Complete | 331 | 0 | 0 | 331 | ✅ Success |
+| **Ooceraea biroi** | 🟠 Curating | 274 | 0 | 0 | 274 | 🔄 Phase 2 |
 | **Linepithema humile** | ⚠️ Ready | 173 | 0 | 0 | 173 | ⚠️ Phase 2 Queue |
-| **Temnothorax americanus** | ⚠️ Ready | 331 | 0 | 0 | 331 | ⚠️ Phase 2 Queue |
 | **Wasmannia auropunctata** | ⚠️ Ready | 33 | 0 | 0 | 33 | ⚠️ Phase 2 Queue |
 | **Anoplolepis gracilipes** | ⚠️ Ready | 7 | 0 | 0 | 7 | ⚠️ Phase 2 Queue |
 | **Dinoponera quadriceps** | ⚠️ Ready | 13 | 0 | 0 | 13 | ⚠️ Phase 2 Queue |
@@ -42,13 +42,13 @@ The VM is an `n2-standard-16` with 16 vCPUs (hyperthreaded to 32 logical cores).
 ### Active Process Snapshot
 | PID | Command | Resource | Activity |
 | :--- | :--- | :--- | :--- |
-| **397588** | `kallisto quant` | cpu: 64.4% | Quantifying `SRR893035` (Apis) |
-| **397668** | `kallisto quant` | cpu: 86.2% | Quantifying `SRR8567919` (Apis) |
-| **397441** | `bg_curate_phase2.sh` | cpu: 1.2% | Orchestrating curation Phase 2 |
-| **397502** | `pigz -p 2` | cpu: 104% | Decompressing `SRR...` buffer |
+| **403330** | `kallisto quant` | cpu: 63.4% | Quantifying `SRR25008587` (Apis) |
+| **403867** | `kallisto quant` | cpu: 65.5% | Quantifying `SRR20272017` (Apis) |
+| **403022** | `bg_curate_phase2.sh` | cpu: 1.5% | Orchestrating curation Phase 2 |
+| **403150** | `pigz -p 2` | cpu: 104% | Decompressing `SRR...` buffer |
 
-**Overall Saturation:** 🟢 **Maximum Throughput**
-Quantification velocity is currently **~115-130 samples/hour**. All 24 isolated CPU cores are pinned to `apis_mellifera` datasets.
+**Overall Saturation:** 🟢 **Peak Performance**
+Quantification velocity is currently **~120 samples/hour**. Currently at `4,042 / 7,370`.
 
 ---
 
