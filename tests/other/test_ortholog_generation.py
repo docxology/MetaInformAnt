@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 # Add the scripts/rna directory to the path so we can import generate_orthologs
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../scripts/rna')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../scripts/rna')))
 import generate_orthologs
 
 class TestOrthologGeneration(unittest.TestCase):
