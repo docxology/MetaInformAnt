@@ -10,7 +10,7 @@ This document provides a highly visual, accessible framework for monitoring the 
 
 ## 📈 1. Live Progress Matrix (All Species)
 
-*Last Polled: 2026-03-15 15:08 UTC*
+*Last Polled: 2026-03-15 15:40 UTC*
 
 ### The Metric Command
 Safely dump the master SQLite pipeline matrix using the bespoke orchestration script inside the running container.
@@ -34,7 +34,7 @@ Species                       pending  downloa  downloa  quantif  quantif   fail
   acromyrmex_echinatior             0        0        0        0       44        0      44  ✅ Complete
   dinoponera_quadriceps             0        0        0        0       13        0      13  ❌ Not run
   vollenhovia_emeryi                0        0        0        0       15        0      15  ❌ Not run
-  odontomachus_brunneus             0        0        0        0       19        0      19  ⚠️  Merge only
+  odontomachus_brunneus             0        0        0        0       19        0      19  ✅ Complete
   formica_exsecta                   0        0        0        0       23        0      23  ⚠️  Merge only
   temnothorax_americanus            0        0        0        0      331        0     331  ❌ Not run
   wasmannia_auropunctata            0        0        0        0       33        0      33  ❌ Not run
@@ -47,13 +47,13 @@ Species                       pending  downloa  downloa  quantif  quantif   fail
   atta_cephalotes                   0        0        0        0      217        0     217  ✅ Complete
   ooceraea_biroi                    0        0        0        0      274        0     274  ❌ Not run
   camponotus_floridanus             0        0        0        0      366        1     367  ⚠️  Merge only
-  solenopsis_invicta                0        0        0        0      450        1     451  ⚠️  Merge only
+  solenopsis_invicta                0        0        0        0      450        1     451  ✅ Complete
   monomorium_pharaonis              0        0        0        0      370        0     370  ⚠️  Merge only
-  temnothorax_longispinosus         0        0        0        0      508        0     508  ⚠️  Merge only
+  temnothorax_longispinosus         0        0        0        0      508        0     508  ✅ Complete
   harpegnathos_saltator             0        0        0        0      689        0     689  ✅ Complete
-  apis_mellifera                 4177        3        0       21     3098       71    7370  ❌ Not run
+  apis_mellifera                 4132        3        0       21     3143       71    7370  ❌ Not run
 --------------------------------------------------------------------------------
-  TOTAL                          4177        3        0       21     7166       85   11452
+  TOTAL                          4132        3        0       21     7211       85   11452
 ================================================================================
 ```
 ================================================================================
@@ -65,14 +65,15 @@ Species                       pending  downloa  downloa  quantif  quantif   fail
 - **T+~12 hours** (12:44 UTC Day 3): `2,877 / 7,370` Complete (+60 heavy SRAs quantified natively trailing 24 minutes)
 - **T+~12.5 hours** (13:10 UTC Day 3): `2,899 / 7,370` Complete (+22 quantified natively trailing 26 minutes)
 - **T+~14.5 hours** (15:08 UTC Day 3): `3,098 / 7,370` Complete (+199 quantified natively trailing 2 hours)
+- **T+~15 hours** (15:40 UTC Day 3): `3,143 / 7,370` Complete (+45 quantified natively trailing 32 minutes)
 
-Since the previous check exactly 2 hours ago (13:10 UTC to 15:08 UTC), the ThreadPool has successfully quantified an additional **+199 `apis_mellifera` samples**. Velocity is steady at approx **100 samples/hour**.
+The ThreadPool is maintaining a consistent velocity of **~85-100 samples/hour**. Since the 13:10 UTC poll, we have added **+244 processed samples** to the `apis_mellifera` count.
 
 ---
 
-### 🔍 Current Activity Assessment (T+11:58 local / 15:08 UTC)
-- **Quantification Processes (`quant`)**: All 24 cores remain fully saturated. Velocity has increased to ~100 samples/hour as the ThreadPool works through a batch of slightly smaller `apis_mellifera` trace files.
-- **Post-Merge Processes (`downstream`)**: The background curation engine (`bg_curate.sh`) is currently **stalled** on `odontomachus_brunneus`. While `Rtsne` and `edgeR` have been successfully mapped into the container, the final analysis modules `sva` and `RUVSeq` are still being compiled from source to complete the Bioconductor stack. 
+### 🔍 Current Activity Assessment (T+12:30 local / 15:40 UTC)
+- **Quantification Processes (`quant`)**: All 24 cores remain fully saturated. Velocity is averaging ~90 samples/hour as the ThreadPool processes `apis_mellifera`.
+- **Post-Merge Processes (`downstream`)**: The `sva` dependency patch successfully unblocked the curation engine. **3 species** (`odontomachus_brunneus`, `solenopsis_invicta`, and `temnothorax_longispinosus`) have already moved from `⚠️ Merge only` to `✅ Complete`. The background loop is currently processing the remaining 7 species in the backlog.
 
 ---
 
