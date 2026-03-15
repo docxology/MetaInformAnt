@@ -10,7 +10,7 @@ This document provides a highly visual, accessible framework for monitoring the 
 
 ## 📈 1. Live Progress Matrix (All Species)
 
-*Last Polled: 2026-03-15 04:54 UTC*
+*Last Polled: 2026-03-15 12:04 UTC*
 
 ### The Metric Command
 Safely dump the master SQLite pipeline matrix using the bespoke orchestration script inside the running container.
@@ -51,15 +51,16 @@ Species                       pending  downloa  downloa  quantif  quantif   fail
   monomorium_pharaonis              0        0        0        0      370        0     370  ⚠️  Merge only
   temnothorax_longispinosus         0        0        0        0      508        0     508  ⚠️  Merge only
   harpegnathos_saltator             0        0        0        0      689        0     689  ✅ Complete
-  apis_mellifera                 5892        6        0       29     1414       29    7370  ❌ Not run
+  apis_mellifera                 4704        5        0       26     2588       47    7370  ❌ Not run
 --------------------------------------------------------------------------------
-  TOTAL                          5892        6        0       29     5482       43   11452
+  TOTAL                          4704        5        0       26     6656       61   11452
 ================================================================================
 ```
 
 ### 🐝 Apis Mellifera Velocity Log
 - **T+~65 min** (00:50 UTC Day 3): `1,331 / 7,370` Complete (+178 burst)
-- **T+~4 hours** (04:54 UTC Day 3): `1,414 / 7,370` Complete (+83 huge files reliably burned down through throttled downloads)
+- **T+~4 hours** (05:07 UTC Day 3): `1,879 / 7,370` Complete (+548 huge files flawlessly processed)
+- **T+~11 hours** (12:04 UTC Day 3): `2,588 / 7,370` Complete (+709 samples processed overnight via the 24-core local SSD engine)
 
 ---
 
@@ -81,12 +82,12 @@ gcloud compute ssh metainformant-pipeline \
 ```text
 UID                 PID                 PPID                C                   STIME               TTY                 TIME                CMD
 root                245176              245157              0                   Mar13               ?                   00:00:00            /bin/bash /app/run_pipeline.sh
-root                245218              245176              0                   Mar13               ?                   00:01:43            python3 scripts/rna/run_all_species.py --max-gb 350.0 --workers 24 --threads 2
+root                245218              245176              0                   Mar13               ?                   00:01:46            python3 scripts/rna/run_all_species.py --max-gb 350.0 --workers 24 --threads 2
 
 < - - - 24 Independent Simultaneous Thread Pools of NCBI & Kallisto - - - >
 
-root                248256              245218              85.1                04:54               ?                   00:37               kallisto quant --threads 1 -i output/amalgkit/apis_mellifera/work/index/Apis_mellifera_transcripts.idx -o /app/output/amalgkit/apis_mellifera/work/quant/SRR893033 /app/output/amalgkit/apis_mellifera/work/getfastq/SRR893033/SRR893033_1.fastq.gz
-root                248197              245218              0.9                 04:53               ?                   00:01               curl -fsSL --retry 3 --retry-delay 10 --connect-timeout 30 -o output/amalgkit/apis_mellifera/work/getfastq/SRR8632766/SRR8632766.fastq.gz http://ftp.sra.ebi.ac.uk/vol1/fastq/SRR863/006/SRR8632766/SRR8632766.fastq.gz
+root                295503              245218              86.3                12:02               ?                   01:13               kallisto quant --threads 1 -i output/amalgkit/apis_mellifera/work/index/Apis_mellifera_transcripts.idx -o /app/output/amalgkit/apis_mellifera/work/quant/SRR19143642 /app/output/amalgkit/apis_mellifera/work/getfastq/SRR19143642/SRR19143642_1.fastq.gz
+root                295579              245218              3.6                 12:04               ?                   00:00               curl -fsSL --retry 3 --retry-delay 10 --connect-timeout 30 -o output/amalgkit/apis_mellifera/work/getfastq/SRR14887961/SRR14887961_1.fastq.gz http://ftp.sra.ebi.ac.uk/vol1/fastq/SRR148/061/SRR14887961/SRR14887961_1.fastq.gz
 
 < - - - Background Single-Thread Curation Engine - - - >
 
