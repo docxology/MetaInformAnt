@@ -10,7 +10,7 @@ This document provides a highly visual, accessible framework for monitoring the 
 
 ## 📈 1. Live Progress Matrix (All Species)
 
-*Last Polled: 2026-03-15 13:10 UTC*
+*Last Polled: 2026-03-15 15:08 UTC*
 
 ### The Metric Command
 Safely dump the master SQLite pipeline matrix using the bespoke orchestration script inside the running container.
@@ -51,9 +51,9 @@ Species                       pending  downloa  downloa  quantif  quantif   fail
   monomorium_pharaonis              0        0        0        0      370        0     370  ⚠️  Merge only
   temnothorax_longispinosus         0        0        0        0      508        0     508  ⚠️  Merge only
   harpegnathos_saltator             0        0        0        0      689        0     689  ✅ Complete
-  apis_mellifera                 4382        2        0       22     2899       65    7370  ❌ Not run
+  apis_mellifera                 4177        3        0       21     3098       71    7370  ❌ Not run
 --------------------------------------------------------------------------------
-  TOTAL                          4382        2        0       22     6967       79   11452
+  TOTAL                          4177        3        0       21     7166       85   11452
 ================================================================================
 ```
 ================================================================================
@@ -64,14 +64,15 @@ Species                       pending  downloa  downloa  quantif  quantif   fail
 - **T+~11.5 hours** (12:20 UTC Day 3): `2,817 / 7,370` Complete (+938 natively processed overnight by the 24-core local SSD engine)
 - **T+~12 hours** (12:44 UTC Day 3): `2,877 / 7,370` Complete (+60 heavy SRAs quantified natively trailing 24 minutes)
 - **T+~12.5 hours** (13:10 UTC Day 3): `2,899 / 7,370` Complete (+22 quantified natively trailing 26 minutes)
+- **T+~14.5 hours** (15:08 UTC Day 3): `3,098 / 7,370` Complete (+199 quantified natively trailing 2 hours)
 
-Since the previous check exactly 26 minutes ago (12:44 UTC to 13:10 UTC), the ThreadPool has successfully quantified an additional **+22 `apis_mellifera` samples**.
+Since the previous check exactly 2 hours ago (13:10 UTC to 15:08 UTC), the ThreadPool has successfully quantified an additional **+199 `apis_mellifera` samples**. Velocity is steady at approx **100 samples/hour**.
 
 ---
 
-### 🔍 Current Activity Assessment (T+31:45)
-- **Quantification Processes (`quant`)**: All 24 isolated CPU cores are fully saturated and dedicated to `apis_mellifera` datasets. The Docker thread pool shows exactly 24 simultaneous streaming instances of `kallisto quant` extracting features from massive FASTQ reads continuously.
-- **Post-Merge Processes (`downstream`)**: The background asynchronous curation engine (`bg_curate.sh`) was spawned safely to handle `merge`, `curate`, and `sanity` for the `⚠️ Merge only` backlog. However, it is currently **stalled** on `odontomachus_brunneus` during the `curate` phase due to an R dependency mismatch (the `Rtsne` package was missing inside the runtime conda environment). We have applied an internal patch to the container to resync these Bioconductor dependencies from `apt` and the curation loop can be restarted safely without interrupting quantification bandwidth.
+### 🔍 Current Activity Assessment (T+11:58 local / 15:08 UTC)
+- **Quantification Processes (`quant`)**: All 24 cores remain fully saturated. Velocity has increased to ~100 samples/hour as the ThreadPool works through a batch of slightly smaller `apis_mellifera` trace files.
+- **Post-Merge Processes (`downstream`)**: The background curation engine (`bg_curate.sh`) is currently **stalled** on `odontomachus_brunneus`. While `Rtsne` and `edgeR` have been successfully mapped into the container, the final analysis modules `sva` and `RUVSeq` are still being compiled from source to complete the Bioconductor stack. 
 
 ---
 
