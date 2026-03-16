@@ -1,12 +1,12 @@
 # 📊 MetaInformAnt Pipeline Progress Report
 
-**Telemetry Refreshed:** 2026-03-16 12:15 UTC (T+~36h)
+**Telemetry Refreshed:** 2026-03-16 17:48 UTC (T+~41.5h)
 **Orchestration Node:** `metainformant-pipeline` (n2-standard-16)
-**Local Workstation Time:** 2026-03-16 05:15 local
+**Local Workstation Time:** 2026-03-16 10:48 local
 
 > [!IMPORTANT]
 > **Pipeline Status: 🟢 HIGHSPEED QUANTIFICATION**
-> `apis_mellifera` has crossed the **5,800** sample mark. Finalizing the remaining 1,400 samples at a velocity of **~128 samples/hour**.
+> `apis_mellifera` has crossed the **6,400** sample mark. Finalizing the remaining 744 samples at a velocity of **~120-125 samples/hour**.
 
 ---
 
@@ -14,7 +14,7 @@
 
 | Species | Status | Quantified | Pending | Failed | Total | Downstream |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Apis mellifera** | 🔵 Running | 5,810 | 1,418 | 118 | 7,370 | ❌ Not run |
+| **Apis mellifera** | 🔵 Running | 6,468 | 744 | 134 | 7,370 | ❌ Not run |
 | **Ooceraea biroi** | ✅ Complete | 274 | 0 | 0 | 274 | ✅ Success |
 | **Linepithema humile** | ✅ Complete | 173 | 0 | 0 | 173 | ✅ Success |
 | **Pogonomyrmex barbatus** | ✅ Complete | 132 | 0 | 0 | 132 | ✅ Success |
@@ -46,16 +46,16 @@
 The VM is operating under a **24-worker** quantification pool. CPU saturation is sustainable, and SSD buffer space is optimal.
 
 ### Active Process Snapshot (Live Runtimes)
-| PID | Command | Resource | Elapse (MM:SS) | Status |
+| PID | Command | Resource | Elapse (HH:MM:SS) | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| **838620** | `kallisto quant` | cpu: 60% | 47:56 | 🔵 Active |
-| **841673** | `kallisto quant` | cpu: 65% | 26:48 | 🔵 Active |
-| **843691** | `kallisto quant` | cpu: 62% | 10:24 | 🔵 Active |
-| **844991** | `kallisto quant` | cpu: 68% | 00:29 | 🔵 Active |
+| **501081** | `kallisto quant` | cpu: 100% | 04:33:21 | 🔵 Active (Heavy) |
+| **524494** | `kallisto quant` | cpu: 100% | 00:28:17 | 🔵 Active |
+| **525924** | `kallisto quant` | cpu: 100% | 00:08:19 | 🔵 Active |
+| **526435** | `kallisto quant` | cpu: 100% | 00:05:20 | 🔵 Active |
 
 **Performance Metrics:**
-- **Quantification Velocity**: ~128 samples/hour (Current: `apis_mellifera`)
-- **Disk IO Capacity**: 737GB available on master SSD.
+- **Quantification Velocity**: ~120 samples/hour (Current: `apis_mellifera`)
+- **Disk IO Capacity**: Stable on master SSD.
 - **Background Curation**: Phase 2 loop is completed.
 
 ---
@@ -81,8 +81,8 @@ docker exec metainformant-pipeline-fresh tail -n 50 output/amalgkit/manual_downs
 
 ---
 
-## 🔭 4. Performance Assessment (T+~36h UTC)
+## 🔭 4. Performance Assessment (T+~41.5h UTC)
 
-- **Apis Achievement**: We are at **79%** of the final goal (**5,810 / 7,370**). Velocity remains ultra-stable at ~128/hr.
+- **Apis Achievement**: We are at **87.7%** of the final goal (**6,468 / 7,370**). Velocity remains robust despite some heavier sample outliers.
 - **Curation Milestone**: 15 species are fully verified and finalized. Batch 2 added `Ooceraea biroi` and `Linepithema humile` to the Success list.
-- **Targeting Completion**: At current velocity, the final 1,400 samples should clear in approximately ~11 hours.
+- **Targeting Completion**: At current velocity, the final 744 samples should clear in approximately **~6 hours**.
