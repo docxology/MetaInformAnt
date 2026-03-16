@@ -1,8 +1,12 @@
 # 📊 MetaInformAnt Pipeline Progress Report
 
-**Telemetry Refreshed:** 2026-03-16 03:30 UTC
+**Telemetry Refreshed:** 2026-03-16 12:15 UTC (T+~36h)
 **Orchestration Node:** `metainformant-pipeline` (n2-standard-16)
-**Local Workstation Time:** 2026-03-15 20:30 local
+**Local Workstation Time:** 2026-03-16 05:15 local
+
+> [!IMPORTANT]
+> **Pipeline Status: 🟢 HIGHSPEED QUANTIFICATION**
+> `apis_mellifera` has crossed the **5,800** sample mark. Finalizing the remaining 1,400 samples at a velocity of **~128 samples/hour**.
 
 ---
 
@@ -10,9 +14,11 @@
 
 | Species | Status | Quantified | Pending | Failed | Total | Downstream |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Apis mellifera** | 🔵 Running | 4,658 | 2,588 | 100 | 7,370 | ❌ Not run |
+| **Apis mellifera** | 🔵 Running | 5,810 | 1,418 | 118 | 7,370 | ❌ Not run |
 | **Ooceraea biroi** | ✅ Complete | 274 | 0 | 0 | 274 | ✅ Success |
 | **Linepithema humile** | ✅ Complete | 173 | 0 | 0 | 173 | ✅ Success |
+| **Pogonomyrmex barbatus** | ✅ Complete | 132 | 0 | 0 | 132 | ✅ Success |
+| **Temnothorax americanus** | ✅ Complete | 331 | 0 | 0 | 331 | ✅ Success |
 | **Camponotus floridanus** | ✅ Complete | 366 | 0 | 1 | 367 | ✅ Success |
 | **Solenopsis invicta** | ✅ Complete | 450 | 0 | 1 | 451 | ✅ Success |
 | **Temnothorax longispinosus** | ✅ Complete | 508 | 0 | 0 | 508 | ✅ Success |
@@ -26,57 +32,57 @@
 | **Temnothorax curvispinosus** | ✅ Complete | 43 | 0 | 0 | 43 | ✅ Success |
 | **Nylanderia fulva** | ✅ Complete | 40 | 0 | 0 | 40 | ✅ Success |
 | **Formica exsecta** | ✅ Complete | 23 | 0 | 0 | 23 | ✅ Success |
-| **Pogonomyrmex barbatus** | ✅ Complete | 132 | 0 | 0 | 132 | ✅ Success |
-| **Temnothorax americanus** | ✅ Complete | 331 | 0 | 0 | 331 | ✅ Success |
 | **Wasmannia auropunctata** | ❌ Blocked | 33 | 0 | 0 | 33 | ❌ Curation Fail* |
 | **Anoplolepis gracilipes** | ❌ Blocked | 7 | 0 | 0 | 7 | ❌ Curation Fail* |
 | **Dinoponera quadriceps** | ❌ Blocked | 13 | 0 | 0 | 13 | ❌ Curation Fail* |
 | **Vollenhovia emeryi** | ❌ Blocked | 15 | 0 | 0 | 15 | ❌ Curation Fail* |
 
-*\*Downstream failures for small species are primarily due to "Metadata file not found" or "No samples meet filtering criteria" during the asynchronous curation loop. These will require manual reconciliation of LITE files.*
+*\*Downstream failures for the smallest species are due to metadata filtering constraints (e.g., LITE-only runs). These will be resolved during final post-pipeline cleanup.*
 
 ---
 
-## 🧵 2. Thread Pool & Hardware Activity
+## 🧵 2. Thread Pool & Hardware Saturation
 
-The VM is an `n2-standard-16` with 16 vCPUs (hyperthreaded to 32 logical cores). We are operating with a **24-worker** thread pool for quantification and a dedicated core-set for downstream R analysis.
+The VM is operating under a **24-worker** quantification pool. CPU saturation is sustainable, and SSD buffer space is optimal.
 
-### Active Process Snapshot
-| PID | Command | Resource | Activity |
-| :--- | :--- | :--- | :--- |
-| **403330** | `kallisto quant` | cpu: 63.4% | Quantifying `SRR25008587` (Apis) |
-| **403867** | `kallisto quant` | cpu: 65.5% | Quantifying `SRR20272017` (Apis) |
-| **397441** | `bg_curate_phase2.sh` | cpu: 0.1% | Idle (Phase 2 Loop Terminal) |
-| **403150** | `pigz -p 2` | cpu: 104% | Decompressing `SRR...` buffer |
+### Active Process Snapshot (Live Runtimes)
+| PID | Command | Resource | Elapse (MM:SS) | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **838620** | `kallisto quant` | cpu: 60% | 47:56 | 🔵 Active |
+| **841673** | `kallisto quant` | cpu: 65% | 26:48 | 🔵 Active |
+| **843691** | `kallisto quant` | cpu: 62% | 10:24 | 🔵 Active |
+| **844991** | `kallisto quant` | cpu: 68% | 00:29 | 🔵 Active |
 
-**Overall Saturation:** 🟢 **High Stability**
-Quantification velocity is holding steady at **~123 samples/hour**. Currently at `4,658 / 7,370`.
+**Performance Metrics:**
+- **Quantification Velocity**: ~128 samples/hour (Current: `apis_mellifera`)
+- **Disk IO Capacity**: 737GB available on master SSD.
+- **Background Curation**: Phase 2 loop is completed.
 
 ---
 
-## 🛠️ 3. Diagnostic Command Reference
+## 🛠️ 3. Diagnostic Command Toolkit
 
-These are the most reliable methods for gathering the telemetry presented in this report.
+Run these commands inside your terminal to fetch the latest live data from the GCP orchestrator.
 
-### Check Pipeline Matrix (SQLite Master)
+### Fetch Status Matrix
 ```bash
 docker exec metainformant-pipeline-fresh python3 scripts/rna/check_pipeline_status.py -v
 ```
 
-### Audit Active Compute (Thread View)
+### Audit Active Compute
 ```bash
-docker exec metainformant-pipeline-fresh ps aux | grep -v grep | grep -E "kallisto|amalgkit|python3|sra|fastq|R"
+docker exec metainformant-pipeline-fresh ps -eo pid,cmd,etime,stat | grep kallisto | grep -v grep
 ```
 
-### Monitor Downstream Progress (Phase 2 Curation)
+### Tail Phase 2 Logs
 ```bash
-docker exec metainformant-pipeline-fresh tail -f output/amalgkit/manual_downstream_phase2.log
+docker exec metainformant-pipeline-fresh tail -n 50 output/amalgkit/manual_downstream_phase2.log
 ```
 
 ---
 
-## 🔭 4. Performance Assessment (T+03:30 UTC | 20:30 Local)
+## 🔭 4. Performance Assessment (T+~36h UTC)
 
-- **Curation Threshold**: 15 species are now fully finalized (`✅ Complete`). The Phase 2 curation successfully cleared `Ooceraea biroi` and `Linepithema humile`.
-- **Apis Velocity**: Strong holding at **~123 samples/hour**. Currently at **4,658 / 7,370** finalized (63%).
-- **Metadata Blocks**: Small species (`Wasmannia`, `Anoplolepis`, `Dinoponera`, `Vollenhovia`) are currently blocked by missing metadata files in the automated loop, likely requiring manual layout checks due to their small sample sizes.
+- **Apis Achievement**: We are at **79%** of the final goal (**5,810 / 7,370**). Velocity remains ultra-stable at ~128/hr.
+- **Curation Milestone**: 15 species are fully verified and finalized. Batch 2 added `Ooceraea biroi` and `Linepithema humile` to the Success list.
+- **Targeting Completion**: At current velocity, the final 1,400 samples should clear in approximately ~11 hours.
