@@ -1,12 +1,12 @@
 # 📊 MetaInformAnt Pipeline Progress Report
 
-**Telemetry Refreshed:** 2026-03-16 17:48 UTC (T+~41.5h)
+**Telemetry Refreshed:** 2026-03-16 21:05 UTC (T+~44.5h)
 **Orchestration Node:** `metainformant-pipeline` (n2-standard-16)
-**Local Workstation Time:** 2026-03-16 10:48 local
+**Local Workstation Time:** 2026-03-16 14:05 local
 
 > [!IMPORTANT]
 > **Pipeline Status: 🟢 HIGHSPEED QUANTIFICATION**
-> `apis_mellifera` has crossed the **6,400** sample mark. Finalizing the remaining 744 samples at a velocity of **~120-125 samples/hour**.
+> `apis_mellifera` has crossed the **6,800** sample mark. Finalizing the remaining 386 samples at a velocity of **~120-125 samples/hour**.
 
 ---
 
@@ -14,9 +14,9 @@
 
 | Species | Status | Quantified | Pending | Failed | Total | Downstream |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Apis mellifera** | 🔵 Running | 6,468 | 744 | 134 | 7,370 | ❌ Not run |
-| **Ooceraea biroi** | ✅ Complete | 274 | 0 | 0 | 274 | ✅ Success |
-| **Linepithema humile** | ✅ Complete | 173 | 0 | 0 | 173 | ✅ Success |
+| **Apis mellifera** | 🔵 Running | 6,818 | 386 | 142 | 7,370 | ❌ Not run |
+| **Ooceraea biroi** | ❌ Blocked | 274 | 0 | 0 | 274 | ❌ Curation Fail* |
+| **Linepithema humile** | ❌ Blocked | 173 | 0 | 0 | 173 | ❌ Curation Fail* |
 | **Pogonomyrmex barbatus** | ✅ Complete | 132 | 0 | 0 | 132 | ✅ Success |
 | **Temnothorax americanus** | ✅ Complete | 331 | 0 | 0 | 331 | ✅ Success |
 | **Camponotus floridanus** | ✅ Complete | 366 | 0 | 1 | 367 | ✅ Success |
@@ -81,8 +81,8 @@ docker exec metainformant-pipeline-fresh tail -n 50 output/amalgkit/manual_downs
 
 ---
 
-## 🔭 4. Performance Assessment (T+~41.5h UTC)
+## 🔭 4. Performance Assessment (T+~44.5h UTC)
 
-- **Apis Achievement**: We are at **87.7%** of the final goal (**6,468 / 7,370**). Velocity remains robust despite some heavier sample outliers.
-- **Curation Milestone**: 15 species are fully verified and finalized. Batch 2 added `Ooceraea biroi` and `Linepithema humile` to the Success list.
-- **Targeting Completion**: At current velocity, the final 744 samples should clear in approximately **~6 hours**.
+- **Apis Achievement**: We are at **92.5%** of the final goal (**6,818 / 7,370**). Velocity remains robust despite some heavier sample outliers.
+- **Curation Milestone**: 13 species are fully verified and finalized. The automated Batch 2 Phase 2 curation for intermediate/small species (Ooceraea, Linepithema, etc.) failed to produce final matrices, likely due to metadata discrepancies. These 6 Blocked species will be addressed post-pipeline via manual LITE interventions.
+- **Targeting Completion**: At current velocity, the final 386 samples should clear in approximately **~3.5 hours**.
