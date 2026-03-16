@@ -1,8 +1,8 @@
 # 📊 MetaInformAnt Pipeline Progress Report
 
-**Telemetry Refreshed:** 2026-03-15 22:30 UTC
+**Telemetry Refreshed:** 2026-03-16 03:30 UTC
 **Orchestration Node:** `metainformant-pipeline` (n2-standard-16)
-**Local Workstation Time:** 2026-03-15 15:31 local
+**Local Workstation Time:** 2026-03-15 20:30 local
 
 ---
 
@@ -10,7 +10,9 @@
 
 | Species | Status | Quantified | Pending | Failed | Total | Downstream |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Apis mellifera** | 🔵 Running | 4,042 | 3,219 | 85 | 7,370 | ❌ Not run |
+| **Apis mellifera** | 🔵 Running | 4,658 | 2,588 | 100 | 7,370 | ❌ Not run |
+| **Ooceraea biroi** | ✅ Complete | 274 | 0 | 0 | 274 | ✅ Success |
+| **Linepithema humile** | ✅ Complete | 173 | 0 | 0 | 173 | ✅ Success |
 | **Camponotus floridanus** | ✅ Complete | 366 | 0 | 1 | 367 | ✅ Success |
 | **Solenopsis invicta** | ✅ Complete | 450 | 0 | 1 | 451 | ✅ Success |
 | **Temnothorax longispinosus** | ✅ Complete | 508 | 0 | 0 | 508 | ✅ Success |
@@ -26,12 +28,12 @@
 | **Formica exsecta** | ✅ Complete | 23 | 0 | 0 | 23 | ✅ Success |
 | **Pogonomyrmex barbatus** | ✅ Complete | 132 | 0 | 0 | 132 | ✅ Success |
 | **Temnothorax americanus** | ✅ Complete | 331 | 0 | 0 | 331 | ✅ Success |
-| **Ooceraea biroi** | 🟠 Curating | 274 | 0 | 0 | 274 | 🔄 Phase 2 |
-| **Linepithema humile** | ⚠️ Ready | 173 | 0 | 0 | 173 | ⚠️ Phase 2 Queue |
-| **Wasmannia auropunctata** | ⚠️ Ready | 33 | 0 | 0 | 33 | ⚠️ Phase 2 Queue |
-| **Anoplolepis gracilipes** | ⚠️ Ready | 7 | 0 | 0 | 7 | ⚠️ Phase 2 Queue |
-| **Dinoponera quadriceps** | ⚠️ Ready | 13 | 0 | 0 | 13 | ⚠️ Phase 2 Queue |
-| **Vollenhovia emeryi** | ⚠️ Ready | 15 | 0 | 0 | 15 | ⚠️ Phase 2 Queue |
+| **Wasmannia auropunctata** | ❌ Blocked | 33 | 0 | 0 | 33 | ❌ Curation Fail* |
+| **Anoplolepis gracilipes** | ❌ Blocked | 7 | 0 | 0 | 7 | ❌ Curation Fail* |
+| **Dinoponera quadriceps** | ❌ Blocked | 13 | 0 | 0 | 13 | ❌ Curation Fail* |
+| **Vollenhovia emeryi** | ❌ Blocked | 15 | 0 | 0 | 15 | ❌ Curation Fail* |
+
+*\*Downstream failures for small species are primarily due to "Metadata file not found" or "No samples meet filtering criteria" during the asynchronous curation loop. These will require manual reconciliation of LITE files.*
 
 ---
 
@@ -44,11 +46,11 @@ The VM is an `n2-standard-16` with 16 vCPUs (hyperthreaded to 32 logical cores).
 | :--- | :--- | :--- | :--- |
 | **403330** | `kallisto quant` | cpu: 63.4% | Quantifying `SRR25008587` (Apis) |
 | **403867** | `kallisto quant` | cpu: 65.5% | Quantifying `SRR20272017` (Apis) |
-| **403022** | `bg_curate_phase2.sh` | cpu: 1.5% | Orchestrating curation Phase 2 |
+| **397441** | `bg_curate_phase2.sh` | cpu: 0.1% | Idle (Phase 2 Loop Terminal) |
 | **403150** | `pigz -p 2` | cpu: 104% | Decompressing `SRR...` buffer |
 
-**Overall Saturation:** 🟢 **Peak Performance**
-Quantification velocity is currently **~120 samples/hour**. Currently at `4,042 / 7,370`.
+**Overall Saturation:** 🟢 **High Stability**
+Quantification velocity is holding steady at **~123 samples/hour**. Currently at `4,658 / 7,370`.
 
 ---
 
@@ -73,8 +75,8 @@ docker exec metainformant-pipeline-fresh tail -f output/amalgkit/manual_downstre
 
 ---
 
-## 🔭 4. Performance Assessment (T+22:00 UTC)
+## 🔭 4. Performance Assessment (T+03:30 UTC | 20:30 Local)
 
-- **Curation Surge**: 13 species are now fully finalized (`✅ Complete`). The R dependency fix has proven incredibly stable.
-- **Apis Acceleration**: `apis_mellifera` has crossed the 50% mark for its final batch, with **3,965 / 7,370** finalized.
-- **Phase 2 Pipeline**: `bg_curate_phase2.sh` is now processing the final 8 species (`Pogonomyrmex` through `Vollenhovia`).
+- **Curation Threshold**: 15 species are now fully finalized (`✅ Complete`). The Phase 2 curation successfully cleared `Ooceraea biroi` and `Linepithema humile`.
+- **Apis Velocity**: Strong holding at **~123 samples/hour**. Currently at **4,658 / 7,370** finalized (63%).
+- **Metadata Blocks**: Small species (`Wasmannia`, `Anoplolepis`, `Dinoponera`, `Vollenhovia`) are currently blocked by missing metadata files in the automated loop, likely requiring manual layout checks due to their small sample sizes.
