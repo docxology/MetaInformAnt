@@ -1,0 +1,6 @@
+sample_id	group	source	collection_date	notes
+S0001	control	lab_colony_A	2026-01-15	Replace with your real sample manifest
+S0002	treatment_A	field_site_B	2026-01-16	This file is the sample registry
+S0003	treatment_B	field_site_C	2026-01-17	Add one row per sample
+S0004	control	lab_colony_A	2026-01-18	column `source` = data origin
+S0005	treatment_A	field_site_B	2026-01-19	column `collection_date` = ISO 8601 date
