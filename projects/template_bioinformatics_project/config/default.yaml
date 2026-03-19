@@ -1,15 +1,47 @@
-import_path:
-  config: "config/default.yaml"
+# ============================================================
+# MetaInformAnt Template Project — Default Configuration
+# ============================================================
+# All paths are relative to the project root.
+# Override any value in a custom config: --config config/my_experiment.yaml
+
+metadata:
+  project_name: "template_bioinformatics_project"
+  version: "0.1.0"
+  description: "Template MetaInformAnt bioinformatics pipeline"
+  author: ""
+  date: ""
+  organism: ""                     # e.g. "Apis mellifera", "Homo sapiens"
+  genome_accession: ""             # e.g. "GCA_003254395.2"
+
+paths:
   data_raw: "data/raw/"
   data_processed: "data/processed/"
   results: "results/"
+  results_figures: "results/figures/"
+  results_tables: "results/tables/"
   logs: "logs/"
+  config: "config/default.yaml"
 
 processing:
   threads: 4
   filtering_threshold: 10.0
   normalize: true
+  min_sample_count: 5              # Minimum observations to keep a feature
+  missing_fraction_max: 0.2        # Drop features with >20% missing values
+
+analysis:
+  method: "summary"                # One of: summary, correlation, pca
+  n_components: 10                 # For PCA analysis
+  significance_threshold: 0.05     # Alpha for statistical tests
+  correction: "bonferroni"         # Multiple testing correction: bonferroni, fdr
+
+visualization:
+  dpi: 150
+  figure_width: 10
+  figure_height: 6
+  color_palette: "viridis"
+  file_format: "png"               # png, pdf, svg
 
 logging:
-  level: "INFO"
-  format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+  level: "INFO"                    # DEBUG, INFO, WARNING, ERROR
+  format: "%(asctime)s [%(levelname)s] %(name)s — %(message)s"

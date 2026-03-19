@@ -2,18 +2,36 @@
 __pycache__/
 *.py[cod]
 *$py.class
+*.pyo
+*.pyd
+
+# uv / packaging
+.uv-cache/
+.venv/
+venv/
+env/
+ENV/
+.python-version
+dist/
+build/
+*.egg-info/
+*.egg
 
 # Jupyter
-.ipynb_checkpoints
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
 
 # Environments
 .env
-.venv
-env/
-venv/
-ENV/
+.env.*
 
-# Data and Results (Ignored by default to prevent large commits)
+# Test / coverage outputs
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# Data and Results (tracked only via .gitkeep)
 data/raw/*
 !data/raw/.gitkeep
 data/processed/*
