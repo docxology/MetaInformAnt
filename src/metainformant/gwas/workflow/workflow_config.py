@@ -169,6 +169,18 @@ def _normalize_config(config: Dict[str, Any]) -> Dict[str, Any]:
         if isinstance(corr, dict) and corr:
             normalized["correction"] = corr
 
+    # Map samples.phenotypes.default_trait -> trait (for phenotype column selection)
+    if "trait" not in normalized and "trait_name" not in normalized:
+        samples = normalized.get("samples", {})
+        if isinstance(samples, dict):
+            pheno_section = samples.get("phenotypes", {})
+            if isinstance(pheno_section, dict) and pheno_section.get("default_trait"):
+                normalized["trait"] = pheno_section["default_trait"]
+        # Also check gwas.phenotype as an alternative source
+        gwas_section = normalized.get("gwas", {})
+        if isinstance(gwas_section, dict) and gwas_section.get("phenotype"):
+            normalized["trait"] = gwas_section["phenotype"]
+
     return normalized
 
 
@@ -311,8 +323,16 @@ def _extract_genotype_matrix(vcf_data: Dict[str, Any]) -> List[List[int]]:
 
     # Ensure all genotype rows have the same length (same number of samples)
     sample_count = len(vcf_data.get("samples", []))
+    variant_count = len(vcf_data.get("variants", []))
+
     if sample_count == 0:
         raise ValueError("No samples found in VCF data")
+
+    # Detect if matrix is sample-major (samples x variants) and transpose if needed
+    # parse_vcf_full transposes to sample-major, but GWAS functions expect variant-major
+    if len(genotypes) == sample_count and len(genotypes[0]) == variant_count and sample_count != variant_count:
+        logger.info("Detecting sample-major genotype matrix. Transposing to variant-major...")
+        genotypes = [[genotypes[s][v] for s in range(sample_count)] for v in range(variant_count)]
 
     for i, variant_genotypes in enumerate(genotypes):
         if len(variant_genotypes) != sample_count:

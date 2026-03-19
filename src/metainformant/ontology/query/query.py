@@ -37,9 +37,9 @@ def set_cache_enabled(enabled: bool) -> None:
     logger.info(f"Ontology query cache {'enabled' if enabled else 'disabled'}.")
 
 
-def _get_cache_key(func_name: str, *args, **kwargs) -> str:
-    """Generate a cache key for a function call."""
-    key_parts = [func_name]
+def _get_cache_key(onto: Ontology, func_name: str, *args, **kwargs) -> str:
+    """Generate a cache key for a function call, including ontology identity."""
+    key_parts = [str(id(onto)), func_name]
     key_parts.extend(str(arg) for arg in args)
     key_parts.extend(f"{k}={v}" for k, v in sorted(kwargs.items()))
     return "|".join(key_parts)
@@ -68,26 +68,11 @@ def ancestors(onto: Ontology, term_id: str, relation_type: str = "is_a") -> Set[
     if term_id not in onto.terms:
         raise errors.TermNotFoundError(f"Term '{term_id}' not found in ontology.")
 
-    cache_key = _get_cache_key("ancestors", term_id, relation_type)
+    cache_key = _get_cache_key(onto, "ancestors", term_id, relation_type)
     if _cache_enabled and cache_key in _query_cache:
         return set(_query_cache[cache_key])
 
-    ancestors_set = {term_id}  # Include self
-    to_process = [term_id]
-    visited = set()
-
-    while to_process:
-        current_term = to_process.pop()
-        if current_term in visited:
-            continue
-        visited.add(current_term)
-
-        # Find parents via specified relationship type
-        for rel in onto.relationships:
-            if rel.target == current_term and rel.relation_type == relation_type:
-                if rel.source not in ancestors_set:
-                    ancestors_set.add(rel.source)
-                    to_process.append(rel.source)
+    ancestors_set = set(onto.get_ancestors(term_id, relation_type))
 
     if _cache_enabled:
         _query_cache[cache_key] = list(ancestors_set)
@@ -118,26 +103,11 @@ def descendants(onto: Ontology, term_id: str, relation_type: str = "is_a") -> Se
     if term_id not in onto.terms:
         raise errors.TermNotFoundError(f"Term '{term_id}' not found in ontology.")
 
-    cache_key = _get_cache_key("descendants", term_id, relation_type)
+    cache_key = _get_cache_key(onto, "descendants", term_id, relation_type)
     if _cache_enabled and cache_key in _query_cache:
         return set(_query_cache[cache_key])
 
-    descendants_set = {term_id}  # Include self
-    to_process = [term_id]
-    visited = set()
-
-    while to_process:
-        current_term = to_process.pop()
-        if current_term in visited:
-            continue
-        visited.add(current_term)
-
-        # Find children via specified relationship type
-        for rel in onto.relationships:
-            if rel.source == current_term and rel.relation_type == relation_type:
-                if rel.target not in descendants_set:
-                    descendants_set.add(rel.target)
-                    to_process.append(rel.target)
+    descendants_set = set(onto.get_descendants(term_id, relation_type))
 
     if _cache_enabled:
         _query_cache[cache_key] = list(descendants_set)
@@ -233,20 +203,18 @@ def path_to_root(onto: Ontology, term_id: str, relation_type: str = "is_a") -> L
         visited.add(current_term)
 
         # Check if current term has parents
-        has_parents = any(
-            rel.target == current_term and rel.relation_type == relation_type for rel in onto.relationships
-        )
+        has_parents = len(onto.get_parents(current_term, relation_type)) > 0
 
         if not has_parents:
             # Found a root
             return path
 
         # Add parents to queue
-        for rel in onto.relationships:
-            if rel.target == current_term and rel.relation_type == relation_type:
-                if rel.source not in visited:
-                    new_path = path + [rel.source]
-                    queue.append((rel.source, new_path))
+        parents = onto.get_parents(current_term, relation_type)
+        for parent in parents:
+            if parent not in visited:
+                new_path = path + [parent]
+                queue.append((parent, new_path))
 
     return []  # No path found
 
@@ -317,9 +285,13 @@ def get_subontology(onto: Ontology, root_terms: Iterable[str], relation_type: st
     """
     validation.validate_type(onto, Ontology, "onto")
     validation.validate_type(root_terms, Iterable, "root_terms")
+    
+    roots_list = list(root_terms)
+    validation.validate_not_empty(roots_list, "root_terms")
 
     all_terms = set()
     for root in root_terms:
+        all_terms.add(root)
         all_terms.update(descendants(onto, root, relation_type))
 
     # Extract terms and relationships
@@ -403,10 +375,7 @@ def get_roots(onto: Ontology, relation_type: str = "is_a") -> Set[str]:
     """
     validation.validate_type(onto, Ontology, "onto")
 
-    # Find all terms that are targets of relationships
-    targets = {rel.target for rel in onto.relationships if rel.relation_type == relation_type}
-    roots = {term.id for term in onto.terms.values() if term.id not in targets}
-    return roots
+    return onto.get_roots(relation_type)
 
 
 def get_leaves(onto: Ontology, relation_type: str = "is_a") -> Set[str]:
@@ -424,10 +393,7 @@ def get_leaves(onto: Ontology, relation_type: str = "is_a") -> Set[str]:
     """
     validation.validate_type(onto, Ontology, "onto")
 
-    # Find all terms that are sources of relationships
-    sources = {rel.source for rel in onto.relationships if rel.relation_type == relation_type}
-    leaves = {term.id for term in onto.terms.values() if term.id not in sources}
-    return leaves
+    return onto.get_leaves(relation_type)
 
 
 def get_subontology_stats(onto: Ontology) -> Dict[str, Any]:
@@ -658,9 +624,7 @@ def path_to_root(onto: Ontology, term_id: str, relation_type: str = "is_a") -> L
     visited = set()
     while current not in visited:
         visited.add(current)
-        parents = [
-            rel.source for rel in onto.relationships if rel.target == current and rel.relation_type == relation_type
-        ]
+        parents = list(onto.get_parents(current, relation_type))
 
         if not parents:
             break  # Reached a root

@@ -32,6 +32,8 @@ dependencies = [
     "scikit-learn>=1.3.0",  # ML - required for multiomics integration
     "psutil>=7.2.1",
     "rich>=14.2.0",
+    "statsmodels>=0.14.0",
+    "seaborn>=0.13.0",
 ]
 
 [project.optional-dependencies]
@@ -347,6 +349,11 @@ python-preference = "managed"
 # automatically override this to use /tmp/uv-cache via UV_CACHE_DIR environment variable.
 # The filesystem detection utilities in metainformant.core.filesystem handle this automatically.
 cache-dir = ".uv-cache"
+
+[tool.uv.workspace]
+members = [
+    "projects/apis_gwas",
+]
 
 [dependency-groups]
 dev = [

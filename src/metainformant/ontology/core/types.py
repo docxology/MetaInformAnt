@@ -127,6 +127,12 @@ class Ontology:
             if parent_id not in self.children_of:
                 self.children_of[parent_id] = set()
             self.children_of[parent_id].add(term.term_id)
+            
+            # Explicitly create Relationship object
+            rel = Relationship(source=term.term_id, target=parent_id, relation_type="is_a")
+            # Only add if it's not already there
+            if not any(r.source == rel.source and r.target == rel.target and r.relation_type == rel.relation_type for r in self.relationships):
+                self.relationships.append(rel)
 
         logger.debug(f"Added term {term.term_id} to ontology")
 
@@ -291,6 +297,10 @@ def create_term(
     namespace: Optional[str] = None,
     synonyms: Optional[List[str]] = None,
     xrefs: Optional[List[str]] = None,
+    alt_ids: Optional[List[str]] = None,
+    is_a_parents: Optional[List[str]] = None,
+    relationships: Optional[Dict[str, List[str]]] = None,
+    subsets: Optional[List[str]] = None,
     is_obsolete: bool = False,
     **metadata: Any,
 ) -> Term:
@@ -326,6 +336,10 @@ def create_term(
         namespace=namespace,
         synonyms=synonyms or [],
         xrefs=xrefs or [],
+        alt_ids=alt_ids or [],
+        is_a_parents=is_a_parents or [],
+        relationships=relationships or {},
+        subsets=subsets or [],
         is_obsolete=is_obsolete,
         metadata=metadata,
     )
@@ -376,4 +390,11 @@ def create_ontology(
         >>> len(ontology)
         1
     """
-    return Ontology(terms=terms or {}, relationships=relationships or [], metadata=metadata)
+    onto = Ontology(metadata=metadata)
+    if terms:
+        for t in terms.values():
+            onto.add_term(t)
+    if relationships:
+        for r in relationships:
+            onto.add_relationship(r)
+    return onto

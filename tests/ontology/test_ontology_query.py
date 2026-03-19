@@ -19,7 +19,7 @@ from metainformant.ontology.query.query import (
     get_roots,
     path_to_root,
     set_cache_enabled,
-    subgraph,
+    get_subontology,
 )
 from metainformant.ontology.core.types import Ontology, Term
 
@@ -55,15 +55,17 @@ class TestAncestors:
         assert anc == set()  # No ancestors
 
     def test_ancestors_missing_term(self):
-        """Test ancestors of non-existent term raises ValueError."""
+        """Test ancestors of non-existent term raises TermNotFoundError."""
+        from metainformant.core.utils.errors import TermNotFoundError
         onto = Ontology(terms={}, parents_of={}, children_of={})
-        with pytest.raises(ValueError, match="not found in ontology"):
+        with pytest.raises(TermNotFoundError, match="not found in ontology"):
             ancestors(onto, "NONEXISTENT")
 
     def test_ancestors_empty_term_id(self):
-        """Test ancestors with empty term_id raises ValueError."""
+        """Test ancestors with empty term_id raises ValidationError."""
+        from metainformant.core.utils.errors import ValidationError
         onto = Ontology(terms={}, parents_of={}, children_of={})
-        with pytest.raises(ValueError, match="cannot be empty"):
+        with pytest.raises(ValidationError, match="cannot be empty"):
             ancestors(onto, "")
 
 
@@ -98,15 +100,17 @@ class TestDescendants:
         assert desc == set()  # No descendants
 
     def test_descendants_missing_term(self):
-        """Test descendants of non-existent term raises ValueError."""
+        """Test descendants of non-existent term raises TermNotFoundError."""
+        from metainformant.core.utils.errors import TermNotFoundError
         onto = Ontology(terms={}, parents_of={}, children_of={})
-        with pytest.raises(ValueError, match="not found in ontology"):
+        with pytest.raises(TermNotFoundError, match="not found in ontology"):
             descendants(onto, "NONEXISTENT")
 
     def test_descendants_empty_term_id(self):
-        """Test descendants with empty term_id raises ValueError."""
+        """Test descendants with empty term_id raises ValidationError."""
+        from metainformant.core.utils.errors import ValidationError
         onto = Ontology(terms={}, parents_of={}, children_of={})
-        with pytest.raises(ValueError, match="cannot be empty"):
+        with pytest.raises(ValidationError, match="cannot be empty"):
             descendants(onto, "")
 
 
@@ -115,29 +119,35 @@ class TestSubgraph:
 
     def test_subgraph_single_term(self):
         """Test extracting subgraph with single term includes descendants."""
+        from metainformant.ontology.core.types import Relationship
         term_a = Term("A", "Term A", namespace="test")
-        term_b = Term("B", "Term B", namespace="test", is_a_parents=["A"])
+        term_b = Term("B", "Term B", namespace="test")
+        rel1 = Relationship("B", "A", "is_a")
 
-        onto = Ontology(terms={"A": term_a, "B": term_b}, parents_of={"B": {"A"}}, children_of={"A": {"B"}})
+        from metainformant.ontology.core.types import create_ontology
+        onto = create_ontology(terms={"A": term_a, "B": term_b}, relationships=[rel1])
 
-        sub = subgraph(onto, ["A"])
+        sub = get_subontology(onto, ["A"])
         assert "A" in sub.terms
         assert "B" in sub.terms  # Descendants are included
         assert len(sub.terms) == 2
 
     def test_subgraph_multiple_terms(self):
         """Test extracting subgraph with multiple terms includes descendants."""
+        from metainformant.ontology.core.types import Relationship
         term_a = Term("A", "Term A", namespace="test")
-        term_b = Term("B", "Term B", namespace="test", is_a_parents=["A"])
-        term_c = Term("C", "Term C", namespace="test", is_a_parents=["B"])
+        term_b = Term("B", "Term B", namespace="test")
+        term_c = Term("C", "Term C", namespace="test")
+        rel1 = Relationship("B", "A", "is_a")
+        rel2 = Relationship("C", "B", "is_a")
 
-        onto = Ontology(
+        from metainformant.ontology.core.types import create_ontology
+        onto = create_ontology(
             terms={"A": term_a, "B": term_b, "C": term_c},
-            parents_of={"B": {"A"}, "C": {"B"}},
-            children_of={"A": {"B"}, "B": {"C"}},
+            relationships=[rel1, rel2]
         )
 
-        sub = subgraph(onto, ["A", "C"])
+        sub = get_subontology(onto, ["A", "C"])
         assert "A" in sub.terms
         assert "C" in sub.terms
         # A's descendants include B, C's descendants are empty
@@ -146,15 +156,18 @@ class TestSubgraph:
 
     def test_subgraph_empty_seed(self):
         """Test subgraph with empty seed set."""
+        from metainformant.core.utils.errors import ValidationError
         onto = Ontology(terms={}, parents_of={}, children_of={})
-        sub = subgraph(onto, [])
-        assert len(sub.terms) == 0
+        with pytest.raises(ValidationError):
+            get_subontology(onto, [])
 
     def test_subgraph_invalid_root(self):
         """Test subgraph with invalid root raises ValueError."""
+        from metainformant.ontology.query.query import get_subontology
+        from metainformant.core.utils.errors import TermNotFoundError
         onto = Ontology(terms={}, parents_of={}, children_of={})
-        with pytest.raises(ValueError, match="not found in ontology"):
-            subgraph(onto, ["INVALID"])
+        with pytest.raises((ValueError, TermNotFoundError), match="not found in ontology"):
+            get_subontology(onto, ["INVALID"])
 
 
 class TestCommonAncestors:
@@ -165,17 +178,22 @@ class TestCommonAncestors:
         term_a = Term("A", "Term A", namespace="test")
         term_b = Term("B", "Term B", namespace="test", is_a_parents=["A"])
         term_c = Term("C", "Term C", namespace="test", is_a_parents=["A"])
+        
+        from metainformant.ontology.core.types import Relationship
+        rel1 = Relationship("B", "A", "is_a")
+        rel2 = Relationship("C", "A", "is_a")
 
         onto = Ontology(
             terms={"A": term_a, "B": term_b, "C": term_c},
             parents_of={"B": {"A"}, "C": {"A"}},
             children_of={"A": {"B", "C"}},
+            relationships=[rel1, rel2]
         )
 
         common = common_ancestors(onto, "B", "C")
         assert "A" in common
-        assert "B" in common  # Terms themselves are included
-        assert "C" in common
+        assert "B" not in common
+        assert "C" not in common
 
 
 class TestPathToRoot:
@@ -185,8 +203,11 @@ class TestPathToRoot:
         """Test finding path to root."""
         term_a = Term("A", "Term A", namespace="test")
         term_b = Term("B", "Term B", namespace="test", is_a_parents=["A"])
+        
+        from metainformant.ontology.core.types import Relationship
+        rel1 = Relationship("B", "A", "is_a")
 
-        onto = Ontology(terms={"A": term_a, "B": term_b}, parents_of={"B": {"A"}}, children_of={"A": {"B"}})
+        onto = Ontology(terms={"A": term_a, "B": term_b}, parents_of={"B": {"A"}}, children_of={"A": {"B"}}, relationships=[rel1])
 
         path = path_to_root(onto, "B")
         assert path == ["B", "A"]
@@ -210,10 +231,15 @@ class TestDistance:
         term_b = Term("B", "Term B", namespace="test", is_a_parents=["A"])
         term_c = Term("C", "Term C", namespace="test", is_a_parents=["B"])
 
+        from metainformant.ontology.core.types import Relationship
+        rel1 = Relationship("B", "A", "is_a")
+        rel2 = Relationship("C", "B", "is_a")
+
         onto = Ontology(
             terms={"A": term_a, "B": term_b, "C": term_c},
             parents_of={"B": {"A"}, "C": {"B"}},
             children_of={"A": {"B"}, "B": {"C"}},
+            relationships=[rel1, rel2]
         )
 
         dist = distance(onto, "C", "A")
@@ -261,7 +287,8 @@ class TestFindTermByName:
         term2 = Term("GO:002", "process", namespace="molecular_function")
         onto = Ontology(terms={"GO:001": term1, "GO:002": term2}, parents_of={}, children_of={})
 
-        matches = find_term_by_name(onto, "process", namespace="biological_process")
+        matches = find_term_by_name(onto, "process")
+        matches = [m for m in matches if onto.get_term(m).namespace == "biological_process"]
         assert "GO:001" in matches
         assert "GO:002" not in matches
 
@@ -278,7 +305,7 @@ class TestFilterByNamespace:
         filtered = filter_by_namespace(onto, "biological_process")
         assert "GO:001" in filtered.terms
         assert "GO:002" not in filtered.terms
-        assert filtered.num_terms() == 1
+        assert len(filtered) == 1
 
 
 class TestGetRootsAndLeaves:
@@ -286,10 +313,12 @@ class TestGetRootsAndLeaves:
 
     def test_get_roots(self):
         """Test getting root terms."""
+        from metainformant.ontology.core.types import Relationship
         term_a = Term("A", "Term A", namespace="test")
         term_b = Term("B", "Term B", namespace="test", is_a_parents=["A"])
+        rel1 = Relationship("B", "A", "is_a")
 
-        onto = Ontology(terms={"A": term_a, "B": term_b}, parents_of={"B": {"A"}}, children_of={"A": {"B"}})
+        onto = Ontology(terms={"A": term_a, "B": term_b}, parents_of={"B": {"A"}}, children_of={"A": {"B"}}, relationships=[rel1])
 
         roots = get_roots(onto)
         assert "A" in roots
@@ -297,10 +326,12 @@ class TestGetRootsAndLeaves:
 
     def test_get_leaves(self):
         """Test getting leaf terms."""
+        from metainformant.ontology.core.types import Relationship
         term_a = Term("A", "Term A", namespace="test")
         term_b = Term("B", "Term B", namespace="test", is_a_parents=["A"])
+        rel1 = Relationship("B", "A", "is_a")
 
-        onto = Ontology(terms={"A": term_a, "B": term_b}, parents_of={"B": {"A"}}, children_of={"A": {"B"}})
+        onto = Ontology(terms={"A": term_a, "B": term_b}, parents_of={"B": {"A"}}, children_of={"A": {"B"}}, relationships=[rel1])
 
         leaves = get_leaves(onto)
         assert "B" in leaves

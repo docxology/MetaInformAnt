@@ -1,8 +1,6 @@
-"""Ontology visualization functions.
-
-Re-exports all public symbols from visualization module for backward compatibility."""
+"""Ontology enrichment and network visualizations."""
 from __future__ import annotations
 
-from . import visualization
+from .plots import enrichment_dotplot, pathway_network_plot, enrichment_score_plot
 
-__all__ = ['visualization']
+__all__ = ["enrichment_dotplot", "pathway_network_plot", "enrichment_score_plot"]

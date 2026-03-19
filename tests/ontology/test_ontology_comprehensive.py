@@ -11,7 +11,7 @@ import pytest
 
 from metainformant.ontology.core.go import load_go_obo, write_go_summary
 from metainformant.ontology.core.obo import parse_obo
-from metainformant.ontology.query.query import ancestors, descendants, subgraph
+from metainformant.ontology.query.query import ancestors, descendants, get_subontology
 from metainformant.ontology.core.types import Ontology, Term
 
 
@@ -35,12 +35,12 @@ class TestOntologyTypes:
     def test_ontology_creation(self):
         """Test creating ontology."""
         onto = Ontology()
-        assert onto.num_terms() == 0
+        assert len(onto) == 0
 
-        term = Term(term_id="GO:001", name="test_term", is_a_parents=[])
-        onto.add_term(term)
-
-        assert onto.num_terms() == 1
+        # Create with terms
+        term = Term(id="GO:001", name="test")
+        onto = Ontology(terms={"GO:001": term})
+        assert len(onto) == 1
         assert onto.has_term("GO:001")
 
     def test_ontology_hierarchy(self):
@@ -117,7 +117,7 @@ class TestOntologyQueries:
         onto.add_term(unrelated)
 
         # Extract subgraph rooted at GO:001
-        sub_onto = subgraph(onto, ["GO:001"])
+        sub_onto = get_subontology(onto, ["GO:001"])
 
         assert sub_onto.has_term("GO:001")
         assert sub_onto.has_term("GO:002")
@@ -149,7 +149,7 @@ is_a: GO:0008150 ! biological_process
 
         onto = parse_obo(obo_file)
 
-        assert onto.num_terms() == 2
+        assert len(onto) == 2
         assert onto.has_term("GO:0008150")
         assert onto.has_term("GO:0009987")
 
@@ -192,7 +192,7 @@ is_a: GO:0003674
 
         onto = load_go_obo(obo_file)
 
-        assert onto.num_terms() == 1
+        assert len(onto) == 1
         assert onto.has_term("GO:0008150")
 
     def test_write_go_summary(self, tmp_path: Path):
@@ -207,7 +207,7 @@ is_a: GO:0003674
         import json
 
         summary = json.loads(summary_path.read_text())
-        assert summary["num_terms"] == 1
+        assert summary["term_count"] == 1
 
 
 class TestEdgeCases:
@@ -215,22 +215,25 @@ class TestEdgeCases:
 
     def test_ancestors_missing_term(self):
         """Test ancestors for non-existent term raises ValueError."""
+        from metainformant.core.utils.errors import TermNotFoundError
         onto = Ontology()
-        with pytest.raises(ValueError, match="not found in ontology"):
+        with pytest.raises(TermNotFoundError, match="not found in ontology"):
             ancestors(onto, "GO:9999999")
 
     def test_descendants_missing_term(self):
         """Test descendants for non-existent term raises ValueError."""
+        from metainformant.core.utils.errors import TermNotFoundError
         onto = Ontology()
-        with pytest.raises(ValueError, match="not found in ontology"):
+        with pytest.raises(TermNotFoundError, match="not found in ontology"):
             descendants(onto, "GO:9999999")
 
     def test_empty_ontology(self):
         """Test operations on empty ontology."""
         onto = Ontology()
 
-        assert onto.num_terms() == 0
+        from metainformant.core.utils.errors import TermNotFoundError
+        assert len(onto) == 0
         assert not onto.has_term("GO:0008150")
 
-        with pytest.raises(ValueError, match="not found in ontology"):
+        with pytest.raises(TermNotFoundError, match="not found in ontology"):
             ancestors(onto, "GO:0008150")

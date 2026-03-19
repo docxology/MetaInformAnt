@@ -12,7 +12,7 @@ from typing import Any, Dict, Optional
 
 from metainformant.core.data import validation
 from metainformant.core.utils import logging
-from metainformant.core import io
+from metainformant.core.io import dump_json, load_json
 
 from metainformant.ontology.core.types import Ontology, Relationship, Term
 
@@ -223,6 +223,10 @@ def _save_obo_format(onto: Ontology, path: Path) -> None:
         if term.definition:
             lines.append(f'def: "{term.definition}"')
 
+        if term.alt_ids:
+            for alt_id in term.alt_ids:
+                lines.append(f"alt_id: {alt_id}")
+
         if term.synonyms:
             for synonym in term.synonyms:
                 lines.append(f'synonym: "{synonym}" EXACT []')
@@ -234,16 +238,16 @@ def _save_obo_format(onto: Ontology, path: Path) -> None:
         if term.is_obsolete:
             lines.append("is_obsolete: true")
 
-        # Add relationships from term metadata
-        if "relationships" in term.metadata:
-            for rel_type, target in term.metadata["relationships"]:
-                lines.append(f"{rel_type}: {target}")
+        # Add relationships for this term
+        for rel in onto.relationships:
+            if rel.source == term.id:
+                lines.append(f"{rel.relation_type}: {rel.target}")
 
         lines.append("")  # Empty line after term
 
     # Write content to file
     content = "\n".join(lines)
-    io.write_text(content, path)
+    Path(path).write_text(content, encoding="utf-8")
 
 
 def _save_json_format(onto: Ontology, path: Path) -> None:
@@ -260,6 +264,10 @@ def _save_json_format(onto: Ontology, path: Path) -> None:
             "namespace": term.namespace,
             "synonyms": term.synonyms,
             "xrefs": term.xrefs,
+            "alt_ids": term.alt_ids,
+            "is_a_parents": term.is_a_parents,
+            "relationships": term.relationships,
+            "subsets": term.subsets,
             "is_obsolete": term.is_obsolete,
             "metadata": term.metadata,
         }
@@ -276,13 +284,13 @@ def _save_json_format(onto: Ontology, path: Path) -> None:
         onto_dict["relationships"].append(rel_dict)
 
     # Save as JSON
-    io.dump_json(onto_dict, path, indent=2)
+    dump_json(onto_dict, path, indent=2)
 
 
 def _load_json_format(path: Path) -> Ontology:
     """Load ontology from JSON format."""
     # Load JSON data
-    data = io.load_json(path)
+    data = load_json(path)
 
     # Extract metadata
     metadata = data.get("metadata", {})
@@ -299,6 +307,10 @@ def _load_json_format(path: Path) -> Ontology:
             namespace=term_dict.get("namespace"),
             synonyms=term_dict.get("synonyms", []),
             xrefs=term_dict.get("xrefs", []),
+            alt_ids=term_dict.get("alt_ids", []),
+            is_a_parents=term_dict.get("is_a_parents", []),
+            relationships=term_dict.get("relationships", {}),
+            subsets=term_dict.get("subsets", []),
             is_obsolete=term_dict.get("is_obsolete", False),
             **term_dict.get("metadata", {}),
         )
@@ -359,7 +371,7 @@ def export_ontology_stats(onto: Ontology, path: str | Path) -> None:
     stats["relationship_type_distribution"] = rel_type_counts
 
     # Save statistics
-    io.dump_json(stats, Path(path), indent=2)
+    dump_json(stats, Path(path), indent=2)
     logger.info(f"Ontology statistics exported to {path}")
 
 

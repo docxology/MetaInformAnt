@@ -377,7 +377,7 @@ def index_vcf(vcf_path: str | Path) -> subprocess.CompletedProcess:
         result.check_returncode()
 
         logger.info(f"VCF indexing completed: {vcf_path}.tbi")
-        return result
+        return vcf_path # Return the path to the indexed/compressed file
 
     except subprocess.CalledProcessError as e:
         logger.error(f"VCF indexing failed: {e}")
@@ -531,12 +531,14 @@ def merge_vcf_files(
         if not Path(vcf_file).exists():
             raise FileNotFoundError(f"VCF file not found: {vcf_file}")
 
-    # Check bcftools availability
-    if not check_bcftools_available():
-        raise FileNotFoundError("bcftools not available for VCF merging")
+    # Ensure all files are indexed/compressed before merging
+    indexed_files = []
+    for f in vcf_files:
+        indexed_path = index_vcf(f) # This handles compression and indexing
+        indexed_files.append(str(indexed_path))
 
     # Build bcftools merge command
-    cmd = ["bcftools", "merge", "--threads", str(threads), "-o", str(output_vcf)] + [str(f) for f in vcf_files]
+    cmd = ["bcftools", "merge", "--threads", str(threads), "-o", str(output_vcf)] + indexed_files
 
     logger.info(f"Merging {len(vcf_files)} VCF files with bcftools")
 

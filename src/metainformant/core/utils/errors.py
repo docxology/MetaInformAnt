@@ -113,6 +113,12 @@ class DownloadError(NetworkError):
     pass
 
 
+class TermNotFoundError(METAINFORMANTError):
+    """Term not found in ontology errors."""
+
+    pass
+
+
 class PipelineError(METAINFORMANTError):
     """Workflow pipeline execution errors.
 

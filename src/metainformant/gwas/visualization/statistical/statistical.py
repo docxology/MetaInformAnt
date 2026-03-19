@@ -20,6 +20,9 @@ def lambda_gc_plot(
     results: List[Any],
     output_file: Optional[str | Path] = None,
     title: str = "Genomic Control Lambda Distribution",
+    axes: Optional[Any] = None,
+    style: Optional[Any] = None,
+    **kwargs: Any,
 ) -> dict[str, Any]:
     """Create a plot showing the distribution of genomic control lambda values.
 
@@ -27,6 +30,9 @@ def lambda_gc_plot(
         results: List of GWAS result dicts (with 'p_value' and 'CHROM' keys) or list of float lambda values
         output_file: Optional output file path
         title: Plot title
+        axes: Optional tuple of (ax1, ax2) to draw into.
+        style: Optional PlotStyle.
+        **kwargs: Additional kwargs.
 
     Returns:
         Dictionary with plot status and metadata
@@ -88,7 +94,15 @@ def lambda_gc_plot(
             lambda_by_chrom = {}
             overall_lambda = float(np.mean(lambda_values))
 
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
+        if style is None:
+            from metainformant.gwas.visualization.config import get_style
+            style = get_style()
+
+        fig = None
+        if axes is None:
+            fig, (ax1, ax2) = plt.subplots(1, 2, figsize=kwargs.get("figsize", (12, 5)))
+        else:
+            ax1, ax2 = axes
 
         # Plot 1: Histogram of lambda values
         ax1.hist(lambda_values, bins=max(1, min(20, len(lambda_values))), alpha=0.7, color="skyblue", edgecolor="black")
@@ -111,7 +125,7 @@ def lambda_gc_plot(
         expected_lambdas = np.sort(expected_lambdas)
         observed_lambdas = np.sort(lambda_values)
 
-        ax2.scatter(expected_lambdas, observed_lambdas, alpha=0.7, color="orange")
+        ax2.scatter(expected_lambdas, observed_lambdas, alpha=style.alpha, color=style.suggestive_color)
         ax2.plot(
             [min(expected_lambdas), max(expected_lambdas)],
             [min(expected_lambdas), max(expected_lambdas)],
@@ -149,8 +163,8 @@ Inflated: {np.mean(lambda_values) > 1.1}"""
 
         plt.tight_layout()
 
-        if output_file:
-            plt.savefig(output_file, dpi=300, bbox_inches="tight")
+        if output_file and fig is not None:
+            plt.savefig(output_file, dpi=style.dpi, bbox_inches="tight")
             logger.info(f"Saved lambda GC plot to {output_file}")
 
         result: dict[str, Any] = {
@@ -173,6 +187,9 @@ def power_plot(
     output_file: Optional[str | Path] = None,
     output_path: Optional[str | Path] = None,
     title: str = "Statistical Power Analysis",
+    ax: Optional[Any] = None,
+    style: Optional[Any] = None,
+    **kwargs: Any,
 ) -> dict[str, Any]:
     """Create a power analysis plot showing statistical power vs sample size and effect size.
 
@@ -183,6 +200,9 @@ def power_plot(
         output_file: Optional output file path
         output_path: Alias for output_file
         title: Plot title
+        ax: Optional matplotlib Axes
+        style: Optional PlotStyle
+        **kwargs: Extra kwargs
 
     Returns:
         Dictionary with plot status and metadata
@@ -226,8 +246,14 @@ def power_plot(
             except (ValueError, ZeroDivisionError):
                 power_grid[i, j] = np.nan
 
+    if style is None:
+        from metainformant.gwas.visualization.config import get_style
+        style = get_style()
+
     # Create plot
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 8)))
 
     # Plot power surface
     cs = ax.contourf(n_grid, effect_grid, power_grid, levels=np.linspace(0, 1, 11), cmap="RdYlBu_r", alpha=0.8)
@@ -262,8 +288,8 @@ def power_plot(
 
     plt.tight_layout()
 
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches="tight")
+    if output_file and fig is not None:
+        plt.savefig(output_file, dpi=style.dpi, bbox_inches="tight")
         logger.info(f"Saved power analysis plot to {output_file}")
 
     return {
@@ -370,7 +396,9 @@ def qq_plot_stratified(
     output_path: Optional[str | Path] = None,
     strata: Optional[list[str]] = None,
     maf_bins: Optional[list[tuple[float, float]]] = None,
-    figsize: tuple[int, int] = (15, 10),
+    axes: Optional[Any] = None,
+    style: Optional[Any] = None,
+    **kwargs: Any,
 ) -> dict[str, Any]:
     """Create stratified Q-Q plots for p-values by different groups.
 
@@ -436,16 +464,24 @@ def qq_plot_stratified(
         n_cols = min(3, n_strata)
         n_rows = (n_strata + n_cols - 1) // n_cols
 
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=figsize, squeeze=False)
-        axes = axes.flatten()
+        if style is None:
+            from metainformant.gwas.visualization.config import get_style
+            style = get_style()
+
+        fig = None
+        if axes is None:
+            fig, ax_array = plt.subplots(n_rows, n_cols, figsize=kwargs.get("figsize", (15, 10)), squeeze=False)
+            flat_axes = ax_array.flatten()
+        else:
+            flat_axes = np.array(axes).flatten()
 
         strata_results: dict[str, Any] = {}
 
         for i, (stratum, stratum_p_values) in enumerate(stratum_data.items()):
-            if i >= len(axes):
+            if i >= len(flat_axes):
                 break
 
-            ax = axes[i]
+            ax = flat_axes[i]
 
             # Remove NA values
             stratum_p_values = [p for p in stratum_p_values if p is not None and not math.isnan(p)]
@@ -470,8 +506,9 @@ def qq_plot_stratified(
             lambda_gc = median_observed / median_expected if median_expected != 0 else 1.0
 
             # Plot
-            ax.scatter(expected, observed, alpha=0.6, s=20, color=f"C{i}")
-            ax.plot([0, max(expected + observed)], [0, max(expected + observed)], "k--", alpha=0.7)
+            scatter_kwargs = kwargs.get("scatter_kwargs", {"s": max(2, style.point_size - 4), "alpha": style.alpha, "color": style.categorical_colors[i % len(style.categorical_colors)]})
+            ax.scatter(expected, observed, **scatter_kwargs)
+            ax.plot([0, max(expected + observed)], [0, max(expected + observed)], linestyle="--", color=style.significance_color, alpha=0.7)
 
             ax.set_xlabel("Expected -log₁₀(p)")
             ax.set_ylabel("Observed -log₁₀(p)")
@@ -486,13 +523,13 @@ def qq_plot_stratified(
             }
 
         # Hide unused subplots
-        for i in range(len(stratum_data), len(axes)):
-            axes[i].set_visible(False)
+        for i in range(len(stratum_data), len(flat_axes)):
+            flat_axes[i].set_visible(False)
 
         plt.tight_layout()
 
-        if output_path:
-            plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        if output_path and fig is not None:
+            plt.savefig(output_path, dpi=style.dpi, bbox_inches="tight")
 
         return {
             "status": "success",
@@ -510,7 +547,9 @@ def volcano_plot(
     output_path: Optional[str | Path] = None,
     significance_threshold: float = 5e-8,
     effect_size_threshold: float = 0.5,
-    figsize: tuple[int, int] = (10, 8),
+    ax: Optional[Any] = None,
+    style: Optional[Any] = None,
+    **kwargs: Any,
 ) -> dict[str, Any]:
     """Create a volcano plot for GWAS results.
 
@@ -552,28 +591,35 @@ def volcano_plot(
         # Convert p-values to -log10
         neg_log_p = [-math.log10(max(p, 1e-300)) for p in p_values]
 
-        # Create plot
-        fig, ax = plt.subplots(figsize=figsize)
+        if style is None:
+            from metainformant.gwas.visualization.config import get_style
+            style = get_style()
+
+        fig = None
+        if ax is None:
+            fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 8)))
 
         # Color points based on significance and effect size
         colors = []
+        volcano_colors = style.volcano_colors
         for effect, p_val in zip(effect_sizes, p_values):
             if p_val < significance_threshold and abs(effect) > effect_size_threshold:
-                colors.append("red")  # Significant and large effect
+                colors.append(volcano_colors.get("sig_large", style.significance_color))
             elif p_val < significance_threshold:
-                colors.append("orange")  # Significant but small effect
+                colors.append(volcano_colors.get("sig_small", style.suggestive_color))
             elif abs(effect) > effect_size_threshold:
-                colors.append("blue")  # Large effect but not significant
+                colors.append(volcano_colors.get("nonsig_large", style.suggestive_color))
             else:
-                colors.append("gray")  # Not significant, small effect
+                colors.append(volcano_colors.get("nonsig_small", "gray"))
 
-        ax.scatter(effect_sizes, neg_log_p, c=colors, alpha=0.6, s=20)
+        scatter_kwargs = kwargs.get("scatter_kwargs", {"s": style.point_size, "alpha": style.alpha})
+        ax.scatter(effect_sizes, neg_log_p, c=colors, **scatter_kwargs)
 
         # Add significance line
         sig_threshold = -math.log10(significance_threshold)
         ax.axhline(
             y=sig_threshold,
-            color="red",
+            color=style.significance_color,
             linestyle="--",
             alpha=0.7,
             label=f"Significance threshold ({significance_threshold})",
@@ -582,12 +628,12 @@ def volcano_plot(
         # Add effect size lines
         ax.axvline(
             x=effect_size_threshold,
-            color="blue",
+            color=style.suggestive_color,
             linestyle="--",
             alpha=0.7,
             label=f"Effect size threshold ({effect_size_threshold})",
         )
-        ax.axvline(x=-effect_size_threshold, color="blue", linestyle="--", alpha=0.7)
+        ax.axvline(x=-effect_size_threshold, color=style.suggestive_color, linestyle="--", alpha=0.7)
 
         ax.set_xlabel("Effect Size (Beta)")
         ax.set_ylabel("-log₁₀(p-value)")

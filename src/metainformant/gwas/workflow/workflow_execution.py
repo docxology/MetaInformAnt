@@ -8,6 +8,7 @@ This module provides the main workflow execution functions:
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
@@ -26,8 +27,8 @@ logger = logging.get_logger(__name__)
 # Import required functions from GWAS modules
 from metainformant.gwas.analysis.annotation import annotate_variants_with_genes
 from metainformant.gwas.analysis.association import association_test_linear
-from metainformant.gwas.analysis.correction import bonferroni_correction, fdr_correction
-from metainformant.gwas.analysis.heritability import estimate_heritability, partition_heritability_by_chromosome
+from metainformant.gwas.analysis.correction import bonferroni_correction, fdr_correction, genomic_control
+from metainformant.gwas.analysis.heritability import estimate_heritability, heritability_bar_chart, partition_heritability_by_chromosome
 from metainformant.gwas.analysis.ld_pruning import ld_prune
 from metainformant.gwas.analysis.mixed_model import association_test_mixed, run_mixed_model_gwas
 from metainformant.gwas.analysis.quality import apply_qc_filters, check_haplodiploidy, parse_vcf_full
@@ -91,47 +92,379 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
         results["steps_completed"].append("quality_control")
         results["steps"].append("quality_control")
 
+        # Step 2.5: LD pruning (remove correlated variants before PCA)
+        logger.info("Step 2.5: LD pruning")
+        genotype_matrix = _extract_genotype_matrix(filtered_data)
+        variants_info = filtered_data.get("variants", [])
+
+        ld_config = config.get("ld_pruning", {})
+        r2_thresh = ld_config.get("r2_threshold", 0.2)
+        window = ld_config.get("window_size", 50)
+        step = ld_config.get("step_size", 5)
+
+        if genotype_matrix and len(genotype_matrix) > 1:
+            kept_indices = ld_prune(
+                genotype_matrix,
+                r2_threshold=r2_thresh,
+                window_size=window,
+                step_size=step,
+            )
+            genotype_matrix = [genotype_matrix[i] for i in kept_indices]
+            variants_info = [variants_info[i] for i in kept_indices] if variants_info else []
+            logger.info(f"LD pruning: {len(kept_indices)} variants retained for structure analysis")
+        else:
+            logger.info("LD pruning: skipped (insufficient variants)")
+
+        results["steps_completed"].append("ld_pruning")
+        results["steps"].append("ld_pruning")
+
         # Step 3: Population structure analysis
         logger.info("Step 3: Analyzing population structure")
-        genotype_matrix = _extract_genotype_matrix(filtered_data)
-        pca_result = compute_pca(genotype_matrix)
-        kinship_matrix = compute_kinship_matrix(genotype_matrix)
+        n_pcs_config = config.get("structure", {}).get("pca_components", 10)
+        kinship_method = config.get("structure", {}).get("kinship_method", "vanraden")
+
+        # genotype_matrix is variant-major (variants × samples) from _extract_genotype_matrix.
+        # compute_pca and compute_kinship_matrix expect sample-major (samples × variants).
+        n_variants_gm = len(genotype_matrix)
+        n_samples_gm = len(genotype_matrix[0]) if genotype_matrix else 0
+        gm_sample_major = [
+            [genotype_matrix[v][s] for v in range(n_variants_gm)]
+            for s in range(n_samples_gm)
+        ]
+        logger.info(f"Transposed genotype matrix: {n_samples_gm} samples × {n_variants_gm} variants (sample-major)")
+
+        pca_result = compute_pca(gm_sample_major, n_components=n_pcs_config)
+        kinship_result = compute_kinship_matrix(gm_sample_major, method=kinship_method)
+
+        # Extract the actual kinship matrix from the result dict
+        # compute_kinship_matrix returns {"status": ..., "kinship_matrix": [[...]], ...}
+        raw_kinship = kinship_result.get("kinship_matrix", [])
+        if hasattr(raw_kinship, "tolist"):
+            kinship_list = raw_kinship.tolist()
+        elif isinstance(raw_kinship, list):
+            kinship_list = raw_kinship
+        else:
+            kinship_list = []
+
+        # Store full kinship metadata for output
+        results["outputs"]["kinship_metadata"] = {
+            k: v for k, v in kinship_result.items() if k != "kinship_matrix"
+        }
+
         results["steps_completed"].append("population_structure")
         results["steps"].append("population_structure")
 
-        # Step 4: Association testing
-        logger.info("Step 4: Performing association testing")
-        phenotypes = _load_phenotypes(config["phenotype_path"])
+        # Step 4: Association testing (model-aware dispatch)
+        model = config.get("model", "linear")
+        logger.info(f"Step 4: Performing association testing (model={model})")
+        trait_name = config.get("trait", config.get("trait_name", config.get("default_trait")))
+        traits = _load_phenotypes(config["phenotype_path"], trait=trait_name)
+
+        # PCA results is a dict with 'pcs' list
+        pcs = pca_result.get("pcs", [])
 
         association_results = []
-        for i, phenotype in enumerate(phenotypes):
-            result = association_test_linear(
-                filtered_data["genotypes"][:, i],  # Use first trait for now
-                phenotype,
-                covariates=pca_result[0][:, :10],  # Use first 10 PCs as covariates
-            )
-            association_results.append(result)
+        if genotype_matrix and traits:
+            n_samples = len(genotype_matrix[0])
+            actual_traits = traits[:n_samples]
+            actual_pcs = pcs[:n_samples]
+
+            # Prepare covariates from PCA
+            n_avail_pcs = len(actual_pcs[0]) if actual_pcs and actual_pcs[0] else 0
+            n_pcs_to_use = min(n_avail_pcs, 5, max(0, n_samples - 2))
+            if n_pcs_to_use > 0:
+                variant_covariates = [
+                    [actual_pcs[s][pc] for s in range(len(actual_pcs))]
+                    for pc in range(n_pcs_to_use)
+                ]
+            else:
+                variant_covariates = None
+
+            # Import logistic if needed
+            if model == "logistic":
+                from metainformant.gwas.analysis.association import association_test_logistic
+
+            for i, genotype in enumerate(genotype_matrix):
+                try:
+                    if model == "mixed":
+                        result = association_test_mixed(
+                            genotype,
+                            actual_traits,
+                            kinship_matrix=kinship_list,
+                            covariates=variant_covariates,
+                        )
+                    elif model == "logistic":
+                        result = association_test_logistic(
+                            genotype,
+                            [int(t) for t in actual_traits],
+                            covariates=variant_covariates,
+                        )
+                    else:  # "linear" or default
+                        result = association_test_linear(
+                            genotype,
+                            actual_traits,
+                            covariates=variant_covariates,
+                        )
+                except Exception as exc:
+                    # Fall back to linear on model-specific failures
+                    logger.debug(f"Variant {i}: {model} model failed ({exc}), falling back to linear")
+                    result = association_test_linear(
+                        genotype,
+                        actual_traits,
+                        covariates=variant_covariates,
+                    )
+
+                # Attach variant info to result for plotter
+                if i < len(variants_info):
+                    vinfo = variants_info[i]
+                    result["chrom"] = vinfo.get("chrom", "1")
+                    result["pos"] = vinfo.get("pos", 0)
+                    result["variant_id"] = vinfo.get("id", f"var_{i}")
+
+                # Compute MAF from genotype vector
+                valid_genos = [g for g in genotype if g >= 0]
+                if valid_genos:
+                    alt_freq = sum(valid_genos) / (2.0 * len(valid_genos))
+                    result["maf"] = min(alt_freq, 1.0 - alt_freq)
+                else:
+                    result["maf"] = 0.0
+
+                association_results.append(result)
+
+            logger.info(f"Association testing complete: {len(association_results)} variants tested with {model} model")
 
         results["steps_completed"].append("association_testing")
         results["steps"].append("association_testing")
         results["outputs"]["association_results"] = association_results
 
-        # Step 5: Multiple testing correction
-        logger.info("Step 5: Applying multiple testing correction")
-        p_values = [r["p_value"] for r in association_results]
-        corrected_results = fdr_correction(p_values)
+        # Step 5: Multiple testing correction & genomic control
+        logger.info("Step 5: Multiple testing correction")
+        p_values = [
+            r.get("p_value", r.get("pval", 1.0))
+            for r in association_results
+            if r.get("p_value", r.get("pval")) is not None
+        ]
+
+        if p_values:
+            # Bonferroni
+            bonf_result = bonferroni_correction(p_values)
+            n_bonf = bonf_result.get("n_significant", 0) if isinstance(bonf_result, dict) else 0
+            logger.info(f"Bonferroni correction: {n_bonf} variants significant")
+
+            # FDR (Benjamini-Hochberg)
+            fdr_result = fdr_correction(p_values)
+            n_fdr = fdr_result.get("n_significant", 0) if isinstance(fdr_result, dict) else 0
+            logger.info(f"FDR correction (BH): {n_fdr} variants significant")
+
+            # Genomic control lambda
+            gc_result = genomic_control(p_values=p_values)
+            lambda_gc = gc_result.get("lambda_gc", 1.0) if isinstance(gc_result, dict) else 1.0
+            logger.info(f"Genomic control: λ_GC = {lambda_gc:.4f}")
+
+            # Attach correction results to output
+            results["outputs"]["bonferroni"] = bonf_result if isinstance(bonf_result, dict) else {}
+            results["outputs"]["fdr"] = fdr_result if isinstance(fdr_result, dict) else {}
+            results["outputs"]["genomic_control"] = {"lambda_gc": lambda_gc}
+
+            # Mark significant variants in association results
+            bonf_significant = bonf_result.get("significant", []) if isinstance(bonf_result, dict) else []
+            fdr_significant = fdr_result.get("significant", []) if isinstance(fdr_result, dict) else []
+            fdr_adjusted = fdr_result.get("adjusted_p_values", []) if isinstance(fdr_result, dict) else []
+            for idx, ar in enumerate(association_results):
+                if idx < len(bonf_significant):
+                    ar["bonferroni_significant"] = bonf_significant[idx]
+                if idx < len(fdr_significant):
+                    ar["fdr_significant"] = fdr_significant[idx]
+                if idx < len(fdr_adjusted):
+                    ar["fdr_p_value"] = fdr_adjusted[idx]
+
         results["steps_completed"].append("multiple_testing_correction")
         results["steps"].append("multiple_testing_correction")
 
-        # Step 6: Generate plots
+        # Step 5.5: Heritability estimation (REML)
+        logger.info("Step 5.5: Estimating SNP heritability (REML)")
+        if kinship_list and traits:
+            actual_traits_h2 = traits[:len(kinship_list)]
+            h2_result = estimate_heritability(kinship_list, actual_traits_h2)
+            if h2_result.get("status") == "success":
+                logger.info(
+                    f"Heritability: h² = {h2_result['h2']:.4f} ± {h2_result['h2_se']:.4f} "
+                    f"(σ²_g={h2_result['sigma_g']:.4f}, σ²_e={h2_result['sigma_e']:.4f})"
+                )
+            else:
+                logger.warning(f"Heritability estimation: {h2_result.get('message', 'failed')}")
+            results["outputs"]["heritability"] = h2_result
+
+        # Step 5.5a: Per-chromosome heritability partitioning
+        logger.info("Step 5.5a: Partitioning heritability by chromosome")
+        if genotype_matrix and variants_info and traits:
+            try:
+                # Build per-chromosome kinship matrices (sample-major)
+                chrom_indices: dict[str, list[int]] = {}
+                for idx, vinfo in enumerate(variants_info):
+                    chrom = vinfo.get("chrom", "unknown")
+                    chrom_indices.setdefault(chrom, []).append(idx)
+
+                n_samples_h2 = len(genotype_matrix[0]) if genotype_matrix else 0
+                per_chrom_kinship: dict[int, list[list[float]]] = {}
+                for chrom_id, (chrom_name, indices) in enumerate(sorted(chrom_indices.items())):
+                    if len(indices) < 2:
+                        continue
+                    # Extract variant-major genotypes for this chromosome
+                    chrom_geno = [genotype_matrix[i] for i in indices]
+                    # Transpose to sample-major for kinship
+                    n_vars_chr = len(chrom_geno)
+                    chrom_sm = [
+                        [chrom_geno[v][s] for v in range(n_vars_chr)]
+                        for s in range(n_samples_h2)
+                    ]
+                    k_result = compute_kinship_matrix(chrom_sm, method=config.get("structure", {}).get("kinship_method", "vanraden"))
+                    if k_result.get("status") == "success":
+                        per_chrom_kinship[chrom_id] = k_result["kinship_matrix"]
+
+                if per_chrom_kinship:
+                    actual_traits_part = traits[:n_samples_h2]
+                    partition_result = partition_heritability_by_chromosome(per_chrom_kinship, actual_traits_part)
+                    if partition_result.get("status") == "success":
+                        logger.info(
+                            f"Per-chromosome h²: total={partition_result['total_h2']:.4f} across "
+                            f"{partition_result['n_chromosomes']} chromosomes"
+                        )
+                        results["outputs"]["heritability_partition"] = partition_result
+
+                        # Generate heritability bar chart
+                        results_dir_h2 = Path(config.get("results_dir", config.get("output_dir", ".")))
+                        results_dir_h2.mkdir(parents=True, exist_ok=True)
+                        bar_result = heritability_bar_chart(
+                            partition_result,
+                            output_file=results_dir_h2 / "heritability_bar_chart.png",
+                        )
+                        if bar_result.get("status") == "success":
+                            logger.info(f"Heritability bar chart saved to {bar_result.get('output_path')}")
+                    else:
+                        logger.warning(f"Heritability partition: {partition_result.get('message', 'failed')}")
+            except Exception as e:
+                logger.warning(f"Heritability partitioning failed: {e}", exc_info=True)
+
+        results["steps_completed"].append("heritability_estimation")
+        results["steps"].append("heritability_estimation")
+
+        # Step 5.5b: Write summary statistics to TSV
+        logger.info("Step 5.5b: Writing summary statistics")
+        out_dir = Path(config.get("output_dir", config.get("work_dir", ".")))
+        out_dir.mkdir(parents=True, exist_ok=True)
+        results_dir = Path(config.get("results_dir", config.get("output_dir", config.get("work_dir", "."))))
+        results_dir.mkdir(parents=True, exist_ok=True)
+
+        if association_results and variants_info:
+            try:
+                summary_path = results_dir / "summary_statistics.tsv"
+                write_summary_statistics(association_results, variants_info, summary_path)
+                logger.info(f"Summary statistics written to {summary_path}")
+
+                sig_threshold = config.get("significance_threshold", 5e-8)
+                sig_path = results_dir / "significant_hits.tsv"
+                write_significant_hits(association_results, variants_info, sig_path, threshold=sig_threshold)
+                logger.info(f"Significant hits written to {sig_path}")
+            except Exception as exc:
+                logger.warning(f"Summary stats output failed: {exc}")
+
+        results["steps_completed"].append("summary_statistics")
+        results["steps"].append("summary_statistics")
+
+        # Step 6: Generate visualization plots
         logger.info("Step 6: Generating visualization plots")
-        plot_results = generate_all_plots(
-            association_results,
-            config.get("output_dir", config.get("work_dir", ".")),
-            pca_file=Path(config.get("work_dir", ".")) / "pca_results.npy",
-            kinship_file=Path(config.get("work_dir", ".")) / "kinship_matrix.npy",
-            vcf_file=Path(config["vcf_path"]),
-        )
+        plot_results = {}
+        if association_results:
+            # Save PCA intermediate data
+            pca_file = out_dir / "pca_results.json"
+            kinship_file = out_dir / "kinship_results.json"
+
+            pcs_list = pca_result.get("pcs", [])
+            explained_var = pca_result.get("explained_variance_ratio", [])
+            if pcs_list:
+                n_samples_pca = len(pcs_list)
+                n_pcs_pca = len(pcs_list[0])
+                transposed_pcs = [[pcs_list[s][p] for s in range(n_samples_pca)] for p in range(n_pcs_pca)]
+                pca_plot_data = {
+                    "components": transposed_pcs,
+                    "variance": explained_var,
+                    "explained_variance": explained_var,
+                    "loadings": [],
+                }
+                with open(pca_file, "w") as f:
+                    json.dump(pca_plot_data, f)
+            else:
+                pca_file = None
+
+            if kinship_list:
+                with open(kinship_file, "w") as f:
+                    json.dump(kinship_list, f)
+            else:
+                kinship_file = None
+
+            # 6a: Core plots (Manhattan, QQ, PCA, Kinship)
+            plot_results = generate_all_plots(
+                association_results=association_results,
+                output_dir=results_dir,
+                pca_file=pca_file,
+                kinship_file=kinship_file,
+                vcf_file=Path(config["vcf_path"]),
+            )
+
+            # 6b: Effect size distribution plot
+            try:
+                from metainformant.gwas.visualization.general import effect_size_plot
+                fig = effect_size_plot(association_results, output_path=results_dir / "effect_size_plot.png")
+                if fig is not None:
+                    plot_results["effect_size"] = str(results_dir / "effect_size_plot.png")
+                    import matplotlib.pyplot as plt
+                    plt.close(fig)
+            except Exception as exc:
+                logger.warning(f"Effect size plot failed: {exc}")
+
+            # 6c: MAF spectrum plot
+            try:
+                maf_values = [r.get("maf", 0.0) for r in association_results if r.get("maf") is not None]
+                if maf_values and any(m > 0 for m in maf_values):
+                    import matplotlib.pyplot as plt
+                    fig, ax = plt.subplots(figsize=(8, 5))
+                    ax.hist(maf_values, bins=30, edgecolor="black", alpha=0.7, color="teal")
+                    ax.set_xlabel("Minor Allele Frequency")
+                    ax.set_ylabel("Number of Variants")
+                    ax.set_title(f"MAF Spectrum (n={len(maf_values)} variants)")
+                    ax.grid(True, alpha=0.3)
+                    plt.tight_layout()
+                    maf_path = results_dir / "maf_spectrum_plot.png"
+                    fig.savefig(maf_path, dpi=300, bbox_inches="tight")
+                    plot_results["maf_spectrum"] = str(maf_path)
+                    logger.info(f"Saved MAF spectrum plot to {maf_path}")
+                    plt.close(fig)
+            except Exception as exc:
+                logger.warning(f"MAF spectrum plot failed: {exc}")
+
+            # 6d: Regional plot for top hit
+            try:
+                from metainformant.gwas.visualization.general import regional_plot
+                if association_results:
+                    top_hit = min(association_results, key=lambda r: r.get("p_value", 1.0))
+                    top_chrom = str(top_hit.get("chrom", "1"))
+                    top_pos = top_hit.get("pos", 0)
+                    region_start = max(0, top_pos - 500000)
+                    region_end = top_pos + 500000
+                    fig = regional_plot(
+                        association_results, top_chrom, region_start, region_end,
+                        output_path=results_dir / "regional_plot.png",
+                    )
+                    if fig is not None:
+                        plot_results["regional"] = str(results_dir / "regional_plot.png")
+                        import matplotlib.pyplot as plt
+                        plt.close(fig)
+            except Exception as exc:
+                logger.warning(f"Regional plot failed: {exc}")
+
+            logger.info(f"Generated {len(plot_results)} plots: {list(plot_results.keys())}")
+
         results["steps_completed"].append("visualization")
         results["steps"].append("visualization")
         results["outputs"]["plots"] = plot_results
@@ -147,6 +480,7 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
         results["errors"].append(str(e))
 
     return results
+
 
 
 def run_gwas(

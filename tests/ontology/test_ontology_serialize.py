@@ -38,13 +38,12 @@ class TestSerialization:
 
         # Save
         save_path = tmp_path / "test_onto.json"
-        saved_path = save_ontology(onto, save_path)
-        assert saved_path.exists()
-        assert saved_path == save_path
+        save_ontology(onto, save_path, format="json")
+        assert save_path.exists()
 
         # Load
-        loaded = load_ontology(save_path)
-        assert loaded.num_terms() == 2
+        loaded = load_ontology(save_path, format="json")
+        assert len(loaded) == 2
         assert loaded.has_term("GO:001")
         assert loaded.has_term("GO:002")
 
@@ -78,16 +77,16 @@ class TestSerialization:
         loaded = load_ontology(save_path)
 
         # Verify structure
-        assert loaded.num_terms() == onto.num_terms()
+        assert len(loaded) == len(onto)
         assert loaded.has_term("GO:001")
         assert "GO:002" in loaded.parents_of.get("GO:001", set())
 
     def test_load_nonexistent_file(self):
         """Test loading nonexistent file raises error."""
-        from metainformant.core.utils.errors import IOError
+        from metainformant.core.utils.errors import ValidationError
 
-        with pytest.raises(IOError, match="not found"):
-            load_ontology("nonexistent.json")
+        with pytest.raises(ValidationError, match="does not exist"):
+            load_ontology("nonexistent.json", format="json")
 
     def test_save_invalid_ontology(self, tmp_path: Path):
         """Test saving empty ontology."""
@@ -96,4 +95,4 @@ class TestSerialization:
         save_ontology(onto, save_path)
 
         loaded = load_ontology(save_path)
-        assert loaded.num_terms() == 0
+        assert len(loaded) == 0

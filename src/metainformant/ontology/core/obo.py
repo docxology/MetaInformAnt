@@ -46,7 +46,7 @@ def parse_obo(path: str | Path) -> Ontology:
     header_metadata = {}
 
     # Read file content
-    content = io.read_text(path)
+    content = Path(path).read_text(encoding="utf-8")
     lines = content.splitlines()
 
     # Parse header
@@ -141,6 +141,9 @@ def _parse_term_stanza(stanza_lines: List[str]) -> Optional[Term]:
 
         key, value = line.split(":", 1)
         key = key.strip()
+        # Remove trailing comments
+        if " ! " in value:
+            value = value.split(" ! ", 1)[0]
         value = value.strip()
 
         # Handle multi-line values and qualifiers
@@ -163,6 +166,10 @@ def _parse_term_stanza(stanza_lines: List[str]) -> Optional[Term]:
             if "xrefs" not in term_data:
                 term_data["xrefs"] = []
             term_data["xrefs"].append(value)
+        elif key == "alt_id":
+            if "alt_ids" not in term_data:
+                term_data["alt_ids"] = []
+            term_data["alt_ids"].append(value)
         elif key in [
             "is_a",
             "part_of",
@@ -191,6 +198,9 @@ def _parse_term_stanza(stanza_lines: List[str]) -> Optional[Term]:
         xrefs=term_data.get("xrefs", []),
         is_obsolete=term_data.get("is_obsolete", False),
     )
+    
+    if "alt_ids" in term_data:
+        term.alt_ids = term_data["alt_ids"]
 
     # Store relationships for later processing
     term.metadata["relationships"] = term_data.get("relationships", [])
@@ -252,7 +262,7 @@ def _extract_relationships_from_terms(terms: Dict[str, Term]) -> List[Relationsh
     """Extract relationships from term metadata."""
     relationships = []
 
-    for term in terms.terms.values():
+    for term in terms.values():
         if "relationships" in term.metadata:
             for rel_type, target_id in term.metadata["relationships"]:
                 relationship = create_relationship(source=term.id, target=target_id, relation_type=rel_type)
@@ -275,7 +285,7 @@ def validate_obo_format(path: str | Path) -> tuple[bool, List[str]]:
     errors = []
 
     try:
-        content = io.read_text(path)
+        content = Path(path).read_text(encoding="utf-8")
         lines = content.splitlines()
 
         # Check for header
@@ -321,7 +331,7 @@ def get_obo_statistics(path: str | Path) -> Dict[str, Any]:
     """
     path = validation.validate_path_exists(Path(path))
 
-    content = io.read_text(path)
+    content = Path(path).read_text(encoding="utf-8")
     lines = content.splitlines()
 
     stats = {

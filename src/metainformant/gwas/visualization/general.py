@@ -32,6 +32,28 @@ except ImportError:
     HAS_NUMPY = False
     logger.warning("numpy not available, some visualizations may not work")
 
+def set_accessible_style():
+    """Apply accessible, high-contrast presentation style for visualizations."""
+    if HAS_MATPLOTLIB:
+        plt.rcParams.update({
+            "font.size": 14,
+            "axes.titlesize": 16,
+            "axes.labelsize": 14,
+            "xtick.labelsize": 12,
+            "ytick.labelsize": 12,
+            "legend.fontsize": 12,
+            "legend.framealpha": 0.85,
+            "legend.edgecolor": "black",
+            "figure.dpi": 300,
+            "axes.grid": True,
+            "axes.axisbelow": True,
+            "grid.alpha": 0.4,
+            "grid.color": "#cccccc",
+        })
+
+if HAS_MATPLOTLIB:
+    set_accessible_style()
+
 
 def manhattan_plot(
     results: Union[List[Dict[str, Any]], Dict[str, Any]],
@@ -41,6 +63,9 @@ def manhattan_plot(
     highlight_regions: Optional[List[Dict[str, Any]]] = None,
     suggestive_threshold: Optional[float] = 1e-5,
     label_top_n: int = 0,
+    ax: Optional[Any] = None,
+    style: Optional[Any] = None,
+    **kwargs: Any,
 ) -> Any:
     """Create a Manhattan plot from GWAS results.
 
@@ -78,8 +103,18 @@ def manhattan_plot(
     p_values = []
     colors = []
 
-    # Color scheme for chromosomes
-    chrom_colors = ["#1f77b4", "#ff7f0e"]  # Blue and orange alternating
+    # Load style if not provided
+    if style is None:
+        from metainformant.gwas.visualization.config import get_style
+        style = get_style()
+
+    # Create plot
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots(figsize=kwargs.get("figsize", style.figsize))
+
+    # Color scheme for chromosomes from style
+    chrom_colors = style.categorical_colors
 
     current_pos = 0
     chrom_offsets = {}
@@ -111,21 +146,19 @@ def manhattan_plot(
         p_values.append(neg_log_p)
         colors.append(chrom_colors[color_idx])
 
-    # Create plot
-    fig, ax = plt.subplots(figsize=(12, 6))
-
-    # Plot points
-    scatter = ax.scatter(positions, p_values, c=colors, s=1, alpha=0.8)
+    # Plot points with kwargs
+    scatter_kwargs = kwargs.get("scatter_kwargs", {"s": style.point_size, "alpha": style.alpha})
+    scatter = ax.scatter(positions, p_values, c=colors, **scatter_kwargs)
 
     # Add significance threshold line
     if significance_threshold > 0:
         threshold_line = -math.log10(significance_threshold)
         ax.axhline(
             y=threshold_line,
-            color="red",
+            color=style.significance_color,
             linestyle="--",
             alpha=0.7,
-            label=f"Significance threshold ({significance_threshold})",
+            label=f"Significance ({significance_threshold})",
         )
 
     # Add suggestive threshold line
@@ -133,10 +166,10 @@ def manhattan_plot(
         suggestive_line = -math.log10(suggestive_threshold)
         ax.axhline(
             y=suggestive_line,
-            color="blue",
+            color=style.suggestive_color,
             linestyle="--",
             alpha=0.5,
-            label=f"Suggestive threshold ({suggestive_threshold})",
+            label=f"Suggestive ({suggestive_threshold})",
         )
 
     # Draw highlight regions
@@ -251,16 +284,21 @@ def manhattan_plot(
 
     plt.tight_layout()
 
-    # Save if output path provided
-    if output_path:
+    # Save if output path provided and we own the figure
+    if output_path and fig is not None:
         output_path = Path(output_path)
-        fig.savefig(output_path, dpi=300, bbox_inches="tight")
+        fig.savefig(output_path, dpi=style.dpi, bbox_inches="tight")
         logger.info(f"Saved Manhattan plot to {output_path}")
 
-    return fig
+    return ax if fig is None else fig
 
-
-def qq_plot(p_values: Union[List[float], List[int]], output_path: Optional[Union[str, Path]] = None) -> Any:
+def qq_plot(
+    p_values: Union[List[float], List[int]],
+    output_path: Optional[Union[str, Path]] = None,
+    ax: Optional[Any] = None,
+    style: Optional[Any] = None,
+    **kwargs: Any,
+) -> Any:
     """Create a Q-Q plot from p-values.
 
     Args:
@@ -295,15 +333,22 @@ def qq_plot(p_values: Union[List[float], List[int]], output_path: Optional[Union
     # Observed -log10 p-values
     observed_log = -np.log10(p_vals)
 
+    if style is None:
+        from metainformant.gwas.visualization.config import get_style
+        style = get_style()
+
     # Create plot
-    fig, ax = plt.subplots(figsize=(8, 6))
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (8, 6)))
 
     # Plot Q-Q points
-    ax.scatter(expected_log, observed_log, s=2, alpha=0.6, color="blue")
+    scatter_kwargs = kwargs.get("scatter_kwargs", {"s": max(2, style.point_size - 4), "alpha": style.alpha, "color": style.suggestive_color})
+    ax.scatter(expected_log, observed_log, **scatter_kwargs)
 
     # Add diagonal line (expected under null)
     max_val = max(np.max(expected_log), np.max(observed_log))
-    ax.plot([0, max_val], [0, max_val], "r--", alpha=0.7, label="Expected (null)")
+    ax.plot([0, max_val], [0, max_val], linestyle="--", color=style.significance_color, alpha=0.7, label="Expected (null)")
 
     # Labels and title
     ax.set_xlabel("Expected -log₁₀(p-value)")
@@ -314,17 +359,23 @@ def qq_plot(p_values: Union[List[float], List[int]], output_path: Optional[Union
 
     plt.tight_layout()
 
-    # Save if output path provided
-    if output_path:
+    if output_path and fig is not None:
         output_path = Path(output_path)
-        fig.savefig(output_path, dpi=300, bbox_inches="tight")
+        fig.savefig(output_path, dpi=style.dpi, bbox_inches="tight")
         logger.info(f"Saved Q-Q plot to {output_path}")
 
-    return fig
+    return ax if fig is None else fig
 
 
 def regional_plot(
-    results: List[Dict[str, Any]], chrom: str, start: int, end: int, output_path: Optional[Union[str, Path]] = None
+    results: List[Dict[str, Any]],
+    chrom: str,
+    start: int,
+    end: int,
+    output_path: Optional[Union[str, Path]] = None,
+    ax: Optional[Any] = None,
+    style: Optional[Any] = None,
+    **kwargs: Any,
 ) -> Any:
     """Create a regional association plot.
 
@@ -368,15 +419,22 @@ def regional_plot(
         else:
             p_values.append(50)  # Cap very small p-values
 
+    if style is None:
+        from metainformant.gwas.visualization.config import get_style
+        style = get_style()
+
     # Create plot
-    fig, ax = plt.subplots(figsize=(12, 6))
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots(figsize=kwargs.get("figsize", style.figsize))
 
     # Plot points
-    ax.scatter(positions, p_values, s=20, alpha=0.7, color="blue")
+    scatter_kwargs = kwargs.get("scatter_kwargs", {"s": style.point_size, "alpha": style.alpha, "color": style.suggestive_color})
+    ax.scatter(positions, p_values, **scatter_kwargs)
 
     # Add significance threshold line
     threshold_line = -math.log10(5e-8)
-    ax.axhline(y=threshold_line, color="red", linestyle="--", alpha=0.7, label="Genome-wide significance")
+    ax.axhline(y=threshold_line, color=style.significance_color, linestyle="--", alpha=0.7, label="Genome-wide significance")
 
     # Labels and title
     ax.set_xlabel(f"Position on chromosome {chrom}")
@@ -388,17 +446,21 @@ def regional_plot(
 
     plt.tight_layout()
 
-    # Save if output path provided
-    if output_path:
+    if output_path and fig is not None:
         output_path = Path(output_path)
-        fig.savefig(output_path, dpi=300, bbox_inches="tight")
+        fig.savefig(output_path, dpi=style.dpi, bbox_inches="tight")
         logger.info(f"Saved regional plot to {output_path}")
 
-    return fig
+    return ax if fig is None else fig
 
 
 def pca_plot(
-    pca_result: tuple, output_path: Optional[Union[str, Path]] = None, explained_var: Optional[List[float]] = None
+    pca_result: tuple,
+    output_path: Optional[Union[str, Path]] = None,
+    explained_var: Optional[List[float]] = None,
+    ax: Optional[Any] = None,
+    style: Optional[Any] = None,
+    **kwargs: Any,
 ) -> Any:
     """Create PCA scatter plot.
 
@@ -423,11 +485,18 @@ def pca_plot(
             logger.warning("Need at least 2 PCA components for plotting")
             return None
 
+        if style is None:
+            from metainformant.gwas.visualization.config import get_style
+            style = get_style()
+
         # Create 2D scatter plot of first two components
-        fig, ax = plt.subplots(figsize=(10, 8))
+        fig = None
+        if ax is None:
+            fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 8)))
 
         # Plot points
-        scatter = ax.scatter(components[0], components[1], s=2, alpha=0.6, color="blue")
+        scatter_kwargs = kwargs.get("scatter_kwargs", {"s": max(2, style.point_size - 4), "alpha": style.alpha, "color": style.suggestive_color})
+        scatter = ax.scatter(components[0], components[1], **scatter_kwargs)
 
         # Labels and title
         pc1_var = explained_var[0] * 100 if explained_var and len(explained_var) > 0 else 0
@@ -447,18 +516,17 @@ def pca_plot(
                 var_text,
                 transform=ax.transAxes,
                 verticalalignment="top",
-                bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
+                bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.9, edgecolor="black"),
             )
 
         plt.tight_layout()
 
-        # Save if output path provided
-        if output_path:
+        if output_path and fig is not None:
             output_path = Path(output_path)
-            fig.savefig(output_path, dpi=300, bbox_inches="tight")
+            fig.savefig(output_path, dpi=style.dpi, bbox_inches="tight")
             logger.info(f"Saved PCA plot to {output_path}")
 
-        return fig
+        return ax if fig is None else fig
 
     except (ValueError, IndexError, TypeError) as e:
         logger.error(f"Error creating PCA plot: {e}")
@@ -466,7 +534,11 @@ def pca_plot(
 
 
 def kinship_heatmap(
-    kinship_matrix: Union[np.ndarray, List[List[float]]], output_path: Optional[Union[str, Path]] = None
+    kinship_matrix: Union[np.ndarray, List[List[float]]],
+    output_path: Optional[Union[str, Path]] = None,
+    ax: Optional[Any] = None,
+    style: Optional[Any] = None,
+    **kwargs: Any,
 ) -> Any:
     """Create kinship matrix heatmap.
 
@@ -488,15 +560,23 @@ def kinship_heatmap(
         if isinstance(kinship_matrix, list):
             kinship_matrix = np.array(kinship_matrix)
 
+        if style is None:
+            from metainformant.gwas.visualization.config import get_style
+            style = get_style()
+
         # Create heatmap
-        fig, ax = plt.subplots(figsize=(10, 8))
+        fig = None
+        if ax is None:
+            fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 8)))
 
         # Plot heatmap
-        im = ax.imshow(kinship_matrix, cmap="viridis", aspect="equal")
+        imshow_kwargs = kwargs.get("imshow_kwargs", {"cmap": style.colormap, "aspect": "equal"})
+        im = ax.imshow(kinship_matrix, **imshow_kwargs)
 
-        # Add colorbar
-        cbar = plt.colorbar(im, ax=ax)
-        cbar.set_label("Kinship coefficient")
+        # Add colorbar only if we created the figure (or explicitly asked)
+        if fig is not None or kwargs.get("show_colorbar", False):
+            cbar = plt.colorbar(im, ax=ax)
+            cbar.set_label("Kinship coefficient")
 
         # Labels and title
         ax.set_title("Kinship Matrix Heatmap")
@@ -505,13 +585,12 @@ def kinship_heatmap(
 
         plt.tight_layout()
 
-        # Save if output path provided
-        if output_path:
+        if output_path and fig is not None:
             output_path = Path(output_path)
-            fig.savefig(output_path, dpi=300, bbox_inches="tight")
+            fig.savefig(output_path, dpi=style.dpi, bbox_inches="tight")
             logger.info(f"Saved kinship heatmap to {output_path}")
 
-        return fig
+        return ax if fig is None else fig
 
     except Exception as e:
         logger.error(f"Error creating kinship heatmap: {e}")
@@ -609,6 +688,10 @@ def generate_all_plots(
 
     # Load association results from file or use directly
     results_data: List[Dict[str, Any]] = []
+    
+    if isinstance(association_results, list):
+        results_data = association_results
+    
     association_path = Path(association_results) if isinstance(association_results, (str, Path)) else None
 
     if association_path and association_path.exists():
@@ -702,7 +785,14 @@ def generate_all_plots(
             if kinship_path_obj.exists():
                 with open(kinship_path_obj) as fh:
                     kinship_data = _json.load(fh)
-                matrix = kinship_data if isinstance(kinship_data, list) else kinship_data.get("matrix", [])
+                
+                # Handle both direct matrix list and wrapped dict
+                if isinstance(kinship_data, list):
+                    matrix = kinship_data
+                elif isinstance(kinship_data, dict):
+                    matrix = kinship_data.get("matrix", kinship_data.get("kinship_matrix", []))
+                else:
+                    matrix = []
                 kinship_output = output_dir / "kinship_plot.png"
                 fig = kinship_heatmap(matrix, output_path=kinship_output)
                 if fig is not None:
@@ -839,4 +929,402 @@ def functional_enrichment_plot(
         fig.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved functional enrichment plot to {output_path}")
 
+    return fig
+
+
+# ---------------------------------------------------------------------------
+# Power & Convergence Plots
+# ---------------------------------------------------------------------------
+
+
+def power_curve_plot(
+    power_data: List[Dict[str, Any]],
+    output_path: Optional[Union[str, Path]] = None,
+) -> Optional[Any]:
+    """Plot statistical power vs. sample size for multiple effect sizes.
+
+    Args:
+        power_data: List of dicts from power_curve(), each with
+            sample_sizes, powers, beta, and maf.
+        output_path: Path to save figure.
+
+    Returns:
+        matplotlib Figure or None.
+    """
+    if not HAS_MATPLOTLIB:
+        logger.warning("matplotlib not available")
+        return None
+
+    logger.info("Creating power curve plot")
+
+    fig, ax = plt.subplots(figsize=(10, 6))
+
+    colors = plt.cm.viridis(np.linspace(0.1, 0.9, len(power_data))) if HAS_NUMPY else [
+        f"C{i}" for i in range(len(power_data))
+    ]
+
+    for idx, curve in enumerate(power_data):
+        sizes = curve.get("sample_sizes", [])
+        powers = curve.get("powers", [])
+        beta = curve.get("beta", 0)
+        maf = curve.get("maf", 0)
+        ax.plot(
+            sizes, powers,
+            color=colors[idx],
+            linewidth=2,
+            marker="o",
+            markersize=4,
+            label=f"β={beta}, MAF={maf:.2f}",
+        )
+
+    ax.axhline(y=0.8, color="gray", linestyle="--", alpha=0.6, label="80% power")
+    ax.set_xlabel("Sample Size (N)")
+    ax.set_ylabel("Statistical Power")
+    ax.set_title("GWAS Power Curves")
+    ax.set_ylim(-0.02, 1.05)
+    ax.legend(fontsize=8, loc="lower right")
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    if output_path:
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(output_path, dpi=300, bbox_inches="tight")
+        logger.info(f"Saved power curve plot to {output_path}")
+
+    return fig
+
+
+def convergence_plot(
+    convergence_data: Dict[str, Any],
+    metrics: Optional[List[str]] = None,
+    output_path: Optional[Union[str, Path]] = None,
+) -> Optional[Any]:
+    """Plot GWAS metric convergence across data fractions.
+
+    Creates a multi-panel figure with one subplot per metric, showing
+    mean ± std as error ribbons.
+
+    Args:
+        convergence_data: Output from subsample_convergence().
+        metrics: Which metrics to plot (default: all available).
+        output_path: Path to save figure.
+
+    Returns:
+        matplotlib Figure or None.
+    """
+    if not HAS_MATPLOTLIB:
+        logger.warning("matplotlib not available")
+        return None
+
+    logger.info("Creating convergence plot")
+
+    fractions = convergence_data.get("fractions", [])
+    all_metrics = convergence_data.get("metrics", {})
+    pct_fractions = [f * 100 for f in fractions]
+
+    if metrics is None:
+        metrics = list(all_metrics.keys())
+
+    n_panels = len(metrics)
+    if n_panels == 0:
+        return None
+
+    fig, axes = plt.subplots(1, n_panels, figsize=(5 * n_panels, 5), squeeze=False)
+
+    metric_labels = {
+        "lambda_gc": "Genomic Inflation (λ_GC)",
+        "n_significant": "Significant Hits",
+        "mean_abs_beta": "Mean |β|",
+        "mean_neg_log10_p": "Mean -log₁₀(p)",
+    }
+    metric_colors = {
+        "lambda_gc": "#E74C3C",
+        "n_significant": "#3498DB",
+        "mean_abs_beta": "#2ECC71",
+        "mean_neg_log10_p": "#9B59B6",
+    }
+
+    for i, metric in enumerate(metrics):
+        ax = axes[0, i]
+        data = all_metrics.get(metric, [])
+        if not data:
+            continue
+
+        means = [d["mean"] for d in data]
+        stds = [d["std"] for d in data]
+        lower = [m - s for m, s in zip(means, stds)]
+        upper = [m + s for m, s in zip(means, stds)]
+
+        color = metric_colors.get(metric, "steelblue")
+        ax.plot(pct_fractions, means, color=color, linewidth=2, marker="o", markersize=5)
+        ax.fill_between(pct_fractions, lower, upper, alpha=0.2, color=color)
+
+        ax.set_xlabel("% of Variants Used")
+        ax.set_ylabel(metric_labels.get(metric, metric))
+        ax.set_title(metric_labels.get(metric, metric))
+        ax.grid(True, alpha=0.3)
+
+    fig.suptitle("Subsampling Convergence Analysis", fontsize=14, fontweight="bold")
+    plt.tight_layout()
+
+    if output_path:
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(output_path, dpi=300, bbox_inches="tight")
+        logger.info(f"Saved convergence plot to {output_path}")
+
+    return fig
+
+
+def saturation_plot(
+    saturation_data: Dict[str, Any],
+    output_path: Optional[Union[str, Path]] = None,
+) -> Optional[Any]:
+    """Plot observed data vs. fitted saturation curve.
+
+    Shows the exponential saturation model K(f) = K_∞(1 - e^{-κf})
+    with the K_∞ asymptote and convergence indicators.
+
+    Args:
+        saturation_data: Output from saturation_analysis().
+        output_path: Path to save figure.
+
+    Returns:
+        matplotlib Figure or None.
+    """
+    if not HAS_MATPLOTLIB:
+        logger.warning("matplotlib not available")
+        return None
+
+    logger.info("Creating saturation plot")
+
+    fractions = saturation_data.get("fractions", [])
+    observed = saturation_data.get("observed", [])
+    predicted = saturation_data.get("predicted", [])
+    k_inf = saturation_data.get("k_inf", 0)
+    kappa = saturation_data.get("kappa", 0)
+    r_sq = saturation_data.get("r_squared", 0)
+    is_saturated = saturation_data.get("is_saturated", False)
+    metric = saturation_data.get("metric", "metric")
+
+    pct_fractions = [f * 100 for f in fractions]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    ax.scatter(pct_fractions, observed, color="#3498DB", s=60, zorder=3, label="Observed")
+    ax.plot(pct_fractions, predicted, color="#E74C3C", linewidth=2, linestyle="--", label="Fitted curve")
+    ax.axhline(y=k_inf, color="#2ECC71", linestyle=":", linewidth=1.5, label=f"K_∞ = {k_inf:.3f}")
+
+    status_text = "✓ SATURATED" if is_saturated else "✗ NOT SATURATED"
+    status_color = "#2ECC71" if is_saturated else "#E74C3C"
+    ax.text(
+        0.02, 0.95, status_text,
+        transform=ax.transAxes, fontsize=12, fontweight="bold",
+        color=status_color, va="top",
+    )
+
+    ax.set_xlabel("% of Variants Used")
+    ax.set_ylabel(metric.replace("_", " ").title())
+    ax.set_title(f"Saturation Analysis — {metric}\n(κ={kappa:.2f}, R²={r_sq:.4f})")
+    ax.legend(loc="lower right")
+    ax.grid(True, alpha=0.3)
+    plt.tight_layout()
+
+    if output_path:
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(output_path, dpi=300, bbox_inches="tight")
+        logger.info(f"Saved saturation plot to {output_path}")
+
+    return fig
+
+
+
+def forest_plot(
+    results: "List[Dict[str, Any]]",
+    output_path: "Optional[Union[str, Path]]" = None,
+    top_n: int = 10,
+    significance_threshold: float = 5e-8,
+    ax: "Optional[Any]" = None,
+    style: "Optional[Any]" = None,
+    **kwargs: "Any",
+) -> "Any":
+    """Forest plot of effect sizes (β ± 1.96·SE) for top GWAS hits.
+
+    Each row shows one variant ordered by p-value (most significant at top).
+    GW-significant hits shown in red; sub-threshold in blue.
+    """
+    if not HAS_MATPLOTLIB:
+        logger.warning("matplotlib not available for forest plot")
+        return None
+    if not results:
+        return None
+
+    if style is None:
+        from metainformant.gwas.visualization.config import get_style
+        style = get_style()
+
+    sorted_r = sorted(results, key=lambda r: r.get("p_value", 1.0))[:top_n]
+    plot_r = list(reversed(sorted_r))
+    n = len(plot_r)
+
+    fig = None
+    if ax is None:
+        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, max(4, n * 0.55 + 1.5))))
+
+    betas_all = [r.get("beta", 0.0) for r in plot_r]
+    ses_all = [r.get("se", 0.0) for r in plot_r]
+    ci_los = [b - 1.96 * s for b, s in zip(betas_all, ses_all)]
+    ci_his = [b + 1.96 * s for b, s in zip(betas_all, ses_all)]
+    x_min = min(ci_los) * 1.15
+    x_max = max(ci_his) * 1.15
+
+    for i, r in enumerate(plot_r):
+        beta = r.get("beta", 0.0)
+        ci_lo = ci_los[i]
+        ci_hi = ci_his[i]
+        p_val = r.get("p_value", 1.0)
+        is_sig = p_val < significance_threshold
+        color = style.significance_color if is_sig else style.suggestive_color
+        marker = "D" if is_sig else "o"
+
+        ax.plot([ci_lo, ci_hi], [i, i], "-", color=color, linewidth=1.8, alpha=0.75)
+        ax.plot(beta, i, marker=marker, color=color, markersize=7 if is_sig else 5, zorder=5)
+
+    ax.axvline(0, color="#555555", linewidth=1.5, linestyle="--")
+    ax.set_yticks(range(n))
+    ax.set_yticklabels(
+        [f"{r.get('snp','?')}  p={r.get('p_value',1):.1e}"
+         for r in plot_r],
+        fontsize=8,
+    )
+    ax.set_xlim(x_min, x_max)
+    ax.set_xlabel("Effect size (β) and 95% CI", fontsize=11)
+    ax.set_title(
+        f"Effect Size Forest Plot — Top {n} GWAS Hits\n"
+        f"{sum(1 for r in sorted_r if r.get('p_value', 1) < significance_threshold)} "
+        f"GW-significant (p<{significance_threshold:.0e}, ◆)",
+        fontsize=11,
+    )
+    ax.grid(axis="x", alpha=style.grid_alpha if style.grid else 0.0)
+    sig_patch = mpatches.Patch(color=style.significance_color, label=f"GW-sig (p<{significance_threshold:.0e})")
+    nom_patch = mpatches.Patch(color=style.suggestive_color, label="Sub-threshold")
+    ax.legend(handles=[sig_patch, nom_patch], fontsize=9, loc="lower right")
+    plt.tight_layout()
+
+    if output_path and fig is not None:
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(output_path, dpi=style.dpi, bbox_inches="tight")
+        logger.info(f"Saved forest plot to {output_path}")
+    return ax if fig is None else fig
+
+
+def z_score_manhattan_plot(
+    results: "List[Dict[str, Any]]",
+    output_path: "Optional[Union[str, Path]]" = None,
+    significance_threshold: float = 5e-8,
+    top_n_label: int = 5,
+) -> "Any":
+    """Manhattan plot where point opacity encodes |z-score| = |β/SE|.
+
+    This separates large-effect signals from high-precision (dense coverage)
+    signals. GW-significant hits are annotated with their SNP ID.
+    """
+    if not HAS_MATPLOTLIB:
+        logger.warning("matplotlib not available for z-score Manhattan")
+        return None
+    if not results:
+        return None
+
+    chrom_order: "List[str]" = []
+    seen: set = set()
+    for r in results:
+        c = r.get("chrom", "")
+        if c not in seen:
+            chrom_order.append(c)
+            seen.add(c)
+
+    chrom_max: "Dict[str, int]" = {
+        c: max(r.get("pos", 0) for r in results if r.get("chrom") == c)
+        for c in chrom_order
+    }
+    chrom_offset: "Dict[str, int]" = {}
+    running = 0
+    for c in chrom_order:
+        chrom_offset[c] = running
+        running += chrom_max.get(c, 0) + 5_000_000
+
+    xs, ys, zs, chroms_list = [], [], [], []
+    for r in results:
+        p = max(r.get("p_value", 1.0), 1e-300)
+        beta = r.get("beta", 0.0)
+        se = r.get("se", 1.0)
+        chrom = r.get("chrom", "")
+        pos = r.get("pos", 0)
+        xs.append(chrom_offset.get(chrom, 0) + pos)
+        ys.append(-math.log10(p))
+        zs.append(abs(beta / se) if se > 0 else 0.0)
+        chroms_list.append(chrom)
+
+    max_z = max(zs) if zs else 1.0
+    sig_y = -math.log10(significance_threshold)
+
+    palette = [
+        "#2E86AB", "#A23B72", "#F18F01", "#C73E1D", "#44BBA4",
+        "#E94F37", "#393E41", "#F4995C", "#D81E5B", "#5C6BC0",
+        "#26A69A", "#AB47BC", "#7E57C2", "#42A5F5", "#6B4226", "#3B1F2B",
+    ]
+    fig, ax = plt.subplots(figsize=(14, 5))
+
+    for ci, chrom in enumerate(chrom_order):
+        base_color = palette[ci % len(palette)]
+        idx_c = [i for i, c in enumerate(chroms_list) if c == chrom]
+        for i in idx_c:
+            z_norm = zs[i] / max_z
+            alpha = 0.2 + 0.75 * z_norm
+            sz = 18 if ys[i] >= sig_y else 6
+            ax.scatter(xs[i], ys[i], c=base_color, s=sz, alpha=alpha, linewidths=0)
+
+    ax.axhline(sig_y, color="#C44E52", linewidth=2, linestyle="--",
+               label=f"GW significance (p={significance_threshold:.0e})")
+
+    # Annotate top |z| significant hits
+    sig_pts = sorted(
+        [(i, zs[i]) for i in range(len(xs)) if ys[i] >= sig_y],
+        key=lambda t: -t[1],
+    )[:top_n_label]
+    for i, _ in sig_pts:
+        snp_lbl = results[i].get("snp", "?") if i < len(results) else "?"
+        ax.annotate(
+            snp_lbl, (xs[i], ys[i]),
+            xytext=(0, 9), textcoords="offset points",
+            ha="center", fontsize=7.5, color="#C44E52", fontweight="bold",
+            arrowprops=dict(arrowstyle="-", color="#C44E52", lw=0.8),
+        )
+
+    for c in chrom_order:
+        idx_c2 = [i for i, ch in enumerate(chroms_list) if ch == c]
+        if idx_c2:
+            mid_x = (min(xs[i] for i in idx_c2) + max(xs[i] for i in idx_c2)) / 2
+            label = c.split(".")[-2][-2:] if "." in c else c
+            ax.text(mid_x, -0.6, label, ha="center", va="top", fontsize=7, color="#555")
+
+    ax.set_xlabel("Genomic position", fontsize=11)
+    ax.set_ylabel("−log₁₀(p-value)", fontsize=11)
+    ax.set_title(
+        "Manhattan Plot — Colored by |z-score| (|β/SE|)\n"
+        "Opacity encodes effect magnitude; brighter = larger |β/SE|",
+        fontsize=11,
+    )
+    ax.set_ylim(bottom=-0.9)
+    ax.legend(fontsize=9, loc="upper right")
+    plt.tight_layout()
+
+    if output_path:
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(output_path, dpi=150, bbox_inches="tight")
+        logger.info(f"Saved z-score Manhattan plot to {output_path}")
     return fig

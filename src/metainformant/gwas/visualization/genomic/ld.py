@@ -159,6 +159,9 @@ def ld_decay_plot(
     output_file: Optional[Union[str, Path]] = None,
     fit_curve: bool = True,
     title: str = "LD Decay",
+    ax: Optional[Any] = None,
+    style: Optional[Any] = None,
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """Plot an LD decay curve: mean r-squared vs physical distance.
 
@@ -202,10 +205,17 @@ def ld_decay_plot(
         if not plot_x:
             return {"status": "failed", "error": "No bins with data", "output_path": None}
 
-        fig, ax = plt.subplots(figsize=(10, 6))
+        if style is None:
+            from metainformant.gwas.visualization.config import get_style
+            style = get_style()
+
+        fig = None
+        if ax is None:
+            fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 6)))
 
         # Scatter plot of binned means
-        ax.scatter(plot_x, plot_y, c="steelblue", alpha=0.7, s=30, label="Mean r\u00b2")
+        scatter_kwargs = kwargs.get("scatter_kwargs", {"c": "steelblue", "alpha": style.alpha, "s": style.point_size})
+        ax.scatter(plot_x, plot_y, label="Mean r\u00b2", **scatter_kwargs)
 
         # Fit exponential decay if requested
         ld_decay_distance = None
@@ -277,19 +287,20 @@ def ld_decay_plot(
         ax.set_title(title, fontsize=14, pad=15)
         ax.set_ylim(bottom=0)
         ax.legend(loc="upper right")
-        ax.grid(True, alpha=0.3)
+        ax.grid(True, alpha=style.grid_alpha if style.grid else 0.0)
 
         plt.tight_layout()
 
         output_path_str: Optional[str] = None
-        if output_file:
+        if output_file and fig is not None:
             output_file = Path(output_file)
             output_file.parent.mkdir(parents=True, exist_ok=True)
-            fig.savefig(output_file, dpi=300, bbox_inches="tight")
+            fig.savefig(output_file, dpi=style.dpi, bbox_inches="tight")
             output_path_str = str(output_file)
             logger.info(f"Saved LD decay plot to {output_file}")
 
-        plt.close(fig)
+        if fig is not None:
+            plt.close(fig)
 
         result: Dict[str, Any] = {
             "status": "success",
@@ -312,6 +323,9 @@ def ld_heatmap_region(
     region_start: Optional[int] = None,
     region_end: Optional[int] = None,
     title: str = "LD Heatmap",
+    ax: Optional[Any] = None,
+    style: Optional[Any] = None,
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """Create a triangular LD heatmap for a genomic region (Haploview style).
 
@@ -387,7 +401,13 @@ def ld_heatmap_region(
                 r2_matrix[jj, ii] = r2
 
         # Create the triangular heatmap (rotated 45 degrees)
-        fig, ax = plt.subplots(figsize=(10, 6))
+        if style is None:
+            from metainformant.gwas.visualization.config import get_style
+            style = get_style()
+
+        fig = None
+        if ax is None:
+            fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 6)))
 
         # Build rotated coordinates for a triangular display
         # Each cell (i, j) where j > i is drawn as a diamond rotated 45 degrees
@@ -424,14 +444,15 @@ def ld_heatmap_region(
                 colors_list.append(r2_matrix[ii, jj])
 
         if patches:
-            collection = PatchCollection(patches, cmap="Reds", edgecolors="none")
+            collection = PatchCollection(patches, cmap=kwargs.get("cmap", "Reds"), edgecolors="none")
             collection.set_array(np.array(colors_list))
             collection.set_clim(0.0, 1.0)
             ax.add_collection(collection)
 
             # Add colorbar
-            cbar = plt.colorbar(collection, ax=ax, fraction=0.046, pad=0.04)
-            cbar.set_label("r\u00b2", fontsize=11)
+            if fig is not None or kwargs.get("show_colorbar", False):
+                cbar = plt.colorbar(collection, ax=ax, fraction=0.046, pad=0.04)
+                cbar.set_label("r\u00b2", fontsize=11)
 
         # Set axis limits
         ax.set_xlim(-0.5, n_region - 0.5)
@@ -459,18 +480,21 @@ def ld_heatmap_region(
         plt.tight_layout()
 
         output_path_str: Optional[str] = None
-        if output_file:
+        if output_file and fig is not None:
             output_file = Path(output_file)
             output_file.parent.mkdir(parents=True, exist_ok=True)
-            fig.savefig(output_file, dpi=300, bbox_inches="tight")
+            fig.savefig(output_file, dpi=style.dpi, bbox_inches="tight")
             output_path_str = str(output_file)
             logger.info(f"Saved LD heatmap to {output_file}")
 
-        plt.close(fig)
+        if fig is not None:
+            plt.close(fig)
         return {
             "status": "success",
             "output_path": output_path_str,
             "n_variants": n_region,
+            "fig": fig,
+            "ax": ax,
         }
 
     except Exception as e:

@@ -96,7 +96,8 @@ def write_go_summary(onto: Ontology, dest: str | Path | None = None) -> Path:
         >>> print(f"Summary written to: {summary_path}")
     """
     if dest is None:
-        output_dir = paths.ensure_directory(Path("output"))
+        output_dir = Path("output")
+        paths.ensure_directory(output_dir)
         dest = output_dir / "go_summary.txt"
     else:
         dest = Path(dest)
@@ -151,8 +152,20 @@ Terms by Namespace:
     if len(roots) > 10:
         content += f"... and {len(roots) - 10} more\n"
 
-    # Write to file
-    io.write_text(content, dest)
+    if dest.suffix == ".json":
+        import json
+        summary_data = {
+            "term_count": len(onto),
+            "obsolete_count": obsolete_count,
+            "namespaces": dict(namespace_counts),
+            "relationships": dict(relationship_counts),
+            "num_roots": len(roots),
+            "num_leaves": len(leaves)
+        }
+        dest.write_text(json.dumps(summary_data, indent=2), encoding="utf-8")
+    else:
+        # Write to file
+        dest.write_text(content, encoding="utf-8")
     logger.info(f"GO summary written to {dest}")
 
     return dest

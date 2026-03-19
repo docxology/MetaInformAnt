@@ -27,7 +27,9 @@ class PlotStyle:
         dpi: Resolution in dots per inch.
         font_size: Base font size for labels and ticks.
         title_size: Font size for plot titles.
-        colormap: Matplotlib colormap name for chromosome coloring.
+        colormap: Matplotlib colormap name for continuous coloring.
+        categorical_colors: List of hex colors for discrete groups (e.g., alternating chromosomes).
+        volcano_colors: Dictionary of colors for volcano plot categories.
         significance_color: Color for genome-wide significance line.
         suggestive_color: Color for suggestive significance line.
         point_size: Marker size for scatter plots.
@@ -43,8 +45,10 @@ class PlotStyle:
     font_size: int = 12
     title_size: int = 14
     colormap: str = "viridis"
-    significance_color: str = "red"
-    suggestive_color: str = "blue"
+    categorical_colors: List[str] = field(default_factory=lambda: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b"])
+    volcano_colors: Dict[str, str] = field(default_factory=lambda: {"sig_large": "#d62728", "sig_small": "#ff7f0e", "nonsig_large": "#1f77b4", "nonsig_small": "#7f7f7f"})
+    significance_color: str = "#d62728"
+    suggestive_color: str = "#1f77b4"
     point_size: float = 8.0
     alpha: float = 0.7
     theme: str = "publication"
@@ -158,6 +162,8 @@ def style_from_config(config: Dict[str, Any]) -> PlotStyle:
         font_size=viz_config.get("font_size", defaults.font_size),
         title_size=viz_config.get("title_size", defaults.title_size),
         colormap=viz_config.get("colormap", defaults.colormap),
+        categorical_colors=viz_config.get("categorical_colors", defaults.categorical_colors),
+        volcano_colors=viz_config.get("volcano_colors", defaults.volcano_colors),
         significance_color=viz_config.get("significance_color", defaults.significance_color),
         suggestive_color=viz_config.get("suggestive_color", defaults.suggestive_color),
         point_size=viz_config.get("point_size", defaults.point_size),
