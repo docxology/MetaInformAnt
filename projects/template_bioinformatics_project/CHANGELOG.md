@@ -7,7 +7,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Version: [SemV
 
 ## [Unreleased]
 
-_(Changes staged for the next release)_
+> _(Changes staged for the next release)_
 
 ---
 

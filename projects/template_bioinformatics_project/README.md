@@ -17,6 +17,7 @@ A **thin orchestration** bioinformatics project template.
 The numbered scripts in `scripts/` are lightweight wrappers that load configuration, call `metainformant.*` library functions, and write structured logs. **No algorithms live in the scripts.** All heavy computation belongs in versioned, testable library modules.
 
 **Key properties:**
+
 - 🔒 **Immutable raw data** — `data/raw/` is never modified by any script
 - ♻️ **Idempotent stages** — safe to re-run; existing outputs are preserved unless `--force`
 - 🔬 **Zero-Mock testing** — tests run real code on synthetic data, no patching
@@ -205,6 +206,7 @@ uv run pytest tests/ -v --cov=scripts --cov-report=term-missing
 ```
 
 Tests cover:
+
 - Stage 99 synthetic data generation (files created, valid YAML provenance)
 - Stage 01 data processing (output exists, idempotency, handles empty dir)
 - Stage 02 analysis (summary CSV, JSON metadata, exits non-zero without input)

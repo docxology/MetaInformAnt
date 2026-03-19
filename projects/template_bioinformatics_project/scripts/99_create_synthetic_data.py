@@ -22,6 +22,7 @@ import time
 import random
 import argparse
 import datetime
+from datetime import UTC
 from pathlib import Path
 
 import yaml
@@ -93,7 +94,7 @@ def write_csv(rows: list[dict], path: Path) -> None:
 def write_metadata(raw_dir: Path, datasets: list[dict]) -> None:
     """Write a provenance YAML file describing the generated data."""
     metadata = {
-        "generated_at": datetime.datetime.utcnow().isoformat() + "Z",
+        "generated_at": datetime.datetime.now(UTC).isoformat(),
         "generator": "scripts/99_create_synthetic_data.py",
         "purpose": "Synthetic data for end-to-end pipeline testing",
         "datasets": datasets,
