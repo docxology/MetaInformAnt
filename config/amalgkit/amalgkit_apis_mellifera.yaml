@@ -9,7 +9,7 @@
 
 work_dir: output/amalgkit/apis_mellifera/work
 log_dir: output/amalgkit/apis_mellifera/logs
-threads: 16
+threads: 60
 
 
 auto_install_amalgkit: true
@@ -54,6 +54,12 @@ genome:
   ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/GCF_003254395.2_Amel_HAv3.1/
 
 
+  # Required for orchestrator genome preparation
+  files:
+    transcriptome_fasta: GCF_003254395.2_Amel_HAv3.1_rna_from_genomic.fna.gz
+    genomic_fasta: GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz
+
+
   # Specific important files for transcriptome analysis
   files:
     genomic_fasta: GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz
@@ -67,8 +73,7 @@ genome:
 # Per-step parameters (merged on top of common params)
 steps:
   metadata:
-    # Required by amalgkit metadata
-    out_dir: output/amalgkit/apis_mellifera/work
+    # Required by amalgkit
     # Uses NCBI_EMAIL from environment; override here if needed
     # entrez_email: you@example.com
     search_string: '"Apis mellifera"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
@@ -78,27 +83,21 @@ steps:
   config: {}
   select: {}
   getfastq:
-    out_dir: output/amalgkit/apis_mellifera/fastq
     remove_sra: yes
-    threads: 16
+    threads: 60
     # accelerate: true  # REMOVED: Unsupported flag
     pfd: yes  # Use parallel-fastq-dump
     redo: no
   quant:
     jobs: 1
     # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
-    out_dir: output/amalgkit/apis_mellifera/quant
-    threads: 16
+    threads: 60
     redo: no
     # Delete SRA/FASTQ files after quantification to save space
     keep_fastq: no
   merge:
     out: output/amalgkit/apis_mellifera/merged/merged_abundance.tsv
-    out_dir: output/amalgkit/apis_mellifera/merged
-  cstmm:
-    out_dir: output/amalgkit/apis_mellifera/cstmm
-  curate:
-    out_dir: output/amalgkit/apis_mellifera/curate
-  csca:
-    out_dir: output/amalgkit/apis_mellifera/csca
+  cstmm: {}
+  curate: {}
+  csca: {}
   sanity: {}
