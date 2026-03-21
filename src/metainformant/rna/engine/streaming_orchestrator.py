@@ -102,6 +102,26 @@ class StreamingPipelineOrchestrator:
                     check_path.unlink()
             sample_dir.mkdir(parents=True, exist_ok=True)
 
+        # Disk space throttle: Prevent starting new enormous downloads if 
+        # the storage volume is nearing capacity (e.g. < 50GB free space).
+        throttle_attempts = 0
+        while True:
+            import shutil
+            try:
+                free_gb = shutil.disk_usage(out_dir).free / (1024**3)
+                if free_gb < 10.0:
+                    if throttle_attempts % 6 == 0:  # Log every ~5 mins
+                        logger.warning(f"[Disk Throttle] Only {free_gb:.1f}GB free. Worker pausing to allow other threads to finish quantification and cleanup FASTQ files...")
+                    time.sleep(60)  # Wait 1 minute and re-check
+                    throttle_attempts += 1
+                else:
+                    if throttle_attempts > 0:
+                        logger.info(f"[Disk Throttle] Space freed up ({free_gb:.1f}GB free). Resuming download for {srr_id}.")
+                    break
+            except Exception as e:
+                logger.error(f"Failed to check disk space: {e}")
+                break # Proceed anyway if check fails
+
         downloader = ENADownloader(timeout=7200, retries=3)
         success, message, downloaded_files = downloader.download_run(srr_id, sample_dir)
 
