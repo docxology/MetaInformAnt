@@ -109,7 +109,7 @@ class StreamingPipelineOrchestrator:
             import shutil
             try:
                 free_gb = shutil.disk_usage(out_dir).free / (1024**3)
-                if free_gb < 10.0:
+                if free_gb < 8.0:
                     if throttle_attempts % 6 == 0:  # Log every ~5 mins
                         logger.warning(f"[Disk Throttle] Only {free_gb:.1f}GB free. Worker pausing to allow other threads to finish quantification and cleanup FASTQ files...")
                     time.sleep(60)  # Wait 1 minute and re-check
@@ -296,7 +296,7 @@ class StreamingPipelineOrchestrator:
             pass  # Fall through to filesystem check on DB errors
         # Filesystem fallback for samples not yet in DB
         quant_dir = Path(f"output/amalgkit/{species_name}/work/quant/{srr_id}")
-        return any(quant_dir.glob("*_abundance.tsv")) if quant_dir.exists() else False
+        return (quant_dir / "abundance.tsv").exists() or (quant_dir / "quant.sf").exists() if quant_dir.exists() else False
 
     def process_single_sample(self, srr_id: str, batch_idx: int, fastq_dir: Path, 
                             config_path: Path, species_name: str, threads: int) -> Dict[str, Any]:

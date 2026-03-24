@@ -240,7 +240,7 @@ class ProgressDB:
             for subdir in quant_dir.iterdir():
                 if not subdir.is_dir():
                     continue
-                if any(subdir.glob("*_abundance.tsv")) or (subdir / "quant.sf").exists():
+                if (subdir / "abundance.tsv").exists() or (subdir / "quant.sf").exists():
                     reconciled.append(subdir.name)
         except Exception as e:
             logger.warning(f"Reconciliation scan failed for {species}: {e}")
