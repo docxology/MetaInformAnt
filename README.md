@@ -503,45 +503,18 @@ See [`scripts/README.md`](scripts/README.md) for documentation.
 
 ### CLI Interface
 
-All modules are accessible via the unified CLI:
+The `metainformant` command exposes a **small** CLI ([`docs/cli.md`](docs/cli.md)): `--version`, `--modules`, `protein` (taxon-ids, comp, rmsd-ca), `quality batch-detect`, `rna info`, `gwas info`. Full domain workflows use **Python imports**, **`scripts/*/run_*.py`**, or **`python -m metainformant.rna.amalgkit`**.
 
 ```bash
-# Setup and environment
-uv run metainformant setup --with-amalgkit
-
-# Domain workflows
-uv run metainformant dna fetch --assembly GCF_000001405.40
-uv run metainformant dna align --input data/sequences.fasta --output output/dna/alignment
-uv run metainformant dna variants --input data/variants.vcf --format vcf --output output/dna/variants
-uv run metainformant rna run --work-dir output/rna --threads 8 --species Apis_mellifera
-uv run metainformant rna run-config --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
-uv run metainformant protein taxon-ids --file data/taxon_ids.txt
-uv run metainformant protein rmsd-ca --pdb-a data/structure1.pdb --pdb-b data/structure2.pdb
-uv run metainformant gwas run --config config/gwas/gwas_template.yaml
-
-# Epigenome and annotation
-uv run metainformant epigenome run --methylation data/methylation.tsv --output output/epigenome
-uv run metainformant ontology run --go data/go.obo --output output/ontology
-uv run metainformant phenotype run --input data/traits.csv --output output/phenotype
-uv run metainformant ecology run --input data/species.csv --output output/ecology --diversity
-
-# Analysis and modeling
-uv run metainformant math popgen --input data/sequences.fasta --output output/math/popgen
-uv run metainformant math coalescent --n-samples 10 --output output/math/coalescent
-uv run metainformant information entropy --input data/seqs.fasta --output output/information
-uv run metainformant simulation run --model sequences --output output/simulation
-
-# Systems biology
-uv run metainformant networks run --input data/interactions.tsv --output output/networks
-uv run metainformant multiomics run --genomics data/genomics.tsv --output output/multiomics
-uv run metainformant singlecell run --input data/counts.h5ad --output output/singlecell --qc
-uv run metainformant quality run --fastq data/reads.fq --output output/quality --analyze-fastq
-uv run metainformant ml run --features data/features.csv --output output/ml --classify
-uv run metainformant visualization run --input data/matrix.csv --plot-type heatmap --output output/visualization
-uv run metainformant life-events embed --input data/events.json --output output/life_events/embeddings
-
-# See all available commands
 uv run metainformant --help
+uv run metainformant --modules
+uv run metainformant protein taxon-ids --file data/taxon_ids.txt
+uv run metainformant protein comp --fasta data/proteins.fasta
+uv run metainformant protein rmsd-ca --pdb-a data/structure1.pdb --pdb-b data/structure2.pdb
+uv run metainformant quality batch-detect --data samples.csv --batches batches.txt
+
+# RNA-seq (config-driven script; see docs/cli.md for Python API)
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 See [`docs/cli.md`](docs/cli.md) for CLI documentation.
@@ -566,28 +539,27 @@ print(f"π = {diversity:.4f}")
 ### RNA-seq Workflow
 
 ```python
-from metainformant.rna import AmalgkitWorkflowConfig, plan_workflow, execute_workflow, check_cli_available
+from pathlib import Path
 
-# Check if amalgkit is available
+from metainformant.rna.amalgkit import check_cli_available
+from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, execute_workflow, plan_workflow
+
 available, help_text = check_cli_available()
 if not available:
     print(f"Amalgkit not available: {help_text}")
 
-# Configure workflow
 config = AmalgkitWorkflowConfig(
-    work_dir="output/amalgkit/work",
+    work_dir=Path("output/amalgkit/work"),
     threads=8,
-    species_list=["Apis_mellifera"]
+    species_list=["Apis_mellifera"],
 )
 
-# Plan workflow steps
 steps = plan_workflow(config)
 print(f"Planned {len(steps)} workflow steps")
 
-# Execute workflow
 results = execute_workflow(config)
-for step, result in results.items():
-    print(f"{step}: exit code {result.returncode}")
+for step_result in results.steps_executed:
+    print(f"{step_result.step_name}: exit code {step_result.return_code}")
 ```
 
 ```bash

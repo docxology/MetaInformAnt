@@ -9,32 +9,31 @@ METAINFORMANT provides a layered orchestration architecture for running bioinfor
 ```mermaid
 flowchart TB
     subgraph "User Interfaces"
-        CLIcliInterfaceMetainformantCommand[CLI Interface_metainformant command]
+        CLIsmallMetainformantEntry[metainformant_CLI_limited_subcommands]
         ScriptsscriptOrchestratorsScripts/*/run*.py[Script Orchestrators_scripts/*/run_*.py]
+        PythonApi[Python_API_imports]
     end
 
     subgraph "Orchestration Framework"
-        CoreOrchbaseworkfloworchestratorCore.workflow[BaseWorkflowOrchestrator_core.workflow]
-        DomainOrchdomainWorkflowsDomain.workflow[Domain Workflows_domain.workflow]
+        CoreOrchBaseWorkflowOrchestrator[BaseWorkflowOrchestrator_core.execution.workflow]
+        DomainOrchEngineModules[Domain_engine_and_workflow_modules]
     end
 
     subgraph "Execution Layer"
-        StepsstepFunctionsDomain.steps[Step Functions_domain.steps]
-        UtilscoreUtilitiesCore.*[Core Utilities_core.*]
+        StepsstepFunctionsDomainSteps[Step_functions_and_external_tools]
+        UtilscoreUtilitiesCore[Core_utilities_core.*]
     end
 
-    CLI --> Scripts
-    Scripts --> CoreOrch
-    Scripts --> DomainOrch
-    CoreOrch --> DomainOrch
-    DomainOrch --> Steps
-    Steps --> Utils
+    CLIsmallMetainformantEntry --> ScriptsscriptOrchestratorsScripts/*/run*.py
+    PythonApi --> DomainOrchEngineModules
+    ScriptsscriptOrchestratorsScripts/*/run*.py --> CoreOrchBaseWorkflowOrchestrator
+    ScriptsscriptOrchestratorsScripts/*/run*.py --> DomainOrchEngineModules
+    CoreOrchBaseWorkflowOrchestrator --> DomainOrchEngineModules
+    DomainOrchEngineModules --> StepsstepFunctionsDomainSteps
+    StepsstepFunctionsDomainSteps --> UtilscoreUtilitiesCore
 
-    DomainOrch --> RNArnaWorkflowRna.workflow[RNA Workflow_rna.workflow]
-    DomainOrch --> GWASgwasWorkflowGwas.workflow[GWAS Workflow_gwas.workflow]
-    DomainOrch --> EPIepigenomeEpigenome.workflow[Epigenome_epigenome.workflow]
-    DomainOrch --> ECOecologyEcology.workflow[Ecology_ecology.workflow]
-    DomainOrch --> SIMsimulationSimulation.workflow[Simulation_simulation.workflow]
+    DomainOrchEngineModules --> RNArnaEngineWorkflow[rna.engine.workflow]
+    DomainOrchEngineModules --> GWASgwasWorkflow[gwas.workflow]
 ```
 
 ## When to Use Each Layer
@@ -44,40 +43,37 @@ flowchart TB
 ```mermaid
 flowchart TD
     AneedToRunWorkflow?[Need to run workflow?] --> B{What level of control?}
-    B --> CfullProgrammaticControlDirectApiCalls[Full programmatic control_Direct API calls]
-    B --> Dconfig-drivenAutomationDomainWorkflows[Config-driven automation_Domain workflows]
-    B --> Ecommand-lineConvenienceScriptOrchestrators[Command-line convenience_Script orchestrators]
-    B --> FinteractiveExplorationCliInterface[Interactive exploration_CLI interface]
+    B --> CfullProgrammaticControlDirectApiCalls[Full programmatic control]
+    B --> Dconfig-drivenAutomationDomainWorkflows[Config-driven automation]
+    B --> Ecommand-lineConvenienceScriptOrchestrators[Script orchestrators]
+    B --> FquickCliProbes[Quick CLI probes]
 
-    C --> GuseDomain.workflowExecute*Functions[Use domain.workflow_execute_* functions]
-    D --> HuseScripts/*/run*.pyWithConfigFiles[Use scripts/*/run_*.py_with config files]
-    E --> IuseMetainformantCliWithSubcommands[Use metainformant CLI_with subcommands]
-    F --> JuseMetainformantCliInteractiveMode[Use metainformant CLI_interactive mode]
+    C --> GuseDomainEngineWorkflow[Use domain engine.workflow or package API]
+    D --> HuseScriptsRunPy[Use scripts/*/run_*.py with config files]
+    E --> H
+    F --> IsmallMetainformantCli[metainformant protein quality rna info gwas info only]
 ```
 
 ### Layer Descriptions
 
 #### 1. CLI Interface (`metainformant`)
 
-**Purpose**: Interactive exploration and quick commands
+**Purpose**: Narrow entry point for a few utilities (`protein`, `quality batch-detect`, module `info` stubs). Not used for full RNA or GWAS pipelines.
 
 **When to use:**
-- Ad-hoc analysis and exploration
-- Learning API patterns
-- Quick one-off operations
-- Interactive debugging
+- Protein FASTA/PDB one-liners
+- Batch-effect probe from CSV + labels
+- Listing modules (`--modules`) or version
 
 **Examples:**
 ```bash
-# Quick DNA analysis
-uv run metainformant dna fetch --assembly GCF_000001405.40
-
-# GWAS visualization
-uv run metainformant gwas plot --input results.csv --type manhattan
-
-# Check workflow status
-uv run metainformant rna status --config config/amalgkit/species.yaml
+uv run metainformant --modules
+uv run metainformant protein comp --fasta data/example.faa
+uv run metainformant quality batch-detect --data matrix.csv --batches batches.txt
+uv run metainformant rna info
 ```
+
+Full workflows: [cli.md](cli.md), [rna/workflow.md](rna/workflow.md), `scripts/rna/run_workflow.py`.
 
 #### 2. Script Orchestrators (`scripts/*/run_*.py`)
 
@@ -102,7 +98,7 @@ python3 scripts/gwas/run_genome_scale_gwas.py --config config/gwas/species.yaml
 python3 scripts/multiomics/run_multiomics_integration.py --input data/ --output output/
 ```
 
-#### 3. BaseWorkflowOrchestrator (`core.workflow`)
+#### 3. BaseWorkflowOrchestrator (`core.execution.workflow`)
 
 **Purpose**: Framework for building complex workflows
 
@@ -114,7 +110,7 @@ python3 scripts/multiomics/run_multiomics_integration.py --input data/ --output 
 
 **Pattern:**
 ```python
-from metainformant.core.workflow import BaseWorkflowOrchestrator
+from metainformant.core.execution.workflow import BaseWorkflowOrchestrator
 
 class CustomWorkflow(BaseWorkflowOrchestrator):
     def get_steps(self) -> List[str]:
@@ -128,26 +124,28 @@ workflow = CustomWorkflow("custom", Path("output/custom"))
 results = workflow.run_workflow()
 ```
 
-#### 4. Domain Workflows (`domain.workflow`)
+#### 4. Domain workflows (RNA engine, GWAS workflow package)
 
-**Purpose**: Domain-specific workflow execution
+**Purpose**: Domain-specific workflow execution from Python
 
 **When to use:**
-- Direct programmatic control over domain workflows
-- Custom workflow modifications
-- Integration into larger systems
-- Fine-grained control over workflow execution
+- Direct programmatic control
+- Embedding in notebooks or services
+- Steps beyond what a single script exposes
 
 **Examples:**
 ```python
-from metainformant.rna.workflow import execute_amalgkit_workflow
-from metainformant.gwas.workflow import execute_gwas_workflow
+from pathlib import Path
 
-# RNA-seq workflow with custom config
-rna_results = execute_amalgkit_workflow(config, work_dir="output/rna")
+from metainformant.gwas import execute_gwas_workflow
+from metainformant.gwas.workflow.workflow_config import load_gwas_config
+from metainformant.rna.engine.workflow import execute_workflow, load_workflow_config
 
-# GWAS with custom parameters
-gwas_results = execute_gwas_workflow(vcf_path, phenotype_path, config)
+rna_cfg = load_workflow_config(Path("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml"))
+rna_results = execute_workflow(rna_cfg, check=False)
+
+gwas_cfg = load_gwas_config("config/gwas/gwas_template.yaml")
+gwas_results = execute_gwas_workflow(gwas_cfg)
 ```
 
 ## Thin Script Wrapper Pattern
@@ -165,7 +163,8 @@ Most script orchestrators follow a "thin wrapper" pattern: they parse arguments 
 # 1. Setup imports and environment
 import argparse
 from pathlib import Path
-from metainformant.domain.workflow import execute_domain_workflow
+# Import the domain workflow entrypoint (path varies), e.g.:
+# from metainformant.rna.engine.workflow import execute_workflow
 
 # 2. Parse arguments (config, output dir, etc.)
 parser = argparse.ArgumentParser()
@@ -173,17 +172,13 @@ parser.add_argument("--config", required=True)
 parser.add_argument("--output", default="output/domain")
 args = parser.parse_args()
 
-# 3. Call domain workflow (all logic in src/)
-results = execute_domain_workflow(
-    config_path=args.config,
-    output_dir=args.output,
-    # Other parameters...
-)
+# 3. Call domain workflow (all logic in src/) — example for RNA:
+# from metainformant.rna.engine.workflow import execute_workflow, load_workflow_config
+# results = execute_workflow(load_workflow_config(Path(args.config)))
 
-# 4. Handle results and exit codes
-if results.get("status") == "failed":
-    print(f"Workflow failed: {results.get('errors', [])}")
-    exit(1)
+# 4. Handle results and exit codes (shape depends on domain)
+# if not getattr(results, "success", True):
+#     exit(1)
 ```
 
 ### Benefits

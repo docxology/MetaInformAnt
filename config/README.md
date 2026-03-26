@@ -35,18 +35,15 @@ config/
 ### Run RNA-seq Workflow
 
 ```bash
-# Using CLI
-uv run metainformant rna run-config --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
-
-# Using script
+# Config-driven script (recommended)
 python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
+Or from Python: `metainformant.rna.engine.workflow.load_workflow_config` and `execute_workflow` (see [docs/rna/workflow.md](../docs/rna/workflow.md)).
+
 ### Run GWAS Workflow
 
-```bash
-uv run metainformant gwas run --config config/gwas/gwas_pbarbatus.yaml
-```
+Use Python (`metainformant.gwas`) or a script under `scripts/gwas/` with this config path; the main `metainformant` CLI does not implement `gwas run` (see [docs/cli.md](../docs/cli.md)).
 
 ## Configuration Format
 

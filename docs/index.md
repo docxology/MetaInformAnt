@@ -170,39 +170,28 @@ uv pip install -e .
 ### Basic Usage
 
 ```python
-import metainformant as mi
+from metainformant.dna.sequence import composition
+from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, execute_workflow
 
-# DNA sequence analysis
 seq = "ATCGATCGATCG"
-gc_content = mi.dna.composition.gc_content(seq)
-print(f"GC content: {gc_content:.2f}")
-
-# RNA-seq workflow
-from metainformant.rna import AmalgkitWorkflowConfig, execute_workflow
+gc = composition.gc_content(seq)
+print(f"GC content: {gc:.2f}")
 
 config = AmalgkitWorkflowConfig(
     work_dir="output/rna_analysis",
-    species_list=["Apis_mellifera"]
+    species_list=["Apis_mellifera"],
 )
 results = execute_workflow(config)
 ```
 
 ### Command Line Interface
 
-METAINFORMANT provides a comprehensive CLI:
+The `metainformant` command exposes a small CLI (`--version`, `--modules`, `protein`, `quality batch-detect`, `rna info`, `gwas info`). RNA and GWAS pipelines use Python APIs or `scripts/*/run_*.py`. See [cli.md](cli.md).
 
 ```bash
-# Show help
-metainformant --help
-
-# DNA analysis
-metainformant dna gc-content --sequence ATCGATCG
-
-# RNA workflow
-metainformant rna run --config config/rna_config.yaml
-
-# GWAS analysis
-metainformant gwas run --config config/gwas_config.yaml
+uv run metainformant --help
+uv run metainformant protein comp --fasta data/example.faa
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 ## Documentation Contents
