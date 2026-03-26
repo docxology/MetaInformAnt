@@ -134,6 +134,6 @@ check_numpy.py
 # Temporary ignore output/
 output/
 
-# Sub-repositories
-projects/hymenoptera_amalgkit/
-
+# Sub-repositories and User Projects
+projects/*
+!projects/template_bioinformatics_project/
