@@ -143,7 +143,11 @@ def apply_style(style: PlotStyle) -> None:
     """
     try:
         import matplotlib as mpl
+        import seaborn as sns
 
+        # Ensure high-contrast universal styling across all graphs natively
+        sns.set_theme(style="whitegrid", palette="husl")
+        
         mpl.rcParams["font.size"] = style.font_size
         mpl.rcParams["axes.titlesize"] = style.title_size
         mpl.rcParams["figure.dpi"] = style.dpi
@@ -151,10 +155,10 @@ def apply_style(style: PlotStyle) -> None:
         mpl.rcParams["font.family"] = style.font_family
         mpl.rcParams["axes.grid"] = style.grid
         mpl.rcParams["grid.alpha"] = style.grid_alpha
-        logger.info("Applied PlotStyle (theme=%s) to matplotlib rcParams", style.theme)
+        logger.info("Applied PlotStyle (theme=%s) to matplotlib rcParams with Seaborn HUSL palette", style.theme)
     except ImportError:
         logger.warning(
-            "matplotlib is not installed; cannot apply PlotStyle to rcParams"
+            "matplotlib or seaborn is not installed; cannot apply PlotStyle to rcParams"
         )
 
 

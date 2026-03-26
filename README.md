@@ -527,7 +527,7 @@ See [`docs/cli.md`](docs/cli.md) for CLI documentation.
 from metainformant.dna import alignment, population
 
 # Pairwise alignment
-align_result = alignment.global_align("ACGTACGT", "ACGTAGGT")
+align_result = alignment.pairwise.global_align("ACGTACGT", "ACGTAGGT")
 print(f"Score: {align_result.score}")
 
 # Population genetics

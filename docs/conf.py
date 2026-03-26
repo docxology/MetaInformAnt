@@ -26,7 +26,7 @@ def get_version():
             data = tomllib.load(f)
             return data['project']['version']
     except Exception:
-        return '0.2.0'
+        return '0.2.7'
 
 version = get_version()
 release = version

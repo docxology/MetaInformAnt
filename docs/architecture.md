@@ -1,18 +1,18 @@
 # Architecture
 
-Comprehensive system architecture of METAINFORMANT, showing the modular design, data flow patterns, and integration relationships across all biological domains.
+System architecture of METAINFORMANT: modular layout, data flow, and how domains connect.
 
 ## System Overview
 
-METAINFORMANT is a comprehensive bioinformatics toolkit designed for multi-omic data analysis. The architecture follows a modular, domain-driven design with clear separation of concerns and extensive integration capabilities.
+METAINFORMANT is a bioinformatics toolkit for multi-omic analysis. The layout is modular and domain-driven, with shared core utilities and typed boundaries between packages.
 
 ### Core Design Principles
 
-- **Modular Architecture**: Each biological domain is self-contained with well-defined interfaces
-- **Data Flow Integration**: Seamless data exchange between modules through standardized formats
-- **Quality Assurance**: Comprehensive validation and error handling throughout
-- **Extensibility**: Easy addition of new analysis methods and data types
-- **Performance**: Optimized algorithms for large-scale biological data processing
+- **Modular packages**: Domains are separated with explicit public surfaces
+- **Shared data conventions**: Common I/O, paths, and config patterns in `core`
+- **Validation and errors**: Config and path checks at workflow boundaries where applicable
+- **Extensibility**: New methods attach as subpackages following existing patterns
+- **Performance**: Large-data paths favor streaming and explicit parallelism where implemented
 
 ## Module Architecture
 
