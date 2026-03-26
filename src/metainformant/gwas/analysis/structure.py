@@ -16,7 +16,9 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 
-def compute_pca(genotype_matrix: List[List[int]], n_components: int = 10) -> Dict[str, Any]:
+def compute_pca(
+    genotype_matrix: List[List[int]], n_components: int = 10
+) -> Dict[str, Any]:
     """Compute principal component analysis on genotype matrix.
 
     Args:
@@ -32,14 +34,19 @@ def compute_pca(genotype_matrix: List[List[int]], n_components: int = 10) -> Dic
     try:
         # Use numpy if available for efficient computation (SVD)
         import numpy as np
-        
+
         # Convert to numpy array (impute missing -1 with mean)
         # genotype_matrix is n_samples x n_variants
         X = np.array(genotype_matrix, dtype=float)
 
         # Guard: empty matrix – return early before any reduction ops
         if X.size == 0:
-            return {"status": "failed", "error": "Empty genotype matrix", "pcs": [], "explained_variance_ratio": []}
+            return {
+                "status": "failed",
+                "error": "Empty genotype matrix",
+                "pcs": [],
+                "explained_variance_ratio": [],
+            }
 
         # Handle missing data (-1)
         # For simplicity in this optimization, replace < 0 with 0 (ref) or mean
@@ -47,59 +54,68 @@ def compute_pca(genotype_matrix: List[List[int]], n_components: int = 10) -> Dic
         mask = X < 0
         if np.any(mask):
             # Compute column means excluding -1
-            col_means = np.sum(np.where(mask, 0, X), axis=0) / (np.sum(~mask, axis=0) + 1e-10)
+            col_means = np.sum(np.where(mask, 0, X), axis=0) / (
+                np.sum(~mask, axis=0) + 1e-10
+            )
             # Find indices where mask is True
             rows, cols = np.where(mask)
             X[rows, cols] = col_means[cols]
-            
+
         # Center the data (subtract mean of each variant)
         X -= np.mean(X, axis=0)
-        
+
         # Perform SVD: X = U S V^T
-        # PC scores are X V = U S (if using full SVD definition) 
+        # PC scores are X V = U S (if using full SVD definition)
         # but typical GWAS PCA projects samples.
-        # sklearn PCA projects X onto components. 
+        # sklearn PCA projects X onto components.
         # U, s, Vt = np.linalg.svd(X, full_matrices=False)
         # PCs = U * s
-        
+
         U, s, Vt = np.linalg.svd(X, full_matrices=False)
-        
+
         # Select top components
         n_comp = min(n_components, len(s))
-        
+
         # PC scores (samples x components)
         # Scale U by singular values to get projected scores
         pcs_array = U[:, :n_comp] * s[:n_comp]
         pcs = pcs_array.tolist()
-        
+
         # Explained variance ratio
         n_samples_svd = X.shape[0]
-        eigenvalues = s ** 2 / (n_samples_svd - 1)
+        eigenvalues = s**2 / (n_samples_svd - 1)
         total_variance = np.sum(eigenvalues)
         explained_variance_ratio = (eigenvalues[:n_comp] / total_variance).tolist()
-        
+
         logger.info(f"PCA completed (SVD): {n_comp} components computed")
-        
+
         return {
             "status": "success",
             "pcs": pcs,
             "explained_variance_ratio": explained_variance_ratio,
             "n_components": n_comp,
         }
-        
+
     except ImportError:
         logger.warning("Numpy not found. Using slow pure-Python PCA implementation.")
-         # Fallback to existing pure Python implementation (legacy code below)
+        # Fallback to existing pure Python implementation (legacy code below)
         pass
 
     # --- Pure Python Fallback ---
     if not genotype_matrix or not genotype_matrix[0]:
-        return {"status": "failed", "error": "Empty genotype matrix", "pcs": [], "explained_variance_ratio": []}
+        return {
+            "status": "failed",
+            "error": "Empty genotype matrix",
+            "pcs": [],
+            "explained_variance_ratio": [],
+        }
 
     n_samples = len(genotype_matrix)
     n_variants = len(genotype_matrix[0])
 
-    logger.info(f"Computing PCA on {n_samples} samples x {n_variants} variants (Pure Python)")
+    logger.info(
+        f"Computing PCA on {n_samples} samples x {n_variants} variants (Pure Python)"
+    )
 
     try:
         # Handle missing data by imputation (replace -1 with variant mean)
@@ -115,7 +131,9 @@ def compute_pca(genotype_matrix: List[List[int]], n_components: int = 10) -> Dic
             imputed_matrix.append(imputed_gts)
 
         # Transpose to [variant][sample] for centering
-        transposed = [[imputed_matrix[s][v] for s in range(n_samples)] for v in range(n_variants)]
+        transposed = [
+            [imputed_matrix[s][v] for s in range(n_samples)] for v in range(n_variants)
+        ]
 
         # Center by variant (subtract mean)
         centered_matrix = []
@@ -159,9 +177,13 @@ def compute_pca(genotype_matrix: List[List[int]], n_components: int = 10) -> Dic
         # Calculate explained variance ratio
         total_variance = sum(abs(ev) for ev, _ in eigen_pairs)
         if total_variance > 0:
-            explained_variance_ratio = [ev / total_variance for ev in explained_variance]
+            explained_variance_ratio = [
+                ev / total_variance for ev in explained_variance
+            ]
         else:
-            explained_variance_ratio = [1.0 / n_comp] * n_comp  # Equal distribution if no variance
+            explained_variance_ratio = [
+                1.0 / n_comp
+            ] * n_comp  # Equal distribution if no variance
 
         # PC scores per sample: project samples onto principal components
         # pcs[sample_idx] = [pc1_score, pc2_score, ...]
@@ -171,7 +193,10 @@ def compute_pca(genotype_matrix: List[List[int]], n_components: int = 10) -> Dic
             for i in range(n_comp):
                 _, eigenvector = eigen_pairs[i]
                 # Project this sample onto the eigenvector
-                score = sum(centered_matrix[v][s] * eigenvector[v] for v in range(min(n_variants, len(eigenvector))))
+                score = sum(
+                    centered_matrix[v][s] * eigenvector[v]
+                    for v in range(min(n_variants, len(eigenvector)))
+                )
                 sample_scores.append(score)
             pcs.append(sample_scores)
 
@@ -186,10 +211,17 @@ def compute_pca(genotype_matrix: List[List[int]], n_components: int = 10) -> Dic
 
     except Exception as e:
         logger.error(f"PCA computation failed: {e}")
-        return {"status": "failed", "error": str(e), "pcs": [], "explained_variance_ratio": []}
+        return {
+            "status": "failed",
+            "error": str(e),
+            "pcs": [],
+            "explained_variance_ratio": [],
+        }
 
 
-def compute_kinship_matrix(genotype_matrix: List[List[int]], method: str = "vanraden") -> Dict[str, Any]:
+def compute_kinship_matrix(
+    genotype_matrix: List[List[int]], method: str = "vanraden"
+) -> Dict[str, Any]:
     """Compute kinship matrix from genotype matrix.
 
     Args:
@@ -201,15 +233,23 @@ def compute_kinship_matrix(genotype_matrix: List[List[int]], method: str = "vanr
         Dictionary with status, kinship_matrix, and optionally error message
     """
     if not genotype_matrix or not genotype_matrix[0]:
-        return {"status": "failed", "error": "Empty genotype matrix", "kinship_matrix": []}
+        return {
+            "status": "failed",
+            "error": "Empty genotype matrix",
+            "kinship_matrix": [],
+        }
 
     n_samples = len(genotype_matrix)
     n_variants = len(genotype_matrix[0])
-    logger.info(f"Computing kinship matrix for {n_samples} samples using {method} method")
+    logger.info(
+        f"Computing kinship matrix for {n_samples} samples using {method} method"
+    )
 
     try:
         # Transpose to [variant][sample] for kinship calculation
-        transposed = [[genotype_matrix[s][v] for s in range(n_samples)] for v in range(n_variants)]
+        transposed = [
+            [genotype_matrix[s][v] for s in range(n_samples)] for v in range(n_variants)
+        ]
 
         method_lower = method.lower()
         if method_lower == "vanraden":
@@ -221,10 +261,16 @@ def compute_kinship_matrix(genotype_matrix: List[List[int]], method: str = "vanr
         elif method_lower == "yang":
             kinship = _yang_kinship(transposed)
         else:
-            return {"status": "failed", "error": f"Unknown kinship method: {method}", "kinship_matrix": []}
+            return {
+                "status": "failed",
+                "error": f"Unknown kinship method: {method}",
+                "kinship_matrix": [],
+            }
 
         # Count missing data (genotype value -1)
-        total_missing = sum(1 for sample_gts in genotype_matrix for g in sample_gts if g < 0)
+        total_missing = sum(
+            1 for sample_gts in genotype_matrix for g in sample_gts if g < 0
+        )
         total_genotypes = n_samples * n_variants
         missing_rate = total_missing / total_genotypes if total_genotypes > 0 else 0.0
 
@@ -301,14 +347,18 @@ def estimate_population_structure(
 
         # Compute kinship
         if compute_relatedness:
-            kinship_result = compute_kinship_matrix(genotype_matrix, method=kinship_method)
+            kinship_result = compute_kinship_matrix(
+                genotype_matrix, method=kinship_method
+            )
             if kinship_result["status"] == "success":
                 results["kinship"] = {
                     "matrix": kinship_result["kinship_matrix"],
                     "method": kinship_method,
                 }
             else:
-                results["kinship_error"] = kinship_result.get("error", "Unknown kinship error")
+                results["kinship_error"] = kinship_result.get(
+                    "error", "Unknown kinship error"
+                )
 
         # Save results if output_dir provided
         if output_dir:
@@ -347,56 +397,56 @@ def _vanraden_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
 
     try:
         import numpy as np
-        
+
         # Convert to numpy array
         X = np.array(genotype_matrix, dtype=float)
-        
+
         # Handle missing data (< 0)
         # Compute allele frequencies on valid data
         # Creates a mask of valid entries
         mask = X >= 0
-        
+
         # We need to compute p for each variant based on valid entries
         # p = sum(g) / (2 * count)
         # Avoid division by zero
         counts = 2.0 * np.sum(mask, axis=1)
         sums = np.sum(np.where(mask, X, 0), axis=1)
-        
+
         # Initialize p with 0.5 (or fit) for variants with no data
         p = np.zeros(n_variants)
         valid_idx = counts > 0
         p[valid_idx] = sums[valid_idx] / counts[valid_idx]
-        
+
         # Filter monomorphic
         valid_p_mask = (p > 0.0) & (p < 1.0)
-        
+
         if not np.any(valid_p_mask):
-             return np.eye(n_samples).tolist()
-             
+            return np.eye(n_samples).tolist()
+
         # Filter genotype matrix to valid variants
         X = X[valid_p_mask, :]
         p = p[valid_p_mask]
-        
+
         # Update n_variants
         n_variants = X.shape[0]
-        
+
         # Impute missing values with 2*p (mean)
         # Z = X - 2p
         # If X is missing, Z = 0 (mean centered)
         # So we can replace missing X with 2p, then subtract 2p -> 0
-        
+
         # Reshape p for broadcasting (n_variants, 1)
         p_col = p.reshape(-1, 1)
-        
+
         # Replace missing with mean (2*p)
         # We need to iterate or use careful masking.
         # X is (variants, samples)
         # missing locations:
         missing_mask = ~mask[valid_p_mask, :]
-        
+
         # Create Z matrix
         Z = X.copy()
-        
+
         # Fill missing with 2*p
         # Create a matrix of means
         means = 2.0 * p_col
@@ -404,23 +454,23 @@ def _vanraden_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
         # Z[missing_mask] approach requires matching shapes which is tricky with boolean index
         # Easier: Z = np.where(missing, means, X)
         Z = np.where(missing_mask, means, Z)
-        
+
         # Subtract mean (2*p)
         Z = Z - means
-        
+
         # Compute scaling: 2 * sum(p * (1-p))
         scaling = 2.0 * np.sum(p * (1.0 - p))
-        
+
         if scaling <= 0:
             return np.eye(n_samples).tolist()
-            
+
         # Compute Kinship: K = Z.T @ Z / scaling
         # Z is (variants, samples). Z.T is (samples, variants)
         # Result is (samples, samples)
         K = np.matmul(Z.T, Z) / scaling
-        
+
         return K.tolist()
-        
+
     except ImportError:
         pass
 
@@ -441,12 +491,16 @@ def _vanraden_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
 
     if not allele_freqs:
         # Fallback: return identity if no valid variants
-        return [[1.0 if i == j else 0.0 for j in range(n_samples)] for i in range(n_samples)]
+        return [
+            [1.0 if i == j else 0.0 for j in range(n_samples)] for i in range(n_samples)
+        ]
 
     # Compute scaling factor: 2 * sum(p_i * (1-p_i))
     scaling = 2.0 * sum(p * (1.0 - p) for p in allele_freqs)
     if scaling <= 0:
-        return [[1.0 if i == j else 0.0 for j in range(n_samples)] for i in range(n_samples)]
+        return [
+            [1.0 if i == j else 0.0 for j in range(n_samples)] for i in range(n_samples)
+        ]
 
     # Build Z matrix (centered genotypes) and compute G = ZZ'/scaling
     # Z[sample_i][variant_k] = genotype[variant_k][sample_i] - 2*p_k
@@ -633,10 +687,11 @@ def _compute_covariance_matrix(matrix: List[List[float]]) -> List[List[float]]:
     """
     try:
         import numpy as np
+
         return np.cov(matrix).tolist()
     except ImportError:
         pass
-        
+
     n_features = len(matrix)
     n_samples = len(matrix[0])
 
@@ -657,7 +712,9 @@ def _compute_covariance_matrix(matrix: List[List[float]]) -> List[List[float]]:
     return cov_matrix
 
 
-def _simple_eigen_decomposition(matrix: List[List[float]]) -> Tuple[List[float], List[List[float]]]:
+def _simple_eigen_decomposition(
+    matrix: List[List[float]],
+) -> Tuple[List[float], List[List[float]]]:
     """Perform eigenvalue decomposition using power iteration method.
 
     This is a pure Python implementation for cases where numpy is not available.
@@ -765,10 +822,13 @@ def _simple_clustering(pc_scores: List[List[float]], k: int = 3) -> List[int]:
 
         # Update centroids
         for cluster_idx in range(k):
-            cluster_samples = [s for s, lbl in zip(samples, labels) if lbl == cluster_idx]
+            cluster_samples = [
+                s for s, lbl in zip(samples, labels) if lbl == cluster_idx
+            ]
             if cluster_samples:
                 centroids[cluster_idx] = [
-                    sum(s[dim] for s in cluster_samples) / len(cluster_samples) for dim in range(n_components)
+                    sum(s[dim] for s in cluster_samples) / len(cluster_samples)
+                    for dim in range(n_components)
                 ]
 
     logger.info(f"Performed k-means clustering: {n_samples} samples -> {k} clusters")
@@ -805,5 +865,7 @@ def _kmeans_clustering(pc_scores: Any, k: int = 3) -> Any:
     kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
     clusters = kmeans.fit_predict(pc_scores)
 
-    logger.info(f"Performed k-means clustering: {len(pc_scores)} samples -> {k} clusters")
+    logger.info(
+        f"Performed k-means clustering: {len(pc_scores)} samples -> {k} clusters"
+    )
     return clusters

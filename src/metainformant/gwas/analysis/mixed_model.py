@@ -87,7 +87,9 @@ def association_test_mixed(
         else:
             delta = 1e10  # essentially no genetic variance
 
-        heritability = sigma_g / (sigma_g + sigma_e) if (sigma_g + sigma_e) > 1e-10 else 0.0
+        heritability = (
+            sigma_g / (sigma_g + sigma_e) if (sigma_g + sigma_e) > 1e-10 else 0.0
+        )
 
         # Test this SNP
         snp_rot = Ut @ snp
@@ -152,7 +154,9 @@ def run_mixed_model_gwas(
     n_variants = len(genotype_matrix)
     n_samples = len(phenotypes)
 
-    logger.info(f"Running mixed model GWAS: {n_variants} variants x {n_samples} samples")
+    logger.info(
+        f"Running mixed model GWAS: {n_variants} variants x {n_samples} samples"
+    )
 
     y = np.array(phenotypes, dtype=float)
     K = np.array(kinship_matrix, dtype=float)
@@ -177,7 +181,9 @@ def run_mixed_model_gwas(
     delta = sigma_e / sigma_g if sigma_g > 1e-10 else 1e10
     heritability = sigma_g / (sigma_g + sigma_e) if (sigma_g + sigma_e) > 1e-10 else 0.0
 
-    logger.info(f"REML estimates: sigma_g={sigma_g:.4f}, sigma_e={sigma_e:.4f}, h2={heritability:.4f}")
+    logger.info(
+        f"REML estimates: sigma_g={sigma_g:.4f}, sigma_e={sigma_e:.4f}, h2={heritability:.4f}"
+    )
 
     # Test each SNP
     results = []
@@ -305,7 +311,9 @@ def _emma_reml(
             best_log_delta = ld
 
     # Refine with Brent-style golden section search
-    best_log_delta = _golden_section_search(reml_log_likelihood, best_log_delta - 1.0, best_log_delta + 1.0)
+    best_log_delta = _golden_section_search(
+        reml_log_likelihood, best_log_delta - 1.0, best_log_delta + 1.0
+    )
 
     # Extract final estimates
     delta = math.exp(best_log_delta)
@@ -450,6 +458,8 @@ def _normal_cdf_complement(x: float) -> float:
 
     x_scaled = abs(x) / math.sqrt(2.0)
     t = 1.0 / (1.0 + p * x_scaled)
-    y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * math.exp(-x_scaled * x_scaled)
+    y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * math.exp(
+        -x_scaled * x_scaled
+    )
     cdf = 0.5 * (1 + y) if x >= 0 else 0.5 * (1 - y)
     return 1.0 - cdf

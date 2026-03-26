@@ -8,13 +8,14 @@ References:
   - Hill & Weir (1988) Theor Popul Biol — LD decay theory
   - McVean (2002) Genetics — population recombination landscapes
 """
+
 from __future__ import annotations
 
 import math
 import random
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 from metainformant.core.utils import logging
 
@@ -22,14 +23,17 @@ logger = logging.get_logger(__name__)
 
 try:
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
 
 try:
-    import numpy as np
+    import numpy as np  # noqa: F401
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
@@ -68,7 +72,12 @@ def compute_ld_decay(
     rng = random.Random(seed)
     n_variants = len(genotype_matrix)
     if n_variants < 2:
-        return {"pairs": [], "binned": [], "r2_half_distance_bp": None, "n_pairs_computed": 0}
+        return {
+            "pairs": [],
+            "binned": [],
+            "r2_half_distance_bp": None,
+            "n_pairs_computed": 0,
+        }
 
     # Precompute means and variances for fast correlation
     means = []
@@ -94,19 +103,32 @@ def compute_ld_decay(
     if len(candidate_pairs) > n_pairs_max:
         candidate_pairs = rng.sample(candidate_pairs, n_pairs_max)
 
-    logger.info(f"LD decay: computing r² for {len(candidate_pairs)} variant pairs "
-                f"(max dist={max_dist_bp:,} bp)")
+    logger.info(
+        f"LD decay: computing r² for {len(candidate_pairs)} variant pairs "
+        f"(max dist={max_dist_bp:,} bp)"
+    )
 
     pairs = []
     for i, j, dist in candidate_pairs:
-        r2 = _pearson_r2(genotype_matrix[i], genotype_matrix[j], means[i], means[j],
-                         vars_[i], vars_[j])
+        r2 = _pearson_r2(
+            genotype_matrix[i],
+            genotype_matrix[j],
+            means[i],
+            means[j],
+            vars_[i],
+            vars_[j],
+        )
         if r2 is not None:
             pairs.append((dist, r2))
 
     # Bin into 20 equal-width distance bins
     if not pairs:
-        return {"pairs": [], "binned": [], "r2_half_distance_bp": None, "n_pairs_computed": 0}
+        return {
+            "pairs": [],
+            "binned": [],
+            "r2_half_distance_bp": None,
+            "n_pairs_computed": 0,
+        }
 
     max_d = max(d for d, _ in pairs)
     n_bins = 20
@@ -182,21 +204,41 @@ def ld_decay_plot(
         display_pairs = pairs
     dists_raw = [d / 1000 for d, _ in display_pairs]  # kb
     r2_raw = [r for _, r in display_pairs]
-    ax.scatter(dists_raw, r2_raw, alpha=0.06, s=3, color="#4C72B0", label=f"Raw pairs (n={n_pairs:,})")
+    ax.scatter(
+        dists_raw,
+        r2_raw,
+        alpha=0.06,
+        s=3,
+        color="#4C72B0",
+        label=f"Raw pairs (n={n_pairs:,})",
+    )
 
     # Binned mean
     if binned:
         bin_d = [d / 1000 for d, _, _ in binned if _ > 0]
         bin_r2 = [r for _, r, n in binned if n > 0]
-        ax.plot(bin_d, bin_r2, "-", color="#C44E52", linewidth=2.5,
-                label="Binned mean r²", zorder=5)
+        ax.plot(
+            bin_d,
+            bin_r2,
+            "-",
+            color="#C44E52",
+            linewidth=2.5,
+            label="Binned mean r²",
+            zorder=5,
+        )
         ax.scatter(bin_d, bin_r2, color="#C44E52", s=40, zorder=6)
 
     # Half-distance marker
     if r2_half is not None:
         ax.axhline(0.5, color="#55A868", linewidth=1.5, linestyle="--", alpha=0.8)
-        ax.axvline(r2_half / 1000, color="#55A868", linewidth=1.5, linestyle="--", alpha=0.8,
-                   label=f"r²=0.5 at {r2_half/1000:.1f} kb")
+        ax.axvline(
+            r2_half / 1000,
+            color="#55A868",
+            linewidth=1.5,
+            linestyle="--",
+            alpha=0.8,
+            label=f"r²=0.5 at {r2_half / 1000:.1f} kb",
+        )
 
     ax.set_xlabel("Genomic distance (kb)", fontsize=12)
     ax.set_ylabel("Linkage disequilibrium (r²)", fontsize=12)
@@ -228,4 +270,4 @@ def _pearson_r2(
         return None
     cov = sum((x[i] - mean_x) * (y[i] - mean_y) for i in range(n)) / n
     r = cov / math.sqrt(var_x * var_y)
-    return min(1.0, r ** 2)
+    return min(1.0, r**2)

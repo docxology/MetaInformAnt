@@ -6,7 +6,7 @@ This module provides plots for visualizing variant-level data and statistics.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -71,14 +71,22 @@ def maf_distribution(
     # Validate MAF values are in valid range
     invalid_maf = [maf for maf in values if not (0 <= maf <= 0.5)]
     if invalid_maf:
-        logger.warning(f"Found {len(invalid_maf)} invalid MAF values (should be 0-0.5), clipping")
+        logger.warning(
+            f"Found {len(invalid_maf)} invalid MAF values (should be 0-0.5), clipping"
+        )
         values = [min(0.5, max(0, maf)) for maf in values]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
     # Plot 1: MAF histogram
     ax1.hist(values, bins=50, alpha=0.7, color="skyblue", edgecolor="black")
-    ax1.axvline(x=np.mean(values), color="red", linestyle="--", linewidth=2, label=f"Mean: {np.mean(values):.3f}")
+    ax1.axvline(
+        x=np.mean(values),
+        color="red",
+        linestyle="--",
+        linewidth=2,
+        label=f"Mean: {np.mean(values):.3f}",
+    )
     ax1.set_xlabel("Minor Allele Frequency", fontsize=12)
     ax1.set_ylabel("Count", fontsize=12)
     ax1.set_title("MAF Distribution", fontsize=14)
@@ -87,7 +95,13 @@ def maf_distribution(
 
     # Plot 2: MAF categories
     maf_bins = [0, 0.01, 0.05, 0.1, 0.2, 0.5]
-    maf_labels = ["Rare (<1%)", "Low (1-5%)", "Common (5-10%)", "High (10-20%)", "Very High (20-50%)"]
+    maf_labels = [
+        "Rare (<1%)",
+        "Low (1-5%)",
+        "Common (5-10%)",
+        "High (10-20%)",
+        "Very High (20-50%)",
+    ]
 
     maf_counts = []
     for i in range(len(maf_bins) - 1):
@@ -140,7 +154,11 @@ Common variants (>=5%): {sum(1 for m in values if m >= 0.05)}"""
         logger.info(f"Saved MAF distribution plot to {output_file}")
 
     plt.close(fig)
-    return {"status": "success", "n_variants": len(values), "mean_maf": float(np.mean(values))}
+    return {
+        "status": "success",
+        "n_variants": len(values),
+        "mean_maf": float(np.mean(values)),
+    }
 
 
 def variant_density_plot(
@@ -169,7 +187,11 @@ def variant_density_plot(
         return {"status": "failed", "error": "matplotlib not available"}
 
     # Parse input: accept list-of-dicts with CHROM/POS keys
-    if isinstance(variants, (list, tuple)) and len(variants) > 0 and isinstance(variants[0], dict):
+    if (
+        isinstance(variants, (list, tuple))
+        and len(variants) > 0
+        and isinstance(variants[0], dict)
+    ):
         # Extract chromosome and position from list of dicts
         chrom_positions: Dict[str, List[int]] = {}
         for v in variants:
@@ -201,7 +223,9 @@ def variant_density_plot(
     # Sort chromosomes by name/number
     chroms = sorted(
         chromosome_lengths.keys(),
-        key=lambda x: int(x.replace("chr", "")) if x.replace("chr", "").isdigit() else float("inf"),
+        key=lambda x: int(x.replace("chr", ""))
+        if x.replace("chr", "").isdigit()
+        else float("inf"),
     )
 
     # Calculate cumulative positions for chromosome boundaries
@@ -218,7 +242,9 @@ def variant_density_plot(
 
     # Build all positions with cumulative offset
     all_positions = []
-    chrom_offset = {chrom: boundary[0] for chrom, boundary in zip(chroms, chrom_boundaries)}
+    chrom_offset = {
+        chrom: boundary[0] for chrom, boundary in zip(chroms, chrom_boundaries)
+    }
     for chrom in chroms:
         for pos in chrom_positions.get(chrom, []):
             all_positions.append(pos + chrom_offset[chrom])
@@ -234,13 +260,28 @@ def variant_density_plot(
     hist, bin_edges = np.histogram(all_positions, bins=bins, density=True)
 
     # Plot density
-    ax.fill_between(bin_edges[:-1], hist, alpha=0.7, color="skyblue", edgecolor="navy", linewidth=0.5)
+    ax.fill_between(
+        bin_edges[:-1],
+        hist,
+        alpha=0.7,
+        color="skyblue",
+        edgecolor="navy",
+        linewidth=0.5,
+    )
 
     # Add chromosome boundaries and labels
     max_hist = max(hist) if len(hist) > 0 else 1
     for i, (chrom, (start, end)) in enumerate(zip(chroms, chrom_boundaries)):
         ax.axvline(x=start, color="red", linestyle="--", alpha=0.5)
-        ax.text(chrom_centers[i], max_hist * 0.9, chrom, ha="center", va="top", fontsize=8, rotation=45)
+        ax.text(
+            chrom_centers[i],
+            max_hist * 0.9,
+            chrom,
+            ha="center",
+            va="top",
+            fontsize=8,
+            rotation=45,
+        )
 
     ax.set_xlabel("Genomic Position")
     ax.set_ylabel("Variant Density")
@@ -254,11 +295,17 @@ def variant_density_plot(
         logger.info(f"Saved variant density plot to {output_file}")
 
     plt.close(fig)
-    return {"status": "success", "n_variants": len(all_positions), "n_chromosomes": len(chroms)}
+    return {
+        "status": "success",
+        "n_variants": len(all_positions),
+        "n_chromosomes": len(chroms),
+    }
 
 
 def hwe_deviation_plot(
-    hwe_p_values: Any, output_file: Optional[str | Path] = None, title: str = "HWE Deviation Plot"
+    hwe_p_values: Any,
+    output_file: Optional[str | Path] = None,
+    title: str = "HWE Deviation Plot",
 ) -> Dict[str, Any]:
     """Create a plot showing deviations from Hardy-Weinberg equilibrium.
 
@@ -285,13 +332,17 @@ def hwe_deviation_plot(
         return {"status": "failed", "error": "No HWE p-values provided"}
 
     # Convert p-values to -log10 for visualization
-    log_p_values = [-np.log10(p) if p > 0 else 50 for p in values]  # Cap at 50 for very small p-values
+    log_p_values = [
+        -np.log10(p) if p > 0 else 50 for p in values
+    ]  # Cap at 50 for very small p-values
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
     # Plot 1: Histogram of -log10(p-values)
     ax1.hist(log_p_values, bins=30, alpha=0.7, color="skyblue", edgecolor="navy")
-    ax1.axvline(x=-np.log10(0.05), color="red", linestyle="--", label="p=0.05 threshold")
+    ax1.axvline(
+        x=-np.log10(0.05), color="red", linestyle="--", label="p=0.05 threshold"
+    )
     ax1.set_xlabel("-log10(p-value)")
     ax1.set_ylabel("Frequency")
     ax1.set_title("HWE Test -log10(p-values)")
@@ -403,14 +454,20 @@ def missingness_plot(
     for sample_idx in range(n_samples):
         missing_count = 0
         for variant_idx in range(n_variants):
-            if genotypes[variant_idx][sample_idx] is None or genotypes[variant_idx][sample_idx] == -1:
+            if (
+                genotypes[variant_idx][sample_idx] is None
+                or genotypes[variant_idx][sample_idx] == -1
+            ):
                 missing_count += 1
         sample_missingness.append(missing_count / n_variants)
 
     for variant_idx in range(n_variants):
         missing_count = 0
         for sample_idx in range(n_samples):
-            if genotypes[variant_idx][sample_idx] is None or genotypes[variant_idx][sample_idx] == -1:
+            if (
+                genotypes[variant_idx][sample_idx] is None
+                or genotypes[variant_idx][sample_idx] == -1
+            ):
                 missing_count += 1
         variant_missingness.append(missing_count / n_samples)
 
@@ -425,12 +482,17 @@ def missingness_plot(
 
     # Add statistics
     ax1.axvline(
-        x=np.mean(sample_missingness), color="red", linestyle="--", label=f"Mean: {np.mean(sample_missingness):.3f}"
+        x=np.mean(sample_missingness),
+        color="red",
+        linestyle="--",
+        label=f"Mean: {np.mean(sample_missingness):.3f}",
     )
     ax1.legend()
 
     # Plot 2: Variant missingness distribution
-    ax2.hist(variant_missingness, bins=20, alpha=0.7, color="lightcoral", edgecolor="darkred")
+    ax2.hist(
+        variant_missingness, bins=20, alpha=0.7, color="lightcoral", edgecolor="darkred"
+    )
     ax2.set_xlabel("Missingness Rate")
     ax2.set_ylabel("Number of Variants")
     ax2.set_title("Variant Missingness Distribution")
@@ -438,7 +500,10 @@ def missingness_plot(
 
     # Add statistics
     ax2.axvline(
-        x=np.mean(variant_missingness), color="red", linestyle="--", label=f"Mean: {np.mean(variant_missingness):.3f}"
+        x=np.mean(variant_missingness),
+        color="red",
+        linestyle="--",
+        label=f"Mean: {np.mean(variant_missingness):.3f}",
     )
     ax2.legend()
 
@@ -490,7 +555,9 @@ def _parse_vcf_basic(vcf_file: Path) -> Dict[str, Any]:
 
 
 def transition_transversion_plot(
-    variants: Any, output_file: Optional[str | Path] = None, title: str = "Transition/Transversion Plot"
+    variants: Any,
+    output_file: Optional[str | Path] = None,
+    title: str = "Transition/Transversion Plot",
 ) -> Dict[str, Any]:
     """Create a plot showing transition vs transversion ratios.
 
@@ -522,7 +589,11 @@ def transition_transversion_plot(
     # Define transition pairs
     transition_pairs = {("A", "G"), ("G", "A"), ("C", "T"), ("T", "C")}
 
-    if isinstance(variants, (list, tuple)) and len(variants) > 0 and isinstance(variants[0], dict):
+    if (
+        isinstance(variants, (list, tuple))
+        and len(variants) > 0
+        and isinstance(variants[0], dict)
+    ):
         # Check if it's list-of-dicts with REF/ALT
         if "REF" in variants[0] and "ALT" in variants[0]:
             # Compute Ts/Tv from individual variant records
@@ -544,7 +615,9 @@ def transition_transversion_plot(
             categories = ["Transitions", "Transversions"]
             counts = [ts_count, tv_count]
             colors = ["steelblue", "coral"]
-            bars = ax1.bar(categories, counts, color=colors, alpha=0.8, edgecolor="black")
+            bars = ax1.bar(
+                categories, counts, color=colors, alpha=0.8, edgecolor="black"
+            )
             ax1.set_ylabel("Count")
             ax1.set_title("Transition vs Transversion Counts")
             ax1.grid(True, alpha=0.3, axis="y")
@@ -613,8 +686,13 @@ def transition_transversion_plot(
         positions = variants.get("positions", [])
 
         if not transitions_list or not transversions_list:
-            logger.error("Transition/transversion data must include 'transitions' and 'transversions' arrays")
-            return {"status": "failed", "error": "Missing transitions/transversions data"}
+            logger.error(
+                "Transition/transversion data must include 'transitions' and 'transversions' arrays"
+            )
+            return {
+                "status": "failed",
+                "error": "Missing transitions/transversions data",
+            }
 
         if not positions:
             positions = list(range(1, len(transitions_list) + 1))
@@ -639,7 +717,12 @@ def transition_transversion_plot(
                 ts_tv_ratios.append(0)
 
         ax2.plot(positions, ts_tv_ratios, "g-", label="Ts/Tv Ratio")
-        ax2.axhline(y=np.mean(ts_tv_ratios), color="red", linestyle="--", label=f"Mean: {np.mean(ts_tv_ratios):.2f}")
+        ax2.axhline(
+            y=np.mean(ts_tv_ratios),
+            color="red",
+            linestyle="--",
+            label=f"Mean: {np.mean(ts_tv_ratios):.2f}",
+        )
         ax2.set_xlabel("Genomic Position")
         ax2.set_ylabel("Ts/Tv Ratio")
         ax2.set_title("Transition/Transversion Ratio")

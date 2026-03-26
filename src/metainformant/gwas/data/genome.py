@@ -6,9 +6,8 @@ and GFF3 gene annotation parsing for the Apis mellifera reference genome.
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 from metainformant.core.utils import logging
 

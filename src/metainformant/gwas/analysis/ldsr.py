@@ -22,10 +22,11 @@ References:
   Finucane et al. (2015) Partitioning heritability by functional
     annotation using GWAS summary statistics. Nat Genet 47:1228-1235.
 """
+
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from metainformant.core.utils import logging
 
@@ -33,26 +34,31 @@ logger = logging.get_logger(__name__)
 
 try:
     import numpy as np
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
 
 try:
     from scipy import stats as scipy_stats
+
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
 
 try:
     import statsmodels.api as sm
+
     HAS_STATSMODELS = True
 except ImportError:
     HAS_STATSMODELS = False
 
 try:
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
@@ -107,12 +113,14 @@ def compute_ld_scores(
                     continue
             # r² = (corr)²
             cov = float(np.dot(geno[i], geno[j])) / n_samples
-            r2 = min(1.0, cov ** 2)
+            r2 = min(1.0, cov**2)
             total_r2 += r2
         ld_scores.append(total_r2)
 
-    logger.info(f"LD scores: {n_var} variants, mean l_score={sum(ld_scores)/len(ld_scores):.2f}, "
-                f"max={max(ld_scores):.2f}")
+    logger.info(
+        f"LD scores: {n_var} variants, mean l_score={sum(ld_scores) / len(ld_scores):.2f}, "
+        f"max={max(ld_scores):.2f}"
+    )
     return ld_scores
 
 
@@ -188,7 +196,9 @@ def ldsr_regression(
         n_f = float(n)
         mean_ld = sum(ld_arr) / n_f
         mean_chi2_v = mean_chi2
-        slope_num = sum((ld_arr[i] - mean_ld) * (chi2_arr[i] - mean_chi2_v) for i in range(n))
+        slope_num = sum(
+            (ld_arr[i] - mean_ld) * (chi2_arr[i] - mean_chi2_v) for i in range(n)
+        )
         slope_den = sum((v - mean_ld) ** 2 for v in ld_arr)
         slope = slope_num / slope_den if slope_den > 1e-10 else 0.0
         intercept = mean_chi2_v - slope * mean_ld
@@ -197,7 +207,9 @@ def ldsr_regression(
 
     # SNP heritability
     h2_snp = slope * n_variants / n_samples
-    h2_snp_se = slope_se * n_variants / n_samples if not math.isnan(slope_se) else float("nan")
+    h2_snp_se = (
+        slope_se * n_variants / n_samples if not math.isnan(slope_se) else float("nan")
+    )
     h2_snp = max(0.0, min(1.0, h2_snp))
 
     # Attenuation ratio: fraction of χ² inflation from confounding
@@ -211,7 +223,9 @@ def ldsr_regression(
     # λ_GC ≈ median chi2 / 0.4549
     median_chi2 = sorted(chi2_arr)[n // 2]
     lambda_gc = median_chi2 / 0.4549
-    polygenicity_fraction = 1.0 - max(0.0, (intercept - 1.0)) / max(0.001, lambda_gc - 1.0)
+    polygenicity_fraction = 1.0 - max(0.0, (intercept - 1.0)) / max(
+        0.001, lambda_gc - 1.0
+    )
 
     logger.info(
         f"LDSR: h²_snp={h2_snp:.4f}±{h2_snp_se:.4f}, "
@@ -223,7 +237,9 @@ def ldsr_regression(
         "h2_snp": round(h2_snp, 6),
         "h2_snp_se": round(h2_snp_se, 6) if not math.isnan(h2_snp_se) else None,
         "intercept": round(intercept, 4),
-        "intercept_se": round(intercept_se, 4) if not math.isnan(intercept_se) else None,
+        "intercept_se": round(intercept_se, 4)
+        if not math.isnan(intercept_se)
+        else None,
         "slope": round(slope, 6),
         "slope_se": round(slope_se, 6) if not math.isnan(slope_se) else None,
         "mean_chi2": round(mean_chi2, 4),
@@ -269,6 +285,7 @@ def ldsr_plot(
     # Scatter (subsample for display)
     if n > 3000:
         import random as _rnd
+
         idx = _rnd.sample(range(n), 3000)
         xs = [ld_arr[i] for i in idx]
         ys = [chi2_arr[i] for i in idx]
@@ -280,8 +297,13 @@ def ldsr_plot(
     # Regression line
     if xs:
         x_lo, x_hi = min(xs), max(xs)
-        ax.plot([x_lo, x_hi], [slope * x_lo + intercept, slope * x_hi + intercept],
-                "r-", linewidth=2, label=f"LDSR fit (slope={slope:.4f})")
+        ax.plot(
+            [x_lo, x_hi],
+            [slope * x_lo + intercept, slope * x_hi + intercept],
+            "r-",
+            linewidth=2,
+            label=f"LDSR fit (slope={slope:.4f})",
+        )
 
     # Annotations
     ax.axhline(1.0, color="#888", linewidth=1, linestyle=":", label="χ²=1 (null)")
@@ -303,6 +325,7 @@ def ldsr_plot(
     plt.tight_layout()
     if output_path:
         from pathlib import Path
+
         Path(output_path).parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(output_path, dpi=150, bbox_inches="tight")
         logger.info(f"LDSR plot saved to {output_path}")

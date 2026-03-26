@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 from metainformant.core.utils import logging
 
@@ -80,7 +80,7 @@ def compute_power(
     sigma_e_sq = (1.0 - h2) if h2 is not None and 0 < h2 < 1 else 1.0
 
     # Non-centrality parameter
-    ncp = n_samples * 2.0 * maf * (1.0 - maf) * (beta ** 2) / sigma_e_sq
+    ncp = n_samples * 2.0 * maf * (1.0 - maf) * (beta**2) / sigma_e_sq
 
     # Chi-squared threshold for significance
     if HAS_SCIPY:
@@ -91,7 +91,7 @@ def compute_power(
         z_alpha = _norm_ppf(1.0 - alpha / 2.0)
         z_power = math.sqrt(ncp) - z_alpha
         power = _norm_cdf(z_power)
-        threshold = z_alpha ** 2
+        threshold = z_alpha**2
 
     logger.debug(
         f"Power calc: N={n_samples}, MAF={maf:.3f}, β={beta:.3f}, "
@@ -133,7 +133,9 @@ def power_curve(
     powers = []
     for n in sample_sizes:
         result = compute_power(n, maf, beta, alpha, h2)
-        powers.append(result.get("power", 0.0) if result.get("status") == "success" else 0.0)
+        powers.append(
+            result.get("power", 0.0) if result.get("status") == "success" else 0.0
+        )
 
     logger.info(
         f"Power curve: {len(sample_sizes)} sample sizes, MAF={maf:.3f}, β={beta:.3f}, "
@@ -239,14 +241,14 @@ def subsample_convergence(
             # Compute metrics
             n_sig = sum(1 for p in p_values if p < alpha)
             mean_beta = sum(betas) / len(betas) if betas else 0.0
-            neg_log10_p = [
-                -math.log10(max(p, 1e-300)) for p in p_values
-            ]
+            neg_log10_p = [-math.log10(max(p, 1e-300)) for p in p_values]
             mean_nlp = sum(neg_log10_p) / len(neg_log10_p) if neg_log10_p else 0.0
 
             # Genomic control lambda
             gc_result = genomic_control(p_values=p_values)
-            lambda_val = gc_result.get("lambda_gc", 1.0) if isinstance(gc_result, dict) else 1.0
+            lambda_val = (
+                gc_result.get("lambda_gc", 1.0) if isinstance(gc_result, dict) else 1.0
+            )
 
             frac_lambdas.append(lambda_val)
             frac_hits.append(n_sig)
@@ -254,26 +256,34 @@ def subsample_convergence(
             frac_logps.append(mean_nlp)
 
         # Aggregate over replicates
-        metrics["lambda_gc"].append({
-            "mean": _mean(frac_lambdas),
-            "std": _std(frac_lambdas),
-            "values": frac_lambdas,
-        })
-        metrics["n_significant"].append({
-            "mean": _mean(frac_hits),
-            "std": _std(frac_hits),
-            "values": frac_hits,
-        })
-        metrics["mean_abs_beta"].append({
-            "mean": _mean(frac_betas),
-            "std": _std(frac_betas),
-            "values": frac_betas,
-        })
-        metrics["mean_neg_log10_p"].append({
-            "mean": _mean(frac_logps),
-            "std": _std(frac_logps),
-            "values": frac_logps,
-        })
+        metrics["lambda_gc"].append(
+            {
+                "mean": _mean(frac_lambdas),
+                "std": _std(frac_lambdas),
+                "values": frac_lambdas,
+            }
+        )
+        metrics["n_significant"].append(
+            {
+                "mean": _mean(frac_hits),
+                "std": _std(frac_hits),
+                "values": frac_hits,
+            }
+        )
+        metrics["mean_abs_beta"].append(
+            {
+                "mean": _mean(frac_betas),
+                "std": _std(frac_betas),
+                "values": frac_betas,
+            }
+        )
+        metrics["mean_neg_log10_p"].append(
+            {
+                "mean": _mean(frac_logps),
+                "std": _std(frac_logps),
+                "values": frac_logps,
+            }
+        )
 
         logger.info(
             f"  Fraction {frac:.0%}: λ_GC={_mean(frac_lambdas):.4f}±{_std(frac_lambdas):.4f}, "
@@ -319,14 +329,15 @@ def jackknife_se(
     Returns:
         Dictionary with full estimate, SE, 95% CI, and block estimates.
     """
-    from metainformant.gwas.analysis.association import association_test_linear
-    from metainformant.gwas.analysis.correction import genomic_control
 
     n_variants = len(genotype_matrix)
     n_samples = len(genotype_matrix[0]) if genotype_matrix else 0
 
     if n_variants < n_blocks:
-        return {"status": "error", "message": f"Need at least {n_blocks} variants for jackknife"}
+        return {
+            "status": "error",
+            "message": f"Need at least {n_blocks} variants for jackknife",
+        }
 
     actual_traits = traits[:n_samples]
 
@@ -361,8 +372,8 @@ def jackknife_se(
 
     # Jackknife SE
     theta_bar = sum(block_estimates) / n_blocks
-    variance = (n_blocks - 1.0) / n_blocks * sum(
-        (t - theta_bar) ** 2 for t in block_estimates
+    variance = (
+        (n_blocks - 1.0) / n_blocks * sum((t - theta_bar) ** 2 for t in block_estimates)
     )
     se = math.sqrt(variance) if variance > 0 else 0.0
 
@@ -444,7 +455,9 @@ def saturation_analysis(
     for k_inf_mult in [0.8, 0.9, 1.0, 1.1, 1.2, 1.5, 2.0]:
         k_inf_try = max(observed) * k_inf_mult if max(observed) > 0 else 1.0
         for kappa_try in [0.5, 1.0, 1.5, 2.0, 3.0, 5.0, 7.0, 10.0]:
-            predicted = [k_inf_try * (1.0 - math.exp(-kappa_try * f)) for f in fractions]
+            predicted = [
+                k_inf_try * (1.0 - math.exp(-kappa_try * f)) for f in fractions
+            ]
             r2 = _r_squared(observed, predicted)
             if r2 > best_r2:
                 best_r2 = r2
@@ -568,6 +581,8 @@ def _norm_ppf(p: float) -> float:
     d2 = 0.189269
     d3 = 0.001308
 
-    result = t - (c0 + c1 * t + c2 * t * t) / (1.0 + d1 * t + d2 * t * t + d3 * t * t * t)
+    result = t - (c0 + c1 * t + c2 * t * t) / (
+        1.0 + d1 * t + d2 * t * t + d3 * t * t * t
+    )
 
     return result if p > 0.5 else -result

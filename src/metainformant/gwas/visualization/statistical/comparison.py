@@ -7,7 +7,7 @@ studies, populations, or analysis methods.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 
 import numpy as np
 
@@ -63,7 +63,11 @@ def compare_gwas_studies(
 
             results = pd.DataFrame(results)
 
-        if hasattr(results, "columns") and "CHR" in results.columns and "P" in results.columns:
+        if (
+            hasattr(results, "columns")
+            and "CHR" in results.columns
+            and "P" in results.columns
+        ):
             plot_manhattan_overlay(ax1, results, study_name, colors[i])
 
     ax1.set_title("Manhattan Plot Comparison")
@@ -135,7 +139,10 @@ def compare_gwas_studies(
 
     if summary_data:
         table = ax4.table(
-            cellText=summary_data, colLabels=["Study", "Total SNPs", "Significant SNPs"], loc="center", cellLoc="center"
+            cellText=summary_data,
+            colLabels=["Study", "Total SNPs", "Significant SNPs"],
+            loc="center",
+            cellLoc="center",
         )
         table.auto_set_font_size(False)
         table.set_fontsize(10)
@@ -155,11 +162,15 @@ def compare_gwas_studies(
 def plot_manhattan_overlay(ax: Any, results: Any, label: str, color: str) -> None:
     """Plot Manhattan plot for one study on given axis."""
     try:
-        import pandas as pd
+        import pandas as pd  # noqa: F401
     except ImportError:
         return
 
-    if not hasattr(results, "columns") or "CHR" not in results.columns or "P" not in results.columns:
+    if (
+        not hasattr(results, "columns")
+        or "CHR" not in results.columns
+        or "P" not in results.columns
+    ):
         return
 
     # Prepare data
@@ -184,7 +195,14 @@ def plot_manhattan_overlay(ax: Any, results: Any, label: str, color: str) -> Non
     # Add chromosome labels
     for chrom in chromosomes:
         chrom_center = chrom_starts[chrom] + len(df[df["CHR"] == chrom]) / 2
-        ax.text(chrom_center, ax.get_ylim()[0] - 0.5, str(chrom), ha="center", va="top", fontsize=8)
+        ax.text(
+            chrom_center,
+            ax.get_ylim()[0] - 0.5,
+            str(chrom),
+            ha="center",
+            va="top",
+            fontsize=8,
+        )
 
     ax.legend()
 
@@ -208,7 +226,9 @@ def plot_qq_overlay(ax: Any, p_values: np.ndarray, label: str, color: str) -> No
 
 
 def compare_populations(
-    pop_data: Dict[str, Any], trait_name: str = "Trait", output_file: Optional[str | Path] = None
+    pop_data: Dict[str, Any],
+    trait_name: str = "Trait",
+    output_file: Optional[str | Path] = None,
 ) -> Optional[Any]:
     """Compare GWAS results across different populations.
 
@@ -268,7 +288,9 @@ def compare_populations(
         results = pop_info.get("results")
         if hasattr(results, "columns") and "P" in results.columns:
             sig_mask = results["P"] < threshold
-            sig_snps[pop_name] = set(results[sig_mask].index if hasattr(results, "index") else [])
+            sig_snps[pop_name] = set(
+                results[sig_mask].index if hasattr(results, "index") else []
+            )
 
     if len(sig_snps) >= 2:
         # Create overlap matrix
@@ -283,7 +305,15 @@ def compare_populations(
                     overlap = len(sig_snps[pop1] & sig_snps[pop2])
                     overlap_matrix[i, j] = overlap
 
-        sns.heatmap(overlap_matrix, annot=True, fmt=".0f", cmap="Blues", xticklabels=pops, yticklabels=pops, ax=ax2)
+        sns.heatmap(
+            overlap_matrix,
+            annot=True,
+            fmt=".0f",
+            cmap="Blues",
+            xticklabels=pops,
+            yticklabels=pops,
+            ax=ax2,
+        )
         ax2.set_title("Significant SNP Overlap")
 
     # 3. Population-specific enrichment
@@ -303,7 +333,14 @@ def compare_populations(
         # Add p-value annotations
         for bar, p_val in zip(bars, p_values):
             height = bar.get_height()
-            ax3.text(bar.get_x() + bar.get_width() / 2, height, f"p={p_val:.2e}", ha="center", va="bottom", fontsize=8)
+            ax3.text(
+                bar.get_x() + bar.get_width() / 2,
+                height,
+                f"p={p_val:.2e}",
+                ha="center",
+                va="bottom",
+                fontsize=8,
+            )
 
     # 4. Genetic architecture comparison
     ax4 = axes[1, 1]
@@ -335,7 +372,9 @@ def compare_populations(
     return plt.gcf()
 
 
-def calculate_population_enrichment(pop_data: Dict[str, Any]) -> Dict[str, Dict[str, float]]:
+def calculate_population_enrichment(
+    pop_data: Dict[str, Any],
+) -> Dict[str, Dict[str, float]]:
     """Calculate population-specific enrichment scores.
 
     Args:
@@ -364,7 +403,9 @@ def calculate_population_enrichment(pop_data: Dict[str, Any]) -> Dict[str, Dict[
         total_snps = len(results)
 
         # Expected proportion
-        expected_prop = len([p for p in pop_data.keys() if p != pop_name]) / len(pop_data)
+        expected_prop = len([p for p in pop_data.keys() if p != pop_name]) / len(
+            pop_data
+        )
 
         # Enrichment calculation (simplified)
         observed_prop = sig_snps / total_snps if total_snps > 0 else 0
@@ -380,7 +421,10 @@ def calculate_population_enrichment(pop_data: Dict[str, Any]) -> Dict[str, Dict[
         try:
             contingency = [
                 [sig_snps, total_snps - sig_snps],
-                [int(expected_prop * total_snps), int((1 - expected_prop) * total_snps)],
+                [
+                    int(expected_prop * total_snps),
+                    int((1 - expected_prop) * total_snps),
+                ],
             ]
             chi2, p_value = stats.chi2_contingency(contingency)[:2]
         except ImportError:
@@ -396,7 +440,9 @@ def calculate_population_enrichment(pop_data: Dict[str, Any]) -> Dict[str, Dict[
     return enrichment_results
 
 
-def analyze_genetic_architecture(pop_data: Dict[str, Any]) -> Dict[str, Dict[str, float]]:
+def analyze_genetic_architecture(
+    pop_data: Dict[str, Any],
+) -> Dict[str, Dict[str, float]]:
     """Analyze genetic architecture differences across populations.
 
     Args:
@@ -422,12 +468,18 @@ def analyze_genetic_architecture(pop_data: Dict[str, Any]) -> Dict[str, Dict[str
         sig_snps = (p_values < 5e-8).sum()
         polygenicity = sig_snps / len(p_values)
 
-        architecture[pop_name] = {"heritability": h2_estimate, "polygenicity": polygenicity, "lambda_gc": lambda_gc}
+        architecture[pop_name] = {
+            "heritability": h2_estimate,
+            "polygenicity": polygenicity,
+            "lambda_gc": lambda_gc,
+        }
 
     return architecture
 
 
-def compare_analysis_methods(method_results: Dict[str, Any], output_file: Optional[str | Path] = None) -> Optional[Any]:
+def compare_analysis_methods(
+    method_results: Dict[str, Any], output_file: Optional[str | Path] = None
+) -> Optional[Any]:
     """Compare different GWAS analysis methods.
 
     Args:
@@ -447,7 +499,7 @@ def compare_analysis_methods(method_results: Dict[str, Any], output_file: Option
     """
     try:
         import matplotlib.pyplot as plt
-        import seaborn as sns
+        import seaborn as sns  # noqa: F401
     except ImportError:
         logger.warning("matplotlib or seaborn not available for plotting")
         return None
@@ -499,7 +551,13 @@ def compare_analysis_methods(method_results: Dict[str, Any], output_file: Option
 
         # Add value labels
         for bar, power in zip(bars, powers):
-            ax3.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.01, ".3f", ha="center", va="bottom")
+            ax3.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + 0.01,
+                ".3f",
+                ha="center",
+                va="bottom",
+            )
 
     # 4. Computational performance
     ax4 = axes[1, 1]
@@ -517,7 +575,13 @@ def compare_analysis_methods(method_results: Dict[str, Any], output_file: Option
         # Add value labels
         for bar, time_val in zip(bars, times):
             if time_val > 0:
-                ax4.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.01, ".1f", ha="center", va="bottom")
+                ax4.text(
+                    bar.get_x() + bar.get_width() / 2,
+                    bar.get_height() + 0.01,
+                    ".1f",
+                    ha="center",
+                    va="bottom",
+                )
 
     plt.tight_layout()
 
@@ -528,7 +592,9 @@ def compare_analysis_methods(method_results: Dict[str, Any], output_file: Option
     return plt.gcf()
 
 
-def calculate_method_power(method_results: Dict[str, Any]) -> Dict[str, Dict[str, float]]:
+def calculate_method_power(
+    method_results: Dict[str, Any],
+) -> Dict[str, Dict[str, float]]:
     """Calculate statistical power for different methods.
 
     Args:
@@ -605,7 +671,10 @@ def miami_plot(
 
         # Validate non-empty
         if trait1_df.empty or trait2_df.empty:
-            return {"status": "failed", "error": "One or both trait result sets are empty"}
+            return {
+                "status": "failed",
+                "error": "One or both trait result sets are empty",
+            }
 
         # Normalize column names: accept CHROM->CHR, POS->BP, p_value->P
         for df in [trait1_df, trait2_df]:
@@ -620,7 +689,10 @@ def miami_plot(
         for df, name in [(trait1_df, trait1_name), (trait2_df, trait2_name)]:
             missing_cols = [col for col in required_cols if col not in df.columns]
             if missing_cols:
-                return {"status": "failed", "error": f"Missing required columns in {name}: {missing_cols}"}
+                return {
+                    "status": "failed",
+                    "error": f"Missing required columns in {name}: {missing_cols}",
+                }
 
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
 
@@ -629,12 +701,16 @@ def miami_plot(
         chroms = sorted(trait1_df["CHR"].unique())
 
         # Plot trait 1 (top panel)
-        plot_manhattan_with_colors(ax1, trait1_df, chrom_colors, significance_threshold, chroms)
+        plot_manhattan_with_colors(
+            ax1, trait1_df, chrom_colors, significance_threshold, chroms
+        )
         ax1.set_title(f"{trait1_name} GWAS Results", fontsize=14)
         ax1.set_ylabel("-log10(P-value)", fontsize=12)
 
         # Plot trait 2 (bottom panel, inverted)
-        plot_manhattan_with_colors(ax2, trait2_df, chrom_colors, significance_threshold, chroms)
+        plot_manhattan_with_colors(
+            ax2, trait2_df, chrom_colors, significance_threshold, chroms
+        )
         ax2.invert_yaxis()
         ax2.set_title(f"{trait2_name} GWAS Results", fontsize=14)
         ax2.set_ylabel("-log10(P-value)", fontsize=12)
@@ -675,7 +751,11 @@ def plot_manhattan_with_colors(ax, results_df, colors, threshold, chroms):
 
         # Plot points
         ax.scatter(
-            chrom_data["adjusted_bp"], -np.log10(chrom_data["P"]), c=colors[color_idx % len(colors)], s=2, alpha=0.7
+            chrom_data["adjusted_bp"],
+            -np.log10(chrom_data["P"]),
+            c=colors[color_idx % len(colors)],
+            s=2,
+            alpha=0.7,
         )
 
         # Add significance line
@@ -717,7 +797,10 @@ def multi_trait_manhattan(
 
         n_traits = len(trait_results)
         if n_traits < 2:
-            return {"status": "failed", "error": f"Need at least 2 traits for multi-trait plot, got {n_traits}"}
+            return {
+                "status": "failed",
+                "error": f"Need at least 2 traits for multi-trait plot, got {n_traits}",
+            }
 
         if n_traits > 6:
             logger.warning(f"Many traits ({n_traits}), plot may be crowded")
@@ -725,7 +808,9 @@ def multi_trait_manhattan(
         # Create subplots
         n_cols = min(3, n_traits)
         n_rows = (n_traits + n_cols - 1) // n_cols
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 4 * n_rows), squeeze=False, sharey=True)
+        fig, axes = plt.subplots(
+            n_rows, n_cols, figsize=(6 * n_cols, 4 * n_rows), squeeze=False, sharey=True
+        )
         fig.suptitle(title, fontsize=16, y=0.95)
 
         # Colors for chromosomes
@@ -755,7 +840,14 @@ def multi_trait_manhattan(
                 continue
 
             if df.empty:
-                ax.text(0.5, 0.5, f"No data for\n{trait_name}", ha="center", va="center", transform=ax.transAxes)
+                ax.text(
+                    0.5,
+                    0.5,
+                    f"No data for\n{trait_name}",
+                    ha="center",
+                    va="center",
+                    transform=ax.transAxes,
+                )
                 continue
 
             # Normalize column names: accept CHROM->CHR, POS->BP, p_value->P
@@ -770,11 +862,16 @@ def multi_trait_manhattan(
             required_cols = ["CHR", "BP", "P"]
             missing = [c for c in required_cols if c not in df.columns]
             if missing:
-                logger.error(f"Missing required columns {missing} for trait {trait_name}")
+                logger.error(
+                    f"Missing required columns {missing} for trait {trait_name}"
+                )
                 continue
 
             # Get unique chromosomes and sort
-            chroms = sorted(df["CHR"].unique(), key=lambda x: int(x) if str(x).isdigit() else float("inf"))
+            chroms = sorted(
+                df["CHR"].unique(),
+                key=lambda x: int(x) if str(x).isdigit() else float("inf"),
+            )
 
             # Plot Manhattan for this trait
             plot_manhattan_with_colors(ax, df, colors, significance_threshold, chroms)
@@ -906,7 +1003,9 @@ def cross_cohort_forest(
             return {"status": "failed", "error": "No valid effect sizes found"}
 
         y_positions = range(len(valid_cohorts))
-        for i, (cohort, effect_size, error) in enumerate(zip(valid_cohorts, effect_sizes, errors)):
+        for i, (cohort, effect_size, error) in enumerate(
+            zip(valid_cohorts, effect_sizes, errors)
+        ):
             ax.errorbar(
                 effect_size,
                 i,
@@ -938,7 +1037,13 @@ def cross_cohort_forest(
         ax.legend()
 
         for i, (effect_size, error) in enumerate(zip(effect_sizes, errors)):
-            ax.text(effect_size + max(error) + 0.01, i, f"{effect_size:.3f}", va="center", fontsize=9)
+            ax.text(
+                effect_size + max(error) + 0.01,
+                i,
+                f"{effect_size:.3f}",
+                va="center",
+                fontsize=9,
+            )
 
         plt.tight_layout()
 
@@ -1055,11 +1160,15 @@ def concordance_plot(
 
         # Add diagonal line
         max_val = max(max(p_values1), max(p_values2))
-        ax.plot([0, max_val], [0, max_val], "r--", alpha=0.7, label="Perfect concordance")
+        ax.plot(
+            [0, max_val], [0, max_val], "r--", alpha=0.7, label="Perfect concordance"
+        )
 
         ax.set_xlabel("Study 1 -log10(p)")
         ax.set_ylabel("Study 2 -log10(p)")
-        plot_title = title if title else f"GWAS Concordance Plot\n{n:,} overlapping SNPs"
+        plot_title = (
+            title if title else f"GWAS Concordance Plot\n{n:,} overlapping SNPs"
+        )
         ax.set_title(plot_title)
         ax.legend()
         ax.grid(True, alpha=0.3)

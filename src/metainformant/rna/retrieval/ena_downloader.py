@@ -4,6 +4,20 @@ ENA Downloader Module.
 Handles direct FASTQ downloads from the European Nucleotide Archive (ENA).
 This bypasses the NCBI SRA Toolkit (prefetch/fasterq-dump) bottleneck by
 fetching pre-extracted .fastq.gz files directly via HTTP/FTP.
+
+This module provides a high-performance alternative to traditional SRA
+download methods, particularly useful for:
+- High-throughput RNA-seq projects (1000+ samples)
+- Environments where SRA Toolkit installation is problematic
+- Projects requiring specific ENA samples not yet synced to SRA
+- Parallel batch downloads with resume support
+
+Example:
+    >>> from metainformant.rna.retrieval.ena_downloader import ENADownloader
+    >>> downloader = ENADownloader(timeout=1800, retries=3)
+    >>> success, msg, files = downloader.download_run("SRR1234567", Path("output/fastq"))
+    >>> print(f"Download {msg}")
+    Download downloaded 2 files
 """
 
 import gzip
@@ -95,11 +109,31 @@ class ENADownloader:
         """
         Discover FASTQ URLs for a sample using the ENA Portal API.
 
+        Queries the ENA Portal API to discover available FASTQ files for a
+        given SRA run accession. Converts FTP paths to HTTP URLs for use
+        with curl.
+
         Args:
-            sample_id: SRA run accession (e.g., SRR1234567).
+            sample_id: SRA run accession (e.g., SRR1234567, ERR1234567).
+                Must be a valid run accession in the ENA database.
 
         Returns:
-            List of HTTP URLs for the FASTQ files.
+            List of HTTP URLs for the FASTQ files. Returns empty list if
+            no FASTQ files are found or the sample doesn't exist.
+
+        Raises:
+            urllib.error.URLError: If the API request fails
+
+        Example:
+            >>> downloader = ENADownloader()
+            >>> urls = downloader.get_fastq_urls("SRR1234567")
+            >>> print(f"Found {len(urls)} FASTQ files")
+            Found 2 FASTQ files
+
+        Note:
+            The ENA Portal API returns FTP paths which are converted to
+            HTTP URLs for curl compatibility. Single-end runs return
+            one URL; paired-end runs return two URLs (forward and reverse).
         """
         api_url = (
             f"https://www.ebi.ac.uk/ena/portal/api/filereport?"
@@ -144,12 +178,41 @@ class ENADownloader:
         """
         Download all FASTQ files for a run.
 
+        Downloads all FASTQ files associated with a run accession using
+        curl with automatic retry. Checks for existing files to enable
+        resume functionality.
+
         Args:
-            sample_id: Run accession (e.g., SRR1234567).
-            output_dir: Directory to save files.
+            sample_id: Run accession (e.g., SRR1234567, ERR1234567).
+                Must be a valid SRA/ENA run accession.
+            output_dir: Directory to save downloaded files. Created if
+                it doesn't exist.
 
         Returns:
-            Tuple of (success, message, list_of_downloaded_files).
+            Tuple of (success, message, list_of_downloaded_files):
+            - success: True if all files downloaded successfully
+            - message: Status message (e.g., "Downloaded 2 files", error description)
+            - list_of_downloaded_files: List of Path objects for downloaded files
+
+        Raises:
+            subprocess.TimeoutExpired: If download exceeds timeout
+
+        Example:
+            >>> from pathlib import Path
+            >>> from metainformant.rna.retrieval.ena_downloader import ENADownloader
+            >>>
+            >>> downloader = ENADownloader(timeout=3600, retries=3)
+            >>> success, msg, files = downloader.download_run(
+            ...     "SRR1234567",
+            ...     Path("output/fastq/SRR1234567")
+            ... )
+            >>> if success:
+            ...     print(f"Downloaded: {[f.name for f in files]}")
+
+        Note:
+            - Existing non-empty files are skipped (resume support)
+            - Uses curl with retry logic for reliability
+            - Cleans up partial downloads on failure
         """
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)

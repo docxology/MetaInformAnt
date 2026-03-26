@@ -16,7 +16,7 @@ References:
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -74,7 +74,10 @@ def compute_credible_set(
     n_variants = len(z_scores)
 
     if coverage <= 0.0 or coverage > 1.0:
-        return {"status": "error", "message": f"Coverage must be in (0, 1], got {coverage}"}
+        return {
+            "status": "error",
+            "message": f"Coverage must be in (0, 1], got {coverage}",
+        }
 
     if prior not in ("uniform", "distance"):
         return {"status": "error", "message": f"Unknown prior type: {prior}"}
@@ -84,16 +87,25 @@ def compute_credible_set(
         if len(ld_matrix) != n_variants:
             return {
                 "status": "error",
-                "message": (f"LD matrix rows ({len(ld_matrix)}) does not match " f"number of Z-scores ({n_variants})"),
+                "message": (
+                    f"LD matrix rows ({len(ld_matrix)}) does not match "
+                    f"number of Z-scores ({n_variants})"
+                ),
             }
         for row_idx, row in enumerate(ld_matrix):
             if len(row) != n_variants:
                 return {
                     "status": "error",
-                    "message": (f"LD matrix row {row_idx} has {len(row)} columns, " f"expected {n_variants}"),
+                    "message": (
+                        f"LD matrix row {row_idx} has {len(row)} columns, "
+                        f"expected {n_variants}"
+                    ),
                 }
 
-    logger.debug(f"Computing credible set for {n_variants} variants, " f"coverage={coverage}, prior={prior}")
+    logger.debug(
+        f"Computing credible set for {n_variants} variants, "
+        f"coverage={coverage}, prior={prior}"
+    )
 
     # Step 1: Compute approximate Bayes factors
     bayes_factors = compute_bayes_factors(z_scores)
@@ -193,7 +205,7 @@ def susie_regression(
 
     # Pre-compute X'X diagonal and X'y
     XtX_diag = np.sum(X_arr**2, axis=0)  # (p,)
-    Xty = X_arr.T @ y_centered  # (p,)
+    X_arr.T @ y_centered  # (p,)
 
     # Initialize
     alpha = np.full((L, p), 1.0 / p)  # Uniform initial inclusion probs
@@ -270,7 +282,9 @@ def susie_regression(
             prior_variance = max(expected_b2 / L, 1e-12)
 
         # Compute ELBO (simplified)
-        elbo = _compute_susie_elbo(y_centered, fitted, sigma2, alpha, mu, mu2, prior_variance)
+        elbo = _compute_susie_elbo(
+            y_centered, fitted, sigma2, alpha, mu, mu2, prior_variance
+        )
 
         # Check convergence
         if abs(elbo - prev_elbo) < tol:
@@ -403,7 +417,10 @@ def colocalization(
     if len(z_scores_1) != len(z_scores_2):
         return {
             "status": "error",
-            "message": (f"Z-score lengths differ: trait 1 has {len(z_scores_1)}, " f"trait 2 has {len(z_scores_2)}"),
+            "message": (
+                f"Z-score lengths differ: trait 1 has {len(z_scores_1)}, "
+                f"trait 2 has {len(z_scores_2)}"
+            ),
         }
 
     n_variants = len(z_scores_1)
@@ -473,7 +490,9 @@ def colocalization(
         4: "H4: Both traits associated, shared causal variant",
     }
     best_idx = posteriors.index(max(posteriors))
-    summary = f"Most supported: {hypothesis_names[best_idx]} (PP={posteriors[best_idx]:.4f})"
+    summary = (
+        f"Most supported: {hypothesis_names[best_idx]} (PP={posteriors[best_idx]:.4f})"
+    )
 
     return {
         "status": "success",
@@ -521,14 +540,20 @@ def conditional_analysis(
 
     # Validate LD matrix
     if len(ld_matrix) != n_variants:
-        logger.error(f"LD matrix rows ({len(ld_matrix)}) does not match " f"Z-score count ({n_variants})")
+        logger.error(
+            f"LD matrix rows ({len(ld_matrix)}) does not match "
+            f"Z-score count ({n_variants})"
+        )
         return []
 
     if not HAS_NUMPY:
         logger.warning("numpy not available; using pure Python conditional analysis")
         return _conditional_analysis_pure(z_scores, ld_matrix, max_signals, p_threshold)
 
-    logger.debug(f"Running conditional analysis: {n_variants} variants, " f"max_signals={max_signals}")
+    logger.debug(
+        f"Running conditional analysis: {n_variants} variants, "
+        f"max_signals={max_signals}"
+    )
 
     z_arr = np.array(z_scores, dtype=float)
     ld_arr = np.array(ld_matrix, dtype=float)
@@ -660,7 +685,9 @@ def annotate_credible_set(
             cat_set = set(cat_indices)
 
             # PIP in this category within the credible set
-            pip_in_cat = sum(pips[i] for i in snps_in_set if i < len(pips) and i in cat_set)
+            pip_in_cat = sum(
+                pips[i] for i in snps_in_set if i < len(pips) and i in cat_set
+            )
 
             # Expected fraction: proportion of all variants in this category
             n_in_cat_total = len(cat_set)
@@ -712,7 +739,7 @@ def _apply_ld_adjustment(
     Returns:
         Adjusted Bayes factors.
     """
-    n = len(bayes_factors)
+    len(bayes_factors)
     if not HAS_NUMPY:
         return bayes_factors
 
@@ -883,7 +910,9 @@ def _compute_susie_elbo(
             if a > 1e-30:
                 kl_total -= a * math.log(a)
                 # Prior contribution
-                kl_total += a * 0.5 * math.log(max(prior_variance, 1e-12) / max(sigma2, 1e-12))
+                kl_total += (
+                    a * 0.5 * math.log(max(prior_variance, 1e-12) / max(sigma2, 1e-12))
+                )
 
     return ll + kl_total
 

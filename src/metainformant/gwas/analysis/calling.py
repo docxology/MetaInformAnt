@@ -17,7 +17,10 @@ logger = logging.get_logger(__name__)
 
 
 def call_variants_bcftools(
-    bam_files: List[str | Path], reference_fasta: str | Path, output_vcf: str | Path, threads: int = 1
+    bam_files: List[str | Path],
+    reference_fasta: str | Path,
+    output_vcf: str | Path,
+    threads: int = 1,
 ) -> subprocess.CompletedProcess:
     """Call variants using bcftools mpileup and call.
 
@@ -96,8 +99,12 @@ def call_variants_bcftools(
 
     try:
         # Pipe mpileup output into call (no shell=True needed)
-        mpileup_proc = subprocess.Popen(mpileup_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        result = subprocess.run(call_cmd, stdin=mpileup_proc.stdout, capture_output=True, text=True)
+        mpileup_proc = subprocess.Popen(
+            mpileup_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+        )
+        result = subprocess.run(
+            call_cmd, stdin=mpileup_proc.stdout, capture_output=True, text=True
+        )
         mpileup_proc.stdout.close()
         mpileup_proc.wait()
         result.check_returncode()
@@ -122,7 +129,10 @@ def call_variants_bcftools(
 
 
 def call_variants_gatk(
-    bam_files: List[str | Path], reference_fasta: str | Path, output_vcf: str | Path, gatk_path: Optional[str] = None
+    bam_files: List[str | Path],
+    reference_fasta: str | Path,
+    output_vcf: str | Path,
+    gatk_path: Optional[str] = None,
 ) -> subprocess.CompletedProcess:
     """Call variants using GATK HaplotypeCaller.
 
@@ -217,7 +227,7 @@ def filter_variants_bcftools(
     filter_expr = []
 
     if "min_qual" in filters:
-        filter_expr.append(f'QUAL>={filters["min_qual"]}')
+        filter_expr.append(f"QUAL>={filters['min_qual']}")
 
     if "max_missing" in filters:
         max_missing = filters["max_missing"]
@@ -248,7 +258,10 @@ def filter_variants_bcftools(
 
 
 def call_variants_freebayes(
-    bam_files: List[str | Path], reference_fasta: str | Path, output_vcf: str | Path, ploidy: int = 2
+    bam_files: List[str | Path],
+    reference_fasta: str | Path,
+    output_vcf: str | Path,
+    ploidy: int = 2,
 ) -> subprocess.CompletedProcess:
     """Call variants using freebayes.
 
@@ -293,7 +306,9 @@ def call_variants_freebayes(
     try:
         # Write stdout to output file instead of using shell redirection
         with open(output_vcf, "w") as vcf_out:
-            result = subprocess.run(cmd, stdout=vcf_out, stderr=subprocess.PIPE, text=True)
+            result = subprocess.run(
+                cmd, stdout=vcf_out, stderr=subprocess.PIPE, text=True
+            )
         result.check_returncode()
 
         logger.info(f"freebayes variant calling completed: {output_vcf}")
@@ -305,7 +320,9 @@ def call_variants_freebayes(
         raise
 
 
-def merge_vcfs(vcf_files: List[str | Path], output_vcf: str | Path) -> subprocess.CompletedProcess:
+def merge_vcfs(
+    vcf_files: List[str | Path], output_vcf: str | Path
+) -> subprocess.CompletedProcess:
     """Merge multiple VCF files.
 
     Args:
@@ -377,7 +394,7 @@ def index_vcf(vcf_path: str | Path) -> subprocess.CompletedProcess:
         result.check_returncode()
 
         logger.info(f"VCF indexing completed: {vcf_path}.tbi")
-        return vcf_path # Return the path to the indexed/compressed file
+        return vcf_path  # Return the path to the indexed/compressed file
 
     except subprocess.CalledProcessError as e:
         logger.error(f"VCF indexing failed: {e}")
@@ -421,26 +438,36 @@ def validate_vcf(vcf_path: str | Path) -> Dict[str, Any]:
                     # Column header
                     fields = line[1:].split("\t")
                     if len(fields) >= 8:  # CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO
-                        validation["stats"]["samples"] = max(0, len(fields) - 9)  # Subtract fixed columns
+                        validation["stats"]["samples"] = max(
+                            0, len(fields) - 9
+                        )  # Subtract fixed columns
                 else:
                     # Variant line
                     fields = line.split("\t")
                     if len(fields) < 8:
-                        validation["errors"].append(f"Line {line_num}: Insufficient fields")
+                        validation["errors"].append(
+                            f"Line {line_num}: Insufficient fields"
+                        )
                         validation["valid"] = False
                         continue
 
                     # Basic validation
-                    chrom, pos, id_field, ref, alt, qual, filter_field, info = fields[:8]
+                    chrom, pos, id_field, ref, alt, qual, filter_field, info = fields[
+                        :8
+                    ]
 
                     # Validate position
                     try:
                         pos_int = int(pos)
                         if pos_int <= 0:
-                            validation["errors"].append(f"Line {line_num}: Invalid position {pos}")
+                            validation["errors"].append(
+                                f"Line {line_num}: Invalid position {pos}"
+                            )
                             validation["valid"] = False
                     except ValueError:
-                        validation["errors"].append(f"Line {line_num}: Non-numeric position {pos}")
+                        validation["errors"].append(
+                            f"Line {line_num}: Non-numeric position {pos}"
+                        )
                         validation["valid"] = False
 
                     # Track contigs
@@ -448,10 +475,14 @@ def validate_vcf(vcf_path: str | Path) -> Dict[str, Any]:
 
                     # Validate alleles
                     if not ref or ref == ".":
-                        validation["warnings"].append(f"Line {line_num}: Missing reference allele")
+                        validation["warnings"].append(
+                            f"Line {line_num}: Missing reference allele"
+                        )
 
                     if not alt or alt == ".":
-                        validation["warnings"].append(f"Line {line_num}: No alternate alleles")
+                        validation["warnings"].append(
+                            f"Line {line_num}: No alternate alleles"
+                        )
 
                     validation["stats"]["total_variants"] += 1
 
@@ -475,7 +506,9 @@ def check_bcftools_available() -> bool:
         True if bcftools is available and executable
     """
     try:
-        result = subprocess.run(["bcftools", "--version"], capture_output=True, text=True, timeout=10)
+        result = subprocess.run(
+            ["bcftools", "--version"], capture_output=True, text=True, timeout=10
+        )
         return result.returncode == 0
     except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
         return False
@@ -489,7 +522,9 @@ def check_gatk_available() -> bool:
     """
     try:
         # Try common GATK commands
-        result = subprocess.run(["gatk", "--version"], capture_output=True, text=True, timeout=10)
+        result = subprocess.run(
+            ["gatk", "--version"], capture_output=True, text=True, timeout=10
+        )
         return result.returncode == 0
     except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
         try:
@@ -502,7 +537,11 @@ def check_gatk_available() -> bool:
                 cwd=".",  # Look in current directory
             )
             return result.returncode == 0
-        except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
+        except (
+            subprocess.TimeoutExpired,
+            FileNotFoundError,
+            subprocess.SubprocessError,
+        ):
             return False
 
 
@@ -534,16 +573,25 @@ def merge_vcf_files(
     # Ensure all files are indexed/compressed before merging
     indexed_files = []
     for f in vcf_files:
-        indexed_path = index_vcf(f) # This handles compression and indexing
+        indexed_path = index_vcf(f)  # This handles compression and indexing
         indexed_files.append(str(indexed_path))
 
     # Build bcftools merge command
-    cmd = ["bcftools", "merge", "--threads", str(threads), "-o", str(output_vcf)] + indexed_files
+    cmd = [
+        "bcftools",
+        "merge",
+        "--threads",
+        str(threads),
+        "-o",
+        str(output_vcf),
+    ] + indexed_files
 
     logger.info(f"Merging {len(vcf_files)} VCF files with bcftools")
 
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)  # 5 minute timeout for merging
+        result = subprocess.run(
+            cmd, capture_output=True, text=True, timeout=300
+        )  # 5 minute timeout for merging
 
         if result.returncode == 0:
             logger.info(f"Successfully merged VCF files to {output_vcf}")

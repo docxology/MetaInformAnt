@@ -167,8 +167,8 @@ class TestEffectsVisualization:
     def test_effect_plot(self, tmp_path):
         """Test effect size visualization."""
         results = [
-            {"p_value": 1e-6, "effect_size": 0.5, "se": 0.1},
-            {"p_value": 1e-5, "effect_size": -0.3, "se": 0.15},
+            {"p_value": 1e-6, "BETA": 0.5, "se": 0.1},
+            {"p_value": 1e-5, "BETA": -0.3, "se": 0.15},
         ]
         output_path = tmp_path / "effects.png"
         if hasattr(visualization_effects, "effect_size_plot"):

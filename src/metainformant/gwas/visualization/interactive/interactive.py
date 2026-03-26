@@ -7,7 +7,6 @@ gracefully fall back to producing styled HTML tables when Plotly is unavailable.
 
 from __future__ import annotations
 
-import json
 import math
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -127,7 +126,12 @@ def interactive_manhattan(
     """
     if not assoc_results:
         logger.warning("No association results provided for Manhattan plot")
-        return {"status": "skipped", "output_path": None, "n_variants": 0, "interactive": False}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "n_variants": 0,
+            "interactive": False,
+        }
 
     out = _ensure_output_dir(output_file)
 
@@ -153,7 +157,12 @@ def interactive_manhattan(
 
     if not records:
         logger.warning("No valid variants after filtering for Manhattan plot")
-        return {"status": "skipped", "output_path": None, "n_variants": 0, "interactive": False}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "n_variants": 0,
+            "interactive": False,
+        }
 
     n_variants = len(records)
 
@@ -262,7 +271,9 @@ def interactive_manhattan(
         for c in chrom_set:
             chrom_records_pos = [r["cum_pos"] for r in records if r["chromosome"] == c]
             if chrom_records_pos:
-                chrom_centers.append((c, (min(chrom_records_pos) + max(chrom_records_pos)) / 2))
+                chrom_centers.append(
+                    (c, (min(chrom_records_pos) + max(chrom_records_pos)) / 2)
+                )
 
         fig.update_layout(
             title=title,
@@ -288,7 +299,9 @@ def interactive_manhattan(
         }
 
     # --- Fallback: styled HTML table -----------------------------------
-    logger.info("Plotly not available; generating fallback HTML table for Manhattan plot")
+    logger.info(
+        "Plotly not available; generating fallback HTML table for Manhattan plot"
+    )
     sorted_records = sorted(records, key=lambda r: r["p_value"])
     headers = ["Variant", "Chromosome", "Position", "P-value", "Beta", "-log10(p)"]
     rows = []
@@ -353,7 +366,12 @@ def interactive_pca(
 
     if not pcs_raw or (hasattr(pcs_raw, "__len__") and len(pcs_raw) == 0):
         logger.warning("No PCA data provided")
-        return {"status": "skipped", "output_path": None, "n_samples": 0, "interactive": False}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "n_samples": 0,
+            "interactive": False,
+        }
 
     # Convert to list-of-lists for uniform handling
     try:
@@ -365,12 +383,22 @@ def interactive_pca(
 
     if pcs_arr is None or pcs_arr.ndim != 2:
         logger.error("pca_data['pcs'] must be a 2D structure")
-        return {"status": "failed", "output_path": None, "n_samples": 0, "interactive": False}
+        return {
+            "status": "failed",
+            "output_path": None,
+            "n_samples": 0,
+            "interactive": False,
+        }
 
     n_samples, n_pcs = pcs_arr.shape
     if n_pcs < 3:
         logger.error(f"Need at least 3 PCs for 3D PCA; got {n_pcs}")
-        return {"status": "failed", "output_path": None, "n_samples": n_samples, "interactive": False}
+        return {
+            "status": "failed",
+            "output_path": None,
+            "n_samples": n_samples,
+            "interactive": False,
+        }
 
     out = _ensure_output_dir(output_file)
 
@@ -511,7 +539,12 @@ def interactive_volcano(
     """
     if not assoc_results:
         logger.warning("No association results provided for volcano plot")
-        return {"status": "skipped", "output_path": None, "n_variants": 0, "interactive": False}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "n_variants": 0,
+            "interactive": False,
+        }
 
     out = _ensure_output_dir(output_file)
 
@@ -551,7 +584,12 @@ def interactive_volcano(
 
     if not records:
         logger.warning("No valid variants after filtering for volcano plot")
-        return {"status": "skipped", "output_path": None, "n_variants": 0, "interactive": False}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "n_variants": 0,
+            "interactive": False,
+        }
 
     n_variants = len(records)
 

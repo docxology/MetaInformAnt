@@ -2,5 +2,6 @@
 from __future__ import annotations
 
 from . import life_course
+from . import statistical
 
-__all__ = ['life_course']
+__all__ = ['life_course', 'statistical']

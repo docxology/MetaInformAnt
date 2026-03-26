@@ -120,7 +120,7 @@ def plot_eqtl_boxplot(
     labels = ["0/0 (Ref)", "0/1 (Het)", "1/1 (Alt)"]
 
     # Filter empty groups
-    valid_data = [(d, l) for d, l in zip(data, labels) if len(d) > 0]
+    valid_data = [(d, lbl) for d, lbl in zip(data, labels) if len(d) > 0]
     if valid_data:
         data, labels = zip(*valid_data)
         bp = ax.boxplot(data, labels=labels, patch_artist=True)
@@ -173,7 +173,9 @@ def plot_locuszoom_eqtl(
         logger.warning("matplotlib not available for plotting")
         return None
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=kwargs.get("figsize", (12, 8)), height_ratios=[3, 1], sharex=True)
+    fig, (ax1, ax2) = plt.subplots(
+        2, 1, figsize=kwargs.get("figsize", (12, 8)), height_ratios=[3, 1], sharex=True
+    )
 
     # Filter to gene region
     if "position" not in results.columns:
@@ -193,7 +195,15 @@ def plot_locuszoom_eqtl(
     else:
         colors = "steelblue"
 
-    ax1.scatter(positions, log_pval, c=colors, s=50, alpha=0.7, edgecolors="black", linewidth=0.5)
+    ax1.scatter(
+        positions,
+        log_pval,
+        c=colors,
+        s=50,
+        alpha=0.7,
+        edgecolors="black",
+        linewidth=0.5,
+    )
     ax1.scatter(
         positions.iloc[lead_idx],
         log_pval.iloc[lead_idx],
@@ -206,7 +216,9 @@ def plot_locuszoom_eqtl(
     )
 
     # Significance line
-    ax1.axhline(-np.log10(5e-8), color="red", linestyle="--", alpha=0.5, label="Genome-wide")
+    ax1.axhline(
+        -np.log10(5e-8), color="red", linestyle="--", alpha=0.5, label="Genome-wide"
+    )
     ax1.set_ylabel("-log₁₀(P-value)")
     ax1.set_title(f"eQTL LocusZoom: {gene_id}")
     ax1.legend()
@@ -215,7 +227,16 @@ def plot_locuszoom_eqtl(
     gene_mid = (gene_start + gene_end) / 2 / 1e6
     gene_width = (gene_end - gene_start) / 1e6
     ax2.barh(0, gene_width, left=gene_start / 1e6, height=0.4, color="navy", alpha=0.7)
-    ax2.text(gene_mid, 0, gene_id, ha="center", va="center", fontsize=10, color="white", fontweight="bold")
+    ax2.text(
+        gene_mid,
+        0,
+        gene_id,
+        ha="center",
+        va="center",
+        fontsize=10,
+        color="white",
+        fontweight="bold",
+    )
     ax2.set_ylim(-0.5, 0.5)
     ax2.set_xlabel("Position (Mb)")
     ax2.set_ylabel("Genes")

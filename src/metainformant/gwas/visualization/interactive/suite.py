@@ -173,7 +173,11 @@ def generate_all_plots(
         try:
             from ..general import manhattan_plot
 
-            plot = manhattan_plot(records, output_path=manhattan_file, significance_threshold=significance_threshold)
+            plot = manhattan_plot(
+                records,
+                output_path=manhattan_file,
+                significance_threshold=significance_threshold,
+            )
             if plot:
                 results["plots"]["manhattan"] = str(manhattan_file)
                 results["files_created"].append(str(manhattan_file))
@@ -204,9 +208,15 @@ def generate_all_plots(
                 pos = int(hit[pos_col])
                 regional_file = output_dir / f"regional_plot_chr{chrom}_{pos}.png"
 
-                plot = regional_plot(records, chrom, pos - 500000, pos + 500000, output_path=regional_file)
+                plot = regional_plot(
+                    records,
+                    chrom,
+                    pos - 500000,
+                    pos + 500000,
+                    output_path=regional_file,
+                )
                 if plot:
-                    results["plots"][f"regional_{i+1}"] = str(regional_file)
+                    results["plots"][f"regional_{i + 1}"] = str(regional_file)
                     results["files_created"].append(str(regional_file))
         except Exception as e:
             logger.warning(f"Failed to create regional plots: {e}")
@@ -263,7 +273,9 @@ def generate_all_plots(
                 pheno_file = output_dir / "phenotype_distribution.png"
                 pheno_values = df["phenotype"].dropna().tolist()
                 if pheno_values:
-                    result = phenotype_distribution(pheno_values, output_file=pheno_file)
+                    result = phenotype_distribution(
+                        pheno_values, output_file=pheno_file
+                    )
                     if result.get("status") == "success":
                         results["plots"]["phenotype_distribution"] = str(pheno_file)
                         results["files_created"].append(str(pheno_file))
@@ -367,7 +379,9 @@ def generate_all_plots(
                 from ..population.geography import population_count_map
 
                 pop_count_file = output_dir / "population_count_map.png"
-                pcm_result = population_count_map(metadata=metadata, output_file=pop_count_file)
+                pcm_result = population_count_map(
+                    metadata=metadata, output_file=pop_count_file
+                )
                 if pcm_result.get("status") == "success":
                     results["plots"]["population_count_map"] = str(pop_count_file)
                     results["files_created"].append(str(pop_count_file))
@@ -434,7 +448,9 @@ def generate_all_plots(
         try:
             from .finemapping import credible_set_plot
 
-            cs_input = finemapping_results if finemapping_results is not None else records
+            cs_input = (
+                finemapping_results if finemapping_results is not None else records
+            )
             if cs_input and len(cs_input) >= 2:
                 cs_file = output_dir / "credible_set_plot.png"
                 cs_result = credible_set_plot(
@@ -468,7 +484,11 @@ def generate_all_plots(
         # ---------------------------------------------------------------
         # Genotype-phenotype boxplot for top hit (requires genotype_matrix + phenotype_values)
         # ---------------------------------------------------------------
-        if genotype_matrix is not None and phenotype_values is not None and len(genotype_matrix) > 0:
+        if (
+            genotype_matrix is not None
+            and phenotype_values is not None
+            and len(genotype_matrix) > 0
+        ):
             try:
                 from .phenotype import genotype_phenotype_boxplot
 
@@ -476,7 +496,9 @@ def generate_all_plots(
                 top_idx = int(df[p_col].idxmin())
                 if top_idx < len(genotype_matrix):
                     top_genotypes = genotype_matrix[top_idx]
-                    top_variant_id = f"chr{df.iloc[top_idx][chrom_col]}:{df.iloc[top_idx][pos_col]}"
+                    top_variant_id = (
+                        f"chr{df.iloc[top_idx][chrom_col]}:{df.iloc[top_idx][pos_col]}"
+                    )
                     gp_file = output_dir / "genotype_phenotype_boxplot.png"
                     gp_result = genotype_phenotype_boxplot(
                         genotypes=top_genotypes,
@@ -493,7 +515,11 @@ def generate_all_plots(
         # ---------------------------------------------------------------
         # Top hits genotype-phenotype (requires assoc_results + genotype_matrix + phenotype_values)
         # ---------------------------------------------------------------
-        if genotype_matrix is not None and phenotype_values is not None and len(records) > 0:
+        if (
+            genotype_matrix is not None
+            and phenotype_values is not None
+            and len(records) > 0
+        ):
             try:
                 from .phenotype import top_hits_genotype_phenotype
 
@@ -510,7 +536,9 @@ def generate_all_plots(
                     for fpath in th_result.get("generated_files", []):
                         results["files_created"].append(fpath)
             except Exception as e:
-                logger.warning(f"Failed to create top hits genotype-phenotype plots: {e}")
+                logger.warning(
+                    f"Failed to create top hits genotype-phenotype plots: {e}"
+                )
 
         # ---------------------------------------------------------------
         # Phenotype-PCA correlation (requires pca_data + phenotype_values)
@@ -521,7 +549,9 @@ def generate_all_plots(
 
                 pcs_raw = pca_data.get("pcs")
                 if pcs_raw is not None:
-                    pcs_list = pcs_raw if isinstance(pcs_raw, list) else pcs_raw.tolist()
+                    pcs_list = (
+                        pcs_raw if isinstance(pcs_raw, list) else pcs_raw.tolist()
+                    )
                     if len(pcs_list) == len(phenotype_values):
                         pca_corr_file = output_dir / "phenotype_pca_correlation.png"
                         pca_corr_result = phenotype_pca_correlation(
@@ -530,7 +560,9 @@ def generate_all_plots(
                             output_file=pca_corr_file,
                         )
                         if pca_corr_result.get("status") == "success":
-                            results["plots"]["phenotype_pca_correlation"] = str(pca_corr_file)
+                            results["plots"]["phenotype_pca_correlation"] = str(
+                                pca_corr_file
+                            )
                             results["files_created"].append(str(pca_corr_file))
             except Exception as e:
                 logger.warning(f"Failed to create phenotype-PCA correlation plot: {e}")
@@ -553,7 +585,9 @@ def generate_all_plots(
                             output_file=interactive_pca_file,
                         )
                         if ipca_result.get("status") == "success":
-                            results["plots"]["pca_interactive"] = str(interactive_pca_file)
+                            results["plots"]["pca_interactive"] = str(
+                                interactive_pca_file
+                            )
                             results["files_created"].append(str(interactive_pca_file))
             except Exception as e:
                 logger.warning(f"Failed to create interactive PCA: {e}")
@@ -599,7 +633,9 @@ def generate_all_plots(
         try:
             p_values = df[p_col].dropna().astype(float).values
             results["statistics"]["total_variants"] = len(df)
-            results["statistics"]["significant_variants"] = int((p_values < significance_threshold).sum())
+            results["statistics"]["significant_variants"] = int(
+                (p_values < significance_threshold).sum()
+            )
             if len(p_values) > 0:
                 results["statistics"]["lambda_gc"] = float(np.median(p_values) / 0.456)
                 results["statistics"]["min_p"] = float(np.min(p_values))

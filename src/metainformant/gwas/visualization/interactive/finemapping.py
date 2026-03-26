@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 from metainformant.core.utils import logging
 
@@ -137,11 +137,19 @@ def credible_set_plot(
     """
     if not HAS_MATPLOTLIB or not HAS_NUMPY:
         logger.warning("matplotlib/numpy not available for credible set plot")
-        return {"status": "skipped", "reason": "matplotlib or numpy not available", "output_path": None}
+        return {
+            "status": "skipped",
+            "reason": "matplotlib or numpy not available",
+            "output_path": None,
+        }
 
     if not assoc_results:
         logger.error("No association results provided")
-        return {"status": "failed", "reason": "No association results", "output_path": None}
+        return {
+            "status": "failed",
+            "reason": "No association results",
+            "output_path": None,
+        }
 
     # Compute credible set
     cs_result = compute_credible_set(assoc_results, credible_level=credible_level)
@@ -221,7 +229,13 @@ def credible_set_plot(
             zorder=2,
         )
         # Legend entries
-        ax.scatter([], [], c="red", s=50, label=f"In credible set (n={cs_result['credible_set_size']})")
+        ax.scatter(
+            [],
+            [],
+            c="red",
+            s=50,
+            label=f"In credible set (n={cs_result['credible_set_size']})",
+        )
         ax.scatter([], [], c="gray", s=50, label="Outside credible set")
 
     # Draw horizontal dashed line at PIP threshold
@@ -282,11 +296,19 @@ def conditional_analysis_plot(
     """
     if not HAS_MATPLOTLIB or not HAS_NUMPY:
         logger.warning("matplotlib/numpy not available for conditional analysis plot")
-        return {"status": "skipped", "reason": "matplotlib or numpy not available", "output_path": None}
+        return {
+            "status": "skipped",
+            "reason": "matplotlib or numpy not available",
+            "output_path": None,
+        }
 
     if not assoc_results_list:
         logger.error("No association result rounds provided")
-        return {"status": "failed", "reason": "No association results", "output_path": None}
+        return {
+            "status": "failed",
+            "reason": "No association results",
+            "output_path": None,
+        }
 
     n_rounds = len(assoc_results_list)
 
@@ -294,7 +316,16 @@ def conditional_analysis_plot(
         labels = [f"Round {i + 1}" for i in range(n_rounds)]
 
     # Color and marker cycles
-    colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b", "#e377c2", "#7f7f7f"]
+    colors = [
+        "#1f77b4",
+        "#ff7f0e",
+        "#2ca02c",
+        "#d62728",
+        "#9467bd",
+        "#8c564b",
+        "#e377c2",
+        "#7f7f7f",
+    ]
     markers = ["o", "s", "^", "D", "v", "<", ">", "p"]
 
     fig, ax = plt.subplots(figsize=(12, 6))
@@ -386,15 +417,27 @@ def pip_vs_ld_plot(
     """
     if not HAS_MATPLOTLIB or not HAS_NUMPY:
         logger.warning("matplotlib/numpy not available for PIP vs LD plot")
-        return {"status": "skipped", "reason": "matplotlib or numpy not available", "output_path": None}
+        return {
+            "status": "skipped",
+            "reason": "matplotlib or numpy not available",
+            "output_path": None,
+        }
 
     if not pips or not ld_with_lead:
         logger.error("PIP or LD data not provided")
-        return {"status": "failed", "reason": "Missing PIP or LD data", "output_path": None}
+        return {
+            "status": "failed",
+            "reason": "Missing PIP or LD data",
+            "output_path": None,
+        }
 
     if len(pips) != len(ld_with_lead):
         logger.error("PIP and LD arrays must have the same length")
-        return {"status": "failed", "reason": "Length mismatch between PIP and LD arrays", "output_path": None}
+        return {
+            "status": "failed",
+            "reason": "Length mismatch between PIP and LD arrays",
+            "output_path": None,
+        }
 
     pips_arr = np.array(pips, dtype=np.float64)
     ld_arr = np.array(ld_with_lead, dtype=np.float64)

@@ -52,7 +52,10 @@ def estimate_heritability(
         log-likelihood, sample size, and method used.
     """
     if not HAS_NUMPY:
-        return {"status": "error", "message": "numpy is required for heritability estimation"}
+        return {
+            "status": "error",
+            "message": "numpy is required for heritability estimation",
+        }
 
     n = len(phenotypes)
     if n < 3:
@@ -65,7 +68,10 @@ def estimate_heritability(
         y = np.array(phenotypes, dtype=float)
         K = np.asarray(kinship_matrix, dtype=float)
     except (ValueError, TypeError) as e:
-        return {"status": "error", "message": f"Failed to convert inputs to arrays: {e}"}
+        return {
+            "status": "error",
+            "message": f"Failed to convert inputs to arrays: {e}",
+        }
 
     if K.shape != (n, n):
         return {
@@ -166,7 +172,10 @@ def partition_heritability_by_chromosome(
         number of chromosomes analyzed.
     """
     if not HAS_NUMPY:
-        return {"status": "error", "message": "numpy is required for heritability partitioning"}
+        return {
+            "status": "error",
+            "message": "numpy is required for heritability partitioning",
+        }
 
     n = len(phenotypes)
     if n < 3:
@@ -192,7 +201,9 @@ def partition_heritability_by_chromosome(
             per_chromosome[str(chrom)] = {"h2": chr_h2, "h2_se": chr_se}
             total_h2 += chr_h2
         else:
-            logger.warning(f"Chromosome {chrom} estimation failed: {result.get('message', 'unknown')}")
+            logger.warning(
+                f"Chromosome {chrom} estimation failed: {result.get('message', 'unknown')}"
+            )
             per_chromosome[str(chrom)] = {"h2": 0.0, "h2_se": 0.0}
 
     # Cap total h2 at 1.0 (sum of independent estimates can exceed 1)
@@ -231,13 +242,21 @@ def heritability_bar_chart(
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
     except ImportError:
-        return {"status": "skipped", "output_path": None, "message": "matplotlib not available"}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "message": "matplotlib not available",
+        }
 
     per_chromosome = h2_data.get("per_chromosome", {})
     total_h2 = h2_data.get("total_h2", 0.0)
 
     if not per_chromosome:
-        return {"status": "failed", "output_path": None, "message": "No per-chromosome data"}
+        return {
+            "status": "failed",
+            "output_path": None,
+            "message": "No per-chromosome data",
+        }
 
     # Sort chromosomes numerically where possible
     def _chr_sort_key(c: str) -> Tuple[int, str]:
@@ -258,7 +277,7 @@ def heritability_bar_chart(
         colors = plt.cm.YlOrRd([v / max_h2 for v in h2_values])  # type: ignore[attr-defined]
 
         x_positions = range(len(sorted_chroms))
-        bars = ax.bar(
+        ax.bar(
             x_positions,
             h2_values,
             yerr=h2_se_values,
@@ -269,7 +288,13 @@ def heritability_bar_chart(
         )
 
         # Horizontal line at total h2
-        ax.axhline(y=total_h2, color="steelblue", linestyle="--", linewidth=1.5, label=f"Total h2 = {total_h2:.3f}")
+        ax.axhline(
+            y=total_h2,
+            color="steelblue",
+            linestyle="--",
+            linewidth=1.5,
+            label=f"Total h2 = {total_h2:.3f}",
+        )
 
         ax.set_xlabel("Chromosome")
         ax.set_ylabel("Heritability (h2)")

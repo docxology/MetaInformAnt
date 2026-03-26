@@ -14,10 +14,10 @@ References:
   Subramanian et al. (2005) PNAS — GSEA
   Boyle et al. (2004) Bioinformatics — GO enrichment
 """
+
 from __future__ import annotations
 
 import math
-import time
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
@@ -26,7 +26,8 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 try:
-    from scipy.stats import fisher_exact, chi2
+    from scipy.stats import fisher_exact, chi2  # noqa: F401
+
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
@@ -68,10 +69,10 @@ def fisher_enrichment_test(
     hit_bg = hit_set & bg
     gs_bg = gs & bg
 
-    a = len(hit_bg & gs_bg)          # hits in gene set
-    b = len(hit_bg - gs_bg)          # hits not in gene set
-    c = len((bg - hit_bg) & gs_bg)   # background in gene set, not hit
-    d = len(bg - hit_bg - gs_bg)     # background not in gene set, not hit
+    a = len(hit_bg & gs_bg)  # hits in gene set
+    b = len(hit_bg - gs_bg)  # hits not in gene set
+    c = len((bg - hit_bg) & gs_bg)  # background in gene set, not hit
+    d = len(bg - hit_bg - gs_bg)  # background not in gene set, not hit
 
     if HAS_SCIPY:
         odds_ratio_arr, p_value = fisher_exact([[a, b], [c, d]], alternative="greater")
@@ -134,8 +135,9 @@ def go_term_info(go_id: str) -> Dict[str, Any]:
     """
     url = f"{QUICKGO_BASE}/ontology/go/terms/{go_id}"
     try:
-        resp = requests.get(url, timeout=QUICKGO_TIMEOUT,
-                            headers={"Accept": "application/json"})
+        resp = requests.get(
+            url, timeout=QUICKGO_TIMEOUT, headers={"Accept": "application/json"}
+        )
         resp.raise_for_status()
         data = resp.json()
         results = data.get("results", [{}])
@@ -173,16 +175,46 @@ def pathway_enrichment_from_annotations(
         # Minimal built-in gene sets as fallback
         gene_sets = {
             "Metabolic_process_broad": [
-                "ACO1", "ALDH2", "CYP6A2", "FASN", "GSTA1", "HADH",
-                "IDH1", "LDHA", "MDH2", "PGK1", "PFKM", "PKM", "SDH",
+                "ACO1",
+                "ALDH2",
+                "CYP6A2",
+                "FASN",
+                "GSTA1",
+                "HADH",
+                "IDH1",
+                "LDHA",
+                "MDH2",
+                "PGK1",
+                "PFKM",
+                "PKM",
+                "SDH",
             ],
             "Stress_response": [
-                "HSP70", "HSP90", "HSPA5", "DNAJB1", "ATF4", "DDIT3",
-                "SOD1", "SOD2", "CAT", "GPX1", "PRX2", "TXN",
+                "HSP70",
+                "HSP90",
+                "HSPA5",
+                "DNAJB1",
+                "ATF4",
+                "DDIT3",
+                "SOD1",
+                "SOD2",
+                "CAT",
+                "GPX1",
+                "PRX2",
+                "TXN",
             ],
             "Immune_signaling": [
-                "RELISH", "DORSAL", "STAT92E", "TOLL", "MYD88",
-                "IRAK1", "TRAF6", "NFKB1", "TNF", "IL6", "IL1B",
+                "RELISH",
+                "DORSAL",
+                "STAT92E",
+                "TOLL",
+                "MYD88",
+                "IRAK1",
+                "TRAF6",
+                "NFKB1",
+                "TNF",
+                "IL6",
+                "IL1B",
             ],
         }
 
@@ -218,12 +250,15 @@ def pathway_enrichment_from_annotations(
 
     results.sort(key=lambda r: r["p_value"])
     n_sig = sum(1 for r in results if r["significant_fdr05"])
-    logger.info(f"Pathway enrichment: {len(results)} sets tested, "
-                f"{n_sig} significant at FDR<0.05")
+    logger.info(
+        f"Pathway enrichment: {len(results)} sets tested, "
+        f"{n_sig} significant at FDR<0.05"
+    )
     return results
 
 
 # ── Pure-Python hypergeometric fallback ────────────────────────────────────────
+
 
 def _hypergeometric_sf(k: int, n: int, K: int, N: int) -> float:
     """P(X >= k) for hypergeometric(N, K, n) i.e. one-tailed enrichment p."""
@@ -235,7 +270,7 @@ def _hypergeometric_sf(k: int, n: int, K: int, N: int) -> float:
 
 
 def _log_hypergeom_pmf(k: int, n: int, K: int, N: int) -> float:
-    return (_log_comb(K, k) + _log_comb(N - K, n - k) - _log_comb(N, n))
+    return _log_comb(K, k) + _log_comb(N - K, n - k) - _log_comb(N, n)
 
 
 def _log_comb(n: int, k: int) -> float:

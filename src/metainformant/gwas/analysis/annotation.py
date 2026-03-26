@@ -1,13 +1,39 @@
 """SNP-to-gene annotation for GWAS results.
 
 This module provides functions for annotating GWAS variants with nearest genes
-and classifying variant locations relative to gene features.
+and classifying variant locations relative to gene features. This is essential
+for interpreting GWAS results and prioritizing variants for downstream analysis.
+
+The annotation pipeline:
+1. Parses GFF3 annotation files to extract gene locations
+2. Organizes genes by chromosome for efficient lookup
+3. For each variant, finds the nearest gene within a window
+4. Classifies variant location (intragenic, upstream, downstream, intergenic)
+
+Use Cases:
+- Prioritize GWAS variants for functional follow-up
+- Identify candidate genes in trait-associated regions
+- Generate input for pathway enrichment analysis
+- Filter variants by genomic context
+
+Example:
+    >>> from metainformant.gwas.analysis.annotation import annotate_variants_with_genes
+    >>> results = [
+    ...     {"chrom": "1", "pos": 1000000, "snp": "rs123", "p_value": 1e-8},
+    ...     {"chrom": "1", "pos": 2500000, "snp": "rs456", "p_value": 5e-6}
+    ... ]
+    >>> annotated = annotate_variants_with_genes(results, "annotations.gff3", window_kb=50)
+    >>> for r in annotated:
+    ...     ann = r.get("annotation", {})
+    ...     print(f"{r['snp']}: {ann.get('location')} - {ann.get('nearest_gene_name')}")
+    rs123: intragenic - GENE1
+    rs456: upstream - GENE2
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Union
 
 from metainformant.core.utils import logging
 
@@ -32,7 +58,10 @@ def annotate_variants_with_genes(
     Returns:
         Annotated results (same list with added 'annotation' field per result)
     """
-    from metainformant.gwas.data.genome import normalize_chromosome_name, parse_gff3_genes
+    from metainformant.gwas.data.genome import (
+        normalize_chromosome_name,
+        parse_gff3_genes,
+    )
 
     # Parse genes from GFF3
     genes = parse_gff3_genes(gff_path)
@@ -153,7 +182,9 @@ def classify_variant_location(
         return {
             "location": "intergenic",
             "nearest_gene": nearest_gene.get("gene_id", "") if nearest_gene else None,
-            "nearest_gene_name": nearest_gene.get("gene_name", "") if nearest_gene else None,
+            "nearest_gene_name": nearest_gene.get("gene_name", "")
+            if nearest_gene
+            else None,
             "distance": int(nearest_distance) if nearest_gene else None,
             "gene_strand": nearest_gene.get("strand", None) if nearest_gene else None,
         }

@@ -6,8 +6,7 @@ window approach, commonly used before PCA computation to remove correlated SNPs.
 
 from __future__ import annotations
 
-import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import List, Optional
 
 from metainformant.core.utils import logging
 
@@ -57,7 +56,10 @@ def ld_prune(
     if n_variants == 0 or n_samples == 0:
         return []
 
-    logger.info(f"LD pruning: {n_variants} variants, window={window_size}, " f"step={step_size}, r2={r2_threshold}")
+    logger.info(
+        f"LD pruning: {n_variants} variants, window={window_size}, "
+        f"step={step_size}, r2={r2_threshold}"
+    )
 
     # Track which variants are removed
     removed = set()
@@ -88,7 +90,10 @@ def ld_prune(
                     continue
 
                 # Skip pairs on different chromosomes if chromosome info provided
-                if variant_chroms is not None and variant_chroms[i] != variant_chroms[j]:
+                if (
+                    variant_chroms is not None
+                    and variant_chroms[i] != variant_chroms[j]
+                ):
                     continue
 
                 r2 = _compute_r_squared_pair(genotype_matrix[i], genotype_matrix[j])

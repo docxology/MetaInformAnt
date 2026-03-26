@@ -21,6 +21,8 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+from pathlib import Path
+from scipy import stats  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -353,10 +355,10 @@ def eqtl_summary_stats(
         return {"n_tests": 0, "n_egenes": 0, "n_eqtls": 0}
 
     # FDR correction
-    from scipy import stats
+    from scipy import stats  # noqa: F811
 
     pvals = cis_results["pvalue"].values
-    _, fdr_pvals = stats.false_discovery_control(pvals, method="bh"), None
+    _, _fdr_pvals = stats.false_discovery_control(pvals, method="bh"), None
 
     # Simple Benjamini-Hochberg
     n = len(pvals)
@@ -408,7 +410,6 @@ def load_transcriptome_variants(
         >>> results = cis_eqtl_scan(expr, geno, gene_pos, var_pos)
     """
     import gzip
-    import os
     from pathlib import Path as _Path
 
     vcf_path = _Path(vcf_path)
@@ -465,11 +466,13 @@ def load_transcriptome_variants(
         return pd.DataFrame(), pd.DataFrame()
 
     genotype_matrix = pd.DataFrame(genotype_rows, index=variant_ids, columns=samples)
-    variant_positions = pd.DataFrame({
-        "variant_id": variant_ids,
-        "chrom": chroms,
-        "position": positions,
-    })
+    variant_positions = pd.DataFrame(
+        {
+            "variant_id": variant_ids,
+            "chrom": chroms,
+            "position": positions,
+        }
+    )
 
     logger.info(
         f"Loaded {len(variant_ids)} SNPs × {len(samples)} samples from {vcf_path.name}"
@@ -533,7 +536,9 @@ def _linear_regression(y: np.ndarray, x: np.ndarray) -> tuple[float, float, floa
     return float(beta), float(se), float(pval)
 
 
-def _linear_regression_residuals(y: np.ndarray, x: np.ndarray) -> tuple[float, float, np.ndarray]:
+def _linear_regression_residuals(
+    y: np.ndarray, x: np.ndarray
+) -> tuple[float, float, np.ndarray]:
     """Linear regression returning beta, SE, and residuals."""
     valid = ~(np.isnan(y) | np.isnan(x))
     y_v, x_v = y.copy(), x.copy()

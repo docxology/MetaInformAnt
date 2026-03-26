@@ -18,6 +18,7 @@ logger = logging.get_logger(__name__)
 try:
     import matplotlib.patches as mpatches
     import matplotlib.pyplot as plt
+    from matplotlib.offsetbox import AnchoredText
 
     HAS_MATPLOTLIB = True
 except ImportError:
@@ -32,24 +33,40 @@ except ImportError:
     HAS_NUMPY = False
     logger.warning("numpy not available, some visualizations may not work")
 
+
 def set_accessible_style():
     """Apply accessible, high-contrast presentation style for visualizations."""
     if HAS_MATPLOTLIB:
-        plt.rcParams.update({
-            "font.size": 14,
-            "axes.titlesize": 16,
-            "axes.labelsize": 14,
-            "xtick.labelsize": 12,
-            "ytick.labelsize": 12,
-            "legend.fontsize": 12,
-            "legend.framealpha": 0.85,
-            "legend.edgecolor": "black",
-            "figure.dpi": 300,
-            "axes.grid": True,
-            "axes.axisbelow": True,
-            "grid.alpha": 0.4,
-            "grid.color": "#cccccc",
-        })
+        plt.rcParams.update(
+            {
+                "font.size": 14,
+                "axes.titlesize": 16,
+                "axes.labelsize": 14,
+                "xtick.labelsize": 12,
+                "ytick.labelsize": 12,
+                "legend.fontsize": 12,
+                "legend.framealpha": 0.85,
+                "legend.edgecolor": "black",
+                "figure.dpi": 300,
+                "axes.grid": True,
+                "axes.axisbelow": True,
+                "grid.alpha": 0.4,
+                "grid.color": "#cccccc",
+                # Use STIX mathtext (bundled) to avoid DejaVu Sans dependency
+                "mathtext.fontset": "stix",
+                # Fallback fonts: prefer system-available sans-serif faces
+                "font.sans-serif": [
+                    "Helvetica",
+                    "Arial",
+                    "Lucida Grande",
+                    "Verdana",
+                    "DejaVu Sans",
+                    "Bitstream Vera Sans",
+                    "sans-serif",
+                ],
+            }
+        )
+
 
 if HAS_MATPLOTLIB:
     set_accessible_style()
@@ -88,7 +105,9 @@ def manhattan_plot(
         matplotlib Figure object
     """
     if not HAS_MATPLOTLIB or not HAS_NUMPY:
-        logger.warning("matplotlib or numpy not available, cannot create Manhattan plot")
+        logger.warning(
+            "matplotlib or numpy not available, cannot create Manhattan plot"
+        )
         return None
 
     logger.info("Creating Manhattan plot")
@@ -106,6 +125,7 @@ def manhattan_plot(
     # Load style if not provided
     if style is None:
         from metainformant.gwas.visualization.config import get_style
+
         style = get_style()
 
     # Create plot
@@ -146,9 +166,17 @@ def manhattan_plot(
         p_values.append(neg_log_p)
         colors.append(chrom_colors[color_idx])
 
-    # Plot points with kwargs
-    scatter_kwargs = kwargs.get("scatter_kwargs", {"s": style.point_size, "alpha": style.alpha})
-    scatter = ax.scatter(positions, p_values, c=colors, **scatter_kwargs)
+    # Plot points with kwargs (auto-rasterize for very dense arrays to prevent 100MB+ PDFs)
+    scatter_kwargs = kwargs.get(
+        "scatter_kwargs", {"s": style.point_size, "alpha": style.alpha}
+    )
+    if len(positions) > 100000:
+        scatter_kwargs.setdefault("rasterized", True)
+        logger.info(
+            f"Auto-rasterizing Manhattan plot due to high variant density (n={len(positions):,})"
+        )
+
+    ax.scatter(positions, p_values, c=colors, **scatter_kwargs)
 
     # Add significance threshold line
     if significance_threshold > 0:
@@ -184,7 +212,9 @@ def manhattan_plot(
             if region_chrom in chrom_offsets:
                 start_x = chrom_offsets[region_chrom] + region_start
                 end_x = chrom_offsets[region_chrom] + region_end
-                ax.axvspan(start_x, end_x, alpha=0.2, color=region_color, label=region_label)
+                ax.axvspan(
+                    start_x, end_x, alpha=0.2, color=region_color, label=region_label
+                )
 
     # Annotate genes
     if gene_annotations:
@@ -256,17 +286,28 @@ def manhattan_plot(
 
     # Add chromosome labels
     chrom_centers = {}
-    for chrom in sorted(chrom_offsets.keys(), key=lambda x: int(x) if x.isdigit() else 999):
+    for chrom in sorted(
+        chrom_offsets.keys(), key=lambda x: int(x) if x.isdigit() else 999
+    ):
         center = chrom_offsets[chrom] + 50000000  # Approximate center
         chrom_centers[center] = chrom
-
     ax.set_xticks(list(chrom_centers.keys()))
     ax.set_xticklabels(list(chrom_centers.values()))
 
     # Labels and title
-    ax.set_xlabel("Chromosome")
-    ax.set_ylabel("-log₁₀(p-value)")
-    ax.set_title("Manhattan Plot")
+    ax.set_xlabel("Chromosome", fontsize=14)
+    ax.set_ylabel("-log\u2081\u2080(p-value)", fontsize=14)
+    n_tested = len(positions)
+    sig_threshold_log = (
+        -math.log10(significance_threshold) if significance_threshold > 0 else 50
+    )
+    n_sig = sum(1 for pv in p_values if pv >= sig_threshold_log)
+    ax.set_title(
+        f"Manhattan Plot (n={n_tested:,} variants, {n_sig} GW-significant)",
+        fontsize=16,
+        fontweight="bold",
+    )
+    ax.tick_params(axis="both", labelsize=12)
     ax.grid(True, alpha=0.3)
 
     # Create legend for colors
@@ -292,29 +333,36 @@ def manhattan_plot(
 
     return ax if fig is None else fig
 
+
 def qq_plot(
     p_values: Union[List[float], List[int]],
     output_path: Optional[Union[str, Path]] = None,
     ax: Optional[Any] = None,
     style: Optional[Any] = None,
+    lambda_gc: Optional[float] = None,
+    n_samples: Optional[int] = None,
     **kwargs: Any,
 ) -> Any:
-    """Create a Q-Q plot from p-values.
+    """Create a publication-quality Q-Q plot with comprehensive power diagnostics.
+
+    Includes: λ_GC with N-adjusted interpretation, mean χ², KS goodness-of-fit,
+    GC-corrected p-value overlay, 95% CI band, and power context annotation.
 
     Args:
-        p_values: List of p-values
-        output_path: Path to save the plot (optional)
+        p_values: List of p-values from association tests.
+        output_path: Path to save the plot (optional).
+        lambda_gc: Pre-computed genomic inflation factor (computed if None).
+        n_samples: Number of samples in the study (for power context).
 
     Returns:
-        matplotlib Figure object
+        matplotlib Figure object.
     """
     if not HAS_MATPLOTLIB or not HAS_NUMPY:
         logger.warning("matplotlib or numpy not available, cannot create Q-Q plot")
         return None
 
-    logger.info("Creating Q-Q plot")
+    logger.info("Creating enhanced Q-Q plot")
 
-    # Convert to numpy array and filter out invalid values
     p_vals = np.array(p_values, dtype=float)
     p_vals = p_vals[~np.isnan(p_vals) & (p_vals > 0) & (p_vals <= 1)]
 
@@ -322,40 +370,192 @@ def qq_plot(
         logger.warning("No valid p-values for Q-Q plot")
         return None
 
-    # Sort p-values
     p_vals = np.sort(p_vals)
-
-    # Expected p-values under null hypothesis
     n = len(p_vals)
     expected = np.arange(1, n + 1) / (n + 1)
     expected_log = -np.log10(expected)
-
-    # Observed -log10 p-values
     observed_log = -np.log10(p_vals)
+
+    # ── Compute λ_GC ──
+    try:
+        from scipy import stats as scipy_stats
+
+        _has_scipy = True
+    except ImportError:
+        _has_scipy = False
+
+    if lambda_gc is None:
+        try:
+            from metainformant.gwas.analysis.correction import genomic_control
+
+            gc_result = genomic_control(p_values=p_vals.tolist())
+            lambda_gc = gc_result.get("lambda_gc", 1.0)
+        except (ImportError, Exception):
+            median_p = float(np.median(p_vals))
+            if 0 < median_p < 1 and _has_scipy:
+                chi2_median = float(scipy_stats.chi2.ppf(1.0 - median_p, df=1))
+                lambda_gc = chi2_median / 0.4549364
+            else:
+                lambda_gc = 1.0
+
+    # ── Compute additional diagnostic statistics ──
+    mean_chi2 = None
+    ks_p = None
+    gc_corrected_log = None
+
+    if _has_scipy:
+        # Mean χ² (should be ~1.0 under null)
+        chi2_vals = scipy_stats.chi2.ppf(1.0 - p_vals, df=1)
+        chi2_vals = chi2_vals[np.isfinite(chi2_vals)]
+        mean_chi2 = float(np.mean(chi2_vals)) if len(chi2_vals) > 0 else None
+
+        # KS test of p-values against Uniform(0,1)
+        ks_stat, ks_p = scipy_stats.kstest(p_vals, "uniform")
+
+        # GC-corrected p-values for overlay
+        if lambda_gc > 1.0:
+            corrected_chi2 = chi2_vals / lambda_gc
+            corrected_p = 1.0 - scipy_stats.chi2.cdf(corrected_chi2, df=1)
+            corrected_p = np.sort(corrected_p)
+            gc_corrected_log = -np.log10(np.clip(corrected_p, 1e-300, 1.0))
 
     if style is None:
         from metainformant.gwas.visualization.config import get_style
+
         style = get_style()
 
-    # Create plot
+    # ── Create figure ──
     fig = None
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (8, 6)))
+        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (9, 9)))
 
-    # Plot Q-Q points
-    scatter_kwargs = kwargs.get("scatter_kwargs", {"s": max(2, style.point_size - 4), "alpha": style.alpha, "color": style.suggestive_color})
-    ax.scatter(expected_log, observed_log, **scatter_kwargs)
+    # 95% CI band
+    if _has_scipy:
+        lower_ci = -np.log10(
+            scipy_stats.beta.ppf(0.975, np.arange(1, n + 1), np.arange(n, 0, -1))
+        )
+        upper_ci = -np.log10(
+            scipy_stats.beta.ppf(0.025, np.arange(1, n + 1), np.arange(n, 0, -1))
+        )
+        ax.fill_between(
+            expected_log,
+            lower_ci,
+            upper_ci,
+            alpha=0.12,
+            color="#90CAF9",
+            label="95% CI (null)",
+            zorder=1,
+        )
 
-    # Add diagonal line (expected under null)
-    max_val = max(np.max(expected_log), np.max(observed_log))
-    ax.plot([0, max_val], [0, max_val], linestyle="--", color=style.significance_color, alpha=0.7, label="Expected (null)")
+    # GC-corrected overlay (if inflated)
+    if gc_corrected_log is not None and lambda_gc > 1.05:
+        ax.scatter(
+            expected_log[: len(gc_corrected_log)],
+            gc_corrected_log,
+            s=4,
+            alpha=0.4,
+            color="#66BB6A",
+            zorder=2,
+            label=f"GC-corrected (λ={lambda_gc:.2f})",
+        )
 
-    # Labels and title
-    ax.set_xlabel("Expected -log₁₀(p-value)")
-    ax.set_ylabel("Observed -log₁₀(p-value)")
-    ax.set_title(f"Q-Q Plot (n={n} variants)")
-    ax.grid(True, alpha=0.3)
-    ax.legend()
+    # Observed Q-Q points
+    s_size = max(4, min(20, 600 // max(1, int(n**0.5))))
+    ax.scatter(
+        expected_log,
+        observed_log,
+        s=s_size,
+        alpha=0.75,
+        color="#1565C0",
+        edgecolors="none",
+        zorder=4,
+        label="Observed",
+    )
+
+    # Diagonal (expected under null)
+    max_val = max(float(np.max(expected_log)), float(np.max(observed_log))) * 1.05
+    ax.plot(
+        [0, max_val],
+        [0, max_val],
+        linestyle="--",
+        color="#E53935",
+        alpha=0.7,
+        linewidth=2,
+        label="Expected (null)",
+        zorder=3,
+    )
+
+    # ── Inflation status with N-aware interpretation ──
+    if lambda_gc < 1.05:
+        inflation_status = "✓ Nominal"
+        status_color = "#E8F5E9"
+        border_color = "#4CAF50"
+    elif lambda_gc < 1.10:
+        inflation_status = "~ Modest inflation"
+        status_color = "#FFFDE7"
+        border_color = "#FFC107"
+    elif lambda_gc < 1.20:
+        inflation_status = "⚠ Moderate inflation"
+        status_color = "#FFF3E0"
+        border_color = "#FF9800"
+    else:
+        inflation_status = "⚠ Elevated λ_GC"
+        status_color = "#FFEBEE"
+        border_color = "#F44336"
+
+    # Context-aware interpretation for small N
+    context_note = ""
+    if n_samples is not None and n_samples < 100 and lambda_gc > 1.1:
+        context_note = f"\nN={n_samples}: small-sample\nλ_GC often elevated"
+        if lambda_gc < 1.5:
+            inflation_status = "~ Expected (small N)"
+            status_color = "#FFF3E0"
+            border_color = "#FF9800"
+
+    # Build annotation text
+    gc_lines = [
+        f"λ_GC = {lambda_gc:.4f}  {inflation_status}",
+        f"n = {n:,} variants tested",
+    ]
+    if n_samples is not None:
+        gc_lines.append(f"N = {n_samples} samples")
+    if mean_chi2 is not None:
+        gc_lines.append(f"mean χ² = {mean_chi2:.3f}  (expect ≈1.0)")
+    if ks_p is not None:
+        gc_lines.append(f"KS test p = {ks_p:.2e}")
+    if context_note:
+        gc_lines.append(context_note)
+
+    gc_text = "\n".join(gc_lines)
+    at = AnchoredText(
+        gc_text,
+        loc="upper left",
+        prop=dict(size=10, fontweight="bold", fontfamily="monospace"),
+        frameon=True,
+    )
+    at.patch.set_boxstyle("round,pad=0.4")
+    at.patch.set_facecolor(status_color)
+    at.patch.set_alpha(0.95)
+    at.patch.set_edgecolor(border_color)
+    at.patch.set_linewidth(2)
+    ax.add_artist(at)
+
+    # ── Axes formatting ──
+    ax.set_xlabel("Expected −log₁₀(p)", fontsize=14, fontweight="medium")
+    ax.set_ylabel("Observed −log₁₀(p)", fontsize=14, fontweight="medium")
+    title_suffix = f" — {n_samples} samples" if n_samples else ""
+    ax.set_title(
+        f"GWAS Q-Q Plot  (n={n:,} variants{title_suffix})",
+        fontsize=15,
+        fontweight="bold",
+    )
+    ax.tick_params(axis="both", labelsize=12)
+    ax.grid(True, alpha=0.25, linewidth=0.5)
+    ax.set_xlim(left=-0.05)
+    ax.set_ylim(bottom=-0.05)
+    ax.legend(
+        fontsize=9, loc="lower right", framealpha=0.95, edgecolor="#ccc", fancybox=True
+    )
 
     plt.tight_layout()
 
@@ -421,6 +621,7 @@ def regional_plot(
 
     if style is None:
         from metainformant.gwas.visualization.config import get_style
+
         style = get_style()
 
     # Create plot
@@ -429,12 +630,40 @@ def regional_plot(
         fig, ax = plt.subplots(figsize=kwargs.get("figsize", style.figsize))
 
     # Plot points
-    scatter_kwargs = kwargs.get("scatter_kwargs", {"s": style.point_size, "alpha": style.alpha, "color": style.suggestive_color})
-    ax.scatter(positions, p_values, **scatter_kwargs)
+    scatter_kwargs = kwargs.get(
+        "scatter_kwargs", {"s": style.point_size, "alpha": style.alpha}
+    )
+
+    # LocusZoom style mapping if LD values are provided
+    ld_dict = kwargs.get("ld_values", None)
+
+    if ld_dict and isinstance(ld_dict, dict):
+        ld_vals = []
+        for r in region_results:
+            vid = r.get("variant_id", "")
+            # fallback to chr:pos string matching if exact ID not found
+            if vid not in ld_dict:
+                vid = f"{r.get('chrom', '')}:{r.get('pos', 0)}"
+            ld_vals.append(ld_dict.get(vid, 0.0))
+
+        scatter = ax.scatter(
+            positions, p_values, c=ld_vals, cmap="viridis_r", **scatter_kwargs
+        )
+        cbar = plt.colorbar(scatter, ax=ax, pad=0.02)
+        cbar.set_label("LD ($r^2$ to top hit)")
+    else:
+        scatter_kwargs.setdefault("color", style.suggestive_color)
+        ax.scatter(positions, p_values, **scatter_kwargs)
 
     # Add significance threshold line
     threshold_line = -math.log10(5e-8)
-    ax.axhline(y=threshold_line, color=style.significance_color, linestyle="--", alpha=0.7, label="Genome-wide significance")
+    ax.axhline(
+        y=threshold_line,
+        color=style.significance_color,
+        linestyle="--",
+        alpha=0.7,
+        label="Genome-wide significance",
+    )
 
     # Labels and title
     ax.set_xlabel(f"Position on chromosome {chrom}")
@@ -454,29 +683,59 @@ def regional_plot(
     return ax if fig is None else fig
 
 
+# ── Strain palette shared across all GWAS visualizations ────────────────
+STRAIN_PALETTE = {
+    "C": "#2196F3",  # Blue — Carniolan
+    "I": "#FF9800",  # Orange — Italian
+    "M": "#4CAF50",  # Green — A.m. mellifera
+    "R": "#F44336",  # Red — Russian
+}
+STRAIN_NAMES = {
+    "C": "Carniolan",
+    "I": "Italian",
+    "M": "A.m. mellifera",
+    "R": "Russian",
+}
+STRAIN_MARKERS = {"C": "o", "I": "s", "M": "D", "R": "^"}
+
+
+def _infer_strain(sample_id: str) -> str:
+    """Infer strain code from sample ID prefix (e.g. 'C15ITQ' → 'C')."""
+    s = sample_id.strip()
+    if s and s[0] in STRAIN_PALETTE:
+        return s[0]
+    return "?"
+
+
 def pca_plot(
     pca_result: tuple,
     output_path: Optional[Union[str, Path]] = None,
     explained_var: Optional[List[float]] = None,
+    sample_ids: Optional[List[str]] = None,
     ax: Optional[Any] = None,
     style: Optional[Any] = None,
     **kwargs: Any,
 ) -> Any:
-    """Create PCA scatter plot.
+    """Create a publication-quality PCA plot with strain coloring and diagnostics.
+
+    Features:
+      • Strain-colored points with distinct markers and per-strain legend
+      • 95 % confidence ellipses per strain
+      • Sample-ID labels (toggled via show_labels kwarg)
+      • Scree-plot inset showing top-10 PC variance
+      • Title with sample/variant counts
 
     Args:
-        pca_result: PCA results tuple (components, variance, loadings)
-        output_path: Path to save the plot (optional)
-        explained_var: Explained variance ratios
-
-    Returns:
-        matplotlib Figure object
+        pca_result: (components, variance, loadings) tuple.
+        output_path: Save path (optional).
+        explained_var: Explained variance ratios per PC.
+        sample_ids: List of sample identifiers (same order as columns).
     """
     if not HAS_MATPLOTLIB or not HAS_NUMPY:
         logger.warning("matplotlib or numpy not available, cannot create PCA plot")
         return None
 
-    logger.info("Creating PCA plot")
+    logger.info("Creating strain-aware PCA plot")
 
     try:
         components, variance, loadings = pca_result
@@ -487,37 +746,166 @@ def pca_plot(
 
         if style is None:
             from metainformant.gwas.visualization.config import get_style
+
             style = get_style()
 
-        # Create 2D scatter plot of first two components
+        pc1 = np.array(components[0], dtype=float)
+        pc2 = np.array(components[1], dtype=float)
+        n_samples = len(pc1)
+
+        # ── Assign strains ──
+        if sample_ids and len(sample_ids) >= n_samples:
+            ids = sample_ids[:n_samples]
+        else:
+            ids = [f"S{i}" for i in range(n_samples)]
+        strains = [_infer_strain(sid) for sid in ids]
+        unique_strains = sorted(set(strains) - {"?"})
+
+        # Variance percentages
+        pc1_var = (
+            explained_var[0] * 100 if explained_var and len(explained_var) > 0 else 0
+        )
+        pc2_var = (
+            explained_var[1] * 100 if explained_var and len(explained_var) > 1 else 0
+        )
+
+        # ── Figure ──
         fig = None
         if ax is None:
-            fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 8)))
+            fig, ax = plt.subplots(figsize=kwargs.get("figsize", (11, 9)))
 
-        # Plot points
-        scatter_kwargs = kwargs.get("scatter_kwargs", {"s": max(2, style.point_size - 4), "alpha": style.alpha, "color": style.suggestive_color})
-        scatter = ax.scatter(components[0], components[1], **scatter_kwargs)
+        show_labels = kwargs.get("show_labels", n_samples <= 60)
+        show_ellipses = kwargs.get("show_ellipses", True)
 
-        # Labels and title
-        pc1_var = explained_var[0] * 100 if explained_var and len(explained_var) > 0 else 0
-        pc2_var = explained_var[1] * 100 if explained_var and len(explained_var) > 1 else 0
-
-        ax.set_xlabel(f"PC1 ({pc1_var:.1f}% variance)")
-        ax.set_ylabel(f"PC2 ({pc2_var:.1f}% variance)")
-        ax.set_title("PCA Scatter Plot")
-        ax.grid(True, alpha=0.3)
-
-        # Add explained variance text if available
-        if explained_var and len(explained_var) >= 2:
-            var_text = f"PC1: {pc1_var:.1f}%, PC2: {pc2_var:.1f}%"
-            ax.text(
-                0.02,
-                0.98,
-                var_text,
-                transform=ax.transAxes,
-                verticalalignment="top",
-                bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.9, edgecolor="black"),
+        # ── Plot per strain ──
+        for strain in unique_strains:
+            mask = np.array([s == strain for s in strains])
+            if not np.any(mask):
+                continue
+            x, y = pc1[mask], pc2[mask]
+            color = STRAIN_PALETTE.get(strain, "#999")
+            marker = STRAIN_MARKERS.get(strain, "o")
+            label = (
+                f"{strain} — {STRAIN_NAMES.get(strain, strain)} (n={int(np.sum(mask))})"
             )
+
+            ax.scatter(
+                x,
+                y,
+                c=color,
+                marker=marker,
+                s=70,
+                alpha=0.85,
+                edgecolors="white",
+                linewidths=0.5,
+                label=label,
+                zorder=4,
+            )
+
+            # 95% confidence ellipse
+            if show_ellipses and np.sum(mask) >= 3:
+                try:
+                    from matplotlib.patches import Ellipse
+
+                    cov = np.cov(x, y)
+                    if np.all(np.isfinite(cov)):
+                        eigenvalues, eigenvectors = np.linalg.eigh(cov)
+                        order = eigenvalues.argsort()[::-1]
+                        eigenvalues = eigenvalues[order]
+                        eigenvectors = eigenvectors[:, order]
+                        angle = np.degrees(np.arctan2(*eigenvectors[:, 0][::-1]))
+                        width, height = 2 * np.sqrt(
+                            eigenvalues * 5.991
+                        )  # chi2(2, 0.95)
+                        ell = Ellipse(
+                            xy=(np.mean(x), np.mean(y)),
+                            width=width,
+                            height=height,
+                            angle=angle,
+                            facecolor=color,
+                            alpha=0.08,
+                            edgecolor=color,
+                            linewidth=1.5,
+                            linestyle="--",
+                            zorder=2,
+                        )
+                        ax.add_patch(ell)
+                except Exception:
+                    pass  # Skip ellipse on error
+
+            # Sample labels
+            if show_labels:
+                for xi, yi, sid in zip(x, y, np.array(ids)[mask]):
+                    ax.annotate(
+                        sid,
+                        (xi, yi),
+                        fontsize=6,
+                        alpha=0.7,
+                        textcoords="offset points",
+                        xytext=(4, 4),
+                    )
+
+        # Unknown strain (if any)
+        unk_mask = np.array([s == "?" for s in strains])
+        if np.any(unk_mask):
+            ax.scatter(
+                pc1[unk_mask],
+                pc2[unk_mask],
+                c="#999",
+                marker="x",
+                s=50,
+                alpha=0.6,
+                label=f"Unknown (n={int(np.sum(unk_mask))})",
+                zorder=3,
+            )
+
+        # ── Axes ──
+        ax.set_xlabel(
+            f"PC1  ({pc1_var:.1f}% variance explained)",
+            fontsize=13,
+            fontweight="medium",
+        )
+        ax.set_ylabel(
+            f"PC2  ({pc2_var:.1f}% variance explained)",
+            fontsize=13,
+            fontweight="medium",
+        )
+        ax.set_title(
+            f"Population Structure — PCA  ({n_samples} samples)",
+            fontsize=15,
+            fontweight="bold",
+        )
+        ax.tick_params(axis="both", labelsize=11)
+        ax.grid(True, alpha=0.2, linewidth=0.5)
+        ax.axhline(0, color="#aaa", linewidth=0.4, zorder=1)
+        ax.axvline(0, color="#aaa", linewidth=0.4, zorder=1)
+        ax.legend(
+            fontsize=9,
+            loc="best",
+            framealpha=0.95,
+            edgecolor="#ccc",
+            fancybox=True,
+            title="Lineage",
+            title_fontsize=10,
+        )
+
+        # ── Scree inset ──
+        if explained_var and len(explained_var) >= 3:
+            inset_ax = ax.inset_axes([0.72, 0.02, 0.26, 0.22])  # [x, y, w, h]
+            n_pcs = min(10, len(explained_var))
+            pcs_idx = np.arange(1, n_pcs + 1)
+            var_pct = [v * 100 for v in explained_var[:n_pcs]]
+            cum_var = np.cumsum(var_pct)
+            inset_ax.bar(pcs_idx, var_pct, color="#1565C0", alpha=0.7, width=0.7)
+            inset_ax.plot(
+                pcs_idx, cum_var, "o-", color="#E53935", markersize=3, linewidth=1
+            )
+            inset_ax.set_xlabel("PC", fontsize=7)
+            inset_ax.set_ylabel("%Var", fontsize=7)
+            inset_ax.set_title("Scree", fontsize=8, fontweight="bold")
+            inset_ax.tick_params(labelsize=6)
+            inset_ax.set_xticks(pcs_idx)
+            inset_ax.grid(True, alpha=0.2)
 
         plt.tight_layout()
 
@@ -536,52 +924,204 @@ def pca_plot(
 def kinship_heatmap(
     kinship_matrix: Union[np.ndarray, List[List[float]]],
     output_path: Optional[Union[str, Path]] = None,
+    sample_ids: Optional[List[str]] = None,
     ax: Optional[Any] = None,
     style: Optional[Any] = None,
     **kwargs: Any,
 ) -> Any:
-    """Create kinship matrix heatmap.
+    """Create kinship matrix heatmap with hierarchical clustering dendrograms.
+
+    Features:
+      - Dendrograms on both axes (hierarchical clustering)
+      - Sample reordering by cluster similarity
+      - Strain-colored sidebar (C=blue, I=orange, M=green, R=red)
+      - Publication-quality typography
 
     Args:
-        kinship_matrix: Kinship matrix
+        kinship_matrix: Kinship matrix (n_samples x n_samples)
         output_path: Path to save the plot (optional)
+        sample_ids: Optional sample ID labels for strain coloring
+        ax: Ignored when dendrograms are enabled (needs custom GridSpec)
+        style: PlotStyle configuration
 
     Returns:
         matplotlib Figure object
     """
     if not HAS_MATPLOTLIB or not HAS_NUMPY:
-        logger.warning("matplotlib or numpy not available, cannot create kinship heatmap")
+        logger.warning(
+            "matplotlib or numpy not available, cannot create kinship heatmap"
+        )
         return None
 
     logger.info("Creating kinship heatmap")
 
     try:
+        from metainformant.gwas.visualization.strain_plots import (
+            STRAIN_NAMES,
+            STRAIN_PALETTE,
+            _extract_strain,
+        )
+    except ImportError:
+        STRAIN_PALETTE = {}
+        STRAIN_NAMES = {}
+        _extract_strain = lambda s: "?"  # noqa: E731
+
+    try:
         # Convert to numpy array if needed
         if isinstance(kinship_matrix, list):
-            kinship_matrix = np.array(kinship_matrix)
+            kinship_matrix = np.array(kinship_matrix, dtype=float)
 
         if style is None:
             from metainformant.gwas.visualization.config import get_style
+
             style = get_style()
 
-        # Create heatmap
-        fig = None
-        if ax is None:
-            fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 8)))
+        n_samples = kinship_matrix.shape[0]
 
-        # Plot heatmap
-        imshow_kwargs = kwargs.get("imshow_kwargs", {"cmap": style.colormap, "aspect": "equal"})
-        im = ax.imshow(kinship_matrix, **imshow_kwargs)
+        # Try hierarchical clustering for dendrograms
+        try:
+            from scipy.cluster.hierarchy import linkage, dendrogram
+            from scipy.spatial.distance import squareform
 
-        # Add colorbar only if we created the figure (or explicitly asked)
-        if fig is not None or kwargs.get("show_colorbar", False):
-            cbar = plt.colorbar(im, ax=ax)
-            cbar.set_label("Kinship coefficient")
+            has_scipy = True
+        except ImportError:
+            has_scipy = False
 
-        # Labels and title
-        ax.set_title("Kinship Matrix Heatmap")
-        ax.set_xlabel("Sample")
-        ax.set_ylabel("Sample")
+        if has_scipy and n_samples >= 3:
+            # Convert kinship to distance: d = 1 - kinship (capped at 0)
+            dist_matrix = 1.0 - np.clip(kinship_matrix, 0, 1)
+            np.fill_diagonal(dist_matrix, 0)
+            # Ensure symmetry
+            dist_matrix = (dist_matrix + dist_matrix.T) / 2.0
+
+            condensed = squareform(dist_matrix, checks=False)
+            Z = linkage(condensed, method="average")
+
+            # Layout: [row_dend | strain_bar | heatmap | colorbar]
+            #          top_dend above heatmap
+            fig = plt.figure(figsize=kwargs.get("figsize", (12, 10)))
+
+            if sample_ids:
+                gs = fig.add_gridspec(
+                    2,
+                    4,
+                    width_ratios=[0.15, 0.03, 1, 0.04],
+                    height_ratios=[0.15, 1],
+                    hspace=0.02,
+                    wspace=0.02,
+                )
+            else:
+                gs = fig.add_gridspec(
+                    2,
+                    3,
+                    width_ratios=[0.15, 1, 0.04],
+                    height_ratios=[0.15, 1],
+                    hspace=0.02,
+                    wspace=0.02,
+                )
+
+            # Top dendrogram
+            ax_top = fig.add_subplot(gs[0, -2] if sample_ids else gs[0, 1])
+            dn_top = dendrogram(
+                Z,
+                ax=ax_top,
+                orientation="top",
+                no_labels=True,
+                color_threshold=0,
+                above_threshold_color="#333333",
+            )
+            ax_top.set_axis_off()
+            order = dn_top["leaves"]
+
+            # Left dendrogram
+            ax_left = fig.add_subplot(gs[1, 0])
+            dendrogram(
+                Z,
+                ax=ax_left,
+                orientation="left",
+                no_labels=True,
+                color_threshold=0,
+                above_threshold_color="#333333",
+            )
+            ax_left.set_axis_off()
+            ax_left.invert_yaxis()
+
+            # Reorder matrix
+            reordered = kinship_matrix[np.ix_(order, order)]
+
+            # Strain color sidebar
+            if sample_ids:
+                ax_bar = fig.add_subplot(gs[1, 1])
+                strains = [_extract_strain(sample_ids[i]) for i in order]
+                strain_colors = [STRAIN_PALETTE.get(s, "#888888") for s in strains]
+                for i, color in enumerate(strain_colors):
+                    ax_bar.add_patch(plt.Rectangle((0, i), 1, 1, color=color))
+                ax_bar.set_xlim(0, 1)
+                ax_bar.set_ylim(0, len(strains))
+                ax_bar.set_axis_off()
+                ax_heat = fig.add_subplot(gs[1, 2])
+            else:
+                ax_heat = fig.add_subplot(gs[1, 1])
+
+            # Main heatmap
+            im = ax_heat.imshow(
+                reordered, cmap="viridis", aspect="equal", interpolation="nearest"
+            )
+
+            # Tick labels
+            if sample_ids and n_samples <= 60:
+                labels = [sample_ids[i] for i in order]
+                ax_heat.set_xticks(range(n_samples))
+                ax_heat.set_xticklabels(
+                    labels, rotation=90, fontsize=max(5, 9 - n_samples // 15)
+                )
+                ax_heat.set_yticks(range(n_samples))
+                ax_heat.set_yticklabels(labels, fontsize=max(5, 9 - n_samples // 15))
+            else:
+                ax_heat.set_xticks([])
+                ax_heat.set_yticks([])
+
+            # Colorbar
+            ax_cbar = fig.add_subplot(gs[1, -1])
+            plt.colorbar(im, cax=ax_cbar, label="Kinship coefficient")
+
+            fig.suptitle(
+                "Kinship Matrix (Clustered)", fontsize=18, fontweight="bold", y=0.98
+            )
+
+            # Strain legend
+            if sample_ids and STRAIN_PALETTE:
+                from matplotlib.patches import Patch
+
+                unique_strains = sorted(
+                    set(_extract_strain(sample_ids[i]) for i in order)
+                )
+                legend_patches = [
+                    Patch(
+                        facecolor=STRAIN_PALETTE.get(s, "#888"),
+                        label=STRAIN_NAMES.get(s, s),
+                    )
+                    for s in unique_strains
+                    if s != "?"
+                ]
+                if legend_patches:
+                    fig.legend(
+                        handles=legend_patches,
+                        loc="lower right",
+                        fontsize=10,
+                        title="Strain",
+                        title_fontsize=12,
+                        bbox_to_anchor=(0.98, 0.02),
+                    )
+
+        else:
+            # Fallback: simple heatmap without dendrograms
+            fig, ax_heat = plt.subplots(figsize=kwargs.get("figsize", (10, 8)))
+            im = ax_heat.imshow(kinship_matrix, cmap="viridis", aspect="equal")
+            plt.colorbar(im, ax=ax_heat, label="Kinship coefficient")
+            ax_heat.set_title("Kinship Matrix Heatmap", fontsize=16, fontweight="bold")
+            ax_heat.set_xlabel("Sample")
+            ax_heat.set_ylabel("Sample")
 
         plt.tight_layout()
 
@@ -590,14 +1130,16 @@ def kinship_heatmap(
             fig.savefig(output_path, dpi=style.dpi, bbox_inches="tight")
             logger.info(f"Saved kinship heatmap to {output_path}")
 
-        return ax if fig is None else fig
+        return fig
 
     except Exception as e:
         logger.error(f"Error creating kinship heatmap: {e}")
         return None
 
 
-def effect_size_plot(results: List[Dict[str, Any]], output_path: Optional[Union[str, Path]] = None) -> Any:
+def effect_size_plot(
+    results: List[Dict[str, Any]], output_path: Optional[Union[str, Path]] = None
+) -> Any:
     """Create effect size distribution plot.
 
     Args:
@@ -608,7 +1150,9 @@ def effect_size_plot(results: List[Dict[str, Any]], output_path: Optional[Union[
         matplotlib Figure object
     """
     if not HAS_MATPLOTLIB or not HAS_NUMPY:
-        logger.warning("matplotlib or numpy not available, cannot create effect size plot")
+        logger.warning(
+            "matplotlib or numpy not available, cannot create effect size plot"
+        )
         return None
 
     logger.info("Creating effect size plot")
@@ -633,7 +1177,11 @@ def effect_size_plot(results: List[Dict[str, Any]], output_path: Optional[Union[
     ax1.hist(effect_sizes, bins=50, edgecolor="black", alpha=0.7, color="steelblue")
     ax1.axvline(x=0, color="red", linestyle="--", alpha=0.7, label="Null effect")
     ax1.axvline(
-        x=np.mean(effect_sizes), color="green", linestyle="-", alpha=0.7, label=f"Mean: {np.mean(effect_sizes):.4f}"
+        x=np.mean(effect_sizes),
+        color="green",
+        linestyle="-",
+        alpha=0.7,
+        label=f"Mean: {np.mean(effect_sizes):.4f}",
     )
     ax1.set_xlabel("Effect Size (Beta)")
     ax1.set_ylabel("Frequency")
@@ -688,11 +1236,15 @@ def generate_all_plots(
 
     # Load association results from file or use directly
     results_data: List[Dict[str, Any]] = []
-    
+
     if isinstance(association_results, list):
         results_data = association_results
-    
-    association_path = Path(association_results) if isinstance(association_results, (str, Path)) else None
+
+    association_path = (
+        Path(association_results)
+        if isinstance(association_results, (str, Path))
+        else None
+    )
 
     if association_path and association_path.exists():
         import csv
@@ -702,7 +1254,9 @@ def generate_all_plots(
         if suffix == ".json":
             with open(association_path) as fh:
                 loaded = json.load(fh)
-                results_data = loaded if isinstance(loaded, list) else loaded.get("results", [])
+                results_data = (
+                    loaded if isinstance(loaded, list) else loaded.get("results", [])
+                )
         elif suffix in (".tsv", ".txt"):
             with open(association_path, newline="") as fh:
                 reader = csv.DictReader(fh, delimiter="\t")
@@ -726,20 +1280,45 @@ def generate_all_plots(
                             entry[k] = v
                     results_data.append(entry)
 
-    # Manhattan plot
-    if results_data:
+    # Extract sample IDs from VCF for strain coloring and sample count
+    _vcf_sample_ids: List[str] = []
+    if vcf_file:
         try:
-            manhattan_path = output_dir / "manhattan_plot.png"
-            fig = manhattan_plot(
-                results_data, output_path=manhattan_path, significance_threshold=significance_threshold
+            import subprocess as _sp
+
+            _qr = _sp.run(
+                ["bcftools", "query", "-l", str(vcf_file)],
+                capture_output=True,
+                text=True,
+                timeout=10,
             )
-            if fig is not None:
-                plots_generated["manhattan"] = str(manhattan_path)
-                plt.close(fig)
+            if _qr.returncode == 0:
+                _vcf_sample_ids = _qr.stdout.strip().splitlines()
+        except Exception:
+            pass  # bcftools not available
+
+    if results_data:
+        # Manhattan plot
+        try:
+            p_vals_manhattan = [
+                r.get("p_value", r.get("pval", r.get("pvalue")))
+                for r in results_data
+                if r.get("p_value", r.get("pval", r.get("pvalue"))) is not None
+            ]
+            if p_vals_manhattan:
+                manhattan_path = output_dir / "manhattan_plot.png"
+                fig = manhattan_plot(
+                    results_data,
+                    output_path=manhattan_path,
+                    significance_threshold=significance_threshold,
+                )
+                if fig is not None:
+                    plots_generated["manhattan"] = str(manhattan_path)
+                    plt.close(fig)
         except Exception as e:
             logger.warning(f"Manhattan plot failed: {e}")
 
-        # Q-Q plot
+        # Q-Q plot — with N-aware diagnostics
         try:
             p_vals = [
                 r.get("p_value", r.get("pval", r.get("pvalue")))
@@ -748,14 +1327,18 @@ def generate_all_plots(
             ]
             if p_vals:
                 qq_path = output_dir / "qq_plot.png"
-                fig = qq_plot(p_vals, output_path=qq_path)
+                fig = qq_plot(
+                    p_vals,
+                    output_path=qq_path,
+                    n_samples=len(_vcf_sample_ids) if _vcf_sample_ids else None,
+                )
                 if fig is not None:
                     plots_generated["qq"] = str(qq_path)
                     plt.close(fig)
         except Exception as e:
             logger.warning(f"Q-Q plot failed: {e}")
 
-    # PCA plot
+    # PCA plot — uses _vcf_sample_ids extracted above for strain coloring
     if pca_file:
         try:
             import json as _json
@@ -769,7 +1352,12 @@ def generate_all_plots(
                 loadings = pca_data.get("loadings", [])
                 explained_var = pca_data.get("explained_variance", [])
                 pca_output = output_dir / "pca_plot.png"
-                fig = pca_plot((components, variance, loadings), output_path=pca_output, explained_var=explained_var)
+                fig = pca_plot(
+                    (components, variance, loadings),
+                    output_path=pca_output,
+                    explained_var=explained_var,
+                    sample_ids=_vcf_sample_ids or None,
+                )
                 if fig is not None:
                     plots_generated["pca"] = str(pca_output)
                     plt.close(fig)
@@ -785,12 +1373,14 @@ def generate_all_plots(
             if kinship_path_obj.exists():
                 with open(kinship_path_obj) as fh:
                     kinship_data = _json.load(fh)
-                
+
                 # Handle both direct matrix list and wrapped dict
                 if isinstance(kinship_data, list):
                     matrix = kinship_data
                 elif isinstance(kinship_data, dict):
-                    matrix = kinship_data.get("matrix", kinship_data.get("kinship_matrix", []))
+                    matrix = kinship_data.get(
+                        "matrix", kinship_data.get("kinship_matrix", [])
+                    )
                 else:
                     matrix = []
                 kinship_output = output_dir / "kinship_plot.png"
@@ -801,11 +1391,15 @@ def generate_all_plots(
         except Exception as e:
             logger.warning(f"Kinship heatmap failed: {e}")
 
-    logger.info(f"Generated {len(plots_generated)} plots: {list(plots_generated.keys())}")
+    logger.info(
+        f"Generated {len(plots_generated)} plots: {list(plots_generated.keys())}"
+    )
     return plots_generated
 
 
-def missingness_plot(vcf_data: Dict[str, Any], output_path: Optional[Union[str, Path]] = None) -> Any:
+def missingness_plot(
+    vcf_data: Dict[str, Any], output_path: Optional[Union[str, Path]] = None
+) -> Any:
     """Create missingness visualization showing per-sample and per-variant missingness.
 
     Args:
@@ -816,7 +1410,9 @@ def missingness_plot(vcf_data: Dict[str, Any], output_path: Optional[Union[str, 
         matplotlib Figure object
     """
     if not HAS_MATPLOTLIB or not HAS_NUMPY:
-        logger.warning("matplotlib or numpy not available, cannot create missingness plot")
+        logger.warning(
+            "matplotlib or numpy not available, cannot create missingness plot"
+        )
         return None
 
     logger.info("Creating missingness plot")
@@ -846,7 +1442,9 @@ def missingness_plot(vcf_data: Dict[str, Any], output_path: Optional[Union[str, 
     ax1.grid(True, alpha=0.3)
 
     # Per-variant missingness histogram
-    ax2.hist(variant_missingness, bins=50, edgecolor="black", alpha=0.7, color="steelblue")
+    ax2.hist(
+        variant_missingness, bins=50, edgecolor="black", alpha=0.7, color="steelblue"
+    )
     ax2.axvline(x=5, color="red", linestyle="--", alpha=0.7, label="5% threshold")
     ax2.set_xlabel("Missing Rate (%)")
     ax2.set_ylabel("Number of Variants")
@@ -865,7 +1463,9 @@ def missingness_plot(vcf_data: Dict[str, Any], output_path: Optional[Union[str, 
 
 
 def functional_enrichment_plot(
-    results: List[Dict[str, Any]], gff_path: Union[str, Path], output_path: Optional[Union[str, Path]] = None
+    results: List[Dict[str, Any]],
+    gff_path: Union[str, Path],
+    output_path: Optional[Union[str, Path]] = None,
 ) -> Any:
     """Create functional enrichment plot showing enrichment of significant variants in functional categories.
 
@@ -878,7 +1478,9 @@ def functional_enrichment_plot(
         matplotlib Figure object
     """
     if not HAS_MATPLOTLIB:
-        logger.warning("matplotlib not available, cannot create functional enrichment plot")
+        logger.warning(
+            "matplotlib not available, cannot create functional enrichment plot"
+        )
         return None
 
     logger.info("Creating functional enrichment plot")
@@ -890,7 +1492,14 @@ def functional_enrichment_plot(
         logger.warning("No significant variants found for enrichment analysis")
         # Create a simple summary plot instead
         fig, ax = plt.subplots(figsize=(8, 6))
-        ax.text(0.5, 0.5, "No genome-wide significant variants\n(p < 5e-8)", ha="center", va="center", fontsize=14)
+        ax.text(
+            0.5,
+            0.5,
+            "No genome-wide significant variants\n(p < 5e-8)",
+            ha="center",
+            va="center",
+            fontsize=14,
+        )
         ax.set_xlim(0, 1)
         ax.set_ylim(0, 1)
         ax.axis("off")
@@ -959,9 +1568,11 @@ def power_curve_plot(
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    colors = plt.cm.viridis(np.linspace(0.1, 0.9, len(power_data))) if HAS_NUMPY else [
-        f"C{i}" for i in range(len(power_data))
-    ]
+    colors = (
+        plt.cm.viridis(np.linspace(0.1, 0.9, len(power_data)))
+        if HAS_NUMPY
+        else [f"C{i}" for i in range(len(power_data))]
+    )
 
     for idx, curve in enumerate(power_data):
         sizes = curve.get("sample_sizes", [])
@@ -969,7 +1580,8 @@ def power_curve_plot(
         beta = curve.get("beta", 0)
         maf = curve.get("maf", 0)
         ax.plot(
-            sizes, powers,
+            sizes,
+            powers,
             color=colors[idx],
             linewidth=2,
             marker="o",
@@ -1057,7 +1669,9 @@ def convergence_plot(
         upper = [m + s for m, s in zip(means, stds)]
 
         color = metric_colors.get(metric, "steelblue")
-        ax.plot(pct_fractions, means, color=color, linewidth=2, marker="o", markersize=5)
+        ax.plot(
+            pct_fractions, means, color=color, linewidth=2, marker="o", markersize=5
+        )
         ax.fill_between(pct_fractions, lower, upper, alpha=0.2, color=color)
 
         ax.set_xlabel("% of Variants Used")
@@ -1112,16 +1726,36 @@ def saturation_plot(
 
     fig, ax = plt.subplots(figsize=(8, 5))
 
-    ax.scatter(pct_fractions, observed, color="#3498DB", s=60, zorder=3, label="Observed")
-    ax.plot(pct_fractions, predicted, color="#E74C3C", linewidth=2, linestyle="--", label="Fitted curve")
-    ax.axhline(y=k_inf, color="#2ECC71", linestyle=":", linewidth=1.5, label=f"K_∞ = {k_inf:.3f}")
+    ax.scatter(
+        pct_fractions, observed, color="#3498DB", s=60, zorder=3, label="Observed"
+    )
+    ax.plot(
+        pct_fractions,
+        predicted,
+        color="#E74C3C",
+        linewidth=2,
+        linestyle="--",
+        label="Fitted curve",
+    )
+    ax.axhline(
+        y=k_inf,
+        color="#2ECC71",
+        linestyle=":",
+        linewidth=1.5,
+        label=f"K_∞ = {k_inf:.3f}",
+    )
 
     status_text = "✓ SATURATED" if is_saturated else "✗ NOT SATURATED"
     status_color = "#2ECC71" if is_saturated else "#E74C3C"
     ax.text(
-        0.02, 0.95, status_text,
-        transform=ax.transAxes, fontsize=12, fontweight="bold",
-        color=status_color, va="top",
+        0.02,
+        0.95,
+        status_text,
+        transform=ax.transAxes,
+        fontsize=12,
+        fontweight="bold",
+        color=status_color,
+        va="top",
     )
 
     ax.set_xlabel("% of Variants Used")
@@ -1138,7 +1772,6 @@ def saturation_plot(
         logger.info(f"Saved saturation plot to {output_path}")
 
     return fig
-
 
 
 def forest_plot(
@@ -1163,6 +1796,7 @@ def forest_plot(
 
     if style is None:
         from metainformant.gwas.visualization.config import get_style
+
         style = get_style()
 
     sorted_r = sorted(results, key=lambda r: r.get("p_value", 1.0))[:top_n]
@@ -1171,7 +1805,9 @@ def forest_plot(
 
     fig = None
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, max(4, n * 0.55 + 1.5))))
+        fig, ax = plt.subplots(
+            figsize=kwargs.get("figsize", (10, max(4, n * 0.55 + 1.5)))
+        )
 
     betas_all = [r.get("beta", 0.0) for r in plot_r]
     ses_all = [r.get("se", 0.0) for r in plot_r]
@@ -1190,13 +1826,14 @@ def forest_plot(
         marker = "D" if is_sig else "o"
 
         ax.plot([ci_lo, ci_hi], [i, i], "-", color=color, linewidth=1.8, alpha=0.75)
-        ax.plot(beta, i, marker=marker, color=color, markersize=7 if is_sig else 5, zorder=5)
+        ax.plot(
+            beta, i, marker=marker, color=color, markersize=7 if is_sig else 5, zorder=5
+        )
 
     ax.axvline(0, color="#555555", linewidth=1.5, linestyle="--")
     ax.set_yticks(range(n))
     ax.set_yticklabels(
-        [f"{r.get('snp','?')}  p={r.get('p_value',1):.1e}"
-         for r in plot_r],
+        [f"{r.get('snp', '?')}  p={r.get('p_value', 1):.1e}" for r in plot_r],
         fontsize=8,
     )
     ax.set_xlim(x_min, x_max)
@@ -1208,7 +1845,9 @@ def forest_plot(
         fontsize=11,
     )
     ax.grid(axis="x", alpha=style.grid_alpha if style.grid else 0.0)
-    sig_patch = mpatches.Patch(color=style.significance_color, label=f"GW-sig (p<{significance_threshold:.0e})")
+    sig_patch = mpatches.Patch(
+        color=style.significance_color, label=f"GW-sig (p<{significance_threshold:.0e})"
+    )
     nom_patch = mpatches.Patch(color=style.suggestive_color, label="Sub-threshold")
     ax.legend(handles=[sig_patch, nom_patch], fontsize=9, loc="lower right")
     plt.tight_layout()
@@ -1272,9 +1911,22 @@ def z_score_manhattan_plot(
     sig_y = -math.log10(significance_threshold)
 
     palette = [
-        "#2E86AB", "#A23B72", "#F18F01", "#C73E1D", "#44BBA4",
-        "#E94F37", "#393E41", "#F4995C", "#D81E5B", "#5C6BC0",
-        "#26A69A", "#AB47BC", "#7E57C2", "#42A5F5", "#6B4226", "#3B1F2B",
+        "#2E86AB",
+        "#A23B72",
+        "#F18F01",
+        "#C73E1D",
+        "#44BBA4",
+        "#E94F37",
+        "#393E41",
+        "#F4995C",
+        "#D81E5B",
+        "#5C6BC0",
+        "#26A69A",
+        "#AB47BC",
+        "#7E57C2",
+        "#42A5F5",
+        "#6B4226",
+        "#3B1F2B",
     ]
     fig, ax = plt.subplots(figsize=(14, 5))
 
@@ -1287,8 +1939,13 @@ def z_score_manhattan_plot(
             sz = 18 if ys[i] >= sig_y else 6
             ax.scatter(xs[i], ys[i], c=base_color, s=sz, alpha=alpha, linewidths=0)
 
-    ax.axhline(sig_y, color="#C44E52", linewidth=2, linestyle="--",
-               label=f"GW significance (p={significance_threshold:.0e})")
+    ax.axhline(
+        sig_y,
+        color="#C44E52",
+        linewidth=2,
+        linestyle="--",
+        label=f"GW significance (p={significance_threshold:.0e})",
+    )
 
     # Annotate top |z| significant hits
     sig_pts = sorted(
@@ -1298,9 +1955,14 @@ def z_score_manhattan_plot(
     for i, _ in sig_pts:
         snp_lbl = results[i].get("snp", "?") if i < len(results) else "?"
         ax.annotate(
-            snp_lbl, (xs[i], ys[i]),
-            xytext=(0, 9), textcoords="offset points",
-            ha="center", fontsize=7.5, color="#C44E52", fontweight="bold",
+            snp_lbl,
+            (xs[i], ys[i]),
+            xytext=(0, 9),
+            textcoords="offset points",
+            ha="center",
+            fontsize=7.5,
+            color="#C44E52",
+            fontweight="bold",
             arrowprops=dict(arrowstyle="-", color="#C44E52", lw=0.8),
         )
 
@@ -1327,4 +1989,100 @@ def z_score_manhattan_plot(
         output_path.parent.mkdir(parents=True, exist_ok=True)
         fig.savefig(output_path, dpi=150, bbox_inches="tight")
         logger.info(f"Saved z-score Manhattan plot to {output_path}")
+    return fig
+
+
+def ld_heatmap_plot(
+    ld_matrix: List[List[float]],
+    association_results: List[Dict[str, Any]],
+    *,
+    top_idx: int = 0,
+    half_window: int = 25,
+    output_path: Optional[Union[str, Path]] = None,
+) -> Optional[Any]:
+    """Publication-grade LD structure heatmap centred on the top hit.
+
+    Extracts a window of ±*half_window* variants around *top_idx* and
+    renders |r| (absolute correlation) with genomic-position tick labels
+    and a red crosshair marking the lead variant.
+
+    Args:
+        ld_matrix: Full variant-by-variant LD correlation matrix.
+        association_results: List of result dicts with ``chrom`` and ``pos``.
+        top_idx: Index of the lead variant in *association_results*.
+        half_window: Half-size of the extraction window.
+        output_path: If set, save the figure as PNG.
+
+    Returns:
+        matplotlib Figure, or ``None`` if dependencies are absent.
+    """
+    if not HAS_MATPLOTLIB or not HAS_NUMPY:
+        logger.warning("ld_heatmap_plot requires matplotlib and numpy")
+        return None
+
+    if not ld_matrix or len(ld_matrix) < 2:
+        logger.info("Skipping LD heatmap (matrix too small or empty)")
+        return None
+
+    lo = max(0, top_idx - half_window)
+    hi = min(len(ld_matrix), top_idx + half_window)
+    ld_sub = np.array([row[lo:hi] for row in ld_matrix[lo:hi]])
+    ld_sub = np.abs(ld_sub)  # Plot |r| not r²
+
+    fig, ax = plt.subplots(figsize=(9, 7))
+    im = ax.imshow(
+        ld_sub,
+        cmap="RdYlBu_r",
+        vmin=0,
+        vmax=1,
+        aspect="auto",
+        interpolation="nearest",
+    )
+    cbar = fig.colorbar(im, ax=ax, shrink=0.8)
+    cbar.set_label("|r| (correlation coefficient)", fontsize=10)
+
+    # Genomic-position tick labels
+    n_ticks = min(10, ld_sub.shape[0])
+    tick_step = max(1, ld_sub.shape[0] // n_ticks)
+    tick_positions = list(range(0, ld_sub.shape[0], tick_step))
+    tick_labels = []
+    for i in tick_positions:
+        idx = lo + i
+        if idx < len(association_results):
+            r = association_results[idx]
+            chrom_short = (
+                r["chrom"].split(".")[-2][-2:] if "." in r["chrom"] else r["chrom"]
+            )
+            tick_labels.append(f"{chrom_short}:{r['pos'] // 1000}k")
+        else:
+            tick_labels.append("")
+    ax.set_xticks(tick_positions)
+    ax.set_xticklabels(tick_labels, rotation=45, ha="right", fontsize=7)
+    ax.set_yticks(tick_positions)
+    ax.set_yticklabels(tick_labels, fontsize=7)
+
+    # Title with top-hit coordinates
+    if top_idx < len(association_results):
+        top_r = association_results[top_idx]
+        ax.set_title(
+            f"LD Structure Near Top Hit ({top_r['chrom']}:{top_r['pos']:,})\n"
+            f"Window: ±{half_window} variants, n={ld_sub.shape[0]}",
+            fontsize=11,
+        )
+
+    # Red crosshair on top hit
+    rel_top = min(half_window, top_idx - lo)
+    ax.axhline(rel_top, color="red", lw=1.5, ls="--", alpha=0.7, label="Top hit")
+    ax.axvline(rel_top, color="red", lw=1.5, ls="--", alpha=0.7)
+    ax.legend(fontsize=8, loc="upper right")
+
+    plt.tight_layout()
+
+    if output_path:
+        output_path = Path(output_path)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(output_path, dpi=150, bbox_inches="tight")
+        logger.info(
+            f"Saved LD heatmap to {output_path} ({ld_sub.shape[0]}×{ld_sub.shape[1]})"
+        )
     return fig

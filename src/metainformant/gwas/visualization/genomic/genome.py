@@ -45,7 +45,7 @@ def circular_manhattan_plot(
     """
     try:
         import matplotlib.pyplot as plt
-        from matplotlib.patches import Wedge
+        from matplotlib.patches import Wedge  # noqa: F401
     except ImportError:
         logger.warning("matplotlib not available for circular Manhattan plot")
         return {"status": "failed", "error": "matplotlib not available"}
@@ -58,22 +58,34 @@ def circular_manhattan_plot(
         positions_list = []
         pvalues_list = []
         for entry in results_df:
-            chroms_list.append(entry.get("CHROM", entry.get("CHR", entry.get("chr", "1"))))
-            positions_list.append(entry.get("POS", entry.get("BP", entry.get("pos", 0))))
-            pvalues_list.append(entry.get("p_value", entry.get("P", entry.get("pval", 1.0))))
+            chroms_list.append(
+                entry.get("CHROM", entry.get("CHR", entry.get("chr", "1")))
+            )
+            positions_list.append(
+                entry.get("POS", entry.get("BP", entry.get("pos", 0)))
+            )
+            pvalues_list.append(
+                entry.get("p_value", entry.get("P", entry.get("pval", 1.0)))
+            )
     elif hasattr(results_df, "columns"):
         # DataFrame path
         required_cols = ["CHR", "BP", "P"]
         missing_cols = [col for col in required_cols if col not in results_df.columns]
         if missing_cols:
             logger.error(f"Missing required columns: {missing_cols}")
-            return {"status": "failed", "error": f"Missing required columns: {missing_cols}"}
+            return {
+                "status": "failed",
+                "error": f"Missing required columns: {missing_cols}",
+            }
         chroms_list = results_df["CHR"].tolist()
         positions_list = results_df["BP"].tolist()
         pvalues_list = results_df["P"].tolist()
     else:
         logger.error("Input data must be a DataFrame or list of dicts")
-        return {"status": "failed", "error": "Input data must be a DataFrame or list of dicts"}
+        return {
+            "status": "failed",
+            "error": "Input data must be a DataFrame or list of dicts",
+        }
 
     fig, ax = plt.subplots(1, 1, figsize=(10, 10), subplot_kw=dict(projection="polar"))
 
@@ -125,7 +137,15 @@ def circular_manhattan_plot(
         # Add chromosome label
         label_angle = np.deg2rad(start_angle + angle_per_chrom / 2)
         label_radius = 1.2
-        ax.text(label_angle, label_radius, str(chrom), ha="center", va="center", fontsize=10, fontweight="bold")
+        ax.text(
+            label_angle,
+            label_radius,
+            str(chrom),
+            ha="center",
+            va="center",
+            fontsize=10,
+            fontweight="bold",
+        )
 
     # Add significance threshold ring
     threshold_radius = 1 + (-np.log10(significance_threshold)) * 0.1
@@ -134,7 +154,13 @@ def circular_manhattan_plot(
 
     # Add significance label
     ax.text(
-        0, threshold_radius + 0.05, f"p = {significance_threshold}", ha="center", va="bottom", fontsize=10, color="red"
+        0,
+        threshold_radius + 0.05,
+        f"p = {significance_threshold}",
+        ha="center",
+        va="bottom",
+        fontsize=10,
+        color="red",
     )
 
     # Add suggestive threshold ring
@@ -171,11 +197,15 @@ def circular_manhattan_plot(
             for j in range(len(data)):
                 angle_deg = start_angle + norm_pos[j] * angle_per_chrom
                 radius = 1 + neg_log_p_arr[j] * 0.1
-                all_points.append((pval_arr[j], angle_deg, radius, chrom, int(pos_arr[j])))
+                all_points.append(
+                    (pval_arr[j], angle_deg, radius, chrom, int(pos_arr[j]))
+                )
 
         # Sort by p-value ascending (smallest p-value = most significant)
         all_points.sort(key=lambda x: x[0])
-        for rank, (pval, angle_deg, radius, chrom_label, pos_val) in enumerate(all_points[:label_top_n]):
+        for rank, (pval, angle_deg, radius, chrom_label, pos_val) in enumerate(
+            all_points[:label_top_n]
+        ):
             label_text = f"{chrom_label}:{pos_val}"
             angle_rad = np.deg2rad(angle_deg)
             label_radius = radius + 0.15 + rank * 0.05
@@ -232,7 +262,7 @@ def chromosome_ideogram(
     """
     try:
         import matplotlib.pyplot as plt
-        import numpy as np
+        import numpy as np  # noqa: F401
         from matplotlib.patches import Rectangle
     except ImportError:
         logger.warning("matplotlib not available for chromosome ideogram")
@@ -260,7 +290,9 @@ def chromosome_ideogram(
     # Sort chromosomes
     chroms = sorted(
         chromosome_lengths.keys(),
-        key=lambda x: int(x.replace("chr", "")) if x.replace("chr", "").isdigit() else float("inf"),
+        key=lambda x: int(x.replace("chr", ""))
+        if x.replace("chr", "").isdigit()
+        else float("inf"),
     )
 
     fig, ax = plt.subplots(figsize=(12, 8))
@@ -377,7 +409,7 @@ def genome_wide_ld_heatmap(
         Dictionary with status and metadata
     """
     try:
-        import matplotlib.patches as patches
+        import matplotlib.patches as patches  # noqa: F401
         import matplotlib.pyplot as plt
         import numpy as np
     except ImportError:
@@ -412,7 +444,9 @@ def genome_wide_ld_heatmap(
         nrows = int(np.ceil(n_chroms / 4))
         ncols = 4
 
-    fig, axes = plt.subplots(nrows, ncols, figsize=figsize, squeeze=False, sharex=True, sharey=True)
+    fig, axes = plt.subplots(
+        nrows, ncols, figsize=figsize, squeeze=False, sharex=True, sharey=True
+    )
     axes = axes.flatten()
 
     # Plot each chromosome
@@ -428,7 +462,9 @@ def genome_wide_ld_heatmap(
         r2_values = [entry["r2"] for entry in data]
 
         # Create scatter plot colored by LD
-        scatter = ax.scatter(pos1, pos2, c=r2_values, cmap="RdYlBu_r", s=2, alpha=0.6, vmin=0, vmax=1)
+        scatter = ax.scatter(
+            pos1, pos2, c=r2_values, cmap="RdYlBu_r", s=2, alpha=0.6, vmin=0, vmax=1
+        )
 
         # Highlight high LD regions
         high_ld = [entry for entry in data if entry["r2"] >= ld_threshold]
@@ -452,9 +488,9 @@ def genome_wide_ld_heatmap(
         # Format axis labels
         def format_bp(x, pos):
             if x >= 1e6:
-                return f"{x/1e6:.1f}M"
+                return f"{x / 1e6:.1f}M"
             elif x >= 1e3:
-                return f"{x/1e3:.0f}K"
+                return f"{x / 1e3:.0f}K"
             else:
                 return f"{x:.0f}"
 
@@ -563,7 +599,13 @@ def manhattan_plot(
 
         for i in range(len(x_positions)):
             chrom_name = num_to_chrom[chrom_nums[i]]
-            ax.scatter(x_positions[i], neg_log_p[i], color=chrom_colors[chrom_name], alpha=0.8, s=20)
+            ax.scatter(
+                x_positions[i],
+                neg_log_p[i],
+                color=chrom_colors[chrom_name],
+                alpha=0.8,
+                s=20,
+            )
 
         # Add significance line
         sig_threshold = -math.log10(significance_threshold)
@@ -595,7 +637,14 @@ def manhattan_plot(
                 chrom_centers.append((chrom, sum(chrom_x) / len(chrom_x)))
 
         for chrom, center in chrom_centers:
-            ax.text(center, min(neg_log_p) - 0.5, str(chrom), ha="center", va="top", fontsize=8)
+            ax.text(
+                center,
+                min(neg_log_p) - 0.5,
+                str(chrom),
+                ha="center",
+                va="top",
+                fontsize=8,
+            )
 
         ax.set_xlabel("Genomic Position")
         ax.set_ylabel("-log₁₀(p-value)")

@@ -8,7 +8,7 @@ and regional effect plots.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 import numpy as np
 
@@ -17,7 +17,9 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 
-def effect_size_plot(results: Any, output_file: Optional[str | Path] = None) -> Optional[Any]:
+def effect_size_plot(
+    results: Any, output_file: Optional[str | Path] = None
+) -> Optional[Any]:
     """Create effect size distribution and analysis plot.
 
     Args:
@@ -33,13 +35,13 @@ def effect_size_plot(results: Any, output_file: Optional[str | Path] = None) -> 
     try:
         import matplotlib.pyplot as plt
         import pandas as pd
-        import seaborn as sns
+        import seaborn as sns  # noqa: F401
     except ImportError:
         logger.warning("matplotlib, seaborn, or pandas not available for plotting")
         return None
 
     # Convert to DataFrame if needed
-    if isinstance(results, dict):
+    if isinstance(results, (dict, list)):
         results = pd.DataFrame(results)
 
     if not hasattr(results, "columns") or "BETA" not in results.columns:
@@ -93,7 +95,14 @@ def effect_size_plot(results: Any, output_file: Optional[str | Path] = None) -> 
         p_subset = p_values[:min_len]
         beta_aligned = beta_subset[:min_len]
 
-        scatter = ax3.scatter(-np.log10(p_subset), beta_aligned, alpha=0.6, s=2, c=beta_aligned, cmap="RdYlBu_r")
+        scatter = ax3.scatter(
+            -np.log10(p_subset),
+            beta_aligned,
+            alpha=0.6,
+            s=2,
+            c=beta_aligned,
+            cmap="RdYlBu_r",
+        )
         ax3.set_title("Effect Size vs Significance")
         ax3.set_xlabel("-log10(P-value)")
         ax3.set_ylabel("Effect Size (Beta)")
@@ -116,7 +125,12 @@ def effect_size_plot(results: Any, output_file: Optional[str | Path] = None) -> 
 
     # Create table
     table_data = [[key, value] for key, value in stats.items()]
-    table = ax4.table(cellText=table_data, colLabels=["Statistic", "Value"], loc="center", cellLoc="center")
+    table = ax4.table(
+        cellText=table_data,
+        colLabels=["Statistic", "Value"],
+        loc="center",
+        cellLoc="center",
+    )
     table.auto_set_font_size(False)
     table.set_fontsize(10)
     table.scale(1, 1.2)
@@ -131,7 +145,9 @@ def effect_size_plot(results: Any, output_file: Optional[str | Path] = None) -> 
     return plt.gcf()
 
 
-def compare_effect_sizes(study_results: Dict[str, Any], output_file: Optional[str | Path] = None) -> Optional[Any]:
+def compare_effect_sizes(
+    study_results: Dict[str, Any], output_file: Optional[str | Path] = None
+) -> Optional[Any]:
     """Compare effect sizes across different studies or methods.
 
     Args:
@@ -148,7 +164,7 @@ def compare_effect_sizes(study_results: Dict[str, Any], output_file: Optional[st
     try:
         import matplotlib.pyplot as plt
         import pandas as pd
-        import seaborn as sns
+        import seaborn as sns  # noqa: F401
     except ImportError:
         logger.warning("matplotlib, seaborn, or pandas not available for plotting")
         return None
@@ -204,7 +220,7 @@ def compare_effect_sizes(study_results: Dict[str, Any], output_file: Optional[st
         study1_subset = study1_betas[:min_len]
         study2_subset = study2_betas[:min_len]
 
-        scatter = ax3.scatter(study1_subset, study2_subset, alpha=0.6, s=2)
+        ax3.scatter(study1_subset, study2_subset, alpha=0.6, s=2)
         ax3.set_title(f"Effect Size Correlation: {study_names[0]} vs {study_names[1]}")
         ax3.set_xlabel(f"{study_names[0]} Effect Size")
         ax3.set_ylabel(f"{study_names[1]} Effect Size")
@@ -234,12 +250,20 @@ def compare_effect_sizes(study_results: Dict[str, Any], output_file: Optional[st
     # Calculate statistics for each study
     stats_data = []
     for study_name, beta_values in study_data.items():
-        stats_data.append([study_name, ".4f", ".4f", (abs(beta_values) > 0.5).sum(), len(beta_values)])
+        stats_data.append(
+            [study_name, ".4f", ".4f", (abs(beta_values) > 0.5).sum(), len(beta_values)]
+        )
 
     if stats_data:
         table = ax4.table(
             cellText=stats_data,
-            colLabels=["Study", "Mean |Effect|", "Max |Effect|", "Large Effects", "Total SNPs"],
+            colLabels=[
+                "Study",
+                "Mean |Effect|",
+                "Max |Effect|",
+                "Large Effects",
+                "Total SNPs",
+            ],
             loc="center",
             cellLoc="center",
         )
@@ -259,7 +283,9 @@ def compare_effect_sizes(study_results: Dict[str, Any], output_file: Optional[st
 
 
 def effect_size_manhattan(
-    results: Any, significance_threshold: float = 5e-8, output_file: Optional[str | Path] = None
+    results: Any,
+    significance_threshold: float = 5e-8,
+    output_file: Optional[str | Path] = None,
 ) -> Optional[Any]:
     """Create Manhattan plot colored by effect size.
 
@@ -307,7 +333,9 @@ def effect_size_manhattan(
         current_pos += len(chrom_data) + 1000  # Gap between chromosomes
 
     df["pos"] = df.apply(
-        lambda row: chrom_starts[row["CHR"]] + df[df["CHR"] == row["CHR"]].index.get_loc(row.name), axis=1
+        lambda row: chrom_starts[row["CHR"]]
+        + df[df["CHR"] == row["CHR"]].index.get_loc(row.name),
+        axis=1,
     )
 
     # Color by effect size
@@ -316,16 +344,36 @@ def effect_size_manhattan(
 
     # Plot points colored by effect size
     scatter = ax.scatter(
-        df["pos"], df["-logP"], c=effect_sizes, cmap="RdYlBu_r", alpha=0.8, s=3, vmin=0, vmax=max_effect
+        df["pos"],
+        df["-logP"],
+        c=effect_sizes,
+        cmap="RdYlBu_r",
+        alpha=0.8,
+        s=3,
+        vmin=0,
+        vmax=max_effect,
     )
 
     # Add significance threshold line
-    ax.axhline(y=-np.log10(significance_threshold), color="red", linestyle="--", alpha=0.7, label=".0e")
+    ax.axhline(
+        y=-np.log10(significance_threshold),
+        color="red",
+        linestyle="--",
+        alpha=0.7,
+        label=".0e",
+    )
 
     # Add chromosome labels
     for chrom in chromosomes:
         chrom_center = chrom_starts[chrom] + len(df[df["CHR"] == chrom]) / 2
-        ax.text(chrom_center, ax.get_ylim()[0] - 0.5, str(chrom), ha="center", va="top", fontsize=10)
+        ax.text(
+            chrom_center,
+            ax.get_ylim()[0] - 0.5,
+            str(chrom),
+            ha="center",
+            va="top",
+            fontsize=10,
+        )
 
     ax.set_title("Manhattan Plot (Colored by Effect Size)", fontsize=14)
     ax.set_xlabel("Chromosome", fontsize=12)
@@ -346,7 +394,9 @@ def effect_size_manhattan(
     return plt.gcf()
 
 
-def effect_size_qq(results: Any, output_file: Optional[str | Path] = None) -> Optional[Any]:
+def effect_size_qq(
+    results: Any, output_file: Optional[str | Path] = None
+) -> Optional[Any]:
     """Create Q-Q plot with effect size information.
 
     Args:
@@ -394,7 +444,9 @@ def effect_size_qq(results: Any, output_file: Optional[str | Path] = None) -> Op
     effect_sizes = np.abs(beta_sorted)
 
     # Plot
-    scatter = ax.scatter(expected_log, observed_log, c=effect_sizes, cmap="RdYlBu_r", alpha=0.7, s=4)
+    scatter = ax.scatter(
+        expected_log, observed_log, c=effect_sizes, cmap="RdYlBu_r", alpha=0.7, s=4
+    )
 
     # Add diagonal line
     ax.plot(
@@ -465,7 +517,7 @@ def effect_size_forest_plot(
         >>> result = effect_size_forest_plot(data)
     """
     try:
-        import matplotlib.patches as patches
+        import matplotlib.patches as patches  # noqa: F401
         import matplotlib.pyplot as plt
     except ImportError:
         logger.warning("matplotlib not available for forest plot")
@@ -506,7 +558,10 @@ def effect_size_forest_plot(
             required_keys = ["variants", "effects", "lower_ci", "upper_ci"]
             missing_keys = [key for key in required_keys if key not in effect_data]
             if missing_keys:
-                return {"status": "failed", "error": f"Missing required keys: {missing_keys}"}
+                return {
+                    "status": "failed",
+                    "error": f"Missing required keys: {missing_keys}",
+                }
 
             variants = effect_data["variants"]
             effects = effect_data["effects"]
@@ -514,7 +569,10 @@ def effect_size_forest_plot(
             upper_ci = effect_data["upper_ci"]
 
             if not (len(variants) == len(effects) == len(lower_ci) == len(upper_ci)):
-                return {"status": "failed", "error": "All effect data arrays must have the same length"}
+                return {
+                    "status": "failed",
+                    "error": "All effect data arrays must have the same length",
+                }
 
             if top_n is not None:
                 variants = variants[:top_n]
@@ -531,7 +589,9 @@ def effect_size_forest_plot(
         y_positions = range(len(variants))
 
         # Plot confidence intervals
-        for i, (effect, lower, upper, variant) in enumerate(zip(effects, lower_ci, upper_ci, variants)):
+        for i, (effect, lower, upper, variant) in enumerate(
+            zip(effects, lower_ci, upper_ci, variants)
+        ):
             # Confidence interval line
             ax.plot([lower, upper], [i, i], "k-", linewidth=2, alpha=0.8)
 
@@ -547,14 +607,18 @@ def effect_size_forest_plot(
         # Add vertical line at reference effect (e.g., 1 for OR, 0 for beta)
         if all(isinstance(e, (int, float)) and e > 0 for e in effects):
             # Likely odds ratios - add reference line at 1
-            ax.axvline(x=1, color="blue", linestyle="-", alpha=0.5, label="Reference (OR=1)")
+            ax.axvline(
+                x=1, color="blue", linestyle="-", alpha=0.5, label="Reference (OR=1)"
+            )
             ax.legend()
 
         # Format plot
         ax.set_xlabel("Effect Size", fontsize=12)
         ax.set_title(title, fontsize=14, pad=20)
         ax.set_yticks(y_positions)
-        ax.set_yticklabels([""] * len(variants))  # Hide y-tick labels (we use text labels)
+        ax.set_yticklabels(
+            [""] * len(variants)
+        )  # Hide y-tick labels (we use text labels)
         ax.grid(True, alpha=0.3, axis="x")
 
         # Add summary statistics
@@ -587,7 +651,9 @@ def effect_size_forest_plot(
 
 
 def effect_direction_plot(
-    results: list[dict], output_path: Optional[str | Path] = None, figsize: tuple[int, int] = (10, 6)
+    results: list[dict],
+    output_path: Optional[str | Path] = None,
+    figsize: tuple[int, int] = (10, 6),
 ) -> dict[str, Any]:
     """Create an effect direction plot showing beta coefficients by chromosome.
 
@@ -663,7 +729,9 @@ def effect_direction_plot(
                 chrom_centers.append((chrom, sum(chrom_x) / len(chrom_x)))
 
         for chrom, center in chrom_centers:
-            ax.text(center, min(betas) - 0.1, str(chrom), ha="center", va="top", fontsize=8)
+            ax.text(
+                center, min(betas) - 0.1, str(chrom), ha="center", va="top", fontsize=8
+            )
 
         ax.set_xlabel("Genomic Position")
         ax.set_ylabel("Effect Size (Beta)")
@@ -721,7 +789,9 @@ def functional_enrichment_plot(
     # Validate significance_threshold if provided
     if significance_threshold is not None:
         if significance_threshold <= 0 or significance_threshold >= 1:
-            raise ValueError("significance_threshold must be between 0 and 1 (exclusive)")
+            raise ValueError(
+                "significance_threshold must be between 0 and 1 (exclusive)"
+            )
 
     threshold = significance_threshold if significance_threshold is not None else 5e-8
 
@@ -743,13 +813,17 @@ def functional_enrichment_plot(
         if isinstance(enrichment_results, list):
             # Filter significant variants
             significant_variants = [
-                v for v in enrichment_results if v.get("p_value", v.get("P", v.get("pval", 1.0))) < threshold
+                v
+                for v in enrichment_results
+                if v.get("p_value", v.get("P", v.get("pval", 1.0))) < threshold
             ]
 
             if not significant_variants:
                 return {
                     "status": "failed",
-                    "error": "No significant variants found at threshold {:.1e}".format(threshold),
+                    "error": "No significant variants found at threshold {:.1e}".format(
+                        threshold
+                    ),
                 }
 
             # Simulate functional annotation categories based on position
@@ -778,11 +852,15 @@ def functional_enrichment_plot(
             # Create plot
             fig, ax = plt.subplots(figsize=figsize)
 
-            sorted_cats = sorted(category_counts.items(), key=lambda x: x[1], reverse=True)[:top_n]
+            sorted_cats = sorted(
+                category_counts.items(), key=lambda x: x[1], reverse=True
+            )[:top_n]
             cat_names = [c[0] for c in sorted_cats]
             cat_values = [c[1] for c in sorted_cats]
 
-            bars = ax.barh(range(len(cat_names)), cat_values, color="skyblue", edgecolor="black")
+            bars = ax.barh(
+                range(len(cat_names)), cat_values, color="skyblue", edgecolor="black"
+            )
             ax.set_yticks(range(len(cat_names)))
             ax.set_yticklabels(cat_names)
             ax.set_xlabel("Number of Significant Variants")
@@ -808,7 +886,11 @@ def functional_enrichment_plot(
 
         # Sort by enrichment ratio and get top N
         sorted_results = sorted(
-            [(func, stats) for func, stats in enrichment_results.items() if stats.get("enrichment_ratio", 0) > 1],
+            [
+                (func, stats)
+                for func, stats in enrichment_results.items()
+                if stats.get("enrichment_ratio", 0) > 1
+            ],
             key=lambda x: x[1].get("enrichment_ratio", 0),
             reverse=True,
         )[:top_n]
@@ -817,7 +899,9 @@ def functional_enrichment_plot(
             return {"status": "failed", "error": "No significantly enriched functions"}
 
         functions = [func for func, _ in sorted_results]
-        enrichment_ratios = [stats.get("enrichment_ratio", 1) for _, stats in sorted_results]
+        enrichment_ratios = [
+            stats.get("enrichment_ratio", 1) for _, stats in sorted_results
+        ]
         p_values = [stats.get("p_value", 1) for _, stats in sorted_results]
 
         # Create plot
@@ -852,7 +936,11 @@ def functional_enrichment_plot(
         for i, func in enumerate(functions):
             short_name = func[:20] + "..." if len(func) > 20 else func
             ax2.annotate(
-                short_name, (enrichment_ratios[i], neg_log_p[i]), xytext=(5, 5), textcoords="offset points", fontsize=6
+                short_name,
+                (enrichment_ratios[i], neg_log_p[i]),
+                xytext=(5, 5),
+                textcoords="offset points",
+                fontsize=6,
             )
 
         ax2.set_xlabel("Enrichment Ratio")
@@ -878,7 +966,9 @@ def functional_enrichment_plot(
 
 
 def allelic_series_plot(
-    results: list[dict], output_path: Optional[str | Path] = None, gene_region: Optional[tuple[str, int, int]] = None
+    results: list[dict],
+    output_path: Optional[str | Path] = None,
+    gene_region: Optional[tuple[str, int, int]] = None,
 ) -> dict[str, Any]:
     """Create an allelic series plot showing effect sizes across alleles at a locus.
 
@@ -909,7 +999,9 @@ def allelic_series_plot(
     try:
         # Check if any results have effect size data
         has_beta = any(
-            result.get("BETA") is not None or result.get("beta") is not None or result.get("effect_size") is not None
+            result.get("BETA") is not None
+            or result.get("beta") is not None
+            or result.get("effect_size") is not None
             for result in results
         )
         if not has_beta:
@@ -924,7 +1016,9 @@ def allelic_series_plot(
             chrom = result.get("CHROM", result.get("chr", result.get("chromosome")))
             pos = result.get("POS", result.get("pos", result.get("position")))
             beta = result.get("BETA", result.get("beta", result.get("effect_size")))
-            rsid = result.get("ID", result.get("rsid", result.get("variant_id", f"var_{pos}")))
+            rsid = result.get(
+                "ID", result.get("rsid", result.get("variant_id", f"var_{pos}"))
+            )
             p_value = result.get("P", result.get("p_value", result.get("pval", 1.0)))
 
             if beta is None or pos is None:
@@ -949,7 +1043,10 @@ def allelic_series_plot(
             )
 
         if not variants:
-            return {"status": "failed", "error": "No variants found in specified region"}
+            return {
+                "status": "failed",
+                "error": "No variants found in specified region",
+            }
 
         # Sort by position
         variants.sort(key=lambda x: x["pos"])
@@ -958,14 +1055,14 @@ def allelic_series_plot(
         fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
         fig.suptitle("Allelic Series Plot", fontsize=14)
 
-        positions = [v["pos"] for v in variants]
+        [v["pos"] for v in variants]
         betas = [v["beta"] for v in variants]
         p_values = [v["p_value"] for v in variants]
         rsids = [v["rsid"] for v in variants]
 
         # Top panel: Effect sizes
         colors = ["red" if b < 0 else "blue" for b in betas]
-        bars = ax1.bar(range(len(variants)), betas, color=colors, alpha=0.7, edgecolor="black")
+        ax1.bar(range(len(variants)), betas, color=colors, alpha=0.7, edgecolor="black")
 
         ax1.axhline(y=0, color="black", linestyle="-", alpha=0.5)
         ax1.set_ylabel("Effect Size (Beta)", fontsize=12)
@@ -981,8 +1078,12 @@ def allelic_series_plot(
 
         # Bottom panel: -log10(p-value)
         neg_log_p = [-np.log10(max(p, 1e-300)) for p in p_values]
-        ax2.bar(range(len(variants)), neg_log_p, color="green", alpha=0.7, edgecolor="black")
-        ax2.axhline(y=-np.log10(5e-8), color="red", linestyle="--", alpha=0.7, label="p = 5e-8")
+        ax2.bar(
+            range(len(variants)), neg_log_p, color="green", alpha=0.7, edgecolor="black"
+        )
+        ax2.axhline(
+            y=-np.log10(5e-8), color="red", linestyle="--", alpha=0.7, label="p = 5e-8"
+        )
         ax2.set_ylabel("-log₁₀(p-value)", fontsize=12)
         ax2.set_xlabel("Variant", fontsize=12)
         ax2.set_title("Significance by Variant", fontsize=12)
@@ -1000,7 +1101,12 @@ def allelic_series_plot(
 
         stats_text = f"Variants: {len(variants)} | Positive: {positive_effects} | Negative: {negative_effects} | Significant: {significant}"
         fig.text(
-            0.5, 0.02, stats_text, ha="center", fontsize=10, bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8)
+            0.5,
+            0.02,
+            stats_text,
+            ha="center",
+            fontsize=10,
+            bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
         )
 
         plt.tight_layout()

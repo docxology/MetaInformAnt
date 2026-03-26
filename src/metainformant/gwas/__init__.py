@@ -30,6 +30,7 @@ Quick start::
         output_dir="output/gwas/my_study",
     )
 """
+
 from __future__ import annotations
 
 from . import analysis, data, finemapping, heritability, visualization, workflow
@@ -92,10 +93,22 @@ from .heritability.estimation import (
 )
 
 # --- Visualization convenience exports ---
-from .visualization.config import THEMES, PlotStyle, apply_style, get_style, style_from_config
+from .visualization.config import (
+    THEMES,
+    PlotStyle,
+    apply_style,
+    get_style,
+    style_from_config,
+)
 from .visualization.genomic.ld import compute_ld_decay, ld_decay_plot, ld_heatmap_region
-from .visualization.interactive.composite import gwas_summary_panel, population_structure_panel
-from .visualization.interactive.finemapping import compute_credible_set, credible_set_plot
+from .visualization.interactive.composite import (
+    gwas_summary_panel,
+    population_structure_panel,
+)
+from .visualization.interactive.finemapping import (
+    compute_credible_set,
+    credible_set_plot,
+)
 from .visualization.interactive.interactive import interactive_manhattan
 from .visualization.interactive.phenotype import (
     genotype_phenotype_boxplot,

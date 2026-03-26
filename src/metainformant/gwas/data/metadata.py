@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import csv
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Union
 
 from metainformant.core.utils import logging
 
@@ -86,7 +86,10 @@ def load_sample_metadata(metadata_file: Union[str, Path]) -> Dict[str, Any]:
                     sample_data[col] = row.get(col, "")
                 metadata[sample_id] = sample_data
 
-        logger.info(f"Loaded metadata for {len(metadata)} samples " f"with {len(columns)} columns from {metadata_path}")
+        logger.info(
+            f"Loaded metadata for {len(metadata)} samples "
+            f"with {len(columns)} columns from {metadata_path}"
+        )
 
         return {
             "status": "success",
@@ -142,7 +145,9 @@ def merge_metadata_with_phenotypes(
             n_unmatched += 1
         merged[sample_id] = entry
 
-    logger.info(f"Merged metadata with phenotypes: {n_matched} matched, " f"{n_unmatched} unmatched")
+    logger.info(
+        f"Merged metadata with phenotypes: {n_matched} matched, {n_unmatched} unmatched"
+    )
 
     return {
         "status": "success",
@@ -187,9 +192,15 @@ def validate_metadata(
     valid = len(missing_samples) == 0
 
     if missing_samples:
-        logger.warning(f"Metadata validation: {len(missing_samples)} samples missing " f"(e.g. {missing_samples[:3]})")
+        logger.warning(
+            f"Metadata validation: {len(missing_samples)} samples missing "
+            f"(e.g. {missing_samples[:3]})"
+        )
     if extra_samples:
-        logger.info(f"Metadata validation: {len(extra_samples)} extra samples in metadata " f"not in expected list")
+        logger.info(
+            f"Metadata validation: {len(extra_samples)} extra samples in metadata "
+            f"not in expected list"
+        )
 
     return {
         "status": "success",
@@ -224,7 +235,10 @@ def get_population_labels(
         if value:
             labels[sample_id] = str(value)
 
-    logger.info(f"Extracted population labels for {len(labels)}/{len(metadata)} samples " f"using column '{column}'")
+    logger.info(
+        f"Extracted population labels for {len(labels)}/{len(metadata)} samples "
+        f"using column '{column}'"
+    )
 
     return labels
 
@@ -257,7 +271,10 @@ def get_geographic_coordinates(
             lat = float(lat_raw)
             lon = float(lon_raw)
         except (ValueError, TypeError):
-            logger.debug(f"Skipping non-numeric coordinates for {sample_id}: " f"lat={lat_raw!r}, lon={lon_raw!r}")
+            logger.debug(
+                f"Skipping non-numeric coordinates for {sample_id}: "
+                f"lat={lat_raw!r}, lon={lon_raw!r}"
+            )
             continue
 
         coordinates.append(
@@ -268,6 +285,8 @@ def get_geographic_coordinates(
             }
         )
 
-    logger.info(f"Extracted geographic coordinates for {len(coordinates)}/{len(metadata)} samples")
+    logger.info(
+        f"Extracted geographic coordinates for {len(coordinates)}/{len(metadata)} samples"
+    )
 
     return coordinates

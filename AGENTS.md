@@ -551,6 +551,21 @@ Life course phenotype analysis, trait curation, and AntWiki integration.
 - `EventSequence(person_id: str, events: List[Event])`
 - `analyze_life_course(sequences: List[EventSequence], outcomes: List[str] = None) -> Dict[str, Any]`
 
+**Statistical Phenotype Analysis** (`metainformant.phenotype.analysis.statistical`):
+
+- `calculate_summary_stats(df: pd.DataFrame, value_col: str, group_col: str) -> pd.DataFrame`
+- `perform_anova(df: pd.DataFrame, value_col: str, group_col: str) -> Dict[str, Any]`
+- `perform_kruskal(df: pd.DataFrame, value_col: str, group_col: str) -> Dict[str, Any]`
+- `perform_ttest(df: pd.DataFrame, value_col: str, group_col: str, group1: str, group2: str) -> Dict[str, Any]`
+- `correlate_phenotypes(df: pd.DataFrame, cols: list[str]) -> pd.DataFrame`
+
+**Phenotype Visualization** (`metainformant.phenotype.visualization.plots`):
+
+- `plot_boxplot_with_swarm(df: pd.DataFrame, x_col: str, y_col: str, title: str = "", ylabel: str = "", order: Optional[list[str]] = None) -> plt.Figure`
+- `plot_violin(df: pd.DataFrame, x_col: str, y_col: str, title: str = "", ylabel: str = "", order: Optional[list[str]] = None, hue: Optional[str] = None) -> plt.Figure`
+- `plot_categorical_proportions(df: pd.DataFrame, group_col: str, cat_col: str, title: str = "") -> plt.Figure`
+- `plot_correlation_heatmap(corr_matrix: pd.DataFrame, title: str = "") -> plt.Figure`
+
 ### Ecology Functions
 
 Community diversity analysis, biodiversity metrics, and ecological statistics.

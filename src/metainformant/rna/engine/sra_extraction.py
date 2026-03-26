@@ -25,15 +25,48 @@ def extract_sra_directly(config: AmalgkitWorkflowConfig, sra_dir: Path, output_d
     """Manually extract SRA files using fasterq-dump when amalgkit fails.
 
     This acts as a fallback when amalgkit getfastq skips extraction due to
-    existing SRA files (redo: no) or other internal checks.
+    existing SRA files (redo: no) or other internal checks. It provides a
+    robust recovery mechanism for RNA-seq workflows that encounter partial
+    failures during the FASTQ download step.
+
+    The function uses parallel extraction with configurable thread limits
+    to optimize throughput while avoiding resource exhaustion. Each sample
+    is processed independently, allowing partial success even when some
+    samples fail.
 
     Args:
-        config: Workflow configuration
-        sra_dir: Directory containing .sra files
-        output_dir: Directory to output .fastq.gz files
+        config: AmalgkitWorkflowConfig instance containing workflow parameters
+            including thread count (used to limit parallel extraction).
+        sra_dir: Directory containing .sra files. Can be the root SRA cache
+            directory, a 'sra/' subdirectory, or sample-specific subdirectories.
+            The function recursively searches for .sra files in typical locations.
+        output_dir: Directory to output .fastq.gz files. A subdirectory is
+            created for each sample (e.g., output_dir/SRR123456/) containing
+            the extracted FASTQ files.
 
     Returns:
-        Number of successfully extracted samples
+        int: Number of successfully extracted samples. Returns 0 if no SRA
+            files found or if required tools (fasterq-dump, gzip) are missing.
+            Partial success is possible - check the count to determine if
+            some samples extracted successfully.
+
+    Example:
+        >>> from metainformant.rna.engine.workflow import load_workflow_config
+        >>> from metainformant.rna.engine.sra_extraction import extract_sra_directly
+        >>>
+        >>> config = load_workflow_config("config/amalgkit_apis.yaml")
+        >>> sra_cache = Path("/path/to/sra_cache")
+        >>> output = Path("output/fastq")
+        >>>
+        >>> extracted = extract_sra_directly(config, sra_cache, output)
+        >>> print(f"Extracted {extracted} samples successfully")
+
+    Note:
+        - This is a fallback mechanism; the primary extraction should use
+          amalgkit getfastq for proper error handling and progress tracking.
+        - Requires fasterq-dump (from SRA Toolkit) and gzip/pigz in PATH.
+        - Uses pigz for parallel compression if available (faster than gzip).
+        - Temp files are stored in .tmp/fasterq-dump within the repository.
     """
     from metainformant.core.io.download import monitor_subprocess_directory_growth
 
@@ -141,14 +174,45 @@ def extract_sra_directly(config: AmalgkitWorkflowConfig, sra_dir: Path, output_d
 def manual_integration_fallback(config: AmalgkitWorkflowConfig) -> bool:
     """Fallback for when 'amalgkit integrate' fails (e.g. path detection bugs).
 
-    Manually exposes FASTQ files from getfastq subdirectories to the location
-    expected by 'amalgkit quant'.
+    This function provides a recovery mechanism when the amalgkit integrate
+    step fails due to path detection issues or other configuration problems.
+    It manually creates symbolic links or copies FASTQ files from the getfastq
+    output directory to the location expected by the subsequent 'amalgkit quant'
+    step.
+
+    The function performs the following operations:
+    1. Locates FASTQ files in the getfastq output directory
+    2. Identifies sample IDs from directory names or filename patterns
+    3. Creates sample-specific subdirectories in the quant input directory
+    4. Symlinks or copies FASTQ files to the new location
+    5. Optionally creates metadata.tsv from metadata_selected.tsv if needed
 
     Args:
-        config: Workflow configuration with work_dir and step settings
+        config: AmalgkitWorkflowConfig instance with work_dir and step
+            configuration. The step configuration should include out_dir
+            paths for getfastq and quant steps.
 
     Returns:
-        True if any FASTQ files were successfully linked/copied.
+        bool: True if any FASTQ files were successfully linked or copied.
+            False if no valid FASTQ files were found or the getfastq
+            directory doesn't exist.
+
+    Example:
+        >>> from metainformant.rna.engine.workflow import load_workflow_config
+        >>> from metainformant.rna.engine.sra_extraction import manual_integration_fallback
+        >>>
+        >>> config = load_workflow_config("config/amalgkit_apis.yaml")
+        >>> success = manual_integration_fallback(config)
+        >>> if success:
+        ...     print("FASTQ files now accessible for quantification")
+
+    Note:
+        - This is a last-resort fallback; check amalgkit logs for the
+          root cause of integration failures.
+        - Symbolic links are attempted first (preserving disk space).
+          If symlink fails (cross-filesystem), falls back to copy.
+        - The function uses regex to extract sample IDs from filenames,
+          supporting SRR, ERR, and DRR accessions.
     """
     import re
 

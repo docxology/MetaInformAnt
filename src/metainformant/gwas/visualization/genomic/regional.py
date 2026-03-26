@@ -6,7 +6,7 @@ This module provides plots for regional association analysis and gene annotation
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -47,7 +47,7 @@ def gene_annotation_plot(
 
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
-        from matplotlib.patches import Rectangle
+        from matplotlib.patches import Rectangle  # noqa: F401
     except ImportError:
         logger.warning("matplotlib not available for regional plot")
         return {"status": "skipped", "reason": "matplotlib not available"}
@@ -59,11 +59,15 @@ def gene_annotation_plot(
         results_df = pd.DataFrame(results)
         # Normalize column names
         col_map = {"CHROM": "CHR", "POS": "BP", "p_value": "P"}
-        results_df = results_df.rename(columns={k: v for k, v in col_map.items() if k in results_df.columns})
+        results_df = results_df.rename(
+            columns={k: v for k, v in col_map.items() if k in results_df.columns}
+        )
     elif hasattr(results, "columns"):
         results_df = results.copy()
         col_map = {"CHROM": "CHR", "POS": "BP", "p_value": "P"}
-        results_df = results_df.rename(columns={k: v for k, v in col_map.items() if k in results_df.columns})
+        results_df = results_df.rename(
+            columns={k: v for k, v in col_map.items() if k in results_df.columns}
+        )
     else:
         logger.error("Input data must be a list of dicts or DataFrame")
         return {"status": "failed", "reason": "Invalid input data format"}
@@ -83,13 +87,21 @@ def gene_annotation_plot(
         logger.warning(f"No data found for region {chrom}:{start}-{end}")
         return {"status": "success", "reason": "No data in region", "n_variants": 0}
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), gridspec_kw={"height_ratios": [3, 1]})
+    fig, (ax1, ax2) = plt.subplots(
+        2, 1, figsize=(12, 8), gridspec_kw={"height_ratios": [3, 1]}
+    )
 
     # Plot 1: Manhattan plot for region
     region_data["neg_log_p"] = -np.log10(region_data["P"].clip(lower=1e-50))
 
     ax1.scatter(region_data["BP"], region_data["neg_log_p"], c="blue", s=20, alpha=0.7)
-    ax1.axhline(y=-np.log10(5e-8), color="red", linestyle="--", alpha=0.8, label="Genome-wide significance")
+    ax1.axhline(
+        y=-np.log10(5e-8),
+        color="red",
+        linestyle="--",
+        alpha=0.8,
+        label="Genome-wide significance",
+    )
     ax1.set_ylabel("-log10(P-value)", fontsize=12)
     ax1.set_title(title, fontsize=14)
     ax1.legend()
@@ -100,7 +112,14 @@ def gene_annotation_plot(
         plot_gene_track(ax2, chrom, start, end, gene_data)
     else:
         # Default gene track (simplified)
-        ax2.text(0.5, 0.5, "Gene annotations not provided", ha="center", va="center", transform=ax2.transAxes)
+        ax2.text(
+            0.5,
+            0.5,
+            "Gene annotations not provided",
+            ha="center",
+            va="center",
+            transform=ax2.transAxes,
+        )
         if start is not None and end is not None:
             ax2.set_xlim(start, end)
 
@@ -111,9 +130,9 @@ def gene_annotation_plot(
     # Format x-axis labels
     def format_bp(x, pos):
         if x >= 1e6:
-            return f"{x/1e6:.1f}M"
+            return f"{x / 1e6:.1f}M"
         elif x >= 1e3:
-            return f"{x/1e3:.0f}K"
+            return f"{x / 1e3:.0f}K"
         else:
             return str(int(x))
 
@@ -139,6 +158,8 @@ def gene_annotation_plot(
 
 def plot_gene_track(ax, chrom: str, start: int, end: int, gene_data: Dict[str, Any]):
     """Plot gene annotation track."""
+    from matplotlib.patches import Rectangle
+    
     # Simplified gene plotting - in practice would use genomic annotation data
     if "genes" in gene_data:
         genes = gene_data["genes"]
@@ -151,7 +172,13 @@ def plot_gene_track(ax, chrom: str, start: int, end: int, gene_data: Dict[str, A
             if gene_start < gene_end:
                 # Draw gene rectangle
                 width = gene_end - gene_start
-                rect = Rectangle((gene_start, y_pos - 0.1), width, 0.2, facecolor="lightblue", alpha=0.7)
+                rect = Rectangle(
+                    (gene_start, y_pos - 0.1),
+                    width,
+                    0.2,
+                    facecolor="lightblue",
+                    alpha=0.7,
+                )  # noqa: F821
                 ax.add_patch(rect)
 
                 # Add gene name if space allows
@@ -204,14 +231,16 @@ def recombination_rate_plot(
         import matplotlib
 
         matplotlib.use("Agg")
-        import matplotlib.pyplot as plt
+        import matplotlib.pyplot as plt  # noqa: F401
     except ImportError:
         logger.warning("matplotlib not available for recombination rate plot")
         return {"status": "skipped", "reason": "matplotlib not available"}
 
     # If called with explicit recombination data, use the legacy path
     if recombination_rates is not None and positions is not None:
-        return _recombination_rate_plot_legacy(recombination_rates, positions, output_file, title)
+        return _recombination_rate_plot_legacy(
+            recombination_rates, positions, output_file, title
+        )
 
     # Otherwise, this requires external recombination map data which we don't have
     # Create a placeholder plot noting that recombination data is needed
@@ -249,7 +278,9 @@ def _recombination_rate_plot_legacy(
         n_cols = 3
         n_rows = (n_chroms + n_cols - 1) // n_cols
 
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 4 * n_rows), squeeze=False, sharey=True)
+    fig, axes = plt.subplots(
+        n_rows, n_cols, figsize=(6 * n_cols, 4 * n_rows), squeeze=False, sharey=True
+    )
     fig.suptitle(title, fontsize=16, y=0.95)
 
     colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
@@ -278,7 +309,9 @@ def _recombination_rate_plot_legacy(
                 if window_size % 2 == 0:
                     window_size += 1
                 smoothed = signal.savgol_filter(rates, window_size, 3)
-                ax.plot(pos, smoothed, color="red", linewidth=2, alpha=0.6, label="Smoothed")
+                ax.plot(
+                    pos, smoothed, color="red", linewidth=2, alpha=0.6, label="Smoothed"
+                )
             except ImportError:
                 pass
 
@@ -305,7 +338,11 @@ def _recombination_rate_plot_legacy(
 
     plt.close(fig)
 
-    return {"status": "success", "n_chromosomes": n_chroms, "output_path": str(output_file) if output_file else None}
+    return {
+        "status": "success",
+        "n_chromosomes": n_chroms,
+        "output_path": str(output_file) if output_file else None,
+    }
 
 
 def effect_direction_plot(
@@ -362,7 +399,11 @@ def effect_direction_plot(
     ax2.hist(effect_sizes, bins=30, alpha=0.7, color="skyblue", edgecolor="navy")
     ax2.axvline(x=0, color="red", linestyle="--", linewidth=2, label="No effect")
     ax2.axvline(
-        x=np.mean(effect_sizes), color="green", linestyle="-", linewidth=2, label=f"Mean: {np.mean(effect_sizes):.3f}"
+        x=np.mean(effect_sizes),
+        color="green",
+        linestyle="-",
+        linewidth=2,
+        label=f"Mean: {np.mean(effect_sizes):.3f}",
     )
     ax2.set_xlabel("Effect Size", fontsize=12)
     ax2.set_ylabel("Frequency", fontsize=12)
@@ -375,8 +416,8 @@ def effect_direction_plot(
 Mean: {np.mean(effect_sizes):.3f}
 Median: {np.median(effect_sizes):.3f}
 SD: {np.std(effect_sizes):.3f}
-Positive effects: {sum(1 for x in effect_sizes if x > 0)} ({sum(1 for x in effect_sizes if x > 0)/len(effect_sizes)*100:.1f}%)
-Negative effects: {sum(1 for x in effect_sizes if x < 0)} ({sum(1 for x in effect_sizes if x < 0)/len(effect_sizes)*100:.1f}%)"""
+Positive effects: {sum(1 for x in effect_sizes if x > 0)} ({sum(1 for x in effect_sizes if x > 0) / len(effect_sizes) * 100:.1f}%)
+Negative effects: {sum(1 for x in effect_sizes if x < 0)} ({sum(1 for x in effect_sizes if x < 0) / len(effect_sizes) * 100:.1f}%)"""
 
     fig.text(
         0.02,
@@ -441,11 +482,15 @@ def regional_plot(
         results_df = pd.DataFrame(results)
         # Normalize column names
         col_map = {"CHROM": "CHR", "POS": "BP", "p_value": "P"}
-        results_df = results_df.rename(columns={k: v for k, v in col_map.items() if k in results_df.columns})
+        results_df = results_df.rename(
+            columns={k: v for k, v in col_map.items() if k in results_df.columns}
+        )
     elif hasattr(results, "columns"):
         results_df = results.copy()
         col_map = {"CHROM": "CHR", "POS": "BP", "p_value": "P"}
-        results_df = results_df.rename(columns={k: v for k, v in col_map.items() if k in results_df.columns})
+        results_df = results_df.rename(
+            columns={k: v for k, v in col_map.items() if k in results_df.columns}
+        )
     else:
         return {"status": "failed", "reason": "Invalid input data format"}
 
@@ -468,10 +513,19 @@ def regional_plot(
     # Convert p-values to -log10 scale
     region_data["NEG_LOG_P"] = -np.log10(region_data["P"].clip(lower=1e-50))
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={"height_ratios": [3, 1]})
+    fig, (ax1, ax2) = plt.subplots(
+        2, 1, figsize=figsize, gridspec_kw={"height_ratios": [3, 1]}
+    )
 
     # Main plot: -log10(p) vs position
-    ax1.scatter(region_data["BP"], region_data["NEG_LOG_P"], c=region_data["NEG_LOG_P"], cmap="Reds", alpha=0.7, s=20)
+    ax1.scatter(
+        region_data["BP"],
+        region_data["NEG_LOG_P"],
+        c=region_data["NEG_LOG_P"],
+        cmap="Reds",
+        alpha=0.7,
+        s=20,
+    )
 
     # Add significance threshold line
     ax1.axhline(
@@ -491,7 +545,13 @@ def regional_plot(
             & (recombination_rate["BP"] <= end)
         ]
         if not recomb_data.empty:
-            ax2_twin.plot(recomb_data["BP"], recomb_data["RATE"], color="blue", alpha=0.7, linewidth=2)
+            ax2_twin.plot(
+                recomb_data["BP"],
+                recomb_data["RATE"],
+                color="blue",
+                alpha=0.7,
+                linewidth=2,
+            )
             ax2_twin.set_ylabel("Recombination Rate (cM/Mb)", color="blue")
             ax2_twin.tick_params(axis="y", labelcolor="blue")
 
@@ -515,9 +575,9 @@ def regional_plot(
     # Format x-axis labels
     def format_bp(x, pos):
         if x >= 1e6:
-            return f"{x/1e6:.1f}M"
+            return f"{x / 1e6:.1f}M"
         elif x >= 1e3:
-            return f"{x/1e3:.0f}K"
+            return f"{x / 1e3:.0f}K"
         else:
             return f"{x:.0f}"
 
@@ -623,8 +683,13 @@ def regional_ld_plot(
                 genotypes.append(sample_genotypes)
 
         if len(positions) < 2:
-            logger.warning(f"Insufficient SNPs in region {chrom}:{start}-{end} for LD calculation")
-            return {"status": "skipped", "reason": f"Only {len(positions)} SNPs found in region (need at least 2)"}
+            logger.warning(
+                f"Insufficient SNPs in region {chrom}:{start}-{end} for LD calculation"
+            )
+            return {
+                "status": "skipped",
+                "reason": f"Only {len(positions)} SNPs found in region (need at least 2)",
+            }
 
         n_snps = len(positions)
         positions = np.array(positions)
@@ -652,14 +717,23 @@ def regional_ld_plot(
         logger.error(f"Failed to parse VCF for LD calculation: {e}")
         return {"status": "error", "reason": f"VCF parsing error: {e}"}
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={"height_ratios": [1, 3]})
+    fig, (ax1, ax2) = plt.subplots(
+        2, 1, figsize=figsize, gridspec_kw={"height_ratios": [1, 3]}
+    )
 
     # Top plot: SNP positions
     ax1.scatter(positions, [1] * n_snps, c="blue", s=50, alpha=0.7)
     if lead_snp_pos:
         # Highlight lead SNP
         lead_idx = np.argmin(np.abs(positions - lead_snp_pos))
-        ax1.scatter(positions[lead_idx], 1, c="red", s=100, marker="*", label=f"Lead SNP (pos {lead_snp_pos})")
+        ax1.scatter(
+            positions[lead_idx],
+            1,
+            c="red",
+            s=100,
+            marker="*",
+            label=f"Lead SNP (pos {lead_snp_pos})",
+        )
 
     ax1.set_xlim(start, end)
     ax1.set_ylim(0.5, 1.5)
@@ -671,16 +745,23 @@ def regional_ld_plot(
     # Format x-axis
     def format_bp(x, pos):
         if x >= 1e6:
-            return f"{x/1e6:.1f}M"
+            return f"{x / 1e6:.1f}M"
         elif x >= 1e3:
-            return f"{x/1e3:.0f}K"
+            return f"{x / 1e3:.0f}K"
         else:
             return f"{x:.0f}"
 
     ax1.xaxis.set_major_formatter(plt.FuncFormatter(format_bp))
 
     # Bottom plot: LD heatmap
-    im = ax2.imshow(ld_matrix, cmap="RdYlBu_r", aspect="auto", extent=[start, end, end, start], vmin=0, vmax=1)
+    im = ax2.imshow(
+        ld_matrix,
+        cmap="RdYlBu_r",
+        aspect="auto",
+        extent=[start, end, end, start],
+        vmin=0,
+        vmax=1,
+    )
 
     # Add colorbar
     cbar = plt.colorbar(im, ax=ax2, shrink=0.8)
@@ -691,7 +772,13 @@ def regional_ld_plot(
         high_ld_mask = ld_matrix >= ld_threshold
         if np.any(high_ld_mask):
             # Add contour lines for high LD regions
-            ax2.contour(ld_matrix, levels=[ld_threshold], colors="red", linewidths=2, extent=[start, end, end, start])
+            ax2.contour(
+                ld_matrix,
+                levels=[ld_threshold],
+                colors="red",
+                linewidths=2,
+                extent=[start, end, end, start],
+            )
 
     ax2.set_xlabel("Position 1 (bp)")
     ax2.set_ylabel("Position 2 (bp)")

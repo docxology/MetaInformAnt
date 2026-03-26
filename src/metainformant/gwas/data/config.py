@@ -165,7 +165,9 @@ def validate_config_parameters(config: Dict[str, Any]) -> List[str]:
         if "phenotype_path" in config:
             has_pheno = True
     if not has_pheno:
-        errors.append("Missing required parameter: phenotype_file (or samples.phenotype_file)")
+        errors.append(
+            "Missing required parameter: phenotype_file (or samples.phenotype_file)"
+        )
 
     # Output dir requirement: output_dir OR work_dir OR output.results_dir
     has_output = "output_dir" in config or "work_dir" in config
@@ -174,7 +176,9 @@ def validate_config_parameters(config: Dict[str, Any]) -> List[str]:
         if isinstance(output, dict) and output.get("results_dir"):
             has_output = True
     if not has_output:
-        errors.append("Missing required parameter: output_dir (or work_dir or output.results_dir)")
+        errors.append(
+            "Missing required parameter: output_dir (or work_dir or output.results_dir)"
+        )
 
     # NOTE: File existence checks are intentionally skipped here.
     # Paths may not exist yet when loading config before workflow execution.
@@ -203,7 +207,9 @@ def validate_config_parameters(config: Dict[str, Any]) -> List[str]:
     if not method and isinstance(assoc_dict, dict):
         method = assoc_dict.get("model")
     if method and method not in valid_methods:
-        errors.append(f"Invalid association method '{method}'. Must be one of: {valid_methods}")
+        errors.append(
+            f"Invalid association method '{method}'. Must be one of: {valid_methods}"
+        )
 
     valid_corrections = ["bonferroni", "fdr", "genomic_control"]
     correction = config.get("multiple_testing_correction")
@@ -211,7 +217,9 @@ def validate_config_parameters(config: Dict[str, Any]) -> List[str]:
     if not correction and isinstance(corr_dict, dict):
         correction = corr_dict.get("method")
     if correction and correction not in valid_corrections:
-        errors.append(f"Invalid correction method '{correction}'. Must be one of: {valid_corrections}")
+        errors.append(
+            f"Invalid correction method '{correction}'. Must be one of: {valid_corrections}"
+        )
 
     valid_kinship = ["vanraden", "ibs", "astle", "yang"]
     kinship = config.get("kinship_method")
@@ -219,7 +227,9 @@ def validate_config_parameters(config: Dict[str, Any]) -> List[str]:
     if not kinship and isinstance(struct_dict, dict):
         kinship = struct_dict.get("kinship_method")
     if kinship and kinship not in valid_kinship:
-        errors.append(f"Invalid kinship method '{kinship}'. Must be one of: {valid_kinship}")
+        errors.append(
+            f"Invalid kinship method '{kinship}'. Must be one of: {valid_kinship}"
+        )
 
     # Threads and memory
     if "threads" in config:
@@ -303,7 +313,10 @@ def load_gwas_config(config_path: str | Path) -> AttrDict:
     # Validate
     errors = validate_config_parameters(config)
     if errors:
-        raise ValueError(f"Configuration validation failed:\n" + "\n".join(f"- {error}" for error in errors))
+        raise ValueError(
+            "Configuration validation failed:\n"
+            + "\n".join(f"- {error}" for error in errors)
+        )
 
     logger.info(f"Loaded and validated GWAS configuration from {config_path}")
 
@@ -325,7 +338,9 @@ def save_gwas_config(config: Dict[str, Any], output_path: str | Path) -> None:
     logger.info(f"Saved GWAS configuration to {output_path}")
 
 
-def create_config_from_vcf(vcf_path: str | Path, phenotype_path: str | Path, output_dir: str | Path) -> Dict[str, Any]:
+def create_config_from_vcf(
+    vcf_path: str | Path, phenotype_path: str | Path, output_dir: str | Path
+) -> Dict[str, Any]:
     """Create a basic GWAS configuration from VCF and phenotype files.
 
     Args:
@@ -371,7 +386,11 @@ def update_config_for_runtime(config: Dict[str, Any]) -> Dict[str, Any]:
     import os
 
     # Update from environment variables
-    env_mappings = {"GWAS_THREADS": "threads", "GWAS_MEMORY": "memory_gb", "GWAS_OUTPUT_DIR": "output_dir"}
+    env_mappings = {
+        "GWAS_THREADS": "threads",
+        "GWAS_MEMORY": "memory_gb",
+        "GWAS_OUTPUT_DIR": "output_dir",
+    }
 
     for env_var, config_key in env_mappings.items():
         if env_var in os.environ:
@@ -380,7 +399,9 @@ def update_config_for_runtime(config: Dict[str, Any]) -> Dict[str, Any]:
                     config[config_key] = int(os.environ[env_var])
                 else:
                     config[config_key] = os.environ[env_var]
-                logger.info(f"Updated {config_key} from environment: {config[config_key]}")
+                logger.info(
+                    f"Updated {config_key} from environment: {config[config_key]}"
+                )
             except ValueError:
                 logger.warning(f"Invalid value for {env_var}: {os.environ[env_var]}")
 
@@ -413,7 +434,10 @@ def get_config_summary(config: Dict[str, Any]) -> Dict[str, Any]:
             "significance_threshold": config.get("significance_threshold"),
             "pca_components": config.get("pca_components"),
         },
-        "performance": {"threads": config.get("threads"), "memory_gb": config.get("memory_gb")},
+        "performance": {
+            "threads": config.get("threads"),
+            "memory_gb": config.get("memory_gb"),
+        },
         "output": {
             "directory": config.get("output_dir"),
             "plots": config.get("create_plots"),
@@ -511,14 +535,14 @@ def estimate_runtime(
 
     # Per-step pilot timings (seconds) — empirical
     pilot_steps = {
-        "parse_vcf":          5.0,    # O(n·m)
-        "qc_filters":         5.0,    # O(n·m)
-        "ld_pruning":         5.0,    # O(w²·m)
-        "population_structure": 15.0, # O(n²·m) dominated by kinship
-        "association_testing": 111.0, # O(n·m) — 4000 tests/sec
-        "multiple_testing":   2.0,    # O(m)
-        "summary_stats":      2.0,    # O(m)
-        "annotation":         3.0,    # O(m)
+        "parse_vcf": 5.0,  # O(n·m)
+        "qc_filters": 5.0,  # O(n·m)
+        "ld_pruning": 5.0,  # O(w²·m)
+        "population_structure": 15.0,  # O(n²·m) dominated by kinship
+        "association_testing": 111.0,  # O(n·m) — 4000 tests/sec
+        "multiple_testing": 2.0,  # O(m)
+        "summary_stats": 2.0,  # O(m)
+        "annotation": 3.0,  # O(m)
     }
 
     if config.get("create_plots", True):
@@ -526,15 +550,15 @@ def estimate_runtime(
 
     # Complexity model per step
     step_models = {
-        "parse_vcf":          "n_m",
-        "qc_filters":         "n_m",
-        "ld_pruning":         "m",
+        "parse_vcf": "n_m",
+        "qc_filters": "n_m",
+        "ld_pruning": "m",
         "population_structure": "n2_m",
         "association_testing": "n_m",
-        "multiple_testing":   "m",
-        "summary_stats":      "m",
-        "annotation":         "m",
-        "visualization":      "m",
+        "multiple_testing": "m",
+        "summary_stats": "m",
+        "annotation": "m",
+        "visualization": "m",
     }
 
     data_driven = n_samples is not None and n_variants is not None
@@ -546,7 +570,9 @@ def estimate_runtime(
 
     for step_name, pilot_secs in pilot_steps.items():
         model = step_models.get(step_name, "n_m")
-        factor = _compute_scaling_factor(model, PILOT_N, PILOT_M, target_n, target_m, pca_comp)
+        factor = _compute_scaling_factor(
+            model, PILOT_N, PILOT_M, target_n, target_m, pca_comp
+        )
         per_step[step_name] = pilot_secs * factor
 
     # PCA component scaling for population_structure
@@ -574,7 +600,7 @@ def estimate_runtime(
             )
 
     # Memory estimate: GRM is n×n floats (8 bytes each)
-    grm_memory_gb = (target_n ** 2 * 8) / (1024 ** 3) if data_driven else 0.5
+    grm_memory_gb = (target_n**2 * 8) / (1024**3) if data_driven else 0.5
     estimated_memory = max(config.get("memory_gb", 16), grm_memory_gb * 2)
 
     return {
@@ -615,10 +641,10 @@ def _compute_scaling_factor(
     if model == "n_m":
         return (target_n * target_m) / (pilot_n * pilot_m)
     elif model == "n2_m":
-        return (target_n ** 2 * target_m) / (pilot_n ** 2 * pilot_m)
+        return (target_n**2 * target_m) / (pilot_n**2 * pilot_m)
     elif model == "m":
         return target_m / pilot_m
     elif model == "m_k2":
-        return (target_m * k ** 2) / (pilot_m * 100)  # pilot k=10
+        return (target_m * k**2) / (pilot_m * 100)  # pilot k=10
     else:
         return (target_n * target_m) / (pilot_n * pilot_m)

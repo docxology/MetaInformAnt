@@ -44,7 +44,9 @@ def _load_pca_from_file(pca_file: str | Path) -> Dict[str, Any]:
     # Compute approximate explained variance from variance of each PC column
     variances = np.var(pcs_array, axis=0)
     total_var = np.sum(variances)
-    explained_variance = variances / total_var if total_var > 0 else np.zeros(len(pc_cols))
+    explained_variance = (
+        variances / total_var if total_var > 0 else np.zeros(len(pc_cols))
+    )
 
     return {
         "pcs": pcs_array,
@@ -100,7 +102,10 @@ def pca_plot(
         missing_keys = [key for key in required_keys if key not in pca_data]
         if missing_keys:
             logger.error(f"Missing required keys in pca_data: {missing_keys}")
-            return {"status": "failed", "error": f"Missing required keys: {missing_keys}"}
+            return {
+                "status": "failed",
+                "error": f"Missing required keys: {missing_keys}",
+            }
 
         pcs = pca_data["pcs"]
         explained_var = pca_data["explained_variance"]
@@ -110,8 +115,10 @@ def pca_plot(
             return {"status": "failed", "error": "PCA data 'pcs' must be a 2D array"}
 
         if pc1 >= pcs.shape[1] or pc2 >= pcs.shape[1]:
-            logger.error(f"PC indices {pc1}, {pc2} out of range for {pcs.shape[1]} components")
-            return {"status": "failed", "error": f"PC indices out of range"}
+            logger.error(
+                f"PC indices {pc1}, {pc2} out of range for {pcs.shape[1]} components"
+            )
+            return {"status": "failed", "error": "PC indices out of range"}
 
         fig, ax = plt.subplots(1, 1, figsize=(10, 8))
 
@@ -130,7 +137,14 @@ def pca_plot(
 
             for i, pop in enumerate(unique_pops):
                 mask = [p == pop for p in populations]
-                ax.scatter(x_data[mask], y_data[mask], c=[colors[i]], label=pop, alpha=0.7, s=50)
+                ax.scatter(
+                    x_data[mask],
+                    y_data[mask],
+                    c=[colors[i]],
+                    label=pop,
+                    alpha=0.7,
+                    s=50,
+                )
             ax.legend(title="Population", bbox_to_anchor=(1.05, 1), loc="upper left")
         else:
             # Simple scatter plot
@@ -140,15 +154,20 @@ def pca_plot(
         if sample_names is not None and len(sample_names) <= 50:
             for i, name in enumerate(sample_names):
                 ax.annotate(
-                    name, (x_data[i], y_data[i]), xytext=(5, 5), textcoords="offset points", fontsize=8, alpha=0.8
+                    name,
+                    (x_data[i], y_data[i]),
+                    xytext=(5, 5),
+                    textcoords="offset points",
+                    fontsize=8,
+                    alpha=0.8,
                 )
 
         # Labels and title
         var1 = explained_var[pc1] * 100
         var2 = explained_var[pc2] * 100
 
-        ax.set_xlabel(f"PC{pc1+1} ({var1:.1f}% variance)", fontsize=12)
-        ax.set_ylabel(f"PC{pc2+1} ({var2:.1f}% variance)", fontsize=12)
+        ax.set_xlabel(f"PC{pc1 + 1} ({var1:.1f}% variance)", fontsize=12)
+        ax.set_ylabel(f"PC{pc2 + 1} ({var2:.1f}% variance)", fontsize=12)
         ax.set_title(title, fontsize=14, pad=20)
         ax.grid(True, alpha=0.3)
 
@@ -221,17 +240,30 @@ def pca_scree_plot(
 
         # Create scree plot
         components = list(range(1, len(explained_variance) + 1))
-        bars = ax.bar(components, explained_variance_pct, color="skyblue", edgecolor="navy", alpha=0.7)
+        bars = ax.bar(
+            components,
+            explained_variance_pct,
+            color="skyblue",
+            edgecolor="navy",
+            alpha=0.7,
+        )
 
         # Add cumulative variance line
         cumulative = np.cumsum(explained_variance_pct)
-        ax.plot(components, cumulative, "r-o", linewidth=2, markersize=4, label="Cumulative")
+        ax.plot(
+            components, cumulative, "r-o", linewidth=2, markersize=4, label="Cumulative"
+        )
 
         # Add value labels on bars
         for bar, pct in zip(bars, explained_variance_pct):
             height = bar.get_height()
             ax.text(
-                bar.get_x() + bar.get_width() / 2.0, height + 0.5, f"{pct:.1f}%", ha="center", va="bottom", fontsize=8
+                bar.get_x() + bar.get_width() / 2.0,
+                height + 0.5,
+                f"{pct:.1f}%",
+                ha="center",
+                va="bottom",
+                fontsize=8,
             )
 
         ax.set_xlabel("Principal Component", fontsize=12)
@@ -245,7 +277,13 @@ def pca_scree_plot(
         if len(explained_variance_pct) > 1:
             for i in range(1, len(explained_variance_pct)):
                 if explained_variance_pct[i] < 5.0:
-                    ax.axvline(x=i + 0.5, color="red", linestyle="--", alpha=0.7, label=f"Elbow at PC{i+1}")
+                    ax.axvline(
+                        x=i + 0.5,
+                        color="red",
+                        linestyle="--",
+                        alpha=0.7,
+                        label=f"Elbow at PC{i + 1}",
+                    )
                     break
 
         plt.tight_layout()
@@ -312,7 +350,12 @@ def pca_multi_panel(
 
         if pcs.ndim != 2 or pcs.shape[0] == 0:
             logger.error("pca_data['pcs'] must be a non-empty 2D structure")
-            return {"status": "failed", "output_path": None, "n_samples": 0, "n_panels": 0}
+            return {
+                "status": "failed",
+                "output_path": None,
+                "n_samples": 0,
+                "n_panels": 0,
+            }
 
         n_samples, n_pcs = pcs.shape
 
@@ -322,13 +365,20 @@ def pca_multi_panel(
         valid_pairs = [(a, b) for a, b in pairs if a < n_pcs and b < n_pcs]
         if not valid_pairs:
             logger.error("No valid PC pairs for the number of available components")
-            return {"status": "failed", "output_path": None, "n_samples": n_samples, "n_panels": 0}
+            return {
+                "status": "failed",
+                "output_path": None,
+                "n_samples": n_samples,
+                "n_panels": 0,
+            }
 
         n_panels = len(valid_pairs)
         n_cols = min(n_panels, 3)
         n_rows = (n_panels + n_cols - 1) // n_cols
 
-        fig, axes = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 5 * n_rows), squeeze=False)
+        fig, axes = plt.subplots(
+            n_rows, n_cols, figsize=(6 * n_cols, 5 * n_rows), squeeze=False
+        )
 
         # Resolve per-sample colour labels from metadata
         color_labels: Optional[List[str]] = None
@@ -349,10 +399,16 @@ def pca_multi_panel(
             row, col = divmod(idx, n_cols)
             ax = axes[row][col]
 
-            if color_labels is not None and label_to_color is not None and unique_labels is not None:
+            if (
+                color_labels is not None
+                and label_to_color is not None
+                and unique_labels is not None
+            ):
                 for lab in unique_labels:
                     mask = np.array([cl == lab for cl in color_labels])
-                    ax.scatter(pcs[mask, pc_a], pcs[mask, pc_b], label=lab, alpha=0.7, s=40)
+                    ax.scatter(
+                        pcs[mask, pc_a], pcs[mask, pc_b], label=lab, alpha=0.7, s=40
+                    )
             else:
                 ax.scatter(pcs[:, pc_a], pcs[:, pc_b], alpha=0.7, s=40, c="steelblue")
 
@@ -375,7 +431,9 @@ def pca_multi_panel(
         if unique_labels is not None and len(unique_labels) > 0:
             handles, labels = axes[0][0].get_legend_handles_labels()
             if handles:
-                fig.legend(handles, labels, loc="upper right", title=color_by, fontsize=9)
+                fig.legend(
+                    handles, labels, loc="upper right", title=color_by, fontsize=9
+                )
 
         fig.suptitle(title, fontsize=14, y=1.02)
         fig.tight_layout()
@@ -438,7 +496,12 @@ def pca_3d(
         from mpl_toolkits.mplot3d import Axes3D  # noqa: F401
     except ImportError:
         logger.warning("matplotlib/mpl_toolkits not available for 3D PCA plot")
-        return {"status": "skipped", "output_path": None, "n_samples": 0, "n_components": 0}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "n_samples": 0,
+            "n_components": 0,
+        }
 
     try:
         pcs = np.asarray(pca_data.get("pcs", []), dtype=np.float64)
@@ -447,7 +510,12 @@ def pca_3d(
 
         if pcs.ndim != 2 or pcs.shape[0] == 0:
             logger.error("pca_data['pcs'] must be a non-empty 2D structure")
-            return {"status": "failed", "output_path": None, "n_samples": 0, "n_components": 0}
+            return {
+                "status": "failed",
+                "output_path": None,
+                "n_samples": 0,
+                "n_components": 0,
+            }
 
         n_samples, n_pcs = pcs.shape
 
@@ -457,7 +525,10 @@ def pca_3d(
             # Graceful degradation: fall back to available components
             available = tuple(c for c in components if c < n_pcs)
             if len(available) < 3:
-                logger.warning(f"Only {n_pcs} PCs available, need 3 for 3D plot. " f"Returning status 'failed'.")
+                logger.warning(
+                    f"Only {n_pcs} PCs available, need 3 for 3D plot. "
+                    f"Returning status 'failed'."
+                )
                 return {
                     "status": "failed",
                     "output_path": None,
@@ -475,7 +546,10 @@ def pca_3d(
         # Resolve per-sample colour labels from metadata
         color_labels: Optional[List[str]] = None
         if metadata is not None and sample_ids:
-            color_labels = [str(metadata.get(sid, {}).get(color_by, "unknown")) for sid in sample_ids]
+            color_labels = [
+                str(metadata.get(sid, {}).get(color_by, "unknown"))
+                for sid in sample_ids
+            ]
 
         if color_labels is not None:
             unique_labels = sorted(set(color_labels))
@@ -494,7 +568,9 @@ def pca_3d(
                 )
             ax.legend(title=color_by, fontsize=9)
         else:
-            ax.scatter(pcs[:, pc_a], pcs[:, pc_b], pcs[:, pc_c], alpha=0.7, s=40, c="steelblue")
+            ax.scatter(
+                pcs[:, pc_a], pcs[:, pc_b], pcs[:, pc_c], alpha=0.7, s=40, c="steelblue"
+            )
 
         # Axis labels with explained variance
         def _label(idx: int) -> str:
@@ -526,4 +602,9 @@ def pca_3d(
 
     except Exception as e:
         logger.error(f"Error creating 3D PCA plot: {e}")
-        return {"status": "failed", "output_path": None, "n_samples": 0, "n_components": 0}
+        return {
+            "status": "failed",
+            "output_path": None,
+            "n_samples": 0,
+            "n_components": 0,
+        }

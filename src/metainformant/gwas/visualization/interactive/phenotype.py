@@ -8,7 +8,7 @@ principal components.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 from metainformant.core.utils import logging
 
@@ -18,7 +18,7 @@ try:
     import matplotlib
 
     matplotlib.use("Agg")
-    import matplotlib.patches as mpatches
+    import matplotlib.patches as mpatches  # noqa: F401
     import matplotlib.pyplot as plt
 
     HAS_MATPLOTLIB = True
@@ -62,16 +62,28 @@ def phenotype_distribution(
     """
     if not HAS_MATPLOTLIB:
         logger.warning("matplotlib not available for phenotype distribution plot")
-        return {"status": "skipped", "output_path": None, "reason": "matplotlib not available"}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "reason": "matplotlib not available",
+        }
 
     if not HAS_NUMPY:
         logger.warning("numpy not available for phenotype distribution plot")
-        return {"status": "skipped", "output_path": None, "reason": "numpy not available"}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "reason": "numpy not available",
+        }
 
     try:
         values = np.array(phenotype_values, dtype=np.float64)
         if len(values) == 0:
-            return {"status": "failed", "error": "No phenotype values provided", "output_path": None}
+            return {
+                "status": "failed",
+                "error": "No phenotype values provided",
+                "output_path": None,
+            }
 
         # Basic statistics
         mean_val = float(np.mean(values))
@@ -104,7 +116,11 @@ def phenotype_distribution(
                 # KDE overlay per population
                 if len(pop_arr) > 1:
                     kde_x = np.linspace(float(pop_arr.min()), float(pop_arr.max()), 200)
-                    bandwidth = 1.06 * float(np.std(pop_arr, ddof=1)) * len(pop_arr) ** (-1.0 / 5.0)
+                    bandwidth = (
+                        1.06
+                        * float(np.std(pop_arr, ddof=1))
+                        * len(pop_arr) ** (-1.0 / 5.0)
+                    )
                     if bandwidth > 0:
                         kde_y = np.zeros_like(kde_x)
                         for v in pop_arr:
@@ -116,7 +132,14 @@ def phenotype_distribution(
         else:
             # Single distribution
             n_bins = max(10, int(np.sqrt(len(values))))
-            ax.hist(values, bins=n_bins, alpha=0.7, color="steelblue", edgecolor="black", density=True)
+            ax.hist(
+                values,
+                bins=n_bins,
+                alpha=0.7,
+                color="steelblue",
+                edgecolor="black",
+                density=True,
+            )
 
             # KDE overlay
             if len(values) > 1:
@@ -130,8 +153,20 @@ def phenotype_distribution(
                     ax.plot(kde_x, kde_y, color="darkblue", linewidth=2, label="KDE")
 
         # Mean and median lines
-        ax.axvline(x=mean_val, color="red", linestyle="--", linewidth=1.5, label=f"Mean: {mean_val:.3f}")
-        ax.axvline(x=median_val, color="green", linestyle="-.", linewidth=1.5, label=f"Median: {median_val:.3f}")
+        ax.axvline(
+            x=mean_val,
+            color="red",
+            linestyle="--",
+            linewidth=1.5,
+            label=f"Mean: {mean_val:.3f}",
+        )
+        ax.axvline(
+            x=median_val,
+            color="green",
+            linestyle="-.",
+            linewidth=1.5,
+            label=f"Median: {median_val:.3f}",
+        )
 
         ax.set_xlabel(trait_name, fontsize=12)
         ax.set_ylabel("Density", fontsize=12)
@@ -194,15 +229,27 @@ def phenotype_correlation_matrix(
     """
     if not HAS_MATPLOTLIB:
         logger.warning("matplotlib not available for correlation matrix plot")
-        return {"status": "skipped", "output_path": None, "reason": "matplotlib not available"}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "reason": "matplotlib not available",
+        }
 
     if not HAS_NUMPY:
         logger.warning("numpy not available for correlation matrix plot")
-        return {"status": "skipped", "output_path": None, "reason": "numpy not available"}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "reason": "numpy not available",
+        }
 
     try:
         if not phenotypes_dict or len(phenotypes_dict) < 2:
-            return {"status": "failed", "error": "At least two traits are required", "output_path": None}
+            return {
+                "status": "failed",
+                "error": "At least two traits are required",
+                "output_path": None,
+            }
 
         trait_names = list(phenotypes_dict.keys())
         n_traits = len(trait_names)
@@ -210,10 +257,16 @@ def phenotype_correlation_matrix(
         # Validate equal lengths
         lengths = [len(phenotypes_dict[t]) for t in trait_names]
         if len(set(lengths)) != 1:
-            return {"status": "failed", "error": "All trait value lists must have the same length", "output_path": None}
+            return {
+                "status": "failed",
+                "error": "All trait value lists must have the same length",
+                "output_path": None,
+            }
 
         # Build data matrix: rows = samples, cols = traits
-        data_matrix = np.column_stack([np.array(phenotypes_dict[t], dtype=np.float64) for t in trait_names])
+        data_matrix = np.column_stack(
+            [np.array(phenotypes_dict[t], dtype=np.float64) for t in trait_names]
+        )
 
         # Compute correlation matrix
         corr_matrix = np.corrcoef(data_matrix, rowvar=False)
@@ -233,7 +286,14 @@ def phenotype_correlation_matrix(
                 r_val = corr_matrix[i, j]
                 text_color = "white" if abs(r_val) > 0.6 else "black"
                 ax.text(
-                    j, i, f"{r_val:.2f}", ha="center", va="center", fontsize=10, color=text_color, fontweight="bold"
+                    j,
+                    i,
+                    f"{r_val:.2f}",
+                    ha="center",
+                    va="center",
+                    fontsize=10,
+                    color=text_color,
+                    fontweight="bold",
                 )
 
         # Axis labels
@@ -297,11 +357,19 @@ def genotype_phenotype_boxplot(
     """
     if not HAS_MATPLOTLIB:
         logger.warning("matplotlib not available for genotype-phenotype boxplot")
-        return {"status": "skipped", "output_path": None, "reason": "matplotlib not available"}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "reason": "matplotlib not available",
+        }
 
     if not HAS_NUMPY:
         logger.warning("numpy not available for genotype-phenotype boxplot")
-        return {"status": "skipped", "output_path": None, "reason": "numpy not available"}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "reason": "numpy not available",
+        }
 
     try:
         if len(genotypes) != len(phenotypes):
@@ -312,7 +380,11 @@ def genotype_phenotype_boxplot(
             }
 
         if len(genotypes) == 0:
-            return {"status": "failed", "error": "No data provided", "output_path": None}
+            return {
+                "status": "failed",
+                "error": "No data provided",
+                "output_path": None,
+            }
 
         genotype_arr = np.array(genotypes, dtype=int)
         phenotype_arr = np.array(phenotypes, dtype=np.float64)
@@ -327,7 +399,11 @@ def genotype_phenotype_boxplot(
                 groups[geno] = phenotype_arr[mask]
 
         if not groups:
-            return {"status": "failed", "error": "No valid genotype groups found", "output_path": None}
+            return {
+                "status": "failed",
+                "error": "No valid genotype groups found",
+                "output_path": None,
+            }
 
         # Manual one-way ANOVA F-test
         grand_mean = float(np.mean(phenotype_arr))
@@ -357,7 +433,9 @@ def genotype_phenotype_boxplot(
             # For F(d1, d2) with observed f_stat:
             # p = 1 - I_x(d1/2, d2/2), where x = d1*f / (d1*f + d2)
             x = (df_between * f_statistic) / (df_between * f_statistic + df_within)
-            p_value = 1.0 - _regularized_incomplete_beta(x, df_between / 2.0, df_within / 2.0)
+            p_value = 1.0 - _regularized_incomplete_beta(
+                x, df_between / 2.0, df_within / 2.0
+            )
 
         fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -382,7 +460,13 @@ def genotype_phenotype_boxplot(
                 }
 
         # Box plot with individual points
-        bp = ax.boxplot(box_data, positions=box_positions, widths=0.6, patch_artist=True, showmeans=True)
+        bp = ax.boxplot(
+            box_data,
+            positions=box_positions,
+            widths=0.6,
+            patch_artist=True,
+            showmeans=True,
+        )
 
         colors_box = ["#4ECDC4", "#FFD93D", "#FF6B6B"]
         for i, patch in enumerate(bp["boxes"]):
@@ -437,7 +521,9 @@ def genotype_phenotype_boxplot(
         return {"status": "failed", "error": str(e), "output_path": None}
 
 
-def _regularized_incomplete_beta(x: float, a: float, b: float, n_iter: int = 200) -> float:
+def _regularized_incomplete_beta(
+    x: float, a: float, b: float, n_iter: int = 200
+) -> float:
     """Compute the regularized incomplete beta function I_x(a, b).
 
     Uses a continued fraction expansion (Lentz's method) for numerical
@@ -531,15 +617,27 @@ def top_hits_genotype_phenotype(
     """
     if not HAS_MATPLOTLIB:
         logger.warning("matplotlib not available for top hits plots")
-        return {"status": "skipped", "output_path": None, "reason": "matplotlib not available"}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "reason": "matplotlib not available",
+        }
 
     if not HAS_NUMPY:
         logger.warning("numpy not available for top hits plots")
-        return {"status": "skipped", "output_path": None, "reason": "numpy not available"}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "reason": "numpy not available",
+        }
 
     try:
         if not assoc_results:
-            return {"status": "failed", "error": "No association results provided", "output_path": None}
+            return {
+                "status": "failed",
+                "error": "No association results provided",
+                "output_path": None,
+            }
 
         if len(assoc_results) != len(genotype_matrix):
             return {
@@ -621,11 +719,19 @@ def phenotype_pca_correlation(
     """
     if not HAS_MATPLOTLIB:
         logger.warning("matplotlib not available for phenotype PCA correlation plot")
-        return {"status": "skipped", "output_path": None, "reason": "matplotlib not available"}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "reason": "matplotlib not available",
+        }
 
     if not HAS_NUMPY:
         logger.warning("numpy not available for phenotype PCA correlation plot")
-        return {"status": "skipped", "output_path": None, "reason": "numpy not available"}
+        return {
+            "status": "skipped",
+            "output_path": None,
+            "reason": "numpy not available",
+        }
 
     try:
         pcs_arr = np.array(pcs, dtype=np.float64)
@@ -639,10 +745,18 @@ def phenotype_pca_correlation(
             }
 
         if pcs_arr.ndim != 2 or pcs_arr.shape[1] < 2:
-            return {"status": "failed", "error": "pcs must have at least 2 components per sample", "output_path": None}
+            return {
+                "status": "failed",
+                "error": "pcs must have at least 2 components per sample",
+                "output_path": None,
+            }
 
         if len(pheno_arr) < 2:
-            return {"status": "failed", "error": "At least 2 samples required", "output_path": None}
+            return {
+                "status": "failed",
+                "error": "At least 2 samples required",
+                "output_path": None,
+            }
 
         pc1 = pcs_arr[:, 0]
         pc2 = pcs_arr[:, 1]
@@ -655,7 +769,14 @@ def phenotype_pca_correlation(
 
         # Panel 1: Phenotype vs PC1
         sc1 = ax1.scatter(
-            pc1, pheno_arr, c=pheno_arr, cmap="viridis", alpha=0.7, s=40, edgecolors="gray", linewidths=0.3
+            pc1,
+            pheno_arr,
+            c=pheno_arr,
+            cmap="viridis",
+            alpha=0.7,
+            s=40,
+            edgecolors="gray",
+            linewidths=0.3,
         )
         ax1.set_xlabel("PC1", fontsize=12)
         ax1.set_ylabel(trait_name, fontsize=12)
@@ -665,7 +786,14 @@ def phenotype_pca_correlation(
 
         # Panel 2: Phenotype vs PC2
         sc2 = ax2.scatter(
-            pc2, pheno_arr, c=pheno_arr, cmap="viridis", alpha=0.7, s=40, edgecolors="gray", linewidths=0.3
+            pc2,
+            pheno_arr,
+            c=pheno_arr,
+            cmap="viridis",
+            alpha=0.7,
+            s=40,
+            edgecolors="gray",
+            linewidths=0.3,
         )
         ax2.set_xlabel("PC2", fontsize=12)
         ax2.set_ylabel(trait_name, fontsize=12)

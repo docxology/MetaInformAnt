@@ -38,7 +38,7 @@ class TestPlotStyleDefaults:
 
     def test_default_significance_color(self) -> None:
         style = PlotStyle()
-        assert style.significance_color == "red"
+        assert style.significance_color == "#d62728"
 
     def test_default_alpha_and_point_size(self) -> None:
         style = PlotStyle()
@@ -156,7 +156,7 @@ class TestStyleFromConfig:
         assert style.font_size == 14
         assert style.colormap == "plasma"
         # Defaults for unset fields
-        assert style.significance_color == "red"
+        assert style.significance_color == "#d62728"
 
     def test_empty_config_uses_defaults(self) -> None:
         style = style_from_config({})

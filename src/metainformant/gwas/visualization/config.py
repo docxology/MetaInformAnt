@@ -7,8 +7,7 @@ for applying consistent visual settings across all GWAS visualization outputs.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 from metainformant.core.utils import logging
 
@@ -45,8 +44,24 @@ class PlotStyle:
     font_size: int = 12
     title_size: int = 14
     colormap: str = "viridis"
-    categorical_colors: List[str] = field(default_factory=lambda: ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd", "#8c564b"])
-    volcano_colors: Dict[str, str] = field(default_factory=lambda: {"sig_large": "#d62728", "sig_small": "#ff7f0e", "nonsig_large": "#1f77b4", "nonsig_small": "#7f7f7f"})
+    categorical_colors: List[str] = field(
+        default_factory=lambda: [
+            "#1f77b4",
+            "#ff7f0e",
+            "#2ca02c",
+            "#d62728",
+            "#9467bd",
+            "#8c564b",
+        ]
+    )
+    volcano_colors: Dict[str, str] = field(
+        default_factory=lambda: {
+            "sig_large": "#d62728",
+            "sig_small": "#ff7f0e",
+            "nonsig_large": "#1f77b4",
+            "nonsig_small": "#7f7f7f",
+        }
+    )
     significance_color: str = "#d62728"
     suggestive_color: str = "#1f77b4"
     point_size: float = 8.0
@@ -95,7 +110,7 @@ def get_style(theme: str = "publication", **overrides: Any) -> PlotStyle:
     """
     if theme not in THEMES:
         logger.warning(
-            "Unknown theme '%s', falling back to 'publication'. " "Available themes: %s",
+            "Unknown theme '%s', falling back to 'publication'. Available themes: %s",
             theme,
             list(THEMES.keys()),
         )
@@ -103,7 +118,9 @@ def get_style(theme: str = "publication", **overrides: Any) -> PlotStyle:
 
     # Start from a copy of the theme's style
     base = THEMES[theme]
-    style_kwargs: Dict[str, Any] = {f.name: getattr(base, f.name) for f in base.__dataclass_fields__.values()}
+    style_kwargs: Dict[str, Any] = {
+        f.name: getattr(base, f.name) for f in base.__dataclass_fields__.values()
+    }
 
     # Apply caller overrides
     for key, value in overrides.items():
@@ -136,7 +153,9 @@ def apply_style(style: PlotStyle) -> None:
         mpl.rcParams["grid.alpha"] = style.grid_alpha
         logger.info("Applied PlotStyle (theme=%s) to matplotlib rcParams", style.theme)
     except ImportError:
-        logger.warning("matplotlib is not installed; cannot apply PlotStyle to rcParams")
+        logger.warning(
+            "matplotlib is not installed; cannot apply PlotStyle to rcParams"
+        )
 
 
 def style_from_config(config: Dict[str, Any]) -> PlotStyle:
@@ -162,9 +181,13 @@ def style_from_config(config: Dict[str, Any]) -> PlotStyle:
         font_size=viz_config.get("font_size", defaults.font_size),
         title_size=viz_config.get("title_size", defaults.title_size),
         colormap=viz_config.get("colormap", defaults.colormap),
-        categorical_colors=viz_config.get("categorical_colors", defaults.categorical_colors),
+        categorical_colors=viz_config.get(
+            "categorical_colors", defaults.categorical_colors
+        ),
         volcano_colors=viz_config.get("volcano_colors", defaults.volcano_colors),
-        significance_color=viz_config.get("significance_color", defaults.significance_color),
+        significance_color=viz_config.get(
+            "significance_color", defaults.significance_color
+        ),
         suggestive_color=viz_config.get("suggestive_color", defaults.suggestive_color),
         point_size=viz_config.get("point_size", defaults.point_size),
         alpha=viz_config.get("alpha", defaults.alpha),

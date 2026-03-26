@@ -9,6 +9,7 @@ queries at the time of writing). Uses NCBI E-utilities to:
 
 Works for any organism in the NCBI Gene database.
 """
+
 from __future__ import annotations
 
 import json
@@ -29,6 +30,7 @@ NCBI_TIMEOUT = 15  # seconds per request
 # ---------------------------------------------------------------------------
 # Low-level NCBI helpers
 # ---------------------------------------------------------------------------
+
 
 def _ncbi_get(url: str) -> dict | list | None:
     """HTTP GET with JSON response; returns None on failure."""
@@ -89,9 +91,7 @@ def lookup_genes_by_region_ncbi(
     # Build query: taxon + chromosome accession + position range
     # NCBI gene does not support WGS accession + position natively through
     # a simple term, so we query by accession and organism, then filter.
-    term = (
-        f"{taxon_id}[taxid] AND {chrom_accession}[accession]"
-    )
+    term = f"{taxon_id}[taxid] AND {chrom_accession}[accession]"
     search_url = (
         f"{NCBI_EUTILS_BASE}/esearch.fcgi"
         f"?db=gene&term={urllib.parse.quote(term)}&retmax=100&retmode=json"
@@ -108,8 +108,7 @@ def lookup_genes_by_region_ncbi(
     # Fetch summaries in one batch
     ids_joined = ",".join(gene_ids[:50])
     summary_url = (
-        f"{NCBI_EUTILS_BASE}/esummary.fcgi"
-        f"?db=gene&id={ids_joined}&retmode=json"
+        f"{NCBI_EUTILS_BASE}/esummary.fcgi?db=gene&id={ids_joined}&retmode=json"
     )
     summary = _ncbi_get(summary_url)
     if not summary:
@@ -135,24 +134,32 @@ def lookup_genes_by_region_ncbi(
             continue  # has location data but outside range
 
         chrinfo = loc_info[0] if loc_info else {}
-        gene_mid = (int(chrinfo.get("chrstart", 0)) + int(chrinfo.get("chrstop", 0))) / 2
+        gene_mid = (
+            int(chrinfo.get("chrstart", 0)) + int(chrinfo.get("chrstop", 0))
+        ) / 2
 
-        genes.append({
-            "gene_id": gid,
-            "gene_name": g.get("symbol", g.get("name", gid)),
-            "description": g.get("description", ""),
-            "chromosome": g.get("chromosome", ""),
-            "chr_start": int(chrinfo.get("chrstart", 0)),
-            "chr_end": int(chrinfo.get("chrstop", 0)),
-            "strand": chrinfo.get("exongapcount", 0),
-            "biotype": g.get("type", ""),
-            "distance_bp": 0,  # will be set by caller
-            "_gene_mid": gene_mid,
-        })
+        genes.append(
+            {
+                "gene_id": gid,
+                "gene_name": g.get("symbol", g.get("name", gid)),
+                "description": g.get("description", ""),
+                "chromosome": g.get("chromosome", ""),
+                "chr_start": int(chrinfo.get("chrstart", 0)),
+                "chr_end": int(chrinfo.get("chrstop", 0)),
+                "strand": chrinfo.get("exongapcount", 0),
+                "biotype": g.get("type", ""),
+                "distance_bp": 0,  # will be set by caller
+                "_gene_mid": gene_mid,
+            }
+        )
 
     logger.debug(
         "NCBI gene region %s:%d-%d → %d genes (taxon %d)",
-        chrom_accession, start, end, len(genes), taxon_id,
+        chrom_accession,
+        start,
+        end,
+        len(genes),
+        taxon_id,
     )
     return genes
 
@@ -160,6 +167,7 @@ def lookup_genes_by_region_ncbi(
 # ---------------------------------------------------------------------------
 # Top-level annotation function
 # ---------------------------------------------------------------------------
+
 
 def annotate_top_hits_ncbi(
     association_results: list[dict[str, Any]],
@@ -197,9 +205,9 @@ def annotate_top_hits_ncbi(
         >>> isinstance(annotations, list)
         True
     """
-    sorted_results = sorted(
-        association_results, key=lambda r: r.get("p_value", 1.0)
-    )[:top_n]
+    sorted_results = sorted(association_results, key=lambda r: r.get("p_value", 1.0))[
+        :top_n
+    ]
 
     annotated: list[dict[str, Any]] = []
     n_genes_total = 0
@@ -227,23 +235,27 @@ def annotate_top_hits_ncbi(
         genes.sort(key=lambda g: g["distance_bp"])
         n_genes_total += len(genes)
 
-        annotated.append({
-            "snp": snp,
-            "chrom": chrom,
-            "pos": pos,
-            "p_value": r.get("p_value"),
-            "beta": r.get("beta"),
-            "se": r.get("se"),
-            "nearby_genes": genes,
-            "nearest_gene": genes[0]["gene_name"] if genes else None,
-            "nearest_gene_dist_bp": genes[0]["distance_bp"] if genes else None,
-        })
+        annotated.append(
+            {
+                "snp": snp,
+                "chrom": chrom,
+                "pos": pos,
+                "p_value": r.get("p_value"),
+                "beta": r.get("beta"),
+                "se": r.get("se"),
+                "nearby_genes": genes,
+                "nearest_gene": genes[0]["gene_name"] if genes else None,
+                "nearest_gene_dist_bp": genes[0]["distance_bp"] if genes else None,
+            }
+        )
 
         time.sleep(rate_limit_s)
 
     logger.info(
         "NCBI annotation: %d hits queried, %d genes found total (taxon %d)",
-        len(annotated), n_genes_total, taxon_id,
+        len(annotated),
+        n_genes_total,
+        taxon_id,
     )
     return annotated
 
@@ -251,6 +263,7 @@ def annotate_top_hits_ncbi(
 # ---------------------------------------------------------------------------
 # Backwards-compatible wrapper kept for existing callers of Ensembl function
 # ---------------------------------------------------------------------------
+
 
 def annotate_top_hits_ensembl(
     association_results: list[dict[str, Any]],
@@ -287,7 +300,8 @@ def annotate_top_hits_ensembl(
     taxon_id = _TAXON_MAP.get(species, 7460)
     logger.info(
         "annotate_top_hits_ensembl: delegating to NCBI (taxon=%d, species=%s)",
-        taxon_id, species,
+        taxon_id,
+        species,
     )
     return annotate_top_hits_ncbi(
         association_results,

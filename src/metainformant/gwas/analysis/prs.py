@@ -13,12 +13,12 @@ References:
   - Choi et al. (2020) Nat Protoc — PRS tutorial and best practices
   - Dudbridge (2013) PloS Genet — statistical theory of C+T
 """
+
 from __future__ import annotations
 
 import math
-import statistics as _stats
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 from metainformant.core.utils import logging
 
@@ -26,15 +26,18 @@ logger = logging.get_logger(__name__)
 
 try:
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    import matplotlib.colors as mcolors
+    import matplotlib.colors as mcolors  # noqa: F401
+
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
 
 try:
-    import numpy as np
+    import numpy as np  # noqa: F401
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
@@ -71,7 +74,8 @@ def clump_variants(
 
     # Pre-filter by p-value threshold
     eligible = [
-        i for i, r in enumerate(association_results)
+        i
+        for i, r in enumerate(association_results)
         if r.get("p_value", 1.0) < p_threshold
     ]
     if not eligible:
@@ -91,12 +95,19 @@ def clump_variants(
         # Prune all variants in LD with this one
         if idx < n_ld:
             for j in eligible_sorted:
-                if j != idx and j not in pruned and j < n_ld and idx < len(ld_matrix[j]):
+                if (
+                    j != idx
+                    and j not in pruned
+                    and j < n_ld
+                    and idx < len(ld_matrix[j])
+                ):
                     if ld_matrix[idx][j] > r2_threshold:
                         pruned.add(j)
 
-    logger.info(f"Clumping (r²<{r2_threshold}): {len(representatives)}/{len(eligible)} "
-                f"representative variants selected from {n} total")
+    logger.info(
+        f"Clumping (r²<{r2_threshold}): {len(representatives)}/{len(eligible)} "
+        f"representative variants selected from {n} total"
+    )
     return representatives
 
 
@@ -166,7 +177,7 @@ def prs_r2(prs: List[float], phenotypes: List[float]) -> float:
     if den_prs < 1e-10 or den_y < 1e-10:
         return 0.0
     r = num / (den_prs * den_y)
-    return min(1.0, r ** 2)
+    return min(1.0, r**2)
 
 
 def prs_full_analysis(
@@ -202,23 +213,31 @@ def prs_full_analysis(
 
     for p_thresh in p_thresholds:
         clumped_idx = clump_variants(
-            association_results, ld_matrix,
-            r2_threshold=r2_clump, p_threshold=p_thresh,
+            association_results,
+            ld_matrix,
+            r2_threshold=r2_clump,
+            p_threshold=p_thresh,
         )
         prs_scores = compute_prs(genotype_matrix, betas, clumped_idx, n_samples)
         r2 = prs_r2(prs_scores, phenotypes)
-        threshold_results.append({
-            "p_threshold": p_thresh,
-            "n_variants": len(clumped_idx),
-            "r2_phenotype": round(r2, 6),
-            "prs_scores": prs_scores,
-        })
-        logger.info(f"  PRS (p<{p_thresh:.0e}, n={len(clumped_idx)} variants): R²={r2:.4f}")
+        threshold_results.append(
+            {
+                "p_threshold": p_thresh,
+                "n_variants": len(clumped_idx),
+                "r2_phenotype": round(r2, 6),
+                "prs_scores": prs_scores,
+            }
+        )
+        logger.info(
+            f"  PRS (p<{p_thresh:.0e}, n={len(clumped_idx)} variants): R²={r2:.4f}"
+        )
 
     # Best threshold
     best = max(threshold_results, key=lambda x: x["r2_phenotype"])
-    logger.info(f"Best PRS: p<{best['p_threshold']:.0e} → R²={best['r2_phenotype']:.4f} "
-                f"({best['n_variants']} variants)")
+    logger.info(
+        f"Best PRS: p<{best['p_threshold']:.0e} → R²={best['r2_phenotype']:.4f} "
+        f"({best['n_variants']} variants)"
+    )
 
     return {
         "thresholds": threshold_results,
@@ -252,8 +271,9 @@ def prs_distribution_plot(
 
     thresholds = prs_result.get("thresholds", [])
     best_thresh = prs_result.get("best_threshold")
-    best_prs = next((t["prs_scores"] for t in thresholds
-                     if t["p_threshold"] == best_thresh), [])
+    best_prs = next(
+        (t["prs_scores"] for t in thresholds if t["p_threshold"] == best_thresh), []
+    )
 
     if not thresholds:
         return None
@@ -262,18 +282,25 @@ def prs_distribution_plot(
     fig.suptitle(
         f"Polygenic Risk Score — C+T Analysis\nBest R²={prs_result.get('best_r2', 0):.4f} "
         f"(p<{best_thresh:.0e}, n={prs_result.get('best_n_variants', 0)} variants)",
-        fontsize=12, fontweight="bold",
+        fontsize=12,
+        fontweight="bold",
     )
 
     # Left: R² profile across p thresholds
     p_labels = [f"{t['p_threshold']:.0e}" for t in thresholds]
     r2_vals = [t["r2_phenotype"] for t in thresholds]
     n_var_vals = [t["n_variants"] for t in thresholds]
-    colors = ["#C44E52" if t["p_threshold"] == best_thresh else "#4C72B0" for t in thresholds]
+    colors = [
+        "#C44E52" if t["p_threshold"] == best_thresh else "#4C72B0" for t in thresholds
+    ]
 
-    bars = ax1.bar(p_labels, r2_vals, color=colors, edgecolor="white", linewidth=0.5, alpha=0.9)
+    bars = ax1.bar(
+        p_labels, r2_vals, color=colors, edgecolor="white", linewidth=0.5, alpha=0.9
+    )
     ax1_twin = ax1.twinx()
-    ax1_twin.plot(p_labels, n_var_vals, "ko--", markersize=5, label="N variants", zorder=5)
+    ax1_twin.plot(
+        p_labels, n_var_vals, "ko--", markersize=5, label="N variants", zorder=5
+    )
     ax1_twin.set_ylabel("# variants selected", fontsize=9, color="#333")
     ax1_twin.tick_params(axis="y", labelcolor="#333", labelsize=8)
     ax1.set_xlabel("P-value threshold", fontsize=11)
@@ -281,8 +308,14 @@ def prs_distribution_plot(
     ax1.set_title("PRS Performance vs Threshold", fontsize=10)
 
     for bar, r2 in zip(bars, r2_vals):
-        ax1.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.0005,
-                 f"{r2:.4f}", ha="center", va="bottom", fontsize=7)
+        ax1.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + 0.0005,
+            f"{r2:.4f}",
+            ha="center",
+            va="bottom",
+            fontsize=7,
+        )
 
     # Right: PRS distribution by phenotype tertile (best threshold)
     if best_prs and phenotypes:
@@ -310,7 +343,14 @@ def prs_distribution_plot(
             (prs_high, "High phenotype (T3)", "#C44E52"),
         ]:
             if vals:
-                ax2.hist(vals, bins=bin_edges, alpha=0.55, label=label, color=color, edgecolor="white")
+                ax2.hist(
+                    vals,
+                    bins=bin_edges,
+                    alpha=0.55,
+                    label=label,
+                    color=color,
+                    edgecolor="white",
+                )
 
         ax2.set_xlabel("Polygenic Risk Score", fontsize=11)
         ax2.set_ylabel("Count", fontsize=11)

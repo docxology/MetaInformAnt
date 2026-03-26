@@ -18,16 +18,29 @@ from metainformant.core.utils.errors import ValidationError
 def validate_type(value: Any, expected_type: type | tuple[type, ...], name: str = "value") -> None:
     """Validate that a value is of expected type.
 
+    This is a foundational validation function used throughout METAINFORMANT
+    for config validation, API parameter checking, and data integrity verification.
+
     Args:
-        value: Value to validate
-        expected_type: Expected type or tuple of types
-        name: Name of value for error message
+        value: Value to validate - can be any Python object
+        expected_type: Expected type or tuple of types. Supports:
+            - Single types: `int`, `str`, `Path`
+            - Type tuples: `(int, float)` for numeric types
+            - Generic types via typing module
+        name: Name of value for error message - used in ValidationError
+            to provide context about which parameter failed
 
     Raises:
-        ValidationError: If value is not of expected type
+        ValidationError: If value is not of expected type. Message format:
+            "{name} must be of type {type_names}, got {actual_type}"
 
     Example:
-        validate_type(42, int, "age")
+        >>> validate_type(42, int, "age")  # Passes silently
+        >>> # validate_type("42", int, "age")  # Would raise ValidationError
+
+        >>> # Multiple types - float is allowed when int is expected
+        >>> validate_type(3.14, (int, float), "threshold")  # Passes
+        >>> # validate_type(True, (int, float), "threshold")  # Would raise ValidationError
     """
     if not isinstance(value, expected_type):
         if isinstance(expected_type, tuple):

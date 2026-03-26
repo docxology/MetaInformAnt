@@ -62,6 +62,25 @@ config = AntWikiScraperConfig(delay_seconds=2.0, max_retries=3)
 record = AntWikiRecord({"species_name": "Pogonomyrmex barbatus", "genus": "Pogonomyrmex"})
 ```
 
+### Statistical Analysis
+
+```python
+import pandas as pd
+from metainformant.phenotype.analysis.statistical import perform_anova, calculate_summary_stats
+
+df = pd.read_csv("phenotypes.csv")
+anova_result = perform_anova(df, value_col="queen_score", group_col="population")
+stats_summary = calculate_summary_stats(df, "queen_score", "population")
+```
+
+| Function | Description |
+|----------|-------------|
+| `calculate_summary_stats` | Descriptive statistics by group |
+| `perform_anova` | Parametric variance testing |
+| `perform_kruskal` | Non-parametric variance testing |
+| `perform_ttest` | Pairwise independent contrast testing |
+| `correlate_phenotypes` | Pearson/Spearman trait correlation matrix |
+
 ### Visualization
 
 | Function | Description |
@@ -69,8 +88,10 @@ record = AntWikiRecord({"species_name": "Pogonomyrmex barbatus", "genus": "Pogon
 | `plot_trait_distribution` | Histograms and density plots for traits |
 | `plot_trait_correlation_matrix` | Correlation heatmaps across traits |
 | `plot_life_course_trajectory` | Timeline plots for event sequences |
-| `plot_morphological_measurements` | Morphometric comparison charts |
-| `plot_phenotype_pca` | PCA scatter of phenotypic space |
+| `plot_boxplot_with_swarm` | Boxplot overlaid with swarm dots for dense distributions |
+| `plot_violin` | Violin density estimation by categorical groups |
+| `plot_categorical_proportions` | Stacked percentage bars of categorical distributions |
+| `plot_correlation_heatmap` | Standardized heatmap for phenotype correlations |
 
 ## Submodules
 

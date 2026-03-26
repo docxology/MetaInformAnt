@@ -18,7 +18,7 @@ try:
     import matplotlib
 
     matplotlib.use("Agg")
-    import matplotlib.patches as mpatches
+    import matplotlib.patches as mpatches  # noqa: F401
     import matplotlib.pyplot as plt
 
     HAS_MATPLOTLIB = True
@@ -116,7 +116,9 @@ def sample_map(
                 n_skipped += 1
 
         if n_skipped > 0:
-            logger.warning(f"Skipped {n_skipped} samples with missing or invalid coordinates")
+            logger.warning(
+                f"Skipped {n_skipped} samples with missing or invalid coordinates"
+            )
 
         if not plotable:
             logger.error("No samples with valid coordinates to plot")

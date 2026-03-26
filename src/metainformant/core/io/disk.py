@@ -20,8 +20,12 @@ logger = get_logger(__name__)
 def get_disk_usage(path: str | Path) -> Tuple[float, float, float, str]:
     """Get disk usage statistics for a path.
 
+    This function is essential for monitoring disk space in bioinformatics workflows,
+    particularly when processing large datasets (VCF files, FASTQ files, BAM files).
+
     Args:
-        path: Path to check disk usage for
+        path: Path to check disk usage for. Can be a file or directory; if file,
+            uses the parent filesystem. Non-existent paths fall back to parent.
 
     Returns:
         Tuple of (total, used, free, percent_string):
@@ -29,6 +33,15 @@ def get_disk_usage(path: str | Path) -> Tuple[float, float, float, str]:
         - used: Used disk space in bytes
         - free: Free disk space in bytes
         - percent: Percentage used string (e.g. "45.2%")
+
+    Example:
+        >>> from metainformant.core.io.disk import get_disk_usage
+        >>> total, used, free, pct = get_disk_usage("/data")
+        >>> print(f"Disk usage: {pct} used, {free / (1024**3):.1f} GB free")
+        Disk usage: 45.2% used, 234.5 GB free
+
+    Note:
+        Uses os.statvfs() which is POSIX-compliant. On Windows, behavior may vary.
     """
     path = Path(path)
     # Handle non-existent paths by checking parent
@@ -61,11 +74,20 @@ def get_disk_usage(path: str | Path) -> Tuple[float, float, float, str]:
 def get_free_space(path: str | Path) -> int:
     """Get available disk space in bytes.
 
+    A convenience wrapper around get_disk_usage() for cases where only
+    free space information is needed.
+
     Args:
-        path: Path to check
+        path: Path to check. Can be any path on the target filesystem.
 
     Returns:
-        Free space in bytes
+        Free space in bytes. Returns 0 if the path cannot be accessed.
+
+    Example:
+        >>> from metainformant.core.io.disk import get_free_space
+        >>> free_bytes = get_free_space("/home/user/data")
+        >>> print(f"Free: {free_bytes / (1024**3):.2f} GB")
+        Free: 234.56 GB
     """
     _, _, free, _ = get_disk_usage(path)
     return int(free)
@@ -340,16 +362,33 @@ def monitor_disk_space(
 ) -> Dict[str, Any]:
     """Monitor disk space and return status.
 
+    Provides a high-level status check for disk space monitoring in
+    long-running pipelines. Can be used in a monitoring loop or
+    as a pre-flight check before starting large operations.
+
     Args:
-        path: Path to monitor
-        warning_threshold: Usage threshold for warning (0-1)
-        critical_threshold: Usage threshold for critical (0-1)
+        path: Path to monitor. Typically the data or output directory.
+        warning_threshold: Usage threshold for warning (0-1). Default 0.80 (80%).
+        critical_threshold: Usage threshold for critical (0-1). Default 0.95 (95%).
 
     Returns:
         Dictionary with monitoring results:
-        - status: 'ok', 'warning', or 'critical'
-        - usage: Disk usage statistics
-        - message: Status message
+        - status: 'ok', 'warning', 'critical', or 'error'
+        - usage: Disk usage statistics (total, used, free, percent, path)
+        - message: Human-readable status message
+
+    Example:
+        >>> from metainformant.core.io.disk import monitor_disk_space
+        >>> result = monitor_disk_space("/data", warning_threshold=0.75)
+        >>> print(f"Status: {result['status']}")
+        >>> if result['status'] != 'ok':
+        ...     print(f"Warning: {result['message']}")
+
+    Use Case:
+        # Pre-flight check before GWAS pipeline
+        >>> result = monitor_disk_space("/data")
+        >>> if result['status'] == 'critical':
+        ...     raise RuntimeError(f"Disk critical: {result['message']}")
     """
     try:
         total, used, free, percent_str = get_disk_usage(path)

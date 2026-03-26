@@ -21,7 +21,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 from metainformant.core.utils import logging
 
@@ -73,9 +73,11 @@ class ComputeTimeEstimate:
             "Per-step estimates:",
         ]
         for step, secs in sorted(self.per_step.items()):
-            hrs = secs / 3600
+            secs / 3600
             factor = self.scaling_factors.get(step, 1.0)
-            lines.append(f"  {step:30s}  {_format_duration(secs):>12s}  (×{factor:.1f})")
+            lines.append(
+                f"  {step:30s}  {_format_duration(secs):>12s}  (×{factor:.1f})"
+            )
         return "\n".join(lines)
 
 
@@ -87,21 +89,21 @@ class ComputeTimeEstimate:
 # where n = samples, m = variants.
 
 SCALING_MODELS: Dict[str, str] = {
-    "parse_vcf":              "n_m",       # O(n·m)
-    "qc_filters":             "n_m",       # O(n·m)
-    "maf_filter":             "n_m",       # O(n·m)
-    "hwe_test":               "n_m",       # O(n·m)
-    "ld_pruning":             "m",         # O(w²·m) — window fixed, linear in m
-    "population_structure":   "n2_k2",     # O(n²·m) dominated by kinship
-    "pca":                    "m_k2",      # O(m·k²)
-    "kinship":                "n2_m",      # O(n²·m)
-    "association_testing":    "n_m",       # O(n·m)
-    "multiple_testing":       "m",         # O(m)
-    "fine_mapping":           "k3",        # O(k³) per region
-    "heritability":           "m",         # O(m) for LDSC
-    "visualization":          "m",         # O(m) for Manhattan/QQ
-    "summary_stats":          "m",         # O(m)
-    "annotation":             "m",         # O(m)
+    "parse_vcf": "n_m",  # O(n·m)
+    "qc_filters": "n_m",  # O(n·m)
+    "maf_filter": "n_m",  # O(n·m)
+    "hwe_test": "n_m",  # O(n·m)
+    "ld_pruning": "m",  # O(w²·m) — window fixed, linear in m
+    "population_structure": "n2_k2",  # O(n²·m) dominated by kinship
+    "pca": "m_k2",  # O(m·k²)
+    "kinship": "n2_m",  # O(n²·m)
+    "association_testing": "n_m",  # O(n·m)
+    "multiple_testing": "m",  # O(m)
+    "fine_mapping": "k3",  # O(k³) per region
+    "heritability": "m",  # O(m) for LDSC
+    "visualization": "m",  # O(m) for Manhattan/QQ
+    "summary_stats": "m",  # O(m)
+    "annotation": "m",  # O(m)
 }
 
 
@@ -141,7 +143,7 @@ def scaling_model(
 
     elif model == "n2_m":
         # O(n² · m)
-        return (target_n ** 2 * target_m) / (pilot_n ** 2 * pilot_m)
+        return (target_n**2 * target_m) / (pilot_n**2 * pilot_m)
 
     elif model == "m":
         # O(m)
@@ -149,11 +151,11 @@ def scaling_model(
 
     elif model == "m_k2":
         # O(m · k²)
-        return (target_m * k_target ** 2) / (pilot_m * k_pilot ** 2)
+        return (target_m * k_target**2) / (pilot_m * k_pilot**2)
 
     elif model == "n2_k2":
         # O(n² · m) dominated term
-        return (target_n ** 2 * target_m) / (pilot_n ** 2 * pilot_m)
+        return (target_n**2 * target_m) / (pilot_n**2 * pilot_m)
 
     elif model == "k3":
         # O(k³) — region-level, approximate with variant ratio
@@ -206,8 +208,12 @@ def benchmark_subset_run(
     actual_n_samples = len(vcf_data.get("samples", []))
     actual_n_variants = len(vcf_data.get("variants", []))
 
-    n_samples_used = min(max_samples, actual_n_samples) if max_samples else actual_n_samples
-    n_variants_used = min(max_variants, actual_n_variants) if max_variants else actual_n_variants
+    n_samples_used = (
+        min(max_samples, actual_n_samples) if max_samples else actual_n_samples
+    )
+    n_variants_used = (
+        min(max_variants, actual_n_variants) if max_variants else actual_n_variants
+    )
 
     logger.info(
         f"Benchmarking subset: {n_samples_used}/{actual_n_samples} samples, "
@@ -237,31 +243,38 @@ def benchmark_subset_run(
 
     if step_timings_raw:
         for step_name, elapsed in step_timings_raw.items():
-            timings.append(StepTiming(
-                step_name=step_name,
-                elapsed_seconds=elapsed,
-                n_samples=n_samples_used,
-                n_variants=n_variants_used,
-            ))
+            timings.append(
+                StepTiming(
+                    step_name=step_name,
+                    elapsed_seconds=elapsed,
+                    n_samples=n_samples_used,
+                    n_variants=n_variants_used,
+                )
+            )
     else:
         # Fallback: report total time split proportionally by known complexity ratios
         proportions = _estimate_step_proportions(steps_completed)
         for step_name, proportion in proportions.items():
-            timings.append(StepTiming(
-                step_name=step_name,
-                elapsed_seconds=total_time * proportion,
-                n_samples=n_samples_used,
-                n_variants=n_variants_used,
-            ))
+            timings.append(
+                StepTiming(
+                    step_name=step_name,
+                    elapsed_seconds=total_time * proportion,
+                    n_samples=n_samples_used,
+                    n_variants=n_variants_used,
+                )
+            )
 
     # Add the VCF parse timing we measured directly
     if not any(t.step_name == "parse_vcf" for t in timings):
-        timings.insert(0, StepTiming(
-            step_name="parse_vcf",
-            elapsed_seconds=parse_time,
-            n_samples=n_samples_used,
-            n_variants=n_variants_used,
-        ))
+        timings.insert(
+            0,
+            StepTiming(
+                step_name="parse_vcf",
+                elapsed_seconds=parse_time,
+                n_samples=n_samples_used,
+                n_variants=n_variants_used,
+            ),
+        )
 
     logger.info(
         f"Benchmark complete: {len(timings)} steps timed, total {total_time:.2f}s"

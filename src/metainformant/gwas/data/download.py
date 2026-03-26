@@ -6,14 +6,12 @@ and SRA sequencing data for GWAS analysis.
 
 from __future__ import annotations
 
-import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import requests
 
 from metainformant.core.utils import logging
-from metainformant.core import io
 
 logger = logging.get_logger(__name__)
 
@@ -97,8 +95,11 @@ def _download_from_ncbi_datasets(accession: str, output_dir: Path) -> Path:
     # Validate that we actually got a FASTA file
     if not glob.glob(str(extract_dir / "**" / "*.fna*"), recursive=True):
         import shutil
+
         shutil.rmtree(extract_dir)
-        raise RuntimeError(f"NCBI Datasets API returned a zip without any .fna files for {accession}")
+        raise RuntimeError(
+            f"NCBI Datasets API returned a zip without any .fna files for {accession}"
+        )
 
     return extract_dir
 
@@ -141,14 +142,22 @@ def _download_from_ftp(accession: str, output_dir: Path) -> Path:
         dirs = ftp.nlst()
         target_dir = next((d for d in dirs if d.startswith(accession)), None)
         if not target_dir:
-            raise RuntimeError(f"No directory found for {accession} on NCBI FTP at {ftp_dir}")
+            raise RuntimeError(
+                f"No directory found for {accession} on NCBI FTP at {ftp_dir}"
+            )
 
         ftp.cwd(target_dir)
         files = ftp.nlst()
 
         # Download genomic FASTA and GFF3 annotation
         for suffix in ("_genomic.fna.gz", "_genomic.gff.gz"):
-            matching = [f for f in files if f.endswith(suffix) and "_from_genomic" not in f and "_rna_from" not in f]
+            matching = [
+                f
+                for f in files
+                if f.endswith(suffix)
+                and "_from_genomic" not in f
+                and "_rna_from" not in f
+            ]
             if matching:
                 filename = matching[0]
                 local_path = genome_dir / filename
@@ -240,11 +249,10 @@ def _download_dbsnp(output_dir: Path, chromosome: str | None = None) -> Path:
 
         if chromosome:
             # Download specific chromosome
-            chrom_pattern = f"GCF_000001405.40_chr{chromosome}.vcf.gz"
             vcf_files = [f for f in vcf_files if chromosome in f]
 
         if not vcf_files:
-            logger.warning(f"No dbSNP VCF files found matching criteria")
+            logger.warning("No dbSNP VCF files found matching criteria")
             ftp.quit()
             return db_dir
 
@@ -268,7 +276,9 @@ def _download_dbsnp(output_dir: Path, chromosome: str | None = None) -> Path:
         raise RuntimeError(f"dbSNP download failed: {e}")
 
 
-def _download_1000genomes(output_dir: Path, chromosome: str | None = None, population: str | None = None) -> Path:
+def _download_1000genomes(
+    output_dir: Path, chromosome: str | None = None, population: str | None = None
+) -> Path:
     """Download 1000 Genomes Project VCF data.
 
     Args:
@@ -305,10 +315,14 @@ def _download_1000genomes(output_dir: Path, chromosome: str | None = None, popul
 
         if chromosome:
             # Download specific chromosome
-            vcf_files = [f for f in vcf_files if f"chr{chromosome}." in f or f".{chromosome}." in f]
+            vcf_files = [
+                f
+                for f in vcf_files
+                if f"chr{chromosome}." in f or f".{chromosome}." in f
+            ]
 
         if not vcf_files:
-            logger.warning(f"No 1000 Genomes VCF files found matching criteria")
+            logger.warning("No 1000 Genomes VCF files found matching criteria")
             # Download the panel file instead for population info
             panel_file = "integrated_call_samples_v3.20130502.ALL.panel"
             if panel_file in files:
@@ -340,7 +354,9 @@ def _download_1000genomes(output_dir: Path, chromosome: str | None = None, popul
         raise RuntimeError(f"1000 Genomes download failed: {e}")
 
 
-def download_sra_run(sra_accession: str, output_dir: str | Path, threads: int = 1) -> Path:
+def download_sra_run(
+    sra_accession: str, output_dir: str | Path, threads: int = 1
+) -> Path:
     """Download SRA run data.
 
     Args:
@@ -387,28 +403,33 @@ def _download_sra_from_ena(accession: str, output_dir: Path, threads: int) -> Pa
     # ENA URL pattern (FTP). We keep the original behavior but add heartbeat + retry.
     # Query ENA API for exact FTP links to avoid guessing and 550 errors
     import requests
+
     api_url = f"https://www.ebi.ac.uk/ena/portal/api/filereport?accession={accession}&result=read_run&fields=fastq_ftp&format=json"
-    
+
     try:
         resp = requests.get(api_url, timeout=15)
         resp.raise_for_status()
         metadata = resp.json()
         if not metadata or "fastq_ftp" not in metadata[0]:
             raise ValueError(f"No fastq_ftp fields returned for {accession}")
-            
+
         ftp_links_raw = metadata[0]["fastq_ftp"]
         # Can be multiple links separated by semicolon (e.g. for paired end)
         patterns = [f"http://{link}" for link in ftp_links_raw.split(";") if link]
-        
+
     except Exception as e:
-        logger.warning(f"Failed to fetch ENA API for {accession}: {e}. Falling back to default patterns.")
+        logger.warning(
+            f"Failed to fetch ENA API for {accession}: {e}. Falling back to default patterns."
+        )
         ena_url = f"http://ftp.sra.ebi.ac.uk/vol1/fastq/{accession[:6]}"
         if len(accession) > 9:
             # Simple fallback for 10 or 11 chars
-            if len(accession) == 10: ena_url += f"/00{accession[-1]}"
-            elif len(accession) == 11: ena_url += f"/0{accession[-2:]}"
+            if len(accession) == 10:
+                ena_url += f"/00{accession[-1]}"  # noqa: E701
+            elif len(accession) == 11:
+                ena_url += f"/0{accession[-2:]}"  # noqa: E701
         ena_url += f"/{accession}"
-        
+
         patterns = [
             f"{ena_url}/{accession}.fastq.gz",
             f"{ena_url}/{accession}_1.fastq.gz",
@@ -439,7 +460,9 @@ def _download_sra_from_ena(accession: str, output_dir: Path, threads: int) -> Pa
             last_error = result.error
 
     if not downloaded_files:
-        raise RuntimeError(f"No files downloaded from ENA for {accession}: {last_error or 'unknown error'}")
+        raise RuntimeError(
+            f"No files downloaded from ENA for {accession}: {last_error or 'unknown error'}"
+        )
 
     return output_dir
 
@@ -471,7 +494,9 @@ def _download_sra_with_toolkit(accession: str, output_dir: Path, threads: int) -
     return output_dir
 
 
-def download_sra_project(project_id: str, output_dir: str | Path, threads: int = 1) -> List[Path]:
+def download_sra_project(
+    project_id: str, output_dir: str | Path, threads: int = 1
+) -> List[Path]:
     """Download all runs from an SRA project.
 
     Args:
@@ -519,10 +544,17 @@ def _get_project_runs(project_id: str) -> List[str]:
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 
     # Search for runs in this project
-    search_params = {"db": "sra", "term": f"{project_id}[BioProject]", "retmax": 1000, "retmode": "json"}
+    search_params = {
+        "db": "sra",
+        "term": f"{project_id}[BioProject]",
+        "retmax": 1000,
+        "retmode": "json",
+    }
 
     try:
-        response = requests.get(f"{base_url}/esearch.fcgi", params=search_params, timeout=30)
+        response = requests.get(
+            f"{base_url}/esearch.fcgi", params=search_params, timeout=30
+        )
         response.raise_for_status()
 
         data = response.json()
@@ -534,16 +566,22 @@ def _get_project_runs(project_id: str) -> List[str]:
 
         # Get run accessions from summaries
         if id_list:
-            summary_params = {"db": "sra", "id": ",".join(id_list[:100]), "retmode": "json"}  # Limit for performance
+            summary_params = {
+                "db": "sra",
+                "id": ",".join(id_list[:100]),
+                "retmode": "json",
+            }  # Limit for performance
 
-            summary_response = requests.get(f"{base_url}/esummary.fcgi", params=summary_params, timeout=30)
+            summary_response = requests.get(
+                f"{base_url}/esummary.fcgi", params=summary_params, timeout=30
+            )
             summary_response.raise_for_status()
 
             summary_data = summary_response.json()
 
             # Import re at the module level or locally
             import re
-            
+
             run_accessions = []
             if "result" in summary_data:
                 for uid in id_list[:100]:
@@ -551,7 +589,7 @@ def _get_project_runs(project_id: str) -> List[str]:
                         record = summary_data["result"][uid]
                         if not isinstance(record, dict):
                             continue
-                        
+
                         runs_data = record.get("runs", "")
                         if isinstance(runs_data, str) and runs_data.strip():
                             # EUtils returns an XML string inside the JSON for SRA runs
@@ -580,7 +618,9 @@ def _get_project_runs(project_id: str) -> List[str]:
     return []
 
 
-def search_sra_for_organism(organism: str, max_results: int = 100) -> List[Dict[str, Any]]:
+def search_sra_for_organism(
+    organism: str, max_results: int = 100
+) -> List[Dict[str, Any]]:
     """Search SRA for sequencing data from a specific organism.
 
     Args:
@@ -600,10 +640,17 @@ def search_sra_for_organism(organism: str, max_results: int = 100) -> List[Dict[
 
     query = f'"{organism}"[Organism] AND "RNA-seq"[Strategy]'
 
-    search_params = {"db": "sra", "term": query, "retmax": min(max_results, 1000), "retmode": "json"}
+    search_params = {
+        "db": "sra",
+        "term": query,
+        "retmax": min(max_results, 1000),
+        "retmode": "json",
+    }
 
     try:
-        response = requests.get(f"{base_url}/esearch.fcgi", params=search_params, timeout=30)
+        response = requests.get(
+            f"{base_url}/esearch.fcgi", params=search_params, timeout=30
+        )
         response.raise_for_status()
 
         search_data = response.json()
@@ -617,9 +664,15 @@ def search_sra_for_organism(organism: str, max_results: int = 100) -> List[Dict[
             return []
 
         # Get summaries
-        summary_params = {"db": "sra", "id": ",".join(id_list[:max_results]), "retmode": "json"}
+        summary_params = {
+            "db": "sra",
+            "id": ",".join(id_list[:max_results]),
+            "retmode": "json",
+        }
 
-        summary_response = requests.get(f"{base_url}/esummary.fcgi", params=summary_params, timeout=30)
+        summary_response = requests.get(
+            f"{base_url}/esummary.fcgi", params=summary_params, timeout=30
+        )
         summary_response.raise_for_status()
 
         summary_data = summary_response.json()
@@ -634,10 +687,14 @@ def search_sra_for_organism(organism: str, max_results: int = 100) -> List[Dict[
                         "accession": record.get("runs", {}).get("run", {}).get("@acc"),
                         "experiment": record.get("expxml", {}).get("summary"),
                         "platform": record.get("expxml", {}).get("platform"),
-                        "library_strategy": record.get("expxml", {}).get("library_strategy"),
+                        "library_strategy": record.get("expxml", {}).get(
+                            "library_strategy"
+                        ),
                         "spots": record.get("runs", {}).get("run", {}).get("@spots"),
                         "bases": record.get("runs", {}).get("run", {}).get("@bases"),
-                        "size_mb": record.get("runs", {}).get("run", {}).get("@size_MB"),
+                        "size_mb": record.get("runs", {})
+                        .get("run", {})
+                        .get("@size_MB"),
                         "taxon_id": record.get("taxon", {}).get("@taxid"),
                         "organism": record.get("taxon", {}).get("@scientificname"),
                     }
@@ -689,7 +746,9 @@ def download_annotation(accession: str, output_dir: str | Path) -> Path:
         return extract_dir
 
     except Exception as e:
-        logger.warning(f"NCBI Datasets annotation download failed: {e}, trying FTP fallback")
+        logger.warning(
+            f"NCBI Datasets annotation download failed: {e}, trying FTP fallback"
+        )
 
         # FTP fallback: download GFF3 annotation directly
         try:
@@ -709,12 +768,18 @@ def download_annotation(accession: str, output_dir: str | Path) -> Path:
                 dirs = ftp.nlst()
                 target_dir = next((d for d in dirs if d.startswith(accession)), None)
                 if not target_dir:
-                    raise RuntimeError(f"No directory found for {accession} on NCBI FTP")
+                    raise RuntimeError(
+                        f"No directory found for {accession} on NCBI FTP"
+                    )
 
                 ftp.cwd(target_dir)
                 files = ftp.nlst()
 
-                gff_files = [f for f in files if f.endswith("_genomic.gff.gz") and "_from_genomic" not in f]
+                gff_files = [
+                    f
+                    for f in files
+                    if f.endswith("_genomic.gff.gz") and "_from_genomic" not in f
+                ]
                 if gff_files:
                     filename = gff_files[0]
                     local_path = annotation_dir / filename
@@ -723,7 +788,9 @@ def download_annotation(accession: str, output_dir: str | Path) -> Path:
                         ftp.retrbinary(f"RETR {filename}", out_file.write)
                     logger.info(f"Downloaded annotation {filename}")
                 else:
-                    raise RuntimeError(f"No GFF annotation file found for {accession} on NCBI FTP")
+                    raise RuntimeError(
+                        f"No GFF annotation file found for {accession} on NCBI FTP"
+                    )
             finally:
                 ftp.quit()
 
@@ -731,11 +798,14 @@ def download_annotation(accession: str, output_dir: str | Path) -> Path:
 
         except Exception as ftp_err:
             raise RuntimeError(
-                f"All annotation download methods failed for {accession}: " f"API error: {e}, FTP error: {ftp_err}"
+                f"All annotation download methods failed for {accession}: "
+                f"API error: {e}, FTP error: {ftp_err}"
             )
 
 
-def download_variant_data(study_accession: str, output_dir: str | Path, data_type: str = "vcf") -> Path:
+def download_variant_data(
+    study_accession: str, output_dir: str | Path, data_type: str = "vcf"
+) -> Path:
     """Download variant data for a GWAS study.
 
     Args:
@@ -782,15 +852,23 @@ def download_variant_data(study_accession: str, output_dir: str | Path, data_typ
             assoc_response = requests.get(associations_url, timeout=30)
 
             if assoc_response.status_code == 200:
-                associations = assoc_response.json().get("_embedded", {}).get("associations", [])
+                associations = (
+                    assoc_response.json().get("_embedded", {}).get("associations", [])
+                )
 
                 # Save summary statistics
                 stats_file = study_dir / f"{study_accession}_summary_stats.tsv"
                 with open(stats_file, "w") as f:
                     f.write("variant\trisk_allele\tp_value\todds_ratio\tbeta\n")
                     for assoc in associations[:1000]:  # Limit to avoid huge files
-                        variant = assoc.get("loci", [{}])[0].get("strongestRiskAlleles", [{}])[0]
-                        p_value = assoc.get("pvalueMantissa", "") + "e" + str(assoc.get("pvalueExponent", ""))
+                        variant = assoc.get("loci", [{}])[0].get(
+                            "strongestRiskAlleles", [{}]
+                        )[0]
+                        p_value = (
+                            assoc.get("pvalueMantissa", "")
+                            + "e"
+                            + str(assoc.get("pvalueExponent", ""))
+                        )
                         odds_ratio = assoc.get("orPerCopyNum", "")
                         beta = assoc.get("betaNum", "")
 
@@ -841,7 +919,7 @@ Study information:
                     "trait": trait,
                     "pubmed_id": pubmed_id,
                     "downloaded_files": [str(f) for f in downloaded_files],
-                    "download_date": str(pd.Timestamp.now()),
+                    "download_date": str(pd.Timestamp.now()),  # noqa: F821
                 },
                 f,
                 indent=2,
@@ -856,3 +934,41 @@ Study information:
     except Exception as e:
         logger.error(f"Unexpected error downloading variant data: {e}")
         raise
+
+
+def prepare_reference_genome(output_dir: str | Path) -> Path | None:
+    """Decompress and index reference genome FASTA files.
+
+    Finds compressed FASTA files (.fna.gz), decompresses them,
+    and runs bwa index and samtools faidx.
+
+    Args:
+        output_dir: Directory containing reference genome files
+
+    Returns:
+        Path to the primary uncompressed FASTA file, or None if not found
+    """
+    output_dir = Path(output_dir)
+    import subprocess
+
+    # Decompress
+    fastas = list(output_dir.glob("**/*.fna.gz"))
+    for f in fastas:
+        logger.info(f"Decompressing {f}...")
+        subprocess.run(["gunzip", "-f", str(f)], check=True)
+
+    # Re-discover uncompressed FASTAs
+    final_fastas = list(output_dir.glob("**/*.fna")) + list(
+        output_dir.glob("**/*.fasta")
+    )
+    if not final_fastas:
+        return None
+
+    ref_path = final_fastas[0]
+
+    # Indexing
+    logger.info(f"Indexing reference: {ref_path}")
+    subprocess.run(["bwa", "index", str(ref_path)], check=True)
+    subprocess.run(["samtools", "faidx", str(ref_path)], check=True)
+
+    return ref_path

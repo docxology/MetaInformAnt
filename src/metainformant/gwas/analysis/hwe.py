@@ -8,6 +8,7 @@ Key references:
   - Wigginton et al. (2005) Am J Hum Genet 76:887-893 (exact HWE test)
   - Laurie et al. (2010) Genet Epidemiol — stratified HWE QC
 """
+
 from __future__ import annotations
 
 import math
@@ -20,14 +21,17 @@ logger = logging.get_logger(__name__)
 
 try:
     import matplotlib
+
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
+
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
 
 try:
-    import numpy as np
+    import numpy as np  # noqa: F401
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
@@ -59,9 +63,9 @@ def hwe_chi2_test(
     p_ref = 1.0 - p_alt
 
     # Expected counts under HWE
-    e_hom_ref = n * p_ref ** 2
+    e_hom_ref = n * p_ref**2
     e_het = n * 2 * p_ref * p_alt
-    e_hom_alt = n * p_alt ** 2
+    e_hom_alt = n * p_alt**2
 
     # Check for monomorphic (all expected in one class)
     if e_hom_ref < 0.01 or e_het < 0.01 or e_hom_alt < 0.01:
@@ -107,17 +111,21 @@ def hwe_flag_variants(
     _DOSAGE_TO_GT = {0: "0/0", 1: "0/1", 2: "1/1", "0": "0/0", "1": "0/1", "2": "1/1"}
 
     if isinstance(genotypes_raw, list):
+
         def _gt(sample_idx: int, var_idx: int) -> str:
             row = genotypes_raw[sample_idx] if sample_idx < len(genotypes_raw) else []
             raw = row[var_idx] if var_idx < len(row) else None
             return _DOSAGE_TO_GT.get(raw, str(raw)) if raw is not None else "./."
+
         sample_indices = list(range(n_samples))
     else:
+
         def _gt(sample_idx: int, var_idx: int) -> str:
             sample_id = samples[sample_idx] if sample_idx < len(samples) else ""
             gt_list = genotypes_raw.get(sample_id, [])
             raw = gt_list[var_idx] if var_idx < len(gt_list) else None
             return _DOSAGE_TO_GT.get(raw, str(raw)) if raw is not None else "./."
+
         sample_indices = list(range(n_samples))
 
     results = []
@@ -146,7 +154,11 @@ def hwe_flag_variants(
         # Allele freq
         alt_alleles = 2 * n_hom_alt + n_het
         total_alleles = 2 * n_called
-        maf = min(alt_alleles / total_alleles, 1 - alt_alleles / total_alleles) if total_alleles > 0 else 0.0
+        maf = (
+            min(alt_alleles / total_alleles, 1 - alt_alleles / total_alleles)
+            if total_alleles > 0
+            else 0.0
+        )
 
         chi2, p_val = hwe_chi2_test(n_hom_ref, n_het, n_hom_alt)
 
@@ -155,24 +167,28 @@ def hwe_flag_variants(
         exp_het = 2 * p_ref * p_alt
         obs_het = n_het / n_called if n_called > 0 else 0.0
 
-        results.append({
-            "chrom": chrom,
-            "pos": pos,
-            "snp_id": snp_id,
-            "maf": round(maf, 4),
-            "n_hom_ref": n_hom_ref,
-            "n_het": n_het,
-            "n_hom_alt": n_hom_alt,
-            "n_missing": n_miss,
-            "chi2_hwe": round(chi2, 4),
-            "p_hwe": p_val,
-            "flagged": p_val < threshold,
-            "obs_het": round(obs_het, 4),
-            "exp_het": round(exp_het, 4),
-        })
+        results.append(
+            {
+                "chrom": chrom,
+                "pos": pos,
+                "snp_id": snp_id,
+                "maf": round(maf, 4),
+                "n_hom_ref": n_hom_ref,
+                "n_het": n_het,
+                "n_hom_alt": n_hom_alt,
+                "n_missing": n_miss,
+                "chi2_hwe": round(chi2, 4),
+                "p_hwe": p_val,
+                "flagged": p_val < threshold,
+                "obs_het": round(obs_het, 4),
+                "exp_het": round(exp_het, 4),
+            }
+        )
 
-    logger.info(f"HWE test: {len(results)} variants tested, "
-                f"{sum(1 for r in results if r['flagged'])} flagged at p<{threshold:.0e}")
+    logger.info(
+        f"HWE test: {len(results)} variants tested, "
+        f"{sum(1 for r in results if r['flagged'])} flagged at p<{threshold:.0e}"
+    )
     return results
 
 
@@ -206,7 +222,7 @@ def hwe_distribution_plot(
     p_vals = [r["p_hwe"] for r in hwe_results if r["p_hwe"] > 0]
     obs_hets = [r["obs_het"] for r in hwe_results]
     exp_hets = [r["exp_het"] for r in hwe_results]
-    mafs = [r["maf"] for r in hwe_results]
+    [r["maf"] for r in hwe_results]
     n_flagged = sum(1 for r in hwe_results if r["flagged"])
 
     log_p = [-math.log10(max(p, 1e-300)) for p in p_vals]
@@ -215,30 +231,50 @@ def hwe_distribution_plot(
     fig.suptitle(
         f"Hardy-Weinberg Equilibrium Diagnostic\n"
         f"N={len(hwe_results):,} variants, {n_flagged} flagged (p<{threshold:.0e})",
-        fontsize=12, fontweight="bold",
+        fontsize=12,
+        fontweight="bold",
     )
 
     # Left panel: HWE -log10(p) histogram
-    ax1.hist(log_p, bins=min(60, max(10, len(log_p) // 10)),
-             color="#4C72B0", edgecolor="white", linewidth=0.5, alpha=0.85)
-    ax1.axvline(-math.log10(threshold), color="#C44E52", linewidth=2,
-                linestyle="--", label=f"Threshold (p={threshold:.0e})")
+    ax1.hist(
+        log_p,
+        bins=min(60, max(10, len(log_p) // 10)),
+        color="#4C72B0",
+        edgecolor="white",
+        linewidth=0.5,
+        alpha=0.85,
+    )
+    ax1.axvline(
+        -math.log10(threshold),
+        color="#C44E52",
+        linewidth=2,
+        linestyle="--",
+        label=f"Threshold (p={threshold:.0e})",
+    )
     ax1.set_xlabel("−log₁₀(HWE p-value)", fontsize=11)
     ax1.set_ylabel("Number of variants", fontsize=11)
     ax1.set_title("HWE p-value distribution", fontsize=10)
     ax1.legend(fontsize=9)
 
     # Add annotation
-    ax1.text(0.97, 0.95, f"{n_flagged} flagged\n({100*n_flagged/len(hwe_results):.1f}%)",
-             transform=ax1.transAxes, ha="right", va="top",
-             fontsize=9, color="#C44E52",
-             bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8))
+    ax1.text(
+        0.97,
+        0.95,
+        f"{n_flagged} flagged\n({100 * n_flagged / len(hwe_results):.1f}%)",
+        transform=ax1.transAxes,
+        ha="right",
+        va="top",
+        fontsize=9,
+        color="#C44E52",
+        bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8),
+    )
 
     # Right panel: obs vs expected het scatter, colored by MAF
     if HAS_NUMPY:
         mafs_arr = [r["maf"] for r in hwe_results]
-        scatter = ax2.scatter(exp_hets, obs_hets, c=mafs_arr, cmap="viridis",
-                              s=4, alpha=0.4, linewidths=0)
+        scatter = ax2.scatter(
+            exp_hets, obs_hets, c=mafs_arr, cmap="viridis", s=4, alpha=0.4, linewidths=0
+        )
         plt.colorbar(scatter, ax=ax2, label="MAF", shrink=0.8)
     else:
         ax2.scatter(exp_hets, obs_hets, s=4, alpha=0.3, color="#4C72B0")
@@ -261,6 +297,7 @@ def hwe_distribution_plot(
 
 # ── Pure-Python chi-square survival function ──────────────────────────────────
 
+
 def _chi2_sf(x: float, df: int = 1) -> float:
     """Survival function of chi-square distribution P(X > x).
 
@@ -278,7 +315,9 @@ def _chi2_sf(x: float, df: int = 1) -> float:
     return _regularized_gamma_q(df / 2.0, x / 2.0)
 
 
-def _regularized_gamma_q(a: float, x: float, max_iter: int = 200, tol: float = 1e-12) -> float:
+def _regularized_gamma_q(
+    a: float, x: float, max_iter: int = 200, tol: float = 1e-12
+) -> float:
     """Q(a, x) = 1 - P(a, x): upper regularized incomplete gamma function.
 
     Uses continued fraction representation (Lentz method).
@@ -330,9 +369,15 @@ def _log_gamma(x: float) -> float:
     """Natural log of Gamma function via Lanczos approximation."""
     g = 7
     c = [
-        0.99999999999980993, 676.5203681218851, -1259.1392167224028,
-        771.32342877765313, -176.61502916214059, 12.507343278686905,
-        -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7,
+        0.99999999999980993,
+        676.5203681218851,
+        -1259.1392167224028,
+        771.32342877765313,
+        -176.61502916214059,
+        12.507343278686905,
+        -0.13857109526572012,
+        9.9843695780195716e-6,
+        1.5056327351493116e-7,
     ]
     if x < 0.5:
         return math.log(math.pi / math.sin(math.pi * x)) - _log_gamma(1 - x)

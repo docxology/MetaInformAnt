@@ -17,7 +17,7 @@ try:
     import matplotlib
 
     matplotlib.use("Agg")
-    import matplotlib.gridspec as gridspec
+    import matplotlib.gridspec as gridspec  # noqa: F401
     import matplotlib.pyplot as plt
 
     HAS_MATPLOTLIB = True
@@ -198,7 +198,9 @@ def population_structure_panel(
         ``"panels_generated"`` keys.
     """
     if not HAS_MATPLOTLIB or not HAS_NUMPY:
-        logger.warning("matplotlib/numpy not available, skipping population structure panel")
+        logger.warning(
+            "matplotlib/numpy not available, skipping population structure panel"
+        )
         return {"status": "skipped", "output_path": None, "panels_generated": 0}
 
     try:
@@ -214,7 +216,10 @@ def population_structure_panel(
         if pcs.ndim == 2 and pcs.shape[0] > 0 and pcs.shape[1] >= 2:
             pop_labels: Optional[List[str]] = None
             if metadata is not None and sample_ids:
-                pop_labels = [str(metadata.get(sid, {}).get("population", "unknown")) for sid in sample_ids]
+                pop_labels = [
+                    str(metadata.get(sid, {}).get("population", "unknown"))
+                    for sid in sample_ids
+                ]
 
             if pop_labels is not None:
                 unique_pops = sorted(set(pop_labels))
@@ -444,7 +449,9 @@ def top_hit_detail_panel(
 
         if regional_variants:
             reg_positions = [r.get("pos", r.get("POS", 0)) for r in regional_variants]
-            reg_pvalues = [-np.log10(max(r.get("p_value", 1.0), 1e-300)) for r in regional_variants]
+            reg_pvalues = [
+                -np.log10(max(r.get("p_value", 1.0), 1e-300)) for r in regional_variants
+            ]
             ax_regional.scatter(
                 reg_positions,
                 reg_pvalues,
@@ -492,7 +499,11 @@ def top_hit_detail_panel(
 
         # --- Centre: Genotype-phenotype boxplot ---
         ax_boxplot = axes[1]
-        if genotypes is not None and phenotypes is not None and variant_index < len(genotypes):
+        if (
+            genotypes is not None
+            and phenotypes is not None
+            and variant_index < len(genotypes)
+        ):
             geno_vec = genotypes[variant_index]
             pheno_arr = np.asarray(phenotypes, dtype=np.float64)
             geno_arr = np.asarray(geno_vec, dtype=int)
@@ -643,7 +654,11 @@ def _draw_manhattan(
             edgecolors="none",
         )
 
-        mid = offset + (positions.max() + positions.min()) / 2 if len(positions) > 0 else offset
+        mid = (
+            offset + (positions.max() + positions.min()) / 2
+            if len(positions) > 0
+            else offset
+        )
         tick_positions.append(mid)
         tick_labels.append(chrom)
         if len(positions) > 0:
@@ -664,7 +679,9 @@ def _draw_manhattan(
 def _draw_qq(ax: Any, assoc_results: List[Dict[str, Any]]) -> None:
     """Draw a QQ plot on the given axes."""
     p_values = [
-        r.get("p_value", 1.0) for r in assoc_results if r.get("p_value") is not None and r.get("p_value", 1.0) > 0
+        r.get("p_value", 1.0)
+        for r in assoc_results
+        if r.get("p_value") is not None and r.get("p_value", 1.0) > 0
     ]
     if not p_values:
         ax.text(
