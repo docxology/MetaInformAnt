@@ -40,7 +40,7 @@ genome:
 
 ```python
 from pathlib import Path
-from metainformant.rna.configs import SpeciesProfile, AmalgkitRunLayout, build_step_params
+from metainformant.rna.core.configs import AmalgkitRunLayout, SpeciesProfile, build_step_params
 
 spec = SpeciesProfile(name="Apis mellifera", taxon_id=7460, tissues=["head", "abdomen"])
 layout = AmalgkitRunLayout(base_dir=Path("./work/Apis_mellifera"))
@@ -50,7 +50,7 @@ params = build_step_params(spec, layout)
 ### Loading from YAML
 
 ```python
-from metainformant.rna.workflow import load_workflow_config
+from metainformant.rna.engine.workflow import load_workflow_config
 
 cfg = load_workflow_config("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
 ```
@@ -67,7 +67,7 @@ High-level helpers for building per-step parameter maps.
 
 ```python
 from pathlib import Path
-from metainformant.rna.configs import SpeciesProfile, AmalgkitRunLayout, build_step_params
+from metainformant.rna.core.configs import AmalgkitRunLayout, SpeciesProfile, build_step_params
 
 spec = SpeciesProfile(name="Apis mellifera", taxon_id=7460, tissues=["head", "abdomen"])
 layout = AmalgkitRunLayout(base_dir=Path("./work/Apis_mellifera"))

@@ -323,7 +323,7 @@ auto_install_amalgkit: false  # Optional
 
 **Actual Config Loading**:
 ```python
-from metainformant.rna.workflow import load_workflow_config
+from metainformant.rna.engine.workflow import load_workflow_config
 
 config = load_workflow_config("config/amalgkit/species.yaml")
 # Returns AmalgkitWorkflowConfig instance
@@ -346,7 +346,7 @@ config = load_workflow_config("config/amalgkit/species.yaml")
 
 **Workflow Execution Patterns**:
 ```python
-from metainformant.rna.workflow import load_workflow_config, plan_workflow, execute_workflow
+from metainformant.rna.engine.workflow import load_workflow_config, plan_workflow, execute_workflow
 
 # Load and plan workflow
 config = load_workflow_config("config/amalgkit/species.yaml")

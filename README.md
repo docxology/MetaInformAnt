@@ -576,10 +576,8 @@ bash scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit/amalgkit_pogo
 ### GWAS Analysis
 
 ```python
-from metainformant.gwas import run_gwas, manhattan_plot, load_gwas_config
+from metainformant.gwas import manhattan_plot, run_gwas
 
-# Load configuration and run workflow
-config = load_gwas_config("config/gwas/gwas_template.yaml")
 results = run_gwas(
     vcf_path="data/variants/cohort.vcf.gz",
     phenotype_path="data/phenotypes/traits.tsv",

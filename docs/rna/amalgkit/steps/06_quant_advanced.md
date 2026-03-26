@@ -146,7 +146,7 @@ amalgkit quant \
 ### Example 3: METAINFORMANT Workflow Integration
 
 ```python
-from metainformant.rna.workflow import execute_workflow, load_workflow_config
+from metainformant.rna.engine.workflow import execute_workflow, load_workflow_config
 
 cfg = load_workflow_config("config/amalgkit/amalgkit_apis_mellifera.yaml")
 execute_workflow(cfg)  # quant runs automatically after getfastq/integrate

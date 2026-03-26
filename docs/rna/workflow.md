@@ -2,29 +2,29 @@
 
 ## Overview
 
-The RNA module provides comprehensive workflow orchestration for RNA-seq analysis, from raw sequencing data to expression quantification. Workflows are built on the `BaseWorkflowOrchestrator` foundation and integrate with amalgkit for production-ready analysis.
+The RNA module provides workflow orchestration for RNA-seq analysis, from raw sequencing data to expression quantification. Planning and execution live in `metainformant.rna.engine.workflow` and integrate with the amalgkit CLI for production runs.
 
 ## Architecture
 
 ```mermaid
 flowchart TB
     subgraph "RNA Orchestration"
-        CLIcliInterfaceMetainformantRna[CLI Interface_metainformant rna] --> ScriptsscriptOrchestratorsScripts/rna/run*.py[Script Orchestrators_scripts/rna/run_*.py]
-        Scripts --> WorkflowexecuteAmalgkitWorkflowRna.workflow[execute_amalgkit_workflow_rna.workflow]
-        Workflow --> StepsstepFunctionsRna.engine.workflow_steps.run*[Step Functions_rna.engine.workflow_steps.run_*]
+        ScriptsRna[scripts/rna/run*.py] --> EngineWorkflow[rna.engine.workflow]
+        PythonApi[Python_imports] --> EngineWorkflow
+        EngineWorkflow --> StepsRna[rna.engine.workflow_steps plus amalgkit CLI]
     end
 
     subgraph "Workflow Components"
-        ConfigamalgkitworkflowconfigConfiguration[AmalgkitWorkflowConfig_Configuration]
-        MonitoringmonitoringRna.monitoring[Monitoring_rna.monitoring]
-        GenomegenomePrepRna.genomePrep[Genome Prep_rna.genome_prep]
-        Steps
+        ConfigAmalgkit[AmalgkitWorkflowConfig]
+        MonitoringEngine[rna.engine.monitoring]
+        GenomePrep[rna.amalgkit.genome_prep]
+        StepsRna
     end
 
-    Workflow --> Config
-    Workflow --> Monitoring
-    Workflow --> Genome
-    Steps --> AmalgkitamalgkitCliExternalTool[Amalgkit CLI_External Tool]
+    EngineWorkflow --> ConfigAmalgkit
+    EngineWorkflow --> MonitoringEngine
+    EngineWorkflow --> GenomePrep
+    StepsRna --> AmalgkitCli[Amalgkit CLI]
 ```
 
 ## Workflow Types
@@ -34,40 +34,27 @@ flowchart TB
 The main workflow orchestrates all 11 amalgkit steps for single-species analysis:
 
 ```python
-from metainformant.rna.workflow import execute_amalgkit_workflow, AmalgkitWorkflowConfig
+from pathlib import Path
 
-# Configure workflow
+from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, execute_workflow
+
 config = AmalgkitWorkflowConfig(
     work_dir=Path("output/rna/species"),
     species_list=["Apis_mellifera"],
-    threads=12
+    threads=12,
 )
 
-# Execute complete workflow
-results = execute_amalgkit_workflow(config)
-
-if results["status"] == "completed":
-    print(f"Workflow completed in {results['duration_seconds']:.1f}s")
-    print(f"Quantified {len(results['steps'])} steps")
+results = execute_workflow(config, check=False)
+if results.success:
+    print(f"Completed {results.successful_steps}/{results.total_steps} steps")
 else:
-    print(f"Workflow failed: {results['errors']}")
+    failed = [s for s in results.steps_executed if not s.success]
+    print(f"Workflow failed at: {[s.step_name for s in failed]}")
 ```
 
-### Convenience Functions
+### Simulated expression data
 
-Simple function-based workflows for common operations:
-
-```python
-from metainformant.rna.workflow import run_sequence_simulation_workflow
-
-# Simple sequence simulation
-results = run_sequence_simulation_workflow(
-    output_dir="output/rna/simulated",
-    n_sequences=1000,
-    sequence_length=100,
-    seed=42
-)
-```
+For synthetic RNA-style counts, use the simulation package (not the RNA workflow engine), for example `metainformant.simulation.models.rna` (`simulate_rnaseq_counts`, `simulate_bulk_rnaseq`). See [simulation documentation](../simulation/index.md).
 
 ## Configuration
 
@@ -97,10 +84,11 @@ class AmalgkitWorkflowConfig:
 Load configuration from YAML files with environment variable overrides:
 
 ```python
-from metainformant.rna.configs import load_workflow_config
+from pathlib import Path
 
-# Load from YAML with AK_ environment overrides
-config = load_workflow_config("config/amalgkit/amalgkit_species.yaml")
+from metainformant.rna.engine.workflow import load_workflow_config
+
+config = load_workflow_config(Path("config/amalgkit/amalgkit_species.yaml"))
 ```
 
 ## Workflow Steps
@@ -121,37 +109,9 @@ The complete amalgkit workflow consists of 11 orchestrated steps:
 | **csca** | `run_csca` | Cross-species correlation analysis |
 | **sanity** | `run_sanity` | Workflow integrity validation |
 
-### Step Execution Pattern
+### Step execution
 
-Each step follows the standardized pattern:
-
-```python
-def run_metadata(config: AmalgkitParams, **kwargs) -> dict[str, Any]:
-    """Execute metadata retrieval step.
-
-    Args:
-        config: Step configuration
-        **kwargs: Additional parameters
-
-    Returns:
-        Standardized result dictionary
-    """
-    try:
-        # Step logic here
-        result = execute_amalgkit_step("metadata", config)
-
-        return {
-            "status": "completed",
-            "output": {"metadata_file": "path/to/metadata.csv"},
-            "metadata": {"samples_found": 100}
-        }
-    except Exception as e:
-        return {
-            "status": "failed",
-            "errors": [str(e)],
-            "output": {}
-        }
-```
+Individual steps are invoked from `execute_workflow` via `metainformant.rna.engine.workflow_steps` and the amalgkit Python API in `metainformant.rna.amalgkit`. See source under `src/metainformant/rna/engine/workflow_steps.py` for the dispatch map (`metadata`, `quant`, etc.).
 
 ## Monitoring and Progress
 
@@ -160,31 +120,23 @@ def run_metadata(config: AmalgkitParams, **kwargs) -> dict[str, Any]:
 Workflows provide comprehensive monitoring capabilities:
 
 ```python
-from metainformant.rna.monitoring import analyze_species_status
+from pathlib import Path
 
-# Monitor workflow progress
-status = analyze_species_status("Apis_mellifera", work_dir="output/amalgkit")
+from metainformant.rna.engine.monitoring import analyze_species_status
 
-print(f"Status: {status['overall_status']}")
-print(f"Samples quantified: {status['quantified_samples']}")
-print(f"Active downloads: {status['active_downloads']}")
+status = analyze_species_status(Path("output/amalgkit/Apis_mellifera/work"))
+print(f"Completed: {status.get('completed')}, Quantified: {status.get('quantified')}")
 ```
 
-### Progress Tracking
+### Progress initialization
 
 ```python
-# Initialize progress tracking
-from metainformant.rna.monitoring import initialize_progress_tracking
+from pathlib import Path
 
-progress = initialize_progress_tracking(
-    species="Apis_mellifera",
-    expected_samples=100,
-    work_dir="output/amalgkit"
-)
+from metainformant.rna.engine.monitoring import initialize_progress_tracking
 
-# Track progress during workflow
-progress.update_quantified_sample("SRR123456")
-progress.update_completed_step("quant")
+info = initialize_progress_tracking(Path("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml"))
+print(info)
 ```
 
 ## Genome Preparation
@@ -193,22 +145,7 @@ progress.update_completed_step("quant")
 
 Workflows can include genome preparation as part of the orchestration:
 
-```python
-from metainformant.rna.genome_prep import orchestrate_genome_setup
-
-# Setup genome for species
-genome_config = {
-    "species": "Apis_mellifera",
-    "accession": "GCF_000001405.40",  # Amel_HAv3.1
-    "index_type": "kallisto"
-}
-
-genome_result = orchestrate_genome_setup(
-    work_dir="output/amalgkit/Apis_mellifera/genome",
-    genome_config=genome_config,
-    threads=8
-)
-```
+Genome download and index preparation are handled inside `execute_workflow` (via `prepare_reference_genome`) and documented in [amalgkit/genome_preparation.md](amalgkit/genome_preparation.md). Lower-level helpers live in `metainformant.rna.amalgkit.genome_prep`.
 
 ### Genome Requirements
 
@@ -224,14 +161,7 @@ Each species requires:
 
 Workflows support resuming from any failed step:
 
-```python
-# Workflow automatically detects completed steps and resumes
-results = execute_amalgkit_workflow(config)
-
-# Check for recovery information
-if "recovery_info" in results:
-    print(f"Resumed from step: {results['recovery_info']['last_completed_step']}")
-```
+`execute_workflow` skips steps that already have completion artifacts unless the config marks them for redo. Inspect `results.steps_executed` on the returned `WorkflowExecutionResult` for per-step outcomes.
 
 ### Error Classification
 
@@ -282,29 +212,17 @@ with io.read_delimited("large_metadata.csv", chunk_size=1000) as reader:
     for chunk in reader:
         process_chunk(chunk)
 
-# Temporary file cleanup
-from metainformant.rna.cleanup import cleanup_partial_downloads
-cleanup_partial_downloads(work_dir="output/amalgkit", max_age_hours=24)
+# Temporary / partial download cleanup (see docstring for parameters)
+from metainformant.rna.core.cleanup import cleanup_partial_downloads
+
+cleanup_partial_downloads(Path("output/amalgkit/Species_name/work"), dry_run=False)
 ```
 
 ## Integration with Other Modules
 
-### Cross-Module Workflows
+### Cross-module use
 
-RNA workflows integrate with other METAINFORMANT modules:
-
-```python
-# RNA + Protein integration
-from metainformant.rna.workflow import execute_amalgkit_workflow
-from metainformant.protein.workflow import execute_protein_workflow
-
-# Run RNA workflow
-rna_results = execute_amalgkit_workflow(rna_config)
-
-# Use RNA results for protein analysis
-protein_config.expression_data = rna_results["expression_matrix"]
-protein_results = execute_protein_workflow(protein_config)
-```
+Downstream modules consume RNA outputs (quantification tables, paths under `output/amalgkit/`) via files or Python loaders in those domains. Wire them in your own script after `execute_workflow` completes; there is no single `execute_protein_workflow` facade tied to RNA results.
 
 ### Data Flow
 
@@ -357,44 +275,29 @@ wait
 
 ## Testing and Validation
 
-### Workflow Testing
+### Workflow testing
+
+Use real configs and `tmp_path` (see project NO_MOCKING policy). Smoke-test planning without running amalgkit:
 
 ```python
-import pytest
-from metainformant.rna.workflow import execute_amalgkit_workflow
+from pathlib import Path
 
-def test_workflow_execution(tmp_path):
-    """Test complete workflow execution."""
+import pytest
+
+from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, plan_workflow
+
+
+def test_plan_workflow_smoke(tmp_path: Path) -> None:
     config = AmalgkitWorkflowConfig(
         work_dir=tmp_path / "workflow",
         species_list=["test_species"],
-        threads=1
+        threads=1,
     )
-
-    # Mock external dependencies for testing
-    results = execute_amalgkit_workflow(config, check=True)
-
-    assert results["status"] == "validated"
-    assert "config" in results
+    steps = plan_workflow(config)
+    assert isinstance(steps, list)
 ```
 
-### Integration Testing
-
-```python
-def test_end_to_end_workflow(tmp_path):
-    """Test complete workflow with real components."""
-    # Setup test data
-    setup_test_data(tmp_path)
-
-    # Execute workflow
-    config = create_test_config(tmp_path)
-    results = execute_amalgkit_workflow(config)
-
-    # Validate results
-    assert results["status"] == "completed"
-    assert_results_structure(results)
-    validate_output_files(results)
-```
+Full end-to-end tests require amalgkit, reference data, and network or local FASTQ; see `tests/` and [amalgkit/testing_coverage.md](amalgkit/testing_coverage.md).
 
 ## Best Practices
 
@@ -432,23 +335,13 @@ def test_end_to_end_workflow(tmp_path):
 
 **Workflow hangs during download:**
 ```bash
-# Check active downloads
-python3 -c "
-from metainformant.rna.monitoring import check_active_downloads
-print(check_active_downloads('output/amalgkit'))
-"
-
-# Kill stuck downloads
-pkill -f wget
+python3 -c "from metainformant.rna.engine.monitoring import check_active_downloads; print(check_active_downloads())"
 ```
 
 **Memory issues with large datasets:**
 ```python
-# Reduce threads
-config = AmalgkitWorkflowConfig(threads=4)  # Instead of 24
-
-# Enable streaming processing
-config.stream_processing = True
+# Reduce threads in AmalgkitWorkflowConfig or YAML (e.g. threads: 4)
+config = AmalgkitWorkflowConfig(work_dir=Path("output/amalgkit/work"), threads=4, species_list=["Apis_mellifera"])
 ```
 
 **Genome index issues:**

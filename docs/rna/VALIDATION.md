@@ -40,7 +40,7 @@ python3 scripts/rna/run_workflow.py config/amalgkit/my_species.yaml --validate -
 ### Programmatic Validation
 
 ```python
-from metainformant.rna.workflow import load_workflow_config
+from metainformant.rna.engine.workflow import load_workflow_config
 from metainformant.rna.validation import validate_all_samples, get_sample_pipeline_status
 
 # Load config
@@ -353,7 +353,7 @@ ready_samples = [
 """Validate multiple species workflows."""
 
 from pathlib import Path
-from metainformant.rna.workflow import load_workflow_config
+from metainformant.rna.engine.workflow import load_workflow_config
 from metainformant.rna.validation import validate_all_samples
 
 species_configs = [

@@ -45,6 +45,8 @@ METAINFORMANT documentation organized by biological domain.
 | Menu | [menu/](menu/) | Interactive CLI system |
 | Cloud | [cloud/](cloud/) | GCP deployment, Docker pipelines |
 | eQTL | [eqtl/](eqtl/) | Expression QTL integration |
+| Agents | [agents/](agents/) | Per-module agent rules for development |
+| MCP | [mcp/](mcp/) | Model Context Protocol notes |
 
 ## Key Guides
 

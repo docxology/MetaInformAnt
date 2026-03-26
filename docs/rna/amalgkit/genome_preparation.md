@@ -73,7 +73,7 @@ The genome preparation is automatically integrated into the workflow execution:
 ### Workflow Execution
 
 ```python
-from metainformant.rna.workflow import load_workflow_config, execute_workflow
+from metainformant.rna.engine.workflow import load_workflow_config, execute_workflow
 
 config = load_workflow_config("config/amalgkit/camponotus_floridanus.yaml")
 return_codes = execute_workflow(config)

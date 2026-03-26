@@ -389,7 +389,7 @@ Functions for planning and executing complete RNA-seq workflows.
 def load_workflow_config(config_file: str | Path) -> AmalgkitWorkflowConfig
 ```
 
-**Module**: `metainformant.rna.workflow`
+**Module**: `metainformant.rna.engine.workflow`
 
 **Purpose**: Load workflow configuration from YAML file.
 
@@ -408,7 +408,7 @@ def load_workflow_config(config_file: str | Path) -> AmalgkitWorkflowConfig
 def plan_workflow(config: AmalgkitWorkflowConfig) -> list[tuple[str, AmalgkitParams]]
 ```
 
-**Module**: `metainformant.rna.workflow`
+**Module**: `metainformant.rna.engine.workflow`
 
 **Purpose**: Generate ordered list of workflow steps with parameters (dry-run planning).
 
@@ -430,7 +430,7 @@ def plan_workflow_with_params(
 ) -> list[tuple[str, AmalgkitParams]]
 ```
 
-**Module**: `metainformant.rna.workflow`
+**Module**: `metainformant.rna.engine.workflow`
 
 **Purpose**: Plan workflow with explicit per-step parameter overrides.
 
@@ -449,7 +449,7 @@ def execute_workflow(
 ) -> list[int]
 ```
 
-**Module**: `metainformant.rna.workflow`
+**Module**: `metainformant.rna.engine.workflow`
 
 **Purpose**: Execute complete workflow from configuration.
 
@@ -482,7 +482,7 @@ class AmalgkitWorkflowConfig:
     filters: dict[str, Any] = field(default_factory=dict)
 ```
 
-**Module**: `metainformant.rna.workflow`
+**Module**: `metainformant.rna.engine.workflow`
 
 **Purpose**: Configuration dataclass for workflow execution.
 

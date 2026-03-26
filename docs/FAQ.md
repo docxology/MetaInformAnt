@@ -174,7 +174,7 @@ print("Amalgkit available:", amalgkit.check_cli_available())
 **A:** Use configuration files or direct parameter setting:
 
 ```python
-from metainformant.rna.workflow import AmalgkitWorkflowConfig
+from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
 
 config = AmalgkitWorkflowConfig(
     work_dir="output/rna_analysis",

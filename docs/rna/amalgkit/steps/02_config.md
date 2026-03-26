@@ -470,7 +470,7 @@ EOF
 ### Automatic Config Generation
 
 ```python
-from metainformant.rna.workflow import execute_workflow, load_workflow_config
+from metainformant.rna.engine.workflow import execute_workflow, load_workflow_config
 
 cfg = load_workflow_config("config/amalgkit_apis_mellifera.yaml")
 execute_workflow(cfg)  # config step runs automatically after metadata

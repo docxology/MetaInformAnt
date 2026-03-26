@@ -30,11 +30,11 @@ Workflow planning and execution.
 
 | Function | Module | Description | Documentation |
 |----------|--------|-------------|---------------|
-| `load_workflow_config` | `metainformant.rna.workflow` | Load configuration from YAML | [API.md](../API.md#load_workflow_config) |
-| `plan_workflow` | `metainformant.rna.workflow` | Plan workflow steps (dry-run) | [API.md](../API.md#plan_workflow) |
-| `plan_workflow_with_params` | `metainformant.rna.workflow` | Plan workflow with overrides | [API.md](../API.md#plan_workflow_with_params) |
-| `execute_workflow` | `metainformant.rna.workflow` | Execute complete workflow | [API.md](../API.md#execute_workflow) |
-| `AmalgkitWorkflowConfig` | `metainformant.rna.workflow` | Configuration dataclass | [API.md](../API.md#amalgkitworkflowconfig) |
+| `load_workflow_config` | `metainformant.rna.engine.workflow` | Load configuration from YAML | [API.md](../API.md#load_workflow_config) |
+| `plan_workflow` | `metainformant.rna.engine.workflow` | Plan workflow steps (dry-run) | [API.md](../API.md#plan_workflow) |
+| `plan_workflow_with_params` | `metainformant.rna.engine.workflow` | Plan workflow with overrides | [API.md](../API.md#plan_workflow_with_params) |
+| `execute_workflow` | `metainformant.rna.engine.workflow` | Execute complete workflow | [API.md](../API.md#execute_workflow) |
+| `AmalgkitWorkflowConfig` | `metainformant.rna.engine.workflow` | Configuration dataclass | [API.md](../API.md#amalgkitworkflowconfig) |
 
 ## Genome Preparation Functions
 

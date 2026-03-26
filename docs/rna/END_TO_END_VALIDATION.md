@@ -10,7 +10,7 @@ Validate workflow configuration and planning:
 # Check specific species workflow planning
 python3 -c "
 from pathlib import Path
-from metainformant.rna.workflow import apply_step_defaults, load_workflow_config, plan_workflow
+from metainformant.rna.engine.workflow import apply_step_defaults, load_workflow_config, plan_workflow
 
 cfg = load_workflow_config('config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml')
 apply_step_defaults(cfg)
@@ -184,7 +184,7 @@ All species support configurable threads:
 # Check specific species workflow planning
 python3 -c "
 from pathlib import Path
-from metainformant.rna.workflow import load_workflow_config, plan_workflow
+from metainformant.rna.engine.workflow import load_workflow_config, plan_workflow
 
 cfg = load_workflow_config('config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml')
 steps = plan_workflow(cfg)

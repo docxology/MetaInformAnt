@@ -445,7 +445,7 @@ for species in species_list:
 ### Automatic Metadata Handling
 
 ```python
-from metainformant.rna.workflow import load_workflow_config, execute_workflow
+from metainformant.rna.engine.workflow import load_workflow_config, execute_workflow
 
 # Load configuration
 cfg = load_workflow_config("config/amalgkit_apis_mellifera.yaml")

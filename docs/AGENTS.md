@@ -8,7 +8,7 @@ Documentation agent context for METAINFORMANT's technical documentation.
 
 Documentation is organized by module domain:
 
-- `agents/` - Agent-based modeling and ecosystem simulation documentation
+- `agents/` - Module-specific Cursor/agent rule packs (`rules/*.md`) for coding conventions per domain
 - `core/` - Core infrastructure (I/O, config, paths, logging, parallel, caching)
 - `dna/` - DNA sequence analysis (alignment, phylogeny, population genetics)
 - `ecology/` - Community diversity and ecology
@@ -37,6 +37,8 @@ Documentation is organized by module domain:
 - `metabolomics/` - Metabolomics (mass spectrometry, pathway mapping, metabolite-gene integration)
 - `cloud/` - Cloud deployment (GCP VM lifecycle, Docker pipelines, genome prep)
 - `menu/` - Interactive menu and discovery system
+- `mcp/` - Model Context Protocol documentation (`src/metainformant/mcp/`, currently minimal tool stubs)
+- `eqtl/` - eQTL integration docs (implementation lives under `gwas/finemapping/` and `scripts/eqtl/`)
 
 ## Key Root Files
 

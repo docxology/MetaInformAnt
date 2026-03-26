@@ -190,7 +190,7 @@ These scripts automatically:
 - **[genome_setup_guide.md](../genome_setup_guide.md)**: Complete step-by-step guide for genome setup
 - **[commands.md](../commands.md)**: Command reference for all genome setup scripts
 
-The workflow execution in `metainformant.rna.workflow` automatically integrates genome preparation when `build_index: yes` is set in the quant configuration. See [genome_preparation.md](../genome_preparation.md) for details on automatic workflow integration.
+The workflow execution in `metainformant.rna.engine.workflow` automatically integrates genome preparation when `build_index: yes` is set in the quant configuration. See [genome_preparation.md](../genome_preparation.md) for details on automatic workflow integration.
 
 ### System Dependencies
 

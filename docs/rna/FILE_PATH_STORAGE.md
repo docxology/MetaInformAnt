@@ -134,7 +134,7 @@ steps:
 **File**: `src/metainformant/rna/workflow.py`
 
 ```python
-from metainformant.rna.workflow import load_workflow_config
+from metainformant.rna.engine.workflow import load_workflow_config
 
 config = load_workflow_config("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
 
@@ -744,7 +744,7 @@ index_path = get_expected_index_path(work_dir, species)
 ### Example 3: Reading All Paths from Config
 
 ```python
-from metainformant.rna.workflow import load_workflow_config
+from metainformant.rna.engine.workflow import load_workflow_config
 from pathlib import Path
 
 # Load config

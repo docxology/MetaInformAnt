@@ -493,7 +493,7 @@ amalgkit csca \
 ### Multi-Species Workflow
 
 ```python
-from metainformant.rna.workflow import execute_workflow, load_workflow_config
+from metainformant.rna.engine.workflow import execute_workflow, load_workflow_config
 
 # Run workflow for each species
 for species in ["amellifera", "pbarbatus", "cfloridanus"]:

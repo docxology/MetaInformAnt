@@ -1,7 +1,7 @@
 # Amalgkit Test Coverage Report
 
 **Date**: November 2025 (Updated)  
-**Module**: `metainformant.rna.amalgkit`, `metainformant.rna.engine.workflow_steps`, and `metainformant.rna.workflow`
+**Module**: `metainformant.rna.amalgkit`, `metainformant.rna.engine.workflow_steps`, and `metainformant.rna.engine.workflow`
 
 ## Executive Summary
 

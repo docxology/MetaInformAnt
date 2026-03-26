@@ -146,7 +146,7 @@ For recovering or testing individual samples:
 ```python
 from metainformant.rna.engine.workflow_steps import quantify_sample
 from metainformant.rna.engine.sra_extraction import delete_sample_fastqs
-from metainformant.rna.workflow import load_workflow_config
+from metainformant.rna.engine.workflow import load_workflow_config
 from metainformant.core.io import read_delimited
 from pathlib import Path
 

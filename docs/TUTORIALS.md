@@ -203,7 +203,7 @@ Complete RNA-seq analysis pipeline from raw reads to gene expression quantificat
 #### Configuration Setup
 
 ```python
-from metainformant.rna.workflow import AmalgkitWorkflowConfig
+from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
 from pathlib import Path
 
 # Configure RNA-seq analysis

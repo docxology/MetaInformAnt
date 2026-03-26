@@ -109,39 +109,28 @@ sequences = generate_population_sequences(
 
 **Patterns**:
 ```python
-from metainformant.simulation.workflow import (
-    run_sequence_simulation_workflow,
-    run_agent_simulation_workflow,
-    run_popgen_simulation_workflow
-)
+from metainformant.simulation.workflow.workflow import SimulationConfig, run_simulation_workflow
 
-# Sequence simulation workflow
-results = run_sequence_simulation_workflow(
-    output_dir="output/simulation/sequences",
-    n_sequences=1000,
+# Config-driven workflow (see SimulationConfig.valid_types in source)
+config = SimulationConfig(
+    simulation_type="sequence_evolution",
+    output_dir="output/simulation/run1",
+    n_steps=100,
     sequence_length=1000,
     gc_content=0.5,
-    seed=42
+    random_seed=42,
 )
+results = run_simulation_workflow(config)
 
-# Agent-based simulation workflow
-results = run_agent_simulation_workflow(
-    output_dir="output/simulation/agents",
-    width=100,
-    height=100,
-    num_agents=500,
-    num_steps=1000,
-    seed=42
-)
-
-# Population genetics workflow
-results = run_popgen_simulation_workflow(
+# Other simulation_type values include population_genetics, rna_expression, agent_ecosystem, etc.
+config_pg = SimulationConfig(
+    simulation_type="population_genetics",
     output_dir="output/simulation/popgen",
-    n_sequences=50,
-    sequence_length=1000,
-    nucleotide_diversity=0.01,
-    seed=42
+    population_size=500,
+    n_snps=200,
+    random_seed=42,
 )
+results_pg = run_simulation_workflow(config_pg)
 ```
 
 ## Module-Specific Simulation Scripts

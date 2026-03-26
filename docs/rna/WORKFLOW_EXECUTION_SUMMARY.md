@@ -21,7 +21,7 @@ All three configuration files verified:
 
 **Verification Command**:
 ```bash
-python3 -c "import sys; sys.path.insert(0, 'src'); from metainformant.rna.workflow import load_workflow_config; cfg = load_workflow_config('config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml'); print('✓ Config loaded')"
+python3 -c "import sys; sys.path.insert(0, 'src'); from metainformant.rna.engine.workflow import load_workflow_config; cfg = load_workflow_config('config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml'); print('✓ Config loaded')"
 ```
 
 ### 2. Environment Validation ✅
