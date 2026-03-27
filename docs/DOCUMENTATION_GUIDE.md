@@ -112,6 +112,7 @@ Source code documentation mirrors the `src/metainformant/` structure:
 - Document AI contributions to the project
 - Located at repository root and in `src/metainformant/` module directories
 - Track development history and design decisions
+- Cursor project skills under `.cursor/skills/` are generated from each `AGENTS.md`; regenerate with `uv run python scripts/package/generate_cursor_skills.py` (see `.cursor/skills/README.md`)
 
 ### Topic Documentation
 - Detailed coverage of specific functionality

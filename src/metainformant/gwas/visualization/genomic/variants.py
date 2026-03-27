@@ -90,6 +90,7 @@ def maf_distribution(
     ax1.set_xlabel("Minor Allele Frequency", fontsize=12)
     ax1.set_ylabel("Count", fontsize=12)
     ax1.set_title("MAF Distribution", fontsize=14)
+    ax1.set_xlim(0.0, 0.5)
     ax1.legend()
     ax1.grid(True, alpha=0.3)
 

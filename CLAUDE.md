@@ -12,6 +12,7 @@ METAINFORMANT is a bioinformatics toolkit for multi-omic analysis (genomics, tra
 - **UV Only**: Use `uv` for all package operations (never `pip`)
 - **Output to `output/`**: All execution outputs go to `output/` directory
 - **Temp files in `.tmp/`**: Use repository-local `.tmp/` (not system `/tmp`)
+- **Cursor project skills**: Generated thin wrappers live under `.cursor/skills/` (one per folder that has `AGENTS.md`). After adding or moving `AGENTS.md`, run `uv run python scripts/package/generate_cursor_skills.py` and optionally `uv run python scripts/package/generate_cursor_skills.py --check`.
 
 ## Commands
 

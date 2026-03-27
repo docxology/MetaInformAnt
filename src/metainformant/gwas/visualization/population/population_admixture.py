@@ -78,25 +78,24 @@ def kinship_heatmap(
     """
     try:
         import matplotlib
-
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
-
+        import seaborn as sns
         HAS_MATPLOTLIB = True
     except ImportError:
         HAS_MATPLOTLIB = False
 
     if not HAS_MATPLOTLIB:
-        logger.warning("matplotlib not available, cannot create kinship heatmap")
-        return {"status": "failed", "error": "matplotlib not available"}
+        logger.warning("matplotlib or seaborn not available, cannot create kinship heatmap")
+        return {"status": "failed", "error": "matplotlib or seaborn not available"}
 
-    logger.info("Creating kinship heatmap")
+    logger.info("Creating kinship heatmap with seaborn.clustermap")
 
     try:
         sample_labels: Optional[List[str]] = None
         actual_output_path: Optional[Path] = None
 
-        # Handle file path input (first arg is a file path string/Path)
+        # Handle file path input
         if isinstance(kinship_matrix, (str, Path)) and not isinstance(
             kinship_matrix, np.ndarray
         ):
@@ -110,7 +109,7 @@ def kinship_heatmap(
 
         # Determine output_path and sample_labels from positional args
         if isinstance(output_path_or_labels, list):
-            # Called as: kinship_heatmap(matrix, sample_labels_list, output_path, ...)
+            sample_labels = output_path_or_labels
             if output_path_if_labels is not None:
                 actual_output_path = Path(output_path_if_labels)
         elif (
@@ -119,54 +118,50 @@ def kinship_heatmap(
         ):
             actual_output_path = Path(output_path_or_labels)
 
-        # Convert to numpy array if needed
+        # Convert to numpy array
         if isinstance(kinship_matrix, list):
             kinship_matrix = np.array(kinship_matrix, dtype=np.float64)
 
-        # Ensure float dtype to avoid "Image data of dtype object cannot be converted to float"
         if isinstance(kinship_matrix, np.ndarray) and kinship_matrix.dtype == object:
             kinship_matrix = kinship_matrix.astype(np.float64)
 
-        # Create heatmap
-        fig, ax = plt.subplots(figsize=(10, 8))
-
-        # Plot heatmap
-        im = ax.imshow(kinship_matrix, cmap="viridis", aspect="equal")
-
-        # Add colorbar
-        cbar = plt.colorbar(im, ax=ax)
-        cbar.set_label("Kinship coefficient")
-
-        # Labels and title
-        plot_title = title if title else "Kinship Matrix Heatmap"
-        ax.set_title(plot_title)
-        ax.set_xlabel("Sample")
-        ax.set_ylabel("Sample")
-
-        # Add population color bar if population_labels provided
-        if (
-            population_labels is not None
-            and len(population_labels) == kinship_matrix.shape[0]
-        ):
+        row_colors = None
+        col_colors = None
+        if population_labels is not None and len(population_labels) == kinship_matrix.shape[0]:
             unique_pops = sorted(set(population_labels))
-            pop_color_map = {pop: i for i, pop in enumerate(unique_pops)}
-            pop_colors = [pop_color_map[p] for p in population_labels]
+            cmap_colors = plt.cm.tab10(np.linspace(0, 1, max(len(unique_pops), 1)))
+            pop_color_map = {pop: cmap_colors[i] for i, pop in enumerate(unique_pops)}
+            row_colors = [pop_color_map[p] for p in population_labels]
+            col_colors = row_colors
 
-            # Add a thin color strip on top for populations
-            pop_ax = fig.add_axes([0.125, 0.92, 0.62, 0.02])
-            pop_arr = np.array(pop_colors).reshape(1, -1)
-            pop_ax.imshow(pop_arr, aspect="auto", cmap="tab10")
-            pop_ax.set_xticks([])
-            pop_ax.set_yticks([])
+        plot_title = title if title else "Kinship Matrix Clustered Heatmap"
 
-        plt.tight_layout()
+        # Apply seaborn clustermap for Phase 20 uniformity
+        g = sns.clustermap(
+            kinship_matrix,
+            cmap="viridis",
+            row_colors=row_colors,
+            col_colors=col_colors,
+            method='ward',
+            figsize=(10, 10),
+            cbar_kws={'label': 'Kinship coefficient'},
+            xticklabels=sample_labels if sample_labels and len(sample_labels) <= 50 else False,
+            yticklabels=sample_labels if sample_labels and len(sample_labels) <= 50 else False,
+        )
+        
+        g.fig.suptitle(plot_title, y=1.02)
+        
+        # Add legend if population_labels exist
+        if population_labels is not None:
+            from matplotlib.patches import Patch
+            legend_elements = [Patch(facecolor=pop_color_map[p], label=p) for p in unique_pops]
+            g.fig.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(0.02, 0.98), title="Population")
 
-        # Save if output path provided
         if actual_output_path:
-            fig.savefig(actual_output_path, dpi=300, bbox_inches="tight")
-            logger.info(f"Saved kinship heatmap to {actual_output_path}")
+            g.savefig(actual_output_path, dpi=300, bbox_inches="tight")
+            logger.info(f"Saved clustered kinship heatmap to {actual_output_path}")
 
-        plt.close(fig)
+        plt.close(g.fig)
         return {
             "status": "success",
             "n_samples": kinship_matrix.shape[0],

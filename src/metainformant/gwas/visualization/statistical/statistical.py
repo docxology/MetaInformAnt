@@ -388,30 +388,37 @@ def qq_plot(
         observed = [-math.log10(p) for p in p_values]
 
         # Calculate lambda GC (genomic control inflation factor)
-        median_observed = np.median(observed)
-        median_expected = np.median(expected)
+        median_observed = float(np.median(observed))
+        median_expected = float(np.median(expected))
         lambda_gc = median_observed / median_expected if median_expected != 0 else 1.0
+
+        # 95% confidence interval using Beta(i, n+1-i) quantiles
+        try:
+            from scipy.stats import beta as beta_dist
+            ci_lo = [-math.log10(beta_dist.ppf(0.975, i + 1, n - i)) for i in range(n)]
+            ci_hi = [-math.log10(max(beta_dist.ppf(0.025, i + 1, n - i), 1e-300)) for i in range(n)]
+        except ImportError:
+            # Fallback: Wilson score approximation
+            ci_lo = [e - 1.36 / math.sqrt(n) for e in expected]
+            ci_hi = [e + 1.36 / math.sqrt(n) for e in expected]
 
         # Create plot
         fig, ax = plt.subplots(figsize=figsize)
 
-        ax.scatter(expected, observed, alpha=0.6, s=20, color="blue")
+        ax.fill_between(expected, ci_lo, ci_hi, alpha=0.15, color="gray", label="95% CI (Beta dist.)")
+        ax.scatter(expected, observed, alpha=0.6, s=20, color="#2563eb", zorder=3, label=f"Variants (n={n:,})")
 
         # Add diagonal line
         max_val = max(max(expected), max(observed))
-        ax.plot([0, max_val], [0, max_val], "r--", alpha=0.7, label="Expected")
+        ax.plot([0, max_val], [0, max_val], "r--", alpha=0.7, linewidth=1.5, label="Expected (H₀)")
 
-        # Add confidence interval (simplified)
-        ci_lower = [e - 0.5 for e in expected]
-        ci_upper = [e + 0.5 for e in expected]
-        ax.fill_between(
-            expected, ci_lower, ci_upper, alpha=0.1, color="gray", label="95% CI"
+        ax.set_xlabel("Expected -log₁₀(p)", fontsize=13)
+        ax.set_ylabel("Observed -log₁₀(p)", fontsize=13)
+        ax.set_title(
+            f"Q-Q Plot  ·  λ_GC = {lambda_gc:.3f}" + (" ⚠" if lambda_gc > 1.1 else ""),
+            fontsize=14,
         )
-
-        ax.set_xlabel("Expected -log₁₀(p)")
-        ax.set_ylabel("Observed -log₁₀(p)")
-        ax.set_title(f"Q-Q Plot\nλ = {lambda_gc:.3f}")
-        ax.legend()
+        ax.legend(fontsize=10, loc="upper left")
         ax.grid(True, alpha=0.3)
 
         plt.tight_layout()

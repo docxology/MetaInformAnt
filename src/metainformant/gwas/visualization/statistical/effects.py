@@ -114,12 +114,12 @@ def effect_size_plot(
 
     # Calculate statistics
     stats = {
-        "Mean Effect": ".4f",
-        "Median Effect": ".4f",
-        "Std Effect": ".4f",
-        "Min Effect": ".4f",
-        "Max Effect": ".4f",
-        "Large Effects (>0.5)": (abs(beta_values) > 0.5).sum(),
+        "Mean Effect": f"{beta_values.mean():.4f}",
+        "Median Effect": f"{beta_values.median():.4f}",
+        "Std Effect": f"{beta_values.std():.4f}",
+        "Min Effect": f"{beta_values.min():.4f}",
+        "Max Effect": f"{beta_values.max():.4f}",
+        "Large Effects (>0.5)": int((abs(beta_values) > 0.5).sum()),
         "Total SNPs": len(beta_values),
     }
 
@@ -360,7 +360,7 @@ def effect_size_manhattan(
         color="red",
         linestyle="--",
         alpha=0.7,
-        label=".0e",
+        label=f"Significance ({significance_threshold:.0e})",
     )
 
     # Add chromosome labels

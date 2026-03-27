@@ -30,6 +30,7 @@ Package management, build, and testing infrastructure scripts.
 - `uv_docs.sh` - Build documentation
 
 ### Utilities
+- `generate_cursor_skills.py` - Emit `.cursor/skills/<name>/SKILL.md` for every `AGENTS.md` in the repo; `--check` verifies parity and front matter
 - `release.sh` - Release workflow
 - `fix_tmp_space.sh` - Fix temp space issues
 - `_common.sh` - Shared shell utilities
