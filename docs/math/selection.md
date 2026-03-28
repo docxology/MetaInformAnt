@@ -3,7 +3,7 @@
 Functions: `kin_selection_response`, `multilevel_selection_decomposition`.
 
 ```python
-from metainformant.math import selection
+from metainformant.math.population_genetics import selection
 
 r_b_minus_c = selection.kin_selection_response(relatedness=0.5, benefit=0.4, cost=0.1)
 between, within, total = selection.multilevel_selection_decomposition(

@@ -89,6 +89,9 @@ All species use a two-tier download strategy managed by the `StreamingPipelineOr
 - **Scheduling**: Size-ordered (smallest samples first) for maximum throughput
 - **Monitoring**: Real-time TUI via `scripts/rna/monitor_tui.py`
 
+### ⚠️ SRA Cache Management (The Docker Overlay Danger)
+When the NCBI Fallback is triggered across hundreds of parallel workers, `fasterq-dump` utilizes internal scratch directories. In a containerized Docker context (`ghcr.io/docxology/metainformant/pipeline`), this dumps hundreds of Gigabytes into the unmapped overlay filesystem (`/app/fasterq.tmp.*` and `/tmp/sra-cache/`) directly onto the VM's OS disk (`/dev/root`), rather than the mapped data volumes. If the root partition hits 100%, the entire pipeline will deadlock and OS calls will silently fail. This is recovered via VM reboots and manual internal purges (`rm -rf`).
+
 ## 🧬 Index Complexity Management
 
 For genomes with high repetitive content (e.g., *Harpegnathos saltator*), standard `kallisto index` may stall.

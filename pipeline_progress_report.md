@@ -1,88 +1,94 @@
-# 📊 MetaInformAnt Pipeline Progress Report
+# 📊 MetaInformAnt Pipeline Progress Report — Recovery VM
 
-**Telemetry Refreshed:** 2026-03-16 21:05 UTC (T+~44.5h)
-**Orchestration Node:** `metainformant-pipeline` (n2-standard-16)
-**Local Workstation Time:** 2026-03-16 14:05 local
+**Telemetry Refreshed:** 2026-03-22 00:30 UTC  
+**Orchestration Node:** `metainformant-recovery` (n2-standard-32, us-central1-a)  
+**Local Workstation Time:** 2026-03-21 17:30 local
 
-> [!IMPORTANT]
-> **Pipeline Status: 🟢 HIGHSPEED QUANTIFICATION**
-> `apis_mellifera` has crossed the **6,800** sample mark. Finalizing the remaining 386 samples at a velocity of **~120-125 samples/hour**.
-
----
-
-## 📈 1. Live Progress Matrix (All Species)
-
-| Species | Status | Quantified | Pending | Failed | Total | Downstream |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Apis mellifera** | 🔵 Running | 6,818 | 386 | 142 | 7,370 | ❌ Not run |
-| **Ooceraea biroi** | ❌ Blocked | 274 | 0 | 0 | 274 | ❌ Curation Fail* |
-| **Linepithema humile** | ❌ Blocked | 173 | 0 | 0 | 173 | ❌ Curation Fail* |
-| **Pogonomyrmex barbatus** | ✅ Complete | 132 | 0 | 0 | 132 | ✅ Success |
-| **Temnothorax americanus** | ✅ Complete | 331 | 0 | 0 | 331 | ✅ Success |
-| **Camponotus floridanus** | ✅ Complete | 366 | 0 | 1 | 367 | ✅ Success |
-| **Solenopsis invicta** | ✅ Complete | 450 | 0 | 1 | 451 | ✅ Success |
-| **Temnothorax longispinosus** | ✅ Complete | 508 | 0 | 0 | 508 | ✅ Success |
-| **Harpegnathos saltator** | ✅ Complete | 689 | 0 | 0 | 689 | ✅ Success |
-| **Atta cephalotes** | ✅ Complete | 217 | 0 | 0 | 217 | ✅ Success |
-| **Acromyrmex echinatior** | ✅ Complete | 44 | 0 | 0 | 44 | ✅ Success |
-| **Odontomachus brunneus** | ✅ Complete | 19 | 0 | 0 | 19 | ✅ Success |
-| **Monomorium pharaonis** | ✅ Complete | 370 | 0 | 0 | 370 | ✅ Success |
-| **Temnothorax nylanderi** | ✅ Complete | 154 | 0 | 12 | 166 | ✅ Success |
-| **Cardiocondyla obscurior** | ✅ Complete | 167 | 0 | 0 | 167 | ✅ Success |
-| **Temnothorax curvispinosus** | ✅ Complete | 43 | 0 | 0 | 43 | ✅ Success |
-| **Nylanderia fulva** | ✅ Complete | 40 | 0 | 0 | 40 | ✅ Success |
-| **Formica exsecta** | ✅ Complete | 23 | 0 | 0 | 23 | ✅ Success |
-| **Wasmannia auropunctata** | ❌ Blocked | 33 | 0 | 0 | 33 | ❌ Curation Fail* |
-| **Anoplolepis gracilipes** | ❌ Blocked | 7 | 0 | 0 | 7 | ❌ Curation Fail* |
-| **Dinoponera quadriceps** | ❌ Blocked | 13 | 0 | 0 | 13 | ❌ Curation Fail* |
-| **Vollenhovia emeryi** | ❌ Blocked | 15 | 0 | 0 | 15 | ❌ Curation Fail* |
-
-*\*Downstream failures for the smallest species are due to metadata filtering constraints (e.g., LITE-only runs). These will be resolved during final post-pipeline cleanup.*
+> [!NOTE]
+> **Pipeline Status: 🟢 RECOVERING — polistes_fuscatus actively quantifying**  
+> Emergency disk cleanup freed **213+ GB**. Disk now ~63 GB free. All failed samples re-queued to pending.
 
 ---
 
-## 🧵 2. Thread Pool & Hardware Saturation
+## 🛠️ Fixes Applied This Session
 
-The VM is operating under a **24-worker** quantification pool. CPU saturation is sustainable, and SSD buffer space is optimal.
-
-### Active Process Snapshot (Live Runtimes)
-| PID | Command | Resource | Elapse (HH:MM:SS) | Status |
-| :--- | :--- | :--- | :--- | :--- |
-| **501081** | `kallisto quant` | cpu: 100% | 04:33:21 | 🔵 Active (Heavy) |
-| **524494** | `kallisto quant` | cpu: 100% | 00:28:17 | 🔵 Active |
-| **525924** | `kallisto quant` | cpu: 100% | 00:08:19 | 🔵 Active |
-| **526435** | `kallisto quant` | cpu: 100% | 00:05:20 | 🔵 Active |
-
-**Performance Metrics:**
-- **Quantification Velocity**: ~120 samples/hour (Current: `apis_mellifera`)
-- **Disk IO Capacity**: Stable on master SSD.
-- **Background Curation**: Phase 2 loop is completed.
+| Fix | Status | Detail |
+| :--- | :---: | :--- |
+| FASTQ cleanup (post-quant) | ✅ Done | 213+ GB freed (141+ files deleted, daemon running) |
+| Failed samples re-queued | ✅ Done | 139 samples reset to pending across two rounds |
+| Disk throttle patch (source) | ✅ Done | `streaming_orchestrator.py`: 10 GB → 50 GB on VM |
+| Cleanup daemon v2 launched | ✅ Done | Runs every 30s, cleans completed FASTQs + re-queues failures |
 
 ---
 
-## 🛠️ 3. Diagnostic Command Toolkit
+## 🌿 Wave-2 Species Progress (Recovery VM)
 
-Run these commands inside your terminal to fetch the latest live data from the GCP orchestrator.
+| Species | Quantifying | Downloading | Pending | Failed | Total | % Done |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Polistes canadensis** | 0 | 0 | 115 | 0 | 115 | ~87% (100 on disk) |
+| **Polistes fuscatus** | 19 | 1 | ~260 | ~0* | 293 | ~12% |
+| **Megachile rotundata** | 0 | 0 | 170 | 0 | 170 | Not started |
+| **Athalia rosae** | 0 | 0 | 43 | 0 | 43 | Not started |
+| **Apis mellifera** (recovery) | 0 | 0 | 7,264 | 0 | 7,264 | Not started |
 
-### Fetch Status Matrix
+*\*Failures continuously re-queued by daemon every 30s*
+
+> **Disk**: ~63 GB free (was 7.3 GB). Daemon v2 cleaning FASTQs every 30s.  
+> **Workers**: 20 workers x 2 threads = 40 concurrent threads.
+
+---
+
+## 🏆 Wave-1 Species — Previously Completed
+
+| Species | Quantified | Failed | Total |
+| :--- | :---: | :---: | :---: |
+| Apis mellifera | 7,222 | 148 | 7,370 |
+| Harpegnathos saltator | 689 | 0 | 689 |
+| Temnothorax longispinosus | 508 | 0 | 508 |
+| Solenopsis invicta | 450 | 1 | 451 |
+| Monomorium pharaonis | 370 | 0 | 370 |
+| Camponotus floridanus | 366 | 1 | 367 |
+| Temnothorax americanus | 331 | 0 | 331 |
+| Ooceraea biroi | 274 | 0 | 274 |
+| Atta cephalotes | 217 | 0 | 217 |
+| Linepithema humile | 173 | 0 | 173 |
+| Cardiocondyla obscurior | 167 | 0 | 167 |
+| Temnothorax nylanderi | 154 | 12 | 166 |
+| Pogonomyrmex barbatus | 132 | 0 | 132 |
+| *(+ 8 smaller species)* | 233 | 0 | 233 |
+| **TOTAL Wave-1** | **11,278** | **162** | **11,440** |
+
+---
+
+## 🔧 Monitoring Commands
+
 ```bash
-docker exec metainformant-pipeline-fresh python3 scripts/rna/check_pipeline_status.py -v
+# Quick DB state check
+gcloud compute ssh metainformant-recovery --zone=us-central1-a \
+  --command='sqlite3 -readonly /opt/MetaInformAnt/output/amalgkit/pipeline_progress.db \
+  "SELECT species,state,COUNT(*) FROM samples GROUP BY species,state ORDER BY species,state;"'
+
+# Daemon v2 log (cleanup + re-queue status)
+gcloud compute ssh metainformant-recovery --zone=us-central1-a \
+  --command='tail -20 /tmp/daemon2.log'
+
+# Disk free
+gcloud compute ssh metainformant-recovery --zone=us-central1-a \
+  --command='df -h / | tail -1'
+
+# Re-queue any new failures manually
+gcloud compute ssh metainformant-recovery --zone=us-central1-a \
+  --command='sudo sqlite3 /opt/MetaInformAnt/output/amalgkit/pipeline_progress.db \
+  "UPDATE samples SET state=\"pending\",error=NULL WHERE state=\"failed\"; SELECT changes();"'
 ```
 
-### Audit Active Compute
-```bash
-docker exec metainformant-pipeline-fresh ps -eo pid,cmd,etime,stat | grep kallisto | grep -v grep
-```
-
-### Tail Phase 2 Logs
-```bash
-docker exec metainformant-pipeline-fresh tail -n 50 output/amalgkit/manual_downstream_phase2.log
-```
-
 ---
 
-## 🔭 4. Performance Assessment (T+~44.5h UTC)
+## ⚡ Root Cause & Fix Summary
 
-- **Apis Achievement**: We are at **92.5%** of the final goal (**6,818 / 7,370**). Velocity remains robust despite some heavier sample outliers.
-- **Curation Milestone**: 13 species are fully verified and finalized. The automated Batch 2 Phase 2 curation for intermediate/small species (Ooceraea, Linepithema, etc.) failed to produce final matrices, likely due to metadata discrepancies. These 6 Blocked species will be addressed post-pipeline via manual LITE interventions.
-- **Targeting Completion**: At current velocity, the final 386 samples should clear in approximately **~3.5 hours**.
+| Problem | Root Cause | Fix |
+| :--- | :--- | :--- |
+| Disk 100% full | FASTQ files not deleted after quantification | Cleanup daemon (running every 30s) |
+| `raise RuntimeError()` failures | `curl: (23)` write error — disk full during download | FASTQ cleanup + throttle raised to 50GB |
+| Workers all throttle-paused | Threshold 10 GB too low for 20 concurrent downloaders | Patched source to 50 GB on VM |
+| Failed samples stuck | Error state not auto-cleared | Daemon v2 re-queues failures every 30s |

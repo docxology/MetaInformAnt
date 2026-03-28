@@ -816,6 +816,7 @@ In early 2026, the amalgkit pipeline was scaled to 8,000+ samples. Key learnings
 - **IO Isolation**: Live progress databases must be queried in read-only mode to prevent deadlocks during high-throughput quantification.
 - **SRA Reliability**: Automated fallback to `fasterq-dump` and explicit binary path management for NCBI tools.
 - **Environment Stability**: Pre-downloading large taxonomy datasets (`taxdump.tar.gz`) for containerized runs.
+- **Storage Deadlocks (The False Zero Bug)**: Unmapped internal Docker caching directories (`/app/fasterq.tmp.*` and `/tmp/sra-cache`) can write Terabytes of data directly to the `/dev/root` container overlay layer when doing heavy NCBI fallbacks. This 100% capacity deadlock causes I/O calls to silently fail, leaving samples eternally "pending" and dropping dynamic database scan results to 0. Mitigated by explicit volume mapping and automated hard resets + container purges (`rm -rf /app/fasterq.tmp.*`).
 
 #### Developer Cheat Sheet:
 - **Status Checks**: Run `python3 scripts/rna/check_pipeline_status.py` instead of raw SQL.

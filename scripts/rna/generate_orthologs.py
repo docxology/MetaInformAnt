@@ -123,8 +123,8 @@ def main():
     gene_file = cache_dir / "odb12v2_genes.tab.gz"
     mapping_file = cache_dir / "odb12v2_OG2genes.tab.gz"
     
-    # Updated reliable data mirrors
-    url_base = "https://data.orthodb.org/v12/download"
+    # Updated reliable data mirrors (OrthoDB v12.2 data dump endpoint)
+    url_base = "https://data.orthodb.org/current/download/odb_data_dump"
     gene_url = f"{url_base}/odb12v2_genes.tab.gz"
     mapping_url = f"{url_base}/odb12v2_OG2genes.tab.gz"
     

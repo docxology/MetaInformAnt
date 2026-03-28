@@ -974,6 +974,7 @@ Contributions are welcome! Please:
 - **NumPy Vectorization**: Optimized mathematical operations for 10-100x performance improvements
 - **Progress Tracking**: Real-time progress bars for long-running analyses
 - **Memory Optimization**: Efficient algorithms for large datasets
+- **Resilient Orchestration**: Engineered automatic recovery flows and VM-level hard reset protocols to survive catastrophic 100% Docker overlay lockups caused by hidden `fasterq-dump` caches.
 
 ### Enhanced Documentation
 

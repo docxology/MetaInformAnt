@@ -62,6 +62,12 @@ SPECIES_ORDER = [
     "monomorium_pharaonis",
     "temnothorax_longispinosus",
     "harpegnathos_saltator",
+    "nasonia_vitripennis",
+    "polistes_canadensis",
+    "polistes_fuscatus",
+    "megachile_rotundata",
+    "bombus_terrestris",
+    "athalia_rosae",
     "apis_mellifera",
 ]
 

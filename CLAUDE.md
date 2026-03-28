@@ -93,7 +93,9 @@ src/metainformant/
 ├── longread/       # PacBio/Nanopore: FAST5/POD5, modified bases, assembly
 ├── spatial/        # Spatial transcriptomics: Visium, MERFISH, Xenium
 ├── pharmacogenomics/    # Clinical variants: CPIC, PharmGKB, ACMG
-└── metabolomics/        # Metabolite identification, MS data, pathway mapping
+├── metabolomics/        # Metabolite identification, MS data, pathway mapping
+├── cloud/               # GCP deployment, Docker pipelines
+└── mcp/                 # MCP tools for AI-assisted analysis
 ```
 
 ### Data Flow

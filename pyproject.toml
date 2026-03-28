@@ -352,9 +352,7 @@ python-preference = "managed"
 cache-dir = ".uv-cache"
 
 [tool.uv.workspace]
-members = [
-    "projects/apis_gwas",
-]
+members = []
 
 [dependency-groups]
 dev = [

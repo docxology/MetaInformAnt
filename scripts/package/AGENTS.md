@@ -8,7 +8,7 @@ Package management, build, and testing infrastructure scripts.
 ### Environment Setup
 - `setup.sh` - Complete environment setup
 - `uv_dev_setup.sh` - UV-based development setup
-- `setup_uv.sh` - Initialize UV environment
+- `setup_uv.sh` - **Deprecated** (redirects to `setup.sh`)
 - `verify_uv_setup.sh` - Verify UV installation
 
 ### Testing

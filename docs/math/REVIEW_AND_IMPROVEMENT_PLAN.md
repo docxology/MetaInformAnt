@@ -1,8 +1,11 @@
 # Math Module: Review and Improvement Plan
 
-**Date**: 2025-01-06  
-**Scope**: Complete review of `src/metainformant/math/` module  
-**Status**: Analysis Complete
+> [!WARNING]
+> **Stale Report**: This review was conducted on 2025-01-06. Several issues noted below have since been resolved (e.g., `fisher_exact_test()` now has a real implementation, README.md module references are corrected). The findings may no longer reflect the current state.
+
+**Date**: 2025-01-06
+**Scope**: Complete review of `src/metainformant/math/` module
+**Status**: Historical — many items resolved
 
 ## Executive Summary
 
