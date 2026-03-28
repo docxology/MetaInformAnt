@@ -546,7 +546,10 @@ def check_gatk_available() -> bool:
 
 
 def merge_vcf_files(
-    vcf_files: List[str | Path], output_vcf: str | Path, threads: int = 1
+    vcf_files: List[str | Path],
+    output_vcf: str | Path,
+    threads: int = 1,
+    timeout: int = 14400,
 ) -> subprocess.CompletedProcess:
     """Merge multiple VCF files using bcftools.
 
@@ -554,6 +557,7 @@ def merge_vcf_files(
         vcf_files: List of VCF files to merge
         output_vcf: Output merged VCF file
         threads: Number of threads to use
+        timeout: Subprocess timeout in seconds (default 14400 = 4h for large cohorts)
 
     Returns:
         CompletedProcess with bcftools merge results
@@ -561,6 +565,7 @@ def merge_vcf_files(
     Raises:
         FileNotFoundError: If bcftools is not available or input files don't exist
         ValueError: If no input files provided
+        RuntimeError: If the merge process exceeds the timeout
     """
     if not vcf_files:
         raise ValueError("Must provide at least one VCF file to merge")
@@ -586,12 +591,12 @@ def merge_vcf_files(
         str(output_vcf),
     ] + indexed_files
 
-    logger.info(f"Merging {len(vcf_files)} VCF files with bcftools")
+    logger.info(
+        f"Merging {len(vcf_files)} VCF files with bcftools (timeout={timeout}s)"
+    )
 
     try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=300
-        )  # 5 minute timeout for merging
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
 
         if result.returncode == 0:
             logger.info(f"Successfully merged VCF files to {output_vcf}")
@@ -601,8 +606,8 @@ def merge_vcf_files(
         return result
 
     except subprocess.TimeoutExpired:
-        logger.error("VCF merging timed out")
-        raise RuntimeError("VCF merging operation timed out")
+        logger.error(f"VCF merging timed out after {timeout}s")
+        raise RuntimeError(f"VCF merging operation timed out after {timeout}s")
     except Exception as e:
         logger.error(f"VCF merging failed with error: {e}")
         raise
