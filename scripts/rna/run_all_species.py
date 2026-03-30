@@ -19,38 +19,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
 
 from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
 
-# Species processing order: all ants (smallest first), then bees
+# Species processing order: precisely the final 6 empty datasets
 SPECIES_ORDER = [
-    # ── Ants (21 species, sorted by sample count ascending) ──
-    "amalgkit_anoplolepis_gracilipes.yaml",      #    2 samples
-    "amalgkit_acromyrmex_echinatior.yaml",        #    8 samples
-    "amalgkit_dinoponera_quadriceps.yaml",        #   13 samples
-    "amalgkit_vollenhovia_emeryi.yaml",           #   15 samples
-    "amalgkit_odontomachus_brunneus.yaml",        #   19 samples
-    "amalgkit_formica_exsecta.yaml",              #   23 samples
-    "amalgkit_temnothorax_americanus.yaml",       #   32 samples
-    "amalgkit_wasmannia_auropunctata.yaml",       #   33 samples
-    "amalgkit_nylanderia_fulva.yaml",             #   40 samples
-    "amalgkit_temnothorax_curvispinosus.yaml",    #   43 samples
-    "amalgkit_pogonomyrmex_barbatus.yaml",                    #   95 samples
-    "amalgkit_cardiocondyla_obscurior.yaml",      #  162 samples
-    "amalgkit_temnothorax_nylanderi.yaml",        #  166 samples
-    "amalgkit_linepithema_humile.yaml",           #  173 samples
-    "amalgkit_atta_cephalotes.yaml",              #  220 samples
-    "amalgkit_ooceraea_biroi.yaml",               #  237 samples
-    "amalgkit_camponotus_floridanus.yaml",        #  304 samples
-    "amalgkit_solenopsis_invicta.yaml",           #  349 samples
-    "amalgkit_monomorium_pharaonis.yaml",         #  370 samples
-    "amalgkit_temnothorax_longispinosus.yaml",    #  508 samples
-    "amalgkit_harpegnathos_saltator.yaml",        #  689 samples
-    # ── Bees, Wasps, and Sawflies ──
-    "amalgkit_nasonia_vitripennis.yaml",          # Parasitoid wasp
-    "amalgkit_polistes_canadensis.yaml",          # Paper wasp
-    "amalgkit_polistes_fuscatus.yaml",            # Paper wasp
-    "amalgkit_megachile_rotundata.yaml",          # Alfalfa leafcutter bee
-    "amalgkit_bombus_terrestris.yaml",            # Bumblebee
-    "amalgkit_athalia_rosae.yaml",                # Sawfly
-    "amalgkit_apis_mellifera.yaml",               # 3154 samples (Honey bee)
+    "amalgkit_athalia_rosae.yaml",
+    "amalgkit_bombus_terrestris.yaml",
+    "amalgkit_megachile_rotundata.yaml",
+    "amalgkit_nasonia_vitripennis.yaml",
+    "amalgkit_polistes_canadensis.yaml",
+    "amalgkit_polistes_fuscatus.yaml",
 ]
 
 DEFAULTS = {
