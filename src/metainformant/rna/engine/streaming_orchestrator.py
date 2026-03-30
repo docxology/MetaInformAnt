@@ -483,7 +483,7 @@ class StreamingPipelineOrchestrator:
                 "python3", "scripts/rna/run_workflow.py",
                 "--config", str(config_path),
                 "--no-progress",
-                "--steps", "config", "select", "metadata", "index"
+                "--steps", "metadata", "config", "select", "index"
             ]
             try:
                 prep_result = subprocess.run(prep_cmd, capture_output=True, text=True, timeout=7200)
