@@ -469,13 +469,12 @@ class StreamingPipelineOrchestrator:
             ete_dir = work_dir / "downloads" / "ete4"
             try:
                 ete_dir.mkdir(parents=True, exist_ok=True)
-                # Seed from the newly hosted persistent location
-                taxdump_src = Path("/app/output/taxdump.tar.gz")
                 taxdump_dest = ete_dir / "taxdump.tar.gz"
-                if taxdump_src.exists() and not taxdump_dest.exists():
-                    import shutil
-                    shutil.copy2(taxdump_src, taxdump_dest)
-                    logger.info(f"Seeded NCBI Taxdump locally at {taxdump_dest}")
+                if not taxdump_dest.exists():
+                    import urllib.request
+                    logger.info(f"Downloading NCBI Taxdump directly to {taxdump_dest}...")
+                    urllib.request.urlretrieve("https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz", taxdump_dest)
+                    logger.info(f"Successfully seeded NCBI Taxdump locally!")
             except Exception as e:
                 logger.warning(f"Failed to seed taxdump.tar.gz: {e}")
                 
