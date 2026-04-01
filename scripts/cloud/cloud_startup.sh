@@ -90,7 +90,8 @@ docker run -d \
     -e "PIPELINE_THREADS=$THREADS" \
     --cpus="$THREADS" \
     --memory="90g" \
-    "$DOCKER_IMAGE"
+    "$DOCKER_IMAGE" \
+    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_apis_mellifera.yaml --max-gb $MAX_GB --workers $WORKERS --threads $THREADS
 
 echo "  ✓ Pipeline container started"
 echo "  Container: $(docker ps --filter name=metainformant-pipeline --format '{{.ID}} {{.Status}}')"
