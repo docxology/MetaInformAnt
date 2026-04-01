@@ -11,8 +11,8 @@
 # Generated: 2026-02-09
 
 # Paths are resolved relative to repository root
-work_dir: output/amalgkit/acromyrmex_echinatior/work
-log_dir: output/amalgkit/acromyrmex_echinatior/logs
+work_dir: projects/hymenoptera_amalgkit/data/acromyrmex_echinatior/work
+log_dir: projects/hymenoptera_amalgkit/data/acromyrmex_echinatior/logs
 threads: 16
 
 auto_install_amalgkit: true
@@ -32,7 +32,7 @@ genome:
   accession: GCF_000204515.1
   assembly_name: Aech_3.9
   annotation_release: 100
-  dest_dir: output/amalgkit/shared/genome/Acromyrmex_echinatior
+  dest_dir: projects/hymenoptera_amalgkit/data/shared/genome/Acromyrmex_echinatior
   include:
     - genome
     - gff3
@@ -50,18 +50,18 @@ genome:
 # Per-step parameters
 steps:
   metadata:
-    out_dir: output/amalgkit/acromyrmex_echinatior/work
+    out_dir: projects/hymenoptera_amalgkit/data/acromyrmex_echinatior/work
     search_string: '"Acromyrmex echinatior"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
     redo: no
   integrate:
-    fastq_dir: output/amalgkit/acromyrmex_echinatior/fastq/getfastq
+    fastq_dir: projects/hymenoptera_amalgkit/data/acromyrmex_echinatior/fastq/getfastq
   select:
     max_sample: 999999
     mark_missing_rank: none
     priority: "completeness"
     redo: no
   getfastq:
-    out_dir: output/amalgkit/acromyrmex_echinatior/fastq
+    out_dir: projects/hymenoptera_amalgkit/data/acromyrmex_echinatior/fastq
     remove_sra: yes
     threads: 16
     jobs: 16
@@ -73,22 +73,22 @@ steps:
     fastp: no
   quant:
     jobs: 1
-    out_dir: output/amalgkit/acromyrmex_echinatior/work
+    out_dir: projects/hymenoptera_amalgkit/data/acromyrmex_echinatior/work
     threads: 16
     redo: no
     build_index: no
     keep_fastq: no
-    index_dir: output/amalgkit/shared/genome/Acromyrmex_echinatior/index
-    fasta_dir: output/amalgkit/shared/genome/Acromyrmex_echinatior
+    index_dir: projects/hymenoptera_amalgkit/data/shared/genome/Acromyrmex_echinatior/index
+    fasta_dir: projects/hymenoptera_amalgkit/data/shared/genome/Acromyrmex_echinatior
   merge:
-    out: output/amalgkit/acromyrmex_echinatior/merged/merged_abundance.tsv
-    out_dir: output/amalgkit/acromyrmex_echinatior/merged
+    out: projects/hymenoptera_amalgkit/data/acromyrmex_echinatior/merged/merged_abundance.tsv
+    out_dir: projects/hymenoptera_amalgkit/data/acromyrmex_echinatior/merged
   cstmm:
-    out_dir: output/amalgkit/acromyrmex_echinatior/work
+    out_dir: projects/hymenoptera_amalgkit/data/acromyrmex_echinatior/work
     orthogroup_table: ""
   curate:
-    out_dir: output/amalgkit/acromyrmex_echinatior/work
+    out_dir: projects/hymenoptera_amalgkit/data/acromyrmex_echinatior/work
   csca:
-    out_dir: output/amalgkit/acromyrmex_echinatior/work
+    out_dir: projects/hymenoptera_amalgkit/data/acromyrmex_echinatior/work
     orthogroup_table: ""
   sanity: {}

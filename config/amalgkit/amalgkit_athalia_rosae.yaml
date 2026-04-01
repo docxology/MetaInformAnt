@@ -4,8 +4,8 @@
 # Assembly: GCF_000515845.1
 # Note: Added for Hymenoptera cross-species tissue comparisons (antenna, brain, ovary, tubules)
 
-work_dir: output/amalgkit/athalia_rosae/work
-log_dir: output/amalgkit/athalia_rosae/logs
+work_dir: projects/hymenoptera_amalgkit/data/athalia_rosae/work
+log_dir: projects/hymenoptera_amalgkit/data/athalia_rosae/logs
 threads: 16
 
 auto_install_amalgkit: true
@@ -20,7 +20,7 @@ taxon_id: 37344
 
 genome:
   accession: GCF_000515845.1
-  dest_dir: output/amalgkit/athalia_rosae/genome
+  dest_dir: projects/hymenoptera_amalgkit/data/athalia_rosae/genome
 
   include:
     - genome           
@@ -39,32 +39,32 @@ genome:
 
 steps:
   metadata:
-    out_dir: output/amalgkit/athalia_rosae/work
+    out_dir: projects/hymenoptera_amalgkit/data/athalia_rosae/work
     search_string: '"Athalia rosae"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
     redo: no
   integrate:
-    fastq_dir: output/amalgkit/athalia_rosae/fastq/getfastq
+    fastq_dir: projects/hymenoptera_amalgkit/data/athalia_rosae/fastq/getfastq
   config: {}
   select: {}
   getfastq:
-    out_dir: output/amalgkit/athalia_rosae/fastq
+    out_dir: projects/hymenoptera_amalgkit/data/athalia_rosae/fastq
     remove_sra: yes
     threads: 16
     pfd: yes
     redo: no
   quant:
     jobs: 1
-    out_dir: output/amalgkit/athalia_rosae/quant
+    out_dir: projects/hymenoptera_amalgkit/data/athalia_rosae/quant
     threads: 16
     redo: no
     keep_fastq: no
   merge:
-    out: output/amalgkit/athalia_rosae/merged/merged_abundance.tsv
-    out_dir: output/amalgkit/athalia_rosae/merged
+    out: projects/hymenoptera_amalgkit/data/athalia_rosae/merged/merged_abundance.tsv
+    out_dir: projects/hymenoptera_amalgkit/data/athalia_rosae/merged
   cstmm:
-    out_dir: output/amalgkit/athalia_rosae/cstmm
+    out_dir: projects/hymenoptera_amalgkit/data/athalia_rosae/cstmm
   curate:
-    out_dir: output/amalgkit/athalia_rosae/curate
+    out_dir: projects/hymenoptera_amalgkit/data/athalia_rosae/curate
   csca:
-    out_dir: output/amalgkit/athalia_rosae/csca
+    out_dir: projects/hymenoptera_amalgkit/data/athalia_rosae/csca
   sanity: {}

@@ -11,8 +11,8 @@
 # Generated: 2026-02-09
 
 # Paths are resolved relative to repository root
-work_dir: output/amalgkit/vollenhovia_emeryi/work
-log_dir: output/amalgkit/vollenhovia_emeryi/logs
+work_dir: projects/hymenoptera_amalgkit/data/vollenhovia_emeryi/work
+log_dir: projects/hymenoptera_amalgkit/data/vollenhovia_emeryi/logs
 threads: 16
 
 auto_install_amalgkit: true
@@ -32,7 +32,7 @@ genome:
   accession: GCF_000949405.1
   assembly_name: V.emery_V1.0
   annotation_release: 100
-  dest_dir: output/amalgkit/shared/genome/Vollenhovia_emeryi
+  dest_dir: projects/hymenoptera_amalgkit/data/shared/genome/Vollenhovia_emeryi
   include:
     - genome
     - gff3
@@ -50,18 +50,18 @@ genome:
 # Per-step parameters
 steps:
   metadata:
-    out_dir: output/amalgkit/vollenhovia_emeryi/work
+    out_dir: projects/hymenoptera_amalgkit/data/vollenhovia_emeryi/work
     search_string: '"Vollenhovia emeryi"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
     redo: no
   integrate:
-    fastq_dir: output/amalgkit/vollenhovia_emeryi/fastq/getfastq
+    fastq_dir: projects/hymenoptera_amalgkit/data/vollenhovia_emeryi/fastq/getfastq
   select:
     max_sample: 999999
     mark_missing_rank: none
     priority: "completeness"
     redo: no
   getfastq:
-    out_dir: output/amalgkit/vollenhovia_emeryi/fastq
+    out_dir: projects/hymenoptera_amalgkit/data/vollenhovia_emeryi/fastq
     threads: 16
     jobs: 16
     redo: no
@@ -73,22 +73,22 @@ steps:
     max_bp: 50000000
   quant:
     jobs: 1
-    out_dir: output/amalgkit/vollenhovia_emeryi/work
+    out_dir: projects/hymenoptera_amalgkit/data/vollenhovia_emeryi/work
     threads: 16
     redo: no
     build_index: no
     keep_fastq: no
-    index_dir: output/amalgkit/shared/genome/Vollenhovia_emeryi/index
-    fasta_dir: output/amalgkit/shared/genome/Vollenhovia_emeryi
+    index_dir: projects/hymenoptera_amalgkit/data/shared/genome/Vollenhovia_emeryi/index
+    fasta_dir: projects/hymenoptera_amalgkit/data/shared/genome/Vollenhovia_emeryi
   merge:
-    out: output/amalgkit/vollenhovia_emeryi/merged/merged_abundance.tsv
-    out_dir: output/amalgkit/vollenhovia_emeryi/merged
+    out: projects/hymenoptera_amalgkit/data/vollenhovia_emeryi/merged/merged_abundance.tsv
+    out_dir: projects/hymenoptera_amalgkit/data/vollenhovia_emeryi/merged
   cstmm:
-    out_dir: output/amalgkit/vollenhovia_emeryi/work
+    out_dir: projects/hymenoptera_amalgkit/data/vollenhovia_emeryi/work
     orthogroup_table: ""
   curate:
-    out_dir: output/amalgkit/vollenhovia_emeryi/work
+    out_dir: projects/hymenoptera_amalgkit/data/vollenhovia_emeryi/work
   csca:
-    out_dir: output/amalgkit/vollenhovia_emeryi/work
+    out_dir: projects/hymenoptera_amalgkit/data/vollenhovia_emeryi/work
     orthogroup_table: ""
   sanity: {}

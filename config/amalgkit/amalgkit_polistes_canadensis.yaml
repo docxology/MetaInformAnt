@@ -4,8 +4,8 @@
 # Assembly: GCF_022905055.1
 # Note: Added for Hymenoptera cross-species tissue comparisons (brain, antenna, ovary)
 
-work_dir: output/amalgkit/polistes_canadensis/work
-log_dir: output/amalgkit/polistes_canadensis/logs
+work_dir: projects/hymenoptera_amalgkit/data/polistes_canadensis/work
+log_dir: projects/hymenoptera_amalgkit/data/polistes_canadensis/logs
 threads: 16
 
 auto_install_amalgkit: true
@@ -20,7 +20,7 @@ taxon_id: 91411
 
 genome:
   accession: GCF_022905055.1
-  dest_dir: output/amalgkit/polistes_canadensis/genome
+  dest_dir: projects/hymenoptera_amalgkit/data/polistes_canadensis/genome
 
   # Include standard RefSeq indices
   include:
@@ -43,32 +43,32 @@ genome:
 
 steps:
   metadata:
-    out_dir: output/amalgkit/polistes_canadensis/work
+    out_dir: projects/hymenoptera_amalgkit/data/polistes_canadensis/work
     search_string: '"Polistes canadensis"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
     redo: no
   integrate:
-    fastq_dir: output/amalgkit/polistes_canadensis/fastq/getfastq
+    fastq_dir: projects/hymenoptera_amalgkit/data/polistes_canadensis/fastq/getfastq
   config: {}
   select: {}
   getfastq:
-    out_dir: output/amalgkit/polistes_canadensis/fastq
+    out_dir: projects/hymenoptera_amalgkit/data/polistes_canadensis/fastq
     remove_sra: yes
     threads: 16
     pfd: yes
     redo: no
   quant:
     jobs: 1
-    out_dir: output/amalgkit/polistes_canadensis/quant
+    out_dir: projects/hymenoptera_amalgkit/data/polistes_canadensis/quant
     threads: 16
     redo: no
     keep_fastq: no
   merge:
-    out: output/amalgkit/polistes_canadensis/merged/merged_abundance.tsv
-    out_dir: output/amalgkit/polistes_canadensis/merged
+    out: projects/hymenoptera_amalgkit/data/polistes_canadensis/merged/merged_abundance.tsv
+    out_dir: projects/hymenoptera_amalgkit/data/polistes_canadensis/merged
   cstmm:
-    out_dir: output/amalgkit/polistes_canadensis/cstmm
+    out_dir: projects/hymenoptera_amalgkit/data/polistes_canadensis/cstmm
   curate:
-    out_dir: output/amalgkit/polistes_canadensis/curate
+    out_dir: projects/hymenoptera_amalgkit/data/polistes_canadensis/curate
   csca:
-    out_dir: output/amalgkit/polistes_canadensis/csca
+    out_dir: projects/hymenoptera_amalgkit/data/polistes_canadensis/csca
   sanity: {}

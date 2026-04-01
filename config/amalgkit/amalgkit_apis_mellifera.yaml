@@ -7,8 +7,8 @@
 # Notes: Model organism for social behavior, extensive RNA-seq datasets available
 
 
-work_dir: output/amalgkit/apis_mellifera/work
-log_dir: output/amalgkit/apis_mellifera/logs
+work_dir: projects/hymenoptera_amalgkit/data/apis_mellifera/work
+log_dir: projects/hymenoptera_amalgkit/data/apis_mellifera/logs
 threads: 60
 
 
@@ -35,7 +35,7 @@ genome:
   accession: GCF_003254395.2
   assembly_name: Amel_HAv3.1
   annotation_release: 104
-  dest_dir: output/amalgkit/apis_mellifera/genome
+  dest_dir: projects/hymenoptera_amalgkit/data/apis_mellifera/genome
 
 
   # Files to download (based on available NCBI FTP resources)
@@ -79,7 +79,7 @@ steps:
     search_string: '"Apis mellifera"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
     redo: no
   integrate:
-    fastq_dir: output/amalgkit/apis_mellifera/fastq/getfastq
+    fastq_dir: projects/hymenoptera_amalgkit/data/apis_mellifera/fastq/getfastq
   config: {}
   select: {}
   getfastq:
@@ -96,7 +96,7 @@ steps:
     # Delete SRA/FASTQ files after quantification to save space
     keep_fastq: no
   merge:
-    out: output/amalgkit/apis_mellifera/merged/merged_abundance.tsv
+    out: projects/hymenoptera_amalgkit/data/apis_mellifera/merged/merged_abundance.tsv
   cstmm: {}
   curate: {}
   csca: {}

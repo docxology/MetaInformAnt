@@ -11,8 +11,8 @@
 # Generated: 2026-02-09
 
 # Paths are resolved relative to repository root
-work_dir: output/amalgkit/ooceraea_biroi/work
-log_dir: output/amalgkit/ooceraea_biroi/logs
+work_dir: projects/hymenoptera_amalgkit/data/ooceraea_biroi/work
+log_dir: projects/hymenoptera_amalgkit/data/ooceraea_biroi/logs
 threads: 16
 
 auto_install_amalgkit: true
@@ -32,7 +32,7 @@ genome:
   accession: GCF_003672135.1
   assembly_name: Obir_v5.4
   annotation_release: 100
-  dest_dir: output/amalgkit/shared/genome/Ooceraea_biroi
+  dest_dir: projects/hymenoptera_amalgkit/data/shared/genome/Ooceraea_biroi
   include:
     - genome
     - gff3
@@ -50,18 +50,18 @@ genome:
 # Per-step parameters
 steps:
   metadata:
-    out_dir: output/amalgkit/ooceraea_biroi/work
+    out_dir: projects/hymenoptera_amalgkit/data/ooceraea_biroi/work
     search_string: '"Ooceraea biroi"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
     redo: no
   integrate:
-    fastq_dir: output/amalgkit/ooceraea_biroi/fastq/getfastq
+    fastq_dir: projects/hymenoptera_amalgkit/data/ooceraea_biroi/fastq/getfastq
   select:
     max_sample: 999999
     mark_missing_rank: none
     priority: "completeness"
     redo: no
   getfastq:
-    out_dir: output/amalgkit/ooceraea_biroi/fastq
+    out_dir: projects/hymenoptera_amalgkit/data/ooceraea_biroi/fastq
     threads: 16
     jobs: 16
     redo: no
@@ -73,21 +73,21 @@ steps:
     max_bp: 50000000
   quant:
     jobs: 1
-    out_dir: output/amalgkit/ooceraea_biroi/work
+    out_dir: projects/hymenoptera_amalgkit/data/ooceraea_biroi/work
     threads: 16
     redo: no
     build_index: no
     keep_fastq: no
-    index_dir: output/amalgkit/shared/genome/Ooceraea_biroi/index
-    fasta_dir: output/amalgkit/shared/genome/Ooceraea_biroi
+    index_dir: projects/hymenoptera_amalgkit/data/shared/genome/Ooceraea_biroi/index
+    fasta_dir: projects/hymenoptera_amalgkit/data/shared/genome/Ooceraea_biroi
   merge:
-    out_dir: output/amalgkit/ooceraea_biroi/work
+    out_dir: projects/hymenoptera_amalgkit/data/ooceraea_biroi/work
   cstmm:
-    out_dir: output/amalgkit/ooceraea_biroi/work
+    out_dir: projects/hymenoptera_amalgkit/data/ooceraea_biroi/work
     orthogroup_table: ""
   curate:
-    out_dir: output/amalgkit/ooceraea_biroi/work
+    out_dir: projects/hymenoptera_amalgkit/data/ooceraea_biroi/work
   csca:
-    out_dir: output/amalgkit/ooceraea_biroi/work
+    out_dir: projects/hymenoptera_amalgkit/data/ooceraea_biroi/work
     orthogroup_table: ""
   sanity: {}

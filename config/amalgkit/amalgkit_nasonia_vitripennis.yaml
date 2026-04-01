@@ -4,8 +4,8 @@
 # Assembly: GCF_009193385.2 (Nvit_psr_1.1)
 # Note: Added for Hymenoptera cross-species tissue comparisons (parasitoid wasp)
 
-work_dir: output/amalgkit/nasonia_vitripennis/work
-log_dir: output/amalgkit/nasonia_vitripennis/logs
+work_dir: projects/hymenoptera_amalgkit/data/nasonia_vitripennis/work
+log_dir: projects/hymenoptera_amalgkit/data/nasonia_vitripennis/logs
 threads: 16
 
 auto_install_amalgkit: true
@@ -25,7 +25,7 @@ taxon_id: 7425
 genome:
   accession: GCF_009193385.2
   assembly_name: Nvit_psr_1.1
-  dest_dir: output/amalgkit/nasonia_vitripennis/genome
+  dest_dir: projects/hymenoptera_amalgkit/data/nasonia_vitripennis/genome
 
   # Files to download (based on available NCBI FTP resources)
   include:
@@ -49,32 +49,32 @@ genome:
 # Per-step parameters (merged on top of common params)
 steps:
   metadata:
-    out_dir: output/amalgkit/nasonia_vitripennis/work
+    out_dir: projects/hymenoptera_amalgkit/data/nasonia_vitripennis/work
     search_string: '"Nasonia vitripennis"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
     redo: no
   integrate:
-    fastq_dir: output/amalgkit/nasonia_vitripennis/fastq/getfastq
+    fastq_dir: projects/hymenoptera_amalgkit/data/nasonia_vitripennis/fastq/getfastq
   config: {}
   select: {}
   getfastq:
-    out_dir: output/amalgkit/nasonia_vitripennis/fastq
+    out_dir: projects/hymenoptera_amalgkit/data/nasonia_vitripennis/fastq
     remove_sra: yes
     threads: 16
     pfd: yes
     redo: no
   quant:
     jobs: 1
-    out_dir: output/amalgkit/nasonia_vitripennis/quant
+    out_dir: projects/hymenoptera_amalgkit/data/nasonia_vitripennis/quant
     threads: 16
     redo: no
     keep_fastq: no
   merge:
-    out: output/amalgkit/nasonia_vitripennis/merged/merged_abundance.tsv
-    out_dir: output/amalgkit/nasonia_vitripennis/merged
+    out: projects/hymenoptera_amalgkit/data/nasonia_vitripennis/merged/merged_abundance.tsv
+    out_dir: projects/hymenoptera_amalgkit/data/nasonia_vitripennis/merged
   cstmm:
-    out_dir: output/amalgkit/nasonia_vitripennis/cstmm
+    out_dir: projects/hymenoptera_amalgkit/data/nasonia_vitripennis/cstmm
   curate:
-    out_dir: output/amalgkit/nasonia_vitripennis/curate
+    out_dir: projects/hymenoptera_amalgkit/data/nasonia_vitripennis/curate
   csca:
-    out_dir: output/amalgkit/nasonia_vitripennis/csca
+    out_dir: projects/hymenoptera_amalgkit/data/nasonia_vitripennis/csca
   sanity: {}

@@ -4,8 +4,8 @@
 # Assembly: GCF_000226025.1
 # Note: Added for Hymenoptera cross-species tissue comparisons (gut, head, ovary)
 
-work_dir: output/amalgkit/megachile_rotundata/work
-log_dir: output/amalgkit/megachile_rotundata/logs
+work_dir: projects/hymenoptera_amalgkit/data/megachile_rotundata/work
+log_dir: projects/hymenoptera_amalgkit/data/megachile_rotundata/logs
 threads: 16
 
 auto_install_amalgkit: true
@@ -20,7 +20,7 @@ taxon_id: 143995
 
 genome:
   accession: GCF_000226025.1
-  dest_dir: output/amalgkit/megachile_rotundata/genome
+  dest_dir: projects/hymenoptera_amalgkit/data/megachile_rotundata/genome
 
   include:
     - genome           
@@ -39,32 +39,32 @@ genome:
 
 steps:
   metadata:
-    out_dir: output/amalgkit/megachile_rotundata/work
+    out_dir: projects/hymenoptera_amalgkit/data/megachile_rotundata/work
     search_string: '"Megachile rotundata"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
     redo: no
   integrate:
-    fastq_dir: output/amalgkit/megachile_rotundata/fastq/getfastq
+    fastq_dir: projects/hymenoptera_amalgkit/data/megachile_rotundata/fastq/getfastq
   config: {}
   select: {}
   getfastq:
-    out_dir: output/amalgkit/megachile_rotundata/fastq
+    out_dir: projects/hymenoptera_amalgkit/data/megachile_rotundata/fastq
     remove_sra: yes
     threads: 16
     pfd: yes
     redo: no
   quant:
     jobs: 1
-    out_dir: output/amalgkit/megachile_rotundata/quant
+    out_dir: projects/hymenoptera_amalgkit/data/megachile_rotundata/quant
     threads: 16
     redo: no
     keep_fastq: no
   merge:
-    out: output/amalgkit/megachile_rotundata/merged/merged_abundance.tsv
-    out_dir: output/amalgkit/megachile_rotundata/merged
+    out: projects/hymenoptera_amalgkit/data/megachile_rotundata/merged/merged_abundance.tsv
+    out_dir: projects/hymenoptera_amalgkit/data/megachile_rotundata/merged
   cstmm:
-    out_dir: output/amalgkit/megachile_rotundata/cstmm
+    out_dir: projects/hymenoptera_amalgkit/data/megachile_rotundata/cstmm
   curate:
-    out_dir: output/amalgkit/megachile_rotundata/curate
+    out_dir: projects/hymenoptera_amalgkit/data/megachile_rotundata/curate
   csca:
-    out_dir: output/amalgkit/megachile_rotundata/csca
+    out_dir: projects/hymenoptera_amalgkit/data/megachile_rotundata/csca
   sanity: {}

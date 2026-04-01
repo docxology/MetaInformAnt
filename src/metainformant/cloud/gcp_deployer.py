@@ -209,7 +209,7 @@ class GCPDeployer:
             script_path = Path(__file__).resolve().parent.parent.parent.parent / "scripts" / "cloud" / "download_results.sh"
             if script_path.exists():
                 subprocess.run(
-                    ["bash", str(script_path), str(local_path)],
+                    ["bash", str(script_path), "--output", str(local_path)],
                     check=True, timeout=7200
                 )
                 return True

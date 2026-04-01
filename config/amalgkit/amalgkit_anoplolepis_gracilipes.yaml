@@ -11,8 +11,8 @@
 # Generated: 2026-02-09
 
 # Paths are resolved relative to repository root
-work_dir: output/amalgkit/anoplolepis_gracilipes/work
-log_dir: output/amalgkit/anoplolepis_gracilipes/logs
+work_dir: projects/hymenoptera_amalgkit/data/anoplolepis_gracilipes/work
+log_dir: projects/hymenoptera_amalgkit/data/anoplolepis_gracilipes/logs
 threads: 16
 
 auto_install_amalgkit: true
@@ -32,7 +32,7 @@ genome:
   accession: GCF_047496725.1
   assembly_name: ASM4749672v1
   annotation_release: RS_2025_04
-  dest_dir: output/amalgkit/shared/genome/Anoplolepis_gracilipes
+  dest_dir: projects/hymenoptera_amalgkit/data/shared/genome/Anoplolepis_gracilipes
   include:
     - genome
     - gff3
@@ -50,18 +50,18 @@ genome:
 # Per-step parameters
 steps:
   metadata:
-    out_dir: output/amalgkit/anoplolepis_gracilipes/work
+    out_dir: projects/hymenoptera_amalgkit/data/anoplolepis_gracilipes/work
     search_string: '"Anoplolepis gracilipes"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
     redo: no
   integrate:
-    fastq_dir: output/amalgkit/anoplolepis_gracilipes/fastq/getfastq
+    fastq_dir: projects/hymenoptera_amalgkit/data/anoplolepis_gracilipes/fastq/getfastq
   select:
     max_sample: 999999
     mark_missing_rank: none
     priority: "completeness"
     redo: no
   getfastq:
-    out_dir: output/amalgkit/anoplolepis_gracilipes/fastq
+    out_dir: projects/hymenoptera_amalgkit/data/anoplolepis_gracilipes/fastq
     threads: 16
     jobs: 16
     redo: no
@@ -73,22 +73,22 @@ steps:
     max_bp: 50000000
   quant:
     jobs: 1
-    out_dir: output/amalgkit/anoplolepis_gracilipes/work
+    out_dir: projects/hymenoptera_amalgkit/data/anoplolepis_gracilipes/work
     threads: 16
     redo: no
     build_index: no
     keep_fastq: no
-    index_dir: output/amalgkit/shared/genome/Anoplolepis_gracilipes/index
-    fasta_dir: output/amalgkit/shared/genome/Anoplolepis_gracilipes
+    index_dir: projects/hymenoptera_amalgkit/data/shared/genome/Anoplolepis_gracilipes/index
+    fasta_dir: projects/hymenoptera_amalgkit/data/shared/genome/Anoplolepis_gracilipes
   merge:
-    out: output/amalgkit/anoplolepis_gracilipes/merged/merged_abundance.tsv
-    out_dir: output/amalgkit/anoplolepis_gracilipes/merged
+    out: projects/hymenoptera_amalgkit/data/anoplolepis_gracilipes/merged/merged_abundance.tsv
+    out_dir: projects/hymenoptera_amalgkit/data/anoplolepis_gracilipes/merged
   cstmm:
-    out_dir: output/amalgkit/anoplolepis_gracilipes/work
+    out_dir: projects/hymenoptera_amalgkit/data/anoplolepis_gracilipes/work
     orthogroup_table: ""
   curate:
-    out_dir: output/amalgkit/anoplolepis_gracilipes/work
+    out_dir: projects/hymenoptera_amalgkit/data/anoplolepis_gracilipes/work
   csca:
-    out_dir: output/amalgkit/anoplolepis_gracilipes/work
+    out_dir: projects/hymenoptera_amalgkit/data/anoplolepis_gracilipes/work
     orthogroup_table: ""
   sanity: {}

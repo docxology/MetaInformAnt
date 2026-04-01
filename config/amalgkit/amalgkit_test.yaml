@@ -1,8 +1,8 @@
 # Test configuration for RNA workflow tests
 # This file is used for testing configuration loading and planning
 
-work_dir: output/amalgkit/test/work
-log_dir: output/amalgkit/test/logs
+work_dir: projects/hymenoptera_amalgkit/data/test/work
+log_dir: projects/hymenoptera_amalgkit/data/test/logs
 threads: 6
 
 auto_install_amalgkit: false
@@ -14,23 +14,23 @@ species_list:
 # Per-step parameters (merged on top of common params)
 steps:
   metadata:
-    out_dir: output/amalgkit/test/work
+    out_dir: projects/hymenoptera_amalgkit/data/test/work
     search_string: '"Test species"[Organism] AND RNA-Seq[Strategy]'
   integrate:
-    fastq_dir: output/amalgkit/test/fastq
+    fastq_dir: projects/hymenoptera_amalgkit/data/test/fastq
   config: {}
   select: {}
   getfastq:
-    out_dir: output/amalgkit/test/fastq
+    out_dir: projects/hymenoptera_amalgkit/data/test/fastq
   quant:
-    out_dir: output/amalgkit/test/quant
+    out_dir: projects/hymenoptera_amalgkit/data/test/quant
   merge:
-    out: output/amalgkit/test/merged/merged_abundance.tsv
-    out_dir: output/amalgkit/test/merged
+    out: projects/hymenoptera_amalgkit/data/test/merged/merged_abundance.tsv
+    out_dir: projects/hymenoptera_amalgkit/data/test/merged
   cstmm:
-    out_dir: output/amalgkit/test/cstmm
+    out_dir: projects/hymenoptera_amalgkit/data/test/cstmm
   curate:
-    out_dir: output/amalgkit/test/curate
+    out_dir: projects/hymenoptera_amalgkit/data/test/curate
   csca:
-    out_dir: output/amalgkit/test/csca
+    out_dir: projects/hymenoptera_amalgkit/data/test/csca
   sanity: {}

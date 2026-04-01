@@ -361,6 +361,8 @@ def _validate_merge_prerequisites(
                 if merge_quant_link.exists() and not merge_quant_link.is_symlink():
                     if merge_quant_link.is_dir() and not any(merge_quant_link.iterdir()):
                         merge_quant_link.rmdir()
+                if merge_quant_link.is_symlink():
+                    merge_quant_link.unlink()
                 if not merge_quant_link.exists():
                     merge_quant_link.symlink_to(quant_dir.resolve())
             except Exception as e:
@@ -388,11 +390,14 @@ def _validate_r_step_prerequisites(
         curate_merge_link = curate_out_dir / "merge"
 
         if merge_results_dir.exists() and merge_results_dir.resolve() != curate_merge_link.resolve():
-            if not curate_merge_link.exists():
+            if not curate_merge_link.exists() or curate_merge_link.is_symlink():
                 logger.info(f"Bridging merge results for {step_name}: {merge_results_dir} -> {curate_merge_link}")
                 try:
                     curate_merge_link.parent.mkdir(parents=True, exist_ok=True)
-                    curate_merge_link.symlink_to(merge_results_dir.resolve())
+                    if curate_merge_link.is_symlink():
+                        curate_merge_link.unlink()
+                    if not curate_merge_link.exists():
+                        curate_merge_link.symlink_to(merge_results_dir.resolve())
                 except Exception as e:
                     logger.warning(f"Could not bridge merge results for {step_name}: {e}")
 

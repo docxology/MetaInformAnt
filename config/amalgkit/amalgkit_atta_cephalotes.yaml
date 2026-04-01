@@ -11,8 +11,8 @@
 # Generated: 2026-02-09
 
 # Paths are resolved relative to repository root
-work_dir: output/amalgkit/atta_cephalotes/work
-log_dir: output/amalgkit/atta_cephalotes/logs
+work_dir: projects/hymenoptera_amalgkit/data/atta_cephalotes/work
+log_dir: projects/hymenoptera_amalgkit/data/atta_cephalotes/logs
 threads: 16
 
 auto_install_amalgkit: true
@@ -32,7 +32,7 @@ genome:
   accession: GCF_000143395.1
   assembly_name: Attacep1.0
   annotation_release: 100
-  dest_dir: output/amalgkit/shared/genome/Atta_cephalotes
+  dest_dir: projects/hymenoptera_amalgkit/data/shared/genome/Atta_cephalotes
   include:
     - genome
     - gff3
@@ -50,18 +50,18 @@ genome:
 # Per-step parameters
 steps:
   metadata:
-    out_dir: output/amalgkit/atta_cephalotes/work
+    out_dir: projects/hymenoptera_amalgkit/data/atta_cephalotes/work
     search_string: '"Atta cephalotes"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
     redo: no
   integrate:
-    fastq_dir: output/amalgkit/atta_cephalotes/fastq/getfastq
+    fastq_dir: projects/hymenoptera_amalgkit/data/atta_cephalotes/fastq/getfastq
   select:
     max_sample: 999999
     mark_missing_rank: none
     priority: "completeness"
     redo: no
   getfastq:
-    out_dir: output/amalgkit/atta_cephalotes/fastq
+    out_dir: projects/hymenoptera_amalgkit/data/atta_cephalotes/fastq
     threads: 16
     jobs: 16
     redo: no
@@ -73,22 +73,22 @@ steps:
     max_bp: 50000000
   quant:
     jobs: 1
-    out_dir: output/amalgkit/atta_cephalotes/work
+    out_dir: projects/hymenoptera_amalgkit/data/atta_cephalotes/work
     threads: 16
     redo: no
     build_index: no
     keep_fastq: no
-    index_dir: output/amalgkit/shared/genome/Atta_cephalotes/index
-    fasta_dir: output/amalgkit/shared/genome/Atta_cephalotes
+    index_dir: projects/hymenoptera_amalgkit/data/shared/genome/Atta_cephalotes/index
+    fasta_dir: projects/hymenoptera_amalgkit/data/shared/genome/Atta_cephalotes
   merge:
-    out: output/amalgkit/atta_cephalotes/merged/merged_abundance.tsv
-    out_dir: output/amalgkit/atta_cephalotes/merged
+    out: projects/hymenoptera_amalgkit/data/atta_cephalotes/merged/merged_abundance.tsv
+    out_dir: projects/hymenoptera_amalgkit/data/atta_cephalotes/merged
   cstmm:
-    out_dir: output/amalgkit/atta_cephalotes/work
+    out_dir: projects/hymenoptera_amalgkit/data/atta_cephalotes/work
     orthogroup_table: ""
   curate:
-    out_dir: output/amalgkit/atta_cephalotes/work
+    out_dir: projects/hymenoptera_amalgkit/data/atta_cephalotes/work
   csca:
-    out_dir: output/amalgkit/atta_cephalotes/work
+    out_dir: projects/hymenoptera_amalgkit/data/atta_cephalotes/work
     orthogroup_table: ""
   sanity: {}

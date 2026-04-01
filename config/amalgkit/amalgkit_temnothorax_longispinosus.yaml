@@ -11,8 +11,8 @@
 # Generated: 2026-02-09
 
 # Paths are resolved relative to repository root
-work_dir: output/amalgkit/temnothorax_longispinosus/work
-log_dir: output/amalgkit/temnothorax_longispinosus/logs
+work_dir: projects/hymenoptera_amalgkit/data/temnothorax_longispinosus/work
+log_dir: projects/hymenoptera_amalgkit/data/temnothorax_longispinosus/logs
 threads: 16
 
 auto_install_amalgkit: true
@@ -32,7 +32,7 @@ genome:
   accession: GCF_030848805.1
   assembly_name: Tlon_JGU_v1
   annotation_release: RS_2025_02
-  dest_dir: output/amalgkit/shared/genome/Temnothorax_longispinosus
+  dest_dir: projects/hymenoptera_amalgkit/data/shared/genome/Temnothorax_longispinosus
   include:
     - genome
     - gff3
@@ -50,18 +50,18 @@ genome:
 # Per-step parameters
 steps:
   metadata:
-    out_dir: output/amalgkit/temnothorax_longispinosus/work
+    out_dir: projects/hymenoptera_amalgkit/data/temnothorax_longispinosus/work
     search_string: '"Temnothorax longispinosus"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
     redo: no
   integrate:
-    fastq_dir: output/amalgkit/temnothorax_longispinosus/fastq/getfastq
+    fastq_dir: projects/hymenoptera_amalgkit/data/temnothorax_longispinosus/fastq/getfastq
   select:
     max_sample: 999999
     mark_missing_rank: none
     priority: "completeness"
     redo: no
   getfastq:
-    out_dir: output/amalgkit/temnothorax_longispinosus/fastq
+    out_dir: projects/hymenoptera_amalgkit/data/temnothorax_longispinosus/fastq
     threads: 16
     jobs: 16
     redo: no
@@ -73,22 +73,22 @@ steps:
     max_bp: 50000000
   quant:
     jobs: 1
-    out_dir: output/amalgkit/temnothorax_longispinosus/work
+    out_dir: projects/hymenoptera_amalgkit/data/temnothorax_longispinosus/work
     threads: 16
     redo: no
     build_index: no
     keep_fastq: no
-    index_dir: output/amalgkit/shared/genome/Temnothorax_longispinosus/index
-    fasta_dir: output/amalgkit/shared/genome/Temnothorax_longispinosus
+    index_dir: projects/hymenoptera_amalgkit/data/shared/genome/Temnothorax_longispinosus/index
+    fasta_dir: projects/hymenoptera_amalgkit/data/shared/genome/Temnothorax_longispinosus
   merge:
-    out: output/amalgkit/temnothorax_longispinosus/merged/merged_abundance.tsv
-    out_dir: output/amalgkit/temnothorax_longispinosus/merged
+    out: projects/hymenoptera_amalgkit/data/temnothorax_longispinosus/merged/merged_abundance.tsv
+    out_dir: projects/hymenoptera_amalgkit/data/temnothorax_longispinosus/merged
   cstmm:
-    out_dir: output/amalgkit/temnothorax_longispinosus/work
+    out_dir: projects/hymenoptera_amalgkit/data/temnothorax_longispinosus/work
     orthogroup_table: ""
   curate:
-    out_dir: output/amalgkit/temnothorax_longispinosus/work
+    out_dir: projects/hymenoptera_amalgkit/data/temnothorax_longispinosus/work
   csca:
-    out_dir: output/amalgkit/temnothorax_longispinosus/work
+    out_dir: projects/hymenoptera_amalgkit/data/temnothorax_longispinosus/work
     orthogroup_table: ""
   sanity: {}
