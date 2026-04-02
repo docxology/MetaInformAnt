@@ -56,40 +56,18 @@ gcloud compute ssh "$VM_NAME" \
         sudo rm -rf /tmp/quant_export
         sudo mkdir -p /tmp/quant_export
 
-        # Copy all quant directories from container
-        for sp_dir in \$(sudo docker exec $CONTAINER ls output/amalgkit/ 2>/dev/null); do
-            if [ -n "$SPECIES" ] && [ "\$sp_dir" != "$SPECIES" ]; then
-                continue
-            fi
-            if sudo docker exec $CONTAINER test -d output/amalgkit/\$sp_dir/work/quant; then
-                count=\$(sudo docker exec $CONTAINER ls output/amalgkit/\$sp_dir/work/quant 2>/dev/null | wc -l)
-                if [ \"\$count\" -gt 0 ]; then
-                    sudo mkdir -p /tmp/quant_export/\$sp_dir/work/quant
-                    sudo docker cp $CONTAINER:/app/output/amalgkit/\$sp_dir/work/quant /tmp/quant_export/\$sp_dir/work/
-                    echo \"  ✓ \$sp_dir: \$count samples\"
-                fi
-            fi
-        done
-
-        # Also copy progress DB and any merged results
-        sudo docker cp $CONTAINER:/app/output/amalgkit/pipeline_progress.db /tmp/quant_export/ 2>/dev/null || true
-        for sp_dir in \$(sudo docker exec $CONTAINER ls output/amalgkit/ 2>/dev/null); do
-            if [ -n "$SPECIES" ] && [ "\$sp_dir" != "$SPECIES" ]; then
-                continue
-            fi
-            if sudo docker exec $CONTAINER test -d output/amalgkit/\$sp_dir/merged; then
-                sudo mkdir -p /tmp/quant_export/\$sp_dir/
-                sudo docker cp $CONTAINER:/app/output/amalgkit/\$sp_dir/merged /tmp/quant_export/\$sp_dir/ 2>/dev/null || true
-                echo \"  ✓ \$sp_dir/merged\"
-            fi
-        done
+        # Copy natively from the new VM mount point
+        sudo cp -r /opt/MetaInformAnt/projects /tmp/quant_export/ || true
+        
+        # Strip large intermediates so we only download results and DBs
+        sudo find /tmp/quant_export -name "*.fastq.gz" -o -name "*.sra" -o -name "index" -type d -exec rm -rf {} + 2>/dev/null || true
 
         # Fix permissions for SCP
         sudo chmod -R 755 /tmp/quant_export
         sudo chown -R \$(whoami) /tmp/quant_export
 
-        echo ''
-        echo \"Total export size:\"
+        echo ""
+        echo "Total export size:"
         du -sh /tmp/quant_export
     "
 

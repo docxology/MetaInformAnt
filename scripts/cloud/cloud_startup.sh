@@ -75,7 +75,7 @@ docker build -t "$DOCKER_IMAGE" . 2>&1 | tail -5
 echo "  ✓ Image built: $DOCKER_IMAGE"
 
 # ── Create output directory ─────────────────────────────────────────────
-mkdir -p "$WORK_DIR/output/amalgkit"
+mkdir -p "$WORK_DIR/projects"
 
 # ── Start pipeline ──────────────────────────────────────────────────────
 echo ""
@@ -83,7 +83,7 @@ echo "▸ Starting pipeline..."
 docker run -d \
     --name metainformant-pipeline \
     --restart unless-stopped \
-    -v "$WORK_DIR/output:/app/output" \
+    -v "$WORK_DIR/projects:/app/projects" \
     -v "$WORK_DIR/config:/app/config" \
     -e "PIPELINE_MAX_GB=$MAX_GB" \
     -e "PIPELINE_WORKERS=$WORKERS" \
@@ -103,7 +103,7 @@ if [ -n "$GCS_BUCKET" ]; then
 
     # Sync every 30 minutes
     cat > /etc/cron.d/metainformant-sync << CRON
-*/30 * * * * root gsutil -m rsync -r /opt/MetaInformAnt/output/amalgkit/ gs://${GCS_BUCKET}/amalgkit/ >> /var/log/metainformant-sync.log 2>&1
+*/30 * * * * root gsutil -m rsync -r /opt/MetaInformAnt/projects/ gs://${GCS_BUCKET}/projects/ >> /var/log/metainformant-sync.log 2>&1
 CRON
     echo "  ✓ GCS sync configured (every 30 min → gs://$GCS_BUCKET/amalgkit/)"
 fi

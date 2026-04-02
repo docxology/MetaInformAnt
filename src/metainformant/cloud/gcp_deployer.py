@@ -171,9 +171,7 @@ class GCPDeployer:
         """Tail the pipeline log on the remote VM."""
         try:
             result = self._ssh_run(
-                f"tail -{lines} /opt/MetaInformAnt/output/amalgkit/pipeline_restart.log 2>/dev/null "
-                f"|| tail -{lines} /opt/MetaInformAnt/pipeline.log 2>/dev/null "
-                f"|| echo 'No logs found yet'",
+                f"sudo docker logs --tail {lines} metainformant-pipeline 2>&1 || echo 'No logs found yet'",
                 timeout=30,
             )
             return result.stdout.strip() if result.stdout else "No output"
@@ -221,7 +219,7 @@ class GCPDeployer:
                     "gcloud", "compute", "scp", "--recurse",
                     "--zone", self.cfg.zone,
                     "--project", self.cfg.project,
-                    f"{self.cfg.instance_name}:/app/output/amalgkit/{subdir}",
+                    f"{self.cfg.instance_name}:/opt/MetaInformAnt/projects/hymenoptera_amalgkit/data/{subdir}",
                     str(local_path),
                 ], check=False, timeout=3600)
             return True
@@ -236,7 +234,7 @@ class GCPDeployer:
             return False
         try:
             self._ssh_run(
-                f"gsutil -m rsync -r /opt/MetaInformAnt/output/amalgkit/ "
+                f"gsutil -m rsync -r /opt/MetaInformAnt/projects/ "
                 f"gs://{self.cfg.gcs_bucket}/amalgkit/",
                 timeout=600,
             )
