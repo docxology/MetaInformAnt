@@ -116,6 +116,24 @@ def _execute_streaming_mode(
             single_params = step_params.copy()
             single_params["metadata"] = str(single_meta_file)
             
+            # FAST PYTHON SKIP LOGIC
+            # Avoid paying the 1.5 second penalty per skipped sample during spot reboots
+            if step_name == "quant":
+                abundance_file = config.work_dir / "quant" / sample_id / f"{sample_id}_abundance.tsv"
+                if abundance_file.exists() and str(single_params.get("redo", "no")).lower() not in ("yes", "true", "1"):
+                    logger.debug(f"  [Sample {sample_id}] Step {step_name} output found. Native quick bypass!")
+                    sample_results.append(WorkflowStepResult(step_name=f"{step_name}_{sample_id}", return_code=0, success=True))
+                    continue
+            elif step_name == "getfastq":
+                sra_dir = config.work_dir / "getfastq" / sample_id
+                fastq_file = sra_dir / f"{sample_id}.amalgkit.fastq.gz"
+                abundance_file = config.work_dir / "quant" / sample_id / f"{sample_id}_abundance.tsv"
+                # If abundance exists, getfastq is intrinsically handled. If fastq exists, it's also handled.
+                if (abundance_file.exists() or fastq_file.exists()) and str(single_params.get("redo", "no")).lower() not in ("yes", "true", "1"):
+                    logger.debug(f"  [Sample {sample_id}] Step {step_name} target found. Native quick bypass!")
+                    sample_results.append(WorkflowStepResult(step_name=f"{step_name}_{sample_id}", return_code=0, success=True))
+                    continue
+            
             # Dynamically throttle cores to prevent system choking
             # If total threads=16, and chunk_size=16, give each sample 1 thread.
             base_threads = int(single_params.get("threads", 1))
