@@ -81,7 +81,8 @@ steps:
   integrate:
     fastq_dir: projects/hymenoptera_amalgkit/data/apis_mellifera/fastq/getfastq
   config: {}
-  select: {}
+  select:
+    config_dir: config_base
   getfastq:
     remove_sra: yes
     threads: 60
