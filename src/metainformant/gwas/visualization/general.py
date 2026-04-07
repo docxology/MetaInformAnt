@@ -133,8 +133,8 @@ def manhattan_plot(
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.get("figsize", style.figsize))
 
-    # Color scheme for chromosomes from style
-    chrom_colors = style.categorical_colors
+    # High-contrast aesthetic colors for Manhattan chromosomes
+    chrom_colors = kwargs.get("colors", ["#0D47A1", "#64B5F6"])
 
     current_pos = 0
     chrom_offsets = {}
@@ -1418,16 +1418,20 @@ def missingness_plot(
     logger.info("Creating missingness plot")
 
     genotypes = vcf_data.get("genotypes", [])
-    if not genotypes:
+    if len(genotypes) == 0:
         logger.warning("No genotype data found for missingness plot")
         return None
 
     genotypes = np.array(genotypes)
-    n_variants, n_samples = genotypes.shape
-
-    # Calculate missingness (assuming -1 or negative values indicate missing)
-    sample_missingness = np.mean(genotypes < 0, axis=0) * 100
-    variant_missingness = np.mean(genotypes < 0, axis=1) * 100
+    # Detect major axis to avoid plotting millions of geometric bars
+    if genotypes.shape[0] < genotypes.shape[1]:
+        n_samples, n_variants = genotypes.shape
+        variant_missingness = np.mean(genotypes < 0, axis=0) * 100
+        sample_missingness = np.mean(genotypes < 0, axis=1) * 100
+    else:
+        n_variants, n_samples = genotypes.shape
+        sample_missingness = np.mean(genotypes < 0, axis=0) * 100
+        variant_missingness = np.mean(genotypes < 0, axis=1) * 100
 
     # Create figure
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 5))
@@ -1438,7 +1442,7 @@ def missingness_plot(
     ax1.set_xlabel("Sample Index")
     ax1.set_ylabel("Missing Rate (%)")
     ax1.set_title(f"Per-Sample Missingness (n={n_samples})")
-    ax1.legend()
+    ax1.legend(loc="upper right")
     ax1.grid(True, alpha=0.3)
 
     # Per-variant missingness histogram
@@ -1449,7 +1453,7 @@ def missingness_plot(
     ax2.set_xlabel("Missing Rate (%)")
     ax2.set_ylabel("Number of Variants")
     ax2.set_title(f"Per-Variant Missingness Distribution (n={n_variants})")
-    ax2.legend()
+    ax2.legend(loc="upper right")
     ax2.grid(True, alpha=0.3)
 
     plt.tight_layout()

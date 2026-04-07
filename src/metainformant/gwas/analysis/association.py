@@ -37,7 +37,7 @@ Example:
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from metainformant.core.utils import logging
 
@@ -54,7 +54,7 @@ logger = logging.get_logger(__name__)
 
 
 def association_test_linear(
-    genotypes: List[int],
+    genotypes: Union[List[int], "np.ndarray"],
     phenotypes: List[float],
     covariates: Optional[List[List[float]]] = None,
     **kwargs,
@@ -124,7 +124,7 @@ def association_test_linear(
 
 
 def run_linear_model_gwas(
-    genotype_matrix: List[List[int]],
+    genotype_matrix: Union[List[List[int]], "np.ndarray"],
     phenotypes: List[float],
     variant_info: Optional[List[Dict[str, Any]]] = None,
     covariates: Optional[List[List[float]]] = None,
@@ -247,7 +247,7 @@ def run_linear_model_gwas(
 
 
 def run_logistic_model_gwas(
-    genotype_matrix: List[List[int]],
+    genotype_matrix: Union[List[List[int]], "np.ndarray"],
     phenotypes: List[int],
     variant_info: Optional[List[Dict[str, Any]]] = None,
     covariates: Optional[List[List[float]]] = None,
@@ -296,7 +296,7 @@ def run_logistic_model_gwas(
 
 
 def association_test_logistic(
-    genotypes: List[int],
+    genotypes: Union[List[int], "np.ndarray"],
     phenotypes: List[int],
     covariates: Optional[List[List[float]]] = None,
     max_iter: int = 100,

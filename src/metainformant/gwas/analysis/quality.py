@@ -16,65 +16,60 @@ logger = logging.get_logger(__name__)
 
 
 def parse_vcf_full(vcf_path: Union[str, Path]) -> Dict[str, Any]:
-    """Parse a complete VCF file.
-
+    """Parse entire VCF file into a dictionary (NumPy optimized for large cohorts).
+    
     Args:
         vcf_path: Path to VCF file
-
+        
     Returns:
-        Dictionary containing parsed VCF data
-
-    Raises:
-        FileNotFoundError: If VCF file doesn't exist
-        ValueError: If VCF format is invalid
+        Dictionary with samples, variants, genotypes (numpy array), metadata
     """
+    import gzip
+    import numpy as np
+    
     vcf_path = Path(vcf_path)
     if not vcf_path.exists():
         raise FileNotFoundError(f"VCF file not found: {vcf_path}")
 
-    logger.info(f"Parsing VCF file: {vcf_path}")
+    logger.info(f"Parsing VCF file (NumPy optimized): {vcf_path}")
+
+    opener = gzip.open if str(vcf_path).endswith(".gz") else open
+    mode = "rt" if str(vcf_path).endswith(".gz") else "r"
 
     data = {
         "samples": [],
         "variants": [],
-        "genotypes": [],  # Will be numpy array in full implementation
         "metadata": {},
     }
 
+    n_variants = 0
     try:
-        # Open file (handle gzipped files)
-        if str(vcf_path).endswith(".gz"):
-            opener = gzip.open
-            mode = "rt"
-        else:
-            opener = open
-            mode = "r"
-
         with opener(vcf_path, mode) as f:
-            for line_num, line in enumerate(f, 1):
-                line = line.strip()
-
-                if not line:
-                    continue
-
-                if line.startswith("##"):
-                    # Metadata lines
+            for line in f:
+                if not line.startswith('#'):
+                    n_variants += 1
+                elif line.startswith('##'):
                     if "=" in line:
-                        key, value = line[2:].split("=", 1)
-                        data["metadata"][key] = value
+                        key, val = line.strip()[2:].split("=", 1)
+                        data["metadata"][key] = val
+                elif line.startswith('#CHROM'):
+                    data["samples"] = line.strip().split("\t")[9:]
+    except Exception as e:
+        raise ValueError(f"Error reading VCF file {vcf_path}: {e}")
+
+    logger.info(f"Pre-scan detected {n_variants} variants")
+
+    n_samples = len(data["samples"])
+    genotypes = np.full((n_variants, n_samples), -1, dtype=np.int8)
+
+    try:
+        with opener(vcf_path, mode) as f:
+            var_idx = 0
+            for line_num, line in enumerate(f, 1):
+                if line.startswith('#'):
                     continue
 
-                if line.startswith("#"):
-                    # Header line with sample names
-                    parts = line[1:].split("\t")
-                    if (
-                        len(parts) > 9
-                    ):  # CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO, FORMAT, then samples
-                        data["samples"] = parts[9:]
-                    continue
-
-                # Variant line
-                parts = line.split("\t")
+                parts = line.strip().split("\t")
                 if len(parts) < 10:
                     continue
 
@@ -85,10 +80,7 @@ def parse_vcf_full(vcf_path: Union[str, Path]) -> Dict[str, Any]:
                     ref = parts[3]
                     alt = parts[4]
                     qual = float(parts[5]) if parts[5] != "." else None
-                    filter_field = parts[6]
-                    info = parts[7]
-                    format_field = parts[8]
-
+                    
                     variant = {
                         "chrom": chrom,
                         "pos": pos,
@@ -96,61 +88,32 @@ def parse_vcf_full(vcf_path: Union[str, Path]) -> Dict[str, Any]:
                         "ref": ref,
                         "alt": alt.split(","),
                         "qual": qual,
-                        "filter": filter_field,
-                        "info": info,
-                        "format": format_field,
+                        "filter": parts[6],
+                        "info": parts[7],
+                        "format": parts[8],
                     }
-
                     data["variants"].append(variant)
 
-                    # Parse genotypes for each sample
-                    genotype_row = []
-                    for sample_gt in parts[9:]:
-                        # Parse GT field (handles both "/" and "|" separators)
+                    for s_idx, sample_gt in enumerate(parts[9:]):
                         gt_field = sample_gt.split(":")[0] if sample_gt else "./."
-
-                        # Handle missing genotypes
-                        if gt_field in ("./.", ".|.", ".", ""):
-                            gt_value = -1  # Missing
-                        else:
-                            # Split by / or |
+                        if gt_field not in ("./.", ".|.", ".", ""):
                             sep = "|" if "|" in gt_field else "/"
                             gt_parts = gt_field.split(sep)
-
-                            # Sum alleles: 0/0=0, 0/1=1, 1/1=2
                             try:
-                                allele_sum = sum(
-                                    int(a) for a in gt_parts if a.isdigit()
-                                )
-                                gt_value = allele_sum
+                                genotypes[var_idx, s_idx] = sum(int(a) for a in gt_parts if a.isdigit())
                             except (ValueError, TypeError):
-                                gt_value = -1  # Missing/invalid
-
-                        genotype_row.append(gt_value)
-
-                    data["genotypes"].append(genotype_row)
-
+                                pass
+                    var_idx += 1
                 except (ValueError, IndexError) as e:
                     logger.warning(f"Error parsing variant at line {line_num}: {e}")
                     continue
-
     except Exception as e:
-        raise ValueError(f"Error reading VCF file {vcf_path}: {e}")
+        raise ValueError(f"Error reading genotypes from {vcf_path}: {e}")
+
+    logger.info(f"Successfully loaded {n_variants} variants for {n_samples} samples into NumPy matrix")
 
     # Transpose genotypes: from [variant][sample] to [sample][variant]
-    # Test expects genotypes[sample_idx][variant_idx]
-    if data["genotypes"]:
-        n_variants = len(data["genotypes"])
-        n_samples = len(data["genotypes"][0]) if n_variants > 0 else 0
-        transposed = [
-            [data["genotypes"][v][s] for v in range(n_variants)]
-            for s in range(n_samples)
-        ]
-        data["genotypes"] = transposed
-
-    logger.info(
-        f"Parsed {len(data['variants'])} variants for {len(data['samples'])} samples"
-    )
+    data["genotypes"] = genotypes.T
 
     return data
 
@@ -167,7 +130,7 @@ def filter_by_maf(
     Returns:
         Tuple of (filtered_genotypes, kept_indices)
     """
-    if not genotypes:
+    if len(genotypes) == 0:
         return [], []
 
     kept_indices = []
@@ -221,7 +184,7 @@ def filter_by_missing(
     Returns:
         Tuple of (filtered_genotypes, kept_indices)
     """
-    if not genotypes:
+    if len(genotypes) == 0:
         return [], []
 
     kept_indices = []
@@ -382,7 +345,7 @@ def check_haplodiploidy(
         - n_diploid: count of diploid samples
     """
     genotypes = vcf_data.get("genotypes", [])
-    if not genotypes:
+    if len(genotypes) == 0:
         return {
             "haploid_samples": [],
             "diploid_samples": [],
@@ -456,7 +419,7 @@ def apply_qc_filters(
 
     # Get genotypes - need to transpose from [sample][variant] to [variant][sample] for filtering
     genotypes_by_sample = vcf_data.get("genotypes", [])
-    if not genotypes_by_sample:
+    if len(genotypes_by_sample) == 0:
         logger.warning("No genotype data found in VCF")
         return {
             "status": "success",
@@ -476,7 +439,7 @@ def apply_qc_filters(
 
     # Apply filters
     filtered_genotypes, maf_indices = filter_by_maf(genotypes, min_maf)
-    if not filtered_genotypes:
+    if len(filtered_genotypes) == 0:
         logger.warning("No variants passed MAF filter")
         return {
             "status": "success",
@@ -489,7 +452,7 @@ def apply_qc_filters(
     filtered_genotypes, missing_indices = filter_by_missing(
         filtered_genotypes, max_missing
     )
-    if not filtered_genotypes:
+    if len(filtered_genotypes) == 0:
         logger.warning("No variants passed missing data filter")
         return {
             "status": "success",
@@ -765,13 +728,13 @@ def extract_variant_regions(
     # Filter genotypes if present
     filtered_genotypes = []
     genotypes = vcf_data.get("genotypes", [])
-    if genotypes and len(genotypes) == len(variants):
+    if len(genotypes) > 0 and len(genotypes) == len(variants):
         filtered_genotypes = [genotypes[i] for i in filtered_indices]
 
     # Create result dictionary
     result = vcf_data.copy()
     result["variants"] = filtered_variants
-    if filtered_genotypes:
+    if len(filtered_genotypes) > 0:
         result["genotypes"] = filtered_genotypes
 
     logger.info(

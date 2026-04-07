@@ -425,9 +425,9 @@ def run_strain_analysis(
             variants_info = vcf_data.get("variants", [])
             vcf_samples = vcf_data.get("samples", [])
 
-            if genotypes:
+            if len(genotypes) > 0:
                 # Transpose if needed: (samples × variants) → (variants × samples)
-                if genotypes and len(genotypes[0]) != len(vcf_samples):
+                if len(genotypes) > 0 and len(genotypes[0]) != len(vcf_samples):
                     geno_vm = genotypes
                 else:
                     n_s = len(genotypes)

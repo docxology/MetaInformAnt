@@ -16,10 +16,6 @@ import math
 import random
 from typing import Any, Dict, List, Optional
 
-from metainformant.core.utils import logging
-
-logger = logging.get_logger(__name__)
-
 try:
     import numpy as np
 
@@ -27,6 +23,10 @@ try:
 except ImportError:
     HAS_NUMPY = False
     np = None  # type: ignore
+
+from metainformant.core.utils import logging
+
+logger = logging.get_logger(__name__)
 
 # SciPy is needed for non-central chi-squared CDF
 try:
@@ -159,7 +159,7 @@ def power_curve(
 
 
 def subsample_convergence(
-    genotype_matrix: List[List[int]],
+    genotype_matrix: Union[List[List[int]], "np.ndarray"],
     traits: List[float],
     variants_info: Optional[List[Dict[str, Any]]] = None,
     fractions: Optional[List[float]] = None,
@@ -195,7 +195,7 @@ def subsample_convergence(
         fractions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
 
     n_variants = len(genotype_matrix)
-    n_samples = len(genotype_matrix[0]) if genotype_matrix else 0
+    n_samples = len(genotype_matrix[0]) if len(genotype_matrix) > 0 else 0
 
     if n_variants == 0 or n_samples == 0:
         return {"status": "error", "message": "Empty genotype matrix"}
@@ -305,7 +305,7 @@ def subsample_convergence(
 
 
 def jackknife_se(
-    genotype_matrix: List[List[int]],
+    genotype_matrix: Union[List[List[int]], "np.ndarray"],
     traits: List[float],
     n_blocks: int = 10,
     statistic: str = "lambda_gc",
@@ -331,7 +331,7 @@ def jackknife_se(
     """
 
     n_variants = len(genotype_matrix)
-    n_samples = len(genotype_matrix[0]) if genotype_matrix else 0
+    n_samples = len(genotype_matrix[0]) if len(genotype_matrix) > 0 else 0
 
     if n_variants < n_blocks:
         return {
@@ -498,7 +498,7 @@ def saturation_analysis(
 
 
 def _compute_statistic(
-    genotype_matrix: List[List[int]],
+    genotype_matrix: Union[List[List[int]], "np.ndarray"],
     traits: List[float],
     variant_indices: List[int],
     statistic: str,

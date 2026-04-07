@@ -131,7 +131,7 @@ def execute_gwas_workflow(
         window = ld_config.get("window_size", 50)
         step = ld_config.get("step_size", 5)
 
-        if genotype_matrix and len(genotype_matrix) > 1:
+        if len(genotype_matrix) > 0 and len(genotype_matrix) > 1:
             kept_indices = ld_prune(
                 genotype_matrix,
                 r2_threshold=r2_thresh,
@@ -159,7 +159,7 @@ def execute_gwas_workflow(
         # genotype_matrix is variant-major (variants × samples) from _extract_genotype_matrix.
         # compute_pca and compute_kinship_matrix expect sample-major (samples × variants).
         n_variants_gm = len(genotype_matrix)
-        n_samples_gm = len(genotype_matrix[0]) if genotype_matrix else 0
+        n_samples_gm = len(genotype_matrix[0]) if len(genotype_matrix) > 0 else 0
         gm_sample_major = [
             [genotype_matrix[v][s] for v in range(n_variants_gm)]
             for s in range(n_samples_gm)
@@ -201,7 +201,7 @@ def execute_gwas_workflow(
         pcs = pca_result.get("pcs", [])
 
         association_results = []
-        if genotype_matrix and traits:
+        if len(genotype_matrix) > 0 and traits:
             n_samples = len(genotype_matrix[0])
             actual_traits = traits[:n_samples]
             actual_pcs = pcs[:n_samples]
@@ -347,7 +347,7 @@ def execute_gwas_workflow(
 
         # Step 5.5a: Per-chromosome heritability partitioning
         logger.info("Step 5.5a: Partitioning heritability by chromosome")
-        if genotype_matrix and variants_info and traits:
+        if len(genotype_matrix) > 0 and variants_info and traits:
             try:
                 # Build per-chromosome kinship matrices (sample-major)
                 chrom_indices: dict[str, list[int]] = {}
@@ -355,7 +355,7 @@ def execute_gwas_workflow(
                     chrom = vinfo.get("chrom", "unknown")
                     chrom_indices.setdefault(chrom, []).append(idx)
 
-                n_samples_h2 = len(genotype_matrix[0]) if genotype_matrix else 0
+                n_samples_h2 = len(genotype_matrix[0]) if len(genotype_matrix) > 0 else 0
                 per_chrom_kinship: dict[int, list[list[float]]] = {}
                 for chrom_id, (chrom_name, indices) in enumerate(
                     sorted(chrom_indices.items())
@@ -911,9 +911,9 @@ def run_gwas(
         # Step 4: Population structure analysis (PCA on LD-pruned, kinship on all)
         logger.info("Step 4: Computing population structure")
         kinship_result = None
-        if genotypes_by_sample:
+        if len(genotypes_by_sample) > 0:
             # PCA on LD-pruned genotypes (transposed back to samples x variants)
-            if ld_pruned_genotypes:
+            if len(ld_pruned_genotypes) > 0:
                 pca_genotypes_by_sample = [
                     [ld_pruned_genotypes[v][s] for v in range(len(ld_pruned_genotypes))]
                     for s in range(n_samples)
@@ -1442,8 +1442,8 @@ def run_multi_trait_gwas(
         # Shared step 4: PCA + kinship
         kinship_result = None
         pca_result = None
-        if genotypes_by_sample:
-            if ld_pruned_genotypes:
+        if len(genotypes_by_sample) > 0:
+            if len(ld_pruned_genotypes) > 0:
                 pca_geno = [
                     [ld_pruned_genotypes[v][s] for v in range(len(ld_pruned_genotypes))]
                     for s in range(n_samples)

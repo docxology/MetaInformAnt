@@ -325,7 +325,7 @@ def validate_gwas_config(
     return errors
 
 
-def _extract_genotype_matrix(vcf_data: Dict[str, Any]) -> List[List[int]]:
+def _extract_genotype_matrix(vcf_data: Dict[str, Any]) -> Union[List[List[int]], Any]:
     """Extract genotype matrix from VCF data.
 
     Args:
@@ -341,7 +341,7 @@ def _extract_genotype_matrix(vcf_data: Dict[str, Any]) -> List[List[int]]:
         raise ValueError("VCF data missing genotypes field")
 
     genotypes = vcf_data["genotypes"]
-    if not genotypes:
+    if genotypes is None or len(genotypes) == 0:
         raise ValueError("No genotypes found in VCF data")
 
     # Ensure all genotype rows have the same length (same number of samples)
@@ -353,23 +353,35 @@ def _extract_genotype_matrix(vcf_data: Dict[str, Any]) -> List[List[int]]:
 
     # Detect if matrix is sample-major (samples x variants) and transpose if needed
     # parse_vcf_full transposes to sample-major, but GWAS functions expect variant-major
-    if (
-        len(genotypes) == sample_count
-        and len(genotypes[0]) == variant_count
-        and sample_count != variant_count
-    ):
-        logger.info(
-            "Detecting sample-major genotype matrix. Transposing to variant-major..."
-        )
-        genotypes = [
-            [genotypes[s][v] for s in range(sample_count)] for v in range(variant_count)
-        ]
-
-    for i, variant_genotypes in enumerate(genotypes):
-        if len(variant_genotypes) != sample_count:
-            raise ValueError(
-                f"Variant {i} has {len(variant_genotypes)} genotypes but {sample_count} samples expected"
+    is_numpy = hasattr(genotypes, "shape")
+    
+    if is_numpy:
+        if genotypes.shape == (sample_count, variant_count) and sample_count != variant_count:
+            logger.info("Detecting sample-major genotype matrix. Transposing to variant-major...")
+            genotypes = genotypes.T
+    else:
+        if (
+            len(genotypes) == sample_count
+            and len(genotypes[0]) == variant_count
+            and sample_count != variant_count
+        ):
+            logger.info(
+                "Detecting sample-major genotype matrix. Transposing to variant-major..."
             )
+            genotypes = [
+                [genotypes[s][v] for s in range(sample_count)] for v in range(variant_count)
+            ]
+
+    # Validate shape using numpy attributes if possible
+    if is_numpy:
+        if genotypes.shape[1] != sample_count:
+            raise ValueError(f"NumPy variant shape mismatch: expected {sample_count} samples, got {genotypes.shape[1]}")
+    else:
+        for i, variant_genotypes in enumerate(genotypes):
+            if len(variant_genotypes) != sample_count:
+                raise ValueError(
+                    f"Variant {i} has {len(variant_genotypes)} genotypes but {sample_count} samples expected"
+                )
 
     logger.info(
         f"Extracted genotype matrix: {len(genotypes)} variants x {sample_count} samples"
