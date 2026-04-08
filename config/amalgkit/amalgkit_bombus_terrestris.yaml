@@ -57,6 +57,7 @@ steps:
   config: {}
   select: {}
   getfastq:
+    max_bp: 10000000000
     out_dir: projects/hymenoptera_amalgkit/data/bombus_terrestris/fastq
     remove_sra: yes
     threads: 16

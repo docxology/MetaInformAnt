@@ -84,6 +84,7 @@ steps:
   select:
     config_dir: projects/hymenoptera_amalgkit/data/apis_mellifera/work/config_base
   getfastq:
+    max_bp: 10000000000
     remove_sra: yes
     threads: 60
     # accelerate: true  # REMOVED: Unsupported flag

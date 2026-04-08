@@ -61,6 +61,7 @@ steps:
     priority: "completeness"
     redo: no
   getfastq:
+    max_bp: 10000000000
     out_dir: projects/hymenoptera_amalgkit/data/acromyrmex_echinatior/fastq
     remove_sra: yes
     threads: 16

@@ -21,6 +21,7 @@ steps:
   config: {}
   select: {}
   getfastq:
+    max_bp: 10000000000
     out_dir: projects/hymenoptera_amalgkit/data/test/fastq
   quant:
     out_dir: projects/hymenoptera_amalgkit/data/test/quant

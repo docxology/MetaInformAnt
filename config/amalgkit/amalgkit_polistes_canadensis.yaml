@@ -6,7 +6,7 @@
 
 work_dir: projects/hymenoptera_amalgkit/data/polistes_canadensis/work
 log_dir: projects/hymenoptera_amalgkit/data/polistes_canadensis/logs
-threads: 16
+threads: 4
 
 auto_install_amalgkit: true
 
@@ -51,15 +51,16 @@ steps:
   config: {}
   select: {}
   getfastq:
+    max_bp: 10000000000
     out_dir: projects/hymenoptera_amalgkit/data/polistes_canadensis/fastq
     remove_sra: yes
-    threads: 16
+    threads: 4
     pfd: yes
     redo: no
   quant:
     jobs: 1
     out_dir: projects/hymenoptera_amalgkit/data/polistes_canadensis/quant
-    threads: 16
+    threads: 4
     redo: no
     keep_fastq: no
   merge:
