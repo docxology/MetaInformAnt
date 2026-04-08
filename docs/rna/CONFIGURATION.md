@@ -275,6 +275,18 @@ python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml --sta
 - ⚠️ Network bandwidth underutilized
 - ⚠️ CPU idle time high
 
+### Sample Size Capabilities & 10 GB Caps
+When processing SRA targets with massive unconstrained sequences (>20 GB), orchestrators can hang on I/O. You should actively cap downstream extraction based on your hardware capabilities using the `max_bp` step parameter under `getfastq`. 
+
+For standard robust processing, we recommend a **10 GB downsampling maximum** limit (`10000000000` base pairs) per sample. This guarantees depth remains at ~150M reads while terminating monolithic bottlenecks. 
+If you have higher compute, network, and storage resource levels, you can configure that size limit to be appropriately wide open:
+
+```yaml
+steps:
+  getfastq:
+    max_bp: 10000000000  # Cap SRA extraction at exactly ~10 Gigabytes
+```
+
 ### Troubleshooting
 
 #### Downloads Stuck or Slow

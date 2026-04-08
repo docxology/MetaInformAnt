@@ -40,7 +40,7 @@ conda install -c bioconda sra-tools
 | `--threads` | INT | `1` | Threads for parallel processing. |
 | `--redo` | yes/no | `no` | Skip already-downloaded samples (recommended). |
 | `--batch` | INT | None | Process one SRA record by 1-based index (for HPC array jobs). |
-| `--max_bp` | INT | `4000000000` | Skip samples exceeding this base count. Default: 4B. |
+| `--max_bp` | INT | `999999999999999` | Limit target sequence extraction (downsamples or skips massive sequences). Use 10000000000 for a 10 GB cap. Default: Unlimited. |
 | `--fastp` | yes/no | `yes` | Quality filtering and adapter trimming with fastp. |
 | `--remove_sra` | yes/no | `yes` | Delete SRA files after FASTQ extraction. |
 | `--aws` | yes/no | `yes` | Use AWS Open Data for SRA downloads (SRA fallback path). |
@@ -63,7 +63,7 @@ steps:
     threads: 24
     num_download_workers: 16    # Parallel ENA workers
     fastp: yes
-    max_bp: 4000000000          # Skip samples >4B bases
+    max_bp: 10000000000         # 10GB extraction cap / downsampling limit
     remove_sra: yes
 ```
 
@@ -93,20 +93,30 @@ flowchart LR
 - `getfastq` runs **after select**, **before integrate/quant**
 - Downstream steps consume FASTQs from `{out_dir}/getfastq/{SRR}/`
 
-## Size Filtering
+## Sample Size Limits & Downsampling
 
-Samples exceeding `max_bp` (default: 4,000,000,000 = 4B bases) are auto-skipped:
+To prevent pipeline exhaustion on massive monolithic datasets, you can apply an upper limit using `max_bp`. For sequence datasets exceeding this threshold, `amalgkit` natively utilizes `fasterq-dump` and metadata filters to intelligently downsample or skip them, effectively capping the download bandwidth and final FASTQ extraction.
 
-```
-✗ SzSkip — SRR12345678 (7.2B bases, limit: 4.0B)
-```
-
-Skipped samples are logged with `SzSkip` in the run log. To process large samples, increase `max_bp`:
+**Standard 10 GB Cap Framework**:
+A maximum base pair configuration of 10 billion bases mathematically translates to an absolute download and extraction maximum of roughly **10 GB** per sample (yielding ~150M reads, which remains incredibly high-depth for RNA-seq quantification). 
 
 ```yaml
 steps:
   getfastq:
-    max_bp: 10000000000   # 10B bases
+    max_bp: 10000000000   # 10B bases limit (~10 GB max extraction cap)
+```
+
+**Customizing Limits for Your Resources**:
+If you lack storage capacity and bandwidth, or conversely, if you have immense enterprise resources, you may scale this parameter up or down exactly as you wish. 
+
+- **Aggressive Execution (Low Storage)**: `max_bp: 50000000` (50 Mbp max limit)
+- **Standard Baseline**: `max_bp: 4000000000` (4 Gbp max limit)
+- **High-Resource / Deep-Seq**: `max_bp: 999999999999999` (Unlimited Extraction)
+
+Samples categorically skipped entirely (if bypasses trigger) will be logged as:
+
+```
+✗ SzSkip — SRR12345678 (12.2B bases, limit: 10.0B)
 ```
 
 ## Performance
