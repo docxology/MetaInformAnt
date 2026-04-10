@@ -19,7 +19,7 @@ species_list:
 taxon_id: 91411
 
 genome:
-  accession: GCF_022905055.1
+  accession: GCF_001313835.1
   dest_dir: projects/hymenoptera_amalgkit/data/polistes_canadensis/genome
 
   # Include standard RefSeq indices
@@ -32,14 +32,14 @@ genome:
 
   # Hypothetical direct FTP URL using the accession-only symlink format. 
   # Note: If this fails during prep_genomes.py, update this with the true assembly_name suffix.
-  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/022/905/055/GCF_022905055.1/
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/001/313/835/GCF_001313835.1_ASM131383v1/
 
   files:
-    genomic_fasta: GCF_022905055.1_genomic.fna.gz
-    transcriptome_fasta: GCF_022905055.1_rna_from_genomic.fna.gz
-    cds_fasta: GCF_022905055.1_cds_from_genomic.fna.gz
-    protein_fasta: GCF_022905055.1_protein.faa.gz
-    annotation_gff: GCF_022905055.1_genomic.gff.gz
+    genomic_fasta: GCF_001313835.1_ASM131383v1_genomic.fna.gz
+    transcriptome_fasta: GCF_001313835.1_ASM131383v1_rna_from_genomic.fna.gz
+    cds_fasta: GCF_001313835.1_ASM131383v1_cds_from_genomic.fna.gz
+    protein_fasta: GCF_001313835.1_ASM131383v1_protein.faa.gz
+    annotation_gff: GCF_001313835.1_ASM131383v1_genomic.gff.gz
 
 steps:
   metadata:

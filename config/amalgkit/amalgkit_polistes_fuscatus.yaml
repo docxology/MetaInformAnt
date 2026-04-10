@@ -19,7 +19,7 @@ species_list:
 taxon_id: 30207
 
 genome:
-  accession: GCF_000220695.1
+  accession: GCF_010416935.1
   dest_dir: projects/hymenoptera_amalgkit/data/polistes_fuscatus/genome
 
   include:
@@ -29,13 +29,13 @@ genome:
     - cds             
     - protein         
 
-  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/220/695/GCF_000220695.1/
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/010/416/935/GCF_010416935.1_CU_Pfus_HIC/
   files:
-    genomic_fasta: GCF_000220695.1_genomic.fna.gz
-    transcriptome_fasta: GCF_000220695.1_rna_from_genomic.fna.gz
-    cds_fasta: GCF_000220695.1_cds_from_genomic.fna.gz
-    protein_fasta: GCF_000220695.1_protein.faa.gz
-    annotation_gff: GCF_000220695.1_genomic.gff.gz
+    genomic_fasta: GCF_010416935.1_CU_Pfus_HIC_genomic.fna.gz
+    transcriptome_fasta: GCF_010416935.1_CU_Pfus_HIC_rna_from_genomic.fna.gz
+    cds_fasta: GCF_010416935.1_CU_Pfus_HIC_cds_from_genomic.fna.gz
+    protein_fasta: GCF_010416935.1_CU_Pfus_HIC_protein.faa.gz
+    annotation_gff: GCF_010416935.1_CU_Pfus_HIC_genomic.gff.gz
 
 steps:
   metadata:

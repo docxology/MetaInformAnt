@@ -19,7 +19,7 @@ species_list:
 taxon_id: 143995
 
 genome:
-  accession: GCF_000226025.1
+  accession: GCF_000220905.1
   dest_dir: projects/hymenoptera_amalgkit/data/megachile_rotundata/genome
 
   include:
@@ -29,13 +29,13 @@ genome:
     - cds             
     - protein         
 
-  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/226/025/GCF_000226025.1/
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/220/905/GCF_000220905.1_MROT_1.0/
   files:
-    genomic_fasta: GCF_000226025.1_genomic.fna.gz
-    transcriptome_fasta: GCF_000226025.1_rna_from_genomic.fna.gz
-    cds_fasta: GCF_000226025.1_cds_from_genomic.fna.gz
-    protein_fasta: GCF_000226025.1_protein.faa.gz
-    annotation_gff: GCF_000226025.1_genomic.gff.gz
+    genomic_fasta: GCF_000220905.1_MROT_1.0_genomic.fna.gz
+    transcriptome_fasta: GCF_000220905.1_MROT_1.0_rna_from_genomic.fna.gz
+    cds_fasta: GCF_000220905.1_MROT_1.0_cds_from_genomic.fna.gz
+    protein_fasta: GCF_000220905.1_MROT_1.0_protein.faa.gz
+    annotation_gff: GCF_000220905.1_MROT_1.0_genomic.gff.gz
 
 steps:
   metadata:
