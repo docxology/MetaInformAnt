@@ -88,8 +88,10 @@ def _execute_streaming_mode(
     # Symlink getfastq output dir to work dir so `quant` can find it
     fastq_src_dir = config.work_dir.parent / "fastq" / "getfastq"
     fastq_link_dir = config.work_dir / "getfastq"
-    if fastq_src_dir.exists() and not fastq_link_dir.exists():
+    if fastq_src_dir.exists():
         try:
+            if fastq_link_dir.is_symlink() or fastq_link_dir.exists():
+                fastq_link_dir.unlink()
             fastq_link_dir.symlink_to(fastq_src_dir.resolve(), target_is_directory=True)
             logger.info("  Created symlink: work/getfastq -> fastq/getfastq")
         except Exception as e:
@@ -481,9 +483,9 @@ def execute_workflow(
 
                 if real_gf_dir.exists() and not target_link.exists() and real_gf_dir != target_link:
                     try:
-                        if target_link.is_symlink():
+                        if target_link.is_symlink() or target_link.exists():
                             target_link.unlink()
-                        target_link.symlink_to(real_gf_dir)
+                        target_link.symlink_to(real_gf_dir.resolve())
                         logger.info(f"Symlinked getfastq dir for compatibility: {real_gf_dir} -> {target_link}")
                     except Exception as e:
                         logger.warning(f"Could not symlink getfastq dir: {e}")

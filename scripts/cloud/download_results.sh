@@ -60,14 +60,14 @@ gcloud compute ssh "$VM_NAME" \
         sudo cp -r /opt/MetaInformAnt/projects /tmp/quant_export/ || true
         
         # Strip large intermediates so we only download results and DBs
-        sudo find /tmp/quant_export -name "*.fastq.gz" -o -name "*.sra" -o -name "index" -type d -exec rm -rf {} + 2>/dev/null || true
+        sudo find /tmp/quant_export \( -name "*.fastq.gz" -o -name "*.sra" -o -name "index" \) -exec rm -rf {} + 2>/dev/null || true
 
         # Fix permissions for SCP
         sudo chmod -R 755 /tmp/quant_export
         sudo chown -R \$(whoami) /tmp/quant_export
 
-        echo ""
-        echo "Total export size:"
+        echo ''
+        echo 'Total export size:'
         du -sh /tmp/quant_export
     "
 

@@ -1,42 +1,23 @@
-# METAINFORMANT Amalgkit Configuration
-# Species: Pogonomyrmex barbatus (red harvester ant)
-# NCBI Taxonomy ID: 144034
-# Assembly: GCF_000187915.1 (Pbar_UMD_V03)
-# Assembly Level: Scaffold (454 pyrosequencing)
-# Annotation Release: 101
-# RNA-seq Samples: ~110 (95/110 quantified in production run)
-# Status: ✅ COMPLETE - expression matrices generated 2026-01-24
-# Generated: 2026-02-09
-
-# Paths are resolved relative to repository root
 work_dir: projects/hymenoptera_amalgkit/data/pogonomyrmex_barbatus/work
 log_dir: projects/hymenoptera_amalgkit/data/pogonomyrmex_barbatus/logs
-threads: 16
-
+threads: 2
 auto_install_amalgkit: true
-
-# Pre-selection filtering rules
 filters:
   require_tissue: false
-
-# Species configuration
 species_list:
-  - Pogonomyrmex_barbatus
-
+- Pogonomyrmex_barbatus
 taxon_id: 144034
-
-# Reference genome configuration - shared genome directory
 genome:
   accession: GCF_000187915.1
   assembly_name: Pbar_UMD_V03
   annotation_release: 101
   dest_dir: projects/hymenoptera_amalgkit/data/shared/genome/Pogonomyrmex_barbatus
   include:
-    - genome
-    - gff3
-    - rna
-    - cds
-    - protein
+  - genome
+  - gff3
+  - rna
+  - cds
+  - protein
   ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/187/915/GCF_000187915.1_Pbar_UMD_V03/
   files:
     genomic_fasta: GCF_000187915.1_Pbar_UMD_V03_genomic.fna.gz
@@ -44,39 +25,37 @@ genome:
     cds_fasta: GCF_000187915.1_Pbar_UMD_V03_cds_from_genomic.fna.gz
     protein_fasta: GCF_000187915.1_Pbar_UMD_V03_protein.faa.gz
     annotation_gff: GCF_000187915.1_Pbar_UMD_V03_genomic.gff.gz
-
-# Per-step parameters
 steps:
   metadata:
     out_dir: projects/hymenoptera_amalgkit/data/pogonomyrmex_barbatus/work
-    # Filter to RNA-Seq + Illumina (prevents genomic/UCE samples leaking in)
-    search_string: '"Pogonomyrmex barbatus"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
-    redo: no  # Reuse existing metadata if available
+    search_string: '"Pogonomyrmex barbatus"[Organism] AND "RNA-Seq"[Strategy] AND
+      "Illumina"[Platform]'
+    redo: false
   integrate:
     fastq_dir: projects/hymenoptera_amalgkit/data/pogonomyrmex_barbatus/fastq/getfastq
   select:
-    max_sample: 999999  # No artificial limit - process all available samples
+    max_sample: 999999
     mark_missing_rank: none
-    priority: "completeness"
-    redo: no  # Reuse existing selection
+    priority: completeness
+    redo: false
   getfastq:
     out_dir: projects/hymenoptera_amalgkit/data/pogonomyrmex_barbatus/fastq
-    threads: 16
-    jobs: 16
-    redo: no  # CRITICAL: Skip already-downloaded samples
-    aws: yes
-    gcp: no   # DISABLED: GCP has lite files (no sequence data) for this species
-    ncbi: no  # DISABLED: NCBI has lite files (no sequence data)
-    pfd: yes  # parallel-fastq-dump not installed
-    fastp: no
-    max_bp: 50000000  # Downsampling for speed (50M bp per sample)
+    threads: 2
+    jobs: 2
+    redo: false
+    aws: true
+    gcp: false
+    ncbi: false
+    pfd: true
+    fastp: false
+    max_bp: 50000000
   quant:
     jobs: 1
     out_dir: projects/hymenoptera_amalgkit/data/pogonomyrmex_barbatus/work
-    threads: 16
-    redo: no  # CRITICAL: Skip already-quantified samples
-    build_index: no  # Use existing index
-    keep_fastq: no  # Delete FASTQs after quantification (stream-and-clean)
+    threads: 2
+    redo: false
+    build_index: false
+    keep_fastq: false
     index_dir: projects/hymenoptera_amalgkit/data/shared/genome/Pogonomyrmex_barbatus/index
     fasta_dir: projects/hymenoptera_amalgkit/data/shared/genome/Pogonomyrmex_barbatus
   merge:
@@ -84,10 +63,10 @@ steps:
     out_dir: projects/hymenoptera_amalgkit/data/pogonomyrmex_barbatus/merged
   cstmm:
     out_dir: projects/hymenoptera_amalgkit/data/pogonomyrmex_barbatus/work
-    orthogroup_table: ""
+    orthogroup_table: ''
   curate:
     out_dir: projects/hymenoptera_amalgkit/data/pogonomyrmex_barbatus/work
   csca:
     out_dir: projects/hymenoptera_amalgkit/data/pogonomyrmex_barbatus/work
-    orthogroup_table: ""
+    orthogroup_table: ''
   sanity: {}

@@ -78,14 +78,21 @@ COPY src/ ./src/
 COPY scripts/ ./scripts/
 COPY config/ ./config/
 
-# Install Python deps
+# ── Python & tool environment ──────────────────────────────────────────
+# Ensure all conda-installed tools (seqkit, fastp, etc.) are available in the PATH
+ENV PATH="/opt/conda/bin:${PATH}"
+
+# Install Python deps and setup amalgkit
 RUN uv pip install --system -e "." && \
     cd /tmp && \
     wget -qO micromamba.tar.bz2 "https://micro.mamba.pm/api/micromamba/linux-64/latest" && \
     tar -xjf micromamba.tar.bz2 bin/micromamba && \
     export MAMBA_ROOT_PREFIX=/opt/conda && \
-    bin/micromamba create -y -p /opt/conda -c conda-forge -c bioconda amalgkit && \
+    bin/micromamba create -y -p /opt/conda -c conda-forge -c bioconda amalgkit seqkit fastp kallisto && \
+    rm -f /opt/conda/bin/kallisto_orig && \
     ln -s /opt/conda/bin/amalgkit /usr/local/bin/amalgkit && \
+    ln -s /opt/conda/bin/seqkit /usr/local/bin/seqkit && \
+    ln -s /opt/conda/bin/fastp /usr/local/bin/fastp && \
     mv bin/micromamba /usr/local/bin/micromamba && \
     rm -rf /tmp/micromamba* bin
 

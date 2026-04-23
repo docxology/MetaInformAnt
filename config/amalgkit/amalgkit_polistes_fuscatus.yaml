@@ -6,7 +6,7 @@
 
 work_dir: projects/hymenoptera_amalgkit/data/polistes_fuscatus/work
 log_dir: projects/hymenoptera_amalgkit/data/polistes_fuscatus/logs
-threads: 4
+threads: 16
 
 auto_install_amalgkit: true
 
@@ -50,13 +50,13 @@ steps:
     max_bp: 10000000000
     out_dir: projects/hymenoptera_amalgkit/data/polistes_fuscatus/fastq
     remove_sra: yes
-    threads: 4
+    threads: 16
     pfd: yes
     redo: no
   quant:
     jobs: 1
     out_dir: projects/hymenoptera_amalgkit/data/polistes_fuscatus/quant
-    threads: 4
+    threads: 16
     redo: no
     keep_fastq: no
   merge:

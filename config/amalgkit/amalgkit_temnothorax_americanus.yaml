@@ -1,44 +1,23 @@
-# METAINFORMANT Amalgkit Configuration
-# Species: Temnothorax americanus
-# NCBI Taxonomy ID: 1964332
-# Assembly: GCF_048541705.1 (ASM4854170v1)
-# Assembly Level: Scaffold
-# Sequencing: N/A
-# Annotation: GCF_048541705.1-RS_2025_09
-# Annotation Release: RS_2025_09
-# Notes: Social parasite, slavemaker ant
-# RNA-seq Samples Available: 331
-# Generated: 2026-02-09
-
-# Paths are resolved relative to repository root
 work_dir: projects/hymenoptera_amalgkit/data/temnothorax_americanus/work
 log_dir: projects/hymenoptera_amalgkit/data/temnothorax_americanus/logs
-threads: 16
-
+threads: 2
 auto_install_amalgkit: true
-
-# Pre-selection filtering rules
 filters:
   require_tissue: false
-
-# Species configuration
 species_list:
-  - Temnothorax_americanus
-
+- Temnothorax_americanus
 taxon_id: 1964332
-
-# Reference genome configuration — shared genome directory
 genome:
   accession: GCF_048541705.1
   assembly_name: ASM4854170v1
   annotation_release: RS_2025_09
   dest_dir: projects/hymenoptera_amalgkit/data/shared/genome/Temnothorax_americanus
   include:
-    - genome
-    - gff3
-    - rna
-    - cds
-    - protein
+  - genome
+  - gff3
+  - rna
+  - cds
+  - protein
   ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/048/541/705/GCF_048541705.1_ASM4854170v1/
   files:
     genomic_fasta: GCF_048541705.1_ASM4854170v1_genomic.fna.gz
@@ -46,38 +25,37 @@ genome:
     cds_fasta: GCF_048541705.1_ASM4854170v1_cds_from_genomic.fna.gz
     protein_fasta: GCF_048541705.1_ASM4854170v1_protein.faa.gz
     annotation_gff: GCF_048541705.1_ASM4854170v1_genomic.gff.gz
-
-# Per-step parameters
 steps:
   metadata:
     out_dir: projects/hymenoptera_amalgkit/data/temnothorax_americanus/work
-    search_string: '"Temnothorax americanus"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
-    redo: no
+    search_string: '"Temnothorax americanus"[Organism] AND "RNA-Seq"[Strategy] AND
+      "Illumina"[Platform]'
+    redo: false
   integrate:
     fastq_dir: projects/hymenoptera_amalgkit/data/temnothorax_americanus/fastq/getfastq
   select:
     max_sample: 999999
     mark_missing_rank: none
-    priority: "completeness"
-    redo: no
+    priority: completeness
+    redo: false
   getfastq:
     out_dir: projects/hymenoptera_amalgkit/data/temnothorax_americanus/fastq
-    threads: 16
-    jobs: 16
-    redo: no
-    aws: yes
-    gcp: no
-    ncbi: no
-    pfd: yes
-    fastp: no
+    threads: 2
+    jobs: 2
+    redo: false
+    aws: true
+    gcp: false
+    ncbi: false
+    pfd: true
+    fastp: false
     max_bp: 50000000
   quant:
     jobs: 1
     out_dir: projects/hymenoptera_amalgkit/data/temnothorax_americanus/work
-    threads: 16
-    redo: no
-    build_index: no
-    keep_fastq: no
+    threads: 2
+    redo: false
+    build_index: false
+    keep_fastq: false
     index_dir: projects/hymenoptera_amalgkit/data/shared/genome/Temnothorax_americanus/index
     fasta_dir: projects/hymenoptera_amalgkit/data/shared/genome/Temnothorax_americanus
   merge:
@@ -85,10 +63,10 @@ steps:
     out_dir: projects/hymenoptera_amalgkit/data/temnothorax_americanus/merged
   cstmm:
     out_dir: projects/hymenoptera_amalgkit/data/temnothorax_americanus/work
-    orthogroup_table: ""
+    orthogroup_table: ''
   curate:
     out_dir: projects/hymenoptera_amalgkit/data/temnothorax_americanus/work
   csca:
     out_dir: projects/hymenoptera_amalgkit/data/temnothorax_americanus/work
-    orthogroup_table: ""
+    orthogroup_table: ''
   sanity: {}

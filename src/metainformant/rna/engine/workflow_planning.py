@@ -262,7 +262,7 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
         # Hardcode canonical config directory for parsing validation on bootstrap steps
         if step in ("select", "cstmm", "csca", "index", "config"):
             if "config_dir" not in step_params:
-                step_params["config_dir"] = "config/amalgkit"
+                step_params["config_dir"] = "config/config_base"
 
         # INTELLIGENT REDO LOGIC:
         if step == "getfastq":

@@ -9,7 +9,7 @@
 
 work_dir: projects/hymenoptera_amalgkit/data/apis_mellifera/work
 log_dir: projects/hymenoptera_amalgkit/data/apis_mellifera/logs
-threads: 60
+threads: 16
 
 
 auto_install_amalgkit: true
@@ -86,14 +86,14 @@ steps:
   getfastq:
     max_bp: 10000000000
     remove_sra: yes
-    threads: 60
+    threads: 16
     # accelerate: true  # REMOVED: Unsupported flag
     pfd: yes  # Use parallel-fastq-dump
     redo: no
   quant:
     jobs: 1
     # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
-    threads: 60
+    threads: 16
     redo: no
     # Delete SRA/FASTQ files after quantification to save space
     keep_fastq: no

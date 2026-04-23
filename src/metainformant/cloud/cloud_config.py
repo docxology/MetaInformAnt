@@ -40,6 +40,7 @@ class CloudConfig:
     instance_name: str = "metainformant-pipeline"
     machine_type: str = _DEFAULT_MACHINE
     disk_size_gb: int = _DEFAULT_DISK_GB
+    local_ssd_count: int = 0
     spot: bool = True
     max_gb: float = 20.0
     workers: int = 80

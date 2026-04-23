@@ -44,6 +44,8 @@ def build_parser() -> argparse.ArgumentParser:
                         help="VM machine type (default: n2-standard-32)")
     deploy.add_argument("--disk-gb", type=int, default=1000,
                         help="Boot disk size in GB (default: 1000)")
+    deploy.add_argument("--local-ssd-count", type=int, default=0,
+                        help="Number of 375GB NVMe Local SSDs to attach (default: 0)")
     deploy.add_argument("--spot", action="store_true", default=True,
                         help="Use spot/preemptible pricing (default: true)")
     deploy.add_argument("--no-spot", action="store_false", dest="spot",
@@ -111,10 +113,10 @@ def make_deployer(args: argparse.Namespace) -> GCPDeployer:
         instance_name=args.name,
     )
 
-    # Deploy command has extra fields
     if args.command == "deploy":
         cfg.machine_type = args.machine_type
         cfg.disk_size_gb = args.disk_gb
+        cfg.local_ssd_count = args.local_ssd_count
         cfg.spot = args.spot
         cfg.max_gb = args.max_gb
         cfg.workers = args.workers

@@ -53,11 +53,38 @@ else
     echo "  ✓ Docker already installed"
 fi
 
+# ── Mount NVMe Local SSDs (If Attached) ───────────────────────────────
+echo ""
+echo "▸ Checking for Ephemeral NVMe Local SSDs..."
+apt-get install -y -qq mdadm
+NVME_DEVS=$(find /dev/disk/by-id/ -name 'google-local-nvme-ssd-*' | sort | xargs -r readlink -f | uniq || true)
+
+WORK_DIR="/opt/MetaInformAnt"
+
+if [ -n "$NVME_DEVS" ]; then
+    DEVICES=($NVME_DEVS)
+    NUM_DEVS=${#DEVICES[@]}
+    echo "  Found $NUM_DEVS NVMe interfaces: ${DEVICES[*]}"
+    
+    # Check if md0 is already active to prevent re-formatting on ghost re-evaluations
+    if ! grep -q md0 /proc/mdstat; then
+        mdadm --create /dev/md0 --level=0 --raid-devices=$NUM_DEVS "${DEVICES[@]}" --force --run
+        mkfs.ext4 -m 0 -F -q /dev/md0
+    fi
+    
+    mkdir -p "$WORK_DIR"
+    mount -o discard,defaults /dev/md0 "$WORK_DIR"
+    chmod a+w "$WORK_DIR"
+    echo "  ✓ Mounted NVMe RAID0 array to $WORK_DIR ($NUM_DEVS x 375GB)"
+else
+    echo "  ⚠ No NVMe devices found. Booting with Standard Persistent Disk."
+    mkdir -p "$WORK_DIR"
+fi
+
 # ── Clone repository ────────────────────────────────────────────────────
 echo ""
 echo "▸ Cloning repository..."
-WORK_DIR="/opt/MetaInformAnt"
-if [ -d "$WORK_DIR" ]; then
+if [ -d "$WORK_DIR/.git" ]; then
     cd "$WORK_DIR"
     git fetch origin "$REPO_BRANCH" && git checkout "$REPO_BRANCH" && git pull
     echo "  ✓ Repository updated"

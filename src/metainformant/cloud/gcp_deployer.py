@@ -93,6 +93,10 @@ class GCPDeployer:
             "--tags", "metainformant-pipeline",
         ]
 
+        if self.cfg.local_ssd_count > 0:
+            for _ in range(self.cfg.local_ssd_count):
+                cmd.extend(["--local-ssd", "interface=NVME"])
+
         if self.cfg.spot:
             cmd.extend(["--provisioning-model", "SPOT",
                          "--instance-termination-action", "STOP"])

@@ -18,7 +18,6 @@
 | acromyrmex_echinatior     |                 44 |              21 | 47.7%        | ✅          | ✅       | ✅       | ✅        |
 | anoplolepis_gracilipes    |                  7 |               7 | 100.0%       | ✅          | ✅       | ✅       | ✅        |
 | apis_mellifera            |               7292 |              24 | 0.3%         | ✅          | ✅       | ✅       | ✅        |
-| athalia_rosae             |                 43 |               0 | 0.0%         | ✅          | ✅       | ❌       | ❌        |
 | atta_cephalotes           |                217 |             223 | 102.8%       | ✅          | ✅       | ✅       | ✅        |
 | bombus_terrestris         |                994 |               0 | 0.0%         | ✅          | ✅       | ❌       | ❌        |
 | camponotus_floridanus     |                367 |             292 | 79.6%        | ✅          | ✅       | ✅       | ✅        |
