@@ -387,6 +387,6 @@ for config_path in species_configs:
 - **[getfastq Step Guide](amalgkit/steps/04_getfastq.md)**: Download and extraction details
 - **[Workflow Guide](workflow.md)**: Complete workflow execution
 - **[Configuration Guide](CONFIGURATION.md)**: Workflow configuration
-- **[README](../src/metainformant/rna/README.md)**: Module overview
+- **[README](README.md)**: Module overview
 
 

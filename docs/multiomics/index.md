@@ -308,4 +308,4 @@ uv run pytest tests/test_multiomics_integration.py::test_joint_pca_basic -v
 ## Related Documentation
 
 - [Data Integration API](./integration.md): Complete API reference for integration functions
-- [Module README](../src/metainformant/multiomics/README.md): Detailed usage examples and integration patterns
+- [Module README](README.md): Detailed usage examples and integration patterns

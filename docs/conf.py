@@ -48,6 +48,9 @@ extensions = [
     # Markdown support
     'myst_parser',
 
+    # Mermaid diagram support (used extensively in architecture/workflow docs)
+    'sphinxcontrib.mermaid',
+
     # Jupyter notebook support (optional)
     # 'nbsphinx',
 ]

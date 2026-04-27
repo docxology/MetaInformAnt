@@ -167,7 +167,7 @@ Source code documentation mirrors the `src/metainformant/` structure:
 
 ---
 
-*This guide provides navigation for documentation organized across 29 domains, ensuring coverage of METAINFORMANT's bioinformatics capabilities.*
+*This guide provides navigation for documentation organized across 30 domains, ensuring coverage of METAINFORMANT's bioinformatics capabilities.*
 
 
 

@@ -88,4 +88,4 @@ In v0.2.7 (2026-03-01):
 - **Heartbeat JSON files** (`*.heartbeat.json`) were deleted and added to `.gitignore`. These were transient download-progress trackers that were never read back; the `abundance.tsv` file is the authoritative proof a sample completed.
 - **`.safely_removed` markers** were deleted and added to `.gitignore`. The non-empty `abundance.tsv` makes them redundant.
 
-See [CHANGELOG.md](../../../../CHANGELOG.md) for details.
+See the project commit history for details.

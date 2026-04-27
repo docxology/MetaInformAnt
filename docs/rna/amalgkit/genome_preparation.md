@@ -559,7 +559,7 @@ python3 scripts/rna/build_kallisto_indexes.py
 ### Documentation
 - **[API Reference](../API.md#genome-preparation-functions)** - Complete function documentation
 - **[Function Index](FUNCTIONS.md)** - Quick function lookup
-- **[Quantification Step](steps/quant.md)** - Using kallisto indexes
+- **[Quantification Step](steps/06_quant.md)** - Using kallisto indexes
 - **[Pipeline Overview](amalgkit.md)** - Complete workflow documentation
 - **[Main Index](../README.md)** - RNA domain master index
 

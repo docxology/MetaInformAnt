@@ -396,7 +396,7 @@ All scripts generate JSON result files. Keep these for:
 ### Documentation
 - **[API Reference](../API.md#genome-preparation-functions)** - Complete function documentation
 - **[Function Index](FUNCTIONS.md)** - Quick function lookup
-- **[Quantification Step](steps/quant.md)** - Using indexes for quantification
+- **[Quantification Step](steps/06_quant.md)** - Using indexes for quantification
 - **[Pipeline Overview](amalgkit.md)** - Complete workflow documentation
 - **[Main Index](../README.md)** - RNA domain master index
 

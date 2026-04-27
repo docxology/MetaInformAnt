@@ -73,7 +73,7 @@ The life events module integrates with:
 
 ## Related Documentation
 
-- **[Source Module Documentation](../src/metainformant/life_events/README.md)** - Detailed implementation
+- **[Source Module Documentation](README.md)** - Detailed implementation
 - **[ML Module](../ml/index.md)** - Machine learning methods
 - **[Phenotype Module](../phenotype/index.md)** - Phenotypic trait analysis
 - **[Visualization Module](../visualization/index.md)** - Plotting utilities

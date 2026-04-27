@@ -462,7 +462,7 @@ nproc
 
 ### Additional Resources
 
-- [FAQ](docs/FAQ.md) - Common questions and answers
+- [FAQ](FAQ.md) - Common questions and answers
 - [Documentation Guide](DOCUMENTATION_GUIDE.md) - How to use documentation
 - [GitHub Issues](https://github.com/username/metainformant/issues) - Report bugs
 - [Discussions](https://github.com/username/metainformant/discussions) - Ask questions

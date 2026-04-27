@@ -11,7 +11,7 @@ src/metainformant/mcp/
 └── tools/    # MCP tool implementations
 ```
 
-## Related
+## Related Documentation
 
-- [Architecture](../architecture.md)
-- [CLI Reference](../cli.md)
+- [Architecture](../architecture.md) — System architecture
+- [CLI Reference](../cli.md) — Command-line interface

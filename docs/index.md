@@ -96,6 +96,8 @@ graph TD
 | **Spatial** | [spatial](spatial/) | Spatial transcriptomics | Tissue mapping, spatial statistics |
 | **Pharmacogenomics** | [pharmacogenomics](pharmacogenomics/) | Clinical genomics | Drug-gene interactions, variant interpretation |
 | **Metabolomics** | [metabolomics](metabolomics/) | Metabolomic analysis | MS data processing, pathway mapping |
+| **eQTL** | [eqtl](eqtl/) | eQTL integration *(cross-cutting)* | RNA×GWAS integration — logic in `gwas` and `multiomics` |
+| **MCP** | [mcp](mcp/) | Model Context Protocol | LLM tool integrations |
 | **Menu** | [menu](menu/) | Interactive navigation | CLI menu system, workflow discovery |
 
 ## Data Flow Architecture
@@ -203,9 +205,12 @@ python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrm
 :caption: User Guides
 
 setup
+UV_SETUP
 DOCUMENTATION_GUIDE
 TUTORIALS
 FAQ
+DISK_SPACE_MANAGEMENT
+LINUX_TRANSFER
 rna/amalgkit/TROUBLESHOOTING
 ERROR_HANDLING
 ```
@@ -218,6 +223,7 @@ ERROR_HANDLING
 
 architecture
 cli
+SPEC
 ORCHESTRATION
 COMPARISON_GUIDES
 NO_MOCKING_POLICY
@@ -240,8 +246,10 @@ ontology/index
 phenotype/index
 ecology/index
 math/index
+information/index
 ml/index
 networks/index
+multiomics/index
 singlecell/index
 quality/index
 visualization/index
@@ -254,6 +262,7 @@ spatial/index
 pharmacogenomics/index
 metabolomics/index
 menu/index
+mcp/index
 cloud/README
 agents/rules/index
 ```

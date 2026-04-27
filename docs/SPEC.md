@@ -2,7 +2,7 @@
 
 ## Scope
 
-Technical documentation for METAINFORMANT, organized by domain module. Contains architecture guides, API documentation, tutorials, and reference materials for all 27 bioinformatics modules. Built with Sphinx for HTML generation.
+Technical documentation for METAINFORMANT, organized by domain module. Contains architecture guides, API documentation, tutorials, and reference materials for all 28 bioinformatics modules. Built with Sphinx for HTML generation.
 
 ## Architecture
 
