@@ -15,9 +15,9 @@ grep -E "Done|SzSkip|Error|species" output/amalgkit/run_all_species_incremental.
 ```
 
 Key log tokens:
-- `✓ Done` — sample quantified successfully
-- `✗ SzSkip` — sample skipped (exceeds `max_bp` size limit)
-- `✗ Error` — quantification failed
+- ` Done` — sample quantified successfully
+- ` SzSkip` — sample skipped (exceeds `max_bp` size limit)
+- ` Error` — quantification failed
 - `[<species>]` — pipeline position marker
 
 ## Active Process Monitor
@@ -77,9 +77,9 @@ ls -lt output/amalgkit/amellifera/work/quant/ | head -20
 
 ```bash
 LOG=output/amalgkit/run_all_species_incremental.log
-grep  "✓ Done"   "$LOG" | wc -l   # completed
-grep  "✗ SzSkip" "$LOG" | wc -l   # size-skipped
-grep  "✗ Error"  "$LOG" | wc -l   # failed
+grep " Done" "$LOG" | wc -l # completed
+grep " SzSkip" "$LOG" | wc -l # size-skipped
+grep " Error" "$LOG" | wc -l # failed
 ```
 
 ## What Was Changed in v0.2.7

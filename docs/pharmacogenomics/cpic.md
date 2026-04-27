@@ -1,127 +1,126 @@
-# CPIC Guideline Integration
+# CPIC Guidelines Integration
 
-The CPIC (Clinical Pharmacogenetics Implementation Consortium) module provides parsing and querying of CPIC guideline data for pharmacogenomic clinical decision support. It covers drug-gene pair lookups, phenotype-specific dosing recommendations, actionable gene lists, and allele definition table parsing.
+CPIC (Clinical Pharmacogenetics Implementation Consortium) publishes peer‑reviewed,
+evidence‑based guidelines linking gene–drug pairs to actionable prescribing guidance.
+This module bundles the guideline JSON and provides fast lookup.
 
-## Key Concepts
+## Guideline lifecycle
 
-### CPIC Evidence Levels
+- **Level A** — action required (strong evidence; test recommended before prescribing)
+- **Level B** — action recommended (moderate evidence)
+- **Level C** — optional — may affect decision
+- **Level D** — not recommended — minimal actionability
 
-CPIC assigns evidence levels to drug-gene interactions:
-
-- **Level A**: Strong genetic evidence with strong prescribing action recommended
-- **Level A/B**: Strong evidence, moderate action
-- **Level B**: Moderate genetic evidence with prescribing action recommended
-- **Level C**: Moderate evidence, optional action
-- **Level D**: Weak evidence or limited data
-
-### Built-in Guidelines
-
-The module ships with built-in CPIC Level A guideline data covering major drug-gene pairs including codeine/CYP2D6, clopidogrel/CYP2C19, warfarin/CYP2C9, fluorouracil/DPYD, azathioprine/TPMT, and simvastatin/SLCO1B1.
-
-### Phenotype Normalization
-
-The module handles both full phenotype names ("Poor Metabolizer") and abbreviations ("PM"), including legacy terminology ("Extensive Metabolizer" maps to "Normal Metabolizer").
-
-## Function Reference
-
-### load_cpic_guidelines
+## Loading guidelines
 
 ```python
-def load_cpic_guidelines(
-    filepath: str | Path | None = None,
-) -> list[dict[str, Any]]
-```
-
-Load CPIC guideline data from built-in tables or an external JSON/TSV file. Returns a list of guideline dictionaries with keys: `drug`, `gene`, `cpic_level`, `guideline_url`, `recommendations`.
-
-### lookup_drug_gene
-
-```python
-def lookup_drug_gene(
-    drug: str,
-    gene: str,
-    guidelines: list[dict[str, Any]] | None = None,
-) -> dict[str, Any] | None
-```
-
-Look up a CPIC guideline for a specific drug-gene pair. Case-insensitive matching. Returns the guideline dictionary or `None` if no guideline exists.
-
-### get_dosing_recommendation
-
-```python
-def get_dosing_recommendation(
-    drug: str,
-    phenotype: str,
-    guidelines: list[dict[str, Any]] | None = None,
-) -> dict[str, Any] | None
-```
-
-Get a dosing recommendation for a drug based on metabolizer phenotype. Accepts both full names and abbreviations. Returns a dictionary with `drug`, `gene`, `cpic_level`, `phenotype`, `recommendation`, `classification`, `implications`, and `guideline_url`.
-
-### list_actionable_genes
-
-```python
-def list_actionable_genes(
-    guidelines: list[dict[str, Any]] | None = None,
-    min_level: str = "B",
-) -> list[dict[str, str]]
-```
-
-List CPIC-actionable gene-drug pairs at or above a specified evidence level. Returns sorted list of dictionaries with `gene`, `drug`, and `cpic_level`.
-
-### parse_cpic_allele_definitions
-
-```python
-def parse_cpic_allele_definitions(
-    filepath: str | Path,
-) -> dict[str, list[dict[str, Any]]]
-```
-
-Parse CPIC allele definition TSV or JSON files. Returns a dictionary mapping gene symbol to lists of allele definitions, each containing `allele`, `defining_variants`, `function`, and `activity_value`.
-
-## Usage Examples
-
-```python
-from metainformant.pharmacogenomics import (
-    load_cpic_guidelines, lookup_drug_gene,
-    get_dosing_recommendation, list_actionable_genes,
+from metainformant.pharmacogenomics.annotations.cpic import (
+    load_cpic_guidelines,          # built‑in snapshot
+    get_dosing_recommendation,     # single lookup
+    lookup_drug_gene,              # filter by level, gene, or drug
 )
 
-# Load all CPIC guidelines
+# Built‑in v3.0 (2024-01) loaded lazily on first call
 guidelines = load_cpic_guidelines()
-
-# Look up a specific drug-gene pair
-guideline = lookup_drug_gene("codeine", "CYP2D6")
-if guideline:
-    print(f"CPIC Level: {guideline['cpic_level']}")
-
-# Get dosing recommendation for a poor metabolizer
-rec = get_dosing_recommendation("codeine", "Poor Metabolizer")
-if rec:
-    print(f"Recommendation: {rec['recommendation']}")
-    print(f"Classification: {rec['classification']}")
-
-# Works with abbreviations too
-rec_abbrev = get_dosing_recommendation("clopidogrel", "PM")
-
-# List all actionable gene-drug pairs
-actionable = list_actionable_genes(min_level="A")
-for entry in actionable:
-    print(f"{entry['gene']} / {entry['drug']} (Level {entry['cpic_level']})")
-
-# Load custom guidelines from file
-custom = load_cpic_guidelines("data/custom_guidelines.json")
+len(guidelines)  # ≈ 200 entries
 ```
 
-## Configuration
+## Single‑drug lookup
 
-- **Environment prefix**: `PHARMA_`
-- Guidelines can be loaded from JSON files with a `guidelines` key containing a list
-- TSV files should have columns: `drug`, `gene`, `cpic_level`, `guideline_url`
+```python
+rec = get_dosing_recommendation(
+    drug='codeine',
+    phenotype='Poor Metabolizer',
+    gene='CYP2D6',
+)
+print(rec['recommendation'])
+# → 'Avoid codeine; recommend alternative analgesic'
+print(rec['cpic_level'])   # 'A'
+print(rec['classification'])  # 'strong'
+```
 
-## Related Modules
+## Bulk queries
 
-- `pharmacogenomics.alleles.phenotype` -- Phenotype classification (provides phenotype strings for dosing lookups)
-- `pharmacogenomics.annotations.pharmgkb` -- PharmGKB annotation queries
-- `pharmacogenomics.annotations.drug_labels` -- FDA drug label parsing
-- `pharmacogenomics.clinical.drug_interaction` -- Drug-gene interaction analysis
+```python
+# All Level A actionable pairs
+level_a = lookup_drug_gene(level='A')
+for entry in level_a:
+    print(entry['drug'], entry['gene'], entry['phenotypes'].keys())
+```
+
+## Overriding / upgrading
+
+From a downloaded newer CPIC JSON:
+
+```python
+load_cpic_guidelines(path='~/cpic_guidelines_2025.json')
+```
+
+Or set environment variable:
+
+```bash
+export PG_CPIC_GUIDELINES_URL=https://cpicpgx.org/guidelines/2025/cpic_guidelines.json
+```
+
+The module downloads once and caches under `~/.cache/metainformant/cpic/`.
+
+## Schema validation
+
+Each entry must contain:
+
+```json
+{
+  "drug": "warfarin",
+  "gene": "CYP2C9",
+  "cpic_level": "A",
+  "phenotypes": {
+    "Poor Metabolizer": {
+      "recommendation": "Reduce warfarin starting dose by …",
+      "classification": "strong"
+    }
+  },
+  "guideline_url": "https://cpicpgx.org/guidelines/…",
+  "version": "3.0",
+  "published": "2024-01-15"
+}
+```
+
+Missing top‑level keys raise `ValueError` on load.
+
+## Multi‑drug, multi‑phenotype matrix
+
+```python
+import pandas as pd
+drugs = ['codeine','tamoxifen','warfarin','clopidogrel']
+genes = ['CYP2D6','CYP2C19','CYP2C9']
+rows = []
+for drug in drugs:
+    for gene in genes:
+        for ph in ['PM','IM','NM','RM','UM']:
+            try:
+                rec = get_dosing_recommendation(drug, ph, gene=gene)
+                rows.append({'drug':drug,'gene':gene,'phenotype':ph,
+                             'recommendation':rec['recommendation'],
+                             'level':rec['cpic_level']})
+            except KeyError:
+                continue  # no guidance for this combo
+df = pd.DataFrame(rows)
+df.to_csv('cpic_matrix.csv', index=False)
+```
+
+## Integration with clinical report
+
+`generate_clinical_report()` automatically iterates over the patient's genes,
+calls `get_dosing_recommendation()` for each actionable drug, and inserts a
+table into the final report.
+
+## Latest snapshot info
+
+Current built‑in: **CPIC v3.0** published 2024‑01, covering 33 genes, 208 drug–
+gene pairs. Last manual update in repo: 2024‑02. Newer versions can be loaded at
+runtime without restart.
+
+## Citations
+
+When using CPIC data in publications, cite the appropriate guideline DOI and
+acknowledge CPIC. See `cpic/CITATION.cff` in the source distribution.

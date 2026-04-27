@@ -26,25 +26,25 @@ Welcome to the documentation for the **MetaInformAnt Template Bioinformatics Pro
 
 ```text
 template_bioinformatics_project/
-├── AGENTS.md                        # AI agent responsibilities & standards
-├── SPEC.md                          # Living project specification
-├── README.md                        # User-facing quickstart
-├── pyproject.toml                   # uv-compatible project manifest
-├── main.py                          # Top-level CLI pipeline runner
-├── run.sh                           # Shell pipeline runner (stage-selectable)
-├── config/
-│   └── default.yaml                 # Centralized configuration
-├── data/
-│   ├── raw/                         # ⚠ Immutable raw inputs
-│   └── processed/                   # Stage 1 outputs
-├── scripts/                         # Numbered thin-orchestrator scripts
-├── results/
-│   ├── figures/                     # Stage 3 plots
-│   └── tables/                      # Stage 2 summary tables
-├── logs/                            # Per-stage execution logs
-├── tests/                           # Zero-Mock end-to-end tests
-└── doc/                             # This documentation suite
-    └── stages/                      # Per-stage technical references
+ AGENTS.md # AI agent responsibilities & standards
+ SPEC.md # Living project specification
+ README.md # User-facing quickstart
+ pyproject.toml # uv-compatible project manifest
+ main.py # Top-level CLI pipeline runner
+ run.sh # Shell pipeline runner (stage-selectable)
+ config/
+ default.yaml # Centralized configuration
+ data/
+ raw/ # Immutable raw inputs
+ processed/ # Stage 1 outputs
+ scripts/ # Numbered thin-orchestrator scripts
+ results/
+ figures/ # Stage 3 plots
+ tables/ # Stage 2 summary tables
+ logs/ # Per-stage execution logs
+ tests/ # Zero-Mock end-to-end tests
+ doc/ # This documentation suite
+ stages/ # Per-stage technical references
 ```
 
 ## Prerequisites
@@ -93,18 +93,18 @@ uv run pytest tests/ -v
 ## Pipeline Execution Flow
 
 ```text
-🚀 Starting pipeline (stage=all)
+ Starting pipeline (stage=all)
 
 ==> Stage: Data Processing   (01)   → data/processed/processed_data.csv
 ==> Stage: Results Analysis  (02)   → results/tables/summary_statistics.csv
 ==> Stage: Visualization     (03)   → results/figures/distribution_grid.png
                                        results/figures/correlation_heatmap.png
 
-✨ Pipeline finished successfully.
-   📂 Raw data:    data/raw/
-   📂 Processed:   data/processed/
-   📂 Results:     results/
-   📂 Logs:        logs/
+ Pipeline finished successfully.
+ Raw data: data/raw/
+ Processed: data/processed/
+ Results: results/
+ Logs: logs/
 ```
 
 Each stage is **idempotent**: re-running any stage after completion safely skips redundant work.  Use `--force` to unconditionally reprocess.

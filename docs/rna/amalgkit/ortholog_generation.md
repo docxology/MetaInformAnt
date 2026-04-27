@@ -55,5 +55,5 @@ These are retrieved securely from `https://data.orthodb.org/v12/`.
 ## Validation
 
 The ortholog generation workflow is validated via:
--   **Automated Tests**: [test_ortholog_generation.py](../../../tests/test_ortholog_generation.py) verifies correct Taxon ID extraction from configuration files.
+-   **Automated Tests**: [test_ortholog_generation.py](../../../tests/other/test_ortholog_generation.py) verifies correct Taxon ID extraction from configuration files.
 -   **Output Integrity**: Verified by the `cstmm` step, which fails if the ortholog table contains invalid IDs or mismatched headers.

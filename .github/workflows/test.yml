@@ -204,7 +204,7 @@ jobs:
     - name: Run example tests
       continue-on-error: true
       run: |
-        uv run python scripts/test_examples.py --continue-on-error --junit-xml
+        uv run python scripts/test_examples/test_examples.py --continue-on-error --junit-xml
 
     - name: Publish Test Results
       uses: EnricoMi/publish-unit-test-result-action@v2

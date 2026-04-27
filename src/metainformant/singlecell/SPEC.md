@@ -1,23 +1,23 @@
 # Specification: singlecell
 
-## 🎯 Scope
+## Scope
 
 Single-cell analysis module for METAINFORMANT. Provides preprocessing,
 dimensionality reduction (PCA, UMAP, t-SNE, diffusion maps), clustering,
 cell type annotation, doublet detection, and RNA velocity analysis.
 
-## 🧱 Architecture
+## Architecture
 
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 
 - **Sub-packages**: analysis, celltyping, data, differential, doublet, velocity, visualization
 - **Core Class**: `SingleCellData` — expression matrix with `obs`, `var`, `obsm`, `varm`, `uns`
 - **Key Concepts**: scRNA-seq analysis, clustering, celltyping, doublet detection, RNA velocity
 
-## 🔌 API Definition
+## API Definition
 
 ### Exports — `analysis/`
 

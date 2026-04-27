@@ -3,10 +3,10 @@
 ## Overview
 Functionality for information.
 
-## 📦 Contents
+## Contents
 - `[example_entropy.py](example_entropy.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

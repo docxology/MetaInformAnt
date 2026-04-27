@@ -1,16 +1,17 @@
 # Agent Directives: docs/phenotype
 
 ## Role
-Documentation for phenotype analysis and trait curation.
 
-## Contents
-- Life course phenotype analysis
-- Trait curation workflows
-- AntWiki integration
-- Phenotype-genotype relationships
-- Phenotype data standardization
+Documentation for the phenotype analysis module.
 
-## Key Concepts
-- Phenotype ontologies
-- Trait measurement standardization
-- Missing data handling
+## Module Scope
+
+Phenotypic data curation, AntWiki integration, trait analysis, morphological measurements, behavioral phenotyping, and GWAS integration.
+
+## Key Source Files
+
+| Path | Description |
+|------|-------------|
+| `src/metainformant/phenotype/analysis/` | Statistical trait analysis |
+| `src/metainformant/phenotype/data/` | Data loading and curation |
+| `src/metainformant/phenotype/gwas_integration/` | Phenotype-GWAS bridging |

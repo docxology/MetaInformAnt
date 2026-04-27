@@ -89,16 +89,16 @@ VERIFICATION SUMMARY
 Total species: 24
 
 Genome Downloads:
-  ✓ Downloaded: 9/24 (37.5%)
-  ✗ Missing: 15/24
+ Downloaded: 9/24 (37.5%)
+ Missing: 15/24
 
 RNA FASTA Files (of downloaded genomes):
-  ✓ Found: 3/9 (33.3%)
-  ✗ Missing: 6/9
+ Found: 3/9 (33.3%)
+ Missing: 6/9
 
 Kallisto Indexes (of prepared transcriptomes):
-  ✓ Built: 4/3 (133.3%)
-  ✗ Missing: 0/3
+ Built: 4/3 (133.3%)
+ Missing: 0/3
 
 ================================================================================
 
@@ -214,21 +214,21 @@ VERIFICATION SUMMARY
 Total species: 24
 
 Genome Downloads:
-  ✓ Downloaded: 24/24 (100.0%)
-  ✗ Missing: 0/24
+ Downloaded: 24/24 (100.0%)
+ Missing: 0/24
 
 RNA FASTA Files (of downloaded genomes):
-  ✓ Found: 24/24 (100.0%)
-  ✗ Missing: 0/24
+ Found: 24/24 (100.0%)
+ Missing: 0/24
 
 Kallisto Indexes (of prepared transcriptomes):
-  ✓ Built: 24/24 (100.0%)
-  ✗ Missing: 0/24
+ Built: 24/24 (100.0%)
+ Missing: 0/24
 
 ================================================================================
 
 Next Steps:
-  ✓ All species are fully prepared!
+ All species are fully prepared!
 ```
 
 ## Single Species Setup

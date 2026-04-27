@@ -78,11 +78,11 @@ The fallback is rare (< 5% of accessions in practice). ENA covers virtually all 
 
 ```
 out_dir/
-└── getfastq/
-    └── <SRR>/
-        ├── <SRR>_1.fastq.gz   # forward reads (paired-end)
-        ├── <SRR>_2.fastq.gz   # reverse reads (paired-end)
-        └── <SRR>.fastq.gz     # single-end (if applicable)
+ getfastq/
+ <SRR>/
+ <SRR>_1.fastq.gz # forward reads (paired-end)
+ <SRR>_2.fastq.gz # reverse reads (paired-end)
+ <SRR>.fastq.gz # single-end (if applicable)
 ```
 
 ## See Also

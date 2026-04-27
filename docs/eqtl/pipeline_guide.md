@@ -53,20 +53,20 @@ Merges per-sample VCFs into a population VCF with `bcftools merge`. Computes all
 
 ```
 output/eqtl/{species}/
-├── index/                  # HISAT2 index (built once)
-├── samples/
-│   ├── {SRR_ID}/
-│   │   ├── aligned.bam     # Sorted alignment
-│   │   ├── aligned.bam.bai
-│   │   ├── variants.vcf.gz # Filtered per-sample VCF
-│   │   └── variant_stats.json
-├── population/
-│   ├── merged.vcf.gz       # Multi-sample population VCF
-│   ├── allele_freqs.tsv    # Per-site allele frequencies
-│   └── popgen_summary.json # Population genetics summary
-├── logs/
-│   └── pipeline.log
-└── run_summary.json
+ index/ # HISAT2 index (built once)
+ samples/
+ {SRR_ID}/
+ aligned.bam # Sorted alignment
+ aligned.bam.bai
+ variants.vcf.gz # Filtered per-sample VCF
+ variant_stats.json
+ population/
+ merged.vcf.gz # Multi-sample population VCF
+ allele_freqs.tsv # Per-site allele frequencies
+ popgen_summary.json # Population genetics summary
+ logs/
+ pipeline.log
+ run_summary.json
 ```
 
 ## Integration with eQTL Analysis

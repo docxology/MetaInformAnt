@@ -1,155 +1,86 @@
-# ACMG Variant Classification
+# ACMG Variant Classification: Pharmacogenomics
 
-The ACMG module implements the American College of Medical Genetics and Genomics / Association for Molecular Pathology (ACMG/AMP) 5-tier variant classification system based on the 2015 Richards et al. guidelines. It evaluates individual evidence criteria, combines them using the published combining rules, and produces a final classification.
+Applied to pharmacogenes to classify pathogenicity of rare variants lacking population
+frequency or functional data. Criteria adapted from ACMG/AMP 2015 guidelines with
+gene‑specific tweaks.
 
-## Key Concepts
+## Criteria table (PGx‑adapted)
 
-### Five-Tier Classification
+| Code | Full name | Strength | When it applies |
+|------|-----------|----------|-----------------|
+| PVS1 | Null variant | Very strong | Nonsense, frameshift, canonical splice, whole‑gene deletion |
+| PS1 | Same amino‑acid change as established pathogenic | Strong | Missense identical to known pathogenic |
+| PM1 | Located in mutational hot‑spot / critical domain | Moderate | Variant in well‑established functional domain |
+| PM2 | Absent/rare in population databases | Moderate | gnomAD AF < gene‑specific threshold |
+| PP3 | Multiple computational lines of evidence | Supporting | CADD>20, SIFT<0.05, PolyPhen>0.95 |
+| BA1 | Allele frequency ≥ 5 % in population | Stand‑alone | Benign by prevalence |
 
-ACMG classifies variants into five categories:
+PGx genes often have lower variability, so PM2 thresholds are stricter (e.g. CYP2D6
+AF < 0.0005).
 
-1. **Pathogenic** -- Strong evidence the variant causes disease
-2. **Likely Pathogenic** -- Evidence strongly suggests pathogenicity (>90% certainty)
-3. **Uncertain Significance (VUS)** -- Insufficient evidence to classify
-4. **Likely Benign** -- Evidence strongly suggests variant is benign
-5. **Benign** -- Strong evidence the variant does not cause disease
-
-### Evidence Criteria
-
-Evidence criteria are organized by strength and direction:
-
-**Pathogenic criteria:**
-- PVS1: Very Strong (null variant in LOF-mechanism gene)
-- PS1-PS4: Strong pathogenic evidence
-- PM1-PM6: Moderate pathogenic evidence
-- PP1-PP5: Supporting pathogenic evidence
-
-**Benign criteria:**
-- BA1: Stand-alone benign (allele frequency >5%)
-- BS1-BS4: Strong benign evidence
-- BP1-BP7: Supporting benign evidence
-
-### Combining Rules
-
-The module implements the full combining rules from Richards et al. 2015 Table 5. For example, Pathogenic requires: 1 Very Strong + 1 Strong, or 2 Strong, or 1 Very Strong + 2 Moderate, among other combinations.
-
-## Data Structures
-
-### ACMGClassification (Enum)
+## Full example
 
 ```python
-class ACMGClassification(str, Enum):
-    PATHOGENIC = "Pathogenic"
-    LIKELY_PATHOGENIC = "Likely Pathogenic"
-    VUS = "Uncertain Significance"
-    LIKELY_BENIGN = "Likely Benign"
-    BENIGN = "Benign"
-```
-
-### ACMGCriteria (Enum)
-
-All 28 ACMG criteria as enum members: `PVS1`, `PS1`-`PS4`, `PM1`-`PM6`, `PP1`-`PP5`, `BA1`, `BS1`-`BS4`, `BP1`-`BP7`.
-
-## Function Reference
-
-### classify_variant_acmg
-
-```python
-def classify_variant_acmg(
-    variant: dict[str, Any],
-    evidence: dict[str, bool] | None = None,
-) -> dict[str, Any]
-```
-
-Classify a variant using the ACMG 5-tier system. If `evidence` is provided, uses those pre-evaluated criteria; otherwise auto-evaluates from variant data. Returns `classification`, `criteria_met`, `criteria_details`, `score_summary`, and `confidence`.
-
-### apply_acmg_criteria
-
-```python
-def apply_acmg_criteria(
-    variant_data: dict[str, Any],
-) -> dict[str, bool]
-```
-
-Evaluate all 28 ACMG criteria from variant data. Input keys include: `consequence`, `allele_frequency`, `computational_predictions`, `functional_data`, `segregation_data`, `de_novo`, `paternity_confirmed`, and many others. Returns a dictionary mapping criterion name to True/False.
-
-### aggregate_evidence
-
-```python
-def aggregate_evidence(
-    criteria: dict[str, bool],
-) -> ACMGClassification
-```
-
-Combine met criteria into a final classification using the ACMG combining rules. Benign rules are checked first (BA1 is standalone), then Pathogenic, then Likely Pathogenic. Defaults to VUS.
-
-### query_clinvar
-
-```python
-def query_clinvar(
-    variant_id: str,
-) -> dict[str, Any] | None
-```
-
-Look up ClinVar classification for a variant by rsID or HGVS notation. Returns a record with `variant_id`, `gene`, `hgvs`, `classification`, `review_status`, `stars`, `condition`, `last_evaluated`, and `submitter_count`.
-
-### check_gnomad_frequency
-
-```python
-def check_gnomad_frequency(
-    variant: dict[str, Any],
-    population: str | None = None,
-    threshold: float = 0.05,
-) -> dict[str, Any]
-```
-
-Check variant population frequency for ACMG benign criteria. Returns `max_frequency`, `population`, `exceeds_threshold`, `ba1_triggered`, `bs1_triggered`, and `frequencies`.
-
-## Usage Examples
-
-```python
-from metainformant.pharmacogenomics import (
-    classify_variant_acmg, apply_acmg_criteria,
-    aggregate_evidence, query_clinvar, check_gnomad_frequency,
+from metainformant.pharmacogenomics.clinical.pathogenicity import (
+    classify_variant_acmg,
+    ACMGClassification,
+    ACMGCriteria,
 )
 
-# Full automated classification
 variant = {
-    "rsid": "rs3892097",
-    "gene": "CYP2D6",
-    "consequence": "splice_donor",
-    "allele_frequency": {"European": 0.02, "East_Asian": 0.005},
-    "computational_predictions": {
-        "CADD": "damaging", "REVEL": "pathogenic", "SIFT": "deleterious"
-    },
+    'rsid': 'rs4244285',          # CYP2C19 *2 loss‑of‑function
+    'gene': 'CYP2C19',
+    'gnomad_af': 0.0002,
+    'clinvar_sig': 'Pathogenic',
+    'sift': 0.0,
+    'polyphen': 1.0,
+    'cadd_score': 25.0,
+    'provean_score': -5.0,
 }
-result = classify_variant_acmg(variant)
-print(f"Classification: {result['classification'].value}")
-print(f"Criteria met: {result['criteria_met']}")
 
-# Manual criteria evaluation
-criteria = apply_acmg_criteria(variant)
-classification = aggregate_evidence(criteria)
-
-# ClinVar lookup
-clinvar = query_clinvar("rs3892097")
-if clinvar:
-    print(f"ClinVar: {clinvar['classification']} ({clinvar['stars']} stars)")
-
-# Population frequency check
-freq_result = check_gnomad_frequency(variant, threshold=0.01)
-if freq_result["ba1_triggered"]:
-    print("BA1 benign criterion met (AF > 5%)")
+result = classify_variant_acmg(
+    variant,
+    gene='CYP2C19',
+    criteria_applied=[ACMGCriteria.PVS1, ACMGCriteria.PM2, ACMGCriteria.PP3],
+)
+print(result['classification'].value)  # PATHOGENIC or LIKELY_PATHOGENIC
+print(result['evidence_summary'])      # list of applied criteria with weights
 ```
 
-## Configuration
+## Gene‑specific thresholds
 
-- **Environment prefix**: `PHARMA_`
-- ClinVar data is stored locally for fast lookups (no network required)
-- gnomAD frequency checks use variant-level allele frequency data from the input
+| Gene | PM2 AF cutoff | PVS1 exceptions |
+|------|---------------|-----------------|
+| CYP2D6 | < 0.0005 | Deletion `*5` always PVS1 |
+| CYP2C19 | < 0.001 | Splice variants require RNAseq confirmation |
+| TPMT | < 0.002 | Missense must have functional assay support |
+| NUDT15 | < 0.001 | |
 
-## Related Modules
+These live in `src/metainformant/pharmacogenomics/clinical/pathogenicity.py` in
+`_GENE_THRESHOLDS`.
 
-- `pharmacogenomics.clinical.drug_interaction` -- Uses pathogenicity to inform interaction severity
-- `pharmacogenomics.clinical.reporting` -- Includes ACMG results in clinical reports
-- `pharmacogenomics.annotations.cpic` -- CPIC guidelines cross-referenced with classification
+## Output fields
+
+```python
+{
+  'classification': ACMGClassification.PATHOGENIC,
+  'activity_score': 0.0,
+  'evidence_summary': [
+    {'code':'PVS1','weight':1.0,'reason':'nonsense variant'},
+    {'code':'PM2','weight':0.5,'reason':'gnomAD AF=2e-4'},
+    {'code':'PP3','weight':0.5,'reason':'CADD=25, SIFT=0.0'}
+  ],
+  'recommendation': 'Consider functional assay for confirmation'
+}
+```
+
+## Combining with phenotype
+
+Once a variant is classified, its effect on activity enters the star-allele table.
+If you add a novel LoF variant via custom JSON, you can use ACMG classification
+as evidence to justify the activity assignment (0.0).
+
+## References
+
+- Richards et al. (2015) *Genet Med* 17:405 — standards and guidelines.
+- CPIC allele function criteria (2024) — gene‑specific mappings.

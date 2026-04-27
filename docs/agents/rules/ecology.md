@@ -10,10 +10,10 @@ Ecological metadata and community analysis: community structure analysis and div
 ## Source Structure
 ```
 src/metainformant/ecology/
-├── analysis/
-│   ├── community.py, functional.py, indicators.py, macroecology.py, ordination.py
-└── visualization/
-    └── visualization.py
+ analysis/
+ community.py, functional.py, indicators.py, macroecology.py, ordination.py
+ visualization/
+ visualization.py
 ```
 
 ## Package Management

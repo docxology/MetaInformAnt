@@ -9,10 +9,10 @@ This guide outlines best practices for writing, maintaining, and using METAINFOR
 #### File Structure
 ```
 examples/
-├── domain/
-│   ├── README.md              # Domain overview and examples list
-│   ├── example_name.py        # Individual example
-│   └── example_other.py       # Another example
+ domain/
+ README.md # Domain overview and examples list
+ example_name.py # Individual example
+ example_other.py # Another example
 ```
 
 #### Example Template
@@ -178,13 +178,13 @@ with open(large_file, 'r') as f:
 ### Automated Testing
 ```bash
 # Test all examples
-python scripts/test_examples.py
+python scripts/test_examples/test_examples.py
 
 # Test specific domain
-python scripts/test_examples.py --domain dna
+python scripts/test_examples/test_examples.py --domain dna
 
 # Test with HTML report
-python scripts/test_examples.py --html
+python scripts/test_examples/test_examples.py --html
 ```
 
 ### Manual Testing
@@ -202,10 +202,10 @@ python -c "import json; print(json.load(open('output/examples/dna/results.json')
 ### Performance Testing
 ```bash
 # Establish baseline
-python scripts/benchmark_examples.py --baseline
+python scripts/test_examples/benchmark_examples.py --baseline
 
 # Compare performance
-python scripts/benchmark_examples.py --compare --threshold 0.1
+python scripts/test_examples/benchmark_examples.py --compare --threshold 0.1
 ```
 
 ## Maintenance Practices
@@ -218,13 +218,13 @@ python scripts/benchmark_examples.py --compare --threshold 0.1
 ### Updating Examples
 ```bash
 # 1. Test current functionality
-python scripts/test_examples.py --example domain/example_name.py
+python scripts/test_examples/test_examples.py --example domain/example_name.py
 
 # 2. Make changes
 # Edit example file...
 
 # 3. Test again
-python scripts/test_examples.py --example domain/example_name.py
+python scripts/test_examples/test_examples.py --example domain/example_name.py
 
 # 4. Update documentation if needed
 # Edit README.md...
@@ -370,7 +370,7 @@ Output format:
 ### Adding New Examples
 ```bash
 # 1. Use the example generator
-python scripts/generate_example.py dna sequences \
+python scripts/test_examples/generate_example.py dna sequences \
     --description "DNA sequence analysis demonstration" \
     --features "FASTA reading,GC content,reverse complement"
 
@@ -378,7 +378,7 @@ python scripts/generate_example.py dna sequences \
 # Edit the generated file...
 
 # 3. Test the example
-python scripts/test_examples.py --example dna/example_sequences.py
+python scripts/test_examples/test_examples.py --example dna/example_sequences.py
 
 # 4. Update documentation
 # Edit examples/dna/README.md...
@@ -388,7 +388,7 @@ python scripts/test_examples.py --example dna/example_sequences.py
 ```
 
 ### Quality Checklist
-- [ ] **Runs without errors**: `python scripts/test_examples.py --example path`
+- [ ] **Runs without errors**: `python scripts/test_examples/test_examples.py --example path`
 - [ ] **Follows structure**: Proper imports, error handling, output format
 - [ ] **Well documented**: Docstrings, comments, README updates
 - [ ] **Dependencies listed**: In `examples/dependencies.json`
@@ -412,8 +412,8 @@ python scripts/test_examples.py --example dna/example_sequences.py
 
 ### Getting Help
 - Check `examples/TROUBLESHOOTING.md`
-- Run dependency checks: `python scripts/check_example_dependencies.py`
-- Test with verbose output: `python scripts/test_examples.py --verbose`
+- Run dependency checks: `python scripts/test_examples/check_example_dependencies.py`
+- Test with verbose output: `python scripts/test_examples/test_examples.py --verbose`
 
 ## Performance Guidelines
 

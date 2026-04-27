@@ -20,9 +20,9 @@ Ingests all raw CSV files from `data/raw/`, applies configured quality filters, 
 
 | Column | Type | Required | Description |
 | :--- | :--- | :--- | :--- |
-| `sample_id` | str | ✅ | Unique observation identifier |
-| `group` | str | ✅ | Experimental group label |
-| `feature_*` | float | ✅ | Numeric measurements |
+| `sample_id` | str | [DONE] | Unique observation identifier |
+| `group` | str | [DONE] | Experimental group label |
+| `feature_*` | float | [DONE] | Numeric measurements |
 
 ## Outputs
 

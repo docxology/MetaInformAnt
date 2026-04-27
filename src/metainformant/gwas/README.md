@@ -2,7 +2,26 @@
 
 Genome-Wide Association Studies analysis, fine-mapping, variant-expression integration, and compute-time benchmarking.
 
-## 📊 Architecture
+## Overview
+
+Genome-Wide Association Studies analysis, fine-mapping, variant-expression integration, and compute-time benchmarking.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Key Capabilities](#key-capabilities)
+  - [Association Testing](#association-testing)
+  - [Fine-Mapping & Colocalization](#fine-mapping--colocalization)
+  - [Compute-Time Benchmarking](#compute-time-benchmarking)
+  - [Data I/O](#data-io)
+  - [Heritability Estimation](#heritability-estimation)
+- [Submodules](#submodules)
+- [Integration with Expression Data](#integration-with-expression-data)
+- [Related](#related)
+- [See Also](#see-also)
+
+## Architecture
 
 ```mermaid
 graph TD
@@ -30,7 +49,7 @@ graph TD
     end
 ```
 
-## 🔑 Key Capabilities
+## Key Capabilities
 
 ### Association Testing
 
@@ -118,7 +137,7 @@ Scaling models used per step:
 | `haseman_elston_regression()` | Haseman-Elston regression |
 | `compute_liability_h2()` | Liability-scale conversion for case-control |
 
-## 📦 Submodules
+## Submodules
 
 | Module | Purpose |
 |--------|---------|
@@ -129,7 +148,7 @@ Scaling models used per step:
 | [`visualization/`](visualization/) | Manhattan, QQ, LocusZoom, interactive dashboards |
 | [`workflow/`](workflow/) | Pipeline orchestration, config management |
 
-## 🧬 Integration with Expression Data
+## Integration with Expression Data
 
 The GWAS module integrates with RNA-seq via the multiomics module and expression loader:
 
@@ -150,8 +169,18 @@ results = cis_eqtl_scan(
 )
 ```
 
-## 🔗 Related
+## Related
 
-- [metainformant.multiomics](../multiomics/) — Multi-omic integration
-- [metainformant.rna](../rna/) — RNA-seq analysis
-- [config/gwas/](../../../config/gwas/) — Configuration files
+- [metainformant.multiomics](../../docs/multiomics/) — Multi-omic integration
+- [metainformant.rna](../../docs/rna/) — RNA-seq analysis
+- [config/gwas/](../../../docs/config/gwas/) — Configuration files
+
+---
+
+## See Also
+
+- **Documentation**: [docs/gwas/index.md](../../../docs/gwas/index.md) — Workflow guides, methods, troubleshooting
+- **API Reference**: [docs/gwas/SPEC.md](../../../docs/gwas/SPEC.md) — Data structures, function signatures
+- **Tutorial**: [docs/TUTORIALS.md](../../../docs/TUTORIALS.md#3-gwas-analysis-tutorial) — Step-by-step walkthrough
+- **eQTL integration**: [docs/eqtl/README.md](../../../docs/eqtl/README.md) — Combined RNA × GWAS analysis
+- **Configuration**: [config/gwas/](../../config/gwas/) — YAML config files for pipelines

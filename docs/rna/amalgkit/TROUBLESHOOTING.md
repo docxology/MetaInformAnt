@@ -2,7 +2,7 @@
 
 This guide covers common issues, performance bottlenecks, and environment configurations encountered during large-scale RNA-seq runs (8k+ samples).
 
-## 🗄️ Database & IO Issues
+## Database & IO Issues
 
 ### IO Contention (Hanging Queries)
 **Problem**: The `output/amalgkit` directory becomes IO-saturated during quantification, causing `sqlite3` queries on `pipeline_progress.db` to hang or deadlock.
@@ -18,7 +18,7 @@ This guide covers common issues, performance bottlenecks, and environment config
    ```
 3. **Avoid Pandas `read_sql` on live DBs**: Standard `pandas.read_sql` can trigger locking issues. Prefer raw `sqlite3` cursors with short timeouts.
 
-## 🛠️ Tool & Environment Setup
+## Tool & Environment Setup
 
 ### SRA Toolkit: `fasterq-dump` Not Found
 **Problem**: Amalgkit fails to find `fasterq-dump` despite the SRA Toolkit being installed.
@@ -38,7 +38,7 @@ wget https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz
 # ete4 will detect existing local files or can be pointed to them
 ```
 
-## 🧬 Data Integrity
+## Data Integrity
 
 ### Tissue Patch Inconsistency
 **Problem**: Inconsistent BioProject-to-Tissue mappings in `config/amalgkit/tissue_patches.yaml`.

@@ -1,16 +1,16 @@
 # Specification: menu
 
-## 🎯 Scope
+## Scope
 Interactive menu and CLI interface for METAINFORMANT.
 
-## 🧱 Architecture
+## Architecture
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 - **Sub-packages**: core, ui
 - **Key Concepts**: Interactive CLI menus, configuration UI
 
-## 🔌 API Definition
+## API Definition
 ### Exports
 - `__init__.py`

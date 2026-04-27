@@ -90,12 +90,12 @@ OG0000002               Species1_004                                   Species2_
 Expected structure:
 ```
 dir_count/
-├── Species1/
-│   └── Species1_tc.tsv    # Count matrix
-├── Species2/
-│   └── Species2_tc.tsv    # Count matrix
-└── Species3/
-    └── Species3_tc.tsv    # Count matrix
+ Species1/
+ Species1_tc.tsv # Count matrix
+ Species2/
+ Species2_tc.tsv # Count matrix
+ Species3/
+ Species3_tc.tsv # Count matrix
 ```
 
 ### BUSCO Full Tables (Optional)
@@ -103,9 +103,9 @@ dir_count/
 Directory structure:
 ```
 dir_busco/
-├── Species1_full_table.tsv
-├── Species2_full_table.tsv
-└── Species3_full_table.tsv
+ Species1_full_table.tsv
+ Species2_full_table.tsv
+ Species3_full_table.tsv
 ```
 
 **File Naming**: `{Genus}_{Species}_full_table.tsv`  
@@ -117,10 +117,10 @@ dir_busco/
 
 ```
 out_dir/cstmm/
-└── {Species_List}/
-    ├── {Species_List}_cstmm.tc.tsv          # ⭐ TMM-normalized counts matrix
-    ├── {Species_List}_cstmm.sample_info.tsv # Sample metadata
-    └── cstmm_summary.txt                    # Normalization statistics
+ {Species_List}/
+ {Species_List}_cstmm.tc.tsv # TMM-normalized counts matrix
+ {Species_List}_cstmm.sample_info.tsv # Sample metadata
+ cstmm_summary.txt # Normalization statistics
 ```
 
 ### Primary Output
@@ -519,6 +519,6 @@ steps:
 
 **Last Updated**: October 29, 2025  
 **AMALGKIT Version**: 0.12.19  
-**Status**: ✅ Production-ready, requires orthogroup tables from OrthoFinder
+**Status**: Production-ready, requires orthogroup tables from OrthoFinder
 
 

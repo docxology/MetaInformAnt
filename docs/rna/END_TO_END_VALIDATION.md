@@ -1,6 +1,6 @@
 # End-to-End Amalgkit Workflow Validation
 
-**Status**: ✅ All 24 species validated and ready for end-to-end workflows
+**Status**: All 24 species validated and ready for end-to-end workflows
 
 ## Quick Validation
 
@@ -15,7 +15,7 @@ from metainformant.rna.engine.workflow import apply_step_defaults, load_workflow
 cfg = load_workflow_config('config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml')
 apply_step_defaults(cfg)
 steps = plan_workflow(cfg)
-print(f'✅ {len(steps)} steps planned for cfloridanus')
+print(f' {len(steps)} steps planned for cfloridanus')
 "
 
 # Check all species configs
@@ -24,31 +24,31 @@ from pathlib import Path
 from metainformant.rna.orchestration import discover_species_configs
 
 configs = discover_species_configs(Path('config/amalgkit'))
-print(f'✅ {len(configs)} species configs discovered')
+print(f' {len(configs)} species configs discovered')
 "
 ```
 
 ## Validation Results
 
 ### Species Discovery
-- ✅ **24 species configs** discovered and validated
-- ✅ All configs have valid structure (work_dir, threads, species_list)
-- ✅ All configs can be loaded and workflows planned
+-**24 species configs** discovered and validated
+- All configs have valid structure (work_dir, threads, species_list)
+- All configs can be loaded and workflows planned
 
 ### Thread Configuration
-- ✅ **AK_THREADS environment variable** works correctly
-- ✅ Default threads: 24 (configurable per config file)
-- ✅ Override via environment: `export AK_THREADS=24`
-- ✅ Parallel downloads: Configure `num_download_workers` in each species config file
+-**AK_THREADS environment variable** works correctly
+- Default threads: 24 (configurable per config file)
+- Override via environment: `export AK_THREADS=24`
+- Parallel downloads: Configure `num_download_workers` in each species config file
 
 ### Workflow Planning
-- ✅ All 11 workflow steps can be planned
-- ✅ Step order: metadata → config → select → getfastq → integrate → quant → merge → cstmm → curate → csca → sanity
-- ✅ Workflow continuation works (can resume from checkpoints)
+- All 11 workflow steps can be planned
+- Step order: metadata → config → select → getfastq → integrate → quant → merge → cstmm → curate → csca → sanity
+- Workflow continuation works (can resume from checkpoints)
 
 ### Startup Capability
-- ✅ All species can start workflows
-- ✅ Script available: `run_workflow.py` (main orchestrator for all workflows)
+- All species can start workflows
+- Script available: `run_workflow.py` (main orchestrator for all workflows)
 
 ## Starting End-to-End Workflows
 
@@ -164,10 +164,10 @@ All these species are validated and ready:
 
 The workflow can continue from checkpoints:
 
-- ✅ Detects already-quantified samples and skips them
-- ✅ Resumes from last completed step
-- ✅ Handles partial completion gracefully
-- ✅ Can restart after interruptions
+- Detects already-quantified samples and skips them
+- Resumes from last completed step
+- Handles partial completion gracefully
+- Can restart after interruptions
 
 ## Thread Configuration
 
@@ -188,7 +188,7 @@ from metainformant.rna.engine.workflow import load_workflow_config, plan_workflo
 
 cfg = load_workflow_config('config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml')
 steps = plan_workflow(cfg)
-print(f'✅ {len(steps)} steps planned')
+print(f' {len(steps)} steps planned')
 "
 
 # Check all species configs
@@ -197,7 +197,7 @@ from pathlib import Path
 from metainformant.rna.orchestration import discover_species_configs
 
 configs = discover_species_configs(Path('config/amalgkit'))
-print(f'✅ {len(configs)} species configs discovered')
+print(f' {len(configs)} species configs discovered')
 for species in sorted(configs.keys())[:5]:
     print(f'  - {species}')
 "

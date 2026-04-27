@@ -3,10 +3,10 @@
 ## Overview
 Functionality for association.
 
-## 📦 Contents
+## Contents
 - `[run_association.py](run_association.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

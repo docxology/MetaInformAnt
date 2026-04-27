@@ -3,10 +3,10 @@
 ## Overview
 Functionality for protein.
 
-## 📦 Contents
+## Contents
 - `[run_protein_analysis.py](run_protein_analysis.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

@@ -1,39 +1,43 @@
 # Agent Directives: rna
 
-## 🤖 Role
+**Context**: RNA transcriptomic analysis and workflow orchestration module for METAINFORMANT.
 
-Specialized agent context for the `rna` component.
+## Capabilities
 
-## 🛠️ Tools & Capabilities
+End-to-end RNA-seq pipelines: ENA/SRA metadata retrieval, FASTQ streaming, Kallisto quantification, cross-species TMM normalization, and industrial-scale orchestration (8,300+ samples across 28 Hymenoptera species).
 
-- **Context**: RNA transcriptomic analysis and workflow orchestration module for METAINFORMANT.
-- **Pattern**: Source Code Pattern
+## Subpackages
 
-## ⚠️ Rules & Constraints
+| Subpackage | Purpose |
+|------------|---------|
+| `amalgkit/` | Amalgkit CLI integration — command construction, workflow config, step execution |
+| `engine/` | Workflow orchestration — `AmalgkitWorkflowConfig`, `execute_workflow()`, `plan_workflow()` |
+| `retrieval/` | ENA/SRA data retrieval and metadata download |
+| `analysis/` | Expression matrix analysis and quality assessment |
+| `core/` | Shared RNA utilities and data structures |
+| `splicing/` | Alternative splicing analysis |
+| `deconvolution/` | Cell-type deconvolution from bulk RNA-seq |
 
-- **Imports**: Prefer absolute imports from `metainformant`.
-- **I/O**: Use `metainformant.core.io` for all file operations.
-- **Logging**: Use `metainformant.core.utils.logging`.
+## Rules
 
-## 📋 Code Quality Policy
-
-All code in this module **MUST** be:
-
-1. **Functional** — Every function performs real work with real data. No placeholder implementations.
-2. **Modular** — Clear separation of concerns across `engine/`, `amalgkit/`, `retrieval/`, `analysis/`, `splicing/`.
-3. **Tested** — Comprehensive tests using real implementations, real configs, and real filesystem.
-4. **Documented** — README.md, AGENTS.md, SPEC.md at every directory level. Docstrings on all public functions.
-
-## 🚫 NO_MOCKING_POLICY (Mandatory)
-
-> **NEVER use `unittest.mock`, `pytest-mock`, `MagicMock`, `patch`, or any mocking library.**
-
-Instead:
-
-- Use `build_cli_args()` / `build_amalgkit_command()` to test command construction without running subprocesses.
-- Use `tmp_path` and real YAML configs for orchestrator tests.
-- Use real `AmalgkitWorkflowConfig`, `WorkflowExecutionResult`, and `WorkflowStepResult` classes.
-- Use real `pd.DataFrame` for data pipeline tests.
-- Use `try/except` for optional network tests (ENA API).
+- Use `metainformant.core.utils.logging` for all logging
+- Use `metainformant.core.io` for file operations — never `import json` directly
+- Prefer absolute imports from `metainformant`
+- Follow NO MOCKING policy — all tests must use real implementations
+- Use `uv` for dependency management
+- Use `build_cli_args()` / `build_amalgkit_command()` to test command construction without subprocesses
+- Use `tmp_path` and real YAML configs for orchestrator tests
+- Use real `AmalgkitWorkflowConfig`, `WorkflowExecutionResult`, and `WorkflowStepResult` classes
 
 See `tests/NO_MOCKING_POLICY.md` for the full policy.
+
+## Related Documentation
+
+- **Module guide**: [../../../docs/rna/](../../../docs/rna/) — In-depth usage, architecture, and examples
+- **API reference**: [SPEC.md](SPEC.md) — Type signatures, data structures, error codes
+- **Core infrastructure**: [../core/AGENTS.md](../core/AGENTS.md) — Shared utilities (logging, config, I/O)
+- **Full module index**: [../../../docs/index.md](../../../docs/index.md) — Overview of all METAINFORMANT modules
+- **Dna module**: [../dna/AGENTS.md](../dna/AGENTS.md)
+- **Quality module**: [../quality/AGENTS.md](../quality/AGENTS.md)
+- **Visualization module**: [../visualization/AGENTS.md](../visualization/AGENTS.md)
+- **Core module**: [../core/AGENTS.md](../core/AGENTS.md)

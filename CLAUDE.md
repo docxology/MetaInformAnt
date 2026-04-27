@@ -68,34 +68,34 @@ from metainformant.gwas.analysis import association
 
 ```
 src/metainformant/
-├── core/           # Shared utilities (io, paths, config, logging, cache, parallel)
-├── dna/            # DNA: sequences, alignment, phylogeny, population genetics
-├── rna/            # RNA-seq: amalgkit integration, workflow orchestration
-├── protein/        # Protein: sequences, structures, AlphaFold, UniProt
-├── gwas/           # GWAS: association, QC, visualization
-├── epigenome/      # Methylation, ChIP-seq, ATAC-seq
-├── networks/       # Biological networks, community detection
-├── multiomics/     # Multi-omic integration
-├── singlecell/     # scRNA-seq analysis
-├── visualization/  # 70+ plot types
-├── quality/        # QC metrics
-├── ml/             # Machine learning pipelines
-├── math/           # Population genetics theory, coalescent
-├── information/    # Information theory (entropy, MI)
-├── ontology/       # GO analysis, semantic similarity
-├── phenotype/      # Trait analysis
-├── ecology/        # Community diversity
-├── simulation/     # Synthetic data generation
-├── life_events/    # Event sequence analysis
-├── menu/           # Interactive menu and discovery system
-├── metagenomics/   # Microbiome: amplicon, shotgun, functional annotation
-├── structural_variants/  # CNV/SV detection, annotation, visualization
-├── longread/       # PacBio/Nanopore: FAST5/POD5, modified bases, assembly
-├── spatial/        # Spatial transcriptomics: Visium, MERFISH, Xenium
-├── pharmacogenomics/    # Clinical variants: CPIC, PharmGKB, ACMG
-├── metabolomics/        # Metabolite identification, MS data, pathway mapping
-├── cloud/               # GCP deployment, Docker pipelines
-└── mcp/                 # MCP tools for AI-assisted analysis
+ core/ # Shared utilities (io, paths, config, logging, cache, parallel)
+ dna/ # DNA: sequences, alignment, phylogeny, population genetics
+ rna/ # RNA-seq: amalgkit integration, workflow orchestration
+ protein/ # Protein: sequences, structures, AlphaFold, UniProt
+ gwas/ # GWAS: association, QC, visualization
+ epigenome/ # Methylation, ChIP-seq, ATAC-seq
+ networks/ # Biological networks, community detection
+ multiomics/ # Multi-omic integration
+ singlecell/ # scRNA-seq analysis
+ visualization/ # 70+ plot types
+ quality/ # QC metrics
+ ml/ # Machine learning pipelines
+ math/ # Population genetics theory, coalescent
+ information/ # Information theory (entropy, MI)
+ ontology/ # GO analysis, semantic similarity
+ phenotype/ # Trait analysis
+ ecology/ # Community diversity
+ simulation/ # Synthetic data generation
+ life_events/ # Event sequence analysis
+ menu/ # Interactive menu and discovery system
+ metagenomics/ # Microbiome: amplicon, shotgun, functional annotation
+ structural_variants/ # CNV/SV detection, annotation, visualization
+ longread/ # PacBio/Nanopore: FAST5/POD5, modified bases, assembly
+ spatial/ # Spatial transcriptomics: Visium, MERFISH, Xenium
+ pharmacogenomics/ # Clinical variants: CPIC, PharmGKB, ACMG
+ metabolomics/ # Metabolite identification, MS data, pathway mapping
+ cloud/ # GCP deployment, Docker pipelines
+ mcp/ # MCP tools for AI-assisted analysis
 ```
 
 ### Data Flow

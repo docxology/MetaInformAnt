@@ -91,27 +91,27 @@ The workflow automatically:
 
 ```
 output/amalgkit/{species}/genome/
-├── download_record.json          # Download metadata
-├── ncbi_dataset_api.zip          # Downloaded package (optional)
-└── ncbi_dataset_api_extracted/   # Extracted files
-    └── ncbi_dataset/
-        └── data/
-            └── {accession}/
-                ├── rna.fna       # RNA transcriptome FASTA
-                ├── genomic.fna   # Genome sequence
-                ├── genomic.gff  # Gene annotations
-                └── ...
+ download_record.json # Download metadata
+ ncbi_dataset_api.zip # Downloaded package (optional)
+ ncbi_dataset_api_extracted/ # Extracted files
+ ncbi_dataset/
+ data/
+ {accession}/
+ rna.fna # RNA transcriptome FASTA
+ genomic.fna # Genome sequence
+ genomic.gff # Gene annotations
+ ...
 ```
 
 ### Work Directory
 
 ```
 output/amalgkit/{species}/work/
-├── fasta/
-│   └── {Species_Name}_rna.fasta  # Prepared transcriptome
-├── index/
-│   └── {Species_Name}_transcripts.idx  # Kallisto index
-└── ...
+ fasta/
+ {Species_Name}_rna.fasta # Prepared transcriptome
+ index/
+ {Species_Name}_transcripts.idx # Kallisto index
+ ...
 ```
 
 ## Manual Genome Preparation
@@ -190,16 +190,16 @@ VERIFICATION SUMMARY
 Total species: 24
 
 Genome Downloads:
-  ✓ Downloaded: 9/24 (37.5%)
-  ✗ Missing: 15/24
+ Downloaded: 9/24 (37.5%)
+ Missing: 15/24
 
 RNA FASTA Files (of downloaded genomes):
-  ✓ Found: 3/9 (33.3%)
-  ✗ Missing: 6/9
+ Found: 3/9 (33.3%)
+ Missing: 6/9
 
 Kallisto Indexes (of prepared transcriptomes):
-  ✓ Built: 4/3 (133.3%)
-  ✗ Missing: 0/3
+ Built: 4/3 (133.3%)
+ Missing: 0/3
 
 ================================================================================
 
@@ -349,16 +349,16 @@ VERIFICATION SUMMARY
 Total species: 24
 
 Genome Downloads:
-  ✓ Downloaded: 9/24 (37.5%)
-  ✗ Missing: 15/24
+ Downloaded: 9/24 (37.5%)
+ Missing: 15/24
 
 RNA FASTA Files (of downloaded genomes):
-  ✓ Found: 3/9 (33.3%)
-  ✗ Missing: 6/9
+ Found: 3/9 (33.3%)
+ Missing: 6/9
 
 Kallisto Indexes (of prepared transcriptomes):
-  ✓ Built: 4/3 (133.3%)
-  ✗ Missing: 0/3
+ Built: 4/3 (133.3%)
+ Missing: 0/3
 
 ================================================================================
 

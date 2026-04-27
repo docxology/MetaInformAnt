@@ -3,15 +3,15 @@
 ## Overview
 Life events and trajectory analysis module for METAINFORMANT.
 
-## 📦 Contents
-- **[analysis/](analysis/)**
-- **[core/](core/)**
-- **[models/](models/)**
-- **[visualization/](visualization/)**
-- **[workflow/](workflow/)**
-- `[__init__.py](__init__.py)`
+## Contents
+- **[analysis/](events.md)**
+- **[core/](models.md)**
+- **[models/](models.md)**
+- **[visualization/](visualization.md)**
+- **[workflow/](workflow.md)**
+- `__init__.py`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

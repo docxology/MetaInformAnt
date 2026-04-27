@@ -3,10 +3,10 @@
 ## Overview
 Functionality for simulation.
 
-## 📦 Contents
+## Contents
 - `[example_simulation.py](example_simulation.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

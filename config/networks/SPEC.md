@@ -1,12 +1,12 @@
 # Specification: networks Config
 
-## 🎯 Scope
+## Scope
 Configuration templates and schemas for networks.
 
-## 🧱 Architecture
+## Architecture
 - **Component**: Configuration
 - **Location**: `config/networks/`
 
-## 💾 Data Structures
+## Data Structures
 - **Format**: YAML
 - **Schema**: `metainformant.networks.config`

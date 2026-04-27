@@ -3,14 +3,14 @@
 ## Overview
 Functionality for core.
 
-## 📦 Contents
+## Contents
 - `[example_config.py](example_config.py)`
 - `[example_io.py](example_io.py)`
 - `[example_logging.py](example_logging.py)`
 - `[example_paths.py](example_paths.py)`
 - `[example_workflow.py](example_workflow.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

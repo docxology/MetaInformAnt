@@ -3,10 +3,10 @@
 ## Overview
 Functionality for ontology.
 
-## 📦 Contents
+## Contents
 - **[GO_v3/](GO_v3/)**
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

@@ -32,11 +32,11 @@ Failed to create virtual environment
 
 | Filesystem | Symlinks | Linux | Windows | macOS | Best For |
 |------------|----------|-------|---------|-------|----------|
-| **ext4** | ✅ Yes | Native | ❌ No* | ❌ No* | Linux-only drives |
-| **NTFS** | ✅ Yes | ✅ Yes** | Native | Read-only*** | Cross-platform |
-| **exFAT** | ❌ No | ✅ Yes | ✅ Yes | ✅ Yes | Simple file transfer |
-| **Btrfs** | ✅ Yes | Native | ❌ No | ❌ No | Advanced Linux |
-| **APFS** | ✅ Yes | ❌ No | ❌ No | Native | macOS only |
+| **ext4** | [DONE] Yes | Native | No* | No* | Linux-only drives |
+| **NTFS** | [DONE] Yes | [DONE] Yes** | Native | Read-only*** | Cross-platform |
+| **exFAT** | No | [DONE] Yes | [DONE] Yes | [DONE] Yes | Simple file transfer |
+| **Btrfs** | [DONE] Yes | Native | No | No | Advanced Linux |
+| **APFS** | [DONE] Yes | No | No | Native | macOS only |
 
 \* Requires third-party tools  
 \** Via ntfs-3g driver  
@@ -57,7 +57,7 @@ Failed to create virtual environment
 
 **How to Format**:
 ```bash
-# ⚠️ BACKUP DATA FIRST - THIS ERASES THE DRIVE! ⚠️
+# BACKUP DATA FIRST - THIS ERASES THE DRIVE!
 
 # Unmount the drive
 sudo umount /dev/sdb2
@@ -82,7 +82,7 @@ sudo mount /dev/sdb2 /media/q/ext6
 
 **How to Format**:
 ```bash
-# ⚠️ BACKUP DATA FIRST - THIS ERASES THE DRIVE! ⚠️
+# BACKUP DATA FIRST - THIS ERASES THE DRIVE!
 
 # Install ntfs-3g if not already installed
 sudo apt-get install ntfs-3g
@@ -203,8 +203,8 @@ uv pip install ncbi-datasets-pylib --python /tmp/metainformant_venv/bin/python3
 **Symptom**:
 ```
 × Failed to download `biopython==1.86`
-├─▶ Failed to read from the distribution cache
-╰─▶ failed to symlink file from ... to ...
+ Failed to read from the distribution cache
+ failed to symlink file from ... to ...
    Operation not permitted (os error 1)
 ```
 
@@ -320,10 +320,10 @@ python3 scripts/rna/check_environment.py
 /tmp/metainformant_venv/bin/python3 -c "import sys; print(sys.prefix)"
 
 # Check biopython
-/tmp/metainformant_venv/bin/python3 -c "from Bio import Entrez; print('✓ biopython available')"
+/tmp/metainformant_venv/bin/python3 -c "from Bio import Entrez; print(' biopython available')"
 
 # Check ncbi-datasets
-/tmp/metainformant_venv/bin/python3 -c "from ncbi.datasets import GenomeApi; print('✓ ncbi-datasets available')"
+/tmp/metainformant_venv/bin/python3 -c "from ncbi.datasets import GenomeApi; print(' ncbi-datasets available')"
 ```
 
 ### Verify UV Cache
@@ -407,11 +407,11 @@ The following files automatically handle external drive issues:
 
 METAINFORMANT automatically handles external drive and filesystem limitations:
 
-✅ **Automatic venv location selection** - Falls back to `/tmp/metainformant_venv` when needed  
-✅ **Automatic UV cache configuration** - Uses `/tmp/uv-cache` to avoid symlink issues  
-✅ **Automatic temp directory selection** - Chooses best location based on drive size  
-✅ **Graceful degradation** - Optional dependencies (biopython, ncbi-datasets) are optional  
-✅ **Comprehensive error handling** - Clear messages and automatic fallbacks  
+ **Automatic venv location selection** - Falls back to `/tmp/metainformant_venv` when needed
+ **Automatic UV cache configuration** - Uses `/tmp/uv-cache` to avoid symlink issues
+ **Automatic temp directory selection** - Chooses best location based on drive size
+ **Graceful degradation** - Optional dependencies (biopython, ncbi-datasets) are optional
+ **Comprehensive error handling** - Clear messages and automatic fallbacks
 
 No manual configuration needed - the system handles everything automatically!
 

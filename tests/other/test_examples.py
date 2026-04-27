@@ -28,7 +28,7 @@ class TestExamples:
         # Return a helper function that uses subprocess instead of direct import
         def run_test_examples(**kwargs):
             """Run test_examples.py script with given arguments."""
-            cmd = [sys.executable, "scripts/test_examples.py"]
+            cmd = [sys.executable, "scripts/test_examples/test_examples.py"]
 
             # Add arguments
             if kwargs.get("continue_on_error"):
@@ -177,7 +177,7 @@ class TestExamples:
         start_time = time.time()
 
         result = subprocess.run(
-            [sys.executable, "scripts/test_examples.py", "--parallel", "--max-workers", "4"],
+            [sys.executable, "scripts/test_examples/test_examples.py", "--parallel", "--max-workers", "4"],
             cwd=Path.cwd(),
             capture_output=True,
             text=True,
@@ -261,7 +261,7 @@ class TestExamples:
         # by running examples and checking they don't crash the test runner
 
         result = subprocess.run(
-            [sys.executable, "scripts/test_examples.py", "--continue-on-error"],
+            [sys.executable, "scripts/test_examples/test_examples.py", "--continue-on-error"],
             cwd=Path.cwd(),
             capture_output=True,
             text=True,
@@ -284,7 +284,7 @@ class TestExamples:
         # If network is available, examples should still work
         # (Most examples don't actually need network, but this tests the framework)
         result = subprocess.run(
-            [sys.executable, "scripts/test_examples.py", "--domain", "core"],
+            [sys.executable, "scripts/test_examples/test_examples.py", "--domain", "core"],
             cwd=Path.cwd(),
             capture_output=True,
             text=True,

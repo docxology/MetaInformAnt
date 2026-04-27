@@ -389,7 +389,7 @@ uv venv
 uv pip install -e .[dev]
 ```
 
-2. **Make changes** following the [Cursor Rules](.cursorrules)
+2. **Make changes** following the [Cursor Rules](../.cursorrules)
 
 3. **Add tests** (no mocks, real implementations)
 

@@ -14,20 +14,20 @@ Technical documentation for METAINFORMANT, organized by domain module. Contains 
 
 ```
 docs/
-├── conf.py                  # Sphinx configuration
-├── index.md                 # Documentation entry point
-├── architecture.md          # System architecture overview
-├── cli.md                   # CLI documentation
-├── FAQ.md                   # Frequently asked questions
-├── TUTORIALS.md             # Step-by-step tutorials
-├── ERROR_HANDLING.md        # Error handling patterns
-├── NO_MOCKING_POLICY.md     # Testing policy
-├── UV_SETUP.md              # UV package manager guide
-└── {module}/                # Domain-specific documentation
-    ├── index.md             # Module entry point
-    ├── API.md               # API reference
-    ├── ARCHITECTURE.md      # Module architecture
-    └── workflow.md          # Workflow documentation
+ conf.py # Sphinx configuration
+ index.md # Documentation entry point
+ architecture.md # System architecture overview
+ cli.md # CLI documentation
+ FAQ.md # Frequently asked questions
+ TUTORIALS.md # Step-by-step tutorials
+ ERROR_HANDLING.md # Error handling patterns
+ NO_MOCKING_POLICY.md # Testing policy
+ UV_SETUP.md # UV package manager guide
+ {module}/ # Domain-specific documentation
+ index.md # Module entry point
+ API.md # API reference
+ ARCHITECTURE.md # Module architecture
+ workflow.md # Workflow documentation
 ```
 
 ## Data Structures
@@ -77,6 +77,6 @@ bash scripts/package/uv_docs.sh
 - Keep documentation synchronized with source code
 - Never create new root-level files (update existing or add to subdirectories)
 
-## 🧪 Testing Policy
+## Testing Policy
 
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

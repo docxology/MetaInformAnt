@@ -3,11 +3,11 @@
 ## Overview
 Functionality for rna.
 
-## 📦 Contents
+## Contents
 - `[example_amalgkit.py](example_amalgkit.py)`
 - `[example_quantification.py](example_quantification.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

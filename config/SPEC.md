@@ -14,18 +14,18 @@ YAML configuration files for all METAINFORMANT workflows and modules. Contains a
 
 ```
 config/
-├── amalgkit/           # RNA-seq workflow configs (active species)
-├── archive/            # Archived/legacy amalgkit configs
-├── config_base/        # Base configuration templates
-├── eqtl/              # eQTL analysis configurations
-├── gwas/              # GWAS pipeline configurations
-├── life_events/       # Life events module configurations
-├── longread/          # Long-read sequencing configurations
-├── multiomics/        # Multi-omics integration configurations
-├── ncbi/              # NCBI API configurations
-├── networks/          # Network analysis configurations
-├── phenotype/         # Phenotype analysis configurations
-└── singlecell/        # Single-cell analysis configurations
+ amalgkit/ # RNA-seq workflow configs (active species)
+ archive/ # Archived/legacy amalgkit configs
+ config_base/ # Base configuration templates
+ eqtl/ # eQTL analysis configurations
+ gwas/ # GWAS pipeline configurations
+ life_events/ # Life events module configurations
+ longread/ # Long-read sequencing configurations
+ multiomics/ # Multi-omics integration configurations
+ ncbi/ # NCBI API configurations
+ networks/ # Network analysis configurations
+ phenotype/ # Phenotype analysis configurations
+ singlecell/ # Single-cell analysis configurations
 ```
 
 ## Data Structures

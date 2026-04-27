@@ -3,11 +3,11 @@
 ## Overview
 Electronic phenotype analysis module.
 
-## 📦 Contents
+## Contents
 - `[__init__.py](__init__.py)`
 - `[tracking.py](tracking.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

@@ -80,22 +80,22 @@ steps:
 **For Cross-Species Analysis**:
 ```
 out_dir/curate/  # or out_dir/cstmm/
-├── Species1/
-│   └── tables/
-│       └── Species1.no.tc.tsv    # Curated expression
-├── Species2/
-│   └── tables/
-│       └── Species2.no.tc.tsv    # Curated expression
-└── Species3/
-    └── tables/
-        └── Species3.no.tc.tsv    # Curated expression
+ Species1/
+ tables/
+ Species1.no.tc.tsv # Curated expression
+ Species2/
+ tables/
+ Species2.no.tc.tsv # Curated expression
+ Species3/
+ tables/
+ Species3.no.tc.tsv # Curated expression
 ```
 
 **OR**:
 ```
 out_dir/cstmm/
-└── multi_species/
-    └── multi_species_cstmm.tc.tsv  # TMM-normalized cross-species matrix
+ multi_species/
+ multi_species_cstmm.tc.tsv # TMM-normalized cross-species matrix
 ```
 
 ### R Dependencies
@@ -119,17 +119,17 @@ out_dir/cstmm/
 
 ```
 out_dir/csca/
-└── {Analysis_Name}/
-    ├── plots/
-    │   ├── {Analysis_Name}_correlation_heatmap.pdf     # ⭐ Correlation heatmap
-    │   ├── {Analysis_Name}_pca.pdf                     # ⭐ PCA plot
-    │   ├── {Analysis_Name}_dendrogram.pdf             # ⭐ Hierarchical clustering
-    │   └── {Analysis_Name}_sample_correlation.pdf      # Sample correlation matrix
-    ├── tables/
-    │   ├── {Analysis_Name}_correlation_matrix.tsv     # Correlation values
-    │   ├── {Analysis_Name}_species_summary.tsv        # Species statistics
-    │   └── {Analysis_Name}_sample_info.tsv           # Sample metadata
-    └── csca_summary.txt                                # Analysis summary
+ {Analysis_Name}/
+ plots/
+ {Analysis_Name}_correlation_heatmap.pdf # Correlation heatmap
+ {Analysis_Name}_pca.pdf # PCA plot
+ {Analysis_Name}_dendrogram.pdf # Hierarchical clustering
+ {Analysis_Name}_sample_correlation.pdf # Sample correlation matrix
+ tables/
+ {Analysis_Name}_correlation_matrix.tsv # Correlation values
+ {Analysis_Name}_species_summary.tsv # Species statistics
+ {Analysis_Name}_sample_info.tsv # Sample metadata
+ csca_summary.txt # Analysis summary
 ```
 
 ### Primary Visualizations
@@ -570,6 +570,6 @@ steps:
 
 **Last Updated**: October 29, 2025  
 **AMALGKIT Version**: 0.12.19  
-**Status**: ✅ Production-ready, requires R visualization packages
+**Status**: Production-ready, requires R visualization packages
 
 

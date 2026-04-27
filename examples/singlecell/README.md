@@ -3,10 +3,10 @@
 ## Overview
 Functionality for singlecell.
 
-## 📦 Contents
+## Contents
 - `[example_scrna.py](example_scrna.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

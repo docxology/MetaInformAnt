@@ -2,6 +2,23 @@
 
 Clinical pharmacogenomic analysis: star allele calling, metabolizer phenotyping, CPIC guideline lookups, drug interaction prediction, and report generation.
 
+## Overview
+
+Clinical pharmacogenomic analysis: star allele calling, metabolizer phenotyping, CPIC guideline lookups, drug interaction prediction, and report generation.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Submodules](#submodules)
+- [Key Capabilities](#key-capabilities)
+  - [Star Allele Calling](#star-allele-calling)
+  - [Metabolizer Prediction](#metabolizer-prediction)
+  - [Guideline Annotations](#guideline-annotations)
+  - [Drug Interactions & Clinical](#drug-interactions--clinical)
+- [Quick Start](#quick-start)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -107,6 +124,7 @@ report = generate_clinical_report(
 ```
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [docs/pharmacogenomics/](../../../docs/pharmacogenomics/) - CPIC, ACMG, star allele documentation
 - [metainformant.gwas](../gwas/) - GWAS variant data for pharmacogenomic loci

@@ -3,10 +3,10 @@
 ## Overview
 Functionality for quality.
 
-## 📦 Contents
+## Contents
 - `[run_quality_control.py](run_quality_control.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

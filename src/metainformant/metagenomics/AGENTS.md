@@ -1,6 +1,6 @@
 # Agent Directives: metagenomics
 
-
+**Context**: Microbiome and metagenomic analysis: amplicon profiling (16S/ITS), shotgun metagenomics, community diversity, functional annotation, and differential abundance testing.
 
 ## Capabilities
 
@@ -21,3 +21,14 @@ This module provides functionality organized into the following structure:
 - Use `metainformant.core.io` for file operations — never `import json` directly
 - Follow NO MOCKING policy — all tests must use real implementations
 - Use `uv` for dependency management
+
+## Related Documentation
+
+- **Module guide**: [../../../docs/metagenomics/](../../../docs/metagenomics/) — In-depth usage, architecture, and examples
+- **API reference**: [SPEC.md](SPEC.md) — Type signatures, data structures, error codes
+- **Core infrastructure**: [../core/AGENTS.md](../core/AGENTS.md) — Shared utilities (logging, config, I/O)
+- **Full module index**: [../../../docs/index.md](../../../docs/index.md) — Overview of all METAINFORMANT modules
+- **Ecology module**: [../ecology/AGENTS.md](../ecology/AGENTS.md)
+- **Networks module**: [../networks/AGENTS.md](../networks/AGENTS.md)
+- **Visualization module**: [../visualization/AGENTS.md](../visualization/AGENTS.md)
+- **Core module**: [../core/AGENTS.md](../core/AGENTS.md)

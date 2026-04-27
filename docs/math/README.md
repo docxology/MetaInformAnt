@@ -3,17 +3,17 @@
 ## Overview
 Mathematical biology and theoretical modeling module for METAINFORMANT.
 
-## 📦 Contents
-- **[core/](core/)**
-- **[decision_theory/](decision_theory/)**
-- **[epidemiology/](epidemiology/)**
-- **[evolutionary_dynamics/](evolutionary_dynamics/)**
-- **[perception/](perception/)**
-- **[population_genetics/](population_genetics/)**
-- **[quantitative_genetics/](quantitative_genetics/)**
-- **[bayesian/](bayesian/)** — Bayesian inference methods
+## Contents
+- **[core/](index.md)**
+- **[decision_theory/](ddm.md)**
+- **[epidemiology/](epidemiology.md)**
+- **[evolutionary_dynamics/](dynamics.md)**
+- **perception/**
+- **[population_genetics/](popgen.md)**
+- **[quantitative_genetics/](popgen_stats.md)**
+- **bayesian/** — Bayesian inference methods
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

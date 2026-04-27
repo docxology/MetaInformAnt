@@ -2,7 +2,7 @@
 
 Workflow execution, monitoring, and orchestration for RNA-seq pipelines.
 
-## 📦 Components
+## Components
 
 | File | Purpose |
 |------|---------|
@@ -22,7 +22,7 @@ Workflow execution, monitoring, and orchestration for RNA-seq pipelines.
 | [`progress_tracker.py`](progress_tracker.py) | Progress state persistence |
 | [`sra_extraction.py`](sra_extraction.py) | SRA data extraction utilities |
 
-## 🔑 Key Classes
+## Key Classes
 
 ### streaming_orchestrator.py
 
@@ -49,7 +49,7 @@ Workflow execution, monitoring, and orchestration for RNA-seq pipelines.
 
 - `ProgressTracker` - Persistent progress state
 
-## 🚀 Usage
+## Usage
 
 ```python
 from metainformant.rna.engine.workflow import (
@@ -61,7 +61,7 @@ config = AmalgkitWorkflowConfig.load("config/amalgkit/my_config.yaml")
 result = execute_workflow(config)
 ```
 
-## 🔗 Related
+## Related
 
 - [amalgkit/](../amalgkit/) - Tool wrappers
 - [scripts/rna/](../../../../scripts/rna/) - CLI scripts

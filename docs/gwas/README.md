@@ -2,7 +2,7 @@
 
 Genome-Wide Association Studies analysis, fine-mapping, and variant-expression integration.
 
-## 📊 Architecture
+## Architecture
 
 ```mermaid
 graph TD
@@ -28,7 +28,7 @@ graph TD
     end
 ```
 
-## 🔑 Key Capabilities
+## Key Capabilities
 
 ### Fine-Mapping & Colocalization
 
@@ -66,18 +66,18 @@ result = eqtl_coloc(
 | `read_plink()` | Load PLINK bed/bim/fam |
 | `write_sumstats()` | Export summary statistics |
 
-## 📦 Submodules
+## Submodules
 
 | Module | Purpose |
 |--------|---------|
-| [`analysis/`](analysis/) | Association testing |
-| [`data/`](data/) | VCF, PLINK I/O |
-| [`finemapping/`](finemapping/) | Fine-mapping, colocalization |
-| [`heritability/`](heritability/) | Heritability estimation |
-| [`visualization/`](visualization/) | Manhattan, QQ, LocusZoom |
-| [`workflow/`](workflow/) | Pipeline orchestration |
+| [`analysis/`](workflow.md) | Association testing |
+| [`data/`](real_data_acquisition.md) | VCF, PLINK I/O |
+| `finemapping/` | Fine-mapping, colocalization |
+| `heritability/` | Heritability estimation |
+| [`visualization/`](visualization_gallery.md) | Manhattan, QQ, LocusZoom |
+| [`workflow/`](workflow.md) | Pipeline orchestration |
 
-## 🧬 Integration with Expression Data
+## Integration with Expression Data
 
 The GWAS module integrates with RNA-seq via the multiomics module:
 
@@ -96,7 +96,7 @@ integrated = integration.integrate_omics_data(
 )
 ```
 
-## 🔗 Related
+## Related
 
 - **[eQTL Integration Pipeline](../eqtl/README.md)** - Maps DNA variants against RNA expression
 - [metainformant.multiomics](../multiomics/) - Multi-omic integration

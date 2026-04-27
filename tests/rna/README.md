@@ -2,7 +2,7 @@
 
 Tests for the RNA-seq pipeline engine, retrieval, and amalgkit integration.
 
-## 📦 Test Categories
+## Test Categories
 
 | Area | What's Tested |
 |------|---------------|
@@ -11,7 +11,7 @@ Tests for the RNA-seq pipeline engine, retrieval, and amalgkit integration.
 | Amalgkit Wrapper | CLI command construction, config loading, step execution |
 | Workflow Engine | Config parsing, step sequencing, progress tracking |
 
-## 🚀 Running Tests
+## Running Tests
 
 ```bash
 # Run all RNA tests
@@ -24,7 +24,7 @@ uv run pytest tests/rna/test_ena_downloader.py -v
 uv run pytest tests/rna/ --cov=metainformant.rna -v
 ```
 
-## 🔗 Related
+## Related
 
 - [src/metainformant/rna/](../../src/metainformant/rna/) - Source module
 - [scripts/rna/](../../scripts/rna/) - Pipeline scripts

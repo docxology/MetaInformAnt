@@ -10,14 +10,14 @@ Plotting and animation utilities for biological data visualization across all do
 ## Source Structure
 ```
 src/metainformant/visualization/
-├── composite.py, interactive.py, palettes.py, themes.py
-├── analysis/
-│   ├── dimred.py, information.py, quality.py, quality_assessment.py
-│   ├── quality_omics.py, quality_sequencing.py, statistical.py, timeseries.py
-├── genomics/
-│   ├── expression.py, genomics.py, networks.py, trees.py
-└── plots/
-    ├── animations.py, basic.py, general.py, multidim.py, specialized.py
+ composite.py, interactive.py, palettes.py, themes.py
+ analysis/
+ dimred.py, information.py, quality.py, quality_assessment.py
+ quality_omics.py, quality_sequencing.py, statistical.py, timeseries.py
+ genomics/
+ expression.py, genomics.py, networks.py, trees.py
+ plots/
+ animations.py, basic.py, general.py, multidim.py, specialized.py
 ```
 
 ## Package Management

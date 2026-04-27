@@ -3,17 +3,17 @@
 ## Overview
 Core utilities for METAINFORMANT bioinformatics toolkit.
 
-## 📦 Contents
-- **[data/](data/)**
-- **[engine/](engine/)**
-- **[execution/](execution/)**
-- **[io/](io/)**
-- **[output/](output/)**
-- **[ui/](ui/)**
-- **[utils/](utils/)**
-- `[__init__.py](__init__.py)`
+## Contents
+- **[data/](db.md)**
+- **[engine/](workflow.md)**
+- **[execution/](parallel.md)**
+- **[io/](io.md)**
+- **[output/](logging.md)**
+- **ui/**
+- **[utils/](config.md)**
+- `__init__.py`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD
@@ -35,6 +35,15 @@ graph TD
         UI[ui/] --> |tui.py| TI[Terminal Interface]
     end
 ```
+
+## Coordination Role
+
+Core provides the orchestration primitives used by all domain agents:
+- `engine/workflow_manager.py`: BasePipelineManager — generic multi-phase pipeline
+- `execution/workflow.py`: Config-driven execution engine
+- `execution/parallel.py`: Resource-aware thread pool utilities
+
+See [Agent Coordination Hub](../agents/README.md) for multi-agent workflow patterns.
 
 ## Usage
 Import module:

@@ -1,20 +1,20 @@
 # Specification: simulation
 
-## 🎯 Scope
+## Scope
 
 Evolutionary and Population Genetics Simulation module for METAINFORMANT.
 
-## 🧱 Architecture
+## Architecture
 
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 
 - **Sub-packages**: benchmark, methylation, models, visualization, workflow
 - **Key Concepts**: Agent-based evolution, methylation simulation, population genetics, Wright-Fisher models
 
-## 🔌 API Definition
+## API Definition
 
 ### Exports
 

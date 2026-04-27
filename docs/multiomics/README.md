@@ -2,7 +2,7 @@
 
 Core multi-omics data integration for combining GWAS, RNA-seq, proteomics, and epigenomics data layers.
 
-## 📊 Architecture
+## Architecture
 
 ```mermaid
 graph TD
@@ -26,7 +26,7 @@ graph TD
     PROT --> I
 ```
 
-## 🔑 Key Capabilities
+## Key Capabilities
 
 ### GWAS-Expression (eQTL) Integration
 
@@ -70,17 +70,17 @@ result = eqtl_coloc(
 | `from_protein_abundance()` | Proteomics preprocessing |
 | `from_epigenome_data()` | Methylation/ChIP-seq data |
 
-## 📦 Submodules
+## Submodules
 
 | Module | Purpose |
 |--------|---------|
-| [`analysis/`](analysis/) | Core integration algorithms |
-| [`methods/`](methods/) | Factorization, clustering |
-| [`pathways/`](pathways/) | Multi-omic pathway analysis |
-| [`survival/`](survival/) | Cox, Kaplan-Meier models |
-| [`visualization/`](visualization/) | Integrated plots |
+| [`analysis/`](integration.md) | Core integration algorithms |
+| [`methods/`](methods.md) | Factorization, clustering |
+| [`pathways/`](pathways.md) | Multi-omic pathway analysis |
+| [`survival/`](survival.md) | Cox, Kaplan-Meier models |
+| [`visualization/`](integration.md) | Integrated plots |
 
-## 🧬 Species-Agnostic Design
+## Species-Agnostic Design
 
 All methods are species-agnostic. Example with *Apis mellifera*:
 
@@ -92,7 +92,7 @@ multiomics = integration.integrate_omics_data(
 )
 ```
 
-## 🔗 Related
+## Related
 
 - [metainformant.gwas](../gwas/) - GWAS analysis and fine-mapping
 - [metainformant.rna](../rna/) - RNA-seq quantification

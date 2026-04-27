@@ -1,17 +1,17 @@
 # Agent Directives: docs/networks
 
 ## Role
-Documentation for biological network analysis.
 
-## Contents
-- Graph construction and manipulation
-- Protein-protein interaction (PPI) networks
-- Gene regulatory networks
-- Pathway analysis
-- Community detection (Louvain, Leiden)
-- Centrality measures
+Documentation for the biological network analysis module.
 
-## Key Dependencies
-- networkx for graph operations
-- Community detection algorithms
-- STRING/BioGRID database integration
+## Module Scope
+
+Graph construction, community detection (Louvain, Leiden), centrality measures, PPI networks, regulatory networks, and pathway analysis.
+
+## Key Source Files
+
+| Path | Description |
+|------|-------------|
+| `src/metainformant/networks/analysis/` | Graph algorithms |
+| `src/metainformant/networks/interaction/` | PPI network construction |
+| `src/metainformant/networks/regulatory/` | Regulatory network analysis |

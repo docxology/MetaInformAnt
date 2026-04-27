@@ -10,26 +10,26 @@ Phenotypic trait analysis: life course phenotype extraction and AntWiki integrat
 ## Source Structure
 ```
 src/metainformant/phenotype/
-├── analysis/
-│   └── life_course.py
-├── behavior/
-│   ├── ethogram.py, sequence.py
-├── chemical/
-│   ├── compound.py, profile.py
-├── data/
-│   ├── antwiki.py, scraper.py
-├── electronic/
-│   └── tracking.py
-├── integration/
-│   └── cross_omic.py
-├── morphological/
-│   ├── measurement.py, profile.py
-├── sonic/
-│   └── signal.py
-├── visualization/
-│   └── visualization.py
-└── workflow/
-    └── pipeline.py
+ analysis/
+ life_course.py
+ behavior/
+ ethogram.py, sequence.py
+ chemical/
+ compound.py, profile.py
+ data/
+ antwiki.py, scraper.py
+ electronic/
+ tracking.py
+ integration/
+ cross_omic.py
+ morphological/
+ measurement.py, profile.py
+ sonic/
+ signal.py
+ visualization/
+ visualization.py
+ workflow/
+ pipeline.py
 ```
 
 ## Package Management

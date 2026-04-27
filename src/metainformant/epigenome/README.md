@@ -2,6 +2,22 @@
 
 DNA methylation, ChIP-seq, ATAC-seq analysis and chromatin state discovery for METAINFORMANT.
 
+## Overview
+
+DNA methylation, ChIP-seq, ATAC-seq analysis and chromatin state discovery for METAINFORMANT.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Submodules](#submodules)
+- [Key Capabilities](#key-capabilities)
+  - [Methylation Analysis](#methylation-analysis)
+  - [ChIP-seq and ATAC-seq](#chip-seq-and-atac-seq)
+  - [Chromatin State and Workflow](#chromatin-state-and-workflow)
+- [Quick Start](#quick-start)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -98,6 +114,7 @@ print(f"H3K4me3 peak: {peak.length} bp")  # 1000
 ```
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [metainformant.dna](../dna/) - DNA sequence and variant analysis
 - [metainformant.singlecell](../singlecell/) - Single-cell epigenomics integration

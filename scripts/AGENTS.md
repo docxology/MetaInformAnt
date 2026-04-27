@@ -5,12 +5,15 @@ Executable scripts and utilities for running METAINFORMANT workflows.
 
 ## Directory Structure
 Domain-specific scripts organized by module:
+- `cloud/` - Cloud deployment and sync utilities
 - `core/` - Core infrastructure utilities
 - `dna/` - DNA analysis scripts
 - `ecology/` - Ecology analysis scripts
 - `epigenome/` - Epigenome analysis scripts
+- `eqtl/` - eQTL analysis scripts
 - `gwas/` - GWAS pipeline scripts (with subdirectories)
 - `life_events/` - Life events analysis workflows
+- `maintenance/` - Refactoring, import fixes, code generation
 - `math/` - Mathematical biology scripts
 - `menu/` - Interactive menu system
 - `ml/` - Machine learning scripts
@@ -21,19 +24,14 @@ Domain-specific scripts organized by module:
 - `phenotype/` - Phenotype analysis
 - `popgen/` - Population genetics scripts
 - `protein/` - Protein analysis
-- `quality/` - Quality control scripts
+- `quality/` - Auditing, linting, export checks
+- `reorganize/` - Import rewriting and migration
 - `rna/` - RNA-seq and amalgkit scripts
 - `simulation/` - Simulation scripts for all modules
 - `singlecell/` - Single-cell analysis
-- `test_examples/` - Example testing scripts
+- `test_examples/` - Example testing, validation, benchmarking
+- `validate/` - Project completeness audits
 - `visualization/` - Visualization scripts
-
-## Root-Level Utilities
-- `analyze_example_coverage.py` - Check example coverage
-- `benchmark_examples.py` - Benchmark example scripts
-- `generate_example.py` - Generate example files
-- `validate_examples.py` - Validate example scripts
-- `refactor_imports.py` - Import refactoring utility
 
 ## Rules and Constraints
 - All scripts should be executable directly or via `uv run`

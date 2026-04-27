@@ -1,19 +1,18 @@
 # Agent Directives: docs/math
 
 ## Role
-Documentation for mathematical biology and population genetics theory.
 
-## Contents
-- Population genetics (Hardy-Weinberg, FST, effective size)
-- Coalescent theory and simulations
-- Selection analysis (directional, balancing, frequency-dependent)
-- Evolutionary game theory
-- Epidemiological models (SIR, SEIR)
-- Linkage disequilibrium
-- Quantitative genetics
+Documentation for the mathematical biology module.
 
-## Key Algorithms
-- Wright-Fisher model
-- Kingman coalescent
-- Price equation
-- Genetic drift simulations
+## Module Scope
+
+Population genetics theory, coalescent models, selection analysis, epidemiology (SIR/SEIR), evolutionary dynamics, Bayesian inference, and quantitative genetics.
+
+## Key Source Files
+
+| Path | Description |
+|------|-------------|
+| `src/metainformant/math/population_genetics/` | Hardy-Weinberg, Fst, drift |
+| `src/metainformant/math/epidemiology/` | Compartmental models |
+| `src/metainformant/math/evolutionary_dynamics/` | Game theory, fitness landscapes |
+| `src/metainformant/math/bayesian/` | Bayesian inference |

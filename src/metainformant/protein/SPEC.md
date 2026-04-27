@@ -1,21 +1,21 @@
 # Specification: protein
 
-## 🎯 Scope
+## Scope
 
 Protein sequence and structure analysis module for METAINFORMANT. Covers proteome
 retrieval, domain analysis, structure prediction, and workflow orchestration.
 
-## 🧱 Architecture
+## Architecture
 
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 
 - **Sub-packages**: analysis, data, database, domains, function, sequence, structure, visualization, workflow
 - **Key Concepts**: Protein structure, domains, function prediction, sequence analysis
 
-## 🔌 API Definition
+## API Definition
 
 ### Exports — `analysis/orchestration.py`
 

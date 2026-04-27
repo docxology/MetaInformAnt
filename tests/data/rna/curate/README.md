@@ -3,10 +3,10 @@
 ## Overview
 Functionality for curate.
 
-## 📦 Contents
+## Contents
 - **[Apis_mellifera/](Apis_mellifera/)**
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

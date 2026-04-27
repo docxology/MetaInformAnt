@@ -9,12 +9,12 @@ Synthetic data generation and modeling: sequence generation, agent-based ecosyst
 ## Source Structure
 ```
 src/metainformant/simulation/
-├── models/
-│   ├── agents.py, popgen.py, rna.py, sequences.py
-├── visualization/
-│   └── visualization.py
-└── workflow/
-    └── workflow.py
+ models/
+ agents.py, popgen.py, rna.py, sequences.py
+ visualization/
+ visualization.py
+ workflow/
+ workflow.py
 ```
 
 ## Package Management

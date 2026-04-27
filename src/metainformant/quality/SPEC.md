@@ -1,21 +1,21 @@
 # Specification: quality
 
-## 🎯 Scope
+## Scope
 
 Quality control analysis module for METAINFORMANT. Sequence quality assessment,
 contamination detection, batch effect analysis, and FASTQ parsing.
 
-## 🧱 Architecture
+## Architecture
 
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 
 - **Sub-packages**: analysis, batch, io, reporting
 - **Key Concepts**: QC metrics, batch effect detection/correction, FASTQ parsing
 
-## 🔌 API Definition
+## API Definition
 
 ### Exports — `analysis/contamination.py`
 

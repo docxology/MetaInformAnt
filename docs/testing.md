@@ -520,7 +520,7 @@ uv run pytest -x tests/test_core_text.py
 
 #### UV Not Found
 ```bash
-❌ uv is not installed or not in PATH
+ uv is not installed or not in PATH
    Please install uv first:
    curl -LsSf https://astral.sh/uv/install.sh | sh
    Or visit: https://github.com/astral.sh/uv
@@ -534,7 +534,7 @@ export PATH="$HOME/.cargo/bin:$PATH"
 
 #### Dependency Sync Issues
 ```bash
-❌ Failed to sync dependencies
+ Failed to sync dependencies
 ```
 
 **Solution**: Clear UV cache and retry:
@@ -545,14 +545,14 @@ bash scripts/package/verify.sh --mode deps
 
 #### FAT Filesystem Issues
 ```bash
-📁 FAT filesystem detected - using /tmp locations
+ FAT filesystem detected - using /tmp locations
 ```
 
 **Note**: This is normal on FAT filesystems (exFAT, FAT32). The system automatically uses `/tmp` for virtual environments and caches.
 
 #### Test Environment Not Ready
 ```bash
-❌ pytest not available
+ pytest not available
 ```
 
 **Solution**: Setup test environment:
@@ -562,14 +562,14 @@ bash scripts/package/verify.sh --mode deps --test-type fast
 
 #### Network Tests Failing
 ```bash
-⚠️  Network connectivity check failed
+ Network connectivity check failed
 ```
 
 **Note**: Network tests require internet access. They will be skipped gracefully if offline.
 
 #### External Tool Tests Failing
 ```bash
-⚠️  amalgkit not available - some tests may be skipped
+ amalgkit not available - some tests may be skipped
 ```
 
 **Note**: External tool tests require specific CLI tools. Install them or tests will be skipped.

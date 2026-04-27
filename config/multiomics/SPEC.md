@@ -1,12 +1,12 @@
 # Specification: multiomics Config
 
-## 🎯 Scope
+## Scope
 Configuration templates and schemas for multiomics.
 
-## 🧱 Architecture
+## Architecture
 - **Component**: Configuration
 - **Location**: `config/multiomics/`
 
-## 💾 Data Structures
+## Data Structures
 - **Format**: YAML
 - **Schema**: `metainformant.multiomics.config`

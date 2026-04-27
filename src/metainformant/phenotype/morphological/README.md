@@ -3,12 +3,12 @@
 ## Overview
 Morphological phenotype analysis module.
 
-## 📦 Contents
+## Contents
 - `[__init__.py](__init__.py)`
 - `[measurement.py](measurement.py)`
 - `[profile.py](profile.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

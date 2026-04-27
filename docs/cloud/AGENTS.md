@@ -2,27 +2,40 @@
 
 ## Role
 
-Cloud deployment module documentation agent for METAINFORMANT.
+Cloud deployment and infrastructure automation. Provides API for provisioning Google Cloud Platform (GCP) VMs, installing Docker containers, uploading/downloading data, running METAINFORMANT pipelines, and collecting results.
 
-## Scope
+**Primary consumers:** `scripts/cloud/deploy_gcp.py`, `scripts/cloud/prep_genomes.py`.
 
-- `src/metainformant/cloud/` — Cloud configuration and GCP deployer
-- `scripts/cloud/` — Deployment CLI, startup scripts, genome prep
-- `docs/cloud/` — User-facing deployment and troubleshooting guides
+## Module Scope
 
-## Key Components
+| Submodule | Purpose |
+|-----------|---------|
+| `cloud_config.py` | `CloudConfig` dataclass — GCP project/zone/machine-type configuration, validation, cost estimation |
+| `gcp_deployer.py` | `GCPDeployer` class — VM lifecycle (create/delete/wait), file transfer (SCP), Docker build/run/stream-logs |
 
-| File | Purpose |
-|------|---------|
-| `cloud_config.py` | `CloudConfig` dataclass — VM type, disk, workers, provisioning type |
-| `gcp_deployer.py` | VM lifecycle via `subprocess` → `gcloud` CLI (no Python SDK) |
-| `deploy_gcp.py` | User-facing CLI: deploy / status / logs / download / destroy |
-| `prep_genomes.py` | Download genomes + build Kallisto indices on VM |
-| `cloud_startup.sh` | VM boot script — Docker install, repo clone, pipeline auto-start |
+## Key Source Files
 
-## Standards
+- **CLI entry**: `scripts/cloud/deploy_gcp.py` — argparsing, command dispatch, CLI UX
+- **Genome prep**: `scripts/cloud/prep_genomes.py` — NCBI download, indexing, GCS caching
+- **Startup script**: `scripts/cloud/cloud_startup.sh` — VM init: Docker install, firewall rules, environment
+- **Startup script**: `scripts/cloud/cloud_shutdown.sh` — cleanup, results compression
+- **Library**: `src/metainformant/cloud/cloud_config.py` — 32-field `CloudConfig` dataclass
+- **Library**: `src/metainformant/cloud/gcp_deployer.py` — ~1,000 lines GCP operations
 
-- **Thin orchestrator pattern**: local script shells out to `gcloud`; all logic in `src/`
-- **No Python GCP SDK**: uses `subprocess.run(["gcloud", ...])` exclusively
-- **Real implementations only** — NO_MOCKING_POLICY applies
-- **Package management**: `uv` for all Python operations
+## Related Documentation
+
+- **Module guide**: [index.md](index.md) — Architecture, cost optimization, deployment walkthrough
+- **Core infrastructure**: [../core/AGENTS.md](../core/AGENTS.md) — Shared utilities (logging, config, I/O)
+- **API spec**: [SPEC.md](SPEC.md) — Type signatures, JSON schemas, error codes
+- **Troubleshooting**: [TROUBLESHOOTING.md](TROUBLESHOOTING.md) — Common errors + fixes
+- **Economics**: [ECONOMICS.md](ECONOMICS.md) — Cost breakdown, preemptible VM strategy
+- **Architecture**: [../architecture.md](../architecture.md) — System-wide component diagram
+- **RNA module**: [../rna/index.md](../rna/index.md) — Primary cloud consumer (amalgkit)
+
+## Rules & Constraints
+
+- GCP-native only (no AWS/Azure in this module yet)
+- Thin wrapper over `gcloud` CLI — no client-library lock-in
+- All VM operations idempotent where possible
+- Preemptible VMs used by default for 70-80% cost savings
+- Genome indices cached in `gs://metainformant-genomes/` (shared across projects)

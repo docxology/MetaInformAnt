@@ -1,10 +1,10 @@
 # Agent Directives: metainformant
 
-## 🤖 Role
+## Role
 
 Specialized agent context for the `metainformant` component.
 
-## 🛠️ Tools & Capabilities
+## Tools & Capabilities
 
 - **Context**: METAINFORMANT: Comprehensive Bioinformatics Toolkit for Multi-Omic Analysis (27 modules).
 - **Core & Utils**: `core` (I/O, logging, config), `menu` (interactive CLI), `quality` (QC, batch effects), `visualization` (plotting)
@@ -14,7 +14,7 @@ Specialized agent context for the `metainformant` component.
 - **Annotation & Ecology**: `ontology`, `phenotype`, `ecology`, `life_events`
 - **Pattern**: Source Code Pattern
 
-## ⚠️ Rules & Constraints
+## Rules & Constraints
 
 - **Imports**: Prefer absolute imports from `metainformant`.
 - **I/O**: Use `metainformant.core.io` for all file operations.

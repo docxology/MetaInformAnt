@@ -2,6 +2,24 @@
 
 Life course event sequence analysis: temporal event modeling, embedding learning, survival analysis, and trajectory comparison.
 
+## Overview
+
+Life course event sequence analysis: temporal event modeling, embedding learning, survival analysis, and trajectory comparison.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Key Capabilities](#key-capabilities)
+  - [Event Data Structures](#event-data-structures)
+  - [Embedding and Representation Learning](#embedding-and-representation-learning)
+  - [Survival Analysis](#survival-analysis)
+  - [Workflows](#workflows)
+- [Submodules](#submodules)
+- [Quick Start](#quick-start)
+- [Integration](#integration)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -111,6 +129,7 @@ results = analyze_life_course(sequences=[seq], output_dir="output/life_events")
 - **ML** -- Embedding vectors feed into `metainformant.ml` classification and clustering
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [`metainformant.phenotype`](../phenotype/) -- Trait and phenotype analysis
 - [`metainformant.information`](../information/) -- Information-theoretic measures

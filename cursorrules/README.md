@@ -1,18 +1,18 @@
 # Cursor Rules
 
-## 🧠 Context & Intent
+## Context & Intent
 
 - **Purpose**: Module-specific AI coding assistant rules
 - **Consistency**: Extends root `.cursorrules`
 - **Automation**: Generated and maintained to ensure domain specificity
 
-## 📂 Structure
+## Structure
 
 - `*.cursorrules`: Domain-specific rules (e.g., `dna.cursorrules`)
 - `README.md`: Index and guide
 - `AGENTS.md`: AI attribution and workflow
 
-## 🔄 Workflow
+## Workflow
 
 1. **Load**: Cursor loads these based on file context
 2. **Override**: Specific rules override or extend general rules

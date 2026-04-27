@@ -71,9 +71,9 @@ amalgkit config --config base --out_dir output/work
 **Generated Files**:
 ```
 out_dir/config/
-├── tissue.config              # Tissue name mappings
-├── sample_group.config        # Sample group definitions
-└── quality.config             # Quality thresholds
+ tissue.config # Tissue name mappings
+ sample_group.config # Sample group definitions
+ quality.config # Quality thresholds
 ```
 
 ### `base_all` - Complete Empty Template Set
@@ -143,13 +143,13 @@ The `config` step is self-contained and requires only:
 
 ```
 out_dir/config/
-└── <config_name>/
-    ├── tissue.config
-    ├── sample_group.config
-    ├── quality.config
-    ├── platform.config
-    ├── layout.config
-    └── [additional .config files]
+ <config_name>/
+ tissue.config
+ sample_group.config
+ quality.config
+ platform.config
+ layout.config
+ [additional .config files]
 ```
 
 ### Config File Format
@@ -501,6 +501,6 @@ Default `config_name` is `base`.
 
 **Last Updated**: October 29, 2025  
 **AMALGKIT Version**: 0.12.19  
-**Status**: ✅ Production-ready, comprehensively tested
+**Status**: Production-ready, comprehensively tested
 
 

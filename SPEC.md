@@ -13,39 +13,39 @@ Comprehensive bioinformatics toolkit for multi-omic analysis. Domain-driven, mod
 
 ```
 metainformant/
-├── src/metainformant/     # Source code (25 domain modules + core)
-│   ├── core/              # Shared infrastructure (I/O, config, logging)
-│   ├── dna/               # Genomic analysis, alignment, population genetics
-│   ├── rna/               # Transcriptomic workflows, Amalgkit integration
-│   ├── protein/           # Proteomic analysis, structure modeling
-│   ├── gwas/              # Genome-wide association studies
-│   ├── epigenome/         # Methylation, ChIP-seq, ATAC-seq
-│   ├── networks/          # Biological networks, community detection
-│   ├── multiomics/        # Multi-omic data integration
-│   ├── singlecell/        # Single-cell RNA-seq analysis
-│   ├── visualization/     # 70+ plot types, publication-quality output
-│   ├── quality/           # QC metrics, contamination detection
-│   ├── ml/                # Machine learning pipelines
-│   ├── math/              # Population genetics theory, coalescent
-│   ├── information/       # Information theory (entropy, MI)
-│   ├── ontology/          # GO analysis, semantic similarity
-│   ├── phenotype/         # Trait analysis, curation
-│   ├── ecology/           # Community diversity
-│   ├── simulation/        # Synthetic data generation
-│   ├── life_events/       # Event sequence analysis
-│   ├── menu/              # Interactive menu and discovery system
-│   ├── longread/          # PacBio/Nanopore long-read analysis
-│   ├── metagenomics/      # Microbiome and metagenomic analysis
-│   ├── spatial/           # Spatial transcriptomics
-│   ├── structural_variants/ # CNV/SV detection and annotation
-│   ├── pharmacogenomics/  # Clinical variant analysis
-│   └── metabolomics/      # Metabolite identification, MS data, pathway mapping
-├── scripts/               # Thin wrapper orchestrators
-├── tests/                 # Pytest test suite (real implementations only)
-├── docs/                  # Documentation by domain
-├── config/                # YAML configuration templates
-├── data/                  # Input data (read-mostly)
-└── output/                # Program-generated results (ephemeral)
+ src/metainformant/ # Source code (25 domain modules + core)
+ core/ # Shared infrastructure (I/O, config, logging)
+ dna/ # Genomic analysis, alignment, population genetics
+ rna/ # Transcriptomic workflows, Amalgkit integration
+ protein/ # Proteomic analysis, structure modeling
+ gwas/ # Genome-wide association studies
+ epigenome/ # Methylation, ChIP-seq, ATAC-seq
+ networks/ # Biological networks, community detection
+ multiomics/ # Multi-omic data integration
+ singlecell/ # Single-cell RNA-seq analysis
+ visualization/ # 70+ plot types, publication-quality output
+ quality/ # QC metrics, contamination detection
+ ml/ # Machine learning pipelines
+ math/ # Population genetics theory, coalescent
+ information/ # Information theory (entropy, MI)
+ ontology/ # GO analysis, semantic similarity
+ phenotype/ # Trait analysis, curation
+ ecology/ # Community diversity
+ simulation/ # Synthetic data generation
+ life_events/ # Event sequence analysis
+ menu/ # Interactive menu and discovery system
+ longread/ # PacBio/Nanopore long-read analysis
+ metagenomics/ # Microbiome and metagenomic analysis
+ spatial/ # Spatial transcriptomics
+ structural_variants/ # CNV/SV detection and annotation
+ pharmacogenomics/ # Clinical variant analysis
+ metabolomics/ # Metabolite identification, MS data, pathway mapping
+ scripts/ # Thin wrapper orchestrators
+ tests/ # Pytest test suite (real implementations only)
+ docs/ # Documentation by domain
+ config/ # YAML configuration templates
+ data/ # Input data (read-mostly)
+ output/ # Program-generated results (ephemeral)
 ```
 
 ## Architectural Patterns

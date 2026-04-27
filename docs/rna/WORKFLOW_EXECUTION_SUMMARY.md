@@ -12,7 +12,7 @@ This document provides a comprehensive summary of the complete end-to-end amalgk
 
 ## Pre-Execution Setup
 
-### 1. Configuration Verification ✅
+### 1. Configuration Verification
 
 All three configuration files verified:
 - `amalgkit_pogonomyrmex_barbatus.yaml`: 11 steps configured, genome config validated
@@ -21,26 +21,26 @@ All three configuration files verified:
 
 **Verification Command**:
 ```bash
-python3 -c "import sys; sys.path.insert(0, 'src'); from metainformant.rna.engine.workflow import load_workflow_config; cfg = load_workflow_config('config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml'); print('✓ Config loaded')"
+python3 -c "import sys; sys.path.insert(0, 'src'); from metainformant.rna.engine.workflow import load_workflow_config; cfg = load_workflow_config('config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml'); print(' Config loaded')"
 ```
 
-### 2. Environment Validation ✅
+### 2. Environment Validation
 
 **Environment Check Results**:
-- ✅ Virtual Environment: Active at `/tmp/metainformant_venv`
-- ✅ metainformant: v0.2.0
-- ✅ amalgkit: v0.12.20
-- ✅ SRA Toolkit: fasterq-dump 3.0.3
-- ✅ kallisto: v0.48.0
-- ✅ biopython: v1.86 (installed in venv)
-- ✅ ncbi-datasets-pylib: v16.6.1 (installed in venv)
+- Virtual Environment: Active at `/tmp/metainformant_venv`
+- metainformant: v0.2.0
+- amalgkit: v0.12.20
+- SRA Toolkit: fasterq-dump 3.0.3
+- kallisto: v0.48.0
+- biopython: v1.86 (installed in venv)
+- ncbi-datasets-pylib: v16.6.1 (installed in venv)
 
 **Verification Command**:
 ```bash
 python3 scripts/rna/check_environment.py
 ```
 
-### 3. Genome Configuration Verification ✅
+### 3. Genome Configuration Verification
 
 **Genome Config**:
 - Accession: `GCF_000187915.1`
@@ -62,27 +62,27 @@ python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbat
 The workflow automatically executes all steps in the correct order:
 
 1. **Genome Setup** (Automatic)
-   - ✅ Genome download: 97MB downloaded
-   - ✅ Transcriptome extraction: Complete
-   - ✅ Kallisto index: Built at `output/amalgkit/pogonomyrmex_barbatus/work/index/Pogonomyrmex_barbatus_transcripts.idx`
+ - Genome download: 97MB downloaded
+ - Transcriptome extraction: Complete
+ - Kallisto index: Built at `output/amalgkit/pogonomyrmex_barbatus/work/index/Pogonomyrmex_barbatus_transcripts.idx`
 
-2. **Metadata Retrieval** ✅
-   - ✅ Metadata file: `output/amalgkit/pogonomyrmex_barbatus/work/metadata/metadata.tsv`
-   - ✅ Total samples: 83
-   - ✅ Qualified samples: 83
+2. **Metadata Retrieval**
+ - Metadata file: `output/amalgkit/pogonomyrmex_barbatus/work/metadata/metadata.tsv`
+ - Total samples: 83
+ - Qualified samples: 83
 
-3. **Config Generation** ✅
-   - ✅ Config files generated in `output/amalgkit/pogonomyrmex_barbatus/work/config_base/`
+3. **Config Generation**
+ - Config files generated in `output/amalgkit/pogonomyrmex_barbatus/work/config_base/`
 
-4. **Sample Selection** ✅
-   - ✅ Selected samples: 83
-   - ✅ Pivot files: `pivot_qualified.tsv`, `pivot_selected.tsv`
+4. **Sample Selection**
+ - Selected samples: 83
+ - Pivot files: `pivot_qualified.tsv`, `pivot_selected.tsv`
 
 5. **FASTQ Download** (In Progress)
-   - ✅ Parallel workers: 11 (as configured: `num_download_workers: 10`)
-   - ✅ Currently downloading: 11 samples
-   - ✅ Queued: 72 samples
-   - ✅ FASTQ directories created: 2
+ - Parallel workers: 11 (as configured: `num_download_workers: 10`)
+ - Currently downloading: 11 samples
+ - Queued: 72 samples
+ - FASTQ directories created: 2
 
 6. **Quantification** (Pending)
    - ⏳ Will start automatically as downloads complete
@@ -128,13 +128,13 @@ The workflow automatically executes all steps in the correct order:
 ### Transcriptome and Index
 - Transcriptome: `output/amalgkit/pogonomyrmex_barbatus/work/Pogonomyrmex_barbatus_transcripts.fa`
 - Kallisto Index: `output/amalgkit/pogonomyrmex_barbatus/work/index/Pogonomyrmex_barbatus_transcripts.idx`
-- Status: ✅ Both created
+- Status: Both created
 
 ### Metadata Files
 - Main metadata: `output/amalgkit/pogonomyrmex_barbatus/work/metadata/metadata.tsv`
 - Qualified samples: `output/amalgkit/pogonomyrmex_barbatus/work/metadata/pivot_qualified.tsv`
 - Selected samples: `output/amalgkit/pogonomyrmex_barbatus/work/metadata/pivot_selected.tsv`
-- Status: ✅ All created
+- Status: All created
 
 ### Quantification Results
 - Location: `output/amalgkit/pogonomyrmex_barbatus/quant/`
@@ -187,9 +187,9 @@ The workflow automatically handles external drive limitations:
 
 ### Issues Resolved
 
-1. ✅ **Biopython Installation**: Fixed by using `/tmp/uv-cache` for UV cache
-2. ✅ **NCBI Datasets Installation**: Fixed by using `/tmp/uv-cache` for UV cache
-3. ✅ **Symlink Errors**: Resolved by automatic cache directory selection
+1.**Biopython Installation**: Fixed by using `/tmp/uv-cache` for UV cache
+2.**NCBI Datasets Installation**: Fixed by using `/tmp/uv-cache` for UV cache
+3.**Symlink Errors**: Resolved by automatic cache directory selection
 
 ## Workflow Features
 
@@ -224,13 +224,13 @@ The workflow automatically:
 
 ## Verification Checklist
 
-### Pre-Execution ✅
+### Pre-Execution
 - [x] Configuration files validated
 - [x] Environment checked and validated
 - [x] Genome config verified
 - [x] Dependencies installed (biopython, ncbi-datasets)
 
-### Execution ✅
+### Execution
 - [x] Workflow started successfully
 - [x] Genome downloaded and indexed
 - [x] Metadata retrieved
@@ -272,12 +272,12 @@ All methods and issues are documented:
 
 ## Summary
 
-✅ **Configuration**: All configs validated and verified  
-✅ **Environment**: All dependencies installed and verified  
-✅ **Genome Setup**: Automatic download, extraction, and indexing complete  
-✅ **Workflow Execution**: Running end-to-end with all 11 steps  
-✅ **External Drive Issues**: All resolved and documented  
-✅ **Documentation**: Comprehensive guides created  
+ **Configuration**: All configs validated and verified
+ **Environment**: All dependencies installed and verified
+ **Genome Setup**: Automatic download, extraction, and indexing complete
+ **Workflow Execution**: Running end-to-end with all 11 steps
+ **External Drive Issues**: All resolved and documented
+ **Documentation**: Comprehensive guides created
 
 The workflow is executing comprehensively and will complete all steps automatically. All external drive issues have been resolved and documented for future reference.
 

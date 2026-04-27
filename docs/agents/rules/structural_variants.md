@@ -6,18 +6,18 @@ Structural variant (SV) and copy number variation (CNV) detection, annotation, f
 ## Source Structure
 ```
 src/metainformant/structural_variants/
-├── detection/
-│   ├── cnv.py          # CNV detection from depth, segmentation, state calling
-│   ├── sv_calling.py   # SV calling, split-read/discordant-pair, genotyping
-│   └── breakpoints.py  # Breakpoint refinement, microhomology, clustering
-├── annotation/
-│   ├── overlap.py         # Gene/regulatory overlap, overlap fraction, nearest gene
-│   └── functional_impact.py # Functional impact, dosage sensitivity, TAD disruption
-├── filtering/
-│   ├── quality_filter.py  # Quality/size/frequency filtering, blacklists
-│   └── merge.py           # Multi-caller merging, reciprocal overlap, SURVIVOR
-└── visualization/
-    └── plots.py           # Circos plots, coverage tracks, SV size distributions
+ detection/
+ cnv.py # CNV detection from depth, segmentation, state calling
+ sv_calling.py # SV calling, split-read/discordant-pair, genotyping
+ breakpoints.py # Breakpoint refinement, microhomology, clustering
+ annotation/
+ overlap.py # Gene/regulatory overlap, overlap fraction, nearest gene
+ functional_impact.py # Functional impact, dosage sensitivity, TAD disruption
+ filtering/
+ quality_filter.py # Quality/size/frequency filtering, blacklists
+ merge.py # Multi-caller merging, reciprocal overlap, SURVIVOR
+ visualization/
+ plots.py # Circos plots, coverage tracks, SV size distributions
 ```
 
 ## Dependencies

@@ -3,13 +3,13 @@
 ## Overview
 Functionality for preparation.
 
-## 📦 Contents
+## Contents
 - `[download_honeybee_variants.py](download_honeybee_variants.py)`
 - `[generate_phenotypes.py](generate_phenotypes.py)`
 - `[generate_synthetic_variants.py](generate_synthetic_variants.py)`
 - `[query_bioproject_metadata.py](query_bioproject_metadata.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

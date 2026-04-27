@@ -2,6 +2,24 @@
 
 Spatial transcriptomics analysis: platform I/O (Visium, MERFISH, Xenium), spatial statistics, cell-cell communication, deconvolution, and scRNA-seq integration.
 
+## Overview
+
+Spatial transcriptomics analysis: platform I/O (Visium, MERFISH, Xenium), spatial statistics, cell-cell communication, deconvolution, and scRNA-seq integration.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Submodules](#submodules)
+- [Key Capabilities](#key-capabilities)
+  - [Platform I/O](#platform-io)
+  - [Spatial Statistics](#spatial-statistics)
+  - [Spatial Clustering](#spatial-clustering)
+  - [Cell-Cell Communication](#cell-cell-communication)
+  - [Deconvolution & Integration](#deconvolution--integration)
+- [Quick Start](#quick-start)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -117,6 +135,7 @@ lr_results = compute_ligand_receptor_interactions(
 ```
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [docs/spatial/](../../../docs/spatial/) - Platform guides, autocorrelation, clustering docs
 - [metainformant.singlecell](../singlecell/) - scRNA-seq analysis for integration workflows

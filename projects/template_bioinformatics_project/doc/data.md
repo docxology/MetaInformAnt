@@ -6,12 +6,12 @@ This document describes the data layout, file format conventions, immutability r
 
 ```text
 data/
-├── raw/             ← ⚠ IMMUTABLE — treat as read-only after acquisition
-│   ├── samples_A.csv
-│   ├── samples_B.csv
-│   └── metadata.yaml
-└── processed/       ← Written by Stage 1; inputs to Stages 2–3
-    └── processed_data.csv
+ raw/ ← IMMUTABLE — treat as read-only after acquisition
+ samples_A.csv
+ samples_B.csv
+ metadata.yaml
+ processed/ ← Written by Stage 1; inputs to Stages 2–3
+ processed_data.csv
 ```
 
 > [!CAUTION]

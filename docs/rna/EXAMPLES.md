@@ -22,35 +22,35 @@ METAINFORMANT RNA workflows support complete end-to-end transcriptomic analysis 
 
 ```
 output/amalgkit/pbarbatus/
-├── work/
-│   ├── metadata/
-│   │   └── metadata.tsv              # 83 samples discovered from NCBI SRA
-│   ├── index/
-│   │   └── Pogonomyrmex_barbatus.idx # Kallisto index (20.3MB, ready to use)
-│   ├── fasta/
-│   │   └── Pogonomyrmex_barbatus.fasta # Transcriptome reference (51.3MB)
-│   └── quant/
-│       ├── SRR14740487/              # Quantified sample 1
-│       │   └── abundance.tsv         # Gene expression values (826KB)
-│       └── SRR14740488/              # Quantified sample 2
-│           └── abundance.tsv         # Gene expression values (828KB)
-├── genome/                           # P. barbatus genome reference
-├── fastq/                            # Downloaded FASTQ files (cleaned after quant)
-├── logs/                             # Pipeline logs
-└── merged/                           # Merged expression matrix (after all samples)
+ work/
+ metadata/
+ metadata.tsv # 83 samples discovered from NCBI SRA
+ index/
+ Pogonomyrmex_barbatus.idx # Kallisto index (20.3MB, ready to use)
+ fasta/
+ Pogonomyrmex_barbatus.fasta # Transcriptome reference (51.3MB)
+ quant/
+ SRR14740487/ # Quantified sample 1
+ abundance.tsv # Gene expression values (826KB)
+ SRR14740488/ # Quantified sample 2
+ abundance.tsv # Gene expression values (828KB)
+ genome/ # P. barbatus genome reference
+ fastq/ # Downloaded FASTQ files (cleaned after quant)
+ logs/ # Pipeline logs
+ merged/ # Merged expression matrix (after all samples)
 ```
 
 ### Current Status
 
 | Component | Status | Details |
 |-----------|--------|---------|
-| **Metadata** | ✅ Complete | 83 samples from NCBI SRA |
-| **Genome Reference** | ✅ Downloaded | GCF_000187915.1 |
-| **Transcriptome** | ✅ Prepared | 20,672 transcripts |
-| **Kallisto Index** | ✅ Built | Ready for quantification |
+| **Metadata** | [DONE] Complete | 83 samples from NCBI SRA |
+| **Genome Reference** | [DONE] Downloaded | GCF_000187915.1 |
+| **Transcriptome** | [DONE] Prepared | 20,672 transcripts |
+| **Kallisto Index** | [DONE] Built | Ready for quantification |
 | **Samples Downloaded** | 2/83 (2.4%) | SRR14740487, SRR14740488 |
 | **Samples Quantified** | 2/83 (2.4%) | ~90% expression rate |
-| **Expression Matrix** | ⏹️ Pending | Need all 83 samples |
+| **Expression Matrix** | ⏹ Pending | Need all 83 samples |
 
 ### Completed Samples
 
@@ -59,7 +59,7 @@ output/amalgkit/pbarbatus/
 Location:   output/amalgkit/pbarbatus/work/quant/SRR14740487/abundance.tsv
 Transcripts: 20,672 total, 18,592 expressed (89.9%)
 Reads:       26,078,116 processed, 16,838,576 mapped (64.6%)
-Quality:     ✅ Excellent mapping and expression rates
+Quality: Excellent mapping and expression rates
 
 Top 3 genes:
   1. XM_011631231.1 - TPM: 24,372.3
@@ -72,7 +72,7 @@ Top 3 genes:
 Location:   output/amalgkit/pbarbatus/work/quant/SRR14740488/abundance.tsv
 Transcripts: 20,672 total, 18,719 expressed (90.6%)
 Reads:       27,085,159 processed, 17,828,830 mapped (65.8%)
-Quality:     ✅ Excellent mapping and expression rates
+Quality: Excellent mapping and expression rates
 
 Top 3 genes:
   1. XM_011631231.1 - TPM: 29,342.9
@@ -110,9 +110,9 @@ amalgkit merge --out_dir work
 This will create:
 ```
 output/amalgkit/pbarbatus/work/merge/Pogonomyrmex_barbatus/
-├── Pogonomyrmex_barbatus_tc.tsv    # Estimated counts matrix
-├── Pogonomyrmex_barbatus_tpm.tsv   # TPM-normalized matrix
-└── Pogonomyrmex_barbatus_eff_len.tsv # Effective lengths
+ Pogonomyrmex_barbatus_tc.tsv # Estimated counts matrix
+ Pogonomyrmex_barbatus_tpm.tsv # TPM-normalized matrix
+ Pogonomyrmex_barbatus_eff_len.tsv # Effective lengths
 ```
 
 **Format**: One row per transcript, one column per sample, TPM-normalized values
@@ -159,24 +159,24 @@ expressed = expr[(expr > 1).sum(axis=1) >= min_samples]
 #### Current Usage
 ```
 Total directory:     599MB
-├── Metadata:        ~1MB
-├── Genome:          ~520MB
-├── Index:           20.3MB
-├── Transcriptome:   51.3MB
-├── Quantification:  2.2MB (2 samples × ~1MB)
-└── Logs:            ~5MB
+ Metadata: ~1MB
+ Genome: ~520MB
+ Index: 20.3MB
+ Transcriptome: 51.3MB
+ Quantification: 2.2MB (2 samples × ~1MB)
+ Logs: ~5MB
 ```
 
 #### After All 83 Samples
 ```
 Expected total:      ~690MB
-├── Metadata:        ~1MB
-├── Genome:          ~520MB
-├── Index:           20.3MB
-├── Transcriptome:   51.3MB
-├── Quantification:  ~90MB (83 samples × ~1MB)
-├── Merged matrix:   ~5MB
-└── Logs:            ~10MB
+ Metadata: ~1MB
+ Genome: ~520MB
+ Index: 20.3MB
+ Transcriptome: 51.3MB
+ Quantification: ~90MB (83 samples × ~1MB)
+ Merged matrix: ~5MB
+ Logs: ~10MB
 
 FASTQ files:         0MB (deleted after quantification)
 ```
@@ -233,14 +233,14 @@ output/amalgkit/pbarbatus/work/merge/Pogonomyrmex_barbatus/Pogonomyrmex_barbatus
 ### Workflow Summary
 
 ```
-1. ✅ Metadata Discovery       [COMPLETE] 83 samples found
-2. ✅ Genome Download          [COMPLETE] Reference genome
-3. ✅ Transcriptome Prep       [COMPLETE] 20,672 transcripts
-4. ✅ Index Building           [COMPLETE] Kallisto index ready
-5. 🔄 Sample Download          [2/83]     Process in batches
-6. 🔄 Sample Quantification    [2/83]     Using existing index
-7. ⏹️ Merge Expression Matrix  [PENDING]  After all samples
-8. ⏹️ Downstream Analysis      [PENDING]  DESeq2, WGCNA, etc.
+1. Metadata Discovery [COMPLETE] 83 samples found
+2. Genome Download [COMPLETE] Reference genome
+3. Transcriptome Prep [COMPLETE] 20,672 transcripts
+4. Index Building [COMPLETE] Kallisto index ready
+5. Sample Download [2/83] Process in batches
+6. Sample Quantification [2/83] Using existing index
+7. ⏹ Merge Expression Matrix [PENDING] After all samples
+8. ⏹ Downstream Analysis [PENDING] DESeq2, WGCNA, etc.
 ```
 
 ### Consolidated Folder Benefits
@@ -251,7 +251,7 @@ output/amalgkit/pbarbatus/work/merge/Pogonomyrmex_barbatus/Pogonomyrmex_barbatus
 4. **Efficient Storage**: ~690MB total (vs ~360GB if keeping FASTQs)
 5. **Ready to Scale**: Validated workflow for remaining 81 samples
 
-**Status**: ✅ **READY FOR BATCH PROCESSING**  
+**Status**:**READY FOR BATCH PROCESSING**
 **Next Step**: Download and quantify remaining 81 samples using existing index  
 **Estimated Time**: 10-15 hours for all samples (can run overnight)
 

@@ -3,10 +3,10 @@
 ## Overview
 Functionality for ecology.
 
-## 📦 Contents
+## Contents
 - `[run_ecology_analysis.py](run_ecology_analysis.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

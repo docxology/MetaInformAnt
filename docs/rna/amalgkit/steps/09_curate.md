@@ -128,26 +128,26 @@ BiocManager::install(c("edgeR", "sva", "RUVSeq", "pcaMethods", "NMF"))
 
 ```
 out_dir/curate/{Scientific_Name}/
-├── plots/
-│   ├── {Species}.0.original.pdf                    # Original data visualization
-│   ├── {Species}.0.original.no.pdf                 # Original (no batch correction)
-│   ├── {Species}.1.mapping_cutoff.pdf              # After mapping filter
-│   ├── {Species}.1.mapping_cutoff.no.pdf
-│   ├── {Species}.2.correlation_cutoff.pdf          # After outlier removal
-│   └── {Species}.2.correlation_cutoff.no.pdf
-├── tables/
-│   ├── {Species}.uncorrected.tc.tsv                # Original expression
-│   ├── {Species}.uncorrected.sample_group.mean.tsv # Original means
-│   ├── {Species}.no.tc.tsv                         # ⭐ Curated expression (PRIMARY)
-│   ├── {Species}.no.sample_group.mean.tsv          # Curated means
-│   ├── {Species}.no.tau.tsv                        # Tissue specificity scores
-│   ├── {Species}.no.correlation_statistics.tsv     # QC correlation stats
-│   └── {Species}.metadata.tsv                      # Sample metadata with QC metrics
-├── rdata/
-│   ├── {Species}.no.0.RData                        # Round 0 analysis state
-│   ├── {Species}.no.1.RData                        # Round 1 analysis state
-│   └── {Species}.no.2.RData                        # Round 2 analysis state
-└── curate_completion_flag.txt                      # Completion marker
+ plots/
+ {Species}.0.original.pdf # Original data visualization
+ {Species}.0.original.no.pdf # Original (no batch correction)
+ {Species}.1.mapping_cutoff.pdf # After mapping filter
+ {Species}.1.mapping_cutoff.no.pdf
+ {Species}.2.correlation_cutoff.pdf # After outlier removal
+ {Species}.2.correlation_cutoff.no.pdf
+ tables/
+ {Species}.uncorrected.tc.tsv # Original expression
+ {Species}.uncorrected.sample_group.mean.tsv # Original means
+ {Species}.no.tc.tsv # Curated expression (PRIMARY)
+ {Species}.no.sample_group.mean.tsv # Curated means
+ {Species}.no.tau.tsv # Tissue specificity scores
+ {Species}.no.correlation_statistics.tsv # QC correlation stats
+ {Species}.metadata.tsv # Sample metadata with QC metrics
+ rdata/
+ {Species}.no.0.RData # Round 0 analysis state
+ {Species}.no.1.RData # Round 1 analysis state
+ {Species}.no.2.RData # Round 2 analysis state
+ curate_completion_flag.txt # Completion marker
 ```
 
 ### Primary Outputs
@@ -596,6 +596,6 @@ steps:
 
 **Last Updated**: October 29, 2025  
 **AMALGKIT Version**: 0.12.19  
-**Status**: ✅ Production-ready with `--batch_effect_alg no` (SVA may require R environment configuration)
+**Status**: Production-ready with `--batch_effect_alg no` (SVA may require R environment configuration)
 
 

@@ -2,6 +2,23 @@
 
 Synthetic biological data generation for benchmarking and validation -- sequence evolution, population genetics, RNA-seq counts, and agent-based ecosystem models.
 
+## Overview
+
+Synthetic biological data generation for benchmarking and validation -- sequence evolution, population genetics, RNA-seq counts, and agent-based ecosystem models.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Key Capabilities](#key-capabilities)
+  - [Sequence Simulation](#sequence-simulation)
+  - [Population Genetics](#population-genetics)
+  - [RNA-seq Count Simulation](#rna-seq-count-simulation)
+  - [Agent-Based Ecosystem Models](#agent-based-ecosystem-models)
+- [Submodules](#submodules)
+- [Quick Start](#quick-start)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -103,6 +120,7 @@ result = run_simulation_workflow(config)
 ```
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [`metainformant.dna`](../dna/) -- Real sequence analysis to validate simulations
 - [`metainformant.math.population_genetics`](../math/population_genetics/) -- Analytical population genetics theory

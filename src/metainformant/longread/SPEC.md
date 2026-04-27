@@ -1,20 +1,20 @@
 # Specification: longread
 
-## 🎯 Scope
+## Scope
 
 PacBio and Oxford Nanopore long-read analysis: signal I/O, quality assessment, assembly, methylation calling, haplotype phasing, and structural variant detection.
 
-## 🧱 Architecture
+## Architecture
 
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 
 - **Sub-packages**: io, quality, analysis, assembly, methylation, phasing, workflow, visualization, utils
 - **Key Concepts**: `LongReadOrchestrator`, `PipelineStep`, `PipelineResult`
 
-## 🔌 API Definition
+## API Definition
 
 ### Exports
 

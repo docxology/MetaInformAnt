@@ -139,14 +139,14 @@ Generates:
 
 ```
 output/ant_discovery/
-├── DISCOVERY_REPORT.md          # Human-readable summary
-├── ant_species_rnaseq_data.json # Machine-readable data
-└── configs/
-    ├── amalgkit_camponotus_floridanus.yaml
-    ├── amalgkit_solenopsis_invicta.yaml
-    ├── amalgkit_pogonomyrmex_barbatus.yaml
-    ├── amalgkit_monomorium_pharaonis.yaml
-    └── ... (all discovered species)
+ DISCOVERY_REPORT.md # Human-readable summary
+ ant_species_rnaseq_data.json # Machine-readable data
+ configs/
+ amalgkit_camponotus_floridanus.yaml
+ amalgkit_solenopsis_invicta.yaml
+ amalgkit_pogonomyrmex_barbatus.yaml
+ amalgkit_monomorium_pharaonis.yaml
+ ... (all discovered species)
 ```
 
 ## Example Generated YAML
@@ -255,11 +255,11 @@ done
 Processing 20 ant species with immediate per-sample processing (download → immediately quantify → immediately delete FASTQs) using 24 total threads distributed across all species.
 
 **Rationale:**
-- ✅ **Maximum Disk Efficiency**: Only one sample's FASTQs exist at any time  
-- ✅ **Immediate Processing**: Download → immediately quantify → immediately delete  
-- ✅ **Total Thread Allocation**: 24 threads distributed across all species (not per species)  
-- ✅ **Dynamic Redistribution**: Threads redistribute as species complete  
-- ✅ **Scalability**: Can process all species simultaneously without disk space issues  
+-**Maximum Disk Efficiency**: Only one sample's FASTQs exist at any time
+-**Immediate Processing**: Download → immediately quantify → immediately delete
+-**Total Thread Allocation**: 24 threads distributed across all species (not per species)
+-**Dynamic Redistribution**: Threads redistribute as species complete
+-**Scalability**: Can process all species simultaneously without disk space issues
 
 ### Processing Strategy
 
@@ -274,7 +274,7 @@ Processing 20 ant species with immediate per-sample processing (download → imm
 **Per Sample** (immediate processing):
 1. Download FASTQ (~2-10 GB)
 2. **Immediately** quantify with Kallisto
-3. ✅ **Immediately delete FASTQ** after quantification
+3.**Immediately delete FASTQ** after quantification
 4. Keep results only (~10-50 MB)
 5. Move to next sample
 
@@ -285,8 +285,8 @@ Processing 20 ant species with immediate per-sample processing (download → imm
 
 | Phase | Duration | Batch 1 | Batch 2 |
 |-------|----------|---------|---------|
-| Metadata | 1-2 hours | ✅ | ⏳ |
-| Downloads | 12-36 hours | 🔄 | ⏳ |
+| Metadata | 1-2 hours | [DONE] | ⏳ |
+| Downloads | 12-36 hours | | ⏳ |
 | Quantification | 6-18 hours | ⏳ | ⏳ |
 | Merge + QC | 2-4 hours | ⏳ | ⏳ |
 | **Total** | **24-48 hours** | | **12-24 hours** |
@@ -393,7 +393,7 @@ Given assemblies:
 ```
 1. GCA_XXXXXX.1 (GenBank, Scaffold, N50=1Mb) → Score: 100
 2. GCF_YYYYYY.1 (RefSeq, Contig, N50=100kb) → Score: 1010
-3. GCF_ZZZZZZ.1 (RefSeq, Chromosome, N50=10Mb) → Score: 1600 ✅ SELECTED
+3. GCF_ZZZZZZ.1 (RefSeq, Chromosome, N50=10Mb) → Score: 1600 SELECTED
 ```
 
 ## Scripts
@@ -535,6 +535,6 @@ python3 scripts/rna/discover_species.py \
 ---
 
 **Last Updated**: November 3, 2025  
-**Status**: ✅ Production-ready  
+**Status**: Production-ready
 **Tested with**: Biopython 1.81, ncbi-datasets-pylib 14.22.0
 

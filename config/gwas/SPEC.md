@@ -1,12 +1,12 @@
 # Specification: gwas Config
 
-## 🎯 Scope
+## Scope
 Configuration templates and schemas for gwas.
 
-## 🧱 Architecture
+## Architecture
 - **Component**: Configuration
 - **Location**: `config/gwas/`
 
-## 💾 Data Structures
+## Data Structures
 - **Format**: YAML
 - **Schema**: `metainformant.gwas.config`

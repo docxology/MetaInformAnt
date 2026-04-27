@@ -3,10 +3,10 @@
 ## Overview
 Functionality for rna.
 
-## 📦 Contents
+## Contents
 - **[curate/](curate/)**
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

@@ -129,10 +129,10 @@ Expected output when R is installed:
 ================================================================================
 CHECKING R DEPENDENCIES
 ================================================================================
-✅ Rscript found: /usr/bin/Rscript
+ Rscript found: /usr/bin/Rscript
    Version: R scripting front-end version 4.x.x
 ================================================================================
-✅ R DEPENDENCIES: SATISFIED
+ R DEPENDENCIES: SATISFIED
 ================================================================================
 ```
 
@@ -149,12 +149,12 @@ bash scripts/rna/amalgkit/run_amalgkit.sh \
 
 ### Expected Behavior
 
-#### With R Installed ✅
+#### With R Installed
 - **Merge**: Creates expression matrices + generates plots
 - **Curate**: Performs statistical QC and batch correction
 - **Sanity**: Validates all outputs
 
-#### Without R ⚠️
+#### Without R
 - **Merge**: Creates expression matrices, skips plots (warning)
 - **Curate**: Fails with error about missing Rscript
 - **Sanity**: Still validates core outputs

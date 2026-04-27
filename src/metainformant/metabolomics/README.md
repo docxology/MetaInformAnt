@@ -2,6 +2,18 @@
 
 Metabolomics analysis: mass spectrometry data processing, metabolite identification, pathway mapping, and metabolite-gene integration.
 
+## Overview
+
+Metabolomics analysis: mass spectrometry data processing, metabolite identification, pathway mapping, and metabolite-gene integration.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Submodules](#submodules)
+- [Quick Start](#quick-start)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -49,6 +61,7 @@ enriched = enrichment.metabolite_set_enrichment(identified, pathway_db="kegg")
 ```
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [metainformant.multiomics](../multiomics/) - Multi-omic integration
 - [metainformant.protein](../protein/) - Protein-metabolite interactions

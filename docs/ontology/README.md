@@ -3,13 +3,13 @@
 ## Overview
 Gene ontology and functional annotation module for METAINFORMANT.
 
-## 📦 Contents
+## Contents
 - `core/` — GO ontology loading, OBO parsing, type definitions (`go.py`, `obo.py`, `types.py`)
 - `query/` — Ontology querying and serialization (`query.py`, `serialize.py`)
 - `visualization/` — Ontology visualization (`visualization.py`)
 - `pathway_enrichment/` — Pathway enrichment analysis
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

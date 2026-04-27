@@ -2,6 +2,23 @@
 
 Gene ontology parsing, querying, enrichment analysis, and visualization for METAINFORMANT.
 
+## Overview
+
+Gene ontology parsing, querying, enrichment analysis, and visualization for METAINFORMANT.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Key Capabilities](#key-capabilities)
+  - [GO Loading & Enrichment](#go-loading--enrichment)
+  - [Querying and Traversal](#querying-and-traversal)
+  - [Serialization & Visualization](#serialization--visualization)
+- [Submodules](#submodules)
+- [Quick Start](#quick-start)
+- [Integration](#integration)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -108,6 +125,7 @@ save_ontology(go, "output/ontology/go_subset.json", format="json")
 - Visualization outputs integrate with [`metainformant.visualization`](../visualization/) themes
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [`metainformant.networks`](../networks/) -- Biological network analysis
 - [`metainformant.rna`](../rna/) -- RNA expression for enrichment inputs

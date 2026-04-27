@@ -2,6 +2,24 @@
 
 Community ecology analysis: diversity indices, ordination, species abundance distributions, and functional trait analysis.
 
+## Overview
+
+Community ecology analysis: diversity indices, ordination, species abundance distributions, and functional trait analysis.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Key Capabilities](#key-capabilities)
+  - [Diversity Indices](#diversity-indices)
+  - [Ordination](#ordination)
+  - [Hypothesis Testing and Indicators](#hypothesis-testing-and-indicators)
+  - [Functional Diversity](#functional-diversity)
+- [Submodules](#submodules)
+- [Quick Start](#quick-start)
+- [Integration](#integration)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -110,6 +128,7 @@ fd = functional_diversity_suite(trait_matrix=traits, abundances=abund)
 - **Simulation** -- Agent-based ecological models via `metainformant.simulation`
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [`metainformant.information`](../information/) -- Information-theoretic foundations
 - [`metainformant.dna.phylogeny`](../dna/phylogeny/) -- Phylogenetic tree construction

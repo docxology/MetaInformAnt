@@ -3,10 +3,10 @@
 ## Overview
 Functionality for life_events.
 
-## 📦 Contents
+## Contents
 - `[example_events.py](example_events.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

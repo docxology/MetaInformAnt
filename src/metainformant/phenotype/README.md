@@ -2,6 +2,23 @@
 
 Multi-modal phenotype analysis for social insects -- morphological traits, behavioral patterns, chemical profiles, life course trajectories, and AntWiki data integration.
 
+## Overview
+
+Multi-modal phenotype analysis for social insects -- morphological traits, behavioral patterns, chemical profiles, life course trajectories, and AntWiki data integration.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Key Capabilities](#key-capabilities)
+  - [Life Course Analysis](#life-course-analysis)
+  - [AntWiki Data](#antwiki-data)
+  - [Statistical Analysis](#statistical-analysis)
+  - [Visualization](#visualization)
+- [Submodules](#submodules)
+- [Quick Start](#quick-start)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -124,6 +141,7 @@ results = analyze_life_course(sequences, outcomes=["survival"])
 ```
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [`metainformant.life_events`](../life_events/) -- General event sequence modeling
 - [`metainformant.gwas`](../gwas/) -- GWAS association analysis

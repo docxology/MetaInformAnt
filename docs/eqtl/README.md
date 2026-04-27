@@ -6,7 +6,7 @@ By analyzing how genetic variants (from VCFs) correlate with gene expression lev
 
 > **Note**: eQTL is a **cross-cutting integration pipeline** — it does not have its own `src/metainformant/eqtl/` module. Instead, the core logic lives in `metainformant.gwas.finemapping.eqtl`, `metainformant.gwas.visualization.eqtl_visualization`, and `metainformant.multiomics.analysis.integration`. Scripts are in `scripts/eqtl/`.
 
-## 📖 Documentation
+## Documentation
 
 | Doc | Description |
 |-----|-------------|
@@ -14,7 +14,7 @@ By analyzing how genetic variants (from VCFs) correlate with gene expression lev
 | [Configuration Reference](./configuration.md) | All YAML config options |
 | This page | Overview, architecture, and integration scripts |
 
-## 📊 Pipeline Architecture
+## Pipeline Architecture
 
 ```mermaid
 graph TD
@@ -43,7 +43,7 @@ graph TD
     A --> BOX
 ```
 
-## 🚀 Workflows
+## Workflows
 
 The repository provides end-to-end execution scripts in the `scripts/eqtl/` directory highlighting both synthetic and real-world usage.
 
@@ -85,7 +85,7 @@ uv run python scripts/eqtl/rna_snp_pipeline.py --config config/eqtl/eqtl_amellif
 
 See [Pipeline Guide](./pipeline_guide.md) and [Configuration Reference](./configuration.md) for details.
 
-## 📦 Core Submodules
+## Core Submodules
 
 Under the hood, the eQTL workflows rely on the highly optimized functions located in:
 
@@ -93,7 +93,7 @@ Under the hood, the eQTL workflows rely on the highly optimized functions locate
 - `metainformant.gwas.visualization.eqtl_visualization`: Plotting utilities for volcano plots, summary grids, and genotype/expression boxplots.
 - `metainformant.multiomics.analysis.integration`: Helper functions to convert and harmonize VCFs and expression `DataFrames`.
 
-## 🔗 Related
+## Related
 
 - **[Amalgkit Total Pipeline](../rna/README.md)**: Upstream transcriptomics.
 - **[GWAS Total Pipeline](../gwas/README.md)**: Upstream genomic variants.

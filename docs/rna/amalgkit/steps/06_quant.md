@@ -210,11 +210,11 @@ The workflow execution in `metainformant.rna.engine.workflow` automatically inte
 
 ```
 out_dir/quant/
-└── SRR12345678/
-    ├── abundance.tsv               # ⭐ Transcript-level abundance estimates
-    ├── abundance.h5                 # HDF5 format abundance
-    ├── run_info.json                # Kallisto run information
-    └── kallisto_output.log          # Kallisto stdout/stderr
+ SRR12345678/
+ abundance.tsv # Transcript-level abundance estimates
+ abundance.h5 # HDF5 format abundance
+ run_info.json # Kallisto run information
+ kallisto_output.log # Kallisto stdout/stderr
 ```
 
 ### Primary Output: `abundance.tsv`
@@ -483,6 +483,6 @@ See **[06_quant_advanced.md](06_quant_advanced.md)** for:
 **Last Updated**: March 8, 2026
 **AMALGKIT Version**: 0.16.0
 **kallisto Version**: ≥0.50.0
-**Status**: ✅ Production-ready
+**Status**: Production-ready
 
 

@@ -1,17 +1,17 @@
 # Agent Directives: docs/life_events
 
 ## Role
-Documentation for life course event analysis and temporal modeling.
 
-## Contents
-- Event sequence processing
-- Event embeddings and representation learning
-- Temporal pattern mining
-- Outcome prediction models
-- Model interpretability
+Documentation for the life events temporal analysis module.
 
-## Key Concepts
-- Life course epidemiology
-- Event sequence modeling
-- Temporal dependencies
-- Survival analysis integration
+## Module Scope
+
+Life course event sequences, temporal embeddings, survival analysis, and outcome prediction modeling.
+
+## Key Source Files
+
+| Path | Description |
+|------|-------------|
+| `src/metainformant/life_events/core/` | Event data structures |
+| `src/metainformant/life_events/models/` | Prediction models |
+| `src/metainformant/life_events/workflow/` | Analysis pipelines |

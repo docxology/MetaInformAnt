@@ -90,15 +90,15 @@ wget https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz -P ~/.etc/taxonomy
 
 ```bash
 # Python environment
-python -c "import metainformant; print('✓ metainformant', metainformant.__version__)"
-python -c "import amalgkit; print('✓ amalgkit')"
+python -c "import metainformant; print(' metainformant', metainformant.__version__)"
+python -c "import amalgkit; print(' amalgkit')"
 
 # External CLI tools
-kallisto version && echo "✓ kallisto"
-fasterq-dump --version 2>&1 | head -1 && echo "✓ fasterq-dump"
-fastp --version 2>&1 | head -1 && echo "✓ fastp"
-datasets version 2>/dev/null && echo "✓ ncbi-datasets-cli"
-R --version | head -1 && echo "✓ R"
+kallisto version && echo " kallisto"
+fasterq-dump --version 2>&1 | head -1 && echo " fasterq-dump"
+fastp --version 2>&1 | head -1 && echo " fastp"
+datasets version 2>/dev/null && echo " ncbi-datasets-cli"
+R --version | head -1 && echo " R"
 
 # Run fast tests (no network required)
 uv run pytest tests/ -m "not network and not external" -q --tb=short

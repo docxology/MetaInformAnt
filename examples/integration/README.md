@@ -3,12 +3,12 @@
 ## Overview
 Functionality for integration.
 
-## 📦 Contents
+## Contents
 - `[example_complete_workflow.py](example_complete_workflow.py)`
 - `[example_dna_rna.py](example_dna_rna.py)`
 - `[example_multiomics.py](example_multiomics.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

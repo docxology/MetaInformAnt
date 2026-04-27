@@ -3,10 +3,10 @@
 ## Overview
 Functionality for protein.
 
-## 📦 Contents
+## Contents
 
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

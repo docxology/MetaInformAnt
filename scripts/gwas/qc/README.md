@@ -3,10 +3,10 @@
 ## Overview
 Functionality for qc.
 
-## 📦 Contents
+## Contents
 - `[run_qc.py](run_qc.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

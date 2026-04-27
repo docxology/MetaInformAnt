@@ -22,7 +22,7 @@ RNA-seq analysis and amalgkit workflow scripts.
 - `install_r_packages.sh` - R package installation script
 - `run_rna_tests.sh` - RNA test runner
 
-## 🚀 ENA Contributions
+## ENA Contributions
 - **ENA-First Strategy**: Robust ENA download logic (`download_ena_robust`) integrated into orchestrators.
 - **Failover**: Automatic failover to `fasterq-dump` from NCBI SRA.
 
@@ -42,7 +42,7 @@ python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrm
 python3 scripts/rna/check_environment.py
 ```
 
-## 📋 Code Quality Policy
+## Code Quality Policy
 
 All scripts **MUST** be:
 
@@ -51,7 +51,7 @@ All scripts **MUST** be:
 3. **Tested** — Integration tests covering all scripts. No mocks.
 4. **Documented** — Docstrings, `--help` output, and README entries.
 
-## 🚫 NO_MOCKING_POLICY
+## NO_MOCKING_POLICY
 
 > **NEVER use `unittest.mock`, `pytest-mock`, `MagicMock`, or `patch` in tests.**
 

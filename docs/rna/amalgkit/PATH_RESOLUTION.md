@@ -17,33 +17,33 @@ This guide explains how amalgkit resolves file paths for each workflow step, bas
 
 ```
 output/amalgkit/{species}/
-├── work/                          ← Working directory (used as quant.out_dir)
-│   ├── fasta/                     ← Prepared transcriptome
-│   │   └── {Species_Name}_rna.fasta
-│   ├── index/                      ← Kallisto index
-│   │   └── {Species_Name}_transcripts.idx
-│   ├── metadata/                  ← Sample metadata
-│   │   ├── metadata.tsv
-│   │   ├── metadata_selected.tsv
-│   │   └── metadata_integrated.tsv
-│   ├── quant/                      ← Quantification results (when quant.out_dir = work_dir)
-│   │   └── {sample_id}/
-│   │       └── abundance.tsv
-│   ├── getfastq/                   ← Symlink to fastq/getfastq (if needed for quant)
-│   │   └── {sample_id}/
-│   │       └── {sample_id}_1.fastq.gz
-│   └── merge/                      ← Merged expression matrices (if merge.out_dir = work_dir)
-│       └── {Scientific_Name}/
-│           └── {Scientific_Name}_tpm.tsv
-├── fastq/                          ← FASTQ files (getfastq out_dir)
-│   └── getfastq/                   ← Automatically created by amalgkit getfastq
-│       └── {sample_id}/
-│           ├── {sample_id}_1.fastq.gz
-│           └── {sample_id}_2.fastq.gz
-└── merged/                         ← Merged results (if merge uses separate out_dir)
-    └── merge/
-        └── {Scientific_Name}/
-            └── {Scientific_Name}_tpm.tsv
+ work/ ← Working directory (used as quant.out_dir)
+ fasta/ ← Prepared transcriptome
+ {Species_Name}_rna.fasta
+ index/ ← Kallisto index
+ {Species_Name}_transcripts.idx
+ metadata/ ← Sample metadata
+ metadata.tsv
+ metadata_selected.tsv
+ metadata_integrated.tsv
+ quant/ ← Quantification results (when quant.out_dir = work_dir)
+ {sample_id}/
+ abundance.tsv
+ getfastq/ ← Symlink to fastq/getfastq (if needed for quant)
+ {sample_id}/
+ {sample_id}_1.fastq.gz
+ merge/ ← Merged expression matrices (if merge.out_dir = work_dir)
+ {Scientific_Name}/
+ {Scientific_Name}_tpm.tsv
+ fastq/ ← FASTQ files (getfastq out_dir)
+ getfastq/ ← Automatically created by amalgkit getfastq
+ {sample_id}/
+ {sample_id}_1.fastq.gz
+ {sample_id}_2.fastq.gz
+ merged/ ← Merged results (if merge uses separate out_dir)
+ merge/
+ {Scientific_Name}/
+ {Scientific_Name}_tpm.tsv
 ```
 
 ## Step-by-Step Path Resolution
@@ -283,6 +283,6 @@ The workflow automatically handles some path adjustments:
 ---
 
 **Last Updated**: January 2026  
-**Status**: ✅ Production-ready, comprehensively documented
+**Status**: Production-ready, comprehensively documented
 
 

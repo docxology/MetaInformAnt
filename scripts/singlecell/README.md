@@ -3,10 +3,10 @@
 ## Overview
 Functionality for singlecell.
 
-## 📦 Contents
+## Contents
 - `[run_singlecell_analysis.py](run_singlecell_analysis.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

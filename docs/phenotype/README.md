@@ -3,18 +3,18 @@
 ## Overview
 Phenotype module for MetaInformAnt.
 
-## 📦 Contents
-- **[analysis/](analysis/)**
-- **[behavior/](behavior/)**
-- **[chemical/](chemical/)**
-- **[data/](data/)**
-- **[electronic/](electronic/)**
-- **[morphological/](morphological/)**
-- **[sonic/](sonic/)**
-- **[visualization/](visualization/)**
-- `[__init__.py](__init__.py)`
+## Contents
+- **[analysis/](life_course.md)**
+- **behavior/**
+- **chemical/**
+- **[data/](antwiki.md)**
+- **electronic/**
+- **morphological/**
+- **sonic/**
+- **[visualization/](visualization.md)**
+- `__init__.py`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

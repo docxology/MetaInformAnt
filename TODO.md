@@ -6,48 +6,48 @@
 
 ## Recent Accomplishments (v0.2.5 → v0.2.7)
 
-- ✅ **GCP Cloud Deployment** — Full `cloud/` module with VM lifecycle management, Docker pipelines, autonomous bootstrapping, genome prep, and micromamba integration
-- ✅ **Streaming Orchestrator** — `streaming_orchestrator.py` with SQLite-backed progress tracking, size-ordered scheduling, and 16-worker concurrency
-- ✅ **Download Resilience** — ENA-first + NCBI `fasterq-dump` fallback, thread-safe symlink handling, concurrent SQLite locking with retry
-- ✅ **Index Complexity Filtering** — `IndexComplexityManager` in `index_prep.py` for automatic ncRNA/duplicate/rRNA cleaning on any species
-- ✅ **Process Watchdog** — `ProcessWatchdog` in `core/utils/watchdog.py` with `--watchdog` flag; auto-kills stalled jobs (0 CPU > 1h)
-- ✅ **Pipeline Housekeeping** — Cleaned ~7k stale sentinel files (heartbeats + `.safely_removed` markers); `.gitignore` hardened
-- ✅ **Script Consolidation** — All legacy scripts physically deleted; fully superseded by `run_workflow.py`
-- ✅ **Dynamic Resource Profiles** — `ResourceProfile` dataclass with 4 presets (`high_mem`, `high_io`, `default`, `minimal`) and species auto-detection in `orchestrator.py`
-- ✅ **MCP Amalgkit Monitor** — `mcp/tools/amalgkit_monitor.py` dry-run verified
-- ✅ **GWAS P. barbatus Runner** — End-to-end real-data GWAS via BWA + BCFtools + SRA reads
-- ✅ **GWAS ↔ RNA Integration** — `gwas/data/expression.py` reads amalgkit `abundance.tsv` directly; `eqtl_coloc` and `from_rna_expression` exported and functional
-- ✅ **Infrastructure Fixes** — Circular dependency removal, t-SNE perplexity correction, diffusion map dense fallback, 72% import-error reduction
+-**GCP Cloud Deployment** — Full `cloud/` module with VM lifecycle management, Docker pipelines, autonomous bootstrapping, genome prep, and micromamba integration
+-**Streaming Orchestrator** — `streaming_orchestrator.py` with SQLite-backed progress tracking, size-ordered scheduling, and 16-worker concurrency
+-**Download Resilience** — ENA-first + NCBI `fasterq-dump` fallback, thread-safe symlink handling, concurrent SQLite locking with retry
+-**Index Complexity Filtering** — `IndexComplexityManager` in `index_prep.py` for automatic ncRNA/duplicate/rRNA cleaning on any species
+-**Process Watchdog** — `ProcessWatchdog` in `core/utils/watchdog.py` with `--watchdog` flag; auto-kills stalled jobs (0 CPU > 1h)
+-**Pipeline Housekeeping** — Cleaned ~7k stale sentinel files (heartbeats + `.safely_removed` markers); `.gitignore` hardened
+-**Script Consolidation** — All legacy scripts physically deleted; fully superseded by `run_workflow.py`
+-**Dynamic Resource Profiles** — `ResourceProfile` dataclass with 4 presets (`high_mem`, `high_io`, `default`, `minimal`) and species auto-detection in `orchestrator.py`
+-**MCP Amalgkit Monitor** — `mcp/tools/amalgkit_monitor.py` dry-run verified
+-**GWAS P. barbatus Runner** — End-to-end real-data GWAS via BWA + BCFtools + SRA reads
+-**GWAS ↔ RNA Integration** — `gwas/data/expression.py` reads amalgkit `abundance.tsv` directly; `eqtl_coloc` and `from_rna_expression` exported and functional
+-**Infrastructure Fixes** — Circular dependency removal, t-SNE perplexity correction, diffusion map dense fallback, 72% import-error reduction
 
 ### Documentation (completed 2026-03-04)
 
-- ✅ **RNA docs consolidated** — `docs/rna/README.md` → symlink to `src/metainformant/rna/README.md` (single source of truth)
-- ✅ **ENA-first strategy documented** — Updated RNA README with streaming orchestrator architecture and dual-tier download strategy
-- ✅ **TUI tools documented** — Added `monitor_tui.py` and `run_workflow_tui.py` sections to `docs/cli.md`
-- ✅ **Directory conventions documented** — `work/` vs `fastq/` vs `output/` hierarchy with symlink explanation in `docs/cli.md`
-- ✅ **Zero-Mock audit passed** — Only 1 dead mock import found and removed (`tests/rna/test_ena_downloader.py`); no actual mock usage in test suite
-- ✅ **Stale configs verified** — `amalgkit_test.yaml` and `amalgkit_template.yaml` are referenced by tests/scripts and remain valid
+-**RNA docs consolidated** — `docs/rna/README.md` → symlink to `src/metainformant/rna/README.md` (single source of truth)
+-**ENA-first strategy documented** — Updated RNA README with streaming orchestrator architecture and dual-tier download strategy
+-**TUI tools documented** — Added `monitor_tui.py` and `run_workflow_tui.py` sections to `docs/cli.md`
+-**Directory conventions documented** — `work/` vs `fastq/` vs `output/` hierarchy with symlink explanation in `docs/cli.md`
+-**Zero-Mock audit passed** — Only 1 dead mock import found and removed (`tests/rna/test_ena_downloader.py`); no actual mock usage in test suite
+-**Stale configs verified** — `amalgkit_test.yaml` and `amalgkit_template.yaml` are referenced by tests/scripts and remain valid
 
 ---
 
-## 🔬 In Progress: Amalgkit Multi-Species Pipeline (GCP Cloud Run)
+## In Progress: Amalgkit Multi-Species Pipeline (GCP Cloud Run)
 
 ### Pipeline Status (GCP VM: `metainformant-pipeline`)
 
 | Species | Samples Quantified | Status |
 |---------|-------------------|--------|
-| *Harpegnathos saltator* | 368 | ✅ Done |
-| *Solenopsis invicta* | 323 | ✅ Done |
-| *Ooceraea biroi* | 217 | ✅ Done |
-| *Temnothorax longispinosus* | 148 | ✅ Done |
-| *Temnothorax nylanderi* | 115 | ✅ Done |
-| *Linepithema humile* | 111 | ✅ Done |
-| *Monomorium pharaonis* | 98 | ✅ Done |
-| *Pogonomyrmex barbatus* | 78 | ✅ Done |
-| *Apis mellifera* | 57+ | 🔄 Active (~5,700 total) |
-| *Temnothorax americanus* | 54 | ✅ Done |
-| 10 other ant species | 182 | ✅ Done |
-| *Cardiocondyla obscurior* | 3 | 🔄 Starting |
+| *Harpegnathos saltator* | 368 | [DONE] Done |
+| *Solenopsis invicta* | 323 | [DONE] Done |
+| *Ooceraea biroi* | 217 | [DONE] Done |
+| *Temnothorax longispinosus* | 148 | [DONE] Done |
+| *Temnothorax nylanderi* | 115 | [DONE] Done |
+| *Linepithema humile* | 111 | [DONE] Done |
+| *Monomorium pharaonis* | 98 | [DONE] Done |
+| *Pogonomyrmex barbatus* | 78 | [DONE] Done |
+| *Apis mellifera* | 57+ | Active (~5,700 total) |
+| *Temnothorax americanus* | 54 | [DONE] Done |
+| 10 other ant species | 182 | [DONE] Done |
+| *Cardiocondyla obscurior* | 3 | Starting |
 | *Atta/Camponotus* | 0 | ⏳ Metadata deployed |
 | **TOTAL** | **1,751+** | **20/22 species active** |
 
@@ -63,7 +63,7 @@
 
 ---
 
-## 🚀 Upcoming: v0.3.0 Milestones
+## Upcoming: v0.3.0 Milestones
 
 ### Cloud & Scalability
 
@@ -85,7 +85,7 @@
 
 ---
 
-## 🛠️ Technical Debt
+## Technical Debt
 
 - [ ] **Import error backlog** — Reduce remaining ~63 import errors (currently at 72% improvement from baseline)
 - [ ] **Test collection rate** — Push from 87% to 95%+ by fixing remaining collection failures

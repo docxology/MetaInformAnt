@@ -1,12 +1,12 @@
 # Specification: eqtl Config
 
-## 🎯 Scope
+## Scope
 Configuration templates and schemas for eqtl.
 
-## 🧱 Architecture
+## Architecture
 - **Component**: Configuration
 - **Location**: `config/eqtl/`
 
-## 💾 Data Structures
+## Data Structures
 - **Format**: YAML
 - **Schema**: `metainformant.eqtl.config`

@@ -3,10 +3,10 @@
 ## Overview
 Functionality for dna.
 
-## 📦 Contents
+## Contents
 
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

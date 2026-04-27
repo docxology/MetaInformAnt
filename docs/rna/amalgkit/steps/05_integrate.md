@@ -106,8 +106,8 @@ sample_name_R2.fastq.gz
 
 ```
 out_dir/metadata/
-├── metadata.tsv                     # Updated with FASTQ info
-└── metadata.filtered.tissue.tsv     # Filtered version with FASTQ data
+ metadata.tsv # Updated with FASTQ info
+ metadata.filtered.tissue.tsv # Filtered version with FASTQ data
 ```
 
 ### Added Columns
@@ -420,6 +420,6 @@ amalgkit integrate --fastq_dir output/fastq
 
 **Last Updated**: October 29, 2025  
 **AMALGKIT Version**: 0.12.19  
-**Status**: ✅ Production-ready, comprehensively tested
+**Status**: Production-ready, comprehensively tested
 
 

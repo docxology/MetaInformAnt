@@ -1,17 +1,17 @@
 # Agent Directives: docs/multiomics
 
 ## Role
-Documentation for multi-omics data integration and analysis.
 
-## Contents
-- Cross-platform data harmonization
-- Joint dimensionality reduction
-- Multi-view learning
-- Data fusion methods
-- Sample mapping across platforms
+Documentation for the multi-omics integration module.
 
-## Key Concepts
-- Batch effect correction
-- Feature alignment across omics
-- Integrative pathway analysis
-- Multi-modal clustering
+## Module Scope
+
+Cross-platform data harmonization, joint PCA, multi-omic factor analysis, survival integration, and pathway-level integration.
+
+## Key Source Files
+
+| Path | Description |
+|------|-------------|
+| `src/metainformant/multiomics/analysis/` | Integration analysis |
+| `src/metainformant/multiomics/methods/` | Integration algorithms |
+| `src/metainformant/multiomics/pathways/` | Pathway-level analysis |

@@ -2,6 +2,24 @@
 
 Microbiome and metagenomic analysis: amplicon profiling (16S/ITS), shotgun metagenomics, community diversity, functional annotation, and differential abundance testing.
 
+## Overview
+
+Microbiome and metagenomic analysis: amplicon profiling (16S/ITS), shotgun metagenomics, community diversity, functional annotation, and differential abundance testing.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Submodules](#submodules)
+- [Key Capabilities](#key-capabilities)
+  - [Amplicon Analysis](#amplicon-analysis)
+  - [Shotgun Metagenomics](#shotgun-metagenomics)
+  - [Community Diversity](#community-diversity)
+  - [Functional Annotation](#functional-annotation)
+- [Quick Start](#quick-start)
+- [Integration](#integration)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -108,6 +126,7 @@ community_result = community.analyze(diversity_values)
 ```
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [docs/metagenomics/](../../../docs/metagenomics/) - Metagenomics documentation
 - [metainformant.ecology](../ecology/) - Ecological community analysis

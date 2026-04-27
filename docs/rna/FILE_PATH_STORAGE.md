@@ -333,63 +333,63 @@ print(state["quant_dir"])    # output/amalgkit/pogonomyrmex_barbatus/quant
 
 ```
 output/amalgkit/{species}/
-├── genome/                                      ← Genome/reference files
-│   ├── ncbi_dataset_api_extracted/
-│   │   └── ncbi_dataset/
-│   │       └── data/
-│   │           └── {accession}/
-│   │               ├── genomic.fna.gz          ← Genomic FASTA
-│   │               ├── rna.fna.gz              ← Transcriptome FASTA
-│   │               ├── cds.fna.gz              ← CDS FASTA
-│   │               ├── protein.faa.gz          ← Protein FASTA
-│   │               ├── genomic.gff.gz          ← GFF annotation
-│   │               └── genomic.gtf.gz          ← GTF annotation
-│   └── download_record.json                    ← Download metadata
-├── work/                                        ← Working directory (used as quant.out_dir)
-│   ├── fasta/
-│   │   └── {Species_Name}_rna.fasta            ← Prepared transcriptome
-│   ├── index/
-│   │   └── {Species_Name}_transcripts.idx      ← Kallisto index
-│   ├── metadata/
-│   │   ├── metadata.tsv                        ← Sample metadata (PRIMARY)
-│   │   ├── metadata_selected.tsv               ← Filtered samples
-│   │   └── metadata_integrated.tsv             ← With local FASTQs
-│   ├── config_base/
-│   │   └── {species}_config.tsv                ← Amalgkit config files
-│   ├── quant/                                   ← Quantification results (when quant.out_dir = work_dir)
-│   │   ├── SRR1234567/
-│   │   │   ├── abundance.tsv                   ← Kallisto/Salmon output
-│   │   │   ├── abundance.h5                    ← Binary abundance
-│   │   │   └── run_info.json                   ← Run metadata
-│   │   └── SRR1234568/
-│   │       └── abundance.tsv
-│   ├── getfastq/                                ← Symlink to fastq/getfastq (if needed for quant)
-│   │   └── SRR1234567/                         ← Points to fastq/getfastq/SRR1234567/
-│   ├── amalgkit.manifest.jsonl                 ← Execution history
-│   └── progress_state.json                     ← Progress tracking
-├── fastq/                                       ← Raw FASTQ files (getfastq out_dir)
-│   └── getfastq/                                ← Automatically created by amalgkit getfastq
-│       ├── SRR1234567/
-│       │   ├── SRR1234567_1.fastq.gz           ← Forward reads
-│       │   └── SRR1234567_2.fastq.gz           ← Reverse reads
-│       └── SRR1234568/
-│           ├── SRR1234568_1.fastq.gz
-│           └── SRR1234568_2.fastq.gz
-├── merged/                                      ← Merged expression matrix
-│   ├── merged_abundance.tsv                    ← All samples combined
-│   └── merged_tpm.tsv                          ← TPM values
-├── cstmm/                                       ← Cross-species TMM normalized
-│   └── cstmm_normalized.tsv
-├── curate/                                      ← Curated data
-│   └── curated_expression.tsv
-├── csca/                                        ← Cross-species correlation
-│   ├── correlation_matrix.tsv
-│   └── correlation_plots.pdf
-└── logs/                                        ← Execution logs
-    ├── 20251115T103000Z.metadata.stdout.log
-    ├── 20251115T103000Z.metadata.stderr.log
-    ├── 20251115T104500Z.getfastq.stdout.log
-    └── 20251115T104500Z.getfastq.stderr.log
+ genome/ ← Genome/reference files
+ ncbi_dataset_api_extracted/
+ ncbi_dataset/
+ data/
+ {accession}/
+ genomic.fna.gz ← Genomic FASTA
+ rna.fna.gz ← Transcriptome FASTA
+ cds.fna.gz ← CDS FASTA
+ protein.faa.gz ← Protein FASTA
+ genomic.gff.gz ← GFF annotation
+ genomic.gtf.gz ← GTF annotation
+ download_record.json ← Download metadata
+ work/ ← Working directory (used as quant.out_dir)
+ fasta/
+ {Species_Name}_rna.fasta ← Prepared transcriptome
+ index/
+ {Species_Name}_transcripts.idx ← Kallisto index
+ metadata/
+ metadata.tsv ← Sample metadata (PRIMARY)
+ metadata_selected.tsv ← Filtered samples
+ metadata_integrated.tsv ← With local FASTQs
+ config_base/
+ {species}_config.tsv ← Amalgkit config files
+ quant/ ← Quantification results (when quant.out_dir = work_dir)
+ SRR1234567/
+ abundance.tsv ← Kallisto/Salmon output
+ abundance.h5 ← Binary abundance
+ run_info.json ← Run metadata
+ SRR1234568/
+ abundance.tsv
+ getfastq/ ← Symlink to fastq/getfastq (if needed for quant)
+ SRR1234567/ ← Points to fastq/getfastq/SRR1234567/
+ amalgkit.manifest.jsonl ← Execution history
+ progress_state.json ← Progress tracking
+ fastq/ ← Raw FASTQ files (getfastq out_dir)
+ getfastq/ ← Automatically created by amalgkit getfastq
+ SRR1234567/
+ SRR1234567_1.fastq.gz ← Forward reads
+ SRR1234567_2.fastq.gz ← Reverse reads
+ SRR1234568/
+ SRR1234568_1.fastq.gz
+ SRR1234568_2.fastq.gz
+ merged/ ← Merged expression matrix
+ merged_abundance.tsv ← All samples combined
+ merged_tpm.tsv ← TPM values
+ cstmm/ ← Cross-species TMM normalized
+ cstmm_normalized.tsv
+ curate/ ← Curated data
+ curated_expression.tsv
+ csca/ ← Cross-species correlation
+ correlation_matrix.tsv
+ correlation_plots.pdf
+ logs/ ← Execution logs
+ 20251115T103000Z.metadata.stdout.log
+ 20251115T103000Z.metadata.stderr.log
+ 20251115T104500Z.getfastq.stdout.log
+ 20251115T104500Z.getfastq.stderr.log
 ```
 
 ### Path Construction Rules
@@ -710,11 +710,11 @@ genome:
 NCBI datasets downloads to:
 ```
 output/amalgkit/pogonomyrmex_barbatus/genome/ncbi_dataset_api_extracted/ncbi_dataset/data/GCF_000187915.1/
-├── genomic.fna.gz
-├── rna.fna.gz                    ← Transcriptome FASTA
-├── cds.fna.gz
-├── protein.faa.gz
-└── genomic.gff.gz
+ genomic.fna.gz
+ rna.fna.gz ← Transcriptome FASTA
+ cds.fna.gz
+ protein.faa.gz
+ genomic.gff.gz
 ```
 
 **Step 2: Transcriptome Preparation**
@@ -830,10 +830,10 @@ transcriptome_path = f"{work_dir}/fasta/{species_name}_rna.fasta"
 ### Verification
 
 All path storage and construction logic is:
-- ✅ **Documented** in this file
-- ✅ **Tested** with 31 RNA test files
-- ✅ **Production-validated** with 7,451+ samples
-- ✅ **Type-safe** using Path objects and dataclasses
+-**Documented** in this file
+-**Tested** with 31 RNA test files
+-**Production-validated** with 7,451+ samples
+-**Type-safe** using Path objects and dataclasses
 
 ---
 

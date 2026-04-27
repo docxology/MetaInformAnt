@@ -16,11 +16,11 @@ METAINFORMANT uses repository-local temp directories instead of system `/tmp`:
 
 ```
 metainformant/
-├── .tmp/              # Repository-local temp directory
-│   ├── python/        # Python tempfile operations
-│   └── bash/          # Shell script heredocs and temp files
-├── .cache/            # Cache directory for expensive operations
-└── output/            # All program outputs
+ .tmp/ # Repository-local temp directory
+ python/ # Python tempfile operations
+ bash/ # Shell script heredocs and temp files
+ .cache/ # Cache directory for expensive operations
+ output/ # All program outputs
 ```
 
 ## Configuration

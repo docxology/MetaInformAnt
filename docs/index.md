@@ -100,6 +100,52 @@ graph TD
 | **MCP** | [mcp](mcp/) | Model Context Protocol | LLM tool integrations |
 | **Menu** | [menu](menu/) | Interactive navigation | CLI menu system, workflow discovery |
 
+
+### Module Selection Decision Tree
+
+```mermaid
+flowchart TD
+    A[What are you analyzing?] --> B{Data Type}
+    
+    B -->|Sequences<br/>FASTA/FASTQ| C[DNA? RNA? Proteins?]
+    B -->|Variants<br/>VCF| D[GWAS / Population Genetics]
+    B -->|Annotations<br/>GFF/GTF| E[Functional / Ontology]
+    B -->|Counts<br/>Matrix| F[Expression / Abundance]
+    B -->|Networks<br/>Edges| G[Pathways / Interactions]
+    
+    C -->|DNA| H[dna]<br>Sequences, alignment, trees
+    C -->|RNA| I[rna]<br>Amalgkit, ENA/SRA
+    C -->|Proteins| J[protein]<br>Structure + function
+    C -->|Epigenetic| K[epigenome]<br>Bisulfite, ChIP-seq
+    
+    D --> L[gwas]<br>Association testing
+    D --> M[multiomics]<br>eQTL, integration
+    
+    E --> N[ontology]<br>GO, KEGG, enrichment
+    E --> O[phenotype]<br>Trait analysis
+    
+    F --> P[singlecell]<br>scRNA-seq, clustering
+    F --> Q[metagenomics]<br>16S, metagenome
+    
+    G --> R[networks]<br>Graph + pathway analysis
+    
+    style H fill:#e1f5ff
+    style I fill:#e1f5ff
+    style J fill:#e1f5ff
+    style K fill:#e1f5ff
+    style L fill:#e1f5ff
+    style M fill:#e1f5ff
+    style N fill:#e1f5ff
+    style O fill:#e1f5ff
+    style P fill:#e1f5ff
+    style Q fill:#e1f5ff
+    style R fill:#e1f5ff
+```
+
+Click any module name for detailed documentation.
+
+---
+
 ## Data Flow Architecture
 
 ```mermaid
@@ -186,6 +232,20 @@ config = AmalgkitWorkflowConfig(
 results = execute_workflow(config)
 ```
 
+#### Complete Pipeline Example (DNA → GWAS → Visualization)
+
+For a production-grade end-to-end workflow covering genomic association studies, see the **[Integration Guide](INTEGRATION.md)**. It demonstrates how to:
+
+- Parse & filter VCF files (dna.variants)
+- Run mixed-model association (gwas.analysis)
+- Construct fine-mapping credible sets (gwas.finemapping)
+- Generate Manhattan, QQ, and LocusZoom plots (visualization)
+- Orchestrate distributed processing with caching
+
+The guide provides both minimal and full-featured implementations with performance benchmarks and troubleshooting tips.
+
+---
+
 ### Command Line Interface
 
 The `metainformant` command exposes a small CLI (`--version`, `--modules`, `protein`, `quality batch-detect`, `rna info`, `gwas info`). RNA and GWAS pipelines use Python APIs or `scripts/*/run_*.py`. See [cli.md](cli.md).
@@ -208,6 +268,7 @@ setup
 UV_SETUP
 DOCUMENTATION_GUIDE
 TUTORIALS
+INTEGRATION
 FAQ
 DISK_SPACE_MANAGEMENT
 LINUX_TRANSFER
@@ -256,6 +317,8 @@ visualization/index
 simulation/index
 life_events/index
 longread/index
+cloud/index
+mcp/index
 metagenomics/index
 structural_variants/index
 spatial/index
@@ -278,7 +341,7 @@ testing
 
 ## Key Features
 
-### 🔬 **Comprehensive Domain Coverage**
+### **Comprehensive Domain Coverage**
 
 - **DNA Analysis**: Sequence composition, alignments, phylogenetics, population genetics
 - **RNA Analysis**: Transcriptome quantification, differential expression, cross-species analysis
@@ -287,21 +350,21 @@ testing
 - **Epigenomics**: DNA methylation analysis, chromatin accessibility
 - **Systems Biology**: Network analysis, pathway enrichment, multi-omics integration
 
-### 🚀 **Production Ready**
+### **Production Ready**
 
 - **Real Implementations**: No mocks or fakes - actual external API calls and tool integration
 - **Scalable**: Parallel processing, memory-efficient algorithms for large datasets
 - **Robust**: Comprehensive error handling and validation
 - **Tested**: Extensive test suite with real-world validation
 
-### 🛠 **Developer Friendly**
+### **Developer Friendly**
 
 - **Type Hints**: Full type annotation throughout codebase
 - **Documentation**: Comprehensive docstrings and API documentation
 - **CLI**: Intuitive command-line interface with subcommands
 - **Modular**: Clean separation of concerns, easy to extend
 
-### 📊 **Research Grade**
+### **Research Grade**
 
 - **Scientific Rigor**: Algorithms validated against established methods
 - **Reproducible**: Version-controlled configurations and deterministic workflows
@@ -377,7 +440,27 @@ graph TB
     CLOUD[cloudDeployment] --> Core
 ```
 
+## Common Tasks & Quick Commands
+
+```{toctree}
+:maxdepth: 1
+:caption: Task Reference
+
+tasks/analyze_dna
+tasks/run_rna_pipeline
+tasks/run_gwas
+tasks/deploy_cloud
+tasks/visualize_results
+tasks/mcp_integration
+tasks/performance_tuning
+tasks/data_conversion
+```
+
+
 ## Getting Help
+
+
+If you'd like to contribute, see [CONTRIBUTING.md](../CONTRIBUTING.md).
 
 ### Community Support
 

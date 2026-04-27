@@ -5,30 +5,30 @@ Deploy the MetaInformAnt amalgkit RNA-seq pipeline to Google Cloud Platform for 
 ## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Local Machine                                              │
-│  ┌──────────────────┐    ┌────────────────────────────┐     │
-│  │ deploy_gcp.py    │───▸│ gcloud CLI                 │     │
-│  │ (orchestrator)   │    │ (SSH, SCP, VM lifecycle)    │     │
-│  └──────────────────┘    └────────────────────────────┘     │
-│                                   │                         │
-└───────────────────────────────────│─────────────────────────┘
-                                    │ SSH/SCP
-                                    ▼
-┌─────────────────────────────────────────────────────────────┐
-│  GCP VM (n2-standard-16, standard)                          │
-│  ┌──────────────────┐    ┌────────────────────────────┐     │
-│  │ prep_genomes.py  │───▸│ kallisto index (per species)│     │
-│  └──────────────────┘    └────────────────────────────┘     │
-│  ┌──────────────────┐    ┌────────────────────────────┐     │
-│  │ run_all_species  │───▸│ streaming_orchestrator.py   │     │
-│  │ (pipeline entry) │    │ (download + quant + merge)  │     │
-│  └──────────────────┘    └────────────────────────────┘     │
-│                                   │                         │
-│                                   ▼                         │
-│                          output/amalgkit/                    │
-│                          (quant results, DB)                 │
-└─────────────────────────────────────────────────────────────┘
+
+ Local Machine
+
+ deploy_gcp.py gcloud CLI
+ (orchestrator) (SSH, SCP, VM lifecycle)
+
+
+
+ SSH/SCP
+
+
+ GCP VM (n2-standard-16, standard)
+
+ prep_genomes.py kallisto index (per species)
+
+
+ run_all_species streaming_orchestrator.py
+ (pipeline entry) (download + quant + merge)
+
+
+
+ output/amalgkit/
+ (quant results, DB)
+
 ```
 
 ## Quick Start
@@ -116,24 +116,24 @@ python scripts/cloud/deploy_gcp.py destroy --project YOUR_PROJECT_ID
 
 ```
 src/metainformant/cloud/
-├── __init__.py           # Package exports
-├── cloud_config.py       # VM config dataclass (machine, spot, workers...)
-└── gcp_deployer.py       # VM lifecycle (create, SSH, status, download, delete)
+ __init__.py # Package exports
+ cloud_config.py # VM config dataclass (machine, spot, workers...)
+ gcp_deployer.py # VM lifecycle (create, SSH, status, download, delete)
 
 scripts/cloud/
-├── deploy_gcp.py         # CLI orchestrator (deploy/status/logs/download/destroy)
-├── download_results.sh   # Robust 3-step download (docker cp → scp → cleanup)
-├── install_gcloud.sh     # One-click gcloud CLI installer
-├── cloud_startup.sh      # VM boot script (Docker + pipeline auto-start)
-├── prep_genomes.py       # Download transcriptomes + build kallisto indices
-└── vm_setup.sh           # Native tool install (no Docker)
+ deploy_gcp.py # CLI orchestrator (deploy/status/logs/download/destroy)
+ download_results.sh # Robust 3-step download (docker cp → scp → cleanup)
+ install_gcloud.sh # One-click gcloud CLI installer
+ cloud_startup.sh # VM boot script (Docker + pipeline auto-start)
+ prep_genomes.py # Download transcriptomes + build kallisto indices
+ vm_setup.sh # Native tool install (no Docker)
 
 scripts/rna/
-├── run_all_species.py    # Thin orchestrator: species order + args → StreamingPipelineOrchestrator
-└── run_workflow.py       # Single-species workflow runner
+ run_all_species.py # Thin orchestrator: species order + args → StreamingPipelineOrchestrator
+ run_workflow.py # Single-species workflow runner
 
 tests/
-└── test_cloud.py         # Zero-mock tests for cloud config, deployer, scripts
+ test_cloud.py # Zero-mock tests for cloud config, deployer, scripts
 
 Dockerfile                # Full pipeline container image
 .dockerignore             # Keeps image small

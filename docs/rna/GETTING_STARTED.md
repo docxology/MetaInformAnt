@@ -27,13 +27,13 @@ sudo apt-get install -y sra-toolkit kallisto fastp seqkit
 
 ```bash
 # Check Python packages
-python3 -c "import metainformant; print('✓ metainformant')"
+python3 -c "import metainformant; print(' metainformant')"
 amalgkit --version
 
 # Check command-line tools
-command -v amalgkit && echo "✓ amalgkit CLI"
-command -v fasterq-dump && echo "✓ fasterq-dump"
-command -v kallisto && echo "✓ kallisto"
+command -v amalgkit && echo " amalgkit CLI"
+command -v fasterq-dump && echo " fasterq-dump"
+command -v kallisto && echo " kallisto"
 
 # Set NCBI email (required)
 export NCBI_EMAIL="your.email@example.com"
@@ -199,13 +199,13 @@ steps:
 ```
 
 **Features:**
-- ✅ **Immediate processing**: Each sample: download → immediately quantify → immediately delete FASTQs
-- ✅ **Parallel downloads**: Configurable via `num_download_workers` in config file
-- ✅ **Maximum disk efficiency**: Only one sample's FASTQs exist at a time
-- ✅ **100% reliability**: ENA-based downloads (vs ~0% for SRA Toolkit)
-- ✅ **Virtual environment**: Auto-activates if available
-- ✅ **Cloud acceleration**: AWS, GCP, NCBI enabled by default
-- ✅ **Progress tracking**: Status checking via `--status` flag
+-**Immediate processing**: Each sample: download → immediately quantify → immediately delete FASTQs
+-**Parallel downloads**: Configurable via `num_download_workers` in config file
+-**Maximum disk efficiency**: Only one sample's FASTQs exist at a time
+-**100% reliability**: ENA-based downloads (vs ~0% for SRA Toolkit)
+-**Virtual environment**: Auto-activates if available
+-**Cloud acceleration**: AWS, GCP, NCBI enabled by default
+-**Progress tracking**: Status checking via `--status` flag
 
 **Configuration Options:**
 - `num_download_workers`: Number of parallel download processes per species (default: 16)
@@ -310,12 +310,12 @@ amalgkit sanity: end
 
 **Files Created**:
 - `work/sanity/SRA_IDs_without_fastq.txt` - Lists samples without FASTQ files (expected if FASTQs deleted after quant)
-- NO `SRA_IDs_without_quant.txt` file = all samples validated ✅
+- NO `SRA_IDs_without_quant.txt` file = all samples validated
 
 **Verification**:
 ```bash
 # Should NOT exist (or be empty) if all samples are good
-ls work/sanity/SRA_IDs_without_quant.txt 2>/dev/null || echo "✅ All samples validated!"
+ls work/sanity/SRA_IDs_without_quant.txt 2>/dev/null || echo "[DONE] All samples validated!"
 ```
 
 ### Curate Step
@@ -349,12 +349,12 @@ transcriptome_curation.r: Completed.
 #### Visualizations (6 PDFs)
 ```
 work/curate/<species_name>/plots/
-├── <species_name>.0.original.pdf
-├── <species_name>.0.original.no.pdf
-├── <species_name>.1.mapping_cutoff.pdf
-├── <species_name>.1.mapping_cutoff.no.pdf
-├── <species_name>.2.correlation_cutoff.pdf
-└── <species_name>.2.correlation_cutoff.no.pdf
+ <species_name>.0.original.pdf
+ <species_name>.0.original.no.pdf
+ <species_name>.1.mapping_cutoff.pdf
+ <species_name>.1.mapping_cutoff.no.pdf
+ <species_name>.2.correlation_cutoff.pdf
+ <species_name>.2.correlation_cutoff.no.pdf
 ```
 
 Each PDF contains:
@@ -366,13 +366,13 @@ Each PDF contains:
 #### Data Tables (7 TSV files)
 ```
 work/curate/<species_name>/tables/
-├── <species_name>.uncorrected.tc.tsv                    # Original expression matrix
-├── <species_name>.uncorrected.sample_group.mean.tsv     # Sample group means
-├── <species_name>.no.tc.tsv                             # Final curated expression (⭐ PRIMARY OUTPUT)
-├── <species_name>.no.sample_group.mean.tsv              # Final sample means
-├── <species_name>.no.tau.tsv                            # Tissue specificity scores
-├── <species_name>.no.correlation_statistics.tsv         # QC correlation statistics
-└── <species_name>.metadata.tsv                          # Sample metadata with QC metrics
+ <species_name>.uncorrected.tc.tsv # Original expression matrix
+ <species_name>.uncorrected.sample_group.mean.tsv # Sample group means
+ <species_name>.no.tc.tsv # Final curated expression ( PRIMARY OUTPUT)
+ <species_name>.no.sample_group.mean.tsv # Final sample means
+ <species_name>.no.tau.tsv # Tissue specificity scores
+ <species_name>.no.correlation_statistics.tsv # QC correlation statistics
+ <species_name>.metadata.tsv # Sample metadata with QC metrics
 ```
 
 ## Understanding the Output
@@ -381,17 +381,17 @@ work/curate/<species_name>/tables/
 
 ```
 output/amalgkit/
-├── {species}/
-│   ├── quant/              # Quantification results (~2 MB per sample)
-│   │   ├── SRR1234567/
-│   │   │   ├── abundance.tsv
-│   │   │   └── run_info.json
-│   │   └── ...
-│   ├── fastq/              # Temporary FASTQs (auto-deleted)
-│   ├── work/
-│   │   ├── metadata/
-│   │   └── index/          # Kallisto index
-│   └── logs/               # Workflow logs
+ {species}/
+ quant/ # Quantification results (~2 MB per sample)
+ SRR1234567/
+ abundance.tsv
+ run_info.json
+ ...
+ fastq/ # Temporary FASTQs (auto-deleted)
+ work/
+ metadata/
+ index/ # Kallisto index
+ logs/ # Workflow logs
 ```
 
 ### Key Files

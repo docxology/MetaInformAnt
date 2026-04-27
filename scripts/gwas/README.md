@@ -3,7 +3,7 @@
 ## Overview
 Functionality for gwas.
 
-## 📦 Contents
+## Contents
 - **[association/](association/)**
 - **[pipelines/](pipelines/)**
 - **[preparation/](preparation/)**
@@ -11,7 +11,7 @@ Functionality for gwas.
 - **[structure/](structure/)**
 - **[visualization/](visualization/)**
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

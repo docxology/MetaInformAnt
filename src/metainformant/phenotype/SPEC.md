@@ -1,21 +1,21 @@
 # Specification: phenotype
 
-## 🎯 Scope
+## Scope
 
 Phenotype module for MetaInformAnt. Multi-modal phenotyping across morphological,
 behavioral, chemical, acoustic, and electronic tracking domains.
 
-## 🧱 Architecture
+## Architecture
 
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 
 - **Sub-packages**: analysis, behavior, chemical, data, electronic, gwas_integration, integration, morphological, sonic, visualization, workflow
 - **Key Concepts**: Morphology, behavior, chemical profiles, acoustic, electronic tracking
 
-## 🔌 API Definition
+## API Definition
 
 ### Exports — `analysis/life_course.py`
 

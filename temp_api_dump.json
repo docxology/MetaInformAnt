@@ -1,0 +1,1371 @@
+{
+  "pharma": {
+    "functions": {
+      "diplotype.determine_diplotype": {
+        "doc": "Construct a diplotype from two star alleles with activity scoring.\n\nCreates a Diplotype object from two allele designations, looking up\nactivity values from the gene-specific scoring table to compute the\ncombined activity score.\n\nArgs:\n    allele1: First allele name (str) or StarAllele object\n    allele2: Second allele name (str) or StarAllele object\n    gene: Gene symbol (e.g., \"CYP2D6\")\n    scoring_table: Optional custom activity score mapping (allele_name -> score).\n        If None, uses built-in CPIC-derived tables.\n\nReturns:\n    Diplotype object with computed activity score",
+        "args": [
+          "allele1",
+          "allele2",
+          "gene",
+          "scoring_table"
+        ]
+      },
+      "diplotype.calculate_activity_score_from_alleles": {
+        "doc": "Calculate the combined activity score for two alleles.\n\nArgs:\n    allele1_name: First allele name\n    allele2_name: Second allele name\n    gene: Gene symbol\n    scoring_table: Optional custom scoring table\n\nReturns:\n    Combined activity score (sum of individual allele scores)",
+        "args": [
+          "allele1_name",
+          "allele2_name",
+          "gene",
+          "scoring_table"
+        ]
+      },
+      "diplotype.calculate_activity_score": {
+        "doc": "Calculate activity score for an existing Diplotype.\n\nArgs:\n    diplotype: Diplotype object\n    gene: Gene symbol\n    scoring_table: Optional custom scoring table\n\nReturns:\n    Combined activity score, also updates the Diplotype object",
+        "args": [
+          "diplotype",
+          "gene",
+          "scoring_table"
+        ]
+      },
+      "diplotype.resolve_ambiguous_diplotypes": {
+        "doc": "Resolve ambiguous diplotype calls when phase is unknown.\n\nWhen genotype data is unphased, multiple diplotype configurations may be\npossible. This function selects the most clinically relevant assignment\nusing the following priority rules (per CPIC recommendations):\n\n1. Prefer diplotypes with known activity scores for both alleles\n2. Among scored diplotypes, prefer the one with the highest activity score\n   (conservative: assume best-case metabolism)\n3. If tied, prefer diplotypes containing more common alleles (*1, *2)\n\nArgs:\n    possible_diplotypes: List of possible Diplotype objects\n\nReturns:\n    The selected most likely Diplotype\n\nRaises:\n    ValueError: If possible_diplotypes is empty",
+        "args": [
+          "possible_diplotypes"
+        ]
+      },
+      "diplotype.phased_diplotype": {
+        "doc": "Determine diplotype using phasing information.\n\nWhen phase information is available (e.g., from long reads, family data,\nor statistical phasing), this function assigns variants to maternal and\npaternal haplotypes before calling star alleles on each independently.\n\nArgs:\n    variants: Set of all observed variant identifiers\n    phase_data: Mapping of variant_id -> phase (0 for haplotype A, 1 for haplotype B).\n        Variants not in phase_data are treated as unphased.\n    gene: Gene symbol (e.g., \"CYP2D6\")\n    allele_definitions: Optional pre-loaded allele definitions\n\nReturns:\n    Diplotype with phased=True and alleles called from each haplotype",
+        "args": [
+          "variants",
+          "phase_data",
+          "gene",
+          "allele_definitions"
+        ]
+      },
+      "phenotype.predict_metabolizer_status": {
+        "doc": "Map an activity score to a metabolizer phenotype category.\n\nUses gene-specific threshold tables derived from CPIC guidelines. When a\ngene has no defined thresholds, applies a default mapping:\n    AS = 0 -> PM, 0 < AS < 1.25 -> IM, 1.25 <= AS <= 2.25 -> NM, AS > 2.25 -> UM\n\nArgs:\n    activity_score: Combined activity score (typically sum of two allele scores)\n    gene: Gene symbol (e.g., \"CYP2D6\")\n\nReturns:\n    MetabolizerPhenotype enum value",
+        "args": [
+          "activity_score",
+          "gene"
+        ]
+      },
+      "phenotype.get_phenotype_thresholds": {
+        "doc": "Get gene-specific phenotype threshold definitions.\n\nArgs:\n    gene: Gene symbol (e.g., \"CYP2D6\")\n\nReturns:\n    List of threshold dictionaries with keys:\n        - \"lower_bound\": Lower activity score boundary (inclusive)\n        - \"upper_bound\": Upper activity score boundary (exclusive)\n        - \"phenotype\": MetabolizerPhenotype value\n        - \"abbreviation\": Phenotype abbreviation (PM, IM, NM, RM, UM)",
+        "args": [
+          "gene"
+        ]
+      },
+      "phenotype.classify_phenotype": {
+        "doc": "Full diplotype-to-phenotype classification pipeline.\n\nTakes a diplotype (object or string like \"*1/*4\") and gene, computes the\nactivity score, and maps it to a metabolizer phenotype.\n\nArgs:\n    diplotype: Diplotype object or string in format \"*X/*Y\"\n    gene: Gene symbol\n\nReturns:\n    Dictionary with:\n        - \"gene\": Gene symbol\n        - \"diplotype\": Diplotype string\n        - \"activity_score\": Computed activity score\n        - \"phenotype\": MetabolizerPhenotype value\n        - \"phenotype_abbreviation\": Short form (PM, IM, NM, RM, UM)\n        - \"clinical_significance\": Brief clinical note",
+        "args": [
+          "diplotype",
+          "gene"
+        ]
+      },
+      "phenotype.population_phenotype_frequencies": {
+        "doc": "Estimate expected phenotype distribution from allele frequencies.\n\nCalculates the expected frequency of each metabolizer phenotype in a\npopulation given the allele frequency spectrum, assuming Hardy-Weinberg\nequilibrium. For each possible diplotype (all combinations of alleles),\nthe diplotype frequency is 2*p*q for heterozygotes and p^2 for homozygotes.\n\nArgs:\n    allele_frequencies: Mapping of allele name -> population frequency.\n        Frequencies should sum to approximately 1.0.\n    gene: Gene symbol\n\nReturns:\n    Dictionary mapping phenotype abbreviation -> expected frequency.\n    Example: {\"PM\": 0.05, \"IM\": 0.20, \"NM\": 0.65, \"RM\": 0.08, \"UM\": 0.02}",
+        "args": [
+          "allele_frequencies",
+          "gene"
+        ]
+      },
+      "star_allele.load_allele_definitions": {
+        "doc": "Load allele definition tables for a pharmacogene.\n\nLoads allele definitions from either the built-in CPIC-derived table or\nfrom an external file (TSV or JSON format). The built-in tables cover\nCYP2D6, CYP2C19, CYP2C9, CYP3A5, DPYD, TPMT, NUDT15, and SLCO1B1.\n\nArgs:\n    gene: Gene symbol (e.g., \"CYP2D6\", \"CYP2C19\")\n    source: Definition source - \"cpic\" for built-in, \"file\" for external file\n    filepath: Path to external allele definition file (required if source=\"file\")\n\nReturns:\n    List of StarAllele objects for the gene\n\nRaises:\n    ValueError: If gene not found in definitions or invalid source\n    FileNotFoundError: If filepath specified but not found",
+        "args": [
+          "gene",
+          "source",
+          "filepath"
+        ]
+      },
+      "star_allele.call_star_alleles": {
+        "doc": "Call star alleles from observed variants.\n\nMatches observed variant identifiers against known allele definitions to\ndetermine which star alleles are present. Uses a greedy algorithm that\nprioritizes alleles with the most defining variants matched.\n\nThe algorithm:\n1. Sort allele definitions by number of defining variants (descending)\n2. For each allele, check if all defining variants are in the observed set\n3. Matched alleles are collected; variants consumed by matched alleles are tracked\n4. If no non-reference alleles match, the reference (*1) allele is returned\n\nArgs:\n    variants: Set of observed variant identifiers (rsIDs or chr:pos:ref:alt)\n    gene: Gene symbol (e.g., \"CYP2D6\")\n    allele_definitions: Pre-loaded allele definitions. If None, loads from built-in.\n\nReturns:\n    List of matched StarAllele objects, sorted by allele name.\n    Returns [*1] if no variant alleles match.",
+        "args": [
+          "variants",
+          "gene",
+          "allele_definitions"
+        ]
+      },
+      "star_allele.match_allele_definition": {
+        "doc": "Match observed variants against a single allele definition.\n\nPerforms detailed comparison between observed variants and an allele's\ndefining variant set, returning match statistics.\n\nArgs:\n    observed_variants: Set of observed variant identifiers\n    allele_definition: StarAllele definition to match against\n\nReturns:\n    Dictionary with match results:\n        - \"allele\": Star allele name\n        - \"gene\": Gene symbol\n        - \"is_match\": True if all defining variants are present\n        - \"match_score\": Fraction of defining variants matched (0.0 - 1.0)\n        - \"matched_variants\": Set of matched variant IDs\n        - \"missing_variants\": Set of unmatched defining variants\n        - \"extra_variants\": Observed variants not in the definition",
+        "args": [
+          "observed_variants",
+          "allele_definition"
+        ]
+      },
+      "star_allele.detect_novel_alleles": {
+        "doc": "Detect potentially novel allele combinations.\n\nIdentifies observed variant combinations that do not exactly match any\nknown allele definition, which may represent novel or rare alleles.\n\nArgs:\n    variants: Set of observed variant identifiers\n    known_alleles: List of known StarAllele definitions\n\nReturns:\n    Dictionary with:\n        - \"has_novel\": True if novel combinations detected\n        - \"unmatched_variants\": Variants not explained by any known allele\n        - \"partial_matches\": Alleles with partial but incomplete matches\n        - \"closest_allele\": Best partial match allele name, or None\n        - \"closest_score\": Match score of closest allele",
+        "args": [
+          "variants",
+          "known_alleles"
+        ]
+      },
+      "star_allele.handle_cyp2d6_cnv": {
+        "doc": "Handle CYP2D6 copy number variation for star allele calling.\n\nCYP2D6 is subject to gene deletion (*5), gene duplication/multiplication,\nand hybrid gene arrangements. This function adjusts star allele calls\nbased on observed copy number.\n\nCopy number interpretation:\n    - 0: Homozygous gene deletion (*5/*5)\n    - 1: Hemizygous (one allele deleted): allele/*5\n    - 2: Normal diploid (standard calling)\n    - 3+: Gene duplication/multiplication\n\nFor duplications (CN >= 3), the activity score of the duplicated allele\nis multiplied by the additional copy count. Per CPIC guidelines, functional\nallele duplications are denoted with \"xN\" suffix (e.g., *1x2).\n\nArgs:\n    variants: Set of observed variant identifiers\n    copy_number: CYP2D6 gene copy number (0, 1, 2, 3+)\n\nReturns:\n    Dictionary with:\n        - \"copy_number\": Input copy number\n        - \"alleles\": List of called StarAllele objects (adjusted for CNV)\n        - \"diplotype_string\": Formatted diplotype string\n        - \"total_activity_score\": Sum of all allele activity values\n        - \"cnv_type\": \"deletion\", \"normal\", or \"duplication\"\n        - \"notes\": Clinical notes about the CNV",
+        "args": [
+          "variants",
+          "copy_number"
+        ]
+      },
+      "cpic.load_cpic_guidelines": {
+        "doc": "Load CPIC guideline data.\n\nLoads from either an external file (TSV or JSON) or the built-in guideline\ntable. The built-in table covers major CPIC Level A/A-B guidelines.\n\nArgs:\n    filepath: Optional path to external CPIC guideline file.\n        Supports JSON and TSV formats. If None, uses built-in data.\n\nReturns:\n    List of guideline dictionaries with keys: drug, gene, cpic_level,\n    guideline_url, recommendations",
+        "args": [
+          "filepath"
+        ]
+      },
+      "cpic.lookup_drug_gene": {
+        "doc": "Look up CPIC guideline for a specific drug-gene pair.\n\nArgs:\n    drug: Drug name (case-insensitive)\n    gene: Gene symbol (case-insensitive)\n    guidelines: Optional pre-loaded guidelines. If None, uses built-in data.\n\nReturns:\n    Guideline dictionary if found, None otherwise",
+        "args": [
+          "drug",
+          "gene",
+          "guidelines"
+        ]
+      },
+      "cpic.get_dosing_recommendation": {
+        "doc": "Get dosing recommendation for a drug based on metabolizer phenotype.\n\nSearches all guidelines for the specified drug and returns the\nrecommendation matching the given phenotype. If the drug has guidelines\nfor multiple genes, returns the first matching recommendation.\n\nArgs:\n    drug: Drug name (case-insensitive)\n    phenotype: Metabolizer phenotype string (e.g., \"Poor Metabolizer\", \"PM\",\n        \"Normal Metabolizer\", \"NM\")\n    guidelines: Optional pre-loaded guidelines\n\nReturns:\n    Dictionary with recommendation details, or None if not found.\n    Keys: drug, gene, cpic_level, phenotype, recommendation, classification, implications",
+        "args": [
+          "drug",
+          "phenotype",
+          "guidelines"
+        ]
+      },
+      "cpic.list_actionable_genes": {
+        "doc": "List CPIC Level A and B (actionable) gene-drug pairs.\n\nArgs:\n    guidelines: Optional pre-loaded guidelines\n    min_level: Minimum CPIC level to include (\"A\" for Level A only,\n        \"B\" for Level A and B)\n\nReturns:\n    List of dictionaries with keys: gene, drug, cpic_level",
+        "args": [
+          "guidelines",
+          "min_level"
+        ]
+      },
+      "cpic.parse_cpic_allele_definitions": {
+        "doc": "Parse CPIC allele definition tables.\n\nReads CPIC-formatted allele definition files (TSV format) that define the\ngenetic variants comprising each star allele for pharmacogenes.\n\nExpected TSV columns: gene, allele, rsid, position, ref, alt, function, activity_value\n\nArgs:\n    filepath: Path to allele definition TSV/JSON file\n\nReturns:\n    Dictionary mapping gene -> list of allele definition dicts.\n    Each allele dict contains: allele, defining_variants, function, activity_value\n\nRaises:\n    FileNotFoundError: If file does not exist",
+        "args": [
+          "filepath"
+        ]
+      },
+      "drug_labels.parse_drug_label": {
+        "doc": "Parse an FDA drug label file for pharmacogenomic information.\n\nReads a drug label file (JSON or structured text) and extracts PGx-relevant\nsections including biomarker requirements, dosing modifications, and warnings.\n\nArgs:\n    filepath: Path to drug label file (JSON format preferred)\n\nReturns:\n    Dictionary with parsed label data including:\n        - \"drug\": Drug name\n        - \"brand_name\": Brand name\n        - \"gene_biomarker\": Gene/biomarker mentioned\n        - \"sections\": Dict of label sections with PGx content\n        - \"biomarker_info\": Extracted biomarker testing information\n        - \"label_type\": Classification of PGx labeling strength",
+        "args": [
+          "filepath"
+        ]
+      },
+      "drug_labels.extract_biomarker_info": {
+        "doc": "Extract biomarker testing requirements from parsed label data.\n\nArgs:\n    label_data: Parsed drug label dictionary\n\nReturns:\n    Dictionary with:\n        - \"biomarker_gene\": Gene/biomarker name\n        - \"testing_required\": Whether testing is mandated\n        - \"testing_recommended\": Whether testing is recommended\n        - \"boxed_warning\": Whether PGx info is in boxed warning\n        - \"affected_populations\": Populations with specific considerations\n        - \"test_timing\": When testing should be performed",
+        "args": [
+          "label_data"
+        ]
+      },
+      "drug_labels.classify_label_type": {
+        "doc": "Classify the strength of PGx labeling for a drug.\n\nCategorizes the drug label based on the strength of pharmacogenomic\ntesting language:\n    - \"required\": Testing mandated before prescribing\n    - \"recommended\": Testing strongly suggested\n    - \"actionable\": Genotype information affects clinical decisions\n    - \"informational\": PGx information provided for awareness\n\nArgs:\n    label_data: Parsed drug label dictionary\n\nReturns:\n    Dictionary with:\n        - \"label_type\": Classification string\n        - \"rationale\": Explanation for classification",
+        "args": [
+          "label_data"
+        ]
+      },
+      "drug_labels.search_labels_by_gene": {
+        "doc": "Find drug labels mentioning a specific gene or biomarker.\n\nArgs:\n    gene: Gene symbol (case-insensitive)\n    labels_db: Optional pre-loaded labels database. If None, uses built-in data.\n\nReturns:\n    List of matching drug label dictionaries",
+        "args": [
+          "gene",
+          "labels_db"
+        ]
+      },
+      "pharmgkb.query_pharmgkb_annotations": {
+        "doc": "Query PharmGKB clinical annotations by gene, drug, and/or variant.\n\nFilters the annotation database by any combination of gene, drug, and variant.\nAt least one filter must be provided.\n\nArgs:\n    gene: Gene symbol (case-insensitive)\n    drug: Drug name (case-insensitive)\n    variant: Variant rsID or identifier\n\nReturns:\n    List of matching annotation dictionaries\n\nRaises:\n    ValueError: If no filter criteria provided",
+        "args": [
+          "gene",
+          "drug",
+          "variant"
+        ]
+      },
+      "pharmgkb.parse_clinical_annotations": {
+        "doc": "Parse PharmGKB clinical annotation data from file.\n\nReads a PharmGKB clinical annotation export file (TSV format) and\nparses it into structured annotation records.\n\nExpected TSV columns: Clinical Annotation ID, Gene, Level of Evidence,\nDrug(s), Phenotype Category, PMID Count, Annotation Text\n\nArgs:\n    filepath: Path to PharmGKB clinical annotations TSV file\n\nReturns:\n    List of parsed annotation dictionaries",
+        "args": [
+          "filepath"
+        ]
+      },
+      "pharmgkb.get_evidence_level": {
+        "doc": "Extract and interpret the evidence level from a PharmGKB annotation.\n\nArgs:\n    annotation: Annotation dictionary with \"evidence_level\" key\n\nReturns:\n    Dictionary with:\n        - \"level\": Evidence level string (e.g., \"1A\")\n        - \"description\": Human-readable description\n        - \"strength\": Qualitative strength (\"Strong\", \"Moderate\", \"Weak\", \"Preliminary\")\n        - \"actionable\": Whether this evidence level supports clinical action",
+        "args": [
+          "annotation"
+        ]
+      },
+      "pharmgkb.search_drug_pathways": {
+        "doc": "Get pharmacokinetic/pharmacodynamic pathway information for a drug.\n\nArgs:\n    drug: Drug name (case-insensitive)\n\nReturns:\n    Pathway dictionary with genes involved, mechanism, active metabolite,\n    etc. Returns None if drug not found.",
+        "args": [
+          "drug"
+        ]
+      },
+      "pharmgkb.get_variant_annotations": {
+        "doc": "Get variant-specific pharmacogenomic annotations.\n\nArgs:\n    rsid: Variant rsID (e.g., \"rs4244285\")\n\nReturns:\n    Variant annotation dictionary with gene, allele, frequency data,\n    clinical significance, etc. Returns None if variant not found.",
+        "args": [
+          "rsid"
+        ]
+      },
+      "drug_interaction.analyze_drug_gene_interactions": {
+        "doc": "Analyze drug-gene interactions for a set of drugs and genotypes.\n\nFor each drug, checks against all available genotype data to identify\npharmacogenomic interactions and generate clinical recommendations.\n\nArgs:\n    drugs: List of drug names to analyze\n    genotype_data: Dictionary mapping gene symbol to genotype information.\n        Each gene entry should have:\n            - \"phenotype\": MetabolizerPhenotype or string (e.g., \"Poor Metabolizer\")\n            - \"diplotype\": Optional diplotype string (e.g., \"*1/*4\")\n            - \"activity_score\": Optional activity score\n\nReturns:\n    List of DrugRecommendation objects for all identified interactions",
+        "args": [
+          "drugs",
+          "genotype_data"
+        ]
+      },
+      "drug_interaction.check_contraindications": {
+        "doc": "Check if a drug is contraindicated for a given metabolizer phenotype.\n\nSearches across all gene-drug contraindication records for the specified drug.\n\nArgs:\n    drug: Drug name (case-insensitive)\n    phenotype: Metabolizer phenotype (string or enum)\n\nReturns:\n    Dictionary with:\n        - \"contraindicated\": Whether drug is contraindicated\n        - \"severity\": Interaction severity\n        - \"gene_interactions\": List of specific gene-level contraindication details\n        - \"overall_recommendation\": Summary recommendation",
+        "args": [
+          "drug",
+          "phenotype"
+        ]
+      },
+      "drug_interaction.calculate_interaction_severity": {
+        "doc": "Calculate overall severity for a set of drug-gene interactions.\n\nAssesses the combined risk from multiple pharmacogenomic interactions,\nproviding an overall severity classification and risk summary.\n\nArgs:\n    interactions: List of DrugRecommendation objects\n\nReturns:\n    Dictionary with:\n        - \"overall_severity\": Highest severity level across all interactions\n        - \"major_count\": Number of major interactions\n        - \"moderate_count\": Number of moderate interactions\n        - \"minor_count\": Number of minor interactions\n        - \"total_interactions\": Total interaction count\n        - \"risk_level\": Qualitative risk assessment (\"High\", \"Moderate\", \"Low\")\n        - \"summary\": Text summary of findings",
+        "args": [
+          "interactions"
+        ]
+      },
+      "drug_interaction.polypharmacy_analysis": {
+        "doc": "Perform comprehensive polypharmacy pharmacogenomic assessment.\n\nAnalyzes all drugs in a patient's medication list against their genotype\ndata to identify all PGx interactions, drug-drug-gene overlaps, and\ncumulative risk.\n\nArgs:\n    drug_list: List of all drugs the patient is taking\n    genotype_data: Dictionary mapping gene -> genotype info (see analyze_drug_gene_interactions)\n\nReturns:\n    Dictionary with:\n        - \"total_drugs\": Number of drugs analyzed\n        - \"drugs_with_interactions\": Drugs that have PGx interactions\n        - \"interactions\": Full list of DrugRecommendation objects\n        - \"severity_summary\": Interaction severity breakdown\n        - \"gene_overlap\": Genes affected by multiple drugs\n        - \"high_risk_combinations\": Drug combinations with compounding PGx risk\n        - \"recommendations\": Prioritized clinical recommendations",
+        "args": [
+          "drug_list",
+          "genotype_data"
+        ]
+      },
+      "drug_interaction.suggest_alternatives": {
+        "doc": "Suggest alternative drugs based on pharmacogenomic phenotype.\n\nQueries the alternatives database for drugs in the same therapeutic class\nthat are less affected by the patient's pharmacogenomic profile.\n\nArgs:\n    drug: Drug name (case-insensitive)\n    phenotype: Metabolizer phenotype\n    alternatives_db: Optional custom alternatives database.\n        If None, uses built-in data.\n\nReturns:\n    Dictionary with:\n        - \"drug\": Original drug name\n        - \"therapeutic_class\": Drug's therapeutic class\n        - \"alternatives\": List of alternative drug options with details\n        - \"phenotype\": Patient's phenotype\n        - \"rationale\": Why alternatives are suggested",
+        "args": [
+          "drug",
+          "phenotype",
+          "alternatives_db"
+        ]
+      },
+      "pathogenicity.classify_variant_acmg": {
+        "doc": "Classify a variant using the ACMG 5-tier system.\n\nTakes variant information and either pre-evaluated evidence criteria or\nauto-evaluates criteria from the variant data, then aggregates into a\nfinal classification.\n\nArgs:\n    variant: Variant data dictionary with keys like:\n        - \"rsid\": rsID (e.g., \"rs3892097\")\n        - \"gene\": Gene symbol\n        - \"consequence\": Variant consequence (e.g., \"missense\", \"frameshift\")\n        - \"allele_frequency\": Population allele frequency dict or float\n        - \"computational_predictions\": Dict of tool -> prediction\n        - \"functional_data\": Functional study evidence\n        - \"segregation_data\": Family segregation data\n        - \"de_novo\": Whether variant is de novo\n    evidence: Optional pre-evaluated criteria dict mapping ACMGCriteria name\n        to True/False. If None, criteria are auto-evaluated from variant data.\n\nReturns:\n    Dictionary with:\n        - \"classification\": ACMGClassification value\n        - \"criteria_met\": List of met ACMG criteria\n        - \"criteria_details\": Dict of criterion -> description for met criteria\n        - \"score_summary\": Count of criteria at each evidence level\n        - \"confidence\": Assessment confidence (\"high\", \"moderate\", \"low\")",
+        "args": [
+          "variant",
+          "evidence"
+        ]
+      },
+      "pathogenicity.apply_acmg_criteria": {
+        "doc": "Evaluate individual ACMG criteria from variant data.\n\nSystematically evaluates each ACMG criterion based on available variant\ninformation. Each criterion is assessed independently.\n\nArgs:\n    variant_data: Variant information dictionary (see classify_variant_acmg)\n\nReturns:\n    Dictionary mapping criterion name (str) to met/not-met (bool)",
+        "args": [
+          "variant_data"
+        ]
+      },
+      "pathogenicity.aggregate_evidence": {
+        "doc": "Combine ACMG criteria into a final 5-tier classification.\n\nImplements the combining rules from Richards et al. 2015 (Table 5):\n\nPathogenic:\n    (i)   1 Very Strong + >=1 Strong\n    (ii)  1 Very Strong + >=2 Moderate\n    (iii) 1 Very Strong + 1 Moderate + 1 Supporting\n    (iv)  1 Very Strong + >=2 Supporting\n    (v)   >=2 Strong\n    (vi)  1 Strong + >=3 Moderate\n    (vii) 1 Strong + 2 Moderate + >=2 Supporting\n    (viii) 1 Strong + 1 Moderate + >=4 Supporting\n\nLikely Pathogenic:\n    (i)   1 Very Strong + 1 Moderate\n    (ii)  1 Strong + 1-2 Moderate\n    (iii) 1 Strong + >=2 Supporting\n    (iv)  >=3 Moderate\n    (v)   2 Moderate + >=2 Supporting\n    (vi)  1 Moderate + >=4 Supporting\n\nBenign:\n    (i) 1 Stand-alone (BA1)\n    (ii) >=2 Strong\n\nLikely Benign:\n    (i) 1 Strong + 1 Supporting\n    (ii) >=2 Supporting\n\nVUS: Everything else\n\nArgs:\n    criteria: Dictionary of criterion name -> True/False\n\nReturns:\n    ACMGClassification enum value",
+        "args": [
+          "criteria"
+        ]
+      },
+      "pathogenicity.query_clinvar": {
+        "doc": "Look up ClinVar classification for a variant.\n\nQueries the local ClinVar data cache for a variant's classification,\nreview status, and associated conditions.\n\nArgs:\n    variant_id: Variant identifier (rsID, ClinVar variation ID, or HGVS)\n\nReturns:\n    ClinVar record dictionary, or None if not found.\n    Keys: variant_id, gene, hgvs, classification, review_status,\n    stars, condition, last_evaluated, submitter_count",
+        "args": [
+          "variant_id"
+        ]
+      },
+      "pathogenicity.check_gnomad_frequency": {
+        "doc": "Check variant population frequency against gnomAD thresholds.\n\nEvaluates whether a variant exceeds frequency thresholds relevant to\nACMG benign criteria (BA1 at 5%, BS1 at disease-specific threshold).\n\nArgs:\n    variant: Variant dictionary with \"allele_frequency\" key containing\n        either a float or a dict of population -> frequency\n    population: Optional specific population to check (e.g., \"European\",\n        \"East_Asian\"). If None, checks maximum across all populations.\n    threshold: Frequency threshold for classification (default 0.05 for BA1)\n\nReturns:\n    Dictionary with:\n        - \"max_frequency\": Maximum allele frequency observed\n        - \"population\": Population with highest frequency\n        - \"exceeds_threshold\": Whether threshold is exceeded\n        - \"ba1_triggered\": Whether BA1 benign criterion is met (AF > 5%)\n        - \"bs1_triggered\": Whether BS1 benign criterion is met (AF > disease threshold)\n        - \"frequencies\": All population frequencies if available",
+        "args": [
+          "variant",
+          "population",
+          "threshold"
+        ]
+      },
+      "reporting.generate_clinical_report": {
+        "doc": "Generate a comprehensive clinical pharmacogenomic report.\n\nAnalyzes patient genotype data across all pharmacogenes and generates\na structured report with phenotype classifications, drug-specific\nrecommendations, and clinical action items.\n\nArgs:\n    patient_data: Patient demographics dictionary with optional keys:\n        - \"patient_id\": Unique identifier\n        - \"name\": Patient name (optional, may be de-identified)\n        - \"dob\": Date of birth\n        - \"sex\": Biological sex\n        - \"ethnicity\": Self-reported ethnicity\n        - \"ordering_provider\": Ordering provider name\n    genotypes: Dictionary mapping gene symbol -> genotype info:\n        - \"diplotype\": Diplotype string (e.g., \"*1/*4\")\n        - \"phenotype\": Optional pre-determined phenotype\n        - \"activity_score\": Optional pre-computed activity score\n    drugs: Optional list of drugs to generate specific recommendations for.\n        If None, generates recommendations for all drugs with CPIC guidelines.\n\nReturns:\n    Comprehensive report dictionary with sections:\n        - \"header\": Report metadata\n        - \"patient_info\": Sanitized patient demographics\n        - \"genotype_results\": Per-gene genotype and phenotype results\n        - \"drug_recommendations\": Per-drug clinical recommendations\n        - \"interaction_summary\": Overall interaction risk assessment\n        - \"clinical_actions\": Prioritized action items\n        - \"disclaimer\": Clinical disclaimer text",
+        "args": [
+          "patient_data",
+          "genotypes",
+          "drugs"
+        ]
+      },
+      "reporting.format_recommendation": {
+        "doc": "Format a single drug-gene recommendation for the clinical report.\n\nArgs:\n    drug: Drug name\n    gene: Gene symbol\n    phenotype: Metabolizer phenotype string\n    guideline: Guideline data with recommendation, evidence_level, etc.\n\nReturns:\n    Formatted recommendation dictionary",
+        "args": [
+          "drug",
+          "gene",
+          "phenotype",
+          "guideline"
+        ]
+      },
+      "reporting.generate_summary_table": {
+        "doc": "Generate a summary table of all pharmacogenomic findings.\n\nCreates a condensed tabular view of genotype results and drug\nrecommendations suitable for display or embedding in reports.\n\nArgs:\n    results: List of genotype result or recommendation dictionaries\n\nReturns:\n    List of row dictionaries with standardized columns:\n        - \"Gene\": Gene symbol\n        - \"Diplotype\": Diplotype string\n        - \"Phenotype\": Metabolizer phenotype\n        - \"Drug\": Drug name (if recommendation)\n        - \"Recommendation\": Brief recommendation\n        - \"Severity\": Interaction severity",
+        "args": [
+          "results"
+        ]
+      },
+      "reporting.export_report": {
+        "doc": "Export a clinical report to the specified format.\n\nArgs:\n    report: Report dictionary (from generate_clinical_report)\n    format: Output format - \"text\", \"html\", or \"json\"\n    output_path: Optional file path to write the report to\n\nReturns:\n    Formatted report string\n\nRaises:\n    ValueError: If format is not supported",
+        "args": [
+          "report",
+          "format",
+          "output_path"
+        ]
+      },
+      "reporting.add_disclaimer": {
+        "doc": "Add or update the clinical disclaimer in a report.\n\nArgs:\n    report: Report dictionary\n    custom_disclaimer: Optional custom disclaimer text.\n        If None, uses the standard METAINFORMANT disclaimer.\n\nReturns:\n    Updated report dictionary with disclaimer",
+        "args": [
+          "report",
+          "custom_disclaimer"
+        ]
+      },
+      "drug_interactions.default_interaction_database": {
+        "doc": "Return the built-in drug-drug interaction database.\n\nThe database contains approximately 100 common drug pairs with severity,\nmechanism, description, and evidence level. Each entry is keyed by a\nfrozenset-style tuple of two drug names (lowercased, sorted).\n\nReturns:\n    Dictionary mapping ``(drug_a, drug_b)`` tuples (sorted) to interaction\n    records with keys: severity, mechanism, description, evidence_level,\n    recommendation.",
+        "args": []
+      },
+      "drug_interactions.predict_drug_interaction": {
+        "doc": "Predict drug-drug interaction between two medications.\n\nLooks up the drug pair in the interaction database and returns the\ninteraction record including severity, mechanism, description, evidence\nlevel, and clinical recommendation.\n\nArgs:\n    drug_a: Name of the first drug.\n    drug_b: Name of the second drug.\n    interaction_db: Optional pre-built interaction database. If ``None``,\n        the built-in database from :func:`default_interaction_database` is\n        used.\n\nReturns:\n    Dictionary with keys:\n        - severity: ``\"major\"`` | ``\"moderate\"`` | ``\"minor\"`` | ``\"none\"``\n        - mechanism: Pharmacokinetic or pharmacodynamic mechanism.\n        - description: Narrative description of the interaction.\n        - evidence_level: ``\"A\"`` through ``\"D\"``.\n        - recommendation: Clinical recommendation text.\n        - drug_a: Normalised name of drug A.\n        - drug_b: Normalised name of drug B.",
+        "args": [
+          "drug_a",
+          "drug_b",
+          "interaction_db"
+        ]
+      },
+      "drug_interactions.polypharmacy_risk": {
+        "doc": "Assess polypharmacy risk from multiple concurrent medications.\n\nPerforms pairwise interaction checks across all medications, identifies\nCYP pathway competition, and computes an overall risk score.\n\nArgs:\n    medications: List of drug names currently prescribed.\n    interaction_db: Optional pre-built interaction database.\n\nReturns:\n    Dictionary with keys:\n        - risk_score: Float 0-1 summarising overall polypharmacy risk.\n        - n_medications: Number of medications assessed.\n        - interactions: List of pairwise interaction dicts (non-``\"none\"``).\n        - competing_pathways: Dict mapping CYP enzyme to list of competing\n          drugs from the input.\n        - n_interactions: Count of identified interactions.\n        - severity_counts: Dict mapping severity to count.\n        - recommendations: List of distinct recommendation strings.\n\nRaises:\n    ValueError: If fewer than 2 medications provided.",
+        "args": [
+          "medications",
+          "interaction_db"
+        ]
+      },
+      "drug_interactions.cyp_inhibition_prediction": {
+        "doc": "Predict CYP enzyme inhibition and induction potential of a drug.\n\nChecks the drug against known CYP inhibitor and inducer tables to\nidentify which enzymes may be affected and at what potency.\n\nArgs:\n    drug: Name of the drug to profile.\n    cyp_profiles: Optional custom CYP profile database. If ``None``,\n        the built-in inhibitor/inducer tables are used. Expected format:\n        ``{\"inhibitors\": {cyp: [...]}, \"inducers\": {cyp: [...]}}``.\n\nReturns:\n    Dictionary with keys:\n        - drug: Normalised drug name.\n        - affected_enzymes: List of dicts, each with\n          ``{enzyme, effect_type, inhibition_type, potency_estimate}``.\n        - n_affected: Count of affected enzymes.\n        - substrate_of: List of CYP enzymes where this drug is a substrate.\n        - summary: Human-readable summary string.",
+        "args": [
+          "drug",
+          "cyp_profiles"
+        ]
+      },
+      "metabolizer_status.default_allele_function_table": {
+        "doc": "Return the built-in allele function assignment table.\n\nCovers CYP2D6, CYP2C19, and CYP2C9 with CPIC-consensus function\nassignments. Each gene maps to a dict of allele -> function_value.\n\nReturns:\n    Dictionary mapping gene name to a dict of\n    ``{allele_name: function_value}``. Function values:\n    0.0 = no function, 0.5 = decreased function, 1.0 = normal function,\n    1.5 = increased function (CYP2C19 *17).",
+        "args": []
+      },
+      "metabolizer_status.compute_activity_score": {
+        "doc": "Compute CPIC-style activity score from a diplotype string.\n\nParses a diplotype of the form ``\"*1/*4\"`` and sums the function values\nof each allele from the provided table.\n\nArgs:\n    diplotype: Diplotype string, e.g. ``\"*1/*4\"``, ``\"*1xN/*2\"``.\n    allele_function_table: Dictionary mapping allele name to numeric\n        function value (e.g. ``{\"*1\": 1.0, \"*4\": 0.0}``).\n\nReturns:\n    Activity score (sum of both allele function values).\n\nRaises:\n    ValueError: If diplotype format is invalid or alleles not found.",
+        "args": [
+          "diplotype",
+          "allele_function_table"
+        ]
+      },
+      "metabolizer_status.classify_metabolizer": {
+        "doc": "Classify metabolizer phenotype from an activity score.\n\nUses gene-specific thresholds from the CPIC framework to map an\nactivity score to a phenotype category.\n\nArgs:\n    activity_score: Numeric activity score from :func:`compute_activity_score`.\n    gene: Gene symbol (e.g. ``\"CYP2D6\"``).\n\nReturns:\n    Phenotype string: one of ``\"poor\"``, ``\"intermediate\"``, ``\"normal\"``,\n    ``\"rapid\"``, or ``\"ultrarapid\"``.",
+        "args": [
+          "activity_score",
+          "gene"
+        ]
+      },
+      "metabolizer_status.predict_metabolizer_status": {
+        "doc": "Predict metabolizer phenotype from genotype information.\n\nTakes a genotype dictionary containing diplotype information and\ncomputes the metabolizer phenotype using the CPIC activity score\nframework.\n\nArgs:\n    genotype: Dictionary with at least a ``\"diplotype\"`` key containing\n        the diplotype string (e.g. ``\"*1/*4\"``), or a ``\"alleles\"`` key\n        with a list of two allele names.\n    gene: Gene symbol (e.g. ``\"CYP2D6\"``).\n    activity_scores: Optional custom allele function table for the gene.\n        If ``None``, uses the built-in table.\n\nReturns:\n    Dictionary with keys:\n        - phenotype: Metabolizer classification string.\n        - activity_score: Computed numeric activity score.\n        - alleles: Tuple of two allele names.\n        - gene: Gene symbol.\n        - diplotype: Diplotype string.\n        - thresholds_used: The threshold ranges applied.\n\nRaises:\n    ValueError: If genotype is missing required fields.",
+        "args": [
+          "genotype",
+          "gene",
+          "activity_scores"
+        ]
+      },
+      "metabolizer_status.dose_adjustment": {
+        "doc": "Recommend dose adjustment based on metabolizer status and drug.\n\nLooks up the drug in the dose guideline table and returns the\nrecommendation for the given metabolizer phenotype.\n\nArgs:\n    metabolizer_status: Metabolizer phenotype string (e.g. ``\"poor\"``,\n        ``\"intermediate\"``, ``\"normal\"``, ``\"ultrarapid\"``).\n    drug: Drug name to look up.\n    dose_guidelines: Optional custom dose guidelines. If ``None``, uses\n        the built-in CPIC-derived guidelines. Expected format:\n        ``{drug: {phenotype: {recommendation, adjusted_dose_fraction, ...}}}``.\n\nReturns:\n    Dictionary with keys:\n        - drug: Normalised drug name.\n        - metabolizer_status: Input phenotype.\n        - recommendation: Clinical recommendation text.\n        - adjusted_dose_fraction: Multiplier for standard dose (0.0 = avoid,\n          1.0 = standard, 2.0 = double).\n        - evidence_level: Evidence grade (``\"A\"`` through ``\"D\"``).\n        - guideline_source: Source of the guideline.",
+        "args": [
+          "metabolizer_status",
+          "drug",
+          "dose_guidelines"
+        ]
+      },
+      "plots.plot_metabolizer_status": {
+        "doc": "Plot metabolizer status distribution as a bar chart.\n\nCreates a bar chart showing the distribution of metabolizer phenotypes,\ncolor-coded by category (PM=red, IM=orange, NM=green, RM=blue, UM=purple).\n\nArgs:\n    phenotypes: Dictionary mapping phenotype name/abbreviation to count or frequency.\n        Example: {\"PM\": 5, \"IM\": 20, \"NM\": 65, \"RM\": 8, \"UM\": 2}\n    output_path: Path to save the figure\n    title: Plot title\n    figsize: Figure size in inches (width, height)\n\nReturns:\n    Path to saved figure",
+        "args": [
+          "phenotypes",
+          "output_path",
+          "title",
+          "figsize"
+        ]
+      },
+      "plots.plot_allele_frequencies": {
+        "doc": "Plot allele frequency distribution for a pharmacogene.\n\nCreates either a bar chart or pie chart showing the frequency of each\nstar allele in a population.\n\nArgs:\n    allele_freqs: Dictionary mapping allele name to frequency.\n        Example: {\"*1\": 0.45, \"*2\": 0.25, \"*4\": 0.15, \"*10\": 0.10, \"*17\": 0.05}\n    gene: Gene symbol for the title\n    output_path: Path to save the figure\n    plot_type: \"bar\" for bar chart, \"pie\" for pie chart\n    title: Optional custom title\n    figsize: Figure size in inches\n\nReturns:\n    Path to saved figure",
+        "args": [
+          "allele_freqs",
+          "gene",
+          "output_path",
+          "plot_type",
+          "title",
+          "figsize"
+        ]
+      },
+      "plots.plot_activity_score_distribution": {
+        "doc": "Plot activity score distribution as a histogram.\n\nShows the distribution of activity scores across a cohort, with vertical\nlines indicating phenotype threshold boundaries.\n\nArgs:\n    scores: List of activity score values\n    gene: Gene symbol\n    output_path: Path to save the figure\n    title: Optional custom title\n    figsize: Figure size in inches\n\nReturns:\n    Path to saved figure",
+        "args": [
+          "scores",
+          "gene",
+          "output_path",
+          "title",
+          "figsize"
+        ]
+      },
+      "plots.plot_drug_response_heatmap": {
+        "doc": "Plot drug-gene response heatmap.\n\nCreates a matrix visualization showing the interaction severity or\nmetabolizer impact for each drug-gene combination.\n\nArgs:\n    drugs: List of drug names (rows)\n    genes: List of gene symbols (columns)\n    phenotypes: Dict mapping (drug, gene) tuple to phenotype/severity string.\n        Example: {(\"codeine\", \"CYP2D6\"): \"Major\", (\"warfarin\", \"CYP2C9\"): \"Moderate\"}\n    output_path: Path to save the figure\n    title: Plot title\n    figsize: Optional figure size (auto-calculated if None)\n\nReturns:\n    Path to saved figure",
+        "args": [
+          "drugs",
+          "genes",
+          "phenotypes",
+          "output_path",
+          "title",
+          "figsize"
+        ]
+      },
+      "plots.plot_population_comparison": {
+        "doc": "Plot cross-population allele frequency comparison.\n\nCreates a grouped bar chart comparing allele frequencies across\ndifferent populations (e.g., African, European, East Asian).\n\nArgs:\n    allele_freqs_by_pop: Nested dict: population -> allele -> frequency.\n        Example: {\"European\": {\"*1\": 0.6, \"*2\": 0.3}, \"East Asian\": {\"*1\": 0.4, \"*10\": 0.4}}\n    gene: Gene symbol\n    output_path: Path to save the figure\n    title: Optional custom title\n    figsize: Figure size in inches\n\nReturns:\n    Path to saved figure",
+        "args": [
+          "allele_freqs_by_pop",
+          "gene",
+          "output_path",
+          "title",
+          "figsize"
+        ]
+      },
+      "plots.plot_acmg_criteria": {
+        "doc": "Plot ACMG criteria evaluation summary.\n\nCreates a horizontal bar chart showing which ACMG criteria are met (green)\nor not met (gray), organized by evidence strength category.\n\nArgs:\n    criteria_results: Dictionary mapping criterion name to met/not-met.\n        Example: {\"PVS1\": True, \"PS1\": False, \"PM2\": True, \"PP3\": True, ...}\n    output_path: Path to save the figure\n    title: Plot title\n    figsize: Figure size in inches\n\nReturns:\n    Path to saved figure",
+        "args": [
+          "criteria_results",
+          "output_path",
+          "title",
+          "figsize"
+        ]
+      }
+    },
+    "classes": {
+      "diplotype.Diplotype": {
+        "doc": "Represents a pharmacogene diplotype (pair of star alleles).\n\nAttributes:\n    allele1: First star allele (typically the lower-numbered or reference)\n    allele2: Second star allele\n    gene: Gene symbol\n    activity_score: Combined activity score for the diplotype\n    phased: Whether the diplotype assignment is phased (True) or inferred (False)\n    confidence: Confidence in the diplotype call (\"high\", \"moderate\", \"low\")"
+      },
+      "phenotype.MetabolizerPhenotype": {
+        "doc": "Standardized metabolizer phenotype categories.\n\nValues follow CPIC terminology for consistent clinical communication.\nInherits from str for JSON serialization compatibility."
+      },
+      "star_allele.StarAllele": {
+        "doc": "Represents a pharmacogene star allele.\n\nAttributes:\n    name: Star allele designation (e.g., \"*1\", \"*2\", \"*4\")\n    gene: Gene symbol (e.g., \"CYP2D6\", \"CYP2C19\")\n    defining_variants: Set of variant identifiers that define this allele\n        Each variant is represented as \"chr:pos:ref:alt\" or rsID\n    function: Functional classification (e.g., \"Normal function\",\n        \"No function\", \"Decreased function\", \"Increased function\")\n    activity_value: Numeric activity score (e.g., 1.0 for normal, 0.0 for no function)\n    clinical_significance: Clinical significance annotation\n    evidence_level: Strength of evidence for this allele definition\n    substrate_specificity: Optional notes on substrate-specific effects"
+      },
+      "drug_interaction.InteractionSeverity": {
+        "doc": "Drug-gene interaction severity classification."
+      },
+      "drug_interaction.DrugRecommendation": {
+        "doc": "Represents a pharmacogenomic drug recommendation.\n\nAttributes:\n    drug: Drug name\n    gene: Gene symbol\n    phenotype: Metabolizer phenotype\n    recommendation: Clinical recommendation text\n    evidence_level: CPIC evidence level (A, A/B, B, C, D)\n    source: Source of the recommendation (e.g., \"CPIC\", \"PharmGKB\", \"FDA\")\n    severity: Interaction severity level\n    alternatives: Suggested alternative drugs"
+      },
+      "pathogenicity.ACMGClassification": {
+        "doc": "ACMG 5-tier variant classification.\n\nPer Richards et al., 2015 (Genet Med 17:405-424)."
+      },
+      "pathogenicity.ACMGCriteria": {
+        "doc": "Individual ACMG evidence criteria.\n\nPathogenic criteria:\n    PVS1: Null variant in gene where LOF is a known disease mechanism\n    PS1-4: Strong pathogenic evidence\n    PM1-6: Moderate pathogenic evidence\n    PP1-5: Supporting pathogenic evidence\n\nBenign criteria:\n    BA1: Stand-alone benign (allele frequency > 5%)\n    BS1-4: Strong benign evidence\n    BP1-7: Supporting benign evidence"
+      }
+    }
+  },
+  "spatial": {
+    "functions": {
+      "autocorrelation.spatial_weights_matrix": {
+        "doc": "Build a spatial weights matrix from coordinates.\n\nArgs:\n    coordinates: Spatial coordinates (n x 2).\n    method: Weights construction method:\n        - \"knn\": K-nearest neighbors with binary weights.\n        - \"distance\": Inverse distance weighting within bandwidth.\n        - \"binary\": Binary weights within bandwidth.\n    k: Number of neighbors for KNN method.\n    bandwidth: Distance threshold for distance/binary methods.\n        If None, uses median nearest-neighbor distance * 1.5.\n    row_standardize: If True, normalize rows to sum to 1.\n\nReturns:\n    Sparse weights matrix (n x n) in CSR format.",
+        "args": [
+          "coordinates",
+          "method",
+          "k",
+          "bandwidth"
+        ]
+      },
+      "autocorrelation.morans_i": {
+        "doc": "Compute Moran's I spatial autocorrelation statistic.\n\nMoran's I measures the overall spatial autocorrelation of a variable.\nIt is the spatial analog of Pearson's correlation coefficient.\n\nFormula:\n    I = (n / S0) * (z^T W z) / (z^T z)\nwhere z = x - mean(x), S0 = sum of all weights.\n\nArgs:\n    values: Observed values (length n).\n    weights: Spatial weights matrix (n x n), sparse or dense.\n\nReturns:\n    MoransIResult with I statistic, expected value, variance, z-score, p-value.",
+        "args": [
+          "values",
+          "weights"
+        ]
+      },
+      "autocorrelation.gearys_c": {
+        "doc": "Compute Geary's C spatial autocorrelation statistic.\n\nGeary's C is based on squared differences between neighboring observations,\nmaking it more sensitive to local spatial patterns than Moran's I.\n\nFormula:\n    C = ((n-1) / (2 * S0)) * (sum_ij w_ij (x_i - x_j)^2) / (sum_i (x_i - x_bar)^2)\n\nArgs:\n    values: Observed values (length n).\n    weights: Spatial weights matrix (n x n).\n\nReturns:\n    GearyCResult with C statistic, z-score, and p-value.",
+        "args": [
+          "values",
+          "weights"
+        ]
+      },
+      "autocorrelation.local_morans_i": {
+        "doc": "Compute Local Moran's I (LISA) statistics.\n\nLocal Indicators of Spatial Association (LISA) decompose Moran's I into\nper-observation contributions, identifying local clusters and spatial outliers.\n\nFormula for observation i:\n    I_i = z_i * sum_j(w_ij * z_j) / (sum z^2 / n)\n\nClassification:\n    - HH: High value surrounded by high values (hot spot).\n    - LL: Low value surrounded by low values (cold spot).\n    - HL: High value surrounded by low values (outlier).\n    - LH: Low value surrounded by high values (outlier).\n    - NS: Not significant at the given significance level.\n\nArgs:\n    values: Observed values (length n).\n    weights: Spatial weights matrix (n x n). Should be row-standardized.\n    significance: Significance level for cluster classification.\n\nReturns:\n    LocalMoransResult with local I values, z-scores, p-values, and cluster labels.",
+        "args": [
+          "values",
+          "weights"
+        ]
+      },
+      "autocorrelation.getis_ord_g": {
+        "doc": "Compute Getis-Ord G* statistic for hot/cold spot detection.\n\nG* measures the concentration of high or low values in the neighborhood\nof each observation. Unlike LISA, G* includes the observation itself.\n\nFormula:\n    G*_i = (sum_j w_ij * x_j - x_bar * sum_j w_ij) /\n           (S * sqrt((n * sum_j w_ij^2 - (sum_j w_ij)^2) / (n-1)))\n\nwhere S is the standard deviation of all values.\n\nArgs:\n    values: Observed values (length n).\n    weights: Spatial weights matrix (n x n). Should NOT be row-standardized.\n    significance: Significance level for hot/cold spot identification.\n\nReturns:\n    GetisOrdResult with G* statistics and hot/cold spot identification.",
+        "args": [
+          "values",
+          "weights"
+        ]
+      },
+      "autocorrelation.spatial_variogram": {
+        "doc": "Compute the empirical spatial variogram (semivariogram).\n\nThe semivariogram gamma(h) measures the average squared difference\nbetween pairs of observations separated by distance h:\n\n    gamma(h) = (1 / 2|N(h)|) * sum_{(i,j) in N(h)} (x_i - x_j)^2\n\nwhere N(h) is the set of pairs at distance h (within a bin).\n\nAlso estimates variogram model parameters:\n- Nugget: discontinuity at the origin (measurement error + micro-scale variation).\n- Sill: the plateau level (total variance).\n- Range: distance at which the sill is reached.\n\nArgs:\n    values: Observed values (length n).\n    coordinates: Spatial coordinates (n x 2).\n    n_bins: Number of distance bins.\n    max_distance: Maximum distance to consider. If None, uses half the\n        maximum pairwise distance.\n\nReturns:\n    VariogramResult with semivariance values and estimated parameters.",
+        "args": [
+          "values",
+          "coordinates",
+          "n_bins"
+        ]
+      },
+      "clustering.build_spatial_graph": {
+        "doc": "Build a spatial neighborhood graph from coordinates.\n\nArgs:\n    coordinates: Array of shape (n, 2) with spatial coordinates.\n    method: Graph construction method:\n        - \"knn\": K-nearest neighbors graph.\n        - \"delaunay\": Delaunay triangulation graph.\n        - \"radius\": Fixed-radius neighborhood graph.\n    n_neighbors: Number of neighbors for KNN (default 6 for hexagonal Visium grid).\n    radius: Radius for radius-based graph (required if method=\"radius\").\n\nReturns:\n    Sparse adjacency matrix (scipy CSR) of shape (n, n).\n\nRaises:\n    ImportError: If scipy or sklearn is not installed.\n    ValueError: If method is \"radius\" but no radius is provided.",
+        "args": [
+          "coordinates",
+          "method",
+          "n_neighbors",
+          "radius"
+        ]
+      },
+      "clustering.leiden_clustering": {
+        "doc": "Leiden community detection on a graph.\n\nImplements the Leiden algorithm using a modularity-optimization approach.\nFalls back to a greedy modularity maximization if the leidenalg package\nis not available.\n\nArgs:\n    adjacency_matrix: Sparse adjacency matrix (n x n).\n    resolution: Resolution parameter (higher = more clusters).\n    n_iterations: Number of iterations (-1 for until convergence).\n    seed: Random seed for reproducibility.\n\nReturns:\n    Tuple of (labels, modularity) where labels is an integer array\n    and modularity is the partition quality score.\n\nRaises:\n    ImportError: If neither leidenalg nor required fallback deps are available.",
+        "args": [
+          "adjacency_matrix",
+          "resolution",
+          "n_iterations",
+          "seed"
+        ]
+      },
+      "clustering.louvain_clustering": {
+        "doc": "Louvain community detection on a graph.\n\nImplements the Louvain method for modularity-based community detection.\nUses community_louvain if available, otherwise falls back to a greedy approach.\n\nArgs:\n    adjacency_matrix: Sparse adjacency matrix (n x n).\n    resolution: Resolution parameter (higher = more clusters).\n    seed: Random seed.\n\nReturns:\n    Tuple of (labels, modularity).",
+        "args": [
+          "adjacency_matrix",
+          "resolution",
+          "seed"
+        ]
+      },
+      "clustering.spatial_cluster": {
+        "doc": "Spatially-aware clustering combining expression and spatial proximity.\n\nConstructs a joint graph that balances transcriptomic similarity with spatial\nproximity, then applies community detection or KMeans.\n\nFor graph-based methods (leiden, louvain):\n    1. Build expression similarity graph (KNN in PCA space).\n    2. Build spatial proximity graph.\n    3. Combine: A_combined = (1-w)*A_expr + w*A_spatial.\n    4. Run community detection on combined graph.\n\nFor KMeans:\n    1. PCA on expression.\n    2. Concatenate scaled PCA coordinates with scaled spatial coordinates.\n    3. Run KMeans on concatenated features.\n\nArgs:\n    expression: Expression matrix (n_spots x n_genes), dense or sparse.\n    coordinates: Spatial coordinates (n_spots x 2).\n    n_clusters: Number of clusters (required for KMeans, optional for graph methods).\n    method: Clustering algorithm (\"leiden\", \"louvain\", \"kmeans\").\n    n_neighbors: Number of spatial neighbors.\n    graph_method: How to build the spatial graph.\n    resolution: Resolution parameter for graph methods.\n    spatial_weight: Weight for spatial graph in [0, 1]. 0 = expression only, 1 = spatial only.\n    n_pcs: Number of PCA components for expression.\n    seed: Random seed.\n\nReturns:\n    SpatialClusterResult with labels and metadata.",
+        "args": [
+          "expression",
+          "coordinates",
+          "n_clusters",
+          "method"
+        ]
+      },
+      "clustering.spatial_domains": {
+        "doc": "Identify spatial domains using a BayesSpace-inspired iterative approach.\n\nAlgorithm:\n1. PCA on expression data.\n2. Initialize domains via KMeans on PCA + spatial features.\n3. Iteratively refine assignments by incorporating spatial neighbors:\n   a. For each spot, compute mean expression profile of its spatial neighbors.\n   b. Blend spot's own profile with its neighborhood mean.\n   c. Re-cluster the blended profiles.\n4. Repeat until convergence or max_iterations.\n\nThis is a simplified version of the BayesSpace spatial smoothing approach,\nusing iterative neighborhood averaging instead of full MCMC.\n\nArgs:\n    expression: Expression matrix (n x genes), dense or sparse.\n    coordinates: Spatial coordinates (n x 2).\n    n_domains: Number of spatial domains. If None, auto-selects via gap statistic heuristic.\n    n_pcs: Number of PCA components.\n    n_neighbors: Spatial neighbors for smoothing.\n    max_iterations: Maximum refinement iterations.\n    seed: Random seed.\n\nReturns:\n    SpatialClusterResult with domain labels.",
+        "args": [
+          "expression",
+          "coordinates",
+          "n_domains"
+        ]
+      },
+      "deconvolution.create_reference_profiles": {
+        "doc": "Build cell type reference expression profiles from scRNA-seq data.\n\nFor each cell type, computes the average (or median) expression profile\nacross all cells of that type.\n\nArgs:\n    scrna_data: scRNA-seq expression matrix (n_cells x n_genes), dense or sparse.\n    cell_type_labels: Array or list of cell type labels (length n_cells).\n    gene_names: List of gene names (length n_genes). If None, uses indices.\n    method: Aggregation method (\"mean\" or \"median\").\n\nReturns:\n    Tuple of (reference_profiles, cell_type_names, gene_names) where\n    reference_profiles is (n_types x n_genes).",
+        "args": [
+          "scrna_data",
+          "cell_type_labels"
+        ]
+      },
+      "deconvolution.nnls_deconvolution": {
+        "doc": "Non-negative least squares deconvolution for a single spot or batch.\n\nSolves: min ||bulk - reference^T * x||^2  subject to x >= 0\n\nFor each spot, finds the non-negative weights that best reconstruct the\nobserved expression from the reference cell type signatures.\n\nArgs:\n    bulk_expression: Expression vector(s). If 1D (n_genes,), single spot.\n        If 2D (n_spots x n_genes), batch of spots.\n    reference_signatures: Reference profiles matrix (n_types x n_genes).\n\nReturns:\n    Tuple of (weights, residuals). weights has shape matching input:\n    (n_types,) for single spot or (n_spots, n_types) for batch.\n    residuals is the per-spot/vector fitting residual norm.\n\nRaises:\n    ImportError: If scipy is not installed.",
+        "args": [
+          "bulk_expression",
+          "reference_signatures"
+        ]
+      },
+      "deconvolution.estimate_cell_fractions": {
+        "doc": "Normalize deconvolution weights to cell type fractions (proportions summing to 1).\n\nArgs:\n    deconvolution_result: Either a DeconvolutionResult object or a raw weights\n        matrix (n_spots x n_types).\n\nReturns:\n    Normalized fractions array (n_spots x n_types) where each row sums to 1.",
+        "args": [
+          "deconvolution_result"
+        ]
+      },
+      "deconvolution.enrichment_score": {
+        "doc": "Compute cell type enrichment score per spot.\n\nEnrichment is the log2 fold change of observed fractions vs expected\n(background) fractions, with a pseudocount for numerical stability.\n\nenrichment = log2((observed + epsilon) / (expected + epsilon))\n\nArgs:\n    observed: Observed cell type fractions (n_spots x n_types) or (n_types,).\n    expected: Expected (background) cell type fractions (n_types,).\n\nReturns:\n    Enrichment scores with same shape as observed.",
+        "args": [
+          "observed",
+          "expected"
+        ]
+      },
+      "deconvolution.deconvolve_spots": {
+        "doc": "Deconvolve spatial spots to estimate cell type composition.\n\nSupports multiple deconvolution methods:\n- \"nnls\": Non-negative least squares (fast, robust).\n- \"nmf\": Non-negative matrix factorization based approach.\n\nWhen gene_names are provided for both spatial and reference data, the function\nautomatically intersects to shared genes.\n\nArgs:\n    spatial_expression: Spatial expression matrix (n_spots x n_genes), dense or sparse.\n    reference_profiles: Reference cell type profiles (n_types x n_genes).\n    method: Deconvolution method (\"nnls\" or \"nmf\").\n    cell_type_names: Names of cell types (length n_types).\n    gene_names: Deprecated, use spatial_gene_names and reference_gene_names.\n    spatial_gene_names: Gene names for spatial data.\n    reference_gene_names: Gene names for reference profiles.\n    alpha: Regularization parameter (for NMF).\n\nReturns:\n    DeconvolutionResult with weights, fractions, and residuals.",
+        "args": [
+          "spatial_expression",
+          "reference_profiles",
+          "method"
+        ]
+      },
+      "neighborhood.neighborhood_enrichment": {
+        "doc": "Compute cell type neighborhood enrichment (co-localization analysis).\n\nFor each pair of cell types (A, B), counts how often type-A cells\nare neighbors of type-B cells compared to a random permutation baseline.\nReturns Z-score enrichment: positive means co-localized, negative means avoided.\n\nAlgorithm:\n1. Build spatial neighbor graph (KNN or radius-based).\n2. Count observed pairwise type interactions.\n3. Permute cell type labels N times to build null distribution.\n4. Compute Z-score: (observed - mean_null) / std_null.\n\nArgs:\n    cell_types: Array of cell type labels (length n).\n    coordinates: Spatial coordinates (n x 2).\n    radius: If specified, use radius-based neighbors instead of KNN.\n    n_neighbors: Number of neighbors for KNN (ignored if radius is set).\n    n_permutations: Number of permutations for null distribution.\n    seed: Random seed.\n\nReturns:\n    NeighborhoodEnrichmentResult with enrichment matrix and statistics.",
+        "args": [
+          "cell_types",
+          "coordinates",
+          "radius"
+        ]
+      },
+      "neighborhood.compute_interaction_matrix": {
+        "doc": "Compute pairwise cell type interaction scores from a spatial graph.\n\nFor each pair of cell types, computes the interaction score as the number\nof edges between them, optionally normalized by the product of their\nfrequencies (to account for abundance).\n\nArgs:\n    cell_types: Array of cell type labels (length n).\n    spatial_graph: Sparse adjacency matrix (n x n).\n    normalize_by_type_frequency: If True, normalize by expected frequency.\n\nReturns:\n    InteractionResult with interaction matrix.",
+        "args": [
+          "cell_types",
+          "spatial_graph"
+        ]
+      },
+      "neighborhood.ligand_receptor_spatial": {
+        "doc": "Spatial ligand-receptor interaction analysis.\n\nFor each ligand-receptor pair, computes a spatial interaction score\nthat measures the co-expression of the ligand in one spot and the\nreceptor in neighboring spots.\n\nScore for pair (L, R) = mean over all spots i of:\n    expression(L, i) * mean(expression(R, neighbors(i)))\n\nArgs:\n    expression: Expression matrix (n_spots x n_genes), dense or sparse.\n    lr_pairs: List of (ligand_gene, receptor_gene) tuples.\n    coordinates: Spatial coordinates (n_spots x 2).\n    gene_names: Gene name list (length n_genes) to map names to columns.\n    radius: Radius for neighbor definition (if None, uses KNN).\n    n_neighbors: Number of neighbors for KNN.\n\nReturns:\n    Dictionary with keys:\n        - \"scores\": Dict mapping (ligand, receptor) -> float interaction score.\n        - \"per_spot_scores\": Dict mapping (ligand, receptor) -> array of per-spot scores.\n        - \"n_pairs_tested\": Number of pairs with both genes present.",
+        "args": [
+          "expression",
+          "lr_pairs",
+          "coordinates"
+        ]
+      },
+      "neighborhood.niche_detection": {
+        "doc": "Identify cellular niches based on local cell type composition.\n\nAlgorithm:\n1. Build spatial neighbor graph.\n2. For each cell, compute the cell type composition of its neighborhood.\n3. Cluster these neighborhood composition vectors to define niches.\n\nArgs:\n    cell_types: Array of cell type labels (length n).\n    coordinates: Spatial coordinates (n x 2).\n    n_niches: Number of niches to identify.\n    n_neighbors: Number of spatial neighbors to consider.\n    seed: Random seed.\n\nReturns:\n    NicheResult with niche labels and compositions.",
+        "args": [
+          "cell_types",
+          "coordinates",
+          "n_niches"
+        ]
+      },
+      "neighborhood.ripley_k": {
+        "doc": "Compute Ripley's K function for spatial point pattern analysis.\n\nRipley's K(r) counts the expected number of points within distance r\nof a typical point, normalized by intensity. Under Complete Spatial\nRandomness (CSR), K(r) = pi * r^2.\n\nAlso computes Besag's L-function: L(r) = sqrt(K(r)/pi) - r,\nwhich is centered at 0 under CSR. Positive L(r) indicates clustering,\nnegative indicates regularity/inhibition.\n\nUses Ripley's isotropic edge correction.\n\nArgs:\n    points: Point coordinates (n x 2).\n    radii: Array of radii at which to evaluate K.\n    area: Total study area (e.g., bounding box area).\n    n_simulations: Number of CSR simulations for confidence envelope.\n    seed: Random seed.\n\nReturns:\n    RipleyKResult with K values, L values, and CSR envelope.",
+        "args": [
+          "points",
+          "radii",
+          "area"
+        ]
+      },
+      "cell_communication.compute_ligand_receptor_interactions": {
+        "doc": "Compute ligand-receptor interaction scores between cell types.\n\nFor each ligand-receptor pair, computes an interaction score between\nevery source (ligand-expressing) and target (receptor-expressing) cell\ntype pair. The score is the product of mean ligand expression in the\nsource type and mean receptor expression in the target type, normalized\nby background expression.\n\nStatistical significance is assessed by permutation testing: cell type\nlabels are shuffled to build a null distribution and a p-value is\ncomputed for each interaction.\n\nArgs:\n    expression: Expression matrix (n_cells x n_genes) as a numpy array\n        or list of lists.\n    cell_types: Cell type label for each cell (length n_cells).\n    lr_database: Ligand-receptor pair database. Dictionary with key\n        ``\"pairs\"`` mapping to a list of dicts, each with ``\"ligand\"``\n        (gene name) and ``\"receptor\"`` (gene name). If None, uses the\n        built-in database from ``default_lr_database()``.\n\nReturns:\n    Dictionary with keys:\n        - ``interactions``: List of interaction dicts, each containing\n          ``ligand``, ``receptor``, ``source_type``, ``target_type``,\n          ``score`` (float), ``p_value`` (float).\n        - ``n_significant``: Number of interactions with p < 0.05.\n        - ``summary``: Dictionary with total pairs tested, unique\n          cell types, unique ligands, unique receptors.\n\nRaises:\n    ImportError: If numpy is not available.",
+        "args": [
+          "expression",
+          "cell_types",
+          "lr_database"
+        ]
+      },
+      "cell_communication.spatial_interaction_score": {
+        "doc": "Score cell-cell communication considering spatial proximity.\n\nOnly counts ligand-receptor interactions between cells that are\nwithin ``max_distance`` of each other. Applies an exponential distance\ndecay to weight interactions by proximity.\n\nArgs:\n    expression: Expression matrix (n_cells x n_genes).\n    coordinates: (x, y) coordinates for each cell.\n    lr_pairs: List of ligand-receptor pair dicts, each with\n        ``\"ligand_idx\"`` (int, gene index) and ``\"receptor_idx\"``\n        (int, gene index).\n    max_distance: Maximum Euclidean distance between cells for an\n        interaction to be considered.\n\nReturns:\n    Dictionary with keys:\n        - ``spatial_scores``: List of dicts with ``ligand_idx``,\n          ``receptor_idx``, ``score``, ``n_interacting_pairs``.\n        - ``distance_decay``: The decay constant used (1 / max_distance).\n        - ``significant_pairs``: Number of pairs with score > 0.\n\nRaises:\n    ImportError: If numpy is not available.",
+        "args": [
+          "expression",
+          "coordinates",
+          "lr_pairs",
+          "max_distance"
+        ]
+      },
+      "cell_communication.build_communication_network": {
+        "doc": "Build cell-cell communication network from interaction results.\n\nConstructs a directed graph where nodes are cell types and edges\nrepresent significant ligand-receptor interactions. Edge weights are\nthe sum of interaction scores between each pair of cell types.\n\nArgs:\n    interactions: List of interaction dicts as returned by\n        ``compute_ligand_receptor_interactions``. Each must have\n        ``source_type``, ``target_type``, ``score``.\n    min_score: Minimum interaction score to include an edge.\n\nReturns:\n    Dictionary with keys:\n        - ``adjacency_matrix``: 2D list (n_types x n_types) of edge\n          weights.\n        - ``cell_types``: Sorted list of unique cell type names.\n        - ``edge_list``: List of dicts with ``source``, ``target``,\n          ``weight``, ``n_interactions``.\n        - ``hub_types``: List of cell types with highest total outgoing\n          interaction weight (top 3).\n        - ``pathway_summary``: Dictionary summarizing interactions by\n          ligand-receptor pair.\n\nRaises:\n    ValueError: If interactions list is empty.",
+        "args": [
+          "interactions",
+          "min_score"
+        ]
+      },
+      "cell_communication.default_lr_database": {
+        "doc": "Return built-in ligand-receptor pair database.\n\nProvides a curated subset of approximately 200 ligand-receptor pairs\ncovering major signaling pathways including chemokines, growth factors,\nWnt, Notch, Hedgehog, TGF-beta, interleukins, and adhesion molecules.\nGene names follow HGNC nomenclature.\n\nReturns:\n    Dictionary with key ``\"pairs\"`` containing a list of dicts, each\n    with ``\"ligand\"`` and ``\"receptor\"`` gene name strings.",
+        "args": []
+      },
+      "cell_communication.communication_pattern_analysis": {
+        "doc": "Identify communication patterns using NMF on interaction matrix.\n\nDecomposes the cell-type interaction matrix into a small number of\ncommunication patterns using non-negative matrix factorization. Each\npattern represents a group of correlated ligand-receptor interactions.\n\nArgs:\n    interactions: Interaction results from\n        ``compute_ligand_receptor_interactions``. Must contain\n        ``interactions`` list with ``source_type``, ``target_type``,\n        ``ligand``, ``receptor``, ``score``.\n    n_patterns: Number of communication patterns to discover.\n\nReturns:\n    Dictionary with keys:\n        - ``patterns``: 2D list (n_patterns x n_lr_pairs) of pattern\n          weights.\n        - ``pattern_loadings``: 2D list (n_type_pairs x n_patterns) of\n          how strongly each cell-type pair participates in each pattern.\n        - ``dominant_pathways_per_pattern``: Dictionary mapping pattern\n          index to list of top ligand-receptor pairs.\n\nRaises:\n    ImportError: If numpy is not available.",
+        "args": [
+          "interactions",
+          "n_patterns"
+        ]
+      },
+      "spatial_deconvolution.deconvolve_spots": {
+        "doc": "Deconvolve spatial spots into cell type proportions.\n\nEstimates the fraction of each cell type present in every spatial spot\nby solving a constrained optimization problem. For NNLS, solves\n``min ||counts - R @ w||^2`` subject to ``w >= 0`` for each spot, where\nR is the reference profile matrix.\n\nFor the regression method, uses ordinary least squares with negative\nvalues clipped to zero and results renormalized.\n\nArgs:\n    spatial_counts: Expression count matrix (n_spots x n_genes). Can be a\n        numpy array, list of lists, or any array-like.\n    reference_profiles: Dictionary mapping cell type names to their\n        reference expression profiles (each a list of length n_genes).\n    method: Deconvolution algorithm. One of ``\"nnls\"`` (non-negative least\n        squares, recommended) or ``\"regression\"`` (clipped OLS).\n\nReturns:\n    Dictionary with keys:\n        - ``proportions_matrix``: Array of shape (n_spots, n_types) with\n          normalized cell type proportions (rows sum to 1).\n        - ``cell_types``: List of cell type names in column order.\n        - ``confidence_scores``: Per-spot fitting confidence (1 - normalized\n          residual), shape (n_spots,).\n        - ``spots_summary``: Dictionary with ``n_spots``, ``n_types``,\n          ``mean_confidence``, ``dominant_types`` count per cell type.\n\nRaises:\n    ImportError: If numpy is not available.\n    ValueError: If method is unrecognized or dimensions mismatch.",
+        "args": [
+          "spatial_counts",
+          "reference_profiles",
+          "method"
+        ]
+      },
+      "spatial_deconvolution.build_reference_profiles": {
+        "doc": "Build cell-type reference profiles from single-cell data.\n\nComputes per-cell-type mean expression profiles and selects top marker\ngenes per type based on fold-change over other types. The returned\nprofiles are restricted to the union of selected marker genes for\ndimensionality reduction.\n\nArgs:\n    sc_expression: Single-cell expression matrix (n_cells x n_genes).\n        Can be dense array or list of lists.\n    cell_types: Cell type labels for each cell (length n_cells).\n    n_markers: Number of top marker genes to select per cell type.\n        The final profile uses the union of all selected markers.\n\nReturns:\n    Dictionary with keys:\n        - ``profiles``: Dictionary mapping cell type name to expression\n          profile (list of floats, length = number of selected genes).\n        - ``gene_indices``: Indices of selected marker genes in the\n          original gene space.\n        - ``n_markers_per_type``: Number of markers selected per type.\n        - ``unique_types``: Sorted list of unique cell types.\n\nRaises:\n    ImportError: If numpy is not available.\n    ValueError: If cell_types length does not match n_cells.",
+        "args": [
+          "sc_expression",
+          "cell_types",
+          "n_markers"
+        ]
+      },
+      "spatial_deconvolution.spatial_cell_type_mapping": {
+        "doc": "Map cell type proportions to spatial coordinates for visualization.\n\nAssigns a dominant cell type to each spot and computes the mixing entropy\n(Shannon entropy of the proportion vector) to quantify how mixed each\nspot is between cell types.\n\nArgs:\n    proportions: Cell type proportions matrix (n_spots x n_types).\n        Rows should sum to approximately 1.\n    coordinates: List of (x, y) coordinate tuples for each spot.\n    cell_types: List of cell type names corresponding to columns.\n\nReturns:\n    Dictionary with keys:\n        - ``spatial_map``: List of dicts, one per spot, each containing\n          ``x``, ``y``, ``dominant_type``, ``proportions`` dict, ``entropy``.\n        - ``dominant_type_per_spot``: List of dominant cell type names.\n        - ``mixing_entropy``: Array of per-spot Shannon entropy values.\n\nRaises:\n    ImportError: If numpy is not available.\n    ValueError: If dimensions are inconsistent.",
+        "args": [
+          "proportions",
+          "coordinates",
+          "cell_types"
+        ]
+      },
+      "spatial_deconvolution.validate_deconvolution": {
+        "doc": "Validate spatial deconvolution using marker gene expression agreement.\n\nChecks consistency of estimated cell type proportions against known marker\ngene expression. For each cell type with known markers, computes the\ncorrelation between estimated proportion and the mean expression of its\nmarkers across spots.\n\nWhen no marker information is provided, performs internal consistency\nchecks: proportion normalization, confidence distribution, and dominant\ntype diversity.\n\nArgs:\n    estimated: Deconvolution result dictionary as returned by\n        ``deconvolve_spots``. Must contain ``proportions_matrix``,\n        ``cell_types``, and ``confidence_scores``.\n    spatial_markers: Optional dictionary mapping cell type names to lists\n        of marker gene names. Used for external validation against\n        observed marker expression.\n\nReturns:\n    Dictionary with keys:\n        - ``normalization_check``: Whether all rows sum to ~1.\n        - ``mean_confidence``: Mean confidence across spots.\n        - ``confidence_distribution``: Dictionary with ``min``, ``max``,\n          ``median``, ``std`` of confidence scores.\n        - ``type_diversity``: Number of distinct dominant types observed.\n        - ``marker_correlations``: Dictionary mapping cell type to Pearson\n          correlation with marker expression (only if spatial_markers\n          provided and numpy available).\n        - ``overall_validity``: Boolean indicating if basic checks pass.\n\nRaises:\n    ImportError: If numpy is not available.",
+        "args": [
+          "estimated",
+          "spatial_markers"
+        ]
+      },
+      "spatial_deconvolution.niche_identification": {
+        "doc": "Identify tissue niches from cell type composition and spatial proximity.\n\nGroups spatial spots into niches (neighborhoods with similar cell type\ncomposition) using k-means clustering on the proportions matrix, weighted\nby spatial proximity. Spatial coherence is measured as the fraction of\neach spot's spatial neighbors that share the same niche label.\n\nArgs:\n    proportions: Cell type proportions matrix (n_spots x n_types).\n    coordinates: List of (x, y) coordinate tuples for each spot.\n    n_niches: Number of niches to identify.\n\nReturns:\n    Dictionary with keys:\n        - ``niche_labels``: Array of niche assignments (length n_spots),\n          integers from 0 to n_niches-1.\n        - ``niche_compositions``: Dictionary mapping niche label to mean\n          cell type proportion vector.\n        - ``spatial_coherence``: Float between 0 and 1 indicating how\n          spatially contiguous the niches are.\n\nRaises:\n    ImportError: If numpy is not available.\n    ValueError: If n_niches exceeds number of spots.",
+        "args": [
+          "proportions",
+          "coordinates",
+          "n_niches"
+        ]
+      },
+      "scrna_mapping.correlation_mapping": {
+        "doc": "Correlation-based mapping of spatial spots to cell type profiles.\n\nFor each spatial spot, computes the correlation between its expression\nvector and each reference cell type profile, then assigns the most\ncorrelated type.\n\nArgs:\n    spatial_expression: Spatial expression matrix (n_spots x n_genes).\n    scrna_profiles: Reference cell type profiles (n_types x n_genes).\n        Each row is the mean expression for one cell type.\n    cell_type_names: Names of cell types. If None, uses indices.\n    correlation_method: \"pearson\" or \"spearman\".\n\nReturns:\n    MappingResult with predicted labels and probabilities.",
+        "args": [
+          "spatial_expression",
+          "scrna_profiles"
+        ]
+      },
+      "scrna_mapping.anchor_based_transfer": {
+        "doc": "Anchor-based label transfer from scRNA-seq to spatial data.\n\nInspired by Seurat's anchor-based integration approach:\n1. Project both datasets into shared PCA space using shared genes.\n2. Find mutual nearest neighbors (MNNs) as anchors between datasets.\n3. Transfer labels through anchor-weighted voting.\n\nIf pre-computed anchors are provided (as index pairs), uses those directly.\nOtherwise, computes MNN anchors.\n\nArgs:\n    spatial_data: Spatial expression matrix (n_spots x n_spatial_genes).\n    scrna_data: scRNA-seq expression matrix (n_cells x n_scrna_genes).\n    anchors: Either:\n        - Array of (spatial_idx, scrna_idx) pairs, shape (n_anchors, 2).\n        - None to auto-compute anchors via MNN.\n    scrna_labels: Cell type labels for scRNA-seq cells (length n_cells).\n        Required for label transfer.\n    cell_type_names: List of possible cell types.\n    spatial_genes: Gene names for spatial data.\n    scrna_genes: Gene names for scRNA-seq data.\n    n_pcs: Number of PCA components for embedding.\n    k_anchor: Number of nearest neighbors for MNN anchor finding.\n    seed: Random seed.\n\nReturns:\n    MappingResult with transferred labels.",
+        "args": [
+          "spatial_data",
+          "scrna_data",
+          "anchors"
+        ]
+      },
+      "scrna_mapping.map_scrna_to_spatial": {
+        "doc": "Map scRNA-seq cell type annotations to spatial spots.\n\nUnified interface for label transfer from scRNA-seq reference to\nspatial transcriptomics data.\n\nArgs:\n    scrna_data: scRNA-seq expression matrix (n_cells x n_genes).\n    spatial_data: Spatial expression matrix (n_spots x n_genes).\n    method: Mapping method (\"correlation\" or \"anchor\").\n    scrna_labels: Cell type labels for scRNA-seq cells.\n    scrna_genes: Gene names for scRNA-seq data.\n    spatial_genes: Gene names for spatial data.\n    cell_type_names: List of cell type names.\n    **kwargs: Additional arguments passed to the specific method.\n\nReturns:\n    MappingResult with predicted spatial labels.",
+        "args": [
+          "scrna_data",
+          "spatial_data",
+          "method"
+        ]
+      },
+      "scrna_mapping.impute_spatial_genes": {
+        "doc": "Impute unmeasured genes in spatial data using scRNA-seq reference.\n\nFor genes not present in the spatial panel but measured in scRNA-seq:\n1. Project both datasets into shared PCA space (using overlapping genes).\n2. For each spatial spot, find K nearest scRNA-seq cells in PCA space.\n3. Impute target gene expression as weighted average of neighbor values.\n\nArgs:\n    spatial_data: Spatial expression matrix (n_spots x n_spatial_genes).\n    scrna_data: scRNA-seq expression matrix (n_cells x n_scrna_genes).\n    genes: List of gene names to impute (must be present in scrna_genes).\n    spatial_genes: Gene names for spatial data.\n    scrna_genes: Gene names for scRNA-seq data.\n    n_neighbors: Number of scRNA-seq neighbors for imputation.\n    n_pcs: Number of PCA components.\n    seed: Random seed.\n\nReturns:\n    ImputationResult with imputed expression for requested genes.",
+        "args": [
+          "spatial_data",
+          "scrna_data",
+          "genes"
+        ]
+      },
+      "merfish.parse_cell_metadata": {
+        "doc": "Parse MERFISH cell metadata CSV file.\n\nReads cell centroid positions, volumes, FOVs, and any additional columns.\nThe file should have columns including: cell_id (or CellID), center_x, center_y\n(or x, y), and optionally center_z, volume, fov.\n\nArgs:\n    metadata_file: Path to cell_metadata.csv.\n\nReturns:\n    List of CellMetadata records.\n\nRaises:\n    FileNotFoundError: If the metadata file does not exist.\n    ValueError: If required columns are missing.",
+        "args": [
+          "metadata_file"
+        ]
+      },
+      "merfish.load_transcript_spots": {
+        "doc": "Load individual transcript spot coordinates from a MERFISH detected transcripts file.\n\nThe file should have columns: gene, x (or global_x), y (or global_y),\nand optionally z, cell_id, quality.\n\nArgs:\n    spots_file: Path to detected_transcripts.csv.\n\nReturns:\n    List of TranscriptSpot records.\n\nRaises:\n    FileNotFoundError: If the spots file does not exist.",
+        "args": [
+          "spots_file"
+        ]
+      },
+      "merfish.aggregate_to_cells": {
+        "doc": "Aggregate individual transcript spots to cell-level expression counts.\n\nFor each cell, counts the number of transcripts per gene that fall within\nthe cell's assignment. If transcripts have pre-assigned cell_id, uses that;\notherwise uses nearest-centroid assignment.\n\nArgs:\n    transcript_spots: List of TranscriptSpot records.\n    cell_boundaries: List of CellMetadata records (used for cell IDs and positions).\n    unassigned_label: Label for unassigned transcripts (excluded from output).\n\nReturns:\n    Tuple of (expression_matrix, cell_ids, gene_names) where expression_matrix\n    is a numpy array of shape (n_cells, n_genes) with integer counts.\n\nRaises:\n    ImportError: If numpy is not installed.",
+        "args": [
+          "transcript_spots",
+          "cell_boundaries"
+        ]
+      },
+      "merfish.load_merfish": {
+        "doc": "Load a complete MERFISH dataset from a directory.\n\nExpects:\n    path/\n        cell_by_gene.csv: Cell-level expression matrix (cells as rows, genes as columns).\n        cell_metadata.csv: Cell positions and metadata.\n        detected_transcripts.csv (optional): Per-transcript coordinates.\n\nArgs:\n    path: Path to the MERFISH output directory.\n    load_transcripts: If True, also load individual transcript spots.\n\nReturns:\n    MERFISHDataset with expression, coordinates, and metadata.\n\nRaises:\n    FileNotFoundError: If required files are missing.\n    ImportError: If numpy is not installed.",
+        "args": [
+          "path"
+        ]
+      },
+      "visium.read_tissue_positions": {
+        "doc": "Parse a Visium tissue_positions.csv file.\n\nSupports both Space Ranger v1 (tissue_positions_list.csv, no header)\nand v2 (tissue_positions.csv, with header) formats.\n\nArgs:\n    positions_file: Path to tissue_positions.csv or tissue_positions_list.csv.\n\nReturns:\n    List of TissuePosition records.\n\nRaises:\n    FileNotFoundError: If the positions file does not exist.\n    ValueError: If the file format is unrecognized.",
+        "args": [
+          "positions_file"
+        ]
+      },
+      "visium.read_spatial_image": {
+        "doc": "Load an H&E tissue image as a numpy array.\n\nArgs:\n    image_path: Path to the tissue image (PNG/JPEG).\n\nReturns:\n    Numpy array of shape (height, width, channels) with values in [0, 255] uint8.\n\nRaises:\n    FileNotFoundError: If image file does not exist.\n    ImportError: If Pillow (PIL) is not installed.",
+        "args": [
+          "image_path"
+        ]
+      },
+      "visium.filter_tissue_spots": {
+        "doc": "Filter tissue position records to keep only spots overlapping tissue.\n\nArgs:\n    positions: List of TissuePosition records.\n    in_tissue_only: If True, keep only spots with in_tissue=True.\n        If False, return all positions unchanged.\n\nReturns:\n    Filtered list of TissuePosition records.",
+        "args": [
+          "positions",
+          "in_tissue_only"
+        ]
+      },
+      "visium.load_visium": {
+        "doc": "Load a 10x Visium Spatial Gene Expression dataset.\n\nExpects the standard Space Ranger output directory structure:\n    path/\n        filtered_feature_bc_matrix/ (or filtered_feature_bc_matrix.h5)\n        spatial/\n            tissue_positions_list.csv (or tissue_positions.csv)\n            tissue_hires_image.png\n            tissue_lowres_image.png\n            scalefactors_json.json\n\nArgs:\n    path: Path to the Space Ranger output directory.\n    in_tissue_only: If True, keep only spots overlapping tissue.\n    load_image: If True, load the tissue image.\n    image_resolution: Which resolution image to load (\"hires\" or \"lowres\").\n\nReturns:\n    SpatialDataset with expression matrix, coordinates, and optionally image.\n\nRaises:\n    FileNotFoundError: If required files are missing.",
+        "args": [
+          "path"
+        ]
+      },
+      "visium.create_spatial_dataset": {
+        "doc": "Create a unified SpatialDataset from components.\n\nArgs:\n    matrix: Expression matrix (spots x genes) as numpy array or scipy sparse.\n    positions: List of TissuePosition records (one per row in matrix).\n    image: Optional tissue image array.\n    gene_names: List of gene names. Defaults to G0, G1, ...\n    gene_ids: List of gene IDs.\n    scale_factors: Optional scale factor dictionary.\n    platform: Originating platform name.\n\nReturns:\n    SpatialDataset instance.",
+        "args": [
+          "matrix",
+          "positions",
+          "image",
+          "gene_names",
+          "gene_ids",
+          "scale_factors",
+          "platform"
+        ]
+      },
+      "xenium.read_cell_features": {
+        "doc": "Read a Xenium cell-level feature matrix.\n\nSupports both MEX directory format and HDF5 format.\n\nArgs:\n    feature_matrix_path: Path to cell_feature_matrix/ directory or .h5 file.\n\nReturns:\n    Tuple of (expression_matrix, cell_ids, gene_names, gene_ids).\n    Matrix is (n_cells, n_genes) in CSR sparse format.\n\nRaises:\n    FileNotFoundError: If the path does not exist.\n    ImportError: If required dependencies are missing.",
+        "args": [
+          "feature_matrix_path"
+        ]
+      },
+      "xenium.read_transcripts": {
+        "doc": "Read per-transcript coordinates from a Xenium transcripts file.\n\nArgs:\n    transcripts_path: Path to transcripts.csv or transcripts.csv.gz.\n    min_quality: Minimum Phred quality score to keep (default 20 = Q20).\n\nReturns:\n    List of XeniumTranscript records passing the quality filter.\n\nRaises:\n    FileNotFoundError: If the transcripts file does not exist.",
+        "args": [
+          "transcripts_path"
+        ]
+      },
+      "xenium.load_cell_boundaries": {
+        "doc": "Load cell segmentation polygon boundaries.\n\nSupports CSV/CSV.GZ format where each row has cell_id, vertex_x, vertex_y,\nwith multiple rows per cell forming a polygon.\n\nArgs:\n    boundaries_path: Path to cell_boundaries.csv(.gz) or cell_boundaries.parquet.\n\nReturns:\n    List of CellBoundary records with polygon vertices.\n\nRaises:\n    FileNotFoundError: If the boundaries file does not exist.",
+        "args": [
+          "boundaries_path"
+        ]
+      },
+      "xenium.load_xenium": {
+        "doc": "Load a complete 10x Xenium dataset from a directory.\n\nExpects the Xenium Ranger output structure:\n    path/\n        cell_feature_matrix/ (or cell_feature_matrix.h5)\n        cells.csv.gz: Cell centroid positions\n        transcripts.csv.gz (optional): Per-transcript coordinates\n        cell_boundaries.csv.gz (optional): Cell polygon boundaries\n\nArgs:\n    path: Path to the Xenium output directory.\n    load_transcripts: If True, load individual transcript coordinates.\n    load_boundaries: If True, load cell segmentation boundaries.\n    min_transcript_quality: Minimum quality for transcript filtering.\n\nReturns:\n    XeniumDataset with expression matrix, coordinates, and optional extras.\n\nRaises:\n    FileNotFoundError: If required files are missing.",
+        "args": [
+          "path"
+        ]
+      },
+      "identification.identify_niches": {
+        "doc": "Identify tissue niches from local cell type composition.\n\n1. Build a neighborhood graph from spatial coordinates.\n2. Smooth cell type proportions over the spatial neighborhood.\n3. Cluster smoothed proportions using K-Means to define niches.\n4. Characterize each niche by its mean composition and diversity.\n\nArgs:\n    cell_type_proportions: 2D array (spots \u00d7 cell_types), rows sum to 1.\n    coordinates: 2D array (spots \u00d7 2) of spatial coordinates.\n    cell_type_names: Optional names for cell types.\n    n_niches: Number of niches to identify.\n    n_neighbors: Neighbors for spatial smoothing.\n    spatial_weight: Weight for spatial smoothing (0 = no smoothing, 1 = full).\n    random_state: Random seed.\n\nReturns:\n    NicheResult with niche assignments and characterizations.",
+        "args": [
+          "cell_type_proportions",
+          "coordinates",
+          "cell_type_names",
+          "n_niches",
+          "n_neighbors",
+          "spatial_weight",
+          "random_state"
+        ]
+      },
+      "plots.plot_spatial_scatter": {
+        "doc": "Create a spatial scatter plot colored by continuous or categorical values.\n\nArgs:\n    coordinates: Spatial coordinates (n x 2).\n    values: Values for coloring (length n). Can be numeric or categorical.\n    output_path: Path to save the plot image.\n    cmap: Matplotlib colormap name.\n    title: Plot title.\n    point_size: Scatter point size.\n    alpha: Point transparency.\n    figsize: Figure dimensions (width, height) in inches.\n    colorbar_label: Label for the colorbar.\n    vmin: Minimum value for color scale.\n    vmax: Maximum value for color scale.\n\nReturns:\n    Matplotlib Figure object.",
+        "args": [
+          "coordinates",
+          "values",
+          "output_path"
+        ]
+      },
+      "plots.plot_tissue_overlay": {
+        "doc": "Overlay expression values on a tissue H&E image.\n\nArgs:\n    coordinates: Spatial coordinates (n x 2) in pixel space.\n    values: Expression values or cluster labels (length n).\n    tissue_image: Tissue image array (H, W, C).\n    output_path: Path to save the plot.\n    cmap: Colormap for expression overlay.\n    title: Plot title.\n    point_size: Scatter point size.\n    alpha: Overlay transparency.\n    figsize: Figure dimensions.\n    scale_factor: Scale factor to convert coordinates to image pixel space.\n\nReturns:\n    Matplotlib Figure object.",
+        "args": [
+          "coordinates",
+          "values",
+          "tissue_image",
+          "output_path"
+        ]
+      },
+      "plots.plot_gene_expression_map": {
+        "doc": "Plot spatial expression map for a single gene.\n\nArgs:\n    spatial_data: A SpatialDataset (or compatible object with .expression,\n        .coordinates, .gene_names attributes).\n    gene: Gene name to plot.\n    output_path: Path to save the plot.\n    cmap: Colormap for expression.\n    figsize: Figure dimensions.\n\nReturns:\n    Matplotlib Figure object.\n\nRaises:\n    ValueError: If gene is not found in the dataset.",
+        "args": [
+          "spatial_data",
+          "gene",
+          "output_path"
+        ]
+      },
+      "plots.plot_cell_type_map": {
+        "doc": "Plot spatial distribution of cell types.\n\nArgs:\n    spatial_data: A SpatialDataset or compatible object with .coordinates attribute.\n    cell_types: Cell type labels (length n_spots), string or integer.\n    output_path: Path to save the plot.\n    figsize: Figure dimensions.\n    point_size: Scatter point size.\n\nReturns:\n    Matplotlib Figure object.",
+        "args": [
+          "spatial_data",
+          "cell_types",
+          "output_path"
+        ]
+      },
+      "plots.plot_neighborhood_graph": {
+        "doc": "Plot the spatial neighborhood graph on tissue coordinates.\n\nDraws edges between connected spots and colors nodes by cluster or expression.\n\nArgs:\n    coordinates: Spatial coordinates (n x 2).\n    spatial_graph: Sparse adjacency matrix (n x n).\n    output_path: Path to save the plot.\n    node_colors: Values to color nodes by (length n). If None, uniform color.\n    title: Plot title.\n    figsize: Figure dimensions.\n    node_size: Node marker size.\n    edge_alpha: Edge line transparency.\n    edge_width: Edge line width.\n\nReturns:\n    Matplotlib Figure object.",
+        "args": [
+          "coordinates",
+          "spatial_graph",
+          "output_path"
+        ]
+      },
+      "plots.plot_interaction_heatmap": {
+        "doc": "Plot a cell type interaction heatmap.\n\nArgs:\n    interaction_matrix: Interaction scores (n_types x n_types).\n    output_path: Path to save the plot.\n    cell_type_names: Labels for rows/columns.\n    title: Plot title.\n    cmap: Colormap.\n    figsize: Figure dimensions.\n    annot: If True, annotate cells with values.\n\nReturns:\n    Matplotlib Figure object.",
+        "args": [
+          "interaction_matrix",
+          "output_path"
+        ]
+      },
+      "plots.plot_deconvolution_pie": {
+        "doc": "Plot pie charts per spatial spot showing cell type fractions.\n\nEach spot is represented as a small pie chart showing the estimated\ncell type proportions from deconvolution.\n\nArgs:\n    coordinates: Spatial coordinates (n_spots x 2).\n    fractions: Cell type fractions (n_spots x n_types), rows sum to 1.\n    output_path: Path to save the plot.\n    cell_type_names: Names of cell types.\n    title: Plot title.\n    figsize: Figure dimensions.\n    pie_radius: Radius of each pie chart. If None, auto-calculated.\n    min_fraction: Minimum fraction to display (smaller merged into \"other\").\n\nReturns:\n    Matplotlib Figure object.",
+        "args": [
+          "coordinates",
+          "fractions",
+          "output_path"
+        ]
+      },
+      "plots.plot_spatial_autocorrelation": {
+        "doc": "Plot LISA cluster map showing spatial autocorrelation patterns.\n\nColors spots by their LISA cluster classification:\nHH (red), LL (blue), HL (pink), LH (lightblue), NS (gray).\n\nArgs:\n    coordinates: Spatial coordinates (n x 2).\n    local_scores: Local Moran's I values (length n) or similar local statistic.\n    output_path: Path to save the plot.\n    cluster_labels: LISA cluster labels (\"HH\", \"LL\", \"HL\", \"LH\", \"NS\").\n        If None, uses local_scores as continuous values.\n    title: Plot title.\n    figsize: Figure dimensions.\n    point_size: Scatter point size.\n\nReturns:\n    Matplotlib Figure object.",
+        "args": [
+          "coordinates",
+          "local_scores",
+          "output_path"
+        ]
+      }
+    },
+    "classes": {
+      "autocorrelation.MoransIResult": {
+        "doc": "Result of Moran's I spatial autocorrelation test.\n\nAttributes:\n    I: Moran's I statistic. Range roughly [-1, 1].\n        Positive = positive spatial autocorrelation (similar values cluster).\n        Near 0 = random spatial pattern.\n        Negative = negative spatial autocorrelation (checkerboard pattern).\n    expected_I: Expected I under null hypothesis of no autocorrelation.\n    variance_I: Variance of I under normality assumption.\n    z_score: Standardized Z-score: (I - E[I]) / sqrt(Var[I]).\n    p_value: Two-sided p-value from normal approximation.\n    n: Number of observations."
+      },
+      "autocorrelation.GearyCResult": {
+        "doc": "Result of Geary's C spatial autocorrelation test.\n\nAttributes:\n    C: Geary's C statistic. Range [0, 2].\n        C < 1 = positive spatial autocorrelation.\n        C = 1 = no spatial autocorrelation.\n        C > 1 = negative spatial autocorrelation.\n    expected_C: Expected C under null hypothesis (= 1).\n    variance_C: Variance of C under normality assumption.\n    z_score: Standardized Z-score.\n    p_value: Two-sided p-value.\n    n: Number of observations."
+      },
+      "autocorrelation.LocalMoransResult": {
+        "doc": "Result of Local Moran's I (LISA) analysis.\n\nAttributes:\n    local_I: Local Moran's I values per observation (length n).\n    expected_I: Expected local I under null.\n    z_scores: Z-scores per observation.\n    p_values: P-values per observation.\n    cluster_labels: LISA cluster classification per observation:\n        \"HH\" = High-High (hot spot), \"LL\" = Low-Low (cold spot),\n        \"HL\" = High-Low (spatial outlier), \"LH\" = Low-High (spatial outlier),\n        \"NS\" = Not significant.\n    significance_level: Alpha level used for classification."
+      },
+      "autocorrelation.GetisOrdResult": {
+        "doc": "Result of Getis-Ord G* statistic analysis.\n\nAttributes:\n    g_star: G* statistic per observation (length n). Z-score scale.\n    p_values: P-values per observation.\n    hot_spots: Boolean mask for significant hot spots.\n    cold_spots: Boolean mask for significant cold spots.\n    significance_level: Alpha level used."
+      },
+      "autocorrelation.VariogramResult": {
+        "doc": "Result of spatial variogram/semivariogram analysis.\n\nAttributes:\n    bin_centers: Distance bin centers (length n_bins).\n    semivariance: Estimated semivariance at each bin.\n    n_pairs: Number of point pairs in each bin.\n    nugget: Estimated nugget (semivariance at distance 0).\n    sill: Estimated sill (plateau semivariance).\n    range_param: Estimated range (distance at which sill is reached)."
+      },
+      "clustering.SpatialClusterResult": {
+        "doc": "Result of spatial clustering.\n\nAttributes:\n    labels: Cluster label per spot/cell (integer array of length n).\n    n_clusters: Number of clusters found.\n    method: Clustering method used.\n    modularity: Modularity score (for graph-based methods).\n    spatial_graph: Adjacency matrix used for clustering.\n    metadata: Additional result metadata."
+      },
+      "deconvolution.DeconvolutionResult": {
+        "doc": "Result of cell type deconvolution.\n\nAttributes:\n    weights: Raw deconvolution weights matrix (n_spots x n_types).\n    fractions: Normalized cell type fractions (n_spots x n_types), rows sum to 1.\n    cell_type_names: List of cell type names.\n    residuals: Per-spot fitting residuals.\n    method: Deconvolution method used.\n    metadata: Additional result metadata."
+      },
+      "neighborhood.NeighborhoodEnrichmentResult": {
+        "doc": "Result of neighborhood enrichment analysis.\n\nAttributes:\n    enrichment_matrix: Enrichment Z-scores (n_types x n_types).\n        Positive = co-localized more than expected, negative = avoided.\n    count_matrix: Observed interaction counts (n_types x n_types).\n    expected_matrix: Expected interaction counts under random spatial arrangement.\n    p_values: P-values from permutation testing (n_types x n_types).\n    cell_type_names: List of cell type names."
+      },
+      "neighborhood.InteractionResult": {
+        "doc": "Result of pairwise cell type interaction analysis.\n\nAttributes:\n    interaction_matrix: Interaction scores (n_types x n_types).\n    cell_type_names: List of cell type names.\n    method: Scoring method used."
+      },
+      "neighborhood.NicheResult": {
+        "doc": "Result of cellular niche detection.\n\nAttributes:\n    niche_labels: Niche assignment per cell/spot (length n).\n    niche_compositions: Cell type composition per niche (n_niches x n_types).\n    n_niches: Number of niches found.\n    cell_type_names: List of cell type names."
+      },
+      "neighborhood.RipleyKResult": {
+        "doc": "Result of Ripley's K function analysis.\n\nAttributes:\n    radii: Array of evaluation radii.\n    k_values: K(r) values at each radius.\n    l_values: L(r) = sqrt(K(r)/pi) - r (Besag's L-function, centered).\n    csr_envelope_lower: Lower bound of CSR envelope (from simulations).\n    csr_envelope_upper: Upper bound of CSR envelope.\n    n_points: Number of points analyzed.\n    area: Study area."
+      },
+      "scrna_mapping.MappingResult": {
+        "doc": "Result of scRNA-seq to spatial mapping.\n\nAttributes:\n    predicted_labels: Predicted cell type label per spatial spot (length n_spots).\n    prediction_scores: Confidence score per spot (length n_spots).\n    label_probabilities: Probability matrix (n_spots x n_types) for each cell type.\n    cell_type_names: List of cell type names.\n    method: Mapping method used.\n    metadata: Additional result metadata."
+      },
+      "scrna_mapping.ImputationResult": {
+        "doc": "Result of spatial gene imputation.\n\nAttributes:\n    imputed_expression: Imputed expression matrix (n_spots x n_imputed_genes).\n    gene_names: Names of imputed genes.\n    confidence: Per-gene confidence scores.\n    method: Imputation method used."
+      },
+      "merfish.CellMetadata": {
+        "doc": "Metadata for a single MERFISH cell.\n\nAttributes:\n    cell_id: Unique cell identifier.\n    x: Cell centroid x-coordinate.\n    y: Cell centroid y-coordinate.\n    z: Cell centroid z-coordinate (layer/z-plane).\n    volume: Cell volume (in cubic microns).\n    fov: Field of view index.\n    extra: Additional metadata key-value pairs."
+      },
+      "merfish.TranscriptSpot": {
+        "doc": "A single detected transcript location.\n\nAttributes:\n    gene: Gene name.\n    x: Transcript x-coordinate.\n    y: Transcript y-coordinate.\n    z: Transcript z-coordinate.\n    cell_id: Cell assignment (if segmented), or empty.\n    quality: Detection quality/confidence score."
+      },
+      "merfish.MERFISHDataset": {
+        "doc": "Complete MERFISH spatial dataset.\n\nAttributes:\n    expression: Cell-by-gene expression matrix (numpy array, cells x genes).\n    coordinates: Cell centroid coordinates array of shape (n_cells, 2).\n    cell_ids: List of cell identifier strings.\n    gene_names: List of gene names.\n    cell_metadata: List of CellMetadata records.\n    transcript_spots: Optional list of individual TranscriptSpot records.\n    metadata: Additional dataset metadata."
+      },
+      "visium.TissuePosition": {
+        "doc": "A single Visium spot position on the tissue.\n\nAttributes:\n    barcode: Spot barcode string.\n    in_tissue: Whether the spot overlaps tissue (1) or not (0).\n    array_row: Row index in the Visium array grid.\n    array_col: Column index in the Visium array grid.\n    pixel_row: Row pixel coordinate in the full-resolution image.\n    pixel_col: Column pixel coordinate in the full-resolution image."
+      },
+      "visium.SpatialDataset": {
+        "doc": "Unified spatial transcriptomics dataset.\n\nAttributes:\n    expression: Gene expression matrix (spots x genes) as numpy array or scipy sparse.\n    coordinates: Spot coordinates array of shape (n_spots, 2) [row, col in pixels].\n    barcodes: List of spot barcodes.\n    gene_names: List of gene names/symbols.\n    gene_ids: List of gene IDs (e.g., Ensembl).\n    tissue_positions: Full TissuePosition records per spot.\n    image: Optional tissue image as numpy array (H, W, C).\n    scale_factors: Dictionary of Visium scale factors.\n    platform: Originating platform (visium, merfish, xenium).\n    metadata: Additional metadata dictionary."
+      },
+      "xenium.XeniumTranscript": {
+        "doc": "A single Xenium detected transcript.\n\nAttributes:\n    transcript_id: Unique transcript identifier.\n    gene: Gene name.\n    x: X-coordinate in microns.\n    y: Y-coordinate in microns.\n    z: Z-coordinate in microns.\n    cell_id: Assigned cell ID (0 or empty if unassigned).\n    quality_value: Phred-scaled quality score.\n    overlaps_nucleus: Whether the transcript overlaps a segmented nucleus."
+      },
+      "xenium.CellBoundary": {
+        "doc": "Polygon boundary for a single cell.\n\nAttributes:\n    cell_id: Unique cell identifier.\n    vertices: List of (x, y) coordinate tuples forming the polygon boundary."
+      },
+      "xenium.XeniumDataset": {
+        "doc": "Complete 10x Xenium spatial dataset.\n\nAttributes:\n    expression: Cell-by-gene expression matrix (numpy or scipy sparse).\n    coordinates: Cell centroid coordinates (n_cells, 2).\n    cell_ids: List of cell identifier strings.\n    gene_names: List of gene names.\n    gene_ids: List of gene IDs.\n    transcripts: Optional list of individual transcript records.\n    cell_boundaries: Optional list of cell boundary polygons.\n    metadata: Additional dataset metadata."
+      },
+      "identification.NicheResult": {
+        "doc": "Result of spatial niche identification.\n\nAttributes:\n    niche_labels: Per-spot niche assignment.\n    n_niches: Number of identified niches.\n    compositions: Per-niche mean cell type composition (niche \u00d7 cell_type).\n    cell_type_names: Names of cell types.\n    niche_sizes: Number of spots per niche.\n    niche_diversity: Shannon diversity of cell types within each niche."
+      }
+    }
+  },
+  "sv": {
+    "functions": {
+      "functional_impact.predict_functional_impact": {
+        "doc": "Predict the functional impact of a structural variant.\n\nIntegrates multiple lines of evidence to classify the functional\nconsequence of an SV:\n\n1. Gene overlap analysis (disrupted vs. duplicated genes)\n2. Dosage sensitivity of affected genes\n3. TAD boundary disruption\n4. Variant type-specific considerations (DEL vs DUP vs INV)\n5. Aggregate pathogenicity scoring\n\nArgs:\n    variant: Variant dictionary containing:\n        - 'chrom': Chromosome\n        - 'start': Start position\n        - 'end': End position\n        - 'sv_type': Type of SV (DEL, DUP, INV, TRA, INS)\n        - 'id': Optional variant identifier\n        - 'overlapping_genes': Optional pre-computed gene overlaps\n    gene_annotations: List of gene annotation dictionaries with:\n        - 'chrom': Chromosome\n        - 'start': Gene start\n        - 'end': Gene end\n        - 'name': Gene name\n        - 'is_coding': Whether gene is protein-coding (optional)\n    haploinsufficiency_db: Optional dictionary mapping gene names to\n        haploinsufficiency scores (0-1).\n    tad_boundaries: Optional list of TAD boundary dictionaries with\n        'chrom', 'start', 'end' keys.\n\nReturns:\n    FunctionalImpact object with comprehensive impact assessment.",
+        "args": [
+          "variant",
+          "gene_annotations",
+          "haploinsufficiency_db",
+          "tad_boundaries"
+        ]
+      },
+      "functional_impact.assess_dosage_sensitivity": {
+        "doc": "Assess dosage sensitivity of a gene.\n\nLooks up the gene in multiple dosage sensitivity databases and\nproduces a composite assessment. A gene is classified as\nhaploinsufficient if its HI score exceeds 0.5 or pLI exceeds 0.9.\n\nArgs:\n    gene: Gene name to look up.\n    haploinsufficiency_db: Dictionary mapping gene names to HI scores (0-1).\n    triplosensitivity_db: Dictionary mapping gene names to TS scores (0-1).\n    pli_db: Dictionary mapping gene names to pLI scores (0-1).\n    loeuf_db: Dictionary mapping gene names to LOEUF values.\n\nReturns:\n    DosageSensitivity object with all available information.",
+        "args": [
+          "gene",
+          "haploinsufficiency_db",
+          "triplosensitivity_db",
+          "pli_db",
+          "loeuf_db"
+        ]
+      },
+      "functional_impact.predict_tad_disruption": {
+        "doc": "Predict whether a structural variant disrupts TAD boundaries.\n\nTAD (Topologically Associating Domain) boundaries are important\nchromatin organization elements. Their disruption can lead to\nectopic enhancer-promoter contacts and gene misregulation.\n\nA boundary is considered disrupted if the SV breakpoint falls\nwithin boundary_window base pairs of the boundary midpoint.\n\nArgs:\n    variant: Variant dictionary with 'chrom', 'start', 'end', 'sv_type'.\n    tad_boundaries: List of TAD boundary dictionaries with:\n        - 'chrom': Chromosome\n        - 'start': Boundary start position\n        - 'end': Boundary end position\n        - 'insulation_score': Optional insulation score\n        - 'genes': Optional list of genes in adjacent TADs\n    boundary_window: Window size around each boundary for disruption\n        detection (default 10kb).\n\nReturns:\n    TADPrediction object with disruption assessment.",
+        "args": [
+          "variant",
+          "tad_boundaries",
+          "boundary_window"
+        ]
+      },
+      "functional_impact.score_pathogenicity": {
+        "doc": "Compute aggregate pathogenicity score for a structural variant.\n\nCombines multiple evidence lines into a single [0, 1] score using\na weighted logistic model:\n\n- Size of the variant (larger = more likely pathogenic)\n- Number of affected coding genes\n- Dosage sensitivity of affected genes\n- TAD boundary disruption\n- Variant type (DEL/DUP more pathogenic than INV on average)\n- Population frequency (if available)\n\nArgs:\n    variant: Variant dictionary with 'chrom', 'start', 'end', 'sv_type'.\n    annotations: Annotation dictionary containing:\n        - 'overlapping_genes': List of overlapping gene names\n        - 'dosage_sensitive_genes': List of dosage-sensitive genes\n        - 'tad_disrupted': Whether TAD boundary is disrupted\n        - 'impact_level': Impact level string\n        - 'n_coding_genes': Number of affected coding genes\n        - 'population_frequency': Allele frequency in population (optional)\n\nReturns:\n    Pathogenicity score between 0 and 1.",
+        "args": [
+          "variant",
+          "annotations"
+        ]
+      },
+      "overlap.annotate_gene_overlap": {
+        "doc": "Annotate structural variants with overlapping genes.\n\nFor each variant, finds all genes that overlap with the variant\ninterval and adds gene annotation information.\n\nArgs:\n    variants: List of variant dictionaries, each containing:\n        - 'chrom': Chromosome\n        - 'start': Start position\n        - 'end': End position\n        - Additional fields are preserved in the output.\n    gene_db: List of gene entries as dictionaries with 'chrom', 'start',\n        'end', 'name' keys, or as GenomicInterval objects.\n\nReturns:\n    List of variant dictionaries with added fields:\n        - 'overlapping_genes': List of gene names that overlap\n        - 'gene_overlaps': List of OverlapResult objects\n        - 'n_genes_affected': Number of genes affected",
+        "args": [
+          "variants",
+          "gene_db"
+        ]
+      },
+      "overlap.annotate_regulatory_overlap": {
+        "doc": "Annotate structural variants with overlapping regulatory elements.\n\nFor each variant, finds all regulatory elements (enhancers, promoters,\nsilencers, insulators, etc.) that overlap with the variant interval.\n\nArgs:\n    variants: List of variant dictionaries (same format as annotate_gene_overlap).\n    regulatory_db: List of regulatory element entries as dictionaries with\n        'chrom', 'start', 'end', 'name', 'feature_type' keys, or as\n        GenomicInterval objects.\n\nReturns:\n    List of variant dictionaries with added fields:\n        - 'overlapping_regulatory': List of regulatory element names\n        - 'regulatory_overlaps': List of OverlapResult objects\n        - 'regulatory_types': Set of affected regulatory element types\n        - 'n_regulatory_affected': Count of affected elements",
+        "args": [
+          "variants",
+          "regulatory_db"
+        ]
+      },
+      "overlap.calculate_overlap_fraction": {
+        "doc": "Calculate reciprocal overlap fractions between two intervals.\n\nComputes what fraction of interval A is covered by interval B and\nvice versa. Both intervals must be on the same chromosome (caller\nis responsible for this check).\n\nArgs:\n    interval_a: First interval as dict with 'start'/'end' keys or\n        (start, end) tuple.\n    interval_b: Second interval in the same format.\n\nReturns:\n    Tuple of (fraction_of_a_covered, fraction_of_b_covered).\n    Each value is between 0.0 and 1.0.",
+        "args": [
+          "interval_a",
+          "interval_b"
+        ]
+      },
+      "overlap.find_nearest_gene": {
+        "doc": "Find the nearest gene to a structural variant.\n\nIf the variant overlaps a gene, the distance is 0. Otherwise, finds\nthe closest gene within max_distance base pairs of either breakpoint.\n\nArgs:\n    variant: Variant dictionary with 'chrom', 'start', 'end' keys.\n    gene_db: Gene database (see annotate_gene_overlap for format).\n    max_distance: Maximum distance to search for nearest gene.\n\nReturns:\n    Dictionary with:\n        - 'nearest_gene': Name of nearest gene (empty string if none found)\n        - 'distance': Distance to nearest gene in bp (0 if overlapping, -1 if none found)\n        - 'direction': 'upstream', 'downstream', 'overlapping', or 'none'\n        - 'gene_interval': The GenomicInterval of the nearest gene, or None",
+        "args": [
+          "variant",
+          "gene_db",
+          "max_distance"
+        ]
+      },
+      "breakpoints.refine_breakpoints": {
+        "doc": "Refine breakpoint positions to base-pair resolution.\n\nFor each variant, examines split reads near the reported breakpoint\npositions and determines the most likely exact breakpoint positions\nby consensus of soft-clip positions.\n\nArgs:\n    variants: List of variant dictionaries, each containing:\n        - 'chrom' or 'chrom1': Chromosome of breakpoint 1\n        - 'start' or 'breakpoint1': Approximate position of breakpoint 1\n        - 'end' or 'breakpoint2': Approximate position of breakpoint 2\n        - 'chrom2': Chromosome of breakpoint 2 (optional, defaults to chrom)\n        - 'sv_type': Type of structural variant (optional)\n    reads: List of read alignment dictionaries with:\n        - 'chrom': Chromosome\n        - 'pos': Alignment start position\n        - 'cigar': CIGAR string\n        - 'name': Read name\n        - 'seq': Read sequence (optional, for microhomology detection)\n    window: Window size around each breakpoint to search for refinement.\n    min_clip: Minimum soft-clip length to consider.\n\nReturns:\n    List of BreakpointPair objects with refined positions.",
+        "args": [
+          "variants",
+          "reads",
+          "window",
+          "min_clip"
+        ]
+      },
+      "breakpoints.detect_microhomology": {
+        "doc": "Detect microhomology at a breakpoint junction.\n\nExamines the sequence around a breakpoint to find short regions of\nsequence identity (microhomology), which are indicative of the\nrepair mechanism (e.g., NHEJ, MMEJ/alt-EJ).\n\nThe algorithm slides a window from the breakpoint position in both\ndirections, comparing bases for matches. The longest run of matching\nbases starting from the breakpoint is reported.\n\nArgs:\n    breakpoint: Breakpoint position info. Can be a dict with 'position'\n        key or a Breakpoint object.\n    flanking_seq: Sequence flanking the breakpoint. The breakpoint is\n        assumed to be at the midpoint of this sequence.\n    max_homology: Maximum microhomology length to search for.\n\nReturns:\n    Microhomology sequence string (empty if none found).",
+        "args": [
+          "breakpoint",
+          "flanking_seq",
+          "max_homology"
+        ]
+      },
+      "breakpoints.cluster_breakpoints": {
+        "doc": "Cluster nearby breakpoints using single-linkage clustering.\n\nGroups breakpoints that are on the same chromosome and within\nmax_distance base pairs of each other. Returns clusters sorted\nby cluster size (largest first).\n\nArgs:\n    breakpoints: List of Breakpoint objects or dictionaries with\n        'chrom' and 'position' keys.\n    max_distance: Maximum distance between breakpoints to be\n        assigned to the same cluster.\n\nReturns:\n    List of breakpoint clusters, each cluster is a list of Breakpoint\n    objects. Clusters are sorted by size (descending).",
+        "args": [
+          "breakpoints",
+          "max_distance"
+        ]
+      },
+      "breakpoints.calculate_breakpoint_confidence": {
+        "doc": "Calculate confidence score for a breakpoint.\n\nCombines multiple evidence metrics into a single confidence score:\n- Number of supporting reads (more = higher confidence)\n- Positional consistency (lower std = higher confidence)\n- Ratio of supporting to total nearby split reads\n\nArgs:\n    evidence: Dictionary or object containing:\n        - 'support': Number of reads supporting the exact position (int)\n        - 'total_clips': Total split reads in the region (int, optional)\n        - 'position_std': Standard deviation of clip positions (float, optional)\n        - 'mapq_mean': Mean mapping quality of supporting reads (float, optional)\n\nReturns:\n    Confidence score between 0 and 1.",
+        "args": [
+          "evidence"
+        ]
+      },
+      "cnv.detect_cnv_from_depth": {
+        "doc": "Detect copy number variations from read depth data.\n\nAnalyzes per-chromosome depth arrays to identify regions of copy number\ngain or loss using circular binary segmentation (CBS).\n\nArgs:\n    depth_data: Dictionary mapping chromosome names to arrays of read depth\n        values. Each value represents the mean depth in a genomic window.\n        Can be numpy arrays or plain lists of floats.\n    window_size: Size of each depth bin in base pairs.\n    method: Detection method. Currently supports 'segmentation' (CBS).\n    significance: P-value threshold for CBS change-point detection.\n    ploidy: Expected ploidy of the organism (default 2 for diploid).\n    min_segment_bins: Minimum number of bins for a valid segment.\n    merge_distance: Maximum gap (in bp) to merge adjacent same-state segments.\n\nReturns:\n    Dictionary mapping chromosome names to CNVResult objects containing\n    detected segments with copy number states.\n\nRaises:\n    ValueError: If depth_data is empty or method is unsupported.",
+        "args": [
+          "depth_data",
+          "window_size",
+          "method",
+          "significance",
+          "ploidy",
+          "min_segment_bins",
+          "merge_distance"
+        ]
+      },
+      "cnv.segment_coverage": {
+        "doc": "Circular Binary Segmentation (CBS) algorithm for coverage segmentation.\n\nRecursively finds change-points in a coverage array by testing for\ndifferences in means across circular permutations of the data, splitting\nat the most significant change-point, and recursing on each half.\n\nArgs:\n    coverage_array: Array of log2 ratio values to segment. Can be a numpy\n        array or list of floats.\n    significance: P-value threshold for accepting a change-point. Lower\n        values produce fewer, more confident segments.\n    max_iterations: Maximum recursion depth to prevent infinite loops.\n    min_width: Minimum segment width in bins.\n\nReturns:\n    List of (start, end, mean) tuples representing segments, where start\n    is inclusive, end is exclusive, and mean is the segment mean.",
+        "args": [
+          "coverage_array",
+          "significance",
+          "max_iterations",
+          "min_width"
+        ]
+      },
+      "cnv.call_cnv_states": {
+        "doc": "Assign copy number states to segments based on log2 ratio thresholds.\n\nClassifies each segment as homozygous deletion, deletion, neutral,\nduplication, or amplification based on its mean log2 ratio value\nrelative to configurable thresholds.\n\nArgs:\n    segments: List of segments as (start, end, mean_log2ratio) tuples\n        or CNVSegment objects.\n    ploidy: Expected ploidy (default 2 for diploid).\n    del_threshold: Log2 ratio threshold below which a segment is called\n        as a deletion (default -0.3, approximately CN=1 for diploid).\n    dup_threshold: Log2 ratio threshold above which a segment is called\n        as a duplication (default 0.3, approximately CN=3 for diploid).\n    amp_threshold: Log2 ratio threshold for high-level amplification\n        (default 1.0, approximately CN=4+ for diploid).\n    homodel_threshold: Log2 ratio threshold for homozygous deletion\n        (default -1.5, approximately CN=0 for diploid).\n\nReturns:\n    List of CNVSegment objects with state and cn fields populated.",
+        "args": [
+          "segments",
+          "ploidy",
+          "del_threshold",
+          "dup_threshold",
+          "amp_threshold",
+          "homodel_threshold"
+        ]
+      },
+      "cnv.merge_adjacent_segments": {
+        "doc": "Merge adjacent segments with the same copy number state.\n\nCombines neighboring segments on the same chromosome that share\nthe same CNV state and are separated by no more than max_gap base pairs.\n\nArgs:\n    segments: List of CNVSegment objects, ideally sorted by position.\n    max_gap: Maximum gap in base pairs between segments to allow merging.\n\nReturns:\n    List of merged CNVSegment objects.",
+        "args": [
+          "segments",
+          "max_gap"
+        ]
+      },
+      "cnv.calculate_log2_ratio": {
+        "doc": "Compute log2 ratio between tumor and normal read depths.\n\nCalculates the log2(tumor/normal) ratio with optional GC-content bias\ncorrection using LOESS-like smoothing.\n\nArgs:\n    tumor_depth: Array of tumor read depth values per window.\n    normal_depth: Array of normal (reference) read depth values per window.\n    gc_content: Optional array of GC content fractions per window (0-1)\n        for GC bias correction. If provided, the ratio is corrected\n        using median normalization within GC bins.\n    pseudocount: Small value added to avoid division by zero.\n\nReturns:\n    Numpy array of log2 ratio values. If numpy is not available,\n    returns a list of floats.\n\nRaises:\n    ValueError: If arrays have different lengths.",
+        "args": [
+          "tumor_depth",
+          "normal_depth",
+          "gc_content",
+          "pseudocount"
+        ]
+      },
+      "sv_calling.call_structural_variants": {
+        "doc": "Call structural variants from alignment data.\n\nCombines split-read and discordant read-pair evidence to detect\nstructural variants. Reads are first classified as split or discordant,\nthen evidence is clustered by genomic position, and variant calls are\nmade from clusters with sufficient support.\n\nArgs:\n    alignments: List of read alignment dictionaries, each containing:\n        - 'name': Read name (str)\n        - 'chrom': Reference chromosome (str)\n        - 'pos': Alignment start position, 0-based (int)\n        - 'mapq': Mapping quality (int)\n        - 'cigar': CIGAR string (str) or list of (op, length) tuples\n        - 'mate_chrom': Mate chromosome (str, optional)\n        - 'mate_pos': Mate start position (int, optional)\n        - 'insert_size': Observed insert size (int, optional)\n        - 'is_reverse': Whether read is reverse-complemented (bool, optional)\n        - 'mate_is_reverse': Whether mate is reverse-complemented (bool, optional)\n        - 'is_supplementary': Whether this is a supplementary alignment (bool, optional)\n        - 'sa_tag': SA tag for supplementary alignments (str, optional)\n    min_support: Minimum number of supporting reads for a call.\n    insert_size_stats: Pre-computed insert size distribution statistics.\n        If None, will be estimated from the data.\n    min_mapq: Minimum mapping quality for reads to be considered.\n    min_sv_size: Minimum structural variant size in base pairs.\n\nReturns:\n    List of StructuralVariant objects, sorted by chromosome and position.",
+        "args": [
+          "alignments",
+          "min_support",
+          "insert_size_stats",
+          "min_mapq",
+          "min_sv_size"
+        ]
+      },
+      "sv_calling.detect_split_reads": {
+        "doc": "Identify split-read evidence for structural variants.\n\nExamines CIGAR strings and supplementary alignment information to\ndetect reads that span structural variant breakpoints. A split read\nhas a soft-clipped portion of at least min_clip bases, indicating\nthe read crosses a breakpoint.\n\nArgs:\n    reads: List of read alignment dictionaries (see call_structural_variants\n        for format).\n    min_clip: Minimum soft-clip length (bases) to consider as evidence\n        for a breakpoint.\n\nReturns:\n    List of SVEvidence objects, one per split-read breakpoint detected.",
+        "args": [
+          "reads",
+          "min_clip"
+        ]
+      },
+      "sv_calling.detect_discordant_pairs": {
+        "doc": "Detect discordant read pair evidence for structural variants.\n\nA discordant read pair has an insert size significantly different from\nthe expected distribution, or has reads mapping to different chromosomes,\nor has unexpected orientation patterns.\n\nArgs:\n    pairs: List of read alignment dictionaries (see call_structural_variants\n        for format). Only reads with mate information are analyzed.\n    insert_size_stats: Insert size distribution statistics.\n    n_std: Number of standard deviations from the mean to classify\n        a pair as discordant (default 4.0).\n\nReturns:\n    List of SVEvidence objects for discordant pairs.",
+        "args": [
+          "pairs",
+          "insert_size_stats",
+          "n_std"
+        ]
+      },
+      "sv_calling.classify_sv_type": {
+        "doc": "Classify the type of structural variant based on evidence patterns.\n\nUses breakpoint positions, chromosome assignments, and strand orientations\nto determine the SV type:\n    - DEL: Same chromosome, same strand, forward-reverse pair, distant breakpoints\n    - DUP: Same chromosome, reverse-forward orientation\n    - INV: Same chromosome, same strand orientation\n    - TRA: Different chromosomes\n    - INS: Same chromosome, close breakpoints with split-read evidence\n\nArgs:\n    evidence: SVEvidence object containing breakpoint and orientation info.\n\nReturns:\n    SVType enum value.",
+        "args": [
+          "evidence"
+        ]
+      },
+      "sv_calling.genotype_sv": {
+        "doc": "Genotype a structural variant based on supporting and reference reads.\n\nCounts the number of reads supporting the variant (split reads and\ndiscordant pairs) versus reads supporting the reference allele\n(reads spanning the breakpoint region without split alignment).\nUses a simple allele-fraction model:\n    - AF < 0.15: homozygous reference (0/0)\n    - 0.15 <= AF < 0.85: heterozygous (0/1)\n    - AF >= 0.85: homozygous alternate (1/1)\n\nArgs:\n    variant: StructuralVariant to genotype.\n    reads: List of read alignment dictionaries.\n    min_mapq: Minimum mapping quality for counting reads.\n\nReturns:\n    Genotype string: '0/0', '0/1', or '1/1'.",
+        "args": [
+          "variant",
+          "reads",
+          "min_mapq"
+        ]
+      },
+      "merge.merge_callsets": {
+        "doc": "Merge structural variant callsets from multiple callers.\n\nUses reciprocal overlap to identify the same SV detected by different\ntools. For each group of matching variants across callers, produces a\nsingle consensus call with aggregated support.\n\nArgs:\n    callsets: Dictionary mapping caller names to lists of variant\n        dictionaries. Each variant should have 'chrom', 'start',\n        'end', 'sv_type' keys.\n    min_overlap: Minimum reciprocal overlap fraction (0-1) to consider\n        two variants as the same event (default 0.5 = 50%).\n    type_match: Whether SV types must match for merging (default True).\n\nReturns:\n    Tuple of (merged_variants, merge_statistics).",
+        "args": [
+          "callsets",
+          "min_overlap",
+          "type_match"
+        ]
+      },
+      "merge.calculate_reciprocal_overlap": {
+        "doc": "Calculate the minimum reciprocal overlap between two SVs.\n\nReciprocal overlap requires that the overlap constitutes at least a\ncertain fraction of BOTH variants. The minimum of the two fractions\nis returned (i.e., the stricter criterion).\n\nFor inter-chromosomal SVs or SVs without clear coordinates,\nuses breakpoint distance as a proxy.\n\nArgs:\n    sv1: First variant dictionary with 'chrom', 'start', 'end' keys.\n    sv2: Second variant dictionary with 'chrom', 'start', 'end' keys.\n\nReturns:\n    Reciprocal overlap fraction between 0.0 and 1.0.",
+        "args": [
+          "sv1",
+          "sv2"
+        ]
+      },
+      "merge.survivor_merge": {
+        "doc": "SURVIVOR-style merging of structural variant callsets.\n\nImplements the SURVIVOR merge algorithm that uses breakpoint distance\nrather than reciprocal overlap for matching variants. This is more\nappropriate for imprecise SV calls where exact breakpoints are uncertain.\n\nNote: If vcf_files contains strings (file paths), this function requires\npysam or a VCF parser. If vcf_files contains dictionaries, they are\nused directly.\n\nArgs:\n    vcf_files: Either file paths to VCF files or lists of variant\n        dictionaries. If file paths, each file is treated as one caller.\n        If dicts, each dict should have a '_caller' key.\n    max_distance: Maximum distance between breakpoints to consider\n        variants as the same event (default 1000bp).\n    min_callers: Minimum number of callers required to keep a merged\n        variant (default 2).\n    type_match: Whether SV types must match (default True).\n    strand_match: Whether strand orientations must match (default False).\n\nReturns:\n    Tuple of (merged_variants, merge_statistics).",
+        "args": [
+          "vcf_files",
+          "max_distance",
+          "min_callers",
+          "type_match",
+          "strand_match"
+        ]
+      },
+      "merge.deduplicate_variants": {
+        "doc": "Remove duplicate structural variant calls.\n\nIdentifies duplicate calls based on proximity and reciprocal overlap,\nkeeping the highest-quality call from each group of duplicates.\n\nArgs:\n    variants: List of variant dictionaries with 'chrom', 'start', 'end',\n        'sv_type', and optionally 'quality' keys.\n    max_distance: Maximum breakpoint distance for duplicate candidates.\n    min_reciprocal_overlap: Minimum reciprocal overlap to classify as\n        duplicate (default 0.8 = 80%).\n    type_match: Whether SV types must match (default True).\n\nReturns:\n    Tuple of (deduplicated_variants, n_removed).",
+        "args": [
+          "variants",
+          "max_distance",
+          "min_reciprocal_overlap",
+          "type_match"
+        ]
+      },
+      "quality_filter.filter_by_quality": {
+        "doc": "Filter structural variants by quality metrics.\n\nRemoves variants that do not meet minimum quality thresholds.\nMultiple quality metrics can be applied simultaneously.\n\nArgs:\n    variants: List of variant dictionaries. Expected keys:\n        - 'quality' or 'qual': Quality score (float)\n        - 'support' or 'n_support': Number of supporting reads (int)\n        - 'mapq': Mean mapping quality of supporting reads (float, optional)\n        - 'gq': Genotype quality (float, optional)\n    min_qual: Minimum quality score (Phred-scaled, default 20).\n    min_support: Minimum number of supporting reads (default 3).\n    min_mapq: Minimum mean mapping quality (default 0, no filter).\n    min_gq: Minimum genotype quality (default 0, no filter).\n\nReturns:\n    Tuple of (filtered_variants, filter_statistics).",
+        "args": [
+          "variants",
+          "min_qual",
+          "min_support",
+          "min_mapq",
+          "min_gq"
+        ]
+      },
+      "quality_filter.filter_by_size": {
+        "doc": "Filter structural variants by size.\n\nRemoves variants outside the specified size range. This is commonly\nused to separate SVs (>=50bp) from indels (<50bp) and to exclude\nextremely large artifacts.\n\nArgs:\n    variants: List of variant dictionaries. Expected keys:\n        - 'size': Variant size in base pairs (int)\n        - Or 'start' and 'end' to compute size\n        - 'sv_type': Optional; translocations (TRA) are always kept\n          since they don't have a meaningful \"size\"\n    min_size: Minimum size in base pairs (default 50, the standard\n        SV size threshold).\n    max_size: Maximum size in base pairs (default None, no upper limit).\n\nReturns:\n    Tuple of (filtered_variants, filter_statistics).",
+        "args": [
+          "variants",
+          "min_size",
+          "max_size"
+        ]
+      },
+      "quality_filter.filter_by_frequency": {
+        "doc": "Filter structural variants by population allele frequency.\n\nRemoves common variants that are likely benign based on their\nfrequency in population databases (e.g., gnomAD-SV, DGV).\n\nVariant matching uses both position proximity and reciprocal overlap\nto find matching database entries.\n\nArgs:\n    variants: List of variant dictionaries with 'chrom', 'start', 'end',\n        'sv_type' keys. May also have 'af' or 'allele_frequency' pre-computed.\n    population_db: Population frequency database. Can be:\n        - dict mapping 'chrom:start-end' to allele frequency\n        - list of dicts with 'chrom', 'start', 'end', 'af' keys\n        - None (no filtering applied, all variants pass)\n    max_af: Maximum population allele frequency to keep (default 0.01 = 1%).\n    match_window: Window in bp around breakpoints for matching database entries.\n    min_reciprocal_overlap: Minimum reciprocal overlap fraction for matching.\n\nReturns:\n    Tuple of (filtered_variants, filter_statistics).",
+        "args": [
+          "variants",
+          "population_db",
+          "max_af",
+          "match_window",
+          "min_reciprocal_overlap"
+        ]
+      },
+      "quality_filter.apply_blacklist": {
+        "doc": "Remove variants overlapping blacklist regions.\n\nBlacklist regions are genomic intervals known to produce false-positive\nSV calls, such as centromeres, telomeres, segmental duplications,\nlow-complexity regions, and assembly gaps.\n\nArgs:\n    variants: List of variant dictionaries with 'chrom', 'start', 'end'.\n    blacklist_regions: Blacklist as a list of dicts with 'chrom', 'start',\n        'end' keys, or as (chrom, start, end) tuples.\n    min_overlap_fraction: Minimum fraction of variant overlapping a blacklist\n        region to trigger removal (default 0.0, any overlap removes the variant).\n\nReturns:\n    Tuple of (filtered_variants, filter_statistics).",
+        "args": [
+          "variants",
+          "blacklist_regions",
+          "min_overlap_fraction"
+        ]
+      },
+      "sv_population.genotype_sv_population": {
+        "doc": "Population-scale SV genotyping across multiple samples.\n\nFor each SV, determines the genotype (0/0, 0/1, or 1/1) in each sample\nusing the specified method. The depth method uses read depth signals,\nwhile the split method uses split-read and discordant-pair evidence.\n\nArgs:\n    sv_calls: List of SV call dicts, each containing:\n        - ``chrom`` (str): Chromosome.\n        - ``start`` (int): Start position.\n        - ``end`` (int): End position.\n        - ``sv_type`` (str): SV type (DEL, DUP, INV, etc.).\n        - ``samples`` (dict): Mapping sample name to evidence dict with\n          ``depth_ratio`` (float), ``split_reads`` (int),\n          ``discordant_pairs`` (int).\n    samples: List of sample names to genotype.\n    method: Genotyping method, ``\"depth\"`` or ``\"split\"``.\n\nReturns:\n    Dictionary with keys:\n        - ``genotype_matrix``: 2D list (n_svs x n_samples) of genotype\n          integers (0, 1, or 2 for number of alt alleles).\n        - ``quality_scores``: 2D list (n_svs x n_samples) of genotype\n          quality scores (0-100).\n        - ``allele_frequencies``: List of allele frequencies per SV.\n\nRaises:\n    ValueError: If method is unrecognized.",
+        "args": [
+          "sv_calls",
+          "samples",
+          "method"
+        ]
+      },
+      "sv_population.sv_allele_frequency": {
+        "doc": "Compute SV allele frequencies, optionally stratified by population.\n\nCalculates minor allele frequency (MAF), site frequency spectrum (SFS),\nand optionally per-population allele frequencies.\n\nArgs:\n    genotype_matrix: Genotype matrix (n_svs x n_samples) with values\n        0, 1, or 2 (number of alt alleles).\n    sample_labels: Optional population labels for each sample (length\n        n_samples). If provided, frequencies are computed per population.\n\nReturns:\n    Dictionary with keys:\n        - ``frequencies``: List of allele frequencies per SV.\n        - ``maf``: List of minor allele frequencies per SV.\n        - ``n_polymorphic``: Number of polymorphic SVs (MAF > 0).\n        - ``sfs``: Site frequency spectrum as a list of counts.\n        - ``population_frequencies``: Dict mapping population label to\n          list of per-SV allele frequencies (only if sample_labels given).\n\nRaises:\n    ImportError: If numpy is not available.",
+        "args": [
+          "genotype_matrix",
+          "sample_labels"
+        ]
+      },
+      "sv_population.sv_association_test": {
+        "doc": "Test association between SV genotype and phenotype.\n\nPerforms linear regression (continuous phenotype) or logistic regression\n(binary phenotype) of phenotype on genotype, optionally adjusting for\ncovariates.\n\nArgs:\n    genotypes: Genotype values per sample (0, 1, or 2).\n    phenotypes: Phenotype values per sample (continuous or binary 0/1).\n    covariates: Optional covariate matrix (n_samples x n_covariates).\n\nReturns:\n    Dictionary with keys:\n        - ``beta``: Effect size (regression coefficient for genotype).\n        - ``se``: Standard error of beta.\n        - ``p_value``: Two-sided p-value.\n        - ``odds_ratio``: Odds ratio (only for binary phenotype, else None).\n        - ``n_samples``: Number of samples analyzed.\n\nRaises:\n    ImportError: If numpy is not available.\n    ValueError: If genotypes and phenotypes have different lengths.",
+        "args": [
+          "genotypes",
+          "phenotypes",
+          "covariates"
+        ]
+      },
+      "sv_population.sv_population_structure": {
+        "doc": "PCA on SV genotype matrix for population structure analysis.\n\nCenters and scales the genotype matrix, then computes the top principal\ncomponents to visualize population structure driven by structural\nvariant genotypes.\n\nArgs:\n    genotype_matrix: Genotype matrix (n_svs x n_samples) with values\n        0, 1, or 2.\n    n_components: Number of principal components to compute.\n\nReturns:\n    Dictionary with keys:\n        - ``pcs``: 2D array (n_samples x n_components) of PC coordinates.\n        - ``eigenvalues``: List of eigenvalues for each component.\n        - ``variance_explained``: List of fraction of variance explained\n          per component.\n        - ``loadings``: 2D array (n_svs x n_components) of SV loadings.\n\nRaises:\n    ImportError: If numpy is not available.",
+        "args": [
+          "genotype_matrix",
+          "n_components"
+        ]
+      },
+      "sv_population.sv_ld_analysis": {
+        "doc": "Compute LD between SVs and nearby SNPs.\n\nFor each SV, computes the squared Pearson correlation (r^2) with all\nSNPs within a window, identifying tag SNPs (SNPs in highest LD with\neach SV).\n\nArgs:\n    genotype_matrix_sv: SV genotype matrix (n_svs x n_samples), values\n        0/1/2.\n    genotype_matrix_snp: SNP genotype matrix (n_snps x n_samples),\n        values 0/1/2.\n    sv_positions: Genomic position for each SV.\n    snp_positions: Genomic position for each SNP.\n\nReturns:\n    Dictionary with keys:\n        - ``ld_matrix``: 2D list (n_svs x n_snps) of r^2 values.\n        - ``tag_snps``: List of dicts per SV with ``snp_index``,\n          ``snp_position``, ``r2``.\n        - ``max_r2_per_sv``: List of maximum r^2 value for each SV.\n\nRaises:\n    ImportError: If numpy is not available.",
+        "args": [
+          "genotype_matrix_sv",
+          "genotype_matrix_snp",
+          "sv_positions",
+          "snp_positions"
+        ]
+      },
+      "sv_population.merge_sv_callsets": {
+        "doc": "Merge SV calls across samples using reciprocal overlap and breakpoint proximity.\n\nCompares SV calls from multiple samples/callers and merges variants that\nrepresent the same event based on reciprocal overlap fraction and\nbreakpoint distance criteria.\n\nArgs:\n    callsets: List of callsets, each a list of SV call dicts containing:\n        - ``chrom`` (str): Chromosome.\n        - ``start`` (int): Start position.\n        - ``end`` (int): End position.\n        - ``sv_type`` (str): SV type.\n        - ``sample`` (str, optional): Source sample name.\n    min_overlap: Minimum reciprocal overlap fraction (0-1) for merging.\n    max_breakpoint_distance: Maximum distance between breakpoints for\n        merging.\n\nReturns:\n    List of merged SV dicts, each containing:\n        - ``chrom``, ``start``, ``end``, ``sv_type``: Consensus call.\n        - ``n_samples``: Number of samples supporting this SV.\n        - ``samples``: List of sample names.\n        - ``support_count``: Total number of supporting calls.\n        - ``merged_calls``: List of original calls merged into this entry.",
+        "args": [
+          "callsets",
+          "min_overlap",
+          "max_breakpoint_distance"
+        ]
+      },
+      "plots.plot_circos": {
+        "doc": "Generate a Circos-style genome-wide structural variant plot.\n\nDraws chromosomes as arcs around a circle, with SVs represented as\ncolored chords connecting breakpoint pairs. Intra-chromosomal SVs\nare drawn as arcs within the chromosome. Colors indicate SV type.\n\nArgs:\n    variants: List of variant dictionaries with:\n        - 'chrom': Chromosome\n        - 'start': Start position\n        - 'end': End position\n        - 'sv_type': SV type string\n        - 'chrom2': Second chromosome (for translocations, optional)\n    chromosomes: Dictionary mapping chromosome names to sizes (in bp).\n    output_path: Path to save the plot image.\n    title: Plot title.\n    figsize: Figure size in inches.\n    show_labels: Whether to show chromosome labels.\n\nReturns:\n    matplotlib Figure object.",
+        "args": [
+          "variants",
+          "chromosomes",
+          "output_path",
+          "title",
+          "figsize",
+          "show_labels"
+        ]
+      },
+      "plots.plot_coverage_track": {
+        "doc": "Plot read depth coverage with structural variant overlay.\n\nShows a coverage track (read depth) for a genomic region with\ncolored rectangles indicating structural variant positions and types.\n\nArgs:\n    coverage: Array of coverage values (one per bin).\n    variants: List of variant dictionaries (same format as other functions).\n    region: Genomic region as dict with 'chrom', 'start', 'end' or\n        tuple (chrom, start, end).\n    output_path: Path to save the plot. If empty, plot is not saved.\n    title: Plot title. Auto-generated from region if empty.\n    figsize: Figure size in inches.\n    bin_size: Size of each coverage bin in base pairs.\n\nReturns:\n    matplotlib Figure object.",
+        "args": [
+          "coverage",
+          "variants",
+          "region",
+          "output_path",
+          "title",
+          "figsize",
+          "bin_size"
+        ]
+      },
+      "plots.plot_sv_size_distribution": {
+        "doc": "Plot size distribution of structural variants.\n\nCreates a histogram showing the distribution of SV sizes, optionally\nfiltered by SV type. Uses log-scale x-axis by default since SV sizes\nspan several orders of magnitude.\n\nArgs:\n    variants: List of variant dictionaries with 'size' or 'start'/'end',\n        and 'sv_type' keys.\n    sv_type: If specified, only plot variants of this type.\n    output_path: Path to save the plot. If empty, plot is not saved.\n    title: Plot title.\n    figsize: Figure size in inches.\n    log_scale: Whether to use log scale for x-axis (default True).\n\nReturns:\n    matplotlib Figure object.",
+        "args": [
+          "variants",
+          "sv_type",
+          "output_path",
+          "title",
+          "figsize",
+          "log_scale"
+        ]
+      },
+      "plots.plot_sv_type_summary": {
+        "doc": "Plot summary of SV types as bar chart and pie chart.\n\nCreates a two-panel figure showing (left) a bar chart of SV counts\nby type and (right) a pie chart of the same data.\n\nArgs:\n    variants: List of variant dictionaries with 'sv_type' keys.\n    output_path: Path to save the plot.\n    title: Plot title.\n    figsize: Figure size.\n\nReturns:\n    matplotlib Figure object.",
+        "args": [
+          "variants",
+          "output_path",
+          "title",
+          "figsize"
+        ]
+      },
+      "plots.plot_breakpoint_detail": {
+        "doc": "Plot detailed view of a structural variant breakpoint.\n\nCreates a multi-panel figure showing:\n- Top: Read alignment pileup around the breakpoint\n- Middle: Coverage profile\n- Bottom: Split/discordant read evidence\n\nArgs:\n    variant: Variant dictionary with 'chrom', 'start', 'end', 'sv_type'.\n    reads: List of read alignment dictionaries.\n    flanking: Number of base pairs to show flanking the breakpoint.\n    output_path: Path to save the plot.\n    figsize: Figure size.\n\nReturns:\n    matplotlib Figure object.",
+        "args": [
+          "variant",
+          "reads",
+          "flanking",
+          "output_path",
+          "figsize"
+        ]
+      },
+      "plots.plot_cnv_profile": {
+        "doc": "Plot genome-wide CNV profile.\n\nDisplays log2 ratio values across the genome with colored segments\nindicating copy number states. Chromosomes are laid out linearly\nwith alternating background shading.\n\nArgs:\n    segments: List of segment dictionaries with:\n        - 'chrom': Chromosome\n        - 'start': Start position\n        - 'end': End position\n        - 'mean_log2ratio': Mean log2 ratio\n        - 'state': CNV state (DEL, DUP, NEUTRAL, etc.)\n    chromosomes: Dictionary mapping chromosome names to sizes.\n    output_path: Path to save the plot.\n    title: Plot title.\n    figsize: Figure size.\n    ploidy: Expected ploidy for reference line.\n\nReturns:\n    matplotlib Figure object.",
+        "args": [
+          "segments",
+          "chromosomes",
+          "output_path",
+          "title",
+          "figsize",
+          "ploidy"
+        ]
+      }
+    },
+    "classes": {
+      "functional_impact.FunctionalImpact": {
+        "doc": "Functional impact assessment for a structural variant.\n\nAttributes:\n    variant_id: Identifier for the variant.\n    impact_level: Impact level ('HIGH', 'MODERATE', 'LOW', 'MODIFIER').\n    impact_type: Specific impact type (e.g., 'gene_disruption', 'gene_fusion',\n        'dosage_change', 'regulatory_disruption', 'tad_disruption').\n    affected_genes: List of affected gene names.\n    dosage_sensitive_genes: Genes with dosage sensitivity concern.\n    tad_disrupted: Whether a TAD boundary is disrupted.\n    pathogenicity_score: Aggregate pathogenicity score [0, 1].\n    details: Additional details about the impact."
+      },
+      "functional_impact.DosageSensitivity": {
+        "doc": "Dosage sensitivity information for a gene.\n\nAttributes:\n    gene_name: Gene name.\n    haploinsufficiency_score: Haploinsufficiency score [0, 1].\n        Higher means more likely to be haploinsufficient.\n    triplosensitivity_score: Triplosensitivity score [0, 1].\n        Higher means more sensitive to copy gain.\n    pli_score: Probability of loss-of-function intolerance (pLI) [0, 1].\n    loeuf: Loss-of-function observed/expected upper fraction (LOEUF).\n        Lower values indicate more constraint.\n    is_haploinsufficient: Whether gene is classified as haploinsufficient.\n    is_triplosensitive: Whether gene is classified as triplosensitive."
+      },
+      "functional_impact.TADPrediction": {
+        "doc": "TAD boundary disruption prediction.\n\nAttributes:\n    variant_chrom: Chromosome.\n    variant_start: Variant start position.\n    variant_end: Variant end position.\n    disrupted_boundaries: List of disrupted TAD boundary positions.\n    n_boundaries_disrupted: Number of TAD boundaries disrupted.\n    genes_in_affected_tads: Genes within affected TAD domains.\n    disruption_score: TAD disruption severity score [0, 1]."
+      },
+      "overlap.GenomicInterval": {
+        "doc": "A genomic interval.\n\nAttributes:\n    chrom: Chromosome name.\n    start: Start position (0-based, inclusive).\n    end: End position (0-based, exclusive).\n    name: Feature name (e.g., gene name).\n    feature_type: Type of feature (e.g., 'gene', 'exon', 'promoter').\n    strand: Strand ('+', '-', or '.').\n    info: Additional annotation fields."
+      },
+      "overlap.OverlapResult": {
+        "doc": "Result of an overlap analysis between a variant and a genomic feature.\n\nAttributes:\n    variant_chrom: Chromosome of the variant.\n    variant_start: Start of the variant.\n    variant_end: End of the variant.\n    feature: The overlapping genomic feature.\n    overlap_bp: Number of overlapping base pairs.\n    overlap_fraction_variant: Fraction of the variant overlapping the feature.\n    overlap_fraction_feature: Fraction of the feature overlapping the variant.\n    relationship: Relationship type ('overlap', 'contained_in', 'contains', 'upstream', 'downstream')."
+      },
+      "overlap.IntervalIndex": {
+        "doc": "Efficient interval index for overlap queries.\n\nUses a sorted-start approach with binary search for fast overlap queries.\nSuitable for moderate-size feature databases (up to millions of intervals)."
+      },
+      "breakpoints.Breakpoint": {
+        "doc": "A structural variant breakpoint.\n\nAttributes:\n    chrom: Chromosome name.\n    position: Genomic position (0-based).\n    strand: Strand orientation ('+' or '-').\n    confidence: Confidence score [0, 1].\n    support: Number of supporting reads.\n    microhomology: Microhomology sequence at the breakpoint, if any.\n    inserted_sequence: Inserted sequence at the breakpoint, if any.\n    read_names: Names of reads supporting this breakpoint."
+      },
+      "breakpoints.BreakpointPair": {
+        "doc": "A pair of breakpoints defining a structural variant.\n\nAttributes:\n    bp1: First breakpoint.\n    bp2: Second breakpoint.\n    sv_type: Inferred structural variant type.\n    confidence: Joint confidence score."
+      },
+      "cnv.CNVSegment": {
+        "doc": "A segment of constant copy number.\n\nAttributes:\n    chrom: Chromosome name.\n    start: 0-based start position (inclusive).\n    end: 0-based end position (exclusive).\n    mean_log2ratio: Mean log2 ratio for this segment.\n    n_bins: Number of bins (windows) in the segment.\n    state: Copy number state ('DEL', 'DUP', 'NEUTRAL', 'AMP', 'HOMODEL').\n    cn: Estimated integer copy number.\n    confidence: Confidence score [0, 1]."
+      },
+      "cnv.CNVResult": {
+        "doc": "Result of CNV detection.\n\nAttributes:\n    segments: List of CNV segments detected.\n    log2_ratios: The log2 ratio array used for detection.\n    bin_size: Size of each bin/window in base pairs.\n    method: Detection method used.\n    parameters: Dictionary of parameters used."
+      },
+      "sv_calling.SVType": {
+        "doc": "Structural variant types."
+      },
+      "sv_calling.InsertSizeStats": {
+        "doc": "Insert size distribution statistics.\n\nAttributes:\n    mean: Mean insert size.\n    std: Standard deviation of insert size.\n    median: Median insert size.\n    mad: Median absolute deviation."
+      },
+      "sv_calling.SVEvidence": {
+        "doc": "Evidence supporting a structural variant call.\n\nAttributes:\n    split_reads: Number of supporting split reads.\n    discordant_pairs: Number of supporting discordant read pairs.\n    depth_support: Whether read depth supports the call.\n    evidence_reads: List of read names providing evidence.\n    breakpoint1: Estimated position of first breakpoint.\n    breakpoint2: Estimated position of second breakpoint.\n    chrom1: Chromosome of first breakpoint.\n    chrom2: Chromosome of second breakpoint.\n    strand1: Strand orientation at breakpoint 1.\n    strand2: Strand orientation at breakpoint 2."
+      },
+      "sv_calling.StructuralVariant": {
+        "doc": "A called structural variant.\n\nAttributes:\n    chrom: Primary chromosome.\n    start: Start position (0-based).\n    end: End position (0-based).\n    sv_type: Type of structural variant.\n    size: Size of the variant in base pairs.\n    quality: Quality score.\n    evidence: Supporting evidence.\n    genotype: Genotype string (e.g., '0/1', '1/1').\n    filter_status: Filter status ('PASS' or reason).\n    chrom2: Secondary chromosome (for translocations).\n    info: Additional info fields."
+      },
+      "merge.MergedVariant": {
+        "doc": "A structural variant resulting from merging multiple callsets.\n\nAttributes:\n    chrom: Chromosome.\n    start: Consensus start position.\n    end: Consensus end position.\n    sv_type: Consensus SV type.\n    size: Consensus size.\n    n_callers: Number of callers that detected this variant.\n    caller_names: Names of callers that detected this variant.\n    support_variants: Original variant calls that were merged.\n    consensus_quality: Quality based on multi-caller agreement.\n    genotype: Consensus genotype."
+      },
+      "merge.MergeStats": {
+        "doc": "Statistics from a merge operation.\n\nAttributes:\n    n_input_callsets: Number of input callsets.\n    n_input_variants: Total variants across all callsets.\n    n_output_variants: Number of merged variants.\n    n_multi_caller: Variants detected by multiple callers.\n    n_single_caller: Variants detected by only one caller.\n    caller_counts: Variants per caller."
+      },
+      "quality_filter.FilterStats": {
+        "doc": "Statistics from a filtering operation.\n\nAttributes:\n    input_count: Number of variants before filtering.\n    output_count: Number of variants passing filter.\n    filtered_count: Number of variants removed.\n    filter_name: Name of the filter applied.\n    parameters: Filter parameters used."
+      }
+    }
+  }
+}

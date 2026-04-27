@@ -223,49 +223,49 @@ The pipeline is configured for 28 Hymenoptera species across two major clades:
 
 | Species | Quantified | Failed | Pending | Total | Status |
 |---|---:|---:|---:|---:|---|
-| *A. mellifera* | 5,000 | 459 | 82 active | 5,541 | 🏃 Active |
-| *H. saltator* | 368 | 0 | 0 | 368 | ✅ Complete |
-| *S. invicta* | 325 | 10 | 0 | 335 | ✅ Complete |
+| *A. mellifera* | 5,000 | 459 | 82 active | 5,541 | Active |
+| *H. saltator* | 368 | 0 | 0 | 368 | [DONE] Complete |
+| *S. invicta* | 325 | 10 | 0 | 335 | [DONE] Complete |
 | *T. americanus* | 30 | 0 | 300 | 330 | ⏳ Pending |
-| *C. floridanus* | 292 | 0 | 0 | 292 | ✅ Complete |
-| *A. cephalotes* | 219 | 1 | 0 | 220 | ✅ Complete |
-| *O. biroi* | 217 | 0 | 0 | 217 | ✅ Complete |
-| *C. obscurior* | 151 | 2 | 5 | 158 | ✅ Nearly |
-| *T. longispinosus* | 148 | 0 | 0 | 148 | ✅ Complete |
-| *L. humile* | 113 | 0 | 0 | 113 | ✅ Complete |
-| *T. nylanderi* | 103 | 12 | 0 | 115 | ✅ Complete |
-| *M. pharaonis* | 98 | 0 | 0 | 98 | ✅ Complete |
+| *C. floridanus* | 292 | 0 | 0 | 292 | [DONE] Complete |
+| *A. cephalotes* | 219 | 1 | 0 | 220 | [DONE] Complete |
+| *O. biroi* | 217 | 0 | 0 | 217 | [DONE] Complete |
+| *C. obscurior* | 151 | 2 | 5 | 158 | [DONE] Nearly |
+| *T. longispinosus* | 148 | 0 | 0 | 148 | [DONE] Complete |
+| *L. humile* | 113 | 0 | 0 | 113 | [DONE] Complete |
+| *T. nylanderi* | 103 | 12 | 0 | 115 | [DONE] Complete |
+| *M. pharaonis* | 98 | 0 | 0 | 98 | [DONE] Complete |
 | *P. barbatus* | 70 | 0 | 62 | 132 | ⏳ Pending |
-| *A. echinatior* | 44 | 0 | 0 | 44 | ✅ Complete |
-| *N. fulva* | 40 | 0 | 0 | 40 | ✅ Complete |
-| *W. auropunctata* | 33 | 0 | 0 | 33 | ✅ Complete |
-| *F. exsecta* | 23 | 0 | 0 | 23 | ✅ Complete |
-| *O. brunneus* | 19 | 0 | 0 | 19 | ✅ Complete |
-| *V. emeryi* | 15 | 0 | 0 | 15 | ✅ Complete |
+| *A. echinatior* | 44 | 0 | 0 | 44 | [DONE] Complete |
+| *N. fulva* | 40 | 0 | 0 | 40 | [DONE] Complete |
+| *W. auropunctata* | 33 | 0 | 0 | 33 | [DONE] Complete |
+| *F. exsecta* | 23 | 0 | 0 | 23 | [DONE] Complete |
+| *O. brunneus* | 19 | 0 | 0 | 19 | [DONE] Complete |
+| *V. emeryi* | 15 | 0 | 0 | 15 | [DONE] Complete |
 | *T. curvispinosus* | 14 | 0 | 29 | 43 | ⏳ Pending |
-| *D. quadriceps* | 13 | 0 | 0 | 13 | ✅ Complete |
-| *A. gracilipes* | 7 | 0 | 0 | 7 | ✅ Complete |
+| *D. quadriceps* | 13 | 0 | 0 | 13 | [DONE] Complete |
+| *A. gracilipes* | 7 | 0 | 0 | 7 | [DONE] Complete |
 | **TOTAL** | **7,342** | **484** | **478** | **8,304** | **88% done** |
 
 ## 12. Output Directory Structure
 
 ```
 output/amalgkit/<species>/
-├── work/
-│   ├── metadata/
-│   │   └── metadata.tsv          # SRA metadata with tissue normalization
-│   ├── index/
-│   │   └── <species>_transcripts.idx  # Kallisto transcriptome index
-│   ├── quant/
-│   │   └── <SRR_ID>/
-│   │       └── abundance.tsv     # Per-sample Kallisto output
-│   ├── merge/
-│   │   └── merged_abundance.tsv  # Combined expression matrix
-│   ├── curate/
-│   │   └── <species>/tables/     # QC-filtered expression data
-│   └── sanity/                   # Validation outputs
-├── shared/genome/<Species>/      # Reference genome and index files
-└── pipeline_progress.db          # SQLite progress tracking database
+ work/
+ metadata/
+ metadata.tsv # SRA metadata with tissue normalization
+ index/
+ <species>_transcripts.idx # Kallisto transcriptome index
+ quant/
+ <SRR_ID>/
+ abundance.tsv # Per-sample Kallisto output
+ merge/
+ merged_abundance.tsv # Combined expression matrix
+ curate/
+ <species>/tables/ # QC-filtered expression data
+ sanity/ # Validation outputs
+ shared/genome/<Species>/ # Reference genome and index files
+ pipeline_progress.db # SQLite progress tracking database
 ```
 
 ## 13. Reproducibility

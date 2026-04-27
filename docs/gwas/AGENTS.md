@@ -1,21 +1,18 @@
 # Agent Directives: docs/gwas
 
 ## Role
-Documentation for genome-wide association study workflows.
 
-## Contents
-- `index.md` - GWAS module overview
-- `workflow.md` - Complete GWAS pipeline documentation
-- `config.md` - Configuration options
-- `structure.md` - Population structure analysis
-- `visualization_gallery.md` - Plot examples
-- `ASSESSMENT.md` - Module assessment
-- Species-specific guides (amellifera, pbarbatus)
+Documentation for the GWAS (Genome-Wide Association Studies) module.
 
-## Key Topics
-- Association testing (linear, logistic)
-- Quality control filters (MAF, HWE, missingness)
-- Multiple testing correction (Bonferroni, FDR)
-- Visualization (Manhattan, QQ, regional plots)
-- Variant calling integration (bcftools, GATK)
-- SRA data acquisition
+## Module Scope
+
+Association testing (linear, logistic, mixed model), quality control, population structure (PCA, kinship), fine-mapping (SuSiE, credible sets), colocalization, heritability (LDSC, GREML), and comprehensive visualization.
+
+## Key Source Files
+
+| Path | Description |
+|------|-------------|
+| `src/metainformant/gwas/analysis/` | Association testing and QC |
+| `src/metainformant/gwas/finemapping/` | Fine-mapping and colocalization |
+| `src/metainformant/gwas/visualization/` | Manhattan, QQ, regional plots |
+| `src/metainformant/gwas/workflow/` | End-to-end pipeline execution |

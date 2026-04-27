@@ -2,7 +2,7 @@
 
 Python wrapper for the amalgkit RNA-seq quantification tool.
 
-## 📦 Components
+## Components
 
 | File | Purpose |
 |------|---------|
@@ -14,7 +14,7 @@ Python wrapper for the amalgkit RNA-seq quantification tool.
 | [`tissue_normalizer.py`](tissue_normalizer.py) | Tissue label normalization via mapping files |
 | [`__main__.py`](__main__.py) | CLI entry point |
 
-## 🔑 Key Functions
+## Key Functions
 
 ### amalgkit.py
 
@@ -33,7 +33,7 @@ Python wrapper for the amalgkit RNA-seq quantification tool.
 - `filter_rna_seq_samples()` - Filter to valid RNA-seq
 - `select_qualified_samples()` - Apply quality criteria
 
-## 🚀 Usage
+## Usage
 
 ```python
 from metainformant.rna.amalgkit import (
@@ -49,7 +49,7 @@ cmd = build_amalgkit_command("quant", {"out_dir": "work", "threads": 4})
 result = run_amalgkit("quant", AmalgkitParams(out_dir="work", threads=4))
 ```
 
-## 🔗 Related
+## Related
 
 - [engine/](../engine/) - Workflow orchestration
 - [config/amalgkit/](../../../../config/amalgkit/) - Configurations

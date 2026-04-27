@@ -67,5 +67,5 @@ uv run python examples/{module}/example_{feature}.py
 
 Validate all examples:
 ```bash
-uv run python scripts/validate_examples.py
+uv run python scripts/test_examples/validate_examples.py
 ```

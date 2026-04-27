@@ -9,10 +9,10 @@ Data quality assessment and control: FASTQ quality metrics, general quality metr
 ## Source Structure
 ```
 src/metainformant/quality/
-├── analysis/
-│   ├── contamination.py, metrics.py
-└── io/
-    └── fastq.py
+ analysis/
+ contamination.py, metrics.py
+ io/
+ fastq.py
 ```
 
 ## Package Management

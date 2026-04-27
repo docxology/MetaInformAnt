@@ -1,19 +1,19 @@
 # Personal AI Infrastructure (PAI) - output
 
-## 🧠 Context & Intent
+## Context & Intent
 - **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/core/output`
 - **Purpose**: Functionality for output.
 - **Domain**: core
 
-## 🏗️ Virtual Hierarchy
+## Virtual Hierarchy
 - **Type**: Source Code
 - **Parent**: `core`
 
-## 📝 Maintenance Notes
+## Maintenance Notes
 - **System**: Part of the METAINFORMANT Core layer.
 - **Style**: Strict type hinting, no mocks in tests.
 - **Stability**: API boundaries should be respected.
 
-## 🔄 AI Workflows
+## AI Workflows
 - **Modification**: Run functional tests in `tests/` before committing.
 - **Documentation**: Update `SPEC.md` if architectural patterns change.

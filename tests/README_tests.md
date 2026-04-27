@@ -9,14 +9,14 @@ Tests are organized to mirror the source code structure:
 
 ```
 tests/
-├── test_core_*.py          # Core infrastructure tests
-├── test_dna_*.py           # DNA analysis tests
-├── test_rna_*.py           # RNA workflow tests
-├── test_protein_*.py       # Protein analysis tests
-├── test_math_*.py          # Mathematical biology tests
-├── test_simulation_*.py    # Simulation tests
-├── test_visualization_*.py # Visualization tests
-└── test_*.py               # Cross-cutting and integration tests
+ test_core_*.py # Core infrastructure tests
+ test_dna_*.py # DNA analysis tests
+ test_rna_*.py # RNA workflow tests
+ test_protein_*.py # Protein analysis tests
+ test_math_*.py # Mathematical biology tests
+ test_simulation_*.py # Simulation tests
+ test_visualization_*.py # Visualization tests
+ test_*.py # Cross-cutting and integration tests
 ```
 
 ### Test Data (`data/`)

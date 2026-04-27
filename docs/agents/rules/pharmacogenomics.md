@@ -6,20 +6,20 @@ Clinical pharmacogenomics analysis with star allele calling, diplotype determina
 ## Source Structure
 ```
 src/metainformant/pharmacogenomics/
-├── alleles/
-│   ├── star_allele.py   # Star allele calling, definition matching, CYP2D6 CNV
-│   ├── diplotype.py     # Diplotype determination, activity score calculation
-│   └── phenotype.py     # Metabolizer status prediction, population frequencies
-├── annotations/
-│   ├── cpic.py          # CPIC guideline loading, drug-gene lookup, dosing
-│   ├── pharmgkb.py      # PharmGKB queries, clinical annotations, evidence levels
-│   └── drug_labels.py   # FDA drug label parsing, biomarker extraction
-├── clinical/
-│   ├── pathogenicity.py    # ACMG variant classification, ClinVar/gnomAD queries
-│   ├── drug_interaction.py # Drug-gene interactions, contraindications, polypharmacy
-│   └── reporting.py        # Clinical report generation, disclaimers
-└── visualization/
-    └── plots.py          # Metabolizer status, allele frequencies, ACMG criteria charts
+ alleles/
+ star_allele.py # Star allele calling, definition matching, CYP2D6 CNV
+ diplotype.py # Diplotype determination, activity score calculation
+ phenotype.py # Metabolizer status prediction, population frequencies
+ annotations/
+ cpic.py # CPIC guideline loading, drug-gene lookup, dosing
+ pharmgkb.py # PharmGKB queries, clinical annotations, evidence levels
+ drug_labels.py # FDA drug label parsing, biomarker extraction
+ clinical/
+ pathogenicity.py # ACMG variant classification, ClinVar/gnomAD queries
+ drug_interaction.py # Drug-gene interactions, contraindications, polypharmacy
+ reporting.py # Clinical report generation, disclaimers
+ visualization/
+ plots.py # Metabolizer status, allele frequencies, ACMG criteria charts
 ```
 
 ## Dependencies

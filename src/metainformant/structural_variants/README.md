@@ -2,6 +2,25 @@
 
 Structural variant analysis: CNV detection via circular binary segmentation, SV calling from split/discordant reads, annotation, filtering, population genotyping, and visualization.
 
+## Overview
+
+Structural variant analysis: CNV detection via circular binary segmentation, SV calling from split/discordant reads, annotation, filtering, population genotyping, and visualization.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Submodules](#submodules)
+- [Key Capabilities](#key-capabilities)
+  - [CNV Detection](#cnv-detection)
+  - [SV Calling](#sv-calling)
+  - [Annotation](#annotation)
+  - [Filtering](#filtering)
+  - [Population Analysis](#population-analysis)
+- [Quick Start](#quick-start)
+- [Integration](#integration)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -128,6 +147,7 @@ assoc = sv_association_test(genotypes=gt_matrix, phenotypes=pheno_values)
 ```
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [docs/structural_variants/](../../../docs/structural_variants/) - Detection, annotation, filtering docs
 - [metainformant.dna](../dna/) - Upstream alignment and variant calling

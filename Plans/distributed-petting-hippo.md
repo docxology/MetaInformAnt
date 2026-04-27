@@ -34,7 +34,7 @@ Full audit of `docs/` revealed the documentation is overall excellent (415+ file
 
 ### 6. CLAUDE.md missing `cloud/` module
 - `src/metainformant/cloud/` exists with `__init__.py` but is not listed in the CLAUDE.md architecture diagram
-- **Fix**: Add `├── cloud/           # GCP deployment, Docker pipelines` to the module structure
+- **Fix**: Add ` cloud/ # GCP deployment, Docker pipelines` to the module structure
 
 ### 7. `src/metainformant/mcp/` missing `__init__.py`
 - Directory exists with `tools/` subdirectory but no `__init__.py` -- not a proper Python package

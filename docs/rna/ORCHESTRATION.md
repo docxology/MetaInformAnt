@@ -11,7 +11,7 @@ Overview of scripts for running RNA-seq workflows across species.
 
 ---
 
-## Streaming Orchestrator: `streaming_orchestrator.py` ⭐⭐
+## Streaming Orchestrator: `streaming_orchestrator.py`
 
 **Script**: `src/metainformant/rna/engine/streaming_orchestrator.py`  
 **Entry Point**: `python3 -m metainformant.rna.engine.streaming_orchestrator`
@@ -36,7 +36,7 @@ python3 -m metainformant.rna.engine.streaming_orchestrator \
 
 ---
 
-## Main Orchestrator: `run_workflow.py` ⭐
+## Main Orchestrator: `run_workflow.py`
 
 **Script**: `scripts/rna/run_workflow.py`
 

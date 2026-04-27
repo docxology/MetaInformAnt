@@ -16,7 +16,7 @@ Based on industry best practices and research showing that mocking is an anti-pa
 
 ### Policy Implementation
 
-#### ✅ **ALLOWED: Real Implementations Only**
+#### **ALLOWED: Real Implementations Only**
 - **Real API calls** to UniProt, PDB, AlphaFold, NCBI with timeout handling
 - **Actual file downloads** and I/O operations with proper error handling  
 - **Real database connections** when available, graceful skip when not
@@ -24,7 +24,7 @@ Based on industry best practices and research showing that mocking is an anti-pa
 - **Authentic network requests** with proper timeout and retry logic
 - **Environment variable configuration** for test setup (acceptable real configuration)
 
-#### ❌ **PROHIBITED: All Forms of Mocking**
+#### **PROHIBITED: All Forms of Mocking**
 - `unittest.mock.Mock`, `unittest.mock.patch`, `unittest.mock.MagicMock`
 - `pytest-mock`, `pytest.MonkeyPatch` for function replacement
 - HTTP mocking libraries (responses, httpretty, etc.)
@@ -131,12 +131,12 @@ filterwarnings = [
 ```
 
 #### **Code Review Checklist**
-- ❌ No imports of `unittest.mock` or similar libraries
-- ❌ No `@patch` decorators or `monkeypatch` usage
-- ❌ No fake/stub/mock objects in test code
-- ✅ Real API calls with proper skip conditions
-- ✅ Actual file I/O with temporary directories
-- ✅ Genuine external tool execution
+- No imports of `unittest.mock` or similar libraries
+- No `@patch` decorators or `monkeypatch` usage
+- No fake/stub/mock objects in test code
+- Real API calls with proper skip conditions
+- Actual file I/O with temporary directories
+- Genuine external tool execution
 
 #### **Automated Detection**
 The test runner and CI/CD should flag:

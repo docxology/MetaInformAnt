@@ -1,20 +1,20 @@
 # Specification: pharmacogenomics
 
-## 🎯 Scope
+## Scope
 
 Clinical pharmacogenomic analysis: star allele calling, metabolizer phenotyping, CPIC guideline lookups, drug interaction prediction, and report generation.
 
-## 🧱 Architecture
+## Architecture
 
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 
 - **Sub-packages**: alleles, annotations, metabolism, interaction, clinical, visualization
 - **Key Concepts**: `StarAllele`, star allele calling, CPIC activity scores, metabolizer phenotypes
 
-## 🔌 API Definition
+## API Definition
 
 ### Exports
 

@@ -3,10 +3,10 @@
 ## Overview
 Functionality for multiomics.
 
-## 📦 Contents
+## Contents
 - `[example_integration.py](example_integration.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

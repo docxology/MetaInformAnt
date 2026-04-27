@@ -13,13 +13,13 @@ Working example scripts demonstrating METAINFORMANT functionality. Contains real
 ### Directory Structure
 ```
 examples/
-├── core/               # Core infrastructure examples
-├── dna/                # DNA sequence analysis examples
-├── rna/                # RNA-seq and amalgkit examples
-├── gwas/               # GWAS pipeline examples
-├── {module}/           # Domain-specific examples
-├── integration/        # Cross-module integration examples
-└── templates/          # Templates for creating new examples
+ core/ # Core infrastructure examples
+ dna/ # DNA sequence analysis examples
+ rna/ # RNA-seq and amalgkit examples
+ gwas/ # GWAS pipeline examples
+ {module}/ # Domain-specific examples
+ integration/ # Cross-module integration examples
+ templates/ # Templates for creating new examples
 ```
 
 ## Data Structures
@@ -51,10 +51,10 @@ uv run python examples/dna/example_alignment.py
 uv run python examples/gwas/example_association.py
 
 # Validate all examples
-uv run python scripts/validate_examples.py
+uv run python scripts/test_examples/validate_examples.py
 
 # Benchmark examples
-uv run python scripts/benchmark_examples.py
+uv run python scripts/test_examples/benchmark_examples.py
 ```
 
 ### Example Structure

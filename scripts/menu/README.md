@@ -3,10 +3,10 @@
 ## Overview
 Functionality for menu.
 
-## 📦 Contents
+## Contents
 - `[run_menu.py](run_menu.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

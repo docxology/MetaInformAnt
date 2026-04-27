@@ -3,13 +3,13 @@
 ## Overview
 Functionality for dna.
 
-## 📦 Contents
+## Contents
 - `[example_alignment.py](example_alignment.py)`
 - `[example_phylogeny.py](example_phylogeny.py)`
 - `[example_population.py](example_population.py)`
 - `[example_sequences.py](example_sequences.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

@@ -6,19 +6,19 @@ Spatial transcriptomics analysis supporting Visium, MERFISH, and Xenium platform
 ## Source Structure
 ```
 src/metainformant/spatial/
-├── io/
-│   ├── visium.py          # 10x Visium data loading, tissue positions, spatial images
-│   ├── merfish.py         # MERFISH transcript spots, cell metadata, aggregation
-│   └── xenium.py          # 10x Xenium transcripts, cell features, boundaries
-├── analysis/
-│   ├── clustering.py      # Spatial clustering (Leiden/Louvain), graph construction
-│   ├── deconvolution.py   # Cell type deconvolution (NNLS, NMF), enrichment scoring
-│   ├── autocorrelation.py # Moran's I, Geary's C, Getis-Ord G, variograms
-│   └── neighborhood.py    # Neighborhood enrichment, niche detection, Ripley's K
-├── integration/
-│   └── scrna_mapping.py   # scRNA-seq mapping, anchor-based transfer, gene imputation
-└── visualization/
-    └── plots.py           # Spatial scatter, tissue overlay, gene maps, interaction heatmaps
+ io/
+ visium.py # 10x Visium data loading, tissue positions, spatial images
+ merfish.py # MERFISH transcript spots, cell metadata, aggregation
+ xenium.py # 10x Xenium transcripts, cell features, boundaries
+ analysis/
+ clustering.py # Spatial clustering (Leiden/Louvain), graph construction
+ deconvolution.py # Cell type deconvolution (NNLS, NMF), enrichment scoring
+ autocorrelation.py # Moran's I, Geary's C, Getis-Ord G, variograms
+ neighborhood.py # Neighborhood enrichment, niche detection, Ripley's K
+ integration/
+ scrna_mapping.py # scRNA-seq mapping, anchor-based transfer, gene imputation
+ visualization/
+ plots.py # Spatial scatter, tissue overlay, gene maps, interaction heatmaps
 ```
 
 ## Dependencies

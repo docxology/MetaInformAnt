@@ -3,10 +3,10 @@
 ## Overview
 Functionality for epigenome.
 
-## 📦 Contents
+## Contents
 - `[example_methylation.py](example_methylation.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

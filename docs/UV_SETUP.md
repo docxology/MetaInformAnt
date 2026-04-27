@@ -69,12 +69,12 @@ METAINFORMANT automatically detects filesystem type and configures UV accordingl
 
 | Filesystem | Symlinks | UV Cache | Venv Location | Notes |
 |------------|----------|----------|---------------|-------|
-| **ext4** | ✅ Yes | `.uv-cache` | `.venv` | Standard Linux |
-| **NTFS** | ✅ Yes | `.uv-cache` | `.venv` | Cross-platform |
-| **exFAT** | ❌ No | `/tmp/uv-cache` | `/tmp/metainformant_venv` | Auto-detected |
-| **FAT32** | ❌ No | `/tmp/uv-cache` | `/tmp/metainformant_venv` | Auto-detected |
-| **Btrfs** | ✅ Yes | `.uv-cache` | `.venv` | Advanced Linux |
-| **APFS** | ✅ Yes | `.uv-cache` | `.venv` | macOS |
+| **ext4** | [DONE] Yes | `.uv-cache` | `.venv` | Standard Linux |
+| **NTFS** | [DONE] Yes | `.uv-cache` | `.venv` | Cross-platform |
+| **exFAT** | No | `/tmp/uv-cache` | `/tmp/metainformant_venv` | Auto-detected |
+| **FAT32** | No | `/tmp/uv-cache` | `/tmp/metainformant_venv` | Auto-detected |
+| **Btrfs** | [DONE] Yes | `.uv-cache` | `.venv` | Advanced Linux |
+| **APFS** | [DONE] Yes | `.uv-cache` | `.venv` | macOS |
 
 ### Automatic Detection
 
@@ -194,11 +194,11 @@ bash scripts/package/setup.sh --skip-tests
 ```
 
 **Features**:
-- ✅ Automatic filesystem detection
-- ✅ Cache directory configuration
-- ✅ Virtual environment creation
-- ✅ Dependency installation
-- ✅ FAT filesystem support
+- Automatic filesystem detection
+- Cache directory configuration
+- Virtual environment creation
+- Dependency installation
+- FAT filesystem support
 
 ### Development Setup Script
 
@@ -209,11 +209,11 @@ bash scripts/package/uv_dev_setup.sh
 ```
 
 **Features**:
-- ✅ Filesystem detection
-- ✅ Cache configuration
-- ✅ Dependency syncing
-- ✅ Pre-commit hooks
-- ✅ Task runner scripts
+- Filesystem detection
+- Cache configuration
+- Dependency syncing
+- Pre-commit hooks
+- Task runner scripts
 
 ## Testing
 
@@ -235,10 +235,10 @@ bash scripts/package/test.sh --mode fast integration
 ```
 
 **Automatic Handling**:
-- ✅ Filesystem detection
-- ✅ Cache directory configuration
-- ✅ Venv location detection
-- ✅ Proper pytest command selection
+- Filesystem detection
+- Cache directory configuration
+- Venv location detection
+- Proper pytest command selection
 
 ### Verification Script
 
@@ -249,48 +249,48 @@ bash scripts/package/verify.sh --mode setup
 ```
 
 **Checks**:
-- ✅ UV installation
-- ✅ Filesystem type detection
-- ✅ Cache directory configuration
-- ✅ Virtual environment location
-- ✅ Venv creation capability
-- ✅ Basic UV commands
-- ✅ Package installation
+- UV installation
+- Filesystem type detection
+- Cache directory configuration
+- Virtual environment location
+- Venv creation capability
+- Basic UV commands
+- Package installation
 
 **Example Output**:
 ```
-🔍 Verifying UV setup for METAINFORMANT...
+ Verifying UV setup for METAINFORMANT...
 
 [1/7] Checking UV installation...
-✓ UV is installed: uv 0.1.0
+ UV is installed: uv 0.1.0
 
 [2/7] Detecting filesystem type...
-⚠ FAT filesystem detected: exfat (no symlink support)
+ FAT filesystem detected: exfat (no symlink support)
 
 [3/7] Checking UV cache directory configuration...
-✓ UV_CACHE_DIR is set: /tmp/uv-cache
-✓ Cache directory is writable: /tmp/uv-cache
+ UV_CACHE_DIR is set: /tmp/uv-cache
+ Cache directory is writable: /tmp/uv-cache
 
 [4/7] Checking virtual environment location...
-✓ Virtual environment found at: /tmp/metainformant_venv (Python 3.11.5)
+ Virtual environment found at: /tmp/metainformant_venv (Python 3.11.5)
 
 [5/7] Testing venv creation capability...
-✓ Venv already exists, skipping creation test
+ Venv already exists, skipping creation test
 
 [6/7] Testing basic UV commands...
-✓ uv pip list command works
-✓ Python in venv is executable
+ uv pip list command works
+ Python in venv is executable
 
 [7/7] Testing package installation capability...
-✓ Package installation test passed
+ Package installation test passed
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 Verification Summary:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 Passed: 7
 Warnings: 1
 
-✓ UV setup verified for FAT filesystem
+ UV setup verified for FAT filesystem
 
 Configuration:
   Filesystem: exfat (FAT - no symlink support)
@@ -502,10 +502,10 @@ bash scripts/package/verify.sh --mode setup
 ### 5. FAT Filesystem Considerations
 
 On FAT filesystems:
-- ✅ Cache directory automatically uses `/tmp/uv-cache`
-- ✅ Venv automatically uses `/tmp/metainformant_venv`
-- ⚠️ Venv deleted on reboot (recreate with setup script)
-- ⚠️ No manual configuration needed
+- Cache directory automatically uses `/tmp/uv-cache`
+- Venv automatically uses `/tmp/metainformant_venv`
+- Venv deleted on reboot (recreate with setup script)
+- No manual configuration needed
 
 ## Related Documentation
 
@@ -518,11 +518,11 @@ On FAT filesystems:
 
 METAINFORMANT's UV setup is **fully automatic** on all filesystems:
 
-✅ **Automatic filesystem detection** - No manual configuration needed  
-✅ **Automatic cache directory** - Uses `/tmp/uv-cache` on FAT filesystems  
-✅ **Automatic venv location** - Uses `/tmp/metainformant_venv` on FAT filesystems  
-✅ **All scripts handle FAT** - Setup, testing, and verification scripts work automatically  
-✅ **Comprehensive verification** - Verification script confirms proper setup  
+ **Automatic filesystem detection** - No manual configuration needed
+ **Automatic cache directory** - Uses `/tmp/uv-cache` on FAT filesystems
+ **Automatic venv location** - Uses `/tmp/metainformant_venv` on FAT filesystems
+ **All scripts handle FAT** - Setup, testing, and verification scripts work automatically
+ **Comprehensive verification** - Verification script confirms proper setup
 
 **No manual `UV_CACHE_DIR` exports needed** - everything is handled automatically!
 

@@ -2,6 +2,22 @@
 
 Single-cell RNA-seq analysis: preprocessing, dimensionality reduction, clustering, trajectory inference, and visualization for METAINFORMANT.
 
+## Overview
+
+Single-cell RNA-seq analysis: preprocessing, dimensionality reduction, clustering, trajectory inference, and visualization for METAINFORMANT.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Submodules](#submodules)
+- [Key Capabilities](#key-capabilities)
+  - [Preprocessing and QC](#preprocessing-and-qc)
+  - [Dimensionality Reduction](#dimensionality-reduction)
+  - [Clustering and Trajectory](#clustering-and-trajectory)
+- [Quick Start](#quick-start)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -93,6 +109,7 @@ fig = plot_umap(data, color="leiden")
 ```
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [metainformant.rna](../rna/) - Bulk RNA-seq expression analysis
 - [metainformant.epigenome](../epigenome/) - Epigenomic assays for single-cell

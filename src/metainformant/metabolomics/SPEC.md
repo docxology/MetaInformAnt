@@ -1,20 +1,20 @@
 # Specification: metabolomics
 
-## 🎯 Scope
+## Scope
 
 Metabolomics analysis: mass spectrometry data processing, metabolite identification, pathway mapping, and metabolite-gene integration.
 
-## 🧱 Architecture
+## Architecture
 
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 
 - **Sub-packages**: io, analysis, pathways, visualization
 - **Key Concepts**: Mass spectrometry, metabolite identification, pathway enrichment
 
-## 🔌 API Definition
+## API Definition
 
 ### Exports
 

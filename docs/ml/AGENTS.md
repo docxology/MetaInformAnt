@@ -1,17 +1,17 @@
 # Agent Directives: docs/ml
 
 ## Role
-Documentation for machine learning applied to biological data.
 
-## Contents
-- Classification methods (random forest, SVM, neural networks)
-- Regression analysis
-- Feature selection and extraction
-- Cross-validation strategies
-- Model evaluation metrics
+Documentation for the machine learning module.
 
-## Key Patterns
-- scikit-learn integration
-- Biological feature engineering
-- Imbalanced class handling
-- Hyperparameter tuning
+## Module Scope
+
+Classification, regression, feature selection, model evaluation, interpretability, AutoML, and LLM integration (Ollama).
+
+## Key Source Files
+
+| Path | Description |
+|------|-------------|
+| `src/metainformant/ml/models/` | Classification and regression models |
+| `src/metainformant/ml/features/` | Feature extraction and selection |
+| `src/metainformant/ml/llm/` | LLM integration (Ollama) |

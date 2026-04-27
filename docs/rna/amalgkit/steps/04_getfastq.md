@@ -71,11 +71,11 @@ steps:
 
 ```
 out_dir/
-└── getfastq/                   # Created automatically by amalgkit
-    └── SRR12345678/
-        ├── SRR12345678_1.fastq.gz   # Paired-end read 1
-        ├── SRR12345678_2.fastq.gz   # Paired-end read 2 (if paired)
-        └── SRR12345678.fastq.gz     # Single-end (if applicable)
+ getfastq/ # Created automatically by amalgkit
+ SRR12345678/
+ SRR12345678_1.fastq.gz # Paired-end read 1
+ SRR12345678_2.fastq.gz # Paired-end read 2 (if paired)
+ SRR12345678.fastq.gz # Single-end (if applicable)
 ```
 
 **Note:** FASTQs are **temporary**. They are deleted immediately after successful kallisto quantification. The `abundance.tsv` file is the canonical output.
@@ -116,7 +116,7 @@ If you lack storage capacity and bandwidth, or conversely, if you have immense e
 Samples categorically skipped entirely (if bypasses trigger) will be logged as:
 
 ```
-✗ SzSkip — SRR12345678 (12.2B bases, limit: 10.0B)
+ SzSkip — SRR12345678 (12.2B bases, limit: 10.0B)
 ```
 
 ## Performance

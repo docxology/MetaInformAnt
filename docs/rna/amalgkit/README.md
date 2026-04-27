@@ -17,8 +17,8 @@ Amalgkit handles the full pipeline from public database → expression matrix:
 
 ```
 scripts/rna/run_all_species.py
-   └─ iterates species configs → run_workflow.py per species
-         └─ per sample: download_ena.py (wget) → amalgkit quant → delete FASTQ
+ iterates species configs → run_workflow.py per species
+ per sample: download_ena.py (wget) → amalgkit quant → delete FASTQ
 ```
 
 The orchestrator (`run_all_species.py`) drives sequential per-species execution. Each species config lives in `config/amalgkit/amalgkit_<species>.yaml`.
@@ -27,22 +27,22 @@ The orchestrator (`run_all_species.py`) drives sequential per-species execution.
 
 ```
 docs/rna/amalgkit/
-├── README.md               ← This file
-├── guide.md                ← Quick-start guide
-├── amalgkit.md             ← Wrapper details and configuration
-├── commands.md             ← Genome setup script reference
-├── cross_species_pipeline.md  ← CSTMM + CSCA cross-species steps
-├── monitoring.md           ← How to check pipeline progress
-├── genome_preparation.md   ← Genome download and kallisto index build
-├── genome_setup_guide.md   ← Step-by-step genome setup
-├── FUNCTIONS.md            ← Python function index
-├── PATH_RESOLUTION.md      ← Path resolution reference
-├── R_INSTALLATION.md       ← R environment setup
-├── r_packages.md           ← R package management
-├── testing_coverage.md     ← Test coverage details
-├── AGENTS.md               ← AI contribution notes
-├── PAI.md                  ← Persistent AI context
-└── steps/                  ← Per-step documentation (01–11)
+ README.md ← This file
+ guide.md ← Quick-start guide
+ amalgkit.md ← Wrapper details and configuration
+ commands.md ← Genome setup script reference
+ cross_species_pipeline.md ← CSTMM + CSCA cross-species steps
+ monitoring.md ← How to check pipeline progress
+ genome_preparation.md ← Genome download and kallisto index build
+ genome_setup_guide.md ← Step-by-step genome setup
+ FUNCTIONS.md ← Python function index
+ PATH_RESOLUTION.md ← Path resolution reference
+ R_INSTALLATION.md ← R environment setup
+ r_packages.md ← R package management
+ testing_coverage.md ← Test coverage details
+ AGENTS.md ← AI contribution notes
+ PAI.md ← Persistent AI context
+ steps/ ← Per-step documentation (01–11)
 ```
 
 ## 11-Step Pipeline

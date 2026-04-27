@@ -1,23 +1,23 @@
 # Specification: ontology
 
-## 🎯 Scope
+## Scope
 Documentation for the ontology domain in MetaInformAnt.
 
-## 🧱 Architecture
+## Architecture
 - **Dependency Level**: Documentation
 - **Component Type**: Guide
 - **Location**: `docs/ontology/`
 
-## 💾 Data Structures
+## Data Structures
 - **Files**:
   - `README.md`: Overview
   - `AGENTS.md`: AI Attribution
   - `SPEC.md`: This file
   - `*.md`: Topic-specific guides
 
-## 🔌 Integration
+## Integration
 - **Source**: `src/metainformant/ontology/`
 - **Tests**: `tests/test_ontology_*.py`
 
-## 🧪 Testing Policy
+## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

@@ -1,17 +1,17 @@
 # Specification: math
 
-## 🎯 Scope
+## Scope
 Mathematical biology and theoretical modeling module for METAINFORMANT.
 
-## 🧱 Architecture
+## Architecture
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 - **Modules**: 2 Python modules
 - **Key Concepts**: Refer to Pydantic models in source.
 
-## 🔌 API Definition
+## API Definition
 ### Exports
 - `__init__.py`
 - `coalescent.py`

@@ -3,10 +3,10 @@
 ## Overview
 Functionality for config_base.
 
-## 📦 Contents
+## Contents
 
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

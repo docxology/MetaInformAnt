@@ -10,15 +10,15 @@ Machine learning for biological data: classification, regression, dimensionality
 ## Source Structure
 ```
 src/metainformant/ml/
-├── evaluation/
-│   └── validation.py
-├── features/
-│   ├── dimensionality.py, features.py
-├── llm/
-│   └── ollama/
-│       ├── chains.py, client.py, config.py, prompts.py
-└── models/
-    ├── classification.py, regression.py
+ evaluation/
+ validation.py
+ features/
+ dimensionality.py, features.py
+ llm/
+ ollama/
+ chains.py, client.py, config.py, prompts.py
+ models/
+ classification.py, regression.py
 ```
 
 ## Package Management

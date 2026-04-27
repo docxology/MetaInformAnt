@@ -3,14 +3,14 @@
 ## Overview
 Network analysis module for METAINFORMANT.
 
-## 📦 Contents
-- **[analysis/](analysis/)** — Graph algorithms, community detection, pathway analysis
-- **[interaction/](interaction/)** — Protein-protein and regulatory interactions
-- **[regulatory/](regulatory/)** — Gene regulatory network analysis
-- **[config/](config/)** — Network analysis configuration
-- **[workflow/](workflow/)** — Network analysis workflows
+## Contents
+- **[analysis/](graph.md)** — Graph algorithms, community detection, pathway analysis
+- **[interaction/](ppi.md)** — Protein-protein and regulatory interactions
+- **[regulatory/](regulatory.md)** — Gene regulatory network analysis
+- **config/** — Network analysis configuration
+- **workflow/** — Network analysis workflows
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

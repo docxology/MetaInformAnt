@@ -6,7 +6,7 @@ The `amalgkit curate` step requires several R packages for full functionality. T
 
 ## Installation Status
 
-### ✅ Successfully Installed (Core Packages)
+### Successfully Installed (Core Packages)
 
 ```r
 # Core packages - WORKING
@@ -21,7 +21,7 @@ BiocManager::install(c("pcaMethods", "NMF"))
 install.packages("pvclust", repos="https://cloud.r-project.org")
 ```
 
-**Status**: ✅ Installed successfully
+**Status**: Installed successfully
 - `dendextend` - dendrogram manipulation
 - `viridis` - color palettes
 - `gplots` - heatmaps
@@ -29,16 +29,16 @@ install.packages("pvclust", repos="https://cloud.r-project.org")
 - `pcaMethods` - PCA methods
 - `pvclust` - hierarchical clustering with p-values
 
-### ⚠️ Compilation Failures (Optional Packages)
+### Compilation Failures (Optional Packages)
 
 The following packages fail to compile due to system-level gcc/gfortran linking issues:
 
 ```
-❌ amap         - alternative clustering (can use stats::hclust)
-❌ vegan        - community ecology statistics  
-❌ sva          - surrogate variable analysis (batch effects)
-❌ RUVSeq       - remove unwanted variation
-❌ Rtsne        - t-SNE dimensionality reduction
+ amap - alternative clustering (can use stats::hclust)
+ vegan - community ecology statistics
+ sva - surrogate variable analysis (batch effects)
+ RUVSeq - remove unwanted variation
+ Rtsne - t-SNE dimensionality reduction
 ```
 
 **Error**: `ld: library 'emutls_w' not found`
@@ -67,7 +67,7 @@ amap_available <- require(amap, quietly = TRUE)
 
 ## Current Functionality
 
-### What Works ✅
+### What Works
 
 1. **curate method** - Executes successfully (return code 0)
    - Loads expression matrices
@@ -80,7 +80,7 @@ amap_available <- require(amap, quietly = TRUE)
 
 3. **All other amalgkit steps** - Complete end-to-end workflow functional
 
-### What's Limited ⚠️
+### What's Limited
 
 The `curate` step completes successfully but generates limited output files because:
 - Advanced visualization features require the optional R packages
@@ -125,9 +125,9 @@ required <- c("dendextend", "viridis", "gplots", "NMF", "pcaMethods", "pvclust",
 
 for (pkg in required) {
   if (require(pkg, quietly = TRUE, character.only = TRUE)) {
-    cat(sprintf("✓ %s\n", pkg))
+ cat(sprintf(" %s\n", pkg))
   } else {
-    cat(sprintf("✗ %s\n", pkg))
+ cat(sprintf(" %s\n", pkg))
   }
 }
 ```
@@ -135,17 +135,17 @@ for (pkg in required) {
 ### Expected Output
 
 ```
-✓ dendextend
-✓ viridis
-✓ gplots
-✓ NMF
-✓ pcaMethods
-✓ pvclust
-✗ amap
-✗ vegan
-✗ sva
-✗ RUVSeq
-✗ Rtsne
+ dendextend
+ viridis
+ gplots
+ NMF
+ pcaMethods
+ pvclust
+ amap
+ vegan
+ sva
+ RUVSeq
+ Rtsne
 ```
 
 ## Production Recommendations
@@ -159,20 +159,20 @@ for (pkg in required) {
 ### For Current System
 
 The amalgkit integration is **fully functional** for the core workflow:
-- ✅ metadata → config → select → getfastq → quant → merge → sanity
-- ✅ All methods tested and working
-- ✅ sanity produces full outputs
-- ⚠️ curate executes successfully but with limited visualization output
+- metadata → config → select → getfastq → quant → merge → sanity
+- All methods tested and working
+- sanity produces full outputs
+- curate executes successfully but with limited visualization output
 
 ## Summary
 
-**Status**: ✅ Amalgkit integration complete and functional
+**Status**: Amalgkit integration complete and functional
 
 - All 11 amalgkit methods work correctly
 - Test coverage: 197/199 tests passing
 - Real data workflow: 83 samples processed end-to-end
-- sanity outputs: ✅ 2 files generated
-- curate functionality: ✅ Core logic works, visualization limited by R environment
+- sanity outputs: 2 files generated
+- curate functionality: Core logic works, visualization limited by R environment
 
 The R package compilation issues are **environmental/system-level** problems, not amalgkit integration issues. The amalgkit Python API is fully operational and production-ready.
 
@@ -182,5 +182,5 @@ The R package compilation issues are **environmental/system-level** problems, no
 **System**: macOS (darwin 25.0.0)  
 **R Version**: 4.5.1  
 **Amalgkit Version**: 0.12.19  
-**Status**: ✅ Core functionality verified and operational
+**Status**: Core functionality verified and operational
 

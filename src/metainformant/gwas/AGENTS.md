@@ -77,3 +77,14 @@ End-to-end GWAS pipelines for social insect genomics: VCF parsing, QC, associati
 - Use `uv` for dependency management
 - Pure Python fallbacks for all numpy/scipy operations (graceful degradation)
 - All computational complexity models documented (O(n·m), O(n²·m), etc.)
+
+## Related Documentation
+
+- **Module guide**: [../../../docs/gwas/](../../../docs/gwas/) — In-depth usage, architecture, and examples
+- **API reference**: [SPEC.md](SPEC.md) — Type signatures, data structures, error codes
+- **Core infrastructure**: [../core/AGENTS.md](../core/AGENTS.md) — Shared utilities (logging, config, I/O)
+- **Full module index**: [../../../docs/index.md](../../../docs/index.md) — Overview of all METAINFORMANT modules
+- **Dna module**: [../dna/AGENTS.md](../dna/AGENTS.md)
+- **Phenotype module**: [../phenotype/AGENTS.md](../phenotype/AGENTS.md)
+- **Networks module**: [../networks/AGENTS.md](../networks/AGENTS.md)
+- **Visualization module**: [../visualization/AGENTS.md](../visualization/AGENTS.md)

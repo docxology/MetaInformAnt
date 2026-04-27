@@ -10,24 +10,24 @@ DNA sequence analysis, genomics, population genetics, and variant calling.
 ## Source Structure
 ```
 src/metainformant/dna/
-├── alignment/
-│   ├── distances.py, msa.py, pairwise.py
-├── expression/
-│   ├── codon.py, transcription.py, translation.py
-├── external/
-│   ├── entrez.py, genomes.py, ncbi.py
-├── integration/
-│   └── rna.py
-├── io/
-│   ├── fasta.py, fastq.py
-├── phylogeny/
-│   └── tree.py
-├── population/
-│   ├── analysis.py, core.py, visualization.py
-├── sequence/
-│   ├── composition.py, consensus.py, core.py, kmer.py, motifs.py, restriction.py
-└── variation/
-    ├── mutations.py, variants.py
+ alignment/
+ distances.py, msa.py, pairwise.py
+ expression/
+ codon.py, transcription.py, translation.py
+ external/
+ entrez.py, genomes.py, ncbi.py
+ integration/
+ rna.py
+ io/
+ fasta.py, fastq.py
+ phylogeny/
+ tree.py
+ population/
+ analysis.py, core.py, visualization.py
+ sequence/
+ composition.py, consensus.py, core.py, kmer.py, motifs.py, restriction.py
+ variation/
+ mutations.py, variants.py
 ```
 
 ## Package Management

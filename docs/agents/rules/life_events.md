@@ -10,16 +10,16 @@ Life course event analysis and prediction: event extraction, embedding generatio
 ## Source Structure
 ```
 src/metainformant/life_events/
-├── analysis/
-│   └── interpretability.py
-├── core/
-│   ├── config.py, events.py, utils.py
-├── models/
-│   ├── embeddings.py, models.py
-├── visualization/
-│   └── visualization.py
-└── workflow/
-    └── workflow.py
+ analysis/
+ interpretability.py
+ core/
+ config.py, events.py, utils.py
+ models/
+ embeddings.py, models.py
+ visualization/
+ visualization.py
+ workflow/
+ workflow.py
 ```
 
 ## Package Management

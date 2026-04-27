@@ -407,17 +407,17 @@ print(f"Found {len(significant)} significant variants")
 
 **Real Data Options:**
 
-1. ✅ **SRA Download** (Most flexible, requires processing)
+1.**SRA Download** (Most flexible, requires processing)
    - Download raw FASTQ with `fasterq-dump`
    - Align with BWA, call variants with bcftools/GATK
    - Full control over quality and parameters
 
-2. ✅ **Pre-Called VCF** (Fastest, limited availability)
+2.**Pre-Called VCF** (Fastest, limited availability)
    - Check EVA, Zenodo, publication supplements
    - Direct download with wget/curl
    - Ready for immediate analysis
 
-3. ✅ **Custom URL** (Moderate, requires known source)
+3.**Custom URL** (Moderate, requires known source)
    - Use `download_variant_data(source="custom", url=...)`
    - Download from research group servers
    - Verify data quality

@@ -3,12 +3,12 @@
 ## Overview
 Functionality for templates.
 
-## 📦 Contents
+## Contents
 - `[base_template.py](base_template.py)`
 - `[dna_template.py](dna_template.py)`
 - `[ml_template.py](ml_template.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

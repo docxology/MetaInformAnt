@@ -60,18 +60,18 @@ nohup python3 scripts/rna/run_all_species.py \
 
 ```
 output/amalgkit/<species>/
-├── work/
-│   ├── metadata/          # Steps 1–3 outputs
-│   ├── config_base/       # Step 2 output
-│   ├── index/             # Kallisto index (pre-built)
-│   ├── fasta/             # Transcriptome FASTA
-│   └── quant/<SRR>/       # Step 6 outputs (abundance.tsv per sample)
-├── fastq/getfastq/<SRR>/  # Step 4 (temporary — deleted after quant)
-├── merged/                # Step 7 output
-├── cstmm/                 # Step 8 output
-├── curate/                # Step 9 output
-├── csca/                  # Step 10 output
-└── logs/                  # Per-step logs
+ work/
+ metadata/ # Steps 1–3 outputs
+ config_base/ # Step 2 output
+ index/ # Kallisto index (pre-built)
+ fasta/ # Transcriptome FASTA
+ quant/<SRR>/ # Step 6 outputs (abundance.tsv per sample)
+ fastq/getfastq/<SRR>/ # Step 4 (temporary — deleted after quant)
+ merged/ # Step 7 output
+ cstmm/ # Step 8 output
+ curate/ # Step 9 output
+ csca/ # Step 10 output
+ logs/ # Per-step logs
 ```
 
 ## See Also

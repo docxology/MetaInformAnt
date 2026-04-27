@@ -3,12 +3,12 @@
 ## Overview
 Feature selection and engineering module.
 
-## 📦 Contents
+## Contents
 - `[__init__.py](__init__.py)`
 - `[dimensionality.py](dimensionality.py)`
 - `[features.py](features.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

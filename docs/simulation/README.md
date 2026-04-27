@@ -3,13 +3,13 @@
 ## Overview
 Evolutionary and Population Genetics Simulation module for METAINFORMANT.
 
-## 📦 Contents
-- **[models/](models/)**
-- **[visualization/](visualization/)**
-- **[workflow/](workflow/)**
+## Contents
+- **[models/](popgen.md)**
+- **visualization/**
+- **workflow/**
 - `[__init__.py](__init__.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

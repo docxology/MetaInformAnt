@@ -2,7 +2,27 @@
 
 Core RNA-seq analysis and workflow orchestration for METAINFORMANT.
 
-## 📊 Architecture
+## Overview
+
+Core RNA-seq analysis and workflow orchestration for METAINFORMANT.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Submodules](#submodules)
+- [Key Classes](#key-classes)
+  - [Workflow Engine](#workflow-engine)
+  - [Amalgkit Wrapper](#amalgkit-wrapper)
+- [Usage](#usage)
+- [Workflow Steps](#workflow-steps)
+- [Download Strategy: ENA-First with NCBI Fallback](#download-strategy-ena-first-with-ncbi-fallback)
+  - [SRA Cache Management (The Docker Overlay Danger)](#sra-cache-management-the-docker-overlay-danger)
+- [Index Complexity Management](#index-complexity-management)
+- [GWAS Integration](#gwas-integration)
+- [Related](#related)
+
+## Architecture
 
 ```mermaid
 graph TD
@@ -25,7 +45,7 @@ graph TD
     end
 ```
 
-## 📦 Submodules
+## Submodules
 
 | Module                               | Purpose                                       |
 |--------------------------------------|-----------------------------------------------|
@@ -37,7 +57,7 @@ graph TD
 | [`deconvolution/`](deconvolution/)   | Cell-type deconvolution from bulk RNA-seq     |
 | [`splicing/`](splicing/)             | Alternative splicing analysis                 |
 
-## 🔑 Key Classes
+## Key Classes
 
 ### Workflow Engine
 
@@ -54,7 +74,7 @@ graph TD
 - `GenomePreparator` — Reference genome download and Kallisto indexing
 - `TissueNormalizer` — Tissue label normalization via mappings
 
-## 🚀 Usage
+## Usage
 
 ```python
 from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, execute_workflow
@@ -66,7 +86,7 @@ config = AmalgkitWorkflowConfig.load("config/amalgkit/amalgkit_pogonomyrmex_barb
 result = execute_workflow(config, steps=["getfastq", "quant", "merge"])
 ```
 
-## 📊 Workflow Steps
+## Workflow Steps
 
 | Step       | Description                         |
 |------------|-------------------------------------|
@@ -77,7 +97,7 @@ result = execute_workflow(config, steps=["getfastq", "quant", "merge"])
 | `merge`    | Combine abundance files             |
 | `curate`   | Quality control and filtering       |
 
-## 🌐 Download Strategy: ENA-First with NCBI Fallback
+## Download Strategy: ENA-First with NCBI Fallback
 
 All species use a two-tier download strategy managed by the `StreamingPipelineOrchestrator`:
 
@@ -89,10 +109,10 @@ All species use a two-tier download strategy managed by the `StreamingPipelineOr
 - **Scheduling**: Size-ordered (smallest samples first) for maximum throughput
 - **Monitoring**: Real-time TUI via `scripts/rna/monitor_tui.py`
 
-### ⚠️ SRA Cache Management (The Docker Overlay Danger)
+### SRA Cache Management (The Docker Overlay Danger)
 When the NCBI Fallback is triggered across hundreds of parallel workers, `fasterq-dump` utilizes internal scratch directories. In a containerized Docker context (`ghcr.io/docxology/metainformant/pipeline`), this dumps hundreds of Gigabytes into the unmapped overlay filesystem (`/app/fasterq.tmp.*` and `/tmp/sra-cache/`) directly onto the VM's OS disk (`/dev/root`), rather than the mapped data volumes. If the root partition hits 100%, the entire pipeline will deadlock and OS calls will silently fail. This is recovered via VM reboots and manual internal purges (`rm -rf`).
 
-## 🧬 Index Complexity Management
+## Index Complexity Management
 
 For genomes with high repetitive content (e.g., *Harpegnathos saltator*), standard `kallisto index` may stall.
 
@@ -109,7 +129,7 @@ For genomes with high repetitive content (e.g., *Harpegnathos saltator*), standa
 
 *This strategy solved the Harpegnathos stall (Max EC: ~3015) by reducing index size and complexity. It is now applied automatically for any species.*
 
-## 🧬 GWAS Integration
+## GWAS Integration
 
 RNA expression data can be integrated with GWAS variants for eQTL analysis:
 
@@ -131,14 +151,16 @@ result = eqtl_coloc(
 )
 ```
 
-- [Orchestration & Performance Guide](docs/rna/ORCHESTRATION.md) — ENA-first amalgkit streaming pipeline
-- [Troubleshooting & Hacks](docs/rna/amalgkit/TROUBLESHOOTING.md) — IO contention & SRA setup fixes
+- [Orchestration & Performance Guide](../../../docs/rna/ORCHESTRATION.md) — ENA-first amalgkit streaming pipeline
+- [Troubleshooting & Hacks](../../../docs/rna/amalgkit/TROUBLESHOOTING.md) — IO contention & SRA setup fixes
 
 See [metainformant.multiomics](../multiomics/) for comprehensive integration methods.
 
-## 🔗 Related
+## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
-- [scripts/rna/](../../../scripts/rna/) - Workflow scripts
-- [config/amalgkit/](../../../config/amalgkit/) - Configuration files
+- [Agent Coordination Hub](../../../docs/agents/README.md) — Multi-agent orchestration patterns, workflows, safety
+- [scripts/rna/](../../scripts/rna/) - Workflow scripts
+- [config/amalgkit/](../../config/amalgkit/) - Configuration files
 - [config/amalgkit/amalgkit_faq.md](../../../config/amalgkit/amalgkit_faq.md) - FAQ
 - [metainformant.multiomics](../multiomics/) - GWAS-expression integration

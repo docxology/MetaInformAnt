@@ -1,18 +1,17 @@
 # Agent Directives: docs/protein
 
 ## Role
-Documentation for protein sequence and structure analysis.
 
-## Contents
-- Protein sequence alignment
-- Structure prediction (AlphaFold integration)
-- Domain annotation (InterPro)
-- UniProt/PDB data retrieval
-- RMSD calculations
-- Secondary structure analysis
+Documentation for the protein analysis module.
 
-## Key APIs
-- UniProt REST API
-- AlphaFold database
-- InterPro API
-- PDB file parsing
+## Module Scope
+
+Protein sequence analysis, structure prediction (AlphaFold), domain annotation, UniProt integration, and functional classification.
+
+## Key Source Files
+
+| Path | Description |
+|------|-------------|
+| `src/metainformant/protein/sequence/` | Sequence analysis |
+| `src/metainformant/protein/structure/` | Structure analysis and PDB |
+| `src/metainformant/protein/database/` | UniProt and database queries |

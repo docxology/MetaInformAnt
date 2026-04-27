@@ -13,16 +13,16 @@ This document describes the workflow for comparative analysis of RNA-seq data ac
 
 ```
 output/amalgkit/cross_species/
-├── cstmm/              # Normalization output
-├── csca/               # Correlation analysis output
-├── orthologs/
-│   └── orthogroups.tsv # Ortholog table (Orthogroup, Sp1, Sp2...)
-└── work/
-    └── merge_inputs/   # Input abundance matrices
-        ├── Species_One/
-        │   └── Species_One_est_counts.tsv
-        └── Species_Two/
-            └── Species_Two_est_counts.tsv
+ cstmm/ # Normalization output
+ csca/ # Correlation analysis output
+ orthologs/
+ orthogroups.tsv # Ortholog table (Orthogroup, Sp1, Sp2...)
+ work/
+ merge_inputs/ # Input abundance matrices
+ Species_One/
+ Species_One_est_counts.tsv
+ Species_Two/
+ Species_Two_est_counts.tsv
 ```
 
 ## Configuration

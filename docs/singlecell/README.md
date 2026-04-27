@@ -3,13 +3,13 @@
 ## Overview
 Single-cell analysis module for METAINFORMANT.
 
-## 📦 Contents
-- **[analysis/](analysis/)**
-- **[data/](data/)**
-- **[visualization/](visualization/)**
+## Contents
+- **[analysis/](index.md)**
+- **[data/](preprocessing.md)**
+- **[visualization/](visualization.md)**
 - `[__init__.py](__init__.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

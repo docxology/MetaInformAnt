@@ -1,20 +1,20 @@
 # Specification: networks
 
-## 🎯 Scope
+## Scope
 
 Network analysis module for METAINFORMANT.
 
-## 🧱 Architecture
+## Architecture
 
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 
 - **Sub-packages**: analysis, config, interaction, regulatory, workflow
 - **Key Concepts**: Gene regulatory networks, protein-protein interaction, network topology, community detection
 
-## 🔌 API Definition
+## API Definition
 
 ### Exports
 

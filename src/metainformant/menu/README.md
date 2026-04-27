@@ -2,6 +2,23 @@
 
 Interactive command-line menu system for METAINFORMANT -- script discovery, navigation, execution, and formatted display.
 
+## Overview
+
+Interactive command-line menu system for METAINFORMANT -- script discovery, navigation, execution, and formatted display.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Key Capabilities](#key-capabilities)
+  - [Script Discovery](#script-discovery)
+  - [Navigation](#navigation)
+  - [Execution](#execution)
+  - [Display](#display)
+- [Submodules](#submodules)
+- [Quick Start](#quick-start)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -100,6 +117,7 @@ print(format_menu(menu.items, title=menu.title))
 ```
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [`metainformant.core`](../core/) -- Shared utilities used by menu system
 - [`scripts/`](../../../scripts/) -- Discoverable analysis scripts

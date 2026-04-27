@@ -154,7 +154,7 @@ amalgkit curate --out_dir work --batch_effect_alg no
 **Solution**: Already handled via patches to `amalgkit/curate.r`:
 - Changed `library()` to `require()` for graceful degradation
 - Added fallbacks for missing functions
-- Core visualizations still work perfectly ✅
+- Core visualizations still work perfectly
 
 **Impact**: Minimal — only advanced optional features affected
 

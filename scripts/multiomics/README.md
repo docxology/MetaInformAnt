@@ -3,13 +3,13 @@
 ## Overview
 Functionality for multiomics.
 
-## 📦 Contents
+## Contents
 - `[example_basic_integration.py](example_basic_integration.py)`
 - `[example_cca.py](example_cca.py)`
 - `[example_joint_analysis.py](example_joint_analysis.py)`
 - `[run_multiomics_integration.py](run_multiomics_integration.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

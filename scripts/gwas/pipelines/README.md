@@ -3,13 +3,13 @@
 ## Overview
 Functionality for pipelines.
 
-## 📦 Contents
+## Contents
 - `[run_analysis.py](run_analysis.py)`
 - `[run_genome_scale_gwas.py](run_genome_scale_gwas.py)`
 - `[run_pbarbatus_analysis.py](run_pbarbatus_analysis.py)`
 - `[run_pbarbatus_gwas.py](run_pbarbatus_gwas.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

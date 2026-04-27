@@ -3,10 +3,10 @@
 ## Overview
 Functionality for visualization.
 
-## 📦 Contents
+## Contents
 - `[run_visualization.py](run_visualization.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

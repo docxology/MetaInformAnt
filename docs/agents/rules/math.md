@@ -10,22 +10,22 @@ Mathematical and theoretical biology: population genetics theory, selection mode
 ## Source Structure
 ```
 src/metainformant/math/
-├── coalescent.py
-├── core/
-│   ├── utilities.py, visualization.py
-├── decision_theory/
-│   └── ddm.py
-├── epidemiology/
-│   └── models.py
-├── evolutionary_dynamics/
-│   ├── core.py, egt.py
-├── perception/
-│   ├── psychophysics.py, signal_detection.py
-├── population_genetics/
-│   ├── coalescent.py, core.py, demography.py, effective_size.py
-│   ├── fst.py, ld.py, selection.py, statistics.py
-└── quantitative_genetics/
-    ├── core.py, price.py
+ coalescent.py
+ core/
+ utilities.py, visualization.py
+ decision_theory/
+ ddm.py
+ epidemiology/
+ models.py
+ evolutionary_dynamics/
+ core.py, egt.py
+ perception/
+ psychophysics.py, signal_detection.py
+ population_genetics/
+ coalescent.py, core.py, demography.py, effective_size.py
+ fst.py, ld.py, selection.py, statistics.py
+ quantitative_genetics/
+ core.py, price.py
 ```
 
 ## Package Management

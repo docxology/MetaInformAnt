@@ -1,11 +1,11 @@
 # Configuration: longread
 
-## 📝 Overview
+## Overview
 Configuration files for the longread module.
 
-## 📂 Structure
+## Structure
 - `*.yaml`: Configuration templates
 - Environment overrides supported via `LR_` prefix.
 
-## 🔗 Links
+## Links
 - [Module Docs](../../docs/longread/README.md)

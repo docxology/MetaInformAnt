@@ -3,7 +3,7 @@
 ## Overview
 Test examples package for METAINFORMANT.
 
-## 📦 Contents
+## Contents
 - `[__init__.py](__init__.py)`
 - `[discover.py](discover.py)`
 - `[main.py](main.py)`
@@ -11,7 +11,7 @@ Test examples package for METAINFORMANT.
 - `[runner.py](runner.py)`
 - `[validator.py](validator.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

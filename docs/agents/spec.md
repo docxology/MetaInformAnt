@@ -14,12 +14,12 @@ Module-specific Cursor AI rules for consistent development patterns across METAI
 
 ```text
 docs/agents/
-├── README.md               # Agents system documentation
-├── spec.md                 # Specification
-└── rules/                  # Module-specific rules
-    ├── core.md             # Core patterns
-    ├── dna.md              # DNA patterns
-    └── {module}.md         # Domain-specific patterns
+ README.md # Agents system documentation
+ spec.md # Specification
+ rules/ # Module-specific rules
+ core.md # Core patterns
+ dna.md # DNA patterns
+ {module}.md # Domain-specific patterns
 ```
 
 ## Data Structures
@@ -93,6 +93,6 @@ All cursorrules enforce these project-wide standards:
 4. Include common patterns and anti-patterns
 5. Reference related rule files
 
-## 🧪 Testing Policy
+## Testing Policy
 
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

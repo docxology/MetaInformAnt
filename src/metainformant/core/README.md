@@ -2,6 +2,22 @@
 
 Shared infrastructure for METAINFORMANT: I/O, configuration, validation, logging, workflow execution, and TUI.
 
+## Overview
+
+Shared infrastructure for METAINFORMANT: I/O, configuration, validation, logging, workflow execution, and TUI.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Submodules](#submodules)
+- [Key Capabilities](#key-capabilities)
+  - [File I/O (gzip-aware, atomic)](#file-io-gzip-aware-atomic)
+  - [Path Security and Configuration](#path-security-and-configuration)
+  - [Pipeline Orchestration](#pipeline-orchestration)
+- [Quick Start](#quick-start)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -91,6 +107,7 @@ io.dump_json(result, "output/analysis/result.json", indent=2)
 ```
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [metainformant.rna](../rna/) - RNA workflow engine built on core pipeline
 - [metainformant.visualization](../visualization/) - Plotting uses core I/O

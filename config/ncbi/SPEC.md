@@ -1,12 +1,12 @@
 # Specification: ncbi Config
 
-## 🎯 Scope
+## Scope
 Configuration templates and schemas for ncbi.
 
-## 🧱 Architecture
+## Architecture
 - **Component**: Configuration
 - **Location**: `config/ncbi/`
 
-## 💾 Data Structures
+## Data Structures
 - **Format**: YAML
 - **Schema**: `metainformant.ncbi.config`

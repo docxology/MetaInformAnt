@@ -1,16 +1,16 @@
 # Specification: dna
 
-## 🎯 Scope
+## Scope
 DNA sequence analysis and genomics module for METAINFORMANT.
 
-## 🧱 Architecture
+## Architecture
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 - **Sub-packages**: analysis, assembly, io, methylation, sequence, structural, variants, visualization, workflow
 - **Key Concepts**: Sequence analysis, variant calling, assembly, methylation
 
-## 🔌 API Definition
+## API Definition
 ### Exports
 - `__init__.py`

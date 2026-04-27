@@ -1,16 +1,17 @@
 # Agent Directives: docs/epigenome
 
 ## Role
-Documentation for epigenomic analysis: methylation, ChIP-seq, and ATAC-seq.
 
-## Contents
-- DNA methylation analysis (bedGraph, beta values)
-- Differentially methylated region (DMR) detection
-- ChIP-seq peak analysis
-- ATAC-seq chromatin accessibility
-- Histone modification analysis
+Documentation for the epigenome analysis module.
 
-## Key Formats
-- bedGraph for methylation values
-- BED for genomic intervals
-- narrowPeak/broadPeak for ChIP-seq peaks
+## Module Scope
+
+DNA methylation (BedGraph, bismark), ChIP-seq peak calling, ATAC-seq accessibility, and chromatin state analysis.
+
+## Key Source Files
+
+| Path | Description |
+|------|-------------|
+| `src/metainformant/epigenome/assays/` | Assay-specific analysis |
+| `src/metainformant/epigenome/chromatin_state/` | Chromatin state modeling |
+| `src/metainformant/epigenome/peak_calling/` | Peak detection |

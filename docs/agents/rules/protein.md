@@ -10,15 +10,15 @@ Protein sequence and structure analysis, database integration, and 3D structure 
 ## Source Structure
 ```
 src/metainformant/protein/
-├── orchestration.py
-├── database/
-│   ├── interpro.py, uniprot.py
-├── sequence/
-│   ├── alignment.py, proteomes.py, sequences.py
-├── structure/
-│   ├── alphafold.py, analysis.py, contacts.py, general.py, io.py, pdb.py, secondary.py
-└── visualization/
-    └── general.py
+ orchestration.py
+ database/
+ interpro.py, uniprot.py
+ sequence/
+ alignment.py, proteomes.py, sequences.py
+ structure/
+ alphafold.py, analysis.py, contacts.py, general.py, io.py, pdb.py, secondary.py
+ visualization/
+ general.py
 ```
 
 ## Package Management

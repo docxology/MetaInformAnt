@@ -10,23 +10,23 @@ Genome-wide association studies: variant quality control, association testing, p
 ## Source Structure
 ```
 src/metainformant/gwas/
-├── analysis/
-│   ├── annotation.py, association.py, calling.py, correction.py
-│   ├── heritability.py, ld_pruning.py, mixed_model.py
-│   ├── quality.py, structure.py, summary_stats.py, utils.py
-├── data/
-│   ├── config.py, download.py, genome.py, metadata.py, sra_download.py
-├── visualization/
-│   ├── config.py, general.py, utils.py
-│   ├── visualization_comparison.py, visualization_composite.py
-│   ├── visualization_effects.py, visualization_finemapping.py
-│   ├── visualization_genome.py, visualization_geography.py
-│   ├── visualization_interactive.py, visualization_ld.py
-│   ├── visualization_phenotype.py, visualization_population.py
-│   ├── visualization_regional.py, visualization_statistical.py
-│   ├── visualization_suite.py, visualization_variants.py
-└── workflow/
-    └── workflow.py
+ analysis/
+ annotation.py, association.py, calling.py, correction.py
+ heritability.py, ld_pruning.py, mixed_model.py
+ quality.py, structure.py, summary_stats.py, utils.py
+ data/
+ config.py, download.py, genome.py, metadata.py, sra_download.py
+ visualization/
+ config.py, general.py, utils.py
+ visualization_comparison.py, visualization_composite.py
+ visualization_effects.py, visualization_finemapping.py
+ visualization_genome.py, visualization_geography.py
+ visualization_interactive.py, visualization_ld.py
+ visualization_phenotype.py, visualization_population.py
+ visualization_regional.py, visualization_statistical.py
+ visualization_suite.py, visualization_variants.py
+ workflow/
+ workflow.py
 ```
 
 ## Package Management

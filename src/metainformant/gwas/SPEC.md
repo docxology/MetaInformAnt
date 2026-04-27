@@ -1,16 +1,16 @@
 # Specification: gwas
 
-## 🎯 Scope
+## Scope
 
 Genome-Wide Association Studies (GWAS) module for METAINFORMANT. Provides end-to-end GWAS pipelines for social insect genomics, including VCF parsing, QC, association testing (linear, logistic, mixed model), fine-mapping (SuSiE, credible sets), colocalization, eQTL analysis, heritability estimation (LDSC, GREML), compute-time benchmarking, expression data loading, and comprehensive visualization.
 
-## 🧱 Architecture
+## Architecture
 
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 - **Sub-packages**: `analysis`, `data`, `finemapping`, `heritability`, `visualization`, `workflow`
 
-## 🔌 API Exports
+## API Exports
 
 ### analysis
 
@@ -72,7 +72,7 @@ Genome-Wide Association Studies (GWAS) module for METAINFORMANT. Provides end-to
 | `workflow_config` | `GWASWorkflowConfig`, `load_gwas_config()`, `validate_gwas_config()` |
 | `workflow_execution` | `execute_gwas_workflow()`, `run_gwas()`, `run_multi_trait_gwas()` |
 
-## 🧪 Testing
+## Testing
 
 - **41 GWAS test files** covering unit, integration, and end-to-end suites
 - **11/11 end-to-end tests pass** (`tests/test_gwas_end_to_end.py`)

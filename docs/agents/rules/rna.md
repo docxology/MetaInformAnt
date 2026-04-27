@@ -11,20 +11,20 @@ RNA transcriptomic analysis via amalgkit integration and workflow orchestration.
 ## Source Structure
 ```
 src/metainformant/rna/
-├── progress_tracker.py, steps.py
-├── amalgkit/
-│   ├── amalgkit.py, genome_prep.py, metadata_filter.py
-│   ├── metadata_utils.py, tissue_normalizer.py
-├── analysis/
-│   ├── cross_species.py, expression.py, protein_integration.py, qc.py, validation.py
-├── core/
-│   ├── cleanup.py, configs.py, deps.py, environment.py
-├── engine/
-│   ├── discovery.py, monitoring.py, orchestration.py, pipeline.py
-│   ├── progress_tracker.py, sra_extraction.py, workflow.py
-│   ├── workflow_cleanup.py, workflow_steps.py
-└── retrieval/
-    └── ena_downloader.py
+ progress_tracker.py, steps.py
+ amalgkit/
+ amalgkit.py, genome_prep.py, metadata_filter.py
+ metadata_utils.py, tissue_normalizer.py
+ analysis/
+ cross_species.py, expression.py, protein_integration.py, qc.py, validation.py
+ core/
+ cleanup.py, configs.py, deps.py, environment.py
+ engine/
+ discovery.py, monitoring.py, orchestration.py, pipeline.py
+ progress_tracker.py, sra_extraction.py, workflow.py
+ workflow_cleanup.py, workflow_steps.py
+ retrieval/
+ ena_downloader.py
 ```
 
 ## Package Management

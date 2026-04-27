@@ -6,27 +6,27 @@ Runnable examples demonstrating METAINFORMANT functionality across all domains.
 
 ```
 examples/
-├── core/           # Core utilities (I/O, config, logging)
-├── dna/            # DNA sequence analysis, phylogeny
-├── rna/            # RNA-seq workflows
-├── protein/        # Protein analysis
-├── gwas/           # GWAS pipeline examples
-├── visualization/  # Plotting and figures
-├── networks/       # Biological networks
-├── singlecell/     # Single-cell analysis
-├── multiomics/     # Multi-omic integration
-├── ml/             # Machine learning
-├── math/           # Population genetics, coalescent
-├── information/    # Information theory
-├── life_events/    # Life event analysis
-├── ontology/       # GO analysis
-├── phenotype/      # Trait analysis
-├── ecology/        # Community ecology
-├── epigenome/      # Methylation, ChIP-seq
-├── simulation/     # Synthetic data
-├── quality/        # QC examples
-├── integration/    # Cross-module examples
-└── templates/      # Example templates
+ core/ # Core utilities (I/O, config, logging)
+ dna/ # DNA sequence analysis, phylogeny
+ rna/ # RNA-seq workflows
+ protein/ # Protein analysis
+ gwas/ # GWAS pipeline examples
+ visualization/ # Plotting and figures
+ networks/ # Biological networks
+ singlecell/ # Single-cell analysis
+ multiomics/ # Multi-omic integration
+ ml/ # Machine learning
+ math/ # Population genetics, coalescent
+ information/ # Information theory
+ life_events/ # Life event analysis
+ ontology/ # GO analysis
+ phenotype/ # Trait analysis
+ ecology/ # Community ecology
+ epigenome/ # Methylation, ChIP-seq
+ simulation/ # Synthetic data
+ quality/ # QC examples
+ integration/ # Cross-module examples
+ templates/ # Example templates
 ```
 
 ## Running Examples
@@ -100,10 +100,10 @@ All examples write to `output/examples/<domain>/`:
 
 ```
 output/examples/
-├── core/
-├── dna/
-├── gwas/
-└── ...
+ core/
+ dna/
+ gwas/
+ ...
 ```
 
 ## Dependencies

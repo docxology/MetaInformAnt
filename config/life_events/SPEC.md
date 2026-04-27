@@ -1,12 +1,12 @@
 # Specification: life_events Config
 
-## 🎯 Scope
+## Scope
 Configuration templates and schemas for life_events.
 
-## 🧱 Architecture
+## Architecture
 - **Component**: Configuration
 - **Location**: `config/life_events/`
 
-## 💾 Data Structures
+## Data Structures
 - **Format**: YAML
 - **Schema**: `metainformant.life_events.config`

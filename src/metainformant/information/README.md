@@ -2,6 +2,22 @@
 
 Information-theoretic analysis for biological sequences and multi-omic data, from Shannon entropy to Fisher-Rao geometry.
 
+## Overview
+
+Information-theoretic analysis for biological sequences and multi-omic data, from Shannon entropy to Fisher-Rao geometry.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Key Capabilities](#key-capabilities)
+  - [Core Measures](#core-measures)
+  - [Advanced Measures](#advanced-measures)
+- [Submodules](#submodules)
+- [Quick Start](#quick-start)
+- [Integration](#integration)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -87,6 +103,7 @@ results = batch_entropy_analysis(sequences=["ATCGATCG", "GCTAGCTA"], k=2)
 - **ML** -- Feature selection using `mutual_information` and `information_coefficient`
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [`metainformant.networks`](../networks/) -- Network analysis with information flow
 - [`metainformant.dna.sequence`](../dna/sequence/) -- DNA sequence composition

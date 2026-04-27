@@ -21,7 +21,7 @@ This guide helps resolve common issues when running METAINFORMANT examples.
 
 3. **Missing dependencies**: Run dependency check:
    ```bash
-   python scripts/check_example_dependencies.py --example <domain>/example_name.py
+   python scripts/test_examples/check_example_dependencies.py --example <domain>/example_name.py
    ```
 
 ### Permission Errors
@@ -202,13 +202,13 @@ print(f'METAINFORMANT: {metainformant.__version__}')
 
 ```bash
 # Run with detailed error reporting
-python scripts/test_examples.py --verbose --domain dna
+python scripts/test_examples/test_examples.py --verbose --domain dna
 
 # Check specific example
-python scripts/test_examples.py --example dna/example_sequences.py
+python scripts/test_examples/test_examples.py --example dna/example_sequences.py
 
 # Generate HTML report for visualization
-python scripts/test_examples.py --html
+python scripts/test_examples/test_examples.py --html
 ```
 
 ## Performance Issues

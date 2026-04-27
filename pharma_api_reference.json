@@ -1,0 +1,652 @@
+{
+  "diplotype.Diplotype": {
+    "file": "pharmacogenomics/alleles/diplotype.py",
+    "type": "class",
+    "doc": "Represents a pharmacogene diplotype (pair of star alleles).\n\nAttributes:\n    allele1: First star allele (typically the lower-numbered or reference)\n    allele2: Second star allele\n    gene: Gene symbol\n    activity_score: Combined activity score for the diplotype\n    phased: Whether the diplotype assignment is phased (True) or inferred (False)\n    confidence: Confidence in the diplotype call (\"high\", \"moderate\", \"low\")",
+    "methods": [
+      {
+        "name": "diplotype_string",
+        "doc": "Return formatted diplotype string (e.g., '*1/*2').",
+        "args": [
+          "self"
+        ]
+      },
+      {
+        "name": "is_homozygous",
+        "doc": "Return True if both alleles are the same.",
+        "args": [
+          "self"
+        ]
+      },
+      {
+        "name": "is_reference",
+        "doc": "Return True if both alleles are reference (*1/*1).",
+        "args": [
+          "self"
+        ]
+      }
+    ]
+  },
+  "diplotype.determine_diplotype": {
+    "file": "pharmacogenomics/alleles/diplotype.py",
+    "doc": "Construct a diplotype from two star alleles with activity scoring.\n\nCreates a Diplotype object from two allele designations, looking up\nactivity values from the gene-specific scoring table to compute the\ncombined activity score.\n\nArgs:\n    allele1: First allele name (str) or StarAllele object\n    allele2: Second allele name (str) or StarAllele object\n    gene: Gene symbol (e.g., \"CYP2D6\")\n    scoring_table: Optional custom activity score mapping (allele_name -> score).\n        If None, uses built-in CPIC-derived tables.\n\nReturns:\n    Diplotype object with computed activity score",
+    "args": [
+      "allele1",
+      "allele2",
+      "gene",
+      "scoring_table"
+    ],
+    "return": "Diplotype"
+  },
+  "diplotype.calculate_activity_score_from_alleles": {
+    "file": "pharmacogenomics/alleles/diplotype.py",
+    "doc": "Calculate the combined activity score for two alleles.\n\nArgs:\n    allele1_name: First allele name\n    allele2_name: Second allele name\n    gene: Gene symbol\n    scoring_table: Optional custom scoring table\n\nReturns:\n    Combined activity score (sum of individual allele scores)",
+    "args": [
+      "allele1_name",
+      "allele2_name",
+      "gene",
+      "scoring_table"
+    ],
+    "return": "float"
+  },
+  "diplotype.calculate_activity_score": {
+    "file": "pharmacogenomics/alleles/diplotype.py",
+    "doc": "Calculate activity score for an existing Diplotype.\n\nArgs:\n    diplotype: Diplotype object\n    gene: Gene symbol\n    scoring_table: Optional custom scoring table\n\nReturns:\n    Combined activity score, also updates the Diplotype object",
+    "args": [
+      "diplotype",
+      "gene",
+      "scoring_table"
+    ],
+    "return": "float"
+  },
+  "diplotype.resolve_ambiguous_diplotypes": {
+    "file": "pharmacogenomics/alleles/diplotype.py",
+    "doc": "Resolve ambiguous diplotype calls when phase is unknown.\n\nWhen genotype data is unphased, multiple diplotype configurations may be\npossible. This function selects the most clinically relevant assignment\nusing the following priority rules (per CPIC recommendations):\n\n1. Prefer diplotypes with known activity scores for both alleles\n2. Among scored diplotypes, prefer the one with the highest activity score\n   (conservative: assume best-case metabolism)\n3. If tied, prefer diplotypes containing more common alleles (*1, *2)\n\nArgs:\n    possible_diplotypes: List of possible Diplotype objects\n\nReturns:\n    The selected most likely Diplotype\n\nRaises:\n    ValueError: If possible_diplotypes is empty",
+    "args": [
+      "possible_diplotypes"
+    ],
+    "return": "Diplotype"
+  },
+  "diplotype.phased_diplotype": {
+    "file": "pharmacogenomics/alleles/diplotype.py",
+    "doc": "Determine diplotype using phasing information.\n\nWhen phase information is available (e.g., from long reads, family data,\nor statistical phasing), this function assigns variants to maternal and\npaternal haplotypes before calling star alleles on each independently.\n\nArgs:\n    variants: Set of all observed variant identifiers\n    phase_data: Mapping of variant_id -> phase (0 for haplotype A, 1 for haplotype B).\n        Variants not in phase_data are treated as unphased.\n    gene: Gene symbol (e.g., \"CYP2D6\")\n    allele_definitions: Optional pre-loaded allele definitions\n\nReturns:\n    Diplotype with phased=True and alleles called from each haplotype",
+    "args": [
+      "variants",
+      "phase_data",
+      "gene",
+      "allele_definitions"
+    ],
+    "return": "Diplotype"
+  },
+  "phenotype.MetabolizerPhenotype": {
+    "file": "pharmacogenomics/alleles/phenotype.py",
+    "type": "class",
+    "doc": "Standardized metabolizer phenotype categories.\n\nValues follow CPIC terminology for consistent clinical communication.\nInherits from str for JSON serialization compatibility.",
+    "methods": [
+      {
+        "name": "abbreviation",
+        "doc": "Return standard abbreviation (PM, IM, NM, RM, UM).",
+        "args": [
+          "self"
+        ]
+      }
+    ]
+  },
+  "phenotype.predict_metabolizer_status": {
+    "file": "pharmacogenomics/alleles/phenotype.py",
+    "doc": "Map an activity score to a metabolizer phenotype category.\n\nUses gene-specific threshold tables derived from CPIC guidelines. When a\ngene has no defined thresholds, applies a default mapping:\n    AS = 0 -> PM, 0 < AS < 1.25 -> IM, 1.25 <= AS <= 2.25 -> NM, AS > 2.25 -> UM\n\nArgs:\n    activity_score: Combined activity score (typically sum of two allele scores)\n    gene: Gene symbol (e.g., \"CYP2D6\")\n\nReturns:\n    MetabolizerPhenotype enum value",
+    "args": [
+      "activity_score",
+      "gene"
+    ],
+    "return": "MetabolizerPhenotype"
+  },
+  "phenotype.get_phenotype_thresholds": {
+    "file": "pharmacogenomics/alleles/phenotype.py",
+    "doc": "Get gene-specific phenotype threshold definitions.\n\nArgs:\n    gene: Gene symbol (e.g., \"CYP2D6\")\n\nReturns:\n    List of threshold dictionaries with keys:\n        - \"lower_bound\": Lower activity score boundary (inclusive)\n        - \"upper_bound\": Upper activity score boundary (exclusive)\n        - \"phenotype\": MetabolizerPhenotype value\n        - \"abbreviation\": Phenotype abbreviation (PM, IM, NM, RM, UM)",
+    "args": [
+      "gene"
+    ],
+    "return": "list[dict[str, Any]]"
+  },
+  "phenotype.classify_phenotype": {
+    "file": "pharmacogenomics/alleles/phenotype.py",
+    "doc": "Full diplotype-to-phenotype classification pipeline.\n\nTakes a diplotype (object or string like \"*1/*4\") and gene, computes the\nactivity score, and maps it to a metabolizer phenotype.\n\nArgs:\n    diplotype: Diplotype object or string in format \"*X/*Y\"\n    gene: Gene symbol\n\nReturns:\n    Dictionary with:\n        - \"gene\": Gene symbol\n        - \"diplotype\": Diplotype string\n        - \"activity_score\": Computed activity score\n        - \"phenotype\": MetabolizerPhenotype value\n        - \"phenotype_abbreviation\": Short form (PM, IM, NM, RM, UM)\n        - \"clinical_significance\": Brief clinical note",
+    "args": [
+      "diplotype",
+      "gene"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "phenotype.population_phenotype_frequencies": {
+    "file": "pharmacogenomics/alleles/phenotype.py",
+    "doc": "Estimate expected phenotype distribution from allele frequencies.\n\nCalculates the expected frequency of each metabolizer phenotype in a\npopulation given the allele frequency spectrum, assuming Hardy-Weinberg\nequilibrium. For each possible diplotype (all combinations of alleles),\nthe diplotype frequency is 2*p*q for heterozygotes and p^2 for homozygotes.\n\nArgs:\n    allele_frequencies: Mapping of allele name -> population frequency.\n        Frequencies should sum to approximately 1.0.\n    gene: Gene symbol\n\nReturns:\n    Dictionary mapping phenotype abbreviation -> expected frequency.\n    Example: {\"PM\": 0.05, \"IM\": 0.20, \"NM\": 0.65, \"RM\": 0.08, \"UM\": 0.02}",
+    "args": [
+      "allele_frequencies",
+      "gene"
+    ],
+    "return": "dict[str, float]"
+  },
+  "star_allele.StarAllele": {
+    "file": "pharmacogenomics/alleles/star_allele.py",
+    "type": "class",
+    "doc": "Represents a pharmacogene star allele.\n\nAttributes:\n    name: Star allele designation (e.g., \"*1\", \"*2\", \"*4\")\n    gene: Gene symbol (e.g., \"CYP2D6\", \"CYP2C19\")\n    defining_variants: Set of variant identifiers that define this allele\n        Each variant is represented as \"chr:pos:ref:alt\" or rsID\n    function: Functional classification (e.g., \"Normal function\",\n        \"No function\", \"Decreased function\", \"Increased function\")\n    activity_value: Numeric activity score (e.g., 1.0 for normal, 0.0 for no function)\n    clinical_significance: Clinical significance annotation\n    evidence_level: Strength of evidence for this allele definition\n    substrate_specificity: Optional notes on substrate-specific effects",
+    "methods": [
+      {
+        "name": "is_reference",
+        "doc": "Return True if this is the reference (*1) allele.",
+        "args": [
+          "self"
+        ]
+      },
+      {
+        "name": "is_no_function",
+        "doc": "Return True if this allele has no function.",
+        "args": [
+          "self"
+        ]
+      },
+      {
+        "name": "matches_variants",
+        "doc": "Check if observed variants match this allele's defining variants.\n\nArgs:\n    observed: Set of observed variant identifiers\n\nReturns:\n    True if all defining variants are present in observed set",
+        "args": [
+          "self",
+          "observed"
+        ]
+      },
+      {
+        "name": "partial_match_score",
+        "doc": "Calculate fraction of defining variants that match.\n\nArgs:\n    observed: Set of observed variant identifiers\n\nReturns:\n    Float between 0.0 and 1.0 indicating match fraction",
+        "args": [
+          "self",
+          "observed"
+        ]
+      }
+    ]
+  },
+  "star_allele.load_allele_definitions": {
+    "file": "pharmacogenomics/alleles/star_allele.py",
+    "doc": "Load allele definition tables for a pharmacogene.\n\nLoads allele definitions from either the built-in CPIC-derived table or\nfrom an external file (TSV or JSON format). The built-in tables cover\nCYP2D6, CYP2C19, CYP2C9, CYP3A5, DPYD, TPMT, NUDT15, and SLCO1B1.\n\nArgs:\n    gene: Gene symbol (e.g., \"CYP2D6\", \"CYP2C19\")\n    source: Definition source - \"cpic\" for built-in, \"file\" for external file\n    filepath: Path to external allele definition file (required if source=\"file\")\n\nReturns:\n    List of StarAllele objects for the gene\n\nRaises:\n    ValueError: If gene not found in definitions or invalid source\n    FileNotFoundError: If filepath specified but not found",
+    "args": [
+      "gene",
+      "source",
+      "filepath"
+    ],
+    "return": "list[StarAllele]"
+  },
+  "star_allele.call_star_alleles": {
+    "file": "pharmacogenomics/alleles/star_allele.py",
+    "doc": "Call star alleles from observed variants.\n\nMatches observed variant identifiers against known allele definitions to\ndetermine which star alleles are present. Uses a greedy algorithm that\nprioritizes alleles with the most defining variants matched.\n\nThe algorithm:\n1. Sort allele definitions by number of defining variants (descending)\n2. For each allele, check if all defining variants are in the observed set\n3. Matched alleles are collected; variants consumed by matched alleles are tracked\n4. If no non-reference alleles match, the reference (*1) allele is returned\n\nArgs:\n    variants: Set of observed variant identifiers (rsIDs or chr:pos:ref:alt)\n    gene: Gene symbol (e.g., \"CYP2D6\")\n    allele_definitions: Pre-loaded allele definitions. If None, loads from built-in.\n\nReturns:\n    List of matched StarAllele objects, sorted by allele name.\n    Returns [*1] if no variant alleles match.",
+    "args": [
+      "variants",
+      "gene",
+      "allele_definitions"
+    ],
+    "return": "list[StarAllele]"
+  },
+  "star_allele.match_allele_definition": {
+    "file": "pharmacogenomics/alleles/star_allele.py",
+    "doc": "Match observed variants against a single allele definition.\n\nPerforms detailed comparison between observed variants and an allele's\ndefining variant set, returning match statistics.\n\nArgs:\n    observed_variants: Set of observed variant identifiers\n    allele_definition: StarAllele definition to match against\n\nReturns:\n    Dictionary with match results:\n        - \"allele\": Star allele name\n        - \"gene\": Gene symbol\n        - \"is_match\": True if all defining variants are present\n        - \"match_score\": Fraction of defining variants matched (0.0 - 1.0)\n        - \"matched_variants\": Set of matched variant IDs\n        - \"missing_variants\": Set of unmatched defining variants\n        - \"extra_variants\": Observed variants not in the definition",
+    "args": [
+      "observed_variants",
+      "allele_definition"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "star_allele.detect_novel_alleles": {
+    "file": "pharmacogenomics/alleles/star_allele.py",
+    "doc": "Detect potentially novel allele combinations.\n\nIdentifies observed variant combinations that do not exactly match any\nknown allele definition, which may represent novel or rare alleles.\n\nArgs:\n    variants: Set of observed variant identifiers\n    known_alleles: List of known StarAllele definitions\n\nReturns:\n    Dictionary with:\n        - \"has_novel\": True if novel combinations detected\n        - \"unmatched_variants\": Variants not explained by any known allele\n        - \"partial_matches\": Alleles with partial but incomplete matches\n        - \"closest_allele\": Best partial match allele name, or None\n        - \"closest_score\": Match score of closest allele",
+    "args": [
+      "variants",
+      "known_alleles"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "star_allele.handle_cyp2d6_cnv": {
+    "file": "pharmacogenomics/alleles/star_allele.py",
+    "doc": "Handle CYP2D6 copy number variation for star allele calling.\n\nCYP2D6 is subject to gene deletion (*5), gene duplication/multiplication,\nand hybrid gene arrangements. This function adjusts star allele calls\nbased on observed copy number.\n\nCopy number interpretation:\n    - 0: Homozygous gene deletion (*5/*5)\n    - 1: Hemizygous (one allele deleted): allele/*5\n    - 2: Normal diploid (standard calling)\n    - 3+: Gene duplication/multiplication\n\nFor duplications (CN >= 3), the activity score of the duplicated allele\nis multiplied by the additional copy count. Per CPIC guidelines, functional\nallele duplications are denoted with \"xN\" suffix (e.g., *1x2).\n\nArgs:\n    variants: Set of observed variant identifiers\n    copy_number: CYP2D6 gene copy number (0, 1, 2, 3+)\n\nReturns:\n    Dictionary with:\n        - \"copy_number\": Input copy number\n        - \"alleles\": List of called StarAllele objects (adjusted for CNV)\n        - \"diplotype_string\": Formatted diplotype string\n        - \"total_activity_score\": Sum of all allele activity values\n        - \"cnv_type\": \"deletion\", \"normal\", or \"duplication\"\n        - \"notes\": Clinical notes about the CNV",
+    "args": [
+      "variants",
+      "copy_number"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "cpic.load_cpic_guidelines": {
+    "file": "pharmacogenomics/annotations/cpic.py",
+    "doc": "Load CPIC guideline data.\n\nLoads from either an external file (TSV or JSON) or the built-in guideline\ntable. The built-in table covers major CPIC Level A/A-B guidelines.\n\nArgs:\n    filepath: Optional path to external CPIC guideline file.\n        Supports JSON and TSV formats. If None, uses built-in data.\n\nReturns:\n    List of guideline dictionaries with keys: drug, gene, cpic_level,\n    guideline_url, recommendations",
+    "args": [
+      "filepath"
+    ],
+    "return": "list[dict[str, Any]]"
+  },
+  "cpic.lookup_drug_gene": {
+    "file": "pharmacogenomics/annotations/cpic.py",
+    "doc": "Look up CPIC guideline for a specific drug-gene pair.\n\nArgs:\n    drug: Drug name (case-insensitive)\n    gene: Gene symbol (case-insensitive)\n    guidelines: Optional pre-loaded guidelines. If None, uses built-in data.\n\nReturns:\n    Guideline dictionary if found, None otherwise",
+    "args": [
+      "drug",
+      "gene",
+      "guidelines"
+    ],
+    "return": "dict[str, Any] | None"
+  },
+  "cpic.get_dosing_recommendation": {
+    "file": "pharmacogenomics/annotations/cpic.py",
+    "doc": "Get dosing recommendation for a drug based on metabolizer phenotype.\n\nSearches all guidelines for the specified drug and returns the\nrecommendation matching the given phenotype. If the drug has guidelines\nfor multiple genes, returns the first matching recommendation.\n\nArgs:\n    drug: Drug name (case-insensitive)\n    phenotype: Metabolizer phenotype string (e.g., \"Poor Metabolizer\", \"PM\",\n        \"Normal Metabolizer\", \"NM\")\n    guidelines: Optional pre-loaded guidelines\n\nReturns:\n    Dictionary with recommendation details, or None if not found.\n    Keys: drug, gene, cpic_level, phenotype, recommendation, classification, implications",
+    "args": [
+      "drug",
+      "phenotype",
+      "guidelines"
+    ],
+    "return": "dict[str, Any] | None"
+  },
+  "cpic.list_actionable_genes": {
+    "file": "pharmacogenomics/annotations/cpic.py",
+    "doc": "List CPIC Level A and B (actionable) gene-drug pairs.\n\nArgs:\n    guidelines: Optional pre-loaded guidelines\n    min_level: Minimum CPIC level to include (\"A\" for Level A only,\n        \"B\" for Level A and B)\n\nReturns:\n    List of dictionaries with keys: gene, drug, cpic_level",
+    "args": [
+      "guidelines",
+      "min_level"
+    ],
+    "return": "list[dict[str, str]]"
+  },
+  "cpic.parse_cpic_allele_definitions": {
+    "file": "pharmacogenomics/annotations/cpic.py",
+    "doc": "Parse CPIC allele definition tables.\n\nReads CPIC-formatted allele definition files (TSV format) that define the\ngenetic variants comprising each star allele for pharmacogenes.\n\nExpected TSV columns: gene, allele, rsid, position, ref, alt, function, activity_value\n\nArgs:\n    filepath: Path to allele definition TSV/JSON file\n\nReturns:\n    Dictionary mapping gene -> list of allele definition dicts.\n    Each allele dict contains: allele, defining_variants, function, activity_value\n\nRaises:\n    FileNotFoundError: If file does not exist",
+    "args": [
+      "filepath"
+    ],
+    "return": "dict[str, list[dict[str, Any]]]"
+  },
+  "drug_labels.parse_drug_label": {
+    "file": "pharmacogenomics/annotations/drug_labels.py",
+    "doc": "Parse an FDA drug label file for pharmacogenomic information.\n\nReads a drug label file (JSON or structured text) and extracts PGx-relevant\nsections including biomarker requirements, dosing modifications, and warnings.\n\nArgs:\n    filepath: Path to drug label file (JSON format preferred)\n\nReturns:\n    Dictionary with parsed label data including:\n        - \"drug\": Drug name\n        - \"brand_name\": Brand name\n        - \"gene_biomarker\": Gene/biomarker mentioned\n        - \"sections\": Dict of label sections with PGx content\n        - \"biomarker_info\": Extracted biomarker testing information\n        - \"label_type\": Classification of PGx labeling strength",
+    "args": [
+      "filepath"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "drug_labels.extract_biomarker_info": {
+    "file": "pharmacogenomics/annotations/drug_labels.py",
+    "doc": "Extract biomarker testing requirements from parsed label data.\n\nArgs:\n    label_data: Parsed drug label dictionary\n\nReturns:\n    Dictionary with:\n        - \"biomarker_gene\": Gene/biomarker name\n        - \"testing_required\": Whether testing is mandated\n        - \"testing_recommended\": Whether testing is recommended\n        - \"boxed_warning\": Whether PGx info is in boxed warning\n        - \"affected_populations\": Populations with specific considerations\n        - \"test_timing\": When testing should be performed",
+    "args": [
+      "label_data"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "drug_labels.classify_label_type": {
+    "file": "pharmacogenomics/annotations/drug_labels.py",
+    "doc": "Classify the strength of PGx labeling for a drug.\n\nCategorizes the drug label based on the strength of pharmacogenomic\ntesting language:\n    - \"required\": Testing mandated before prescribing\n    - \"recommended\": Testing strongly suggested\n    - \"actionable\": Genotype information affects clinical decisions\n    - \"informational\": PGx information provided for awareness\n\nArgs:\n    label_data: Parsed drug label dictionary\n\nReturns:\n    Dictionary with:\n        - \"label_type\": Classification string\n        - \"rationale\": Explanation for classification",
+    "args": [
+      "label_data"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "drug_labels.search_labels_by_gene": {
+    "file": "pharmacogenomics/annotations/drug_labels.py",
+    "doc": "Find drug labels mentioning a specific gene or biomarker.\n\nArgs:\n    gene: Gene symbol (case-insensitive)\n    labels_db: Optional pre-loaded labels database. If None, uses built-in data.\n\nReturns:\n    List of matching drug label dictionaries",
+    "args": [
+      "gene",
+      "labels_db"
+    ],
+    "return": "list[dict[str, Any]]"
+  },
+  "pharmgkb.query_pharmgkb_annotations": {
+    "file": "pharmacogenomics/annotations/pharmgkb.py",
+    "doc": "Query PharmGKB clinical annotations by gene, drug, and/or variant.\n\nFilters the annotation database by any combination of gene, drug, and variant.\nAt least one filter must be provided.\n\nArgs:\n    gene: Gene symbol (case-insensitive)\n    drug: Drug name (case-insensitive)\n    variant: Variant rsID or identifier\n\nReturns:\n    List of matching annotation dictionaries\n\nRaises:\n    ValueError: If no filter criteria provided",
+    "args": [
+      "gene",
+      "drug",
+      "variant"
+    ],
+    "return": "list[dict[str, Any]]"
+  },
+  "pharmgkb.parse_clinical_annotations": {
+    "file": "pharmacogenomics/annotations/pharmgkb.py",
+    "doc": "Parse PharmGKB clinical annotation data from file.\n\nReads a PharmGKB clinical annotation export file (TSV format) and\nparses it into structured annotation records.\n\nExpected TSV columns: Clinical Annotation ID, Gene, Level of Evidence,\nDrug(s), Phenotype Category, PMID Count, Annotation Text\n\nArgs:\n    filepath: Path to PharmGKB clinical annotations TSV file\n\nReturns:\n    List of parsed annotation dictionaries",
+    "args": [
+      "filepath"
+    ],
+    "return": "list[dict[str, Any]]"
+  },
+  "pharmgkb.get_evidence_level": {
+    "file": "pharmacogenomics/annotations/pharmgkb.py",
+    "doc": "Extract and interpret the evidence level from a PharmGKB annotation.\n\nArgs:\n    annotation: Annotation dictionary with \"evidence_level\" key\n\nReturns:\n    Dictionary with:\n        - \"level\": Evidence level string (e.g., \"1A\")\n        - \"description\": Human-readable description\n        - \"strength\": Qualitative strength (\"Strong\", \"Moderate\", \"Weak\", \"Preliminary\")\n        - \"actionable\": Whether this evidence level supports clinical action",
+    "args": [
+      "annotation"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "pharmgkb.search_drug_pathways": {
+    "file": "pharmacogenomics/annotations/pharmgkb.py",
+    "doc": "Get pharmacokinetic/pharmacodynamic pathway information for a drug.\n\nArgs:\n    drug: Drug name (case-insensitive)\n\nReturns:\n    Pathway dictionary with genes involved, mechanism, active metabolite,\n    etc. Returns None if drug not found.",
+    "args": [
+      "drug"
+    ],
+    "return": "dict[str, Any] | None"
+  },
+  "pharmgkb.get_variant_annotations": {
+    "file": "pharmacogenomics/annotations/pharmgkb.py",
+    "doc": "Get variant-specific pharmacogenomic annotations.\n\nArgs:\n    rsid: Variant rsID (e.g., \"rs4244285\")\n\nReturns:\n    Variant annotation dictionary with gene, allele, frequency data,\n    clinical significance, etc. Returns None if variant not found.",
+    "args": [
+      "rsid"
+    ],
+    "return": "dict[str, Any] | None"
+  },
+  "drug_interaction.InteractionSeverity": {
+    "file": "pharmacogenomics/clinical/drug_interaction.py",
+    "type": "class",
+    "doc": "Drug-gene interaction severity classification.",
+    "methods": [
+      {
+        "name": "requires_action",
+        "doc": "Return True if this severity level requires clinical action.",
+        "args": [
+          "self"
+        ]
+      }
+    ]
+  },
+  "drug_interaction.DrugRecommendation": {
+    "file": "pharmacogenomics/clinical/drug_interaction.py",
+    "type": "class",
+    "doc": "Represents a pharmacogenomic drug recommendation.\n\nAttributes:\n    drug: Drug name\n    gene: Gene symbol\n    phenotype: Metabolizer phenotype\n    recommendation: Clinical recommendation text\n    evidence_level: CPIC evidence level (A, A/B, B, C, D)\n    source: Source of the recommendation (e.g., \"CPIC\", \"PharmGKB\", \"FDA\")\n    severity: Interaction severity level\n    alternatives: Suggested alternative drugs",
+    "methods": []
+  },
+  "drug_interaction.analyze_drug_gene_interactions": {
+    "file": "pharmacogenomics/clinical/drug_interaction.py",
+    "doc": "Analyze drug-gene interactions for a set of drugs and genotypes.\n\nFor each drug, checks against all available genotype data to identify\npharmacogenomic interactions and generate clinical recommendations.\n\nArgs:\n    drugs: List of drug names to analyze\n    genotype_data: Dictionary mapping gene symbol to genotype information.\n        Each gene entry should have:\n            - \"phenotype\": MetabolizerPhenotype or string (e.g., \"Poor Metabolizer\")\n            - \"diplotype\": Optional diplotype string (e.g., \"*1/*4\")\n            - \"activity_score\": Optional activity score\n\nReturns:\n    List of DrugRecommendation objects for all identified interactions",
+    "args": [
+      "drugs",
+      "genotype_data"
+    ],
+    "return": "list[DrugRecommendation]"
+  },
+  "drug_interaction.check_contraindications": {
+    "file": "pharmacogenomics/clinical/drug_interaction.py",
+    "doc": "Check if a drug is contraindicated for a given metabolizer phenotype.\n\nSearches across all gene-drug contraindication records for the specified drug.\n\nArgs:\n    drug: Drug name (case-insensitive)\n    phenotype: Metabolizer phenotype (string or enum)\n\nReturns:\n    Dictionary with:\n        - \"contraindicated\": Whether drug is contraindicated\n        - \"severity\": Interaction severity\n        - \"gene_interactions\": List of specific gene-level contraindication details\n        - \"overall_recommendation\": Summary recommendation",
+    "args": [
+      "drug",
+      "phenotype"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "drug_interaction.calculate_interaction_severity": {
+    "file": "pharmacogenomics/clinical/drug_interaction.py",
+    "doc": "Calculate overall severity for a set of drug-gene interactions.\n\nAssesses the combined risk from multiple pharmacogenomic interactions,\nproviding an overall severity classification and risk summary.\n\nArgs:\n    interactions: List of DrugRecommendation objects\n\nReturns:\n    Dictionary with:\n        - \"overall_severity\": Highest severity level across all interactions\n        - \"major_count\": Number of major interactions\n        - \"moderate_count\": Number of moderate interactions\n        - \"minor_count\": Number of minor interactions\n        - \"total_interactions\": Total interaction count\n        - \"risk_level\": Qualitative risk assessment (\"High\", \"Moderate\", \"Low\")\n        - \"summary\": Text summary of findings",
+    "args": [
+      "interactions"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "drug_interaction.polypharmacy_analysis": {
+    "file": "pharmacogenomics/clinical/drug_interaction.py",
+    "doc": "Perform comprehensive polypharmacy pharmacogenomic assessment.\n\nAnalyzes all drugs in a patient's medication list against their genotype\ndata to identify all PGx interactions, drug-drug-gene overlaps, and\ncumulative risk.\n\nArgs:\n    drug_list: List of all drugs the patient is taking\n    genotype_data: Dictionary mapping gene -> genotype info (see analyze_drug_gene_interactions)\n\nReturns:\n    Dictionary with:\n        - \"total_drugs\": Number of drugs analyzed\n        - \"drugs_with_interactions\": Drugs that have PGx interactions\n        - \"interactions\": Full list of DrugRecommendation objects\n        - \"severity_summary\": Interaction severity breakdown\n        - \"gene_overlap\": Genes affected by multiple drugs\n        - \"high_risk_combinations\": Drug combinations with compounding PGx risk\n        - \"recommendations\": Prioritized clinical recommendations",
+    "args": [
+      "drug_list",
+      "genotype_data"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "drug_interaction.suggest_alternatives": {
+    "file": "pharmacogenomics/clinical/drug_interaction.py",
+    "doc": "Suggest alternative drugs based on pharmacogenomic phenotype.\n\nQueries the alternatives database for drugs in the same therapeutic class\nthat are less affected by the patient's pharmacogenomic profile.\n\nArgs:\n    drug: Drug name (case-insensitive)\n    phenotype: Metabolizer phenotype\n    alternatives_db: Optional custom alternatives database.\n        If None, uses built-in data.\n\nReturns:\n    Dictionary with:\n        - \"drug\": Original drug name\n        - \"therapeutic_class\": Drug's therapeutic class\n        - \"alternatives\": List of alternative drug options with details\n        - \"phenotype\": Patient's phenotype\n        - \"rationale\": Why alternatives are suggested",
+    "args": [
+      "drug",
+      "phenotype",
+      "alternatives_db"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "pathogenicity.ACMGClassification": {
+    "file": "pharmacogenomics/clinical/pathogenicity.py",
+    "type": "class",
+    "doc": "ACMG 5-tier variant classification.\n\nPer Richards et al., 2015 (Genet Med 17:405-424).",
+    "methods": []
+  },
+  "pathogenicity.ACMGCriteria": {
+    "file": "pharmacogenomics/clinical/pathogenicity.py",
+    "type": "class",
+    "doc": "Individual ACMG evidence criteria.\n\nPathogenic criteria:\n    PVS1: Null variant in gene where LOF is a known disease mechanism\n    PS1-4: Strong pathogenic evidence\n    PM1-6: Moderate pathogenic evidence\n    PP1-5: Supporting pathogenic evidence\n\nBenign criteria:\n    BA1: Stand-alone benign (allele frequency > 5%)\n    BS1-4: Strong benign evidence\n    BP1-7: Supporting benign evidence",
+    "methods": []
+  },
+  "pathogenicity.classify_variant_acmg": {
+    "file": "pharmacogenomics/clinical/pathogenicity.py",
+    "doc": "Classify a variant using the ACMG 5-tier system.\n\nTakes variant information and either pre-evaluated evidence criteria or\nauto-evaluates criteria from the variant data, then aggregates into a\nfinal classification.\n\nArgs:\n    variant: Variant data dictionary with keys like:\n        - \"rsid\": rsID (e.g., \"rs3892097\")\n        - \"gene\": Gene symbol\n        - \"consequence\": Variant consequence (e.g., \"missense\", \"frameshift\")\n        - \"allele_frequency\": Population allele frequency dict or float\n        - \"computational_predictions\": Dict of tool -> prediction\n        - \"functional_data\": Functional study evidence\n        - \"segregation_data\": Family segregation data\n        - \"de_novo\": Whether variant is de novo\n    evidence: Optional pre-evaluated criteria dict mapping ACMGCriteria name\n        to True/False. If None, criteria are auto-evaluated from variant data.\n\nReturns:\n    Dictionary with:\n        - \"classification\": ACMGClassification value\n        - \"criteria_met\": List of met ACMG criteria\n        - \"criteria_details\": Dict of criterion -> description for met criteria\n        - \"score_summary\": Count of criteria at each evidence level\n        - \"confidence\": Assessment confidence (\"high\", \"moderate\", \"low\")",
+    "args": [
+      "variant",
+      "evidence"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "pathogenicity.apply_acmg_criteria": {
+    "file": "pharmacogenomics/clinical/pathogenicity.py",
+    "doc": "Evaluate individual ACMG criteria from variant data.\n\nSystematically evaluates each ACMG criterion based on available variant\ninformation. Each criterion is assessed independently.\n\nArgs:\n    variant_data: Variant information dictionary (see classify_variant_acmg)\n\nReturns:\n    Dictionary mapping criterion name (str) to met/not-met (bool)",
+    "args": [
+      "variant_data"
+    ],
+    "return": "dict[str, bool]"
+  },
+  "pathogenicity.aggregate_evidence": {
+    "file": "pharmacogenomics/clinical/pathogenicity.py",
+    "doc": "Combine ACMG criteria into a final 5-tier classification.\n\nImplements the combining rules from Richards et al. 2015 (Table 5):\n\nPathogenic:\n    (i)   1 Very Strong + >=1 Strong\n    (ii)  1 Very Strong + >=2 Moderate\n    (iii) 1 Very Strong + 1 Moderate + 1 Supporting\n    (iv)  1 Very Strong + >=2 Supporting\n    (v)   >=2 Strong\n    (vi)  1 Strong + >=3 Moderate\n    (vii) 1 Strong + 2 Moderate + >=2 Supporting\n    (viii) 1 Strong + 1 Moderate + >=4 Supporting\n\nLikely Pathogenic:\n    (i)   1 Very Strong + 1 Moderate\n    (ii)  1 Strong + 1-2 Moderate\n    (iii) 1 Strong + >=2 Supporting\n    (iv)  >=3 Moderate\n    (v)   2 Moderate + >=2 Supporting\n    (vi)  1 Moderate + >=4 Supporting\n\nBenign:\n    (i) 1 Stand-alone (BA1)\n    (ii) >=2 Strong\n\nLikely Benign:\n    (i) 1 Strong + 1 Supporting\n    (ii) >=2 Supporting\n\nVUS: Everything else\n\nArgs:\n    criteria: Dictionary of criterion name -> True/False\n\nReturns:\n    ACMGClassification enum value",
+    "args": [
+      "criteria"
+    ],
+    "return": "ACMGClassification"
+  },
+  "pathogenicity.query_clinvar": {
+    "file": "pharmacogenomics/clinical/pathogenicity.py",
+    "doc": "Look up ClinVar classification for a variant.\n\nQueries the local ClinVar data cache for a variant's classification,\nreview status, and associated conditions.\n\nArgs:\n    variant_id: Variant identifier (rsID, ClinVar variation ID, or HGVS)\n\nReturns:\n    ClinVar record dictionary, or None if not found.\n    Keys: variant_id, gene, hgvs, classification, review_status,\n    stars, condition, last_evaluated, submitter_count",
+    "args": [
+      "variant_id"
+    ],
+    "return": "dict[str, Any] | None"
+  },
+  "pathogenicity.check_gnomad_frequency": {
+    "file": "pharmacogenomics/clinical/pathogenicity.py",
+    "doc": "Check variant population frequency against gnomAD thresholds.\n\nEvaluates whether a variant exceeds frequency thresholds relevant to\nACMG benign criteria (BA1 at 5%, BS1 at disease-specific threshold).\n\nArgs:\n    variant: Variant dictionary with \"allele_frequency\" key containing\n        either a float or a dict of population -> frequency\n    population: Optional specific population to check (e.g., \"European\",\n        \"East_Asian\"). If None, checks maximum across all populations.\n    threshold: Frequency threshold for classification (default 0.05 for BA1)\n\nReturns:\n    Dictionary with:\n        - \"max_frequency\": Maximum allele frequency observed\n        - \"population\": Population with highest frequency\n        - \"exceeds_threshold\": Whether threshold is exceeded\n        - \"ba1_triggered\": Whether BA1 benign criterion is met (AF > 5%)\n        - \"bs1_triggered\": Whether BS1 benign criterion is met (AF > disease threshold)\n        - \"frequencies\": All population frequencies if available",
+    "args": [
+      "variant",
+      "population",
+      "threshold"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "reporting.generate_clinical_report": {
+    "file": "pharmacogenomics/clinical/reporting.py",
+    "doc": "Generate a comprehensive clinical pharmacogenomic report.\n\nAnalyzes patient genotype data across all pharmacogenes and generates\na structured report with phenotype classifications, drug-specific\nrecommendations, and clinical action items.\n\nArgs:\n    patient_data: Patient demographics dictionary with optional keys:\n        - \"patient_id\": Unique identifier\n        - \"name\": Patient name (optional, may be de-identified)\n        - \"dob\": Date of birth\n        - \"sex\": Biological sex\n        - \"ethnicity\": Self-reported ethnicity\n        - \"ordering_provider\": Ordering provider name\n    genotypes: Dictionary mapping gene symbol -> genotype info:\n        - \"diplotype\": Diplotype string (e.g., \"*1/*4\")\n        - \"phenotype\": Optional pre-determined phenotype\n        - \"activity_score\": Optional pre-computed activity score\n    drugs: Optional list of drugs to generate specific recommendations for.\n        If None, generates recommendations for all drugs with CPIC guidelines.\n\nReturns:\n    Comprehensive report dictionary with sections:\n        - \"header\": Report metadata\n        - \"patient_info\": Sanitized patient demographics\n        - \"genotype_results\": Per-gene genotype and phenotype results\n        - \"drug_recommendations\": Per-drug clinical recommendations\n        - \"interaction_summary\": Overall interaction risk assessment\n        - \"clinical_actions\": Prioritized action items\n        - \"disclaimer\": Clinical disclaimer text",
+    "args": [
+      "patient_data",
+      "genotypes",
+      "drugs"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "reporting.format_recommendation": {
+    "file": "pharmacogenomics/clinical/reporting.py",
+    "doc": "Format a single drug-gene recommendation for the clinical report.\n\nArgs:\n    drug: Drug name\n    gene: Gene symbol\n    phenotype: Metabolizer phenotype string\n    guideline: Guideline data with recommendation, evidence_level, etc.\n\nReturns:\n    Formatted recommendation dictionary",
+    "args": [
+      "drug",
+      "gene",
+      "phenotype",
+      "guideline"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "reporting.generate_summary_table": {
+    "file": "pharmacogenomics/clinical/reporting.py",
+    "doc": "Generate a summary table of all pharmacogenomic findings.\n\nCreates a condensed tabular view of genotype results and drug\nrecommendations suitable for display or embedding in reports.\n\nArgs:\n    results: List of genotype result or recommendation dictionaries\n\nReturns:\n    List of row dictionaries with standardized columns:\n        - \"Gene\": Gene symbol\n        - \"Diplotype\": Diplotype string\n        - \"Phenotype\": Metabolizer phenotype\n        - \"Drug\": Drug name (if recommendation)\n        - \"Recommendation\": Brief recommendation\n        - \"Severity\": Interaction severity",
+    "args": [
+      "results"
+    ],
+    "return": "list[dict[str, str]]"
+  },
+  "reporting.export_report": {
+    "file": "pharmacogenomics/clinical/reporting.py",
+    "doc": "Export a clinical report to the specified format.\n\nArgs:\n    report: Report dictionary (from generate_clinical_report)\n    format: Output format - \"text\", \"html\", or \"json\"\n    output_path: Optional file path to write the report to\n\nReturns:\n    Formatted report string\n\nRaises:\n    ValueError: If format is not supported",
+    "args": [
+      "report",
+      "format",
+      "output_path"
+    ],
+    "return": "str"
+  },
+  "reporting.add_disclaimer": {
+    "file": "pharmacogenomics/clinical/reporting.py",
+    "doc": "Add or update the clinical disclaimer in a report.\n\nArgs:\n    report: Report dictionary\n    custom_disclaimer: Optional custom disclaimer text.\n        If None, uses the standard METAINFORMANT disclaimer.\n\nReturns:\n    Updated report dictionary with disclaimer",
+    "args": [
+      "report",
+      "custom_disclaimer"
+    ],
+    "return": "dict[str, Any]"
+  },
+  "drug_interactions.default_interaction_database": {
+    "file": "pharmacogenomics/interaction/drug_interactions.py",
+    "doc": "Return the built-in drug-drug interaction database.\n\nThe database contains approximately 100 common drug pairs with severity,\nmechanism, description, and evidence level. Each entry is keyed by a\nfrozenset-style tuple of two drug names (lowercased, sorted).\n\nReturns:\n    Dictionary mapping ``(drug_a, drug_b)`` tuples (sorted) to interaction\n    records with keys: severity, mechanism, description, evidence_level,\n    recommendation.",
+    "args": [],
+    "return": "dict"
+  },
+  "drug_interactions.predict_drug_interaction": {
+    "file": "pharmacogenomics/interaction/drug_interactions.py",
+    "doc": "Predict drug-drug interaction between two medications.\n\nLooks up the drug pair in the interaction database and returns the\ninteraction record including severity, mechanism, description, evidence\nlevel, and clinical recommendation.\n\nArgs:\n    drug_a: Name of the first drug.\n    drug_b: Name of the second drug.\n    interaction_db: Optional pre-built interaction database. If ``None``,\n        the built-in database from :func:`default_interaction_database` is\n        used.\n\nReturns:\n    Dictionary with keys:\n        - severity: ``\"major\"`` | ``\"moderate\"`` | ``\"minor\"`` | ``\"none\"``\n        - mechanism: Pharmacokinetic or pharmacodynamic mechanism.\n        - description: Narrative description of the interaction.\n        - evidence_level: ``\"A\"`` through ``\"D\"``.\n        - recommendation: Clinical recommendation text.\n        - drug_a: Normalised name of drug A.\n        - drug_b: Normalised name of drug B.",
+    "args": [
+      "drug_a",
+      "drug_b",
+      "interaction_db"
+    ],
+    "return": "dict"
+  },
+  "drug_interactions.polypharmacy_risk": {
+    "file": "pharmacogenomics/interaction/drug_interactions.py",
+    "doc": "Assess polypharmacy risk from multiple concurrent medications.\n\nPerforms pairwise interaction checks across all medications, identifies\nCYP pathway competition, and computes an overall risk score.\n\nArgs:\n    medications: List of drug names currently prescribed.\n    interaction_db: Optional pre-built interaction database.\n\nReturns:\n    Dictionary with keys:\n        - risk_score: Float 0-1 summarising overall polypharmacy risk.\n        - n_medications: Number of medications assessed.\n        - interactions: List of pairwise interaction dicts (non-``\"none\"``).\n        - competing_pathways: Dict mapping CYP enzyme to list of competing\n          drugs from the input.\n        - n_interactions: Count of identified interactions.\n        - severity_counts: Dict mapping severity to count.\n        - recommendations: List of distinct recommendation strings.\n\nRaises:\n    ValueError: If fewer than 2 medications provided.",
+    "args": [
+      "medications",
+      "interaction_db"
+    ],
+    "return": "dict"
+  },
+  "drug_interactions.cyp_inhibition_prediction": {
+    "file": "pharmacogenomics/interaction/drug_interactions.py",
+    "doc": "Predict CYP enzyme inhibition and induction potential of a drug.\n\nChecks the drug against known CYP inhibitor and inducer tables to\nidentify which enzymes may be affected and at what potency.\n\nArgs:\n    drug: Name of the drug to profile.\n    cyp_profiles: Optional custom CYP profile database. If ``None``,\n        the built-in inhibitor/inducer tables are used. Expected format:\n        ``{\"inhibitors\": {cyp: [...]}, \"inducers\": {cyp: [...]}}``.\n\nReturns:\n    Dictionary with keys:\n        - drug: Normalised drug name.\n        - affected_enzymes: List of dicts, each with\n          ``{enzyme, effect_type, inhibition_type, potency_estimate}``.\n        - n_affected: Count of affected enzymes.\n        - substrate_of: List of CYP enzymes where this drug is a substrate.\n        - summary: Human-readable summary string.",
+    "args": [
+      "drug",
+      "cyp_profiles"
+    ],
+    "return": "dict"
+  },
+  "metabolizer_status.default_allele_function_table": {
+    "file": "pharmacogenomics/metabolism/metabolizer_status.py",
+    "doc": "Return the built-in allele function assignment table.\n\nCovers CYP2D6, CYP2C19, and CYP2C9 with CPIC-consensus function\nassignments. Each gene maps to a dict of allele -> function_value.\n\nReturns:\n    Dictionary mapping gene name to a dict of\n    ``{allele_name: function_value}``. Function values:\n    0.0 = no function, 0.5 = decreased function, 1.0 = normal function,\n    1.5 = increased function (CYP2C19 *17).",
+    "args": [],
+    "return": "dict"
+  },
+  "metabolizer_status.compute_activity_score": {
+    "file": "pharmacogenomics/metabolism/metabolizer_status.py",
+    "doc": "Compute CPIC-style activity score from a diplotype string.\n\nParses a diplotype of the form ``\"*1/*4\"`` and sums the function values\nof each allele from the provided table.\n\nArgs:\n    diplotype: Diplotype string, e.g. ``\"*1/*4\"``, ``\"*1xN/*2\"``.\n    allele_function_table: Dictionary mapping allele name to numeric\n        function value (e.g. ``{\"*1\": 1.0, \"*4\": 0.0}``).\n\nReturns:\n    Activity score (sum of both allele function values).\n\nRaises:\n    ValueError: If diplotype format is invalid or alleles not found.",
+    "args": [
+      "diplotype",
+      "allele_function_table"
+    ],
+    "return": "float"
+  },
+  "metabolizer_status.classify_metabolizer": {
+    "file": "pharmacogenomics/metabolism/metabolizer_status.py",
+    "doc": "Classify metabolizer phenotype from an activity score.\n\nUses gene-specific thresholds from the CPIC framework to map an\nactivity score to a phenotype category.\n\nArgs:\n    activity_score: Numeric activity score from :func:`compute_activity_score`.\n    gene: Gene symbol (e.g. ``\"CYP2D6\"``).\n\nReturns:\n    Phenotype string: one of ``\"poor\"``, ``\"intermediate\"``, ``\"normal\"``,\n    ``\"rapid\"``, or ``\"ultrarapid\"``.",
+    "args": [
+      "activity_score",
+      "gene"
+    ],
+    "return": "str"
+  },
+  "metabolizer_status.predict_metabolizer_status": {
+    "file": "pharmacogenomics/metabolism/metabolizer_status.py",
+    "doc": "Predict metabolizer phenotype from genotype information.\n\nTakes a genotype dictionary containing diplotype information and\ncomputes the metabolizer phenotype using the CPIC activity score\nframework.\n\nArgs:\n    genotype: Dictionary with at least a ``\"diplotype\"`` key containing\n        the diplotype string (e.g. ``\"*1/*4\"``), or a ``\"alleles\"`` key\n        with a list of two allele names.\n    gene: Gene symbol (e.g. ``\"CYP2D6\"``).\n    activity_scores: Optional custom allele function table for the gene.\n        If ``None``, uses the built-in table.\n\nReturns:\n    Dictionary with keys:\n        - phenotype: Metabolizer classification string.\n        - activity_score: Computed numeric activity score.\n        - alleles: Tuple of two allele names.\n        - gene: Gene symbol.\n        - diplotype: Diplotype string.\n        - thresholds_used: The threshold ranges applied.\n\nRaises:\n    ValueError: If genotype is missing required fields.",
+    "args": [
+      "genotype",
+      "gene",
+      "activity_scores"
+    ],
+    "return": "dict"
+  },
+  "metabolizer_status.dose_adjustment": {
+    "file": "pharmacogenomics/metabolism/metabolizer_status.py",
+    "doc": "Recommend dose adjustment based on metabolizer status and drug.\n\nLooks up the drug in the dose guideline table and returns the\nrecommendation for the given metabolizer phenotype.\n\nArgs:\n    metabolizer_status: Metabolizer phenotype string (e.g. ``\"poor\"``,\n        ``\"intermediate\"``, ``\"normal\"``, ``\"ultrarapid\"``).\n    drug: Drug name to look up.\n    dose_guidelines: Optional custom dose guidelines. If ``None``, uses\n        the built-in CPIC-derived guidelines. Expected format:\n        ``{drug: {phenotype: {recommendation, adjusted_dose_fraction, ...}}}``.\n\nReturns:\n    Dictionary with keys:\n        - drug: Normalised drug name.\n        - metabolizer_status: Input phenotype.\n        - recommendation: Clinical recommendation text.\n        - adjusted_dose_fraction: Multiplier for standard dose (0.0 = avoid,\n          1.0 = standard, 2.0 = double).\n        - evidence_level: Evidence grade (``\"A\"`` through ``\"D\"``).\n        - guideline_source: Source of the guideline.",
+    "args": [
+      "metabolizer_status",
+      "drug",
+      "dose_guidelines"
+    ],
+    "return": "dict"
+  },
+  "plots.plot_metabolizer_status": {
+    "file": "pharmacogenomics/visualization/plots.py",
+    "doc": "Plot metabolizer status distribution as a bar chart.\n\nCreates a bar chart showing the distribution of metabolizer phenotypes,\ncolor-coded by category (PM=red, IM=orange, NM=green, RM=blue, UM=purple).\n\nArgs:\n    phenotypes: Dictionary mapping phenotype name/abbreviation to count or frequency.\n        Example: {\"PM\": 5, \"IM\": 20, \"NM\": 65, \"RM\": 8, \"UM\": 2}\n    output_path: Path to save the figure\n    title: Plot title\n    figsize: Figure size in inches (width, height)\n\nReturns:\n    Path to saved figure",
+    "args": [
+      "phenotypes",
+      "output_path",
+      "title",
+      "figsize"
+    ],
+    "return": "Path"
+  },
+  "plots.plot_allele_frequencies": {
+    "file": "pharmacogenomics/visualization/plots.py",
+    "doc": "Plot allele frequency distribution for a pharmacogene.\n\nCreates either a bar chart or pie chart showing the frequency of each\nstar allele in a population.\n\nArgs:\n    allele_freqs: Dictionary mapping allele name to frequency.\n        Example: {\"*1\": 0.45, \"*2\": 0.25, \"*4\": 0.15, \"*10\": 0.10, \"*17\": 0.05}\n    gene: Gene symbol for the title\n    output_path: Path to save the figure\n    plot_type: \"bar\" for bar chart, \"pie\" for pie chart\n    title: Optional custom title\n    figsize: Figure size in inches\n\nReturns:\n    Path to saved figure",
+    "args": [
+      "allele_freqs",
+      "gene",
+      "output_path",
+      "plot_type",
+      "title",
+      "figsize"
+    ],
+    "return": "Path"
+  },
+  "plots.plot_activity_score_distribution": {
+    "file": "pharmacogenomics/visualization/plots.py",
+    "doc": "Plot activity score distribution as a histogram.\n\nShows the distribution of activity scores across a cohort, with vertical\nlines indicating phenotype threshold boundaries.\n\nArgs:\n    scores: List of activity score values\n    gene: Gene symbol\n    output_path: Path to save the figure\n    title: Optional custom title\n    figsize: Figure size in inches\n\nReturns:\n    Path to saved figure",
+    "args": [
+      "scores",
+      "gene",
+      "output_path",
+      "title",
+      "figsize"
+    ],
+    "return": "Path"
+  },
+  "plots.plot_drug_response_heatmap": {
+    "file": "pharmacogenomics/visualization/plots.py",
+    "doc": "Plot drug-gene response heatmap.\n\nCreates a matrix visualization showing the interaction severity or\nmetabolizer impact for each drug-gene combination.\n\nArgs:\n    drugs: List of drug names (rows)\n    genes: List of gene symbols (columns)\n    phenotypes: Dict mapping (drug, gene) tuple to phenotype/severity string.\n        Example: {(\"codeine\", \"CYP2D6\"): \"Major\", (\"warfarin\", \"CYP2C9\"): \"Moderate\"}\n    output_path: Path to save the figure\n    title: Plot title\n    figsize: Optional figure size (auto-calculated if None)\n\nReturns:\n    Path to saved figure",
+    "args": [
+      "drugs",
+      "genes",
+      "phenotypes",
+      "output_path",
+      "title",
+      "figsize"
+    ],
+    "return": "Path"
+  },
+  "plots.plot_population_comparison": {
+    "file": "pharmacogenomics/visualization/plots.py",
+    "doc": "Plot cross-population allele frequency comparison.\n\nCreates a grouped bar chart comparing allele frequencies across\ndifferent populations (e.g., African, European, East Asian).\n\nArgs:\n    allele_freqs_by_pop: Nested dict: population -> allele -> frequency.\n        Example: {\"European\": {\"*1\": 0.6, \"*2\": 0.3}, \"East Asian\": {\"*1\": 0.4, \"*10\": 0.4}}\n    gene: Gene symbol\n    output_path: Path to save the figure\n    title: Optional custom title\n    figsize: Figure size in inches\n\nReturns:\n    Path to saved figure",
+    "args": [
+      "allele_freqs_by_pop",
+      "gene",
+      "output_path",
+      "title",
+      "figsize"
+    ],
+    "return": "Path"
+  },
+  "plots.plot_acmg_criteria": {
+    "file": "pharmacogenomics/visualization/plots.py",
+    "doc": "Plot ACMG criteria evaluation summary.\n\nCreates a horizontal bar chart showing which ACMG criteria are met (green)\nor not met (gray), organized by evidence strength category.\n\nArgs:\n    criteria_results: Dictionary mapping criterion name to met/not-met.\n        Example: {\"PVS1\": True, \"PS1\": False, \"PM2\": True, \"PP3\": True, ...}\n    output_path: Path to save the figure\n    title: Plot title\n    figsize: Figure size in inches\n\nReturns:\n    Path to saved figure",
+    "args": [
+      "criteria_results",
+      "output_path",
+      "title",
+      "figsize"
+    ],
+    "return": "Path"
+  }
+}

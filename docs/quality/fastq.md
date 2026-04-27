@@ -330,7 +330,7 @@ def assess_gc_content(results, expected_gc=None):
         print(f"Observed GC content: {observed_gc:.1f}%")
         print("Expected ranges for common organisms:")
         for org, (low, high) in organisms.items():
-            status = "✓" if low <= observed_gc <= high else "✗"
+ status = "" if low <= observed_gc <= high else ""
             print(f"  {status} {org}: {low}-{high}%")
     else:
         deviation = abs(observed_gc - expected_gc)

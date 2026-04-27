@@ -3,13 +3,13 @@
 ## Overview
 Machine learning module for METAINFORMANT.
 
-## 📦 Contents
-- **[evaluation/](evaluation/)**
-- **[features/](features/)**
-- **[models/](models/)**
+## Contents
+- **[evaluation/](evaluation.md)**
+- **[features/](features.md)**
+- **[models/](models.md)**
 - `[__init__.py](__init__.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

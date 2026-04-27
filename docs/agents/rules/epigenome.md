@@ -9,14 +9,14 @@ Epigenetic modification analysis: DNA methylation analysis and epigenomic track 
 ## Source Structure
 ```
 src/metainformant/epigenome/
-├── analysis/
-│   └── tracks.py
-├── assays/
-│   ├── atacseq.py, chipseq.py, methylation.py
-├── visualization/
-│   └── visualization.py
-└── workflow/
-    └── workflow.py
+ analysis/
+ tracks.py
+ assays/
+ atacseq.py, chipseq.py, methylation.py
+ visualization/
+ visualization.py
+ workflow/
+ workflow.py
 ```
 
 ## Package Management

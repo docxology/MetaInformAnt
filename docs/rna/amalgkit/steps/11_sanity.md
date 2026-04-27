@@ -106,9 +106,9 @@ steps:
 
 ```
 out_dir/sanity/
-├── SRA_IDs_without_index.txt      # Species missing indices (if --index)
-├── SRA_IDs_without_fastq.txt       # Samples missing FASTQs (if --getfastq)
-└── SRA_IDs_without_quant.txt       # Samples missing quant outputs (if --quant)
+ SRA_IDs_without_index.txt # Species missing indices (if --index)
+ SRA_IDs_without_fastq.txt # Samples missing FASTQs (if --getfastq)
+ SRA_IDs_without_quant.txt # Samples missing quant outputs (if --quant)
 ```
 
 ### File Contents
@@ -195,8 +195,8 @@ amalgkit sanity \
 ```
 
 **Exit Code**:
-- `0`: All samples have quant outputs ✅
-- `1`: Some samples missing quant outputs ⚠️
+- `0`: All samples have quant outputs
+- `1`: Some samples missing quant outputs
 
 ### 3. Identify Failed Downloads
 
@@ -315,7 +315,7 @@ amalgkit sanity --getfastq
 ```bash
 # Check if quant outputs exist instead
 amalgkit sanity --quant
-# If no missing quant files: FASTQ deletion was intentional ✅
+# If no missing quant files: FASTQ deletion was intentional
 ```
 
 ## Best Practices
@@ -393,9 +393,9 @@ Exit code: 0
 ```
 
 **Files Generated**:
-- `SRA_IDs_without_quant.txt`: Empty or non-existent ✅
+- `SRA_IDs_without_quant.txt`: Empty or non-existent
 - `SRA_IDs_without_fastq.txt`: May list samples (FASTQs cleaned after quant)
-- `SRA_IDs_without_index.txt`: Empty ✅
+- `SRA_IDs_without_index.txt`: Empty
 
 ### Example 2: Identifying Failed Quantifications
 
@@ -430,9 +430,9 @@ for species in amellifera pbarbatus cfloridanus; do
       --all
     
     if [ $? -eq 0 ]; then
-        echo "$species: ✅ All checks passed"
+ echo "$species: All checks passed"
     else
-        echo "$species: ⚠️ Some checks failed"
+ echo "$species: Some checks failed"
     fi
 done
 ```
@@ -474,17 +474,17 @@ if missing_quant.exists():
         print(f"WARNING: {len(missing_samples)} samples missing quant outputs")
         print(f"Samples: {', '.join(missing_samples)}")
     else:
-        print("✅ All samples have quant outputs")
+ print(" All samples have quant outputs")
 else:
-    print("✅ No missing quant files reported")
+ print(" No missing quant files reported")
 ```
 
 ## Exit Codes
 
 | Exit Code | Meaning |
 |-----------|---------|
-| `0` | All requested checks passed ✅ |
-| `1` | One or more checks failed (missing files detected) ⚠️ |
+| `0` | All requested checks passed [DONE] |
+| `1` | One or more checks failed (missing files detected) |
 
 **Usage in Scripts**:
 ```bash
@@ -511,6 +511,6 @@ esac
 
 **Last Updated**: October 29, 2025  
 **AMALGKIT Version**: 0.12.19  
-**Status**: ✅ Production-ready, comprehensively tested
+**Status**: Production-ready, comprehensively tested
 
 

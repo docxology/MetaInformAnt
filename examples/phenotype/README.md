@@ -3,10 +3,10 @@
 ## Overview
 Functionality for phenotype.
 
-## 📦 Contents
+## Contents
 - `[example_traits.py](example_traits.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

@@ -3,12 +3,12 @@
 ## Overview
 Quality control analysis module for METAINFORMANT.
 
-## 📦 Contents
-- **[analysis/](analysis/)**
-- **[io/](io/)**
-- `[__init__.py](__init__.py)`
+## Contents
+- **[Analysis](metrics.md)**
+- **[I/O](fastq.md)**
+- `__init__.py`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

@@ -1,12 +1,12 @@
 # Specification: phenotype Config
 
-## 🎯 Scope
+## Scope
 Configuration templates and schemas for phenotype.
 
-## 🧱 Architecture
+## Architecture
 - **Component**: Configuration
 - **Location**: `config/phenotype/`
 
-## 💾 Data Structures
+## Data Structures
 - **Format**: YAML
 - **Schema**: `metainformant.phenotype.config`

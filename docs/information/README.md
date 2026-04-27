@@ -3,13 +3,13 @@
 ## Overview
 Information theory analysis module for METAINFORMANT.
 
-## 📦 Contents
-- **[integration/](integration/)** — Cross-module information integration
-- **[metrics/](metrics/)** — Information metrics (`core/`, `advanced/`, `analysis/` subpackages)
-- **[network_info/](network_info/)** — Network information analysis
-- **[workflow/](workflow/)** — Information theory workflows
+## Contents
+- **[integration/](index.md)** — Cross-module information integration
+- **[metrics/](entropy.md)** — Information metrics (`core/`, `advanced/`, `analysis/` subpackages)
+- **[network_info/](mutual_information.md)** — Network information analysis
+- **[workflow/](estimation.md)** — Information theory workflows
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

@@ -3,10 +3,10 @@
 ## Overview
 Functionality for core.
 
-## 📦 Contents
+## Contents
 - `[run_demo.py](run_demo.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

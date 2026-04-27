@@ -113,15 +113,15 @@ Interactive terminal tools (separate from `metainformant`):
 
 ```text
 output/amalgkit/<species>/
-├── work/            # Amalgkit intermediate files (metadata, selected samples, merge outputs)
-│   ├── metadata/    # Sample metadata from NCBI (metadata_selected.tsv)
-│   ├── getfastq/    # Symlinks to downloaded FASTQ files
-│   ├── quant/       # Kallisto quantification results per sample
-│   ├── merge/       # Combined abundance matrices
-│   └── logs/        # Step-level log files
-├── fastq/           # Raw downloaded FASTQ files (ENA .fastq.gz or SRA extracts)
-│   └── getfastq/    # Per-sample subdirectories with FASTQ pairs
-└── genome/          # Reference genome FASTA + Kallisto index
+ work/ # Amalgkit intermediate files (metadata, selected samples, merge outputs)
+ metadata/ # Sample metadata from NCBI (metadata_selected.tsv)
+ getfastq/ # Symlinks to downloaded FASTQ files
+ quant/ # Kallisto quantification results per sample
+ merge/ # Combined abundance matrices
+ logs/ # Step-level log files
+ fastq/ # Raw downloaded FASTQ files (ENA .fastq.gz or SRA extracts)
+ getfastq/ # Per-sample subdirectories with FASTQ pairs
+ genome/ # Reference genome FASTA + Kallisto index
 ```
 
 `work/getfastq/` holds **symlinks** to `fastq/getfastq/` where data files live.

@@ -6,30 +6,30 @@ Analysis tools for Oxford Nanopore (ONT) and PacBio long-read sequencing data, i
 ## Source Structure
 ```
 src/metainformant/longread/
-├── io/
-│   ├── fast5.py          # FAST5 file reading, signal extraction
-│   ├── bam.py            # Long-read BAM parsing, methylation tags
-│   └── formats.py        # Format conversion (FAST5/FASTQ, POD5/FAST5, PAF)
-├── quality/
-│   ├── metrics.py        # N50/NX, read length stats, accuracy, throughput
-│   └── filtering.py      # Length/quality filtering, adapter trimming, chimeric splitting
-├── analysis/
-│   ├── modified_bases.py # 5mC/6mA methylation detection, differential methylation
-│   ├── structural.py     # SV detection from long reads (insertions, inversions)
-│   └── phasing.py        # Haplotype phasing, block building, read tagging
-├── assembly/
-│   ├── overlap.py        # Overlap finding, minimizer sketching, overlap graphs
-│   ├── consensus.py      # Consensus generation, polishing, quality calculation
-│   └── hybrid.py         # Hybrid assembly with short reads, scaffolding
-├── visualization/
-│   └── plots.py          # Read length histograms, dotplots, methylation tracks
-├── utils/
-│   ├── batch.py          # Batch processing, filtering, metrics
-│   └── summary.py        # QC/assembly/methylation summaries, run comparisons
-└── workflow/
-    ├── orchestrator.py   # Pipeline orchestration (LongReadOrchestrator)
-    ├── pipelines.py      # Pre-configured pipelines
-    └── reporting.py      # QC report generation
+ io/
+ fast5.py # FAST5 file reading, signal extraction
+ bam.py # Long-read BAM parsing, methylation tags
+ formats.py # Format conversion (FAST5/FASTQ, POD5/FAST5, PAF)
+ quality/
+ metrics.py # N50/NX, read length stats, accuracy, throughput
+ filtering.py # Length/quality filtering, adapter trimming, chimeric splitting
+ analysis/
+ modified_bases.py # 5mC/6mA methylation detection, differential methylation
+ structural.py # SV detection from long reads (insertions, inversions)
+ phasing.py # Haplotype phasing, block building, read tagging
+ assembly/
+ overlap.py # Overlap finding, minimizer sketching, overlap graphs
+ consensus.py # Consensus generation, polishing, quality calculation
+ hybrid.py # Hybrid assembly with short reads, scaffolding
+ visualization/
+ plots.py # Read length histograms, dotplots, methylation tracks
+ utils/
+ batch.py # Batch processing, filtering, metrics
+ summary.py # QC/assembly/methylation summaries, run comparisons
+ workflow/
+ orchestrator.py # Pipeline orchestration (LongReadOrchestrator)
+ pipelines.py # Pre-configured pipelines
+ reporting.py # QC report generation
 ```
 
 ## Dependencies

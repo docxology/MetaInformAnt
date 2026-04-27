@@ -30,7 +30,7 @@ Notes
 - `execute_workflow` writes per-step logs to `work_dir/logs` and a JSONL manifest to `work_dir/amalgkit.manifest.jsonl`
 - To parameterize steps by species/tissues and output layout, see [Configuration Guide](./CONFIGURATION.md#species-profiles)
 
-## MetaInformAnt Extensions ⭐
+## MetaInformAnt Extensions
 
 These tools provide automation and precision beyond the standard `amalgkit` capabilities:
 

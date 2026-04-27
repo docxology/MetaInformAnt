@@ -3,10 +3,10 @@
 ## Overview
 Functionality for math.
 
-## 📦 Contents
+## Contents
 - `[example_dynamics.py](example_dynamics.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

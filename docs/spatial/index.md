@@ -1,30 +1,36 @@
-# Spatial Transcriptomics Module
+# Spatial Transcriptomics Index
 
-Spatial transcriptomics analysis supporting Visium, MERFISH, and Xenium platforms.
+High‑level map.
 
-## Submodules
+## Getting started
 
-### I/O (`io/`)
-- **visium.py** - 10x Visium data loading, tissue positions, spatial images
-- **merfish.py** - MERFISH transcript spots, cell metadata, aggregation
-- **xenium.py** - 10x Xenium transcripts, cell features, boundaries
+- **[GETTING_STARTED.md](GETTING_STARTED.md)** — first‑time demo
+- **[io.md](io.md)** — loaders per platform
 
-### Analysis (`analysis/`)
-- **clustering.py** - Spatial clustering (Leiden/Louvain), spatial graph construction, domain detection
-- **deconvolution.py** - Cell type deconvolution (NNLS, NMF), reference profiles, enrichment scoring
-- **autocorrelation.py** - Moran's I, Geary's C, Getis-Ord G, variograms, spatial weights
-- **neighborhood.py** - Neighborhood enrichment, niche detection, Ripley's K, ligand-receptor signaling
+## Core guides
 
-### Integration (`integration/`)
-- **scrna_mapping.py** - scRNA-seq mapping, anchor-based transfer, gene imputation, correlation
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** — module design + data‑flow
+- **[CONFIGURATION.md](CONFIGURATION.md)** — all `spatial.*` keys
+- **[PERFORMANCE.md](PERFORMANCE.md)** — benchmarks & tuning
+- **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** — error → fix table
 
-### Visualization (`visualization/`)
-- **plots.py** - Spatial scatter, tissue overlay, gene/cell-type maps, deconvolution pies, interaction heatmaps
+## Analysis
 
-## Usage
+- **[autocorrelation.md](autocorrelation.md)** — Moran, LISA, Geary, Getis‑Ord
+- **[clustering.md](clustering.md)** — spatially‑constrained Leiden / k‑means
+- **[neighborhood.md](neighborhood.md)** — Ripley's K, interaction index, NES
+- **[deconvolution.md](deconvolution.md)** — Stereoscope, Tangram
+- **[communication.md](communication.md)** — ligand‑receptor scoring
+- **[niche.md](niche.md)** — niche discovery + annotation
 
-```python
-from metainformant.spatial.io import visium, merfish, xenium
-from metainformant.spatial.analysis import clustering, deconvolution, autocorrelation
-from metainformant.spatial.integration import scrna_mapping
-```
+## Visualisation
+
+- **[visualization.md](visualization.md)** — Matplotlib & Plotly wrappers
+
+## Integration
+
+- **[integration.md](integration.md)** — batch‑correction, label‑transfer, registration
+
+## API
+
+See also `metainformant.spatial` package reference (auto‑generated in docs/API).

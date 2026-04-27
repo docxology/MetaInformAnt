@@ -3,10 +3,10 @@
 ## Overview
 Functionality for protein.
 
-## 📦 Contents
+## Contents
 - `[example_sequences.py](example_sequences.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

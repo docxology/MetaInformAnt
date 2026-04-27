@@ -10,14 +10,14 @@ The `src/` directory contains the main Python package source code. AI agents wor
 
 ```
 src/
-├── metainformant/          # Main package (see src/metainformant/AGENTS.md)
-│   ├── core/               # Shared infrastructure
-│   ├── dna/                # DNA sequence analysis
-│   ├── rna/                # RNA-seq workflows
-│   ├── protein/            # Protein analysis
-│   ├── gwas/               # GWAS pipeline
-│   └── ...                 # 25 domain modules
-└── metainformant.egg-info/ # Package metadata (auto-generated)
+ metainformant/ # Main package (see src/metainformant/AGENTS.md)
+ core/ # Shared infrastructure
+ dna/ # DNA sequence analysis
+ rna/ # RNA-seq workflows
+ protein/ # Protein analysis
+ gwas/ # GWAS pipeline
+ ... # 25 domain modules
+ metainformant.egg-info/ # Package metadata (auto-generated)
 ```
 
 ## Key Rules

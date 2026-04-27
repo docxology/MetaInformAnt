@@ -125,19 +125,19 @@ correction:
 
 ```
 output/gwas/
-├── genome/              # Reference genome
-├── variants/            # VCF files (raw and filtered)
-├── structure/           # Population structure results
-│   ├── pca_components.tsv
-│   ├── kinship_matrix.tsv
-│   └── structure_summary.json
-├── results/             # Association test results
-│   ├── association_results.tsv
-│   └── summary.json
-└── plots/               # Visualizations
-    ├── manhattan.png
-    ├── qq_plot.png
-    └── regional_*.png
+ genome/ # Reference genome
+ variants/ # VCF files (raw and filtered)
+ structure/ # Population structure results
+ pca_components.tsv
+ kinship_matrix.tsv
+ structure_summary.json
+ results/ # Association test results
+ association_results.tsv
+ summary.json
+ plots/ # Visualizations
+ manhattan.png
+ qq_plot.png
+ regional_*.png
 ```
 
 ## Input File Formats

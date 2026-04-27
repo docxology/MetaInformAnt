@@ -1,12 +1,12 @@
 # Specification: singlecell Config
 
-## 🎯 Scope
+## Scope
 Configuration templates and schemas for singlecell.
 
-## 🧱 Architecture
+## Architecture
 - **Component**: Configuration
 - **Location**: `config/singlecell/`
 
-## 💾 Data Structures
+## Data Structures
 - **Format**: YAML
 - **Schema**: `metainformant.singlecell.config`

@@ -2,6 +2,22 @@
 
 70+ plot types for biological data -- basic charts, statistical plots, genomic visualizations, expression heatmaps, interactive dashboards, and configurable themes.
 
+## Overview
+
+70+ plot types for biological data -- basic charts, statistical plots, genomic visualizations, expression heatmaps, interactive dashboards, and configurable themes.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Key Capabilities](#key-capabilities)
+  - [Basic & Statistical Plots](#basic--statistical-plots)
+  - [Genomic Visualizations](#genomic-visualizations)
+  - [Themes, Palettes & Dashboards](#themes-palettes--dashboards)
+- [Submodules](#submodules)
+- [Quick Start](#quick-start)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -101,6 +117,7 @@ ax = volcano_plot(log2fc, pvalues, output_path="output/viz/volcano.png")
 ```
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [`metainformant.gwas.visualization`](../gwas/visualization/) -- GWAS-specific plot suites
 - [`metainformant.simulation.visualization`](../simulation/visualization/) -- Simulation result plots

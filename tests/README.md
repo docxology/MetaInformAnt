@@ -118,12 +118,12 @@ Test fixtures are in `tests/data/`:
 
 ```
 tests/data/
-├── dna/        # FASTA, FASTQ samples
-├── protein/    # PDB, sequence data
-├── rna/        # RNA-seq test data
-├── ontology/   # GO OBO files
-├── phenotype/  # Trait data
-└── epigenome/  # Methylation data
+ dna/ # FASTA, FASTQ samples
+ protein/ # PDB, sequence data
+ rna/ # RNA-seq test data
+ ontology/ # GO OBO files
+ phenotype/ # Trait data
+ epigenome/ # Methylation data
 ```
 
 ## Writing Tests

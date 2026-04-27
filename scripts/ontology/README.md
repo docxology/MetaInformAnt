@@ -3,10 +3,10 @@
 ## Overview
 Functionality for ontology.
 
-## 📦 Contents
+## Contents
 - `[run_ontology_analysis.py](run_ontology_analysis.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

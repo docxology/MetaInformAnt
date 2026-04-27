@@ -3,11 +3,11 @@
 ## Overview
 Sonic phenotype analysis module.
 
-## 📦 Contents
+## Contents
 - `[__init__.py](__init__.py)`
 - `[signal.py](signal.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

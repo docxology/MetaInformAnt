@@ -1,12 +1,12 @@
 # Specification: amalgkit Config
 
-## 🎯 Scope
+## Scope
 Configuration templates and schemas for amalgkit.
 
-## 🧱 Architecture
+## Architecture
 - **Component**: Configuration
 - **Location**: `config/amalgkit/`
 
-## 💾 Data Structures
+## Data Structures
 - **Format**: YAML
 - **Schema**: `metainformant.amalgkit.config`

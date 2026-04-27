@@ -1,21 +1,18 @@
 # Agent Directives: docs/rna
 
 ## Role
-Documentation for RNA-seq analysis and amalgkit workflow orchestration.
 
-## Directory Structure
-- `amalgkit/` - Amalgkit-specific documentation
-- Core workflow documentation files
+Documentation for the RNA transcriptomics module.
 
-## Key Files
-- `API.md` - Complete RNA module API reference
-- `ARCHITECTURE.md` - Module architecture overview
-- `CONFIGURATION.md` - Config file specification
-- `WORKFLOW_EXECUTION_SUMMARY.md` - Execution details
-- `GETTING_STARTED.md` - Quick start guide
-- `ORCHESTRATION.md` - Workflow orchestration patterns
+## Module Scope
 
-## Amalgkit Integration
-- Complete workflow: metadata -> getfastq -> quant -> merge -> cstmm -> curate -> csca
-- Environment prefix: `AK_`
-- Config location: `config/amalgkit/`
+ENA-first amalgkit streaming pipeline, Kallisto quantification, cross-species TMM normalization, and industrial-scale orchestration (8,300+ samples).
+
+## Key Source Files
+
+| Path | Description |
+|------|-------------|
+| `src/metainformant/rna/amalgkit/` | Amalgkit CLI integration |
+| `src/metainformant/rna/engine/` | Workflow orchestration |
+| `src/metainformant/rna/retrieval/` | ENA/SRA data retrieval |
+| `src/metainformant/rna/analysis/` | Expression matrix analysis |

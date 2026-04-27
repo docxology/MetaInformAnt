@@ -3,10 +3,10 @@
 ## Overview
 Functionality for dna.
 
-## 📦 Contents
+## Contents
 - `[run_dna_analysis.py](run_dna_analysis.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

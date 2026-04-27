@@ -261,9 +261,9 @@ If genome configuration is provided, the reference genome is downloaded using NC
 
 Three options available:
 
-1. **Pre-existing VCF**: Specify paths to existing VCF files ✅ Fully supported
-2. **Download**: Download from public databases (dbSNP, 1000 Genomes) ⚠️ Placeholder (requires external tools)
-3. **Calling**: Call variants from BAM/CRAM files using bcftools or GATK ✅ Fully supported
+1. **Pre-existing VCF**: Specify paths to existing VCF files Fully supported
+2. **Download**: Download from public databases (dbSNP, 1000 Genomes) Placeholder (requires external tools)
+3. **Calling**: Call variants from BAM/CRAM files using bcftools or GATK Fully supported
 
 ### Quality Control
 

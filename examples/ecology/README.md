@@ -3,10 +3,10 @@
 ## Overview
 Functionality for ecology.
 
-## 📦 Contents
+## Contents
 - `[example_community.py](example_community.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

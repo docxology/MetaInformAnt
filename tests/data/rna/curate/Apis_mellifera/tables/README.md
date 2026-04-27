@@ -3,10 +3,10 @@
 ## Overview
 Functionality for tables.
 
-## 📦 Contents
+## Contents
 
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

@@ -8,8 +8,8 @@ The cloud deployment system uses a **thin orchestrator pattern**: a local CLI (`
 
 ```
 src/metainformant/cloud/
-├── cloud_config.py    # CloudConfig dataclass
-└── gcp_deployer.py    # GCPDeployer class
+ cloud_config.py # CloudConfig dataclass
+ gcp_deployer.py # GCPDeployer class
 ```
 
 ### CloudConfig
@@ -51,15 +51,15 @@ Starting the container with named volumes (e.g. `pipeline_data:/app/output`) wil
 ## Data Flow
 
 ```
-NCBI SRA ──▸ download (ENA FTP/NCBI) ──▸ FASTQ files
-                                              │
-NCBI FTP ──▸ transcriptome FASTA ──▸ kallisto index
-                                              │
-                              FASTQ + index ──▸ kallisto quant ──▸ abundance.tsv
-                                                                       │
-                                              merge ──▸ merged_abundance.tsv
-                                                                       │
-                                              curate ──▸ expression tables
+NCBI SRA download (ENA FTP/NCBI) FASTQ files
+
+NCBI FTP transcriptome FASTA kallisto index
+
+ FASTQ + index kallisto quant abundance.tsv
+
+ merge merged_abundance.tsv
+
+ curate expression tables
 ```
 
 ## Result Download

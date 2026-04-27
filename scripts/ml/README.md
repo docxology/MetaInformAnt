@@ -3,10 +3,10 @@
 ## Overview
 Functionality for ml.
 
-## 📦 Contents
+## Contents
 - `[run_ml_pipeline.py](run_ml_pipeline.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

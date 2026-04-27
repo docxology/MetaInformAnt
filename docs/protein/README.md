@@ -3,14 +3,14 @@
 ## Overview
 Protein sequence and structure analysis module for METAINFORMANT.
 
-## 📦 Contents
-- **[database/](database/)**
-- **[sequence/](sequence/)**
-- **[structure/](structure/)**
-- **[visualization/](visualization/)**
+## Contents
+- **[database/](uniprot.md)**
+- **sequence/**
+- **[structure/](alphafold.md)**
+- **visualization/**
 - `[__init__.py](__init__.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

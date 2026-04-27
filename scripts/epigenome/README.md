@@ -3,10 +3,10 @@
 ## Overview
 Functionality for epigenome.
 
-## 📦 Contents
+## Contents
 - `[run_epigenome_analysis.py](run_epigenome_analysis.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

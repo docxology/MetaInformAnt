@@ -3,20 +3,20 @@
 ## Overview
 DNA sequence analysis and genomics module for METAINFORMANT.
 
-## 📦 Contents
-- **[alignment/](alignment/)**
-- **[annotation/](annotation/)**
-- **[expression/](expression/)**
-- **[external/](external/)**
-- **[integration/](integration/)**
-- **[io/](io/)**
-- **[phylogeny/](phylogeny/)**
-- **[population/](population/)**
-- **[sequence/](sequence/)**
-- **[variation/](variation/)**
-- `[__init__.py](__init__.py)`
+## Contents
+- **[alignment/](alignment.md)**
+- **[annotation/](annotation.md)**
+- **[expression/](transcription.md)**
+- **[external/](ncbi.md)**
+- **[integration/](integration.md)**
+- **[io/](../core/io.md)**
+- **[phylogeny/](phylogeny.md)**
+- **[population/](population.md)**
+- **[sequence/](sequences.md)**
+- **[variation/](variants.md)**
+- `__init__.py`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD
@@ -48,13 +48,13 @@ graph TD
     end
 ```
 
-## 🚀 Usage
+## Usage
 Import module:
 ```python
 from metainformant.dna import ...
 ```
 
-## 🔗 Full Pipelines
+## Full Pipelines
 
 DNA modules form the basis of several end-to-end workflows:
 - **[GWAS Pipeline](../gwas/README.md)**: Genome-Wide Association Studies (Sequence variants to Phenotypes).

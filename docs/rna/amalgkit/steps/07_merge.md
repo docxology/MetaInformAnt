@@ -78,12 +78,12 @@ steps:
 
 ```
 {out_dir}/quant/
-├── SRR12345678/
-│   └── SRR12345678_abundance.tsv  # Note: filename includes sample_id prefix
-├── SRR12345679/
-│   └── SRR12345679_abundance.tsv
-└── SRR12345680/
-    └── SRR12345680_abundance.tsv
+ SRR12345678/
+ SRR12345678_abundance.tsv # Note: filename includes sample_id prefix
+ SRR12345679/
+ SRR12345679_abundance.tsv
+ SRR12345680/
+ SRR12345680_abundance.tsv
 ```
 
 **Example**: If quant used `out_dir: output/amalgkit/pbarbatus/work`, then:
@@ -98,12 +98,12 @@ steps:
 
 ```
 out_dir/merge/
-└── {Scientific_Name}/
-    ├── {Scientific_Name}_tc.tsv              # ⭐ Estimated counts matrix
-    ├── {Scientific_Name}_tpm.tsv             # ⭐ TPM (normalized) matrix
-    ├── {Scientific_Name}_eff_len.tsv         # Effective lengths matrix
-    ├── {Scientific_Name}_sample_info.tsv     # Sample metadata
-    └── merge_summary.txt                     # Merge statistics
+ {Scientific_Name}/
+ {Scientific_Name}_tc.tsv # Estimated counts matrix
+ {Scientific_Name}_tpm.tsv # TPM (normalized) matrix
+ {Scientific_Name}_eff_len.tsv # Effective lengths matrix
+ {Scientific_Name}_sample_info.tsv # Sample metadata
+ merge_summary.txt # Merge statistics
 ```
 
 ### Primary Outputs
@@ -603,6 +603,6 @@ print(f"Loaded expression matrix: {tpm.shape[1]} samples, {tpm.shape[0]} transcr
 
 **Last Updated**: October 29, 2025  
 **AMALGKIT Version**: 0.12.19  
-**Status**: ✅ Production-ready, comprehensively tested
+**Status**: Production-ready, comprehensively tested
 
 

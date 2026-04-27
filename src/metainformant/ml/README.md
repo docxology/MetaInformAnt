@@ -2,6 +2,23 @@
 
 Machine learning pipelines for biological data -- classification, regression, feature engineering, dimensionality reduction, and local LLM inference.
 
+## Overview
+
+Machine learning pipelines for biological data -- classification, regression, feature engineering, dimensionality reduction, and local LLM inference.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Key Capabilities](#key-capabilities)
+  - [Feature Selection](#feature-selection)
+  - [Dimensionality Reduction](#dimensionality-reduction)
+  - [Local LLM Inference](#local-llm-inference)
+- [Submodules](#submodules)
+- [Quick Start](#quick-start)
+- [Integration](#integration)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -95,6 +112,7 @@ X_pca, model = pca_reduction(X_selected, n_components=2)
 - LLM inference supports annotation tasks across all domains
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [`metainformant.visualization.analysis`](../visualization/analysis/) -- PCA/UMAP plots
 - [`metainformant.information`](../information/) -- Information-theoretic feature metrics

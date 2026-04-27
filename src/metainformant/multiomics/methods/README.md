@@ -2,7 +2,7 @@
 
 Matrix factorization, clustering, and network fusion methods for multi-omic integration.
 
-## 📦 Components
+## Components
 
 ### factorization.py
 
@@ -24,7 +24,7 @@ Multi-omic clustering methods:
 | `snf_clustering()` | Similarity Network Fusion |
 | `consensus_clustering()` | Ensemble approach |
 
-## 🚀 Usage
+## Usage
 
 ```python
 from metainformant.multiomics.methods import factorization, clustering
@@ -42,7 +42,7 @@ clusters = clustering.snf_clustering(
 )
 ```
 
-## 🔗 Related
+## Related
 
 - [analysis/integration.py](../analysis/integration.py) - Core integration
 - [pathways/](../pathways/) - Pathway-level analysis

@@ -4,17 +4,17 @@
 
 ```
 ml/llm/
-├── __init__.py          # Package exports
-├── README.md            # User documentation
-├── AGENTS.md            # Agent guidance
-├── SPEC.md              # This file
-└── ollama/              # Ollama backend
-    ├── __init__.py      # Subpackage exports
-    ├── config.py        # OllamaConfig dataclass
-    ├── client.py        # OllamaClient class
-    ├── prompts.py       # Prompt templates
-    ├── chains.py        # Composable chains
-    └── README.md        # Ollama-specific docs
+ __init__.py # Package exports
+ README.md # User documentation
+ AGENTS.md # Agent guidance
+ SPEC.md # This file
+ ollama/ # Ollama backend
+ __init__.py # Subpackage exports
+ config.py # OllamaConfig dataclass
+ client.py # OllamaClient class
+ prompts.py # Prompt templates
+ chains.py # Composable chains
+ README.md # Ollama-specific docs
 ```
 
 ## Core Interfaces

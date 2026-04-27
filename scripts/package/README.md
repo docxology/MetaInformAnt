@@ -3,10 +3,10 @@
 ## Overview
 Functionality for package.
 
-## 📦 Contents
+## Contents
 
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

@@ -10,12 +10,12 @@ Functional annotation and ontologies: Gene Ontology operations, OBO format parsi
 ## Source Structure
 ```
 src/metainformant/ontology/
-├── go.py          # Gene Ontology operations
-├── obo.py         # OBO format parsing
-├── query.py       # Ontology querying
-├── serialize.py   # Ontology serialization
-├── types.py       # Core data structures (Term, Ontology)
-└── visualization.py  # Ontology visualization
+ go.py # Gene Ontology operations
+ obo.py # OBO format parsing
+ query.py # Ontology querying
+ serialize.py # Ontology serialization
+ types.py # Core data structures (Term, Ontology)
+ visualization.py # Ontology visualization
 ```
 
 ## Package Management

@@ -6,19 +6,19 @@ Metagenomic analysis including amplicon profiling (16S/ITS), shotgun metagenomic
 ## Source Structure
 ```
 src/metainformant/metagenomics/
-├── amplicon/
-│   ├── otu_clustering.py  # OTU clustering, identity calculation, chimera filtering
-│   ├── asv_denoising.py   # ASV denoising, error rate estimation, paired-read merging
-│   └── taxonomy.py        # Taxonomic classification, tree building, confidence scoring
-├── shotgun/
-│   ├── assembly.py        # Metagenome assembly, scaffolding, assembly statistics
-│   ├── binning.py         # Contig binning, tetranucleotide frequency, bin QC
-│   └── profiling.py       # Community profiling, relative abundance, k-mer indexing
-├── functional/
-│   ├── annotation.py      # Gene annotation, ORF prediction, gene family classification
-│   └── pathways.py        # Pathway reconstruction, completeness, profile comparison
-└── visualization/
-    └── plots.py           # Krona charts, stacked bars, rarefaction, ordination, heatmaps
+ amplicon/
+ otu_clustering.py # OTU clustering, identity calculation, chimera filtering
+ asv_denoising.py # ASV denoising, error rate estimation, paired-read merging
+ taxonomy.py # Taxonomic classification, tree building, confidence scoring
+ shotgun/
+ assembly.py # Metagenome assembly, scaffolding, assembly statistics
+ binning.py # Contig binning, tetranucleotide frequency, bin QC
+ profiling.py # Community profiling, relative abundance, k-mer indexing
+ functional/
+ annotation.py # Gene annotation, ORF prediction, gene family classification
+ pathways.py # Pathway reconstruction, completeness, profile comparison
+ visualization/
+ plots.py # Krona charts, stacked bars, rarefaction, ordination, heatmaps
 ```
 
 ## Dependencies

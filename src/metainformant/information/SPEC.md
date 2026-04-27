@@ -1,16 +1,16 @@
 # Specification: information
 
-## 🎯 Scope
+## Scope
 Information theory analysis module for METAINFORMANT.
 
-## 🧱 Architecture
+## Architecture
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 - **Sub-packages**: integration, metrics, network_info, workflow
 - **Key Concepts**: Information theory metrics, mutual information, entropy
 
-## 🔌 API Definition
+## API Definition
 ### Exports
 - `__init__.py`

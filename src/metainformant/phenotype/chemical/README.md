@@ -3,12 +3,12 @@
 ## Overview
 Chemical phenotype analysis module.
 
-## 📦 Contents
+## Contents
 - `[__init__.py](__init__.py)`
 - `[compound.py](compound.py)`
 - `[profile.py](profile.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

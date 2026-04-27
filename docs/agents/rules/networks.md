@@ -10,12 +10,12 @@ Biological network analysis: protein-protein interactions, regulatory networks, 
 ## Source Structure
 ```
 src/metainformant/networks/
-├── config.py
-├── workflow.py
-├── analysis/
-│   ├── community.py, graph.py, pathway.py
-└── interaction/
-    ├── ppi.py, regulatory.py
+ config.py
+ workflow.py
+ analysis/
+ community.py, graph.py, pathway.py
+ interaction/
+ ppi.py, regulatory.py
 ```
 
 ## Package Management

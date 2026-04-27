@@ -3,7 +3,7 @@
 ## Overview
 Functionality for simulation.
 
-## 📦 Contents
+## Contents
 - `[_common.py](_common.py)`
 - `[run_simulation.py](run_simulation.py)`
 - `[simulate_core.py](simulate_core.py)`
@@ -25,7 +25,7 @@ Functionality for simulation.
 - `[simulate_singlecell.py](simulate_singlecell.py)`
 - `[simulate_visualization.py](simulate_visualization.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

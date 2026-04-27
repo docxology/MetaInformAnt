@@ -1,19 +1,19 @@
 # Personal AI Infrastructure (PAI) - sonic
 
-## 🧠 Context & Intent
+## Context & Intent
 - **Path**: `/Users/mini/Documents/GitHub/metainformant/src/metainformant/phenotype/sonic`
 - **Purpose**: Sonic phenotype analysis module.
 - **Domain**: phenotype
 
-## 🏗️ Virtual Hierarchy
+## Virtual Hierarchy
 - **Type**: Source Code
 - **Parent**: `phenotype`
 
-## 📝 Maintenance Notes
+## Maintenance Notes
 - **System**: Part of the METAINFORMANT Domain layer.
 - **Style**: Strict type hinting, no mocks in tests.
 - **Stability**: API boundaries should be respected.
 
-## 🔄 AI Workflows
+## AI Workflows
 - **Modification**: Run functional tests in `tests/` before committing.
 - **Documentation**: Update `SPEC.md` if architectural patterns change.

@@ -137,7 +137,7 @@ steps:
 
 ```
 out_dir/metadata/
-└── metadata.tsv
+ metadata.tsv
 ```
 
 **`metadata.tsv`**: Tab-delimited table with columns:
@@ -194,9 +194,9 @@ out_dir/metadata/
 
 ```
 out_dir/metadata/
-├── metadata.tsv                    # Primary output
-├── metadata.filtered.tissue.tsv    # Tissue-filtered (if filters applied)
-└── metadata_original.tsv           # Backup of original query results
+ metadata.tsv # Primary output
+ metadata.filtered.tissue.tsv # Tissue-filtered (if filters applied)
+ metadata_original.tsv # Backup of original query results
 ```
 
 ## Common Use Cases
@@ -498,7 +498,7 @@ filters:
 
 **Last Updated**: November 11, 2025  
 **AMALGKIT Version**: 0.12.20  
-**Status**: ✅ Production-ready, comprehensively tested
+**Status**: Production-ready, comprehensively tested
 
 ## New Features in v0.12.20
 

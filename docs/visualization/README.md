@@ -3,15 +3,15 @@
 ## Overview
 Visualization and plotting utilities module for METAINFORMANT.
 
-## 📦 Contents
-- **[analysis/](analysis/)** — Statistical, quality, and dimensionality reduction plots
-- **[genomics/](genomics/)** — Genomics-specific visualizations (expression, trees, networks)
-- **[plots/](plots/)** — Core plotting functions (basic, specialized, animations)
-- **[config/](config/)** — Color palettes and theme configuration
-- **[dashboards/](dashboards/)** — Composite and interactive dashboard layouts
-- **[interactive_dashboards/](interactive_dashboards/)** — Interactive web-based dashboards
+## Contents
+- **[analysis/](statistical.md)** — Statistical, quality, and dimensionality reduction plots
+- **[genomics/](genomics.md)** — Genomics-specific visualizations (expression, trees, networks)
+- **[plots/](plots.md)** — Core plotting functions (basic, specialized, animations)
+- **[config/](styling.md)** — Color palettes and theme configuration
+- **[dashboards/](multidim.md)** — Composite and interactive dashboard layouts
+- **[interactive_dashboards/](specialized.md)** — Interactive web-based dashboards
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

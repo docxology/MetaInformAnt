@@ -9,14 +9,14 @@ Information-theoretic analysis of biological data: entropy, mutual information, 
 ## Source Structure
 ```
 src/metainformant/information/
-├── integration/
-│   ├── integration.py, networks.py
-├── metrics/
-│   ├── advanced.py, analysis.py, channel.py, continuous.py
-│   ├── decomposition.py, estimation.py, geometry.py
-│   ├── hypothesis.py, semantic.py, syntactic.py
-└── workflow/
-    └── workflows.py
+ integration/
+ integration.py, networks.py
+ metrics/
+ advanced.py, analysis.py, channel.py, continuous.py
+ decomposition.py, estimation.py, geometry.py
+ hypothesis.py, semantic.py, syntactic.py
+ workflow/
+ workflows.py
 ```
 
 ## Package Management

@@ -4,7 +4,7 @@
 
 METAINFORMANT: Comprehensive Bioinformatics Toolkit for Multi-Omic Analysis.
 
-## 📦 Contents
+## Contents
 
 - **[core/](core/)**
 - **[dna/](dna/)**
@@ -35,7 +35,7 @@ METAINFORMANT: Comprehensive Bioinformatics Toolkit for Multi-Omic Analysis.
 - `[__init__.py](__init__.py)`
 - `[__main__.py](__main__.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

@@ -17,43 +17,43 @@ This document provides a comprehensive overview of the METAINFORMANT RNA module 
 
 ```
 src/metainformant/rna/
-├── __init__.py              # Public API exports
-├── core/                    # Core utilities
-│   ├── configs.py           # Configuration management
-│   └── cleanup.py           # Cleanup and maintenance utilities
-├── engine/                  # Workflow engine (20 files)
-│   ├── streaming_orchestrator.py  # ⭐ Production orchestrator (ENA-first streaming)
-│   ├── workflow.py          # Main workflow orchestration
-│   ├── workflow_execution.py # Step execution logic
-│   ├── workflow_planning.py  # Workflow planning and step ordering
-│   ├── workflow_steps.py     # Individual step implementations
-│   ├── workflow_core.py      # Core workflow utilities
-│   ├── workflow_cleanup.py   # Cleanup and recovery
-│   ├── orchestration.py     # High-level workflow execution
-│   ├── orchestrator.py      # Orchestrator base class
-│   ├── orchestration_multi_species.py  # Multi-species orchestration
-│   ├── monitoring.py        # Progress tracking and status
-│   ├── progress_db.py       # SQLite progress database (WAL mode)
-│   ├── progress_tracker.py  # Real-time progress state management
-│   ├── progress_dashboard.py # Visual dashboard
-│   ├── pipeline.py          # Pipeline utilities
-│   ├── discovery.py         # Species discovery and config generation
-│   └── sra_extraction.py    # SRA file extraction utilities
-├── amalgkit/                # Amalgkit integration
-│   ├── amalgkit.py          # CLI wrapper (run_amalgkit, build_amalgkit_command)
-│   ├── genome_prep.py       # GenomePreparator: reference genome download and indexing
-│   ├── index_prep.py        # IndexComplexityManager: transcript filtering for robust indexing
-│   ├── tissue_normalizer.py # TissueNormalizer: tissue label harmonization
-│   ├── metadata_filter.py   # Metadata filtering
-│   └── metadata_utils.py    # Metadata manipulation
-├── analysis/                # Analysis functions
-│   ├── protein_integration.py  # RNA-protein integration
-│   └── validation.py        # Pipeline validation
-├── retrieval/               # Data retrieval
-│   └── ena_downloader.py    # ENA/SRA download utilities
-├── deconvolution/           # Cell-type deconvolution from bulk RNA-seq
-├── splicing/                # Alternative splicing analysis
-└── ...
+ __init__.py # Public API exports
+ core/ # Core utilities
+ configs.py # Configuration management
+ cleanup.py # Cleanup and maintenance utilities
+ engine/ # Workflow engine (20 files)
+ streaming_orchestrator.py # Production orchestrator (ENA-first streaming)
+ workflow.py # Main workflow orchestration
+ workflow_execution.py # Step execution logic
+ workflow_planning.py # Workflow planning and step ordering
+ workflow_steps.py # Individual step implementations
+ workflow_core.py # Core workflow utilities
+ workflow_cleanup.py # Cleanup and recovery
+ orchestration.py # High-level workflow execution
+ orchestrator.py # Orchestrator base class
+ orchestration_multi_species.py # Multi-species orchestration
+ monitoring.py # Progress tracking and status
+ progress_db.py # SQLite progress database (WAL mode)
+ progress_tracker.py # Real-time progress state management
+ progress_dashboard.py # Visual dashboard
+ pipeline.py # Pipeline utilities
+ discovery.py # Species discovery and config generation
+ sra_extraction.py # SRA file extraction utilities
+ amalgkit/ # Amalgkit integration
+ amalgkit.py # CLI wrapper (run_amalgkit, build_amalgkit_command)
+ genome_prep.py # GenomePreparator: reference genome download and indexing
+ index_prep.py # IndexComplexityManager: transcript filtering for robust indexing
+ tissue_normalizer.py # TissueNormalizer: tissue label harmonization
+ metadata_filter.py # Metadata filtering
+ metadata_utils.py # Metadata manipulation
+ analysis/ # Analysis functions
+ protein_integration.py # RNA-protein integration
+ validation.py # Pipeline validation
+ retrieval/ # Data retrieval
+ ena_downloader.py # ENA/SRA download utilities
+ deconvolution/ # Cell-type deconvolution from bulk RNA-seq
+ splicing/ # Alternative splicing analysis
+ ...
 ```
 
 ### Component Responsibilities
@@ -266,49 +266,49 @@ Step 8-11: Statistical analysis
 
 ```
 1. Load Configuration
-   └─> config/amalgkit/species.yaml
-       └─> AmalgkitWorkflowConfig
+ > config/amalgkit/species.yaml
+ > AmalgkitWorkflowConfig
 
 2. Plan Workflow
-   └─> workflow.py:plan_workflow()
-       └─> Returns list of step names
+ > workflow.py:plan_workflow()
+ > Returns list of step names
 
 3. Execute Steps
-   └─> workflow.py:execute_workflow()
-       ├─> For each step:
-       │   ├─> Get step runner from STEP_RUNNERS
-       │   ├─> Prepare step parameters
-       │   ├─> Call step runner
-       │   └─> Handle errors
-       │
-       └─> Special handling for getfastq+quant:
-           └─> process_samples.py:run_download_quant_workflow()
-               ├─> Sequential mode (num_workers=1)
-               └─> Parallel mode (num_workers>1)
+ > workflow.py:execute_workflow()
+ > For each step:
+ > Get step runner from STEP_RUNNERS
+ > Prepare step parameters
+ > Call step runner
+ > Handle errors
+
+ > Special handling for getfastq+quant:
+ > process_samples.py:run_download_quant_workflow()
+ > Sequential mode (num_workers=1)
+ > Parallel mode (num_workers>1)
 ```
 
 ### File System Structure
 
 ```
 output/amalgkit/<species>/
-├── work/
-│   ├── metadata/
-│   │   └── metadata.tsv
-│   ├── config/
-│   │   └── *.config
-│   └── index/
-│       └── kallisto.idx
-├── fastq/
-│   └── getfastq/
-│       └── <SRR>/
-│           └── *.fastq.gz
-├── quant/
-│   └── <SRR>/
-│       └── abundance.tsv
-├── merged/
-│   └── expression_matrix.tsv
-└── logs/
-    └── *.log
+ work/
+ metadata/
+ metadata.tsv
+ config/
+ *.config
+ index/
+ kallisto.idx
+ fastq/
+ getfastq/
+ <SRR>/
+ *.fastq.gz
+ quant/
+ <SRR>/
+ abundance.tsv
+ merged/
+ expression_matrix.tsv
+ logs/
+ *.log
 ```
 
 ## Decision Tree
@@ -317,41 +317,41 @@ output/amalgkit/<species>/
 
 ```
 Do you have limited disk space?
-├─> Yes → Use sequential mode (num_workers=1)
-│   └─> Only one sample's FASTQs exist at a time
-│
-└─> No → Continue to next question
+> Yes → Use sequential mode (num_workers=1)
+ > Only one sample's FASTQs exist at a time
+
+> No → Continue to next question
 
 Is your cohort small (<50 samples)?
-├─> Yes → Sequential mode is fine
-│   └─> Simpler, easier to debug
-│
-└─> No → Consider parallel mode
+> Yes → Sequential mode is fine
+ > Simpler, easier to debug
+
+> No → Consider parallel mode
 
 Do you need maximum throughput?
-├─> Yes → Use parallel mode (num_workers=4-8)
-│   └─> Multiple downloads in parallel
-│
-└─> No → Sequential mode is sufficient
+> Yes → Use parallel mode (num_workers=4-8)
+ > Multiple downloads in parallel
+
+> No → Sequential mode is sufficient
 ```
 
 ### When to Use Parallel Mode
 
 ```
 Do you have sufficient disk space?
-├─> No → Use sequential mode
-│
-└─> Yes → Continue
+> No → Use sequential mode
+
+> Yes → Continue
 
 Is your cohort large (>50 samples)?
-├─> No → Sequential mode is fine
-│
-└─> Yes → Use parallel mode
+> No → Sequential mode is fine
+
+> Yes → Use parallel mode
 
 How many workers?
-├─> Limited bandwidth → 2-4 workers
-├─> Good bandwidth → 4-8 workers
-└─> Excellent bandwidth → 8-16 workers
+> Limited bandwidth → 2-4 workers
+> Good bandwidth → 4-8 workers
+> Excellent bandwidth → 8-16 workers
     (Note: More workers = more disk space needed)
 ```
 
@@ -359,20 +359,20 @@ How many workers?
 
 ```
 What do you want to do?
-├─> Start from scratch
-│   └─> Steps: metadata, config, select, getfastq, quant, merge
-│
-├─> Already have metadata
-│   └─> Steps: config, select, getfastq, quant, merge
-│
-├─> Already have FASTQ files
-│   └─> Steps: integrate, quant, merge
-│
-├─> Already have quantifications
-│   └─> Steps: merge, cstmm, curate, csca, sanity
-│
-└─> Complete workflow
-    └─> Steps: metadata, config, select, getfastq, quant, merge, cstmm, curate, csca, sanity
+> Start from scratch
+ > Steps: metadata, config, select, getfastq, quant, merge
+
+> Already have metadata
+ > Steps: config, select, getfastq, quant, merge
+
+> Already have FASTQ files
+ > Steps: integrate, quant, merge
+
+> Already have quantifications
+ > Steps: merge, cstmm, curate, csca, sanity
+
+> Complete workflow
+ > Steps: metadata, config, select, getfastq, quant, merge, cstmm, curate, csca, sanity
 ```
 
 ## Extending the System

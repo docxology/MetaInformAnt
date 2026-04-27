@@ -3,7 +3,7 @@
 ## Overview
 Functionality for life_events.
 
-## 📦 Contents
+## Contents
 - `[analyze_intervention.py](analyze_intervention.py)`
 - `[compare_groups.py](compare_groups.py)`
 - `[export_embeddings.py](export_embeddings.py)`
@@ -19,7 +19,7 @@ Functionality for life_events.
 - `[validate_data.py](validate_data.py)`
 - `[visualize_sequences.py](visualize_sequences.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

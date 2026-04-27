@@ -13,16 +13,33 @@ Scripts are **thin wrappers** around `src/metainformant/` modules:
 
 ```
 scripts/
-├── package/        # Package management (setup, test, build)
-├── rna/            # RNA-seq workflow orchestration
-├── gwas/           # GWAS pipeline scripts
-├── dna/            # DNA analysis workflows
-├── protein/        # Protein analysis scripts
-├── visualization/  # Batch plotting utilities
-├── core/           # Core utility scripts
-├── menu/           # Interactive menu system
-├── test_examples/  # Example validation
-└── <domain>/       # Domain-specific scripts
+ cloud/           # Cloud deployment and sync utilities
+ core/            # Core utility scripts
+ dna/             # DNA analysis workflows
+ ecology/         # Ecology analysis scripts
+ epigenome/       # Epigenome analysis scripts
+ eqtl/            # eQTL analysis scripts
+ gwas/            # GWAS pipeline scripts
+ life_events/     # Life events analysis workflows
+ maintenance/     # Refactoring, import fixes, code generation
+ math/            # Mathematical biology scripts
+ menu/            # Interactive menu system
+ ml/              # Machine learning scripts
+ multiomics/      # Multi-omics integration
+ networks/        # Network analysis scripts
+ ontology/        # Ontology analysis
+ package/         # Package management (setup, test, build)
+ phenotype/       # Phenotype analysis
+ popgen/          # Population genetics scripts
+ protein/         # Protein analysis scripts
+ quality/         # Auditing, linting, export checks
+ reorganize/      # Import rewriting and migration
+ rna/             # RNA-seq workflow orchestration
+ simulation/      # Simulation scripts for all modules
+ singlecell/      # Single-cell analysis
+ test_examples/   # Example testing, validation, benchmarking
+ validate/        # Project completeness audits
+ visualization/   # Batch plotting utilities
 ```
 
 ## Key Scripts
@@ -72,6 +89,32 @@ python3 scripts/gwas/run_genome_scale_gwas.py --config config/gwas/species.yaml
 
 # Generate all visualizations
 python3 scripts/gwas/generate_plots.py --results output/gwas/results.tsv
+```
+
+### Quality & Auditing (`quality/`)
+
+```bash
+# Audit documentation presence
+python3 scripts/quality/audit_docs.py
+
+# Check export completeness
+python3 scripts/quality/check_exports.py
+
+# Audit docstring coverage
+python3 scripts/quality/audit_docstrings.py
+```
+
+### Example Testing (`test_examples/`)
+
+```bash
+# Run all examples
+python3 scripts/test_examples/test_examples.py --continue-on-error
+
+# Fast validation (pre-commit)
+python3 scripts/test_examples/validate_examples.py --fast
+
+# Benchmark examples
+python3 scripts/test_examples/benchmark_examples.py
 ```
 
 ### Visualization (`visualization/`)
@@ -150,11 +193,11 @@ All scripts write to `output/`:
 
 ```
 output/
-├── amalgkit/<species>/    # RNA workflow outputs
-├── gwas/<species>/        # GWAS outputs
-├── visualization/         # Generated plots
-├── logs/                  # Script logs
-└── ...
+ amalgkit/<species>/ # RNA workflow outputs
+ gwas/<species>/ # GWAS outputs
+ visualization/ # Generated plots
+ logs/ # Script logs
+ ...
 ```
 
 ## Related

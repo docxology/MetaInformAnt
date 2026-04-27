@@ -14,14 +14,14 @@ Root source directory containing the metainformant Python package. This is the p
 
 ```
 src/
-├── metainformant/          # Main package directory
-│   ├── __init__.py         # Package initialization
-│   ├── __main__.py         # CLI entry point
-│   ├── core/               # Core infrastructure
-│   ├── dna/                # DNA analysis
-│   ├── rna/                # RNA analysis
-│   └── {module}/           # 24 additional domain modules
-└── metainformant.egg-info/ # Package metadata (generated)
+ metainformant/ # Main package directory
+ __init__.py # Package initialization
+ __main__.py # CLI entry point
+ core/ # Core infrastructure
+ dna/ # DNA analysis
+ rna/ # RNA analysis
+ {module}/ # 24 additional domain modules
+ metainformant.egg-info/ # Package metadata (generated)
 ```
 
 ## Data Structures

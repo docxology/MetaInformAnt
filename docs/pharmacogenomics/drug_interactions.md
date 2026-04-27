@@ -1,160 +1,110 @@
-# Drug-Gene Interactions
+# Drug–Drug & Drug–Gene Interactions
 
-The drug interaction module provides multi-drug pharmacogenomic interaction assessment, contraindication checking, severity scoring, polypharmacy analysis, and alternative drug suggestions. It integrates CPIC guidelines with drug-gene interaction databases to produce clinically actionable recommendations.
+Computes severity‑weighted interaction scores from CYP inhibition/induction and
+PGx phenotype, returning actionable alerts.
 
-## Key Concepts
-
-### Interaction Severity Levels
-
-Drug-gene interactions are classified by severity:
-
-- **Major**: Potentially life-threatening or causing permanent damage. Requires immediate clinical action.
-- **Moderate**: May result in deterioration of clinical status. Attention recommended.
-- **Minor**: Minimally clinically significant. May increase side effect frequency.
-- **None**: No known pharmacogenomic interaction.
-
-### Contraindication Database
-
-The module maintains a contraindication database mapping (drug, gene, phenotype) tuples to interaction details including severity, clinical reason, and alternative drug suggestions. Covered drug-gene pairs include codeine/CYP2D6, clopidogrel/CYP2C19, warfarin/CYP2C9, fluorouracil/DPYD, azathioprine/TPMT, simvastatin/SLCO1B1, and others.
-
-### Polypharmacy Risk Assessment
-
-When patients take multiple drugs, the module identifies gene pathway overlaps (multiple drugs metabolized by the same gene), compounding risks, and high-risk drug combinations.
-
-## Data Structures
-
-### InteractionSeverity (Enum)
+## Core API
 
 ```python
-class InteractionSeverity(str, Enum):
-    MAJOR = "Major"
-    MODERATE = "Moderate"
-    MINOR = "Minor"
-    NONE = "None"
-```
-
-Property: `requires_action` -- True for MAJOR and MODERATE.
-
-### DrugRecommendation
-
-```python
-@dataclass
-class DrugRecommendation:
-    drug: str                                       # Drug name
-    gene: str                                       # Gene symbol
-    phenotype: str                                  # Metabolizer phenotype
-    recommendation: str                             # Clinical recommendation
-    evidence_level: str = ""                        # CPIC level (A, B, etc.)
-    source: str = "CPIC"                            # Recommendation source
-    severity: InteractionSeverity = InteractionSeverity.NONE
-    alternatives: list[str] = field(default_factory=list)
-```
-
-## Function Reference
-
-### analyze_drug_gene_interactions
-
-```python
-def analyze_drug_gene_interactions(
-    drugs: list[str],
-    genotype_data: dict[str, dict[str, Any]],
-) -> list[DrugRecommendation]
-```
-
-Analyze drug-gene interactions for a set of drugs against patient genotype data. Each gene entry in `genotype_data` should have `phenotype` (string or `MetabolizerPhenotype`), and optionally `diplotype` and `activity_score`. Returns a list of `DrugRecommendation` objects.
-
-### check_contraindications
-
-```python
-def check_contraindications(
-    drug: str,
-    phenotype: str | MetabolizerPhenotype,
-) -> dict[str, Any]
-```
-
-Check if a drug is contraindicated for a given metabolizer phenotype. Returns `contraindicated` (bool), `severity`, `gene_interactions` (list of gene-level details), and `overall_recommendation`.
-
-### calculate_interaction_severity
-
-```python
-def calculate_interaction_severity(
-    interactions: list[DrugRecommendation],
-) -> dict[str, Any]
-```
-
-Calculate overall severity for a set of interactions. Returns `overall_severity`, `major_count`, `moderate_count`, `minor_count`, `total_interactions`, `risk_level` ("Low", "Moderate", "High", "Very High"), and a text `summary`.
-
-### polypharmacy_analysis
-
-```python
-def polypharmacy_analysis(
-    drug_list: list[str],
-    genotype_data: dict[str, dict[str, Any]],
-) -> dict[str, Any]
-```
-
-Comprehensive polypharmacy assessment. Returns `total_drugs`, `drugs_with_interactions`, `interactions`, `severity_summary`, `gene_overlap` (genes affected by multiple drugs), `high_risk_combinations`, and prioritized `recommendations`.
-
-### suggest_alternatives
-
-```python
-def suggest_alternatives(
-    drug: str,
-    phenotype: str | MetabolizerPhenotype,
-    alternatives_db: dict[str, dict[str, Any]] | None = None,
-) -> dict[str, Any]
-```
-
-Suggest alternative drugs in the same therapeutic class with reduced pharmacogenomic interaction risk. Returns `drug`, `therapeutic_class`, `alternatives` (list with details), `phenotype`, and `rationale`.
-
-## Usage Examples
-
-```python
-from metainformant.pharmacogenomics import (
-    analyze_drug_gene_interactions, check_contraindications,
-    polypharmacy_analysis, suggest_alternatives,
+from metainformant.pharmacogenomics.interaction.drug_interactions import (
+    analyze_drug_gene_interactions,
+    polypharmacy_risk,
+    cyp_inhibition_prediction,
 )
 
-# Patient genotype data
-genotypes = {
-    "CYP2D6": {"phenotype": "Poor Metabolizer", "diplotype": "*4/*4"},
-    "CYP2C19": {"phenotype": "Normal Metabolizer", "diplotype": "*1/*1"},
-}
-
-# Analyze interactions for prescribed drugs
 interactions = analyze_drug_gene_interactions(
-    ["codeine", "clopidogrel"], genotypes
+    gene='CYP2C9',
+    phenotype='Poor Metabolizer',
+    drugs=['warfarin','amiodarone','simvastatin','fluconazole'],
 )
-for rec in interactions:
-    print(f"{rec.drug}/{rec.gene}: {rec.severity.value} - {rec.recommendation}")
-
-# Check a specific contraindication
-contra = check_contraindications("codeine", "Poor Metabolizer")
-if contra["contraindicated"]:
-    print(f"CONTRAINDICATED: {contra['overall_recommendation']}")
-
-# Full polypharmacy assessment
-poly = polypharmacy_analysis(
-    ["codeine", "simvastatin", "warfarin"], genotypes
-)
-print(f"Risk level: {poly['severity_summary']['risk_level']}")
-for rec in poly["recommendations"]:
-    print(f"  {rec}")
-
-# Get alternative drugs
-alts = suggest_alternatives("codeine", "Poor Metabolizer")
-for alt in alts["alternatives"]:
-    print(f"  {alt['drug']}: {alt['notes']}")
+for ix in interactions:
+    if ix['severity'] in ('contraindicated','major'):
+        print(f"ALERT {ix['drug']}: {ix['recommendation']}")
 ```
 
-## Configuration
+## Severity levels
 
-- **Environment prefix**: `PHARMA_`
-- Contraindication database covers major CPIC Level A drug-gene pairs
-- Alternative drug database is organized by therapeutic class
+| Severity | Definition | Example |
+|----------|------------|---------|
+| contraindicated | Absolutely avoid combination | PM CYP2C9 + fluconazole + warfarin |
+| major | Strong recommendation to adjust/substitute | IM CYP2D6 + codeine |
+| moderate | Consider monitoring or dose reduction | NM + simvastatin |
+| minor | Low clinical impact | Any + caffeine |
 
-## Related Modules
+## CYP inhibition taxonomy
 
-- `pharmacogenomics.annotations.cpic` -- CPIC guidelines used for interaction analysis
-- `pharmacogenomics.alleles.phenotype` -- Provides metabolizer phenotype classification
-- `pharmacogenomics.clinical.reporting` -- Includes interaction results in clinical reports
+| Category | AUC multiplier | Examples |
+|----------|----------------|----------|
+| Strong inhibitor | >5× | ketoconazole, itraconazole, ritonavir |
+| Moderate inhibitor | 2–5× | amiodarone, fluoxetine, fluconazole |
+| Weak inhibitor | 1.25–2× | cimetidine, trimethoprim |
+| Strong inducer | <0.2× | rifampin, carbamazepine, phenytoin |
+| Moderate inducer | 0.2–0.5× | efavirenz, modafinil |
+
+Each CYP enzyme (2C9, 2C19, 2D6, 3A4) has its own inhibition table loaded from
+YAML in `interaction/data/`.
+
+## Net CYP inhibition score
+
+```python
+score = cyp_inhibition_prediction(['ketoconazole','rifampin'], enzyme='CYP3A4')
+print(score['category'])   # 'neutral' — strong inhibitor balances strong inducer
+print(score['mechanism'])  # 'mixed_inhibition_induction'
+```
+
+The algorithm sums log₂ fold‑change from each drug (inhibitor +1, inducer −1) then
+bins the net score.
+
+## Polypharmacy composite risk
+
+```python
+risk = polypharmacy_risk(
+    drugs=patient_meds,
+    patient_phenotype='Normal Metabolizer',
+    gene='CYP2C9',
+)
+print(f"Risk score = {risk['risk_score']:.2f}")
+print(f"High‑severity count = {risk['high_severity_count']}")
+```
+
+Scoring: `minor=1, moderate=2, major=3, contraindicated=4`; weighted sum over
+drugs/pairs.
+
+## Report inclusion
+
+`generate_clinical_report()` automatically runs `analyze_drug_gene_interactions()`
+for each gene and adds a **DDI Warnings** section showing only `contraindicated`
+and `major` findings (configurable via `ddi_severity_threshold`).
+
+## Extending the knowledge base
+
+Drug definitions live in `src/metainformant/pharmacogenomics/interaction/data/` as
+YAML. To add a new drug:
+
+```yaml
+# my_drug.yaml
+name: my_drug
+inhibits: [CYP2C19, CYP3A4]
+inducer: []
+therapeutic_index: narrow   # 'narrow' or 'wide'
+pgx_class: anticoagulant
+```
+
+Then register in `_DRUG_REGISTRY` inside `drug_interactions.py`:
+
+```python
+from metainformant.pharmacogenomics.interaction.data.my_drug import MY_DRUG
+_DRUG_REGISTRY['my_drug'] = MY_DRUG
+```
+
+Run tests (`pytest tests/pharmacogenomics/interaction/`) to validate.
+
+## Pitfalls
+
+- **Double counting** — If drug A inhibits and drug B induces the same CYP, the net
+  score may be neutral, but individual pairwise severities still apply; both alerts
+  show.
+- **Phenotype mismatches** — `phenotype` must match one of `{'Poor','PM',…}`; use
+  `MetabolizerPhenotype.POOR.value` for safety.
+- **Missing CYP entry** — If a drug is not in the internal tables, it is silently
+  ignored (contributes no severity). Add it via YAML as above.

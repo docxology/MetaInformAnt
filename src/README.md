@@ -6,32 +6,32 @@ Python source code for METAINFORMANT bioinformatics toolkit.
 
 ```
 src/
-└── metainformant/          # Main package
-    ├── core/               # Shared infrastructure
-    ├── dna/                # DNA sequence analysis
-    ├── rna/                # RNA-seq workflows
-    ├── protein/            # Protein analysis
-    ├── gwas/               # GWAS pipeline
-    ├── visualization/      # Plotting (70+ types)
-    ├── networks/           # Biological networks
-    ├── singlecell/         # scRNA-seq
-    ├── multiomics/         # Multi-omic integration
-    ├── ml/                 # Machine learning
-    ├── math/               # Population genetics theory
-    ├── information/        # Information theory
-    ├── life_events/        # Event sequence analysis
-    ├── ontology/           # GO analysis
-    ├── phenotype/          # Trait analysis
-    ├── ecology/            # Community ecology
-    ├── epigenome/          # Methylation, ChIP-seq
-    ├── simulation/         # Synthetic data
-    ├── longread/           # Long-read sequencing
-    ├── metagenomics/       # Metagenomic analysis
-    ├── pharmacogenomics/   # Pharmacogenomic analysis
-    ├── spatial/            # Spatial transcriptomics
-    ├── structural_variants/ # Structural variant analysis
-    ├── quality/            # QC metrics
-    └── menu/               # Interactive CLI
+ metainformant/ # Main package
+ core/ # Shared infrastructure
+ dna/ # DNA sequence analysis
+ rna/ # RNA-seq workflows
+ protein/ # Protein analysis
+ gwas/ # GWAS pipeline
+ visualization/ # Plotting (70+ types)
+ networks/ # Biological networks
+ singlecell/ # scRNA-seq
+ multiomics/ # Multi-omic integration
+ ml/ # Machine learning
+ math/ # Population genetics theory
+ information/ # Information theory
+ life_events/ # Event sequence analysis
+ ontology/ # GO analysis
+ phenotype/ # Trait analysis
+ ecology/ # Community ecology
+ epigenome/ # Methylation, ChIP-seq
+ simulation/ # Synthetic data
+ longread/ # Long-read sequencing
+ metagenomics/ # Metagenomic analysis
+ pharmacogenomics/ # Pharmacogenomic analysis
+ spatial/ # Spatial transcriptomics
+ structural_variants/ # Structural variant analysis
+ quality/ # QC metrics
+ menu/ # Interactive CLI
 ```
 
 ## Usage

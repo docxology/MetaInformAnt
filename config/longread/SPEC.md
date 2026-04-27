@@ -1,12 +1,12 @@
 # Specification: longread Config
 
-## 🎯 Scope
+## Scope
 Configuration templates and schemas for longread.
 
-## 🧱 Architecture
+## Architecture
 - **Component**: Configuration
 - **Location**: `config/longread/`
 
-## 💾 Data Structures
+## Data Structures
 - **Format**: YAML
 - **Schema**: `metainformant.longread.config`

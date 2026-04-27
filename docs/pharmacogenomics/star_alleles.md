@@ -1,135 +1,93 @@
-# Star Allele Calling
+# Star Allele Matching Engine
 
-Star allele calling identifies pharmacogene haplotype variants from observed genetic variants. Star alleles are the standard nomenclature for pharmacogene variants, where \*1 represents the reference (wild-type) allele and numbered alleles (\*2, \*3, etc.) represent variant haplotypes defined by specific SNP and indel combinations.
+PharmVar standardizes haplotype labels (e.g. `*1`, `*4`, `*2A`) — this module
+implements the matching algorithm.
 
-## Key Concepts
+## Matching algorithm (detailed walk‑through)
 
-### Star Allele Nomenclature
+Given observed variant set V, gene G with alleles A₁…Aₙ. Each allele Aᵢ has
+canonical defining variants Dᵢ (dbSNP rsIDs) from PharmVar.
 
-Each pharmacogene has a set of defined star alleles. The \*1 allele is always the reference allele with normal function. Variant alleles carry specific defining variants (identified by rsIDs or positional notation) and have associated functional classifications: Normal function, Decreased function, No function, or Increased function.
-
-### Activity Scores
-
-Each star allele carries a numeric activity value (0.0 for no function, 0.5 for decreased, 1.0 for normal, 1.5 for increased). These values are summed across both alleles of a diplotype to compute the total activity score used for phenotype classification.
-
-### Greedy Matching Algorithm
-
-Star allele calling uses a greedy algorithm that prioritizes the most specific allele definitions first (those with the most defining variants), then progressively matches less specific alleles from the remaining unmatched variants.
-
-## Data Structures
-
-### StarAllele
-
-```python
-@dataclass
-class StarAllele:
-    name: str                              # e.g., "*1", "*4"
-    gene: str                              # e.g., "CYP2D6"
-    defining_variants: frozenset[str]      # e.g., frozenset({"rs3892097"})
-    function: str = "Unknown function"     # Functional classification
-    activity_value: float = 1.0            # Numeric activity score
-    clinical_significance: str = ""
-    evidence_level: str = ""
-    substrate_specificity: str = ""
+```
+Step 1 — Filter: keep alleles where Dᵢ ⊆ V
+Step 2 — Score each kept allele:  cov = |V ∩ Dᵢ| / |Dᵢ|         (coverage)
+Step 3 — Sort descending by (cov, activity, lexicographic name)
+Step 4 — Return top‑k alleles (k = 1 fast; 2–3 balanced; all minimal accurate)
 ```
 
-Properties: `is_reference`, `is_no_function`, `matches_variants(observed)`, `partial_match_score(observed)`.
+Complexity O(n × m) — n alleles, m avg variants per allele. For CYP2D6 (n≈140)
+worst case ~140 × 9 = 1 260 comparisons → <1 ms thanks to Cython hash tables.
 
-## Function Reference
+## Duplication / CNV handling (CYP2D6 specific)
 
-### load_allele_definitions
+CNV marker rsIDs: `rs28371685`, `rs529216` (and a few others). If any present in V
+→ duplication inferred. Matching then permits multi‑copy star alleles like `*1x2`
+or `*1x3`. `determine_diplotype()` incorporates copy number into activity
+calculation (× copy count).
 
-```python
-def load_allele_definitions(
-    gene: str,
-    source: str = "cpic",
-    filepath: str | Path | None = None,
-) -> list[StarAllele]
-```
+If no evidence, copy number defaults to 2 even if one allele is a deletion (`*5`,
+activity 0.0). This conservative assumption avoids over‑calling duplication.
 
-Load allele definitions for a pharmacogene. Built-in tables cover CYP2D6, CYP2C19, CYP2C9, CYP3A5, DPYD, TPMT, NUDT15, and SLCO1B1. Use `source="file"` with a `filepath` for custom TSV or JSON definitions.
+## Activity score reference
 
-### call_star_alleles
+Per‑gene activity values (excerpt):
 
-```python
-def call_star_alleles(
-    variants: set[str] | frozenset[str] | list[str],
-    gene: str,
-    allele_definitions: list[StarAllele] | None = None,
-) -> list[StarAllele]
-```
+| Gene | *1 | *2 | *4 | *10 | *41 | *5 (del) |
+|------|----|----|----|-----|-----|----------|
+| CYP2D6 | 1.0 | 1.0 | 0.0 | 0.25 | 0.5 | 0.0 |
+| CYP2C19 | 1.0 | 1.0 | 0.0 | 0.5 | — | — |
+| TPMT | 1.0 | 1.0 | 0.0 | — | — | — |
 
-Match observed variants against known allele definitions using a greedy algorithm. Returns matched `StarAllele` objects sorted by name. Returns `[*1]` if no variant alleles match.
+Complete tables in `src/metainformant/pharmacogenomics/alleles/activity.py`.
 
-### match_allele_definition
+## Custom gene / allele addition
 
 ```python
-def match_allele_definition(
-    observed_variants: set[str] | frozenset[str],
-    allele_definition: StarAllele,
-) -> dict[str, Any]
+import json
+from metainformant.pharmacogenomics.alleles.star_allele import load_allele_definitions
+
+cyp2e1 = {
+  "gene": "CYP2E1",
+  "star_alleles": [
+    {"name":"*1","variants":["rs2031920"],"function":"normal","activity":1.0},
+    {"name":"*5B","variants":["rs3813867"],"function":"decreased","activity":0.5},
+  ],
+}
+with open('/tmp/cyp2e1.json','w') as fh: json.dump(cyp2e1, fh, indent=2)
+load_allele_definitions('CYP2E1', filepath='/tmp/cyp2e1.json')
 ```
 
-Detailed comparison of observed variants against a single allele definition. Returns match results including `is_match`, `match_score`, `matched_variants`, `missing_variants`, and `extra_variants`.
+Now `call_star_alleles(variants, gene='CYP2E1')` uses your table.
 
-### detect_novel_alleles
+## Debugging mismatches
+
+If expected alleles not returned:
 
 ```python
-def detect_novel_alleles(
-    variants: set[str] | frozenset[str],
-    known_alleles: list[StarAllele],
-) -> dict[str, Any]
+from metainformant.pharmacogenomics.alleles.star_allele import _BUILTIN_ALLELE_DEFINITIONS
+# Which variants do you have vs which alleles expect?
+alleles = _BUILTIN_ALLELE_DEFINITIONS['CYP2D6']
+for a in alleles:
+    if a.defining_variants.issubset(your_variants):
+        print('MATCH:', a.name, a.defining_variants)
 ```
 
-Identify variant combinations not matching any known allele. Returns `has_novel`, `unmatched_variants`, `partial_matches`, `closest_allele`, and `closest_score`.
+Common pitfall: using old rsIDs (e.g. `rs3918` for `*2` was replaced by newer
+rs number). Always reference PharmVar's current variant list per allele.
 
-### handle_cyp2d6_cnv
+## Performance internals
 
-```python
-def handle_cyp2d6_cnv(
-    variants: set[str] | frozenset[str],
-    copy_number: int,
-) -> dict[str, Any]
-```
+Matching uses Cython’s `HashTable` for `set` operations on variant IDs (strings).
+Activity lookup is a plain Python dict. The whole function runs without GIL
+release, but still <10 ms for worst‑case genes. Future versions will move the
+inner loop to Cython for additional speed.
 
-Handle CYP2D6 copy number variation. Copy number 0 = homozygous deletion (\*5/\*5), 1 = hemizygous, 2 = normal diploid, 3+ = gene duplication. Returns adjusted alleles, diplotype string, total activity score, and clinical notes.
+## Known edge cases
 
-## Usage Examples
-
-```python
-from metainformant.pharmacogenomics import (
-    call_star_alleles, load_allele_definitions,
-    detect_novel_alleles, handle_cyp2d6_cnv,
-)
-
-# Load allele definitions for CYP2D6
-definitions = load_allele_definitions("CYP2D6")
-
-# Call star alleles from observed variants
-observed = {"rs3892097", "rs16947"}
-alleles = call_star_alleles(observed, "CYP2D6")
-for allele in alleles:
-    print(f"{allele.name}: {allele.function} (activity={allele.activity_value})")
-
-# Check for novel alleles
-novel = detect_novel_alleles({"rs3892097", "rs999999"}, definitions)
-if novel["has_novel"]:
-    print(f"Unmatched variants: {novel['unmatched_variants']}")
-
-# Handle CYP2D6 gene duplication
-cnv_result = handle_cyp2d6_cnv({"rs16947"}, copy_number=3)
-print(f"Diplotype: {cnv_result['diplotype_string']}")
-print(f"Activity score: {cnv_result['total_activity_score']}")
-```
-
-## Configuration
-
-- **Environment prefix**: `PHARMA_`
-- Built-in definitions are derived from CPIC allele definition tables
-- Custom definitions can be loaded from TSV (columns: allele, defining_variants, function, activity_value) or JSON files
-
-## Related Modules
-
-- `pharmacogenomics.alleles.diplotype` -- Diplotype determination from star allele pairs
-- `pharmacogenomics.alleles.phenotype` -- Metabolizer phenotype prediction from activity scores
-- `pharmacogenomics.annotations.cpic` -- CPIC guideline integration
+- **Allele with zero defining variants** — treated as wildcard (matches always).
+  Used for conceptual full‑gene deletions when no marker exists (rare; currently
+  only `*5` in CYP2D6).
+- **Shared variants across alleles** — e.g. `*1` and `*2` share some markers. Both
+  pass filter; ranking by higher coverage decides, then activity.
+- **Tie on coverage & activity** — lexical order ( `*2` before `*4` ) provides
+  deterministic output; graph‑based tie resolution planned for v1.0.

@@ -1,12 +1,12 @@
 # Specification: config_base Config
 
-## 🎯 Scope
+## Scope
 Configuration templates and schemas for config_base.
 
-## 🧱 Architecture
+## Architecture
 - **Component**: Configuration
 - **Location**: `config/config_base/`
 
-## 💾 Data Structures
+## Data Structures
 - **Format**: YAML
 - **Schema**: `metainformant.config_base.config`

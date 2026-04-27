@@ -1,16 +1,16 @@
 # Specification: multiomics
 
-## 🎯 Scope
+## Scope
 Multi-omics integration module for METAINFORMANT.
 
-## 🧱 Architecture
+## Architecture
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 - **Sub-packages**: analysis, methods, pathways, survival, visualization
 - **Key Concepts**: Multi-omic integration, pathway analysis, survival
 
-## 🔌 API Definition
+## API Definition
 ### Exports
 - `__init__.py`

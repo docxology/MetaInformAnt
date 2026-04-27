@@ -473,7 +473,7 @@ print(f"Errors: {results['num_errors']}")
 
 # List generated plots
 for plot_name in results['successful_plots']:
-    print(f"  ✓ {plot_name}")
+ print(f" {plot_name}")
 ```
 
 ## Workflow Integration

@@ -2,6 +2,23 @@
 
 Biological network construction, community detection, and pathway analysis for protein-protein interaction, regulatory, and co-expression networks.
 
+## Overview
+
+Biological network construction, community detection, and pathway analysis for protein-protein interaction, regulatory, and co-expression networks.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Key Capabilities](#key-capabilities)
+  - [Graph Construction and Analysis](#graph-construction-and-analysis)
+  - [Community Detection](#community-detection)
+  - [Interaction Networks](#interaction-networks)
+- [Submodules](#submodules)
+- [Quick Start](#quick-start)
+- [Integration](#integration)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -98,6 +115,7 @@ enriched = pathway_enrichment_analysis(
 - **Ontology** -- GO enrichment on detected communities
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [`metainformant.protein`](../protein/) -- Protein sequence and structure analysis
 - [`metainformant.information.network_info`](../information/network_info/) -- Information flow on networks

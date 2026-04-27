@@ -259,21 +259,21 @@ python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml --sta
 ### Performance Tuning
 
 #### Signs of Optimal Configuration
-- ✅ Network bandwidth is well-utilized (check with `nload` or `iftop`)
-- ✅ CPU usage is moderate (not pegged at 100%)
-- ✅ Downloads complete without excessive retries
-- ✅ System remains responsive
+- Network bandwidth is well-utilized (check with `nload` or `iftop`)
+- CPU usage is moderate (not pegged at 100%)
+- Downloads complete without excessive retries
+- System remains responsive
 
 #### Signs of Too Many Threads
-- ⚠️ High latency/packet loss
-- ⚠️ Frequent download failures
-- ⚠️ System becomes unresponsive
-- ⚠️ Network saturation warnings
+- High latency/packet loss
+- Frequent download failures
+- System becomes unresponsive
+- Network saturation warnings
 
 #### Signs of Too Few Threads
-- ⚠️ Downloads are slow
-- ⚠️ Network bandwidth underutilized
-- ⚠️ CPU idle time high
+- Downloads are slow
+- Network bandwidth underutilized
+- CPU idle time high
 
 ### Sample Size Capabilities & 10 GB Caps
 When processing SRA targets with massive unconstrained sequences (>20 GB), orchestrators can hang on I/O. You should actively cap downstream extraction based on your hardware capabilities using the `max_bp` step parameter under `getfastq`. 

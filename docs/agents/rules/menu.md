@@ -6,12 +6,12 @@ Interactive command-line menu system for discovering and executing METAINFORMANT
 ## Source Structure
 ```
 src/metainformant/menu/
-├── core/
-│   ├── discovery.py   # Script discovery, metadata extraction, categorization
-│   └── executor.py    # Script execution (Python/Bash), argument prompting, validation
-└── ui/
-    ├── display.py     # Menu formatting, screen clearing, breadcrumb navigation
-    └── navigation.py  # Menu data structures (MenuItem, Menu, MenuSystem, MenuHistory)
+ core/
+ discovery.py # Script discovery, metadata extraction, categorization
+ executor.py # Script execution (Python/Bash), argument prompting, validation
+ ui/
+ display.py # Menu formatting, screen clearing, breadcrumb navigation
+ navigation.py # Menu data structures (MenuItem, Menu, MenuSystem, MenuHistory)
 ```
 
 ## Dependencies

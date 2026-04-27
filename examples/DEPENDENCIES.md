@@ -164,7 +164,7 @@ This document provides a comprehensive overview of dependencies required by META
 uv pip install -e .
 
 # Test core examples
-python scripts/test_examples.py --domain core
+python scripts/test_examples/test_examples.py --domain core
 ```
 
 ### Full Scientific Stack
@@ -234,13 +234,13 @@ uv pip install -e .
 ### Automated Dependency Validation
 ```bash
 # Check all dependencies
-python scripts/check_example_dependencies.py
+python scripts/test_examples/check_example_dependencies.py
 
 # Check specific domain
-python scripts/check_example_dependencies.py --domain dna
+python scripts/test_examples/check_example_dependencies.py --domain dna
 
 # Check specific example
-python scripts/check_example_dependencies.py --example dna/example_sequences.py
+python scripts/test_examples/check_example_dependencies.py --example dna/example_sequences.py
 ```
 
 ### Manual Dependency Checking
@@ -398,13 +398,13 @@ brew install muscle seqkit
 ### Local Development
 ```bash
 # Test with minimal dependencies
-python scripts/test_examples.py --domain core
+python scripts/test_examples/test_examples.py --domain core
 
 # Test with scientific dependencies
-python scripts/test_examples.py --domain dna --domain math
+python scripts/test_examples/test_examples.py --domain dna --domain math
 
 # Skip examples with missing dependencies
-python scripts/test_examples.py --continue-on-error
+python scripts/test_examples/test_examples.py --continue-on-error
 ```
 
 ## Future Dependencies
@@ -463,8 +463,8 @@ uv pip install networkx
 python -c "import metainformant, numpy, pandas; print('Core deps OK')"
 
 # Full dependency validation
-python scripts/check_example_dependencies.py
+python scripts/test_examples/check_example_dependencies.py
 
 # Fix missing dependencies
-python scripts/check_example_dependencies.py --fix
+python scripts/test_examples/check_example_dependencies.py --fix
 ```

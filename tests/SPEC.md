@@ -13,11 +13,11 @@ Comprehensive pytest test suite for METAINFORMANT. Contains real-implementation 
 ### Test Hierarchy
 ```
 tests/
-├── conftest.py              # Global fixtures and pytest configuration
-├── conftest_examples.py     # Fixtures for example validation
-├── data/                    # Real test data fixtures (not mocks)
-├── rna/                     # RNA-specific test modules
-└── test_{module}_{feature}.py  # Module-specific tests
+ conftest.py # Global fixtures and pytest configuration
+ conftest_examples.py # Fixtures for example validation
+ data/ # Real test data fixtures (not mocks)
+ rna/ # RNA-specific test modules
+ test_{module}_{feature}.py # Module-specific tests
 ```
 
 ## Data Structures

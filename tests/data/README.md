@@ -3,7 +3,7 @@
 ## Overview
 Functionality for data.
 
-## 📦 Contents
+## Contents
 - **[dna/](dna/)**
 - **[epigenome/](epigenome/)**
 - **[ontology/](ontology/)**
@@ -11,7 +11,7 @@ Functionality for data.
 - **[protein/](protein/)**
 - **[rna/](rna/)**
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

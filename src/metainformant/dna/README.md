@@ -2,6 +2,22 @@
 
 DNA sequence analysis, phylogenetics, population genetics, and genomic data integration for METAINFORMANT.
 
+## Overview
+
+DNA sequence analysis, phylogenetics, population genetics, and genomic data integration for METAINFORMANT.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Submodules](#submodules)
+- [Key Capabilities](#key-capabilities)
+  - [Sequence Analysis](#sequence-analysis)
+  - [Phylogenetics](#phylogenetics)
+  - [Population Genetics](#population-genetics)
+- [Quick Start](#quick-start)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -93,6 +109,7 @@ print(to_newick(tree))
 ```
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [metainformant.math.population_genetics](../math/population_genetics/) - Theoretical population genetics
 - [metainformant.gwas](../gwas/) - Genome-wide association studies

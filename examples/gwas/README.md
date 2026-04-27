@@ -3,11 +3,11 @@
 ## Overview
 Functionality for gwas.
 
-## 📦 Contents
+## Contents
 - `[example_association.py](example_association.py)`
 - `[example_visualization.py](example_visualization.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

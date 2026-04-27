@@ -1,16 +1,16 @@
 # Specification: life_events
 
-## 🎯 Scope
+## Scope
 Life events and trajectory analysis module for METAINFORMANT.
 
-## 🧱 Architecture
+## Architecture
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 - **Sub-packages**: analysis, core, models, survival, visualization, workflow
 - **Key Concepts**: Life event tracking, survival analysis, trajectory modeling
 
-## 🔌 API Definition
+## API Definition
 ### Exports
 - `__init__.py`

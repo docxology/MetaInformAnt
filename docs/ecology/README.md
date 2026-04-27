@@ -3,12 +3,12 @@
 ## Overview
 Ecology and community analysis module for METAINFORMANT.
 
-## 📦 Contents
-- **[analysis/](analysis/)**
-- **[visualization/](visualization/)**
-- `[__init__.py](__init__.py)`
+## Contents
+- **[analysis/](index.md)**
+- **[visualization/](visualization.md)**
+- `__init__.py`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

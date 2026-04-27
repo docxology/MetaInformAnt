@@ -3,10 +3,10 @@
 ## Overview
 Functionality for networks.
 
-## 📦 Contents
+## Contents
 - `[example_networks.py](example_networks.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

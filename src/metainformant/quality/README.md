@@ -2,6 +2,22 @@
 
 Sequencing quality control -- FASTQ analysis, contamination detection, composite quality scoring, and MultiQC report integration.
 
+## Overview
+
+Sequencing quality control -- FASTQ analysis, contamination detection, composite quality scoring, and MultiQC report integration.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Key Capabilities](#key-capabilities)
+  - [FASTQ Quality Analysis](#fastq-quality-analysis)
+  - [Contamination Detection](#contamination-detection)
+  - [Quality Scoring](#quality-scoring)
+- [Submodules](#submodules)
+- [Quick Start](#quick-start)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -100,6 +116,7 @@ print(f"Grade: {score['grade']}, Score: {score['overall_score']:.1f}")
 ```
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [`metainformant.dna.io`](../dna/io/) -- DNA-level FASTQ processing
 - [`metainformant.rna`](../rna/) -- RNA-seq QC within workflows

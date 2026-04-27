@@ -2,7 +2,7 @@
 
 Scripts for RNA-seq workflow execution, monitoring, and recovery.
 
-## 📦 Scripts by Category
+## Scripts by Category
 
 ### Workflow Execution
 
@@ -46,7 +46,7 @@ Scripts for RNA-seq workflow execution, monitoring, and recovery.
 | [`install_r_packages.sh`](install_r_packages.sh) | Shell wrapper for R package installation |
 | [`run_rna_tests.sh`](run_rna_tests.sh) | Run RNA test suite |
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Run Full Pipeline (Recommended)
 
@@ -87,13 +87,13 @@ python3 scripts/rna/check_environment.py
 python3 scripts/rna/discover_species.py --species "Apis mellifera"
 ```
 
-## 📊 Dependencies
+## Dependencies
 
 - **Python**: 3.11+
 - **External**: kallisto, fasterq-dump (SRA Toolkit)
 - **Optional**: R (for merge/curate steps)
 
-## 🔗 Related
+## Related
 
 - [config/amalgkit/](../../config/amalgkit/) - Workflow configurations
 - [config/amalgkit/amalgkit_faq.md](../../config/amalgkit/amalgkit_faq.md) - FAQ

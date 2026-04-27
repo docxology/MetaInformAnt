@@ -10,12 +10,12 @@ Single-cell transcriptomic analysis: quality control, normalization, dimensional
 ## Source Structure
 ```
 src/metainformant/singlecell/
-├── analysis/
-│   ├── clustering.py, dimensionality.py, trajectory.py
-├── data/
-│   ├── integration.py, preprocessing.py
-└── visualization/
-    └── visualization.py
+ analysis/
+ clustering.py, dimensionality.py, trajectory.py
+ data/
+ integration.py, preprocessing.py
+ visualization/
+ visualization.py
 ```
 
 ## Package Management

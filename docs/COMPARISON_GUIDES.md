@@ -1,6 +1,34 @@
-# METAINFORMANT Comparison Guides
+# METAINFORMANT Comparison Guides: Master Index
 
 Decision-making guides for choosing between different analysis methods, algorithms, and approaches in METAINFORMANT.
+
+> **New to METAINFORMANT?** → Start with the comprehensive cross-module comparison guides below before diving into method-specific details.
+
+---
+
+## 📚 Comprehensive Cross-Module Guides (NEW)
+
+These guides provide full-module comparisons to help you select the right tool for your research:
+
+| Guide | Focus | When to Read |
+|-------|-------|--------------|
+| **[Methods Matrix](comparisons/methods_matrix.md)** | All 28 modules compared across data types, scale, methods, outputs, best-use | **Start here** if you're unsure which module fits your data |
+| **[DNA vs RNA vs Transcriptome](comparisons/dna_vs_rna_vs_transcriptome.md)** | dna, rna, singlecell, spatial, multiomics modules for transcriptomics | Choosing between bulk RNA-seq, scRNA-seq, or spatial methods |
+| **[GWAS vs Phenotype vs Multi-omics](comparisons/gwas_vs_phenotype_vs_multiomics.md)** | Study design, power, integration strategies for association studies | Designing genetic association studies or multi-omic integration |
+| **[Visualization Approaches](comparisons/visualization_approaches.md)** | 70+ plot types organized by domain, audience, interactivity | Choosing the right plot type for your data |
+
+**Decision flowchart**:
+```
+Don't know which module?
+  ↓
+[Methods Matrix] → pick 2-3 candidate modules
+  ↓
+Read detailed comparison → choose one
+  ↓
+Consult method-specific section below for algorithmic details
+```
+
+---
 
 ## Method Comparison Guides
 
@@ -12,9 +40,9 @@ Choose the right alignment algorithm based on your sequence data and analysis go
 
 | Method | Best For | Advantages | Limitations | Performance |
 |--------|----------|------------|-------------|-------------|
-| **Global Alignment**_(Needleman-Wunsch) | Similar sequences,_full-length alignment | Finds optimal alignment_of entire sequences | Poor with dissimilar_sequences | O(n×m) time |
-| **Local Alignment**_(Smith-Waterman) | Subsequence similarity,_database searching | Finds best matching_subsequences | May miss global_similarity | O(n×m) time |
-| **Semi-global** | Sequences with different_lengths, one complete | Handles terminal gaps_appropriately | Limited use cases | O(n×m) time |
+| **Global Alignment (Needleman-Wunsch)** | Similar sequences, full-length alignment | Finds optimal alignment of entire sequences | Poor with dissimilar sequences | O(n×m) time |
+| **Local Alignment (Smith-Waterman)** | Subsequence similarity, database searching | Finds best matching subsequences | May miss global similarity | O(n×m) time |
+| **Semi-global** | Sequences with different lengths, one complete | Handles terminal gaps appropriately | Limited use cases | O(n×m) time |
 
 #### Decision Tree
 
@@ -24,8 +52,8 @@ graph TD
     B -->|Similar| C{Full vs Partial Match?}
     B -->|Different| Dsemi-globalAlignment[Semi-global Alignment]
 
-    C -->|Full sequence| EglobalAlignmentNeedleman-wunsch[Global Alignment_Needleman-Wunsch]
-    C -->|Local regions| FlocalAlignmentSmith-waterman[Local Alignment_Smith-Waterman]
+    C -->|Full sequence| EglobalAlignmentNeedleman-wunsch[Global Alignment Needleman-Wunsch]
+    C -->|Local regions| FlocalAlignmentSmith-waterman[Local Alignment Smith-Waterman]
 
     E --> Gmetainformant.dna.alignment.globalAlign[metainformant.dna.alignment.global_align]
     F --> Hmetainformant.dna.alignment.localAlign[metainformant.dna.alignment.local_align]
@@ -52,6 +80,10 @@ short_seq = "ATCG"
 long_seq = "TTTTATCGTTTT"
 semi_result = alignment.semi_global_align(short_seq, long_seq)
 ```
+
+**Related**: For full module capabilities, see [dna/index.md](dna/index.md) and [Methods Matrix](comparisons/methods_matrix.md) (dna row).
+
+---
 
 ### 2. Population Genetics Statistics
 
@@ -103,6 +135,10 @@ else:
     print("Neutral evolution")
 ```
 
+**Related**: For population-scale association, see [GWAS vs Phenotype vs Multi-omics](comparisons/gwas_vs_phenotype_vs_multiomics.md). For theoretical background, see [math/](math/index.md).
+
+---
+
 ### 3. Distance/Similarity Measures
 
 Choose appropriate distance metrics for different data types.
@@ -134,6 +170,10 @@ graph TD
     F --> Kmetainformant.dna.distances.jukesCantorDistance[metainformant.dna.distances.jukes_cantor_distance]
     G --> Lmetainformant.dna.distances.kimura2pDistance[metainformant.dna.distances.kimura_2p_distance]
 ```
+
+**Related**: See [Methods Matrix](comparisons/methods_matrix.md) for comparison across all distance-capable modules.
+
+---
 
 ### 4. Machine Learning Methods
 
@@ -191,6 +231,10 @@ for method in feature_methods:
     print(f"{method}: Selected {selected_X.shape[1]} features")
 ```
 
+**Related**: Full ML capabilities in [ml/](ml/index.md); see [Methods Matrix](comparisons/methods_matrix.md) ML row; also see [information/](information/index.md) for Mutual Information background.
+
+---
+
 ### 5. GWAS Analysis Methods
 
 Compare different approaches to genome-wide association studies.
@@ -246,6 +290,10 @@ graph TD
     K --> L
 ```
 
+**Related**: Full GWAS documentation [gwas/index.md](gwas/index.md); study design comparison see [GWAS vs Phenotype vs Multi-omics](comparisons/gwas_vs_phenotype_vs_multiomics.md); fine-mapping and colocalization (eQTL) in [eqtl/](eqtl/index.md).
+
+---
+
 ### 6. Information Theory Measures
 
 Compare different information-theoretic approaches to biological data analysis.
@@ -297,6 +345,10 @@ print(f"Conditional MI: {cmi:.3f}")
 print(f"Normalized MI: {nmi:.3f}")
 ```
 
+**Related**: MI for feature selection in [ml/feature selection](ml/index.md#feature-selection); [Methods Matrix](comparisons/methods_matrix.md) information row; visualization of information measures [visualization/information.md](visualization/information.md).
+
+---
+
 ### 7. Network Analysis Methods
 
 Compare graph algorithms for biological network analysis.
@@ -327,7 +379,11 @@ Compare graph algorithms for biological network analysis.
 | **Co-expression** | Correlation networks | Undirected, weighted | Expression modules |
 | **Metabolic Networks** | Biochemical reactions | Directed, bipartite | Pathway analysis |
 
-### 8. Multi-Omics Integration Methods
+**Related**: Network visualization [visualization/networks.md](visualization/networks.md); integration with multi-omics [multiomics/](multiomics/index.md); [Methods Matrix](comparisons/methods_matrix.md) networks row.
+
+---
+
+### 8. Multi-Omic Integration Methods
 
 Compare approaches for combining multiple biological data types.
 
@@ -347,6 +403,10 @@ Compare approaches for combining multiple biological data types.
 | **CCA** | Linear, supervised | Cross-modal correlation | `multiomics.integration.cca_integration` |
 | **NMF** | Parts-based | Non-negative data | `multiomics.integration.nmf_integration` |
 | **Autoencoders** | Non-linear | Complex relationships | `multiomics.integration.ae_integration` |
+
+**Related**: Full multi-omics guide [multiomics/index.md](multiomics/index.md); eQTL integration [eqtl/](eqtl/index.md); [GWAS vs Phenotype vs Multi-omics](comparisons/gwas_vs_phenotype_vs_multiomics.md) for integration strategies; [Methods Matrix](comparisons/methods_matrix.md) multiomics row.
+
+---
 
 ## Performance Comparison Tables
 
@@ -369,6 +429,10 @@ Compare approaches for combining multiple biological data types.
 | RNA-seq | 16GB | 64GB | 100 samples × 50M reads |
 | Single-cell | 32GB | 128GB | 10^4 cells × 20K genes |
 | Network analysis | 4GB | 16GB | 10^4 nodes × 10^5 edges |
+
+**Related**: For detailed per-module resource estimates, see [Methods Matrix](comparisons/methods_matrix.md) table by module.
+
+---
 
 ## Decision Frameworks
 
@@ -408,6 +472,8 @@ graph TD
     H --> Kfaster,LessAccurate[Faster, less accurate]
 ```
 
+---
+
 ## Best Practices
 
 ### Method Selection Guidelines
@@ -435,4 +501,53 @@ graph TD
 
 ---
 
-These comparison guides help users make informed decisions about which METAINFORMANT methods to use for their specific biological analysis needs.
+## Cross-Reference Navigation
+
+**Quick links to related comparison guides**:
+
+| From Method… | To Guide |
+|--------------|----------|
+| Alignment algorithms | [Methods Matrix → dna row](comparisons/methods_matrix.md#dna) |
+| GWAS association tests | [GWAS vs Phenotype → Study Design](comparisons/gwas_vs_phenotype_vs_multiomics.md) |
+| ML classification | [Visualization → ROC, decision boundaries](comparisons/visualization_approaches.md) |
+| Multi-omics PCA/CCA | [DNA vs RNA → Multi-omics section](comparisons/dna_vs_rna_vs_transcriptome.md) |
+| Information entropy | [ML → Feature Selection using MI](ml/features.md) |
+| Network community detection | [Visualization → Network plots](comparisons/visualization_approaches.md) |
+| All variability in sample size needs | [Performance Tables → Memory Requirements](#performance-comparison-tables) |
+
+---
+
+## Quick-Starts by Data Type (One-Liners)
+
+```bash
+# DNA sequences → alignment, phylogeny
+uv run python -m metainformant dna align --method global seq1.fasta seq2.fasta
+
+# RNA-seq FASTQ → quantification (bulk)
+uv run python -m metainformant rna workflow --config rna_config.yaml
+
+# Genotype VCF + phenotype → GWAS
+uv run python -m metainformant gwas run --config gwas_config.yaml
+
+# Single-cell h5ad → clustering + trajectory
+uv run python -m metainformant singlecell analyze --input cells.h5ad
+
+# Multi-omic datasets → joint PCA
+uv run python -m metainformant multiomics integrate --dna variants.tsv --rna expr.tsv
+
+# Any plot → visualization
+uv run python -m metainformant viz manhattan --gwas results.tsv --out fig.pdf
+```
+
+---
+
+## Summary
+
+These comparison guides help you:
+1. **Select the right module** for your data and question ([Methods Matrix](comparisons/methods_matrix.md))
+2. **Understand trade-offs** between approaches (DNA vs RNA, GWAS vs Phenotype)
+3. **Choose visualization types** for publication and exploration ([Visualization Approaches](comparisons/visualization_approaches.md))
+4. **Optimize performance** via resource planning tables and decision trees
+5. **Follow best practices** for method selection, validation, and reproducibility
+
+**Need more detail?** → See each module's own documentation at `docs/<module>/index.md` for complete API reference and tutorials.

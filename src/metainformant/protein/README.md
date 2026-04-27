@@ -2,6 +2,22 @@
 
 Protein sequence analysis, 3D structure prediction, database integration, and functional annotation for METAINFORMANT.
 
+## Overview
+
+Protein sequence analysis, 3D structure prediction, database integration, and functional annotation for METAINFORMANT.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Submodules](#submodules)
+- [Key Capabilities](#key-capabilities)
+  - [Database Integration](#database-integration)
+  - [Structure Analysis](#structure-analysis)
+  - [Sequence Processing](#sequence-processing)
+- [Quick Start](#quick-start)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -93,6 +109,7 @@ print(f"{record['protein_name']} - {record['length']} residues")
 ```
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [metainformant.networks](../networks/) - Protein-protein interaction networks
 - [metainformant.ontology](../ontology/) - GO term annotation for proteins

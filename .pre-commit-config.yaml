@@ -74,7 +74,7 @@ repos:
     hooks:
       - id: validate-examples
         name: Validate METAINFORMANT examples
-        entry: python scripts/validate_examples.py --fast
+        entry: python scripts/test_examples/validate_examples.py --fast
         language: system
         files: ^examples/.*\.py$
         pass_filenames: false

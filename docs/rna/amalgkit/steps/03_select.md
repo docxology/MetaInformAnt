@@ -97,11 +97,11 @@ steps:
 
 ```
 out_dir/metadata/
-├── pivot_qualified.tsv          # ⭐ Samples passing quality filters
-├── pivot_selected.tsv            # ⭐ Final selected samples (after max_sample limit)
-├── metadata.filtered.tsv         # All filtered metadata
-├── metadata.filtered.tissue.tsv  # Tissue-annotated metadata
-└── selection_summary.txt         # Selection statistics
+ pivot_qualified.tsv # Samples passing quality filters
+ pivot_selected.tsv # Final selected samples (after max_sample limit)
+ metadata.filtered.tsv # All filtered metadata
+ metadata.filtered.tissue.tsv # Tissue-annotated metadata
+ selection_summary.txt # Selection statistics
 ```
 
 ### Pivot Table Structure
@@ -566,7 +566,7 @@ for sample in samples[:5]:
 
 **Last Updated**: November 11, 2025  
 **AMALGKIT Version**: 0.12.20  
-**Status**: ✅ Production-ready, comprehensively tested
+**Status**: Production-ready, comprehensively tested
 
 ## New Features in v0.12.20
 

@@ -1,16 +1,16 @@
 # Specification: core
 
-## 🎯 Scope
+## Scope
 Core utilities for METAINFORMANT bioinformatics toolkit.
 
-## 🧱 Architecture
+## Architecture
 - **Dependency Level**: Core
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 - **Sub-packages**: data, engine, execution, io, ui, utils
 - **Key Concepts**: I/O, logging, config, execution engine, UI
 
-## 🔌 API Definition
+## API Definition
 ### Exports
 - `__init__.py`

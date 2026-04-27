@@ -3,14 +3,14 @@
 ## Overview
 Epigenome analysis module for METAINFORMANT.
 
-## 📦 Contents
-- **[analysis/](analysis/)**
-- **[assays/](assays/)**
-- **[visualization/](visualization/)**
-- **[workflow/](workflow/)**
-- `[__init__.py](__init__.py)`
+## Contents
+- **[analysis/](peak_calling.md)**
+- **[assays/](atac_seq.md)**
+- **[visualization/](methylation.md)**
+- **[workflow/](workflow.md)**
+- `__init__.py`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

@@ -229,9 +229,9 @@ def quality_gate_check(qc_results, thresholds=None):
 
 # Example usage
 if quality_gate_check(qc_results):
-    print("✓ Data passes quality gates - proceeding with analysis")
+ print(" Data passes quality gates - proceeding with analysis")
 else:
-    print("✗ Data fails quality gates - consider preprocessing or exclusion")
+ print(" Data fails quality gates - consider preprocessing or exclusion")
 ```
 
 ## Output Formats

@@ -3,10 +3,10 @@
 ## Overview
 Functionality for Apis_mellifera.
 
-## 📦 Contents
+## Contents
 - **[tables/](tables/)**
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

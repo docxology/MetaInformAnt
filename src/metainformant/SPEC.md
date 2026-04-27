@@ -1,15 +1,15 @@
 # Specification: metainformant
 
-## 🎯 Scope
+## Scope
 
 METAINFORMANT: Comprehensive Bioinformatics Toolkit for Multi-Omic Analysis.
 
-## 🧱 Architecture
+## Architecture
 
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 💾 Data Structures
+## Data Structures
 
 - **Modules**: 27 Python submodules
   - `core`, `dna`, `ecology`, `epigenome`
@@ -21,7 +21,7 @@ METAINFORMANT: Comprehensive Bioinformatics Toolkit for Multi-Omic Analysis.
   - `spatial`, `structural_variants`, `visualization`
 - **Key Concepts**: Refer to Pydantic models in source.
 
-## 🔌 API Definition
+## API Definition
 
 ### Exports
 

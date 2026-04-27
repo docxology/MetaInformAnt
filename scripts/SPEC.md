@@ -13,16 +13,16 @@ Executable scripts and utilities for running METAINFORMANT workflows. Contains t
 ### Directory Structure
 ```
 scripts/
-├── package/            # Package management and build scripts
-│   ├── setup.sh        # Environment setup
-│   ├── test.sh         # Test runner
-│   ├── build.sh        # Package builder
-│   └── uv_quality.sh   # Code quality checks
-├── core/               # Core utility scripts
-├── {module}/           # Domain-specific scripts
-│   ├── run_workflow.py # Workflow orchestration
-│   └── {feature}.py    # Feature-specific scripts
-└── *.py                # Root-level utility scripts
+ package/ # Package management and build scripts
+ setup.sh # Environment setup
+ test.sh # Test runner
+ build.sh # Package builder
+ uv_quality.sh # Code quality checks
+ core/ # Core utility scripts
+ {module}/ # Domain-specific scripts
+ run_workflow.py # Workflow orchestration
+ {feature}.py # Feature-specific scripts
+ *.py # Root-level utility scripts
 ```
 
 ## Data Structures
@@ -64,8 +64,8 @@ python scripts/rna/run_workflow.py --config config/amalgkit/species.yaml
 uv run python scripts/gwas/run_analysis.py --config config/gwas/gwas.yaml
 
 # Utilities
-python scripts/generate_example.py --module dna --feature alignment
-python scripts/audit_docs.py
+python scripts/test_examples/generate_example.py --module dna --feature alignment
+python scripts/quality/audit_docs.py
 ```
 
 ### Script Conventions

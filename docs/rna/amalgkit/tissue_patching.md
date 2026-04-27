@@ -73,5 +73,5 @@ python3 scripts/rna/verify_tissue_coverage.py --species pbarbatus
 ## Validation
 
 The tissue patching system is validated via:
--   **Automated Tests**: [test_rna_tissue_normalization.py](../../../tests/test_rna_tissue_normalization.py) ensures patching priority and synonym matching work correctly.
+-   **Automated Tests**: [test_rna_tissue_normalization.py](../../../tests/rna/test_rna_tissue_normalization.py) ensures patching priority and synonym matching work correctly.
 -   **Production Audit**: Current coverage for the honeybee dataset is **99.9%** (7,265/7,270 samples) using these patches.

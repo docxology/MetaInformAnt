@@ -3,11 +3,11 @@
 ## Overview
 Functionality for visualization.
 
-## 📦 Contents
+## Contents
 - `[generate_missing_plots.py](generate_missing_plots.py)`
 - `[visualizations.py](visualizations.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

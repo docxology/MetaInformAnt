@@ -18,7 +18,7 @@ Based on industry best practices and research showing that mocking/placeholders 
 
 ### Policy Implementation
 
-#### ✅ **ALLOWED: Real Implementations Only**
+#### **ALLOWED: Real Implementations Only**
 - **Real API calls** to UniProt, PDB, AlphaFold, NCBI with proper error handling
 - **Actual file I/O** with proper path validation and error handling
 - **Genuine algorithms** (Needleman-Wunsch, Smith-Waterman, PCA, etc.)
@@ -26,7 +26,7 @@ Based on industry best practices and research showing that mocking/placeholders 
 - **Genuine computations** using numpy/scipy with real mathematical operations
 - **External tool integration** with real command execution and output parsing
 
-#### ❌ **PROHIBITED: All Forms of Mocking/Placeholders**
+#### **PROHIBITED: All Forms of Mocking/Placeholders**
 - `return [[0, 1, 2] * 100]` (dummy genotype matrices)
 - `return [1.0, 0.5, 1.2] * 100` (dummy phenotype data)
 - `return {'scientific_name': f"Species_{taxon_id}"}` (placeholder API responses)
@@ -39,14 +39,14 @@ Based on industry best practices and research showing that mocking/placeholders 
 
 #### **Data Processing Functions**
 ```python
-# ✅ GOOD: Real VCF parsing
+# GOOD: Real VCF parsing
 def parse_genotype_matrix(vcf_data: Dict[str, Any]) -> List[List[int]]:
     """Extract real genotype matrix from VCF data."""
     genotypes = vcf_data['genotypes']
     # Perform actual parsing and validation
     return genotypes
 
-# ❌ BAD: Dummy data return
+# BAD: Dummy data return
 def parse_genotype_matrix(vcf_data: Dict[str, Any]) -> List[List[int]]:
     """Extract genotype matrix from VCF data."""
     return [[0, 1, 2] * 100]  # DUMMY DATA - PROHIBITED
@@ -54,13 +54,13 @@ def parse_genotype_matrix(vcf_data: Dict[str, Any]) -> List[List[int]]:
 
 #### **API Integration Functions**
 ```python
-# ✅ GOOD: Real API calls
+# GOOD: Real API calls
 def get_proteome_metadata(taxon_id: str) -> Dict[str, Any]:
     """Get proteome metadata from UniProt API."""
     response = requests.get(f"https://www.ebi.ac.uk/proteins/api/proteomes?taxid={taxon_id}")
     return response.json()[0]  # Real API response
 
-# ❌ BAD: Placeholder responses
+# BAD: Placeholder responses
 def get_proteome_metadata(taxon_id: str) -> Dict[str, Any]:
     """Get proteome metadata for taxonomy ID."""
     return {
@@ -71,7 +71,7 @@ def get_proteome_metadata(taxon_id: str) -> Dict[str, Any]:
 
 #### **Algorithm Implementation**
 ```python
-# ✅ GOOD: Real algorithms
+# GOOD: Real algorithms
 def needleman_wunsch(seq1: str, seq2: str) -> Dict[str, Any]:
     """Perform real Needleman-Wunsch global alignment."""
     # Implement actual dynamic programming algorithm
@@ -84,7 +84,7 @@ def needleman_wunsch(seq1: str, seq2: str) -> Dict[str, Any]:
         'score': score_matrix[-1][-1]  # Real computed score
     }
 
-# ❌ BAD: Placeholder algorithms
+# BAD: Placeholder algorithms
 def needleman_wunsch(seq1: str, seq2: str) -> Dict[str, Any]:
     """Perform global alignment."""
     return {
@@ -97,7 +97,7 @@ def needleman_wunsch(seq1: str, seq2: str) -> Dict[str, Any]:
 
 #### **Visualization Functions**
 ```python
-# ✅ GOOD: Real plotting
+# GOOD: Real plotting
 def manhattan_plot(results: List[Dict], output_path: str = None) -> plt.Figure:
     """Create real Manhattan plot."""
     fig, ax = plt.subplots()
@@ -105,7 +105,7 @@ def manhattan_plot(results: List[Dict], output_path: str = None) -> plt.Figure:
     ax.scatter(positions, p_values, c=colors)
     return fig  # Real Figure object
 
-# ❌ BAD: Placeholder plotting
+# BAD: Placeholder plotting
 def manhattan_plot(results: List[Dict], output_path: str = None) -> Any:
     """Create Manhattan plot."""
     if output_path:
@@ -118,7 +118,7 @@ def manhattan_plot(results: List[Dict], output_path: str = None) -> Any:
 When external dependencies are unavailable, **raise errors or skip gracefully**, never return dummy data:
 
 ```python
-# ✅ GOOD: Proper error handling
+# GOOD: Proper error handling
 def fetch_uniprot_record(uniprot_id: str) -> Dict[str, Any]:
     """Fetch UniProt record."""
     try:
@@ -129,7 +129,7 @@ def fetch_uniprot_record(uniprot_id: str) -> Dict[str, Any]:
         logger.error(f"Failed to fetch UniProt record: {e}")
         raise  # Real error propagation
 
-# ❌ BAD: Dummy data fallback
+# BAD: Dummy data fallback
 def fetch_uniprot_record(uniprot_id: str) -> Dict[str, Any]:
     """Fetch UniProt record."""
     try:
@@ -161,12 +161,12 @@ def test_real_uniprot_integration():
 ### Enforcement Mechanisms
 
 #### **Code Review Checklist**
-- ❌ No functions returning dummy/placeholder data
-- ❌ No hardcoded fake responses in API functions
-- ❌ No simplified algorithms that don't perform real computations
-- ✅ All functions implement real algorithms or make real API calls
-- ✅ Proper error handling for missing dependencies
-- ✅ Real file I/O with proper validation
+- No functions returning dummy/placeholder data
+- No hardcoded fake responses in API functions
+- No simplified algorithms that don't perform real computations
+- All functions implement real algorithms or make real API calls
+- Proper error handling for missing dependencies
+- Real file I/O with proper validation
 
 #### **Automated Detection**
 The codebase should be checked for:
@@ -195,14 +195,14 @@ When replacing placeholder implementations:
 ### Examples of Policy Compliance
 
 #### **GWAS Workflow (Fixed)**
-- ✅ Real VCF parsing instead of `return [[0, 1, 2] * 100]`
-- ✅ Real phenotype file reading instead of `return [1.0, 0.5, 1.2] * 100`
-- ✅ Proper error handling for missing files
+- Real VCF parsing instead of `return [[0, 1, 2] * 100]`
+- Real phenotype file reading instead of `return [1.0, 0.5, 1.2] * 100`
+- Proper error handling for missing files
 
 #### **Protein Analysis (Fixed)**
-- ✅ Real UniProt API calls instead of placeholder metadata
-- ✅ Real Needleman-Wunsch algorithm instead of placeholder alignments
-- ✅ Real matplotlib plotting instead of `return None`
+- Real UniProt API calls instead of placeholder metadata
+- Real Needleman-Wunsch algorithm instead of placeholder alignments
+- Real matplotlib plotting instead of `return None`
 
 #### **Remaining Acceptable Cases**
 Some fallback implementations are acceptable when they:

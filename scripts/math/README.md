@@ -3,11 +3,11 @@
 ## Overview
 Functionality for math.
 
-## 📦 Contents
+## Contents
 - `[run_math_modeling.py](run_math_modeling.py)`
 - `[verify_optimizations.py](verify_optimizations.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

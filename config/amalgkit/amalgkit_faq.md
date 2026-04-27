@@ -2,7 +2,7 @@
 
 Frequently asked questions and solutions for the amalgkit RNA-seq workflow.
 
-## 📊 Performance & Optimization
+## Performance & Optimization
 
 ### Q: How does the pipeline process samples?
 
@@ -46,7 +46,7 @@ This means as soon as one sample finishes downloading, it starts quantifying whi
 
 ---
 
-## ⚠️ Common Errors
+## Common Errors
 
 ### Q: "disk-limit exceeded" during extraction
 
@@ -102,7 +102,7 @@ nohup bash scripts/rna/run_all_species.sh > output/amalgkit/run_all_species_incr
 
 ---
 
-## 🔄 Recovery Procedures
+## Recovery Procedures
 
 ### Q: How do I resume after a crash?
 
@@ -137,7 +137,7 @@ nohup bash scripts/rna/run_all_species.sh > output/amalgkit/run_all_species_incr
 
 ---
 
-## 🐝 Species-Specific Notes
+## Species-Specific Notes
 
 ### Apis mellifera (Honeybee)
 
@@ -152,7 +152,7 @@ nohup bash scripts/rna/run_all_species.sh > output/amalgkit/run_all_species_incr
 
 ---
 
-## 🛠️ Scripts Reference
+## Scripts Reference
 
 | Script | Purpose |
 |--------|---------|
@@ -175,7 +175,7 @@ ps -fC amalgkit | grep SRR
 
 ---
 
-## 💾 Disk Cleanup
+## Disk Cleanup
 
 ### Safe to delete
 
@@ -189,7 +189,7 @@ ps -fC amalgkit | grep SRR
 
 ---
 
-## 🧬 Tissue Normalization
+## Tissue Normalization
 
 ### Q: How do I normalize tissue metadata?
 
@@ -228,7 +228,7 @@ bioprojects:
 
 ---
 
-## 🔗 Related Resources
+## Related Resources
 
 - [Amalgkit GitHub](https://github.com/kfuku52/amalgkit)
 - [config/amalgkit/README.md](./README.md) - Configuration guide

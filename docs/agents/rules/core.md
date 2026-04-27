@@ -13,21 +13,21 @@ Shared utilities across all domains. Foundation for all other modules.
 
 ```text
 src/metainformant/core/
-├── data/
-│   ├── db.py, validation.py
-├── engine/
-│   └── workflow_manager.py
-├── execution/
-│   ├── discovery.py, parallel.py, workflow.py
-├── io/
-│   ├── atomic.py, cache.py, checksums.py, disk.py
-│   ├── download.py, download_manager.py, download_robust.py
-│   ├── errors.py, io.py, paths.py
-├── ui/
-│   └── tui.py
-└── utils/
-    ├── config.py, errors.py, hash.py, logging.py
-    ├── optional_deps.py, progress.py, symbols.py, text.py, timing.py
+ data/
+ db.py, validation.py
+ engine/
+ workflow_manager.py
+ execution/
+ discovery.py, parallel.py, workflow.py
+ io/
+ atomic.py, cache.py, checksums.py, disk.py
+ download.py, download_manager.py, download_robust.py
+ errors.py, io.py, paths.py
+ ui/
+ tui.py
+ utils/
+ config.py, errors.py, hash.py, logging.py
+ optional_deps.py, progress.py, symbols.py, text.py, timing.py
 ```
 
 ## Package Management
@@ -88,14 +88,14 @@ with io.open_text_auto("data/large_file.txt.gz") as f:
     content = f.read()
 ```
 
-**❌ PROHIBITED**:
+** PROHIBITED**:
 
 ```python
-import json  # ❌ WRONG - use metainformant.core.io instead
-import csv   # ❌ WRONG - use metainformant.core.io instead
+import json # WRONG - use metainformant.core.io instead
+import csv # WRONG - use metainformant.core.io instead
 
-data = json.load(f)  # ❌ WRONG
-json.dump(data, f)   # ❌ WRONG
+data = json.load(f) # WRONG
+json.dump(data, f) # WRONG
 ```
 
 ### Paths (`paths`)

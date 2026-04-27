@@ -1,15 +1,15 @@
 # Specification: rna
 
-## 🎯 Scope
+## Scope
 
 RNA transcriptomic analysis and workflow orchestration module for METAINFORMANT.
 
-## 🧱 Architecture
+## Architecture
 
 - **Dependency Level**: Domain
 - **Component Type**: Source Code
 
-## 📦 Sub-packages
+## Sub-packages
 
 | Sub-package | Purpose |
 |---|---|
@@ -21,7 +21,7 @@ RNA transcriptomic analysis and workflow orchestration module for METAINFORMANT.
 | `retrieval/` | ENA/SRA data download |
 | `splicing/` | Alternative splicing detection, isoform quantification |
 
-## 🔌 API Definition
+## API Definition
 
 ### Key Exports
 

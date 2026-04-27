@@ -3,10 +3,10 @@
 ## Overview
 Functionality for phenotype.
 
-## 📦 Contents
+## Contents
 
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

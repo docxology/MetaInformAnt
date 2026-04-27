@@ -24,38 +24,38 @@ This repository is the **canonical template** for new bioinformatics projects wi
 
 ```text
 template_bioinformatics_project/
-├── AGENTS.md                  # AI agent responsibilities and standards
-├── SPEC.md                    # This specification
-├── README.md                  # User-facing quickstart and overview
-├── pyproject.toml             # uv-compatible project manifest
-├── main.py                    # Top-level CLI entry point
-├── run.sh                     # Master shell pipeline runner
-├── config/
-│   └── default.yaml           # Centralized configuration (all parameters)
-├── data/
-│   ├── raw/                   # Immutable raw inputs (FASTQ, CSV, YAML metadata)
-│   └── processed/             # Intermediate outputs from Stage 1
-├── scripts/
-│   ├── 01_process_data.py     # Stage 1: ingest and process raw data
-│   ├── 02_analyze_results.py  # Stage 2: downstream statistical analysis
-│   ├── 03_visualize.py        # Stage 3: plot generation
-│   └── 99_create_synthetic_data.py  # Test data generator
-├── results/
-│   └── figures/               # Matplotlib output figures
-├── logs/                      # Per-stage execution logs
-├── tests/
-│   ├── conftest.py            # Shared pytest fixtures
-│   └── test_pipeline.py       # End-to-end pipeline tests
-└── doc/
-    ├── index.md               # Documentation hub
-    ├── architecture.md        # Thin orchestration pattern guide
-    ├── configuration.md       # Config reference
-    ├── data.md                # Data management guide
-    └── stages/                # Per-stage technical references
-        ├── 01_process_data.md
-        ├── 02_analyze_results.md
-        ├── 03_visualize.md
-        └── 99_synthetic_data.md
+ AGENTS.md # AI agent responsibilities and standards
+ SPEC.md # This specification
+ README.md # User-facing quickstart and overview
+ pyproject.toml # uv-compatible project manifest
+ main.py # Top-level CLI entry point
+ run.sh # Master shell pipeline runner
+ config/
+ default.yaml # Centralized configuration (all parameters)
+ data/
+ raw/ # Immutable raw inputs (FASTQ, CSV, YAML metadata)
+ processed/ # Intermediate outputs from Stage 1
+ scripts/
+ 01_process_data.py # Stage 1: ingest and process raw data
+ 02_analyze_results.py # Stage 2: downstream statistical analysis
+ 03_visualize.py # Stage 3: plot generation
+ 99_create_synthetic_data.py # Test data generator
+ results/
+ figures/ # Matplotlib output figures
+ logs/ # Per-stage execution logs
+ tests/
+ conftest.py # Shared pytest fixtures
+ test_pipeline.py # End-to-end pipeline tests
+ doc/
+ index.md # Documentation hub
+ architecture.md # Thin orchestration pattern guide
+ configuration.md # Config reference
+ data.md # Data management guide
+ stages/ # Per-stage technical references
+ 01_process_data.md
+ 02_analyze_results.md
+ 03_visualize.md
+ 99_synthetic_data.md
 ```
 
 ## Extension Patterns

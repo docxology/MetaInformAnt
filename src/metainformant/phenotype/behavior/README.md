@@ -3,12 +3,12 @@
 ## Overview
 Behavioral phenotype analysis module.
 
-## 📦 Contents
+## Contents
 - `[__init__.py](__init__.py)`
 - `[ethogram.py](ethogram.py)`
 - `[sequence.py](sequence.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

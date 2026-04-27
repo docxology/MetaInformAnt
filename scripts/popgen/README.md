@@ -3,7 +3,7 @@
 ## Overview
 Population genetics analysis scripts package.
 
-## 📦 Contents
+## Contents
 - `[__init__.py](__init__.py)`
 - `[analysis.py](analysis.py)`
 - `[analyze.py](analyze.py)`
@@ -11,7 +11,7 @@ Population genetics analysis scripts package.
 - `[report.py](report.py)`
 - `[visualize.py](visualize.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

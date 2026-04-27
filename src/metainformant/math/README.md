@@ -2,6 +2,24 @@
 
 Mathematical biology and theoretical modeling for population genetics, epidemiology, evolutionary dynamics, and quantitative genetics.
 
+## Overview
+
+Mathematical biology and theoretical modeling for population genetics, epidemiology, evolutionary dynamics, and quantitative genetics.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Key Capabilities](#key-capabilities)
+  - [Population Genetics](#population-genetics)
+  - [Evolutionary Dynamics](#evolutionary-dynamics)
+  - [Quantitative Genetics](#quantitative-genetics)
+  - [Epidemiology](#epidemiology)
+- [Submodules](#submodules)
+- [Quick Start](#quick-start)
+- [Integration](#integration)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -137,6 +155,7 @@ Math functions underpin analysis across METAINFORMANT modules:
 - **Information** -- Entropy measures bridge `information` and `epidemiology` (R0 as information flow)
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [`metainformant.dna.population`](../dna/population/) -- Empirical population genetics analysis
 - [`metainformant.simulation`](../simulation/) -- Simulation models using math foundations

@@ -9,10 +9,10 @@ Multi-omic data integration: cross-platform data harmonization, joint statistica
 ## Source Structure
 ```
 src/metainformant/multiomics/
-├── analysis/
-│   └── integration.py
-└── visualization/
-    └── visualization.py
+ analysis/
+ integration.py
+ visualization/
+ visualization.py
 ```
 
 ## Package Management

@@ -3,11 +3,11 @@
 ## Overview
 Functionality for structure.
 
-## 📦 Contents
+## Contents
 - `[run_kinship.py](run_kinship.py)`
 - `[run_pca.py](run_pca.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

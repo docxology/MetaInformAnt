@@ -2,6 +2,22 @@
 
 PacBio and Oxford Nanopore long-read analysis: signal I/O, quality assessment, assembly, methylation calling, haplotype phasing, and structural variant detection.
 
+## Overview
+
+PacBio and Oxford Nanopore long-read analysis: signal I/O, quality assessment, assembly, methylation calling, haplotype phasing, and structural variant detection.
+
+
+## Table of Contents
+
+- [Architecture](#architecture)
+- [Submodules](#submodules)
+- [Key Classes](#key-classes)
+  - [Pipeline Orchestration](#pipeline-orchestration)
+  - [Pipeline Stages](#pipeline-stages)
+- [Quick Start](#quick-start)
+- [Integration](#integration)
+- [Related](#related)
+
 ## Architecture
 
 ```mermaid
@@ -105,6 +121,7 @@ pop_result = population.analyze(sv_calls, sample_metadata)
 ```
 
 ## Related
+- [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [docs/longread/](../../../docs/longread/) - Long-read analysis documentation
 - [metainformant.structural_variants](../structural_variants/) - Population-level SV analysis

@@ -1,20 +1,18 @@
 # Agent Directives: docs/singlecell
 
 ## Role
-Documentation for single-cell RNA-seq analysis.
 
-## Directory Structure
-- `config/` - Single-cell analysis configuration examples
+Documentation for the single-cell RNA-seq analysis module.
 
-## Contents
-- Cell preprocessing and QC
-- Normalization methods
-- Dimensionality reduction (PCA, UMAP, t-SNE)
-- Clustering (Leiden, Louvain)
-- Differential expression
-- Trajectory inference
+## Module Scope
 
-## Key Dependencies
-- anndata for data structures
-- scanpy integration patterns
-- h5ad file format
+Preprocessing (filtering, normalization), clustering (Leiden), differential expression, trajectory inference, RNA velocity, and cell-type annotation.
+
+## Key Source Files
+
+| Path | Description |
+|------|-------------|
+| `src/metainformant/singlecell/analysis/` | Clustering and DE analysis |
+| `src/metainformant/singlecell/data/` | Data loading (h5ad) |
+| `src/metainformant/singlecell/velocity/` | RNA velocity |
+| `src/metainformant/singlecell/celltyping/` | Cell-type annotation |

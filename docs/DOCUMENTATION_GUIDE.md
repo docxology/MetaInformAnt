@@ -69,9 +69,9 @@ Each domain directory follows a consistent pattern:
 
 ```
 docs/<domain>/
-├── README.md       # Domain overview and quick start
-├── index.md        # Detailed index of all submodules
-└── <topic>.md      # Topic-specific documentation
+ README.md # Domain overview and quick start
+ index.md # Detailed index of all submodules
+ <topic>.md # Topic-specific documentation
 ```
 
 ## Finding What You Need

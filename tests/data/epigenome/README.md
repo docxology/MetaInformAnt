@@ -3,10 +3,10 @@
 ## Overview
 Functionality for epigenome.
 
-## 📦 Contents
+## Contents
 
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD

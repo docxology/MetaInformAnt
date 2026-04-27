@@ -3,10 +3,10 @@
 ## Overview
 Functionality for ontology.
 
-## 📦 Contents
+## Contents
 - `[example_go.py](example_go.py)`
 
-## 📊 Structure
+## Structure
 
 ```mermaid
 graph TD
