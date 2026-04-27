@@ -1,8 +1,28 @@
-# AI Agents - multiomics Config
+# Agent Directives: config/multiomics
 
-## 🤖 Agents
-- **Config Validator**: Validates YAML structure against schema.
-- **Migration Assistant**: Helps port legacy configs.
+## Role
 
-## 🛠️ Workflows
-- **Validation**: Schema validation on load.
+Multi-omics integration pipeline configuration for cross-platform data harmonization.
+
+## Contents
+
+| File | Description |
+| :--- | :--- |
+| `multiomics_template.yaml` | Template with integration method options |
+
+## Configuration Structure
+
+```yaml
+# Multi-omics configuration
+layers: [genomics, transcriptomics, proteomics]
+integration_method: joint_pca
+n_components: 50
+standardize: true
+```
+
+## Rules
+
+- Validate with schema before committing new configs
+- Follow NO MOCKING policy — tests use real config files
+- Use `uv` for dependency management
+- Environment overrides use `AK_` prefix
