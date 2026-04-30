@@ -10,6 +10,7 @@ Example:
     config = load_mapping_from_file("settings.yaml")"""
 from __future__ import annotations
 
-from . import config, errors, hash, logging, optional_deps, progress, symbols, text, timing
+from . import config, errors, hash, logging, optional_deps, progress, symbols
+from . import text, timing, watchdog
 
-__all__ = ['config', 'errors', 'hash', 'logging', 'optional_deps', 'progress', 'symbols', 'text', 'timing']
+__all__ = ['config', 'errors', 'hash', 'logging', 'optional_deps', 'progress', 'symbols', 'text', 'timing', 'watchdog']

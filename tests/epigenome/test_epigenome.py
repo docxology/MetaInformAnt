@@ -7,7 +7,7 @@ from metainformant.epigenome.assays.methylation import compute_beta_values, load
 
 
 def test_read_bedgraph_parses_minimal_file():
-    repo_root = Path(__file__).resolve().parents[1]
+    repo_root = Path(__file__).resolve().parents[2]
     bedgraph_path = repo_root / "tests/data/epigenome/example.bedgraph"
     df = read_bedgraph(bedgraph_path)
     # Expect four columns with correct names and at least 3 rows from the fixture
@@ -19,7 +19,7 @@ def test_read_bedgraph_parses_minimal_file():
 
 
 def test_compute_methylation_beta_and_summary():
-    repo_root = Path(__file__).resolve().parents[1]
+    repo_root = Path(__file__).resolve().parents[2]
     table_path = repo_root / "tests/data/epigenome/cpg_counts.tsv"
     df = load_cpg_table(table_path)
     df = compute_beta_values(df)

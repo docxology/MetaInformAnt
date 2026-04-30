@@ -674,7 +674,7 @@ def subset_vcf_data(
 
     # Subset genotypes (samples x variants format)
     genotypes = vcf_data.get("genotypes", [])
-    subset_genotypes = [genotypes[i] for i in keep_indices] if genotypes else []
+    subset_genotypes = [genotypes[i] for i in keep_indices] if genotypes is not None and len(genotypes) > 0 else []
 
     logger.info(f"Subset VCF: {len(all_samples)} -> {len(kept_ids)} samples")
 

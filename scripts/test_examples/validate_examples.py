@@ -5,7 +5,7 @@ This script performs quick validation checks on examples without running them,
 useful for pre-commit hooks and CI/CD validation.
 
 Usage:
-    python scripts/validate_examples.py [--fast] [--verbose] [--fix]
+    python scripts/test_examples/validate_examples.py [--fast] [--verbose] [--fix]
 
 Arguments:
     --fast: Only perform syntax and import checks (default)

@@ -18,7 +18,7 @@ class TestDiscoverFunctions:
     def test_discover_functions_in_core_module(self):
         """Test discovering functions in a core module."""
         # Test with a known module
-        module_path = Path(__file__).parent.parent / "src" / "metainformant" / "core" / "io.py"
+        module_path = Path(__file__).parent.parent.parent / "src" / "metainformant" / "core" / "io.py"
         if module_path.exists():
             functions = discovery.discover_functions(module_path)
             assert isinstance(functions, list)
@@ -29,7 +29,7 @@ class TestDiscoverFunctions:
 
     def test_discover_functions_with_pattern(self):
         """Test discovering functions with name pattern."""
-        module_path = Path(__file__).parent.parent / "src" / "metainformant" / "core" / "io.py"
+        module_path = Path(__file__).parent.parent.parent / "src" / "metainformant" / "core" / "io.py"
         if module_path.exists():
             functions = discovery.discover_functions(module_path, pattern="load")
             assert isinstance(functions, list)
@@ -56,7 +56,7 @@ class TestDiscoverConfigs:
 
     def test_discover_configs_repo_root(self):
         """Test discovering configs from repo root."""
-        repo_root = Path(__file__).parent.parent
+        repo_root = Path(__file__).parent.parent.parent
         configs = discovery.discover_configs(repo_root)
         assert isinstance(configs, list)
         # Should find at least some config files
@@ -67,7 +67,7 @@ class TestDiscoverConfigs:
 
     def test_discover_configs_with_domain(self):
         """Test discovering configs for specific domain."""
-        repo_root = Path(__file__).parent.parent
+        repo_root = Path(__file__).parent.parent.parent
         configs = discovery.discover_configs(repo_root, domain="gwas")
         assert isinstance(configs, list)
         # All configs should be in gwas domain or match pattern
@@ -97,7 +97,7 @@ class TestBuildCallGraph:
 
     def test_build_call_graph_simple_module(self):
         """Test building call graph for a simple module."""
-        repo_root = Path(__file__).parent.parent
+        repo_root = Path(__file__).parent.parent.parent
         # Use a simple module like core/io.py
         entry_point = repo_root / "src" / "metainformant" / "core" / "io.py"
         if entry_point.exists():
@@ -113,7 +113,7 @@ class TestFindSymbolUsage:
     def test_find_symbol_usage_common_function(self):
         """Test finding usage of a common function."""
         # Search for a common function like "get_logger" in just the core module
-        core_dir = Path(__file__).parent.parent / "src" / "metainformant" / "core"
+        core_dir = Path(__file__).parent.parent.parent / "src" / "metainformant" / "core"
         usages = discovery.find_symbol_usage("get_logger", core_dir)
         assert isinstance(usages, list)
         # Should find at least some usages
@@ -130,7 +130,7 @@ class TestGetModuleDependencies:
 
     def test_get_module_dependencies_core_io(self):
         """Test getting dependencies for core/io module."""
-        module_path = Path(__file__).parent.parent / "src" / "metainformant" / "core" / "io.py"
+        module_path = Path(__file__).parent.parent.parent / "src" / "metainformant" / "core" / "io.py"
         if module_path.exists():
             deps = discovery.get_module_dependencies(module_path)
             assert hasattr(deps, "module")
@@ -145,7 +145,7 @@ class TestDiscoverWorkflows:
 
     def test_discover_workflows_repo_root(self):
         """Test discovering workflows from repo root."""
-        repo_root = Path(__file__).parent.parent
+        repo_root = Path(__file__).parent.parent.parent
         workflows = discovery.discover_workflows(repo_root)
         assert isinstance(workflows, list)
         # Should find workflow definitions

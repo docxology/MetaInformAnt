@@ -1,7 +1,21 @@
-"""Information workflow subpackage.
+"""Information workflows and pipelines.
 
-Provides batch analysis, comparison, and reporting workflows for
-information-theoretic analysis pipelines.
+Higher-level orchestration for information-theoretic analysis workflows,
+combining metrics, integration, and reporting.
 """
 
-from . import workflows
+from __future__ import annotations
+
+from .workflows import (
+    batch_entropy_analysis,
+    compare_datasets,
+    information_report,
+    information_workflow,
+)
+
+__all__ = [
+    "batch_entropy_analysis",
+    "compare_datasets",
+    "information_report",
+    "information_workflow",
+]

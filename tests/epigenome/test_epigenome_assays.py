@@ -187,7 +187,7 @@ class TestComputeBetaValues:
         assert "beta" in result.columns
 
     def test_load_cpg_table(self) -> None:
-        repo_root = Path(__file__).resolve().parents[1]
+        repo_root = Path(__file__).resolve().parents[2]
         table_path = repo_root / "tests/data/epigenome/cpg_counts.tsv"
         df = load_cpg_table(table_path)
         assert "chrom" in df.columns

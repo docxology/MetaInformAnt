@@ -145,11 +145,11 @@ def fisher_exact_test(a: int, b: int, c: int, d: int) -> tuple[float, float]:
         d: Count in cell (2,2)
 
     Returns:
-        Tuple of (p_value, odds_ratio)
+        Tuple of (odds_ratio, p_value)
 
     Examples:
         >>> # Test association between treatment and outcome
-        >>> p_val, odds_ratio = fisher_exact_test(8, 2, 1, 9)
+        >>> odds_ratio, p_val = fisher_exact_test(8, 2, 1, 9)
         >>> print(f"p-value: {p_val:.4f}, odds ratio: {odds_ratio:.2f}")
     """
     # Calculate odds ratio
@@ -193,7 +193,7 @@ def fisher_exact_test(a: int, b: int, c: int, d: int) -> tuple[float, float]:
         # Fallback approximation
         p_value = min(1.0, chi_square / 3.84)  # Rough approximation
 
-    return p_value, odds_ratio
+    return odds_ratio, p_value
 
 
 def covariance(x: List[float], y: List[float]) -> float:

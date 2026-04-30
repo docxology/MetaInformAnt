@@ -183,7 +183,7 @@ def main():
     else:
         print("⚠️  Some modules have export issues. Please review and fix.")
         print("\nRun this script again to verify fixes:")
-        print("    python scripts/check_exports.py")
+        print("    python scripts/quality/check_exports.py")
         sys.exit(1)
 
 

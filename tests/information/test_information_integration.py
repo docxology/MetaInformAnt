@@ -11,7 +11,13 @@ from collections import Counter
 import numpy as np
 import pytest
 
-from metainformant.information.integration.integration import dna_integration
+from metainformant.information.integration.integration import (
+    dna_integration,
+    rna_integration,
+    singlecell_integration,
+    multiomics_integration,
+    ml_integration,
+)
 from metainformant.information.metrics.analysis.analysis import information_profile
 from metainformant.information.metrics.core.syntactic import mutual_information, shannon_entropy, shannon_entropy_from_counts
 

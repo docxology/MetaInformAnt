@@ -5,7 +5,7 @@ This script creates new example files based on domain-specific templates,
 ensuring consistent structure and best practices.
 
 Usage:
-    python scripts/generate_example.py <domain> <name> [--description TEXT] [--features LIST]
+    python scripts/test_examples/generate_example.py <domain> <name> [--description TEXT] [--features LIST]
 
 Arguments:
     domain: Target domain (dna, rna, gwas, etc.)

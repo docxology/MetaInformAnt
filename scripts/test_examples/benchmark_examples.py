@@ -4,7 +4,7 @@
 This script establishes performance baselines and detects regressions in example execution times.
 
 Usage:
-    python scripts/benchmark_examples.py [--baseline] [--compare] [--threshold FLOAT] [--output DIR]
+    python scripts/test_examples/benchmark_examples.py [--baseline] [--compare] [--threshold FLOAT] [--output DIR]
 
 Arguments:
     --baseline: Establish new performance baseline

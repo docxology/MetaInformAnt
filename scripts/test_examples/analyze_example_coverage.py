@@ -5,7 +5,7 @@ This script analyzes which METAINFORMANT functions are demonstrated by the examp
 providing insights into test coverage and identifying gaps in example coverage.
 
 Usage:
-    python scripts/analyze_example_coverage.py [--output DIR] [--detailed] [--report]
+    python scripts/test_examples/analyze_example_coverage.py [--output DIR] [--detailed] [--report]
 
 Arguments:
     --output: Output directory for coverage reports (default: output/examples/coverage)

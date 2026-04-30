@@ -130,7 +130,7 @@ class TestBedgraphTrackIO:
     """Tests for loading and saving BEDgraph tracks."""
 
     def test_load_bedgraph(self) -> None:
-        repo_root = Path(__file__).resolve().parents[1]
+        repo_root = Path(__file__).resolve().parents[2]
         path = repo_root / "tests/data/epigenome/example.bedgraph"
         track = load_bedgraph_track(path, name="test_bg")
         assert track.get_total_features() == 3

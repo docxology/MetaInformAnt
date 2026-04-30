@@ -1,0 +1,466 @@
+# Markdown Link Validation Report
+
+**Repository:** /home/trim/Documents/Git/MetaInformAnt
+
+**Scanned:** 1526 markdown files
+
+**Total links found:** 4179
+
+**Internal links:** 3104
+
+**External links:** 428
+
+
+## Summary
+
+- **Broken internal links:** 288
+- **Broken external links:** 14
+- **Files with broken links:** 123
+
+### Severity Breakdown
+
+- HIGH: 225
+
+- MEDIUM: 20
+
+- LOW: 57
+
+
+## Broken Links (Sorted by Severity)
+
+### HIGH - Missing files or undefined references
+
+- **.amalgkit-env/env/lib/R/doc/html/katex/README.md** (line 91): `CONTRIBUTING.md` → Target file does not exist [text: 'our guide to contributing code']
+- **.amalgkit-env/env/lib/R/library/rlang/NEWS.md** (line 139): `rlang::args_data_masking` → Undefined reference [text: '`data-masking`']
+- **.amalgkit-env/env/share/doc/libjpeg-turbo/README.md** (line 56): `BUILDING.md` → Target file does not exist [text: 'BUILDING.md']
+- **.amalgkit-env/env/share/doc/libjpeg-turbo/README.md** (line 72): `src/tjcomp.c` → Target file does not exist [text: 'tjcomp.c']
+- **.amalgkit-env/env/share/doc/libjpeg-turbo/README.md** (line 73): `src/tjdecomp.c` → Target file does not exist [text: 'tjdecomp.c']
+- **.amalgkit-env/env/share/doc/libjpeg-turbo/README.md** (line 73): `src/tjtran.c` → Target file does not exist [text: 'tjtran.c']
+- **.amalgkit-env/env/share/doc/libjpeg-turbo/README.md** (line 74): `java/TJComp.java` → Target file does not exist [text: 'TJComp.java']
+- **.amalgkit-env/env/share/doc/libjpeg-turbo/README.md** (line 74): `java/TJDecomp.java` → Target file does not exist [text: 'TJDecomp.java']
+- **.amalgkit-env/env/share/doc/libjpeg-turbo/README.md** (line 75): `java/TJTran.java` → Target file does not exist [text: 'TJTran.java']
+- **.amalgkit-env/env/share/doc/libjpeg-turbo/README.md** (line 85): `src/cjpeg.c` → Target file does not exist [text: 'cjpeg.c']
+- **.amalgkit-env/env/share/doc/libjpeg-turbo/README.md** (line 85): `src/djpeg.c` → Target file does not exist [text: 'djpeg.c']
+- **.amalgkit-env/env/share/doc/libjpeg-turbo/README.md** (line 86): `doc/libjpeg.txt` → Target file does not exist [text: 'libjpeg.txt']
+- **.amalgkit-env/env/share/doc/libjpeg-turbo/README.md** (line 139): `src/jcstest.c` → Target file does not exist [text: 'jcstest.c']
+- **.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/info/licenses/LICENSE.md** (line 7): `README.ijg` → Target file does not exist [text: 'README.ijg']
+- **.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md** (line 56): `BUILDING.md` → Target file does not exist [text: 'BUILDING.md']
+- **.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md** (line 72): `src/tjcomp.c` → Target file does not exist [text: 'tjcomp.c']
+- **.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md** (line 73): `src/tjdecomp.c` → Target file does not exist [text: 'tjdecomp.c']
+- **.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md** (line 73): `src/tjtran.c` → Target file does not exist [text: 'tjtran.c']
+- **.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md** (line 74): `java/TJComp.java` → Target file does not exist [text: 'TJComp.java']
+- **.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md** (line 74): `java/TJDecomp.java` → Target file does not exist [text: 'TJDecomp.java']
+- **.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md** (line 75): `java/TJTran.java` → Target file does not exist [text: 'TJTran.java']
+- **.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md** (line 85): `src/cjpeg.c` → Target file does not exist [text: 'cjpeg.c']
+- **.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md** (line 85): `src/djpeg.c` → Target file does not exist [text: 'djpeg.c']
+- **.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md** (line 86): `doc/libjpeg.txt` → Target file does not exist [text: 'libjpeg.txt']
+- **.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md** (line 139): `src/jcstest.c` → Target file does not exist [text: 'jcstest.c']
+- **.amalgkit-env/root/pkgs/r-base-4.5.2-h1fbe982_4/lib/R/doc/html/katex/README.md** (line 91): `CONTRIBUTING.md` → Target file does not exist [text: 'our guide to contributing code']
+- **.amalgkit-env/root/pkgs/r-rlang-1.1.7-r45h3697838_0/lib/R/library/rlang/NEWS.md** (line 139): `rlang::args_data_masking` → Undefined reference [text: '`data-masking`']
+- **.cursor/skills/metainformant-docs-spatial/SKILL.md** (line 10): `../../../docs/spatial/AGENTS.md` → Target file does not exist [text: '`AGENTS.md`']
+- **.cursor/skills/metainformant-docs-spatial/SKILL.md** (line 11): `../../../docs/spatial/README.md` → Target file does not exist [text: '`README.md`']
+- **.uv-cache/archive-v0/HPUV5eY1Egy2sbZam-7ei/mdit_py_plugins/texmath/README.md** (line 135): `./license.txt` → Target file does not exist [text: 'MIT License']
+- **.uv-cache/archive-v0/zuLo9T1ymzqfAryXNEKZL/nltk-3.9.2.dist-info/licenses/README.md** (line 15): `CONTRIBUTING.md` → Target file does not exist [text: 'CONTRIBUTING.md']
+- **CONTRIBUTING.md** (line 54): `NO_MOCKING_POLICY.md` → Target file does not exist [text: 'NO_MOCKING_POLICY.md']
+- **README.md** (line 471): `src/metainformant/metagenomics/taxonomy/` → Target file does not exist [text: '`taxonomy/`']
+- **README.md** (line 472): `src/metainformant/pharmacogenomics/interactions/` → Target file does not exist [text: '`interactions/`']
+- **config/README.md** (line 154): `../src/metainformant/core/config.py` → Target file does not exist [text: 'Core Config Module']
+- **config/amalgkit/README.md** (line 127): `../../../scripts/rna/` → Target file does not exist [text: 'RNA Scripts']
+- **config/ncbi/README.md** (line 15): `../../src/metainformant/core/config.py` → Target file does not exist [text: 'Core Config Module']
+- **docs/CONTRIBUTING.md** (line 211): `relative/path.md` → Target file does not exist [text: 'link text']
+- **docs/DEVELOPMENT.md** (line 350): `../docs/tasks/` → Target file does not exist [text: 'docs/tasks/']
+- **docs/FAQ.md** (line 205): `:, :10` → Undefined reference [text: '"pcs"']
+- **docs/FAQ.md** (line 325): `:` → Undefined reference [text: '"dataset"']
+- **docs/GETTING_STARTED.md** (line 340): `tasks/` → Target file does not exist [text: 'docs/tasks/']
+- **docs/NO_MOCKING_POLICY.md** (line 84): `-1` → Undefined reference [text: '-1']
+- **docs/TUTORIALS.md** (line 284): `k` → Undefined reference [text: '"kmer_analyses"']
+- **docs/TUTORIALS.md** (line 305): `'total_sequences'` → Undefined reference [text: ''summary'']
+- **docs/TUTORIALS.md** (line 306): `'mean_entropy'` → Undefined reference [text: ''summary'']
+- **docs/TUTORIALS.md** (line 307): `'min_entropy'` → Undefined reference [text: ''summary'']
+- **docs/TUTORIALS.md** (line 308): `'max_entropy'` → Undefined reference [text: ''summary'']
+- **docs/TUTORIALS.md** (line 566): `1` → Undefined reference [text: '"kmer_analyses"']
+- **docs/agents/SPEC.md** (line 123): `../src/metainformant/core/engine/workflow_manager.py` → Target file does not exist [text: 'Workflow Manager API']
+- **docs/agents/TROUBLESHOOTING.md** (line 264): `"SRR123"` → Undefined reference [text: '"items"']
+- **docs/core/GETTING_STARTED.md** (line 171): `0` → Undefined reference [text: '"genes"']
+- **docs/core/GETTING_STARTED.md** (line 229): `"gene_count"` → Undefined reference [text: '"data"']
+- **docs/core/GETTING_STARTED.md** (line 282): `'from_cache'` → Undefined reference [text: ''summary'']
+- **docs/core/GETTING_STARTED.md** (line 365): `"max_download_workers"` → Undefined reference [text: '"pipeline"']
+- **docs/core/config.md** (line 144): `"name"` → Undefined reference [text: '"pipeline"']
+- **docs/core/config.md** (line 583): `"path"` → Undefined reference [text: '"input"']
+- **docs/core/config.md** (line 649): `"dir"` → Undefined reference [text: '"input"']
+- **docs/core/db.md** (line 450): `"count"` → Undefined reference [text: '0']
+- **docs/core/db.md** (line 530): `0` → Undefined reference [text: '0']
+- **docs/core/paths.md** (line 697): `module` → Undefined reference [text: '"modules"']
+- **docs/core/text.md** (line 373): `-+` → Undefined reference [text: 'eE']
+- **docs/core/workflow.md** (line 472): `0` → Undefined reference [text: '"steps"']
+- **docs/dna/population_workflows.md** (line 81): `'nucleotide_diversity'` → Undefined reference [text: ''pop1_stats'']
+- **docs/dna/population_workflows.md** (line 82): `'nucleotide_diversity'` → Undefined reference [text: ''pop2_stats'']
+- **docs/ecology/ordination.md** (line 69): `:3` → Undefined reference [text: '"coordinates"']
+- **docs/ecology/ordination.md** (line 69): `:3` → Undefined reference [text: '"coordinates"']
+- **docs/gwas/README.md** (line 104): `../../../config/gwas/` → Target file does not exist [text: 'config/gwas/']
+- **docs/gwas/structure.md** (line 133): `0` → Undefined reference [text: ''explained_variance_ratio'']
+- **docs/gwas/structure.md** (line 152): `1` → Undefined reference [text: '0']
+- **docs/gwas/structure.md** (line 194): `"pcs"` → Undefined reference [text: '"pca"']
+- **docs/gwas/workflow.md** (line 333): `s` → Undefined reference [text: 'vcf_data["genotypes"']
+- **docs/information/channel.md** (line 102): `:5` → Undefined reference [text: '"rd_curve"']
+- **docs/life_events/VALIDATION_REPORT.md** (line 143): `k` → Undefined reference [text: 'i']
+- **docs/life_events/survival.md** (line 170): `name` → Undefined reference [text: ''p_values'']
+- **docs/longread/phasing.md** (line 123): `:5` → Undefined reference [text: '"significant_sites"']
+- **docs/metabolomics/CAPABILITIES.md** (line 47): `0` → Undefined reference [text: '0']
+- **docs/metabolomics/CAPABILITIES.md** (line 48): `0` → Undefined reference [text: '1']
+- **docs/metabolomics/CAPABILITIES.md** (line 100): `0` → Undefined reference [text: '0']
+- **docs/metabolomics/CONFIGURATION.md** (line 85): `"identification"` → Undefined reference [text: '"metabolomics"']
+- **docs/metabolomics/EXAMPLES.md** (line 489): `:, top_gene_idx` → Undefined reference [text: 'top_met_idx, :']
+- **docs/metabolomics/INTEGRATION.md** (line 291): `"mz"` → Undefined reference [text: 'name']
+- **docs/metabolomics/INTEGRATION.md** (line 292): `"rt"` → Undefined reference [text: 'name']
+- **docs/metagenomics/CAPABILITIES.md** (line 667): `0` → Undefined reference [text: '"distance_matrix"']
+- **docs/metagenomics/GETTING_STARTED.md** (line 135): `0` → Undefined reference [text: ''distance_matrix'']
+- **docs/metagenomics/GETTING_STARTED.md** (line 434): `"log_fc"` → Undefined reference [text: 'diff[i']
+- **docs/metagenomics/GETTING_STARTED.md** (line 435): `"p_value"` → Undefined reference [text: '-np.log10(diff[i']
+- **docs/ml/BROKEN_EXAMPLES.md** (line 106): `::-1` → Undefined reference [text: '-50:']
+- **docs/ml/BROKEN_EXAMPLES.md** (line 194): `:50` → Undefined reference [text: '::-1']
+- **docs/ml/BROKEN_EXAMPLES.md** (line 241): `0` → Undefined reference [text: '"shap_values"']
+- **docs/ml/BROKEN_EXAMPLES.md** (line 242): `::-1` → Undefined reference [text: '-5:']
+- **docs/ml/README.md** (line 10): `__init__.py` → Target file does not exist [text: '__init__.py']
+- **docs/ml/interpretability.md** (line 129): `:10` → Undefined reference [text: '"ranking"']
+- **docs/ml/interpretability.md** (line 130): `idx` → Undefined reference [text: ''importances'']
+- **docs/ml/interpretability.md** (line 147): `:5` → Undefined reference [text: '"top_interactions"']
+- **docs/multiomics/README.md** (line 99): `../../../docs/multiomics/` → Target file does not exist [text: 'docs/multiomics/']
+- **docs/networks/pathway.md** (line 211): `:30` → Undefined reference [text: 'p['name'']
+- **docs/networks/pathway.md** (line 236): `:20` → Undefined reference [text: ''name'']
+- **docs/networks/pathway.md** (line 236): `:20` → Undefined reference [text: ''name'']
+- **docs/ontology/query.md** (line 202): `'max'` → Undefined reference [text: ''depth_stats'']
+- **docs/pharmacogenomics/ARCHITECTURE.md** (line 3): `diagram.png` → Target file does not exist [text: 'Layer diagram: Public API → Core → Data → External resources']
+- **docs/pharmacogenomics/EXAMPLES.md** (line 58): `:60` → Undefined reference [text: ''recommendation'']
+- **docs/pharmacogenomics/EXAMPLES.md** (line 228): `:80` → Undefined reference [text: ''annotation_text'']
+- **docs/pharmacogenomics/EXAMPLES.md** (line 266): `gene` → Undefined reference [text: 'drug']
+- **docs/pharmacogenomics/GETTING_STARTED.md** (line 176): `API_REFERENCE.md` → Target file does not exist [text: 'API_REFERENCE.md']
+- **docs/pharmacogenomics/index.md** (line 8): `../io.md` → Target file does not exist [text: 'io.md']
+- **docs/pharmacogenomics/index.md** (line 15): `API_REFERENCE.md` → Target file does not exist [text: 'API_REFERENCE.md']
+- **docs/pharmacogenomics/index.md** (line 43): `../../INTEGRATION.md` → Target file does not exist [text: '../INTEGRATION.md']
+- **docs/protein/README.md** (line 11): `__init__.py` → Target file does not exist [text: '__init__.py']
+- **docs/quality/fastq.md** (line 28): `'total_sequences'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/fastq.md** (line 29): `'mean_quality'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/fastq.md** (line 153): `:30` → Undefined reference [text: ''sequence'']
+- **docs/quality/fastq.md** (line 249): `'total_sequences'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/fastq.md** (line 250): `'total_sequences'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/fastq.md** (line 251): `'mean_quality'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/fastq.md** (line 252): `'mean_quality'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/fastq.md** (line 271): `'mean_quality'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/fastq.md** (line 287): `'max_adapter_content'` → Undefined reference [text: ''adapter_content'']
+- **docs/quality/fastq.md** (line 290): `'n_content'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/fastq.md** (line 293): `'duplication_percentage'` → Undefined reference [text: ''duplication_levels'']
+- **docs/quality/fastq.md** (line 318): `'gc_content'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/fastq.md** (line 409): `'gc_content'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/fastq.md** (line 590): `'mean_quality'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/fastq.md** (line 591): `'max_adapter_content'` → Undefined reference [text: ''adapter_content'']
+- **docs/quality/index.md** (line 94): `'total_sequences'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/index.md** (line 95): `'sequence_length'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/index.md** (line 96): `'gc_content'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/index.md** (line 97): `'mean_quality'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/index.md** (line 100): `'max_adapter_content'` → Undefined reference [text: ''adapter_content'']
+- **docs/quality/index.md** (line 103): `'mean_quality'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/index.md** (line 174): `'mean_quality'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/index.md** (line 214): `'mean_quality'` → Undefined reference [text: ''basic_stats'']
+- **docs/quality/index.md** (line 215): `'max_adapter_content'` → Undefined reference [text: ''adapter_content'']
+- **docs/quality/index.md** (line 216): `'max_n_content'` → Undefined reference [text: ''n_content_per_position'']
+- **docs/quality/index.md** (line 217): `'total_sequences'` → Undefined reference [text: ''basic_stats'']
+- **docs/rna/FILE_PATH_STORAGE.md** (line 597): `0` → Undefined reference [text: '0']
+- **docs/rna/FILE_PATH_STORAGE.md** (line 598): `1` → Undefined reference [text: '0']
+- **docs/rna/FILE_PATH_STORAGE.md** (line 761): `"out_dir"` → Undefined reference [text: '"getfastq"']
+- **docs/rna/FILE_PATH_STORAGE.md** (line 762): `"out_dir"` → Undefined reference [text: '"quant"']
+- **docs/rna/FILE_PATH_STORAGE.md** (line 763): `"out"` → Undefined reference [text: '"merge"']
+- **docs/rna/README.md** (line 55): `retrieval/` → Target file does not exist [text: '`retrieval/`']
+- **docs/rna/VALIDATION.md** (line 323): `'SRR123456'` → Undefined reference [text: ''per_sample'']
+- **docs/rna/VALIDATION.md** (line 326): `'quantification_issue'` → Undefined reference [text: ''diagnostics'']
+- **docs/simulation/README.md** (line 10): `__init__.py` → Target file does not exist [text: '__init__.py']
+- **docs/singlecell/README.md** (line 10): `__init__.py` → Target file does not exist [text: '__init__.py']
+- **docs/singlecell/clustering.md** (line 343): `mask, 0` → Undefined reference [text: ''X_umap'']
+- **docs/singlecell/clustering.md** (line 344): `mask, 1` → Undefined reference [text: ''X_umap'']
+- **docs/singlecell/clustering.md** (line 358): `mask, 0` → Undefined reference [text: ''X_umap'']
+- **docs/singlecell/clustering.md** (line 359): `mask, 1` → Undefined reference [text: ''X_umap'']
+- **docs/singlecell/clustering.md** (line 397): `:, :30` → Undefined reference [text: ''X_pca'']
+- **docs/singlecell/differential.md** (line 134): `"apoptosis"` → Undefined reference [text: '"scores"']
+- **docs/singlecell/dimensionality.md** (line 67): `'variance_ratio'` → Undefined reference [text: ''pca'']
+- **docs/singlecell/dimensionality.md** (line 78): `'variance'` → Undefined reference [text: ''pca'']
+- **docs/singlecell/dimensionality.md** (line 79): `'variance_ratio'` → Undefined reference [text: ''pca'']
+- **docs/singlecell/dimensionality.md** (line 87): `'variance_ratio'` → Undefined reference [text: ''pca'']
+- **docs/singlecell/dimensionality.md** (line 242): `mask, 0` → Undefined reference [text: ''X_umap'']
+- **docs/singlecell/dimensionality.md** (line 243): `mask, 1` → Undefined reference [text: ''X_umap'']
+- **docs/singlecell/dimensionality.md** (line 256): `:, 0` → Undefined reference [text: ''X_tsne'']
+- **docs/singlecell/dimensionality.md** (line 257): `:, 1` → Undefined reference [text: ''X_tsne'']
+- **docs/singlecell/dimensionality.md** (line 332): `'variance_ratio'` → Undefined reference [text: ''pca'']
+- **docs/singlecell/integration.md** (line 325): `mask, 0` → Undefined reference [text: ''X_umap'']
+- **docs/singlecell/integration.md** (line 326): `mask, 1` → Undefined reference [text: ''X_umap'']
+- **docs/singlecell/integration.md** (line 338): `mask, 0` → Undefined reference [text: ''X_umap'']
+- **docs/singlecell/integration.md** (line 339): `mask, 1` → Undefined reference [text: ''X_umap'']
+- **docs/singlecell/integration.md** (line 351): `mask, 0` → Undefined reference [text: ''X_pca'']
+- **docs/singlecell/integration.md** (line 352): `mask, 1` → Undefined reference [text: ''X_pca'']
+- **docs/singlecell/integration.md** (line 364): `mask, 0` → Undefined reference [text: ''X_pca'']
+- **docs/singlecell/integration.md** (line 365): `mask, 1` → Undefined reference [text: ''X_pca'']
+- **docs/singlecell/trajectory.md** (line 126): `:, 0` → Undefined reference [text: ''X_umap'']
+- **docs/singlecell/trajectory.md** (line 127): `:, 1` → Undefined reference [text: ''X_umap'']
+- **docs/singlecell/trajectory.md** (line 242): `'pseudotime'` → Undefined reference [text: 'mask']
+- **docs/singlecell/visualization.md** (line 321): `:, 0` → Undefined reference [text: ''X_umap'']
+- **docs/singlecell/visualization.md** (line 322): `:, 1` → Undefined reference [text: ''X_umap'']
+- **docs/spatial/TROUBLESHOOTING.md** (line 21): `:5` → Undefined reference [text: ''spatial'']
+- **docs/structural_variants/CONFIGURATION.md** (line 393): `"min_support"` → Undefined reference [text: '"detection"']
+- **docs/structural_variants/CONFIGURATION.md** (line 467): `'min_support'` → Undefined reference [text: ''detection'']
+- **docs/structural_variants/CONFIGURATION.md** (line 468): `'cnv'` → Undefined reference [text: ''detection'']
+- **docs/structural_variants/EXAMPLES.md** (line 336): `"GT"` → Undefined reference [text: '0']
+- **docs/structural_variants/EXAMPLES.md** (line 653): `pop` → Undefined reference [text: '"population_frequencies"']
+- **docs/structural_variants/EXAMPLES.md** (line 659): `0` → Undefined reference [text: ''explained_variance'']
+- **docs/structural_variants/EXAMPLES.md** (line 660): `1` → Undefined reference [text: ''explained_variance'']
+- **docs/structural_variants/EXAMPLES.md** (line 670): `:, :5` → Undefined reference [text: '"components"']
+- **docs/structural_variants/EXAMPLES.md** (line 954): `0` → Undefined reference [text: '"overlapping_genes"']
+- **docs/structural_variants/GETTING_STARTED.md** (line 395): `0` → Undefined reference [text: ''explained_variance'']
+- **docs/structural_variants/GETTING_STARTED.md** (line 577): `0` → Undefined reference [text: '"genotype_matrix"']
+- **docs/structural_variants/population.md** (line 166): `:3` → Undefined reference [text: ''explained_variance'']
+- **docs/structural_variants/population.md** (line 172): `:, :3` → Undefined reference [text: '"components"']
+- **docs/structural_variants/population.md** (line 179): `idx` → Undefined reference [text: ''p_values'']
+- **docs/structural_variants/population.md** (line 180): `idx` → Undefined reference [text: ''effect_sizes'']
+- **docs/tasks/analyze_dna.md** (line 36): `frame:` → Undefined reference [text: '"chr1"']
+- **examples/BEST_PRACTICES.md** (line 326): `../docs/domain/` → Target file does not exist [text: 'Main documentation']
+- **examples/BEST_PRACTICES.md** (line 327): `../../docs/api/` → Target file does not exist [text: 'API reference']
+- **output/amalgkit/projects/template_bioinformatics_project/AGENTS.md** (line 50): `doc/stages/` → Target file does not exist [text: 'Per-Stage Docs']
+- **output/amalgkit/projects/template_bioinformatics_project/README.md** (line 268): `LICENSE` → Target file does not exist [text: 'LICENSE']
+- **output/amalgkit/projects/template_bioinformatics_project/SPEC.md** (line 77): `'key'` → Undefined reference [text: ''section'']
+- **projects/hymenoptera_amalgkit/config/amalgkit/README.md** (line 130): `../../../scripts/rna/` → Target file does not exist [text: 'RNA Scripts']
+- **projects/template_bioinformatics_project/AGENTS.md** (line 50): `doc/stages/` → Target file does not exist [text: 'Per-Stage Docs']
+- **projects/template_bioinformatics_project/README.md** (line 268): `LICENSE` → Target file does not exist [text: 'LICENSE']
+- **projects/template_bioinformatics_project/SPEC.md** (line 77): `'key'` → Undefined reference [text: ''section'']
+- **src/metainformant/cloud/SPEC.md** (line 230): `rna/` → Target file does not exist [text: 'rna/']
+- **src/metainformant/cloud/SPEC.md** (line 231): `gwas/` → Target file does not exist [text: 'gwas/']
+- **src/metainformant/cloud/SPEC.md** (line 232): `core/io/download.py` → Target file does not exist [text: 'core/io/download.py']
+- **src/metainformant/ecology/README.md** (line 99): `traits/` → Target file does not exist [text: '`traits/`']
+- **src/metainformant/gwas/README.md** (line 174): `../../docs/multiomics/` → Target file does not exist [text: 'metainformant.multiomics']
+- **src/metainformant/gwas/README.md** (line 175): `../../docs/rna/` → Target file does not exist [text: 'metainformant.rna']
+- **src/metainformant/gwas/README.md** (line 176): `../../../docs/config/gwas/` → Target file does not exist [text: 'config/gwas/']
+- **src/metainformant/gwas/README.md** (line 186): `../../config/gwas/` → Target file does not exist [text: 'config/gwas/']
+- **src/metainformant/information/EXAMPLES.md** (line 24): `1` → Undefined reference [text: '"kmer_analyses"']
+- **src/metainformant/information/EXAMPLES.md** (line 25): `2` → Undefined reference [text: '"kmer_analyses"']
+- **src/metainformant/information/EXAMPLES.md** (line 93): `:top_k` → Undefined reference [text: '"top_features"']
+- **src/metainformant/information/WORKFLOWS.md** (line 29): `1` → Undefined reference [text: ''kmer_analyses'']
+- **src/metainformant/information/WORKFLOWS.md** (line 141): `:50` → Undefined reference [text: '"top_features"']
+- **src/metainformant/information/WORKFLOWS.md** (line 295): `1` → Undefined reference [text: '"profiles"']
+- **src/metainformant/metabolomics/README.md** (line 43): `io/` → Target file does not exist [text: '`io/`']
+- **src/metainformant/metabolomics/README.md** (line 44): `analysis/` → Target file does not exist [text: '`analysis/`']
+- **src/metainformant/metabolomics/README.md** (line 45): `pathways/` → Target file does not exist [text: '`pathways/`']
+- **src/metainformant/metabolomics/README.md** (line 46): `visualization/` → Target file does not exist [text: '`visualization/`']
+- **src/metainformant/ml/README.md** (line 88): `deep_learning/` → Target file does not exist [text: '`deep_learning/`']
+- **src/metainformant/protein/README.md** (line 66): `:50` → Undefined reference [text: '"sequence"']
+- **src/metainformant/quality/README.md** (line 101): `batch/` → Target file does not exist [text: '`batch/`']
+- **src/metainformant/rna/README.md** (line 163): `../../scripts/rna/` → Target file does not exist [text: 'scripts/rna/']
+- **src/metainformant/rna/README.md** (line 164): `../../config/amalgkit/` → Target file does not exist [text: 'config/amalgkit/']
+- **src/metainformant/simulation/README.md** (line 102): `methylation/` → Target file does not exist [text: '`methylation/`']
+- **src/metainformant/singlecell/README.md** (line 49): `doublet/` → Target file does not exist [text: '`doublet/`']
+- **src/metainformant/spatial/README.md** (line 60): `niche/` → Target file does not exist [text: '`niche/`']
+
+### MEDIUM - Broken anchors or inaccessible external URLs
+
+- **.amalgkit-env/env/share/doc/libssh2/BINDINGS.md** (line 23): `https://github.com/gellule/PySsh2` → External URL returns 404 or unreachable [text: 'Python-ctypes PySsh2']
+- **.amalgkit-env/root/pkgs/libssh2-1.11.1-hcf80075_0/share/doc/libssh2/BINDINGS.md** (line 23): `https://github.com/gellule/PySsh2` → External URL returns 404 or unreachable [text: 'Python-ctypes PySsh2']
+- **.uv-cache/archive-v0/vZh3nhucIgboajnvlD1bq/pooch-1.9.0.dist-info/licenses/AUTHORS.md** (line 16): `https://github.com/BjoernLudwigPTB` → External URL returns 404 or unreachable [text: 'Björn Ludwig']
+- **.venv/lib/python3.13/site-packages/pooch-1.9.0.dist-info/licenses/AUTHORS.md** (line 16): `https://github.com/BjoernLudwigPTB` → External URL returns 404 or unreachable [text: 'Björn Ludwig']
+- **docs/COMPARISON_GUIDES.md** (line 510): `comparisons/methods_matrix.md#dna` → Anchor "dna" not found in target file (anchor: dna) [text: 'Methods Matrix → dna row']
+- **docs/DEVELOPMENT.md** (line 33): `UV_SETUP.md#fat-filesystem-support` → Anchor "fat-filesystem-support" not found in target file (anchor: fat-filesystem-support) [text: 'UV_SETUP.md']
+- **docs/DEVELOPMENT.md** (line 320): `CONTRIBUTING.md#commit-messages` → Anchor "commit-messages" not found in target file (anchor: commit-messages) [text: 'Conventional Commits']
+- **docs/TROUBLESHOOTING.md** (line 467): `https://github.com/username/metainformant/issues` → External URL returns 404 or unreachable [text: 'GitHub Issues']
+- **docs/TROUBLESHOOTING.md** (line 468): `https://github.com/username/metainformant/discussions` → External URL returns 404 or unreachable [text: 'Discussions']
+- **docs/agents/index.md** (line 144): `MULTI_AGENT_WORKFLOWS.md#2-parallel-fan-out--fan-in` → Anchor "2-parallel-fan-out--fan-in" not found in target file (anchor: 2-parallel-fan-out--fan-in) [text: 'Multi-Agent Workflows — Pattern 2']
+- **docs/cloud/index.md** (line 143): `https://doi.org/10.1186/s12859-021-04549-4` → External URL returns 404 or unreachable [text: 'Amalgkit publication']
+- **docs/dna/accessions.md** (line 118): `ncbi.md#entrez-client` → Anchor "entrez-client" not found in target file (anchor: entrez-client) [text: 'Entrez Utilities']
+- **docs/mcp/index.md** (line 318): `https://github.com/your-org/metainformant/tree/main/src/metainformant/mcp/` → External URL returns 404 or unreachable [text: 'View source']
+- **docs/mcp/index.md** (line 318): `https://github.com/your-org/metainformant/issues/new?template=mcp-tool-request.yml` → External URL returns 404 or unreachable [text: 'Report issue']
+- **docs/metabolomics/TROUBLESHOOTING.md** (line 570): `https://hmdb.ca/` → External URL returns 404 or unreachable [text: 'HMDB']
+- **docs/rna/GETTING_STARTED.md** (line 479): `workflow.md#common-issues-and-solutions` → Anchor "common-issues-and-solutions" not found in target file (anchor: common-issues-and-solutions) [text: 'workflow.md']
+- **output/amalgkit/projects/template_bioinformatics_project/README.md** (line 3): `https://github.com/your-org/metainformant` → External URL returns 404 or unreachable [text: 'MetaInformAnt']
+- **output/amalgkit/projects/template_bioinformatics_project/README.md** (line 6): `https://github.com/your-org/template_bioinformatics_project/actions/workflows/ci.yml/badge.svg` → External URL returns 404 or unreachable [text: '![CI']
+- **projects/template_bioinformatics_project/README.md** (line 3): `https://github.com/your-org/metainformant` → External URL returns 404 or unreachable [text: 'MetaInformAnt']
+- **projects/template_bioinformatics_project/README.md** (line 6): `https://github.com/your-org/template_bioinformatics_project/actions/workflows/ci.yml/badge.svg` → External URL returns 404 or unreachable [text: '![CI']
+
+### LOW - Minor anchor issues in same file
+
+- **docs/SETUP.md** (line 11): `#windows--wsl2` → Anchor "windows--wsl2" not found in current file [text: 'Windows + WSL2']
+- **docs/SETUP.md** (line 12): `#external-drive-exfatfat32` → Anchor "external-drive-exfatfat32" not found in current file [text: 'External Drive (exFAT/FAT32)']
+- **docs/agents/COMMUNICATION_PROTOCOLS.md** (line 11): `#pipelineitem-metadata` → Anchor "pipelineitem-metadata" not found in current file [text: 'PipelineItem Metadata']
+- **docs/agents/COMMUNICATION_PROTOCOLS.md** (line 12): `#configuration-objects` → Anchor "configuration-objects" not found in current file [text: 'Configuration Objects']
+- **docs/agents/COMMUNICATION_PROTOCOLS.md** (line 13): `#file-system-bridge` → Anchor "file-system-bridge" not found in current file [text: 'File System Bridge']
+- **docs/agents/COMMUNICATION_PROTOCOLS.md** (line 14): `#logging-as-side-channel` → Anchor "logging-as-side-channel" not found in current file [text: 'Logging as Side-Channel']
+- **docs/agents/MULTI_AGENT_WORKFLOWS.md** (line 16): `#2-gwas-association--fine-mapping` → Anchor "2-gwas-association--fine-mapping" not found in current file [text: '2. GWAS Association + Fine-Mapping']
+- **docs/agents/MULTI_AGENT_WORKFLOWS.md** (line 19): `#5-batch-download--qc` → Anchor "5-batch-download--qc" not found in current file [text: '5. Batch Download + QC']
+- **docs/agents/MULTI_AGENT_WORKFLOWS.md** (line 22): `#8-protein-structure--function` → Anchor "8-protein-structure--function" not found in current file [text: '8. Protein Structure + Function']
+- **docs/comparisons/methods_matrix.md** (line 10): `#by-data-type` → Anchor "by-data-type" not found in current file [text: 'By Data Type']
+- **docs/comparisons/methods_matrix.md** (line 11): `#by-analysis-goal` → Anchor "by-analysis-goal" not found in current file [text: 'By Analysis Goal']
+- **docs/comparisons/methods_matrix.md** (line 12): `#by-computational-scale` → Anchor "by-computational-scale" not found in current file [text: 'By Computational Scale']
+- **docs/metabolomics/CAPABILITIES.md** (line 7): `#analysis` → Anchor "analysis" not found in current file [text: 'Analysis (`analysis/`)']
+- **docs/metabolomics/CAPABILITIES.md** (line 8): `#io` → Anchor "io" not found in current file [text: 'I/O (`io/`)']
+- **docs/metabolomics/CAPABILITIES.md** (line 9): `#pathways` → Anchor "pathways" not found in current file [text: 'Pathways (`pathways/`)']
+- **docs/metabolomics/CAPABILITIES.md** (line 10): `#visualization` → Anchor "visualization" not found in current file [text: 'Visualization (`visualization/`)']
+- **docs/metabolomics/EXAMPLES.md** (line 7): `#example-1-urine-metabolomics--diabetic-vs-control` → Anchor "example-1-urine-metabolomics--diabetic-vs-control" not found in current file [text: 'Example 1: Urine Metabolomics — Diabetic vs. Control']
+- **docs/metabolomics/EXAMPLES.md** (line 11): `#example-5-multi-omics-integration--metabolite-gene-correlation` → Anchor "example-5-multi-omics-integration--metabolite-gene-correlation" not found in current file [text: 'Example 5: Multi-Omics Integration — Metabolite-Gene Correlation']
+- **docs/metabolomics/EXAMPLES.md** (line 12): `#example-6-large-cohort--quality-control-and-batch-assessment` → Anchor "example-6-large-cohort--quality-control-and-batch-assessment" not found in current file [text: 'Example 6: Large Cohort — Quality Control and Batch Assessment']
+- **docs/metagenomics/ARCHITECTURE.md** (line 12): `#integration-with-diversity--functional-analysis` → Anchor "integration-with-diversity--functional-analysis" not found in current file [text: 'Integration with Diversity & Functional Analysis']
+- **docs/structural_variants/ARCHITECTURE.md** (line 7): `#module-overview` → Anchor "module-overview" not found in current file [text: 'Module Overview']
+- **docs/structural_variants/ARCHITECTURE.md** (line 8): `#directory-structure` → Anchor "directory-structure" not found in current file [text: 'Directory Structure']
+- **docs/structural_variants/ARCHITECTURE.md** (line 9): `#component-responsibilities` → Anchor "component-responsibilities" not found in current file [text: 'Component Responsibilities']
+- **docs/structural_variants/ARCHITECTURE.md** (line 10): `#data-flow` → Anchor "data-flow" not found in current file [text: 'Data Flow']
+- **docs/structural_variants/ARCHITECTURE.md** (line 11): `#key-data-structures` → Anchor "key-data-structures" not found in current file [text: 'Key Data Structures']
+- **docs/structural_variants/ARCHITECTURE.md** (line 12): `#integration-points` → Anchor "integration-points" not found in current file [text: 'Integration Points']
+- **docs/structural_variants/ARCHITECTURE.md** (line 13): `#design-patterns--rationale` → Anchor "design-patterns--rationale" not found in current file [text: 'Design Patterns & Rationale']
+- **docs/structural_variants/ARCHITECTURE.md** (line 14): `#algorithm-details` → Anchor "algorithm-details" not found in current file [text: 'Algorithm Details']
+- **docs/structural_variants/ARCHITECTURE.md** (line 15): `#configuration-architecture` → Anchor "configuration-architecture" not found in current file [text: 'Configuration Architecture']
+- **docs/structural_variants/ARCHITECTURE.md** (line 16): `#extensibility` → Anchor "extensibility" not found in current file [text: 'Extensibility']
+- **docs/structural_variants/EXAMPLES.md** (line 9): `#1-minimal-cnv-calling-from-bam` → Anchor "1-minimal-cnv-calling-from-bam" not found in current file [text: 'Example 1: Minimal CNV Calling from BAM']
+- **docs/structural_variants/EXAMPLES.md** (line 10): `#2-germline-sv-discovery-in-wgs-whole-genome-sequencing` → Anchor "2-germline-sv-discovery-in-wgs-whole-genome-sequencing" not found in current file [text: 'Example 2: Germline SV Discovery in WGS']
+- **docs/structural_variants/EXAMPLES.md** (line 11): `#3-somatic-cnv-detection-tumor-vs-normal` → Anchor "3-somatic-cnv-detection-tumor-vs-normal" not found in current file [text: 'Example 3: Somatic CNV Detection (Tumor vs Normal)']
+- **docs/structural_variants/EXAMPLES.md** (line 12): `#4-multi-caller-consensus-building` → Anchor "4-multi-caller-consensus-building" not found in current file [text: 'Example 4: Multi-Caller Consensus Building']
+- **docs/structural_variants/EXAMPLES.md** (line 13): `#5-clinical-interpretation--gene-overlap--functional-impact` → Anchor "5-clinical-interpretation--gene-overlap--functional-impact" not found in current file [text: 'Example 5: Clinical Interpretation — Gene Overlap + Functional Impact']
+- **docs/structural_variants/EXAMPLES.md** (line 14): `#6-population-frequency-comparison-with-gnomad` → Anchor "6-population-frequency-comparison-with-gnomad" not found in current file [text: 'Example 6: Population Frequency Comparison with gnomAD']
+- **docs/structural_variants/EXAMPLES.md** (line 15): `#7-visualizing-complex-rearrangements--circos--coverage` → Anchor "7-visualizing-complex-rearrangements--circos--coverage" not found in current file [text: 'Example 7: Visualizing Complex Rearrangements — Circos + Coverage']
+- **docs/structural_variants/EXAMPLES.md** (line 16): `#8-cohort-sv-genotyping-and-association-testing` → Anchor "8-cohort-sv-genotyping-and-association-testing" not found in current file [text: 'Example 8: Cohort SV Genotyping and Association Testing']
+- **docs/structural_variants/EXAMPLES.md** (line 17): `#9-long-read-breakpoint-refinement` → Anchor "9-long-read-breakpoint-refinement" not found in current file [text: 'Example 9: Long-Read Breakpoint Refinement']
+- **docs/structural_variants/EXAMPLES.md** (line 18): `#10-batch-processing-pipeline-for-1000-samples` → Anchor "10-batch-processing-pipeline-for-1000-samples" not found in current file [text: 'Example 10: Batch Processing Pipeline for 1000+ Samples']
+- **docs/structural_variants/EXAMPLES.md** (line 19): `#11-integration-with-dna-module-for-variant-effect-prediction` → Anchor "11-integration-with-dna-module-for-variant-effect-prediction" not found in current file [text: 'Example 11: Integration with DNA Module for Variant Effect Prediction']
+- **docs/structural_variants/EXAMPLES.md** (line 20): `#12-multi-omics-correlation-svs-and-gene-expression` → Anchor "12-multi-omics-correlation-svs-and-gene-expression" not found in current file [text: 'Example 12: Multi-Omics Correlation: SVs and Gene Expression']
+- **docs/tasks/data_conversion.md** (line 11): `#fast-interconversion` → Anchor "fast-interconversion" not found in current file [text: 'Fast interconversion']
+- **docs/tasks/deploy_cloud.md** (line 11): `#prerequisites-checklist` → Anchor "prerequisites-checklist" not found in current file [text: 'Prerequisites Checklist']
+- **docs/tasks/mcp_integration.md** (line 11): `#setup-3-minutes` → Anchor "setup-3-minutes" not found in current file [text: 'Setup (3 minutes)']
+- **docs/tasks/performance_tuning.md** (line 11): `#caching` → Anchor "caching" not found in current file [text: 'Caching']
+- **docs/tasks/run_gwas.md** (line 11): `#minimal-working-example` → Anchor "minimal-working-example" not found in current file [text: 'Minimal Working Example']
+- **docs/tasks/run_rna_pipeline.md** (line 11): `#single-species-quick-run` → Anchor "single-species-quick-run" not found in current file [text: 'Single-Species Quick Run']
+- **docs/tasks/run_rna_pipeline.md** (line 12): `#multi-species-parallel` → Anchor "multi-species-parallel" not found in current file [text: 'Multi-Species Parallel']
+- **docs/tasks/visualize_results.md** (line 11): `#manhattan-plot-gwas` → Anchor "manhattan-plot-gwas" not found in current file [text: 'Manhattan Plot (GWAS)']
+- **src/metainformant/gwas/README.md** (line 15): `#fine-mapping--colocalization` → Anchor "fine-mapping--colocalization" not found in current file [text: 'Fine-Mapping & Colocalization']
+- **src/metainformant/ontology/README.md** (line 14): `#go-loading--enrichment` → Anchor "go-loading--enrichment" not found in current file [text: 'GO Loading & Enrichment']
+- **src/metainformant/ontology/README.md** (line 16): `#serialization--visualization` → Anchor "serialization--visualization" not found in current file [text: 'Serialization & Visualization']
+- **src/metainformant/pharmacogenomics/README.md** (line 18): `#drug-interactions--clinical` → Anchor "drug-interactions--clinical" not found in current file [text: 'Drug Interactions & Clinical']
+- **src/metainformant/spatial/README.md** (line 19): `#deconvolution--integration` → Anchor "deconvolution--integration" not found in current file [text: 'Deconvolution & Integration']
+- **src/metainformant/visualization/README.md** (line 14): `#basic--statistical-plots` → Anchor "basic--statistical-plots" not found in current file [text: 'Basic & Statistical Plots']
+- **src/metainformant/visualization/README.md** (line 16): `#themes-palettes--dashboards` → Anchor "themes-palettes--dashboards" not found in current file [text: 'Themes, Palettes & Dashboards']
+
+## Per-File Broken Link Count
+
+- docs/structural_variants/EXAMPLES.md: 18 broken link(s)
+- docs/quality/fastq.md: 15 broken link(s)
+- .amalgkit-env/env/share/doc/libjpeg-turbo/README.md: 11 broken link(s)
+- .amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md: 11 broken link(s)
+- docs/quality/index.md: 11 broken link(s)
+- docs/structural_variants/ARCHITECTURE.md: 10 broken link(s)
+- docs/singlecell/dimensionality.md: 9 broken link(s)
+- docs/singlecell/integration.md: 8 broken link(s)
+- docs/metabolomics/CAPABILITIES.md: 7 broken link(s)
+- docs/TUTORIALS.md: 6 broken link(s)
+- docs/rna/FILE_PATH_STORAGE.md: 5 broken link(s)
+- docs/singlecell/clustering.md: 5 broken link(s)
+- src/metainformant/gwas/README.md: 5 broken link(s)
+- docs/agents/COMMUNICATION_PROTOCOLS.md: 4 broken link(s)
+- docs/core/GETTING_STARTED.md: 4 broken link(s)
+- docs/metabolomics/EXAMPLES.md: 4 broken link(s)
+- docs/ml/BROKEN_EXAMPLES.md: 4 broken link(s)
+- docs/structural_variants/population.md: 4 broken link(s)
+- src/metainformant/metabolomics/README.md: 4 broken link(s)
+- docs/DEVELOPMENT.md: 3 broken link(s)
+- docs/agents/MULTI_AGENT_WORKFLOWS.md: 3 broken link(s)
+- docs/comparisons/methods_matrix.md: 3 broken link(s)
+- docs/core/config.md: 3 broken link(s)
+- docs/gwas/structure.md: 3 broken link(s)
+- docs/metagenomics/GETTING_STARTED.md: 3 broken link(s)
+- docs/ml/interpretability.md: 3 broken link(s)
+- docs/networks/pathway.md: 3 broken link(s)
+- docs/pharmacogenomics/EXAMPLES.md: 3 broken link(s)
+- docs/pharmacogenomics/index.md: 3 broken link(s)
+- docs/singlecell/trajectory.md: 3 broken link(s)
+- docs/structural_variants/CONFIGURATION.md: 3 broken link(s)
+- output/amalgkit/projects/template_bioinformatics_project/README.md: 3 broken link(s)
+- projects/template_bioinformatics_project/README.md: 3 broken link(s)
+- src/metainformant/cloud/SPEC.md: 3 broken link(s)
+- src/metainformant/information/EXAMPLES.md: 3 broken link(s)
+- src/metainformant/information/WORKFLOWS.md: 3 broken link(s)
+- .cursor/skills/metainformant-docs-spatial/SKILL.md: 2 broken link(s)
+- README.md: 2 broken link(s)
+- docs/FAQ.md: 2 broken link(s)
+- docs/SETUP.md: 2 broken link(s)
+- docs/TROUBLESHOOTING.md: 2 broken link(s)
+- docs/core/db.md: 2 broken link(s)
+- docs/dna/population_workflows.md: 2 broken link(s)
+- docs/ecology/ordination.md: 2 broken link(s)
+- docs/mcp/index.md: 2 broken link(s)
+- docs/metabolomics/INTEGRATION.md: 2 broken link(s)
+- docs/rna/VALIDATION.md: 2 broken link(s)
+- docs/singlecell/visualization.md: 2 broken link(s)
+- docs/structural_variants/GETTING_STARTED.md: 2 broken link(s)
+- docs/tasks/run_rna_pipeline.md: 2 broken link(s)
+- examples/BEST_PRACTICES.md: 2 broken link(s)
+- src/metainformant/ontology/README.md: 2 broken link(s)
+- src/metainformant/rna/README.md: 2 broken link(s)
+- src/metainformant/spatial/README.md: 2 broken link(s)
+- src/metainformant/visualization/README.md: 2 broken link(s)
+- .amalgkit-env/env/lib/R/doc/html/katex/README.md: 1 broken link(s)
+- .amalgkit-env/env/lib/R/library/rlang/NEWS.md: 1 broken link(s)
+- .amalgkit-env/env/share/doc/libssh2/BINDINGS.md: 1 broken link(s)
+- .amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/info/licenses/LICENSE.md: 1 broken link(s)
+- .amalgkit-env/root/pkgs/libssh2-1.11.1-hcf80075_0/share/doc/libssh2/BINDINGS.md: 1 broken link(s)
+- .amalgkit-env/root/pkgs/r-base-4.5.2-h1fbe982_4/lib/R/doc/html/katex/README.md: 1 broken link(s)
+- .amalgkit-env/root/pkgs/r-rlang-1.1.7-r45h3697838_0/lib/R/library/rlang/NEWS.md: 1 broken link(s)
+- .uv-cache/archive-v0/HPUV5eY1Egy2sbZam-7ei/mdit_py_plugins/texmath/README.md: 1 broken link(s)
+- .uv-cache/archive-v0/vZh3nhucIgboajnvlD1bq/pooch-1.9.0.dist-info/licenses/AUTHORS.md: 1 broken link(s)
+- .uv-cache/archive-v0/zuLo9T1ymzqfAryXNEKZL/nltk-3.9.2.dist-info/licenses/README.md: 1 broken link(s)
+- .venv/lib/python3.13/site-packages/pooch-1.9.0.dist-info/licenses/AUTHORS.md: 1 broken link(s)
+- CONTRIBUTING.md: 1 broken link(s)
+- config/README.md: 1 broken link(s)
+- config/amalgkit/README.md: 1 broken link(s)
+- config/ncbi/README.md: 1 broken link(s)
+- docs/COMPARISON_GUIDES.md: 1 broken link(s)
+- docs/CONTRIBUTING.md: 1 broken link(s)
+- docs/GETTING_STARTED.md: 1 broken link(s)
+- docs/NO_MOCKING_POLICY.md: 1 broken link(s)
+- docs/agents/SPEC.md: 1 broken link(s)
+- docs/agents/TROUBLESHOOTING.md: 1 broken link(s)
+- docs/agents/index.md: 1 broken link(s)
+- docs/cloud/index.md: 1 broken link(s)
+- docs/core/paths.md: 1 broken link(s)
+- docs/core/text.md: 1 broken link(s)
+- docs/core/workflow.md: 1 broken link(s)
+- docs/dna/accessions.md: 1 broken link(s)
+- docs/gwas/README.md: 1 broken link(s)
+- docs/gwas/workflow.md: 1 broken link(s)
+- docs/information/channel.md: 1 broken link(s)
+- docs/life_events/VALIDATION_REPORT.md: 1 broken link(s)
+- docs/life_events/survival.md: 1 broken link(s)
+- docs/longread/phasing.md: 1 broken link(s)
+- docs/metabolomics/CONFIGURATION.md: 1 broken link(s)
+- docs/metabolomics/TROUBLESHOOTING.md: 1 broken link(s)
+- docs/metagenomics/ARCHITECTURE.md: 1 broken link(s)
+- docs/metagenomics/CAPABILITIES.md: 1 broken link(s)
+- docs/ml/README.md: 1 broken link(s)
+- docs/multiomics/README.md: 1 broken link(s)
+- docs/ontology/query.md: 1 broken link(s)
+- docs/pharmacogenomics/ARCHITECTURE.md: 1 broken link(s)
+- docs/pharmacogenomics/GETTING_STARTED.md: 1 broken link(s)
+- docs/protein/README.md: 1 broken link(s)
+- docs/rna/GETTING_STARTED.md: 1 broken link(s)
+- docs/rna/README.md: 1 broken link(s)
+- docs/simulation/README.md: 1 broken link(s)
+- docs/singlecell/README.md: 1 broken link(s)
+- docs/singlecell/differential.md: 1 broken link(s)
+- docs/spatial/TROUBLESHOOTING.md: 1 broken link(s)
+- docs/tasks/analyze_dna.md: 1 broken link(s)
+- docs/tasks/data_conversion.md: 1 broken link(s)
+- docs/tasks/deploy_cloud.md: 1 broken link(s)
+- docs/tasks/mcp_integration.md: 1 broken link(s)
+- docs/tasks/performance_tuning.md: 1 broken link(s)
+- docs/tasks/run_gwas.md: 1 broken link(s)
+- docs/tasks/visualize_results.md: 1 broken link(s)
+- output/amalgkit/projects/template_bioinformatics_project/AGENTS.md: 1 broken link(s)
+- output/amalgkit/projects/template_bioinformatics_project/SPEC.md: 1 broken link(s)
+- projects/hymenoptera_amalgkit/config/amalgkit/README.md: 1 broken link(s)
+- projects/template_bioinformatics_project/AGENTS.md: 1 broken link(s)
+- projects/template_bioinformatics_project/SPEC.md: 1 broken link(s)
+- src/metainformant/ecology/README.md: 1 broken link(s)
+- src/metainformant/ml/README.md: 1 broken link(s)
+- src/metainformant/pharmacogenomics/README.md: 1 broken link(s)
+- src/metainformant/protein/README.md: 1 broken link(s)
+- src/metainformant/quality/README.md: 1 broken link(s)
+- src/metainformant/simulation/README.md: 1 broken link(s)
+- src/metainformant/singlecell/README.md: 1 broken link(s)

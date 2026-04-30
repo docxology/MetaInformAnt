@@ -5,7 +5,7 @@ This script validates that all required dependencies are available before runnin
 helping prevent runtime failures due to missing packages.
 
 Usage:
-    python scripts/check_example_dependencies.py [--domain DOMAIN] [--example PATH] [--fix]
+    python scripts/test_examples/check_example_dependencies.py [--domain DOMAIN] [--example PATH] [--fix]
 
 Arguments:
     --domain: Check dependencies for specific domain only

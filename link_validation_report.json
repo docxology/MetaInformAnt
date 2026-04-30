@@ -1,0 +1,2579 @@
+{
+  "repository": "/home/trim/Documents/Git/MetaInformAnt",
+  "statistics": {
+    "total_files": 1526,
+    "total_links": 4179,
+    "internal_links": 3104,
+    "external_links": 428,
+    "broken_internal": 288,
+    "broken_external": 14,
+    "files_with_broken_links": 123
+  },
+  "broken_internal_links": [
+    {
+      "file": "CONTRIBUTING.md",
+      "line": 54,
+      "text": "NO_MOCKING_POLICY.md",
+      "url": "NO_MOCKING_POLICY.md",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/NO_MOCKING_POLICY.md",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "README.md",
+      "line": 471,
+      "text": "`taxonomy/`",
+      "url": "src/metainformant/metagenomics/taxonomy/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/metagenomics/taxonomy",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "README.md",
+      "line": 472,
+      "text": "`interactions/`",
+      "url": "src/metainformant/pharmacogenomics/interactions/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/pharmacogenomics/interactions",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "config/README.md",
+      "line": 154,
+      "text": "Core Config Module",
+      "url": "../src/metainformant/core/config.py",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/core/config.py",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/COMPARISON_GUIDES.md",
+      "line": 510,
+      "text": "Methods Matrix → dna row",
+      "url": "comparisons/methods_matrix.md#dna",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/comparisons/methods_matrix.md",
+      "anchor": "dna",
+      "severity": "MEDIUM",
+      "reason": "Anchor \"dna\" not found in target file"
+    },
+    {
+      "file": "docs/NO_MOCKING_POLICY.md",
+      "line": 84,
+      "text": "-1",
+      "url": "-1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/FAQ.md",
+      "line": 205,
+      "text": "\"pcs\"",
+      "url": ":, :10",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/FAQ.md",
+      "line": 325,
+      "text": "\"dataset\"",
+      "url": ":",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/TUTORIALS.md",
+      "line": 284,
+      "text": "\"kmer_analyses\"",
+      "url": "k",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/TUTORIALS.md",
+      "line": 305,
+      "text": "'summary'",
+      "url": "'total_sequences'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/TUTORIALS.md",
+      "line": 306,
+      "text": "'summary'",
+      "url": "'mean_entropy'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/TUTORIALS.md",
+      "line": 307,
+      "text": "'summary'",
+      "url": "'min_entropy'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/TUTORIALS.md",
+      "line": 308,
+      "text": "'summary'",
+      "url": "'max_entropy'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/TUTORIALS.md",
+      "line": 566,
+      "text": "\"kmer_analyses\"",
+      "url": "1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/SETUP.md",
+      "line": 11,
+      "text": "Windows + WSL2",
+      "url": "#windows--wsl2",
+      "anchor": "windows--wsl2",
+      "severity": "LOW",
+      "reason": "Anchor \"windows--wsl2\" not found in current file"
+    },
+    {
+      "file": "docs/SETUP.md",
+      "line": 12,
+      "text": "External Drive (exFAT/FAT32)",
+      "url": "#external-drive-exfatfat32",
+      "anchor": "external-drive-exfatfat32",
+      "severity": "LOW",
+      "reason": "Anchor \"external-drive-exfatfat32\" not found in current file"
+    },
+    {
+      "file": "docs/CONTRIBUTING.md",
+      "line": 211,
+      "text": "link text",
+      "url": "relative/path.md",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/relative/path.md",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/GETTING_STARTED.md",
+      "line": 340,
+      "text": "docs/tasks/",
+      "url": "tasks/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/tasks",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/DEVELOPMENT.md",
+      "line": 33,
+      "text": "UV_SETUP.md",
+      "url": "UV_SETUP.md#fat-filesystem-support",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/UV_SETUP.md",
+      "anchor": "fat-filesystem-support",
+      "severity": "MEDIUM",
+      "reason": "Anchor \"fat-filesystem-support\" not found in target file"
+    },
+    {
+      "file": "docs/DEVELOPMENT.md",
+      "line": 320,
+      "text": "Conventional Commits",
+      "url": "CONTRIBUTING.md#commit-messages",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/CONTRIBUTING.md",
+      "anchor": "commit-messages",
+      "severity": "MEDIUM",
+      "reason": "Anchor \"commit-messages\" not found in target file"
+    },
+    {
+      "file": "docs/DEVELOPMENT.md",
+      "line": 350,
+      "text": "docs/tasks/",
+      "url": "../docs/tasks/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/tasks",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "examples/BEST_PRACTICES.md",
+      "line": 326,
+      "text": "Main documentation",
+      "url": "../docs/domain/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/domain",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "examples/BEST_PRACTICES.md",
+      "line": 327,
+      "text": "API reference",
+      "url": "../../docs/api/",
+      "target": "/home/trim/Documents/Git/docs/api",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".cursor/skills/metainformant-docs-spatial/SKILL.md",
+      "line": 10,
+      "text": "`AGENTS.md`",
+      "url": "../../../docs/spatial/AGENTS.md",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/spatial/AGENTS.md",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".cursor/skills/metainformant-docs-spatial/SKILL.md",
+      "line": 11,
+      "text": "`README.md`",
+      "url": "../../../docs/spatial/README.md",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/spatial/README.md",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "projects/template_bioinformatics_project/AGENTS.md",
+      "line": 50,
+      "text": "Per-Stage Docs",
+      "url": "doc/stages/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/projects/template_bioinformatics_project/doc/stages",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "projects/template_bioinformatics_project/README.md",
+      "line": 268,
+      "text": "LICENSE",
+      "url": "LICENSE",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/projects/template_bioinformatics_project/LICENSE",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "projects/template_bioinformatics_project/SPEC.md",
+      "line": 77,
+      "text": "'section'",
+      "url": "'key'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "projects/hymenoptera_amalgkit/config/amalgkit/README.md",
+      "line": 130,
+      "text": "RNA Scripts",
+      "url": "../../../scripts/rna/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/projects/scripts/rna",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/env/share/doc/libjpeg-turbo/README.md",
+      "line": 56,
+      "text": "BUILDING.md",
+      "url": "BUILDING.md",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/env/share/doc/libjpeg-turbo/BUILDING.md",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/env/share/doc/libjpeg-turbo/README.md",
+      "line": 72,
+      "text": "tjcomp.c",
+      "url": "src/tjcomp.c",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/env/share/doc/libjpeg-turbo/src/tjcomp.c",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/env/share/doc/libjpeg-turbo/README.md",
+      "line": 73,
+      "text": "tjdecomp.c",
+      "url": "src/tjdecomp.c",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/env/share/doc/libjpeg-turbo/src/tjdecomp.c",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/env/share/doc/libjpeg-turbo/README.md",
+      "line": 73,
+      "text": "tjtran.c",
+      "url": "src/tjtran.c",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/env/share/doc/libjpeg-turbo/src/tjtran.c",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/env/share/doc/libjpeg-turbo/README.md",
+      "line": 74,
+      "text": "TJComp.java",
+      "url": "java/TJComp.java",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/env/share/doc/libjpeg-turbo/java/TJComp.java",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/env/share/doc/libjpeg-turbo/README.md",
+      "line": 74,
+      "text": "TJDecomp.java",
+      "url": "java/TJDecomp.java",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/env/share/doc/libjpeg-turbo/java/TJDecomp.java",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/env/share/doc/libjpeg-turbo/README.md",
+      "line": 75,
+      "text": "TJTran.java",
+      "url": "java/TJTran.java",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/env/share/doc/libjpeg-turbo/java/TJTran.java",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/env/share/doc/libjpeg-turbo/README.md",
+      "line": 85,
+      "text": "cjpeg.c",
+      "url": "src/cjpeg.c",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/env/share/doc/libjpeg-turbo/src/cjpeg.c",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/env/share/doc/libjpeg-turbo/README.md",
+      "line": 85,
+      "text": "djpeg.c",
+      "url": "src/djpeg.c",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/env/share/doc/libjpeg-turbo/src/djpeg.c",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/env/share/doc/libjpeg-turbo/README.md",
+      "line": 86,
+      "text": "libjpeg.txt",
+      "url": "doc/libjpeg.txt",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/env/share/doc/libjpeg-turbo/doc/libjpeg.txt",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/env/share/doc/libjpeg-turbo/README.md",
+      "line": 139,
+      "text": "jcstest.c",
+      "url": "src/jcstest.c",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/env/share/doc/libjpeg-turbo/src/jcstest.c",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/env/lib/R/library/rlang/NEWS.md",
+      "line": 139,
+      "text": "`data-masking`",
+      "url": "rlang::args_data_masking",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": ".amalgkit-env/env/lib/R/doc/html/katex/README.md",
+      "line": 91,
+      "text": "our guide to contributing code",
+      "url": "CONTRIBUTING.md",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/env/lib/R/doc/html/katex/CONTRIBUTING.md",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/info/licenses/LICENSE.md",
+      "line": 7,
+      "text": "README.ijg",
+      "url": "README.ijg",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/info/licenses/README.ijg",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md",
+      "line": 56,
+      "text": "BUILDING.md",
+      "url": "BUILDING.md",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/BUILDING.md",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md",
+      "line": 72,
+      "text": "tjcomp.c",
+      "url": "src/tjcomp.c",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/src/tjcomp.c",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md",
+      "line": 73,
+      "text": "tjdecomp.c",
+      "url": "src/tjdecomp.c",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/src/tjdecomp.c",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md",
+      "line": 73,
+      "text": "tjtran.c",
+      "url": "src/tjtran.c",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/src/tjtran.c",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md",
+      "line": 74,
+      "text": "TJComp.java",
+      "url": "java/TJComp.java",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/java/TJComp.java",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md",
+      "line": 74,
+      "text": "TJDecomp.java",
+      "url": "java/TJDecomp.java",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/java/TJDecomp.java",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md",
+      "line": 75,
+      "text": "TJTran.java",
+      "url": "java/TJTran.java",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/java/TJTran.java",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md",
+      "line": 85,
+      "text": "cjpeg.c",
+      "url": "src/cjpeg.c",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/src/cjpeg.c",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md",
+      "line": 85,
+      "text": "djpeg.c",
+      "url": "src/djpeg.c",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/src/djpeg.c",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md",
+      "line": 86,
+      "text": "libjpeg.txt",
+      "url": "doc/libjpeg.txt",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/doc/libjpeg.txt",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/README.md",
+      "line": 139,
+      "text": "jcstest.c",
+      "url": "src/jcstest.c",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/root/pkgs/libjpeg-turbo-3.1.2-hb03c661_0/share/doc/libjpeg-turbo/src/jcstest.c",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".amalgkit-env/root/pkgs/r-rlang-1.1.7-r45h3697838_0/lib/R/library/rlang/NEWS.md",
+      "line": 139,
+      "text": "`data-masking`",
+      "url": "rlang::args_data_masking",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": ".amalgkit-env/root/pkgs/r-base-4.5.2-h1fbe982_4/lib/R/doc/html/katex/README.md",
+      "line": 91,
+      "text": "our guide to contributing code",
+      "url": "CONTRIBUTING.md",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.amalgkit-env/root/pkgs/r-base-4.5.2-h1fbe982_4/lib/R/doc/html/katex/CONTRIBUTING.md",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".uv-cache/archive-v0/zuLo9T1ymzqfAryXNEKZL/nltk-3.9.2.dist-info/licenses/README.md",
+      "line": 15,
+      "text": "CONTRIBUTING.md",
+      "url": "CONTRIBUTING.md",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.uv-cache/archive-v0/zuLo9T1ymzqfAryXNEKZL/nltk-3.9.2.dist-info/licenses/CONTRIBUTING.md",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": ".uv-cache/archive-v0/HPUV5eY1Egy2sbZam-7ei/mdit_py_plugins/texmath/README.md",
+      "line": 135,
+      "text": "MIT License",
+      "url": "./license.txt",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/.uv-cache/archive-v0/HPUV5eY1Egy2sbZam-7ei/mdit_py_plugins/texmath/license.txt",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/ecology/README.md",
+      "line": 99,
+      "text": "`traits/`",
+      "url": "traits/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/ecology/traits",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/gwas/README.md",
+      "line": 15,
+      "text": "Fine-Mapping & Colocalization",
+      "url": "#fine-mapping--colocalization",
+      "anchor": "fine-mapping--colocalization",
+      "severity": "LOW",
+      "reason": "Anchor \"fine-mapping--colocalization\" not found in current file"
+    },
+    {
+      "file": "src/metainformant/gwas/README.md",
+      "line": 174,
+      "text": "metainformant.multiomics",
+      "url": "../../docs/multiomics/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/docs/multiomics",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/gwas/README.md",
+      "line": 175,
+      "text": "metainformant.rna",
+      "url": "../../docs/rna/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/docs/rna",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/gwas/README.md",
+      "line": 176,
+      "text": "config/gwas/",
+      "url": "../../../docs/config/gwas/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/config/gwas",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/gwas/README.md",
+      "line": 186,
+      "text": "config/gwas/",
+      "url": "../../config/gwas/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/config/gwas",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/information/EXAMPLES.md",
+      "line": 24,
+      "text": "\"kmer_analyses\"",
+      "url": "1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "src/metainformant/information/EXAMPLES.md",
+      "line": 25,
+      "text": "\"kmer_analyses\"",
+      "url": "2",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "src/metainformant/information/EXAMPLES.md",
+      "line": 93,
+      "text": "\"top_features\"",
+      "url": ":top_k",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "src/metainformant/information/WORKFLOWS.md",
+      "line": 29,
+      "text": "'kmer_analyses'",
+      "url": "1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "src/metainformant/information/WORKFLOWS.md",
+      "line": 141,
+      "text": "\"top_features\"",
+      "url": ":50",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "src/metainformant/information/WORKFLOWS.md",
+      "line": 295,
+      "text": "\"profiles\"",
+      "url": "1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "src/metainformant/metabolomics/README.md",
+      "line": 43,
+      "text": "`io/`",
+      "url": "io/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/metabolomics/io",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/metabolomics/README.md",
+      "line": 44,
+      "text": "`analysis/`",
+      "url": "analysis/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/metabolomics/analysis",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/metabolomics/README.md",
+      "line": 45,
+      "text": "`pathways/`",
+      "url": "pathways/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/metabolomics/pathways",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/metabolomics/README.md",
+      "line": 46,
+      "text": "`visualization/`",
+      "url": "visualization/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/metabolomics/visualization",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/ml/README.md",
+      "line": 88,
+      "text": "`deep_learning/`",
+      "url": "deep_learning/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/ml/deep_learning",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/ontology/README.md",
+      "line": 14,
+      "text": "GO Loading & Enrichment",
+      "url": "#go-loading--enrichment",
+      "anchor": "go-loading--enrichment",
+      "severity": "LOW",
+      "reason": "Anchor \"go-loading--enrichment\" not found in current file"
+    },
+    {
+      "file": "src/metainformant/ontology/README.md",
+      "line": 16,
+      "text": "Serialization & Visualization",
+      "url": "#serialization--visualization",
+      "anchor": "serialization--visualization",
+      "severity": "LOW",
+      "reason": "Anchor \"serialization--visualization\" not found in current file"
+    },
+    {
+      "file": "src/metainformant/pharmacogenomics/README.md",
+      "line": 18,
+      "text": "Drug Interactions & Clinical",
+      "url": "#drug-interactions--clinical",
+      "anchor": "drug-interactions--clinical",
+      "severity": "LOW",
+      "reason": "Anchor \"drug-interactions--clinical\" not found in current file"
+    },
+    {
+      "file": "src/metainformant/protein/README.md",
+      "line": 66,
+      "text": "\"sequence\"",
+      "url": ":50",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "src/metainformant/quality/README.md",
+      "line": 101,
+      "text": "`batch/`",
+      "url": "batch/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/quality/batch",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/rna/README.md",
+      "line": 163,
+      "text": "scripts/rna/",
+      "url": "../../scripts/rna/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/scripts/rna",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/rna/README.md",
+      "line": 164,
+      "text": "config/amalgkit/",
+      "url": "../../config/amalgkit/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/config/amalgkit",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/simulation/README.md",
+      "line": 102,
+      "text": "`methylation/`",
+      "url": "methylation/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/simulation/methylation",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/singlecell/README.md",
+      "line": 49,
+      "text": "`doublet/`",
+      "url": "doublet/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/singlecell/doublet",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/spatial/README.md",
+      "line": 19,
+      "text": "Deconvolution & Integration",
+      "url": "#deconvolution--integration",
+      "anchor": "deconvolution--integration",
+      "severity": "LOW",
+      "reason": "Anchor \"deconvolution--integration\" not found in current file"
+    },
+    {
+      "file": "src/metainformant/spatial/README.md",
+      "line": 60,
+      "text": "`niche/`",
+      "url": "niche/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/spatial/niche",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/visualization/README.md",
+      "line": 14,
+      "text": "Basic & Statistical Plots",
+      "url": "#basic--statistical-plots",
+      "anchor": "basic--statistical-plots",
+      "severity": "LOW",
+      "reason": "Anchor \"basic--statistical-plots\" not found in current file"
+    },
+    {
+      "file": "src/metainformant/visualization/README.md",
+      "line": 16,
+      "text": "Themes, Palettes & Dashboards",
+      "url": "#themes-palettes--dashboards",
+      "anchor": "themes-palettes--dashboards",
+      "severity": "LOW",
+      "reason": "Anchor \"themes-palettes--dashboards\" not found in current file"
+    },
+    {
+      "file": "src/metainformant/cloud/SPEC.md",
+      "line": 230,
+      "text": "rna/",
+      "url": "rna/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/cloud/rna",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/cloud/SPEC.md",
+      "line": 231,
+      "text": "gwas/",
+      "url": "gwas/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/cloud/gwas",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "src/metainformant/cloud/SPEC.md",
+      "line": 232,
+      "text": "core/io/download.py",
+      "url": "core/io/download.py",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/cloud/core/io/download.py",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "output/amalgkit/projects/template_bioinformatics_project/SPEC.md",
+      "line": 77,
+      "text": "'section'",
+      "url": "'key'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "output/amalgkit/projects/template_bioinformatics_project/AGENTS.md",
+      "line": 50,
+      "text": "Per-Stage Docs",
+      "url": "doc/stages/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/output/amalgkit/projects/template_bioinformatics_project/doc/stages",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "output/amalgkit/projects/template_bioinformatics_project/README.md",
+      "line": 268,
+      "text": "LICENSE",
+      "url": "LICENSE",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/output/amalgkit/projects/template_bioinformatics_project/LICENSE",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/agents/index.md",
+      "line": 144,
+      "text": "Multi-Agent Workflows — Pattern 2",
+      "url": "MULTI_AGENT_WORKFLOWS.md#2-parallel-fan-out--fan-in",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/agents/MULTI_AGENT_WORKFLOWS.md",
+      "anchor": "2-parallel-fan-out--fan-in",
+      "severity": "MEDIUM",
+      "reason": "Anchor \"2-parallel-fan-out--fan-in\" not found in target file"
+    },
+    {
+      "file": "docs/agents/SPEC.md",
+      "line": 123,
+      "text": "Workflow Manager API",
+      "url": "../src/metainformant/core/engine/workflow_manager.py",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/src/metainformant/core/engine/workflow_manager.py",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/agents/MULTI_AGENT_WORKFLOWS.md",
+      "line": 16,
+      "text": "2. GWAS Association + Fine-Mapping",
+      "url": "#2-gwas-association--fine-mapping",
+      "anchor": "2-gwas-association--fine-mapping",
+      "severity": "LOW",
+      "reason": "Anchor \"2-gwas-association--fine-mapping\" not found in current file"
+    },
+    {
+      "file": "docs/agents/MULTI_AGENT_WORKFLOWS.md",
+      "line": 19,
+      "text": "5. Batch Download + QC",
+      "url": "#5-batch-download--qc",
+      "anchor": "5-batch-download--qc",
+      "severity": "LOW",
+      "reason": "Anchor \"5-batch-download--qc\" not found in current file"
+    },
+    {
+      "file": "docs/agents/MULTI_AGENT_WORKFLOWS.md",
+      "line": 22,
+      "text": "8. Protein Structure + Function",
+      "url": "#8-protein-structure--function",
+      "anchor": "8-protein-structure--function",
+      "severity": "LOW",
+      "reason": "Anchor \"8-protein-structure--function\" not found in current file"
+    },
+    {
+      "file": "docs/agents/COMMUNICATION_PROTOCOLS.md",
+      "line": 11,
+      "text": "PipelineItem Metadata",
+      "url": "#pipelineitem-metadata",
+      "anchor": "pipelineitem-metadata",
+      "severity": "LOW",
+      "reason": "Anchor \"pipelineitem-metadata\" not found in current file"
+    },
+    {
+      "file": "docs/agents/COMMUNICATION_PROTOCOLS.md",
+      "line": 12,
+      "text": "Configuration Objects",
+      "url": "#configuration-objects",
+      "anchor": "configuration-objects",
+      "severity": "LOW",
+      "reason": "Anchor \"configuration-objects\" not found in current file"
+    },
+    {
+      "file": "docs/agents/COMMUNICATION_PROTOCOLS.md",
+      "line": 13,
+      "text": "File System Bridge",
+      "url": "#file-system-bridge",
+      "anchor": "file-system-bridge",
+      "severity": "LOW",
+      "reason": "Anchor \"file-system-bridge\" not found in current file"
+    },
+    {
+      "file": "docs/agents/COMMUNICATION_PROTOCOLS.md",
+      "line": 14,
+      "text": "Logging as Side-Channel",
+      "url": "#logging-as-side-channel",
+      "anchor": "logging-as-side-channel",
+      "severity": "LOW",
+      "reason": "Anchor \"logging-as-side-channel\" not found in current file"
+    },
+    {
+      "file": "docs/agents/TROUBLESHOOTING.md",
+      "line": 264,
+      "text": "\"items\"",
+      "url": "\"SRR123\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/core/config.md",
+      "line": 144,
+      "text": "\"pipeline\"",
+      "url": "\"name\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/core/config.md",
+      "line": 583,
+      "text": "\"input\"",
+      "url": "\"path\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/core/config.md",
+      "line": 649,
+      "text": "\"input\"",
+      "url": "\"dir\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/core/db.md",
+      "line": 450,
+      "text": "0",
+      "url": "\"count\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/core/db.md",
+      "line": 530,
+      "text": "0",
+      "url": "0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/core/paths.md",
+      "line": 697,
+      "text": "\"modules\"",
+      "url": "module",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/core/text.md",
+      "line": 373,
+      "text": "eE",
+      "url": "-+",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/core/workflow.md",
+      "line": 472,
+      "text": "\"steps\"",
+      "url": "0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/core/GETTING_STARTED.md",
+      "line": 171,
+      "text": "\"genes\"",
+      "url": "0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/core/GETTING_STARTED.md",
+      "line": 229,
+      "text": "\"data\"",
+      "url": "\"gene_count\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/core/GETTING_STARTED.md",
+      "line": 282,
+      "text": "'summary'",
+      "url": "'from_cache'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/core/GETTING_STARTED.md",
+      "line": 365,
+      "text": "\"pipeline\"",
+      "url": "\"max_download_workers\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/dna/accessions.md",
+      "line": 118,
+      "text": "Entrez Utilities",
+      "url": "ncbi.md#entrez-client",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/dna/ncbi.md",
+      "anchor": "entrez-client",
+      "severity": "MEDIUM",
+      "reason": "Anchor \"entrez-client\" not found in target file"
+    },
+    {
+      "file": "docs/dna/population_workflows.md",
+      "line": 81,
+      "text": "'pop1_stats'",
+      "url": "'nucleotide_diversity'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/dna/population_workflows.md",
+      "line": 82,
+      "text": "'pop2_stats'",
+      "url": "'nucleotide_diversity'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/ecology/ordination.md",
+      "line": 69,
+      "text": "\"coordinates\"",
+      "url": ":3",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/ecology/ordination.md",
+      "line": 69,
+      "text": "\"coordinates\"",
+      "url": ":3",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/gwas/README.md",
+      "line": 104,
+      "text": "config/gwas/",
+      "url": "../../../config/gwas/",
+      "target": "/home/trim/Documents/Git/config/gwas",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/gwas/structure.md",
+      "line": 133,
+      "text": "'explained_variance_ratio'",
+      "url": "0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/gwas/structure.md",
+      "line": 152,
+      "text": "0",
+      "url": "1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/gwas/structure.md",
+      "line": 194,
+      "text": "\"pca\"",
+      "url": "\"pcs\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/gwas/workflow.md",
+      "line": 333,
+      "text": "vcf_data[\"genotypes\"",
+      "url": "s",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/information/channel.md",
+      "line": 102,
+      "text": "\"rd_curve\"",
+      "url": ":5",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/life_events/survival.md",
+      "line": 170,
+      "text": "'p_values'",
+      "url": "name",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/life_events/VALIDATION_REPORT.md",
+      "line": 143,
+      "text": "i",
+      "url": "k",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/longread/phasing.md",
+      "line": 123,
+      "text": "\"significant_sites\"",
+      "url": ":5",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/metabolomics/CAPABILITIES.md",
+      "line": 7,
+      "text": "Analysis (`analysis/`)",
+      "url": "#analysis",
+      "anchor": "analysis",
+      "severity": "LOW",
+      "reason": "Anchor \"analysis\" not found in current file"
+    },
+    {
+      "file": "docs/metabolomics/CAPABILITIES.md",
+      "line": 8,
+      "text": "I/O (`io/`)",
+      "url": "#io",
+      "anchor": "io",
+      "severity": "LOW",
+      "reason": "Anchor \"io\" not found in current file"
+    },
+    {
+      "file": "docs/metabolomics/CAPABILITIES.md",
+      "line": 9,
+      "text": "Pathways (`pathways/`)",
+      "url": "#pathways",
+      "anchor": "pathways",
+      "severity": "LOW",
+      "reason": "Anchor \"pathways\" not found in current file"
+    },
+    {
+      "file": "docs/metabolomics/CAPABILITIES.md",
+      "line": 10,
+      "text": "Visualization (`visualization/`)",
+      "url": "#visualization",
+      "anchor": "visualization",
+      "severity": "LOW",
+      "reason": "Anchor \"visualization\" not found in current file"
+    },
+    {
+      "file": "docs/metabolomics/CAPABILITIES.md",
+      "line": 47,
+      "text": "0",
+      "url": "0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/metabolomics/CAPABILITIES.md",
+      "line": 48,
+      "text": "1",
+      "url": "0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/metabolomics/CAPABILITIES.md",
+      "line": 100,
+      "text": "0",
+      "url": "0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/metabolomics/EXAMPLES.md",
+      "line": 7,
+      "text": "Example 1: Urine Metabolomics — Diabetic vs. Control",
+      "url": "#example-1-urine-metabolomics--diabetic-vs-control",
+      "anchor": "example-1-urine-metabolomics--diabetic-vs-control",
+      "severity": "LOW",
+      "reason": "Anchor \"example-1-urine-metabolomics--diabetic-vs-control\" not found in current file"
+    },
+    {
+      "file": "docs/metabolomics/EXAMPLES.md",
+      "line": 11,
+      "text": "Example 5: Multi-Omics Integration — Metabolite-Gene Correlation",
+      "url": "#example-5-multi-omics-integration--metabolite-gene-correlation",
+      "anchor": "example-5-multi-omics-integration--metabolite-gene-correlation",
+      "severity": "LOW",
+      "reason": "Anchor \"example-5-multi-omics-integration--metabolite-gene-correlation\" not found in current file"
+    },
+    {
+      "file": "docs/metabolomics/EXAMPLES.md",
+      "line": 12,
+      "text": "Example 6: Large Cohort — Quality Control and Batch Assessment",
+      "url": "#example-6-large-cohort--quality-control-and-batch-assessment",
+      "anchor": "example-6-large-cohort--quality-control-and-batch-assessment",
+      "severity": "LOW",
+      "reason": "Anchor \"example-6-large-cohort--quality-control-and-batch-assessment\" not found in current file"
+    },
+    {
+      "file": "docs/metabolomics/EXAMPLES.md",
+      "line": 489,
+      "text": "top_met_idx, :",
+      "url": ":, top_gene_idx",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/metabolomics/CONFIGURATION.md",
+      "line": 85,
+      "text": "\"metabolomics\"",
+      "url": "\"identification\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/metabolomics/INTEGRATION.md",
+      "line": 291,
+      "text": "name",
+      "url": "\"mz\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/metabolomics/INTEGRATION.md",
+      "line": 292,
+      "text": "name",
+      "url": "\"rt\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/metagenomics/ARCHITECTURE.md",
+      "line": 12,
+      "text": "Integration with Diversity & Functional Analysis",
+      "url": "#integration-with-diversity--functional-analysis",
+      "anchor": "integration-with-diversity--functional-analysis",
+      "severity": "LOW",
+      "reason": "Anchor \"integration-with-diversity--functional-analysis\" not found in current file"
+    },
+    {
+      "file": "docs/metagenomics/GETTING_STARTED.md",
+      "line": 135,
+      "text": "'distance_matrix'",
+      "url": "0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/metagenomics/GETTING_STARTED.md",
+      "line": 434,
+      "text": "diff[i",
+      "url": "\"log_fc\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/metagenomics/GETTING_STARTED.md",
+      "line": 435,
+      "text": "-np.log10(diff[i",
+      "url": "\"p_value\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/metagenomics/CAPABILITIES.md",
+      "line": 667,
+      "text": "\"distance_matrix\"",
+      "url": "0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/ml/README.md",
+      "line": 10,
+      "text": "__init__.py",
+      "url": "__init__.py",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/ml/__init__.py",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/ml/interpretability.md",
+      "line": 129,
+      "text": "\"ranking\"",
+      "url": ":10",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/ml/interpretability.md",
+      "line": 130,
+      "text": "'importances'",
+      "url": "idx",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/ml/interpretability.md",
+      "line": 147,
+      "text": "\"top_interactions\"",
+      "url": ":5",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/ml/BROKEN_EXAMPLES.md",
+      "line": 106,
+      "text": "-50:",
+      "url": "::-1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/ml/BROKEN_EXAMPLES.md",
+      "line": 194,
+      "text": "::-1",
+      "url": ":50",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/ml/BROKEN_EXAMPLES.md",
+      "line": 241,
+      "text": "\"shap_values\"",
+      "url": "0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/ml/BROKEN_EXAMPLES.md",
+      "line": 242,
+      "text": "-5:",
+      "url": "::-1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/multiomics/README.md",
+      "line": 99,
+      "text": "docs/multiomics/",
+      "url": "../../../docs/multiomics/",
+      "target": "/home/trim/Documents/Git/docs/multiomics",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/networks/pathway.md",
+      "line": 211,
+      "text": "p['name'",
+      "url": ":30",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/networks/pathway.md",
+      "line": 236,
+      "text": "'name'",
+      "url": ":20",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/networks/pathway.md",
+      "line": 236,
+      "text": "'name'",
+      "url": ":20",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/ontology/query.md",
+      "line": 202,
+      "text": "'depth_stats'",
+      "url": "'max'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/pharmacogenomics/index.md",
+      "line": 8,
+      "text": "io.md",
+      "url": "../io.md",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/io.md",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/pharmacogenomics/index.md",
+      "line": 15,
+      "text": "API_REFERENCE.md",
+      "url": "API_REFERENCE.md",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/pharmacogenomics/API_REFERENCE.md",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/pharmacogenomics/index.md",
+      "line": 43,
+      "text": "../INTEGRATION.md",
+      "url": "../../INTEGRATION.md",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/INTEGRATION.md",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/pharmacogenomics/ARCHITECTURE.md",
+      "line": 3,
+      "text": "Layer diagram: Public API → Core → Data → External resources",
+      "url": "diagram.png",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/pharmacogenomics/diagram.png",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/pharmacogenomics/GETTING_STARTED.md",
+      "line": 176,
+      "text": "API_REFERENCE.md",
+      "url": "API_REFERENCE.md",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/pharmacogenomics/API_REFERENCE.md",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/pharmacogenomics/EXAMPLES.md",
+      "line": 58,
+      "text": "'recommendation'",
+      "url": ":60",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/pharmacogenomics/EXAMPLES.md",
+      "line": 228,
+      "text": "'annotation_text'",
+      "url": ":80",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/pharmacogenomics/EXAMPLES.md",
+      "line": 266,
+      "text": "drug",
+      "url": "gene",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/protein/README.md",
+      "line": 11,
+      "text": "__init__.py",
+      "url": "__init__.py",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/protein/__init__.py",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/quality/fastq.md",
+      "line": 28,
+      "text": "'basic_stats'",
+      "url": "'total_sequences'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/fastq.md",
+      "line": 29,
+      "text": "'basic_stats'",
+      "url": "'mean_quality'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/fastq.md",
+      "line": 153,
+      "text": "'sequence'",
+      "url": ":30",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/fastq.md",
+      "line": 249,
+      "text": "'basic_stats'",
+      "url": "'total_sequences'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/fastq.md",
+      "line": 250,
+      "text": "'basic_stats'",
+      "url": "'total_sequences'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/fastq.md",
+      "line": 251,
+      "text": "'basic_stats'",
+      "url": "'mean_quality'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/fastq.md",
+      "line": 252,
+      "text": "'basic_stats'",
+      "url": "'mean_quality'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/fastq.md",
+      "line": 271,
+      "text": "'basic_stats'",
+      "url": "'mean_quality'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/fastq.md",
+      "line": 287,
+      "text": "'adapter_content'",
+      "url": "'max_adapter_content'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/fastq.md",
+      "line": 290,
+      "text": "'basic_stats'",
+      "url": "'n_content'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/fastq.md",
+      "line": 293,
+      "text": "'duplication_levels'",
+      "url": "'duplication_percentage'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/fastq.md",
+      "line": 318,
+      "text": "'basic_stats'",
+      "url": "'gc_content'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/fastq.md",
+      "line": 409,
+      "text": "'basic_stats'",
+      "url": "'gc_content'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/fastq.md",
+      "line": 590,
+      "text": "'basic_stats'",
+      "url": "'mean_quality'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/fastq.md",
+      "line": 591,
+      "text": "'adapter_content'",
+      "url": "'max_adapter_content'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/index.md",
+      "line": 94,
+      "text": "'basic_stats'",
+      "url": "'total_sequences'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/index.md",
+      "line": 95,
+      "text": "'basic_stats'",
+      "url": "'sequence_length'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/index.md",
+      "line": 96,
+      "text": "'basic_stats'",
+      "url": "'gc_content'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/index.md",
+      "line": 97,
+      "text": "'basic_stats'",
+      "url": "'mean_quality'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/index.md",
+      "line": 100,
+      "text": "'adapter_content'",
+      "url": "'max_adapter_content'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/index.md",
+      "line": 103,
+      "text": "'basic_stats'",
+      "url": "'mean_quality'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/index.md",
+      "line": 174,
+      "text": "'basic_stats'",
+      "url": "'mean_quality'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/index.md",
+      "line": 214,
+      "text": "'basic_stats'",
+      "url": "'mean_quality'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/index.md",
+      "line": 215,
+      "text": "'adapter_content'",
+      "url": "'max_adapter_content'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/index.md",
+      "line": 216,
+      "text": "'n_content_per_position'",
+      "url": "'max_n_content'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/quality/index.md",
+      "line": 217,
+      "text": "'basic_stats'",
+      "url": "'total_sequences'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/rna/GETTING_STARTED.md",
+      "line": 479,
+      "text": "workflow.md",
+      "url": "workflow.md#common-issues-and-solutions",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/rna/workflow.md",
+      "anchor": "common-issues-and-solutions",
+      "severity": "MEDIUM",
+      "reason": "Anchor \"common-issues-and-solutions\" not found in target file"
+    },
+    {
+      "file": "docs/rna/FILE_PATH_STORAGE.md",
+      "line": 597,
+      "text": "0",
+      "url": "0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/rna/FILE_PATH_STORAGE.md",
+      "line": 598,
+      "text": "0",
+      "url": "1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/rna/FILE_PATH_STORAGE.md",
+      "line": 761,
+      "text": "\"getfastq\"",
+      "url": "\"out_dir\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/rna/FILE_PATH_STORAGE.md",
+      "line": 762,
+      "text": "\"quant\"",
+      "url": "\"out_dir\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/rna/FILE_PATH_STORAGE.md",
+      "line": 763,
+      "text": "\"merge\"",
+      "url": "\"out\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/rna/VALIDATION.md",
+      "line": 323,
+      "text": "'per_sample'",
+      "url": "'SRR123456'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/rna/VALIDATION.md",
+      "line": 326,
+      "text": "'diagnostics'",
+      "url": "'quantification_issue'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/rna/README.md",
+      "line": 55,
+      "text": "`retrieval/`",
+      "url": "retrieval/",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/rna/retrieval",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/simulation/README.md",
+      "line": 10,
+      "text": "__init__.py",
+      "url": "__init__.py",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/simulation/__init__.py",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/singlecell/README.md",
+      "line": 10,
+      "text": "__init__.py",
+      "url": "__init__.py",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/docs/singlecell/__init__.py",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "docs/singlecell/clustering.md",
+      "line": 343,
+      "text": "'X_umap'",
+      "url": "mask, 0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/clustering.md",
+      "line": 344,
+      "text": "'X_umap'",
+      "url": "mask, 1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/clustering.md",
+      "line": 358,
+      "text": "'X_umap'",
+      "url": "mask, 0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/clustering.md",
+      "line": 359,
+      "text": "'X_umap'",
+      "url": "mask, 1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/clustering.md",
+      "line": 397,
+      "text": "'X_pca'",
+      "url": ":, :30",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/differential.md",
+      "line": 134,
+      "text": "\"scores\"",
+      "url": "\"apoptosis\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/dimensionality.md",
+      "line": 67,
+      "text": "'pca'",
+      "url": "'variance_ratio'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/dimensionality.md",
+      "line": 78,
+      "text": "'pca'",
+      "url": "'variance'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/dimensionality.md",
+      "line": 79,
+      "text": "'pca'",
+      "url": "'variance_ratio'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/dimensionality.md",
+      "line": 87,
+      "text": "'pca'",
+      "url": "'variance_ratio'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/dimensionality.md",
+      "line": 242,
+      "text": "'X_umap'",
+      "url": "mask, 0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/dimensionality.md",
+      "line": 243,
+      "text": "'X_umap'",
+      "url": "mask, 1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/dimensionality.md",
+      "line": 256,
+      "text": "'X_tsne'",
+      "url": ":, 0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/dimensionality.md",
+      "line": 257,
+      "text": "'X_tsne'",
+      "url": ":, 1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/dimensionality.md",
+      "line": 332,
+      "text": "'pca'",
+      "url": "'variance_ratio'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/integration.md",
+      "line": 325,
+      "text": "'X_umap'",
+      "url": "mask, 0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/integration.md",
+      "line": 326,
+      "text": "'X_umap'",
+      "url": "mask, 1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/integration.md",
+      "line": 338,
+      "text": "'X_umap'",
+      "url": "mask, 0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/integration.md",
+      "line": 339,
+      "text": "'X_umap'",
+      "url": "mask, 1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/integration.md",
+      "line": 351,
+      "text": "'X_pca'",
+      "url": "mask, 0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/integration.md",
+      "line": 352,
+      "text": "'X_pca'",
+      "url": "mask, 1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/integration.md",
+      "line": 364,
+      "text": "'X_pca'",
+      "url": "mask, 0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/integration.md",
+      "line": 365,
+      "text": "'X_pca'",
+      "url": "mask, 1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/trajectory.md",
+      "line": 126,
+      "text": "'X_umap'",
+      "url": ":, 0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/trajectory.md",
+      "line": 127,
+      "text": "'X_umap'",
+      "url": ":, 1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/trajectory.md",
+      "line": 242,
+      "text": "mask",
+      "url": "'pseudotime'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/visualization.md",
+      "line": 321,
+      "text": "'X_umap'",
+      "url": ":, 0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/singlecell/visualization.md",
+      "line": 322,
+      "text": "'X_umap'",
+      "url": ":, 1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/spatial/TROUBLESHOOTING.md",
+      "line": 21,
+      "text": "'spatial'",
+      "url": ":5",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/structural_variants/population.md",
+      "line": 166,
+      "text": "'explained_variance'",
+      "url": ":3",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/structural_variants/population.md",
+      "line": 172,
+      "text": "\"components\"",
+      "url": ":, :3",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/structural_variants/population.md",
+      "line": 179,
+      "text": "'p_values'",
+      "url": "idx",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/structural_variants/population.md",
+      "line": 180,
+      "text": "'effect_sizes'",
+      "url": "idx",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/structural_variants/ARCHITECTURE.md",
+      "line": 7,
+      "text": "Module Overview",
+      "url": "#module-overview",
+      "anchor": "module-overview",
+      "severity": "LOW",
+      "reason": "Anchor \"module-overview\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/ARCHITECTURE.md",
+      "line": 8,
+      "text": "Directory Structure",
+      "url": "#directory-structure",
+      "anchor": "directory-structure",
+      "severity": "LOW",
+      "reason": "Anchor \"directory-structure\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/ARCHITECTURE.md",
+      "line": 9,
+      "text": "Component Responsibilities",
+      "url": "#component-responsibilities",
+      "anchor": "component-responsibilities",
+      "severity": "LOW",
+      "reason": "Anchor \"component-responsibilities\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/ARCHITECTURE.md",
+      "line": 10,
+      "text": "Data Flow",
+      "url": "#data-flow",
+      "anchor": "data-flow",
+      "severity": "LOW",
+      "reason": "Anchor \"data-flow\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/ARCHITECTURE.md",
+      "line": 11,
+      "text": "Key Data Structures",
+      "url": "#key-data-structures",
+      "anchor": "key-data-structures",
+      "severity": "LOW",
+      "reason": "Anchor \"key-data-structures\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/ARCHITECTURE.md",
+      "line": 12,
+      "text": "Integration Points",
+      "url": "#integration-points",
+      "anchor": "integration-points",
+      "severity": "LOW",
+      "reason": "Anchor \"integration-points\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/ARCHITECTURE.md",
+      "line": 13,
+      "text": "Design Patterns & Rationale",
+      "url": "#design-patterns--rationale",
+      "anchor": "design-patterns--rationale",
+      "severity": "LOW",
+      "reason": "Anchor \"design-patterns--rationale\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/ARCHITECTURE.md",
+      "line": 14,
+      "text": "Algorithm Details",
+      "url": "#algorithm-details",
+      "anchor": "algorithm-details",
+      "severity": "LOW",
+      "reason": "Anchor \"algorithm-details\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/ARCHITECTURE.md",
+      "line": 15,
+      "text": "Configuration Architecture",
+      "url": "#configuration-architecture",
+      "anchor": "configuration-architecture",
+      "severity": "LOW",
+      "reason": "Anchor \"configuration-architecture\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/ARCHITECTURE.md",
+      "line": 16,
+      "text": "Extensibility",
+      "url": "#extensibility",
+      "anchor": "extensibility",
+      "severity": "LOW",
+      "reason": "Anchor \"extensibility\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/GETTING_STARTED.md",
+      "line": 395,
+      "text": "'explained_variance'",
+      "url": "0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/structural_variants/GETTING_STARTED.md",
+      "line": 577,
+      "text": "\"genotype_matrix\"",
+      "url": "0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 9,
+      "text": "Example 1: Minimal CNV Calling from BAM",
+      "url": "#1-minimal-cnv-calling-from-bam",
+      "anchor": "1-minimal-cnv-calling-from-bam",
+      "severity": "LOW",
+      "reason": "Anchor \"1-minimal-cnv-calling-from-bam\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 10,
+      "text": "Example 2: Germline SV Discovery in WGS",
+      "url": "#2-germline-sv-discovery-in-wgs-whole-genome-sequencing",
+      "anchor": "2-germline-sv-discovery-in-wgs-whole-genome-sequencing",
+      "severity": "LOW",
+      "reason": "Anchor \"2-germline-sv-discovery-in-wgs-whole-genome-sequencing\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 11,
+      "text": "Example 3: Somatic CNV Detection (Tumor vs Normal)",
+      "url": "#3-somatic-cnv-detection-tumor-vs-normal",
+      "anchor": "3-somatic-cnv-detection-tumor-vs-normal",
+      "severity": "LOW",
+      "reason": "Anchor \"3-somatic-cnv-detection-tumor-vs-normal\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 12,
+      "text": "Example 4: Multi-Caller Consensus Building",
+      "url": "#4-multi-caller-consensus-building",
+      "anchor": "4-multi-caller-consensus-building",
+      "severity": "LOW",
+      "reason": "Anchor \"4-multi-caller-consensus-building\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 13,
+      "text": "Example 5: Clinical Interpretation — Gene Overlap + Functional Impact",
+      "url": "#5-clinical-interpretation--gene-overlap--functional-impact",
+      "anchor": "5-clinical-interpretation--gene-overlap--functional-impact",
+      "severity": "LOW",
+      "reason": "Anchor \"5-clinical-interpretation--gene-overlap--functional-impact\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 14,
+      "text": "Example 6: Population Frequency Comparison with gnomAD",
+      "url": "#6-population-frequency-comparison-with-gnomad",
+      "anchor": "6-population-frequency-comparison-with-gnomad",
+      "severity": "LOW",
+      "reason": "Anchor \"6-population-frequency-comparison-with-gnomad\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 15,
+      "text": "Example 7: Visualizing Complex Rearrangements — Circos + Coverage",
+      "url": "#7-visualizing-complex-rearrangements--circos--coverage",
+      "anchor": "7-visualizing-complex-rearrangements--circos--coverage",
+      "severity": "LOW",
+      "reason": "Anchor \"7-visualizing-complex-rearrangements--circos--coverage\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 16,
+      "text": "Example 8: Cohort SV Genotyping and Association Testing",
+      "url": "#8-cohort-sv-genotyping-and-association-testing",
+      "anchor": "8-cohort-sv-genotyping-and-association-testing",
+      "severity": "LOW",
+      "reason": "Anchor \"8-cohort-sv-genotyping-and-association-testing\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 17,
+      "text": "Example 9: Long-Read Breakpoint Refinement",
+      "url": "#9-long-read-breakpoint-refinement",
+      "anchor": "9-long-read-breakpoint-refinement",
+      "severity": "LOW",
+      "reason": "Anchor \"9-long-read-breakpoint-refinement\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 18,
+      "text": "Example 10: Batch Processing Pipeline for 1000+ Samples",
+      "url": "#10-batch-processing-pipeline-for-1000-samples",
+      "anchor": "10-batch-processing-pipeline-for-1000-samples",
+      "severity": "LOW",
+      "reason": "Anchor \"10-batch-processing-pipeline-for-1000-samples\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 19,
+      "text": "Example 11: Integration with DNA Module for Variant Effect Prediction",
+      "url": "#11-integration-with-dna-module-for-variant-effect-prediction",
+      "anchor": "11-integration-with-dna-module-for-variant-effect-prediction",
+      "severity": "LOW",
+      "reason": "Anchor \"11-integration-with-dna-module-for-variant-effect-prediction\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 20,
+      "text": "Example 12: Multi-Omics Correlation: SVs and Gene Expression",
+      "url": "#12-multi-omics-correlation-svs-and-gene-expression",
+      "anchor": "12-multi-omics-correlation-svs-and-gene-expression",
+      "severity": "LOW",
+      "reason": "Anchor \"12-multi-omics-correlation-svs-and-gene-expression\" not found in current file"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 336,
+      "text": "0",
+      "url": "\"GT\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 653,
+      "text": "\"population_frequencies\"",
+      "url": "pop",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 659,
+      "text": "'explained_variance'",
+      "url": "0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 660,
+      "text": "'explained_variance'",
+      "url": "1",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 670,
+      "text": "\"components\"",
+      "url": ":, :5",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/structural_variants/EXAMPLES.md",
+      "line": 954,
+      "text": "\"overlapping_genes\"",
+      "url": "0",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/structural_variants/CONFIGURATION.md",
+      "line": 393,
+      "text": "\"detection\"",
+      "url": "\"min_support\"",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/structural_variants/CONFIGURATION.md",
+      "line": 467,
+      "text": "'detection'",
+      "url": "'min_support'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/structural_variants/CONFIGURATION.md",
+      "line": 468,
+      "text": "'detection'",
+      "url": "'cnv'",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/tasks/analyze_dna.md",
+      "line": 36,
+      "text": "\"chr1\"",
+      "url": "frame:",
+      "severity": "HIGH",
+      "reason": "Undefined reference"
+    },
+    {
+      "file": "docs/tasks/run_rna_pipeline.md",
+      "line": 11,
+      "text": "Single-Species Quick Run",
+      "url": "#single-species-quick-run",
+      "anchor": "single-species-quick-run",
+      "severity": "LOW",
+      "reason": "Anchor \"single-species-quick-run\" not found in current file"
+    },
+    {
+      "file": "docs/tasks/run_rna_pipeline.md",
+      "line": 12,
+      "text": "Multi-Species Parallel",
+      "url": "#multi-species-parallel",
+      "anchor": "multi-species-parallel",
+      "severity": "LOW",
+      "reason": "Anchor \"multi-species-parallel\" not found in current file"
+    },
+    {
+      "file": "docs/tasks/run_gwas.md",
+      "line": 11,
+      "text": "Minimal Working Example",
+      "url": "#minimal-working-example",
+      "anchor": "minimal-working-example",
+      "severity": "LOW",
+      "reason": "Anchor \"minimal-working-example\" not found in current file"
+    },
+    {
+      "file": "docs/tasks/deploy_cloud.md",
+      "line": 11,
+      "text": "Prerequisites Checklist",
+      "url": "#prerequisites-checklist",
+      "anchor": "prerequisites-checklist",
+      "severity": "LOW",
+      "reason": "Anchor \"prerequisites-checklist\" not found in current file"
+    },
+    {
+      "file": "docs/tasks/visualize_results.md",
+      "line": 11,
+      "text": "Manhattan Plot (GWAS)",
+      "url": "#manhattan-plot-gwas",
+      "anchor": "manhattan-plot-gwas",
+      "severity": "LOW",
+      "reason": "Anchor \"manhattan-plot-gwas\" not found in current file"
+    },
+    {
+      "file": "docs/tasks/mcp_integration.md",
+      "line": 11,
+      "text": "Setup (3 minutes)",
+      "url": "#setup-3-minutes",
+      "anchor": "setup-3-minutes",
+      "severity": "LOW",
+      "reason": "Anchor \"setup-3-minutes\" not found in current file"
+    },
+    {
+      "file": "docs/tasks/performance_tuning.md",
+      "line": 11,
+      "text": "Caching",
+      "url": "#caching",
+      "anchor": "caching",
+      "severity": "LOW",
+      "reason": "Anchor \"caching\" not found in current file"
+    },
+    {
+      "file": "docs/tasks/data_conversion.md",
+      "line": 11,
+      "text": "Fast interconversion",
+      "url": "#fast-interconversion",
+      "anchor": "fast-interconversion",
+      "severity": "LOW",
+      "reason": "Anchor \"fast-interconversion\" not found in current file"
+    },
+    {
+      "file": "docs/comparisons/methods_matrix.md",
+      "line": 10,
+      "text": "By Data Type",
+      "url": "#by-data-type",
+      "anchor": "by-data-type",
+      "severity": "LOW",
+      "reason": "Anchor \"by-data-type\" not found in current file"
+    },
+    {
+      "file": "docs/comparisons/methods_matrix.md",
+      "line": 11,
+      "text": "By Analysis Goal",
+      "url": "#by-analysis-goal",
+      "anchor": "by-analysis-goal",
+      "severity": "LOW",
+      "reason": "Anchor \"by-analysis-goal\" not found in current file"
+    },
+    {
+      "file": "docs/comparisons/methods_matrix.md",
+      "line": 12,
+      "text": "By Computational Scale",
+      "url": "#by-computational-scale",
+      "anchor": "by-computational-scale",
+      "severity": "LOW",
+      "reason": "Anchor \"by-computational-scale\" not found in current file"
+    },
+    {
+      "file": "config/amalgkit/README.md",
+      "line": 127,
+      "text": "RNA Scripts",
+      "url": "../../../scripts/rna/",
+      "target": "/home/trim/Documents/Git/scripts/rna",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    },
+    {
+      "file": "config/ncbi/README.md",
+      "line": 15,
+      "text": "Core Config Module",
+      "url": "../../src/metainformant/core/config.py",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/src/metainformant/core/config.py",
+      "severity": "HIGH",
+      "reason": "Target file does not exist"
+    }
+  ],
+  "broken_external_links": [
+    {
+      "file": "docs/TROUBLESHOOTING.md",
+      "line": 467,
+      "text": "GitHub Issues",
+      "url": "https://github.com/username/metainformant/issues",
+      "severity": "MEDIUM",
+      "reason": "External URL returns 404 or unreachable"
+    },
+    {
+      "file": "docs/TROUBLESHOOTING.md",
+      "line": 468,
+      "text": "Discussions",
+      "url": "https://github.com/username/metainformant/discussions",
+      "severity": "MEDIUM",
+      "reason": "External URL returns 404 or unreachable"
+    },
+    {
+      "file": "projects/template_bioinformatics_project/README.md",
+      "line": 3,
+      "text": "MetaInformAnt",
+      "url": "https://github.com/your-org/metainformant",
+      "severity": "MEDIUM",
+      "reason": "External URL returns 404 or unreachable"
+    },
+    {
+      "file": "projects/template_bioinformatics_project/README.md",
+      "line": 6,
+      "text": "![CI",
+      "url": "https://github.com/your-org/template_bioinformatics_project/actions/workflows/ci.yml/badge.svg",
+      "severity": "MEDIUM",
+      "reason": "External URL returns 404 or unreachable"
+    },
+    {
+      "file": ".amalgkit-env/env/share/doc/libssh2/BINDINGS.md",
+      "line": 23,
+      "text": "Python-ctypes PySsh2",
+      "url": "https://github.com/gellule/PySsh2",
+      "severity": "MEDIUM",
+      "reason": "External URL returns 404 or unreachable"
+    },
+    {
+      "file": ".amalgkit-env/root/pkgs/libssh2-1.11.1-hcf80075_0/share/doc/libssh2/BINDINGS.md",
+      "line": 23,
+      "text": "Python-ctypes PySsh2",
+      "url": "https://github.com/gellule/PySsh2",
+      "severity": "MEDIUM",
+      "reason": "External URL returns 404 or unreachable"
+    },
+    {
+      "file": ".venv/lib/python3.13/site-packages/pooch-1.9.0.dist-info/licenses/AUTHORS.md",
+      "line": 16,
+      "text": "Björn Ludwig",
+      "url": "https://github.com/BjoernLudwigPTB",
+      "severity": "MEDIUM",
+      "reason": "External URL returns 404 or unreachable"
+    },
+    {
+      "file": ".uv-cache/archive-v0/vZh3nhucIgboajnvlD1bq/pooch-1.9.0.dist-info/licenses/AUTHORS.md",
+      "line": 16,
+      "text": "Björn Ludwig",
+      "url": "https://github.com/BjoernLudwigPTB",
+      "severity": "MEDIUM",
+      "reason": "External URL returns 404 or unreachable"
+    },
+    {
+      "file": "output/amalgkit/projects/template_bioinformatics_project/README.md",
+      "line": 3,
+      "text": "MetaInformAnt",
+      "url": "https://github.com/your-org/metainformant",
+      "severity": "MEDIUM",
+      "reason": "External URL returns 404 or unreachable"
+    },
+    {
+      "file": "output/amalgkit/projects/template_bioinformatics_project/README.md",
+      "line": 6,
+      "text": "![CI",
+      "url": "https://github.com/your-org/template_bioinformatics_project/actions/workflows/ci.yml/badge.svg",
+      "severity": "MEDIUM",
+      "reason": "External URL returns 404 or unreachable"
+    },
+    {
+      "file": "docs/metabolomics/TROUBLESHOOTING.md",
+      "line": 570,
+      "text": "HMDB",
+      "url": "https://hmdb.ca/",
+      "severity": "MEDIUM",
+      "reason": "External URL returns 404 or unreachable"
+    },
+    {
+      "file": "docs/cloud/index.md",
+      "line": 143,
+      "text": "Amalgkit publication",
+      "url": "https://doi.org/10.1186/s12859-021-04549-4",
+      "severity": "MEDIUM",
+      "reason": "External URL returns 404 or unreachable"
+    },
+    {
+      "file": "docs/mcp/index.md",
+      "line": 318,
+      "text": "View source",
+      "url": "https://github.com/your-org/metainformant/tree/main/src/metainformant/mcp/",
+      "severity": "MEDIUM",
+      "reason": "External URL returns 404 or unreachable"
+    },
+    {
+      "file": "docs/mcp/index.md",
+      "line": 318,
+      "text": "Report issue",
+      "url": "https://github.com/your-org/metainformant/issues/new?template=mcp-tool-request.yml",
+      "severity": "MEDIUM",
+      "reason": "External URL returns 404 or unreachable"
+    }
+  ],
+  "timestamp": "2026-04-29T06:10:44-07:00"
+}

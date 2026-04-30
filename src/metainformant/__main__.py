@@ -82,6 +82,12 @@ For detailed usage of specific modules, import them directly in Python:
 
     gwas_info_parser = gwas_sub.add_parser("info", help="Show module capabilities")
 
+    # gwas run subcommand
+    gwas_run_parser = gwas_sub.add_parser("run", help="Run complete GWAS workflow")
+    gwas_run_parser.add_argument("--config", required=True, help="Path to GWAS configuration file (YAML/JSON)")
+    gwas_run_parser.add_argument("--check", action="store_true", help="Validate configuration without executing")
+    gwas_run_parser.add_argument("--output-dir", help="Override output directory")
+
     args = parser.parse_args()
 
     if args.modules:
@@ -187,7 +193,64 @@ def _handle_gwas(args: argparse.Namespace) -> int:
         print("GWAS Analysis Module")
         print("Sub-packages: analysis, data, finemapping, heritability, visualization")
         print("Import: from metainformant import gwas")
+        print("\nCLI Command: python -m metainformant gwas run --config <config.yaml>")
         return 0
+
+    elif cmd == "run":
+        # Import here to avoid heavy dependencies unless used
+        try:
+            from metainformant.gwas.workflow.workflow_execution import execute_gwas_workflow
+        except ImportError as e:
+            print(f"Error: GWAS module dependencies not available: {e}")
+            return 1
+
+        config_path = args.config
+        check_mode = args.check or args.config is None  # If no config, treat as check
+
+        if not Path(config_path).exists():
+            print(f"Error: Configuration file not found: {config_path}")
+            return 1
+
+        try:
+            # Load configuration
+            from metainformant.gwas.workflow.workflow_config import load_gwas_config
+            config = load_gwas_config(config_path)
+
+            # Override output directory if specified
+            if args.output_dir:
+                config["output_dir"] = args.output_dir
+
+            # Execute or check
+            if check_mode:
+                result = execute_gwas_workflow(config, check=True)
+                if result.get("status") == "validated":
+                    print("✓ Configuration is valid")
+                    return 0
+                else:
+                    print("✗ Configuration validation failed:")
+                    for err in result.get("errors", []):
+                        print(f"  - {err}")
+                    return 1
+            else:
+                print(f"Starting GWAS workflow with config: {config_path}")
+                result = execute_gwas_workflow(config, check=False)
+
+                if result.get("success"):
+                    print("✓ GWAS workflow completed successfully")
+                    output_dir = result.get("output_dir", ".")
+                    print(f"Results saved to: {output_dir}")
+                    return 0
+                else:
+                    print("✗ GWAS workflow failed")
+                    for err in result.get("errors", []):
+                        print(f"  - {err}")
+                    return 1
+
+        except Exception as e:
+            print(f"Error executing GWAS workflow: {e}")
+            import traceback
+            traceback.print_exc()
+            return 1
 
     return 1
 

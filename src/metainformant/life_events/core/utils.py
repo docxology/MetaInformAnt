@@ -66,7 +66,7 @@ def add_temporal_noise(
             timestamp=new_timestamp,
             event_type=event.event_type,
             description=event.description,
-            metadata=event.metadata.copy(),
+            attributes=event.attributes.copy(),
             confidence=event.confidence,
         )
         new_events.append(new_event)
@@ -128,7 +128,7 @@ def generate_realistic_life_events(
             timestamp=age,
             event_type=event_type,
             description=f"Generated {event_type} event",
-            metadata={"generated": True, "event_index": i},
+            attributes={"generated": True, "event_index": i},
         )
         events.append(event)
 
@@ -227,7 +227,7 @@ def load_sequences_from_json(json_path: str | Path) -> List[EventSequence]:
                 event_type=event_data["event_type"],
                 timestamp=event_data["timestamp"],
                 domain=event_data.get("domain"),
-                metadata=event_data.get("metadata", {}),
+                attributes=event_data.get("attributes", {}),
             )
             events.append(event)
 
@@ -317,38 +317,55 @@ def validate_sequence(sequence: EventSequence) -> Dict[str, Any]:
 def generate_cohort_sequences(
     n_sequences: int = 10,
     avg_events_per_sequence: int = 10,
+    min_events_per_sequence: int | None = None,
+    max_events_per_sequence: int | None = None,
     event_types: Optional[List[str]] = None,
     domains: Optional[List[str]] = None,
     start_year: int = 1980,
     end_year: int = 2020,
     n_cohorts: int | None = None,
+    n_sequences_per_cohort: int | None = None,
     random_seed: int | None = None,
     random_state: int | None = None,
     **kwargs: Any,
-) -> List[EventSequence]:
+) -> List[EventSequence] | Dict[str, List[EventSequence]]:
     """Generate synthetic cohort sequences for testing and simulation.
 
     Args:
-        n_sequences: Number of sequences to generate
+        n_sequences: Number of sequences to generate (if n_cohorts is None, total sequences)
         avg_events_per_sequence: Average events per sequence
+        min_events_per_sequence: Minimum events per sequence (optional, enforces lower bound)
+        max_events_per_sequence: Maximum events per sequence (optional, enforces upper bound)
         event_types: List of possible event types
         domains: List of possible domains
         start_year: Start year for event timestamps
         end_year: End year for event timestamps
-        n_cohorts: Alias for n_sequences (backward compatibility)
+        n_cohorts: Number of cohorts to generate (returns dict of cohorts if set)
+        n_sequences_per_cohort: Number of sequences per cohort (required if n_cohorts set)
         random_seed: Random seed for reproducibility
         random_state: Alias for random_seed (sklearn convention)
         **kwargs: Additional generation parameters
 
     Returns:
-        List of generated EventSequence objects
+        If n_cohorts is None: List of generated EventSequence objects
+        If n_cohorts is set: Dict mapping cohort names to lists of EventSequence objects
     """
     import random
-    from datetime import datetime, timedelta
+    from datetime import datetime
 
-    # Handle parameter aliases
+    # Resolve total number of sequences and per-cohort size
     if n_cohorts is not None:
-        n_sequences = n_cohorts
+        if n_sequences_per_cohort is not None:
+            total_sequences = n_cohorts * n_sequences_per_cohort
+            per_cohort_size = n_sequences_per_cohort
+        else:
+            total_sequences = n_sequences
+            per_cohort_size = max(1, total_sequences // n_cohorts)
+    else:
+        total_sequences = n_sequences
+        per_cohort_size = None
+
+    # Parameter aliases
     if random_state is not None and random_seed is None:
         random_seed = random_state
     if random_seed is not None:
@@ -357,33 +374,26 @@ def generate_cohort_sequences(
     # Default event types and domains
     if event_types is None:
         event_types = [
-            "started_school",
-            "graduated_high_school",
-            "started_college",
-            "graduated_college",
-            "got_first_job",
-            "job_change",
-            "promotion",
-            "started_relationship",
-            "marriage",
-            "divorce",
-            "had_child",
-            "moved_house",
-            "diagnosis",
-            "recovered",
-            "retirement",
+            "started_school", "graduated_high_school", "started_college",
+            "graduated_college", "got_first_job", "job_change", "promotion",
+            "started_relationship", "marriage", "divorce", "had_child",
+            "moved_house", "diagnosis", "recovered", "retirement",
         ]
 
     if domains is None:
         domains = ["education", "career", "family", "health", "housing"]
 
-    sequences = []
+    sequences: list[EventSequence] = []
 
-    for i in range(n_sequences):
+    for i in range(total_sequences):
         person_id = f"person_{i:04d}"
 
-        # Generate random number of events
+        # Determine number of events with optional bounds
         n_events = max(1, int(random.gauss(avg_events_per_sequence, 2)))
+        if min_events_per_sequence is not None:
+            n_events = max(n_events, min_events_per_sequence)
+        if max_events_per_sequence is not None:
+            n_events = min(n_events, max_events_per_sequence)
 
         events = []
 
@@ -398,12 +408,8 @@ def generate_cohort_sequences(
                 domain = "education"
             elif "job" in event_type or "promotion" in event_type or "retirement" in event_type:
                 domain = "career"
-            elif (
-                "relationship" in event_type
-                or "marriage" in event_type
-                or "divorce" in event_type
-                or "child" in event_type
-            ):
+            elif ("relationship" in event_type or "marriage" in event_type
+                  or "divorce" in event_type or "child" in event_type):
                 domain = "family"
             elif "diagnosis" in event_type or "recovered" in event_type:
                 domain = "health"
@@ -416,28 +422,46 @@ def generate_cohort_sequences(
             year_offset = int((end_year - start_year) * (j / max(1, n_events - 1)))
             event_year = start_year + year_offset
             event_month = random.randint(1, 12)
-            event_day = random.randint(1, 28)  # Avoid Feb 29 issues
+            event_day = random.randint(1, 28)
 
             timestamp = datetime(event_year, event_month, event_day)
 
-            # Create event
+            # Determine cohort metadata for this sequence
+            cohort_meta: dict[str, Any] = {}
+            if n_cohorts is not None and per_cohort_size is not None:
+                cohort_idx = i // per_cohort_size
+                cohort_name = f"cohort_{cohort_idx}"
+                cohort_meta = {"cohort": cohort_name}
+
+            # Build event attributes
+            event_attrs: dict[str, Any] = {"generated": True, "sequence_index": j}
+            if cohort_meta:
+                event_attrs.update(cohort_meta)
+
             event = Event(
                 event_type=event_type,
                 timestamp=timestamp,
                 domain=domain,
-                metadata={"generated": True, "sequence_index": j},
+                attributes=event_attrs,
             )
             events.append(event)
 
         # Sort events by timestamp
-        events.sort(key=lambda x: x.timestamp)
+        events.sort(key=lambda e: e.timestamp)
 
-        # Create sequence
-        sequence = EventSequence(person_id=person_id, events=events)
+        # Create sequence with cohort metadata
+        sequence = EventSequence(person_id=person_id, events=events, metadata=cohort_meta)
         sequences.append(sequence)
 
-    return sequences
-
+    # Return cohorts dict or list
+    if n_cohorts is not None:
+        cohorts: Dict[str, List[EventSequence]] = {}
+        for seq in sequences:
+            key = seq.metadata.get("cohort", "default")
+            cohorts.setdefault(key, []).append(seq)
+        return cohorts
+    else:
+        return sequences
 
 def sequence_embeddings(
     sequences: List[EventSequence],

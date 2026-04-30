@@ -97,6 +97,10 @@ class TestDatabaseConnection:
                 pytest.skip("PostgreSQL configuration not available in environment")
             raise
 
+    @pytest.mark.skipif(
+        os.environ.get("TEST_DATABASE_AVAILABLE") != "1",
+        reason="PostgreSQL not available - real implementation requires database connection",
+    )
     def test_get_db_client_without_config(self):
         """Test database client creation fails gracefully without configuration."""
         # Save original environment

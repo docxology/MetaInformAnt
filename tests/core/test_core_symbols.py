@@ -18,7 +18,7 @@ class TestIndexFunctions:
     def test_index_functions_repo_root(self):
         """Test indexing functions in core module."""
         # Index only the core module to avoid timeout
-        core_dir = Path(__file__).parent.parent / "src" / "metainformant" / "core"
+        core_dir = Path(__file__).parent.parent.parent / "src" / "metainformant" / "core"
         index = symbols.index_functions(core_dir, use_cache=False)
         assert isinstance(index, dict)
         # Should have indexed some functions
@@ -32,7 +32,7 @@ class TestIndexFunctions:
 
     def test_index_functions_with_cache(self):
         """Test indexing functions with cache enabled."""
-        repo_root = Path(__file__).parent.parent
+        repo_root = Path(__file__).parent.parent.parent
         index = symbols.index_functions(repo_root, use_cache=True)
         assert isinstance(index, dict)
 
@@ -43,7 +43,7 @@ class TestIndexClasses:
     def test_index_classes_repo_root(self):
         """Test indexing classes in core module."""
         # Index only the core module to avoid timeout
-        core_dir = Path(__file__).parent.parent / "src" / "metainformant" / "core"
+        core_dir = Path(__file__).parent.parent.parent / "src" / "metainformant" / "core"
         index = symbols.index_classes(core_dir, use_cache=False)
         assert isinstance(index, dict)
         # Should have indexed some classes
@@ -55,7 +55,7 @@ class TestFindSymbol:
 
     def test_find_symbol_function(self):
         """Test finding a function symbol."""
-        repo_root = Path(__file__).parent.parent
+        repo_root = Path(__file__).parent.parent.parent
         results = symbols.find_symbol("get_logger", "function", repo_root)
         assert isinstance(results, list)
         # Should find get_logger in logging module
@@ -67,14 +67,14 @@ class TestFindSymbol:
 
     def test_find_symbol_class(self):
         """Test finding a class symbol."""
-        repo_root = Path(__file__).parent.parent
+        repo_root = Path(__file__).parent.parent.parent
         results = symbols.find_symbol("FunctionInfo", "class", repo_root)
         assert isinstance(results, list)
         # May or may not find it depending on indexing
 
     def test_find_symbol_nonexistent(self):
         """Test finding nonexistent symbol."""
-        repo_root = Path(__file__).parent.parent
+        repo_root = Path(__file__).parent.parent.parent
         results = symbols.find_symbol("NonexistentSymbol12345", "function", repo_root)
         assert isinstance(results, list)
         # Should return empty list
@@ -86,14 +86,14 @@ class TestGetSymbolSignature:
 
     def test_get_symbol_signature_existing(self):
         """Test getting signature for existing symbol."""
-        symbol_path = Path(__file__).parent.parent / "src" / "metainformant" / "core" / "logging.py"
+        symbol_path = Path(__file__).parent.parent.parent / "src" / "metainformant" / "core" / "logging.py"
         if symbol_path.exists():
             signature = symbols.get_symbol_signature(symbol_path, "get_logger")
             assert signature is None or isinstance(signature, str)
 
     def test_get_symbol_signature_nonexistent(self):
         """Test getting signature for nonexistent symbol."""
-        symbol_path = Path(__file__).parent.parent / "src" / "metainformant" / "core" / "logging.py"
+        symbol_path = Path(__file__).parent.parent.parent / "src" / "metainformant" / "core" / "logging.py"
         if symbol_path.exists():
             signature = symbols.get_symbol_signature(symbol_path, "NonexistentFunction")
             assert signature is None
@@ -105,7 +105,7 @@ class TestFindSymbolReferences:
     def test_find_symbol_references_common(self):
         """Test finding references to a common symbol in core module."""
         # Search only in core module to avoid timeout
-        core_dir = Path(__file__).parent.parent / "src" / "metainformant" / "core"
+        core_dir = Path(__file__).parent.parent.parent / "src" / "metainformant" / "core"
         references = symbols.find_symbol_references("get_logger", core_dir)
         assert isinstance(references, list)
         # Should find some references
@@ -128,7 +128,7 @@ class TestGetSymbolMetadata:
 
     def test_get_symbol_metadata_existing(self):
         """Test getting metadata for existing symbol."""
-        symbol_path = Path(__file__).parent.parent / "src" / "metainformant" / "core" / "logging.py"
+        symbol_path = Path(__file__).parent.parent.parent / "src" / "metainformant" / "core" / "logging.py"
         if symbol_path.exists():
             metadata = symbols.get_symbol_metadata(symbol_path, "get_logger")
             assert isinstance(metadata, dict)
@@ -141,7 +141,7 @@ class TestFuzzyFindSymbol:
 
     def test_fuzzy_find_symbol_close_match(self):
         """Test fuzzy finding with close match."""
-        repo_root = Path(__file__).parent.parent
+        repo_root = Path(__file__).parent.parent.parent
         results = symbols.fuzzy_find_symbol("get_logr", "function", repo_root, threshold=0.6)
         assert isinstance(results, list)
         # Should find get_logger with high similarity
@@ -152,7 +152,7 @@ class TestFuzzyFindSymbol:
 
     def test_fuzzy_find_symbol_no_match(self):
         """Test fuzzy finding with no close match."""
-        repo_root = Path(__file__).parent.parent
+        repo_root = Path(__file__).parent.parent.parent
         results = symbols.fuzzy_find_symbol("XyzAbc123", "function", repo_root, threshold=0.9)
         assert isinstance(results, list)
         # Should return empty or very few results with high threshold

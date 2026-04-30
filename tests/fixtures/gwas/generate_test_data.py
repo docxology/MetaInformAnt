@@ -232,7 +232,7 @@ def generate_complete_test_dataset(
 
     # Get genotypes in variants x samples format
     genotypes_by_sample = vcf_data.get("genotypes", [])
-    if genotypes_by_sample and genotypes_by_sample[0]:
+    if genotypes_by_sample is not None and len(genotypes_by_sample) > 0 and genotypes_by_sample[0] is not None:
         ns = len(genotypes_by_sample)
         nv = len(genotypes_by_sample[0])
         genotypes_by_variant = [[genotypes_by_sample[s][v] for s in range(ns)] for v in range(nv)]

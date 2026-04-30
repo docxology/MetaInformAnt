@@ -15,7 +15,7 @@ from pathlib import Path
 import pytest
 
 # Add src to path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 import metainformant
 
@@ -94,7 +94,7 @@ class TestPackageStructure:
         package_version = metainformant.__version__
 
         # Read version from pyproject.toml
-        pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
+        pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
         assert pyproject_path.exists(), "pyproject.toml not found"
 
         with open(pyproject_path, "r") as f:
@@ -125,7 +125,7 @@ class TestBuildProcess:
     @pytest.mark.slow
     def test_build_scripts_exist(self):
         """Test that build scripts exist and are executable."""
-        scripts_dir = Path(__file__).parent.parent / "scripts" / "package"
+        scripts_dir = Path(__file__).parent.parent.parent / "scripts" / "package"
 
         build_script = scripts_dir / "build.sh"
         assert build_script.exists(), "build.sh not found"
@@ -139,7 +139,7 @@ class TestBuildProcess:
         """Test that build utilities are importable."""
         # This would require importing build utilities if they were Python modules
         # For now, just check that the script files exist
-        scripts_dir = Path(__file__).parent.parent / "scripts" / "package"
+        scripts_dir = Path(__file__).parent.parent.parent / "scripts" / "package"
         utils_script = scripts_dir / "build_utils.sh"
         assert utils_script.exists(), "build_utils.sh not found"
 
@@ -150,7 +150,7 @@ class TestDocumentationBuild:
     @pytest.mark.slow
     def test_docs_config_exists(self):
         """Test that documentation configuration exists."""
-        docs_dir = Path(__file__).parent.parent / "docs"
+        docs_dir = Path(__file__).parent.parent.parent / "docs"
 
         conf_py = docs_dir / "conf.py"
         assert conf_py.exists(), "docs/conf.py not found"
@@ -160,7 +160,7 @@ class TestDocumentationBuild:
 
     def test_sphinx_config_valid(self):
         """Test that Sphinx configuration is valid."""
-        docs_dir = Path(__file__).parent.parent / "docs"
+        docs_dir = Path(__file__).parent.parent.parent / "docs"
         conf_py = docs_dir / "conf.py"
 
         # Try to import the configuration (basic syntax check)
@@ -189,7 +189,7 @@ print("Core import successful")
 
         result = subprocess.run(
             [sys.executable, "-c", test_code],
-            cwd=Path(__file__).parent.parent,
+            cwd=Path(__file__).parent.parent.parent,
             capture_output=True,
             text=True,
             timeout=30,
@@ -206,7 +206,7 @@ class TestEntryPoints:
     def test_entry_points_defined(self):
         """Test that entry points are properly defined."""
         # Check pyproject.toml for entry points
-        pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
+        pyproject_path = Path(__file__).parent.parent.parent / "pyproject.toml"
         assert pyproject_path.exists()
 
         with open(pyproject_path, "r") as f:
@@ -219,7 +219,7 @@ class TestEntryPoints:
     def test_entry_point_functionality(self):
         """Test that entry points work correctly."""
         # Test the entry point module exists
-        entry_point_path = Path(__file__).parent.parent / "src" / "metainformant" / "__main__.py"
+        entry_point_path = Path(__file__).parent.parent.parent / "src" / "metainformant" / "__main__.py"
         assert entry_point_path.exists(), "Entry point module not found"
 
         # Test that the entry point can be executed
@@ -238,7 +238,7 @@ class TestBuiltPackage:
     @pytest.fixture(scope="session")
     def built_package(self):
         """Fixture to provide path to built package."""
-        dist_dir = Path(__file__).parent.parent / "dist"
+        dist_dir = Path(__file__).parent.parent.parent / "dist"
 
         # Look for wheel file
         wheel_files = list(dist_dir.glob("*.whl"))
