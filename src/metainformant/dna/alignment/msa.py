@@ -7,6 +7,7 @@ like MUSCLE, MAFFT, and ClustalW.
 
 from __future__ import annotations
 
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -15,6 +16,38 @@ from typing import Dict
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
+
+
+def align_msa(sequences: Dict[str, str], method: str = "auto") -> Dict[str, str]:
+    """Align multiple DNA sequences with an external tool or local fallback.
+
+    Args:
+        sequences: Dictionary mapping sequence IDs to DNA sequences.
+        method: ``"auto"`` chooses the first available supported CLI tool,
+            otherwise one of ``"muscle"``, ``"mafft"``, ``"clustalo"``, or
+            ``"clustalw"``.
+
+    Returns:
+        Dictionary mapping sequence IDs to equal-length aligned sequences.
+    """
+    if method == "auto":
+        for candidate in ("muscle", "mafft", "clustalo", "clustalw"):
+            if _is_tool_available(candidate):
+                return _pad_alignment_to_common_length(_run_external_alignment(sequences, candidate))
+        return _pad_alignment_to_common_length(_simple_progressive_alignment(sequences))
+
+    return _pad_alignment_to_common_length(progressive_alignment(sequences, method=method))
+
+
+def align_with_cli(sequences: Dict[str, str], tool: str = "muscle") -> Dict[str, str]:
+    """Align sequences with a named external alignment command.
+
+    Unlike :func:`align_msa`, this explicit CLI helper does not silently fall
+    back when the requested command is unavailable.
+    """
+    if not _is_tool_available(tool):
+        raise FileNotFoundError(f"{tool} alignment tool is not available on PATH")
+    return _pad_alignment_to_common_length(_run_external_alignment(sequences, tool))
 
 
 def progressive_alignment(sequences: Dict[str, str], method: str = "muscle") -> Dict[str, str]:
@@ -46,13 +79,13 @@ def progressive_alignment(sequences: Dict[str, str], method: str = "muscle") -> 
     # Check if external tool is available
     if not _is_tool_available(method):
         logger.warning(f"{method} not available, falling back to simple pairwise alignment")
-        return _simple_progressive_alignment(sequences)
+        return _pad_alignment_to_common_length(_simple_progressive_alignment(sequences))
 
     try:
-        return _run_external_alignment(sequences, method)
+        return _pad_alignment_to_common_length(_run_external_alignment(sequences, method))
     except (subprocess.CalledProcessError, FileNotFoundError) as e:
         logger.warning(f"External alignment failed: {e}, using simple alignment")
-        return _simple_progressive_alignment(sequences)
+        return _pad_alignment_to_common_length(_simple_progressive_alignment(sequences))
 
 
 def _is_tool_available(tool: str) -> bool:
@@ -62,8 +95,12 @@ def _is_tool_available(tool: str) -> bool:
             subprocess.run(["muscle", "-version"], capture_output=True, check=True, timeout=5)
         elif tool == "mafft":
             subprocess.run(["mafft", "--version"], capture_output=True, check=True, timeout=5)
+        elif tool == "clustalo":
+            subprocess.run(["clustalo", "--version"], capture_output=True, check=True, timeout=5)
         elif tool == "clustalw":
             subprocess.run(["clustalw2", "-help"], capture_output=True, check=True, timeout=5)
+        else:
+            return False
         return True
     except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
         return False
@@ -81,7 +118,6 @@ def _run_external_alignment(sequences: Dict[str, str], method: str) -> Dict[str,
     tmpdir = Path(tmpdir)
 
     try:
-
         # Write input FASTA
         input_fasta = tmpdir / "input.fasta"
         _write_fasta(sequences, input_fasta)
@@ -89,21 +125,29 @@ def _run_external_alignment(sequences: Dict[str, str], method: str) -> Dict[str,
         # Run alignment
         output_fasta = tmpdir / "output.fasta"
 
-        if method == "muscle":
-            cmd = ["muscle", "-in", str(input_fasta), "-out", str(output_fasta)]
-        elif method == "mafft":
+        if method == "mafft":
             cmd = ["mafft", "--quiet", str(input_fasta)]
             # MAFFT outputs to stdout
             output_fasta = None
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd=tmpdir)
+        elif method == "muscle":
+            result = _run_muscle(input_fasta, output_fasta, tmpdir)
+        elif method == "clustalo":
+            cmd = ["clustalo", "-i", str(input_fasta), "-o", str(output_fasta), "--force"]
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd=tmpdir)
         elif method == "clustalw":
             cmd = ["clustalw2", "-INFILE=" + str(input_fasta), "-OUTFILE=" + str(output_fasta)]
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd=tmpdir)
         else:
             raise ValueError(f"Unknown alignment method: {method}")
 
-        result = subprocess.run(cmd, capture_output=True, text=True, cwd=tmpdir)
-
         if result.returncode != 0:
-            raise subprocess.CalledProcessError(result.returncode, cmd, result.stdout, result.stderr)
+            raise subprocess.CalledProcessError(
+                result.returncode,
+                result.args,
+                result.stdout,
+                result.stderr,
+            )
 
         # Read output
         if method == "mafft":
@@ -112,13 +156,22 @@ def _run_external_alignment(sequences: Dict[str, str], method: str) -> Dict[str,
         else:
             aligned_fasta_content = output_fasta.read_text()
 
-        return _parse_fasta(aligned_fasta_content)
+        return _pad_alignment_to_common_length(_parse_fasta(aligned_fasta_content))
     finally:
         # Clean up temporary directory
-        import shutil
-
         if tmpdir.exists():
             shutil.rmtree(tmpdir, ignore_errors=True)
+
+
+def _run_muscle(input_fasta: Path, output_fasta: Path, tmpdir: Path) -> subprocess.CompletedProcess[str]:
+    """Run MUSCLE with v5 syntax first, then v3 syntax for older installs."""
+    version_5_cmd = ["muscle", "-align", str(input_fasta), "-output", str(output_fasta)]
+    result = subprocess.run(version_5_cmd, capture_output=True, text=True, cwd=tmpdir)
+    if result.returncode == 0:
+        return result
+
+    version_3_cmd = ["muscle", "-in", str(input_fasta), "-out", str(output_fasta)]
+    return subprocess.run(version_3_cmd, capture_output=True, text=True, cwd=tmpdir)
 
 
 def _simple_progressive_alignment(sequences: Dict[str, str]) -> Dict[str, str]:
@@ -161,6 +214,15 @@ def _merge_alignments(seq1_aligned: str, seq2_aligned: str, new_seq_aligned: str
     # This is a simplified merge - in practice, this would be more complex
     # For now, just return the aligned sequences as they are
     return seq1_aligned, new_seq_aligned
+
+
+def _pad_alignment_to_common_length(sequences: Dict[str, str]) -> Dict[str, str]:
+    """Right-pad aligned sequences with gaps so every sequence has equal length."""
+    if not sequences:
+        return {}
+
+    max_length = max(len(seq) for seq in sequences.values())
+    return {seq_id: seq.ljust(max_length, "-") for seq_id, seq in sequences.items()}
 
 
 def generate_consensus_from_alignment(aligned_sequences: Dict[str, str], threshold: float = 0.5) -> str:

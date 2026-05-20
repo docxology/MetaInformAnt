@@ -117,13 +117,16 @@ result = quality_weighted_consensus(seqs, quals)
 ### `consensus_from_alignment`
 
 Generates both majority and strict consensus, calculates statistics, and returns
-a structured analysis dictionary.
+a structured analysis dictionary for list/tuple input. Mapping input is also
+accepted and returns the consensus string by default for lightweight callers;
+pass `include_analysis=True` to request the analysis dictionary.
 
 ```python
 from metainformant.dna.sequence.consensus import consensus_from_alignment
 
 alignment = ["ATCG-T", "ATCG-T", "ATCGGT", "AGCG-T"]
 consensus, analysis = consensus_from_alignment(alignment)
+mapping_consensus = consensus_from_alignment({"s1": "ATCG", "s2": "ATCG"})
 
 # analysis contains:
 # {

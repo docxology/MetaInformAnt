@@ -6,11 +6,19 @@ DNA alignments, handling ambiguity codes, and quality-based consensus calling.
 
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+from collections.abc import Mapping, Sequence
+from typing import Any, Dict, List, Tuple
 
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
+
+
+def _coerce_alignment_sequences(alignment: Mapping[str, str] | Sequence[str]) -> List[str]:
+    """Normalize mapping or sequence alignment input to a list of sequences."""
+    if isinstance(alignment, Mapping):
+        return list(alignment.values())
+    return list(alignment)
 
 
 def generate_consensus(sequences: List[str], threshold: float = 0.5) -> str:
@@ -220,7 +228,7 @@ def quality_weighted_consensus(sequences: List[str], qualities: List[List[int]])
     return "".join(consensus)
 
 
-def consensus_statistics(sequences: List[str]) -> Dict[str, any]:
+def consensus_statistics(sequences: List[str]) -> Dict[str, Any]:
     """Calculate statistics about sequence consensus.
 
     Args:
@@ -321,14 +329,22 @@ def strict_consensus(sequences: List[str]) -> str:
     return consensus_with_ambiguity(sequences)
 
 
-def consensus_from_alignment(alignment: List[str]) -> Tuple[str, Dict[str, any]]:
+def consensus_from_alignment(
+    alignment: Mapping[str, str] | Sequence[str],
+    *,
+    include_analysis: bool | None = None,
+) -> str | Tuple[str, Dict[str, Any]]:
     """Generate consensus from sequence alignment with comprehensive analysis.
 
     Args:
-        alignment: List of aligned sequences
+        alignment: Aligned sequences as a list/tuple or an ID-to-sequence mapping.
+        include_analysis: Force whether to return ``(consensus, analysis)``.
+            By default, sequence inputs keep the historical tuple return and
+            mapping inputs keep the lightweight string-only return.
 
     Returns:
-        Tuple of (consensus_sequence, analysis_dict)
+        Consensus sequence, or ``(consensus_sequence, analysis_dict)`` when
+        analysis is requested.
 
     Example:
         >>> alignment = ["ATCG-", "ATCG-", "ATCG-"]
@@ -336,15 +352,18 @@ def consensus_from_alignment(alignment: List[str]) -> Tuple[str, Dict[str, any]]
         >>> "statistics" in analysis
         True
     """
-    if not alignment:
-        return "", {}
+    return_analysis = not isinstance(alignment, Mapping) if include_analysis is None else include_analysis
+    sequences = _coerce_alignment_sequences(alignment)
+
+    if not sequences:
+        return ("", {}) if return_analysis else ""
 
     # Generate different types of consensus
-    majority_cons = majority_consensus(alignment)
-    strict_cons = strict_consensus(alignment)
+    majority_cons = majority_consensus(sequences)
+    strict_cons = strict_consensus(sequences)
 
     # Calculate statistics
-    stats = consensus_statistics(alignment)
+    stats = consensus_statistics(sequences)
 
     # Choose best consensus (prefer majority if highly conserved)
     if stats["conservation"] > 0.8:
@@ -357,11 +376,11 @@ def consensus_from_alignment(alignment: List[str]) -> Tuple[str, Dict[str, any]]
         "strict_consensus": strict_cons,
         "final_consensus": final_consensus,
         "statistics": stats,
-        "alignment_length": len(alignment[0]) if alignment else 0,
-        "sequence_count": len(alignment),
+        "alignment_length": len(sequences[0]) if sequences else 0,
+        "sequence_count": len(sequences),
     }
 
-    return final_consensus, analysis
+    return (final_consensus, analysis) if return_analysis else final_consensus
 
 
 def find_consensus_breaks(sequences: List[str], window_size: int = 10) -> List[Tuple[int, float]]:

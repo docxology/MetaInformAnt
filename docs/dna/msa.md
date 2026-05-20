@@ -23,3 +23,11 @@ aligned = msa.align_msa({"A": "ACGT", "B": "AG-T"})
 #   so tests and examples still run under uv. For real analyses, install MUSCLE v5 and ensure it is in PATH.
 # msa.align_with_cli(id_to_seq, tool="muscle")  # or "clustalo"
 ```
+
+**Parameters:**
+
+| Parameter   | Type             | Default  | Description                                          |
+|-------------|------------------|----------|------------------------------------------------------|
+| `sequences` | `dict[str, str]` | required | Sequence ID to DNA sequence mapping                  |
+| `method`    | `str`            | `auto`   | `auto`, `muscle`, `mafft`, `clustalo`, or `clustalw` |
+| `tool`      | `str`            | `muscle` | External CLI tool name for `align_with_cli`          |

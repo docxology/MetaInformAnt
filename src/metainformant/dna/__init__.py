@@ -14,6 +14,7 @@ from . import (
     sequence,
     variation,
 )
+from .alignment import msa
 
 __all__ = [
     "alignment",
@@ -26,4 +27,5 @@ __all__ = [
     "population",
     "sequence",
     "variation",
+    "msa",
 ]
