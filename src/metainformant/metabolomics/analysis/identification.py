@@ -179,7 +179,7 @@ def differential_abundance(
     denom_b = (var_b / max(n_b, 1)) ** 2 / max(n_b - 1, 1) if n_b > 1 else np.zeros_like(var_b)
     denom = denom_a + denom_b
     with np.errstate(divide="ignore", invalid="ignore"):
-        df = np.where(denom > 0, num / denom, 1.0)
+        np.where(denom > 0, num / denom, 1.0)
 
     # Approximate p-value using normal distribution for large df
     p_values = 2.0 * _normal_sf(np.abs(t_stats))

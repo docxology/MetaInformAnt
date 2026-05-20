@@ -98,7 +98,7 @@ def run_sir_model(args, output_dir: Path) -> dict[str, Any]:
     logger.info("Running SIR epidemiology model...")
     from metainformant.math import basic_reproduction_number, sir_step
 
-    S, I, R = args.S0, args.I0, args.R0_init
+    susceptible, infected, recovered = args.S0, args.I0, args.R0_init
     beta, gamma = args.beta, args.gamma
 
     results = {
@@ -110,11 +110,11 @@ def run_sir_model(args, output_dir: Path) -> dict[str, Any]:
 
     for t in range(args.steps):
         results["time_points"].append(t * args.dt)
-        results["S"].append(S)
-        results["I"].append(I)
-        results["R"].append(R)
+        results["S"].append(susceptible)
+        results["I"].append(infected)
+        results["R"].append(recovered)
 
-        S, I, R = sir_step(S, I, R, beta, gamma, dt=args.dt)
+        susceptible, infected, recovered = sir_step(susceptible, infected, recovered, beta, gamma, dt=args.dt)
 
     R0 = basic_reproduction_number(beta, gamma)
     results["R0"] = R0
@@ -151,7 +151,6 @@ def run_logistic_model(args, output_dir: Path) -> dict[str, Any]:
 def run_selection_model(args, output_dir: Path) -> dict[str, Any]:
     """Run selection experiment simulation."""
     logger.info("Running selection experiment simulation...")
-    import numpy as np
 
     from metainformant.math.selection_experiments import simulate_generations
 

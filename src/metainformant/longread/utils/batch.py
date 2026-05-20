@@ -13,8 +13,7 @@ from __future__ import annotations
 import os
 import time
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any, Callable, Sequence
+from typing import Any, Callable
 
 from metainformant.core.utils.logging import get_logger
 

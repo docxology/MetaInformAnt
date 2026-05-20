@@ -56,7 +56,7 @@ def test_uniprot_mapping_offline_behavior():
         result = map_ids_uniprot(["P69905"])
         # If this succeeds, we're online and got a result
         assert isinstance(result, dict)
-    except Exception as e:
+    except Exception:
         # Expected when API fails or times out
         # This documents real failure modes
         assert True  # This is acceptable real-world behavior

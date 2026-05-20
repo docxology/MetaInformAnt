@@ -2,10 +2,10 @@
 
 NO MOCKING POLICY: All tests use real implementations.
 """
+
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from metainformant.ml.evaluation.validation import (
     biological_data_validator,
@@ -15,9 +15,7 @@ from metainformant.ml.evaluation.validation import (
     k_fold_split,
     learning_curve,
     train_test_split_biological,
-    validate_model_stability,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -106,14 +104,14 @@ class TestBiologicalDataValidator:
         X, y = _make_classification_data()
         X[0, 0] = np.nan
         result = biological_data_validator(X, y)
-        assert result["checks"]["missing_values"]["passed"] == False
-        assert result["passed"] == False
+        assert not result["checks"]["missing_values"]["passed"]
+        assert not result["passed"]
 
     def test_infinite_values_detected(self):
         X, y = _make_classification_data()
         X[5, 2] = np.inf
         result = biological_data_validator(X, y)
-        assert result["checks"]["infinite_values"]["passed"] == False
+        assert not result["checks"]["infinite_values"]["passed"]
 
     def test_constant_feature_detected(self):
         X, y = _make_classification_data()

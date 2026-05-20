@@ -240,7 +240,7 @@ class ExampleBenchmarker:
         print(f"Improvements (< -{threshold:.1f}%): {improvements}")
 
         if regressions > 0:
-            print(f"\n❌ Regressions detected:")
+            print("\n❌ Regressions detected:")
             for reg in comparison["regressions"][:5]:  # Show top 5
                 print(".1f")
 
@@ -248,7 +248,7 @@ class ExampleBenchmarker:
                 print(f"  ... and {len(comparison['regressions']) - 5} more")
 
         if improvements > 0:
-            print(f"\n✅ Performance improvements:")
+            print("\n✅ Performance improvements:")
             for imp in comparison["improvements"][:5]:  # Show top 5
                 print(".1f")
 

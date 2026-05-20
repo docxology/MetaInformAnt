@@ -6,10 +6,8 @@ These tests use real Ollama API calls - no mocks.
 import pytest
 
 from metainformant.ml.llm.ollama.chains import (
-    Chain,
     ChainResult,
     ConversationChain,
-    MapReduceChain,
     PromptChain,
     SequentialChain,
     TransformChain,

@@ -73,10 +73,7 @@ def estimate_h2_ldsc(
     if len(chi2_stats) != len(ld_scores):
         return {
             "status": "error",
-            "message": (
-                f"Length mismatch: {len(chi2_stats)} chi2 stats vs "
-                f"{len(ld_scores)} LD scores"
-            ),
+            "message": (f"Length mismatch: {len(chi2_stats)} chi2 stats vs " f"{len(ld_scores)} LD scores"),
         }
 
     m = len(chi2_stats)  # Number of SNPs
@@ -93,11 +90,7 @@ def estimate_h2_ldsc(
     # Compute summary statistics
     mean_chi2 = sum(chi2_stats) / m
     sorted_chi2 = sorted(chi2_stats)
-    median_chi2 = (
-        sorted_chi2[m // 2]
-        if m % 2 == 1
-        else (sorted_chi2[m // 2 - 1] + sorted_chi2[m // 2]) / 2.0
-    )
+    median_chi2 = sorted_chi2[m // 2] if m % 2 == 1 else (sorted_chi2[m // 2 - 1] + sorted_chi2[m // 2]) / 2.0
     lambda_gc = median_chi2 / 0.4549  # Expected median of chi2(1)
 
     # Weighted least squares regression: chi2 = intercept + slope * ld_score
@@ -175,10 +168,7 @@ def partitioned_h2(
         if len(cat_scores) != m:
             return {
                 "status": "error",
-                "message": (
-                    f"Category '{cat_name}' has {len(cat_scores)} LD scores, "
-                    f"expected {m}"
-                ),
+                "message": (f"Category '{cat_name}' has {len(cat_scores)} LD scores, " f"expected {m}"),
             }
 
     categories = list(ld_scores_by_category.keys())
@@ -305,20 +295,14 @@ def genetic_correlation(
     if len(z1) != len(z2) or len(z1) != len(ld_scores):
         return {
             "status": "error",
-            "message": (
-                f"Length mismatch: z1={len(z1)}, z2={len(z2)}, "
-                f"ld_scores={len(ld_scores)}"
-            ),
+            "message": (f"Length mismatch: z1={len(z1)}, z2={len(z2)}, " f"ld_scores={len(ld_scores)}"),
         }
 
     m = len(z1)
     if m < 3:
         return {"status": "error", "message": f"Need at least 3 SNPs, got {m}"}
 
-    logger.debug(
-        f"Estimating genetic correlation: {m} SNPs, N1={n1}, N2={n2}, "
-        f"overlap={n_overlap}"
-    )
+    logger.debug(f"Estimating genetic correlation: {m} SNPs, N1={n1}, N2={n2}, " f"overlap={n_overlap}")
 
     # Step 1: Estimate h2 for each trait individually
     chi2_1 = [z * z for z in z1]
@@ -419,8 +403,7 @@ def haseman_elston_regression(
         return {
             "status": "error",
             "message": (
-                f"Length mismatch: {len(grm_offdiag)} GRM values vs "
-                f"{len(phenotype_products)} phenotype products"
+                f"Length mismatch: {len(grm_offdiag)} GRM values vs " f"{len(phenotype_products)} phenotype products"
             ),
         }
 
@@ -559,9 +542,7 @@ def greml_simple(
         best_h2 = 0.5
 
         for h2_candidate in h2_grid:
-            ll = _reml_log_likelihood(
-                y_rot, ones_rot, eigenvalues, float(h2_candidate), n
-            )
+            ll = _reml_log_likelihood(y_rot, ones_rot, eigenvalues, float(h2_candidate), n)
             if ll > best_ll:
                 best_ll = ll
                 best_h2 = float(h2_candidate)
@@ -653,8 +634,7 @@ def compute_liability_h2(
         }
 
     logger.debug(
-        f"Converting h2_observed={h2_observed:.4f} to liability scale "
-        f"(K={prevalence}, P={sample_prevalence})"
+        f"Converting h2_observed={h2_observed:.4f} to liability scale " f"(K={prevalence}, P={sample_prevalence})"
     )
 
     K = prevalence
@@ -806,10 +786,7 @@ def _ldsc_regression_pure(
         y_mean = w_sum_y / total_w
 
         # Weighted covariance and variance
-        ss_xy = sum(
-            w * (x - x_mean) * (y - y_mean)
-            for w, x, y in zip(weights, ld_scores, y_vals)
-        )
+        ss_xy = sum(w * (x - x_mean) * (y - y_mean) for w, x, y in zip(weights, ld_scores, y_vals))
         ss_xx = sum(w * (x - x_mean) ** 2 for w, x in zip(weights, ld_scores))
 
         if abs(ss_xx) < 1e-20:
@@ -897,9 +874,7 @@ def _partitioned_h2_separate(
     # Compute proportions
     for cat_name in per_category:
         if total_h2 > 1e-12:
-            per_category[cat_name]["proportion"] = (
-                per_category[cat_name]["h2"] / total_h2
-            )
+            per_category[cat_name]["proportion"] = per_category[cat_name]["h2"] / total_h2
 
     total_h2 = max(0.0, min(1.0, total_h2))
 

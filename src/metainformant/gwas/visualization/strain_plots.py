@@ -16,10 +16,10 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 try:
-    import matplotlib.pyplot as plt
     import matplotlib.patches as mpatches
-    from matplotlib.offsetbox import AnchoredText
+    import matplotlib.pyplot as plt
     from matplotlib.lines import Line2D
+    from matplotlib.offsetbox import AnchoredText
 
     HAS_MATPLOTLIB = True
 except ImportError:
@@ -56,9 +56,7 @@ def _extract_strain(sample_id: str) -> str:
     return sample_id[0].upper() if sample_id and sample_id[0].isalpha() else "?"
 
 
-def _apply_publication_style(
-    ax: plt.Axes, title: str, xlabel: str, ylabel: str
-) -> None:
+def _apply_publication_style(ax: plt.Axes, title: str, xlabel: str, ylabel: str) -> None:
     """Apply consistent publication-grade typography."""
     ax.set_title(title, fontsize=16, fontweight="bold", pad=12)
     ax.set_xlabel(xlabel, fontsize=14, labelpad=8)
@@ -179,12 +177,8 @@ def strain_pca_plot(
             markersize=6,
             label="Cumulative",
         )
-        ax_scree.axhline(
-            y=80, color="gray", linestyle="--", alpha=0.5, label="80% threshold"
-        )
-        _apply_publication_style(
-            ax_scree, "Variance Explained", "Principal Component", "% Variance"
-        )
+        ax_scree.axhline(y=80, color="gray", linestyle="--", alpha=0.5, label="80% threshold")
+        _apply_publication_style(ax_scree, "Variance Explained", "Principal Component", "% Variance")
         ax_scree.legend(fontsize=10)
         ax_scree.set_xticks(range(1, n_show + 1))
     else:
@@ -275,8 +269,8 @@ def _plot_strain_scatter(
 
 def _draw_confidence_ellipse(ax, x, y, color, n_std=2.0, alpha=0.15):
     """Draw a 95% confidence ellipse around points."""
-    from matplotlib.patches import Ellipse
     import numpy as np
+    from matplotlib.patches import Ellipse
 
     cov = np.cov(x, y)
     vals, vecs = np.linalg.eigh(cov)
@@ -460,9 +454,7 @@ def kinship_heatmap_clustered(
     ordered_ids = [sample_ids[i] for i in order]
     strains_ordered = [_extract_strain(sid) for sid in ordered_ids]
 
-    fig, axes = plt.subplots(
-        1, 2, figsize=(16, 12), gridspec_kw={"width_ratios": [0.03, 1]}
-    )
+    fig, axes = plt.subplots(1, 2, figsize=(16, 12), gridspec_kw={"width_ratios": [0.03, 1]})
 
     # Strain color bar
     ax_bar = axes[0]
@@ -492,9 +484,7 @@ def kinship_heatmap_clustered(
     ax_heat.set_yticklabels(ordered_ids, fontsize=7)
 
     # Color tick labels by strain
-    for i, (xlbl, ylbl) in enumerate(
-        zip(ax_heat.get_xticklabels(), ax_heat.get_yticklabels())
-    ):
+    for i, (xlbl, ylbl) in enumerate(zip(ax_heat.get_xticklabels(), ax_heat.get_yticklabels())):
         color = STRAIN_PALETTE.get(strains_ordered[i], "#888")
         xlbl.set_color(color)
         ylbl.set_color(color)
@@ -566,9 +556,7 @@ def fst_manhattan_plot(
     ]
 
     n_pairs = len(fst_data)
-    fig, axes = plt.subplots(
-        n_pairs, 1, figsize=(16, 4 * n_pairs), sharex=True, squeeze=False
-    )
+    fig, axes = plt.subplots(n_pairs, 1, figsize=(16, 4 * n_pairs), sharex=True, squeeze=False)
 
     for idx, (pair_key, fst_values) in enumerate(sorted(fst_data.items())):
         ax = axes[idx, 0]
@@ -634,9 +622,7 @@ def fst_manhattan_plot(
             ax.add_artist(at)
 
     axes[-1, 0].set_xlabel("Genomic Position", fontsize=14)
-    fig.suptitle(
-        "Per-Variant Fst Between Strain Pairs", fontsize=18, fontweight="bold", y=1.01
-    )
+    fig.suptitle("Per-Variant Fst Between Strain Pairs", fontsize=18, fontweight="bold", y=1.01)
     plt.tight_layout()
 
     if output_path:
@@ -680,17 +666,17 @@ def allele_frequency_heatmap(
     # Compute variance across strains for each variant to find most differentiated
     af_matrix = np.array([af_by_strain[s][:n_variants] for s in strains], dtype=float)
     var_across_strains = np.nanvar(af_matrix, axis=0)
-    
+
     # Safely handle completely NaN slices by filling them with 0 variance
     var_across_strains = np.nan_to_num(var_across_strains, nan=0.0)
-    
+
     top_indices = np.argsort(var_across_strains)[-top_n:][::-1]
 
     af_subset = af_matrix[:, top_indices]
-    
+
     # Fill any remaining NaNs to prevent scipy pdist linkage crashes
     af_subset = np.nan_to_num(af_subset, nan=0.0)
-    
+
     variant_labels = []
     for vi in top_indices:
         if vi < len(variants_info):
@@ -707,7 +693,7 @@ def allele_frequency_heatmap(
 
     # Try scipy for dendrograms
     try:
-        from scipy.cluster.hierarchy import linkage, dendrogram
+        from scipy.cluster.hierarchy import dendrogram, linkage
         from scipy.spatial.distance import pdist
 
         has_scipy = True
@@ -784,9 +770,7 @@ def allele_frequency_heatmap(
             interpolation="nearest",
         )
         ax_heat.set_yticks(range(len(ordered_strains)))
-        ax_heat.set_yticklabels(
-            [STRAIN_NAMES.get(s, s) for s in ordered_strains], fontsize=11
-        )
+        ax_heat.set_yticklabels([STRAIN_NAMES.get(s, s) for s in ordered_strains], fontsize=11)
 
         # X labels
         if n_display <= 30:
@@ -796,9 +780,7 @@ def allele_frequency_heatmap(
             step = max(1, n_display // 20)
             ticks = list(range(0, n_display, step))
             ax_heat.set_xticks(ticks)
-            ax_heat.set_xticklabels(
-                [reordered_labels[i] for i in ticks], rotation=90, fontsize=7
-            )
+            ax_heat.set_xticklabels([reordered_labels[i] for i in ticks], rotation=90, fontsize=7)
 
         # Colorbar
         ax_cbar = fig.add_subplot(gs[1, 3])
@@ -830,9 +812,7 @@ def allele_frequency_heatmap(
 
     else:
         # Fallback: simple heatmap without dendrograms
-        fig, ax = plt.subplots(
-            figsize=(max(12, n_display * 0.15), 4 + len(strains) * 0.5)
-        )
+        fig, ax = plt.subplots(figsize=(max(12, n_display * 0.15), 4 + len(strains) * 0.5))
 
         im = ax.imshow(af_subset, cmap="YlOrRd", aspect="auto", vmin=0, vmax=1)
         ax.set_yticks(range(len(strains)))
@@ -845,9 +825,7 @@ def allele_frequency_heatmap(
             step = max(1, n_display // 20)
             ticks = list(range(0, n_display, step))
             ax.set_xticks(ticks)
-            ax.set_xticklabels(
-                [variant_labels[i] for i in ticks], rotation=90, fontsize=7
-            )
+            ax.set_xticklabels([variant_labels[i] for i in ticks], rotation=90, fontsize=7)
 
         plt.colorbar(im, ax=ax, shrink=0.6, label="Allele Frequency")
         ax.set_title(

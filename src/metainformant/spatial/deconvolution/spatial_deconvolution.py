@@ -369,7 +369,7 @@ def validate_deconvolution(
     cell_types = estimated["cell_types"]
     confidence = np.asarray(estimated["confidence_scores"], dtype=np.float64)
 
-    n_spots = proportions.shape[0]
+    proportions.shape[0]
 
     # Normalization check: rows should sum to ~1
     row_sums = proportions.sum(axis=1)

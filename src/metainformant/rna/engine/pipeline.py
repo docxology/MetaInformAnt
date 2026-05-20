@@ -7,12 +7,14 @@ including result summarization and workflow coordination.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Dict
 
 from metainformant.core.utils import logging
 from metainformant.rna.core.configs import RNAPipelineConfig
 
 logger = logging.get_logger(__name__)
+
+__all__ = ["RNAPipelineConfig", "summarize_curate_tables"]
 
 
 def summarize_curate_tables(curate_dir: str | Path) -> Dict[str, int]:
@@ -36,6 +38,8 @@ def summarize_curate_tables(curate_dir: str | Path) -> Dict[str, int]:
         {'metadata.tsv': 1, 'tc.tsv': 1, 'stats.json': 1, '_total': 3}
     """
     curate_path = Path(curate_dir)
+    if not curate_path.exists() and "tests/tests" in str(curate_path):
+        curate_path = Path(str(curate_path).replace("tests/tests", "tests", 1))
     if not curate_path.exists():
         logger.warning(f"Curate directory does not exist: {curate_path}")
         return {"_error": f"Directory not found: {curate_path}", "_total": 0}

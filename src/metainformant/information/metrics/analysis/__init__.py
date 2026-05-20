@@ -1,12 +1,8 @@
 """Information theory analysis metrics."""
+
 from __future__ import annotations
 
-from .analysis import (
-    analyze_sequence_information,
-    compare_sequences_information,
-    information_profile,
-    information_signature,
-)
+from . import advanced_analysis, analysis
 from .advanced_analysis import (
     binding_information,
     fisher_information,
@@ -16,7 +12,12 @@ from .advanced_analysis import (
     relative_information_gain,
     variation_of_information,
 )
-from . import advanced_analysis, analysis
+from .analysis import (
+    analyze_sequence_information,
+    compare_sequences_information,
+    information_profile,
+    information_signature,
+)
 
 __all__ = [
     "advanced_analysis",

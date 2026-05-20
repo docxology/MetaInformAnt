@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import Any
+from typing import Any, Optional
 
 from metainformant.core.utils.logging import get_logger
 
@@ -44,9 +44,9 @@ def _cmap_red_blue(t: float) -> tuple[float, float, float]:
 def _viridis_approx(t: float) -> tuple[float, float, float]:
     """Approximate viridis colormap (purple -> yellow)."""
     t = max(0.0, min(1.0, t))
-    r = 0.267 + 0.004 * t + 0.658 * t ** 2 + 0.073 * t ** 3
-    g = 0.005 + 1.096 * t - 0.900 * t ** 2 + 0.498 * t ** 3
-    b = 0.329 + 1.648 * t - 3.294 * t ** 2 + 1.780 * t ** 3
+    r = 0.267 + 0.004 * t + 0.658 * t**2 + 0.073 * t**3
+    g = 0.005 + 1.096 * t - 0.900 * t**2 + 0.498 * t**3
+    b = 0.329 + 1.648 * t - 3.294 * t**2 + 1.780 * t**3
     return (max(0, min(1, r)), max(0, min(1, g)), max(0, min(1, b)))
 
 
@@ -92,24 +92,25 @@ def enrichment_dotplot(
     """
     try:
         import matplotlib.pyplot as plt
-        import matplotlib.patches as mpatches
-        
+
         # Apply accessible, high-contrast presentation style
-        plt.rcParams.update({
-            "font.size": 14,
-            "axes.titlesize": 16,
-            "axes.labelsize": 14,
-            "xtick.labelsize": 12,
-            "ytick.labelsize": 12,
-            "legend.fontsize": 12,
-            "legend.framealpha": 0.85,
-            "legend.edgecolor": "black",
-            "figure.dpi": 300,
-            "axes.grid": True,
-            "axes.axisbelow": True,
-            "grid.alpha": 0.4,
-            "grid.color": "#cccccc",
-        })
+        plt.rcParams.update(
+            {
+                "font.size": 14,
+                "axes.titlesize": 16,
+                "axes.labelsize": 14,
+                "xtick.labelsize": 12,
+                "ytick.labelsize": 12,
+                "legend.fontsize": 12,
+                "legend.framealpha": 0.85,
+                "legend.edgecolor": "black",
+                "figure.dpi": 300,
+                "axes.grid": True,
+                "axes.axisbelow": True,
+                "grid.alpha": 0.4,
+                "grid.color": "#cccccc",
+            }
+        )
     except ImportError:
         logger.warning("matplotlib not available; skipping enrichment_dotplot")
         return None
@@ -130,7 +131,7 @@ def enrichment_dotplot(
     adj_ps = [max(r.get("adjusted_p", r.get("p_value", 1.0)), 1e-300) for r in top]
     neg_log_ps = [-math.log10(p) for p in adj_ps]
     overlaps = [r.get("n_overlap", r.get("observed", 1)) for r in top]
-    n_genes = [r.get("n_genes", r.get("term_size", 1)) for r in top]
+    [r.get("n_genes", r.get("term_size", 1)) for r in top]
     query_sizes = [r.get("query_size", max(overlaps) or 1) for r in top]
     gene_ratios = [ov / qs if qs > 0 else 0.0 for ov, qs in zip(overlaps, query_sizes)]
 
@@ -150,7 +151,7 @@ def enrichment_dotplot(
 
     y_pos = list(range(len(top)))
 
-    sc = ax.scatter(
+    ax.scatter(
         gene_ratios,
         y_pos,
         s=dot_sizes,
@@ -229,24 +230,25 @@ def pathway_network_plot(
     """
     try:
         import matplotlib.pyplot as plt
-        import matplotlib.lines as mlines
-        
+
         # Apply accessible, high-contrast presentation style
-        plt.rcParams.update({
-            "font.size": 14,
-            "axes.titlesize": 16,
-            "axes.labelsize": 14,
-            "xtick.labelsize": 12,
-            "ytick.labelsize": 12,
-            "legend.fontsize": 12,
-            "legend.framealpha": 0.85,
-            "legend.edgecolor": "black",
-            "figure.dpi": 300,
-            "axes.grid": True,
-            "axes.axisbelow": True,
-            "grid.alpha": 0.4,
-            "grid.color": "#cccccc",
-        })
+        plt.rcParams.update(
+            {
+                "font.size": 14,
+                "axes.titlesize": 16,
+                "axes.labelsize": 14,
+                "xtick.labelsize": 12,
+                "ytick.labelsize": 12,
+                "legend.fontsize": 12,
+                "legend.framealpha": 0.85,
+                "legend.edgecolor": "black",
+                "figure.dpi": 300,
+                "axes.grid": True,
+                "axes.axisbelow": True,
+                "grid.alpha": 0.4,
+                "grid.color": "#cccccc",
+            }
+        )
     except ImportError:
         logger.warning("matplotlib not available; skipping pathway_network_plot")
         return None
@@ -264,7 +266,9 @@ def pathway_network_plot(
     visible_edges = [e for e in edges if e["source"] in node_ids and e["target"] in node_ids]
 
     # Simple spring layout using force-directed positions (no scipy/networkx)
-    import random, math as _math
+    import math as _math
+    import random
+
     random.seed(42)
     positions: dict[str, list[float]] = {n["term_id"]: [random.uniform(-1, 1), random.uniform(-1, 1)] for n in nodes}
 
@@ -385,7 +389,9 @@ def enrichment_score_plot(
 
     fig = None
     if axes is None:
-        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=kwargs.get("figsize", figsize), gridspec_kw={"height_ratios": [3, 1]}, sharex=True)
+        fig, (ax1, ax2) = plt.subplots(
+            2, 1, figsize=kwargs.get("figsize", figsize), gridspec_kw={"height_ratios": [3, 1]}, sharex=True
+        )
     else:
         ax1, ax2 = axes
 

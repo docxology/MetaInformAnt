@@ -10,7 +10,6 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Optional
 
 # Add src to path before imports
 repo_root = Path(__file__).parent.parent.parent.resolve()
@@ -220,7 +219,7 @@ def setup_venv_and_dependencies(auto_setup: bool = True) -> bool:
         # Update venv location tracking
         if venv_dir != repo_root / ".venv":
             logger.info(f"Note: Using venv at {venv_dir} (repo .venv has symlink limitations)")
-            logger.info(f"Scripts will use this venv automatically")
+            logger.info("Scripts will use this venv automatically")
 
         return True
 

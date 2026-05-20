@@ -6,13 +6,12 @@ parses markdown documentation for API signatures, then compares.
 """
 
 import ast
-import re
 import os
+import re
 import sys
-from pathlib import Path
 from collections import defaultdict
-from typing import Dict, List, Set, Tuple, Optional, Any
-import json
+from pathlib import Path
+from typing import Any, Dict, List, Set, Tuple
 
 # Base paths
 WORKSPACE = Path("/home/trim/Documents/Git/MetaInformAnt")
@@ -20,10 +19,7 @@ SRC_DIR = WORKSPACE / "src" / "metainformant" / "core"
 DOCS_DIR = WORKSPACE / "docs" / "core"
 
 # Core documentation modules to check
-DOC_MODULES = [
-    "cache", "config", "db", "download", "hash",
-    "io", "logging", "parallel", "paths", "text", "workflow"
-]
+DOC_MODULES = ["cache", "config", "db", "download", "hash", "io", "logging", "parallel", "paths", "text", "workflow"]
 
 # Map each documented module to its source file paths (relative to src/metainformant/core/)
 MODULE_SOURCE_FILES = {
@@ -95,7 +91,7 @@ def extract_python_symbols(filepath: Path) -> Tuple[Dict[str, Dict[str, Any]], S
     Returns (functions_dict, class_names_set).
     """
     try:
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             content = f.read()
         tree = ast.parse(content, filename=str(filepath))
     except Exception as e:
@@ -117,7 +113,7 @@ def extract_python_symbols(filepath: Path) -> Tuple[Dict[str, Dict[str, Any]], S
 
         def visit_FunctionDef(self, node):
             # Skip private/internal functions starting with _
-            if node.name.startswith('_') and not node.name.startswith('__'):
+            if node.name.startswith("_") and not node.name.startswith("__"):
                 return
 
             # Check if immediate parent is a ClassDef (i.e., it's a method)
@@ -131,13 +127,13 @@ def extract_python_symbols(filepath: Path) -> Tuple[Dict[str, Dict[str, Any]], S
             for i, arg in enumerate(args.args):
                 param_name = arg.arg
                 # Skip 'self' and 'cls' for methods
-                if is_method and param_name in ('self', 'cls'):
+                if is_method and param_name in ("self", "cls"):
                     continue
                 default = None
                 if i >= defaults_start:
                     default_idx = i - defaults_start
                     default_node = args.defaults[default_idx]
-                    default = ast.unparse(default_node) if hasattr(ast, 'unparse') else str(default_node)
+                    default = ast.unparse(default_node) if hasattr(ast, "unparse") else str(default_node)
                 params.append((param_name, default))
 
             # Handle *args and **kwargs
@@ -156,12 +152,12 @@ def extract_python_symbols(filepath: Path) -> Tuple[Dict[str, Dict[str, Any]], S
             signature = f"({', '.join(sig_parts)})"
 
             functions[node.name] = {
-                'signature': signature,
-                'line_no': node.lineno,
-                'is_async': isinstance(node, ast.AsyncFunctionDef),
-                'is_method': is_method,
-                'file': filepath.name,
-                'rel_path': str(filepath.relative_to(SRC_DIR.parent.parent)),
+                "signature": signature,
+                "line_no": node.lineno,
+                "is_async": isinstance(node, ast.AsyncFunctionDef),
+                "is_method": is_method,
+                "file": filepath.name,
+                "rel_path": str(filepath.relative_to(SRC_DIR.parent.parent)),
             }
 
         def visit_ClassDef(self, node):
@@ -180,7 +176,7 @@ def extract_documented_functions(filepath: Path) -> Dict[str, Dict[str, Any]]:
     Searches the entire file for function definitions in code blocks, inline code, and headers/tables.
     """
     try:
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             content = f.read()
     except Exception as e:
         print(f"Error reading {filepath}: {e}")
@@ -190,87 +186,87 @@ def extract_documented_functions(filepath: Path) -> Dict[str, Dict[str, Any]]:
 
     # Pattern 1: ```python ... def function(...):```
     # Only capture from code blocks that are signature-only (single-line or just def line)
-    code_blocks = re.findall(r'```python\s*\n(.*?)\n```', content, re.DOTALL | re.IGNORECASE)
+    code_blocks = re.findall(r"```python\s*\n(.*?)\n```", content, re.DOTALL | re.IGNORECASE)
     for block in code_blocks:
         # Skip multi-line code blocks (likely full examples)
         lines = [ln.strip() for ln in block.splitlines() if ln.strip()]
         if len(lines) > 1:
             continue
         # Single-line block, look for function definition
-        line = lines[0] if lines else ''
-        m = re.search(r'def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(\(.*\))', line)
+        line = lines[0] if lines else ""
+        m = re.search(r"def\s+([a-zA-Z_][a-zA-Z0-9_]*)\s*(\(.*\))", line)
         if m:
             fname = m.group(1)
-            if fname.startswith('_'):
+            if fname.startswith("_"):
                 continue
             params_str = m.group(2).strip()
             signature = params_str
             functions[fname] = {
-                'signature': signature,
-                'line_no': content[:content.find(m.group(0))].count('\n') + 1,
-                'source': 'code_block',
+                "signature": signature,
+                "line_no": content[: content.find(m.group(0))].count("\n") + 1,
+                "source": "code_block",
             }
     # Pattern 2: Inline code with full signature (type-annotated): `function_name(param: Type = default, ...) -> Return`
     # Only capture if parameters contain type hints (':') or return arrow ('->') to avoid capturing function calls
-    inline_pattern = r'`([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^`]*?)\)`'
+    inline_pattern = r"`([a-zA-Z_][a-zA-Z0-9_]*)\s*\(([^`]*?)\)`"
     for m in re.finditer(inline_pattern, content):
         fname = m.group(1)
         params_str = m.group(2).strip()
         if fname in functions:
             continue
-        if fname.startswith('_'):
+        if fname.startswith("_"):
             continue
         # Require type hint presence to distinguish signatures from calls
-        if not (':' in params_str or '->' in params_str):
+        if not (":" in params_str or "->" in params_str):
             continue
         signature = f"({params_str})" if params_str else "()"
         functions[fname] = {
-            'signature': signature,
-            'line_no': content[:content.find(m.group(0))].count('\n') + 1,
-            'source': 'inline_code',
+            "signature": signature,
+            "line_no": content[: content.find(m.group(0))].count("\n") + 1,
+            "source": "inline_code",
         }
 
     # Pattern 3: Function headers like `#### function_name(params)`
-    header_pattern = r'^(#{1,4})\s+(.+?)\s*$'
+    header_pattern = r"^(#{1,4})\s+(.+?)\s*$"
     for m in re.finditer(header_pattern, content, re.MULTILINE):
         line = m.group(2).strip()
-        if line.startswith('`') and line.endswith('`'):
+        if line.startswith("`") and line.endswith("`"):
             line = line[1:-1].strip()
         # Skip markdown table rows (lines starting with '|')
-        if line.startswith('|'):
+        if line.startswith("|"):
             continue
-        paren_match = re.search(r'^([a-zA-Z_][a-zA-Z0-9_]*)\s*(\(.*\))', line)
+        paren_match = re.search(r"^([a-zA-Z_][a-zA-Z0-9_]*)\s*(\(.*\))", line)
         if not paren_match:
             continue
         fname = paren_match.group(1)
         signature = paren_match.group(2)
-        if not (signature.startswith('(') and signature.endswith(')')):
+        if not (signature.startswith("(") and signature.endswith(")")):
             continue
-        if fname not in functions and not fname.startswith('_'):
+        if fname not in functions and not fname.startswith("_"):
             functions[fname] = {
-                'signature': signature,
-                'line_no': content[:content.find(m.group(0))].count('\n') + 1,
-                'source': 'header',
+                "signature": signature,
+                "line_no": content[: content.find(m.group(0))].count("\n") + 1,
+                "source": "header",
             }
 
     # Pattern 4: Markdown table rows
-    table_pattern = r'^\|\s*`?([a-zA-Z_][a-zA-Z0-9_]*?)`?\s*\|\s*`?([^`|]+?)\s*(?:`\s*\|?|$)\s*\|'
+    table_pattern = r"^\|\s*`?([a-zA-Z_][a-zA-Z0-9_]*?)`?\s*\|\s*`?([^`|]+?)\s*(?:`\s*\|?|$)\s*\|"
     for m in re.finditer(table_pattern, content, re.MULTILINE):
         fname = m.group(1).strip()
         sig_raw = m.group(2).strip()
-        has_signature_markers = '(' in sig_raw or '->' in sig_raw
+        has_signature_markers = "(" in sig_raw or "->" in sig_raw
         if not has_signature_markers:
             continue
-        sig_match = re.search(r'\([^)]*\)', sig_raw)
+        sig_match = re.search(r"\([^)]*\)", sig_raw)
         if sig_match:
             signature = sig_match.group(0)
         else:
             signature = "()"
-        if fname not in functions and not fname.startswith('_'):
+        if fname not in functions and not fname.startswith("_"):
             functions[fname] = {
-                'signature': signature,
-                'line_no': content[:content.find(m.group(0))].count('\n') + 1,
-                'source': 'table',
+                "signature": signature,
+                "line_no": content[: content.find(m.group(0))].count("\n") + 1,
+                "source": "table",
             }
 
     return functions
@@ -282,13 +278,13 @@ def normalize_signature(sig: str) -> str:
     remove type hints, convert defaults to canonical form.
     """
     # Remove type hints in params: `x: int` -> `x`
-    sig = re.sub(r':\s*[^,)=]+', '', sig)
+    sig = re.sub(r":\s*[^,)=]+", "", sig)
     # Normalize spaces around = and commas
-    sig = re.sub(r'\s*=\s*', '=', sig)
-    sig = re.sub(r'\s*,\s*', ', ', sig)
+    sig = re.sub(r"\s*=\s*", "=", sig)
+    sig = re.sub(r"\s*,\s*", ", ", sig)
     # Strip outer parentheses
     sig = sig.strip()
-    if sig.startswith('(') and sig.endswith(')'):
+    if sig.startswith("(") and sig.endswith(")"):
         sig = sig[1:-1]
     return sig.strip()
 
@@ -306,21 +302,21 @@ def compare_signatures(code_sig: str, doc_sig: str) -> Tuple[bool, List[str]]:
 
     differences = []
     # Parse params
-    code_params = [p.strip() for p in norm_code.split(',') if p.strip()]
-    doc_params = [p.strip() for p in norm_doc.split(',') if p.strip()]
+    code_params = [p.strip() for p in norm_code.split(",") if p.strip()]
+    doc_params = [p.strip() for p in norm_doc.split(",") if p.strip()]
 
     code_names = set()
     for p in code_params:
-        if '=' in p:
-            name = p.split('=')[0].strip()
+        if "=" in p:
+            name = p.split("=")[0].strip()
             code_names.add(name)
         else:
             code_names.add(p)
 
     doc_names = set()
     for p in doc_params:
-        if '=' in p:
-            name = p.split('=')[0].strip()
+        if "=" in p:
+            name = p.split("=")[0].strip()
             doc_names.add(name)
         else:
             doc_names.add(p)
@@ -381,7 +377,9 @@ def main():
             doc_inventory[mod_name].update(funcs)
             all_doc_files.append(doc_path)
 
-    print(f"  Found {sum(len(v) for v in doc_inventory.values())} documented functions across {len(doc_inventory)} modules")
+    print(
+        f"  Found {sum(len(v) for v in doc_inventory.values())} documented functions across {len(doc_inventory)} modules"
+    )
 
     # Filter out class names (documented classes are not functions)
     for mod, funcs in doc_inventory.items():
@@ -412,8 +410,8 @@ def main():
         # Check signature mismatches
         mismatches = []
         for fname in matches:
-            code_sig = code_funcs[fname]['signature']
-            doc_sig = doc_funcs[fname]['signature']
+            code_sig = code_funcs[fname]["signature"]
+            doc_sig = doc_funcs[fname]["signature"]
             match, diffs = compare_signatures(code_sig, doc_sig)
             if not match:
                 mismatches.append((fname, code_sig, doc_sig, diffs))
@@ -427,48 +425,54 @@ def main():
         accuracy = (perfect_matches / total_functions * 100) if total_functions > 0 else 100.0
 
         results[module] = {
-            'accuracy': accuracy,
-            'code_count': len(code_funcs),
-            'doc_count': len(doc_funcs),
-            'missing_in_docs': sorted(missing_in_docs),
-            'extra_in_docs': sorted(extra_in_docs),
-            'signature_mismatches': mismatches,
-            'total_issues': total_mod_issues,
+            "accuracy": accuracy,
+            "code_count": len(code_funcs),
+            "doc_count": len(doc_funcs),
+            "missing_in_docs": sorted(missing_in_docs),
+            "extra_in_docs": sorted(extra_in_docs),
+            "signature_mismatches": mismatches,
+            "total_issues": total_mod_issues,
         }
 
         # Collect individual issues for priority ranking
         for fname in missing_in_docs:
-            all_issues.append((
-                f"{module}.{fname}",
-                "MISSING_IN_DOCS",
-                code_funcs[fname]['rel_path'],
-                code_funcs[fname]['line_no'],
-                code_funcs[fname]['signature'],
-                None,
-                []
-            ))
+            all_issues.append(
+                (
+                    f"{module}.{fname}",
+                    "MISSING_IN_DOCS",
+                    code_funcs[fname]["rel_path"],
+                    code_funcs[fname]["line_no"],
+                    code_funcs[fname]["signature"],
+                    None,
+                    [],
+                )
+            )
 
         for fname in extra_in_docs:
-            all_issues.append((
-                f"{module}.{fname}",
-                "EXTRA_IN_DOCS",
-                f"docs/core/{module}.md",
-                doc_funcs[fname]['line_no'],
-                None,
-                doc_funcs[fname]['signature'],
-                []
-            ))
+            all_issues.append(
+                (
+                    f"{module}.{fname}",
+                    "EXTRA_IN_DOCS",
+                    f"docs/core/{module}.md",
+                    doc_funcs[fname]["line_no"],
+                    None,
+                    doc_funcs[fname]["signature"],
+                    [],
+                )
+            )
 
         for fname, code_sig, doc_sig, diffs in mismatches:
-            all_issues.append((
-                f"{module}.{fname}",
-                "SIGNATURE_MISMATCH",
-                code_funcs[fname]['rel_path'],
-                code_funcs[fname]['line_no'],
-                code_sig,
-                doc_sig,
-                diffs
-            ))
+            all_issues.append(
+                (
+                    f"{module}.{fname}",
+                    "SIGNATURE_MISMATCH",
+                    code_funcs[fname]["rel_path"],
+                    code_funcs[fname]["line_no"],
+                    code_sig,
+                    doc_sig,
+                    diffs,
+                )
+            )
 
     # Sort issues by priority: missing_in_docs > signature_mismatch > extra_in_docs
     # Then by line number (older/earlier = higher priority to fix)
@@ -524,7 +528,9 @@ def main():
     report_lines.append("|--------|----------|------------|-----------|--------|\n")
     for module in sorted(results.keys()):
         r = results[module]
-        report_lines.append(f"| {module} | {r['accuracy']:.1f}% | {r['code_count']} | {r['doc_count']} | {r['total_issues']} |\n")
+        report_lines.append(
+            f"| {module} | {r['accuracy']:.1f}% | {r['code_count']} | {r['doc_count']} | {r['total_issues']} |\n"
+        )
 
     report_lines.append("\n## Detailed Issues\n\n")
 
@@ -539,7 +545,7 @@ def main():
             report_lines.append(f"- **Differences:** {'; '.join(diffs)}\n")
         report_lines.append("\n")
 
-    with open(report_path, 'w') as f:
+    with open(report_path, "w") as f:
         f.writelines(report_lines)
 
     print("\nCross-check complete.")

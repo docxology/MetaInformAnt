@@ -6,8 +6,7 @@ including heritability estimation and selection response.
 
 from __future__ import annotations
 
-import statistics
-from typing import Any, Dict, List, Optional
+from typing import List
 
 from metainformant.core.utils import logging
 
@@ -25,14 +24,19 @@ def narrow_sense_heritability(additive_genetic_variance: float, phenotypic_varia
         Narrow-sense heritability (h² = VA/VP)
     """
     if phenotypic_variance <= 0:
-        raise ValueError("Phenotypic variance must be positive")
+        return 0.0
     if additive_genetic_variance < 0:
         raise ValueError("Additive genetic variance cannot be negative")
 
-    return additive_genetic_variance / phenotypic_variance
+    return max(0.0, min(1.0, additive_genetic_variance / phenotypic_variance))
 
 
-def realized_heritability(selection_response: float, selection_differential: float) -> float:
+def realized_heritability(
+    selection_response: float | None = None,
+    selection_differential: float = 0.0,
+    *,
+    response: float | None = None,
+) -> float:
     """Calculate realized heritability from selection experiment.
 
     Args:
@@ -42,13 +46,17 @@ def realized_heritability(selection_response: float, selection_differential: flo
     Returns:
         Realized heritability (h²)
     """
-    if selection_differential == 0:
+    if response is not None:
+        selection_response = response
+    if selection_response is None or selection_differential == 0:
         return 0.0
 
     return selection_response / selection_differential
 
 
-def lande_equation_response(selection_gradient: List[float], genetic_variance_covariance: List[List[float]]) -> float:
+def lande_equation_response(
+    selection_gradient: List[float], genetic_variance_covariance: List[List[float]]
+) -> List[float]:
     """Calculate evolutionary response using Lande's equation.
 
     Lande's equation predicts the evolutionary response to selection as:
@@ -86,5 +94,4 @@ def lande_equation_response(selection_gradient: List[float], genetic_variance_co
     # Calculate response: R = G * β
     response_vector = np.dot(G, beta)
 
-    # Return the magnitude of the response vector
-    return float(np.linalg.norm(response_vector))
+    return response_vector.tolist()

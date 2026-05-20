@@ -3,7 +3,6 @@
 
 from __future__ import annotations
 
-import json
 import time
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -89,7 +88,7 @@ def generate_html_report(results: Dict[str, Any], output_dir: Path) -> None:
     passed = [r for r in results["results"] if r["status"] == "passed"]
     failed = [r for r in results["results"] if r["status"] == "failed"]
     errors = [r for r in results["results"] if r["status"] == "error"]
-    timeouts = [r for r in results["results"] if r["status"] == "timeout"]
+    [r for r in results["results"] if r["status"] == "timeout"]
 
     # Build HTML content
     html_parts = [

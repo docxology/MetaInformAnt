@@ -117,9 +117,7 @@ def align_reads_bwa(
 
     try:
         with open(output_sam, "w") as sam_out:
-            result = subprocess.run(
-                cmd, stdout=sam_out, stderr=subprocess.PIPE, text=True
-            )
+            result = subprocess.run(cmd, stdout=sam_out, stderr=subprocess.PIPE, text=True)
         result.check_returncode()
 
         logger.info(f"Alignment completed: {output_sam}")
@@ -168,26 +166,29 @@ def align_and_sort_bwa(
 
     bwa_cmd = ["bwa", "mem", "-t", str(bwa_threads)]
     if sample_id:
-        bwa_cmd.extend(
-            ["-R", f"@RG\\tID:{sample_id}\\tLB:{sample_id}\\tPL:ILLUMINA\\tSM:{sample_id}"]
-        )
+        bwa_cmd.extend(["-R", f"@RG\\tID:{sample_id}\\tLB:{sample_id}\\tPL:ILLUMINA\\tSM:{sample_id}"])
     bwa_cmd.append(str(reference_fasta))
     bwa_cmd.extend([str(f) for f in fastq_files])
 
     sort_cmd = [
-        "samtools", "sort",
-        "-@", str(sort_threads),
-        "-m", sort_mem_per_thread,
-        "-T", f"/tmp/gwas_sort_{output_bam.stem}",
-        "-o", str(output_bam)
+        "samtools",
+        "sort",
+        "-@",
+        str(sort_threads),
+        "-m",
+        sort_mem_per_thread,
+        "-T",
+        f"/tmp/gwas_sort_{output_bam.stem}",
+        "-o",
+        str(output_bam),
     ]
 
-    logger.info(f"Running piped BWA-MEM | samtools sort: output={output_bam.name} (bwa={bwa_threads}t, sort={sort_threads}t)")
+    logger.info(
+        f"Running piped BWA-MEM | samtools sort: output={output_bam.name} (bwa={bwa_threads}t, sort={sort_threads}t)"
+    )
 
     try:
-        bwa_proc = subprocess.Popen(
-            bwa_cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=False
-        )
+        bwa_proc = subprocess.Popen(bwa_cmd, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=False)
         sort_proc = subprocess.Popen(
             sort_cmd, stdin=bwa_proc.stdout, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, text=False
         )
@@ -205,9 +206,7 @@ def align_and_sort_bwa(
             if sort_proc.returncode != 0:
                 errs.append(f"Samtools code {sort_proc.returncode}: {sort_stderr.decode('utf-8', errors='replace')}")
             raise subprocess.CalledProcessError(
-                sort_proc.returncode or bwa_proc.returncode, 
-                "Piped Alignment", 
-                stderr='\\n'.join(errs).encode()
+                sort_proc.returncode or bwa_proc.returncode, "Piped Alignment", stderr="\\n".join(errs).encode()
             )
 
         logger.info("Indexing generated BAM...")
@@ -216,9 +215,9 @@ def align_and_sort_bwa(
 
         logger.info(f"Piped alignment + indexing fully completed: {output_bam.name}")
         return output_bam
-        
+
     except subprocess.CalledProcessError as e:
-        err_msg = e.stderr.decode('utf-8', errors='replace') if e.stderr else str(e)
+        err_msg = e.stderr.decode("utf-8", errors="replace") if e.stderr else str(e)
         logger.error(f"Piped alignment execution failed with exit code {e.returncode}:\\n{err_msg}")
         if output_bam.exists():
             output_bam.unlink()
@@ -268,9 +267,7 @@ def sort_index_bam(
             str(output_bam),
             str(input_path),
         ]
-        logger.info(
-            f"Sorting alignments: {output_bam} (-@ {threads} -m {sort_mem_per_thread})"
-        )
+        logger.info(f"Sorting alignments: {output_bam} (-@ {threads} -m {sort_mem_per_thread})")
         subprocess.run(sort_cmd, check=True, capture_output=True)
 
         # 2. Index

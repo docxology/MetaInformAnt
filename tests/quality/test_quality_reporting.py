@@ -2,14 +2,24 @@
 
 NO MOCKING POLICY: All tests use real implementations.
 """
+
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
-import numpy as np
 import pytest
 
+from metainformant.quality.analysis.metrics import (
+    calculate_complexity_metrics,
+    calculate_coverage_metrics,
+    calculate_duplication_metrics,
+    calculate_gc_metrics,
+    calculate_length_metrics,
+    calculate_quality_metrics,
+    calculate_quality_score,
+    detect_outliers,
+)
 from metainformant.quality.reporting.multiqc_integration import (
     aggregate_sample_qc,
     check_qc_thresholds,
@@ -17,19 +27,6 @@ from metainformant.quality.reporting.multiqc_integration import (
     generate_qc_report,
     qc_trend_analysis,
 )
-from metainformant.quality.analysis.metrics import (
-    calculate_coverage_metrics,
-    calculate_complexity_metrics,
-    calculate_data_integrity_score,
-    calculate_duplication_metrics,
-    calculate_gc_metrics,
-    calculate_length_metrics,
-    calculate_quality_metrics,
-    calculate_quality_score,
-    compare_quality_metrics,
-    detect_outliers,
-)
-
 
 # ---------------------------------------------------------------------------
 # default_qc_thresholds
@@ -151,9 +148,7 @@ class TestAggregateSampleQC:
         assert "mean_quality" in result["summary_table"]
 
     def test_summary_statistics(self):
-        samples = [
-            {"sample_id": f"S{i}", "mean_quality": 30.0 + i} for i in range(5)
-        ]
+        samples = [{"sample_id": f"S{i}", "mean_quality": 30.0 + i} for i in range(5)]
         result = aggregate_sample_qc(samples)
         stats = result["summary_table"]["mean_quality"]
         assert stats["mean"] == pytest.approx(32.0, abs=0.01)

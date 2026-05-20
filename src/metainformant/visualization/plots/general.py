@@ -263,7 +263,7 @@ def pca_plot(
         c = [color_map[val] for val in data[hue]]
 
     # Plot scatter
-    scatter = ax.scatter(
+    ax.scatter(
         data["PC1"],
         data["PC2"],
         c=c,

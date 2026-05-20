@@ -6,7 +6,7 @@ adaptation index (CAI), and performing codon optimization for heterologous expre
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
 from metainformant.core.utils import logging
 

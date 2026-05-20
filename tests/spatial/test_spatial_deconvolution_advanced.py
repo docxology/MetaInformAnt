@@ -2,6 +2,7 @@
 
 NO MOCKING POLICY: All tests use real implementations.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -15,7 +16,6 @@ from metainformant.spatial.analysis.deconvolution import (
     estimate_cell_fractions,
     nnls_deconvolution,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -209,7 +209,6 @@ class TestDeconvolveSpots:
     def test_gene_name_intersection(self):
         ref = np.random.RandomState(42).rand(2, 5)
         spatial = np.random.RandomState(42).rand(3, 4)
-        shared = ["geneA", "geneB", "geneC"]
         spatial_genes = ["geneA", "geneB", "geneC", "geneD"]
         ref_genes = ["geneA", "geneB", "geneC", "geneE", "geneF"]
 

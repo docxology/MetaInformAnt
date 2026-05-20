@@ -24,7 +24,6 @@ from __future__ import annotations
 import math
 import random
 from collections import Counter
-from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -496,8 +495,8 @@ def _aldex2_like(
         p_value = _welch_t_test(vals_g1, vals_g2)
 
         # Effect size (Cohen's d)
-        mean_g1 = sum(vals_g1) / len(vals_g1) if vals_g1 else 0.0
-        mean_g2 = sum(vals_g2) / len(vals_g2) if vals_g2 else 0.0
+        sum(vals_g1) / len(vals_g1) if vals_g1 else 0.0
+        sum(vals_g2) / len(vals_g2) if vals_g2 else 0.0
         effect = _cohens_d(vals_g1, vals_g2)
 
         results.append(

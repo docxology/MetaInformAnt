@@ -10,8 +10,7 @@ numerical value that maps to metabolizer phenotype categories.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
 from metainformant.core.utils.logging import get_logger
 

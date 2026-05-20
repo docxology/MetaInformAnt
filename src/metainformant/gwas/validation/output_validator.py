@@ -20,9 +20,7 @@ from metainformant.core.utils.logging import get_logger
 logger = get_logger(__name__)
 
 
-def _check(
-    label: str, ok: bool, detail: str = "", warning: bool = False
-) -> Dict[str, Any]:
+def _check(label: str, ok: bool, detail: str = "", warning: bool = False) -> Dict[str, Any]:
     """Build a single check-result dict."""
     status = ("WARN" if warning else "PASS") if ok else "FAIL"
     return {"label": label, "status": status, "ok": ok or warning, "detail": detail}
@@ -52,9 +50,7 @@ def validate_pipeline_outputs(
     Path(paths.get("phenotype_dir", "data/phenotypes"))
     Path(paths.get("raw_dir", "data/raw"))
 
-    default_trait = (
-        config.get("samples", {}).get("phenotypes", {}).get("default_trait", "")
-    )
+    default_trait = config.get("samples", {}).get("phenotypes", {}).get("default_trait", "")
     model = config.get("gwas", {}).get("model", "mixed")
     sig_threshold = config.get("gwas", {}).get("significance_threshold", 5e-8)
 
@@ -132,11 +128,7 @@ def validate_pipeline_outputs(
     if post_json.exists():
         with open(post_json) as f:
             post_data = json.load(f)
-        lgc = (
-            post_data.get("summary_statistics", {})
-            .get("p_value_calibration", {})
-            .get("lambda_gc", float("nan"))
-        )
+        lgc = post_data.get("summary_statistics", {}).get("p_value_calibration", {}).get("lambda_gc", float("nan"))
         is_finite = not math.isnan(lgc) and not math.isinf(lgc)
         is_acceptable = is_finite and lgc > 0
         is_inflated = is_finite and lgc > lambda_gc_warn
@@ -148,11 +140,7 @@ def validate_pipeline_outputs(
         )
 
         # GW hits
-        n_gw = (
-            post_data.get("summary_statistics", {})
-            .get("significance_counts", {})
-            .get("genome_wide_5e-8", 0)
-        )
+        n_gw = post_data.get("summary_statistics", {}).get("significance_counts", {}).get("genome_wide_5e-8", 0)
         if require_hits:
             _add("GW-significant hits > 0", n_gw > 0, f"n_gw={n_gw}")
         else:
@@ -173,9 +161,7 @@ def validate_pipeline_outputs(
         _add(
             "post_gwas_results.json schema",
             len(missing_keys) == 0,
-            f"keys={list(post_data.keys())}"
-            if not missing_keys
-            else f"missing={missing_keys}",
+            f"keys={list(post_data.keys())}" if not missing_keys else f"missing={missing_keys}",
         )
 
     return {

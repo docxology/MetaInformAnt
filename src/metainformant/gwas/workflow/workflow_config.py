@@ -15,8 +15,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from metainformant.core.utils import logging
 from metainformant.core import io
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
@@ -172,9 +172,7 @@ def _normalize_config(config: Dict[str, Any]) -> Dict[str, Any]:
                 normalized["output_dir"] = output["results_dir"]
 
     # Map correction section
-    if "correction" not in normalized or not isinstance(
-        normalized.get("correction"), dict
-    ):
+    if "correction" not in normalized or not isinstance(normalized.get("correction"), dict):
         corr = config.get("correction", {})
         if isinstance(corr, dict) and corr:
             normalized["correction"] = corr
@@ -228,9 +226,7 @@ def load_gwas_config(config_file: Union[str, Path]) -> Dict[str, Any]:
         raise ValueError(f"Error loading configuration from {config_path}: {e}")
 
 
-def validate_gwas_config(
-    config: Dict[str, Any], *, check_files: bool = False
-) -> List[str]:
+def validate_gwas_config(config: Dict[str, Any], *, check_files: bool = False) -> List[str]:
     """Validate GWAS configuration.
 
     Validates config structure and required fields.  File existence checks are
@@ -274,19 +270,14 @@ def validate_gwas_config(
         if isinstance(samples, dict) and samples.get("phenotype_file"):
             has_pheno = True
     if not has_pheno:
-        errors.append(
-            "Missing required field: phenotype_path (or samples.phenotype_file)"
-        )
+        errors.append("Missing required field: phenotype_path (or samples.phenotype_file)")
 
     # Optional file existence checks (only when explicitly requested)
     if check_files:
         if "vcf_path" in normalized and not Path(normalized["vcf_path"]).exists():
             errors.append(f"VCF file not found: {normalized['vcf_path']}")
 
-        if (
-            "phenotype_path" in normalized
-            and not Path(normalized["phenotype_path"]).exists()
-        ):
+        if "phenotype_path" in normalized and not Path(normalized["phenotype_path"]).exists():
             errors.append(f"Phenotype file not found: {normalized['phenotype_path']}")
 
     # Check work directory (if it exists, it should be a directory)
@@ -300,27 +291,21 @@ def validate_gwas_config(
     valid_methods = ["linear", "logistic", "mixed"]
     method = normalized.get("model")
     if method and method not in valid_methods:
-        errors.append(
-            f"Invalid association model '{method}'. Must be one of: {valid_methods}"
-        )
+        errors.append(f"Invalid association model '{method}'. Must be one of: {valid_methods}")
 
     valid_corrections = ["bonferroni", "fdr", "genomic_control"]
     corr_dict = normalized.get("correction")
     if isinstance(corr_dict, dict):
         correction = corr_dict.get("method")
         if correction and correction not in valid_corrections:
-            errors.append(
-                f"Invalid correction method '{correction}'. Must be one of: {valid_corrections}"
-            )
+            errors.append(f"Invalid correction method '{correction}'. Must be one of: {valid_corrections}")
 
     valid_kinship = ["vanraden", "ibs", "astle", "yang"]
     struct_dict = config.get("structure")
     if isinstance(struct_dict, dict):
         kinship = struct_dict.get("kinship_method")
         if kinship and kinship not in valid_kinship:
-            errors.append(
-                f"Invalid kinship method '{kinship}'. Must be one of: {valid_kinship}"
-            )
+            errors.append(f"Invalid kinship method '{kinship}'. Must be one of: {valid_kinship}")
 
     return errors
 
@@ -354,23 +339,15 @@ def _extract_genotype_matrix(vcf_data: Dict[str, Any]) -> Union[List[List[int]],
     # Detect if matrix is sample-major (samples x variants) and transpose if needed
     # parse_vcf_full transposes to sample-major, but GWAS functions expect variant-major
     is_numpy = hasattr(genotypes, "shape")
-    
+
     if is_numpy:
         if genotypes.shape == (sample_count, variant_count) and sample_count != variant_count:
             logger.info("Detecting sample-major genotype matrix. Transposing to variant-major...")
             genotypes = genotypes.T
     else:
-        if (
-            len(genotypes) == sample_count
-            and len(genotypes[0]) == variant_count
-            and sample_count != variant_count
-        ):
-            logger.info(
-                "Detecting sample-major genotype matrix. Transposing to variant-major..."
-            )
-            genotypes = [
-                [genotypes[s][v] for s in range(sample_count)] for v in range(variant_count)
-            ]
+        if len(genotypes) == sample_count and len(genotypes[0]) == variant_count and sample_count != variant_count:
+            logger.info("Detecting sample-major genotype matrix. Transposing to variant-major...")
+            genotypes = [[genotypes[s][v] for s in range(sample_count)] for v in range(variant_count)]
 
     # Validate shape using numpy attributes if possible
     if is_numpy:
@@ -383,15 +360,11 @@ def _extract_genotype_matrix(vcf_data: Dict[str, Any]) -> Union[List[List[int]],
                     f"Variant {i} has {len(variant_genotypes)} genotypes but {sample_count} samples expected"
                 )
 
-    logger.info(
-        f"Extracted genotype matrix: {len(genotypes)} variants x {sample_count} samples"
-    )
+    logger.info(f"Extracted genotype matrix: {len(genotypes)} variants x {sample_count} samples")
     return genotypes
 
 
-def _load_phenotypes(
-    phenotype_path: str | Path, trait: str | None = None
-) -> List[float]:
+def _load_phenotypes(phenotype_path: str | Path, trait: str | None = None) -> List[float]:
     """Load phenotype data from file.
 
     Supports common phenotype file formats:
@@ -441,10 +414,7 @@ def _load_phenotypes(
                 second_col = parts[1].strip()
 
                 # Check if first column looks like a sample ID (contains letters) and second is numeric
-                if (
-                    any(c.isalpha() for c in first_col)
-                    and second_col.replace(".", "").replace("-", "").isdigit()
-                ):
+                if any(c.isalpha() for c in first_col) and second_col.replace(".", "").replace("-", "").isdigit():
                     # This looks like sample_id,phenotype format, not a header
                     has_header = False
                 elif any(
@@ -509,9 +479,7 @@ def _load_phenotypes(
                             value = float(parts[pheno_col_idx].strip())
                             phenotypes.append(value)
                         except ValueError:
-                            logger.warning(
-                                f"Could not parse phenotype value: {parts[pheno_col_idx]}"
-                            )
+                            logger.warning(f"Could not parse phenotype value: {parts[pheno_col_idx]}")
                             continue
 
         else:
@@ -534,9 +502,7 @@ def _load_phenotypes(
         raise ValueError(f"Error loading phenotypes from {phenotype_path}: {e}")
 
 
-def _load_phenotypes_by_id(
-    phenotype_path: str | Path, trait: str | None = None
-) -> Dict[str, float]:
+def _load_phenotypes_by_id(phenotype_path: str | Path, trait: str | None = None) -> Dict[str, float]:
     """Load phenotype data as a dict keyed by sample_id.
 
     Args:

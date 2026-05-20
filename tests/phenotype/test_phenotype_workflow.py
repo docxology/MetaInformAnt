@@ -2,19 +2,16 @@
 
 NO MOCKING POLICY: All tests use real implementations.
 """
+
 from __future__ import annotations
 
 import json
 
-import pytest
-
-from metainformant.core.utils.errors import ValidationError
 from metainformant.phenotype.workflow.pipeline import (
     PhenotypePipeline,
     PipelineConfig,
     PipelineResult,
 )
-
 
 # ---------------------------------------------------------------------------
 # PipelineConfig
@@ -83,16 +80,12 @@ class TestPipelineConfig:
         assert any("Unknown step" in i for i in issues)
 
     def test_validate_all_valid_types(self):
-        cfg = PipelineConfig(
-            phenotype_types=["morphological", "behavioral", "chemical", "electronic", "sonic"]
-        )
+        cfg = PipelineConfig(phenotype_types=["morphological", "behavioral", "chemical", "electronic", "sonic"])
         issues = cfg.validate()
         assert issues == []
 
     def test_validate_all_valid_steps(self):
-        cfg = PipelineConfig(
-            steps=["load", "validate", "preprocess", "analyze", "summarize", "export"]
-        )
+        cfg = PipelineConfig(steps=["load", "validate", "preprocess", "analyze", "summarize", "export"])
         issues = cfg.validate()
         assert issues == []
 

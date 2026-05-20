@@ -297,12 +297,10 @@ def test_workflow_config_priority(tmp_path):
 
     # Create config file
     config_file = tmp_path / "config.yaml"
-    config_file.write_text(
-        """
+    config_file.write_text("""
 embedding:
   embedding_dim: 100
-"""
-    )
+""")
 
     # Pass config_obj that should override
     config_obj = LifeEventsWorkflowConfig(work_dir=tmp_path / "work", embedding={"embedding_dim": 50})
@@ -322,12 +320,10 @@ def test_config_env_override_edge_cases(tmp_path):
     from metainformant.life_events.core.config import load_life_events_config
 
     config_file = tmp_path / "test_config.yaml"
-    config_file.write_text(
-        """
+    config_file.write_text("""
 work_dir: output/test
 threads: 4
-"""
-    )
+""")
 
     # Set invalid threads value
     os.environ["LE_THREADS"] = "invalid"

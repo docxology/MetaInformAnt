@@ -25,7 +25,6 @@ from metainformant.dna.sequences import write_fasta
 from metainformant.simulation import (
     generate_population_sequences,
     generate_random_dna,
-    generate_two_populations,
     mutate_sequence,
 )
 

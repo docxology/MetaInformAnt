@@ -7,7 +7,7 @@ for spatial point pattern statistics.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
@@ -516,13 +516,13 @@ def ripley_k(
             area=area,
         )
 
-    lambda_hat = n / area  # intensity estimate
+    n / area  # intensity estimate
 
     # Bounding box for edge correction
     x_min, y_min = pts.min(axis=0)
     x_max, y_max = pts.max(axis=0)
-    bbox_width = x_max - x_min
-    bbox_height = y_max - y_min
+    x_max - x_min
+    y_max - y_min
 
     def _compute_k(point_set: Any, n_pts: int) -> Any:
         """Compute K(r) for a set of points with isotropic edge correction."""

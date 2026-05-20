@@ -10,7 +10,6 @@ in the MetaInformAnt repository, ensuring consistent application of:
 4. Domain-specific configuration
 """
 
-import os
 from pathlib import Path
 from typing import Dict
 
@@ -85,29 +84,31 @@ TEMPLATE = """# Cursor Rules for {module_name} Module ({prefix}_)
   ```
 """
 
+
 def main():
     """Generate cursorrules files."""
     CURSORRULES_DIR.mkdir(parents=True, exist_ok=True)
-    
+
     print(f"Generating cursorrules in {CURSORRULES_DIR}...")
-    
+
     modules = [d.name for d in SRC_DIR.iterdir() if d.is_dir() and not d.name.startswith("__")]
-    
+
     for module in modules:
         if module not in MODULE_PREFIXES:
             print(f"Warning: No prefix definition for {module}, skipping.")
             continue
-            
+
         prefix = MODULE_PREFIXES[module]
         content = TEMPLATE.format(module_name=module, prefix=prefix)
-        
+
         output_file = CURSORRULES_DIR / f"{module}.cursorrules"
         with open(output_file, "w") as f:
             f.write(content)
-            
+
         print(f"Created {output_file.name}")
 
     print("Done.")
+
 
 if __name__ == "__main__":
     main()

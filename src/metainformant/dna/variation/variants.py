@@ -7,7 +7,7 @@ and performing variant calling operations.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 from metainformant.core.utils import logging
 

@@ -13,9 +13,10 @@ POLICY = """
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.
 """
 
+
 def main():
     print(f"Checking SPEC.md files in {DOCS_DIR}...")
-    
+
     count = 0
     for spec_file in DOCS_DIR.rglob("SPEC.md"):
         content = spec_file.read_text()
@@ -24,8 +25,9 @@ def main():
             with open(spec_file, "a") as f:
                 f.write(POLICY)
             count += 1
-            
+
     print(f"Updated {count} files.")
+
 
 if __name__ == "__main__":
     main()

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Script to fix test imports after module refactoring."""
 
-import os
 import re
 from pathlib import Path
 
@@ -127,8 +126,6 @@ IMPORT_FIXES = {
     "metainformant.menu.navigation": "metainformant.menu.ui.navigation",
     "metainformant.menu.discovery": "metainformant.menu.core.discovery",
     "metainformant.menu.executor": "metainformant.menu.core.executor",
-    # Math
-    "metainformant.math.coalescent": "metainformant.math.population_genetics.coalescent",
     "metainformant.math.demography": "metainformant.math.population_genetics.demography",
     "metainformant.math.ddm": "metainformant.math.decision_theory.ddm",
     "metainformant.math.epidemiology": "metainformant.math.epidemiology",
@@ -213,7 +210,6 @@ def fix_imports_in_file(file_path: Path) -> int:
     except UnicodeDecodeError:
         return 0
 
-    original_content = content
     replacements = 0
 
     for old_path, new_path in IMPORT_FIXES.items():

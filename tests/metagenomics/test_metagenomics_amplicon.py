@@ -6,8 +6,6 @@ Uses real implementations -- NO mocking per project policy.
 
 from __future__ import annotations
 
-import math
-
 import pytest
 
 from metainformant.metagenomics.amplicon.asv_denoising import (
@@ -18,7 +16,6 @@ from metainformant.metagenomics.amplicon.asv_denoising import (
     merge_paired_reads,
 )
 from metainformant.metagenomics.amplicon.otu_clustering import (
-    OTU,
     ClusteringResult,
     calculate_identity,
     cluster_otus,

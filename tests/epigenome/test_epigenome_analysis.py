@@ -364,7 +364,7 @@ class TestGenerateTrackReport:
         track.add_feature("chr1", 0, 100, value=5.0)
 
         out_path = tmp_path / "report.txt"
-        report = generate_track_report(track, output_path=out_path)
+        generate_track_report(track, output_path=out_path)
         assert out_path.exists()
         assert "saved_report" in out_path.read_text()
 

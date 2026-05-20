@@ -11,12 +11,11 @@ This minimizes disk usage and maximizes throughput compared to the traditional
 "download all, then process all" approach.
 """
 
-import logging
 import shutil
 import subprocess
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List, Optional, Set, Tuple
 
@@ -30,6 +29,7 @@ logger = get_logger(__name__)
 # ---------------------------------------------------------------------------
 # Resource Profiles — species-specific tuning for workers, threads, timeouts
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class ResourceProfile:
@@ -124,6 +124,7 @@ def get_profile(name: Optional[str] = None, species: Optional[str] = None) -> Re
         description=profile.description,
     )
 
+
 class StreamingPipeline:
     """
     Orchestrates streaming RNA-seq processing (Download -> Quant -> Delete).
@@ -176,7 +177,7 @@ class StreamingPipeline:
         self.use_watchdog = use_watchdog if use_watchdog is not None else rp.use_watchdog
         self.watchdog_timeout = watchdog_timeout if watchdog_timeout is not None else rp.watchdog_timeout
         self.profile = rp
-        
+
         # Computed paths
         self.quant_dir = self.work_dir / "quant"
         self.downloader = ENADownloader()
@@ -192,7 +193,7 @@ class StreamingPipeline:
         processed = set()
         if not self.quant_dir.exists():
             return processed
-        
+
         for sample_dir in self.quant_dir.iterdir():
             if sample_dir.is_dir() and (sample_dir / "abundance.tsv").exists():
                 processed.add(sample_dir.name)
@@ -201,70 +202,69 @@ class StreamingPipeline:
     def _quantify_sample(self, sample_id: str, fastq_files: List[Path]) -> Tuple[bool, str]:
         """Run kallisto quant for a single sample."""
         output_dir = self.quant_dir / sample_id
-        
+
         if self.dry_run:
             logger.info(f"[DRY RUN] Would quantify {sample_id} with {fastq_files} -> {output_dir}")
             return True, "Dry Run"
 
         output_dir.mkdir(parents=True, exist_ok=True)
-        
+
         cmd = [
-            "kallisto", "quant",
-            "-i", str(self.index_file),
-            "-o", str(output_dir),
-            "-t", str(self.threads),
+            "kallisto",
+            "quant",
+            "-i",
+            str(self.index_file),
+            "-o",
+            str(output_dir),
+            "-t",
+            str(self.threads),
         ]
-        
+
         # Handle Single vs Paired
         if len(fastq_files) >= 2:
-             cmd.extend([str(fastq_files[0]), str(fastq_files[1])])
+            cmd.extend([str(fastq_files[0]), str(fastq_files[1])])
         else:
-             # Estimated fragment length for single-end
-             cmd.extend(["--single", "-l", "200", "-s", "30", str(fastq_files[0])])
+            # Estimated fragment length for single-end
+            cmd.extend(["--single", "-l", "200", "-s", "30", str(fastq_files[0])])
 
         proc = None
         watchdog = None
-        
+
         try:
             # Start process using Popen interaction to allow monitoring
-            proc = subprocess.Popen(
-                cmd, 
-                stdout=subprocess.PIPE, 
-                stderr=subprocess.PIPE, 
-                text=True
-            )
-            
+            proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
             # Start Watchdog if enabled
             if self.use_watchdog:
                 watchdog = ProcessWatchdog(
-                    pid=proc.pid, 
-                    cpu_threshold=1.0, 
+                    pid=proc.pid,
+                    cpu_threshold=1.0,
                     timeout_seconds=self.watchdog_timeout,
-                    on_stall=ProcessWatchdog.kill_process_tree
+                    on_stall=ProcessWatchdog.kill_process_tree,
                 )
                 watchdog.start()
-            
+
             # Wait for completion (simulates subprocess.run)
-            stdout, stderr = proc.communicate(timeout=7200) # Hard timeout 2h just in case
-            
+            stdout, stderr = proc.communicate(timeout=7200)  # Hard timeout 2h just in case
+
             if proc.returncode != 0:
                 # Check if it was killed by watchdog/signal?
                 if proc.returncode == -9 or proc.returncode == -15:
                     return False, "Killed (likely by Watchdog)"
                 return False, f"Kallisto failed: {stderr[:200] if stderr else 'No stderr'}"
-            
+
             return True, "Quantified"
 
         except subprocess.TimeoutExpired:
             if proc:
                 ProcessWatchdog.kill_process_tree(proc.pid)
             return False, "Hard Timeout (2h)"
-        
+
         except Exception as e:
             if proc:
                 ProcessWatchdog.kill_process_tree(proc.pid)
             return False, str(e)
-            
+
         finally:
             if watchdog:
                 watchdog.stop()
@@ -274,13 +274,8 @@ class StreamingPipeline:
         Full lifecycle for one sample: Download -> Quant -> Clean.
         Designed to be run in a parallel worker.
         """
-        result = {
-            "sample_id": sample_id, 
-            "success": False, 
-            "timing": {}, 
-            "error": None
-        }
-        
+        result = {"sample_id": sample_id, "success": False, "timing": {}, "error": None}
+
         sample_tmp_dir = self.fastq_dir / sample_id
         t0 = time.time()
 
@@ -298,7 +293,7 @@ class StreamingPipeline:
                 ok, msg, fastq_files = self.downloader.download_run(sample_id, sample_tmp_dir)
 
             result["timing"]["download"] = time.time() - t0
-            
+
             if not ok:
                 result["error"] = f"Download failed: {msg}"
                 return result
@@ -307,7 +302,7 @@ class StreamingPipeline:
             t1 = time.time()
             ok, msg = self._quantify_sample(sample_id, fastq_files)
             result["timing"]["quantify"] = time.time() - t1
-            
+
             if not ok:
                 result["error"] = msg
                 return result
@@ -315,7 +310,7 @@ class StreamingPipeline:
             # 4. Cleanup
             if not self.dry_run:
                 shutil.rmtree(sample_tmp_dir, ignore_errors=True)
-            
+
             result["success"] = True
 
         except Exception as e:
@@ -323,7 +318,7 @@ class StreamingPipeline:
             # Cleanup on failure
             if not self.dry_run:
                 shutil.rmtree(sample_tmp_dir, ignore_errors=True)
-        
+
         return result
 
     def run(self, sample_ids: List[str]):
@@ -331,24 +326,21 @@ class StreamingPipeline:
         total = len(sample_ids)
         logger.info(f"Starting pipeline for {total} samples with {self.workers} workers.")
         logger.info(f"Watchdog: {'Enabled' if self.use_watchdog else 'Disabled'} (Timeout: {self.watchdog_timeout}s)")
-        
+
         if self.dry_run:
             logger.info("[DRY RUN] Simulating processing for first 5 samples only.")
             sample_ids = sample_ids[:5]
 
         # Use ProcessPoolExecutor for true parallelism
         with ProcessPoolExecutor(max_workers=self.workers) as executor:
-            future_to_sample = {
-                executor.submit(self.process_one, sid): sid 
-                for sid in sample_ids
-            }
-            
+            future_to_sample = {executor.submit(self.process_one, sid): sid for sid in sample_ids}
+
             completed = 0
             for future in as_completed(future_to_sample):
                 completed += 1
                 res = future.result()
                 sid = res["sample_id"]
-                
+
                 if res["success"]:
                     logger.info(f"[{completed}/{total}] ✓ {sid}")
                 else:

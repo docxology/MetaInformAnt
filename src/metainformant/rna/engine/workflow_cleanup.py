@@ -147,7 +147,7 @@ def cleanup_fastqs(config: AmalgkitWorkflowConfig, sample_ids: List[str]) -> Non
         gf_out = config.per_step["getfastq"].get("out_dir")
         if gf_out:
             getfastq_conf_dir = Path(gf_out)
-            
+
     quant_conf_dir = None
     if config.per_step and "quant" in config.per_step:
         q_out = config.per_step["quant"].get("out_dir")
@@ -166,7 +166,7 @@ def cleanup_fastqs(config: AmalgkitWorkflowConfig, sample_ids: List[str]) -> Non
         if getfastq_conf_dir:
             paths.append(getfastq_conf_dir / "getfastq" / sample_id)
             paths.append(getfastq_conf_dir / sample_id)
-            
+
         if quant_conf_dir:
             paths.append(quant_conf_dir / "getfastq" / sample_id)
 

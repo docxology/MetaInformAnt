@@ -86,7 +86,7 @@ def main():
         return 1
 
     # Apply normalization
-    print(f"\nApplying tissue normalization...")
+    print("\nApplying tissue normalization...")
     print(f"  Mapping: {args.mapping}")
     print(f"  Patches: {args.patches}")
 

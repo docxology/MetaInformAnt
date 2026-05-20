@@ -390,7 +390,7 @@ def _greedy_modularity_clustering(
     # Relabel communities to 0..k-1
     unique_labels = np.unique(labels)
     label_map = {old: new for new, old in enumerate(unique_labels)}
-    labels = np.array([label_map[l] for l in labels], dtype=np.int32)
+    labels = np.array([label_map[label] for label in labels], dtype=np.int32)
 
     # Compute modularity
     modularity = _compute_modularity(adj, labels, m)

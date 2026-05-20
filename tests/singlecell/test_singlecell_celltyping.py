@@ -7,7 +7,6 @@ No mocking used - all tests use real computational methods and data.
 
 from __future__ import annotations
 
-import math
 import random
 
 import numpy as np

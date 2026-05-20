@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Dict, Iterator, List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
-from metainformant.core.utils import errors, logging
 from metainformant.core import io
+from metainformant.core.utils import errors, logging
 
 logger = logging.get_logger(__name__)
 

@@ -1,3 +1,5 @@
+# ruff: noqa: E402 - setup utilities intentionally run before importing metainformant.
+
 import sys
 from pathlib import Path
 
@@ -25,7 +27,6 @@ logger.info(f"Running direct verification for {config_path}")
 import yaml
 
 # Force metadata to single sample to avoid disk issues
-from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
 
 # Manually read work_dir from yaml because AmalgkitWorkflowConfig might require valid file structure first
 with open(config_path) as f:
@@ -38,11 +39,11 @@ metadata_path = work_dir / "metadata" / "metadata.tsv"
 logger.info(f"Resolved metadata path from YAML: {metadata_path}")
 
 if metadata_path.exists():
-    logger.info(f"Editing metadata to keep only SRR1817176")
+    logger.info("Editing metadata to keep only SRR1817176")
     lines = metadata_path.read_text().splitlines()
     header = lines[0]
     # Keep only header and SRR1817176
-    new_lines = [header] + [l for l in lines[1:] if "SRR1817176" in l]
+    new_lines = [header] + [line for line in lines[1:] if "SRR1817176" in line]
     logger.info(f"Filtered to {len(new_lines)-1} samples")
     metadata_path.write_text("\n".join(new_lines) + "\n")
     logger.info("Metadata file updated.")

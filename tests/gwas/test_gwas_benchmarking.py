@@ -16,8 +16,7 @@ from metainformant.gwas.analysis.benchmarking import (
     extrapolate_full_genome_time,
     scaling_model,
 )
-from metainformant.gwas.data.config import estimate_runtime, _compute_scaling_factor
-
+from metainformant.gwas.data.config import _compute_scaling_factor, estimate_runtime
 
 # ---------------------------------------------------------------------------
 # scaling_model() unit tests
@@ -117,7 +116,9 @@ class TestExtrapolateFullGenomeTime:
         ]
         # Force O(m) instead of default O(n·m)
         est = extrapolate_full_genome_time(
-            pilot_timings, target_n_samples=200, target_n_variants=2000,
+            pilot_timings,
+            target_n_samples=200,
+            target_n_variants=2000,
             custom_models={"association_testing": "m"},
         )
         # O(m): 2000/1000 = 2× → 20.0s

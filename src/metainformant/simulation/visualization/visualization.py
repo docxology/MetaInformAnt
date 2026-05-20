@@ -7,16 +7,13 @@ RNA-seq data generation, and agent-based modeling.
 
 from __future__ import annotations
 
-import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 import matplotlib.animation as animation
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from matplotlib.axes import Axes
-from matplotlib.patches import Circle, Rectangle
 
 from metainformant.core.data import validation
 from metainformant.core.io import paths

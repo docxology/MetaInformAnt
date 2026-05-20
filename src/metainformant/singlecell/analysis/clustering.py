@@ -8,7 +8,7 @@ marker gene identification.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Optional
 
 import numpy as np
 import pandas as pd
@@ -17,8 +17,8 @@ from scipy.cluster.hierarchy import fcluster, linkage
 from scipy.spatial.distance import pdist
 
 from metainformant.core.data import validation
-from metainformant.core.utils import errors
-from metainformant.core.utils import logging
+from metainformant.core.utils import errors, logging
+from metainformant.singlecell.data.preprocessing import SingleCellData
 
 # Optional scientific dependencies
 try:
@@ -68,9 +68,6 @@ except ImportError:
 
 logger = logging.get_logger(__name__)
 
-# Import our SingleCellData
-from metainformant.singlecell.data.preprocessing import SingleCellData
-
 
 def leiden_clustering(
     data: SingleCellData,
@@ -109,7 +106,7 @@ def leiden_clustering(
     X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # Construct kNN graph
-    n_cells = X.shape[0]
+    X.shape[0]
     distances = _compute_pairwise_distances(X)
 
     # Build adjacency matrix
@@ -694,7 +691,7 @@ def evaluate_clustering_performance(
     }
 
     # Unsupervised metrics
-    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
+    data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     try:
         silhouette = compute_cluster_silhouette(data, cluster_col)

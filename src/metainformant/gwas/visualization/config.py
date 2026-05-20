@@ -118,9 +118,7 @@ def get_style(theme: str = "publication", **overrides: Any) -> PlotStyle:
 
     # Start from a copy of the theme's style
     base = THEMES[theme]
-    style_kwargs: Dict[str, Any] = {
-        f.name: getattr(base, f.name) for f in base.__dataclass_fields__.values()
-    }
+    style_kwargs: Dict[str, Any] = {f.name: getattr(base, f.name) for f in base.__dataclass_fields__.values()}
 
     # Apply caller overrides
     for key, value in overrides.items():
@@ -147,7 +145,7 @@ def apply_style(style: PlotStyle) -> None:
 
         # Ensure high-contrast universal styling across all graphs natively
         sns.set_theme(style="whitegrid", palette="husl")
-        
+
         mpl.rcParams["font.size"] = style.font_size
         mpl.rcParams["axes.titlesize"] = style.title_size
         mpl.rcParams["figure.dpi"] = style.dpi
@@ -157,9 +155,7 @@ def apply_style(style: PlotStyle) -> None:
         mpl.rcParams["grid.alpha"] = style.grid_alpha
         logger.info("Applied PlotStyle (theme=%s) to matplotlib rcParams with Seaborn HUSL palette", style.theme)
     except ImportError:
-        logger.warning(
-            "matplotlib or seaborn is not installed; cannot apply PlotStyle to rcParams"
-        )
+        logger.warning("matplotlib or seaborn is not installed; cannot apply PlotStyle to rcParams")
 
 
 def style_from_config(config: Dict[str, Any]) -> PlotStyle:
@@ -185,13 +181,9 @@ def style_from_config(config: Dict[str, Any]) -> PlotStyle:
         font_size=viz_config.get("font_size", defaults.font_size),
         title_size=viz_config.get("title_size", defaults.title_size),
         colormap=viz_config.get("colormap", defaults.colormap),
-        categorical_colors=viz_config.get(
-            "categorical_colors", defaults.categorical_colors
-        ),
+        categorical_colors=viz_config.get("categorical_colors", defaults.categorical_colors),
         volcano_colors=viz_config.get("volcano_colors", defaults.volcano_colors),
-        significance_color=viz_config.get(
-            "significance_color", defaults.significance_color
-        ),
+        significance_color=viz_config.get("significance_color", defaults.significance_color),
         suggestive_color=viz_config.get("suggestive_color", defaults.suggestive_color),
         point_size=viz_config.get("point_size", defaults.point_size),
         alpha=viz_config.get("alpha", defaults.alpha),

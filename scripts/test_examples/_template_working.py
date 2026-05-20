@@ -4,7 +4,6 @@
 This demonstrates proper imports, configuration, visualization, and output handling.
 """
 
-import logging
 import sys
 from pathlib import Path
 

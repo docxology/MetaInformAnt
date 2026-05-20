@@ -86,7 +86,6 @@ def main():
     import argparse
 
     # Import os here to avoid circular imports
-    import os
 
     parser = argparse.ArgumentParser(description="Test METAINFORMANT examples")
     parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")

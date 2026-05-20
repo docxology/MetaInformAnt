@@ -8,6 +8,8 @@ Usage:
     python3 scripts/menu/run_menu.py
 """
 
+# ruff: noqa: E402 - this launcher prepends the local src tree before importing metainformant.
+
 from __future__ import annotations
 
 import subprocess
@@ -21,7 +23,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 from metainformant.core.utils.logging import get_logger
 from metainformant.menu import discover_scripts, generate_menu_from_scripts
 from metainformant.menu.display import clear_screen, format_breadcrumb, get_choice, show_menu
-from metainformant.menu.executor import execute_script, prompt_for_args
+from metainformant.menu.executor import execute_script
 from metainformant.menu.navigation import MenuSystem
 
 logger = get_logger(__name__)

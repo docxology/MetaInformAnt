@@ -5,9 +5,8 @@ Tests all visualization modules in gwas/visualization_*.py following NO_MOCKING 
 
 from __future__ import annotations
 
-from pathlib import Path
+import importlib.util
 
-import numpy as np
 import pytest
 
 # Test basic visualization module
@@ -15,14 +14,15 @@ from metainformant.gwas import visualization
 
 # Test specialized visualization modules
 try:
+    from metainformant.gwas.visualization.genomic import genome as visualization_genome
+    from metainformant.gwas.visualization.genomic import regional as visualization_regional
+    from metainformant.gwas.visualization.genomic import variants as visualization_variants
+    from metainformant.gwas.visualization.interactive import suite as visualization_suite
+    from metainformant.gwas.visualization.population import population as visualization_population
     from metainformant.gwas.visualization.statistical import comparison as visualization_comparison
     from metainformant.gwas.visualization.statistical import effects as visualization_effects
-    from metainformant.gwas.visualization.genomic import genome as visualization_genome
-    from metainformant.gwas.visualization.population import population as visualization_population
-    from metainformant.gwas.visualization.genomic import regional as visualization_regional
     from metainformant.gwas.visualization.statistical import statistical as visualization_statistical
-    from metainformant.gwas.visualization.interactive import suite as visualization_suite
-    from metainformant.gwas.visualization.genomic import variants as visualization_variants
+
     # visualization_enhanced does not have a new canonical path; keep trying old import
     try:
         from metainformant.gwas import visualization_enhanced
@@ -173,14 +173,10 @@ class TestEffectsVisualization:
         output_path = tmp_path / "effects.png"
         if hasattr(visualization_effects, "effect_size_plot"):
             # Check for seaborn dependency which is required for this plot
-            try:
-                import seaborn
-                has_seaborn = True
-            except ImportError:
-                has_seaborn = False
+            has_seaborn = importlib.util.find_spec("seaborn") is not None
 
             result = visualization_effects.effect_size_plot(results, output_path)
-            
+
             if has_seaborn:
                 assert result is not None
             else:

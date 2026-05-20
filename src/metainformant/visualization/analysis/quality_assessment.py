@@ -7,11 +7,10 @@ batch effect diagnostics, and data integrity metrics.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from matplotlib.axes import Axes
 
 from metainformant.core.data import validation

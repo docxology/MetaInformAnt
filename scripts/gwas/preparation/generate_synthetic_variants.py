@@ -74,13 +74,13 @@ def generate_synthetic_variants(
     sample_ids = [f"Sample_{i:03d}" for i in range(1, n_samples + 1)]
 
     # Filter chromosomes by length (only use those > 10kb)
-    large_chroms = [(c, l) for c, l in chrom_lengths.items() if l > 10000]
+    large_chroms = [(chrom, length) for chrom, length in chrom_lengths.items() if length > 10000]
     large_chroms.sort(key=lambda x: x[1], reverse=True)  # Sort by length
 
     print(f"Using {len(large_chroms)} large chromosomes (>10kb)")
 
     # Use top 50 chromosomes
-    selected_chroms = [c for c, l in large_chroms[:50]]
+    selected_chroms = [chrom for chrom, _length in large_chroms[:50]]
     selected_lengths = {c: chrom_lengths[c] for c in selected_chroms}
 
     # Generate variant data

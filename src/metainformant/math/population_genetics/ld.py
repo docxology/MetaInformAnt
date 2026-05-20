@@ -5,7 +5,7 @@ This module provides mathematical functions for analyzing linkage disequilibrium
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -93,8 +93,13 @@ def ld_coefficients(
 
 
 def ld_decay_r2(
-    distances: List[float], r_squared_values: List[float], max_distance: Optional[float] = None
-) -> Dict[str, float]:
+    distances: List[float] | float,
+    r_squared_values: List[float] | None = None,
+    max_distance: Optional[float] = None,
+    *,
+    recombination_rate: float | None = None,
+    generations: int | None = None,
+) -> Dict[str, float] | float:
     """Analyze LD decay with distance.
 
     Args:
@@ -105,7 +110,12 @@ def ld_decay_r2(
     Returns:
         Dictionary with LD decay statistics
     """
-    if len(distances) != len(r_squared_values):
+    if isinstance(distances, (int, float)):
+        if recombination_rate is None or generations is None:
+            raise ValueError("recombination_rate and generations are required for scalar LD decay")
+        return float(distances) * ((1.0 - recombination_rate) ** (2 * generations))
+
+    if r_squared_values is None or len(distances) != len(r_squared_values):
         raise ValueError("Distances and r² values must have same length")
 
     # Filter by max distance if specified

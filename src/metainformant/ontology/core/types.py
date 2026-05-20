@@ -9,8 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Set, Tuple
 
-from metainformant.core.utils import logging
-from metainformant.core.utils import errors
+from metainformant.core.utils import errors, logging
 
 logger = logging.get_logger(__name__)
 
@@ -127,11 +126,14 @@ class Ontology:
             if parent_id not in self.children_of:
                 self.children_of[parent_id] = set()
             self.children_of[parent_id].add(term.term_id)
-            
+
             # Explicitly create Relationship object
             rel = Relationship(source=term.term_id, target=parent_id, relation_type="is_a")
             # Only add if it's not already there
-            if not any(r.source == rel.source and r.target == rel.target and r.relation_type == rel.relation_type for r in self.relationships):
+            if not any(
+                r.source == rel.source and r.target == rel.target and r.relation_type == rel.relation_type
+                for r in self.relationships
+            ):
                 self.relationships.append(rel)
 
         logger.debug(f"Added term {term.term_id} to ontology")

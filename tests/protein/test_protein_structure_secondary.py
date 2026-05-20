@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 
 def test_secondary_structure_module_exists():
     """Test that the secondary structure module is importable."""

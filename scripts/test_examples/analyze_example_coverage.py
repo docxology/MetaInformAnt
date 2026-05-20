@@ -121,7 +121,7 @@ class CoverageAnalyzer:
         covered_functions = {}
 
         # Get function names for pattern matching
-        function_names = {name.split(".")[-1]: full_name for full_name, _ in all_functions.items()}
+        function_names = {full_name.split(".")[-1]: full_name for full_name in all_functions}
 
         for example_file in examples_dir.rglob("example_*.py"):
             try:
@@ -241,7 +241,7 @@ class CoverageAnalyzer:
         with open(report_file, "w") as f:
             f.write("# METAINFORMANT Examples Coverage Report\n\n")
 
-            f.write(f"## Overview\n\n")
+            f.write("## Overview\n\n")
             f.write(f"- **Total Functions:** {coverage_data['total_functions']}\n")
             f.write(f"- **Covered Functions:** {coverage_data['covered_functions']}\n")
             f.write(".1f")

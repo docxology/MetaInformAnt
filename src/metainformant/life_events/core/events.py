@@ -34,6 +34,9 @@ class Event:
     timestamp: datetime
     domain: str
     attributes: Dict[str, Any] = field(default_factory=dict)
+    person_id: Optional[str] = None
+    description: str = ""
+    confidence: float = 1.0
 
     def __post_init__(self):
         """Validate event data."""
@@ -55,6 +58,9 @@ class Event:
             "timestamp": self.timestamp.isoformat(),
             "domain": self.domain,
             "attributes": self.attributes,
+            "person_id": self.person_id,
+            "description": self.description,
+            "confidence": self.confidence,
         }
 
     @classmethod
@@ -71,6 +77,9 @@ class Event:
             timestamp=ts_obj,
             domain=data["domain"],
             attributes=data.get("attributes", {}),
+            person_id=data.get("person_id"),
+            description=data.get("description", ""),
+            confidence=float(data.get("confidence", 1.0)),
         )
 
     def __str__(self) -> str:

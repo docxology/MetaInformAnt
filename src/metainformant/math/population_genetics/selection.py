@@ -6,10 +6,7 @@ including quantitative genetics and kin selection theory.
 
 from __future__ import annotations
 
-import math
-from typing import Any, Dict, List, Optional
-
-import numpy as np
+from typing import Dict, List
 
 from metainformant.core.utils import logging
 
@@ -80,7 +77,14 @@ def kin_selection_response(
     return relatedness * benefit - cost
 
 
-def mutation_update(allele_frequency: float, mutation_rate_forward: float, mutation_rate_backward: float) -> float:
+def mutation_update(
+    allele_frequency: float,
+    mutation_rate_forward: float | None = None,
+    mutation_rate_backward: float | None = None,
+    *,
+    mu: float | None = None,
+    nu: float | None = None,
+) -> float:
     """Update allele frequency due to mutation.
 
     Args:
@@ -93,6 +97,12 @@ def mutation_update(allele_frequency: float, mutation_rate_forward: float, mutat
     """
     if not (0 <= allele_frequency <= 1):
         raise ValueError("Allele frequency must be between 0 and 1")
+    if mu is not None:
+        mutation_rate_forward = mu
+    if nu is not None:
+        mutation_rate_backward = nu
+    if mutation_rate_forward is None or mutation_rate_backward is None:
+        raise ValueError("Forward and backward mutation rates are required")
 
     # Mutation balance: Δp = -u*p + v*(1-p)
     delta_p = -mutation_rate_forward * allele_frequency + mutation_rate_backward * (1 - allele_frequency)
@@ -107,7 +117,6 @@ def selection_update(
     allele_frequency: float,
     selection_coefficient: float | None = None,
     dominance_coefficient: float = 0.5,
-    *,
     fitness_AA: float | None = None,
     fitness_Aa: float | None = None,
     fitness_aa: float | None = None,
@@ -134,6 +143,10 @@ def selection_update(
 
     p = allele_frequency
     q = 1 - p
+
+    if fitness_AA is not None and fitness_Aa is None and fitness_aa is None:
+        fitness_AA, fitness_Aa, fitness_aa = selection_coefficient, dominance_coefficient, fitness_AA
+        selection_coefficient = None
 
     # If fitness values are provided, use them directly
     if fitness_AA is not None and fitness_Aa is not None and fitness_aa is not None:
@@ -174,7 +187,7 @@ def selection_update(
     return max(0, min(1, new_frequency))
 
 
-def selection_differential(trait_values: List[float], fitness_values: List[float]) -> float:
+def selection_differential(fitness_values: List[float], trait_values: List[float]) -> float:
     """Calculate selection differential.
 
     Args:
@@ -203,7 +216,7 @@ def selection_differential(trait_values: List[float], fitness_values: List[float
     return covariance / fitness_mean
 
 
-def selection_gradient(trait_values: List[float], fitness_values: List[float]) -> float:
+def selection_gradient(fitness_values: List[float], trait_values: List[float]) -> float:
     """Calculate selection gradient.
 
     Args:
@@ -255,7 +268,7 @@ def relative_fitness(fitness_values: List[float]) -> List[float]:
     return [w / mean_fitness for w in fitness_values]
 
 
-def selection_intensity(trait_values: List[float], fitness_values: List[float]) -> float:
+def selection_intensity(fitness_values: List[float], trait_values: List[float]) -> float:
     """Calculate selection intensity.
 
     Args:
@@ -268,7 +281,7 @@ def selection_intensity(trait_values: List[float], fitness_values: List[float]) 
     # i = S / sigma_trait
     from .statistics import standard_deviation
 
-    S = selection_differential(trait_values, fitness_values)
+    S = selection_differential(fitness_values, trait_values)
     sigma = standard_deviation(trait_values)
 
     if sigma == 0:
@@ -320,8 +333,16 @@ def mutation_selection_balance_dominant(mutation_rate: float, selection_coeffici
 
 
 def multilevel_selection_decomposition(
-    group_trait_mean: float, individual_trait_variance: float, group_trait_variance: float, group_size: int
-) -> Dict[str, float]:
+    group_trait_mean: float | None = None,
+    individual_trait_variance: float | None = None,
+    group_trait_variance: float | None = None,
+    group_size: int | None = None,
+    *,
+    group_means: List[float] | None = None,
+    individual_deviations: List[float] | None = None,
+    selection_strength_group: float = 1.0,
+    selection_strength_individual: float = 1.0,
+) -> Dict[str, float] | tuple[float, float, float]:
     """Decompose selection into individual and group-level components.
 
     Args:
@@ -333,7 +354,24 @@ def multilevel_selection_decomposition(
     Returns:
         Dictionary with multilevel selection components
     """
-    if group_size <= 0:
+    if group_means is not None or individual_deviations is not None:
+        group_means = group_means or []
+        individual_deviations = individual_deviations or []
+        if len(group_means) <= 1:
+            between = 0.0
+        else:
+            mean_group = sum(group_means) / len(group_means)
+            between = (
+                sum((value - mean_group) ** 2 for value in group_means) / len(group_means)
+            ) * selection_strength_group
+        within = (
+            sum(value**2 for value in individual_deviations) / len(individual_deviations)
+            if individual_deviations
+            else 0.0
+        ) * selection_strength_individual
+        return float(between), float(within), float(between + within)
+
+    if group_size is None or group_size <= 0:
         raise ValueError("Group size must be positive")
 
     # Total phenotypic variance

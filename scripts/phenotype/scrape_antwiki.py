@@ -16,7 +16,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from metainformant.phenotype.scraper import AntWikiScraper, AntWikiScraperConfig, load_scraper_config
+from metainformant.phenotype.scraper import AntWikiScraper, load_scraper_config
 
 
 def main() -> int:

@@ -9,8 +9,6 @@ and filtering, FRiP quality metrics, and differential peak analysis.
 from __future__ import annotations
 
 import math
-import statistics
-from typing import Any, Optional
 
 from metainformant.core.utils import logging
 

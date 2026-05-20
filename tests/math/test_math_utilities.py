@@ -15,7 +15,13 @@ import math
 import numpy as np
 import pytest
 
-from metainformant.math.core.utilities import correlation_coefficient, fisher_exact_test, jensen_shannon_divergence, linear_regression, shannon_entropy
+from metainformant.math.core.utilities import (
+    correlation_coefficient,
+    fisher_exact_test,
+    jensen_shannon_divergence,
+    linear_regression,
+    shannon_entropy,
+)
 
 
 class TestCorrelationCoefficient:
@@ -145,7 +151,6 @@ class TestFisherExactTest:
     def test_basic_2x2_table(self):
         """Test basic 2x2 contingency table."""
         # Example from scipy docs
-        table = [[10, 2], [3, 15]]
         odds_ratio, p_value = fisher_exact_test(10, 2, 3, 15)
         assert odds_ratio > 0  # Should be positive
         assert 0 <= p_value <= 1  # p-value should be in valid range
@@ -211,7 +216,7 @@ class TestShannonEntropy:
         """Test that function normalizes unnormalized inputs."""
         values = [2, 2, 2]  # Sums to 6, should be normalized to [1/3, 1/3, 1/3]
         entropy = shannon_entropy(values)
-        expected = -3 * (1 / 3) * math.log2(1 / 3)  # Should be log2(3)
+        -3 * (1 / 3) * math.log2(1 / 3)  # Should be log2(3)
         assert abs(entropy - math.log2(3)) < 1e-10
 
     def test_empty_list(self):

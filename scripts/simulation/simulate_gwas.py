@@ -65,7 +65,7 @@ def simulate_variants(
         f"##contig=<ID={chromosome},length=1000000>",
         '##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">',
         '##FORMAT=<ID=DP,Number=1,Type=Integer,Description="Read Depth">',
-        f"#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t"
+        "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\t"
         + "\t".join([f"sample_{i:03d}" for i in range(n_samples)]),
     ]
 

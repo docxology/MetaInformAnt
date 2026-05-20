@@ -126,7 +126,11 @@ class TestMath:
 
     def test_input_validation(self):
         """Test input validation for all new functions."""
-        from metainformant.math.core.utilities import correlation_coefficient, jensen_shannon_divergence, linear_regression
+        from metainformant.math.core.utilities import (
+            correlation_coefficient,
+            jensen_shannon_divergence,
+            linear_regression,
+        )
 
         # Test invalid correlation inputs
         with pytest.raises(ValueError):

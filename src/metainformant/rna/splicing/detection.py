@@ -40,34 +40,23 @@ Example:
 
 from __future__ import annotations
 
-# Re-export everything from the split modules so that existing imports
-# like ``from metainformant.rna.splicing.detection import detect_splice_junctions``
-# continue to work.
-
-from .splice_sites import (
-    JunctionType,
-    _ACCEPTOR_PWM,
-    _DONOR_PWM,
-    _classify_junction_type,
-    _parse_cigar_junctions,
-    compute_splice_site_strength,
-    detect_splice_junctions,
-)
 from .splice_analysis import (
     SplicingEventType,
-    _beta_confidence_interval,
-    _classify_by_coordinates,
-    _classify_with_gene_model,
-    _empirical_bayes_test,
-    _norm_ppf,
-    _normal_cdf,
-    _permutation_test,
-    _wilcoxon_test,
     classify_splicing_events,
     compute_psi,
     differential_splicing,
     find_novel_junctions,
 )
+from .splice_sites import (
+    JunctionType,
+    compute_splice_site_strength,
+    detect_splice_junctions,
+)
+
+# Re-export everything from the split modules so that existing imports
+# like ``from metainformant.rna.splicing.detection import detect_splice_junctions``
+# continue to work.
+
 
 __all__ = [
     # Types

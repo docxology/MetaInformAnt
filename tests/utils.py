@@ -9,10 +9,9 @@ from __future__ import annotations
 
 import os
 import shutil
-import subprocess
 import tempfile
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List
 
 import pytest
 

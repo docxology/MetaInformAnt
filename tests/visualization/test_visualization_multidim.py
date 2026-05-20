@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 
 import numpy as np
@@ -17,10 +18,8 @@ from metainformant.visualization.plots.multidim import (
 
 # Check for optional dependencies
 try:
-    import seaborn as sns
-
-    HAS_SEABORN = True
-except ImportError:
+    HAS_SEABORN = importlib.util.find_spec("seaborn") is not None
+except ModuleNotFoundError:
     HAS_SEABORN = False
 
 
@@ -48,7 +47,7 @@ class TestPlotPairwiseRelationships:
             }
         )
 
-        ax = plot_pairwise_relationships(data)
+        plot_pairwise_relationships(data)
         # Note: pairplot creates its own figure, so ax might be None
         # This is expected behavior for seaborn pairplot
         plt.close("all")

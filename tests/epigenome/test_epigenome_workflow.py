@@ -146,7 +146,7 @@ class TestIntegrateEpigenomeResults:
         chip_results = {"statistics": {"total_samples": 0}}
         atac_results = {"statistics": {"total_samples": 0}}
 
-        result = integrate_epigenome_results(
+        integrate_epigenome_results(
             meth_results,
             chip_results,
             atac_results,

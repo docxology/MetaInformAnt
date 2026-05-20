@@ -14,25 +14,18 @@ from typing import Any
 
 from metainformant.core.utils.logging import setup_logger
 from metainformant.dna.population_viz import (
-    plot_allele_frequency_spectrum,
-    plot_bootstrap_distribution,
     plot_demographic_comparison,
     plot_diversity_comparison,
     plot_fst_comparison,
     plot_fst_matrix,
-    plot_hardy_weinberg_test,
-    plot_heterozygosity_distribution,
     plot_kinship_matrix,
     plot_linkage_disequilibrium_decay,
     plot_neutrality_test_suite,
     plot_neutrality_test_summary,
-    plot_outlier_detection,
     plot_pca_results,
-    plot_permutation_test,
     plot_pi_vs_theta,
     plot_site_frequency_spectrum,
     plot_statistic_correlation_matrix,
-    plot_statistic_distribution,
     plot_summary_statistics_grid,
     plot_tajimas_d_comparison,
 )

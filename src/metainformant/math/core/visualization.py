@@ -7,15 +7,12 @@ and theoretical biology simulations.
 
 from __future__ import annotations
 
-import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from matplotlib.axes import Axes
-from matplotlib.patches import Circle, FancyBboxPatch, Rectangle
 
 from metainformant.core.data import validation
 from metainformant.core.io import paths
@@ -129,7 +126,7 @@ def plot_population_genetics_summary(
 
     # Plot as bar chart with error bars
     x_positions = np.arange(len(stat_names))
-    bars = ax.bar(x_positions, stat_values, yerr=stat_errors, capsize=5, alpha=0.7, color="lightcoral")
+    ax.bar(x_positions, stat_values, yerr=stat_errors, capsize=5, alpha=0.7, color="lightcoral")
 
     ax.set_xlabel("Population Genetics Statistics")
     ax.set_ylabel("Value")

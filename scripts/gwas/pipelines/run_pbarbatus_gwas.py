@@ -10,6 +10,8 @@ OPTIMIZATIONS:
 - Includes progress logging and time estimates
 """
 
+# ruff: noqa: E402 - this script prepends local source and visualization paths before imports.
+
 import sys
 from pathlib import Path
 
@@ -74,7 +76,7 @@ print(f"Configuration: {config_path}")
 # Load configuration
 print_step(1, 10, "Loading Configuration")
 config = load_gwas_config(config_path)
-print(f"✓ Configuration loaded successfully")
+print("✓ Configuration loaded successfully")
 print(f"  Work directory: {config.work_dir}")
 print(f'  VCF file: {config.variants["vcf_files"][0]}')
 print(f'  Phenotype file: {config.samples["phenotype_file"]}')
@@ -84,7 +86,7 @@ vcf_file = Path(config.variants["vcf_files"][0])
 pheno_file = Path(config.samples["phenotype_file"])
 genome_file = Path(config.genome.get("fasta", ""))
 
-print(f"\nFile verification:")
+print("\nFile verification:")
 print(f"  VCF exists: {vcf_file.exists()} ({vcf_file})")
 print(f"  Phenotypes exist: {pheno_file.exists()} ({pheno_file})")
 print(f"  Genome exists: {genome_file.exists()} ({genome_file})")
@@ -116,7 +118,7 @@ qc_config = {
     "hwe_pval": config.qc.get("hwe_pval", 1e-6),
     "min_qual": config.qc.get("min_qual", 30.0),
 }
-print(f"QC parameters:")
+print("QC parameters:")
 print(f'  Min MAF: {qc_config["min_maf"]}')
 print(f'  Max missing: {qc_config["max_missing"]}')
 print(f'  HWE p-value: {qc_config["hwe_pval"]}')
@@ -148,7 +150,7 @@ else:
 print_step(4, 10, "Computing Population Structure (PCA)")
 n_components = config.structure.get("n_components", 10)
 print(f"Computing {n_components} principal components using all {len(genotypes[0]):,} variants...")
-print(f"This may take 10-20 seconds...")
+print("This may take 10-20 seconds...")
 
 pca_start = time.time()
 pca_result = compute_pca(genotypes, n_components=n_components)
@@ -183,7 +185,7 @@ variant_indices = list(range(0, n_variants_all, step_size))[:n_variants_kinship]
 print(f"OPTIMIZATION: Using {len(variant_indices):,} / {n_variants_all:,} variants for kinship")
 print(f"  (Selecting every {step_size}th variant for computational efficiency)")
 print(f"Computing {n_samples}×{n_samples} kinship matrix using {kinship_method} method...")
-print(f"Estimated time: ~5-10 seconds...")
+print("Estimated time: ~5-10 seconds...")
 
 # Create subset genotype matrix for kinship
 kinship_start = time.time()
@@ -221,14 +223,14 @@ if pcs is not None:
     dump_json(pca_result, results_dir / "pca_results.json", indent=2)
 dump_json(kinship_result, results_dir / "kinship_results.json", indent=2)
 
-print(f"✓ Intermediate results saved")
+print("✓ Intermediate results saved")
 print(f"  Location: {results_dir}")
-print(f"  Files: qc_results.json, pca_results.json, kinship_results.json")
+print("  Files: qc_results.json, pca_results.json, kinship_results.json")
 
 # Load phenotypes
 print_step(7, 10, "Loading Phenotype Data")
 pheno_df = pd.read_csv(str(pheno_file), sep="\t")
-print(f"✓ Phenotypes loaded")
+print("✓ Phenotypes loaded")
 print(f"  Samples: {len(pheno_df)}")
 print(f"  Columns: {len(pheno_df.columns)}")
 print(f'  Traits: {", ".join([c for c in pheno_df.columns if c not in ["sample_id", "age_days", "colony", "sex"]])}')
@@ -259,7 +261,7 @@ for trait_idx, (trait_name, test_type, trait_label) in enumerate(traits_to_test,
     print(f"\n  [{trait_idx}/{len(traits_to_test)}] Testing trait: {trait_label} ({test_type})")
 
     if trait_name not in pheno_df.columns:
-        print(f"    ✗ Trait not found in phenotype file, skipping")
+        print("    ✗ Trait not found in phenotype file, skipping")
         continue
 
     phenotypes = pheno_df[trait_name].tolist()
@@ -289,7 +291,7 @@ for trait_idx, (trait_name, test_type, trait_label) in enumerate(traits_to_test,
                         "p_value": result["p_value"],
                     }
                 )
-        except Exception as e:
+        except Exception:
             # Skip variants that fail
             pass
 
@@ -482,7 +484,7 @@ with open(report_file, "w") as f:
     f.write("-" * 80 + "\n")
     f.write("DATA SUMMARY\n")
     f.write("-" * 80 + "\n")
-    f.write(f"Species: Pogonomyrmex barbatus (Red Harvester Ant)\n")
+    f.write("Species: Pogonomyrmex barbatus (Red Harvester Ant)\n")
     f.write(f'Genome Assembly: {config.genome.get("accession", "N/A")}\n')
     f.write(f"Total Samples: {n_samples}\n")
     f.write(f"Total Variants (input): {n_variants_total:,}\n")
@@ -524,7 +526,7 @@ with open(report_file, "w") as f:
         # Top 5 associations
         sorted_assoc = sorted(trait_data["associations"], key=lambda x: x["p_value"])[:5]
         if sorted_assoc:
-            f.write(f"  Top 5 Associations:\n")
+            f.write("  Top 5 Associations:\n")
             for i, assoc in enumerate(sorted_assoc, 1):
                 f.write(f'    {i}. {assoc["variant_id"]} ({assoc["chrom"]}:{assoc["pos"]}): ')
                 f.write(f'P={assoc["p_value"]:.2e}, β={assoc["beta"]:.4f}\n')

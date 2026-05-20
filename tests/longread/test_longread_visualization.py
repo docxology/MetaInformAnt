@@ -325,7 +325,7 @@ class TestLongReadOrchestrator:
             PipelineStep(name="b", function=step_b, depends_on=["a"]),
         ]
 
-        result = orchestrator._run_steps("test", steps)
+        orchestrator._run_steps("test", steps)
 
         # a must come before b, and both before c
         assert results_order.index("a") < results_order.index("b")

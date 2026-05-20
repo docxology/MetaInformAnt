@@ -336,7 +336,6 @@ def plot_neutrality_test_suite(
     results: Dict[str, Any], output_file: Optional[str] = None, output_path: Optional[str] = None
 ) -> Optional[any]:
     """Plot comprehensive neutrality test results."""
-    output = output_file or output_path
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -382,7 +381,6 @@ def plot_outlier_detection(
     output_path: Optional[str] = None,
 ) -> Optional[any]:
     """Plot outlier detection results."""
-    output = output_file or output_path
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -442,7 +440,6 @@ def plot_permutation_test(
     output_path: Optional[str] = None,
 ) -> Optional[any]:
     """Plot permutation test results."""
-    output = output_file or output_path
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -649,7 +646,7 @@ def plot_tajimas_d_comparison(
 
     colors = ["red" if d < -2 else "green" if d > 2 else "blue" for d in d_values]
 
-    bars = plt.bar(populations, d_values, color=colors, alpha=0.7, edgecolor="black")
+    plt.bar(populations, d_values, color=colors, alpha=0.7, edgecolor="black")
 
     plt.ylabel("Tajima's D")
     plt.title("Tajima's D Comparison Across Populations")

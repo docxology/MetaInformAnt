@@ -470,9 +470,9 @@ class TestMainExports:
         assert callable(theme)
 
     def test_palettes_exported(self):
+        from metainformant.visualization import WONG
         from metainformant.visualization.config import config
         from metainformant.visualization.config.palettes import categorical, chromosome_palette
-        from metainformant.visualization import WONG
 
         assert config is not None
         assert callable(chromosome_palette)
@@ -480,8 +480,8 @@ class TestMainExports:
         assert isinstance(WONG, list)
 
     def test_composite_exported(self):
-        from metainformant.visualization.dashboards.composite import genomic_overview, multi_panel, qc_summary
         from metainformant.visualization import dashboards
+        from metainformant.visualization.dashboards.composite import genomic_overview, multi_panel, qc_summary
 
         assert dashboards is not None
         assert callable(multi_panel)
@@ -489,8 +489,8 @@ class TestMainExports:
         assert callable(qc_summary)
 
     def test_interactive_exported(self):
-        from metainformant.visualization.dashboards.interactive import interactive_scatter, interactive_volcano
         from metainformant.visualization import dashboards
+        from metainformant.visualization.dashboards.interactive import interactive_scatter, interactive_volcano
 
         assert dashboards is not None
         assert callable(interactive_scatter)

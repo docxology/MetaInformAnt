@@ -12,11 +12,9 @@ Output:
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 
-from metainformant.core.io import io
-from metainformant.core.io import paths
+from metainformant.core.io import io, paths
 
 
 def main():

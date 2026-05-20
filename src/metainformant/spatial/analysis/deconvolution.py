@@ -373,7 +373,7 @@ def _nmf_deconvolution(
 
     if alpha > 0:
         # Add L2 regularization: augment system with sqrt(alpha) * I
-        n_genes = ref_t.shape[0]
+        ref_t.shape[0]
         reg_block = np.sqrt(alpha) * np.eye(n_types)
         ref_aug = np.vstack([ref_t, reg_block])
     else:

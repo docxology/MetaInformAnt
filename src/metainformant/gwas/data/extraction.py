@@ -12,12 +12,8 @@ from metainformant.core.utils.logging import get_logger
 logger = get_logger(__name__)
 
 # Regex to parse BeeWAS sample names
-SAMPLE_RE = re.compile(
-    r"^(?P<colony>[A-Z]\d+)(?P<caste>G|ITQ|ITW|IV|WORK)_(?P<read>R[12])\.fastq"
-)
-STANDALONE_RE = re.compile(
-    r"^(?P<colony>[A-Z]\d+)(?P<caste>G|ITQ|ITW|IV|WORK)_(?P<read>R[12])\.fastq-\d+\.gz$"
-)
+SAMPLE_RE = re.compile(r"^(?P<colony>[A-Z]\d+)(?P<caste>G|ITQ|ITW|IV|WORK)_(?P<read>R[12])\.fastq")
+STANDALONE_RE = re.compile(r"^(?P<colony>[A-Z]\d+)(?P<caste>G|ITQ|ITW|IV|WORK)_(?P<read>R[12])\.fastq-\d+\.gz$")
 
 
 def parse_fastq_filename(filename: str) -> dict[str, str] | None:
@@ -50,9 +46,7 @@ def lineage_from_colony(colony: str) -> str:
     return {"I": "I", "M": "M", "R": "R"}.get(prefix, "unknown")
 
 
-def build_sample_file_map(
-    zip_dir: Path, accessions: set[str] | None = None
-) -> dict[str, dict]:
+def build_sample_file_map(zip_dir: Path, accessions: set[str] | None = None) -> dict[str, dict]:
     """Map each sample_id -> {R1: source_info, R2: source_info}."""
     samples: dict[str, dict] = {}
 
@@ -71,9 +65,7 @@ def build_sample_file_map(
                         if info.is_dir():
                             continue
                         parsed = parse_fastq_filename(info.filename)
-                        if parsed and (
-                            accessions is None or parsed["sample_id"] in accessions
-                        ):
+                        if parsed and (accessions is None or parsed["sample_id"] in accessions):
                             entries.append(
                                 {
                                     "source_type": "zip",

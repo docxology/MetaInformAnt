@@ -1,7 +1,7 @@
 """Phenotype visualization tools."""
+
 from __future__ import annotations
 
-from . import visualization
-from . import plots
+from . import plots, visualization
 
-__all__ = ['visualization', 'plots']
+__all__ = ["visualization", "plots"]

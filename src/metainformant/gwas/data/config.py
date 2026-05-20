@@ -9,8 +9,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from metainformant.core.utils import logging
 from metainformant.core import io
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
@@ -165,9 +165,7 @@ def validate_config_parameters(config: Dict[str, Any]) -> List[str]:
         if "phenotype_path" in config:
             has_pheno = True
     if not has_pheno:
-        errors.append(
-            "Missing required parameter: phenotype_file (or samples.phenotype_file)"
-        )
+        errors.append("Missing required parameter: phenotype_file (or samples.phenotype_file)")
 
     # Output dir requirement: output_dir OR work_dir OR output.results_dir
     has_output = "output_dir" in config or "work_dir" in config
@@ -176,9 +174,7 @@ def validate_config_parameters(config: Dict[str, Any]) -> List[str]:
         if isinstance(output, dict) and output.get("results_dir"):
             has_output = True
     if not has_output:
-        errors.append(
-            "Missing required parameter: output_dir (or work_dir or output.results_dir)"
-        )
+        errors.append("Missing required parameter: output_dir (or work_dir or output.results_dir)")
 
     # NOTE: File existence checks are intentionally skipped here.
     # Paths may not exist yet when loading config before workflow execution.
@@ -207,9 +203,7 @@ def validate_config_parameters(config: Dict[str, Any]) -> List[str]:
     if not method and isinstance(assoc_dict, dict):
         method = assoc_dict.get("model")
     if method and method not in valid_methods:
-        errors.append(
-            f"Invalid association method '{method}'. Must be one of: {valid_methods}"
-        )
+        errors.append(f"Invalid association method '{method}'. Must be one of: {valid_methods}")
 
     valid_corrections = ["bonferroni", "fdr", "genomic_control"]
     correction = config.get("multiple_testing_correction")
@@ -217,9 +211,7 @@ def validate_config_parameters(config: Dict[str, Any]) -> List[str]:
     if not correction and isinstance(corr_dict, dict):
         correction = corr_dict.get("method")
     if correction and correction not in valid_corrections:
-        errors.append(
-            f"Invalid correction method '{correction}'. Must be one of: {valid_corrections}"
-        )
+        errors.append(f"Invalid correction method '{correction}'. Must be one of: {valid_corrections}")
 
     valid_kinship = ["vanraden", "ibs", "astle", "yang"]
     kinship = config.get("kinship_method")
@@ -227,9 +219,7 @@ def validate_config_parameters(config: Dict[str, Any]) -> List[str]:
     if not kinship and isinstance(struct_dict, dict):
         kinship = struct_dict.get("kinship_method")
     if kinship and kinship not in valid_kinship:
-        errors.append(
-            f"Invalid kinship method '{kinship}'. Must be one of: {valid_kinship}"
-        )
+        errors.append(f"Invalid kinship method '{kinship}'. Must be one of: {valid_kinship}")
 
     # Threads and memory
     if "threads" in config:
@@ -313,10 +303,7 @@ def load_gwas_config(config_path: str | Path) -> AttrDict:
     # Validate
     errors = validate_config_parameters(config)
     if errors:
-        raise ValueError(
-            "Configuration validation failed:\n"
-            + "\n".join(f"- {error}" for error in errors)
-        )
+        raise ValueError("Configuration validation failed:\n" + "\n".join(f"- {error}" for error in errors))
 
     logger.info(f"Loaded and validated GWAS configuration from {config_path}")
 
@@ -338,9 +325,7 @@ def save_gwas_config(config: Dict[str, Any], output_path: str | Path) -> None:
     logger.info(f"Saved GWAS configuration to {output_path}")
 
 
-def create_config_from_vcf(
-    vcf_path: str | Path, phenotype_path: str | Path, output_dir: str | Path
-) -> Dict[str, Any]:
+def create_config_from_vcf(vcf_path: str | Path, phenotype_path: str | Path, output_dir: str | Path) -> Dict[str, Any]:
     """Create a basic GWAS configuration from VCF and phenotype files.
 
     Args:
@@ -399,9 +384,7 @@ def update_config_for_runtime(config: Dict[str, Any]) -> Dict[str, Any]:
                     config[config_key] = int(os.environ[env_var])
                 else:
                     config[config_key] = os.environ[env_var]
-                logger.info(
-                    f"Updated {config_key} from environment: {config[config_key]}"
-                )
+                logger.info(f"Updated {config_key} from environment: {config[config_key]}")
             except ValueError:
                 logger.warning(f"Invalid value for {env_var}: {os.environ[env_var]}")
 
@@ -570,9 +553,7 @@ def estimate_runtime(
 
     for step_name, pilot_secs in pilot_steps.items():
         model = step_models.get(step_name, "n_m")
-        factor = _compute_scaling_factor(
-            model, PILOT_N, PILOT_M, target_n, target_m, pca_comp
-        )
+        factor = _compute_scaling_factor(model, PILOT_N, PILOT_M, target_n, target_m, pca_comp)
         per_step[step_name] = pilot_secs * factor
 
     # PCA component scaling for population_structure
@@ -591,9 +572,7 @@ def estimate_runtime(
     # Identify limiting factors
     if data_driven:
         if target_n > 1000:
-            limiting_factors.append(
-                f"Kinship matrix O(n²): {target_n}² samples dominates structure step"
-            )
+            limiting_factors.append(f"Kinship matrix O(n²): {target_n}² samples dominates structure step")
         if target_m > 1_000_000:
             limiting_factors.append(
                 f"Association testing O(n·m): {target_n}×{target_m} = {target_n * target_m:,} tests"

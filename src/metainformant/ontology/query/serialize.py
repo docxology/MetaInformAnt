@@ -6,14 +6,12 @@ including JSON, OBO, and NetworkX graph formats.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from metainformant.core.data import validation
-from metainformant.core.utils import logging
 from metainformant.core.io import dump_json, load_json
-
+from metainformant.core.utils import logging
 from metainformant.ontology.core.types import Ontology, Relationship, Term
 
 logger = logging.get_logger(__name__)
@@ -199,7 +197,7 @@ def _save_obo_format(onto: Ontology, path: Path) -> None:
     lines.append("format-version: 1.2")
     lines.append(f"data-version: {onto.metadata.get('data-version', 'unknown')}")
     lines.append(f"date: {onto.metadata.get('date', 'unknown')}")
-    lines.append(f"saved-by: metainformant")
+    lines.append("saved-by: metainformant")
     lines.append("auto-generated-by: metainformant")
 
     # Add other metadata

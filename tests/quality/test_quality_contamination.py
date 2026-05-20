@@ -1,7 +1,5 @@
 """Tests for contamination detection functionality."""
 
-import pytest
-
 from metainformant.quality.analysis.contamination import (
     detect_adapter_contamination,
     detect_cross_species_contamination,

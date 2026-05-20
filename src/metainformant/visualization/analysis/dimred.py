@@ -348,11 +348,11 @@ def biplot(
 
     if isinstance(data, pd.DataFrame):
         data_array = data.values
-        sample_names = data.index.tolist()
+        data.index.tolist()
         feature_names = data.columns.tolist()
     else:
         data_array = data
-        sample_names = [f"Sample_{i}" for i in range(data_array.shape[0])]
+        [f"Sample_{i}" for i in range(data_array.shape[0])]
         feature_names = [f"Feature_{i}" for i in range(data_array.shape[1])]
 
     # Validate PCA model

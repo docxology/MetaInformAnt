@@ -81,7 +81,7 @@ def main():
 
     logger.info(f"Loading model from {args.model}")
     predictor = EventSequencePredictor.load_model(args.model)
-    logger.info(f"✅ Loaded model")
+    logger.info("✅ Loaded model")
 
     logger.info(f"Loading sequences from {args.sequences}")
     sequences = load_sequences_from_json(args.sequences)

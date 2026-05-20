@@ -9,9 +9,10 @@ operations (union/intersection), centrality measures, and shortest paths.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 from metainformant.core.utils import logging
+from metainformant.networks.analysis.graph_core import BiologicalNetwork
 
 logger = logging.get_logger(__name__)
 
@@ -23,7 +24,10 @@ try:
 except ImportError:
     HAS_NETWORKX = False
 
-from metainformant.networks.analysis.graph_core import BiologicalNetwork
+
+def _as_networkx_graph(graph: Any) -> Any:
+    """Return the underlying NetworkX graph for wrapper inputs."""
+    return graph.graph if isinstance(graph, BiologicalNetwork) else graph
 
 
 def network_metrics(graph: Any) -> Dict[str, Any]:
@@ -41,6 +45,7 @@ def network_metrics(graph: Any) -> Dict[str, Any]:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for network metrics")
 
+    graph = _as_networkx_graph(graph)
     try:
         metrics = {}
 
@@ -63,6 +68,7 @@ def network_metrics(graph: Any) -> Dict[str, Any]:
             degrees = [d for n, d in graph.degree()]
             metrics["avg_degree"] = sum(degrees) / len(degrees)
             metrics["max_degree"] = max(degrees)
+            metrics["min_degree"] = min(degrees)
             try:
                 metrics["degree_assortativity"] = nx.degree_assortativity_coefficient(graph)
             except Exception:
@@ -87,6 +93,18 @@ def network_metrics(graph: Any) -> Dict[str, Any]:
                 component_sizes = [len(c) for c in components]
                 metrics["largest_component_size"] = max(component_sizes)
                 metrics["avg_component_size"] = sum(component_sizes) / len(component_sizes)
+        else:
+            metrics.update(
+                {
+                    "density": 0.0,
+                    "avg_degree": 0.0,
+                    "max_degree": 0,
+                    "min_degree": 0,
+                    "num_components": 0,
+                    "largest_component_size": 0,
+                    "avg_component_size": 0.0,
+                }
+            )
 
         return metrics
 
@@ -110,6 +128,8 @@ def subgraph(graph: Any, nodes: List[str]) -> Any:
     """
     if not HAS_NETWORKX:
         raise ImportError("networkx required for subgraph operations")
+
+    graph = _as_networkx_graph(graph)
 
     # Filter to nodes that exist in the graph
     existing_nodes = [n for n in nodes if n in graph.nodes()]
@@ -158,6 +178,15 @@ def export_network(graph: Any, filepath: str | Path, format: str = "json") -> No
     elif format.lower() == "edgelist":
         nx.write_edgelist(graph, filepath)
 
+    elif format.lower() == "csv":
+        import csv
+
+        with open(filepath, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["source", "target", "weight"])
+            for source, target, data in graph.edges(data=True):
+                writer.writerow([source, target, data.get("weight", 1.0)])
+
     else:
         raise ValueError(f"Unsupported export format: {format}")
 
@@ -202,6 +231,15 @@ def import_network(filepath: str | Path, format: str = "json") -> BiologicalNetw
     elif format.lower() == "edgelist":
         graph = nx.read_edgelist(filepath)
 
+    elif format.lower() == "csv":
+        import csv
+
+        graph = nx.Graph()
+        with open(filepath, newline="") as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                graph.add_edge(row["source"], row["target"], weight=float(row.get("weight", 1.0)))
+
     else:
         raise ValueError(f"Unsupported import format: {format}")
 
@@ -213,7 +251,7 @@ def import_network(filepath: str | Path, format: str = "json") -> BiologicalNetw
     return network
 
 
-def network_similarity(graph1: Any, graph2: Any, method: str = "jaccard") -> float:
+def network_similarity(graph1: Any, graph2: Any, method: str = "summary") -> Dict[str, float] | float:
     """Calculate similarity between two networks.
 
     Args:
@@ -227,22 +265,29 @@ def network_similarity(graph1: Any, graph2: Any, method: str = "jaccard") -> flo
     if not HAS_NETWORKX:
         raise ImportError("networkx required for network similarity")
 
-    # Handle BiologicalNetwork
-    if isinstance(graph1, BiologicalNetwork):
-        graph1 = graph1.graph
-    if isinstance(graph2, BiologicalNetwork):
-        graph2 = graph2.graph
+    graph1 = _as_networkx_graph(graph1)
+    graph2 = _as_networkx_graph(graph2)
 
     nodes1 = set(graph1.nodes())
     nodes2 = set(graph2.nodes())
     edges1 = set(graph1.edges())
     edges2 = set(graph2.edges())
 
+    if method == "summary":
+        node_intersection = len(nodes1 & nodes2)
+        node_union = len(nodes1 | nodes2)
+        edge_intersection = len(edges1 & edges2)
+        edge_union = len(edges1 | edges2)
+        return {
+            "node_jaccard": node_intersection / node_union if node_union > 0 else 0.0,
+            "edge_jaccard": edge_intersection / edge_union if edge_union > 0 else 0.0,
+        }
+
     if method == "jaccard":
         # Jaccard similarity for nodes
-        intersection = len(nodes1 & nodes2)
-        union = len(nodes1 | nodes2)
-        return intersection / union if union > 0 else 0.0
+        node_intersection = len(nodes1 & nodes2)
+        node_union = len(nodes1 | nodes2)
+        return node_intersection / node_union if node_union > 0 else 0.0
 
     elif method == "dice":
         # Dice similarity for edges
@@ -291,7 +336,11 @@ def extract_subgraph(graph: Any, nodes: List[str]) -> BiologicalNetwork:
 
 
 def filter_network(
-    graph: Any, min_degree: int = 0, max_degree: int | None = None, min_weight: float = 0.0
+    graph: Any,
+    min_degree: int = 0,
+    max_degree: int | None = None,
+    min_weight: float = 0.0,
+    min_edge_weight: float | None = None,
 ) -> BiologicalNetwork:
     """Filter network based on node/edge properties.
 
@@ -306,6 +355,9 @@ def filter_network(
     """
     if not HAS_NETWORKX:
         raise ImportError("networkx required for network filtering")
+
+    if min_edge_weight is not None:
+        min_weight = min_edge_weight
 
     # Handle BiologicalNetwork
     if isinstance(graph, BiologicalNetwork):
@@ -385,13 +437,18 @@ def network_union(graph1: Any, graph2: Any) -> BiologicalNetwork:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for network operations")
 
-    # Handle BiologicalNetwork
-    if isinstance(graph1, BiologicalNetwork):
-        graph1 = graph1.graph
-    if isinstance(graph2, BiologicalNetwork):
-        graph2 = graph2.graph
+    graph1 = _as_networkx_graph(graph1)
+    graph2 = _as_networkx_graph(graph2)
 
-    union_graph = nx.compose(graph1, graph2)
+    union_graph = graph1.copy()
+    union_graph.add_nodes_from(graph2.nodes(data=True))
+    for source, target, data in graph2.edges(data=True):
+        incoming_weight = data.get("weight", 1.0)
+        if union_graph.has_edge(source, target):
+            existing = union_graph[source][target].get("weight", 1.0)
+            union_graph[source][target]["weight"] = existing + incoming_weight
+        else:
+            union_graph.add_edge(source, target, **data)
 
     result = BiologicalNetwork(directed=union_graph.is_directed())
     result.graph = union_graph
@@ -412,11 +469,8 @@ def network_intersection(graph1: Any, graph2: Any) -> BiologicalNetwork:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for network operations")
 
-    # Handle BiologicalNetwork
-    if isinstance(graph1, BiologicalNetwork):
-        graph1 = graph1.graph
-    if isinstance(graph2, BiologicalNetwork):
-        graph2 = graph2.graph
+    graph1 = _as_networkx_graph(graph1)
+    graph2 = _as_networkx_graph(graph2)
 
     # Get common nodes and edges
     common_nodes = set(graph1.nodes()) & set(graph2.nodes())
@@ -462,11 +516,12 @@ def centrality_measures(graph: Any) -> Dict[str, Dict[str, float]]:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for centrality calculations")
 
-    # Handle BiologicalNetwork
-    if isinstance(graph, BiologicalNetwork):
-        graph = graph.graph
+    was_biological = isinstance(graph, BiologicalNetwork)
+    graph = _as_networkx_graph(graph)
 
     if graph.number_of_nodes() == 0:
+        if was_biological:
+            return {"degree": {}, "betweenness": {}, "closeness": {}, "eigenvector": {}}
         return {}
 
     results = {}
@@ -512,9 +567,8 @@ def shortest_paths(graph: Any, source: str | None = None, target: str | None = N
     if not HAS_NETWORKX:
         raise ImportError("networkx required for shortest path calculations")
 
-    # Handle BiologicalNetwork
-    if isinstance(graph, BiologicalNetwork):
-        graph = graph.graph
+    was_biological = isinstance(graph, BiologicalNetwork)
+    graph = _as_networkx_graph(graph)
 
     if graph.number_of_nodes() == 0:
         return {}
@@ -529,6 +583,27 @@ def shortest_paths(graph: Any, source: str | None = None, target: str | None = N
             return {source: dict(nx.shortest_path_length(graph, source))}
         else:
             # All pairs shortest paths (expensive for large graphs)
+            if was_biological:
+                distances = {node: {other: float("inf") for other in graph.nodes()} for node in graph.nodes()}
+                for src, lengths in nx.shortest_path_length(graph):
+                    distances[src].update(lengths)
+                return distances
             return dict(nx.shortest_path_length(graph))
     except nx.NetworkXError:
         return {}
+
+
+def remove_node(graph: Any, node: str) -> None:
+    """Remove a node from a BiologicalNetwork or NetworkX graph."""
+    if isinstance(graph, BiologicalNetwork):
+        graph.remove_node(node)
+    else:
+        graph.remove_node(node)
+
+
+def remove_edge(graph: Any, source: str, target: str) -> None:
+    """Remove an edge from a BiologicalNetwork or NetworkX graph."""
+    if isinstance(graph, BiologicalNetwork):
+        graph.remove_edge(source, target)
+    else:
+        graph.remove_edge(source, target)

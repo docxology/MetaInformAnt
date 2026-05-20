@@ -5,9 +5,10 @@ and handles loading of RNA-seq expression data, specifically formatted
 outputs from the Amalgkit pipeline (kallisto quantification).
 """
 
-import pandas as pd
 from pathlib import Path
 from typing import List, Optional, Union
+
+import pandas as pd
 
 from metainformant.core.utils.logging import get_logger
 
@@ -29,9 +30,7 @@ class ExpressionLoader:
         self.work_dir = Path(work_dir)
         self.quant_dir = self.work_dir / "quant"
 
-    def load_amalgkit_quant(
-        self, metric: str = "tpm", samples: Optional[List[str]] = None
-    ) -> pd.DataFrame:
+    def load_amalgkit_quant(self, metric: str = "tpm", samples: Optional[List[str]] = None) -> pd.DataFrame:
         """
         Load quantification data into a sample x transcript matrix.
 
@@ -43,19 +42,13 @@ class ExpressionLoader:
             pd.DataFrame: Rows = Samples, Columns = Transcripts.
         """
         if not self.quant_dir.exists():
-            raise FileNotFoundError(
-                f"Quantification directory not found: {self.quant_dir}"
-            )
+            raise FileNotFoundError(f"Quantification directory not found: {self.quant_dir}")
 
         data = {}
 
         # Discover samples if not provided
         if samples is None:
-            samples = [
-                d.name
-                for d in self.quant_dir.iterdir()
-                if d.is_dir() and (d / "abundance.tsv").exists()
-            ]
+            samples = [d.name for d in self.quant_dir.iterdir() if d.is_dir() and (d / "abundance.tsv").exists()]
 
         logger.info(f"Loading {metric} for {len(samples)} samples...")
 

@@ -16,8 +16,6 @@ from metainformant.core.utils.logging import setup_logger
 from metainformant.life_events import (
     EventSequencePredictor,
     convert_sequences_to_tokens,
-    event_importance,
-    learn_event_embeddings,
     load_sequences_from_json,
     plot_domain_timeline,
     plot_embedding_clusters,

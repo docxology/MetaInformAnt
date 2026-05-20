@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from metainformant.gwas.visualization.config import (
     THEMES,
     PlotStyle,

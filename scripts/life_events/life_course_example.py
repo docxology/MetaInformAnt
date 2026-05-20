@@ -20,8 +20,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 try:
     from metainformant.core.errors import ValidationError
-    from metainformant.core.io import write_json
-    from metainformant.core.paths import expand_and_resolve
     from metainformant.life_events import Event, EventSequence
     from metainformant.phenotype import (
         aggregate_temporal_phenotypes,
@@ -149,13 +147,13 @@ def main():
     try:
         aggregated = aggregate_temporal_phenotypes(sequences, time_window_years=5.0)
 
-        print(f"\nAggregate Statistics:")
+        print("\nAggregate Statistics:")
         print(f"  Total events: {aggregated['aggregates']['total_events']}")
         print(f"  Total people: {aggregated['aggregates']['total_people']}")
         print(f"  Time span: {aggregated['aggregates']['time_span_years']:.2f} years")
         print(f"  Number of time windows: {len(aggregated['time_windows'])}")
 
-        print(f"\nTime Windows:")
+        print("\nTime Windows:")
         for i, window in enumerate(aggregated["time_windows"][:5], 1):  # Show first 5
             start = datetime.fromtimestamp(window["start_time"]).strftime("%Y-%m-%d")
             end = datetime.fromtimestamp(window["end_time"]).strftime("%Y-%m-%d")

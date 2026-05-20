@@ -11,8 +11,8 @@ import pytest
 
 from metainformant.ontology.core.go import load_go_obo, write_go_summary
 from metainformant.ontology.core.obo import parse_obo
-from metainformant.ontology.query.query import ancestors, descendants, get_subontology
 from metainformant.ontology.core.types import Ontology, Term
+from metainformant.ontology.query.query import ancestors, descendants, get_subontology
 
 
 class TestOntologyTypes:
@@ -216,6 +216,7 @@ class TestEdgeCases:
     def test_ancestors_missing_term(self):
         """Test ancestors for non-existent term raises ValueError."""
         from metainformant.core.utils.errors import TermNotFoundError
+
         onto = Ontology()
         with pytest.raises(TermNotFoundError, match="not found in ontology"):
             ancestors(onto, "GO:9999999")
@@ -223,6 +224,7 @@ class TestEdgeCases:
     def test_descendants_missing_term(self):
         """Test descendants for non-existent term raises ValueError."""
         from metainformant.core.utils.errors import TermNotFoundError
+
         onto = Ontology()
         with pytest.raises(TermNotFoundError, match="not found in ontology"):
             descendants(onto, "GO:9999999")
@@ -232,6 +234,7 @@ class TestEdgeCases:
         onto = Ontology()
 
         from metainformant.core.utils.errors import TermNotFoundError
+
         assert len(onto) == 0
         assert not onto.has_term("GO:0008150")
 

@@ -210,7 +210,7 @@ class TestLocalMoransI:
         assert len(result.local_I) == 100
         assert len(result.cluster_labels) == 100
         valid_labels = {"HH", "LL", "HL", "LH", "NS"}
-        assert all(l in valid_labels for l in result.cluster_labels)
+        assert all(label in valid_labels for label in result.cluster_labels)
 
 
 # ---------------------------------------------------------------------------

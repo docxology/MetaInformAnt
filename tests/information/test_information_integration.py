@@ -13,13 +13,13 @@ import pytest
 
 from metainformant.information.integration.integration import (
     dna_integration,
+    ml_integration,
+    multiomics_integration,
     rna_integration,
     singlecell_integration,
-    multiomics_integration,
-    ml_integration,
 )
 from metainformant.information.metrics.analysis.analysis import information_profile
-from metainformant.information.metrics.core.syntactic import mutual_information, shannon_entropy, shannon_entropy_from_counts
+from metainformant.information.metrics.core.syntactic import mutual_information, shannon_entropy_from_counts
 
 # ============================================================
 # DNA Integration Tests
@@ -367,6 +367,7 @@ class TestNetworkIntegration:
         """Test network information centrality returns per-node scores."""
         try:
             import networkx as nx
+
             from metainformant.information.integration.networks import network_information_centrality
 
             G = nx.karate_club_graph()

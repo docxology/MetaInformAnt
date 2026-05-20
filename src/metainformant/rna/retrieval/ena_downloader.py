@@ -22,13 +22,11 @@ Example:
 
 import gzip
 import hashlib
-import logging
-import shutil
 import subprocess
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Tuple
 
 from metainformant.core.utils.logging import get_logger
 
@@ -87,11 +85,12 @@ def verify_gzip_integrity(file_path: Path) -> bool:
     except (gzip.BadGzipFile, OSError, EOFError):
         return False
 
+
 class ENADownloader:
     """
     Downloads FASTQ files directly from ENA.
     """
-    
+
     ENA_HTTP_BASE = "http://ftp.sra.ebi.ac.uk/vol1/fastq"
 
     def __init__(self, timeout: int = 1800, retries: int = 3):
@@ -153,9 +152,9 @@ class ENADownloader:
                 parts = lines[1].split("\t")
                 if len(parts) < 2:
                     return []
-                
+
                 ftp_field = parts[1].strip()
-                
+
                 # Check if field is valid/not empty/not just header
                 if not ftp_field or ftp_field == "fastq_ftp":
                     return []
@@ -237,22 +236,21 @@ class ENADownloader:
             cmd = [
                 "curl",
                 "-fsSL",
-                "--retry", str(self.retries),
-                "--retry-delay", "10",
+                "--retry",
+                str(self.retries),
+                "--retry-delay",
+                "10",
                 "--retry-connrefused",
                 "--retry-all-errors",
-                "--connect-timeout", "30",
-                "-o", str(output_file),
-                url
+                "--connect-timeout",
+                "30",
+                "-o",
+                str(output_file),
+                url,
             ]
 
             try:
-                result = subprocess.run(
-                    cmd, 
-                    capture_output=True, 
-                    text=True, 
-                    timeout=self.timeout
-                )
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=self.timeout)
 
                 if result.returncode == 0 and output_file.exists() and output_file.stat().st_size > 0:
                     downloaded_files.append(output_file)
@@ -261,7 +259,7 @@ class ENADownloader:
                     if output_file.exists():
                         output_file.unlink()
                     return False, f"Download failed for {filename}: {result.stderr}", []
-            
+
             except subprocess.TimeoutExpired:
                 if output_file.exists():
                     output_file.unlink()

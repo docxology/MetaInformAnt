@@ -54,7 +54,7 @@ def generate_summary_report(
 
                 if "neutrality_tests" in scenario_data:
                     neutrality = scenario_data["neutrality_tests"]
-                    f.write(f"\n**Neutrality Tests:**\n")
+                    f.write("\n**Neutrality Tests:**\n")
                     f.write(f"- Tajima's D: {neutrality['tajimas_d']:.4f}\n")
                     f.write(f"- π/θ ratio: {neutrality['pi_theta_ratio']:.4f}\n")
                     f.write(f"- Interpretation: {neutrality['interpretation']}\n")
@@ -68,7 +68,7 @@ def generate_summary_report(
                     f.write(f"- Fay & Wu's H: {scenario_data['fay_wu_h']:.4f}\n")
 
             elif "fst" in scenario_data:
-                f.write(f"**Population Comparison:**\n")
+                f.write("**Population Comparison:**\n")
                 f.write(f"- Fst: {scenario_data['fst']:.4f}\n")
                 f.write(f"- Differentiation: {scenario_data['differentiation']}\n")
                 if "pop1_stats" in scenario_data:
@@ -76,7 +76,7 @@ def generate_summary_report(
                     f.write(f"- Pop2 diversity (π): {scenario_data['pop2_stats']['nucleotide_diversity']:.6f}\n")
 
             elif "pca" in scenario_data:
-                f.write(f"**PCA Analysis:**\n")
+                f.write("**PCA Analysis:**\n")
                 f.write(f"- Status: {scenario_data['pca']['status']}\n")
                 f.write(f"- Components: {scenario_data['pca']['n_components']}\n")
                 if scenario_data["pca"].get("explained_variance_ratio"):
@@ -86,13 +86,13 @@ def generate_summary_report(
 
                 if "hardy_weinberg_test" in scenario_data:
                     hwe = scenario_data["hardy_weinberg_test"]
-                    f.write(f"\n**Hardy-Weinberg Test:**\n")
+                    f.write("\n**Hardy-Weinberg Test:**\n")
                     f.write(f"- Chi-square: {hwe.get('chi_square', 'N/A'):.4f}\n")
                     f.write(f"- P-value: {hwe.get('p_value', 'N/A'):.4f}\n")
                     f.write(f"- HWE deviated: {hwe.get('hwe_deviated', 'N/A')}\n")
 
             elif "mean_r_squared" in scenario_data:
-                f.write(f"**Linkage Disequilibrium:**\n")
+                f.write("**Linkage Disequilibrium:**\n")
                 f.write(f"- Mean r²: {scenario_data['mean_r_squared']:.4f}\n")
 
             f.write("\n")

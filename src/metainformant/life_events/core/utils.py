@@ -8,7 +8,10 @@ from __future__ import annotations
 
 import random
 from datetime import datetime, timedelta
-from typing import Any, Dict, List, Optional
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
 
 from metainformant.core.utils import logging
 from metainformant.life_events.core.events import Event, EventSequence
@@ -22,6 +25,7 @@ def add_temporal_noise(
     rng: random.Random | None = None,
     max_days_shift: float | None = None,
     random_seed: int | None = None,
+    missing_probability: float = 0.0,
     **kwargs: Any,
 ) -> EventSequence:
     """Add temporal noise to event timestamps.
@@ -42,39 +46,41 @@ def add_temporal_noise(
         rng = random.Random(random_seed)
     if rng is None:
         rng = random.Random()
-    if max_days_shift is not None:
-        # Convert max_days_shift to noise_level (assuming timestamps are in days)
-        noise_level = max_days_shift / 365.0  # Rough conversion
-
     if not sequence.events:
         return sequence
 
-    # Calculate sequence duration
     timestamps = [event.timestamp for event in sequence.events]
-    duration = max(timestamps) - min(timestamps) if len(timestamps) > 1 else 1.0
-    noise_scale = duration * noise_level
+    if isinstance(timestamps[0], datetime):
+        duration_seconds = (max(timestamps) - min(timestamps)).total_seconds() if len(timestamps) > 1 else 24 * 60 * 60
+        noise_scale = (max_days_shift * 24 * 60 * 60) if max_days_shift is not None else duration_seconds * noise_level
+    else:
+        duration = max(timestamps) - min(timestamps) if len(timestamps) > 1 else 1.0
+        noise_scale = max_days_shift if max_days_shift is not None else duration * noise_level
 
-    # Create new events with noise
     new_events = []
     for event in sequence.events:
-        # Add Gaussian noise to timestamp
-        noise = rng.gauss(0, noise_scale)
-        new_timestamp = event.timestamp + noise
+        if missing_probability and rng.random() < missing_probability:
+            continue
 
-        # Create new event with modified timestamp
+        noise = rng.gauss(0, noise_scale)
+        if isinstance(event.timestamp, datetime):
+            new_timestamp = event.timestamp + timedelta(seconds=noise)
+        else:
+            new_timestamp = event.timestamp + noise
+
         new_event = Event(
-            timestamp=new_timestamp,
             event_type=event.event_type,
-            description=event.description,
+            timestamp=new_timestamp,
+            domain=event.domain,
             attributes=event.attributes.copy(),
+            person_id=event.person_id,
+            description=event.description,
             confidence=event.confidence,
         )
         new_events.append(new_event)
 
-    # Sort events by timestamp
     new_events.sort(key=lambda e: e.timestamp)
 
-    # Create new sequence
     new_sequence = EventSequence(person_id=sequence.person_id, events=new_events, metadata=sequence.metadata.copy())
 
     return new_sequence
@@ -124,9 +130,11 @@ def generate_realistic_life_events(
         if not (start_age <= age <= end_age):
             continue
 
+        domain = event_type.split("_", 1)[0] if "_" in event_type else "life"
         event = Event(
             timestamp=age,
             event_type=event_type,
+            domain=domain,
             description=f"Generated {event_type} event",
             attributes={"generated": True, "event_index": i},
         )
@@ -150,24 +158,33 @@ def get_event_statistics(sequences: List[EventSequence]) -> Dict[str, Any]:
         Dictionary with sequence statistics
     """
     if not sequences:
-        return {}
+        return {"total_sequences": 0, "n_sequences": 0, "total_events": 0, "n_events": 0, "domains": {}, "temporal": {}}
 
     stats = {
+        "total_sequences": len(sequences),
         "n_sequences": len(sequences),
         "total_events": sum(len(seq.events) for seq in sequences),
+        "n_events": sum(len(seq.events) for seq in sequences),
         "events_per_sequence": [],
         "event_types": set(),
+        "domains": {},
         "duration_stats": [],
+        "temporal": {},
     }
 
     for seq in sequences:
         stats["events_per_sequence"].append(len(seq.events))
-        stats["event_types"].update(event.event_type for event in seq.events)
+        for event in seq.events:
+            stats["event_types"].add(event.event_type)
+            stats["domains"][event.domain] = stats["domains"].get(event.domain, 0) + 1
 
         if seq.events:
             timestamps = [event.timestamp for event in seq.events]
             duration = max(timestamps) - min(timestamps)
-            stats["duration_stats"].append(duration)
+            if hasattr(duration, "total_seconds"):
+                stats["duration_stats"].append(duration.total_seconds())
+            else:
+                stats["duration_stats"].append(float(duration))
 
     # Calculate aggregates
     if stats["events_per_sequence"]:
@@ -248,70 +265,48 @@ def convert_sequences_to_tokens(sequences: List[EventSequence]) -> List[List[str
     """
     token_sequences = []
     for seq in sequences:
-        tokens = [event.event_type for event in seq.events]
+        tokens = [f"{event.domain}:{event.event_type}" if event.domain else event.event_type for event in seq.events]
         token_sequences.append(tokens)
     return token_sequences
 
 
-def validate_sequence(sequence: EventSequence) -> Dict[str, Any]:
+def validate_sequence(sequence: EventSequence) -> Tuple[bool, List[str]]:
     """Validate an EventSequence for consistency and completeness.
 
     Args:
         sequence: EventSequence to validate
 
     Returns:
-        Dictionary with validation results
+        Tuple of (is_valid, errors_and_warnings)
     """
-    validation = {
-        "is_valid": True,
-        "issues": [],
-        "warnings": [],
-        "stats": {"n_events": len(sequence.events), "event_types": set(), "domains": set(), "date_range": None},
-    }
+    issues: list[str] = []
+    warnings: list[str] = []
+
+    if not sequence.person_id:
+        issues.append("person_id cannot be empty")
 
     if not sequence.events:
-        validation["issues"].append("Sequence has no events")
-        validation["is_valid"] = False
-        return validation
+        issues.append("Sequence has no events")
+        return False, issues
 
-    # Check events
     timestamps = []
     for i, event in enumerate(sequence.events):
-        validation["stats"]["event_types"].add(event.event_type)
-        if hasattr(event, "domain") and event.domain:
-            validation["stats"]["domains"].add(event.domain)
-
         if not event.event_type:
-            validation["issues"].append(f"Event {i} has no event_type")
+            issues.append(f"Event {i} has no event_type")
+        if not event.domain:
+            issues.append(f"Event {i} has no domain")
 
         if not hasattr(event, "timestamp") or event.timestamp is None:
-            validation["issues"].append(f"Event {i} has no timestamp")
+            issues.append(f"Event {i} has no timestamp")
         else:
             timestamps.append(event.timestamp)
 
-    # Check temporal ordering
     if len(timestamps) > 1:
         sorted_timestamps = sorted(timestamps)
         if timestamps != sorted_timestamps:
-            validation["warnings"].append("Events are not in chronological order")
+            warnings.append("warning: Events are not in chronological order")
 
-        # Calculate date range
-        from datetime import datetime
-
-        if timestamps:
-            min_date = min(timestamps)
-            max_date = max(timestamps)
-            validation["stats"]["date_range"] = {
-                "start": min_date.isoformat() if hasattr(min_date, "isoformat") else str(min_date),
-                "end": max_date.isoformat() if hasattr(max_date, "isoformat") else str(max_date),
-                "span_days": (max_date - min_date).days if hasattr(max_date, "__sub__") else None,
-            }
-
-    validation["stats"]["event_types"] = list(validation["stats"]["event_types"])
-    validation["stats"]["domains"] = list(validation["stats"]["domains"])
-    validation["is_valid"] = len(validation["issues"]) == 0
-
-    return validation
+    return len(issues) == 0, issues + warnings
 
 
 def generate_cohort_sequences(
@@ -351,7 +346,6 @@ def generate_cohort_sequences(
         If n_cohorts is set: Dict mapping cohort names to lists of EventSequence objects
     """
     import random
-    from datetime import datetime
 
     # Resolve total number of sequences and per-cohort size
     if n_cohorts is not None:
@@ -374,10 +368,21 @@ def generate_cohort_sequences(
     # Default event types and domains
     if event_types is None:
         event_types = [
-            "started_school", "graduated_high_school", "started_college",
-            "graduated_college", "got_first_job", "job_change", "promotion",
-            "started_relationship", "marriage", "divorce", "had_child",
-            "moved_house", "diagnosis", "recovered", "retirement",
+            "started_school",
+            "graduated_high_school",
+            "started_college",
+            "graduated_college",
+            "got_first_job",
+            "job_change",
+            "promotion",
+            "started_relationship",
+            "marriage",
+            "divorce",
+            "had_child",
+            "moved_house",
+            "diagnosis",
+            "recovered",
+            "retirement",
         ]
 
     if domains is None:
@@ -398,7 +403,6 @@ def generate_cohort_sequences(
         events = []
 
         # Generate events with temporal progression
-        current_year = start_year
         for j in range(n_events):
             # Select random event type
             event_type = random.choice(event_types)
@@ -408,8 +412,12 @@ def generate_cohort_sequences(
                 domain = "education"
             elif "job" in event_type or "promotion" in event_type or "retirement" in event_type:
                 domain = "career"
-            elif ("relationship" in event_type or "marriage" in event_type
-                  or "divorce" in event_type or "child" in event_type):
+            elif (
+                "relationship" in event_type
+                or "marriage" in event_type
+                or "divorce" in event_type
+                or "child" in event_type
+            ):
                 domain = "family"
             elif "diagnosis" in event_type or "recovered" in event_type:
                 domain = "health"
@@ -463,29 +471,48 @@ def generate_cohort_sequences(
     else:
         return sequences
 
+
+def _sequence_to_tokens(sequence: Any) -> List[str]:
+    """Normalize an EventSequence or token list to event tokens."""
+    if hasattr(sequence, "events"):
+        return [
+            f"{event.domain}:{event.event_type}" if getattr(event, "domain", None) else str(event.event_type)
+            for event in sequence.events
+        ]
+    if isinstance(sequence, str):
+        return [sequence]
+    return [str(event) for event in sequence]
+
+
 def sequence_embeddings(
-    sequences: List[EventSequence],
-    method: str = "average",
+    sequences: List[Any],
     embedding_dict: Optional[Dict[str, np.ndarray]] = None,
+    method: str = "mean",
     **kwargs: Any,
-) -> Dict[str, np.ndarray]:
+) -> np.ndarray:
     """Create sequence-level embeddings from event embeddings.
 
     Args:
-        sequences: List of EventSequence objects
-        method: Aggregation method ('average', 'sum', 'max', 'attention')
+        sequences: List of EventSequence objects or token lists
+        embedding_dict: Dictionary mapping event tokens to embeddings
+        method: Aggregation method ('mean', 'average', 'sum', 'max', 'attention')
         embedding_dict: Dictionary mapping event types to embeddings
         **kwargs: Additional parameters
 
     Returns:
-        Dictionary mapping sequence IDs to embeddings
+        Array with one sequence embedding per row
     """
+    if isinstance(embedding_dict, str):
+        method = embedding_dict
+        embedding_dict = None
+
+    method = "mean" if method == "average" else method
+    token_sequences = [_sequence_to_tokens(seq) for seq in sequences]
+
     if embedding_dict is None:
-        # Use simple one-hot style embeddings if none provided
         all_event_types = set()
-        for seq in sequences:
-            for event in seq.events:
-                all_event_types.add(event.event_type)
+        for tokens in token_sequences:
+            all_event_types.update(tokens)
 
         embedding_dim = kwargs.get("embedding_dim", 50)
         embedding_dict = {}
@@ -494,51 +521,53 @@ def sequence_embeddings(
             embedding[i % embedding_dim] = 1.0
             embedding_dict[event_type] = embedding
 
-    sequence_embeddings_result = {}
+    if embedding_dict:
+        embedding_dim = len(next(iter(embedding_dict.values())))
+    else:
+        embedding_dim = int(kwargs.get("embedding_dim", 50))
 
-    for seq in sequences:
-        if not seq.events:
-            # Empty sequence - use zero embedding
-            embedding_dim = len(list(embedding_dict.values())[0]) if embedding_dict else 50
-            sequence_embeddings_result[seq.person_id] = np.zeros(embedding_dim)
+    sequence_embeddings_result = []
+
+    for tokens in token_sequences:
+        if not tokens:
+            sequence_embeddings_result.append(np.zeros(embedding_dim))
             continue
 
-        # Get embeddings for all events in sequence
         event_embeddings = []
-        for event in seq.events:
-            if event.event_type in embedding_dict:
-                event_embeddings.append(embedding_dict[event.event_type])
+        for token in tokens:
+            if token in embedding_dict:
+                event_embeddings.append(embedding_dict[token])
             else:
-                # Use zero embedding for unknown event types
-                embedding_dim = len(list(embedding_dict.values())[0]) if embedding_dict else 50
                 event_embeddings.append(np.zeros(embedding_dim))
 
         if not event_embeddings:
-            embedding_dim = len(list(embedding_dict.values())[0]) if embedding_dict else 50
-            sequence_embeddings_result[seq.person_id] = np.zeros(embedding_dim)
+            sequence_embeddings_result.append(np.zeros(embedding_dim))
             continue
 
-        event_embeddings = np.array(event_embeddings)
+        event_embeddings_arr = np.array(event_embeddings)
 
-        # Aggregate embeddings
-        if method == "average":
-            seq_embedding = np.mean(event_embeddings, axis=0)
+        if method == "mean":
+            if kwargs.get("temporal_weighting", False) and len(event_embeddings_arr) > 1:
+                weights = np.linspace(0.5, 1.0, len(event_embeddings_arr))
+                weights = weights / weights.sum()
+                seq_embedding = np.average(event_embeddings_arr, axis=0, weights=weights)
+            else:
+                seq_embedding = np.mean(event_embeddings_arr, axis=0)
         elif method == "sum":
-            seq_embedding = np.sum(event_embeddings, axis=0)
+            seq_embedding = np.sum(event_embeddings_arr, axis=0)
         elif method == "max":
-            seq_embedding = np.max(event_embeddings, axis=0)
+            seq_embedding = np.max(event_embeddings_arr, axis=0)
         elif method == "attention":
-            # Simple attention: use first event as query
-            query = event_embeddings[0]
-            scores = np.dot(event_embeddings, query)
+            query = event_embeddings_arr[0]
+            scores = np.dot(event_embeddings_arr, query)
             weights = np.exp(scores) / np.sum(np.exp(scores))
-            seq_embedding = np.sum(event_embeddings * weights[:, np.newaxis], axis=0)
+            seq_embedding = np.sum(event_embeddings_arr * weights[:, np.newaxis], axis=0)
         else:
             raise ValueError(f"Unknown aggregation method: {method}")
 
-        sequence_embeddings_result[seq.person_id] = seq_embedding
+        sequence_embeddings_result.append(seq_embedding)
 
-    return sequence_embeddings_result
+    return np.array(sequence_embeddings_result)
 
 
 def generate_event_chain(
@@ -549,7 +578,7 @@ def generate_event_chain(
     random_seed: int | None = None,
     random_state: int | None = None,
     **kwargs: Any,
-) -> List[str]:
+) -> List[Any]:
     """Generate a causally linked sequence of events using a Markov chain.
 
     Args:
@@ -565,6 +594,50 @@ def generate_event_chain(
         List of event types in sequence
     """
     import random
+
+    chain_rules = kwargs.get("chain_rules")
+    if chain_rules is not None:
+        start_domain = kwargs.get("start_domain", "life")
+        start_timestamp = kwargs.get("start_timestamp", datetime.now().timestamp())
+        time_span = kwargs.get("time_span", max(1, n_events - 1))
+
+        if random_state is not None and random_seed is None:
+            random_seed = random_state
+        rng = random.Random(random_seed)
+        step = time_span / max(1, n_events - 1)
+
+        events: list[Event] = []
+        current_domain = start_domain
+        current_event = start_event
+
+        for i in range(n_events):
+            events.append(
+                Event(
+                    event_type=current_event,
+                    timestamp=datetime.fromtimestamp(start_timestamp + i * step),
+                    domain=current_domain,
+                )
+            )
+
+            transitions = chain_rules.get(f"{current_domain}:{current_event}", {})
+            if transitions:
+                targets, weights = zip(*transitions.items())
+                next_token = rng.choices(targets, weights=weights, k=1)[0]
+                if ":" in next_token:
+                    current_domain, current_event = next_token.split(":", 1)
+                else:
+                    current_event = next_token
+            else:
+                event_types_by_domain = kwargs.get("event_types_by_domain", {})
+                all_tokens = [
+                    (domain, event)
+                    for domain, domain_events in event_types_by_domain.items()
+                    for event in domain_events
+                ]
+                if all_tokens:
+                    current_domain, current_event = rng.choice(all_tokens)
+
+        return events
 
     # Handle parameter aliases
     if random_state is not None and random_seed is None:
@@ -682,7 +755,6 @@ def generate_synthetic_life_events(
         Tuple of (sequences, outcomes) where outcomes is None if not generated
     """
     import random
-    from datetime import datetime, timedelta
 
     if random_state is not None:
         random.seed(random_state)

@@ -5,7 +5,6 @@ Performs linear or logistic regression for phenotype-genotype association.
 """
 
 import argparse
-import json
 import sys
 from pathlib import Path
 
@@ -97,7 +96,7 @@ def main():
                         "p_value": res.get("p_value"),
                     }
                 )
-        except Exception as e:
+        except Exception:
             # logger.debug(f"Test failed for variant {idx}: {e}")
             pass
 

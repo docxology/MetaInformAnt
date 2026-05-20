@@ -7,11 +7,10 @@ continuous divergence measures.
 
 from __future__ import annotations
 
-from typing import Optional, Tuple, Union
+from typing import Optional
 
 import numpy as np
 from scipy import stats
-from scipy.spatial.distance import pdist, squareform
 
 from metainformant.core.data import validation
 from metainformant.core.utils import logging

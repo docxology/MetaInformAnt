@@ -9,8 +9,9 @@ but validates the URL generation logic against a known real-world sample.
 import shutil
 import tempfile
 import unittest
-from pathlib import Path
+
 from metainformant.rna.retrieval.ena_downloader import ENADownloader
+
 
 class TestENADownloader(unittest.TestCase):
     def setUp(self):
@@ -24,16 +25,16 @@ class TestENADownloader(unittest.TestCase):
         """
         Verify URL discovery logic using a known sample ID.
         We expect ENA API to return a valid result for a public sample.
-        
+
         Using a small, public SRA run: SRR11092056 (Apis mellifera RNA-seq)
         """
         # This test actually hits the ENA API.
         # It aligns with "Zero-Mock" philosophy for integration tests calling external APIs,
         # provided we handle network failures gracefully.
-        
+
         sample_id = "SRR11092056"
         urls = self.downloader.get_fastq_urls(sample_id)
-        
+
         # We expect at least one URL
         if not urls:
             print(f"Warning: ENA API returned no URLs for {sample_id}. Network issue?")
@@ -48,6 +49,7 @@ class TestENADownloader(unittest.TestCase):
         """Verify handling of invalid IDs."""
         urls = self.downloader.get_fastq_urls("INVALID_ID_12345")
         self.assertEqual(urls, [], "Should return empty list for invalid ID")
+
 
 if __name__ == "__main__":
     unittest.main()

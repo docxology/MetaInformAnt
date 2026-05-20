@@ -15,6 +15,8 @@ Usage:
     python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --skip-download --skip-prepare
 """
 
+# ruff: noqa: E402 - setup utilities intentionally run before importing metainformant.
+
 from __future__ import annotations
 
 import argparse

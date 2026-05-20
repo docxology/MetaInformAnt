@@ -1,4 +1,5 @@
 """Tests for metabolomics pathway enrichment analysis."""
+
 from __future__ import annotations
 
 import pytest

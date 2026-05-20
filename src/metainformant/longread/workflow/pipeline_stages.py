@@ -30,7 +30,7 @@ def _build_qc_steps(orch: LongReadOrchestrator, reads: Any) -> list[PipelineStep
         compute_metrics -> generate_qc_plots -> export_report
     """
     from ..quality.filtering import filter_by_length, filter_by_quality, trim_adapters
-    from ..quality.metrics import calculate_n50, quality_score_distribution, read_length_stats
+    from ..quality.metrics import quality_score_distribution, read_length_stats
 
     params = orch.config.get("parameters", {})
     min_length = params.get("min_length", 1000)
@@ -57,9 +57,7 @@ def _build_qc_steps(orch: LongReadOrchestrator, reads: Any) -> list[PipelineStep
     def _filter_quality(ctx: dict[str, Any]) -> list[Any]:
         return filter_by_quality(ctx["filter_length"], min_q=min_quality)
 
-    steps.append(
-        PipelineStep(name="filter_quality", function=_filter_quality, params={}, depends_on=["filter_length"])
-    )
+    steps.append(PipelineStep(name="filter_quality", function=_filter_quality, params={}, depends_on=["filter_length"]))
 
     # Step 4: Trim adapters (optional)
     if do_trim:
@@ -142,9 +140,7 @@ def _build_qc_steps(orch: LongReadOrchestrator, reads: Any) -> list[PipelineStep
         qc_report = generate_qc_report(interim_result)
         return export_report(qc_report, orch.output_dir / "qc_report.json", format="json")
 
-    steps.append(
-        PipelineStep(name="export_report", function=_export_report, params={}, depends_on=["compute_metrics"])
-    )
+    steps.append(PipelineStep(name="export_report", function=_export_report, params={}, depends_on=["compute_metrics"]))
 
     return steps
 
@@ -191,9 +187,7 @@ def _build_assembly_steps(orch: LongReadOrchestrator, reads: Any) -> list[Pipeli
             max_overhang=max_overhang,
         )
 
-    steps.append(
-        PipelineStep(name="find_overlaps", function=_find_overlaps, params={}, depends_on=["filter_reads"])
-    )
+    steps.append(PipelineStep(name="find_overlaps", function=_find_overlaps, params={}, depends_on=["filter_reads"]))
 
     def _build_graph(ctx: dict[str, Any]) -> dict[str, Any]:
         overlaps = ctx["find_overlaps"]
@@ -299,7 +293,7 @@ def _build_methylation_steps(orch: LongReadOrchestrator, reads: Any) -> list[Pip
     min_coverage = params.get("min_coverage", 5)
     significance_threshold = params.get("significance_threshold", 0.05)
     min_difference = params.get("min_difference", 0.2)
-    methylation_threshold = params.get("methylation_threshold", 0.5)
+    params.get("methylation_threshold", 0.5)
     regions = params.get("regions", [])
 
     steps: list[PipelineStep] = []
@@ -438,9 +432,7 @@ def _build_methylation_steps(orch: LongReadOrchestrator, reads: Any) -> list[Pip
         return generated
 
     steps.append(
-        PipelineStep(
-            name="methylation_plots", function=_methylation_plots, params={}, depends_on=["aggregate_regions"]
-        )
+        PipelineStep(name="methylation_plots", function=_methylation_plots, params={}, depends_on=["aggregate_regions"])
     )
 
     def _methylation_report(ctx: dict[str, Any]) -> Path:

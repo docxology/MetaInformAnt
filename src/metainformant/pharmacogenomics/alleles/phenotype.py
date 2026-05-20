@@ -15,7 +15,6 @@ Metabolizer categories:
 from __future__ import annotations
 
 from enum import Enum
-from itertools import combinations_with_replacement
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger

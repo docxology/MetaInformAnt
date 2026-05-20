@@ -3,7 +3,7 @@
 
 This example demonstrates:
 - Loading and preprocessing biological data
-- {{analysis_type.lower()}} model training
+- {{analysis_type_lower}} model training
 - Performance evaluation and visualization
 
 Usage:
@@ -24,7 +24,7 @@ from metainformant.ml import classification
 
 
 def main():
-    """Main function demonstrating ML {{analysis_type.lower()}}."""
+    """Main function demonstrating ML {{analysis_type_lower}}."""
     print("Machine Learning {{analysis_type}} Example")
     print("=" * 40)
 
@@ -53,7 +53,7 @@ def main():
         y_train, y_test = y[:train_size], y[train_size:]
 
         # Train model
-        print("Training {{analysis_type.lower()}} model...")
+        print("Training {{analysis_type_lower}} model...")
         model = classification.train_classifier(X_train, y_train, method="rf")
 
         # Make predictions

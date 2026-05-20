@@ -17,7 +17,6 @@ Optional dependencies:
 
 from __future__ import annotations
 
-from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
@@ -302,11 +301,9 @@ def _banded_semiglobal_align(
 
     # Banded DP
     # Only compute cells within bandwidth of the main diagonal
-    diagonal_offset = 0  # Offset between ref and query coordinates
 
     # Initialize score matrix (only band)
     # Score at (i, j) stored as band_matrix[i][j - (i + diagonal_offset - bandwidth)]
-    band_width = bandwidth
 
     # Use simple DP for manageable sizes
     if ref_len * query_len < 100_000_000:  # 100M cells threshold
@@ -668,7 +665,7 @@ def _merge_star_alignments(
         return []
 
     # Get center alignment positions in each pairwise alignment
-    center_ref = pairwise[center_idx][0]  # Ungapped center
+    pairwise[center_idx][0]  # Ungapped center
 
     # Collect all gap positions in the center across all alignments
     all_center_insertions: list[list[int]] = []  # gaps in center per alignment

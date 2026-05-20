@@ -54,11 +54,11 @@ def query_sra_metadata(bioproject: str):
     if result:
         # Count results (simplified - would need efetch for full details)
         lines = result.strip().split("\n")
-        print(f"✅ E-utilities query successful")
+        print("✅ E-utilities query successful")
         print(f"📊 Raw output lines: {len(lines)}")
     else:
-        print(f"⚠️  E-utilities not available")
-        print(f"📝 Manual query recommended:")
+        print("⚠️  E-utilities not available")
+        print("📝 Manual query recommended:")
         print(f"   URL: https://www.ncbi.nlm.nih.gov/Traces/study/?acc={bioproject}")
 
     return result
@@ -68,7 +68,7 @@ def query_with_curl(bioproject: str):
     """Query SRA Run Selector via curl."""
     url = f"https://trace.ncbi.nlm.nih.gov/Traces/sra-db-be/run_selector?acc={bioproject}&format=json"
 
-    print(f"\n🌐 Attempting direct API query with curl...")
+    print("\n🌐 Attempting direct API query with curl...")
     print(f"   URL: {url}")
 
     cmd = ["curl", "-s", "-L", url]
@@ -87,7 +87,7 @@ def query_with_curl(bioproject: str):
                 data = json.loads(result.stdout)
                 return data
             except json.JSONDecodeError:
-                print(f"⚠️  Response not valid JSON")
+                print("⚠️  Response not valid JSON")
                 print(f"   First 200 chars: {result.stdout[:200]}")
                 return None
     except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired) as e:
@@ -146,7 +146,7 @@ def main():
         }
 
         if api_data:
-            print(f"\n✅ API Query Successful!")
+            print("\n✅ API Query Successful!")
             if isinstance(api_data, dict):
                 # Try to extract run count
                 if "data" in api_data:
@@ -158,7 +158,7 @@ def main():
                     # Analyze run metadata
                     if runs:
                         sample_run = runs[0]
-                        print(f"\n📋 Sample Run Metadata (first run):")
+                        print("\n📋 Sample Run Metadata (first run):")
                         for key in list(sample_run.keys())[:10]:
                             print(f"   {key}: {sample_run.get(key, 'N/A')}")
 
@@ -180,7 +180,7 @@ def main():
         if "run_count" in results:
             print(f"  ✅ Runs found: {results['run_count']}")
         else:
-            print(f"  ⚠️  Run count not retrieved")
+            print("  ⚠️  Run count not retrieved")
         print(f"  Manual URL: https://www.ncbi.nlm.nih.gov/Traces/study/?acc={bioproject_id}")
 
     print(f"\n📁 Metadata saved to: {output_dir}")

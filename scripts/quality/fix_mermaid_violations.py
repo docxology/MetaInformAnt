@@ -8,11 +8,9 @@ Fixes common violations:
 3. Reserved keywords as node IDs
 """
 
-import glob
-import os
 import re
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
 
 def camel_case(text: str) -> str:

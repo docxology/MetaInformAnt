@@ -1,15 +1,14 @@
 """Cloud deployment configuration for GCP VMs."""
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
-
 
 # Sensible defaults for RNA-seq pipeline workloads
 _DEFAULT_ZONE = "us-central1-a"
 _DEFAULT_MACHINE = "n2-highcpu-96"  # 96 vCPUs, 96 GB RAM — $3.40/hr (spot: ~$0.80/hr)
-_DEFAULT_DISK_GB = 500              # SSD for fast I/O
+_DEFAULT_DISK_GB = 500  # SSD for fast I/O
 _DEFAULT_IMAGE_FAMILY = "debian-12"
 _DEFAULT_IMAGE_PROJECT = "debian-cloud"
 

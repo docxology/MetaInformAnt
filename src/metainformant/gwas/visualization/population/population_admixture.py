@@ -78,9 +78,11 @@ def kinship_heatmap(
     """
     try:
         import matplotlib
+
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
         import seaborn as sns
+
         HAS_MATPLOTLIB = True
     except ImportError:
         HAS_MATPLOTLIB = False
@@ -96,15 +98,11 @@ def kinship_heatmap(
         actual_output_path: Optional[Path] = None
 
         # Handle file path input
-        if isinstance(kinship_matrix, (str, Path)) and not isinstance(
-            kinship_matrix, np.ndarray
-        ):
+        if isinstance(kinship_matrix, (str, Path)) and not isinstance(kinship_matrix, np.ndarray):
             mat_path = Path(kinship_matrix)
             if mat_path.is_file():
                 kinship_matrix, sample_labels = _load_kinship_from_file(mat_path)
-                if output_path_or_labels is not None and not isinstance(
-                    output_path_or_labels, list
-                ):
+                if output_path_or_labels is not None and not isinstance(output_path_or_labels, list):
                     actual_output_path = Path(output_path_or_labels)
 
         # Determine output_path and sample_labels from positional args
@@ -112,10 +110,7 @@ def kinship_heatmap(
             sample_labels = output_path_or_labels
             if output_path_if_labels is not None:
                 actual_output_path = Path(output_path_if_labels)
-        elif (
-            isinstance(output_path_or_labels, (str, Path))
-            and output_path_or_labels is not None
-        ):
+        elif isinstance(output_path_or_labels, (str, Path)) and output_path_or_labels is not None:
             actual_output_path = Path(output_path_or_labels)
 
         # Convert to numpy array
@@ -142,20 +137,21 @@ def kinship_heatmap(
             cmap="viridis",
             row_colors=row_colors,
             col_colors=col_colors,
-            method='ward',
+            method="ward",
             figsize=(10, 10),
-            cbar_kws={'label': 'Kinship coefficient'},
+            cbar_kws={"label": "Kinship coefficient"},
             xticklabels=sample_labels if sample_labels and len(sample_labels) <= 50 else False,
             yticklabels=sample_labels if sample_labels and len(sample_labels) <= 50 else False,
         )
-        
+
         g.fig.suptitle(plot_title, y=1.02)
-        
+
         # Add legend if population_labels exist
         if population_labels is not None:
             from matplotlib.patches import Patch
+
             legend_elements = [Patch(facecolor=pop_color_map[p], label=p) for p in unique_pops]
-            g.fig.legend(handles=legend_elements, loc='upper left', bbox_to_anchor=(0.02, 0.98), title="Population")
+            g.fig.legend(handles=legend_elements, loc="upper left", bbox_to_anchor=(0.02, 0.98), title="Population")
 
         if actual_output_path:
             g.savefig(actual_output_path, dpi=300, bbox_inches="tight")
@@ -266,9 +262,7 @@ def admixture_plot(
             sorted_indices: List[int] = []
             for pop in sorted(pop_indices.keys()):
                 indices = pop_indices[pop]
-                sorted_pop_indices = sorted(
-                    indices, key=lambda x: admixture_matrix[x, 0], reverse=True
-                )
+                sorted_pop_indices = sorted(indices, key=lambda x: admixture_matrix[x, 0], reverse=True)
                 sorted_indices.extend(sorted_pop_indices)
         else:
             sorted_indices = list(range(n_samples))
@@ -286,11 +280,7 @@ def admixture_plot(
         # Use a color map for ancestries
         colors = plt.cm.tab10(np.linspace(0, 1, n_ancestries))
 
-        ancestry_labels = (
-            ancestry_names
-            if ancestry_names
-            else [f"Ancestry {i + 1}" for i in range(n_ancestries)]
-        )
+        ancestry_labels = ancestry_names if ancestry_names else [f"Ancestry {i + 1}" for i in range(n_ancestries)]
 
         for i in range(n_ancestries):
             ax.bar(
@@ -307,11 +297,7 @@ def admixture_plot(
         # Add population separators if population labels exist
         if population_labels and len(population_labels) == n_samples:
             sorted_pops = [population_labels[i] for i in sorted_indices]
-            pop_changes = [
-                i
-                for i in range(1, len(sorted_pops))
-                if sorted_pops[i] != sorted_pops[i - 1]
-            ]
+            pop_changes = [i for i in range(1, len(sorted_pops)) if sorted_pops[i] != sorted_pops[i - 1]]
 
             for change_point in pop_changes:
                 ax.axvline(x=change_point - 0.5, color="black", linewidth=1, alpha=0.7)
@@ -338,20 +324,13 @@ def admixture_plot(
 
         ax.set_xlabel("Samples")
         ax.set_ylabel("Ancestry Proportion")
-        plot_title = (
-            f"Population Admixture Proportions (K={k})"
-            if k
-            else "Population Admixture Proportions"
-        )
+        plot_title = f"Population Admixture Proportions (K={k})" if k else "Population Admixture Proportions"
         ax.set_title(plot_title)
         ax.set_xlim(-0.5, n_samples - 0.5)
         ax.set_ylim(0, 1)
 
         # Create legend
-        legend_elements = [
-            plt.Rectangle((0, 0), 1, 1, facecolor=colors[i], alpha=0.8)
-            for i in range(n_ancestries)
-        ]
+        legend_elements = [plt.Rectangle((0, 0), 1, 1, facecolor=colors[i], alpha=0.8) for i in range(n_ancestries)]
         ax.legend(
             legend_elements,
             ancestry_labels,
@@ -489,9 +468,7 @@ def kinship_dendrogram(
                 grp = groups[i]
                 rgba = group_to_color[grp]
                 # Convert RGBA to hex for matplotlib
-                hex_color = "#{:02x}{:02x}{:02x}".format(
-                    int(rgba[0] * 255), int(rgba[1] * 255), int(rgba[2] * 255)
-                )
+                hex_color = "#{:02x}{:02x}{:02x}".format(int(rgba[0] * 255), int(rgba[1] * 255), int(rgba[2] * 255))
                 leaf_colors[label] = hex_color
 
         # Create figure
@@ -519,11 +496,7 @@ def kinship_dendrogram(
             if color_by and metadata:
                 from matplotlib.patches import Patch
 
-                legend_elements = [
-                    Patch(facecolor=group_to_color[g], label=g)
-                    for g in unique_groups
-                    if g != "unknown"
-                ]
+                legend_elements = [Patch(facecolor=group_to_color[g], label=g) for g in unique_groups if g != "unknown"]
                 if legend_elements:
                     ax.legend(
                         handles=legend_elements,
@@ -653,14 +626,10 @@ def kinship_clustermap(
                 sample_meta = metadata.get(label, {})
                 pop_groups.append(sample_meta.get("population", "unknown"))
             unique_pops = sorted(set(pop_groups))
-            if len(unique_pops) > 1 or (
-                len(unique_pops) == 1 and unique_pops[0] != "unknown"
-            ):
+            if len(unique_pops) > 1 or (len(unique_pops) == 1 and unique_pops[0] != "unknown"):
                 has_pop_annotations = True
                 cmap_colors = plt.cm.tab10(np.linspace(0, 1, max(len(unique_pops), 1)))
-                pop_color_map = {
-                    pop: cmap_colors[i] for i, pop in enumerate(unique_pops)
-                }
+                pop_color_map = {pop: cmap_colors[i] for i, pop in enumerate(unique_pops)}
 
         # Build the layout using GridSpec
         # Layout: top dendrogram, optional color bar, heatmap + left dendrogram
@@ -737,18 +706,14 @@ def kinship_clustermap(
         if has_pop_annotations:
             # Top color bar (columns)
             ax_col_colors = fig.add_subplot(gs[1, 2])
-            col_colors_arr = np.array(
-                [pop_color_map[pop_groups[i]] for i in reorder_idx]
-            ).reshape(1, -1, 4)
+            col_colors_arr = np.array([pop_color_map[pop_groups[i]] for i in reorder_idx]).reshape(1, -1, 4)
             ax_col_colors.imshow(col_colors_arr, aspect="auto", interpolation="nearest")
             ax_col_colors.set_xticks([])
             ax_col_colors.set_yticks([])
 
             # Left color bar (rows)
             ax_row_colors = fig.add_subplot(gs[2, 1])
-            row_colors_arr = np.array(
-                [pop_color_map[pop_groups[i]] for i in reorder_idx]
-            ).reshape(-1, 1, 4)
+            row_colors_arr = np.array([pop_color_map[pop_groups[i]] for i in reorder_idx]).reshape(-1, 1, 4)
             ax_row_colors.imshow(row_colors_arr, aspect="auto", interpolation="nearest")
             ax_row_colors.set_xticks([])
             ax_row_colors.set_yticks([])
@@ -762,18 +727,14 @@ def kinship_clustermap(
         # Reorder kinship matrix according to dendrogram
         reordered_matrix = kinship_matrix[np.ix_(reorder_idx, reorder_idx)]
 
-        im = ax_heatmap.imshow(
-            reordered_matrix, cmap="viridis", aspect="equal", interpolation="nearest"
-        )
+        im = ax_heatmap.imshow(reordered_matrix, cmap="viridis", aspect="equal", interpolation="nearest")
 
         # Add sample labels if not too many
         reordered_labels = [sample_labels[i] for i in reorder_idx]
         if n_samples <= 50:
             font_size = max(5, min(10, 150 // n_samples))
             ax_heatmap.set_xticks(range(n_samples))
-            ax_heatmap.set_xticklabels(
-                reordered_labels, rotation=90, fontsize=font_size
-            )
+            ax_heatmap.set_xticklabels(reordered_labels, rotation=90, fontsize=font_size)
             ax_heatmap.set_yticks(range(n_samples))
             ax_heatmap.set_yticklabels(reordered_labels, fontsize=font_size)
         else:
@@ -788,9 +749,7 @@ def kinship_clustermap(
         if has_pop_annotations:
             from matplotlib.patches import Patch
 
-            legend_elements = [
-                Patch(facecolor=pop_color_map[p], label=p) for p in unique_pops
-            ]
+            legend_elements = [Patch(facecolor=pop_color_map[p], label=p) for p in unique_pops]
             fig.legend(
                 handles=legend_elements,
                 title="Population",

@@ -18,14 +18,15 @@ from __future__ import annotations
 import sqlite3
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import matplotlib
+
 matplotlib.use("Agg")
 
-import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
 import numpy as np
 
 # ═══════════════════════════════════════════════════════════════
@@ -33,12 +34,12 @@ import numpy as np
 # ═══════════════════════════════════════════════════════════════
 
 COLORS = {
-    "pending":     "#94a3b8",  # cool gray
+    "pending": "#94a3b8",  # cool gray
     "downloading": "#3b82f6",  # vivid blue
-    "downloaded":  "#06b6d4",  # cyan
+    "downloaded": "#06b6d4",  # cyan
     "quantifying": "#f59e0b",  # amber
-    "quantified":  "#10b981",  # emerald
-    "failed":      "#ef4444",  # red
+    "quantified": "#10b981",  # emerald
+    "failed": "#ef4444",  # red
 }
 
 STATE_ORDER = ["pending", "downloading", "downloaded", "quantifying", "quantified", "failed"]
@@ -55,21 +56,36 @@ BG_COLOR = "#ffffff"
 CARD_BG = "#f8fafc"
 TEXT_COLOR = "#1e293b"
 ACCENT = "#0f172a"
-ACCENT2 = "#0369a1"       # secondary accent (blue)
+ACCENT2 = "#0369a1"  # secondary accent (blue)
 GRID_COLOR = "#e2e8f0"
 BORDER_COLOR = "#cbd5e1"
 MUTED = "#64748b"
 
 SPECIES_ORDER = [
-    "anoplolepis_gracilipes", "acromyrmex_echinatior", "dinoponera_quadriceps",
-    "vollenhovia_emeryi", "odontomachus_brunneus", "formica_exsecta",
-    "temnothorax_americanus", "wasmannia_auropunctata", "nylanderia_fulva",
-    "temnothorax_curvispinosus", "pogonomyrmex_barbatus", "cardiocondyla_obscurior",
-    "temnothorax_nylanderi", "linepithema_humile", "atta_cephalotes",
-    "ooceraea_biroi", "camponotus_floridanus", "solenopsis_invicta",
-    "monomorium_pharaonis", "temnothorax_longispinosus", "harpegnathos_saltator",
+    "anoplolepis_gracilipes",
+    "acromyrmex_echinatior",
+    "dinoponera_quadriceps",
+    "vollenhovia_emeryi",
+    "odontomachus_brunneus",
+    "formica_exsecta",
+    "temnothorax_americanus",
+    "wasmannia_auropunctata",
+    "nylanderia_fulva",
+    "temnothorax_curvispinosus",
+    "pogonomyrmex_barbatus",
+    "cardiocondyla_obscurior",
+    "temnothorax_nylanderi",
+    "linepithema_humile",
+    "atta_cephalotes",
+    "ooceraea_biroi",
+    "camponotus_floridanus",
+    "solenopsis_invicta",
+    "monomorium_pharaonis",
+    "temnothorax_longispinosus",
+    "harpegnathos_saltator",
     "apis_mellifera",
 ]
+
 
 # Nicer display names (italic genus abbreviation + species)
 def _display_name(sp: str) -> str:
@@ -77,6 +93,7 @@ def _display_name(sp: str) -> str:
     if len(parts) >= 2:
         return f"{parts[0][0].upper()}. {' '.join(p.capitalize() for p in parts[1:])}"
     return sp.replace("_", " ").title()
+
 
 DEFAULT_DB = Path("output/amalgkit/pipeline_progress.db")
 DEFAULT_OUTPUT = Path("output/amalgkit")
@@ -86,12 +103,11 @@ DEFAULT_OUTPUT = Path("output/amalgkit")
 # Data loading
 # ═══════════════════════════════════════════════════════════════
 
+
 def load_counts(db_path: Path = DEFAULT_DB) -> Dict[str, Dict[str, int]]:
     """Load species × state counts from the progress database."""
     conn = sqlite3.connect(str(db_path))
-    rows = conn.execute(
-        "SELECT species, state, COUNT(*) FROM samples GROUP BY species, state"
-    ).fetchall()
+    rows = conn.execute("SELECT species, state, COUNT(*) FROM samples GROUP BY species, state").fetchall()
     conn.close()
 
     result: Dict[str, Dict[str, int]] = {}
@@ -117,6 +133,7 @@ def load_failed_details(db_path: Path = DEFAULT_DB) -> List[Dict[str, Any]]:
 # Individual plot components
 # ═══════════════════════════════════════════════════════════════
 
+
 def _style_ax(ax: plt.Axes, title: str = "") -> None:
     """Apply consistent styling to an axes."""
     ax.set_facecolor(CARD_BG)
@@ -125,16 +142,14 @@ def _style_ax(ax: plt.Axes, title: str = "") -> None:
         spine.set_linewidth(0.8)
     ax.tick_params(colors=TEXT_COLOR, labelsize=10)
     if title:
-        ax.set_title(title, color=ACCENT, fontsize=14, fontweight="bold",
-                      pad=12, loc="left")
+        ax.set_title(title, color=ACCENT, fontsize=14, fontweight="bold", pad=12, loc="left")
 
 
 def plot_species_bars(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> None:
     """Horizontal stacked bar chart — all species, all states."""
     species = [sp for sp in SPECIES_ORDER if sp in counts]
     if not species:
-        ax.text(0.5, 0.5, "No data", transform=ax.transAxes,
-                ha="center", va="center", color=MUTED, fontsize=14)
+        ax.text(0.5, 0.5, "No data", transform=ax.transAxes, ha="center", va="center", color=MUTED, fontsize=14)
         return
 
     bar_data = {s: [] for s in STATE_ORDER}
@@ -148,16 +163,31 @@ def plot_species_bars(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> None:
     for state in STATE_ORDER:
         vals = bar_data[state]
         if any(v > 0 for v in vals):
-            ax.barh(y_pos, vals, left=left, height=0.65,
-                    color=COLORS[state], label=STATE_LABELS[state],
-                    edgecolor="white", linewidth=0.3)
-            left = [l + v for l, v in zip(left, vals)]
+            ax.barh(
+                y_pos,
+                vals,
+                left=left,
+                height=0.65,
+                color=COLORS[state],
+                label=STATE_LABELS[state],
+                edgecolor="white",
+                linewidth=0.3,
+            )
+            left = [current + value for current, value in zip(left, vals)]
 
     # Total count at end of each bar
     for i, sp in enumerate(species):
         total = sum(counts.get(sp, {}).values())
-        ax.text(left[i] + max(left) * 0.01, i, f" {total:,}",
-                va="center", ha="left", color=MUTED, fontsize=8, fontweight="bold")
+        ax.text(
+            left[i] + max(left) * 0.01,
+            i,
+            f" {total:,}",
+            va="center",
+            ha="left",
+            color=MUTED,
+            fontsize=8,
+            fontweight="bold",
+        )
 
     display_names = [_display_name(sp) for sp in species]
     ax.set_yticks(y_pos)
@@ -183,7 +213,7 @@ def plot_completion_pct(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> None
         sc = counts.get(sp, {})
         total = sum(sc.values())
         quant = sc.get("quantified", 0)
-        failed = sc.get("failed", 0)
+        sc.get("failed", 0)
         pct = (quant / total * 100) if total > 0 else 0
         pcts.append(pct)
 
@@ -203,19 +233,15 @@ def plot_completion_pct(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> None
     y_pos = list(range(len(species)))
 
     # Background track
-    ax.barh(y_pos, [100] * len(species), height=0.65,
-            color="#f1f5f9", edgecolor="none")
+    ax.barh(y_pos, [100] * len(species), height=0.65, color="#f1f5f9", edgecolor="none")
 
     # Foreground progress
-    bars = ax.barh(y_pos, pcts, height=0.65,
-                   color=bg_colors, edgecolor="white", linewidth=0.3)
+    ax.barh(y_pos, pcts, height=0.65, color=bg_colors, edgecolor="white", linewidth=0.3)
 
     # Percentage labels
     for i, pct in enumerate(pcts):
         label_x = max(pct + 2, 8)
-        ax.text(label_x, i, f"{pct:.0f}%",
-                va="center", ha="left", color=fg_colors[i],
-                fontsize=9, fontweight="bold")
+        ax.text(label_x, i, f"{pct:.0f}%", va="center", ha="left", color=fg_colors[i], fontsize=9, fontweight="bold")
 
     ax.set_yticks([])
     ax.set_xlim(0, 110)
@@ -237,8 +263,7 @@ def plot_overall_donut(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> None:
 
     grand_total = sum(totals.values())
     if grand_total == 0:
-        ax.text(0.5, 0.5, "No data", transform=ax.transAxes,
-                ha="center", va="center", color=MUTED, fontsize=14)
+        ax.text(0.5, 0.5, "No data", transform=ax.transAxes, ha="center", va="center", color=MUTED, fontsize=14)
         return
 
     labels = []
@@ -251,19 +276,15 @@ def plot_overall_donut(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> None:
             clrs.append(COLORS[s])
 
     wedges, _ = ax.pie(
-        sizes, colors=clrs, startangle=90,
-        wedgeprops={"width": 0.32, "edgecolor": "white", "linewidth": 2.5}
+        sizes, colors=clrs, startangle=90, wedgeprops={"width": 0.32, "edgecolor": "white", "linewidth": 2.5}
     )
 
     # Center stats
     quant = totals.get("quantified", 0)
     pct = quant / grand_total * 100
-    ax.text(0, 0.08, f"{pct:.1f}%", ha="center", va="center",
-            color=ACCENT, fontsize=28, fontweight="bold")
-    ax.text(0, -0.12, f"{quant:,} / {grand_total:,}", ha="center", va="center",
-            color=MUTED, fontsize=11)
-    ax.text(0, -0.25, "quantified", ha="center", va="center",
-            color=MUTED, fontsize=9, style="italic")
+    ax.text(0, 0.08, f"{pct:.1f}%", ha="center", va="center", color=ACCENT, fontsize=28, fontweight="bold")
+    ax.text(0, -0.12, f"{quant:,} / {grand_total:,}", ha="center", va="center", color=MUTED, fontsize=11)
+    ax.text(0, -0.25, "quantified", ha="center", va="center", color=MUTED, fontsize=9, style="italic")
 
     ax.set_facecolor(CARD_BG)
     _style_ax(ax, "Overall Progress")
@@ -280,7 +301,8 @@ def plot_state_summary_table(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) ->
     grand_total = sum(totals.values())
     n_species = len(counts)
     n_complete = sum(
-        1 for sp in counts
+        1
+        for sp in counts
         if counts[sp].get("quantified", 0) == sum(counts[sp].values()) and sum(counts[sp].values()) > 0
     )
 
@@ -294,10 +316,19 @@ def plot_state_summary_table(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) ->
     def _row(label: str, value: str, color: str = TEXT_COLOR, bold: bool = False):
         nonlocal y
         weight = "bold" if bold else "normal"
-        ax.text(0.05, y, label, transform=ax.transAxes, fontsize=11,
-                color=MUTED, va="top", fontfamily="sans-serif")
-        ax.text(0.95, y, value, transform=ax.transAxes, fontsize=11,
-                color=color, va="top", ha="right", fontweight=weight, fontfamily="monospace")
+        ax.text(0.05, y, label, transform=ax.transAxes, fontsize=11, color=MUTED, va="top", fontfamily="sans-serif")
+        ax.text(
+            0.95,
+            y,
+            value,
+            transform=ax.transAxes,
+            fontsize=11,
+            color=color,
+            va="top",
+            ha="right",
+            fontweight=weight,
+            fontfamily="monospace",
+        )
         y -= line_h
 
     _row("Species tracked", str(n_species), ACCENT, True)
@@ -348,10 +379,12 @@ def plot_species_heatmap(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> Non
 
             rect = mpatches.FancyBboxPatch(
                 (j * (cell_w + pad), (n_sp - 1 - i) * (cell_h + pad)),
-                cell_w, cell_h,
+                cell_w,
+                cell_h,
                 boxstyle="round,pad=0.03",
                 facecolor=blended,
-                edgecolor="white", linewidth=0.5,
+                edgecolor="white",
+                linewidth=0.5,
             )
             ax.add_patch(rect)
 
@@ -362,16 +395,18 @@ def plot_species_heatmap(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> Non
                     j * (cell_w + pad) + cell_w / 2,
                     (n_sp - 1 - i) * (cell_h + pad) + cell_h / 2,
                     f"{int(val):,}",
-                    ha="center", va="center", fontsize=7,
-                    color=text_color, fontweight="bold",
+                    ha="center",
+                    va="center",
+                    fontsize=7,
+                    color=text_color,
+                    fontweight="bold",
                 )
 
     # Axis labels
     ax.set_xlim(-pad, n_st * (cell_w + pad))
     ax.set_ylim(-pad, n_sp * (cell_h + pad))
     ax.set_xticks([j * (cell_w + pad) + cell_w / 2 for j in range(n_st)])
-    ax.set_xticklabels([STATE_LABELS[s] for s in STATE_ORDER],
-                       fontsize=9, color=TEXT_COLOR, rotation=30, ha="right")
+    ax.set_xticklabels([STATE_LABELS[s] for s in STATE_ORDER], fontsize=9, color=TEXT_COLOR, rotation=30, ha="right")
     ax.set_yticks([(n_sp - 1 - i) * (cell_h + pad) + cell_h / 2 for i in range(n_sp)])
     ax.set_yticklabels([_display_name(sp) for sp in species], fontsize=8, color=TEXT_COLOR)
     ax.tick_params(length=0)
@@ -380,8 +415,7 @@ def plot_species_heatmap(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> Non
     _style_ax(ax, "Status Heatmap (log-scaled)")
 
 
-def plot_failed_summary(ax: plt.Axes, counts: Dict[str, Dict[str, int]],
-                        failed_details: List[Dict[str, Any]]) -> None:
+def plot_failed_summary(ax: plt.Axes, counts: Dict[str, Dict[str, int]], failed_details: List[Dict[str, Any]]) -> None:
     """Summary of failed samples by species."""
     ax.axis("off")
     ax.set_facecolor(CARD_BG)
@@ -396,28 +430,48 @@ def plot_failed_summary(ax: plt.Axes, counts: Dict[str, Dict[str, int]],
             failures_by_sp[sp] = failed
 
     if not failures_by_sp:
-        ax.text(0.5, 0.5, "No failures 🎉", transform=ax.transAxes,
-                ha="center", va="center", color=COLORS["quantified"],
-                fontsize=14, fontweight="bold")
+        ax.text(
+            0.5,
+            0.5,
+            "No failures 🎉",
+            transform=ax.transAxes,
+            ha="center",
+            va="center",
+            color=COLORS["quantified"],
+            fontsize=14,
+            fontweight="bold",
+        )
         return
 
     y = 0.82
     total_failed = sum(failures_by_sp.values())
-    ax.text(0.05, y, f"Total failed: {total_failed:,}",
-            transform=ax.transAxes, fontsize=12, color=COLORS["failed"],
-            fontweight="bold")
+    ax.text(
+        0.05,
+        y,
+        f"Total failed: {total_failed:,}",
+        transform=ax.transAxes,
+        fontsize=12,
+        color=COLORS["failed"],
+        fontweight="bold",
+    )
     y -= 0.1
 
     sorted_failures = sorted(failures_by_sp.items(), key=lambda x: x[1], reverse=True)
     for sp, count in sorted_failures[:8]:
-        ax.text(0.08, y, f"• {_display_name(sp)}: {count:,}",
-                transform=ax.transAxes, fontsize=10, color=TEXT_COLOR)
+        ax.text(0.08, y, f"• {_display_name(sp)}: {count:,}", transform=ax.transAxes, fontsize=10, color=TEXT_COLOR)
         y -= 0.08
 
     if len(sorted_failures) > 8:
         remaining = sum(c for _, c in sorted_failures[8:])
-        ax.text(0.08, y, f"  + {len(sorted_failures) - 8} more ({remaining:,})",
-                transform=ax.transAxes, fontsize=9, color=MUTED, style="italic")
+        ax.text(
+            0.08,
+            y,
+            f"  + {len(sorted_failures) - 8} more ({remaining:,})",
+            transform=ax.transAxes,
+            fontsize=9,
+            color=MUTED,
+            style="italic",
+        )
 
 
 def plot_sample_counts_table(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> None:
@@ -435,12 +489,10 @@ def plot_sample_counts_table(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) ->
     col_x = [0.02, 0.45, 0.60, 0.75, 0.88]
     y = 0.90
     for h, x in zip(headers, col_x):
-        ax.text(x, y, h, transform=ax.transAxes, fontsize=9,
-                color=ACCENT, fontweight="bold", va="top")
+        ax.text(x, y, h, transform=ax.transAxes, fontsize=9, color=ACCENT, fontweight="bold", va="top")
 
     y -= 0.03
-    ax.plot([0.02, 0.98], [y, y], color=BORDER_COLOR,
-            linewidth=0.8, transform=ax.transAxes, clip_on=False)
+    ax.plot([0.02, 0.98], [y, y], color=BORDER_COLOR, linewidth=0.8, transform=ax.transAxes, clip_on=False)
     y -= 0.015
 
     line_h = 0.038 if len(species) > 15 else 0.042
@@ -455,50 +507,110 @@ def plot_sample_counts_table(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) ->
 
         name_color = COLORS["quantified"] if quant == total and total > 0 else TEXT_COLOR
 
-        ax.text(col_x[0], y, _display_name(sp), transform=ax.transAxes,
-                fontsize=fsize, color=name_color, va="top")
-        ax.text(col_x[1], y, f"{total:,}", transform=ax.transAxes,
-                fontsize=fsize, color=TEXT_COLOR, va="top", fontfamily="monospace")
-        ax.text(col_x[2], y, f"{quant:,}", transform=ax.transAxes,
-                fontsize=fsize, color=COLORS["quantified"] if quant > 0 else MUTED, va="top",
-                fontfamily="monospace")
-        ax.text(col_x[3], y, f"{failed:,}", transform=ax.transAxes,
-                fontsize=fsize, color=COLORS["failed"] if failed > 0 else MUTED, va="top",
-                fontfamily="monospace")
-        ax.text(col_x[4], y, pct, transform=ax.transAxes,
-                fontsize=fsize, color=COLORS["quantified"] if quant > 0 else MUTED, va="top",
-                fontweight="bold" if quant == total and total > 0 else "normal",
-                fontfamily="monospace")
+        ax.text(col_x[0], y, _display_name(sp), transform=ax.transAxes, fontsize=fsize, color=name_color, va="top")
+        ax.text(
+            col_x[1],
+            y,
+            f"{total:,}",
+            transform=ax.transAxes,
+            fontsize=fsize,
+            color=TEXT_COLOR,
+            va="top",
+            fontfamily="monospace",
+        )
+        ax.text(
+            col_x[2],
+            y,
+            f"{quant:,}",
+            transform=ax.transAxes,
+            fontsize=fsize,
+            color=COLORS["quantified"] if quant > 0 else MUTED,
+            va="top",
+            fontfamily="monospace",
+        )
+        ax.text(
+            col_x[3],
+            y,
+            f"{failed:,}",
+            transform=ax.transAxes,
+            fontsize=fsize,
+            color=COLORS["failed"] if failed > 0 else MUTED,
+            va="top",
+            fontfamily="monospace",
+        )
+        ax.text(
+            col_x[4],
+            y,
+            pct,
+            transform=ax.transAxes,
+            fontsize=fsize,
+            color=COLORS["quantified"] if quant > 0 else MUTED,
+            va="top",
+            fontweight="bold" if quant == total and total > 0 else "normal",
+            fontfamily="monospace",
+        )
         y -= line_h
 
     # Totals row
     y -= 0.005
-    ax.plot([0.02, 0.98], [y, y], color=BORDER_COLOR,
-            linewidth=0.8, transform=ax.transAxes, clip_on=False)
+    ax.plot([0.02, 0.98], [y, y], color=BORDER_COLOR, linewidth=0.8, transform=ax.transAxes, clip_on=False)
     y -= 0.015
     grand_total = sum(sum(counts.get(sp, {}).values()) for sp in species)
     grand_quant = sum(counts.get(sp, {}).get("quantified", 0) for sp in species)
     grand_fail = sum(counts.get(sp, {}).get("failed", 0) for sp in species)
     grand_pct = f"{grand_quant/grand_total*100:.1f}%" if grand_total > 0 else "—"
 
-    ax.text(col_x[0], y, "TOTAL", transform=ax.transAxes,
-            fontsize=fsize + 1, color=ACCENT, va="top", fontweight="bold")
-    ax.text(col_x[1], y, f"{grand_total:,}", transform=ax.transAxes,
-            fontsize=fsize + 1, color=ACCENT, va="top", fontweight="bold", fontfamily="monospace")
-    ax.text(col_x[2], y, f"{grand_quant:,}", transform=ax.transAxes,
-            fontsize=fsize + 1, color=COLORS["quantified"], va="top", fontweight="bold",
-            fontfamily="monospace")
-    ax.text(col_x[3], y, f"{grand_fail:,}", transform=ax.transAxes,
-            fontsize=fsize + 1, color=COLORS["failed"], va="top", fontweight="bold",
-            fontfamily="monospace")
-    ax.text(col_x[4], y, grand_pct, transform=ax.transAxes,
-            fontsize=fsize + 1, color=ACCENT, va="top", fontweight="bold",
-            fontfamily="monospace")
+    ax.text(col_x[0], y, "TOTAL", transform=ax.transAxes, fontsize=fsize + 1, color=ACCENT, va="top", fontweight="bold")
+    ax.text(
+        col_x[1],
+        y,
+        f"{grand_total:,}",
+        transform=ax.transAxes,
+        fontsize=fsize + 1,
+        color=ACCENT,
+        va="top",
+        fontweight="bold",
+        fontfamily="monospace",
+    )
+    ax.text(
+        col_x[2],
+        y,
+        f"{grand_quant:,}",
+        transform=ax.transAxes,
+        fontsize=fsize + 1,
+        color=COLORS["quantified"],
+        va="top",
+        fontweight="bold",
+        fontfamily="monospace",
+    )
+    ax.text(
+        col_x[3],
+        y,
+        f"{grand_fail:,}",
+        transform=ax.transAxes,
+        fontsize=fsize + 1,
+        color=COLORS["failed"],
+        va="top",
+        fontweight="bold",
+        fontfamily="monospace",
+    )
+    ax.text(
+        col_x[4],
+        y,
+        grand_pct,
+        transform=ax.transAxes,
+        fontsize=fsize + 1,
+        color=ACCENT,
+        va="top",
+        fontweight="bold",
+        fontfamily="monospace",
+    )
 
 
 # ═══════════════════════════════════════════════════════════════
 # Main dashboard composer
 # ═══════════════════════════════════════════════════════════════
+
 
 def generate_dashboard(
     db_path: Path = DEFAULT_DB,
@@ -529,22 +641,38 @@ def generate_dashboard(
 
     fig.suptitle(
         "MetaInformAnt  ·  Amalgkit RNA-seq Pipeline Dashboard",
-        fontsize=22, fontweight="bold", color=ACCENT,
-        y=0.975, fontfamily="sans-serif"
+        fontsize=22,
+        fontweight="bold",
+        color=ACCENT,
+        y=0.975,
+        fontfamily="sans-serif",
     )
     fig.text(
-        0.5, 0.96,
-        f"Generated {timestamp}  ·  {len(counts)} species  ·  "
-        f"{grand_total:,} total samples  ·  {grand_quant:,} quantified ({grand_quant/grand_total*100:.1f}%)"
-        if grand_total > 0 else f"Generated {timestamp}  ·  No data",
-        ha="center", fontsize=12, color=MUTED, fontfamily="sans-serif"
+        0.5,
+        0.96,
+        (
+            f"Generated {timestamp}  ·  {len(counts)} species  ·  "
+            f"{grand_total:,} total samples  ·  {grand_quant:,} quantified ({grand_quant/grand_total*100:.1f}%)"
+            if grand_total > 0
+            else f"Generated {timestamp}  ·  No data"
+        ),
+        ha="center",
+        fontsize=12,
+        color=MUTED,
+        fontfamily="sans-serif",
     )
 
     # ── Layout: 3 rows × 4 columns ──
     gs = gridspec.GridSpec(
-        3, 4, figure=fig,
-        left=0.03, right=0.98, top=0.94, bottom=0.03,
-        hspace=0.30, wspace=0.22,
+        3,
+        4,
+        figure=fig,
+        left=0.03,
+        right=0.98,
+        top=0.94,
+        bottom=0.03,
+        hspace=0.30,
+        wspace=0.22,
         height_ratios=[1.3, 1.0, 1.0],
     )
 
@@ -578,24 +706,30 @@ def generate_dashboard(
     ax_legend.axis("off")
     _style_ax(ax_legend, "Legend")
 
-    legend_patches = [
-        mpatches.Patch(color=COLORS[s], label=f"  {STATE_LABELS[s]}")
-        for s in STATE_ORDER
-    ]
+    legend_patches = [mpatches.Patch(color=COLORS[s], label=f"  {STATE_LABELS[s]}") for s in STATE_ORDER]
     ax_legend.legend(
-        handles=legend_patches, loc="center", ncol=1,
-        fontsize=11, frameon=False, labelcolor=TEXT_COLOR,
-        handlelength=2.5, handleheight=1.8,
+        handles=legend_patches,
+        loc="center",
+        ncol=1,
+        fontsize=11,
+        frameon=False,
+        labelcolor=TEXT_COLOR,
+        handlelength=2.5,
+        handleheight=1.8,
     )
 
     # State flow diagram as text
     ax_legend.text(
-        0.5, 0.12,
-        "pending → downloading → downloaded\n"
-        "→ quantifying → quantified | failed",
-        transform=ax_legend.transAxes, fontsize=9,
-        color=MUTED, ha="center", va="center",
-        fontfamily="monospace", style="italic",
+        0.5,
+        0.12,
+        "pending → downloading → downloaded\n" "→ quantifying → quantified | failed",
+        transform=ax_legend.transAxes,
+        fontsize=9,
+        color=MUTED,
+        ha="center",
+        va="center",
+        fontfamily="monospace",
+        style="italic",
     )
 
     # ── Save ──
@@ -606,7 +740,7 @@ def generate_dashboard(
     fig.savefig(str(png_path), format="png", facecolor=BG_COLOR, bbox_inches="tight", dpi=200)
     plt.close(fig)
 
-    print(f"  📊 Dashboard saved:")
+    print("  📊 Dashboard saved:")
     print(f"     PDF: {pdf_path}")
     print(f"     PNG: {png_path}")
 

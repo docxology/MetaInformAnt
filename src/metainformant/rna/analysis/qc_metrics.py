@@ -9,11 +9,10 @@ No mocking, no placeholder data.
 
 from __future__ import annotations
 
-from typing import Any, Literal, Optional, Sequence
+from typing import Literal, Optional, Sequence
 
 import numpy as np
 import pandas as pd
-from scipy import stats
 
 from metainformant.core.utils import logging
 

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Run comprehensive P. barbatus GWAS analysis with synthetic data."""
 
+# ruff: noqa: E402 - this script prepends the local src tree before importing metainformant.
+
 import sys
 from pathlib import Path
 
@@ -33,7 +35,7 @@ print("=" * 80)
 # Load configuration
 print("\nLoading configuration...")
 config = load_gwas_config("config/gwas/gwas_pbarbatus_synthetic.yaml")
-print(f"✓ Configuration loaded")
+print("✓ Configuration loaded")
 
 # Parse VCF
 print("\n[1/7] Parsing VCF file...")

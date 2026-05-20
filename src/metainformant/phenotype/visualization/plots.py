@@ -8,14 +8,15 @@ Publication-quality plotting routines for phenotypic trait analysis:
   - Interaction point plots with strain coloring
   - Correlation heatmaps with statistical significance masking
 
-All functions return matplotlib Axes objects that can be composed into
-multi-panel figures.  Typography follows publication standards (18pt titles,
-14pt labels, 12pt ticks).
+Core figure-producing functions return matplotlib Figure objects while still
+drawing into caller-provided axes when ``ax`` is supplied. Typography follows
+publication standards (18pt titles, 14pt labels, 12pt ticks).
 """
+
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,12 +24,12 @@ import pandas as pd
 import seaborn as sns
 from matplotlib.offsetbox import AnchoredText
 
-
 # ── Strain palette (shared with GWAS viz) ───────────────────────────────
 STRAIN_PALETTE = {"C": "#2196F3", "I": "#FF9800", "M": "#4CAF50", "R": "#F44336"}
 
 
 # ── Internal helpers ────────────────────────────────────────────────────
+
 
 def _add_stats_textbox(
     ax: plt.Axes,
@@ -64,11 +65,15 @@ def _apply_typography(
         ax.set_title(title, fontsize=18, fontweight="bold", pad=15)
     if xlabel:
         ax.set_xlabel(
-            xlabel.replace("_", " ").title(), fontsize=14, labelpad=10,
+            xlabel.replace("_", " ").title(),
+            fontsize=14,
+            labelpad=10,
         )
     if ylabel:
         ax.set_ylabel(
-            ylabel.replace("_", " ").title(), fontsize=14, labelpad=10,
+            ylabel.replace("_", " ").title(),
+            fontsize=14,
+            labelpad=10,
         )
     ax.tick_params(axis="both", which="major", labelsize=12)
 
@@ -88,7 +93,7 @@ def _cohens_d(group1: np.ndarray, group2: np.ndarray) -> float:
 def _format_p(p: float) -> str:
     """Format a p-value with significance stars."""
     if p < 0.001:
-        return f"p < 0.001 (***)"
+        return "p < 0.001 (***)"
     if p < 0.01:
         return f"p = {p:.3f} (**)"
     if p < 0.05:
@@ -170,7 +175,7 @@ def plot_boxplot_with_swarm(
     stats_text: Optional[str] = None,
     show_group_summary: bool = True,
     ax: Optional[plt.Axes] = None,
-) -> plt.Axes:
+) -> plt.Figure:
     """Boxplot overlaid with swarmplot, annotated with per-group statistics.
 
     Features:
@@ -204,21 +209,41 @@ def plot_boxplot_with_swarm(
     palette = None
     if hue:
         unique_hues = sorted(df[hue].dropna().unique(), key=str)
-        palette = {h: STRAIN_PALETTE.get(str(h), sns.color_palette("muted")[i % 10])
-                   for i, h in enumerate(unique_hues)}
+        palette = {h: STRAIN_PALETTE.get(str(h), sns.color_palette("muted")[i % 10]) for i, h in enumerate(unique_hues)}
+
+    use_hue = hue if hue else x_col
+    use_palette = palette if hue else {k: "#E0E0E0" for k in order}
 
     # Base boxplot
     sns.boxplot(
-        data=df, x=x_col, y=y_col, order=order, hue=hue,
-        showfliers=False, width=0.6, palette=palette or ["#E0E0E0"],
-        linewidth=1.2, ax=ax, legend=bool(hue),
+        data=df,
+        x=x_col,
+        y=y_col,
+        order=order,
+        hue=use_hue,
+        showfliers=False,
+        width=0.6,
+        palette=use_palette,
+        linewidth=1.2,
+        ax=ax,
+        legend=bool(hue),
     )
     # Strip overlay (jittered to prevent collision warnings)
     sns.stripplot(
-        data=df, x=x_col, y=y_col, order=order, hue=hue,
-        palette=palette, dodge=bool(hue), jitter=0.25,
-        alpha=0.65, size=4, edgecolor="white", linewidth=0.3,
-        ax=ax, legend=False,
+        data=df,
+        x=x_col,
+        y=y_col,
+        order=order,
+        hue=use_hue,
+        palette=use_palette if hue else "dark:.3",
+        dodge=bool(hue),
+        jitter=0.25,
+        alpha=0.65,
+        size=4,
+        edgecolor="white",
+        linewidth=0.3,
+        ax=ax,
+        legend=False,
     )
 
     _apply_typography(ax, title, x_col if not title else "", ylabel or y_col)
@@ -259,8 +284,12 @@ def plot_boxplot_with_swarm(
                 g2_vals = df.loc[df[x_col] == test["group2"], y_col].dropna().values
                 d = _cohens_d(g1_vals, g2_vals) if len(g1_vals) > 1 and len(g2_vals) > 1 else None
                 add_stat_annotation(
-                    ax, [i1, i2], y_max_base, test["p_value"],
-                    index=idx, effect_size=d,
+                    ax,
+                    [i1, i2],
+                    y_max_base,
+                    test["p_value"],
+                    index=idx,
+                    effect_size=d,
                 )
             except ValueError:
                 pass
@@ -274,11 +303,13 @@ def plot_boxplot_with_swarm(
     if hue:
         ax.legend(
             title=hue.replace("_", " ").title(),
-            bbox_to_anchor=(1.02, 1), loc="upper left",
-            fontsize=11, title_fontsize=13,
+            bbox_to_anchor=(1.02, 1),
+            loc="upper left",
+            fontsize=11,
+            title_fontsize=13,
         )
 
-    return ax
+    return ax.figure
 
 
 def plot_violin(
@@ -292,7 +323,7 @@ def plot_violin(
     stats_text: Optional[str] = None,
     show_group_summary: bool = True,
     ax: Optional[plt.Axes] = None,
-) -> plt.Axes:
+) -> plt.Figure:
     """Violin plot with strip overlay and per-group statistics.
 
     Features:
@@ -321,15 +352,34 @@ def plot_violin(
 
     split_violins = hue is not None and df[hue].nunique() == 2
 
+    use_hue = hue if hue else x_col
+    v_palette = "muted" if hue else {k: sns.color_palette("muted")[i % 10] for i, k in enumerate(order)}
+
     sns.violinplot(
-        data=df, x=x_col, y=y_col, order=order,
-        hue=hue, split=split_violins,
-        inner="quartile", palette="muted", alpha=0.5, ax=ax,
+        data=df,
+        x=x_col,
+        y=y_col,
+        order=order,
+        hue=use_hue,
+        split=split_violins,
+        inner="quartile",
+        palette=v_palette,
+        alpha=0.5,
+        ax=ax,
+        legend=bool(hue),
     )
     sns.stripplot(
-        data=df, x=x_col, y=y_col, order=order,
-        hue=hue, dodge=bool(hue),
-        alpha=0.4, size=3, color=".3", ax=ax, legend=False,
+        data=df,
+        x=x_col,
+        y=y_col,
+        order=order,
+        hue=use_hue,
+        dodge=bool(hue),
+        palette="muted" if hue else "dark:.3",
+        alpha=0.4,
+        size=3,
+        ax=ax,
+        legend=False,
     )
 
     _apply_typography(ax, title, x_col if not title else "", ylabel or y_col)
@@ -344,11 +394,13 @@ def plot_violin(
     if hue and not split_violins:
         ax.legend(
             title=hue.replace("_", " ").title(),
-            bbox_to_anchor=(1.05, 1), loc="upper left",
-            fontsize=12, title_fontsize=14,
+            bbox_to_anchor=(1.05, 1),
+            loc="upper left",
+            fontsize=12,
+            title_fontsize=14,
         )
 
-    return ax
+    return ax.figure
 
 
 def plot_regression_scatter(
@@ -387,8 +439,13 @@ def plot_regression_scatter(
 
     # Regression line with CI band
     sns.regplot(
-        data=df, x=x_col, y=y_col, ax=ax, scatter=False,
-        color="#D32F2F", line_kws={"linewidth": 2.5, "label": "OLS fit"},
+        data=df,
+        x=x_col,
+        y=y_col,
+        ax=ax,
+        scatter=False,
+        color="#D32F2F",
+        line_kws={"linewidth": 2.5, "label": "OLS fit"},
         ci=95,
     )
 
@@ -408,9 +465,16 @@ def plot_regression_scatter(
     # Scatter with hue
     palette = STRAIN_PALETTE if hue else None
     sns.scatterplot(
-        data=plot_df, x=x_col, y=y_col, hue=hue,
-        palette=palette, alpha=0.7, edgecolor="k", linewidth=0.3,
-        ax=ax, s=60,
+        data=plot_df,
+        x=x_col,
+        y=y_col,
+        hue=hue,
+        palette=palette,
+        alpha=0.7,
+        edgecolor="k",
+        linewidth=0.3,
+        ax=ax,
+        s=60,
     )
 
     _apply_typography(ax, title, xlabel or x_col, ylabel or y_col)
@@ -443,8 +507,10 @@ def plot_regression_scatter(
     if hue:
         ax.legend(
             title=hue.replace("_", " ").title(),
-            bbox_to_anchor=(1.05, 1), loc="upper left",
-            fontsize=12, title_fontsize=14,
+            bbox_to_anchor=(1.05, 1),
+            loc="upper left",
+            fontsize=12,
+            title_fontsize=14,
         )
 
     return ax
@@ -457,7 +523,7 @@ def plot_categorical_proportions(
     title: str = "",
     chi2_stats: Optional[Dict[str, Any]] = None,
     ax: Optional[plt.Axes] = None,
-) -> plt.Axes:
+) -> plt.Figure:
     """Stacked bar chart of categorical proportions with chi-square annotation.
 
     Args:
@@ -474,9 +540,7 @@ def plot_categorical_proportions(
             sorted(
                 counts.index,
                 key=lambda x: (
-                    int("".join(c for c in str(x) if c.isdigit()))
-                    if any(c.isdigit() for c in str(x))
-                    else float("inf")
+                    int("".join(c for c in str(x) if c.isdigit())) if any(c.isdigit() for c in str(x)) else float("inf")
                 ),
             )
         ]
@@ -519,15 +583,17 @@ def plot_categorical_proportions(
 
     ax.legend(
         title=cat_col.replace("_", " ").title(),
-        bbox_to_anchor=(1.05, 1), loc="upper left",
-        fontsize=12, title_fontsize=14,
+        bbox_to_anchor=(1.05, 1),
+        loc="upper left",
+        fontsize=12,
+        title_fontsize=14,
     )
 
     for tick in ax.get_xticklabels():
         tick.set_rotation(45)
         tick.set_ha("right")
 
-    return ax
+    return ax.figure
 
 
 def plot_interaction(
@@ -557,14 +623,22 @@ def plot_interaction(
     if ax is None:
         fig, ax = plt.subplots(figsize=(8, 6))
 
-    palette = {h: STRAIN_PALETTE.get(str(h), sns.color_palette("muted")[i % 10])
-               for i, h in enumerate(sorted(df[hue_col].dropna().unique(), key=str))}
+    palette = {
+        h: STRAIN_PALETTE.get(str(h), sns.color_palette("muted")[i % 10])
+        for i, h in enumerate(sorted(df[hue_col].dropna().unique(), key=str))
+    }
 
     sns.pointplot(
-        data=df, x=x_col, y=y_col, hue=hue_col,
-        dodge=0.3, markers="o",
-        err_kws={"linewidth": 1.5}, capsize=0.1,
-        palette=palette, ax=ax,
+        data=df,
+        x=x_col,
+        y=y_col,
+        hue=hue_col,
+        dodge=0.3,
+        markers="o",
+        err_kws={"linewidth": 1.5},
+        capsize=0.1,
+        palette=palette,
+        ax=ax,
     )
 
     _apply_typography(ax, title, x_col, ylabel or y_col)
@@ -578,8 +652,10 @@ def plot_interaction(
 
     ax.legend(
         title=hue_col.replace("_", " ").title(),
-        bbox_to_anchor=(1.05, 1), loc="upper left",
-        fontsize=12, title_fontsize=14,
+        bbox_to_anchor=(1.05, 1),
+        loc="upper left",
+        fontsize=12,
+        title_fontsize=14,
     )
 
     return ax
@@ -592,7 +668,7 @@ def plot_correlation_heatmap(
     mask_nonsig: bool = True,
     sig_threshold: float = 0.05,
     ax: Optional[plt.Axes] = None,
-) -> Any:
+) -> plt.Figure:
     """Correlation heatmap with dendrograms and significance annotations.
 
     Features:
@@ -615,8 +691,9 @@ def plot_correlation_heatmap(
 
     # Try scipy for dendrograms
     try:
-        from scipy.cluster.hierarchy import linkage, dendrogram
+        from scipy.cluster.hierarchy import dendrogram, linkage
         from scipy.spatial.distance import squareform
+
         has_scipy = True
     except ImportError:
         has_scipy = False
@@ -632,17 +709,19 @@ def plot_correlation_heatmap(
         fig = plt.figure(figsize=(max(10, n * 0.9), max(9, n * 0.8)))
 
         gs = fig.add_gridspec(
-            2, 2,
+            2,
+            2,
             width_ratios=[1, 0.04],
             height_ratios=[0.15, 1],
-            hspace=0.02, wspace=0.02,
+            hspace=0.02,
+            wspace=0.02,
         )
 
         # Top dendrogram
         ax_dend = fig.add_subplot(gs[0, 0])
-        dn = dendrogram(Z, ax=ax_dend, orientation="top",
-                        no_labels=True, color_threshold=0,
-                        above_threshold_color="#555555")
+        dn = dendrogram(
+            Z, ax=ax_dend, orientation="top", no_labels=True, color_threshold=0, above_threshold_color="#555555"
+        )
         ax_dend.set_axis_off()
         order = dn["leaves"]
 
@@ -680,7 +759,9 @@ def plot_correlation_heatmap(
             annot=annot_matrix.values,
             fmt="",
             cmap="RdBu_r",
-            vmin=-1, vmax=1, center=0,
+            vmin=-1,
+            vmax=1,
+            center=0,
             square=True,
             mask=mask_tri,
             ax=ax_heat,
@@ -692,8 +773,7 @@ def plot_correlation_heatmap(
 
         # Dedicated colorbar
         ax_cbar = fig.add_subplot(gs[1, 1])
-        sm = plt.cm.ScalarMappable(cmap="RdBu_r",
-                                   norm=plt.Normalize(vmin=-1, vmax=1))
+        sm = plt.cm.ScalarMappable(cmap="RdBu_r", norm=plt.Normalize(vmin=-1, vmax=1))
         plt.colorbar(sm, cax=ax_cbar, label="Pearson r")
 
         if title:
@@ -701,9 +781,15 @@ def plot_correlation_heatmap(
 
         if p_reordered is not None:
             ax_heat.text(
-                0.5, -0.02, "* p<0.05  ** p<0.01  *** p<0.001",
-                transform=ax_heat.transAxes, ha="center", va="top",
-                fontsize=9, fontstyle="italic", color="gray",
+                0.5,
+                -0.02,
+                "* p<0.05  ** p<0.01  *** p<0.001",
+                transform=ax_heat.transAxes,
+                ha="center",
+                va="top",
+                fontsize=9,
+                fontstyle="italic",
+                color="gray",
             )
 
         plt.tight_layout()
@@ -738,7 +824,9 @@ def plot_correlation_heatmap(
             annot=annot_matrix.values,
             fmt="",
             cmap="RdBu_r",
-            vmin=-1, vmax=1, center=0,
+            vmin=-1,
+            vmax=1,
+            center=0,
             square=True,
             mask=mask_tri,
             ax=ax,
@@ -753,9 +841,15 @@ def plot_correlation_heatmap(
 
         if p_matrix is not None:
             ax.text(
-                0.5, -0.02, "* p<0.05  ** p<0.01  *** p<0.001",
-                transform=ax.transAxes, ha="center", va="top",
-                fontsize=9, fontstyle="italic", color="gray",
+                0.5,
+                -0.02,
+                "* p<0.05  ** p<0.01  *** p<0.001",
+                transform=ax.transAxes,
+                ha="center",
+                va="top",
+                fontsize=9,
+                fontstyle="italic",
+                color="gray",
             )
 
-        return ax
+        return ax.figure

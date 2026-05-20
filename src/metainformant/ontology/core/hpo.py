@@ -57,8 +57,8 @@ def fetch_hpo_term(hp_id: str, *, rate_limit_s: float = _DEFAULT_RATE_LIMIT_S) -
         return _term_cache[hp_id]
 
     try:
-        import urllib.request
         import json
+        import urllib.request
 
         # OLS uses short form (e.g. HP_0000118)
         short_form = hp_id.replace(":", "_")
@@ -67,18 +67,18 @@ def fetch_hpo_term(hp_id: str, *, rate_limit_s: float = _DEFAULT_RATE_LIMIT_S) -
         time.sleep(rate_limit_s)
         with urllib.request.urlopen(req, timeout=10) as resp:
             data = json.loads(resp.read().decode())
-        
+
         embedded = data.get("_embedded", {})
         terms = embedded.get("terms", [])
         if not terms:
             return {}
-        
+
         term_data = terms[0]
-        
+
         definition = ""
         if term_data.get("description"):
             definition = term_data["description"][0]
-            
+
         synonyms = term_data.get("synonyms") or []
 
         term = {
@@ -86,7 +86,7 @@ def fetch_hpo_term(hp_id: str, *, rate_limit_s: float = _DEFAULT_RATE_LIMIT_S) -
             "name": term_data.get("label", ""),
             "definition": definition,
             "synonyms": synonyms,
-            "category": "", # OLS doesn't directly map 'category' in the same way
+            "category": "",  # OLS doesn't directly map 'category' in the same way
         }
         _term_cache[hp_id] = term
         logger.debug("Fetched HPO term %s: %s", hp_id, term["name"])
@@ -128,15 +128,11 @@ def search_hpo_terms(
         return _search_cache[cache_key]
 
     try:
-        import urllib.request
-        import urllib.parse
         import json
+        import urllib.parse
+        import urllib.request
 
-        params = {
-            "q": query_str, 
-            "ontology": "hp", 
-            "rows": str(max_results)
-        }
+        params = {"q": query_str, "ontology": "hp", "rows": str(max_results)}
         url = f"{_OLS_BASE}/search?{urllib.parse.urlencode(params)}"
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         time.sleep(rate_limit_s)
@@ -145,12 +141,14 @@ def search_hpo_terms(
 
         results = []
         for hit in data.get("response", {}).get("docs", []):
-            results.append({
-                "id": hit.get("obo_id", ""),
-                "name": hit.get("label", ""),
-                "definition": hit.get("description", [""])[0] if hit.get("description") else "",
-                "score": hit.get("score", 0.0),
-            })
+            results.append(
+                {
+                    "id": hit.get("obo_id", ""),
+                    "name": hit.get("label", ""),
+                    "definition": hit.get("description", [""])[0] if hit.get("description") else "",
+                    "score": hit.get("score", 0.0),
+                }
+            )
 
         _search_cache[cache_key] = results
         logger.info("HPO search '%s': %d results", query_str, len(results))
@@ -192,15 +190,15 @@ def map_phenotype_to_hpo(
     """
     # Local synonym map for common quantitative/agricultural traits
     _SYNONYM_MAP: dict[str, list[str]] = {
-        "honey yield": ["HP:0000118"],       # root — no direct HPO equivalent; use for context
+        "honey yield": ["HP:0000118"],  # root — no direct HPO equivalent; use for context
         "honey production": ["HP:0000118"],
-        "body weight": ["HP:0004324"],        # increased body weight
-        "body mass index": ["HP:0002860"],    # BMI-related
-        "blood pressure": ["HP:0000822"],     # hypertension
-        "height": ["HP:0000256"],             # macrocephaly / stature
+        "body weight": ["HP:0004324"],  # increased body weight
+        "body mass index": ["HP:0002860"],  # BMI-related
+        "blood pressure": ["HP:0000822"],  # hypertension
+        "height": ["HP:0000256"],  # macrocephaly / stature
         "stature": ["HP:0004322"],
-        "glucose": ["HP:0011013"],            # blood glucose
-        "cholesterol": ["HP:0003077"],        # hypercholesterolaemia
+        "glucose": ["HP:0011013"],  # blood glucose
+        "cholesterol": ["HP:0003077"],  # hypercholesterolaemia
     }
 
     label_lower = phenotype_label.lower().strip()
@@ -225,9 +223,7 @@ def map_phenotype_to_hpo(
             len(hp_ids_found),
         )
     else:
-        logger.warning(
-            "map_phenotype_to_hpo: no HPO terms found for '%s'", phenotype_label
-        )
+        logger.warning("map_phenotype_to_hpo: no HPO terms found for '%s'", phenotype_label)
 
     return hp_ids_found
 

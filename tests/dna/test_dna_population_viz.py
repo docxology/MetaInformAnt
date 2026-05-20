@@ -1,5 +1,7 @@
 """Tests for population genetics visualization functions."""
 
+# ruff: noqa: E402 - availability gating happens before importing seaborn-backed plotting helpers.
+
 from __future__ import annotations
 
 from pathlib import Path

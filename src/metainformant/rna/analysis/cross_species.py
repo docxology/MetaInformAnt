@@ -689,10 +689,10 @@ def compute_fingerprint_divergence_matrix(
     """
     species_names = sorted(species_expressions.keys())
     n = len(species_names)
-    
+
     if n < 2:
         raise ValueError(f"Need at least 2 species for comparison, got {n}")
-        
+
     logger.info(f"Computing fingerprint divergence matrix for {n} species using {n_bins} bins")
 
     fingerprints = {}
@@ -700,48 +700,48 @@ def compute_fingerprint_divergence_matrix(
         profile = species_expressions[sp]
         if isinstance(profile, pd.DataFrame):
             profile = profile.mean(axis=1)
-            
+
         # Remove zeros and NaN
         valid = profile[profile > 0].dropna()
         if len(valid) < 100:
             logger.warning(f"Species {sp} has too few valid genes ({len(valid)}) for reliable fingerprinting")
             fingerprints[sp] = np.zeros(n_bins)
             continue
-            
+
         # Log-transform and bin into percentile histogram
         log_expr = np.log1p(valid.values)
         hist, _ = np.histogram(log_expr, bins=n_bins, density=True)
         fingerprints[sp] = hist
-    
+
     # Compute pairwise Spearman correlation of fingerprints
     div_matrix = np.zeros((n, n))
     for i in range(n):
         for j in range(i + 1, n):
             fp_a = fingerprints[species_names[i]]
             fp_b = fingerprints[species_names[j]]
-            
+
             if np.sum(fp_a) == 0 or np.sum(fp_b) == 0:
                 div_matrix[i, j] = 1.0
                 div_matrix[j, i] = 1.0
                 continue
-                
+
             corr, _ = stats.spearmanr(fp_a, fp_b)
             if np.isnan(corr):
                 corr = 0.0
             div_matrix[i, j] = 1.0 - corr
             div_matrix[j, i] = 1.0 - corr
-            
+
     return pd.DataFrame(div_matrix, index=species_names, columns=species_names)
 
 
 def compute_gene_count_overlap(species_profiles: Dict[str, Any]) -> pd.DataFrame:
     """Compute gene count and mean/median expression statistics per species.
-    
+
     Args:
         species_profiles: Dictionary mapping species name to an expression profile Series.
-        
+
     Returns:
-        DataFrame with columns: species, total_genes, expressed_genes, 
+        DataFrame with columns: species, total_genes, expressed_genes,
         mean_expression, median_expression.
     """
     records = []
@@ -752,13 +752,15 @@ def compute_gene_count_overlap(species_profiles: Dict[str, Any]) -> pd.DataFrame
         n_expressed = int((profile > 0).sum())
         mean_expr = float(profile[profile > 0].mean()) if n_expressed > 0 else 0.0
         median_expr = float(profile[profile > 0].median()) if n_expressed > 0 else 0.0
-        records.append({
-            "species": sp,
-            "total_genes": n_genes,
-            "expressed_genes": n_expressed,
-            "mean_expression": round(mean_expr, 2),
-            "median_expression": round(median_expr, 2),
-        })
+        records.append(
+            {
+                "species": sp,
+                "total_genes": n_genes,
+                "expressed_genes": n_expressed,
+                "mean_expression": round(mean_expr, 2),
+                "median_expression": round(median_expr, 2),
+            }
+        )
     return pd.DataFrame(records)
 
 

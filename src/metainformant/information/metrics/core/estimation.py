@@ -118,7 +118,7 @@ def _chao_shen_entropy_estimator(counts: np.ndarray, total: int) -> float:
         return -np.sum(probs * np.log2(probs))
 
     # Weighted sum for Chao-Shen
-    weights = np.array([1 / (i * (i - 1)) for i in range(2, k + 2)])
+    np.array([1 / (i * (i - 1)) for i in range(2, k + 2)])
 
     # Calculate lambda terms
     lambda_terms = []
@@ -203,7 +203,7 @@ def mutual_information_estimator(
     x_counts = Counter(x)
     y_counts = Counter(y)
 
-    total = len(x)
+    len(x)
 
     # I(X;Y) = H(X) + H(Y) - H(X,Y)
     h_x = entropy_estimator(x_counts, method=method, bias_correction=bias_correction)

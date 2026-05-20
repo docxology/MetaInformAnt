@@ -2,6 +2,7 @@
 
 NO MOCKING POLICY: All tests use real implementations.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -14,7 +15,6 @@ from metainformant.math.epidemiology.models import (
     sir_step,
     sis_step,
 )
-
 
 # ---------------------------------------------------------------------------
 # basic_reproduction_number
@@ -81,26 +81,26 @@ class TestHerdImmunityThreshold:
 
 class TestSIRStep:
     def test_conservation_of_population(self):
-        S, I, R = sir_step(990.0, 10.0, 0.0, 0.3, 0.1, dt=1.0)
-        assert S + I + R == pytest.approx(1000.0, abs=0.01)
+        susceptible, infected, recovered = sir_step(990.0, 10.0, 0.0, 0.3, 0.1, dt=1.0)
+        assert susceptible + infected + recovered == pytest.approx(1000.0, abs=0.01)
 
     def test_infection_decreases_susceptible(self):
-        S, I, R = sir_step(990.0, 10.0, 0.0, 0.5, 0.1, dt=1.0)
-        assert S < 990.0
+        susceptible, infected, recovered = sir_step(990.0, 10.0, 0.0, 0.5, 0.1, dt=1.0)
+        assert susceptible < 990.0
 
     def test_recovery_increases_recovered(self):
-        S, I, R = sir_step(990.0, 10.0, 0.0, 0.3, 0.1, dt=1.0)
-        assert R > 0.0
+        susceptible, infected, recovered = sir_step(990.0, 10.0, 0.0, 0.3, 0.1, dt=1.0)
+        assert recovered > 0.0
 
     def test_no_infection_when_no_infected(self):
-        S, I, R = sir_step(1000.0, 0.0, 0.0, 0.3, 0.1, dt=1.0)
-        assert S == pytest.approx(1000.0)
-        assert I == pytest.approx(0.0)
+        susceptible, infected, recovered = sir_step(1000.0, 0.0, 0.0, 0.3, 0.1, dt=1.0)
+        assert susceptible == pytest.approx(1000.0)
+        assert infected == pytest.approx(0.0)
 
     def test_small_timestep(self):
-        S, I, R = sir_step(990.0, 10.0, 0.0, 0.3, 0.1, dt=0.01)
+        susceptible, infected, recovered = sir_step(990.0, 10.0, 0.0, 0.3, 0.1, dt=0.01)
         # Should change less than dt=1.0
-        assert abs(S - 990.0) < 1.0
+        assert abs(susceptible - 990.0) < 1.0
 
 
 # ---------------------------------------------------------------------------
@@ -110,17 +110,17 @@ class TestSIRStep:
 
 class TestSEIRStep:
     def test_conservation_of_population(self):
-        S, E, I, R = seir_step(980.0, 10.0, 10.0, 0.0, 0.3, 0.2, 0.1, dt=1.0)
-        assert S + E + I + R == pytest.approx(1000.0, abs=0.01)
+        susceptible, exposed, infected, recovered = seir_step(980.0, 10.0, 10.0, 0.0, 0.3, 0.2, 0.1, dt=1.0)
+        assert susceptible + exposed + infected + recovered == pytest.approx(1000.0, abs=0.01)
 
     def test_exposed_compartment(self):
-        S, E, I, R = seir_step(990.0, 0.0, 10.0, 0.0, 0.5, 0.2, 0.1, dt=1.0)
+        susceptible, exposed, infected, recovered = seir_step(990.0, 0.0, 10.0, 0.0, 0.5, 0.2, 0.1, dt=1.0)
         # Some should move to exposed
-        assert E > 0.0 or S < 990.0
+        assert exposed > 0.0 or susceptible < 990.0
 
     def test_no_infection_no_change(self):
-        S, E, I, R = seir_step(1000.0, 0.0, 0.0, 0.0, 0.3, 0.2, 0.1, dt=1.0)
-        assert S == pytest.approx(1000.0)
+        susceptible, exposed, infected, recovered = seir_step(1000.0, 0.0, 0.0, 0.0, 0.3, 0.2, 0.1, dt=1.0)
+        assert susceptible == pytest.approx(1000.0)
 
 
 # ---------------------------------------------------------------------------
@@ -130,16 +130,16 @@ class TestSEIRStep:
 
 class TestSISStep:
     def test_conservation_of_population(self):
-        S, I = sis_step(990.0, 10.0, 0.3, 0.1, dt=1.0)
-        assert S + I == pytest.approx(1000.0, abs=0.01)
+        susceptible, infected = sis_step(990.0, 10.0, 0.3, 0.1, dt=1.0)
+        assert susceptible + infected == pytest.approx(1000.0, abs=0.01)
 
     def test_recovery_returns_to_susceptible(self):
-        S, I = sis_step(500.0, 500.0, 0.0, 0.5, dt=1.0)
+        susceptible, infected = sis_step(500.0, 500.0, 0.0, 0.5, dt=1.0)
         # With no transmission, infected recover to susceptible
-        assert S > 500.0
-        assert I < 500.0
+        assert susceptible > 500.0
+        assert infected < 500.0
 
     def test_non_negative_values(self):
-        S, I = sis_step(10.0, 990.0, 0.9, 0.01, dt=1.0)
-        assert S >= 0
-        assert I >= 0
+        susceptible, infected = sis_step(10.0, 990.0, 0.9, 0.01, dt=1.0)
+        assert susceptible >= 0
+        assert infected >= 0

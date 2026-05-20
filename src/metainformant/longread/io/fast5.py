@@ -12,10 +12,9 @@ Optional dependencies:
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -189,7 +188,7 @@ def _parse_fast5_read_group(read_group: Any, group_name: str) -> Fast5Read:
     # Basecalls if available
     sequence = None
     quality_string = None
-    basecall_groups = [k for k in read_group.keys() if k.startswith("Analyses")]
+    [k for k in read_group.keys() if k.startswith("Analyses")]
     if "Analyses" in read_group:
         analyses = read_group["Analyses"]
         # Look for Basecall_1D groups

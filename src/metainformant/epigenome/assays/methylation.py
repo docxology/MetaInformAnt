@@ -11,12 +11,14 @@ import math
 import statistics
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
-from metainformant.core.data import validation
-from metainformant.core.utils import errors
-from metainformant.core.utils import logging
 from metainformant.core import io
+from metainformant.core.data import validation
+from metainformant.core.utils import errors, logging
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 logger = logging.get_logger(__name__)
 
@@ -106,7 +108,7 @@ def load_methylation_bedgraph(path: str | Path, min_coverage: int = 1) -> Dict[s
                 try:
                     chromosome = parts[0]
                     start_pos = int(parts[1])
-                    end_pos = int(parts[2])
+                    int(parts[2])
                     methylation_level = float(parts[3])
 
                     # BEDgraph format typically uses the start position
@@ -173,7 +175,7 @@ def load_methylation_cov(path: str | Path, min_coverage: int = 1) -> Dict[str, L
                 try:
                     chromosome = parts[0]
                     position = int(parts[1])
-                    methylation_level = float(parts[3]) / 100.0  # Convert percentage to fraction
+                    float(parts[3]) / 100.0  # Convert percentage to fraction
                     methylated_reads = int(parts[4])
                     total_reads = int(parts[5])
 
@@ -424,9 +426,6 @@ def identify_cpg_islands(
                 continue
 
             # Calculate GC content and CpG ratio
-            gc_count = 0
-            cpg_count = 0
-            total_bases = 0
 
             # Simplified calculation based on methylation levels
             # In practice, this would use actual sequence data

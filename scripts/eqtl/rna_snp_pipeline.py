@@ -9,6 +9,7 @@ Usage:
     uv run python scripts/eqtl/rna_snp_pipeline.py --species amellifera --n-samples 3
     uv run python scripts/eqtl/rna_snp_pipeline.py --species amellifera --samples SRR21601882,SRR21601883
 """
+
 from __future__ import annotations
 
 import argparse
@@ -243,19 +244,27 @@ def call_variants(bam_path: Path, ref_fasta: Path, output_vcf: Path) -> bool:
 
     # bcftools mpileup | bcftools call
     mpileup_cmd = [
-        "bcftools", "mpileup",
-        "-f", str(fasta),
-        "-Q", "20",        # min base quality
-        "-q", "20",        # min mapping quality
-        "--max-depth", "10000",
+        "bcftools",
+        "mpileup",
+        "-f",
+        str(fasta),
+        "-Q",
+        "20",  # min base quality
+        "-q",
+        "20",  # min mapping quality
+        "--max-depth",
+        "10000",
         str(bam_path),
     ]
     call_cmd = [
-        "bcftools", "call",
-        "-mv",              # multiallelic caller, output variants only
-        "--ploidy", "2",
-        "-Oz",              # compressed VCF output
-        "-o", str(output_vcf),
+        "bcftools",
+        "call",
+        "-mv",  # multiallelic caller, output variants only
+        "--ploidy",
+        "2",
+        "-Oz",  # compressed VCF output
+        "-o",
+        str(output_vcf),
     ]
 
     mpileup_proc = subprocess.Popen(mpileup_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -263,7 +272,7 @@ def call_variants(bam_path: Path, ref_fasta: Path, output_vcf: Path) -> bool:
 
     mpileup_proc.stdout.close()
     call_stderr = call_proc.communicate()[1].decode()
-    mpileup_stderr = mpileup_proc.stderr.read().decode()
+    mpileup_proc.stderr.read().decode()
     mpileup_proc.wait()
 
     if call_proc.returncode != 0:
@@ -276,7 +285,8 @@ def call_variants(bam_path: Path, ref_fasta: Path, output_vcf: Path) -> bool:
     # Count variants
     count_result = subprocess.run(
         ["bcftools", "stats", str(output_vcf)],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
     for line in count_result.stdout.split("\n"):
         if line.startswith("SN") and "number of records" in line:
@@ -291,10 +301,15 @@ def filter_variants(input_vcf: Path, output_vcf: Path) -> bool:
         return True
 
     cmd = [
-        "bcftools", "filter",
-        "-s", "LowQual",
-        "-e", "QUAL<30 || DP<10",
-        "-Oz", "-o", str(output_vcf),
+        "bcftools",
+        "filter",
+        "-s",
+        "LowQual",
+        "-e",
+        "QUAL<30 || DP<10",
+        "-Oz",
+        "-o",
+        str(output_vcf),
         str(input_vcf),
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -310,13 +325,17 @@ def compute_sample_stats(vcf_path: Path, output_json: Path) -> dict:
     """Compute per-sample variant statistics."""
     result = subprocess.run(
         ["bcftools", "stats", str(vcf_path)],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
 
     stats = {
         "vcf_file": str(vcf_path),
-        "n_records": 0, "n_snps": 0, "n_indels": 0,
-        "n_pass": 0, "ts_tv_ratio": 0.0,
+        "n_records": 0,
+        "n_snps": 0,
+        "n_indels": 0,
+        "n_pass": 0,
+        "ts_tv_ratio": 0.0,
     }
 
     for line in result.stdout.split("\n"):
@@ -358,8 +377,11 @@ def merge_vcfs(vcf_files: list[Path], output_vcf: Path) -> bool:
     output_vcf.parent.mkdir(parents=True, exist_ok=True)
 
     cmd = [
-        "bcftools", "merge",
-        "-Oz", "-o", str(output_vcf),
+        "bcftools",
+        "merge",
+        "-Oz",
+        "-o",
+        str(output_vcf),
     ] + [str(v) for v in vcf_files]
 
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -375,8 +397,10 @@ def merge_vcfs(vcf_files: list[Path], output_vcf: Path) -> bool:
 def compute_allele_frequencies(merged_vcf: Path, output_tsv: Path) -> None:
     """Extract per-site allele frequencies from merged VCF."""
     cmd = [
-        "bcftools", "query",
-        "-f", "%CHROM\t%POS\t%REF\t%ALT\t%INFO/AF\n",
+        "bcftools",
+        "query",
+        "-f",
+        "%CHROM\t%POS\t%REF\t%ALT\t%INFO/AF\n",
         str(merged_vcf),
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
@@ -394,7 +418,8 @@ def compute_popgen_summary(merged_vcf: Path, sample_stats: list[dict], output_js
     """Compute population-level genetics summary."""
     result = subprocess.run(
         ["bcftools", "stats", str(merged_vcf)],
-        capture_output=True, text=True,
+        capture_output=True,
+        text=True,
     )
 
     summary = {
@@ -531,7 +556,7 @@ def run_pipeline(
 
         # Step 3: Align reads
         logger.info(f"\n[Step 3/6] Aligning {srr_id}...")
-        ref_fasta = decompress_if_needed(ref_genome)
+        decompress_if_needed(ref_genome)
         ok = align_reads(fastqs, index_prefix, bam_path, threads=threads)
         if not ok:
             logger.warning(f"Skipping {srr_id}: alignment failed")
@@ -574,9 +599,7 @@ def run_pipeline(
         compute_allele_frequencies(merged_vcf, pop_dir / "allele_freqs.tsv")
 
         # Population summary
-        pop_summary = compute_popgen_summary(
-            merged_vcf, all_sample_stats, pop_dir / "popgen_summary.json"
-        )
+        pop_summary = compute_popgen_summary(merged_vcf, all_sample_stats, pop_dir / "popgen_summary.json")
     else:
         pop_summary = {"n_samples": 0, "error": "No samples completed successfully"}
 
@@ -669,4 +692,3 @@ Examples:
 
 if __name__ == "__main__":
     main()
-

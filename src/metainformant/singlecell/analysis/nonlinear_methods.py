@@ -7,14 +7,14 @@ quality metrics.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 import numpy as np
 import pandas as pd
 
 from metainformant.core.data import validation
-from metainformant.core.utils import errors
-from metainformant.core.utils import logging
+from metainformant.core.utils import errors, logging
+from metainformant.singlecell.data.preprocessing import SingleCellData
 
 # Try to import optional dependencies
 try:
@@ -44,18 +44,9 @@ try:
 except ImportError:
     HAS_UMAP = False
 
-# Check for sklearn availability
-try:
-    import sklearn
-
-    SKLEARN_AVAILABLE = True
-except ImportError:
-    SKLEARN_AVAILABLE = False
+SKLEARN_AVAILABLE = HAS_SKLEARN
 
 logger = logging.get_logger(__name__)
-
-# Import our SingleCellData
-from metainformant.singlecell.data.preprocessing import SingleCellData
 
 
 def tsne_reduction(
@@ -102,8 +93,10 @@ def tsne_reduction(
     actual_perplexity = perplexity
     if perplexity >= max_perplexity:
         actual_perplexity = max(1.0, max_perplexity - 0.1)
-        logger.warning(f"perplexity reduced from {perplexity} to {actual_perplexity} "
-                       f"(must be < (n_samples-1)/3 = {max_perplexity:.1f})")
+        logger.warning(
+            f"perplexity reduced from {perplexity} to {actual_perplexity} "
+            f"(must be < (n_samples-1)/3 = {max_perplexity:.1f})"
+        )
 
     logger.info(f"Performing t-SNE with {n_components} components, perplexity={actual_perplexity}")
 
@@ -206,7 +199,7 @@ def umap_reduction(
         raise ImportError("UMAP requires umap-learn package")
 
     validation.validate_type(data, SingleCellData, "data")
-    validation.validate_range(n_components, min_val=2, max_val=3, name="n_components")
+    validation.validate_range(n_components, min_val=1, max_val=3, name="n_components")
     validation.validate_range(n_neighbors, min_val=5, max_val=100, name="n_neighbors")
     validation.validate_range(min_dist, min_val=0.0, max_val=1.0, name="min_dist")
 
@@ -215,8 +208,11 @@ def umap_reduction(
     # Create copy
     result = data.copy()
 
+    if "neighbors" not in result.uns:
+        result = compute_neighbors(result, n_neighbors=n_neighbors, metric=metric)
+
     # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
+    X = result.X.toarray() if hasattr(result.X, "toarray") else result.X
 
     # Perform UMAP
     umap_kwargs = {
@@ -247,6 +243,9 @@ def umap_reduction(
         for col in umap_coords.columns:
             result.obs[col] = umap_coords[col]
 
+    result.obsm = result.obsm if hasattr(result, "obsm") and result.obsm is not None else {}
+    result.obsm["X_umap"] = X_umap
+
     # Store UMAP metadata
     result.uns["umap"] = {
         "n_components": n_components,
@@ -254,6 +253,14 @@ def umap_reduction(
         "min_dist": min_dist,
         "random_state": random_state,
         "metric": metric,
+        "params": {
+            "n_components": n_components,
+            "n_neighbors": n_neighbors,
+            "min_dist": min_dist,
+            "random_state": random_state,
+            "metric": metric,
+            "n_epochs": n_epochs,
+        },
     }
 
     logger.info("UMAP completed")
@@ -775,8 +782,8 @@ def compute_diffusion_map(
         dense = diffusion_operator.toarray() if hasattr(diffusion_operator, "toarray") else diffusion_operator
         eigenvalues, eigenvectors = np.linalg.eigh(dense)
         # eigh returns ascending order — take the top (n_components+1)
-        eigenvalues = eigenvalues[-(n_components + 1):][::-1]
-        eigenvectors = eigenvectors[:, -(n_components + 1):][:, ::-1]
+        eigenvalues = eigenvalues[-(n_components + 1) :][::-1]
+        eigenvectors = eigenvectors[:, -(n_components + 1) :][:, ::-1]
 
     # Sort by eigenvalue magnitude (largest first)
     idx = np.argsort(np.abs(eigenvalues))[::-1]

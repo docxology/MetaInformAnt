@@ -4,9 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import numpy as np
-import pytest
-
 from metainformant.gwas.visualization.statistical.comparison import (
     concordance_plot,
     cross_cohort_forest,

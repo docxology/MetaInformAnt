@@ -49,18 +49,6 @@ Example:
 
 from __future__ import annotations
 
-# Re-export everything from the split modules so that existing imports
-# like ``from metainformant.rna.analysis.expression import normalize_counts``
-# continue to work.
-
-from .expression_core import (
-    NormalizationMethod,
-    VarianceMethod,
-    estimate_size_factors,
-    filter_low_expression,
-    get_highly_variable_genes,
-    normalize_counts,
-)
 from .expression_analysis import (
     DEMethod,
     DistanceMethod,
@@ -72,6 +60,19 @@ from .expression_analysis import (
     prepare_ma_data,
     prepare_volcano_data,
 )
+from .expression_core import (
+    NormalizationMethod,
+    VarianceMethod,
+    estimate_size_factors,
+    filter_low_expression,
+    get_highly_variable_genes,
+    normalize_counts,
+)
+
+# Re-export everything from the split modules so that existing imports
+# like ``from metainformant.rna.analysis.expression import normalize_counts``
+# continue to work.
+
 
 __all__ = [
     # Type aliases

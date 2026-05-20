@@ -8,7 +8,6 @@ and linear model approaches.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
 
 import numpy as np
 
@@ -103,7 +102,7 @@ def detect_batch_effects(
         n_pcs = min(10, n_features, n_samples)
         pca_coords = u[:, :n_pcs] * s[:n_pcs]
     except np.linalg.LinAlgError:
-        pca_coords = centered[:, :min(10, n_features)]
+        pca_coords = centered[:, : min(10, n_features)]
 
     # Simplified silhouette
     silhouette = _compute_silhouette(pca_coords, batch_idx, n_batches)
@@ -161,7 +160,7 @@ def correct_batch_combat(
         grand_std = corrected.std(axis=0)
 
         # Shift to grand mean
-        corrected[mask] -= (batch_mean - grand_mean)
+        corrected[mask] -= batch_mean - grand_mean
 
         # Scale variance (empirical Bayes shrinkage toward grand variance)
         safe_batch_std = np.where(batch_std > 0, batch_std, 1.0)
@@ -205,9 +204,7 @@ def _compute_silhouette(
             continue
 
         # Mean intra-cluster distance
-        a_i = float(np.sqrt(np.sum((coords[own_mask] - coords[i]) ** 2, axis=1)).sum()) / (
-            own_count - 1
-        )
+        a_i = float(np.sqrt(np.sum((coords[own_mask] - coords[i]) ** 2, axis=1)).sum()) / (own_count - 1)
 
         # Mean nearest-cluster distance
         b_i = float("inf")

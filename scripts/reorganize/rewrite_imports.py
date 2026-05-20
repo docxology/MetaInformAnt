@@ -11,12 +11,11 @@ Usage:
     python scripts/reorganize/rewrite_imports.py --init-only  # only rewrite __init__.py
     python scripts/reorganize/rewrite_imports.py --tests-only # only rewrite test imports
 """
+
 from __future__ import annotations
 
 import argparse
-import ast
 import re
-import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -1382,15 +1381,12 @@ def rewrite_init_files(*, apply: bool = False) -> int:
 # Regex to match: from metainformant.<module> import <names>
 # This handles single-line and multi-line (parenthesized) imports.
 _IMPORT_RE = re.compile(
-    r"^(\s*)from\s+metainformant\.(\w+)\s+import\s+"
-    r"(?:\(([^)]+)\)|(.+))$",
+    r"^(\s*)from\s+metainformant\.(\w+)\s+import\s+" r"(?:\(([^)]+)\)|(.+))$",
     re.MULTILINE,
 )
 
 # Regex to match multi-line import blocks: from metainformant.<mod> import (
-_MULTILINE_START_RE = re.compile(
-    r"^(\s*)from\s+metainformant\.(\w+)\s+import\s+\(\s*$"
-)
+_MULTILINE_START_RE = re.compile(r"^(\s*)from\s+metainformant\.(\w+)\s+import\s+\(\s*$")
 _MULTILINE_END_RE = re.compile(r"^(\s*)\)\s*$")
 
 
@@ -1425,9 +1421,7 @@ def parse_import_block(lines: list[str], start_idx: int) -> tuple[str, str, list
         return None  # Unterminated
 
     # Check for single-line: from metainformant.<mod> import a, b, c
-    single_re = re.match(
-        r"^(\s*)from\s+metainformant\.(\w+)\s+import\s+(.+)$", line
-    )
+    single_re = re.match(r"^(\s*)from\s+metainformant\.(\w+)\s+import\s+(.+)$", line)
     if single_re:
         indent = single_re.group(1)
         module_name = single_re.group(2)
@@ -1562,13 +1556,9 @@ def rewrite_test_imports(*, apply: bool = False) -> int:
             if unchanged:
                 if len(unchanged) <= 3:
                     names_str = ", ".join(unchanged)
-                    new_import_lines.append(
-                        f"{indent}from metainformant.{module_name} import {names_str}"
-                    )
+                    new_import_lines.append(f"{indent}from metainformant.{module_name} import {names_str}")
                 else:
-                    new_import_lines.append(
-                        f"{indent}from metainformant.{module_name} import ("
-                    )
+                    new_import_lines.append(f"{indent}from metainformant.{module_name} import (")
                     for u in unchanged:
                         new_import_lines.append(f"{indent}    {u},")
                     new_import_lines.append(f"{indent})")
@@ -1578,13 +1568,9 @@ def rewrite_test_imports(*, apply: bool = False) -> int:
                 syms = sorted(grouped[canonical_path])
                 if len(syms) <= 3:
                     names_str = ", ".join(syms)
-                    new_import_lines.append(
-                        f"{indent}from {canonical_path} import {names_str}"
-                    )
+                    new_import_lines.append(f"{indent}from {canonical_path} import {names_str}")
                 else:
-                    new_import_lines.append(
-                        f"{indent}from {canonical_path} import ("
-                    )
+                    new_import_lines.append(f"{indent}from {canonical_path} import (")
                     for s in syms:
                         new_import_lines.append(f"{indent}    {s},")
                     new_import_lines.append(f"{indent})")
@@ -1612,9 +1598,7 @@ def rewrite_test_imports(*, apply: bool = False) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(
-        description="Rewrite __init__.py and test imports to canonical paths"
-    )
+    parser = argparse.ArgumentParser(description="Rewrite __init__.py and test imports to canonical paths")
     parser.add_argument(
         "--apply",
         action="store_true",

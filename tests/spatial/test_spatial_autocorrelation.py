@@ -2,6 +2,7 @@
 
 NO MOCKING POLICY: All tests use real implementations.
 """
+
 from __future__ import annotations
 
 import numpy as np
@@ -20,7 +21,6 @@ from metainformant.spatial.analysis.autocorrelation import (
     spatial_variogram,
     spatial_weights_matrix,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

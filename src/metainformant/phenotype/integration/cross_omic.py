@@ -10,11 +10,7 @@ This module provides functions for integrating phenotypic data with:
 from __future__ import annotations
 
 import math
-import statistics
-from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple, Union
-
-from metainformant.core.utils.errors import ValidationError
+from typing import Any, Dict, List, Optional, Tuple
 
 
 def phenotype_genotype_association(

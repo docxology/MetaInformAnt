@@ -2,6 +2,7 @@
 
 NO MOCKING POLICY: All tests use real implementations.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -13,7 +14,6 @@ from metainformant.ontology.pathway_enrichment.enrichment import (
     over_representation_analysis,
     pathway_network,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -73,7 +73,9 @@ class TestOverRepresentationAnalysis:
     def test_bonferroni_correction(self):
         gene_list = ["GENE1", "GENE2", "GENE3"]
         gene_sets = _make_gene_sets()
-        results = over_representation_analysis(gene_list, gene_sets, correction="bonferroni", background=_make_background())
+        results = over_representation_analysis(
+            gene_list, gene_sets, correction="bonferroni", background=_make_background()
+        )
         for r in results:
             assert r["adjusted_p"] <= 1.0
 

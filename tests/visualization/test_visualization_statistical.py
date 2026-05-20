@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 
 import numpy as np
@@ -24,31 +25,23 @@ from metainformant.visualization.analysis.statistical import (
 
 # Check for optional dependencies
 try:
-    from scipy import stats
-
-    HAS_SCIPY = True
-except ImportError:
+    HAS_SCIPY = importlib.util.find_spec("scipy") is not None
+except ModuleNotFoundError:
     HAS_SCIPY = False
 
 try:
-    import seaborn as sns
-
-    HAS_SEABORN = True
-except ImportError:
+    HAS_SEABORN = importlib.util.find_spec("seaborn") is not None
+except ModuleNotFoundError:
     HAS_SEABORN = False
 
 try:
-    from sklearn.linear_model import LinearRegression
-
-    HAS_SKLEARN = True
-except ImportError:
+    HAS_SKLEARN = importlib.util.find_spec("sklearn") is not None
+except ModuleNotFoundError:
     HAS_SKLEARN = False
 
 try:
-    import sklearn.metrics
-
-    HAS_METRICS = True
-except ImportError:
+    HAS_METRICS = importlib.util.find_spec("sklearn.metrics") is not None
+except ModuleNotFoundError:
     HAS_METRICS = False
 
 

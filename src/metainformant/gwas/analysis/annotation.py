@@ -182,9 +182,7 @@ def classify_variant_location(
         return {
             "location": "intergenic",
             "nearest_gene": nearest_gene.get("gene_id", "") if nearest_gene else None,
-            "nearest_gene_name": nearest_gene.get("gene_name", "")
-            if nearest_gene
-            else None,
+            "nearest_gene_name": nearest_gene.get("gene_name", "") if nearest_gene else None,
             "distance": int(nearest_distance) if nearest_gene else None,
             "gene_strand": nearest_gene.get("strand", None) if nearest_gene else None,
         }

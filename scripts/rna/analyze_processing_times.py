@@ -10,7 +10,6 @@ Usage:
 """
 
 import re
-from datetime import datetime
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -220,21 +219,21 @@ def print_summary_statistics(data: list[dict], reg: dict) -> None:
     print("PROCESSING TIME ANALYSIS SUMMARY")
     print("=" * 60)
     print(f"\nSamples analyzed: {len(data)}")
-    print(f"\nSize statistics:")
+    print("\nSize statistics:")
     print(f"  Min:    {sizes.min():.1f} MB")
     print(f"  Max:    {sizes.max():.1f} MB")
     print(f"  Mean:   {sizes.mean():.1f} MB")
     print(f"  Median: {np.median(sizes):.1f} MB")
-    print(f"\nTime statistics:")
+    print("\nTime statistics:")
     print(f"  Min:    {times.min():.1f} s")
     print(f"  Max:    {times.max():.1f} s")
     print(f"  Mean:   {times.mean():.1f} s")
     print(f"  Median: {np.median(times):.1f} s")
-    print(f"\nRegression analysis:")
+    print("\nRegression analysis:")
     print(f"  y = {reg['slope']:.3f}x + {reg['intercept']:.1f}")
     print(f"  R² = {reg['r_squared']:.4f}")
     print(f"  p-value = {reg['p_value']:.2e}")
-    print(f"\nThroughput:")
+    print("\nThroughput:")
     throughput = sizes.sum() / times.sum()
     print(f"  Average: {throughput:.2f} MB/s = {throughput*60:.1f} MB/min")
     print("=" * 60 + "\n")

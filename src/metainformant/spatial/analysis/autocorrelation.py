@@ -7,7 +7,7 @@ spatial patterns in gene expression and other continuous variables.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Literal
 
 from metainformant.core.utils.logging import get_logger
@@ -48,7 +48,7 @@ class MoransIResult:
         n: Number of observations.
     """
 
-    I: float
+    I: float  # noqa: E741 - public API uses Moran's I notation.
     expected_I: float
     variance_I: float
     z_score: float
@@ -298,7 +298,7 @@ def morans_i(
     if denominator == 0:
         return MoransIResult(I=0.0, expected_I=0.0, variance_I=0.0, z_score=0.0, p_value=1.0, n=n)
 
-    I = (n / S0) * (numerator / denominator)
+    moran_i = (n / S0) * (numerator / denominator)
 
     # Expected value under null
     E_I = -1.0 / (n - 1)
@@ -322,15 +322,15 @@ def morans_i(
 
     # Z-score and p-value
     if Var_I > 0:
-        z_score = (I - E_I) / np.sqrt(Var_I)
+        z_score = (moran_i - E_I) / np.sqrt(Var_I)
         p_value = float(2 * norm.sf(abs(z_score)))
     else:
         z_score = 0.0
         p_value = 1.0
 
-    logger.info(f"Moran's I={I:.4f}, z={z_score:.2f}, p={p_value:.4e}")
+    logger.info(f"Moran's I={moran_i:.4f}, z={z_score:.2f}, p={p_value:.4e}")
     return MoransIResult(
-        I=I,
+        I=moran_i,
         expected_I=E_I,
         variance_I=Var_I,
         z_score=z_score,
@@ -527,7 +527,7 @@ def local_morans_i(
         else:
             cluster_labels.append("NS")
 
-    n_sig = sum(1 for l in cluster_labels if l != "NS")
+    n_sig = sum(1 for label in cluster_labels if label != "NS")
     logger.info(f"Local Moran's I: {n_sig}/{n} significant at alpha={significance}")
 
     return LocalMoransResult(

@@ -16,7 +16,7 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
-from metainformant.core.io import dump_json, ensure_directory
+from metainformant.core.io import dump_json
 from metainformant.core.utils.logging import setup_logger
 from metainformant.simulation.popgen import (
     generate_genotype_matrix,

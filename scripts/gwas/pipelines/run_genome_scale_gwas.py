@@ -23,7 +23,6 @@ from metainformant.gwas import (
     check_sra_tools_available,
     download_sra_run,
     execute_gwas_workflow,
-    generate_all_plots,
     load_gwas_config,
 )
 
@@ -221,7 +220,7 @@ def main():
         logger.info("\n" + "─" * 80)
         logger.info("STEP 1: Download SRA Data")
         logger.info("─" * 80)
-        download_results = download_sra_data(args.sra_accessions, sra_dir, args.threads)
+        download_sra_data(args.sra_accessions, sra_dir, args.threads)
 
         if args.download_only:
             logger.info("\n✓ Download complete (download-only mode)")

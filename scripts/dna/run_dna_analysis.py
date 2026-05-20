@@ -11,7 +11,6 @@ Usage:
 """
 
 import argparse
-import json
 import logging
 import sys
 from pathlib import Path
@@ -102,7 +101,6 @@ def analyze_composition(sequences: dict[str, str], output_dir: Path) -> dict[str
     """
     logger.info("Analyzing sequence composition...")
 
-    from metainformant.dna import composition
     from metainformant.dna import sequences as dna_sequences
 
     results = {

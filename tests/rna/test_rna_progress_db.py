@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.rna.engine.progress_db import ProgressDB, VALID_STATES
+from metainformant.rna.engine.progress_db import ProgressDB
 
 
 class TestProgressDB:
@@ -217,10 +217,7 @@ class TestProgressDBConcurrency:
             except Exception as e:
                 errors.append(e)
 
-        threads = [
-            threading.Thread(target=worker, args=(i * 25, (i + 1) * 25))
-            for i in range(4)
-        ]
+        threads = [threading.Thread(target=worker, args=(i * 25, (i + 1) * 25)) for i in range(4)]
         for t in threads:
             t.start()
         for t in threads:

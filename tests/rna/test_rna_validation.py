@@ -10,9 +10,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
-from metainformant.core.io.io import dump_json, write_delimited
+from metainformant.core.io.io import write_delimited
 from metainformant.rna.analysis.validation import (
     get_sample_pipeline_status,
     save_validation_report,

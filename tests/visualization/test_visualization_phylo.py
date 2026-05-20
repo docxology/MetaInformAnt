@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import importlib.util
+
 import matplotlib
 import pytest
 
@@ -9,9 +11,7 @@ def test_plot_phylo_tree_smoke():
     matplotlib.use("Agg")
     from Bio.Phylo.TreeConstruction import DistanceMatrix, DistanceTreeConstructor
 
-    try:
-        import networkx
-    except ImportError:
+    if importlib.util.find_spec("networkx") is None:
         pytest.skip("networkx required for phylogenetic tree plotting")
 
     from metainformant.visualization.genomics.trees import plot_phylo_tree

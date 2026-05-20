@@ -24,7 +24,6 @@ Downstream analyses:
 from __future__ import annotations
 
 import math
-import random
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
@@ -572,8 +571,8 @@ def fit_dynamical_model(
             iters_used = iteration + 1
 
             # E-step: compute expected steady-state values
-            expected_u = [alpha / beta if beta > 0 else 0.0] * n_cells
-            expected_s = [beta * (alpha / beta) / gamma if gamma > 0 and beta > 0 else 0.0] * n_cells
+            [alpha / beta if beta > 0 else 0.0] * n_cells
+            [beta * (alpha / beta) / gamma if gamma > 0 and beta > 0 else 0.0] * n_cells
 
             # M-step: update parameters to minimize residuals
             # Update gamma from spliced dynamics: ds/dt = beta*u - gamma*s

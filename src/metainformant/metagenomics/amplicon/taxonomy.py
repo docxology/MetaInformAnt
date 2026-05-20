@@ -11,7 +11,6 @@ Taxonomic ranks follow the standard hierarchy:
 from __future__ import annotations
 
 import math
-import os
 import random
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field

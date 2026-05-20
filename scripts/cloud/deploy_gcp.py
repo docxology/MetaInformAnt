@@ -17,6 +17,7 @@ Usage:
     # Dry run (prints gcloud command without executing):
     python scripts/cloud/deploy_gcp.py deploy --project MY_PROJECT --dry-run
 """
+
 import argparse
 import sys
 from pathlib import Path
@@ -40,28 +41,21 @@ def build_parser() -> argparse.ArgumentParser:
     deploy = sub.add_parser("deploy", help="Create VM and start pipeline")
     deploy.add_argument("--project", required=True, help="GCP project ID")
     deploy.add_argument("--zone", default="us-central1-a", help="GCP zone")
-    deploy.add_argument("--machine-type", default="n2-standard-32",
-                        help="VM machine type (default: n2-standard-32)")
-    deploy.add_argument("--disk-gb", type=int, default=1000,
-                        help="Boot disk size in GB (default: 1000)")
-    deploy.add_argument("--local-ssd-count", type=int, default=0,
-                        help="Number of 375GB NVMe Local SSDs to attach (default: 0)")
-    deploy.add_argument("--spot", action="store_true", default=True,
-                        help="Use spot/preemptible pricing (default: true)")
-    deploy.add_argument("--no-spot", action="store_false", dest="spot",
-                        help="Use on-demand pricing")
-    deploy.add_argument("--max-gb", type=float, default=20.0,
-                        help="Max sample size in GB (default: 20.0)")
-    deploy.add_argument("--workers", type=int, default=28,
-                        help="Parallel workers (default: 28)")
-    deploy.add_argument("--threads", type=int, default=32,
-                        help="Total threads (default: 32)")
-    deploy.add_argument("--name", default="metainformant-pipeline",
-                        help="VM instance name")
-    deploy.add_argument("--gcs-bucket", default="",
-                        help="GCS bucket for periodic result sync")
-    deploy.add_argument("--dry-run", action="store_true",
-                        help="Print gcloud command without executing")
+    deploy.add_argument("--machine-type", default="n2-standard-32", help="VM machine type (default: n2-standard-32)")
+    deploy.add_argument("--disk-gb", type=int, default=1000, help="Boot disk size in GB (default: 1000)")
+    deploy.add_argument(
+        "--local-ssd-count", type=int, default=0, help="Number of 375GB NVMe Local SSDs to attach (default: 0)"
+    )
+    deploy.add_argument(
+        "--spot", action="store_true", default=True, help="Use spot/preemptible pricing (default: true)"
+    )
+    deploy.add_argument("--no-spot", action="store_false", dest="spot", help="Use on-demand pricing")
+    deploy.add_argument("--max-gb", type=float, default=20.0, help="Max sample size in GB (default: 20.0)")
+    deploy.add_argument("--workers", type=int, default=28, help="Parallel workers (default: 28)")
+    deploy.add_argument("--threads", type=int, default=32, help="Total threads (default: 32)")
+    deploy.add_argument("--name", default="metainformant-pipeline", help="VM instance name")
+    deploy.add_argument("--gcs-bucket", default="", help="GCS bucket for periodic result sync")
+    deploy.add_argument("--dry-run", action="store_true", help="Print gcloud command without executing")
 
     # ── status ───────────────────────────────────────────────────────
     status = sub.add_parser("status", help="Check pipeline progress")
@@ -78,14 +72,15 @@ def build_parser() -> argparse.ArgumentParser:
 
     # ── download ─────────────────────────────────────────────────────
     dl = sub.add_parser("download", help="Download results locally")
-    dl.add_argument("--output", default="output/amalgkit",
-                    help="Local output directory")
+    dl.add_argument("--output", default="output/amalgkit", help="Local output directory")
     _add_common(dl)
 
     # ── stop / start / destroy ───────────────────────────────────────
-    for name, hlp in [("stop", "Stop VM (keep disk)"),
-                       ("start", "Start stopped VM"),
-                       ("destroy", "Delete VM and disk")]:
+    for name, hlp in [
+        ("stop", "Stop VM (keep disk)"),
+        ("start", "Start stopped VM"),
+        ("destroy", "Delete VM and disk"),
+    ]:
         p = sub.add_parser(name, help=hlp)
         _add_common(p)
 
@@ -96,8 +91,7 @@ def _add_common(parser: argparse.ArgumentParser) -> None:
     """Add common args for commands that operate on an existing VM."""
     parser.add_argument("--project", default="", help="GCP project ID")
     parser.add_argument("--zone", default="us-central1-a", help="GCP zone")
-    parser.add_argument("--name", default="metainformant-pipeline",
-                        help="VM instance name")
+    parser.add_argument("--name", default="metainformant-pipeline", help="VM instance name")
 
 
 def make_deployer(args: argparse.Namespace) -> GCPDeployer:

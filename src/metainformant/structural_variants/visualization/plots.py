@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -28,21 +28,12 @@ try:
     matplotlib.use("Agg")  # Non-interactive backend
     import matplotlib.patches as mpatches
     import matplotlib.pyplot as plt
-    from matplotlib.collections import LineCollection, PatchCollection
-    from matplotlib.colors import Normalize
     from matplotlib.figure import Figure
 
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
     Figure = Any  # type: ignore[assignment, misc]
-
-try:
-    import seaborn as sns
-
-    HAS_SEABORN = True
-except ImportError:
-    HAS_SEABORN = False
 
 logger = get_logger(__name__)
 

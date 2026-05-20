@@ -23,8 +23,9 @@ def write_summary_statistics(
 ) -> Path:
     """Write full GWAS summary statistics to TSV file.
 
-    Output format follows standard GWAS summary statistics convention:
-    CHR  POS  SNP  REF  ALT  BETA  SE  P  N  MAF
+    Output format follows standard GWAS summary statistics convention, with
+    optional FDR-adjusted q-values:
+    CHR  POS  SNP  REF  ALT  BETA  SE  P  Q_FDR  N  MAF
 
     Args:
         results: List of association test result dictionaries
@@ -39,18 +40,15 @@ def write_summary_statistics(
     """
     if len(results) != len(variant_info):
         raise ValueError(
-            f"Results ({len(results)}) and variant_info ({len(variant_info)}) "
-            "must have the same length"
+            f"Results ({len(results)}) and variant_info ({len(variant_info)}) " "must have the same length"
         )
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    logger.info(
-        f"Writing summary statistics for {len(results)} variants to {output_path}"
-    )
+    logger.info(f"Writing summary statistics for {len(results)} variants to {output_path}")
 
-    header = "CHR\tPOS\tSNP\tREF\tALT\tBETA\tSE\tP\tN\tMAF\n"
+    header = "CHR\tPOS\tSNP\tREF\tALT\tBETA\tSE\tP\tQ_FDR\tN\tMAF\n"
 
     with open(output_path, "w") as f:
         f.write(header)
@@ -66,12 +64,13 @@ def write_summary_statistics(
             beta = result.get("beta", 0.0)
             se = result.get("se", 0.0)
             p_value = result.get("p_value", 1.0)
-            n_samples = result.get("n_samples", 0)
-            maf = result.get("maf", 0.0)
+            q_fdr = result.get("q_value", result.get("q_fdr", result.get("Q_FDR", 1.0)))
+            n_samples = result.get("n_samples", result.get("N", 0))
+            maf = result.get("maf", result.get("MAF", 0.0))
 
             f.write(
                 f"{chrom}\t{pos}\t{snp_id}\t{ref}\t{alt}\t"
-                f"{beta:.6g}\t{se:.6g}\t{p_value:.6e}\t{n_samples}\t{maf:.4f}\n"
+                f"{beta:.6g}\t{se:.6g}\t{p_value:.6e}\t{q_fdr:.6e}\t{n_samples}\t{maf:.4f}\n"
             )
 
     logger.info(f"Summary statistics written to {output_path}")
@@ -99,20 +98,16 @@ def write_significant_hits(
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     significant = [
-        (result, vinfo)
-        for result, vinfo in zip(results, variant_info)
-        if result.get("p_value", 1.0) < threshold
+        (result, vinfo) for result, vinfo in zip(results, variant_info) if result.get("p_value", 1.0) < threshold
     ]
 
     # Sort by p-value
     significant.sort(key=lambda x: x[0].get("p_value", 1.0))
 
-    logger.info(
-        f"Writing {len(significant)} significant hits (threshold={threshold:.2e}) to {output_path}"
-    )
+    logger.info(f"Writing {len(significant)} significant hits (threshold={threshold:.2e}) to {output_path}")
 
     with open(output_path, "w") as f:
-        f.write("CHR\tPOS\tSNP\tREF\tALT\tBETA\tSE\tP\tN\tMAF\n")
+        f.write("CHR\tPOS\tSNP\tREF\tALT\tBETA\tSE\tP\tQ_FDR\tN\tMAF\n")
         for result, vinfo in significant:
             chrom = vinfo.get("chrom", ".")
             pos = vinfo.get("pos", 0)
@@ -125,12 +120,13 @@ def write_significant_hits(
             beta = result.get("beta", 0.0)
             se = result.get("se", 0.0)
             p_value = result.get("p_value", 1.0)
-            n_samples = result.get("n_samples", 0)
-            maf = result.get("maf", 0.0)
+            q_fdr = result.get("q_value", result.get("q_fdr", result.get("Q_FDR", 1.0)))
+            n_samples = result.get("n_samples", result.get("N", 0))
+            maf = result.get("maf", result.get("MAF", 0.0))
 
             f.write(
                 f"{chrom}\t{pos}\t{snp_id}\t{ref}\t{alt}\t"
-                f"{beta:.6g}\t{se:.6g}\t{p_value:.6e}\t{n_samples}\t{maf:.4f}\n"
+                f"{beta:.6g}\t{se:.6g}\t{p_value:.6e}\t{q_fdr:.6e}\t{n_samples}\t{maf:.4f}\n"
             )
 
     return output_path
@@ -196,8 +192,7 @@ def create_results_summary(
         json.dump(summary, f, indent=2)
 
     logger.info(
-        f"Results summary: {n_tests} variants, lambda_gc={lambda_gc:.3f}, "
-        f"{n_significant} genome-wide significant"
+        f"Results summary: {n_tests} variants, lambda_gc={lambda_gc:.3f}, " f"{n_significant} genome-wide significant"
     )
     return summary
 
@@ -216,8 +211,7 @@ def normal_cdf(x: float) -> float:
     x = abs(x) / _math.sqrt(2)
     t = 1.0 / (1.0 + 0.3275911 * x)
     y = 1.0 - (
-        (((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t
-        + 0.254829592
+        (((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592
     ) * t * _math.exp(-x * x)
     return 0.5 * (1.0 + sign * y)
 
@@ -551,9 +545,11 @@ def sign_test(
     interpretation = (
         "Significant directional enrichment (positive effects dominant)"
         if p_sign < 0.05 and n_pos > n_neg
-        else "Significant directional enrichment (negative effects dominant)"
-        if p_sign < 0.05 and n_neg > n_pos
-        else "No significant directional enrichment (balanced +/- effects)"
+        else (
+            "Significant directional enrichment (negative effects dominant)"
+            if p_sign < 0.05 and n_neg > n_pos
+            else "No significant directional enrichment (balanced +/- effects)"
+        )
     )
 
     return {
@@ -648,11 +644,7 @@ def _compute_lambda_gc(p_values: List[float]) -> float:
 
     chi2_values.sort()
     n = len(chi2_values)
-    median_observed = (
-        chi2_values[n // 2]
-        if n % 2 == 1
-        else (chi2_values[n // 2 - 1] + chi2_values[n // 2]) / 2
-    )
+    median_observed = chi2_values[n // 2] if n % 2 == 1 else (chi2_values[n // 2 - 1] + chi2_values[n // 2]) / 2
 
     # Expected median of chi-squared with df=1
     expected_median = 0.4549364

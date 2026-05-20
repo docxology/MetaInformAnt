@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import math
 
-import pytest
-
 from metainformant.math.population_genetics.demography import (
     bottleneck_effective_size,
     exponential_growth_effective_size,

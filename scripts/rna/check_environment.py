@@ -8,6 +8,8 @@ Usage:
     python3 scripts/rna/check_environment.py
 """
 
+# ruff: noqa: E402 - setup utilities intentionally run before importing metainformant.
+
 import sys
 from pathlib import Path
 

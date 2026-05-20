@@ -13,8 +13,8 @@ import numpy as np
 import pandas as pd
 
 from metainformant.core.data import validation
-from metainformant.core.utils import errors
-from metainformant.core.utils import logging
+from metainformant.core.utils import errors, logging
+from metainformant.singlecell.data.preprocessing import SingleCellData
 
 # Optional scientific dependencies
 try:
@@ -28,9 +28,6 @@ except ImportError:
     PCA = None
 
 logger = logging.get_logger(__name__)
-
-# Import our SingleCellData
-from .preprocessing import SingleCellData
 
 
 def bbknn_integration(data: SingleCellData, batch_key: str, n_neighbors: int = 15) -> SingleCellData:

@@ -13,7 +13,6 @@ These tests ensure the test infrastructure is reliable and working correctly.
 from __future__ import annotations
 
 import os
-import subprocess
 import tempfile
 from pathlib import Path
 
@@ -332,7 +331,6 @@ class TestDependencyVerification:
     def test_basic_test_imports(self):
         """Test that basic test imports work."""
         import pathlib
-        import tempfile
 
         assert pathlib is not None
         assert tempfile is not None
@@ -345,7 +343,6 @@ class TestDependencyVerification:
 
     def test_tempfile_available(self):
         """Test tempfile is available."""
-        import tempfile
 
         assert tempfile is not None
 

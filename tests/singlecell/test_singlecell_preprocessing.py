@@ -5,10 +5,9 @@ and preprocessing functions. No mocking used - all tests use real data
 and computational methods.
 """
 
-from __future__ import annotations
+# ruff: noqa: E402 - scipy availability gates imports for this optional test module.
 
-import tempfile
-from pathlib import Path
+from __future__ import annotations
 
 import numpy as np
 import pandas as pd

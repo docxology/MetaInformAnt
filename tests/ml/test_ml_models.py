@@ -23,7 +23,6 @@ from metainformant.ml.models.classification import (
     train_ensemble_classifier,
 )
 from metainformant.ml.models.regression import (
-    BiologicalRegressor,
     analyze_prediction_uncertainty,
     compare_regression_methods,
     create_ensemble_regressor,

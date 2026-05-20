@@ -14,7 +14,7 @@ import math
 import random
 import statistics
 from collections import defaultdict
-from typing import Any, Optional
+from typing import Any
 
 from metainformant.core.utils import logging
 

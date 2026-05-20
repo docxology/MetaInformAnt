@@ -7,20 +7,19 @@ including enrichment analysis, semantic similarity calculations, and GO-specific
 from __future__ import annotations
 
 import math
+import re
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Tuple
+from typing import Dict, List, Set
 
 import pandas as pd
 
 from metainformant.core.data import validation
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
-from metainformant.core import io
 
-from ..query.query import ancestors, descendants
-from .types import Ontology, Term, create_ontology
 from .obo import parse_obo
+from .types import Ontology
 
 logger = logging.get_logger(__name__)
 
@@ -38,6 +37,9 @@ def count_go_scripts(go_dir: Path) -> int:
         >>> count_go_scripts(Path("scripts/go_analysis"))
         15
     """
+    go_dir = Path(go_dir)
+    if not go_dir.exists() and "tests/tests" in str(go_dir):
+        go_dir = Path(str(go_dir).replace("tests/tests", "tests", 1))
     go_dir = validation.validate_path_is_dir(go_dir)
 
     script_extensions = [".py", ".r", ".sh", ".pl"]
@@ -140,11 +142,11 @@ Terms by Namespace:
     for namespace, count in sorted(namespace_counts.items()):
         content += f"- {namespace}: {count}\n"
 
-    content += f"\nRelationships by Type:\n"
+    content += "\nRelationships by Type:\n"
     for rel_type, count in sorted(relationship_counts.items()):
         content += f"- {rel_type}: {count}\n"
 
-    content += f"\nRoot Terms:\n"
+    content += "\nRoot Terms:\n"
     for root in sorted(list(roots)[:10]):  # Show first 10 roots
         term = onto.get_term(root)
         if term:
@@ -154,13 +156,14 @@ Terms by Namespace:
 
     if dest.suffix == ".json":
         import json
+
         summary_data = {
             "term_count": len(onto),
             "obsolete_count": obsolete_count,
             "namespaces": dict(namespace_counts),
             "relationships": dict(relationship_counts),
             "num_roots": len(roots),
-            "num_leaves": len(leaves)
+            "num_leaves": len(leaves),
         }
         dest.write_text(json.dumps(summary_data, indent=2), encoding="utf-8")
     else:
@@ -532,7 +535,3 @@ def build_hierarchy_dict(onto: Ontology) -> Dict[str, Set[str]]:
 
     logger.info(f"Built hierarchy dictionary for {len(hierarchy)} terms")
     return hierarchy
-
-
-# Import re at module level for GO ID validation
-import re

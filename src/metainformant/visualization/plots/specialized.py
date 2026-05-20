@@ -7,16 +7,15 @@ commonly used in bioinformatics and systems biology.
 
 from __future__ import annotations
 
-import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
-from matplotlib.patches import Circle, PathPatch, Wedge
-from matplotlib.path import Path
+from matplotlib.patches import Circle, PathPatch
+from matplotlib.path import Path as MplPath
 
 from metainformant.core.data import validation
 from metainformant.core.io import paths
@@ -311,7 +310,7 @@ def plot_chord_diagram(
                 ]
 
                 codes = [Path.MOVETO, Path.CURVE4, Path.CURVE4, Path.CURVE4, Path.CURVE4]
-                path = Path(verts, codes)
+                path = MplPath(verts, codes)
                 patch = PathPatch(path, facecolor="blue", alpha=0.3, edgecolor="blue")
                 ax.add_patch(patch)
 
@@ -427,7 +426,7 @@ def plot_circular_barplot(
     angles = np.linspace(0, 2 * np.pi, n_bars, endpoint=False)
 
     # Plot bars
-    bars = ax.bar(angles, values, width=0.4, bottom=0.0, alpha=0.7, **kwargs)
+    ax.bar(angles, values, width=0.4, bottom=0.0, alpha=0.7, **kwargs)
 
     # Add labels
     if labels:

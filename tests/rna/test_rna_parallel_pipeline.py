@@ -9,8 +9,6 @@ Tests cover:
 Uses REAL file operations only -- no mocking, no monkeypatching, no stubs.
 """
 
-import csv
-import subprocess
 import sys
 import threading
 from pathlib import Path
@@ -32,6 +30,7 @@ REPO_ROOT = Path(__file__).parent.parent
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture
 def workflow_config(tmp_path: Path) -> AmalgkitWorkflowConfig:
@@ -98,6 +97,7 @@ def _create_subdir_fastqs(fastq_dir: Path, sample_id: str) -> list[Path]:
 # cleanup_fastqs – flat ENA file support (bug fix validation)
 # ===========================================================================
 
+
 class TestCleanupFastqsFlatFiles:
     """Tests that cleanup_fastqs handles flat ENA-downloaded files."""
 
@@ -137,7 +137,7 @@ class TestCleanupFastqsFlatFiles:
         """Both flat files and subdirectory files are cleaned."""
         fastq_dir = config_with_fastq_dir.work_dir / "fastq"
         flat_files = _create_flat_fastqs(fastq_dir, "SRR333")
-        subdir_files = _create_subdir_fastqs(fastq_dir, "SRR333")
+        _create_subdir_fastqs(fastq_dir, "SRR333")
 
         cleanup_fastqs(config_with_fastq_dir, ["SRR333"])
 
@@ -155,6 +155,7 @@ class TestCleanupFastqsFlatFiles:
 # ===========================================================================
 # get_quantified_samples
 # ===========================================================================
+
 
 class TestGetQuantifiedSamples:
     """Tests for get_quantified_samples scanning accuracy."""
@@ -226,6 +227,7 @@ class TestGetQuantifiedSamples:
 # ===========================================================================
 # sanitize_params_for_cli – strips MetaInformAnt-only defaults
 # ===========================================================================
+
 
 class TestSanitizeParamsForCli:
     """Validate that MetaInformAnt-internal params are stripped before CLI calls."""
@@ -303,6 +305,7 @@ class TestSanitizeParamsForCli:
 # SpeciesContext.mark_done thread safety
 # ===========================================================================
 
+
 class TestMarkDoneThreadSafety:
     """Test mark_done for concurrent correctness (using a simulated context)."""
 
@@ -310,7 +313,6 @@ class TestMarkDoneThreadSafety:
         """Multiple threads calling mark_done converge to correct counts."""
         # We can't easily construct a real SpeciesContext without a full config,
         # so we test the locking pattern with a minimal simulation
-        import threading
 
         class FakeContext:
             def __init__(self, total: int):

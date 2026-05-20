@@ -201,8 +201,8 @@ class TestFastaIO:
 
         write_fasta(seqs, fasta_path, line_width=60)
         content = fasta_path.read_text()
-        lines = [l for l in content.strip().split("\n") if not l.startswith(">")]
-        assert all(len(l) <= 60 for l in lines)
+        lines = [line for line in content.strip().split("\n") if not line.startswith(">")]
+        assert all(len(line) <= 60 for line in lines)
 
         loaded = read_fasta(fasta_path)
         assert loaded["long"] == long_seq
@@ -654,8 +654,8 @@ class TestOrchestration:
         assert "error" in results
 
     def test_analyze_from_fasta(self, tmp_path: Path):
-        from metainformant.protein.workflow.orchestration import analyze_from_fasta
         from metainformant.protein.sequence.sequences import write_fasta
+        from metainformant.protein.workflow.orchestration import analyze_from_fasta
 
         seqs = {"prot1": "MKTIIALSY", "prot2": "ACDEFGHIK"}
         fasta_path = tmp_path / "test.fasta"

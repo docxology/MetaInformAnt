@@ -8,16 +8,14 @@ divergence matrix computation) work correctly from orchestrator entry-points.
 import numpy as np
 import pandas as pd
 import pytest
-import tempfile
-from pathlib import Path
 
-from metainformant.rna.analysis.within_species_orchestrator import WithinSpeciesOrchestrator
 from metainformant.rna.analysis.across_species_orchestrator import AcrossSpeciesOrchestrator
-
+from metainformant.rna.analysis.within_species_orchestrator import WithinSpeciesOrchestrator
 
 # =============================================================================
 # Fixtures
 # =============================================================================
+
 
 @pytest.fixture
 def synthetic_abundance(tmp_path):
@@ -38,12 +36,14 @@ def synthetic_abundance(tmp_path):
 def synthetic_metadata(tmp_path):
     """Create a synthetic metadata TSV file with tissue and caste columns."""
     samples = [f"SRR{1000 + i}" for i in range(12)]
-    meta = pd.DataFrame({
-        "run": samples,
-        "tissue": ["brain"] * 6 + ["antenna"] * 6,
-        "caste": ["worker"] * 4 + ["queen"] * 4 + ["worker"] * 2 + ["queen"] * 2,
-        "sex": ["female"] * 12,
-    })
+    meta = pd.DataFrame(
+        {
+            "run": samples,
+            "tissue": ["brain"] * 6 + ["antenna"] * 6,
+            "caste": ["worker"] * 4 + ["queen"] * 4 + ["worker"] * 2 + ["queen"] * 2,
+            "sex": ["female"] * 12,
+        }
+    )
     path = tmp_path / "metadata.tsv"
     meta.to_csv(path, sep="\t", index=False)
     return path, meta
@@ -54,7 +54,7 @@ def three_species_data(tmp_path):
     """Create synthetic expression data for 3 species with shared orthologs."""
     np.random.seed(123)
     shared_genes = [f"ortho_{i}" for i in range(50)]
-    
+
     species_data = {}
     for sp_name in ["Apis_mellifera", "Pogonomyrmex_barbatus", "Solenopsis_invicta"]:
         samples = [f"{sp_name}_s{i}" for i in range(5)]
@@ -63,7 +63,7 @@ def three_species_data(tmp_path):
         path = tmp_path / f"{sp_name}_abundance.tsv"
         df.to_csv(path, sep="\t")
         species_data[sp_name] = (path, df)
-    
+
     return species_data
 
 
@@ -71,14 +71,16 @@ def three_species_data(tmp_path):
 def ortholog_table(tmp_path, three_species_data):
     """Create a synthetic ortholog table mapping genes across 3 species."""
     shared_genes = [f"ortho_{i}" for i in range(50)]
-    
+
     # Create an OrthoFinder-style table
-    orth_df = pd.DataFrame({
-        "Orthogroup": [f"OG{i:04d}" for i in range(50)],
-        "Apis_mellifera": shared_genes,
-        "Pogonomyrmex_barbatus": shared_genes,
-        "Solenopsis_invicta": shared_genes,
-    })
+    orth_df = pd.DataFrame(
+        {
+            "Orthogroup": [f"OG{i:04d}" for i in range(50)],
+            "Apis_mellifera": shared_genes,
+            "Pogonomyrmex_barbatus": shared_genes,
+            "Solenopsis_invicta": shared_genes,
+        }
+    )
     path = tmp_path / "orthologs.tsv"
     orth_df.to_csv(path, sep="\t", index=False)
     return path, orth_df
@@ -88,6 +90,7 @@ def ortholog_table(tmp_path, three_species_data):
 # WithinSpeciesOrchestrator Tests
 # =============================================================================
 
+
 class TestWithinSpeciesOrchestrator:
     """Test suite for WithinSpeciesOrchestrator."""
 
@@ -96,7 +99,7 @@ class TestWithinSpeciesOrchestrator:
         abundance_path, _ = synthetic_abundance
         metadata_path, _ = synthetic_metadata
         output_dir = tmp_path / "output"
-        
+
         orch = WithinSpeciesOrchestrator(
             species_name="test_species",
             abundance_path=abundance_path,
@@ -111,10 +114,10 @@ class TestWithinSpeciesOrchestrator:
         abundance_path, _ = synthetic_abundance
         metadata_path, _ = synthetic_metadata
         output_dir = tmp_path / "output"
-        
+
         orch = WithinSpeciesOrchestrator("test_sp", abundance_path, metadata_path, output_dir)
         orch.load_data()
-        
+
         assert orch.counts_df is not None
         assert orch.metadata_df is not None
         assert orch.counts_df.shape[1] == len(orch.metadata_df)
@@ -126,17 +129,17 @@ class TestWithinSpeciesOrchestrator:
         abundance_path, _ = synthetic_abundance
         metadata_path, _ = synthetic_metadata
         output_dir = tmp_path / "output"
-        
+
         orch = WithinSpeciesOrchestrator("test_sp", abundance_path, metadata_path, output_dir)
         orch.load_data()
         pca_res = orch.run_pca(n_components=2)
-        
+
         assert "transformed" in pca_res
         assert "loadings" in pca_res
         assert "explained_variance_ratio" in pca_res
         assert pca_res["transformed"].shape[1] == 2
         assert pca_res["transformed"].shape[0] == 12  # number of samples
-        
+
         # Check output file was written
         out_file = output_dir / "test_sp_pca_coordinates.tsv"
         assert out_file.exists()
@@ -146,16 +149,16 @@ class TestWithinSpeciesOrchestrator:
         abundance_path, _ = synthetic_abundance
         metadata_path, _ = synthetic_metadata
         output_dir = tmp_path / "output"
-        
+
         orch = WithinSpeciesOrchestrator("test_sp", abundance_path, metadata_path, output_dir)
         orch.load_data()
         de_result = orch.run_differential_expression("tissue")
-        
+
         assert de_result is not None
         assert "log2_fold_change" in de_result.columns
         assert "regulation" in de_result.columns  # from prepare_volcano_data
         assert len(de_result) > 0
-        
+
         # Check output file was written
         out_file = output_dir / "test_sp_DE_tissue.tsv"
         assert out_file.exists()
@@ -165,7 +168,7 @@ class TestWithinSpeciesOrchestrator:
         abundance_path, _ = synthetic_abundance
         metadata_path, _ = synthetic_metadata
         output_dir = tmp_path / "output"
-        
+
         orch = WithinSpeciesOrchestrator("test_sp", abundance_path, metadata_path, output_dir)
         orch.load_data()
         # 'sex' column has only "female" — should return None
@@ -177,7 +180,7 @@ class TestWithinSpeciesOrchestrator:
         abundance_path, _ = synthetic_abundance
         metadata_path, _ = synthetic_metadata
         output_dir = tmp_path / "output"
-        
+
         orch = WithinSpeciesOrchestrator("test_sp", abundance_path, metadata_path, output_dir)
         orch.load_data()
         result = orch.run_differential_expression("nonexistent_column")
@@ -188,10 +191,10 @@ class TestWithinSpeciesOrchestrator:
         abundance_path, _ = synthetic_abundance
         metadata_path, _ = synthetic_metadata
         output_dir = tmp_path / "output"
-        
+
         orch = WithinSpeciesOrchestrator("test_sp", abundance_path, metadata_path, output_dir)
         orch.run_all(condition_cols=["tissue", "caste", "sex", "nonexistent"])
-        
+
         # PCA output should exist
         assert (output_dir / "test_sp_pca_coordinates.tsv").exists()
         # DE for tissue should exist (2 groups)
@@ -208,12 +211,12 @@ class TestWithinSpeciesOrchestrator:
             columns=["X1", "X2", "X3"],
         )
         meta = pd.DataFrame({"run": ["Y1", "Y2", "Y3"], "tissue": ["a", "b", "c"]})
-        
+
         a_path = tmp_path / "ab.tsv"
         m_path = tmp_path / "me.tsv"
         abundance.to_csv(a_path, sep="\t")
         meta.to_csv(m_path, sep="\t", index=False)
-        
+
         orch = WithinSpeciesOrchestrator("fail_sp", a_path, m_path, tmp_path / "out")
         with pytest.raises(ValueError, match="No common samples"):
             orch.load_data()
@@ -223,7 +226,7 @@ class TestWithinSpeciesOrchestrator:
         abundance_path, _ = synthetic_abundance
         metadata_path, _ = synthetic_metadata
         output_dir = tmp_path / "output"
-        
+
         orch = WithinSpeciesOrchestrator("test_sp", abundance_path, metadata_path, output_dir)
         with pytest.raises(ValueError, match="Data not loaded"):
             orch.run_pca()
@@ -232,6 +235,7 @@ class TestWithinSpeciesOrchestrator:
 # =============================================================================
 # AcrossSpeciesOrchestrator Tests
 # =============================================================================
+
 
 class TestAcrossSpeciesOrchestrator:
     """Test suite for AcrossSpeciesOrchestrator."""
@@ -247,7 +251,7 @@ class TestAcrossSpeciesOrchestrator:
         orth_path, _ = ortholog_table
         orch = AcrossSpeciesOrchestrator(orth_path, tmp_path / "output")
         orch.load_orthologs()
-        
+
         assert orch.ortholog_df is not None
         assert len(orch.ortholog_df) == 50
         assert "Orthogroup" in orch.ortholog_df.columns
@@ -256,10 +260,10 @@ class TestAcrossSpeciesOrchestrator:
         """Test species expression loading."""
         orth_path, _ = ortholog_table
         orch = AcrossSpeciesOrchestrator(orth_path, tmp_path / "output")
-        
+
         for sp_name, (sp_path, _) in three_species_data.items():
             orch.load_species_expression(sp_name, sp_path)
-        
+
         assert len(orch.species_expressions) == 3
         for sp_name in three_species_data:
             assert sp_name in orch.species_expressions
@@ -269,12 +273,12 @@ class TestAcrossSpeciesOrchestrator:
         orth_path, _ = ortholog_table
         orch = AcrossSpeciesOrchestrator(orth_path, tmp_path / "output")
         orch.load_orthologs()
-        
+
         for sp_name, (sp_path, _) in three_species_data.items():
             orch.load_species_expression(sp_name, sp_path)
-        
+
         maps = orch.generate_pairwise_maps()
-        
+
         # 3 species -> 6 directional pairs (A->B, B->A, etc.)
         assert len(maps) == 6
         for key, orth_map in maps.items():
@@ -289,22 +293,22 @@ class TestAcrossSpeciesOrchestrator:
         output_dir = tmp_path / "output"
         orch = AcrossSpeciesOrchestrator(orth_path, output_dir)
         orch.load_orthologs()
-        
+
         for sp_name, (sp_path, _) in three_species_data.items():
             orch.load_species_expression(sp_name, sp_path)
-        
+
         orch.run_comparative_analysis()
-        
+
         # Check output files were created
         assert (output_dir / "conservation_scores.tsv").exists()
         assert (output_dir / "expression_divergence_matrix.tsv").exists()
-        
+
         # Validate conservation scores
         cons = pd.read_csv(output_dir / "conservation_scores.tsv", sep="\t")
         assert "gene_id" in cons.columns
         assert "mean_conservation" in cons.columns
         assert len(cons) > 0
-        
+
         # Validate divergence matrix
         div = pd.read_csv(output_dir / "expression_divergence_matrix.tsv", sep="\t", index_col=0)
         assert div.shape[0] == div.shape[1]  # Square matrix
@@ -326,12 +330,12 @@ class TestAcrossSpeciesOrchestrator:
         output_dir = tmp_path / "output"
         orch = AcrossSpeciesOrchestrator(orth_path, output_dir)
         orch.load_orthologs()
-        
+
         for sp_name, (sp_path, _) in three_species_data.items():
             orch.load_species_expression(sp_name, sp_path)
-        
+
         orch.run_comparative_analysis()
-        
+
         cons = pd.read_csv(output_dir / "conservation_scores.tsv", sep="\t")
         # mean_conservation should be between -1 and 1
         assert cons["mean_conservation"].min() >= -1.0
@@ -343,12 +347,12 @@ class TestAcrossSpeciesOrchestrator:
         output_dir = tmp_path / "output"
         orch = AcrossSpeciesOrchestrator(orth_path, output_dir)
         orch.load_orthologs()
-        
+
         for sp_name, (sp_path, _) in three_species_data.items():
             orch.load_species_expression(sp_name, sp_path)
-        
+
         orch.run_comparative_analysis()
-        
+
         div = pd.read_csv(output_dir / "expression_divergence_matrix.tsv", sep="\t", index_col=0)
         # Check symmetry
         for sp_a in div.index:
@@ -360,6 +364,7 @@ class TestAcrossSpeciesOrchestrator:
 # Cross-Module Integration: Within + Across
 # =============================================================================
 
+
 class TestWithinToAcrossIntegration:
     """Test that within-species outputs feed correctly into across-species analysis."""
 
@@ -368,26 +373,26 @@ class TestWithinToAcrossIntegration:
         abundance_path, _ = synthetic_abundance
         metadata_path, _ = synthetic_metadata
         output_dir = tmp_path / "output"
-        
+
         orch = WithinSpeciesOrchestrator("sp1", abundance_path, metadata_path, output_dir)
         orch.load_data()
         orch.run_pca()
-        
+
         # Read back the PCA results
         pca_file = output_dir / "sp1_pca_coordinates.tsv"
         pca_df = pd.read_csv(pca_file, sep="\t", index_col=0)
         assert pca_df.shape[0] == 12  # samples
-        assert pca_df.shape[1] == 2   # components
+        assert pca_df.shape[1] == 2  # components
 
     def test_de_output_has_standard_columns(self, tmp_path, synthetic_abundance, synthetic_metadata):
         """Test that DE output TSV has standard columns for downstream processing."""
         abundance_path, _ = synthetic_abundance
         metadata_path, _ = synthetic_metadata
         output_dir = tmp_path / "output"
-        
+
         orch = WithinSpeciesOrchestrator("sp1", abundance_path, metadata_path, output_dir)
         orch.load_data()
         result = orch.run_differential_expression("tissue")
-        
+
         required_cols = {"log2_fold_change", "p_value", "regulation"}
         assert required_cols.issubset(set(result.columns))

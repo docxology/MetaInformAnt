@@ -4,22 +4,17 @@
 Downloads real genome data, downloads RAW short reads from BioProject PRJNA712959,
 aligns them via BWA, calls variants via bcftools, and runs the complete GWAS pipeline.
 """
+
 from __future__ import annotations
 
-import json
-import logging
-import os
 import random
 import subprocess
 import sys
-import time
 from pathlib import Path
-from typing import List
 
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io
 from metainformant.core.utils import logging as core_logging
 from metainformant.gwas.data.download import _get_project_runs, download_sra_run
 
@@ -39,8 +34,15 @@ PBAR_SCAFFOLDS = {
 }
 
 KNOWN_GENES = [
-    {"chrom": "NW_011925345.1", "start": 5000000, "end": 5050000, "name": "vitellogenin_homolog", "desc": "Caste differentiation and reproduction"},
+    {
+        "chrom": "NW_011925345.1",
+        "start": 5000000,
+        "end": 5050000,
+        "name": "vitellogenin_homolog",
+        "desc": "Caste differentiation and reproduction",
+    },
 ]
+
 
 def check_dependencies():
     """Check if BWA, SAMtools, and BCFtools are installed."""
@@ -53,15 +55,16 @@ def check_dependencies():
         logger.error("Please install them via bioconda or system package manager.")
         sys.exit(1)
 
+
 def download_genome_annotation(output_dir: Path) -> Path:
     """Download the genome and generate mock GFF for the required scaffolds."""
     from metainformant.gwas.data.download import download_reference_genome
-    
+
     genome_dir = output_dir / "genome"
     genome_dir.mkdir(parents=True, exist_ok=True)
-    
+
     gff_path = genome_dir / "genomic.gff"
-    
+
     ncbi_dest = genome_dir / "GCF_000187915.1"
     if not ncbi_dest.exists():
         logger.info("Downloading P. barbatus reference genome GCF_000187915.1...")
@@ -78,15 +81,16 @@ def download_genome_annotation(output_dir: Path) -> Path:
                     f"{gene['chrom']}\tNCBI\tgene\t{gene['start']}\t{gene['end']}\t.\t+\t.\t"
                     f"ID=gene-{gene['name']};Name={gene['name']};description={gene['desc']}\n"
                 )
-    
+
     return genome_dir
+
 
 def download_and_call_variants(output_dir: Path, genome_dir: Path) -> Path:
     """Download SRA FASTQs, align with BWA, and call variants with BCFtools."""
     sra_dir = output_dir / "sra"
     bam_dir = output_dir / "bams"
     vcf_dir = output_dir / "variants"
-    
+
     for d in [sra_dir, bam_dir, vcf_dir]:
         d.mkdir(parents=True, exist_ok=True)
 
@@ -97,6 +101,7 @@ def download_and_call_variants(output_dir: Path, genome_dir: Path) -> Path:
 
     # Step 0: Find Reference Genome
     import glob
+
     gz_fastas = glob.glob(str(genome_dir / "**" / "*genomic.fna.gz"), recursive=True)
     if not gz_fastas:
         # Check if already unzipped
@@ -111,22 +116,22 @@ def download_and_call_variants(output_dir: Path, genome_dir: Path) -> Path:
         ref_fasta = Path(gz_fastas[0].replace(".gz", ""))
 
     logger.info(f"Using reference genome: {ref_fasta}")
-    
+
     # Step 1: Discover and Download SRA Runs
     logger.info(f"Fetching runs for BioProject {SRA_PROJECT}...")
     all_runs = _get_project_runs(SRA_PROJECT)
     if not all_runs:
         logger.error(f"Failed to find any runs for {SRA_PROJECT}.")
         sys.exit(1)
-        
+
     target_runs = all_runs[:MAX_SAMPLES]
     logger.info(f"Targeting {len(target_runs)} runs for processing: {target_runs}")
-    
+
     downloaded_paths = []
     for run in target_runs:
         dl_path = download_sra_run(run, sra_dir, threads=4)
         downloaded_paths.append((run, dl_path))
-        
+
     # Step 2: BWA Index
     logger.info("Indexing reference genome with BWA...")
     idx_check = ref_fasta.with_suffix(".fna.bwt")
@@ -139,15 +144,15 @@ def download_and_call_variants(output_dir: Path, genome_dir: Path) -> Path:
         fastq_files = list(dl_dir.glob("*.fastq*"))
         if not fastq_files:
             continue
-            
+
         bam_path = bam_dir / f"{run}.bam"
         bam_files.append(bam_path)
-        
+
         if bam_path.exists():
             continue
-            
+
         logger.info(f"Subsetting and aligning {run} with BWA MEM...")
-        
+
         subset_fastqs = []
         for fq in fastq_files[:2]:
             sub_fq = fq.with_suffix(".subset" + fq.suffix)
@@ -159,35 +164,36 @@ def download_and_call_variants(output_dir: Path, genome_dir: Path) -> Path:
 
         cmd_bwa = ["bwa", "mem", "-t", "4", str(ref_fasta)] + [str(f) for f in subset_fastqs]
         cmd_sort = ["samtools", "sort", "-@", "4", "-o", str(bam_path)]
-        
+
         p1 = subprocess.Popen(cmd_bwa, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         p2 = subprocess.Popen(cmd_sort, stdin=p1.stdout, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
         p1.stdout.close()
         p2.communicate()
         if p2.returncode != 0:
             logger.error(f"Alignment failed for {run}")
-            
+
     if not bam_files:
         logger.error("No BAM files generated. Cannot proceed.")
         sys.exit(1)
 
     # Step 4: Variant Calling with BCFtools
     logger.info(f"Calling variants across {len(bam_files)} BAMs...")
-    
+
     cmd_mpileup = ["bcftools", "mpileup", "-Ou", "-f", str(ref_fasta)] + [str(b) for b in bam_files]
     cmd_call = ["bcftools", "call", "-vmO", "v", "-o", str(vcf_path)]
-    
+
     p1 = subprocess.Popen(cmd_mpileup, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     p2 = subprocess.Popen(cmd_call, stdin=p1.stdout, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     p1.stdout.close()
     p2.communicate()
-    
+
     if p2.returncode != 0:
         logger.error("Variant calling failed.")
         sys.exit(1)
-        
+
     logger.info(f"VCF generated at {vcf_path}")
     return vcf_path
+
 
 def generate_phenotypes(output_dir: Path, vcf_path: Path) -> Path:
     pheno_dir = output_dir / "phenotypes"
@@ -216,33 +222,30 @@ def generate_phenotypes(output_dir: Path, vcf_path: Path) -> Path:
     logger.info(f"Generated mock phenotypes for {len(samples)} samples -> {pheno_path}")
     return pheno_path
 
+
 def run_main():
     output_base = Path("output/gwas/pbarbatus")
     check_dependencies()
-    
+
     print(f"Starting real data P. barbatus pipeline in {output_base}")
     ref_fasta = download_genome_annotation(output_base)
     vcf_path = download_and_call_variants(output_base, ref_fasta)
     pheno_path = generate_phenotypes(output_base, vcf_path)
-    
-    
+
     import yaml
+
     from metainformant.gwas.workflow.workflow_execution import run_gwas
-    
+
     config_path = Path("config/gwas/gwas_pbarbatus.yaml")
     with open(config_path) as f:
         config_data = yaml.safe_load(f)
-        
+
     print(f"\nExecuting python pipeline: run_gwas() with {vcf_path} and {pheno_path}\n")
-    results = run_gwas(
-        vcf_path=vcf_path,
-        phenotype_path=pheno_path,
-        config=config_data,
-        output_dir=output_base
-    )
-    
+    results = run_gwas(vcf_path=vcf_path, phenotype_path=pheno_path, config=config_data, output_dir=output_base)
+
     print("\nGWAS Analysis completed successfully!")
     print(f"Results saved to: {results.get('output_dir')}")
+
 
 if __name__ == "__main__":
     run_main()

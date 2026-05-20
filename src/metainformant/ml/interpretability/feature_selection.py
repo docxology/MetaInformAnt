@@ -27,8 +27,7 @@ except ImportError:
     np = None  # type: ignore[assignment]
 
 try:
-    from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-    from sklearn.model_selection import cross_val_score
+    from sklearn.ensemble import RandomForestClassifier
 
     HAS_SKLEARN = True
 except ImportError:

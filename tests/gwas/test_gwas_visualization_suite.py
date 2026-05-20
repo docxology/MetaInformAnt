@@ -4,9 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import numpy as np
-import pytest
-
 from metainformant.gwas.visualization.interactive.suite import (
     generate_all_plots,
 )

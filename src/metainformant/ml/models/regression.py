@@ -6,7 +6,7 @@ designed for biological trait prediction and quantitative analysis.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 

@@ -27,7 +27,7 @@ examples/
 ### Example File Types
 - **example_{feature}.py**: Single-feature demonstration scripts
 - **example_{workflow}.py**: Multi-step workflow examples
-- **templates/*.py**: Boilerplate templates for new examples
+- **templates/*.py.j2**: Boilerplate templates for new examples
 
 ### Example Naming Convention
 ```

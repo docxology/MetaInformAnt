@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import pickle
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
@@ -193,9 +193,7 @@ class EventSequencePredictor:
                 k: v.tolist() if hasattr(v, "tolist") else v for k, v in self.classifier.items()
             }
         if self.regressor is not None:
-            model_data["regressor"] = {
-                k: v.tolist() if hasattr(v, "tolist") else v for k, v in self.regressor.items()
-            }
+            model_data["regressor"] = {k: v.tolist() if hasattr(v, "tolist") else v for k, v in self.regressor.items()}
 
         with open(path, "w") as f:
             json.dump(model_data, f, indent=2)

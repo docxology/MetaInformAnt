@@ -1,4 +1,5 @@
 """Protein sequence and structure analysis module for METAINFORMANT."""
+
 from __future__ import annotations
 
 from . import database, domains, function, sequence, structure, visualization, workflow

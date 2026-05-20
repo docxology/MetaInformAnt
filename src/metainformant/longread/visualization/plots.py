@@ -29,7 +29,6 @@ try:
     matplotlib.use("Agg")  # Non-interactive backend
     import matplotlib.patches as mpatches  # type: ignore[import-untyped]
     import matplotlib.pyplot as plt  # type: ignore[import-untyped]
-    from matplotlib.collections import LineCollection  # type: ignore[import-untyped]
 
     HAS_MATPLOTLIB = True
 except ImportError:
@@ -107,7 +106,7 @@ def plot_read_length_histogram(
     _apply_style()
     fig, ax = plt.subplots(figsize=figsize)
 
-    if log_scale and all(l > 0 for l in lengths):
+    if log_scale and all(length > 0 for length in lengths):
         # Log-spaced bins
         log_min = math.log10(min(lengths))
         log_max = math.log10(max(lengths))
@@ -126,10 +125,10 @@ def plot_read_length_histogram(
     total = sum(sorted_lengths)
     cumulative = 0
     n50 = sorted_lengths[-1]
-    for l in sorted_lengths:
-        cumulative += l
+    for length in sorted_lengths:
+        cumulative += length
         if cumulative >= total * 0.5:
-            n50 = l
+            n50 = length
             break
 
     median = sorted(lengths)[len(lengths) // 2]
@@ -552,7 +551,7 @@ def plot_methylation_track(
 
     if positions:
         # Color by methylation level
-        colors = ["#2196F3" if l < threshold else "#F44336" for l in levels]
+        colors = ["#2196F3" if level < threshold else "#F44336" for level in levels]
         ax.bar(
             positions,
             levels,

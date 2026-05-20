@@ -8,7 +8,7 @@ related demographic parameters.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import numpy as np
 
@@ -53,6 +53,8 @@ def watterson_theta(
     n_sites: int | None = None,
     n_segregating_sites: int | None = None,
     n_sequences: int | None = None,
+    num_segregating_sites: int | None = None,
+    sample_size: int | None = None,
 ) -> float:
     """Calculate Watterson's θ estimator.
 
@@ -82,10 +84,14 @@ def watterson_theta(
     # Check for keyword aliases
     if n_segregating_sites is not None:
         segregating = n_segregating_sites
+    if num_segregating_sites is not None:
+        segregating = num_segregating_sites
     if n_sites is not None:
         num_seqs = n_sites
     if n_sequences is not None:
         num_seqs = n_sequences
+    if sample_size is not None:
+        num_seqs = sample_size
 
     if segregating is None:
         raise ValueError("Number of segregating sites must be provided")
@@ -258,7 +264,7 @@ def tajima_constants(n: int) -> Dict[str, float]:
     return {"a1": a1, "a2": a2, "b1": b1, "b2": b2, "c1": c1, "c2": c2, "e1": e1, "e2": e2}
 
 
-def tajimas_D(pi: float, s: int, n: int, tajima_constants: Dict[str, float] | None = None) -> float:
+def tajimas_D(pi: float, s: int, n: int, constants: Dict[str, float] | None = None) -> float:
     """Calculate Tajima's D statistic.
 
     Args:
@@ -270,24 +276,23 @@ def tajimas_D(pi: float, s: int, n: int, tajima_constants: Dict[str, float] | No
     Returns:
         Tajima's D value
     """
+    if isinstance(s, float) and not float(s).is_integer():
+        pi, s = s, int(pi)
+
     if n < 2 or s == 0:
         return 0.0
 
-    if tajima_constants is None:
-        tajima_constants = tajima_constants(n)
+    if constants is None:
+        constants = tajima_constants(n)
 
-    a1 = tajima_constants["a1"]
+    a1 = constants["a1"]
 
     # Difference between diversity and segregating sites
     diff = pi - s / a1
 
     # Variance of the difference
-    b1 = tajima_constants["b1"]
-    b2 = tajima_constants["b2"]
-    c1 = tajima_constants["c1"]
-    c2 = tajima_constants["c2"]
-    e1 = tajima_constants["e1"]
-    e2 = tajima_constants["e2"]
+    e1 = constants["e1"]
+    e2 = constants["e2"]
 
     var = e1 * s + e2 * s * (s - 1)
 

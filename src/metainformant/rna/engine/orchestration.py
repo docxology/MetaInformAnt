@@ -18,12 +18,14 @@ Functions:
 from __future__ import annotations
 
 import concurrent.futures
-import os
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Set
 
 from metainformant.core.utils import logging
+
+if TYPE_CHECKING:
+    from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, WorkflowExecutionResult
 
 logger = logging.get_logger(__name__)
 

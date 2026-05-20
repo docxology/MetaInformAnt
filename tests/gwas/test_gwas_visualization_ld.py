@@ -2,11 +2,9 @@
 
 from __future__ import annotations
 
-import random
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 from metainformant.gwas.visualization.genomic.ld import (
     compute_ld_decay,

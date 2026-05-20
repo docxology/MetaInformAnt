@@ -4,15 +4,15 @@
 Template files for creating new examples.
 
 ## Contents
-- `base_template.py` - Basic example template
-- `dna_template.py` - DNA module example template
-- `ml_template.py` - Machine learning example template
+- `base_template.py.j2` - Basic example template
+- `dna_template.py.j2` - DNA module example template
+- `ml_template.py.j2` - Machine learning example template
 
 ## Usage
 Copy the appropriate template when creating a new example:
 
 ```bash
-cp examples/templates/base_template.py examples/{module}/example_{feature}.py
+python scripts/test_examples/generate_example.py {module} {feature}
 ```
 
 Then customize with module-specific imports and functionality.

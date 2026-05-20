@@ -7,14 +7,12 @@ like MUSCLE, MAFFT, and ClustalW.
 
 from __future__ import annotations
 
-import os
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict
 
 from metainformant.core.utils import logging
-from metainformant.core import io
 
 logger = logging.get_logger(__name__)
 

@@ -233,7 +233,6 @@ def run_workflow(args):
             from metainformant.ecology.analysis.community import (
                 alpha_beta_gamma_diversity,
                 beta_diversity,
-                community_similarity_matrix,
             )
 
             # Calculate pairwise dissimilarities

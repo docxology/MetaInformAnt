@@ -6,16 +6,23 @@ coalescent theory, epidemiology, dynamics, and selection.
 
 from __future__ import annotations
 
-import math
-
-import pytest
-
 from metainformant.math.decision_theory.ddm import ddm_analytic_accuracy, ddm_mean_decision_time
 from metainformant.math.epidemiology.models import basic_reproduction_number, herd_immunity_threshold, sir_step
 from metainformant.math.evolutionary_dynamics.core import logistic_map, lotka_volterra_step
-from metainformant.math.population_genetics.coalescent import expected_pairwise_diversity, expected_time_to_mrca, tajimas_D, watterson_theta
-from metainformant.math.population_genetics.core import hardy_weinberg_genotype_freqs, heterozygosity_decay, inbreeding_coefficient
-from metainformant.math.population_genetics.selection import kin_selection_response, mutation_update, selection_differential, selection_gradient, selection_update
+from metainformant.math.population_genetics.coalescent import (
+    expected_pairwise_diversity,
+    expected_time_to_mrca,
+    tajimas_D,
+    watterson_theta,
+)
+from metainformant.math.population_genetics.core import hardy_weinberg_genotype_freqs, heterozygosity_decay
+from metainformant.math.population_genetics.selection import (
+    kin_selection_response,
+    mutation_update,
+    selection_differential,
+    selection_gradient,
+    selection_update,
+)
 from metainformant.math.population_genetics.statistics import fixation_probability
 from metainformant.math.quantitative_genetics.price import price_equation
 
@@ -196,15 +203,15 @@ class TestEpidemiology:
 
     def test_sir_model_conservation(self):
         """Test SIR model conserves total population."""
-        S, I, R = 990.0, 10.0, 0.0
+        susceptible, infected, recovered = 990.0, 10.0, 0.0
         beta, gamma = 0.3, 0.1
 
-        total_before = S + I + R
+        total_before = susceptible + infected + recovered
 
         for _ in range(10):
-            S, I, R = sir_step(S, I, R, beta, gamma, dt=0.01)
+            susceptible, infected, recovered = sir_step(susceptible, infected, recovered, beta, gamma, dt=0.01)
 
-        total_after = S + I + R
+        total_after = susceptible + infected + recovered
 
         assert abs(total_after - total_before) < 0.1
 

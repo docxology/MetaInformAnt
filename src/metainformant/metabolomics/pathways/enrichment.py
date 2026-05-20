@@ -7,9 +7,7 @@ scoring for metabolic pathways based on identified metabolite sets.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import comb, factorial
-
-import numpy as np
+from math import comb
 
 
 @dataclass
@@ -161,9 +159,7 @@ def enrichment_with_fdr(
     Returns:
         List of significant EnrichmentResult, sorted by q-value.
     """
-    all_results = metabolite_set_enrichment(
-        query_metabolites, pathway_db, background_size
-    )
+    all_results = metabolite_set_enrichment(query_metabolites, pathway_db, background_size)
 
     if not all_results:
         return []

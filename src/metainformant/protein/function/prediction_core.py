@@ -18,10 +18,9 @@ Functions in this module:
 
 from __future__ import annotations
 
-import math
 import re
 from collections import Counter
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 from metainformant.core.utils.logging import get_logger
 

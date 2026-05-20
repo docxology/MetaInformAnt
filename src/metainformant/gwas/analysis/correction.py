@@ -100,9 +100,7 @@ def bonferroni_correction(
 
     significant = [p <= corrected_alpha for p in p_values]
 
-    logger.info(
-        f"Bonferroni correction: {sum(significant)}/{n_tests} tests significant at α={alpha}"
-    )
+    logger.info(f"Bonferroni correction: {sum(significant)}/{n_tests} tests significant at α={alpha}")
 
     if return_dict:
         return {
@@ -183,9 +181,7 @@ def fdr_correction(
         return [], []
 
     if method.lower() not in ["bh", "by"]:
-        raise ValueError(
-            "Method must be 'bh' (Benjamini-Hochberg) or 'by' (Benjamini-Yekutieli)"
-        )
+        raise ValueError("Method must be 'bh' (Benjamini-Hochberg) or 'by' (Benjamini-Yekutieli)")
 
     # Sort p-values and keep track of original indices
     indexed_p = sorted(enumerate(p_values), key=lambda x: x[1])
@@ -199,14 +195,10 @@ def fdr_correction(
         rank = i + 1
 
         if method.lower() == "bh":
-            adjusted_value = min(
-                adjusted_p[i + 1] if i + 1 < n else 1.0, sorted_p[i] * n / rank
-            )
+            adjusted_value = min(adjusted_p[i + 1] if i + 1 < n else 1.0, sorted_p[i] * n / rank)
         else:  # 'by' - Benjamini-Yekutieli
             c_n = sum(1.0 / (k + 1) for k in range(n))
-            adjusted_value = min(
-                adjusted_p[i + 1] if i + 1 < n else 1.0, sorted_p[i] * c_n * n / rank
-            )
+            adjusted_value = min(adjusted_p[i + 1] if i + 1 < n else 1.0, sorted_p[i] * c_n * n / rank)
 
         adjusted_p[i] = adjusted_value
 
@@ -222,9 +214,7 @@ def fdr_correction(
     # Determine significance
     significant = [adj_p <= alpha for adj_p in original_adjusted]
 
-    logger.info(
-        f"FDR correction ({method}): {sum(significant)}/{n} tests significant at FDR={alpha}"
-    )
+    logger.info(f"FDR correction ({method}): {sum(significant)}/{n} tests significant at FDR={alpha}")
 
     if return_dict:
         return {
@@ -364,9 +354,7 @@ def genomic_control(
             else:
                 corrected_p_values.append(p)
 
-    logger.info(
-        f"Genomic control: λ={lambda_gc:.3f}, corrected {len(corrected_p_values)} p-values"
-    )
+    logger.info(f"Genomic control: λ={lambda_gc:.3f}, corrected {len(corrected_p_values)} p-values")
 
     if return_dict:
         return {
@@ -381,9 +369,7 @@ def genomic_control(
     return corrected_p_values, lambda_gc
 
 
-def qvalue_estimation(
-    p_values: List[float], pi0: Optional[float] = None
-) -> Tuple[List[float], float]:
+def qvalue_estimation(p_values: List[float], pi0: Optional[float] = None) -> Tuple[List[float], float]:
     """Estimate q-values from p-values.
 
     Args:
@@ -409,9 +395,7 @@ def qvalue_estimation(
 
     for i in range(n - 1, -1, -1):
         rank = i + 1
-        q_value = min(
-            q_values[i + 1] if i + 1 < n else 1.0, sorted_p[i] * pi0 * n / rank
-        )
+        q_value = min(q_values[i + 1] if i + 1 < n else 1.0, sorted_p[i] * pi0 * n / rank)
         q_values[i] = q_value
 
     # Ensure monotonicity
@@ -548,9 +532,7 @@ def _normal_ppf(p: float) -> float:
     return t - (c0 + c1 * t + c2 * t * t) / (1.0 + d1 * t + d2 * t * t + d3 * t * t * t)
 
 
-def adjust_p_values(
-    p_values: List[float], method: str = "bonferroni", **kwargs
-) -> List[float]:
+def adjust_p_values(p_values: List[float], method: str = "bonferroni", **kwargs) -> List[float]:
     """General function for p-value adjustment.
 
     Args:
@@ -567,9 +549,7 @@ def adjust_p_values(
         return [min(p * len(p_values), 1.0) for p in p_values]
 
     elif method.lower() == "fdr":
-        _, adjusted_p = fdr_correction(
-            p_values, kwargs.get("alpha", 0.05), kwargs.get("fdr_method", "bh")
-        )
+        _, adjusted_p = fdr_correction(p_values, kwargs.get("alpha", 0.05), kwargs.get("fdr_method", "bh"))
         return adjusted_p
 
     elif method.lower() == "genomic_control":

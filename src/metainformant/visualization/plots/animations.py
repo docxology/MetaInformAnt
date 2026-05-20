@@ -11,7 +11,6 @@ from typing import Any, List, Tuple
 
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, PillowWriter
-from matplotlib.axes import Axes
 
 from metainformant.core.data import validation
 from metainformant.core.io import paths
@@ -292,9 +291,9 @@ def animate_network(
 
     # Setup initial plot
     G_initial = graphs_over_time[0]
-    nodes = nx.draw_networkx_nodes(G_initial, pos, ax=ax, node_color="lightblue", node_size=300, alpha=0.8)
-    edges = nx.draw_networkx_edges(G_initial, pos, ax=ax, edge_color="gray", width=1, alpha=0.6)
-    labels = nx.draw_networkx_labels(G_initial, pos, ax=ax, font_size=8)
+    nx.draw_networkx_nodes(G_initial, pos, ax=ax, node_color="lightblue", node_size=300, alpha=0.8)
+    nx.draw_networkx_edges(G_initial, pos, ax=ax, edge_color="gray", width=1, alpha=0.6)
+    nx.draw_networkx_labels(G_initial, pos, ax=ax, font_size=8)
 
     ax.set_title("Network Evolution - Time 0")
     ax.axis("off")

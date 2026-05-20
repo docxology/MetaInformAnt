@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Any, Callable
+from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -230,7 +230,10 @@ def abc_rejection(
             - distances: List of distances for accepted simulations.
     """
     if distance == "manhattan":
-        dist_fn = lambda a, b: sum(abs(ai - bi) for ai, bi in zip(a, b))
+
+        def dist_fn(a, b):
+            return sum(abs(ai - bi) for ai, bi in zip(a, b))
+
     else:
         dist_fn = _euclidean_distance
 
@@ -556,7 +559,7 @@ def compute_dic(
 
     # Compute mean parameters
     n_params = len(parameters[0])
-    mean_params = [_mean([parameters[s][p] for s in range(len(parameters))]) for p in range(n_params)]
+    [_mean([parameters[s][p] for s in range(len(parameters))]) for p in range(n_params)]
 
     # Deviance at mean parameters
     mean_ll = _mean(log_likelihoods)

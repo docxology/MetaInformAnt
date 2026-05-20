@@ -4,9 +4,9 @@
 Functionality for templates.
 
 ## Contents
-- `[base_template.py](base_template.py)`
-- `[dna_template.py](dna_template.py)`
-- `[ml_template.py](ml_template.py)`
+- `[base_template.py.j2](base_template.py.j2)`
+- `[dna_template.py.j2](dna_template.py.j2)`
+- `[ml_template.py.j2](ml_template.py.j2)`
 
 ## Structure
 

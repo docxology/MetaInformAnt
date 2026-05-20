@@ -14,7 +14,7 @@ import math
 import os
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, Sequence
+from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -351,24 +351,19 @@ def detect_discordant_pairs(
         mate_is_reverse = read.get("mate_is_reverse", False)
 
         is_discordant = False
-        disc_reason = ""
 
         # Inter-chromosomal
         if mate_chrom != chrom:
             is_discordant = True
-            disc_reason = "inter_chrom"
         # Aberrant insert size
         elif abs(insert_size) > max_isize or (abs(insert_size) < min_isize and abs(insert_size) > 0):
             is_discordant = True
-            disc_reason = "insert_size"
         # Same-strand orientation (expected: FR for Illumina)
         elif is_reverse == mate_is_reverse:
             is_discordant = True
-            disc_reason = "orientation"
         # Read-pair orientation reversed (RF instead of FR)
         elif is_reverse and not mate_is_reverse and pos < mate_pos:
             is_discordant = True
-            disc_reason = "rf_orientation"
 
         if is_discordant:
             seen_pairs.add(name)

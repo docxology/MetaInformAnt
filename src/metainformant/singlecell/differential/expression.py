@@ -20,7 +20,7 @@ from __future__ import annotations
 
 import math
 import random
-from collections import Counter, defaultdict
+from collections import Counter
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
@@ -625,7 +625,7 @@ def _welch_t_test(a: list[float], b: list[float]) -> float:
     # Welch-Satterthwaite degrees of freedom
     num = (var_a / n_a + var_b / n_b) ** 2
     denom = (var_a / n_a) ** 2 / (n_a - 1) + (var_b / n_b) ** 2 / (n_b - 1)
-    df = num / denom if denom > 0 else 1.0
+    num / denom if denom > 0 else 1.0
 
     # Approximate p-value using normal distribution for large df
     p_value = 2.0 * _standard_normal_cdf(-abs(t_stat))

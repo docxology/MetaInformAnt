@@ -11,13 +11,10 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.core.execution import parallel
-from metainformant.core.io import cache
-from metainformant.core.io import paths
-from metainformant.core.utils import config, text
-from metainformant.core.utils import hash
-from metainformant.core.utils import logging
 from metainformant.core import io
+from metainformant.core.execution import parallel
+from metainformant.core.io import cache, paths
+from metainformant.core.utils import config, hash, logging, text
 
 try:
     from metainformant.core import db

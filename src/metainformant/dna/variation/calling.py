@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, Tuple
 
 from metainformant.core.utils import logging
 
@@ -641,7 +641,6 @@ def annotate_variant_context(
     annotated: list[dict] = []
 
     # Pyrimidine bases for SBS96 standardization
-    complement = {"A": "T", "T": "A", "C": "C", "G": "G", "N": "N"}
     # Actually we need full complement for reverse complement
     full_complement = {"A": "T", "T": "A", "C": "G", "G": "C", "N": "N"}
 
@@ -665,8 +664,8 @@ def annotate_variant_context(
 
         # Trinucleotide context (for SNPs only)
         if len(ref_allele) == 1 and len(alt_allele) == 1:
-            tri_start = max(0, pos - 1)
-            tri_end = min(len(ref_upper), pos + 2)
+            max(0, pos - 1)
+            min(len(ref_upper), pos + 2)
 
             if pos > 0 and pos < len(ref_upper) - 1:
                 trinuc = ref_upper[pos - 1 : pos + 2]

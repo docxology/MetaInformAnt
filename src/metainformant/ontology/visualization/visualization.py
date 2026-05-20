@@ -7,14 +7,12 @@ and functional annotation networks.
 
 from __future__ import annotations
 
-import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Set, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
-from matplotlib.patches import Circle, FancyBboxPatch, Rectangle
 
 from metainformant.core.data import validation
 from metainformant.core.io import paths
@@ -154,8 +152,8 @@ def plot_semantic_similarity_matrix(
             cmap="YlOrRd",
             square=True,
             ax=ax,
-            xticklabels=term_labels,
-            yticklabels=term_labels,
+            xticklabels=term_labels if term_labels is not None else True,
+            yticklabels=term_labels if term_labels is not None else True,
             **kwargs,
         )
     else:
@@ -205,7 +203,7 @@ def plot_go_enrichment_barplot(
     # Extract data
     terms = [result.get("term", f"Term {i}") for i, result in enumerate(enrichment_results)]
     pvalues = [-np.log10(result.get("pvalue", 1.0)) for result in enrichment_results]
-    fold_changes = [result.get("fold_change", 1.0) for result in enrichment_results]
+    [result.get("fold_change", 1.0) for result in enrichment_results]
 
     # Sort by significance
     sorted_idx = np.argsort(pvalues)[::-1]

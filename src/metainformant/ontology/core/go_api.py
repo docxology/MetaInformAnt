@@ -62,8 +62,8 @@ def fetch_go_term(go_id: str, *, rate_limit_s: float = _DEFAULT_RATE_LIMIT_S) ->
         return _term_cache[go_id]
 
     try:
-        import urllib.request
         import json
+        import urllib.request
 
         url = f"{_QUICKGO_BASE}/ontology/go/terms/{go_id}"
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
@@ -157,9 +157,9 @@ def fetch_gene_go_annotations(
         return _annotation_cache[cache_key]
 
     try:
-        import urllib.request
-        import urllib.parse
         import json
+        import urllib.parse
+        import urllib.request
 
         params: dict[str, str] = {
             "taxonId": str(taxon_id),
@@ -180,14 +180,16 @@ def fetch_gene_go_annotations(
 
         annotations: list[dict[str, Any]] = []
         for ann in data.get("results", []):
-            annotations.append({
-                "gene_id": gene_id,
-                "go_id": ann.get("goId", ""),
-                "go_name": ann.get("goName", ""),
-                "aspect": ann.get("goAspect", ""),
-                "evidence_code": ann.get("evidenceCode", ""),
-                "reference": ann.get("reference", ""),
-            })
+            annotations.append(
+                {
+                    "gene_id": gene_id,
+                    "go_id": ann.get("goId", ""),
+                    "go_name": ann.get("goName", ""),
+                    "aspect": ann.get("goAspect", ""),
+                    "evidence_code": ann.get("evidenceCode", ""),
+                    "reference": ann.get("reference", ""),
+                }
+            )
 
         _annotation_cache[cache_key] = annotations
         logger.debug("Gene %s (taxon %s): %d GO annotations", gene_id, taxon_id, len(annotations))
@@ -258,7 +260,9 @@ def build_gene_set_from_api(
     total_genes = len(gene_list)
     logger.info(
         "build_gene_set_from_api: %d genes -> %d GO terms (taxon %d)",
-        total_genes, total_terms, taxon_id,
+        total_genes,
+        total_terms,
+        taxon_id,
     )
     return gene_sets
 
@@ -309,9 +313,9 @@ def build_taxon_go_gene_sets(
         >>> len(gene_sets) > 0
         True
     """
-    import urllib.request
-    import urllib.parse
     import json
+    import urllib.parse
+    import urllib.request
 
     allowed_ev = set(min_evidence_codes) if min_evidence_codes else None
     gene_sets: dict[str, set[str]] = {}
@@ -373,9 +377,11 @@ def build_taxon_go_gene_sets(
             break
 
     logger.info(
-        "build_taxon_go_gene_sets: taxon %d → %d GO terms from %d annotations "
-        "(%d pages fetched)",
-        taxon_id, len(gene_sets), n_annotations, n_pages,
+        "build_taxon_go_gene_sets: taxon %d → %d GO terms from %d annotations " "(%d pages fetched)",
+        taxon_id,
+        len(gene_sets),
+        n_annotations,
+        n_pages,
     )
     return gene_sets
 
@@ -407,9 +413,9 @@ def map_symbols_to_uniprot(
         >>> isinstance(mapping, dict)
         True
     """
-    import urllib.request
-    import urllib.parse
     import json
+    import urllib.parse
+    import urllib.request
 
     if not ncbi_gene_symbols:
         return {}
@@ -417,19 +423,17 @@ def map_symbols_to_uniprot(
     mapping: dict[str, list[str]] = {}
 
     for sym in ncbi_gene_symbols:
-        query = urllib.parse.urlencode({
-            "query": f"(gene:{sym}) AND (taxonomy_id:{taxon_id})",
-            "format": "json",
-            "fields": "accession"
-        })
+        query = urllib.parse.urlencode(
+            {"query": f"({sym}) AND (taxonomy_id:{taxon_id})", "format": "json", "fields": "accession"}
+        )
         url = f"https://rest.uniprot.org/uniprotkb/search?{query}"
-        
+
         try:
             req = urllib.request.Request(url)
             time.sleep(rate_limit_s)
             with urllib.request.urlopen(req, timeout=15) as resp:
                 data = json.loads(resp.read().decode())
-                
+
             accessions = [res.get("primaryAccession") for res in data.get("results", []) if res.get("primaryAccession")]
             if accessions:
                 mapping[sym] = accessions
@@ -438,7 +442,9 @@ def map_symbols_to_uniprot(
 
     logger.info(
         "map_symbols_to_uniprot: %d/%d symbols mapped (taxon %d)",
-        len(mapping), len(ncbi_gene_symbols), taxon_id,
+        len(mapping),
+        len(ncbi_gene_symbols),
+        taxon_id,
     )
 
     return mapping

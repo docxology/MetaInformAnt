@@ -1,5 +1,4 @@
 import os
-import re
 
 MAPPING = {
     # Core
@@ -150,10 +149,6 @@ MAPPING = {
     "metainformant.rna.engine.configs": "metainformant.rna.core.configs",
     "metainformant.rna.amalgkit.amalgkit.metadata_filter": "metainformant.rna.amalgkit.metadata_filter",
     "metainformant.rna.amalgkit.amalgkit": "metainformant.rna.amalgkit.amalgkit",
-    # Networks (re-listed for clarity/correction if needed, though already present)
-    "metainformant.networks.graph": "metainformant.networks.analysis.graph",
-    "metainformant.networks.pathway": "metainformant.networks.analysis.pathway",
-    "metainformant.networks.ppi": "metainformant.networks.interaction.ppi",
     # Life Events
     "metainformant.life_events.models": "metainformant.life_events.models.models",
     "metainformant.life_events.embeddings": "metainformant.life_events.models.embeddings",

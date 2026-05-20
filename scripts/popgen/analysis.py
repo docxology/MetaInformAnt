@@ -6,6 +6,8 @@ and performs comprehensive population genetics analysis, demonstrating the full
 capabilities of the METAINFORMANT population genetics modules.
 """
 
+# ruff: noqa: E402 - this script prepends local script and src paths before importing modules.
+
 from __future__ import annotations
 
 import sys

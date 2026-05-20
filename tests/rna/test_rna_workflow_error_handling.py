@@ -6,7 +6,6 @@ when appropriate, and can resume from manifests.
 
 from __future__ import annotations
 
-import json
 import subprocess
 from pathlib import Path
 
@@ -14,7 +13,6 @@ import pytest
 
 from metainformant.core.io.io import dump_json, read_jsonl
 from metainformant.rna.engine.workflow import (
-    AmalgkitWorkflowConfig,
     execute_workflow,
     load_workflow_config,
     plan_workflow,
@@ -43,7 +41,7 @@ class TestWorkflowErrorHandling:
         dump_json(config_data, config_file)
 
         cfg = load_workflow_config(config_file)
-        steps = plan_workflow(cfg)
+        plan_workflow(cfg)
 
         # Execute with check=False (should continue after failures)
         return_codes = execute_workflow(cfg, check=False)
@@ -96,7 +94,7 @@ class TestWorkflowErrorHandling:
         dump_json(config_data, config_file)
 
         cfg = load_workflow_config(config_file)
-        return_codes = execute_workflow(cfg, check=False)
+        execute_workflow(cfg, check=False)
 
         # Steps with missing dependencies should return 126 (skip code)
         # This is handled in execute_workflow via check_step_dependencies
@@ -237,7 +235,6 @@ class TestEarlyExitAndValidation:
     def test_early_exit_on_getfastq_validation_failure(self, tmp_path: Path):
         """Test that workflow stops early when getfastq validation shows 0 samples with FASTQ files."""
         from metainformant.core.io.io import write_delimited
-        from metainformant.rna.analysis.validation import save_validation_report, validate_all_samples
         from metainformant.rna.engine.workflow import execute_workflow
 
         # Create config
@@ -283,7 +280,7 @@ class TestEarlyExitAndValidation:
         result = execute_workflow(cfg, check=False, steps=["getfastq"])
 
         # Check that validation was run and detected the failure
-        validation_file = cfg.work_dir / "validation" / "getfastq_validation.json"
+        cfg.work_dir / "validation" / "getfastq_validation.json"
 
         # The workflow should have run validation after getfastq
         # Even if getfastq "succeeds" (return code 0), validation should detect missing FASTQ files

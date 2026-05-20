@@ -10,8 +10,6 @@ from __future__ import annotations
 
 import math
 
-import pytest
-
 from metainformant.dna.sequence.kmer import (
     compare_kmer_profiles,
     count_kmers,

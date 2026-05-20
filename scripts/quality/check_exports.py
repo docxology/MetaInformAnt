@@ -48,7 +48,7 @@ def is_submodule_init(module_path: Path) -> bool:
             return True
 
         return False
-    except:
+    except Exception:
         return False
 
 

@@ -7,14 +7,14 @@ without executing full workflows (which require external dependencies).
 from __future__ import annotations
 
 import ast
-import inspect
-import re
 from pathlib import Path
+
+SCRIPT_PATH = Path(__file__).resolve().parents[2] / "scripts" / "rna" / "run_workflow.py"
 
 
 def test_run_workflow_has_config_block():
     """Test that run_workflow.py has proper structure and documentation."""
-    script_path = Path(__file__).parent.parent / "scripts" / "rna" / "run_workflow.py"
+    script_path = SCRIPT_PATH
     assert script_path.exists(), f"Script not found: {script_path}"
 
     content = script_path.read_text()
@@ -26,7 +26,7 @@ def test_run_workflow_has_config_block():
 
 def test_run_workflow_has_docstring():
     """Test that run_workflow.py has module docstring."""
-    script_path = Path(__file__).parent.parent / "scripts" / "rna" / "run_workflow.py"
+    script_path = SCRIPT_PATH
     content = script_path.read_text()
 
     # Check for docstring (module-level)
@@ -36,7 +36,7 @@ def test_run_workflow_has_docstring():
 
 def test_run_workflow_methods_have_docstrings():
     """Test that key functions in run_workflow.py have docstrings."""
-    script_path = Path(__file__).parent.parent / "scripts" / "rna" / "run_workflow.py"
+    script_path = SCRIPT_PATH
     content = script_path.read_text()
 
     # Parse the script to find function definitions
@@ -57,7 +57,7 @@ def test_run_workflow_methods_have_docstrings():
 
 def test_run_workflow_imports_metainformant_modules():
     """Test that run_workflow.py imports from metainformant.rna modules."""
-    script_path = Path(__file__).parent.parent / "scripts" / "rna" / "run_workflow.py"
+    script_path = SCRIPT_PATH
     content = script_path.read_text()
 
     # Check that script imports from metainformant modules
@@ -68,7 +68,7 @@ def test_run_workflow_imports_metainformant_modules():
 
 def test_run_workflow_has_main_guard():
     """Test that run_workflow.py has if __name__ == '__main__' guard."""
-    script_path = Path(__file__).parent.parent / "scripts" / "rna" / "run_workflow.py"
+    script_path = SCRIPT_PATH
     content = script_path.read_text()
 
     # Check for main guard
@@ -79,7 +79,7 @@ def test_run_workflow_has_main_guard():
 
 def test_run_workflow_has_required_structure():
     """Test that run_workflow.py has required structure (argparse, config loading, etc.)."""
-    script_path = Path(__file__).parent.parent / "scripts" / "rna" / "run_workflow.py"
+    script_path = SCRIPT_PATH
     content = script_path.read_text()
 
     # Check for key components

@@ -9,8 +9,9 @@ Submodules:
 - orchestrator: Pipeline execution engine with dependency resolution
 - pipelines: Pre-defined pipeline configurations
 - reporting: QC and analysis report generation"""
+
 from __future__ import annotations
 
 from . import orchestrator, orchestrator_core, pipeline_stages, pipelines, reporting
 
-__all__ = ['orchestrator', 'orchestrator_core', 'pipeline_stages', 'pipelines', 'reporting']
+__all__ = ["orchestrator", "orchestrator_core", "pipeline_stages", "pipelines", "reporting"]

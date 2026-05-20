@@ -4,11 +4,12 @@ Follows NO_MOCKING_POLICY: all tests use real YAML configurations,
 real class instantiation, and real method calls.
 """
 
-import pytest
 from pathlib import Path
 
-from metainformant.rna.engine.orchestration_multi_species import PipelineOrchestrator
+import pytest
+
 from metainformant.rna.amalgkit.amalgkit import AmalgkitParams, build_amalgkit_command
+from metainformant.rna.engine.orchestration_multi_species import PipelineOrchestrator
 
 
 class TestPipelineOrchestrator:
@@ -18,8 +19,7 @@ class TestPipelineOrchestrator:
     def config_path(self, tmp_path: Path) -> Path:
         """Create a real YAML config file for testing."""
         config = tmp_path / "orchestration_config.yaml"
-        config.write_text(
-            """
+        config.write_text("""
 work_dir: {work_dir}
 threads: 4
 run_integrate: false
@@ -29,8 +29,7 @@ species:
     threads: 2
     extra_params:
       redo: yes
-""".format(work_dir=str(tmp_path / "output"))
-        )
+""".format(work_dir=str(tmp_path / "output")))
         return config
 
     @pytest.fixture

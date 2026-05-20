@@ -4,8 +4,9 @@ Follows NO_MOCKING_POLICY: all tests use real build_cli_args() and
 AmalgkitParams to verify command construction without mocking subprocess.
 """
 
-import pytest
 from pathlib import Path
+
+import pytest
 
 from metainformant.rna.amalgkit.amalgkit import (
     AmalgkitParams,

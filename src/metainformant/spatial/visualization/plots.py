@@ -367,7 +367,7 @@ def plot_neighborhood_graph(
     _ensure_plotting_deps()
 
     coords = np.asarray(coordinates, dtype=np.float64)
-    n = coords.shape[0]
+    coords.shape[0]
 
     if sp_sparse is not None and sp_sparse.issparse(spatial_graph):
         adj = spatial_graph

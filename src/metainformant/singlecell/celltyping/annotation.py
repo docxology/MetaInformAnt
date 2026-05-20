@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import math
 import random
-from collections import Counter, defaultdict
+from collections import Counter
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger

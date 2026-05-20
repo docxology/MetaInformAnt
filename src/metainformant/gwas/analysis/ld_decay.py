@@ -103,10 +103,7 @@ def compute_ld_decay(
     if len(candidate_pairs) > n_pairs_max:
         candidate_pairs = rng.sample(candidate_pairs, n_pairs_max)
 
-    logger.info(
-        f"LD decay: computing r² for {len(candidate_pairs)} variant pairs "
-        f"(max dist={max_dist_bp:,} bp)"
-    )
+    logger.info(f"LD decay: computing r² for {len(candidate_pairs)} variant pairs " f"(max dist={max_dist_bp:,} bp)")
 
     pairs = []
     for i, j, dist in candidate_pairs:

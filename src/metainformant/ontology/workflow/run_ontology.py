@@ -30,17 +30,15 @@ Usage::
 
 from __future__ import annotations
 
-import argparse
 import csv
 import json
-import math
-import os
 import sys
 from pathlib import Path
 
 # Set non-interactive matplotlib backend BEFORE any other matplotlib imports.
 # Must happen before any module that might trigger matplotlib import.
 import matplotlib
+
 matplotlib.use("Agg")
 
 # ── Path bootstrap ────────────────────────────────────────────────────────────
@@ -56,10 +54,12 @@ for _candidate in [
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 try:
-    from metainformant.core.utils.logging import get_logger, configure_logging_from_env
+    from metainformant.core.utils.logging import configure_logging_from_env, get_logger
+
     configure_logging_from_env()
 except ImportError:
     import logging
+
     logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s")
     get_logger = logging.getLogger  # type: ignore
 
@@ -74,6 +74,7 @@ logger = get_logger(__name__)
 def _load_yaml(path: Path) -> dict:
     try:
         import yaml
+
         with open(path) as f:
             return yaml.safe_load(f) or {}
     except Exception as exc:
@@ -119,15 +120,17 @@ def _save_tsv(rows: list[dict], path: Path, fields: list[str] | None = None) -> 
 
 
 def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root: Path) -> None:
-    \"\"\"Run the full ontology analysis workflow.\"\"\"
-    gwas_cfg = config.get("gwas", {})
+    """Run the full ontology analysis workflow."""
+    config.get("gwas", {})
 
     ont_cfg = config.get("ontology", {})
     paths_cfg = config.get("paths", {})
 
     taxon_id: int = int(ont_cfg.get("taxon_id", 7460))
     top_n: int = int(ont_cfg.get("top_n_hits", 20))
-    go_aspects: list[str] = ont_cfg.get("go_aspects", ["biological_process", "molecular_function", "cellular_component"])
+    go_aspects: list[str] = ont_cfg.get(
+        "go_aspects", ["biological_process", "molecular_function", "cellular_component"]
+    )
     n_permutations: int = int(ont_cfg.get("gsea_permutations", 500))
     min_set_size: int = int(ont_cfg.get("min_go_set_size", 3))
     max_set_size: int = int(ont_cfg.get("max_go_set_size", 500))
@@ -166,15 +169,17 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
             beta_raw = row.get("beta") or row.get("BETA") or "0"
             se_raw = row.get("se") or row.get("SE") or "1"
             maf_raw = row.get("maf") or row.get("MAF") or "0"
-            association_results.append({
-                "snp": snp,
-                "chrom": str(chrom),
-                "pos": int(float(pos_raw or 0)),
-                "p_value": _coerce_float(p_raw, 1.0),
-                "beta": _coerce_float(beta_raw, 0.0),
-                "se": _coerce_float(se_raw, 1.0),
-                "maf": _coerce_float(maf_raw, 0.0),
-            })
+            association_results.append(
+                {
+                    "snp": snp,
+                    "chrom": str(chrom),
+                    "pos": int(float(pos_raw or 0)),
+                    "p_value": _coerce_float(p_raw, 1.0),
+                    "beta": _coerce_float(beta_raw, 0.0),
+                    "se": _coerce_float(se_raw, 1.0),
+                    "maf": _coerce_float(maf_raw, 0.0),
+                }
+            )
         except Exception:
             continue
 
@@ -194,9 +199,9 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
     # ── Step 10b: Extract genes and ranked list ────────────────────────────
     logger.info("Step 10b: Extracting hit genes and ranked gene list")
     from metainformant.ontology.annotation.annotate import (
+        build_background_from_vcf_genes,
         gwas_hits_to_genes,
         rank_genes_by_pvalue,
-        build_background_from_vcf_genes,
     )
 
     hit_genes = gwas_hits_to_genes(
@@ -210,8 +215,9 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
     )
     background_genes = build_background_from_vcf_genes(gene_annotations)
 
-    logger.info("  Hit genes: %d | Ranked list: %d | Background: %d",
-                len(hit_genes), len(ranked_genes), len(background_genes))
+    logger.info(
+        "  Hit genes: %d | Ranked list: %d | Background: %d", len(hit_genes), len(ranked_genes), len(background_genes)
+    )
 
     if not hit_genes:
         logger.info(
@@ -230,8 +236,9 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
     # GO-term → gene-product mapping.  Hit gene NCBI symbols are then mapped
     # to UniProt IDs and intersected with this mapping for ORA.
     logger.info(
-        "Step 10c: Building taxon-wide GO gene-set reference via QuickGO "
-        "(taxon_id=%d, aspects=%s)", taxon_id, go_aspects,
+        "Step 10c: Building taxon-wide GO gene-set reference via QuickGO " "(taxon_id=%d, aspects=%s)",
+        taxon_id,
+        go_aspects,
     )
     from metainformant.ontology.core.go_api import (
         build_taxon_go_gene_sets,
@@ -242,17 +249,19 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
     uniprot_hit_genes: list[str] = []
     try:
         # 1. Map NCBI gene symbols → UniProtKB accessions for hit genes
-        symbol_to_uniprot = map_symbols_to_uniprot(
-            hit_genes, taxon_id=taxon_id, rate_limit_s=rate_limit_s
-        )
-        uniprot_hit_genes = [
-            acc
-            for sym in hit_genes
-            for acc in symbol_to_uniprot.get(sym, [])
-        ]
+        symbol_to_uniprot = map_symbols_to_uniprot(hit_genes, taxon_id=taxon_id, rate_limit_s=rate_limit_s)
+        uniprot_hit_genes = []
+        for sym in hit_genes:
+            mapped = symbol_to_uniprot.get(sym, [])
+            if mapped:
+                uniprot_hit_genes.extend(mapped)
+            else:
+                uniprot_hit_genes.append(sym)
         logger.info(
             "  UniProt mapping: %d/%d hit genes mapped (%d UniProt accessions)",
-            len(symbol_to_uniprot), len(hit_genes), len(uniprot_hit_genes),
+            len(symbol_to_uniprot),
+            len(hit_genes),
+            len(uniprot_hit_genes),
         )
 
         # 2. Fetch all-taxon GO gene sets (paged, up to max_pages)
@@ -265,11 +274,13 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
         )
         logger.info(
             "  Taxon GO gene sets: %d GO terms, %d pages fetched",
-            len(gene_sets), max_go_pages,
+            len(gene_sets),
+            max_go_pages,
         )
 
         # 3. Explicitly fetch and merge annotations for our hit genes to ensure they aren't missed by pagination
         from metainformant.ontology.core.go_api import fetch_gene_go_annotations
+
         for uni_id in uniprot_hit_genes:
             try:
                 annots = fetch_gene_go_annotations(
@@ -303,10 +314,7 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
         query_genes = uniprot_hit_genes if uniprot_hit_genes else hit_genes
 
         # Filter GO gene sets by size
-        filtered_gs = {
-            k: v for k, v in gene_sets.items()
-            if min_set_size <= len(v) <= max_set_size
-        }
+        filtered_gs = {k: v for k, v in gene_sets.items() if min_set_size <= len(v) <= max_set_size}
 
         if not gene_sets:
             logger.info(
@@ -318,7 +326,9 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
             logger.info(
                 "  ORA skipped: 0 GO terms in size range [%d, %d] (got %d total terms "
                 "— increase max_go_pages in config to fetch more).",
-                min_set_size, max_set_size, len(gene_sets),
+                min_set_size,
+                max_set_size,
+                len(gene_sets),
             )
         else:
             active_gene_sets = {k: list(v) for k, v in filtered_gs.items()}
@@ -332,7 +342,10 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
             logger.info(
                 "  ORA: %d terms tested, %d significant (FDR<%.2f), "
                 "query genes=%d (UniProt), background from taxon gene sets",
-                len(ora_results), n_sig, fdr_threshold, len(query_genes),
+                len(ora_results),
+                n_sig,
+                fdr_threshold,
+                len(query_genes),
             )
 
     except Exception as exc:
@@ -354,8 +367,7 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
                 max_size=max_set_size,
             )
             n_sig_gsea = sum(1 for r in gsea_results if r.get("fdr", 1.0) < 0.25)
-            logger.info("  GSEA: %d gene sets tested, %d significant (FDR<0.25)",
-                        len(gsea_results), n_sig_gsea)
+            logger.info("  GSEA: %d gene sets tested, %d significant (FDR<0.25)", len(gsea_results), n_sig_gsea)
         else:
             logger.info("  GSEA: skipped (no ranked genes or gene sets)")
     except Exception as exc:
@@ -373,8 +385,12 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
                 gene_sets=active_gene_sets,
                 similarity_threshold=jaccard_threshold,
             )
-            logger.info("  Pathway network: %d nodes, %d edges, %d clusters",
-                        len(network["nodes"]), len(network["edges"]), len(network["clusters"]))
+            logger.info(
+                "  Pathway network: %d nodes, %d edges, %d clusters",
+                len(network["nodes"]),
+                len(network["edges"]),
+                len(network["clusters"]),
+            )
         else:
             logger.info("  Pathway network: no ORA results to build network from")
     except Exception as exc:
@@ -384,7 +400,7 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
     logger.info("Step 10g: HPO trait mapping for '%s'", hpo_phenotype)
     hpo_mapping: dict = {"phenotype": hpo_phenotype, "hp_ids": [], "terms": []}
     try:
-        from metainformant.ontology.core.hpo import map_phenotype_to_hpo, describe_hpo_terms
+        from metainformant.ontology.core.hpo import describe_hpo_terms, map_phenotype_to_hpo
 
         hp_ids = map_phenotype_to_hpo(hpo_phenotype, rate_limit_s=rate_limit_s)
         hpo_mapping["hp_ids"] = hp_ids
@@ -403,6 +419,7 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
     logger.info("Step 10h: Generating enrichment dotplot and pathway network plot")
     try:
         import matplotlib.pyplot as plt
+
         from metainformant.ontology.visualization.plots import enrichment_dotplot, pathway_network_plot
 
         # Enrichment dotplot
@@ -447,8 +464,16 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
 
     # ORA TSV
     if ora_results:
-        ora_fields = ["term_id", "term_name", "p_value", "adjusted_p", "odds_ratio",
-                      "n_genes", "n_overlap", "overlap_genes"]
+        ora_fields = [
+            "term_id",
+            "term_name",
+            "p_value",
+            "adjusted_p",
+            "odds_ratio",
+            "n_genes",
+            "n_overlap",
+            "overlap_genes",
+        ]
         ora_rows = []
         for r in ora_results:
             row = {k: r.get(k, "") for k in ora_fields}
@@ -459,8 +484,7 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
 
     # GSEA TSV
     if gsea_results:
-        gsea_fields = ["term_id", "term_name", "es", "nes", "p_value", "fdr",
-                       "leading_edge", "leading_edge_genes"]
+        gsea_fields = ["term_id", "term_name", "es", "nes", "p_value", "fdr", "leading_edge", "leading_edge_genes"]
         gsea_rows = []
         for r in gsea_results:
             row = {k: r.get(k, "") for k in gsea_fields}
@@ -502,11 +526,7 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
             "n_hp_ids": len(hpo_mapping.get("hp_ids", [])),
             "hp_ids": hpo_mapping.get("hp_ids", []),
         },
-        "outputs": [
-            str(p.relative_to(project_root))
-            for p in output_dir.iterdir()
-            if p.is_file()
-        ],
+        "outputs": [str(p.relative_to(project_root)) for p in output_dir.iterdir() if p.is_file()],
     }
 
     with open(output_dir / "ontology_summary.json", "w") as f:
@@ -514,7 +534,7 @@ def run_ontology_analysis(config: dict, phenotype: str, model: str, project_root
 
     print()
     print("=" * 60)
-    print(f"  Stage 10: ONTOLOGY ANALYSIS COMPLETE")
+    print("  Stage 10: ONTOLOGY ANALYSIS COMPLETE")
     print(f"  Phenotype : {phenotype} / {model}")
     print(f"  Hit genes : {summary['n_hit_genes']}")
     print(f"  GO terms  : {summary['n_go_terms_fetched']} fetched")

@@ -8,11 +8,10 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any, Dict, List, Optional
 
 from metainformant.core.data import validation
 from metainformant.core.utils import logging
-from metainformant.core import io
 
 from .types import Ontology, Relationship, Term, create_ontology, create_relationship, create_term
 
@@ -198,7 +197,7 @@ def _parse_term_stanza(stanza_lines: List[str]) -> Optional[Term]:
         xrefs=term_data.get("xrefs", []),
         is_obsolete=term_data.get("is_obsolete", False),
     )
-    
+
     if "alt_ids" in term_data:
         term.alt_ids = term_data["alt_ids"]
 

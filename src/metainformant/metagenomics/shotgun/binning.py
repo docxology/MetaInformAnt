@@ -17,10 +17,8 @@ from __future__ import annotations
 
 import itertools
 import math
-import os
-from collections import Counter, defaultdict
+from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -613,7 +611,6 @@ def assess_bin_quality(
 
             # Simplified marker detection: use hexamer signatures
             # In production, HMM profiles (HMMER) would be used
-            detected_markers: dict[str, int] = {}
             detected = _detect_markers_by_composition(combined_seq, genome_bin.total_length)
             genome_bin.marker_counts = detected
 
@@ -669,16 +666,16 @@ def _detect_markers_by_composition(sequence: str, total_length: int) -> dict[str
         return detected
 
     # Estimate number of expected ORFs (~1 gene per 1000 bp)
-    expected_genes = total_length / 1000
+    total_length / 1000
 
     # Marker gene probability based on genome completeness estimate
     # Average bacterial genome has ~3500 genes, we have 36 markers
-    marker_fraction = len(_BACTERIAL_MARKERS) / 3500
+    len(_BACTERIAL_MARKERS) / 3500
 
     # GC content can indicate genome completeness
     gc_count = sequence.count("G") + sequence.count("C")
     valid = sum(1 for c in sequence if c in "ACGT")
-    gc = gc_count / valid if valid > 0 else 0.5
+    gc_count / valid if valid > 0 else 0.5
 
     # K-mer complexity: high complexity indicates real genomic content
     kmer_k = 6
@@ -692,7 +689,7 @@ def _detect_markers_by_composition(sequence: str, total_length: int) -> dict[str
 
     # Estimate markers: combination of size and complexity
     base_detection_rate = min(1.0, total_length / 3_500_000)
-    adjusted_rate = base_detection_rate * min(1.0, complexity * 1.5)
+    base_detection_rate * min(1.0, complexity * 1.5)
 
     # Assign markers probabilistically based on sequence regions
     # Split sequence into windows and check for marker-like regions

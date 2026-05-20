@@ -1,7 +1,5 @@
 """Basic tests for ecology module functionality."""
 
-import pytest
-
 from metainformant.ecology.analysis import community
 
 

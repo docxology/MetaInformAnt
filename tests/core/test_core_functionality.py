@@ -6,18 +6,16 @@ Following the no-mocking policy - all tests use real implementations.
 
 from __future__ import annotations
 
-import json
 import tempfile
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import pytest
 
 # Test core modules
-from metainformant.core.io.io import dump_json, load_json, open_text_auto
+from metainformant.core.io.io import dump_json, load_json
 from metainformant.core.io.paths import expand_and_resolve, is_within
-from metainformant.core.utils.hash import sha256_bytes, sha256_file
+from metainformant.core.utils.hash import sha256_bytes
 from metainformant.core.utils.text import normalize_whitespace, slugify
 from metainformant.dna.alignment.distances import p_distance
 

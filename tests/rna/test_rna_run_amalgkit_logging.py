@@ -19,7 +19,7 @@ def test_run_amalgkit_writes_logs(tmp_path: Path):
         pytest.skip("amalgkit CLI not available; skipping run_amalgkit logging test")
 
     logs = tmp_path / "logs"
-    res = run_amalgkit(
+    run_amalgkit(
         "metadata",
         {"threads": 1},
         work_dir=tmp_path / "work",

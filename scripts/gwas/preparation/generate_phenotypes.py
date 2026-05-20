@@ -102,9 +102,9 @@ def generate_phenotypes(
 
     print("✓ Phenotype file written")
     print(f"  Samples: {n_samples}")
-    print(f"  Quantitative traits: 5")
-    print(f"  Binary traits: 2")
-    print(f"  Covariates: 3")
+    print("  Quantitative traits: 5")
+    print("  Binary traits: 2")
+    print("  Covariates: 3")
 
     # Print summary statistics
     print("\nTrait Summary Statistics:")

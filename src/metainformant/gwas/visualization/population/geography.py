@@ -116,9 +116,7 @@ def sample_map(
                 n_skipped += 1
 
         if n_skipped > 0:
-            logger.warning(
-                f"Skipped {n_skipped} samples with missing or invalid coordinates"
-            )
+            logger.warning(f"Skipped {n_skipped} samples with missing or invalid coordinates")
 
         if not plotable:
             logger.error("No samples with valid coordinates to plot")

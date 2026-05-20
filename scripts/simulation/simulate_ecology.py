@@ -21,7 +21,7 @@ import pandas as pd
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, logging, paths, validation
+from metainformant.core import io, logging, paths
 
 logger = logging.get_logger(__name__)
 
@@ -34,7 +34,7 @@ def simulate_abundance(
 ) -> dict:
     """Simulate species abundance matrix."""
     logger.info(f"Generating abundance matrix: {n_species} species x {n_samples} samples")
-    rng = random.Random(seed)
+    random.Random(seed)
     np.random.seed(seed)
 
     # Generate abundance data (log-normal distribution)
@@ -122,7 +122,7 @@ def simulate_environmental(
 ) -> dict:
     """Simulate environmental metadata."""
     logger.info(f"Generating environmental metadata: {n_samples} samples")
-    rng = random.Random(seed)
+    random.Random(seed)
     np.random.seed(seed)
 
     # Common environmental variables

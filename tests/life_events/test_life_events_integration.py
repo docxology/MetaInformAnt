@@ -8,12 +8,12 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.life_events.core.config import LifeEventsWorkflowConfig, load_life_events_config
 from metainformant.life_events.core.events import Event, EventSequence
 from metainformant.life_events.core.utils import sequence_embeddings
 from metainformant.life_events.models.embeddings import learn_event_embeddings
 from metainformant.life_events.models.predictor import EventSequencePredictor
 from metainformant.life_events.workflow.workflow import analyze_life_course
+from metainformant.ml.features.dimensionality import biological_embedding
 
 
 def test_integration_with_ml_module():
@@ -69,7 +69,6 @@ def test_integration_with_visualization_module():
     """Test integration with visualization module."""
     try:
         from metainformant.life_events.models.embeddings import learn_event_embeddings
-        from metainformant.life_events.visualization.statistical import plot_event_embeddings
     except ImportError:
         pytest.skip("Visualization integration not available")
 
@@ -190,9 +189,7 @@ model:
   model_type: embedding
   task_type: classification
   random_state: 42
-""".format(
-        work_dir=str(tmp_path / "work")
-    )
+""".format(work_dir=str(tmp_path / "work"))
     config_file.write_text(config_content)
 
     # Create sequences

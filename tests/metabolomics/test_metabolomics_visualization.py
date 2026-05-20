@@ -1,4 +1,5 @@
 """Tests for metabolomics visualization utilities."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -117,8 +118,7 @@ class TestDetectChromatographicPeaks:
 
     def test_multiple_peaks(self) -> None:
         x = np.linspace(0, 200, 400)
-        y = (500.0 * np.exp(-((x - 50) ** 2) / 50)
-             + 800.0 * np.exp(-((x - 150) ** 2) / 50))
+        y = 500.0 * np.exp(-((x - 50) ** 2) / 50) + 800.0 * np.exp(-((x - 150) ** 2) / 50)
         peaks = detect_chromatographic_peaks(x, y, min_intensity=50.0)
         assert len(peaks) >= 2
 

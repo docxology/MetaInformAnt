@@ -549,40 +549,40 @@ def tensor_decomposition(
     if T.ndim != 3:
         raise ValueError(f"Tensor must be 3-D, got {T.ndim}-D")
 
-    I, J, K = T.shape
+    n_rows, n_cols, n_layers = T.shape
     rng = np.random.RandomState(42)
 
     # Initialise factor matrices
-    A = rng.randn(I, rank).astype(np.float64)
-    B = rng.randn(J, rank).astype(np.float64)
-    C = rng.randn(K, rank).astype(np.float64)
+    A = rng.randn(n_rows, rank).astype(np.float64)
+    B = rng.randn(n_cols, rank).astype(np.float64)
+    C = rng.randn(n_layers, rank).astype(np.float64)
 
     # Unfold the tensor along each mode
     # Mode-0 unfolding: (I, J*K)
-    T0 = T.reshape(I, J * K)
+    T0 = T.reshape(n_rows, n_cols * n_layers)
     # Mode-1 unfolding: (J, I*K)
-    T1 = T.transpose(1, 0, 2).reshape(J, I * K)
+    T1 = T.transpose(1, 0, 2).reshape(n_cols, n_rows * n_layers)
     # Mode-2 unfolding: (K, I*J)
-    T2 = T.transpose(2, 0, 1).reshape(K, I * J)
+    T2 = T.transpose(2, 0, 1).reshape(n_layers, n_rows * n_cols)
 
     T_norm_sq = float(np.sum(T**2))
     eps = 1e-10
 
     for iteration in range(1, max_iter + 1):
         # Update A: T_(0) ~ A (C khatri-rao B)^T
-        CB = np.zeros((J * K, rank), dtype=np.float64)
+        CB = np.zeros((n_cols * n_layers, rank), dtype=np.float64)
         for r in range(rank):
             CB[:, r] = np.kron(C[:, r], B[:, r])
         A = np.linalg.lstsq(CB.T @ CB + eps * np.eye(rank), CB.T @ T0.T, rcond=None)[0].T
 
         # Update B: T_(1) ~ B (C khatri-rao A)^T
-        CA = np.zeros((I * K, rank), dtype=np.float64)
+        CA = np.zeros((n_rows * n_layers, rank), dtype=np.float64)
         for r in range(rank):
             CA[:, r] = np.kron(C[:, r], A[:, r])
         B = np.linalg.lstsq(CA.T @ CA + eps * np.eye(rank), CA.T @ T1.T, rcond=None)[0].T
 
         # Update C: T_(2) ~ C (B khatri-rao A)^T
-        BA = np.zeros((I * J, rank), dtype=np.float64)
+        BA = np.zeros((n_rows * n_cols, rank), dtype=np.float64)
         for r in range(rank):
             BA[:, r] = np.kron(B[:, r], A[:, r])
         C = np.linalg.lstsq(BA.T @ BA + eps * np.eye(rank), BA.T @ T2.T, rcond=None)[0].T

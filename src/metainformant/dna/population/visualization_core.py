@@ -9,7 +9,7 @@ bootstrap distribution.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -92,9 +92,8 @@ def plot_tajima_d_distribution(tajima_d_values: List[float], output_file: Option
     """
     try:
         import matplotlib.pyplot as plt
-        import seaborn as sns
     except ImportError:
-        logger.warning("matplotlib and/or seaborn not available for plotting")
+        logger.warning("matplotlib not available for plotting")
         return None
 
     plt.figure(figsize=(10, 6))
@@ -175,7 +174,6 @@ def plot_population_diversity(
         >>> diversity = {"pop1": 0.01, "pop2": 0.015, "pop3": 0.008}
         >>> plot = plot_population_diversity(diversity)
     """
-    output = output_file or output_path
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -282,7 +280,6 @@ def plot_population_structure(
     """
     try:
         import matplotlib.pyplot as plt
-        from mpl_toolkits.mplot3d import Axes3D
     except ImportError:
         logger.warning("matplotlib not available for plotting")
         return None
@@ -398,7 +395,6 @@ def create_population_summary_plot(
     """
     try:
         import matplotlib.pyplot as plt
-        import numpy as np
     except ImportError:
         logger.warning("matplotlib not available for plotting")
         return None

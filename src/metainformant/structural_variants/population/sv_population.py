@@ -193,7 +193,7 @@ def sv_allele_frequency(
         unique_pops = sorted(set(sample_labels))
 
         for pop in unique_pops:
-            pop_indices = [i for i, l in enumerate(sample_labels) if l == pop]
+            pop_indices = [i for i, label in enumerate(sample_labels) if label == pop]
             if not pop_indices:
                 pop_freqs[pop] = [0.0] * n_svs
                 continue

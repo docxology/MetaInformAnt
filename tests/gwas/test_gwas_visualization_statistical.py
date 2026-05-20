@@ -4,9 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import numpy as np
-import pytest
-
 from metainformant.gwas.visualization.statistical.statistical import (
     lambda_gc_plot,
     power_plot,

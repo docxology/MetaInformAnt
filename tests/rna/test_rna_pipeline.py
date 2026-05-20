@@ -7,8 +7,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from metainformant.rna.engine.pipeline import RNAPipelineConfig, summarize_curate_tables
 
 

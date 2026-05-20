@@ -10,6 +10,22 @@ This module re-exports all public symbols from :mod:`graph_core` and
 
 from __future__ import annotations
 
+from metainformant.networks.analysis.graph_algorithms import (
+    centrality_measures,
+    export_network,
+    extract_subgraph,
+    filter_network,
+    get_connected_components,
+    import_network,
+    network_intersection,
+    network_metrics,
+    network_similarity,
+    network_union,
+    remove_edge,
+    remove_node,
+    shortest_paths,
+    subgraph,
+)
 from metainformant.networks.analysis.graph_core import (
     BiologicalNetwork,
     add_edge_attributes,
@@ -29,20 +45,6 @@ from metainformant.networks.analysis.graph_core import (
     remove_isolated_nodes,
     save_network,
     validate_network,
-)
-from metainformant.networks.analysis.graph_algorithms import (
-    centrality_measures,
-    export_network,
-    extract_subgraph,
-    filter_network,
-    get_connected_components,
-    import_network,
-    network_intersection,
-    network_metrics,
-    network_similarity,
-    network_union,
-    shortest_paths,
-    subgraph,
 )
 
 __all__ = [
@@ -77,6 +79,8 @@ __all__ = [
     "get_connected_components",
     "network_union",
     "network_intersection",
+    "remove_node",
+    "remove_edge",
     "centrality_measures",
     "shortest_paths",
 ]

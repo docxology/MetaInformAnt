@@ -238,13 +238,13 @@ def coerce_config_types(config: dict[str, Any], type_map: dict[str, type]) -> di
             value = result[key]
             if value is not None and not isinstance(value, expected_type):
                 try:
-                    if expected_type == bool:
+                    if expected_type is bool:
                         result[key] = str(value).lower() in {"1", "true", "yes", "y", "on"}
-                    elif expected_type == int:
+                    elif expected_type is int:
                         result[key] = int(value)
-                    elif expected_type == float:
+                    elif expected_type is float:
                         result[key] = float(value)
-                    elif expected_type == str:
+                    elif expected_type is str:
                         result[key] = str(value)
                 except (ValueError, TypeError) as e:
                     raise ValueError(f"Cannot coerce {key}={value!r} to {expected_type.__name__}: {e}") from e

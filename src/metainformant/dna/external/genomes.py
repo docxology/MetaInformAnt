@@ -6,18 +6,14 @@ accessions, and retrieving genome metadata from NCBI and other sources.
 
 from __future__ import annotations
 
-import json
 import re
-import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 import requests
 
-from metainformant.core.io import paths
 from metainformant.core.utils import logging
-from metainformant.core import io
 
 logger = logging.get_logger(__name__)
 
@@ -423,7 +419,7 @@ def get_chromosome_lengths(accession: str, email: str | None = None) -> Dict[str
 
             if ftp_path:
                 # Parse assembly stats from report file if available
-                logger.info(f"Assembly found, fetching sequence lengths...")
+                logger.info("Assembly found, fetching sequence lengths...")
 
                 # Alternative: Get sequences directly from nucleotide database
                 # Search for sequences belonging to this assembly

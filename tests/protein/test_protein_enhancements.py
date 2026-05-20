@@ -7,10 +7,8 @@ new visualizations, orchestration workflows, and utility functions.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict
 
 import numpy as np
-import pytest
 
 # ---------------------------------------------------------------------------
 # DSSP Parser Tests
@@ -265,7 +263,7 @@ class TestHelicalWheel:
         from metainformant.protein.visualization.general import plot_helical_wheel
 
         out = tmp_path / "wheel.png"
-        ax = plot_helical_wheel("AKLVFEQHIND", output_path=out)
+        plot_helical_wheel("AKLVFEQHIND", output_path=out)
         assert out.exists()
         import matplotlib.pyplot as plt
 
@@ -308,7 +306,7 @@ class TestMSAHeatmap:
         from metainformant.protein.visualization.general import plot_msa_heatmap
 
         out = tmp_path / "msa.png"
-        ax = plot_msa_heatmap(["AKLV", "EKLV"], output_path=out)
+        plot_msa_heatmap(["AKLV", "EKLV"], output_path=out)
         assert out.exists()
         import matplotlib.pyplot as plt
 
@@ -339,7 +337,7 @@ class TestPropertyDistribution:
 
         out = tmp_path / "dist.png"
         props = {"values": [1.0, 2.0, 3.0, 4.0]}
-        ax = plot_property_distribution(props, output_path=out)
+        plot_property_distribution(props, output_path=out)
         assert out.exists()
         import matplotlib.pyplot as plt
 
@@ -354,7 +352,7 @@ class TestPropertyDistribution:
 def _write_test_pdb(path: Path, *, n_residues: int = 10, chain: str = "A") -> None:
     """Write a minimal PDB file for testing."""
     lines = []
-    lines.append(f"HEADER    TEST STRUCTURE")
+    lines.append("HEADER    TEST STRUCTURE")
     serial = 1
     for i in range(1, n_residues + 1):
         x = float(i * 3.8)

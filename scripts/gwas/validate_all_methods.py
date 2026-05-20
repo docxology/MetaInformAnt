@@ -20,11 +20,11 @@ Exercises ALL GWAS methods sequentially to verify complete coverage:
  16. Metadata loading/validation
  17. Visualizations
 """
+
 from __future__ import annotations
 
 import sys
 import time
-import traceback
 from pathlib import Path
 
 # Add project to path
@@ -76,7 +76,7 @@ def main() -> int:
     start = time.time()
 
     # Compute expected sample count from config
-    from run_amellifera_gwas import DEFAULT_SUBSPECIES, load_data_generation_config
+    from run_amellifera_gwas import load_data_generation_config
 
     dg = load_data_generation_config()
     dg["scale_factor"] = args.scale_factor
@@ -212,10 +212,10 @@ def main() -> int:
     genotypes_all = filtered_data.get("genotypes", [])
     if genotypes_all and diploid_indices:
         genotypes_diploid = [genotypes_all[i] for i in diploid_indices]
-        samples_diploid = [filtered_data["samples"][i] for i in diploid_indices]
+        [filtered_data["samples"][i] for i in diploid_indices]
     else:
         genotypes_diploid = genotypes_all
-        samples_diploid = filtered_data.get("samples", [])
+        filtered_data.get("samples", [])
 
     n_dip = len(genotypes_diploid)
     n_var = len(genotypes_diploid[0]) if genotypes_diploid else 0
@@ -472,7 +472,7 @@ def main() -> int:
     # 12. Heritability Estimation
     # =========================================================================
     print("\n--- 12. HERITABILITY ---")
-    from metainformant.gwas.analysis.heritability import estimate_heritability, partition_heritability_by_chromosome
+    from metainformant.gwas.analysis.heritability import estimate_heritability
 
     try:
         if vanraden_km:
@@ -735,7 +735,6 @@ def main() -> int:
 
         from metainformant.gwas.visualization.interactive.composite import (
             gwas_summary_panel,
-            population_structure_panel,
         )
 
         pca_for_panel = pca_result if pca_result and pca_result.get("status") == "success" else None

@@ -11,6 +11,14 @@ This is a re-export module that aggregates the public API from:
 
 from __future__ import annotations
 
+# Backward compatibility aliases
+from metainformant.rna.engine.workflow_cleanup import (
+    check_disk_space,
+    check_disk_space_or_fail,
+    cleanup_incorrectly_placed_sra_files,
+    cleanup_temp_files,
+)
+
 # Re-export core classes and config functions
 from metainformant.rna.engine.workflow_core import (
     AmalgkitWorkflowConfig,
@@ -23,11 +31,16 @@ from metainformant.rna.engine.workflow_core import (
     validate_workflow_outputs,
 )
 
+# Re-export execution functions
+from metainformant.rna.engine.workflow_execution import (
+    execute_workflow,
+    run_config_based_workflow,
+)
+
 # Re-export planning functions
 from metainformant.rna.engine.workflow_planning import (
     _is_step_completed,
     _log_getfastq_summary,
-    _log_heartbeat,
     apply_step_defaults,
     create_extraction_metadata,
     plan_workflow,
@@ -36,20 +49,6 @@ from metainformant.rna.engine.workflow_planning import (
     prepare_reference_genome,
     sanitize_params_for_cli,
     verify_getfastq_prerequisites,
-)
-
-# Re-export execution functions
-from metainformant.rna.engine.workflow_execution import (
-    execute_workflow,
-    run_config_based_workflow,
-)
-
-# Backward compatibility aliases
-from metainformant.rna.engine.workflow_cleanup import (
-    check_disk_space,
-    check_disk_space_or_fail,
-    cleanup_incorrectly_placed_sra_files,
-    cleanup_temp_files,
 )
 
 _cleanup_incorrectly_placed_sra_files = cleanup_incorrectly_placed_sra_files
@@ -77,6 +76,8 @@ __all__ = [
     "create_extraction_metadata",
     "verify_getfastq_prerequisites",
     "sanitize_params_for_cli",
+    "_is_step_completed",
+    "_log_getfastq_summary",
     # Execution functions
     "execute_workflow",
     "run_config_based_workflow",

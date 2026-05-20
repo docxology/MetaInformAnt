@@ -6,11 +6,6 @@ No mocking used - all tests use real computational methods and data.
 
 from __future__ import annotations
 
-from typing import Dict, List, Set
-
-import numpy as np
-import pytest
-
 from metainformant.networks.analysis.graph import BiologicalNetwork
 from metainformant.networks.analysis.pathway import (
     PathwayNetwork,
@@ -240,7 +235,7 @@ class TestPathwayEnrichment:
         self.test_gene_set = (
             [f"CELL_CYCLE_GENE_{i}" for i in range(6)]
             + [f"APOPTOSIS_GENE_{i}" for i in range(2)]
-            + [f"METABOLISM_GENE_0"]
+            + ["METABOLISM_GENE_0"]
         )
 
     def test_pathway_enrichment_basic(self):

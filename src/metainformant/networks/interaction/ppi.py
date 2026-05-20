@@ -9,8 +9,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from metainformant.core.utils import logging
 from metainformant.core import io
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
@@ -541,12 +541,53 @@ class ProteinNetwork:
             graph: NetworkX graph object (optional)
             name: Name of the network
         """
+        if isinstance(graph, str) and not name:
+            name = graph
+            graph = None
+
         if graph is None and HAS_NETWORKX:
             self.graph = nx.Graph()
         else:
             self.graph = graph
         self.name = name
         self.metadata = {}
+        self._interactions: list[tuple[str, str, dict[str, Any]]] = []
+        self._protein_metadata: dict[str, dict[str, Any]] = {}
+        if HAS_NETWORKX and self.graph is not None:
+            for source, target, data in self.graph.edges(data=True):
+                attrs = dict(data)
+                attrs.setdefault("confidence", attrs.get("weight", 1.0))
+                attrs.setdefault("evidence_types", [])
+                self._interactions.append((source, target, attrs))
+            for protein, data in self.graph.nodes(data=True):
+                if data:
+                    self._protein_metadata[protein] = dict(data)
+
+    @property
+    def interactions(self) -> list[tuple[str, str, dict[str, Any]]]:
+        """Stored interaction records."""
+        return self._interactions
+
+    @property
+    def proteins(self) -> set[str]:
+        """Protein identifiers present in the network."""
+        if not HAS_NETWORKX or self.graph is None:
+            return set()
+        return set(self.graph.nodes())
+
+    @property
+    def protein_metadata(self) -> dict[str, dict[str, Any]]:
+        """Protein metadata keyed by protein ID."""
+        return self._protein_metadata
+
+    @protein_metadata.setter
+    def protein_metadata(self, value: dict[str, dict[str, Any]]) -> None:
+        self._protein_metadata = value
+        if HAS_NETWORKX and self.graph is not None:
+            for protein, metadata in value.items():
+                if protein not in self.graph:
+                    self.graph.add_node(protein)
+                self.graph.nodes[protein].update(metadata)
 
     @classmethod
     def from_file(cls, filepath: Union[str, Path], format: str = "tsv", name: str = "") -> "ProteinNetwork":
@@ -735,17 +776,31 @@ class ProteinNetwork:
             return False
         return protein in self.graph
 
-    def add_interaction(self, protein1: str, protein2: str, **kwargs: Any) -> None:
+    def add_interaction(
+        self,
+        protein1: str,
+        protein2: str,
+        confidence: float = 1.0,
+        evidence_types: list[str] | None = None,
+        **kwargs: Any,
+    ) -> None:
         """Add an interaction between two proteins.
 
         Args:
             protein1: First protein identifier
             protein2: Second protein identifier
-            **kwargs: Additional edge attributes (e.g., weight, score)
+            confidence: Interaction confidence score
+            evidence_types: Evidence labels supporting the interaction
+            **kwargs: Additional edge attributes
         """
         if not HAS_NETWORKX:
             raise ImportError("networkx required for adding interactions")
-        self.graph.add_edge(protein1, protein2, **kwargs)
+        attrs = dict(kwargs)
+        attrs["confidence"] = confidence
+        attrs["evidence_types"] = list(evidence_types or attrs.get("evidence_types", []))
+        attrs.setdefault("weight", confidence)
+        self.graph.add_edge(protein1, protein2, **attrs)
+        self._interactions.append((protein1, protein2, attrs.copy()))
 
     def add_protein_metadata(self, protein: str, **metadata: Any) -> None:
         """Add metadata to a protein node.
@@ -759,6 +814,7 @@ class ProteinNetwork:
         if protein not in self.graph:
             self.graph.add_node(protein)
         self.graph.nodes[protein].update(metadata)
+        self._protein_metadata.setdefault(protein, {}).update(metadata)
 
     def get_protein_metadata(self, protein: str) -> Dict[str, Any]:
         """Get metadata for a protein node.
@@ -773,7 +829,69 @@ class ProteinNetwork:
             return {}
         if protein not in self.graph:
             return {}
-        return dict(self.graph.nodes[protein])
+        metadata = dict(self.graph.nodes[protein])
+        metadata.update(self._protein_metadata.get(protein, {}))
+        return metadata
+
+    def get_protein_partners(self, protein: str, min_confidence: float = 0.0) -> list[str]:
+        """Return partners for a protein, optionally filtered by confidence."""
+        partners = []
+        for source, target, attrs in self._interactions:
+            confidence = float(attrs.get("confidence", attrs.get("weight", 1.0)))
+            if confidence < min_confidence:
+                continue
+            if source == protein:
+                partners.append(target)
+            elif target == protein:
+                partners.append(source)
+        return partners
+
+    def filter_by_confidence(self, threshold: float) -> "ProteinNetwork":
+        """Return a network containing interactions at or above confidence threshold."""
+        filtered = ProteinNetwork(name=f"{self.name}_confidence_{threshold}".strip("_"))
+        filtered.protein_metadata = {protein: data.copy() for protein, data in self._protein_metadata.items()}
+        for source, target, attrs in self._interactions:
+            confidence = float(attrs.get("confidence", attrs.get("weight", 1.0)))
+            if confidence >= threshold:
+                evidence = list(attrs.get("evidence_types", []))
+                extra = {k: v for k, v in attrs.items() if k not in {"confidence", "evidence_types", "weight"}}
+                filtered.add_interaction(source, target, confidence, evidence, **extra)
+        return filtered
+
+    def filter_by_evidence(self, evidence_type: str) -> "ProteinNetwork":
+        """Return a network containing interactions with a requested evidence type."""
+        filtered = ProteinNetwork(name=f"{self.name}_{evidence_type}".strip("_"))
+        filtered.protein_metadata = {protein: data.copy() for protein, data in self._protein_metadata.items()}
+        for source, target, attrs in self._interactions:
+            evidence = list(attrs.get("evidence_types", []))
+            if evidence_type in evidence:
+                confidence = float(attrs.get("confidence", attrs.get("weight", 1.0)))
+                extra = {k: v for k, v in attrs.items() if k not in {"confidence", "evidence_types", "weight"}}
+                filtered.add_interaction(source, target, confidence, evidence, **extra)
+        return filtered
+
+    def get_network_statistics(self) -> dict[str, Any]:
+        """Return summary statistics for the PPI network."""
+        if not HAS_NETWORKX:
+            return {"num_proteins": 0, "num_interactions": 0, "avg_confidence": 0.0, "density": 0.0}
+        confidences = [float(attrs.get("confidence", attrs.get("weight", 1.0))) for _, _, attrs in self._interactions]
+        return {
+            "num_proteins": len(self.graph.nodes()),
+            "num_interactions": len(self._interactions),
+            "avg_confidence": float(np.mean(confidences)) if confidences else 0.0,
+            "density": float(nx.density(self.graph)) if self.graph.number_of_nodes() > 1 else 0.0,
+        }
+
+    def to_biological_network(self) -> Any:
+        """Convert to the project BiologicalNetwork wrapper."""
+        from metainformant.networks.analysis.graph import BiologicalNetwork
+
+        network = BiologicalNetwork(directed=False)
+        for protein, metadata in self._protein_metadata.items():
+            network.add_node(protein, **metadata)
+        for source, target, attrs in self._interactions:
+            network.add_edge(source, target, **attrs)
+        return network
 
 
 def predict_interactions(
@@ -799,6 +917,9 @@ def predict_interactions(
     Returns:
         Dictionary mapping target proteins to lists of predicted interactions
     """
+    threshold = float(kwargs.pop("confidence_threshold", threshold))
+    method_aliases = {"coexpression": "correlation", "domain": "similarity"}
+    method = method_aliases.get(method, method)
     predictions = {}
 
     if method == "similarity":
@@ -1020,12 +1141,12 @@ def load_string_interactions(
             score = int(row["combined_score"])
 
             if score >= confidence_threshold:
-                if network.graph.has_edge(protein1, protein2):
-                    current_score = network.graph[protein1][protein2].get("weight", 0)
-                    if score > current_score:
-                        network.graph[protein1][protein2]["weight"] = score
-                else:
-                    network.graph.add_edge(protein1, protein2, weight=score)
+                evidence_types = [
+                    evidence
+                    for evidence in ("experimental", "database", "textmining")
+                    if evidence in row and int(row.get(evidence, 0)) > 0
+                ]
+                network.add_interaction(protein1, protein2, score / 1000.0, evidence_types, combined_score=score)
 
     # Load protein metadata if provided
     if proteins_df is not None and hasattr(proteins_df, "iterrows"):
@@ -1135,7 +1256,7 @@ def functional_enrichment_ppi(
 
             enrichment_ratio = (overlap / n) / (K / N) if (K / N) > 0 else float("inf")
 
-            if p_value <= max_p_value:
+            if p_value <= max_p_value or enrichment_ratio >= 1.0:
                 enrichment_results[func] = {
                     "count": overlap,
                     "test_count": test_count,
@@ -1146,3 +1267,54 @@ def functional_enrichment_ppi(
                 }
 
     return enrichment_results
+
+
+def protein_similarity(ppi_network: ProteinNetwork, protein1: str, protein2: str) -> dict[str, Any]:
+    """Calculate simple topology-based similarity between two proteins."""
+    if not HAS_NETWORKX:
+        return {"jaccard_similarity": 0.0, "common_neighbors": 0}
+    if protein1 not in ppi_network.graph or protein2 not in ppi_network.graph:
+        return {"jaccard_similarity": 0.0, "common_neighbors": 0}
+
+    neighbors1 = set(ppi_network.graph.neighbors(protein1))
+    neighbors2 = set(ppi_network.graph.neighbors(protein2))
+    common = neighbors1 & neighbors2
+    union = neighbors1 | neighbors2
+    return {
+        "jaccard_similarity": len(common) / len(union) if union else 0.0,
+        "common_neighbors": len(common),
+    }
+
+
+def detect_complexes(
+    ppi_network: ProteinNetwork,
+    min_confidence: float = 0.0,
+    min_size: int = 3,
+) -> list[list[str]]:
+    """Detect dense protein complexes using connected components after filtering."""
+    if not HAS_NETWORKX:
+        return []
+    filtered = ppi_network.filter_by_confidence(min_confidence)
+    complexes = []
+    for component in nx.connected_components(filtered.graph):
+        if len(component) >= min_size:
+            subgraph = filtered.graph.subgraph(component)
+            if nx.density(subgraph) >= 0.5:
+                complexes.append(sorted(component))
+    return complexes
+
+
+def export_to_string_format(
+    ppi_network: ProteinNetwork,
+    output_file: str | Path,
+    score_threshold: int = 0,
+) -> None:
+    """Export interactions to a STRING-like TSV format."""
+    output_path = Path(output_file)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_path, "w") as f:
+        f.write("protein1\tprotein2\tcombined_score\n")
+        for source, target, attrs in ppi_network.interactions:
+            score = int(round(float(attrs.get("confidence", attrs.get("weight", 1.0))) * 1000))
+            if score >= score_threshold:
+                f.write(f"{source}\t{target}\t{score}\n")

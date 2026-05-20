@@ -17,9 +17,7 @@ class TestAmalgkitIntegration:
         self.test_dir = Path("output/test_amalgkit_integration")
         self.test_dir.mkdir(parents=True, exist_ok=True)
         self.work_dir = self.test_dir / "work"
-        self.params = amalgkit.AmalgkitParams(
-            work_dir=self.work_dir, threads=4, species_list=["A", "B"]
-        )
+        self.params = amalgkit.AmalgkitParams(work_dir=self.work_dir, threads=4, species_list=["A", "B"])
 
     def test_check_cli_available_real(self):
         """Test CLI availability checking using actual environment."""
@@ -37,10 +35,10 @@ class TestAmalgkitIntegration:
         # Valid cases
         valid, msg = amalgkit.parse_and_check_version("amalgkit 0.4.0", "0.4.0")
         assert valid, f"Should be valid: {msg}"
-        
+
         valid, msg = amalgkit.parse_and_check_version("amalgkit 0.5.0", "0.4.0")
         assert valid
-        
+
         valid, msg = amalgkit.parse_and_check_version("amalgkit 1.0.0", "0.4.0")
         assert valid
 
@@ -67,7 +65,7 @@ class TestAmalgkitIntegration:
         dummy_dir = tmp_path / "bin"
         dummy_dir.mkdir()
         dummy_script = dummy_dir / "amalgkit"
-        
+
         # Write a script that behaves like amalgkit --version
         with open(dummy_script, "w") as f:
             f.write("#!/bin/sh\n")
@@ -76,19 +74,20 @@ class TestAmalgkitIntegration:
             f.write('elif [ "$1" = "--help" ]; then\n')
             f.write('  echo "Usage: amalgkit ..."\n')
             f.write("fi\n")
-            
+
         dummy_script.chmod(0o755)
-        
+
         # Modify PATH to include dummy script
         import os
+
         old_path = os.environ.get("PATH", "")
         new_path = f"{dummy_dir}:{old_path}"
-        
+
         monkeypatch.setenv("PATH", new_path)
-            
+
         # Should invoke our dummy script
         success, msg, info = amalgkit.ensure_cli_available(min_version="0.4.0")
-        
+
         assert success
         assert info["valid"] is True
         assert info["version"] == "0.5.0"
@@ -609,7 +608,7 @@ def test_curate_summary_counts_from_fixture(tmp_path: Path):
     from metainformant.rna.engine.pipeline import summarize_curate_tables
 
     # Use repo test data under tests/data/rna/curate/Apis_mellifera/tables
-    repo_root = Path(__file__).resolve().parents[1]
+    repo_root = Path(__file__).resolve().parents[2]
     tables_dir = repo_root / "tests" / "data" / "rna" / "curate" / "Apis_mellifera" / "tables"
 
     counts = summarize_curate_tables(tables_dir)

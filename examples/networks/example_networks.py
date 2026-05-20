@@ -49,7 +49,8 @@ def main():
         "network_stats": {
             "nodes": network.number_of_nodes(),
             "edges": network.number_of_edges(),
-            "average_degree": sum(len(list(network.neighbors(node))) for node in network.nodes) / network.number_of_nodes(),
+            "average_degree": sum(len(list(network.neighbors(node))) for node in network.nodes)
+            / network.number_of_nodes(),
         },
         "centrality_measures": centrality,
     }

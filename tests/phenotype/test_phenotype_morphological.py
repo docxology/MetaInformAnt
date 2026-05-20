@@ -2,6 +2,7 @@
 
 NO MOCKING POLICY: All tests use real implementations.
 """
+
 from __future__ import annotations
 
 import math
@@ -17,7 +18,6 @@ from metainformant.phenotype.morphological.profile import (
     compare_profiles,
     summary_statistics,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

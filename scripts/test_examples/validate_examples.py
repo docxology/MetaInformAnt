@@ -17,10 +17,9 @@ from __future__ import annotations
 
 import argparse
 import ast
-import importlib.util
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List
 
 
 class ExampleValidator:

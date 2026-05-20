@@ -7,13 +7,12 @@ extracting metadata, and generating menu structures from discovered scripts.
 from __future__ import annotations
 
 import ast
-import re
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .navigation import Menu, MenuItem
+    from metainformant.menu.ui.navigation import Menu, MenuItem
 
 
 @dataclass
@@ -226,7 +225,7 @@ def generate_menu_from_scripts(scripts: dict[str, list[ScriptInfo]]) -> dict[str
     Returns:
         Dictionary mapping menu ID to Menu object
     """
-    from .navigation import Menu, MenuItem
+    from metainformant.menu.ui.navigation import Menu, MenuItem
 
     menus: dict[str, Menu] = {}
 
@@ -251,11 +250,10 @@ def generate_menu_from_scripts(scripts: dict[str, list[ScriptInfo]]) -> dict[str
         menu_items: list[MenuItem] = []
 
         for script_info in script_list:
-            script_name = script_info.name.replace("_", " ").title()
             menu_items.append(
                 MenuItem(
                     id=f"script_{script_info.path.stem}",
-                    label=script_name,
+                    label=script_info.name,
                     description=script_info.description,
                     action=f"script:{script_info.path}",
                 )

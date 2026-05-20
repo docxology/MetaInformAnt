@@ -105,9 +105,7 @@ def detect_doublets(
     scores = _knn_doublet_scores(pca_coords, is_synthetic, k, n_cells)
 
     # Synthetic scores for calibration
-    synthetic_scores = _knn_doublet_scores(
-        pca_coords, is_synthetic, k, n_cells, score_synthetic=True
-    )
+    synthetic_scores = _knn_doublet_scores(pca_coords, is_synthetic, k, n_cells, score_synthetic=True)
 
     # Threshold: find score that yields expected doublet rate
     sorted_scores = np.sort(scores)

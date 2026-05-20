@@ -201,9 +201,7 @@ def partition_heritability_by_chromosome(
             per_chromosome[str(chrom)] = {"h2": chr_h2, "h2_se": chr_se}
             total_h2 += chr_h2
         else:
-            logger.warning(
-                f"Chromosome {chrom} estimation failed: {result.get('message', 'unknown')}"
-            )
+            logger.warning(f"Chromosome {chrom} estimation failed: {result.get('message', 'unknown')}")
             per_chromosome[str(chrom)] = {"h2": 0.0, "h2_se": 0.0}
 
     # Cap total h2 at 1.0 (sum of independent estimates can exceed 1)

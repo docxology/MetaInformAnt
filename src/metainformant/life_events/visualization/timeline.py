@@ -59,8 +59,8 @@ def plot_event_timeline(
     events = sorted(events, key=lambda x: x.timestamp)
 
     # Plot events
-    dates = [event.timestamp for event in events]
-    event_types = [event.event_type for event in events]
+    [event.timestamp for event in events]
+    [event.event_type for event in events]
 
     # Create scatter plot with different colors for domains
     domains = [event.domain for event in events] if hasattr(events[0], "domain") else ["default"] * len(events)
@@ -117,6 +117,7 @@ def plot_domain_distribution(
     output_path: Optional[str] = None,
     figsize: tuple[int, int] = (12, 6),
     title: str = "Event Domain Distribution",
+    plot_type: str = "both",
 ) -> Optional[Any]:
     """Plot distribution of event domains across sequences.
 
@@ -147,20 +148,29 @@ def plot_domain_distribution(
 
     domains, counts = zip(*domain_counts.items())
 
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
+    if plot_type == "bar":
+        fig, ax1 = plt.subplots(figsize=figsize)
+        ax2 = None
+    elif plot_type == "pie":
+        fig, ax2 = plt.subplots(figsize=figsize)
+        ax1 = None
+    else:
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
 
     # Bar plot
-    bars = ax1.bar(range(len(domains)), counts, color="lightcoral", alpha=0.7)
-    ax1.set_xticks(range(len(domains)))
-    ax1.set_xticklabels(domains, rotation=45, ha="right")
-    ax1.set_ylabel("Count")
-    ax1.set_title("Domain Counts")
-    ax1.grid(True, alpha=0.3)
+    if ax1 is not None:
+        ax1.bar(range(len(domains)), counts, color="lightcoral", alpha=0.7)
+        ax1.set_xticks(range(len(domains)))
+        ax1.set_xticklabels(domains, rotation=45, ha="right")
+        ax1.set_ylabel("Count")
+        ax1.set_title("Domain Counts")
+        ax1.grid(True, alpha=0.3)
 
     # Pie chart
-    ax2.pie(counts, labels=domains, autopct="%1.1f%%", startangle=90)
-    ax2.set_title("Domain Proportions")
-    ax2.axis("equal")
+    if ax2 is not None:
+        ax2.pie(counts, labels=domains, autopct="%1.1f%%", startangle=90)
+        ax2.set_title("Domain Proportions")
+        ax2.axis("equal")
 
     fig.suptitle(title, fontsize=14)
 
@@ -380,7 +390,7 @@ def plot_temporal_patterns(
     if all_timestamps:
         min_time = min(all_timestamps)
         max_time = max(all_timestamps)
-        time_range = max_time - min_time
+        max_time - min_time
 
         for i, seq in enumerate(sequences):
             seq_color = colors[i]

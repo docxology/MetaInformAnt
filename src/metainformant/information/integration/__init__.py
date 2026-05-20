@@ -8,18 +8,18 @@ from __future__ import annotations
 
 from .integration import (
     dna_integration,
+    ml_integration,
+    multiomics_integration,
     rna_integration,
     singlecell_integration,
-    multiomics_integration,
-    ml_integration,
 )
 from .networks import (
-    network_entropy,
+    information_community_detection,
     information_flow,
+    information_graph_distance,
+    network_entropy,
     network_information_centrality,
     network_motif_information,
-    information_graph_distance,
-    information_community_detection,
 )
 
 __all__ = [

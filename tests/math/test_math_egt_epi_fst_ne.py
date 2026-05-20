@@ -17,8 +17,8 @@ def test_replicator_step_and_derivative():
 
 
 def test_sir_and_r0():
-    S, I, R = 0.99, 0.01, 0.0
-    Sn, In, Rn = sir_step(S, I, R, beta=0.5, gamma=0.25, dt=0.1)
+    susceptible, infected, recovered = 0.99, 0.01, 0.0
+    Sn, In, Rn = sir_step(susceptible, infected, recovered, beta=0.5, gamma=0.25, dt=0.1)
     assert Sn >= 0 and In >= 0 and Rn >= 0
     assert basic_reproduction_number(0.5, 0.25) == 2.0
 

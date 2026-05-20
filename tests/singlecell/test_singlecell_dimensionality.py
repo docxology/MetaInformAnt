@@ -4,6 +4,8 @@ Real implementation testing for PCA, UMAP, t-SNE, and neighbor graph computation
 No mocking used - all tests use real computational methods and data.
 """
 
+# ruff: noqa: E402 - scipy availability gates imports for this optional test module.
+
 from __future__ import annotations
 
 import numpy as np
@@ -41,7 +43,7 @@ class TestHVGSelection:
         np.random.seed(42)
 
         # Create data with different variance levels
-        n_cells, n_genes = 100, 200
+        n_cells, _n_genes = 100, 200
 
         # Low variance genes
         X_low = np.random.normal(2, 0.1, (n_cells, 50))
@@ -496,7 +498,7 @@ class TestIntegrationWorkflow:
         np.random.seed(42)
 
         # Create realistic test data with structure
-        n_cells, n_genes = 200, 500
+        _n_cells, n_genes = 200, 500
 
         # Create three populations with different expression patterns
         pop1 = np.random.lognormal(1, 1, (70, n_genes))

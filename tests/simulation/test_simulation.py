@@ -11,11 +11,12 @@ Reproducibility is ensured via seeded random.Random instances.
 from __future__ import annotations
 
 import random
-from typing import List
 
 import numpy as np
 import pytest
 
+from metainformant.simulation.models.agents import GridAgent, GridWorld
+from metainformant.simulation.models.rna import simulate_rnaseq_counts
 from metainformant.simulation.models.sequences import (
     AMINO_ACIDS,
     DNA_BASES,
@@ -33,8 +34,6 @@ from metainformant.simulation.models.sequences import (
     simulate_gene_duplication,
     translate_dna_to_protein,
 )
-from metainformant.simulation.models.rna import simulate_rnaseq_counts
-from metainformant.simulation.models.agents import GridAgent, GridWorld
 
 # ---------------------------------------------------------------------------
 # DNA generation
@@ -789,7 +788,7 @@ class TestGridAgent:
         rng = random.Random(42)
         world = GridWorld(width=10, height=10, num_agents=1, rng=rng)
         agent = world.agents[0]
-        initial_x, initial_y = agent.x, agent.y
+        _initial_x, _initial_y = agent.x, agent.y
         step_rng = random.Random(99)
         agent.step(world, step_rng)
         # Agent should still be in bounds
@@ -949,7 +948,7 @@ class TestSimulationIntegration:
         """Track energy decay across simulation steps."""
         world = GridWorld(width=10, height=10, num_agents=5, rng=random.Random(42))
         initial_energies = world.get_agent_energies()
-        results = world.run_simulation(20)
+        world.run_simulation(20)
 
         final_energies = world.get_agent_energies()
         # Energy should decrease over time (each step costs 0.1)

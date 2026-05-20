@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.core.utils.errors import IOError, ValidationError
+from metainformant.core.utils.errors import ValidationError
 from metainformant.ontology.core.go import load_go_obo, validate_go_ontology, write_go_summary
 from metainformant.ontology.query.query import ancestors, descendants, get_subontology
 

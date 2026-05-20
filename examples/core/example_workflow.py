@@ -16,9 +16,9 @@ import time
 from pathlib import Path
 from typing import Any, Dict
 
+from metainformant.core.execution import workflow
 from metainformant.core.io import io
 from metainformant.core.utils import logging
-from metainformant.core.execution import workflow
 
 
 def main():
@@ -175,7 +175,6 @@ def main():
     for url in example_urls:
         # In real usage, this would download actual data
         # Here we simulate with mock data
-        mock_data = {"sample": "data", "url": url}
         try:
             # This would normally download and process real data
             result = workflow.download_and_process_data(url, mock_data_processor, output_dir)

@@ -12,7 +12,6 @@ dependencies are not available.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -572,7 +571,7 @@ def plot_acmg_criteria(
     fig, ax = plt.subplots(figsize=figsize)
 
     y_positions = list(range(n_criteria))
-    bars = ax.barh(y_positions, [1] * n_criteria, color=colors, edgecolor="white", linewidth=0.5, height=0.7)
+    ax.barh(y_positions, [1] * n_criteria, color=colors, edgecolor="white", linewidth=0.5, height=0.7)
 
     ax.set_yticks(y_positions)
     ax.set_yticklabels(all_criteria, fontsize=9)

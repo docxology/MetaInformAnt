@@ -7,6 +7,15 @@ continue to work unchanged.
 
 from __future__ import annotations
 
+from .gene_annotation import (
+    annotate_coding_regions,
+    annotate_cpg_islands,
+    compute_codon_usage,
+    find_regulatory_elements,
+    find_splice_sites,
+    mask_repeats,
+)
+
 # Re-export everything from the split modules
 from .gene_finding import (
     GENETIC_CODES,
@@ -15,14 +24,6 @@ from .gene_finding import (
     START_CODONS,
     STOP_CODONS,
     predict_orfs,
-)
-from .gene_annotation import (
-    annotate_coding_regions,
-    annotate_cpg_islands,
-    compute_codon_usage,
-    find_regulatory_elements,
-    find_splice_sites,
-    mask_repeats,
 )
 
 __all__ = [

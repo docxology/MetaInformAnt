@@ -8,12 +8,11 @@ figures with a logged warning.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.axes import Axes
 
 from metainformant.core.io import paths
 from metainformant.core.utils import logging

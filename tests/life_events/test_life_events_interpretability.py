@@ -11,8 +11,8 @@ from metainformant.life_events.analysis.interpretability import (
     temporal_patterns,
 )
 from metainformant.life_events.models.embeddings import learn_event_embeddings
-from metainformant.life_events.models.statistical_models import attention_weights
 from metainformant.life_events.models.predictor import EventSequencePredictor
+from metainformant.life_events.models.statistical_models import attention_weights
 
 
 def test_event_importance_permutation():

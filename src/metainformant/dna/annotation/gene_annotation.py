@@ -16,13 +16,9 @@ from metainformant.core.utils import logging
 
 from .gene_finding import (
     GENETIC_CODES,
-    IUPAC_MAP,
     REGULATORY_MOTIFS,
-    START_CODONS,
-    STOP_CODONS,
     _iupac_to_regex,
     _reverse_complement,
-    _translate_sequence,
     predict_orfs,
 )
 

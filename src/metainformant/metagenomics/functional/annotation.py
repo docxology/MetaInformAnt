@@ -12,11 +12,9 @@ Annotation approach:
 
 from __future__ import annotations
 
-import os
 import re
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 

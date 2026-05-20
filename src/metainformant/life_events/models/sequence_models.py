@@ -10,19 +10,27 @@ Both models use PyTorch and require torch as an optional dependency.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Union
-
-import numpy as np
+# Forward reference for type hints
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from metainformant.core.utils import logging
-
-# Forward reference for type hints
-from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from metainformant.life_events.core.events import EventSequence
 
 logger = logging.get_logger(__name__)
+
+
+def _sequence_to_tokens(sequence: Any) -> List[str]:
+    """Normalize EventSequence objects and token lists to event tokens."""
+    if hasattr(sequence, "events"):
+        return [
+            f"{event.domain}:{event.event_type}" if getattr(event, "domain", None) else str(event.event_type)
+            for event in sequence.events
+        ]
+    if isinstance(sequence, str):
+        return [sequence]
+    return [str(event) for event in sequence]
 
 
 class GRUSequenceModel:
@@ -77,6 +85,7 @@ class GRUSequenceModel:
         if random_state is not None:
             try:
                 import torch
+
                 torch.manual_seed(random_state)
                 if torch.cuda.is_available():
                     torch.cuda.manual_seed(random_state)
@@ -96,7 +105,7 @@ class GRUSequenceModel:
         try:
             import torch
             import torch.nn as nn
-            from torch.utils.data import DataLoader, TensorDataset
+            from torch.utils.data import DataLoader
         except ImportError:
             logger.warning("PyTorch not available, GRUSequenceModel disabled")
             self.is_fitted = True
@@ -195,8 +204,7 @@ class GRUSequenceModel:
         """Build event vocabulary from sequences."""
         event_types = set()
         for seq in sequences:
-            for event in seq.events:
-                event_types.add(event.event_type)
+            event_types.update(_sequence_to_tokens(seq))
 
         self.event_vocab = {event_type: idx for idx, event_type in enumerate(sorted(event_types))}
         self.num_events = len(self.event_vocab)
@@ -242,9 +250,9 @@ class GRUSequenceModel:
             return None
 
         event_indices = []
-        for event in sequence.events:
-            if event.event_type in self.event_vocab:
-                event_indices.append(self.event_vocab[event.event_type])
+        for event in _sequence_to_tokens(sequence):
+            if event in self.event_vocab:
+                event_indices.append(self.event_vocab[event])
 
         if not event_indices:
             return None
@@ -304,6 +312,7 @@ class LSTMSequenceModel:
         if random_state is not None:
             try:
                 import torch
+
                 torch.manual_seed(random_state)
                 if torch.cuda.is_available():
                     torch.cuda.manual_seed(random_state)
@@ -323,7 +332,7 @@ class LSTMSequenceModel:
         try:
             import torch
             import torch.nn as nn
-            from torch.utils.data import DataLoader, TensorDataset
+            from torch.utils.data import DataLoader
         except ImportError:
             logger.warning("PyTorch not available, LSTMSequenceModel disabled")
             self.is_fitted = True
@@ -422,8 +431,7 @@ class LSTMSequenceModel:
         """Build event vocabulary from sequences."""
         event_types = set()
         for seq in sequences:
-            for event in seq.events:
-                event_types.add(event.event_type)
+            event_types.update(_sequence_to_tokens(seq))
 
         self.event_vocab = {event_type: idx for idx, event_type in enumerate(sorted(event_types))}
         self.num_events = len(self.event_vocab)
@@ -469,9 +477,9 @@ class LSTMSequenceModel:
             return None
 
         event_indices = []
-        for event in sequence.events:
-            if event.event_type in self.event_vocab:
-                event_indices.append(self.event_vocab[event.event_type])
+        for event in _sequence_to_tokens(sequence):
+            if event in self.event_vocab:
+                event_indices.append(self.event_vocab[event])
 
         if not event_indices:
             return None

@@ -16,10 +16,8 @@ The denoising algorithm:
 from __future__ import annotations
 
 import math
-import os
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 

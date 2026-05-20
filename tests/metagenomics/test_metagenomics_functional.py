@@ -17,7 +17,6 @@ from metainformant.metagenomics.functional.annotation import (
 )
 from metainformant.metagenomics.functional.pathways import (
     PathwayDefinition,
-    PathwayResult,
     calculate_pathway_completeness,
     compare_pathway_profiles,
     reconstruct_pathways,

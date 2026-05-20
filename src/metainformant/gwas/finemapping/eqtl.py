@@ -17,11 +17,11 @@ Example:
 from __future__ import annotations
 
 import logging
+from pathlib import Path
 from typing import Any
 
 import numpy as np
 import pandas as pd
-from pathlib import Path
 from scipy import stats  # noqa: F401
 
 logger = logging.getLogger(__name__)
@@ -474,9 +474,7 @@ def load_transcriptome_variants(
         }
     )
 
-    logger.info(
-        f"Loaded {len(variant_ids)} SNPs × {len(samples)} samples from {vcf_path.name}"
-    )
+    logger.info(f"Loaded {len(variant_ids)} SNPs × {len(samples)} samples from {vcf_path.name}")
     return genotype_matrix, variant_positions
 
 
@@ -536,9 +534,7 @@ def _linear_regression(y: np.ndarray, x: np.ndarray) -> tuple[float, float, floa
     return float(beta), float(se), float(pval)
 
 
-def _linear_regression_residuals(
-    y: np.ndarray, x: np.ndarray
-) -> tuple[float, float, np.ndarray]:
+def _linear_regression_residuals(y: np.ndarray, x: np.ndarray) -> tuple[float, float, np.ndarray]:
     """Linear regression returning beta, SE, and residuals."""
     valid = ~(np.isnan(y) | np.isnan(x))
     y_v, x_v = y.copy(), x.copy()

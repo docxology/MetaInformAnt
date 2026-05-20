@@ -28,8 +28,8 @@ try:
     import matplotlib
 
     matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
     import matplotlib.colors as mcolors  # noqa: F401
+    import matplotlib.pyplot as plt
 
     HAS_MATPLOTLIB = True
 except ImportError:
@@ -73,11 +73,7 @@ def clump_variants(
         return []
 
     # Pre-filter by p-value threshold
-    eligible = [
-        i
-        for i, r in enumerate(association_results)
-        if r.get("p_value", 1.0) < p_threshold
-    ]
+    eligible = [i for i, r in enumerate(association_results) if r.get("p_value", 1.0) < p_threshold]
     if not eligible:
         return []
 
@@ -95,12 +91,7 @@ def clump_variants(
         # Prune all variants in LD with this one
         if idx < n_ld:
             for j in eligible_sorted:
-                if (
-                    j != idx
-                    and j not in pruned
-                    and j < n_ld
-                    and idx < len(ld_matrix[j])
-                ):
+                if j != idx and j not in pruned and j < n_ld and idx < len(ld_matrix[j]):
                     if ld_matrix[idx][j] > r2_threshold:
                         pruned.add(j)
 
@@ -228,15 +219,12 @@ def prs_full_analysis(
                 "prs_scores": prs_scores,
             }
         )
-        logger.info(
-            f"  PRS (p<{p_thresh:.0e}, n={len(clumped_idx)} variants): R²={r2:.4f}"
-        )
+        logger.info(f"  PRS (p<{p_thresh:.0e}, n={len(clumped_idx)} variants): R²={r2:.4f}")
 
     # Best threshold
     best = max(threshold_results, key=lambda x: x["r2_phenotype"])
     logger.info(
-        f"Best PRS: p<{best['p_threshold']:.0e} → R²={best['r2_phenotype']:.4f} "
-        f"({best['n_variants']} variants)"
+        f"Best PRS: p<{best['p_threshold']:.0e} → R²={best['r2_phenotype']:.4f} " f"({best['n_variants']} variants)"
     )
 
     return {
@@ -271,9 +259,7 @@ def prs_distribution_plot(
 
     thresholds = prs_result.get("thresholds", [])
     best_thresh = prs_result.get("best_threshold")
-    best_prs = next(
-        (t["prs_scores"] for t in thresholds if t["p_threshold"] == best_thresh), []
-    )
+    best_prs = next((t["prs_scores"] for t in thresholds if t["p_threshold"] == best_thresh), [])
 
     if not thresholds:
         return None
@@ -290,17 +276,11 @@ def prs_distribution_plot(
     p_labels = [f"{t['p_threshold']:.0e}" for t in thresholds]
     r2_vals = [t["r2_phenotype"] for t in thresholds]
     n_var_vals = [t["n_variants"] for t in thresholds]
-    colors = [
-        "#C44E52" if t["p_threshold"] == best_thresh else "#4C72B0" for t in thresholds
-    ]
+    colors = ["#C44E52" if t["p_threshold"] == best_thresh else "#4C72B0" for t in thresholds]
 
-    bars = ax1.bar(
-        p_labels, r2_vals, color=colors, edgecolor="white", linewidth=0.5, alpha=0.9
-    )
+    bars = ax1.bar(p_labels, r2_vals, color=colors, edgecolor="white", linewidth=0.5, alpha=0.9)
     ax1_twin = ax1.twinx()
-    ax1_twin.plot(
-        p_labels, n_var_vals, "ko--", markersize=5, label="N variants", zorder=5
-    )
+    ax1_twin.plot(p_labels, n_var_vals, "ko--", markersize=5, label="N variants", zorder=5)
     ax1_twin.set_ylabel("# variants selected", fontsize=9, color="#333")
     ax1_twin.tick_params(axis="y", labelcolor="#333", labelsize=8)
     ax1.set_xlabel("P-value threshold", fontsize=11)

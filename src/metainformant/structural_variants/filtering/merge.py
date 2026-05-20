@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Any, Sequence
+from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -119,7 +119,7 @@ def merge_callsets(
     for i in range(n):
         v_i = all_variants[i][1]
         chrom_i = v_i.get("chrom", "")
-        start_i = v_i.get("start", 0)
+        v_i.get("start", 0)
         end_i = v_i.get("end", 0)
         type_i = v_i.get("sv_type", "")
         if hasattr(type_i, "value"):
@@ -138,7 +138,7 @@ def merge_callsets(
             if start_j > end_i + 10_000:
                 break
 
-            end_j = v_j.get("end", 0)
+            v_j.get("end", 0)
             type_j = v_j.get("sv_type", "")
             if hasattr(type_j, "value"):
                 type_j = type_j.value

@@ -6,7 +6,7 @@ DNA alignments, handling ambiguity codes, and quality-based consensus calling.
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from metainformant.core.utils import logging
 

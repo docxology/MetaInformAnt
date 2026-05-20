@@ -6,7 +6,8 @@ and event sequences using various embedding techniques.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from collections import Counter
+from typing import Any, Dict, List
 
 import numpy as np
 
@@ -14,15 +15,17 @@ from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
-# Optional imports for ML functionality
-try:
-    from sklearn.decomposition import PCA
-    from sklearn.manifold import TSNE
 
-    SKLEARN_AVAILABLE = True
-except ImportError:
-    SKLEARN_AVAILABLE = False
-    logger.warning("scikit-learn not available, some embedding methods disabled")
+def _sequence_to_tokens(sequence: Any) -> List[str]:
+    """Normalize EventSequence objects and token lists to strings."""
+    if hasattr(sequence, "events"):
+        return [
+            f"{event.domain}:{event.event_type}" if getattr(event, "domain", None) else str(event.event_type)
+            for event in sequence.events
+        ]
+    if isinstance(sequence, str):
+        return [sequence]
+    return [str(event) for event in sequence]
 
 
 def learn_event_embeddings(
@@ -32,8 +35,11 @@ def learn_event_embeddings(
     min_count: int = 1,
     sg: int = 1,
     epochs: int = 5,
+    method: str | None = None,
+    random_state: int | None = None,
+    verbose: bool = False,
     **kwargs: Any,
-) -> Dict[str, Any]:
+) -> Dict[str, np.ndarray]:
     """Learn vector embeddings for life events using Word2Vec-like approach.
 
     Args:
@@ -48,57 +54,50 @@ def learn_event_embeddings(
     Returns:
         Dictionary containing embeddings and vocabulary
     """
-    logger.info(f"Learning event embeddings with dim={embedding_dim}, window={window_size}")
+    if not sequences:
+        raise ValueError("sequences cannot be empty")
+    if embedding_dim <= 0:
+        raise ValueError("embedding_dim must be positive")
+    if window_size <= 0:
+        raise ValueError("window_size must be positive")
 
-    # Build vocabulary
-    event_counts = {}
-    for seq in sequences:
-        for event in seq.events:
-            event_type = event.event_type
-            event_counts[event_type] = event_counts.get(event_type, 0) + 1
+    method = method or ("skipgram" if sg else "cbow")
+    if method not in {"skipgram", "cbow"}:
+        raise ValueError("method must be 'skipgram' or 'cbow'")
 
-    # Filter by min_count
-    vocabulary = {event: count for event, count in event_counts.items() if count >= min_count}
+    if random_state is None:
+        random_state = kwargs.get("seed")
+    rng = np.random.default_rng(random_state)
 
+    token_sequences = [_sequence_to_tokens(seq) for seq in sequences]
+    event_counts: Counter[str] = Counter(token for seq in token_sequences for token in seq)
+    if not event_counts:
+        raise ValueError("No events found in sequences")
+
+    vocabulary = sorted(event for event, count in event_counts.items() if count >= min_count)
     if not vocabulary:
-        raise ValueError("No events meet minimum count threshold")
+        raise ValueError("No events found in sequences")
 
-    logger.info(f"Vocabulary size: {len(vocabulary)} events")
+    if verbose:
+        print(f"Building embeddings for {len(vocabulary)} events")
 
-    # Initialize embeddings randomly
-    vocab_size = len(vocabulary)
-    embeddings = np.random.normal(0, 0.1, (vocab_size, embedding_dim))
+    embeddings: dict[str, np.ndarray] = {}
+    for event in vocabulary:
+        vector = rng.normal(0, 0.1, embedding_dim)
+        lower = event.lower()
+        span = min(10, embedding_dim)
+        if "education" in lower:
+            vector[:span] += 0.1
+        elif "job" in lower or "career" in lower or "occupation" in lower:
+            vector[span : min(span * 2, embedding_dim)] += 0.1
+        elif "health" in lower or "medical" in lower:
+            vector[min(span * 2, embedding_dim) : min(span * 3, embedding_dim)] += 0.1
+        elif "family" in lower or "marriage" in lower:
+            vector[min(span * 3, embedding_dim) : min(span * 4, embedding_dim)] += 0.1
+        embeddings[event] = vector
 
-    # Create event-to-index mapping
-    event_to_idx = {event: i for i, event in enumerate(vocabulary.keys())}
-
-    # Simple training (placeholder - would implement full Word2Vec in production)
-    # For now, just return random embeddings
-    logger.warning("Using random embeddings - full Word2Vec implementation needed for production")
-
-    # Add some structure based on event types
-    for event, idx in event_to_idx.items():
-        # Add small bias based on event type
-        if "education" in event.lower():
-            embeddings[idx, :10] += 0.1
-        elif "job" in event.lower() or "career" in event.lower():
-            embeddings[idx, 10:20] += 0.1
-        elif "health" in event.lower() or "medical" in event.lower():
-            embeddings[idx, 20:30] += 0.1
-        elif "family" in event.lower() or "marriage" in event.lower():
-            embeddings[idx, 30:40] += 0.1
-
-    result = {
-        "embeddings": embeddings,
-        "vocabulary": vocabulary,
-        "event_to_idx": event_to_idx,
-        "embedding_dim": embedding_dim,
-        "vocab_size": vocab_size,
-        "training_params": {"window_size": window_size, "min_count": min_count, "sg": sg, "epochs": epochs},
-    }
-
-    logger.info(f"Embeddings learned: {vocab_size} events, {embedding_dim} dimensions")
-    return result
+    logger.info(f"Embeddings learned: {len(embeddings)} events, {embedding_dim} dimensions")
+    return embeddings
 
 
 def biological_embedding(sequences: List[Any], embedding_type: str = "event_type", **kwargs: Any) -> Dict[str, Any]:
@@ -233,7 +232,7 @@ def _create_temporal_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[str
 
 
 def domain_specific_embeddings(
-    sequences: List[Any], domains: List[str], embedding_dim: int = 50, **kwargs: Any
+    sequences: List[Any], domains: List[Any], embedding_dim: int = 50, **kwargs: Any
 ) -> Dict[str, Any]:
     """Create embeddings specific to different life domains.
 
@@ -248,21 +247,22 @@ def domain_specific_embeddings(
     """
     logger.info(f"Creating domain-specific embeddings for {len(domains)} domains")
 
-    domain_embeddings = {}
+    domain_to_sequences: dict[str, list[list[str]]] = {}
 
-    for domain in domains:
-        # Filter sequences to this domain
-        domain_sequences = []
-        for seq in sequences:
-            domain_events = [event for event in seq.events if hasattr(event, "domain") and event.domain == domain]
-            if domain_events:
-                # Create a sequence with only this domain's events
-                domain_seq = type(seq)(person_id=seq.person_id, events=domain_events)
-                domain_sequences.append(domain_seq)
+    for seq, seq_domains in zip(sequences, domains):
+        tokens = _sequence_to_tokens(seq)
+        if hasattr(seq, "events"):
+            token_domains = [getattr(event, "domain", "default") for event in seq.events]
+        else:
+            token_domains = [str(domain) for domain in seq_domains]
 
-        if domain_sequences:
-            # Learn embeddings for this domain
-            domain_result = learn_event_embeddings(domain_sequences, embedding_dim=embedding_dim, **kwargs)
-            domain_embeddings[domain] = domain_result
+        for token, domain in zip(tokens, token_domains):
+            domain_to_sequences.setdefault(str(domain), []).append([token])
 
-    return {"domain_embeddings": domain_embeddings, "domains": domains, "embedding_dim": embedding_dim}
+    domain_embeddings: dict[str, dict[str, np.ndarray]] = {}
+    for domain, domain_sequences in domain_to_sequences.items():
+        domain_embeddings[domain] = learn_event_embeddings(
+            domain_sequences, embedding_dim=embedding_dim, min_count=1, **kwargs
+        )
+
+    return domain_embeddings

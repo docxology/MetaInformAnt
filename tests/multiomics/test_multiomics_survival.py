@@ -10,7 +10,6 @@ All tests use real implementations with realistic survival data (NO mocking).
 from __future__ import annotations
 
 import math
-import random
 from typing import Any
 
 import numpy as np

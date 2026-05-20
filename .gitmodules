@@ -1,0 +1,3 @@
+[submodule "projects/hymenoptera_amalgkit"]
+	path = projects/hymenoptera_amalgkit
+	url = https://github.com/docxology/hymenoptera_amalgkit.git

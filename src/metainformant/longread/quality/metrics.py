@@ -125,7 +125,7 @@ def calculate_nx(read_lengths: Sequence[int], x: int = 50) -> int:
     if x < 0 or x > 100:
         raise ValueError(f"x must be between 0 and 100, got {x}")
 
-    lengths = [l for l in read_lengths if l > 0]
+    lengths = [length for length in read_lengths if length > 0]
     if not lengths:
         return 0
 
@@ -152,7 +152,7 @@ def _calculate_lx(read_lengths: Sequence[int], x: int = 50) -> int:
     Returns:
         Lx value (count of reads). Returns 0 if input is empty.
     """
-    lengths = [l for l in read_lengths if l > 0]
+    lengths = [length for length in read_lengths if length > 0]
     if not lengths:
         return 0
 
@@ -200,7 +200,7 @@ def read_length_stats(reads: Sequence[dict[str, Any] | int]) -> ReadLengthStatis
     if not lengths:
         return ReadLengthStatistics()
 
-    lengths = [l for l in lengths if l > 0]
+    lengths = [length for length in lengths if length > 0]
     if not lengths:
         return ReadLengthStatistics()
 
@@ -221,7 +221,7 @@ def read_length_stats(reads: Sequence[dict[str, Any] | int]) -> ReadLengthStatis
 
     # Standard deviation
     if count > 1:
-        variance = sum((l - mean_len) ** 2 for l in sorted_lengths) / (count - 1)
+        variance = sum((length - mean_len) ** 2 for length in sorted_lengths) / (count - 1)
         std = math.sqrt(variance)
     else:
         std = 0.0

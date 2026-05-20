@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import os
 from pathlib import Path
 
@@ -93,9 +94,7 @@ def test_load_life_events_config_json(tmp_path: Path) -> None:
 
 def test_load_life_events_config_toml(tmp_path: Path) -> None:
     """Test loading config from TOML format (if available)."""
-    try:
-        import tomllib
-    except ImportError:
+    if importlib.util.find_spec("tomllib") is None:
         pytest.skip("TOML support not available (requires Python 3.11+)")
 
     config_file = tmp_path / "test_config.toml"

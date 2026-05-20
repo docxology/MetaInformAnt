@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 
 import numpy as np
-import pandas as pd
 import pytest
 
 from metainformant.visualization.analysis.information import (
@@ -18,10 +18,8 @@ from metainformant.visualization.analysis.information import (
 
 # Check for optional dependencies
 try:
-    import networkx as nx
-
-    HAS_NETWORKX = True
-except ImportError:
+    HAS_NETWORKX = importlib.util.find_spec("networkx") is not None
+except ModuleNotFoundError:
     HAS_NETWORKX = False
 
 

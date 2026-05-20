@@ -12,7 +12,6 @@ population frequency checks for the BA1/BS1 benign criteria.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
 
@@ -297,7 +296,7 @@ def apply_acmg_criteria(
     criteria: dict[str, bool] = {}
 
     consequence = variant_data.get("consequence", "").lower()
-    gene = variant_data.get("gene", "").upper()
+    variant_data.get("gene", "").upper()
 
     # Get allele frequency (handle both dict and float)
     af_data = variant_data.get("allele_frequency", 0.0)
@@ -342,7 +341,7 @@ def apply_acmg_criteria(
 
     # ── PS4: Significantly increased prevalence in affected vs controls ───
     case_count = variant_data.get("case_count", 0)
-    control_count = variant_data.get("control_count", 0)
+    variant_data.get("control_count", 0)
     odds_ratio = variant_data.get("odds_ratio", 0.0)
     criteria["PS4"] = odds_ratio > 5.0 and case_count >= 5
 

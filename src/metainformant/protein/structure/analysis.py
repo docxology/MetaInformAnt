@@ -6,7 +6,7 @@ including domain identification, surface analysis, and structural motifs.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 import numpy as np
 
@@ -193,14 +193,14 @@ def analyze_structural_motifs(structure: Dict[str, Any]) -> List[Dict[str, Any]]
     motifs = []
 
     # Example: Simple helix identification
-    atoms = structure.get("atoms", [])
+    structure.get("atoms", [])
     coords = structure.get("coordinates")
 
     if coords is not None and len(coords) > 20:
         # Look for helical patterns in coordinates
         # This is highly simplified
         for i in range(len(coords) - 10):
-            segment = coords[i : i + 10]
+            coords[i : i + 10]
             # Check for helical rise and rotation
             # (real implementation would be more sophisticated)
 
@@ -264,7 +264,7 @@ def identify_ligand_binding_sites(structure: Dict[str, Any]) -> List[Dict[str, A
     # This would identify cavities, pockets, etc.
     # Simplified placeholder
 
-    atoms = structure.get("atoms", [])
+    structure.get("atoms", [])
     coords = structure.get("coordinates")
 
     if coords is None or len(coords) < 20:

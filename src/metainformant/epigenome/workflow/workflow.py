@@ -7,17 +7,14 @@ into comprehensive analysis pipelines.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional
 
-from metainformant.core.data import validation
-from metainformant.core.utils import errors
-from metainformant.core.execution import workflow
-from metainformant.core.io import paths
-from metainformant.core.utils import config
-from metainformant.core.utils import logging
 from metainformant.core import io
+from metainformant.core.data import validation
+from metainformant.core.io import paths
+from metainformant.core.utils import config, errors, logging
 
 logger = logging.get_logger(__name__)
 
@@ -218,7 +215,7 @@ def run_methylation_workflow(
             from .methylation import generate_methylation_report
 
             report_path = output_dir / "methylation_report.txt"
-            report = generate_methylation_report(all_sites, output_path=report_path)
+            generate_methylation_report(all_sites, output_path=report_path)
             results["report_path"] = str(report_path)
 
         logger.info(f"Methylation workflow completed. Processed {len(results['processed_files'])} files")
@@ -353,7 +350,7 @@ def run_chipseq_workflow(
             from .chipseq import generate_chip_report
 
             report_path = output_dir / "chipseq_report.txt"
-            report = generate_chip_report(all_peaks, output_path=report_path)
+            generate_chip_report(all_peaks, output_path=report_path)
             results["report_path"] = str(report_path)
 
         logger.info(f"ChIP-seq workflow completed. Processed {len(results['processed_files'])} files")
@@ -418,7 +415,7 @@ def run_atacseq_workflow(
                 logger.info(f"Processing ATAC-seq file: {file_path}")
 
                 # Load peak data
-                from .atacseq import filter_peaks_by_score, load_atac_peaks
+                from .atacseq import load_atac_peaks
 
                 format_type = _detect_peak_format(file_path)
                 peaks = load_atac_peaks(file_path, format=format_type)
@@ -488,7 +485,7 @@ def run_atacseq_workflow(
             from .atacseq import generate_atac_report
 
             report_path = output_dir / "atacseq_report.txt"
-            report = generate_atac_report(all_peaks, output_path=report_path)
+            generate_atac_report(all_peaks, output_path=report_path)
             results["report_path"] = str(report_path)
 
         logger.info(f"ATAC-seq workflow completed. Processed {len(results['processed_files'])} files")
@@ -593,7 +590,7 @@ def integrate_epigenome_results(
         # Generate integration report
         if config.generate_reports:
             report_path = output_dir / "epigenome_integration_report.txt"
-            report = _generate_integration_report(integrated_results, report_path)
+            _generate_integration_report(integrated_results, report_path)
             integrated_results["report_path"] = str(report_path)
 
         logger.info(f"Epigenome integration completed. Performed {len(analyses)} analyses")

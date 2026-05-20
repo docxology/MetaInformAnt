@@ -21,7 +21,7 @@ import pandas as pd
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, logging, paths, validation
+from metainformant.core import io, logging, paths
 from metainformant.simulation.sequences import generate_random_dna
 
 logger = logging.get_logger(__name__)

@@ -915,7 +915,7 @@ class TestTreeDiameter:
         tree = _make_six_leaf_tree()
         d = tree_diameter(tree)
         tbl = total_branch_length(tree)
-        n_leaves = len(_get_all_leaves(tree))
+        len(_get_all_leaves(tree))
         # Diameter should be a substantial portion of total branch length
         assert d > 0.0
         assert d <= tbl  # Diameter cannot exceed total branch length

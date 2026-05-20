@@ -2,12 +2,9 @@
 
 from __future__ import annotations
 
-import io as iolib
-import sys
-
 import pytest
 
-from metainformant.menu.ui.display import clear_screen, format_breadcrumb, format_menu, get_choice
+from metainformant.menu.ui.display import format_breadcrumb, format_menu, show_menu
 from metainformant.menu.ui.navigation import MenuItem
 
 

@@ -156,9 +156,7 @@ def generate_audit_log(
     qc_cfg = config.get("qc", {})
     pg_cfg = config.get("post_gwas", {})
     params = {
-        "trait": config.get("samples", {})
-        .get("phenotypes", {})
-        .get("default_trait", "unknown"),
+        "trait": config.get("samples", {}).get("phenotypes", {}).get("default_trait", "unknown"),
         "model": gwas_cfg.get("model", "mixed"),
         "significance_threshold": gwas_cfg.get("significance_threshold", 5e-8),
         "maf_threshold": qc_cfg.get("min_maf", 0.01),
@@ -184,8 +182,6 @@ def generate_audit_log(
             "result_files": len(result_checksums),
             "processed_files": len(proc_checksums),
             "raw_metadata_files": len(raw_checksums),
-            "total_audited": len(result_checksums)
-            + len(proc_checksums)
-            + len(raw_checksums),
+            "total_audited": len(result_checksums) + len(proc_checksums) + len(raw_checksums),
         },
     }

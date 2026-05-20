@@ -10,8 +10,9 @@ splicing events from RNA-seq data, including:
 - Isoform quantification via EM algorithm
 - Splice graph construction and isoform enumeration
 - Isoform diversity and usage comparison"""
+
 from __future__ import annotations
 
 from . import detection, isoforms, splice_analysis, splice_sites
 
-__all__ = ['detection', 'isoforms', 'splice_analysis', 'splice_sites']
+__all__ = ["detection", "isoforms", "splice_analysis", "splice_sites"]

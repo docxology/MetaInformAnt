@@ -6,14 +6,16 @@ This module provides functions for Price equation analysis and quantitative gene
 from __future__ import annotations
 
 import statistics
-from typing import Any, Dict, List, Tuple
+from typing import List
 
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
 
-def price_equation(fitness: List[float], parent: List[float], offspring: List[float]) -> tuple[float, float, float]:
+def price_equation(
+    fitness: List[float], parent: List[float], offspring: List[float] | None = None
+) -> tuple[float, float, float]:
     """Decompose evolutionary change using the Price equation.
 
     Args:
@@ -24,38 +26,30 @@ def price_equation(fitness: List[float], parent: List[float], offspring: List[fl
     Returns:
         Tuple of (covariance_term, transmission_term, total_change)
     """
-    if len(fitness) != len(parent) or len(parent) != len(offspring):
+    if len(fitness) != len(parent) or (offspring is not None and len(parent) != len(offspring)):
         raise ValueError("All input lists must have the same length")
 
     # Handle empty inputs gracefully
-    if not fitness or not parent or not offspring:
+    if not fitness or not parent:
         return (0.0, 0.0, 0.0)
 
-    # Calculate means
     fitness_mean = statistics.mean(fitness)
     parent_mean = statistics.mean(parent)
+    covariance_term = sum((f - fitness_mean) * (p - parent_mean) for f, p in zip(fitness, parent)) / len(fitness)
+    covariance_term = covariance_term / fitness_mean if fitness_mean else 0.0
+
+    if offspring is None:
+        return covariance_term, 0.0, covariance_term
+
     offspring_mean = statistics.mean(offspring)
-
-    # Calculate covariance between fitness and parent trait (selection component)
-    cov_fitness_parent = sum((f - fitness_mean) * (p - parent_mean) for f, p in zip(fitness, parent)) / len(fitness)
-
-    # Calculate covariance between parent and offspring (transmission component)
-    cov_parent_offspring = sum((p - parent_mean) * (o - offspring_mean) for p, o in zip(parent, offspring)) / len(
-        parent
-    )
-
-    # Total change in mean
     total_change = offspring_mean - parent_mean
-
-    # Adjust to ensure total = cov_term + trans_term as expected by test
-    # This is a simplified interpretation for testing purposes
-    adjusted_cov_term = total_change * 0.6  # 60% selection
-    adjusted_trans_term = total_change * 0.4  # 40% transmission
-
-    return adjusted_cov_term, adjusted_trans_term, total_change
+    transmission_term = total_change - covariance_term
+    return covariance_term, transmission_term, total_change
 
 
-def delta_mean_trait(trait_values: List[float], fitness_values: List[float]) -> float:
+def delta_mean_trait(
+    fitness_or_trait: List[float], parent_or_fitness: List[float], offspring: List[float] | None = None
+) -> float:
     """Calculate change in mean trait value due to selection.
 
     Args:
@@ -65,6 +59,11 @@ def delta_mean_trait(trait_values: List[float], fitness_values: List[float]) -> 
     Returns:
         Expected change in mean trait value
     """
+    if offspring is not None:
+        return price_equation(fitness_or_trait, parent_or_fitness, offspring)[2]
+
+    trait_values = fitness_or_trait
+    fitness_values = parent_or_fitness
     if len(trait_values) != len(fitness_values):
         raise ValueError("Trait and fitness lists must have same length")
 
@@ -95,7 +94,7 @@ def expectation(values: List[float], weights: List[float] | None = None) -> floa
         Expected value
     """
     if not values:
-        raise ValueError("Values list cannot be empty")
+        return 0.0
 
     if weights is None:
         return statistics.mean(values)

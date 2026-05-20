@@ -173,9 +173,7 @@ def plot_locuszoom_eqtl(
         logger.warning("matplotlib not available for plotting")
         return None
 
-    fig, (ax1, ax2) = plt.subplots(
-        2, 1, figsize=kwargs.get("figsize", (12, 8)), height_ratios=[3, 1], sharex=True
-    )
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=kwargs.get("figsize", (12, 8)), height_ratios=[3, 1], sharex=True)
 
     # Filter to gene region
     if "position" not in results.columns:
@@ -216,9 +214,7 @@ def plot_locuszoom_eqtl(
     )
 
     # Significance line
-    ax1.axhline(
-        -np.log10(5e-8), color="red", linestyle="--", alpha=0.5, label="Genome-wide"
-    )
+    ax1.axhline(-np.log10(5e-8), color="red", linestyle="--", alpha=0.5, label="Genome-wide")
     ax1.set_ylabel("-log₁₀(P-value)")
     ax1.set_title(f"eQTL LocusZoom: {gene_id}")
     ax1.legend()

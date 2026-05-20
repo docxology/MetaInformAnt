@@ -3,7 +3,7 @@
 
 This example demonstrates:
 - Loading DNA sequences from FASTA files
-- Performing {{analysis_type.lower()}} analysis
+- Performing {{analysis_type_lower}} analysis
 - Visualizing results
 
 Usage:
@@ -25,7 +25,7 @@ SAMPLE_SEQUENCES = {"seq1": "ATCGATCGATCGATCG", "seq2": "GCTAGCTAGCTAGCTA", "seq
 
 
 def main():
-    """Main function demonstrating DNA {{analysis_type.lower()}} analysis."""
+    """Main function demonstrating DNA {{analysis_type_lower}} analysis."""
     print("DNA {{analysis_type}} Analysis Example")
     print("=" * 40)
 
@@ -37,7 +37,7 @@ def main():
     try:
         results_data = {}
 
-        # Example {{analysis_type.lower()}} analysis
+        # Example {{analysis_type_lower}} analysis
         for seq_id, sequence in SAMPLE_SEQUENCES.items():
             print(f"Analyzing {seq_id}...")
 
@@ -49,7 +49,7 @@ def main():
             }
 
             # {{analysis_type}} specific analysis
-            {{analysis_code}}
+            {{code_block}}
 
         # Save results
         results = {

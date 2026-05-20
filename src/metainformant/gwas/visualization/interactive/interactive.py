@@ -271,9 +271,7 @@ def interactive_manhattan(
         for c in chrom_set:
             chrom_records_pos = [r["cum_pos"] for r in records if r["chromosome"] == c]
             if chrom_records_pos:
-                chrom_centers.append(
-                    (c, (min(chrom_records_pos) + max(chrom_records_pos)) / 2)
-                )
+                chrom_centers.append((c, (min(chrom_records_pos) + max(chrom_records_pos)) / 2))
 
         fig.update_layout(
             title=title,
@@ -299,9 +297,7 @@ def interactive_manhattan(
         }
 
     # --- Fallback: styled HTML table -----------------------------------
-    logger.info(
-        "Plotly not available; generating fallback HTML table for Manhattan plot"
-    )
+    logger.info("Plotly not available; generating fallback HTML table for Manhattan plot")
     sorted_records = sorted(records, key=lambda r: r["p_value"])
     headers = ["Variant", "Chromosome", "Position", "P-value", "Beta", "-log10(p)"]
     rows = []

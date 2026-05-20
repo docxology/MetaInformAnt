@@ -16,7 +16,6 @@ Core algorithms:
 from __future__ import annotations
 
 import math
-import random
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
@@ -344,7 +343,6 @@ def _km_single(time: list[float], event: list[int]) -> dict[str, Any]:
             i += 1
 
         if d_i > 0:
-            s_prev = s
             s *= (at_risk - d_i) / at_risk if at_risk > 0 else 0.0
 
             # Greenwood variance

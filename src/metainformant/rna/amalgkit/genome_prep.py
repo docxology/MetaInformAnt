@@ -344,7 +344,7 @@ def orchestrate_genome_setup(
     # We typically need to unzip first for some tools, but kallisto handles gz mostly?
     # Actually kallisto index typically accepts .gz.
 
-    index_dir = work_dir / "index"  # Standard amalgkit location
+    work_dir / "index"  # Standard amalgkit location
     index_path = get_expected_index_path(work_dir, species_name)
 
     if not kwargs.get("skip_build"):

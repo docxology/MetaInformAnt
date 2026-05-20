@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from metainformant.core.utils import logging
-
 from metainformant.networks.config.config import NetworkWorkflowConfig
 
 logger = logging.get_logger(__name__)
@@ -55,9 +54,7 @@ class NetworkWorkflow:
         from metainformant.networks.analysis.graph import BiologicalNetwork, add_edges_from_correlation, create_network
 
         if edges is not None:
-            graph = create_network(edges, directed=self.config.network.directed)
-            network = BiologicalNetwork(directed=self.config.network.directed)
-            network.graph = graph
+            network = create_network(edges, directed=self.config.network.directed)
         elif correlation_matrix is not None:
             import networkx as nx
 
@@ -70,7 +67,7 @@ class NetworkWorkflow:
             network = BiologicalNetwork(directed=self.config.network.directed)
             network.graph = g
             t = threshold if threshold is not None else self.config.network.min_edge_weight
-            add_edges_from_correlation(network.graph, correlation_matrix, threshold=t)
+            add_edges_from_correlation(network.graph, correlation_matrix, node_names=node_names, threshold=t)
         else:
             network = BiologicalNetwork(directed=self.config.network.directed)
 
@@ -93,7 +90,11 @@ class NetworkWorkflow:
         if "network" not in self.results:
             raise RuntimeError("Must call build_network() before detect_communities()")
 
-        from metainformant.networks.analysis.community import compare_community_methods, detect_communities, evaluate_communities
+        from metainformant.networks.analysis.community import (
+            compare_community_methods,
+            detect_communities,
+            evaluate_communities,
+        )
 
         network = self.results["network"]
         cfg = self.config.community

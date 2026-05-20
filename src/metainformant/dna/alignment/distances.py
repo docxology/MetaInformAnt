@@ -410,7 +410,7 @@ def tamura_nei_distance(seq1: str, seq2: str, kappa: float = 2.0) -> float:
     Q = transversions / total_sites  # transversion frequency
 
     # GC content proportion
-    gc_prop = gc_count / total_sites
+    gc_count / total_sites
 
     # Tamura-Nei distance calculation
     # This is a simplified version; full implementation would require

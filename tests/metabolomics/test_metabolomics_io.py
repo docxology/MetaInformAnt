@@ -1,4 +1,5 @@
 """Tests for metabolomics I/O formats."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -26,11 +27,13 @@ class TestCSVReadWrite:
         dataset = MetabolomicsDataset(
             metabolites=["met_A", "met_B", "met_C"],
             samples=["S1", "S2", "S3"],
-            intensities=np.array([
-                [100.0, 200.0, 300.0],
-                [50.0, 150.0, 250.0],
-                [10.0, 20.0, 30.0],
-            ]),
+            intensities=np.array(
+                [
+                    [100.0, 200.0, 300.0],
+                    [50.0, 150.0, 250.0],
+                    [10.0, 20.0, 30.0],
+                ]
+            ),
         )
         filepath = tmp_path / "test.csv"
         write_csv(dataset, filepath)
@@ -103,14 +106,7 @@ class TestMGFReadWrite:
 
     def test_read_mgf_retention_time(self, tmp_path: Path) -> None:
         """MGF parser should extract retention time."""
-        mgf_content = (
-            "BEGIN IONS\n"
-            "PEPMASS=500.0\n"
-            "RTINSECONDS=300.5\n"
-            "100.0 1000\n"
-            "200.0 500\n"
-            "END IONS\n"
-        )
+        mgf_content = "BEGIN IONS\n" "PEPMASS=500.0\n" "RTINSECONDS=300.5\n" "100.0 1000\n" "200.0 500\n" "END IONS\n"
         filepath = tmp_path / "rt.mgf"
         filepath.write_text(mgf_content)
         spectra = read_mgf(filepath)
@@ -159,8 +155,7 @@ class TestExtractChromatogram:
 
     def test_basic_extraction(self) -> None:
         spectra = [
-            MassSpectrum(i, float(i * 10), 1, np.array([100.0, 200.0, 300.0]),
-                         np.array([float(i * 100), 50.0, 25.0]))
+            MassSpectrum(i, float(i * 10), 1, np.array([100.0, 200.0, 300.0]), np.array([float(i * 100), 50.0, 25.0]))
             for i in range(5)
         ]
         rts, intensities = extract_chromatogram(spectra, target_mz=100.0, ppm_tolerance=50.0)

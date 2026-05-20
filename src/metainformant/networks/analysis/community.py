@@ -39,6 +39,49 @@ except ImportError:
     HAS_NUMPY = False
 
 
+def _as_networkx_graph(graph: Any) -> Any:
+    """Return a NetworkX graph, accepting the project BiologicalNetwork wrapper."""
+    if hasattr(graph, "to_networkx"):
+        graph = graph.to_networkx()
+    elif hasattr(graph, "graph") and HAS_NETWORKX and isinstance(graph.graph, (nx.Graph, nx.DiGraph)):
+        graph = graph.graph
+
+    if HAS_NETWORKX and isinstance(graph, (nx.Graph, nx.DiGraph)):
+        graph = graph.copy()
+        for _, _, data in graph.edges(data=True):
+            weight = data.get("weight")
+            if weight is not None and weight < 0:
+                data["weight"] = 0.0
+    return graph
+
+
+def _communities_to_lists(communities: Any, graph: Any | None = None) -> list[list[str]]:
+    """Normalize community mappings or iterable communities to list-of-lists."""
+    valid_nodes = set(graph.nodes()) if graph is not None and hasattr(graph, "nodes") else None
+
+    if isinstance(communities, dict):
+        grouped: dict[Any, list[str]] = {}
+        for node, community_id in communities.items():
+            if valid_nodes is not None and node not in valid_nodes:
+                continue
+            grouped.setdefault(community_id, []).append(node)
+        community_lists = list(grouped.values())
+    else:
+        community_lists = []
+        for community in communities:
+            if isinstance(community, str):
+                members = [community]
+            else:
+                members = list(community)
+            if valid_nodes is not None:
+                members = [node for node in members if node in valid_nodes]
+            if members:
+                community_lists.append(members)
+
+    community_lists.sort(key=len, reverse=True)
+    return community_lists
+
+
 def louvain_communities(
     graph: Any, resolution: float = 1.0, randomize: bool = True, random_state: Optional[int] = None, **kwargs: Any
 ) -> List[List[str]]:
@@ -67,6 +110,12 @@ def louvain_communities(
 
         warn_optional_dependency("python-louvain", "Louvain community detection")
         raise ImportError("python-louvain required for Louvain method")
+
+    graph = _as_networkx_graph(graph)
+    if graph.number_of_nodes() == 0:
+        return []
+    if graph.number_of_edges() == 0:
+        return [[node] for node in graph.nodes()]
 
     # Set random seed if provided
     if random_state is not None:
@@ -114,6 +163,12 @@ def leiden_communities(
     """
     if not HAS_NETWORKX:
         raise ImportError("networkx required for community detection")
+
+    graph = _as_networkx_graph(graph)
+    if graph.number_of_nodes() == 0:
+        return []
+    if graph.number_of_edges() == 0:
+        return [[node] for node in graph.nodes()]
 
     try:
         import igraph as ig  # noqa: F401
@@ -197,6 +252,12 @@ def greedy_modularity_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for community detection")
 
+    graph = _as_networkx_graph(graph)
+    if graph.number_of_nodes() == 0:
+        return []
+    if graph.number_of_edges() == 0:
+        return [[node] for node in graph.nodes()]
+
     try:
         communities = list(nx.algorithms.community.greedy_modularity_communities(graph, **kwargs))
     except AttributeError:
@@ -229,6 +290,8 @@ def girvan_newman_communities(graph: Any, n_communities: Optional[int] = None, *
     """
     if not HAS_NETWORKX:
         raise ImportError("networkx required for community detection")
+
+    graph = _as_networkx_graph(graph)
 
     # Make a copy to avoid modifying original
     G = graph.copy()
@@ -272,6 +335,12 @@ def label_propagation_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for community detection")
 
+    graph = _as_networkx_graph(graph)
+    if graph.number_of_nodes() == 0:
+        return []
+    if graph.number_of_edges() == 0:
+        return [[node] for node in graph.nodes()]
+
     communities = list(nx.algorithms.community.label_propagation_communities(graph, **kwargs))
 
     # Convert frozensets to lists and sort by size
@@ -297,6 +366,12 @@ def asyn_lpa_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
     """
     if not HAS_NETWORKX:
         raise ImportError("networkx required for community detection")
+
+    graph = _as_networkx_graph(graph)
+    if graph.number_of_nodes() == 0:
+        return []
+    if graph.number_of_edges() == 0:
+        return [[node] for node in graph.nodes()]
 
     communities = list(nx.algorithms.community.asyn_lpa_communities(graph, **kwargs))
 
@@ -324,6 +399,10 @@ def fluid_communities(graph: Any, k: int, **kwargs: Any) -> List[List[str]]:
     """
     if not HAS_NETWORKX:
         raise ImportError("networkx required for community detection")
+
+    graph = _as_networkx_graph(graph)
+    if graph.number_of_nodes() == 0:
+        return []
 
     communities = list(nx.algorithms.community.asyn_fluidc(graph, k, **kwargs))
 
@@ -361,10 +440,21 @@ def detect_communities(graph: Any, method: str = "louvain", **kwargs: Any) -> Di
 
     if method not in method_map:
         available_methods = list(method_map.keys())
-        raise ValueError(f"Unknown method '{method}'. Available: {available_methods}")
+        raise ValueError(f"Unknown community detection method '{method}'. Available: {available_methods}")
 
     # Get community lists from underlying method
-    community_lists = method_map[method](graph, **kwargs)
+    nx_graph = _as_networkx_graph(graph)
+    try:
+        community_lists = method_map[method](nx_graph, **kwargs)
+    except ImportError:
+        fallback = louvain_communities if method == "leiden" and HAS_LOUVAIN else greedy_modularity_communities
+        community_lists = fallback(nx_graph, **kwargs)
+    except Exception as exc:
+        if method != "greedy":
+            logger.warning(f"Method {method} failed ({exc}); falling back to greedy modularity")
+            community_lists = greedy_modularity_communities(nx_graph)
+        else:
+            raise
 
     # Convert to dict mapping node -> community ID
     node_to_community = {}
@@ -391,6 +481,9 @@ def evaluate_communities(graph: Any, communities: List[List[str]]) -> Dict[str, 
     if not HAS_NETWORKX:
         raise ImportError("networkx required for community evaluation")
 
+    graph = _as_networkx_graph(graph)
+    communities = _communities_to_lists(communities, graph)
+
     # Convert communities to partition format
     partition = {}
     for i, community in enumerate(communities):
@@ -409,6 +502,14 @@ def evaluate_communities(graph: Any, communities: List[List[str]]) -> Dict[str, 
 
     # Calculate community statistics
     community_sizes = [len(comm) for comm in communities]
+    if not community_sizes:
+        return {
+            "n_communities": 0,
+            "num_communities": 0,
+            "modularity": 0.0,
+            "community_sizes": {"mean": 0.0, "std": 0.0, "min": 0, "max": 0, "sizes": []},
+            "coverage": 0.0,
+        }
     n_communities = len(communities)
 
     evaluation = {
@@ -491,7 +592,7 @@ def compare_community_methods(graph: Any, methods: Optional[List[str]] = None, *
 
 def hierarchical_communities(
     graph: Any, method: str = "louvain", max_levels: int = 5, **kwargs: Any
-) -> List[List[List[str]]]:
+) -> Dict[int, Dict[str, int]]:
     """Detect hierarchical community structure.
 
     Args:
@@ -509,18 +610,26 @@ def hierarchical_communities(
     if not HAS_NETWORKX:
         raise ImportError("networkx required for hierarchical communities")
 
-    hierarchies = []
-    current_graph = graph.copy()
+    levels = int(kwargs.pop("levels", max_levels))
+    seed = kwargs.pop("seed", None)
+    if seed is not None and "random_state" not in kwargs:
+        kwargs["random_state"] = seed
 
-    for level in range(max_levels):
+    hierarchies: dict[int, dict[str, int]] = {}
+    current_graph = _as_networkx_graph(graph)
+
+    previous: dict[str, int] = {}
+    for level in range(levels):
         # Detect communities at current level
-        communities = detect_communities(current_graph, method=method, **kwargs)
+        partition = detect_communities(current_graph, method=method, **kwargs)
+        hierarchies[level] = partition
+        communities = _communities_to_lists(partition, current_graph)
 
         if len(communities) <= 1:
-            # No further subdivision possible
-            break
+            previous = partition
+            continue
 
-        hierarchies.append(communities)
+        previous = partition
 
         # Create meta-graph for next level
         # Contract each community into a single supernode
@@ -547,10 +656,105 @@ def hierarchical_communities(
         current_graph = meta_graph
 
         if len(current_graph.nodes()) <= 1:
-            break
+            current_graph = _as_networkx_graph(graph)
+
+    while len(hierarchies) < levels:
+        hierarchies[len(hierarchies)] = previous.copy()
 
     logger.info(f"Detected {len(hierarchies)} levels of hierarchical communities")
     return hierarchies
+
+
+def compare_communities(communities1: Dict[str, int], communities2: Dict[str, int]) -> Dict[str, float]:
+    """Compare two node-to-community assignments."""
+    common_nodes = sorted(set(communities1) & set(communities2))
+    if not common_nodes:
+        return {"normalized_mutual_information": 0.0, "adjusted_rand_index": 0.0}
+
+    labels1 = [communities1[node] for node in common_nodes]
+    labels2 = [communities2[node] for node in common_nodes]
+
+    try:
+        from sklearn.metrics import adjusted_rand_score, normalized_mutual_info_score
+
+        nmi = float(normalized_mutual_info_score(labels1, labels2))
+        ari = float(adjusted_rand_score(labels1, labels2))
+    except Exception:
+        matches = sum(a == b for a, b in zip(labels1, labels2))
+        nmi = matches / len(common_nodes)
+        ari = nmi
+
+    return {"normalized_mutual_information": nmi, "adjusted_rand_index": ari}
+
+
+def community_stability(
+    graph: Any,
+    method: str = "louvain",
+    n_runs: int = 10,
+    seed: int | None = None,
+    **kwargs: Any,
+) -> Dict[str, Any]:
+    """Estimate community stability across repeated runs."""
+    nx_graph = _as_networkx_graph(graph)
+    partitions: list[dict[str, int]] = []
+    modularities: list[float] = []
+
+    for run in range(n_runs):
+        run_kwargs = dict(kwargs)
+        run_kwargs["random_state"] = (seed or 0) + run
+        partition = detect_communities(nx_graph, method=method, **run_kwargs)
+        partitions.append(partition)
+        modularities.append(modularity(nx_graph, partition))
+
+    comparisons = []
+    for i, partition1 in enumerate(partitions):
+        for partition2 in partitions[i + 1 :]:
+            comparisons.append(compare_communities(partition1, partition2)["normalized_mutual_information"])
+
+    stability_score = float(np.mean(comparisons)) if comparisons else 1.0
+    return {
+        "stability_score": stability_score,
+        "avg_modularity": float(np.mean(modularities)) if modularities else 0.0,
+        "modularity_values": modularities,
+    }
+
+
+def optimize_resolution(
+    graph: Any,
+    resolution_range: tuple[float, float] = (0.5, 2.0),
+    n_points: int = 10,
+    method: str = "louvain",
+    **kwargs: Any,
+) -> Dict[str, Any]:
+    """Find a community resolution with the best modularity."""
+    nx_graph = _as_networkx_graph(graph)
+    resolutions = np.linspace(resolution_range[0], resolution_range[1], n_points)
+    results = []
+
+    for resolution in resolutions:
+        partition = detect_communities(nx_graph, method=method, resolution=float(resolution), **kwargs)
+        score = modularity(nx_graph, partition)
+        results.append(
+            {
+                "resolution": float(resolution),
+                "modularity": float(score),
+                "num_communities": len(set(partition.values())),
+            }
+        )
+
+    best = (
+        max(results, key=lambda item: item["modularity"])
+        if results
+        else {
+            "resolution": resolution_range[0],
+            "modularity": 0.0,
+        }
+    )
+    return {
+        "optimal_resolution": best["resolution"],
+        "optimal_modularity": best["modularity"],
+        "results": results,
+    }
 
 
 def modularity(graph: Any, communities: List[List[str]]) -> float:
@@ -569,8 +773,13 @@ def modularity(graph: Any, communities: List[List[str]]) -> float:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for modularity calculation")
 
+    graph = _as_networkx_graph(graph)
+    community_lists = _communities_to_lists(communities, graph)
+    if not community_lists or graph.number_of_edges() == 0:
+        return 0.0
+
     try:
-        return nx.algorithms.community.modularity(graph, communities)
+        return float(nx.algorithms.community.modularity(graph, community_lists))
     except Exception:
         # Fallback: simple modularity approximation
         # This is a simplified calculation for cases where NetworkX fails
@@ -579,7 +788,7 @@ def modularity(graph: Any, communities: List[List[str]]) -> float:
             return 0.0
 
         modularity = 0.0
-        for community in communities:
+        for community in community_lists:
             subgraph = graph.subgraph(community)
             community_edges = subgraph.number_of_edges()
             expected_edges = sum(graph.degree(node) for node in community) ** 2 / (4 * total_edges)
@@ -606,11 +815,26 @@ def community_metrics(graph: Any, communities: List[List[str]]) -> Dict[str, Any
     if not HAS_NETWORKX:
         raise ImportError("networkx required for community metrics")
 
+    graph = _as_networkx_graph(graph)
+    community_lists = _communities_to_lists(communities, graph)
     metrics = {}
 
     # Basic community statistics
-    community_sizes = [len(comm) for comm in communities]
-    metrics["n_communities"] = len(communities)
+    community_sizes = [len(comm) for comm in community_lists]
+    if not community_sizes:
+        return {
+            "n_communities": 0,
+            "num_communities": 0,
+            "community_sizes": {"mean": 0.0, "std": 0.0, "min": 0, "max": 0, "sizes": []},
+            "avg_community_size": 0.0,
+            "modularity": 0.0,
+            "coverage": 0.0,
+            "internal_edge_ratio": 0.0,
+            "quality_score": 0.0,
+        }
+
+    metrics["n_communities"] = len(community_lists)
+    metrics["num_communities"] = len(community_lists)
     metrics["community_sizes"] = {
         "mean": float(np.mean(community_sizes)),
         "std": float(np.std(community_sizes)),
@@ -621,17 +845,24 @@ def community_metrics(graph: Any, communities: List[List[str]]) -> Dict[str, Any
 
     # Modularity
     try:
-        metrics["modularity"] = modularity(graph, communities)
+        metrics["modularity"] = modularity(graph, community_lists)
     except Exception:
         metrics["modularity"] = None
 
     # Coverage (fraction of nodes in communities)
-    total_nodes_in_communities = sum(len(comm) for comm in communities)
+    total_nodes_in_communities = sum(len(comm) for comm in community_lists)
     metrics["coverage"] = total_nodes_in_communities / len(graph.nodes()) if graph.nodes() else 0
+    metrics["avg_community_size"] = float(np.mean(community_sizes))
+
+    internal_edges = 0
+    for community in community_lists:
+        internal_edges += graph.subgraph(community).number_of_edges()
+    total_edges = graph.number_of_edges()
+    metrics["internal_edge_ratio"] = internal_edges / total_edges if total_edges else 0.0
 
     # Conductance for each community
     conductances = []
-    for community in communities:
+    for community in community_lists:
         if len(community) < len(graph.nodes()):
             try:
                 conductance = nx.algorithms.cuts.conductance(graph, community)
@@ -650,7 +881,7 @@ def community_metrics(graph: Any, communities: List[List[str]]) -> Dict[str, Any
 
     # Internal density for each community
     densities = []
-    for community in communities:
+    for community in community_lists:
         subgraph = graph.subgraph(community)
         if len(community) > 1:
             max_edges = len(community) * (len(community) - 1) / 2

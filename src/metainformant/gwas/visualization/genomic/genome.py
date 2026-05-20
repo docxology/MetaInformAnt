@@ -58,15 +58,9 @@ def circular_manhattan_plot(
         positions_list = []
         pvalues_list = []
         for entry in results_df:
-            chroms_list.append(
-                entry.get("CHROM", entry.get("CHR", entry.get("chr", "1")))
-            )
-            positions_list.append(
-                entry.get("POS", entry.get("BP", entry.get("pos", 0)))
-            )
-            pvalues_list.append(
-                entry.get("p_value", entry.get("P", entry.get("pval", 1.0)))
-            )
+            chroms_list.append(entry.get("CHROM", entry.get("CHR", entry.get("chr", "1"))))
+            positions_list.append(entry.get("POS", entry.get("BP", entry.get("pos", 0))))
+            pvalues_list.append(entry.get("p_value", entry.get("P", entry.get("pval", 1.0))))
     elif hasattr(results_df, "columns"):
         # DataFrame path
         required_cols = ["CHR", "BP", "P"]
@@ -197,15 +191,11 @@ def circular_manhattan_plot(
             for j in range(len(data)):
                 angle_deg = start_angle + norm_pos[j] * angle_per_chrom
                 radius = 1 + neg_log_p_arr[j] * 0.1
-                all_points.append(
-                    (pval_arr[j], angle_deg, radius, chrom, int(pos_arr[j]))
-                )
+                all_points.append((pval_arr[j], angle_deg, radius, chrom, int(pos_arr[j])))
 
         # Sort by p-value ascending (smallest p-value = most significant)
         all_points.sort(key=lambda x: x[0])
-        for rank, (pval, angle_deg, radius, chrom_label, pos_val) in enumerate(
-            all_points[:label_top_n]
-        ):
+        for rank, (pval, angle_deg, radius, chrom_label, pos_val) in enumerate(all_points[:label_top_n]):
             label_text = f"{chrom_label}:{pos_val}"
             angle_rad = np.deg2rad(angle_deg)
             label_radius = radius + 0.15 + rank * 0.05
@@ -290,9 +280,7 @@ def chromosome_ideogram(
     # Sort chromosomes
     chroms = sorted(
         chromosome_lengths.keys(),
-        key=lambda x: int(x.replace("chr", ""))
-        if x.replace("chr", "").isdigit()
-        else float("inf"),
+        key=lambda x: int(x.replace("chr", "")) if x.replace("chr", "").isdigit() else float("inf"),
     )
 
     fig, ax = plt.subplots(figsize=(12, 8))
@@ -444,9 +432,7 @@ def genome_wide_ld_heatmap(
         nrows = int(np.ceil(n_chroms / 4))
         ncols = 4
 
-    fig, axes = plt.subplots(
-        nrows, ncols, figsize=figsize, squeeze=False, sharex=True, sharey=True
-    )
+    fig, axes = plt.subplots(nrows, ncols, figsize=figsize, squeeze=False, sharex=True, sharey=True)
     axes = axes.flatten()
 
     # Plot each chromosome
@@ -462,9 +448,7 @@ def genome_wide_ld_heatmap(
         r2_values = [entry["r2"] for entry in data]
 
         # Create scatter plot colored by LD
-        scatter = ax.scatter(
-            pos1, pos2, c=r2_values, cmap="RdYlBu_r", s=2, alpha=0.6, vmin=0, vmax=1
-        )
+        scatter = ax.scatter(pos1, pos2, c=r2_values, cmap="RdYlBu_r", s=2, alpha=0.6, vmin=0, vmax=1)
 
         # Highlight high LD regions
         high_ld = [entry for entry in data if entry["r2"] >= ld_threshold]

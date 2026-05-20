@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from metainformant.gwas.analysis.structure import compute_kinship_matrix
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Dict, List, Optional, Set
 
 from metainformant.core.data import validation
 from metainformant.core.utils import logging

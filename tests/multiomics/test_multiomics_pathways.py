@@ -8,9 +8,6 @@ All tests use real implementations with realistic pathway/gene data (NO mocking)
 
 from __future__ import annotations
 
-import math
-from typing import Any
-
 import pytest
 
 from metainformant.multiomics.pathways.enrichment import (

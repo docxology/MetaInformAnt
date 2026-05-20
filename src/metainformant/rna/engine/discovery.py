@@ -27,6 +27,7 @@ Environment:
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -42,12 +43,7 @@ try:
 except ImportError:
     BIOPYTHON_AVAILABLE = False
 
-try:
-    from ncbi_datasets.openapi import openapi_client
-
-    NCBI_DATASETS_AVAILABLE = True
-except ImportError:
-    NCBI_DATASETS_AVAILABLE = False
+NCBI_DATASETS_AVAILABLE = importlib.util.find_spec("ncbi_datasets") is not None
 
 
 def generate_config_yaml(

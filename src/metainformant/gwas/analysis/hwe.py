@@ -12,8 +12,8 @@ Key references:
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Tuple, Union
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from metainformant.core.utils import logging
 
@@ -154,11 +154,7 @@ def hwe_flag_variants(
         # Allele freq
         alt_alleles = 2 * n_hom_alt + n_het
         total_alleles = 2 * n_called
-        maf = (
-            min(alt_alleles / total_alleles, 1 - alt_alleles / total_alleles)
-            if total_alleles > 0
-            else 0.0
-        )
+        maf = min(alt_alleles / total_alleles, 1 - alt_alleles / total_alleles) if total_alleles > 0 else 0.0
 
         chi2, p_val = hwe_chi2_test(n_hom_ref, n_het, n_hom_alt)
 
@@ -272,9 +268,7 @@ def hwe_distribution_plot(
     # Right panel: obs vs expected het scatter, colored by MAF
     if HAS_NUMPY:
         mafs_arr = [r["maf"] for r in hwe_results]
-        scatter = ax2.scatter(
-            exp_hets, obs_hets, c=mafs_arr, cmap="viridis", s=4, alpha=0.4, linewidths=0
-        )
+        scatter = ax2.scatter(exp_hets, obs_hets, c=mafs_arr, cmap="viridis", s=4, alpha=0.4, linewidths=0)
         plt.colorbar(scatter, ax=ax2, label="MAF", shrink=0.8)
     else:
         ax2.scatter(exp_hets, obs_hets, s=4, alpha=0.3, color="#4C72B0")
@@ -315,9 +309,7 @@ def _chi2_sf(x: float, df: int = 1) -> float:
     return _regularized_gamma_q(df / 2.0, x / 2.0)
 
 
-def _regularized_gamma_q(
-    a: float, x: float, max_iter: int = 200, tol: float = 1e-12
-) -> float:
+def _regularized_gamma_q(a: float, x: float, max_iter: int = 200, tol: float = 1e-12) -> float:
     """Q(a, x) = 1 - P(a, x): upper regularized incomplete gamma function.
 
     Uses continued fraction representation (Lentz method).

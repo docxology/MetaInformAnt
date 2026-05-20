@@ -15,7 +15,6 @@ def verify_ddm_optimization():
     # Generate synthetic data
     v_true = 0.8
     a_true = 1.5
-    z_true = 0.5
     t0_true = 0.3
 
     # Simple simulation of RTs (Wiener process approximation)
@@ -68,7 +67,7 @@ def verify_perception():
     logger.info("Verifying Perception submodule...")
     import math
 
-    from metainformant.math.perception import d_prime, sdt_metrics, stevens_power_law
+    from metainformant.math.perception import d_prime, stevens_power_law
 
     # Test d_prime
     # H=0.84 (Z=+1), FA=0.16 (Z=-1) => d' = 1 - (-1) = 2

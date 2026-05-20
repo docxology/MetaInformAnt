@@ -13,7 +13,7 @@ def filter_samples(metadata_path, output_path, n=5):
 
     valid_samples = []
     for row in rows:
-        run_id = row.get("run", "")
+        row.get("run", "")
         aws_link = row.get("AWS_Link", "")
         size_str = row.get("size", "0")
 
@@ -40,7 +40,7 @@ def filter_samples(metadata_path, output_path, n=5):
         print("WARNING: No valid samples found!")
         # Fallback: try relaxed criteria (size > 0)
         for row in rows:
-            run_id = row.get("run", "")
+            row.get("run", "")
             aws_link = row.get("AWS_Link", "")
             if aws_link and ".lite" not in aws_link:
                 valid_samples.append(row)

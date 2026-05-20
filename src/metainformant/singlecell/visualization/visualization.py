@@ -7,18 +7,18 @@ and quality control plots.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, List, Optional
 
 import numpy as np
-import pandas as pd
 
 from metainformant.core.data import validation
-from metainformant.core.utils import errors
-from metainformant.core.utils import logging
+from metainformant.core.utils import errors, logging
+from metainformant.singlecell.data.preprocessing import SingleCellData
+
+logger = logging.get_logger(__name__)
 
 # Try to import matplotlib
 try:
-    import matplotlib.patches as mpatches
     import matplotlib.pyplot as plt
 
     HAS_MATPLOTLIB = True
@@ -26,11 +26,6 @@ except ImportError:
     plt = None
     HAS_MATPLOTLIB = False
     logger.warning("matplotlib not available - visualization functions will return None")
-
-logger = logging.get_logger(__name__)
-
-# Import our SingleCellData
-from metainformant.singlecell.data.preprocessing import SingleCellData
 
 
 def plot_umap(data: SingleCellData, color: Optional[str] = None, **kwargs) -> Any:
@@ -221,7 +216,7 @@ def plot_pca(data: SingleCellData, color: Optional[str] = None, n_components: in
     ]
 
     if len(pca_cols) < n_components:
-        raise errors.ValidationError(f"PCA coordinates not found in data.obs. Run pca_reduction first.")
+        raise errors.ValidationError("PCA coordinates not found in data.obs. Run pca_reduction first.")
 
     if n_components == 2:
         x_col, y_col = pca_cols[0], pca_cols[1]
@@ -268,7 +263,6 @@ def plot_pca(data: SingleCellData, color: Optional[str] = None, n_components: in
         ax.set_title("PCA Projection")
 
     else:  # 3D plot
-        from mpl_toolkits.mplot3d import Axes3D
 
         x_col, y_col, z_col = pca_cols[0], pca_cols[1], pca_cols[2]
         fig = plt.figure(figsize=kwargs.get("figsize", (10, 8)))

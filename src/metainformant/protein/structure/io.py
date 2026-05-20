@@ -7,12 +7,11 @@ in various formats (PDB, MMCIF, etc.).
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
 from metainformant.core.utils import logging
-from metainformant.core import io
 
 logger = logging.get_logger(__name__)
 
@@ -199,7 +198,6 @@ def parse_mmcif_file(file_path: str | Path) -> Dict[str, Any]:
 
     # Simplified mmCIF parsing
     # Real implementation would use a proper mmCIF parser
-    data = {}
 
     with open(file_path, "r") as f:
         content = f.read()

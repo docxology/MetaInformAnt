@@ -57,7 +57,7 @@ class TestLoadPostgresConfigFromEnv:
         for k in ["PG_HOST", "PG_DATABASE", "PG_USER", "PG_PASSWORD"]:
             os.environ.pop(k, None)
 
-        cfg = core_config.load_postgres_config_from_env()
+        core_config.load_postgres_config_from_env()
         # Should return None if not all required vars are set
         # (depends on implementation)
 

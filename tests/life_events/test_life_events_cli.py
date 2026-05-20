@@ -14,9 +14,7 @@ import pytest
 
 from metainformant.core.io.io import dump_json
 from metainformant.life_events.core.events import Event, EventSequence
-from metainformant.life_events.core.utils import load_sequences_from_json
 from metainformant.life_events.models.predictor import EventSequencePredictor
-from metainformant.life_events.workflow.workflow import analyze_life_course
 
 # Get the repository root directory
 REPO_ROOT = Path(__file__).resolve().parents[1]

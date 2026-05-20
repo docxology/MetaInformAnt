@@ -23,7 +23,7 @@ from __future__ import annotations
 import argparse
 import re
 from pathlib import Path
-from typing import Dict, List
+from typing import Any, Dict, List
 
 
 class ExampleGenerator:
@@ -36,32 +36,32 @@ class ExampleGenerator:
         # Domain-specific configurations
         self.domain_configs = {
             "core": {
-                "template": "base_template.py",
+                "template": "base_template.py.j2",
                 "description": "Core utilities demonstration",
                 "features": ["Configuration management", "I/O operations", "Logging setup"],
             },
             "dna": {
-                "template": "dna_template.py",
+                "template": "dna_template.py.j2",
                 "description": "DNA sequence analysis",
                 "features": ["Sequence processing", "Analysis algorithms", "Result visualization"],
             },
             "rna": {
-                "template": "rna_template.py",
+                "template": "rna_template.py.j2",
                 "description": "RNA analysis workflows",
                 "features": ["Transcriptomic analysis", "Expression quantification", "Workflow orchestration"],
             },
             "gwas": {
-                "template": "gwas_template.py",
+                "template": "gwas_template.py.j2",
                 "description": "Genome-wide association studies",
                 "features": ["Association testing", "Statistical analysis", "Visualization"],
             },
             "protein": {
-                "template": "protein_template.py",
+                "template": "protein_template.py.j2",
                 "description": "Protein sequence analysis",
                 "features": ["Structure analysis", "Sequence alignment", "Property calculation"],
             },
             "ml": {
-                "template": "ml_template.py",
+                "template": "ml_template.py.j2",
                 "description": "Machine learning analysis",
                 "features": ["Model training", "Feature selection", "Performance evaluation"],
             },
@@ -99,7 +99,7 @@ class ExampleGenerator:
         example_file = example_dir / f"example_{name}.py"
 
         # Check if example already exists
-        if example_file.exists():
+        if example_file.exists() and not dry_run:
             raise FileExistsError(f"Example already exists: {example_file}")
 
         # Load template
@@ -111,12 +111,14 @@ class ExampleGenerator:
             "domain": domain,
             "name": name,
             "description": description,
+            "description_lower": description.lower(),
             "features": features,
             "analysis_type": self._get_analysis_type(domain, name),
             "imports": self._get_domain_imports(domain),
             "custom_imports": self._get_custom_imports(domain),
-            "code_block": self._get_code_block(domain, name),
         }
+        template_vars["analysis_type_lower"] = template_vars["analysis_type"].lower()
+        template_vars["code_block"] = self._get_code_block(domain, name, template_vars["analysis_type"])
 
         # Render template
         rendered_content = self._render_template(template_content, template_vars)
@@ -169,15 +171,20 @@ class ExampleGenerator:
                         "{% for import_line in imports -%}\n{{ import_line }}\n{% endfor %}", imports_text
                     )
                 else:
-                    result = result.replace(f"{{{{ {key} }}}}", str(value))
+                    result = self._replace_variable(result, key, str(value))
             else:
-                result = result.replace(f"{{{{ {key} }}}}", str(value))
+                result = self._replace_variable(result, key, str(value))
 
         # Clean up any remaining template tags
         result = re.sub(r"{%.*?%}", "", result)
         result = re.sub(r"{{.*?}}", "", result)
 
         return result
+
+    @staticmethod
+    def _replace_variable(template: str, key: str, value: str) -> str:
+        """Replace both compact and spaced variable placeholders."""
+        return template.replace(f"{{{{ {key} }}}}", value).replace(f"{{{{{key}}}}}", value)
 
     def _get_analysis_type(self, domain: str, name: str) -> str:
         """Get analysis type based on domain and name."""
@@ -210,18 +217,18 @@ class ExampleGenerator:
         """Get custom imports section."""
         return "# Additional imports as needed"
 
-    def _get_code_block(self, domain: str, name: str) -> str:
+    def _get_code_block(self, domain: str, name: str, analysis_type: str) -> str:
         """Get the main code block for the example."""
         code_blocks = {
-            "dna": """
+            "dna": f"""
         # Perform sequence analysis
-        if "{{analysis_type}}" == "Sequence":
-            results_data[seq_id].update({
+        if {analysis_type!r} == "Sequence":
+            results_data[seq_id].update({{
                 "reverse_complement": sequences.reverse_complement(sequence),
                 "gc_skew": sequences.gc_content(sequence) - 0.5,  # Simplified
                 "complexity": len(set(sequence)) / len(sequence)  # Simplified
-            })
-        elif "{{analysis_type}}" == "Alignment":
+            }})
+        elif {analysis_type!r} == "Alignment":
             # Simple alignment example
             results_data[seq_id]["aligned_with_seq1"] = "Example alignment result"
         """,

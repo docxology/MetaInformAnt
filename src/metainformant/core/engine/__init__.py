@@ -7,8 +7,9 @@ This module provides:
 - RNA-seq backward-compatible types (``WorkflowManager``, ``SampleStage``,
   ``SampleState``) that wrap the generic pipeline for the download -> getfastq
   -> quant workflow."""
+
 from __future__ import annotations
 
 from . import workflow_manager
 
-__all__ = ['workflow_manager']
+__all__ = ["workflow_manager"]

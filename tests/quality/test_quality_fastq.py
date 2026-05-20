@@ -6,8 +6,6 @@ No mocking used - all tests use real data and computational methods.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pytest
 
 from metainformant.quality.io.fastq import (
@@ -17,10 +15,8 @@ from metainformant.quality.io.fastq import (
     basic_statistics,
     duplication_levels,
     gc_content_distribution,
-    n_content_per_position,
     overrepresented_sequences,
     per_base_quality,
-    per_sequence_quality,
     quality_score_distribution,
     sequence_length_distribution,
 )

@@ -18,12 +18,10 @@ from __future__ import annotations
 import argparse
 import importlib
 import json
-import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict, List
 
 
 class DependencyChecker:

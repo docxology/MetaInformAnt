@@ -8,13 +8,6 @@ This module re-exports all public symbols from :mod:`population_pca` and
 
 from __future__ import annotations
 
-from metainformant.gwas.visualization.population.population_pca import (
-    _load_pca_from_file,
-    pca_3d,
-    pca_multi_panel,
-    pca_plot,
-    pca_scree_plot,
-)
 from metainformant.gwas.visualization.population.population_admixture import (
     _load_admixture_from_file,
     _load_kinship_from_file,
@@ -22,6 +15,13 @@ from metainformant.gwas.visualization.population.population_admixture import (
     kinship_clustermap,
     kinship_dendrogram,
     kinship_heatmap,
+)
+from metainformant.gwas.visualization.population.population_pca import (
+    _load_pca_from_file,
+    pca_3d,
+    pca_multi_panel,
+    pca_plot,
+    pca_scree_plot,
 )
 
 __all__ = [

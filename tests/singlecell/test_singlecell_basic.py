@@ -234,7 +234,7 @@ class TestSingleCellDimensionality:
             self.expression_matrix[-remaining:, :] = np.random.lognormal(
                 mean=2, sigma=0.8, size=(remaining, self.n_genes)
             )
-            self.cell_types.extend([f"Type_0"] * remaining)
+            self.cell_types.extend(["Type_0"] * remaining)
 
     def test_run_pca_basic(self):
         """Test PCA dimensionality reduction."""

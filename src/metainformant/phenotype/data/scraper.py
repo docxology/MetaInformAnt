@@ -10,16 +10,14 @@ from __future__ import annotations
 import re
 import time
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
-from urllib.parse import urljoin, urlparse
+from typing import Any, Dict, Iterator, List, Optional, Set
 
 import requests
 from bs4 import BeautifulSoup
 
-from metainformant.core.data import validation
-from metainformant.core.utils import errors
-from metainformant.core.utils import logging
 from metainformant.core import io
+from metainformant.core.data import validation
+from metainformant.core.utils import errors, logging
 
 logger = logging.get_logger(__name__)
 

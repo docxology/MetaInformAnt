@@ -318,7 +318,7 @@ def _check_external_tool(tool_name: str) -> bool:
     try:
         result = subprocess.run(["which", tool_name], capture_output=True, text=True, timeout=5)
         return result.returncode == 0
-    except:
+    except Exception:
         return False
 
 
@@ -329,5 +329,5 @@ def _check_network_available() -> bool:
     try:
         urllib.request.urlopen("http://httpbin.org/get", timeout=5)
         return True
-    except:
+    except Exception:
         return False

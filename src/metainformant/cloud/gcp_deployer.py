@@ -4,17 +4,16 @@ Manages creating, monitoring, and tearing down GCP Compute Engine VMs
 to run the amalgkit RNA-seq pipeline at scale.  Shells out to `gcloud`
 CLI so no Python SDK is needed.
 """
+
 from __future__ import annotations
 
 import json
 import logging
 import shutil
 import subprocess
-import sys
-import textwrap
 import time
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from metainformant.cloud.cloud_config import CloudConfig
 
@@ -34,14 +33,21 @@ class GCPDeployer:
         """Check if gcloud CLI is available."""
         return shutil.which("gcloud") is not None
 
-    def _run(self, args: list[str], *, check: bool = True,
-             capture: bool = True, timeout: int = 120) -> subprocess.CompletedProcess:
+    def _run(
+        self, args: list[str], *, check: bool = True, capture: bool = True, timeout: int = 120
+    ) -> subprocess.CompletedProcess:
         """Run a gcloud command."""
-        cmd = ["gcloud"] + args + [
-            "--project", self.cfg.project,
-            "--format", "json",
-            "--quiet",
-        ]
+        cmd = (
+            ["gcloud"]
+            + args
+            + [
+                "--project",
+                self.cfg.project,
+                "--format",
+                "json",
+                "--quiet",
+            ]
+        )
         logger.debug("Running: %s", " ".join(cmd))
         return subprocess.run(
             cmd,
@@ -53,11 +59,18 @@ class GCPDeployer:
 
     def _ssh_run(self, command: str, *, timeout: int = 60) -> subprocess.CompletedProcess:
         """Run a command on the VM via SSH."""
-        return self._run([
-            "compute", "ssh", self.cfg.instance_name,
-            "--zone", self.cfg.zone,
-            "--command", command,
-        ], timeout=timeout)
+        return self._run(
+            [
+                "compute",
+                "ssh",
+                self.cfg.instance_name,
+                "--zone",
+                self.cfg.zone,
+                "--command",
+                command,
+            ],
+            timeout=timeout,
+        )
 
     # ── VM lifecycle ─────────────────────────────────────────────────────
 
@@ -80,17 +93,30 @@ class GCPDeployer:
         metadata_str = ",".join(f"{k}={v}" for k, v in metadata_items.items() if v)
 
         cmd = [
-            "compute", "instances", "create", self.cfg.instance_name,
-            "--zone", self.cfg.zone,
-            "--machine-type", self.cfg.machine_type,
-            "--boot-disk-size", f"{self.cfg.disk_size_gb}GB",
-            "--boot-disk-type", "pd-standard",
-            "--image-family", self.cfg.image_family,
-            "--image-project", self.cfg.image_project,
-            "--metadata-from-file", f"startup-script={startup_script}",
-            "--metadata", metadata_str,
-            "--scopes", "cloud-platform",
-            "--tags", "metainformant-pipeline",
+            "compute",
+            "instances",
+            "create",
+            self.cfg.instance_name,
+            "--zone",
+            self.cfg.zone,
+            "--machine-type",
+            self.cfg.machine_type,
+            "--boot-disk-size",
+            f"{self.cfg.disk_size_gb}GB",
+            "--boot-disk-type",
+            "pd-standard",
+            "--image-family",
+            self.cfg.image_family,
+            "--image-project",
+            self.cfg.image_project,
+            "--metadata-from-file",
+            f"startup-script={startup_script}",
+            "--metadata",
+            metadata_str,
+            "--scopes",
+            "cloud-platform",
+            "--tags",
+            "metainformant-pipeline",
         ]
 
         if self.cfg.local_ssd_count > 0:
@@ -98,8 +124,7 @@ class GCPDeployer:
                 cmd.extend(["--local-ssd", "interface=NVME"])
 
         if self.cfg.spot:
-            cmd.extend(["--provisioning-model", "SPOT",
-                         "--instance-termination-action", "STOP"])
+            cmd.extend(["--provisioning-model", "SPOT", "--instance-termination-action", "STOP"])
 
         if self.cfg.service_account_email:
             cmd.extend(["--service-account", self.cfg.service_account_email])
@@ -115,11 +140,19 @@ class GCPDeployer:
     def delete_vm(self) -> bool:
         """Delete the VM and its disk."""
         try:
-            self._run([
-                "compute", "instances", "delete", self.cfg.instance_name,
-                "--zone", self.cfg.zone,
-                "--delete-disks", "all",
-            ], timeout=120)
+            self._run(
+                [
+                    "compute",
+                    "instances",
+                    "delete",
+                    self.cfg.instance_name,
+                    "--zone",
+                    self.cfg.zone,
+                    "--delete-disks",
+                    "all",
+                ],
+                timeout=120,
+            )
             return True
         except subprocess.CalledProcessError as e:
             logger.error("Failed to delete VM: %s", e.stderr)
@@ -128,10 +161,17 @@ class GCPDeployer:
     def stop_vm(self) -> bool:
         """Stop (but keep) the VM."""
         try:
-            self._run([
-                "compute", "instances", "stop", self.cfg.instance_name,
-                "--zone", self.cfg.zone,
-            ], timeout=120)
+            self._run(
+                [
+                    "compute",
+                    "instances",
+                    "stop",
+                    self.cfg.instance_name,
+                    "--zone",
+                    self.cfg.zone,
+                ],
+                timeout=120,
+            )
             return True
         except subprocess.CalledProcessError:
             return False
@@ -139,10 +179,17 @@ class GCPDeployer:
     def start_vm(self) -> bool:
         """Start a stopped VM."""
         try:
-            self._run([
-                "compute", "instances", "start", self.cfg.instance_name,
-                "--zone", self.cfg.zone,
-            ], timeout=120)
+            self._run(
+                [
+                    "compute",
+                    "instances",
+                    "start",
+                    self.cfg.instance_name,
+                    "--zone",
+                    self.cfg.zone,
+                ],
+                timeout=120,
+            )
             return True
         except subprocess.CalledProcessError:
             return False
@@ -152,10 +199,16 @@ class GCPDeployer:
     def get_vm_status(self) -> dict[str, Any]:
         """Get VM instance status."""
         try:
-            result = self._run([
-                "compute", "instances", "describe", self.cfg.instance_name,
-                "--zone", self.cfg.zone,
-            ])
+            result = self._run(
+                [
+                    "compute",
+                    "instances",
+                    "describe",
+                    self.cfg.instance_name,
+                    "--zone",
+                    self.cfg.zone,
+                ]
+            )
             return json.loads(result.stdout) if result.stdout else {}
         except subprocess.CalledProcessError:
             return {"status": "NOT_FOUND"}
@@ -208,24 +261,32 @@ class GCPDeployer:
 
         try:
             # Use the dedicated download script which handles docker→VM→local
-            script_path = Path(__file__).resolve().parent.parent.parent.parent / "scripts" / "cloud" / "download_results.sh"
+            script_path = (
+                Path(__file__).resolve().parent.parent.parent.parent / "scripts" / "cloud" / "download_results.sh"
+            )
             if script_path.exists():
-                subprocess.run(
-                    ["bash", str(script_path), "--output", str(local_path)],
-                    check=True, timeout=7200
-                )
+                subprocess.run(["bash", str(script_path), "--output", str(local_path)], check=True, timeout=7200)
                 return True
-            
+
             # Fallback: direct scp (works if data is on VM filesystem, not in container)
             logger.warning("download_results.sh not found, trying direct scp...")
             for subdir in ["*/work/quant", "*/merged", "pipeline_progress.db"]:
-                subprocess.run([
-                    "gcloud", "compute", "scp", "--recurse",
-                    "--zone", self.cfg.zone,
-                    "--project", self.cfg.project,
-                    f"{self.cfg.instance_name}:/opt/MetaInformAnt/projects/hymenoptera_amalgkit/data/{subdir}",
-                    str(local_path),
-                ], check=False, timeout=3600)
+                subprocess.run(
+                    [
+                        "gcloud",
+                        "compute",
+                        "scp",
+                        "--recurse",
+                        "--zone",
+                        self.cfg.zone,
+                        "--project",
+                        self.cfg.project,
+                        f"{self.cfg.instance_name}:/opt/MetaInformAnt/projects/hymenoptera_amalgkit/data/{subdir}",
+                        str(local_path),
+                    ],
+                    check=False,
+                    timeout=3600,
+                )
             return True
         except subprocess.TimeoutExpired:
             logger.error("Download timed out after 2 hours")
@@ -238,8 +299,7 @@ class GCPDeployer:
             return False
         try:
             self._ssh_run(
-                f"gsutil -m rsync -r /opt/MetaInformAnt/projects/ "
-                f"gs://{self.cfg.gcs_bucket}/amalgkit/",
+                f"gsutil -m rsync -r /opt/MetaInformAnt/projects/ " f"gs://{self.cfg.gcs_bucket}/amalgkit/",
                 timeout=600,
             )
             return True
@@ -282,9 +342,9 @@ class GCPDeployer:
         vm_status = status.get("status", "UNKNOWN")
         print(f"   Status: {vm_status}")
 
-        print(f"\n🔧 Pipeline will start automatically via startup script.")
+        print("\n🔧 Pipeline will start automatically via startup script.")
         print(f"   Workers: {self.cfg.workers} | Threads: {self.cfg.threads} | Max GB: {self.cfg.max_gb}")
-        print(f"\n   Monitor with: python scripts/cloud/deploy_gcp.py status")
-        print(f"   View logs:    python scripts/cloud/deploy_gcp.py logs")
+        print("\n   Monitor with: python scripts/cloud/deploy_gcp.py status")
+        print("   View logs:    python scripts/cloud/deploy_gcp.py logs")
 
         return {"vm": result, "ssh_ready": True, "status": vm_status}

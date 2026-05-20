@@ -7,7 +7,7 @@ structure elements using various algorithms and methods.
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from metainformant.core.utils import logging
 

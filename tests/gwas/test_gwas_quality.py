@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from metainformant.gwas.analysis.quality import apply_qc_filters, parse_vcf_full
 
 
@@ -33,6 +31,26 @@ chr1	300	rs3	G	A	50	PASS	DP=20	GT	1/1	0/0	0/1
     assert result["genotypes"][0][0] == 1  # S1, variant 0
     assert result["genotypes"][1][0] == 2  # S2, variant 0
     assert result["genotypes"][2][0] == 0  # S3, variant 0
+
+
+def test_parse_vcf_full_uses_safe_sidecar_cache(tmp_path: Path) -> None:
+    """Second parse should use the pickle-free cache when source metadata matches."""
+    vcf_content = """##fileformat=VCFv4.2
+#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	S1
+chr1	100	rs1	A	G	60	PASS	.	GT	0/1
+"""
+    vcf_file = tmp_path / "test.vcf"
+    vcf_file.write_text(vcf_content)
+
+    first = parse_vcf_full(vcf_file)
+    cache_file = tmp_path / "test.vcf.npz"
+    assert cache_file.exists()
+
+    second = parse_vcf_full(vcf_file)
+    assert second["samples"] == first["samples"]
+    assert second["variants"] == first["variants"]
+    assert second["metadata"] == first["metadata"]
+    assert second["genotypes"].tolist() == first["genotypes"].tolist()
 
 
 def test_parse_vcf_full_missing_genotypes(tmp_path: Path) -> None:

@@ -45,9 +45,7 @@ def load_traits(
             return traits
 
         # Resolve trait column name
-        col = (
-            trait_column if trait_column and trait_column in reader.fieldnames else None
-        )
+        col = trait_column if trait_column and trait_column in reader.fieldnames else None
         if not col:
             for c in reversed(reader.fieldnames):
                 if c.lower() not in id_columns:

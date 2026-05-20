@@ -7,7 +7,7 @@ and cross-omics correlation studies.
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Tuple
 
 from metainformant.core.utils import logging
 
@@ -52,7 +52,6 @@ def predict_transcription_start_sites(dna_sequence: str, window_size: int = 50) 
     """
     # Look for TATA box and other promoter elements
     tata_box = "TATA"
-    initiator = "INR"  # Would need more complex pattern
 
     potential_tss = []
 

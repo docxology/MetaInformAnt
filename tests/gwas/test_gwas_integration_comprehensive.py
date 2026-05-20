@@ -170,7 +170,6 @@ def _make_assoc_results(
     chromosomes: List[int],
 ) -> List[Dict[str, Any]]:
     """Run real linear association tests per variant."""
-    from metainformant.gwas.analysis.association import association_test_linear
 
     results: List[Dict[str, Any]] = []
     for v_idx in range(len(genotypes_by_variant)):
@@ -301,11 +300,6 @@ class TestModuleImports:
         assert callable(phenotype_pca_correlation)
 
     def test_visualization_ld_module(self) -> None:
-        from metainformant.gwas.visualization.genomic.ld import (
-            compute_ld_decay,
-            ld_decay_plot,
-            ld_heatmap_region,
-        )
 
         assert callable(compute_ld_decay)
         assert callable(ld_decay_plot)
@@ -313,8 +307,6 @@ class TestModuleImports:
 
     def test_visualization_composite_module(self) -> None:
         from metainformant.gwas.visualization.interactive.composite import (
-            gwas_summary_panel,
-            population_structure_panel,
             top_hit_detail_panel,
         )
 
@@ -325,8 +317,6 @@ class TestModuleImports:
     def test_visualization_geography_module(self) -> None:
         from metainformant.gwas.visualization.population.geography import (
             allele_frequency_map,
-            population_count_map,
-            sample_map,
         )
 
         assert callable(sample_map)
@@ -335,7 +325,6 @@ class TestModuleImports:
 
     def test_visualization_interactive_module(self) -> None:
         from metainformant.gwas.visualization.interactive.interactive import (
-            interactive_manhattan,
             interactive_pca,
             interactive_volcano,
         )
@@ -346,9 +335,7 @@ class TestModuleImports:
 
     def test_visualization_finemapping_module(self) -> None:
         from metainformant.gwas.visualization.interactive.finemapping import (
-            compute_credible_set,
             conditional_analysis_plot,
-            credible_set_plot,
             pip_vs_ld_plot,
         )
 
@@ -359,10 +346,6 @@ class TestModuleImports:
 
     def test_config_module(self) -> None:
         from metainformant.gwas.visualization.config import (
-            THEMES,
-            PlotStyle,
-            apply_style,
-            get_style,
             style_from_config,
         )
 
@@ -375,31 +358,9 @@ class TestModuleImports:
     def test_top_level_gwas_exports(self) -> None:
         """Verify commonly used functions are importable from the top-level gwas package."""
         from metainformant.gwas import (
-            THEMES,
-            PlotStyle,
-            apply_style,
             association_test_linear,
-            bonferroni_correction,
-            compute_credible_set,
-            compute_kinship_matrix,
-            compute_ld_decay,
-            compute_pca,
-            credible_set_plot,
             estimate_heritability,
-            fdr_correction,
-            genotype_phenotype_boxplot,
-            get_population_labels,
-            get_style,
-            gwas_summary_panel,
             interactive_manhattan,
-            ld_decay_plot,
-            load_sample_metadata,
-            phenotype_correlation_matrix,
-            phenotype_distribution,
-            population_count_map,
-            population_structure_panel,
-            sample_map,
-            validate_metadata,
         )
 
         assert callable(association_test_linear)
@@ -416,7 +377,6 @@ class TestConfigThemes:
     """Verify all PlotStyle themes are valid and apply_style works."""
 
     def test_publication_theme(self) -> None:
-        from metainformant.gwas.visualization.config import THEMES, PlotStyle, get_style
 
         style = get_style("publication")
         assert isinstance(style, PlotStyle)
@@ -424,7 +384,6 @@ class TestConfigThemes:
         assert style.theme == "publication"
 
     def test_presentation_theme(self) -> None:
-        from metainformant.gwas.visualization.config import PlotStyle, get_style
 
         style = get_style("presentation")
         assert isinstance(style, PlotStyle)
@@ -434,7 +393,6 @@ class TestConfigThemes:
         assert style.figsize == (14, 8)
 
     def test_poster_theme(self) -> None:
-        from metainformant.gwas.visualization.config import PlotStyle, get_style
 
         style = get_style("poster")
         assert isinstance(style, PlotStyle)
@@ -445,7 +403,6 @@ class TestConfigThemes:
         assert style.figsize == (20, 12)
 
     def test_all_themes_in_registry(self) -> None:
-        from metainformant.gwas.visualization.config import THEMES
 
         assert "publication" in THEMES
         assert "presentation" in THEMES
@@ -453,20 +410,17 @@ class TestConfigThemes:
         assert len(THEMES) == 3
 
     def test_unknown_theme_fallback(self) -> None:
-        from metainformant.gwas.visualization.config import get_style
 
         style = get_style("nonexistent_theme")
         assert style.theme == "publication"
 
     def test_get_style_overrides(self) -> None:
-        from metainformant.gwas.visualization.config import get_style
 
         style = get_style("publication", dpi=72, alpha=0.5)
         assert style.dpi == 72
         assert style.alpha == 0.5
 
     def test_apply_style_does_not_raise(self) -> None:
-        from metainformant.gwas.visualization.config import apply_style, get_style
 
         try:
             import matplotlib  # noqa: F401
@@ -477,7 +431,7 @@ class TestConfigThemes:
             pytest.skip("matplotlib not available")
 
     def test_style_from_config(self) -> None:
-        from metainformant.gwas.visualization.config import PlotStyle, style_from_config
+        from metainformant.gwas.visualization.config import style_from_config
 
         cfg: Dict[str, Any] = {
             "output": {
@@ -551,7 +505,6 @@ class TestFullPipelineSynthetic:
         phenotypes: List[float],
     ) -> None:
         """Run linear association on every variant and verify real results."""
-        from metainformant.gwas.analysis.association import association_test_linear
 
         p_values: List[float] = []
         for genos in genotypes_by_variant:
@@ -566,7 +519,6 @@ class TestFullPipelineSynthetic:
     # -- Multiple testing correction ---------------------------------------
 
     def test_multiple_testing_correction(self, assoc_results: List[Dict[str, Any]]) -> None:
-        from metainformant.gwas.analysis.correction import bonferroni_correction, fdr_correction
 
         p_values = [r["p_value"] for r in assoc_results if r.get("status") == "success"]
         assert len(p_values) == N_VARIANTS
@@ -583,7 +535,6 @@ class TestFullPipelineSynthetic:
     # -- Population structure (PCA + kinship) ------------------------------
 
     def test_pca_and_kinship(self, genotype_matrix: List[List[int]]) -> None:
-        from metainformant.gwas.analysis.structure import compute_kinship_matrix, compute_pca
 
         pca_result = compute_pca(genotype_matrix, n_components=5)
         assert pca_result["status"] == "success"
@@ -606,9 +557,7 @@ class TestFullPipelineSynthetic:
     ) -> None:
         from metainformant.gwas.analysis.heritability import (
             estimate_heritability,
-            partition_heritability_by_chromosome,
         )
-        from metainformant.gwas.analysis.structure import compute_kinship_matrix
 
         kinship_result = compute_kinship_matrix(genotype_matrix)
         km = np.array(kinship_result["kinship_matrix"])
@@ -626,7 +575,6 @@ class TestFullPipelineSynthetic:
         chromosomes: List[int],
     ) -> None:
         from metainformant.gwas.analysis.heritability import partition_heritability_by_chromosome
-        from metainformant.gwas.analysis.structure import compute_kinship_matrix
 
         # Build per-chromosome genotype sub-matrices and kinship matrices
         unique_chroms = sorted(set(chromosomes))
@@ -646,7 +594,6 @@ class TestFullPipelineSynthetic:
     # -- Fine-mapping (credible sets) --------------------------------------
 
     def test_credible_set_computation(self, assoc_results: List[Dict[str, Any]]) -> None:
-        from metainformant.gwas.visualization.interactive.finemapping import compute_credible_set
 
         cs = compute_credible_set(assoc_results, credible_level=0.95)
         assert cs["status"] == "success"
@@ -741,7 +688,6 @@ class TestFullPipelineSynthetic:
         positions: List[int],
         chromosomes: List[int],
     ) -> None:
-        from metainformant.gwas.visualization.genomic.ld import compute_ld_decay, ld_decay_plot
 
         decay = compute_ld_decay(
             genotypes_by_variant=genotypes_by_variant,
@@ -767,7 +713,6 @@ class TestFullPipelineSynthetic:
         genotypes_by_variant: List[List[int]],
         positions: List[int],
     ) -> None:
-        from metainformant.gwas.visualization.genomic.ld import ld_heatmap_region
 
         # Use first 15 variants for a manageable heatmap
         out = tmp_path / "ld_heatmap.png"
@@ -790,7 +735,6 @@ class TestFullPipelineSynthetic:
         sample_ids: List[str],
         pop_labels: Dict[str, str],
     ) -> None:
-        from metainformant.gwas.analysis.structure import compute_pca
         from metainformant.gwas.visualization.population.population_pca import pca_multi_panel
 
         pca_result = compute_pca(genotype_matrix, n_components=5)
@@ -821,7 +765,6 @@ class TestFullPipelineSynthetic:
         assoc_results: List[Dict[str, Any]],
         genotype_matrix: List[List[int]],
     ) -> None:
-        from metainformant.gwas.analysis.structure import compute_kinship_matrix, compute_pca
         from metainformant.gwas.visualization.interactive.composite import gwas_summary_panel
 
         pca_result = compute_pca(genotype_matrix, n_components=3)
@@ -851,7 +794,6 @@ class TestFullPipelineSynthetic:
         sample_ids: List[str],
         pop_labels: Dict[str, str],
     ) -> None:
-        from metainformant.gwas.analysis.structure import compute_kinship_matrix, compute_pca
         from metainformant.gwas.visualization.interactive.composite import population_structure_panel
 
         pca_result = compute_pca(genotype_matrix, n_components=5)
@@ -881,7 +823,6 @@ class TestFullPipelineSynthetic:
         tmp_path: Path,
         assoc_results: List[Dict[str, Any]],
     ) -> None:
-        from metainformant.gwas.visualization.interactive.interactive import interactive_manhattan
 
         out = tmp_path / "manhattan.html"
         result = interactive_manhattan(
@@ -923,7 +864,6 @@ class TestFullPipelineSynthetic:
         sample_ids: List[str],
         pop_labels: Dict[str, str],
     ) -> None:
-        from metainformant.gwas.analysis.structure import compute_pca
         from metainformant.gwas.visualization.interactive.interactive import interactive_pca
 
         pca_result = compute_pca(genotype_matrix, n_components=5)
@@ -951,7 +891,6 @@ class TestFullPipelineSynthetic:
         tmp_path: Path,
         metadata_dict: Dict[str, Dict[str, Any]],
     ) -> None:
-        from metainformant.gwas.visualization.population.geography import sample_map
 
         out = tmp_path / "sample_map.png"
         result = sample_map(
@@ -972,7 +911,6 @@ class TestFullPipelineSynthetic:
         tmp_path: Path,
         metadata_dict: Dict[str, Dict[str, Any]],
     ) -> None:
-        from metainformant.gwas.visualization.population.geography import population_count_map
 
         out = tmp_path / "pop_count_map.png"
         result = population_count_map(
@@ -991,7 +929,6 @@ class TestFullPipelineSynthetic:
         tmp_path: Path,
         assoc_results: List[Dict[str, Any]],
     ) -> None:
-        from metainformant.gwas.visualization.interactive.finemapping import credible_set_plot
 
         out = tmp_path / "credible_set.png"
         result = credible_set_plot(
@@ -1011,7 +948,7 @@ class TestFullPipelineSynthetic:
         tmp_path: Path,
         assoc_results: List[Dict[str, Any]],
     ) -> None:
-        from metainformant.gwas.visualization.interactive.finemapping import compute_credible_set, pip_vs_ld_plot
+        from metainformant.gwas.visualization.interactive.finemapping import pip_vs_ld_plot
 
         cs = compute_credible_set(assoc_results)
         pips = cs["pips"]
@@ -1048,7 +985,6 @@ class TestFullPipelineSynthetic:
             heritability_bar_chart,
             partition_heritability_by_chromosome,
         )
-        from metainformant.gwas.analysis.structure import compute_kinship_matrix
 
         unique_chroms = sorted(set(chromosomes))
         chrom_kinship: Dict[int, Any] = {}
@@ -1075,7 +1011,6 @@ class TestFullPipelineSynthetic:
         genotype_matrix: List[List[int]],
         phenotypes: List[float],
     ) -> None:
-        from metainformant.gwas.analysis.structure import compute_pca
         from metainformant.gwas.visualization.interactive.phenotype import phenotype_pca_correlation
 
         pca_result = compute_pca(genotype_matrix, n_components=3)
@@ -1098,7 +1033,6 @@ class TestFullPipelineSynthetic:
 
     def test_apply_plot_style(self) -> None:
         """Applying a style should not error and should set rcParams."""
-        from metainformant.gwas.visualization.config import apply_style, get_style
 
         try:
             import matplotlib as mpl
@@ -1140,7 +1074,6 @@ class TestFullPipelineSynthetic:
         assert val["valid"] is True
 
         # 2. Association testing
-        from metainformant.gwas.analysis.association import association_test_linear
 
         assoc_results: List[Dict[str, Any]] = []
         for v_idx in range(N_VARIANTS):

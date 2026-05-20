@@ -14,9 +14,6 @@ Algorithms:
 
 from __future__ import annotations
 
-import math
-import random
-from collections import Counter
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
@@ -498,7 +495,7 @@ def consensus_clustering(
         cdf_vals = np.arange(1, n_pairs + 1) / n_pairs
 
         # Area under CDF
-        area = float(np.trapz(cdf_vals, sorted_vals))
+        area = float(np.trapezoid(cdf_vals, sorted_vals))
         cdf_area[k] = area
 
         # PAC: fraction of entries in (0.1, 0.9) -- ambiguous zone

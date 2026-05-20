@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Any, Sequence
+from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -403,7 +403,7 @@ def score_pathogenicity(
     end = variant.get("end", 0)
     size = abs(end - start)
 
-    n_genes = len(annotations.get("overlapping_genes", []))
+    len(annotations.get("overlapping_genes", []))
     n_dosage = len(annotations.get("dosage_sensitive_genes", []))
     tad_disrupted = annotations.get("tad_disrupted", False)
     impact_level = annotations.get("impact_level", "MODIFIER")

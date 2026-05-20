@@ -98,10 +98,7 @@ def compute_ld_decay(
             "total_pairs": 0,
         }
 
-    logger.info(
-        f"Computing LD decay: {n_variants} variants, max_distance={max_distance}, "
-        f"n_bins={n_bins}"
-    )
+    logger.info(f"Computing LD decay: {n_variants} variants, max_distance={max_distance}, " f"n_bins={n_bins}")
 
     # Build bin edges
     bin_width = max_distance / n_bins
@@ -124,9 +121,7 @@ def compute_ld_decay(
 
     # Subsample if needed
     if len(candidate_pairs) > max_pairs:
-        logger.info(
-            f"Subsampling {max_pairs} pairs from {len(candidate_pairs)} candidates"
-        )
+        logger.info(f"Subsampling {max_pairs} pairs from {len(candidate_pairs)} candidates")
         random.seed(42)
         candidate_pairs = random.sample(candidate_pairs, max_pairs)
 
@@ -146,9 +141,7 @@ def compute_ld_decay(
 
     # Compute bin centers and mean r2
     bin_centers = [(bin_edges[k] + bin_edges[k + 1]) / 2.0 for k in range(n_bins)]
-    mean_r2 = [
-        bin_sums[k] / bin_counts[k] if bin_counts[k] > 0 else 0.0 for k in range(n_bins)
-    ]
+    mean_r2 = [bin_sums[k] / bin_counts[k] if bin_counts[k] > 0 else 0.0 for k in range(n_bins)]
 
     logger.info(f"LD decay computed: {total_pairs} pairs across {n_bins} bins")
 
@@ -210,9 +203,7 @@ def ld_decay_plot(
 
         # Filter bins with data
         valid_mask = [n_pairs[i] > 0 for i in range(len(n_pairs))]
-        plot_x = [
-            bin_centers_kb[i] for i in range(len(bin_centers_kb)) if valid_mask[i]
-        ]
+        plot_x = [bin_centers_kb[i] for i in range(len(bin_centers_kb)) if valid_mask[i]]
         plot_y = [mean_r2[i] for i in range(len(mean_r2)) if valid_mask[i]]
 
         if not plot_x:
@@ -299,9 +290,7 @@ def ld_decay_plot(
                                 color="green",
                             )
 
-                logger.info(
-                    f"Fitted decay: a={best_a:.4f}, b={best_b:.6f}, c={best_c:.4f}"
-                )
+                logger.info(f"Fitted decay: a={best_a:.4f}, b={best_b:.6f}, c={best_c:.4f}")
             except Exception as fit_err:
                 logger.warning(f"Could not fit decay curve: {fit_err}")
 
@@ -401,9 +390,7 @@ def ld_heatmap_region(
             region_end = max(positions)
 
         # Select variants within region
-        region_indices = [
-            i for i in range(n_variants) if region_start <= positions[i] <= region_end
-        ]
+        region_indices = [i for i in range(n_variants) if region_start <= positions[i] <= region_end]
 
         if len(region_indices) < 2:
             return {
@@ -415,10 +402,7 @@ def ld_heatmap_region(
         n_region = len(region_indices)
         region_positions = [positions[i] for i in region_indices]
 
-        logger.info(
-            f"Computing LD heatmap for {n_region} variants in region "
-            f"[{region_start}, {region_end}]"
-        )
+        logger.info(f"Computing LD heatmap for {n_region} variants in region " f"[{region_start}, {region_end}]")
 
         # Compute pairwise r-squared matrix
         r2_matrix = np.zeros((n_region, n_region), dtype=np.float64)
@@ -427,9 +411,7 @@ def ld_heatmap_region(
             for jj in range(ii + 1, n_region):
                 idx_i = region_indices[ii]
                 idx_j = region_indices[jj]
-                r2 = _compute_r_squared(
-                    genotypes_by_variant[idx_i], genotypes_by_variant[idx_j]
-                )
+                r2 = _compute_r_squared(genotypes_by_variant[idx_i], genotypes_by_variant[idx_j])
                 r2_matrix[ii, jj] = r2
                 r2_matrix[jj, ii] = r2
 
@@ -478,9 +460,7 @@ def ld_heatmap_region(
                 colors_list.append(r2_matrix[ii, jj])
 
         if patches:
-            collection = PatchCollection(
-                patches, cmap=kwargs.get("cmap", "Reds"), edgecolors="none"
-            )
+            collection = PatchCollection(patches, cmap=kwargs.get("cmap", "Reds"), edgecolors="none")
             collection.set_array(np.array(colors_list))
             collection.set_clim(0.0, 1.0)
             ax.add_collection(collection)

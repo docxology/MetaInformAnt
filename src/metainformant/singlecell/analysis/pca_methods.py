@@ -7,14 +7,14 @@ variable gene (HVG) selection.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict
 
 import numpy as np
 import pandas as pd
 
 from metainformant.core.data import validation
-from metainformant.core.utils import errors
 from metainformant.core.utils import logging
+from metainformant.singlecell.data.preprocessing import SingleCellData
 
 # Try to import optional dependencies
 try:
@@ -28,9 +28,6 @@ except ImportError:
     StandardScaler = None
 
 logger = logging.get_logger(__name__)
-
-# Import our SingleCellData
-from metainformant.singlecell.data.preprocessing import SingleCellData
 
 
 def pca_reduction(

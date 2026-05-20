@@ -7,7 +7,6 @@ Following NO_MOCKING policy - all tests use real implementations.
 
 from __future__ import annotations
 
-import tempfile
 from pathlib import Path
 
 import pytest

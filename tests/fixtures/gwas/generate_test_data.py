@@ -40,7 +40,7 @@ def generate_test_vcf(
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
     # NCBI accessions for Amel_HAv3.1
-    ncbi_chroms = [f"NC_03763{i}.1" if i < 10 else f"NC_0376{i}.1" for i in range(8, 8 + n_chroms)]
+    [f"NC_03763{i}.1" if i < 10 else f"NC_0376{i}.1" for i in range(8, 8 + n_chroms)]
     # Fix: actual NCBI accessions
     ncbi_accessions = {
         1: "NC_037638.1",

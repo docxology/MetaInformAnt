@@ -26,9 +26,7 @@ samples:
 association:
   model: linear
   trait: height
-""".format(
-        work_dir=str(tmp_path / "output")
-    )
+""".format(work_dir=str(tmp_path / "output"))
     config_file.write_text(config_content)
 
     config = load_gwas_config(config_file)
@@ -146,7 +144,8 @@ association:
     except FileNotFoundError:
         # CLI not installed — verify the module exists at least
         import metainformant
-        assert hasattr(metainformant, '__version__')
+
+        assert hasattr(metainformant, "__version__")
 
 
 @pytest.mark.slow
@@ -159,15 +158,13 @@ def test_gwas_workflow_genome_download(tmp_path: Path) -> None:
     """
     import requests
 
-    api_accessible = False
     try:
-        response = requests.head(
+        requests.head(
             "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCF_000001405.40/download",
             timeout=10,
         )
-        api_accessible = response.status_code in (200, 302, 404)
     except (requests.RequestException, requests.Timeout):
-        api_accessible = False
+        pass
 
     work_dir = tmp_path / "gwas_genome"
     ensure_directory(work_dir)
@@ -203,7 +200,7 @@ def test_gwas_workflow_invalid_config(tmp_path: Path) -> None:
 
     # Should fail gracefully
     try:
-        config = load_gwas_config(config_file)
+        load_gwas_config(config_file)
         assert False, "Should have raised an error"
     except (ValueError, FileNotFoundError, Exception):
         # Accept any parsing error (YAML scanner error, etc.)

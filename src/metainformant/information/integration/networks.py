@@ -7,8 +7,9 @@ and information-based community detection.
 
 from __future__ import annotations
 
+import importlib.util
 import math
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -340,18 +341,13 @@ def information_community_detection(graph: Any, method: str = "infomap", **kwarg
     if not HAS_NETWORKX:
         raise ImportError("networkx required for community detection")
 
-    try:
-        import community as community_louvain
-
-        HAS_COMMUNITY = True
-    except ImportError:
-        HAS_COMMUNITY = False
+    has_community = importlib.util.find_spec("community") is not None
 
     if method == "infomap":
         return _infomap_community_detection(graph, **kwargs)
     elif method == "map_equation":
         return _map_equation_community_detection(graph, **kwargs)
-    elif method == "louvain" and HAS_COMMUNITY:
+    elif method == "louvain" and has_community:
         return _louvain_community_detection(graph, **kwargs)
     else:
         raise ValueError(f"Unknown or unavailable community detection method: {method}")
@@ -379,8 +375,6 @@ def _infomap_community_detection(graph: Any, **kwargs: Any) -> Dict[str, Any]:
             "infomap package is required for InfoMap community detection. "
             "Install with: pip install infomap (or: uv pip install infomap)"
         )
-
-    import networkx as nx
 
     # Create infomap object
     im = infomap.Infomap(**kwargs)
@@ -431,15 +425,6 @@ def _map_equation_community_detection(graph: Any, **kwargs: Any) -> Dict[str, An
     Raises:
         ImportError: If infomap package is not installed
     """
-    # Map equation is implemented by infomap
-    try:
-        import infomap
-    except ImportError:
-        raise ImportError(
-            "infomap package is required for map equation community detection. "
-            "Install with: pip install infomap (or: uv pip install infomap)"
-        )
-
     # Use infomap with two-level partition (map equation default)
     return _infomap_community_detection(graph, two_level=True, **kwargs)
 

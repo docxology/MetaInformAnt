@@ -14,6 +14,8 @@ Usage:
     uv run python scripts/rna/orchestrate_species.py --config config/amalgkit/cross_species.yaml
 """
 
+# ruff: noqa: E402 - this script prepends the local src tree before importing metainformant.
+
 import argparse
 import sys
 from pathlib import Path
@@ -29,9 +31,10 @@ def main():
     parser = argparse.ArgumentParser(description="RNA-seq Orchestrator")
     parser.add_argument("--config", type=Path, required=True, help="Path to YAML config file")
     args = parser.parse_args()
-    
+
     orchestrator = PipelineOrchestrator(args.config)
     orchestrator.run()
+
 
 if __name__ == "__main__":
     main()

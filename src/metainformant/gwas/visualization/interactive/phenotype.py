@@ -116,11 +116,7 @@ def phenotype_distribution(
                 # KDE overlay per population
                 if len(pop_arr) > 1:
                     kde_x = np.linspace(float(pop_arr.min()), float(pop_arr.max()), 200)
-                    bandwidth = (
-                        1.06
-                        * float(np.std(pop_arr, ddof=1))
-                        * len(pop_arr) ** (-1.0 / 5.0)
-                    )
+                    bandwidth = 1.06 * float(np.std(pop_arr, ddof=1)) * len(pop_arr) ** (-1.0 / 5.0)
                     if bandwidth > 0:
                         kde_y = np.zeros_like(kde_x)
                         for v in pop_arr:
@@ -264,9 +260,7 @@ def phenotype_correlation_matrix(
             }
 
         # Build data matrix: rows = samples, cols = traits
-        data_matrix = np.column_stack(
-            [np.array(phenotypes_dict[t], dtype=np.float64) for t in trait_names]
-        )
+        data_matrix = np.column_stack([np.array(phenotypes_dict[t], dtype=np.float64) for t in trait_names])
 
         # Compute correlation matrix
         corr_matrix = np.corrcoef(data_matrix, rowvar=False)
@@ -433,9 +427,7 @@ def genotype_phenotype_boxplot(
             # For F(d1, d2) with observed f_stat:
             # p = 1 - I_x(d1/2, d2/2), where x = d1*f / (d1*f + d2)
             x = (df_between * f_statistic) / (df_between * f_statistic + df_within)
-            p_value = 1.0 - _regularized_incomplete_beta(
-                x, df_between / 2.0, df_within / 2.0
-            )
+            p_value = 1.0 - _regularized_incomplete_beta(x, df_between / 2.0, df_within / 2.0)
 
         fig, ax = plt.subplots(figsize=(8, 6))
 
@@ -521,9 +513,7 @@ def genotype_phenotype_boxplot(
         return {"status": "failed", "error": str(e), "output_path": None}
 
 
-def _regularized_incomplete_beta(
-    x: float, a: float, b: float, n_iter: int = 200
-) -> float:
+def _regularized_incomplete_beta(x: float, a: float, b: float, n_iter: int = 200) -> float:
     """Compute the regularized incomplete beta function I_x(a, b).
 
     Uses a continued fraction expansion (Lentz's method) for numerical

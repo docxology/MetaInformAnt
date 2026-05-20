@@ -9,12 +9,10 @@ from __future__ import annotations
 
 import math
 import random
-from collections import Counter
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from metainformant.core.data import validation
-from metainformant.core.utils import errors
-from metainformant.core.utils import logging
+from metainformant.core.utils import errors, logging
 
 logger = logging.get_logger(__name__)
 
@@ -263,7 +261,7 @@ def translate_dna_to_protein(dna_sequence: str, *, frame: int = 0) -> str:
 
     # Validate DNA sequence
     if not all(base in DNA_BASES for base in dna_sequence.upper()):
-        raise errors.ValidationError(f"Invalid DNA sequence: contains non-DNA bases")
+        raise errors.ValidationError("Invalid DNA sequence: contains non-DNA bases")
 
     sequence = dna_sequence.upper()[frame:]
     protein = []

@@ -6,8 +6,7 @@ under various demographic scenarios.
 
 from __future__ import annotations
 
-import math
-from typing import Any, Dict, List, Optional
+from typing import List
 
 from metainformant.core.utils import logging
 
@@ -30,7 +29,7 @@ def effective_size_sex_ratio(male_size: float, female_size: float, sex_ratio: fl
     if not (0 < sex_ratio < 1):
         raise ValueError("Sex ratio must be between 0 and 1")
 
-    total_size = male_size + female_size
+    male_size + female_size
 
     # Wright's formula for unequal sex ratios
     # Ne = 4 * Nm * Nf / (Nm + Nf)

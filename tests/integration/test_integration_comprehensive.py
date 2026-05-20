@@ -9,8 +9,6 @@ computational methods without any mocking.
 from __future__ import annotations
 
 import random
-import tempfile
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -22,6 +20,7 @@ try:
     from metainformant.dna.population.metrics.metrics.metrics.metrics import hudson_fst, nucleotide_diversity
     from metainformant.dna.sequences import gc_content, read_fasta, reverse_complement
 
+    _DNA_IMPORT_PROBES = (hudson_fst,)
     DNA_AVAILABLE = True
 except ImportError:
     DNA_AVAILABLE = False
@@ -32,6 +31,7 @@ try:
         compute_rmsd_kabsch,
     )
 
+    _PROTEIN_IMPORT_PROBES = (compute_rmsd_kabsch,)
     PROTEIN_AVAILABLE = True
 except ImportError:
     PROTEIN_AVAILABLE = False
@@ -87,12 +87,12 @@ except ImportError:
 try:
     from metainformant.epigenome.assays.methylation import compute_beta_values, load_cpg_table
 
+    _EPIGENOME_IMPORT_PROBES = (compute_beta_values, load_cpg_table)
     EPIGENOME_AVAILABLE = True
 except ImportError:
     EPIGENOME_AVAILABLE = False
 
 from metainformant.core.io.io import dump_json, load_json
-from metainformant.core.io.paths import expand_and_resolve
 
 
 class TestBioinformaticsWorkflow:
@@ -280,11 +280,11 @@ class TestBioinformaticsWorkflow:
         sequences = ["ATCGATCGATCG", "ATCGATCGATCG", "ATCGATCGATCG", "ATCGATCGATCT", "ATCGATCGATCT", "ATCGATCCATCG"]
 
         # Calculate nucleotide diversity
-        pi_observed = nucleotide_diversity(sequences)
+        nucleotide_diversity(sequences)
 
         # Mathematical expectation under neutral coalescent
         n_samples = len(sequences)
-        sequence_length = len(sequences[0])
+        len(sequences[0])
 
         # Estimate theta from segregating sites
         segregating_sites = 0
@@ -391,7 +391,6 @@ class TestModuleInteroperability:
 
     def test_core_utilities_integration(self, tmp_path):
         """Test that core utilities work across all modules."""
-        from metainformant.core.io.io import dump_json, load_json
         from metainformant.core.utils.hash import sha256_bytes
         from metainformant.core.utils.text import slugify
 
@@ -707,7 +706,7 @@ class TestEndToEndBiologicalScenarios:
         mrna_network = create_network(mrna_names)
         add_edges_from_correlation(mrna_network, mrna_corr, mrna_names, threshold=0.5)
 
-        communities = detect_communities(mrna_network, method="louvain", seed=123)
+        detect_communities(mrna_network, method="louvain", seed=123)
 
         # Canonical correlation between transcriptomics and proteomics
         X_can, Y_can, _, _, correlations = canonical_correlation(

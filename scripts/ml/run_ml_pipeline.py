@@ -14,7 +14,6 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import Any
 
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
@@ -142,7 +141,6 @@ def run_workflow(args):
     # Load features
     logger.info(f"Loading features from {args.features}")
     try:
-        import numpy as np
         import pandas as pd
 
         X_df = read_csv(args.features)
@@ -200,7 +198,7 @@ def run_workflow(args):
             classifier = BiologicalClassifier(algorithm="random_forest", random_state=42)
             classifier.fit(X, y)
 
-            predictions = classifier.predict(X)
+            classifier.predict(X)
             metrics = evaluate_classifier(classifier, X, y)
 
             workflow_results["analyses"]["classification"] = {
@@ -227,7 +225,7 @@ def run_workflow(args):
             regressor = BiologicalRegressor(algorithm="linear", random_state=42)
             regressor.fit(X, y)
 
-            predictions = regressor.predict(X)
+            regressor.predict(X)
             metrics = evaluate_regressor(regressor, X, y)
 
             workflow_results["analyses"]["regression"] = {

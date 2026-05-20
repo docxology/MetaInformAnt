@@ -17,12 +17,9 @@ References:
 
 from __future__ import annotations
 
-import math
 from collections import Counter
 from itertools import combinations
 from typing import Any, Dict, List, Sequence
-
-import numpy as np
 
 from metainformant.core.data import validation
 from metainformant.core.utils import logging

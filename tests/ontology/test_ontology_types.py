@@ -95,7 +95,7 @@ class TestOntology:
         assert onto.has_term("GO:0008150") is True
         assert onto.has_term("NONEXISTENT") is False
 
-    def test_ontology_get_term(self):
+    def test_ontology_get_term_method(self):
         """Test getting term by ID."""
         term = Term("GO:0008150", "biological_process")
         onto = Ontology(terms={"GO:0008150": term})

@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Run COMPLETE full-scale P. barbatus GWAS analysis - ALL variants, ALL traits."""
 
+# ruff: noqa: E402 - this script prepends the local src tree before importing metainformant.
+
 import sys
 from pathlib import Path
 
@@ -25,8 +27,8 @@ from metainformant.gwas import (
 )
 from metainformant.gwas.association import association_test_linear, association_test_logistic
 from metainformant.gwas.correction import bonferroni_correction, fdr_correction, genomic_control
-from metainformant.gwas.visualization.population.population import kinship_heatmap, pca_plot
 from metainformant.gwas.visualization.genomic.variants import maf_distribution
+from metainformant.gwas.visualization.population.population import kinship_heatmap, pca_plot
 
 print("=" * 80)
 print("P. BARBATUS FULL-SCALE GWAS - ALL VARIANTS, ALL TRAITS")
@@ -35,7 +37,7 @@ print("=" * 80)
 # Load configuration
 print("\nLoading configuration...")
 config = load_gwas_config("config/gwas/gwas_pbarbatus_synthetic.yaml")
-print(f"✓ Configuration loaded")
+print("✓ Configuration loaded")
 
 # Parse VCF
 print("\n[1/9] Parsing VCF file (50,000 variants)...")
@@ -322,15 +324,15 @@ print(f"\nTotal variants tested: {n_passing:,}")
 print(f"Total traits analyzed: {len(all_traits)}")
 print(f"Total association tests: {n_passing * len(all_traits):,}")
 print("\nFiles created:")
-print(f"  - gwas_summary_full.json")
-print(f"  - qc_results.json")
-print(f"  - pca_results.json")
-print(f"  - kinship_results.json")
+print("  - gwas_summary_full.json")
+print("  - qc_results.json")
+print("  - pca_results.json")
+print("  - kinship_results.json")
 for trait_name, _ in all_traits:
     print(f"  - {trait_name}_associations_full.tsv")
     print(f"  - manhattan_{trait_name}_full.png")
     print(f"  - qq_{trait_name}_full.png")
-print(f"  - pca_scatter_full.png")
-print(f"  - kinship_heatmap_full.png")
-print(f"  - maf_distribution_full.png")
+print("  - pca_scatter_full.png")
+print("  - kinship_heatmap_full.png")
+print("  - maf_distribution_full.png")
 print("\n✓ COMPREHENSIVE FULL-SCALE GWAS COMPLETE!")

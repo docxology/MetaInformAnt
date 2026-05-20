@@ -6,8 +6,7 @@ rules, environmental filtering, and niche partitioning.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Any
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -160,9 +159,7 @@ def trait_diversity(
     if n < 3:
         feve = 0.0
     else:
-        dists = np.sqrt(
-            np.sum((trait_data.values[:, None, :] - trait_data.values[None, :, :]) ** 2, axis=2)
-        )
+        dists = np.sqrt(np.sum((trait_data.values[:, None, :] - trait_data.values[None, :, :]) ** 2, axis=2))
         sorted_idx = np.argsort(rel_abund)[::-1]
         ew = np.array([dists[sorted_idx[i], sorted_idx[i + 1]] for i in range(n - 1)])
         if ew.sum() > 0:

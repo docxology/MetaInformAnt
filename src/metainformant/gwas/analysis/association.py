@@ -328,9 +328,7 @@ def association_test_logistic(
     n_cases = sum(1 for p in phenotypes if p == 1)
     n_controls = sum(1 for p in phenotypes if p == 0)
     if n_cases < 2 or n_controls < 2:
-        logger.warning(
-            f"Insufficient cases ({n_cases}) or controls ({n_controls}) for logistic regression"
-        )
+        logger.warning(f"Insufficient cases ({n_cases}) or controls ({n_controls}) for logistic regression")
         return {
             "status": "failed",
             "beta": 0.0,
@@ -361,9 +359,7 @@ def association_test_logistic(
             raise ImportError("numpy is required for logistic regression")
         X_array = np.array(X)
         y_array = np.array(phenotypes)
-        beta, se, z_stat, p_value = _logistic_regression_with_stats(
-            X_array, y_array, max_iter
-        )
+        beta, se, z_stat, p_value = _logistic_regression_with_stats(X_array, y_array, max_iter)
 
         # Calculate odds ratio
         odds_ratio = math.exp(beta) if abs(beta) < 700 else float("inf")
@@ -402,9 +398,7 @@ def association_test_logistic(
     return result
 
 
-def _simple_linear_regression(
-    X: List[List[float]], y: List[float]
-) -> Tuple[float, float, float, float, float]:
+def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[float, float, float, float, float]:
     """Simple linear regression implementation.
 
     Args:
@@ -463,9 +457,7 @@ def _simple_linear_regression(
         y_arr = np.array(y, dtype=float)
         # OLS via least squares: beta = (X'X)^-1 X'y
         try:
-            beta_vec, residuals_arr, rank, sv = np.linalg.lstsq(
-                X_arr, y_arr, rcond=None
-            )
+            beta_vec, residuals_arr, rank, sv = np.linalg.lstsq(X_arr, y_arr, rcond=None)
         except np.linalg.LinAlgError:
             return 0.0, 0.0, 0.0, 1.0, 0.0
 
@@ -514,9 +506,7 @@ def _simple_linear_regression(
     # Use Gaussian elimination (reuse existing _solve_linear_system)
     k = len(X[0])
     # Compute X'X
-    XtX = [
-        [sum(X[s][i] * X[s][j] for s in range(n)) for j in range(k)] for i in range(k)
-    ]
+    XtX = [[sum(X[s][i] * X[s][j] for s in range(n)) for j in range(k)] for i in range(k)]
     # Compute X'y
     Xty = [sum(X[s][i] * y[s] for s in range(n)) for i in range(k)]
     beta_vec_pp = _solve_linear_system(XtX, Xty)
@@ -551,9 +541,7 @@ def _simple_linear_regression(
     return beta, se, t_stat, p_value, r_squared
 
 
-def _logistic_regression_with_stats(
-    X: Any, y: Any, max_iter: int
-) -> Tuple[float, float, float, float]:
+def _logistic_regression_with_stats(X: Any, y: Any, max_iter: int) -> Tuple[float, float, float, float]:
     """Perform logistic regression with statistical inference.
 
     Uses statsmodels or sklearn if available, otherwise falls back to a pure Python
@@ -608,9 +596,7 @@ def _logistic_regression_with_stats(
     return _logistic_regression_pure_python(X, y, max_iter)
 
 
-def _logistic_regression_pure_python(
-    X: Any, y: Any, max_iter: int
-) -> Tuple[float, float, float, float]:
+def _logistic_regression_pure_python(X: Any, y: Any, max_iter: int) -> Tuple[float, float, float, float]:
     """Pure Python logistic regression using iteratively reweighted least squares.
 
     Args:
@@ -674,9 +660,7 @@ def _logistic_regression_pure_python(
                 XtWX[j][k] = sum(X_list[i][j] * W[i] * X_list[i][k] for i in range(n))
 
         # Compute X'Wz
-        XtWz = [
-            sum(X_list[i][j] * W[i] * z[i] for i in range(n)) for j in range(n_features)
-        ]
+        XtWz = [sum(X_list[i][j] * W[i] * z[i] for i in range(n)) for j in range(n_features)]
 
         # Solve using simple Gaussian elimination (for small systems)
         new_beta = _solve_linear_system(XtWX, XtWz)

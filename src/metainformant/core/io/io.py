@@ -212,8 +212,6 @@ def read_parquet(path: str | Path, **kwargs) -> Any:
 def write_parquet(df: Any, path: str | Path, **kwargs) -> None:
     """Write DataFrame to Parquet file."""
     try:
-        import pandas as pd
-
         ensure_directory(Path(path).parent)
         df.to_parquet(path, **kwargs)
     except ImportError as e:
@@ -263,9 +261,10 @@ def write_jsonl(rows: Iterable[Mapping[str, Any]], path: str | Path, *, atomic: 
             # Append .tmp so if the file ends in .gz, it ends in .gz.tmp
             is_gzipped = p.suffix == ".gz"
             temp_path = p.with_name(p.name + ".tmp")
-            
+
             if is_gzipped:
                 import gzip
+
                 with gzip.open(temp_path, "wt", encoding="utf-8") as fh:
                     for row in rows:
                         fh.write(json.dumps(dict(row)))
@@ -280,6 +279,7 @@ def write_jsonl(rows: Iterable[Mapping[str, Any]], path: str | Path, *, atomic: 
             is_gzipped = p.suffix == ".gz"
             if is_gzipped:
                 import gzip
+
                 with gzip.open(p, "wt", encoding="utf-8") as fh:
                     for row in rows:
                         fh.write(json.dumps(dict(row)))

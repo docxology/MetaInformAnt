@@ -240,15 +240,15 @@ def calculate_inertia_tensor(coords: np.ndarray, masses: Optional[np.ndarray] = 
     y = coords_centered[:, 1]
     z = coords_centered[:, 2]
 
-    I = np.zeros((3, 3))
-    I[0, 0] = np.sum(masses * (y**2 + z**2))
-    I[1, 1] = np.sum(masses * (x**2 + z**2))
-    I[2, 2] = np.sum(masses * (x**2 + y**2))
-    I[0, 1] = I[1, 0] = -np.sum(masses * x * y)
-    I[0, 2] = I[2, 0] = -np.sum(masses * x * z)
-    I[1, 2] = I[2, 1] = -np.sum(masses * y * z)
+    inertia = np.zeros((3, 3))
+    inertia[0, 0] = np.sum(masses * (y**2 + z**2))
+    inertia[1, 1] = np.sum(masses * (x**2 + z**2))
+    inertia[2, 2] = np.sum(masses * (x**2 + y**2))
+    inertia[0, 1] = inertia[1, 0] = -np.sum(masses * x * y)
+    inertia[0, 2] = inertia[2, 0] = -np.sum(masses * x * z)
+    inertia[1, 2] = inertia[2, 1] = -np.sum(masses * y * z)
 
-    return I
+    return inertia
 
 
 def find_principal_axes(coords: np.ndarray, masses: Optional[np.ndarray] = None) -> Tuple[np.ndarray, np.ndarray]:
@@ -267,10 +267,10 @@ def find_principal_axes(coords: np.ndarray, masses: Optional[np.ndarray] = None)
         >>> len(eigenvals) == 3
         True
     """
-    I = calculate_inertia_tensor(coords, masses)
+    inertia = calculate_inertia_tensor(coords, masses)
 
     # Diagonalize
-    eigenvals, eigenvecs = np.linalg.eigh(I)
+    eigenvals, eigenvecs = np.linalg.eigh(inertia)
 
     # Sort by eigenvalue (largest first)
     idx = np.argsort(eigenvals)[::-1]
@@ -352,7 +352,7 @@ def identify_secondary_structure_elements(coords: np.ndarray, backbone_atoms: Li
         if len(segment) >= 4:
             # Calculate distances between every 4th residue
             dist1 = np.linalg.norm(segment[0] - segment[3])
-            dist2 = np.linalg.norm(segment[1] - segment[4]) if len(segment) > 4 else 0
+            np.linalg.norm(segment[1] - segment[4]) if len(segment) > 4 else 0
 
             if 5.0 < dist1 < 7.0:  # Approximate helix distance
                 elements.append({"type": "helix", "start_residue": i, "end_residue": i + 4, "confidence": 0.8})

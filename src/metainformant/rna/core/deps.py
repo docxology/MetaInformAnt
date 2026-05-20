@@ -6,9 +6,8 @@ and system requirements for RNA-seq analysis.
 
 from __future__ import annotations
 
-import shutil
 import subprocess
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 from metainformant.core.utils import logging
 

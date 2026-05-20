@@ -56,31 +56,34 @@ from .data.download import (
     download_annotation,
     download_reference_genome,
     download_sra_run,
-    download_variant_database,
     download_variant_data,
+    download_variant_database,
     search_sra_for_organism,
 )
 from .data.expression import ExpressionLoader
+
+# --- Data/metadata additional exports ---
 from .data.metadata import (
     get_geographic_coordinates,
     get_population_labels,
     load_sample_metadata,
+    merge_metadata_with_phenotypes,
     validate_metadata,
 )
 
 # --- Finemapping convenience exports ---
 from .finemapping.colocalization import (
+    compute_clpp,
     eqtl_coloc,
     multi_trait_coloc,
-    compute_clpp,
     regional_coloc,
 )
 from .finemapping.eqtl import (
     cis_eqtl_scan,
-    trans_eqtl_scan,
     conditional_eqtl,
     eqtl_effect_sizes,
     eqtl_summary_stats,
+    trans_eqtl_scan,
 )
 
 # --- Heritability convenience exports ---
@@ -118,9 +121,6 @@ from .visualization.interactive.phenotype import (
     top_hits_genotype_phenotype,
 )
 from .visualization.population.geography import population_count_map, sample_map
-
-# --- Data/metadata additional exports ---
-from .data.metadata import merge_metadata_with_phenotypes
 
 # --- Workflow convenience exports ---
 from .workflow.workflow_execution import (

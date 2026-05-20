@@ -27,6 +27,6 @@ def test_preflight_manifest_when_amalgkit_missing(tmp_path: Path):
     assert len(codes) > 0, "Should have at least one return code"
 
     # Manifest may or may not exist depending on which step fails
-    manifest = cfg.work_dir / "amalgkit.manifest.jsonl"
+    cfg.work_dir / "amalgkit.manifest.jsonl"
     ok, msg = check_cli_available()
     assert not ok or "available" in msg.lower() or "found" in msg.lower()

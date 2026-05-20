@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from metainformant.math.population_genetics.statistics import (
     bootstrap_confidence_interval,

@@ -35,8 +35,10 @@ def plot_event_embeddings(
     embeddings: Dict[str, Any],
     output_path: Optional[str] = None,
     method: str = "pca",
+    n_components: int = 2,
     figsize: tuple[int, int] = (10, 8),
     title: str = "Event Sequence Embeddings",
+    **kwargs: Any,
 ) -> Optional[Any]:
     """Plot event sequence embeddings.
 
@@ -54,44 +56,67 @@ def plot_event_embeddings(
         logger.warning("matplotlib not available for embedding plotting")
         return None
 
-    if "embeddings" not in embeddings:
-        logger.error("No embeddings data provided")
-        return None
+    if "embeddings" in embeddings:
+        embedding_matrix = np.array(embeddings["embeddings"])
+    else:
+        vectors = [value for value in embeddings.values() if hasattr(value, "__len__")]
+        if not vectors:
+            logger.error("No embeddings data provided")
+            return None
+        embedding_matrix = np.array(vectors)
+    reducer_components = min(n_components, embedding_matrix.shape[0], embedding_matrix.shape[1])
+    plot_components = max(2, min(reducer_components, 3))
 
-    embedding_matrix = np.array(embeddings["embeddings"])
-    if embedding_matrix.shape[1] > 2:
+    if embedding_matrix.shape[1] > plot_components:
         # Reduce to 2D if needed
         if method.lower() == "pca":
             from sklearn.decomposition import PCA
 
-            reducer = PCA(n_components=2)
+            reducer = PCA(n_components=plot_components)
         elif method.lower() == "tsne":
             from sklearn.manifold import TSNE
 
-            reducer = TSNE(n_components=2, random_state=42)
+            reducer = TSNE(n_components=plot_components, random_state=42)
         elif method.lower() == "umap":
             try:
                 import umap
 
-                reducer = umap.UMAP(n_components=2, random_state=42)
+                reducer = umap.UMAP(n_components=plot_components, random_state=42)
             except ImportError:
                 logger.warning("UMAP not available, falling back to PCA")
                 from sklearn.decomposition import PCA
 
-                reducer = PCA(n_components=2)
+                reducer = PCA(n_components=plot_components)
         else:
             from sklearn.decomposition import PCA
 
-            reducer = PCA(n_components=2)
+            reducer = PCA(n_components=plot_components)
 
         embedding_2d = reducer.fit_transform(embedding_matrix)
     else:
         embedding_2d = embedding_matrix
 
-    fig, ax = plt.subplots(figsize=figsize)
-
-    # Plot embeddings
-    scatter = ax.scatter(embedding_2d[:, 0], embedding_2d[:, 1], c=range(len(embedding_2d)), cmap="viridis", alpha=0.7)
+    if embedding_2d.shape[1] >= 3 and n_components >= 3:
+        fig = plt.figure(figsize=figsize)
+        ax = fig.add_subplot(111, projection="3d")
+        scatter = ax.scatter(
+            embedding_2d[:, 0],
+            embedding_2d[:, 1],
+            embedding_2d[:, 2],
+            c=range(len(embedding_2d)),
+            cmap="viridis",
+            alpha=0.7,
+        )
+        ax.set_zlabel(f"{method.upper()} Component 3")
+    else:
+        fig, ax = plt.subplots(figsize=figsize)
+        scatter = ax.scatter(
+            embedding_2d[:, 0],
+            embedding_2d[:, 1],
+            c=range(len(embedding_2d)),
+            cmap="viridis",
+            alpha=0.7,
+        )
 
     ax.set_xlabel(f"{method.upper()} Component 1")
     ax.set_ylabel(f"{method.upper()} Component 2")
@@ -113,6 +138,7 @@ def plot_event_embeddings(
 
 def plot_attention_heatmap(
     attention_weights: Any,
+    event_tokens: Optional[List[str]] = None,
     output_path: Optional[str] = None,
     figsize: tuple[int, int] = (12, 8),
     title: str = "Attention Weights Heatmap",
@@ -162,7 +188,16 @@ def plot_attention_heatmap(
     fig, ax = plt.subplots(figsize=figsize)
 
     # Plot heatmap
-    sns.heatmap(weights, cmap="YlOrRd", ax=ax, square=True, cbar_kws={"label": "Attention Weight"})
+    labels = event_tokens if event_tokens and len(event_tokens) == weights.shape[0] else None
+    sns.heatmap(
+        weights,
+        cmap="YlOrRd",
+        ax=ax,
+        square=True,
+        xticklabels=labels if labels else "auto",
+        yticklabels=labels if labels else "auto",
+        cbar_kws={"label": "Attention Weight"},
+    )
 
     ax.set_xlabel("Target Position")
     ax.set_ylabel("Source Position")
@@ -206,9 +241,18 @@ def plot_prediction_importance(
     if top_n:
         sorted_features = sorted_features[:top_n]
 
-    features, importances = zip(*sorted_features)
-
     fig, ax = plt.subplots(figsize=figsize)
+
+    if not sorted_features:
+        ax.set_title(title)
+        ax.set_xlabel("Importance Score")
+        ax.text(0.5, 0.5, "No features", ha="center", va="center", transform=ax.transAxes)
+        plt.tight_layout()
+        if output_path:
+            plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        return fig
+
+    features, importances = zip(*sorted_features)
 
     # Create horizontal bar plot
     bars = ax.barh(range(len(features)), importances, color="skyblue", alpha=0.8)
@@ -350,7 +394,7 @@ def plot_outcome_distribution(
         # Create violin plot manually since seaborn might not be available
         if len(outcomes) > 0:
             # Simple approximation of violin plot
-            parts = ax.violinplot(outcomes, showmeans=True, showmedians=True)
+            ax.violinplot(outcomes, showmeans=True, showmedians=True)
             ax.set_ylabel("Outcome Value")
             ax.set_title("Outcome Distribution Violin Plot")
             ax.set_xticks([1])
@@ -896,7 +940,7 @@ def plot_prediction_accuracy(
         # Q-Q plot of residuals
         from scipy import stats
 
-        probplot = stats.probplot(residuals, dist="norm", plot=axes[1, 1])
+        stats.probplot(residuals, dist="norm", plot=axes[1, 1])
         axes[1, 1].set_title("Q-Q Plot of Residuals")
 
     else:
@@ -1009,10 +1053,8 @@ def plot_sequence_similarity(
         from sklearn.feature_extraction.text import TfidfVectorizer
         from sklearn.metrics.pairwise import cosine_similarity
 
-        HAS_SKLEARN = True
     except ImportError:
         logger.warning("sklearn not available, cannot create sequence similarity plot")
-        HAS_SKLEARN = False
         return None
 
     # Convert sequences to feature vectors

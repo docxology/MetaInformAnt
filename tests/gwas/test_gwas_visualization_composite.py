@@ -6,7 +6,6 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 import numpy as np
-import pytest
 
 from metainformant.gwas.visualization.interactive.composite import (
     gwas_summary_panel,

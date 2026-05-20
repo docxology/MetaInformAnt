@@ -305,7 +305,7 @@ class PhenotypePipeline:
 
         # Apply preprocessing based on phenotype type
         params = self.config.parameters.get("preprocess", {})
-        normalize = params.get("normalize", False)
+        params.get("normalize", False)
         filter_missing = params.get("filter_missing", True)
 
         processed = data
@@ -392,7 +392,6 @@ class PhenotypePipeline:
 
     def _analyze_morphological(self, data: Any, params: Dict) -> Dict[str, Any]:
         """Morphological phenotype analysis."""
-        from ..morphological.measurement import Measurement
         from ..morphological.profile import MorphometricProfile, summary_statistics
 
         if isinstance(data, list) and all(isinstance(d, MorphometricProfile) for d in data):

@@ -10,7 +10,6 @@ Usage:
     watchdog.start()
 """
 
-import logging
 import threading
 import time
 from typing import Callable, Optional
@@ -52,7 +51,7 @@ class ProcessWatchdog:
         self.timeout_seconds = timeout_seconds
         self.check_interval = check_interval
         self.on_stall = on_stall
-        
+
         self.low_activity_start_time: Optional[float] = None
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
@@ -66,7 +65,9 @@ class ProcessWatchdog:
         self._stop_event.clear()
         self._thread = threading.Thread(target=self._monitor_loop, daemon=True, name=f"Watchdog-{self.pid}")
         self._thread.start()
-        logger.info(f"Watchdog started for PID {self.pid} (Threshold: <{self.cpu_threshold}% CPU for {self.timeout_seconds}s)")
+        logger.info(
+            f"Watchdog started for PID {self.pid} (Threshold: <{self.cpu_threshold}% CPU for {self.timeout_seconds}s)"
+        )
 
     def stop(self):
         """Stop the monitoring thread."""
@@ -104,7 +105,7 @@ class ProcessWatchdog:
                 # Check if process is still running
                 if not process.is_running():
                     break
-                
+
                 # Get CPU usage (non-blocking)
                 # psutil.cpu_percent with interval=None returns usage since last call
                 # We need an interval to get an instant reading, but blocking the thread is okay here
@@ -118,7 +119,7 @@ class ProcessWatchdog:
                 if cpu_pct < self.cpu_threshold:
                     if self.low_activity_start_time is None:
                         self.low_activity_start_time = time.time()
-                    
+
                     elapsed = time.time() - self.low_activity_start_time
                     if elapsed > self.timeout_seconds:
                         logger.warning(f"STALL DETECTED: PID {self.pid} has {cpu_pct}% CPU for {elapsed:.1f}s.")
@@ -127,11 +128,11 @@ class ProcessWatchdog:
                                 self.on_stall(self.pid)
                             except Exception as e:
                                 logger.error(f"Error in watchdog on_stall callback: {e}")
-                        
-                        # Monitor stopped after firing once? 
+
+                        # Monitor stopped after firing once?
                         # Or reset? If we killed it, the loop will break next iteration.
                         # If we just warned, we reset.
-                        self.low_activity_start_time = time.time() 
+                        self.low_activity_start_time = time.time()
                 else:
                     # Healthy activity
                     if self.low_activity_start_time is not None:

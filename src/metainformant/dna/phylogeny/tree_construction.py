@@ -224,14 +224,14 @@ def nj_tree_from_kmer(id_to_seq: Dict[str, str], *, k: int = 3, metric: str = "c
 
                 # Calculate Q matrix element (NJ criterion)
                 r_i = sum(
-                    working_matrix[idx1][l]
-                    for l in range(len(working_taxa))
-                    if working_taxa[l] in active_taxa and l != idx1
+                    working_matrix[idx1][idx]
+                    for idx in range(len(working_taxa))
+                    if working_taxa[idx] in active_taxa and idx != idx1
                 )
                 r_j = sum(
-                    working_matrix[idx2][l]
-                    for l in range(len(working_taxa))
-                    if working_taxa[l] in active_taxa and l != idx2
+                    working_matrix[idx2][idx]
+                    for idx in range(len(working_taxa))
+                    if working_taxa[idx] in active_taxa and idx != idx2
                 )
 
                 q_ij = (n_active - 2) * working_matrix[idx1][idx2] - r_i - r_j

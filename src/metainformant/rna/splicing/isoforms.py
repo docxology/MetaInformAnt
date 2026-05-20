@@ -36,8 +36,7 @@ Example:
 from __future__ import annotations
 
 import math
-from collections import defaultdict, deque
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from collections import defaultdict
 
 from metainformant.core.utils.logging import get_logger
 

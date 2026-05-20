@@ -8,13 +8,12 @@ tree comparisons, and annotated tree visualizations.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.axes import Axes
 
-from metainformant.core.data import validation
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
 
@@ -435,7 +434,7 @@ def _hierarchical_tree_layout(G: nx.DiGraph) -> Dict[str, Tuple[float, float]]:
                 levels[node] = 0
 
     # Assign positions
-    max_level = max(levels.values()) if levels else 0
+    max(levels.values()) if levels else 0
     nodes_per_level = {}
     for node, level in levels.items():
         if level not in nodes_per_level:

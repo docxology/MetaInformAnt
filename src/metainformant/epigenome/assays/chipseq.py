@@ -6,16 +6,14 @@ including peak calling, motif analysis, quality control, and data integration.
 
 from __future__ import annotations
 
-import math
 import statistics
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from metainformant.core.data import validation
-from metainformant.core.utils import errors
-from metainformant.core.utils import logging
 from metainformant.core import io
+from metainformant.core.data import validation
+from metainformant.core.utils import errors, logging
 
 logger = logging.get_logger(__name__)
 
@@ -166,7 +164,7 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
                     chromosome = parts[0]
                     start = int(parts[1])
                     end = int(parts[2])
-                    name = parts[3] if len(parts) > 3 else f"peak_{line_num}"
+                    parts[3] if len(parts) > 3 else f"peak_{line_num}"
                     score = float(parts[4]) if len(parts) > 4 else 0.0
                     strand = parts[5] if len(parts) > 5 else "."
 

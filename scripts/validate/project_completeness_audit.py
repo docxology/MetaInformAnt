@@ -10,6 +10,7 @@ Outputs:
 
 This is the canonical implementation of the "project-completeness-audit" pattern.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -19,11 +20,7 @@ from pathlib import Path
 
 
 def discover_modules(src_root: Path) -> list[str]:
-    return sorted(
-        d.name
-        for d in src_root.iterdir()
-        if d.is_dir() and not d.name.startswith("_")
-    )
+    return sorted(d.name for d in src_root.iterdir() if d.is_dir() and not d.name.startswith("_"))
 
 
 def check_doc_files(module_dir: Path) -> dict[str, bool]:
@@ -98,6 +95,7 @@ def run_validation_scripts(repo_root: Path) -> dict[str, str]:
 def can_import_pytest() -> bool:
     try:
         import pytest  # noqa: F401
+
         return True
     except ImportError:
         return False

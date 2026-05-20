@@ -7,16 +7,14 @@ transcription factor binding site identification.
 
 from __future__ import annotations
 
-import math
 import statistics
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from metainformant.core.data import validation
-from metainformant.core.utils import errors
-from metainformant.core.utils import logging
 from metainformant.core import io
+from metainformant.core.data import validation
+from metainformant.core.utils import errors, logging
 
 logger = logging.get_logger(__name__)
 
@@ -336,9 +334,9 @@ def calculate_atac_specific_metrics(peaks: List[ATACPeak]) -> Dict[str, Any]:
     lengths = [p.length for p in peaks]
 
     # Typical ATAC-seq peaks should be around nucleosome-free regions (~100-200bp)
-    nfr_peaks = sum(1 for l in lengths if 50 <= l <= 150)  # Nucleosome-free region
-    mono_peaks = sum(1 for l in lengths if 150 <= l <= 250)  # Mononucleosome
-    di_peaks = sum(1 for l in lengths if 250 <= l <= 350)  # Dinucleosome
+    nfr_peaks = sum(1 for length in lengths if 50 <= length <= 150)  # Nucleosome-free region
+    mono_peaks = sum(1 for length in lengths if 150 <= length <= 250)  # Mononucleosome
+    di_peaks = sum(1 for length in lengths if 250 <= length <= 350)  # Dinucleosome
 
     total_peaks = len(peaks)
     if total_peaks > 0:

@@ -10,8 +10,8 @@ Usage:
 """
 
 import argparse
-import sys
 import os
+import sys
 from pathlib import Path
 
 # Add src to python path to allow importing metainformant modules
@@ -35,25 +35,33 @@ DEFAULTS = {
     "threads": int(os.environ.get("PIPELINE_THREADS", 6)),
 }
 
+
 def main():
-    parser = argparse.ArgumentParser(
-        description="ENA-first sample-by-sample RNA-seq pipeline"
+    parser = argparse.ArgumentParser(description="ENA-first sample-by-sample RNA-seq pipeline")
+    parser.add_argument(
+        "--max-gb",
+        type=float,
+        default=DEFAULTS["max_gb"],
+        help=f"Max sample size in GB (default: {DEFAULTS['max_gb']})",
     )
-    parser.add_argument("--max-gb", type=float, default=DEFAULTS["max_gb"],
-                        help=f"Max sample size in GB (default: {DEFAULTS['max_gb']})")
-    parser.add_argument("--workers", type=int, default=DEFAULTS["workers"],
-                        help=f"Parallel workers (default: {DEFAULTS['workers']})")
-    parser.add_argument("--threads", type=int, default=DEFAULTS["threads"],
-                        help=f"Total threads (default: {DEFAULTS['threads']})")
+    parser.add_argument(
+        "--workers", type=int, default=DEFAULTS["workers"], help=f"Parallel workers (default: {DEFAULTS['workers']})"
+    )
+    parser.add_argument(
+        "--threads", type=int, default=DEFAULTS["threads"], help=f"Total threads (default: {DEFAULTS['threads']})"
+    )
     args = parser.parse_args()
 
-    print(f"╔══════════════════════════════════════════════════════════╗")
-    print(f"║  ENA-First Sample-by-Sample Pipeline (Wrapped)          ║")
-    print(f"║  Species: {len(SPECIES_ORDER)} | Max: {args.max_gb}GB | Workers: {args.workers} | Threads: {args.threads}  ║")
-    print(f"╚══════════════════════════════════════════════════════════╝")
+    print("╔══════════════════════════════════════════════════════════╗")
+    print("║  ENA-First Sample-by-Sample Pipeline (Wrapped)          ║")
+    print(
+        f"║  Species: {len(SPECIES_ORDER)} | Max: {args.max_gb}GB | Workers: {args.workers} | Threads: {args.threads}  ║"
+    )
+    print("╚══════════════════════════════════════════════════════════╝")
 
     orchestrator = StreamingPipelineOrchestrator()
     orchestrator.run_all(SPECIES_ORDER, args.max_gb, args.workers, args.threads)
+
 
 if __name__ == "__main__":
     main()

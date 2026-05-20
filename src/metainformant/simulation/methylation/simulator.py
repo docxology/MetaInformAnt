@@ -7,7 +7,7 @@ Useful for benchmarking differential methylation analysis tools.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -88,9 +88,7 @@ def _simulate_correlated_beta(
     offsets = np.zeros((n_sites, n_samples))
     offsets[0] = rng.normal(0, noise_std, n_samples)
     for i in range(1, n_sites):
-        offsets[i] = correlation * offsets[i - 1] + rng.normal(
-            0, noise_std * np.sqrt(1 - correlation**2), n_samples
-        )
+        offsets[i] = correlation * offsets[i - 1] + rng.normal(0, noise_std * np.sqrt(1 - correlation**2), n_samples)
     result = base + offsets
     return np.clip(result, 0.0, 1.0)
 
@@ -135,9 +133,7 @@ def simulate_methylation(
     all_dmr: list[bool] = []
 
     for region_idx, (site_type, n_sites, mean_meth, corr) in enumerate(site_configs):
-        region_beta = _simulate_correlated_beta(
-            n_sites, config.n_samples, mean_meth, corr, config.noise_std, rng
-        )
+        region_beta = _simulate_correlated_beta(n_sites, config.n_samples, mean_meth, corr, config.noise_std, rng)
 
         is_dmr = region_idx in dmr_indices
         if is_dmr:

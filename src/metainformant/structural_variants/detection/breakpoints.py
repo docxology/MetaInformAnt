@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import math
 from dataclasses import dataclass, field
-from typing import Any, Sequence
+from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -198,9 +198,9 @@ def detect_microhomology(
         return ""
 
     if isinstance(breakpoint, Breakpoint):
-        bp_pos = breakpoint.position
+        pass
     else:
-        bp_pos = breakpoint.get("position", 0)
+        breakpoint.get("position", 0)
 
     seq = flanking_seq.upper()
     mid = len(seq) // 2

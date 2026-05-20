@@ -5,8 +5,6 @@ All tests follow NO_MOCKING_POLICY and use real implementations.
 
 from __future__ import annotations
 
-import pytest
-
 from metainformant.math.population_genetics.selection import (
     kin_selection_response,
     multilevel_selection_decomposition,

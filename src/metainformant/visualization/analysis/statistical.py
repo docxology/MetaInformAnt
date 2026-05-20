@@ -8,7 +8,6 @@ ridge plots, ROC curves, precision-recall curves, residual plots, and leverage p
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -283,7 +282,7 @@ def correlation_heatmap(
         # Add text annotations
         for i in range(len(corr_matrix)):
             for j in range(len(corr_matrix)):
-                text = ax.text(j, i, f"{corr_matrix.iloc[i, j]:.2f}", ha="center", va="center", color="w")
+                ax.text(j, i, f"{corr_matrix.iloc[i, j]:.2f}", ha="center", va="center", color="w")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
@@ -361,7 +360,7 @@ def ridge_plot(
 
     # Simple ridge plot implementation
     n_groups = len(data)
-    y_positions = np.linspace(0, n_groups - 1, n_groups)
+    np.linspace(0, n_groups - 1, n_groups)
 
     for i, arr in enumerate(data):
         if HAS_SEABORN:
@@ -546,7 +545,6 @@ def leverage_plot(
 
     try:
         from sklearn.linear_model import LinearRegression
-        from sklearn.metrics import r2_score
     except ImportError:
         raise ImportError("scikit-learn required for leverage plot")
 

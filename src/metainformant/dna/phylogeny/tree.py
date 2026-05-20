@@ -7,16 +7,6 @@ continue to work unchanged.
 
 from __future__ import annotations
 
-# Re-export the Tree type alias
-from .tree_construction import Tree
-
-# Re-export construction functions
-from .tree_construction import (
-    neighbor_joining_tree,
-    nj_tree_from_kmer,
-    upgma_tree,
-)
-
 # Re-export analysis functions
 from .tree_analysis import (
     _find_root,
@@ -32,6 +22,15 @@ from .tree_analysis import (
     to_newick,
     total_branch_length,
     tree_diameter,
+)
+
+# Re-export construction functions
+# Re-export the Tree type alias
+from .tree_construction import (
+    Tree,
+    neighbor_joining_tree,
+    nj_tree_from_kmer,
+    upgma_tree,
 )
 
 __all__ = [
@@ -51,4 +50,7 @@ __all__ = [
     "total_branch_length",
     "prune_tree",
     "tree_diameter",
+    "_find_root",
+    "_get_all_leaves",
+    "_get_bipartitions",
 ]

@@ -12,6 +12,13 @@ This module re-exports all public symbols from :mod:`prediction_core` and
 
 from __future__ import annotations
 
+from metainformant.protein.function.prediction_analysis import (
+    _ACTIVE_SITE_PATTERNS,
+    _PTM_PATTERNS,
+    find_active_sites,
+    predict_disordered_regions,
+    predict_post_translational_mods,
+)
 from metainformant.protein.function.prediction_core import (
     _AA_MW,
     _DISORDER_PROPENSITY,
@@ -32,13 +39,6 @@ from metainformant.protein.function.prediction_core import (
     predict_function_from_domains,
     predict_localization,
     predict_solubility,
-)
-from metainformant.protein.function.prediction_analysis import (
-    _ACTIVE_SITE_PATTERNS,
-    _PTM_PATTERNS,
-    find_active_sites,
-    predict_disordered_regions,
-    predict_post_translational_mods,
 )
 
 __all__ = [

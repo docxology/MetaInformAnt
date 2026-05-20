@@ -192,7 +192,7 @@ def detect_chromatographic_peaks(
             continue
 
         # Trapezoidal integration for area
-        area = float(np.trapz(intensities[left : right + 1], retention_times[left : right + 1]))
+        area = float(np.trapezoid(intensities[left : right + 1], retention_times[left : right + 1]))
 
         peaks.append(
             ChromatogramPeak(

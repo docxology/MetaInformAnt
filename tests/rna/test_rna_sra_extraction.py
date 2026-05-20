@@ -9,10 +9,8 @@ Tests that require external tools (fasterq-dump, pigz/gzip) are marked with
 from __future__ import annotations
 
 import gzip
-import os
 import shutil
 from pathlib import Path
-from typing import Any, Dict
 
 import pytest
 

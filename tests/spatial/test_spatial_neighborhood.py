@@ -2,10 +2,10 @@
 
 NO MOCKING POLICY: All tests use real implementations.
 """
+
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from metainformant.spatial.analysis.neighborhood import (
     InteractionResult,
@@ -18,7 +18,6 @@ from metainformant.spatial.analysis.neighborhood import (
     niche_detection,
     ripley_k,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -33,8 +32,8 @@ def _make_spatial_cells(n=50, n_types=3, seed=42):
 
 
 def _make_adjacency(coords, k=5, seed=42):
-    from scipy.spatial import KDTree
     from scipy import sparse
+    from scipy.spatial import KDTree
 
     tree = KDTree(coords)
     _, indices = tree.query(coords, k=k + 1)

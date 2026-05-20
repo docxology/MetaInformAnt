@@ -30,7 +30,7 @@ def test_ncbi_datasets_optional_dependency_errors():
         pytest.skip("ncbi function available, skipping missing dependency test")
     except RuntimeError:
         pass  # Expected
-    except (ImportError, AttributeError) as e:
+    except (ImportError, AttributeError):
         # Also acceptable - module may not have function
         pass
 

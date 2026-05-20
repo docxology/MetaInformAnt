@@ -12,10 +12,7 @@ if the identity exceeds the threshold, or creates a new OTU centroid.
 from __future__ import annotations
 
 import os
-from collections import Counter
 from dataclasses import dataclass, field
-from pathlib import Path
-from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -112,18 +109,18 @@ def calculate_identity(seq1: str, seq2: str) -> float:
     NEG_INF = float("-inf")
 
     # For memory efficiency, use two-row approach
-    prev_m = [NEG_INF] * (m + 1)
-    prev_x = [NEG_INF] * (m + 1)
-    prev_y = [NEG_INF] * (m + 1)
+    [NEG_INF] * (m + 1)
+    [NEG_INF] * (m + 1)
+    [NEG_INF] * (m + 1)
 
-    curr_m = [NEG_INF] * (m + 1)
-    curr_x = [NEG_INF] * (m + 1)
-    curr_y = [NEG_INF] * (m + 1)
+    [NEG_INF] * (m + 1)
+    [NEG_INF] * (m + 1)
+    [NEG_INF] * (m + 1)
 
     # Traceback matrices (we need full matrices for traceback)
-    trace_m = [[0] * (m + 1) for _ in range(n + 1)]
-    trace_x = [[0] * (m + 1) for _ in range(n + 1)]
-    trace_y = [[0] * (m + 1) for _ in range(n + 1)]
+    [[0] * (m + 1) for _ in range(n + 1)]
+    [[0] * (m + 1) for _ in range(n + 1)]
+    [[0] * (m + 1) for _ in range(n + 1)]
 
     # Store all rows for traceback
     all_m = [[NEG_INF] * (m + 1) for _ in range(n + 1)]
@@ -167,7 +164,7 @@ def calculate_identity(seq1: str, seq2: str) -> float:
             all_y[i][j] = max(y_from_m, y_from_y)
 
     # Best terminal score
-    final_score = max(all_m[n][m], all_x[n][m], all_y[n][m])
+    max(all_m[n][m], all_x[n][m], all_y[n][m])
 
     # Traceback to count matches
     i, j = n, m
@@ -333,7 +330,6 @@ def cluster_otus(
             logger.warning(f"Skipping empty sequence: {seq_id}")
             continue
 
-        assigned = False
         best_identity = 0.0
         best_otu_idx = -1
 
@@ -353,7 +349,6 @@ def cluster_otus(
 
         if best_otu_idx >= 0:
             otus[best_otu_idx].add_member(seq_id, seq)
-            assigned = True
         else:
             new_otu = OTU(
                 centroid_id=seq_id,

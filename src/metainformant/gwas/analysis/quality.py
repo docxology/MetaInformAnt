@@ -7,8 +7,11 @@ including VCF parsing, genotype filtering, and data validation.
 from __future__ import annotations
 
 import gzip
+import json
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
+
+import numpy as np
 
 from metainformant.core.utils import logging
 
@@ -17,21 +20,44 @@ logger = logging.get_logger(__name__)
 
 def parse_vcf_full(vcf_path: Union[str, Path]) -> Dict[str, Any]:
     """Parse entire VCF file into a dictionary (NumPy optimized for large cohorts).
-    
+
+    A sidecar ``.npz`` cache is used when it matches the source file size and
+    modification time. The cache stores JSON metadata and NumPy arrays only, so
+    cache reads do not require pickle.
+
     Args:
         vcf_path: Path to VCF file
-        
+
     Returns:
         Dictionary with samples, variants, genotypes (numpy array), metadata
     """
-    import gzip
-    import numpy as np
-    
     vcf_path = Path(vcf_path)
     if not vcf_path.exists():
         raise FileNotFoundError(f"VCF file not found: {vcf_path}")
 
     logger.info(f"Parsing VCF file (NumPy optimized): {vcf_path}")
+
+    cache_path = vcf_path.with_suffix(vcf_path.suffix + ".npz")
+    source_stat = vcf_path.stat()
+    if cache_path.exists():
+        logger.info(f"Found cached genotype matrix at {cache_path}. Loading natively...")
+        try:
+            with np.load(cache_path, allow_pickle=False) as cached:
+                cache_mtime_ns = int(cached["source_mtime_ns"][()])
+                cache_size = int(cached["source_size"][()])
+                if cache_mtime_ns != source_stat.st_mtime_ns or cache_size != source_stat.st_size:
+                    raise ValueError("cache source metadata does not match VCF")
+
+                data = {
+                    "samples": cached["samples"].tolist(),
+                    "variants": json.loads(str(cached["variants_json"][()])),
+                    "metadata": json.loads(str(cached["metadata_json"][()])),
+                    "genotypes": cached["genotypes"],
+                }
+            logger.info("Successfully loaded VCF cache via optimized protocol.")
+            return data
+        except Exception as e:
+            logger.warning(f"Failed to load cache from {cache_path}: {e}. Falling back to parsing.")
 
     opener = gzip.open if str(vcf_path).endswith(".gz") else open
     mode = "rt" if str(vcf_path).endswith(".gz") else "r"
@@ -46,13 +72,15 @@ def parse_vcf_full(vcf_path: Union[str, Path]) -> Dict[str, Any]:
     try:
         with opener(vcf_path, mode) as f:
             for line in f:
-                if not line.startswith('#'):
+                if not line.startswith("#"):
                     n_variants += 1
-                elif line.startswith('##'):
+                    if n_variants % 2500000 == 0:
+                        logger.info(f"Pre-scan: Processed {n_variants:,} variants...")
+                elif line.startswith("##"):
                     if "=" in line:
                         key, val = line.strip()[2:].split("=", 1)
                         data["metadata"][key] = val
-                elif line.startswith('#CHROM'):
+                elif line.startswith("#CHROM"):
                     data["samples"] = line.strip().split("\t")[9:]
     except Exception as e:
         raise ValueError(f"Error reading VCF file {vcf_path}: {e}")
@@ -66,8 +94,16 @@ def parse_vcf_full(vcf_path: Union[str, Path]) -> Dict[str, Any]:
         with opener(vcf_path, mode) as f:
             var_idx = 0
             for line_num, line in enumerate(f, 1):
-                if line.startswith('#'):
+                if line.startswith("#"):
                     continue
+
+                if var_idx > 0 and var_idx % 1000000 == 0:
+                    logger.info(
+                        "Loading variants into NumPy matrix: %s/%s (%.1f%%)",
+                        f"{var_idx:,}",
+                        f"{n_variants:,}",
+                        (var_idx / n_variants) * 100,
+                    )
 
                 parts = line.strip().split("\t")
                 if len(parts) < 10:
@@ -80,7 +116,7 @@ def parse_vcf_full(vcf_path: Union[str, Path]) -> Dict[str, Any]:
                     ref = parts[3]
                     alt = parts[4]
                     qual = float(parts[5]) if parts[5] != "." else None
-                    
+
                     variant = {
                         "chrom": chrom,
                         "pos": pos,
@@ -115,12 +151,24 @@ def parse_vcf_full(vcf_path: Union[str, Path]) -> Dict[str, Any]:
     # Transpose genotypes: from [variant][sample] to [sample][variant]
     data["genotypes"] = genotypes.T
 
+    try:
+        np.savez_compressed(
+            cache_path,
+            genotypes=data["genotypes"],
+            samples=np.asarray(data["samples"], dtype=str),
+            variants_json=json.dumps(data["variants"]),
+            metadata_json=json.dumps(data["metadata"]),
+            source_mtime_ns=np.asarray(source_stat.st_mtime_ns, dtype=np.int64),
+            source_size=np.asarray(source_stat.st_size, dtype=np.int64),
+        )
+        logger.info(f"Cached genotype matrix to {cache_path}")
+    except Exception as e:
+        logger.warning(f"Failed to cache generated VCF arrays: {e}")
+
     return data
 
 
-def filter_by_maf(
-    genotypes: List[List[int]], maf_threshold: float = 0.01
-) -> Tuple[List[List[int]], List[int]]:
+def filter_by_maf(genotypes: List[List[int]], maf_threshold: float = 0.01) -> Tuple[List[List[int]], List[int]]:
     """Filter variants by minor allele frequency.
 
     Args:
@@ -156,9 +204,7 @@ def filter_by_maf(
             continue
 
         # Calculate MAF
-        allele_freqs = {
-            allele: count / total_alleles for allele, count in allele_counts.items()
-        }
+        allele_freqs = {allele: count / total_alleles for allele, count in allele_counts.items()}
         maf = min(allele_freqs.values()) if len(allele_freqs) > 1 else 0.0
 
         if maf >= maf_threshold:
@@ -172,9 +218,7 @@ def filter_by_maf(
     return filtered_genotypes, kept_indices
 
 
-def filter_by_missing(
-    genotypes: List[List[int]], missing_threshold: float = 0.1
-) -> Tuple[List[List[int]], List[int]]:
+def filter_by_missing(genotypes: List[List[int]], missing_threshold: float = 0.1) -> Tuple[List[List[int]], List[int]]:
     """Filter variants by missing data proportion.
 
     Args:
@@ -200,9 +244,7 @@ def filter_by_missing(
     # Extract kept genotypes
     filtered_genotypes = [genotypes[i] for i in kept_indices]
 
-    logger.info(
-        f"Missing data filter: kept {len(kept_indices)}/{len(genotypes)} variants"
-    )
+    logger.info(f"Missing data filter: kept {len(kept_indices)}/{len(genotypes)} variants")
 
     return filtered_genotypes, kept_indices
 
@@ -431,9 +473,7 @@ def apply_qc_filters(
     # Transpose genotypes to [variant][sample] for filtering functions
     n_samples = len(genotypes_by_sample)
     n_variants = len(genotypes_by_sample[0]) if n_samples > 0 else 0
-    genotypes = [
-        [genotypes_by_sample[s][v] for s in range(n_samples)] for v in range(n_variants)
-    ]
+    genotypes = [[genotypes_by_sample[s][v] for s in range(n_samples)] for v in range(n_variants)]
 
     num_variants_before = len(genotypes)
 
@@ -449,9 +489,7 @@ def apply_qc_filters(
         }
 
     # Re-filter by missing data on MAF-filtered set
-    filtered_genotypes, missing_indices = filter_by_missing(
-        filtered_genotypes, max_missing
-    )
+    filtered_genotypes, missing_indices = filter_by_missing(filtered_genotypes, max_missing)
     if len(filtered_genotypes) == 0:
         logger.warning("No variants passed missing data filter")
         return {
@@ -475,14 +513,9 @@ def apply_qc_filters(
 
     # Transpose final genotypes back to [sample][variant]
     n_final_variants = len(final_genotypes)
-    final_genotypes_by_sample = [
-        [final_genotypes[v][s] for v in range(n_final_variants)]
-        for s in range(n_samples)
-    ]
+    final_genotypes_by_sample = [[final_genotypes[v][s] for v in range(n_final_variants)] for s in range(n_samples)]
 
-    logger.info(
-        f"QC filtering complete: {len(final_genotypes)}/{num_variants_before} variants passed"
-    )
+    logger.info(f"QC filtering complete: {len(final_genotypes)}/{num_variants_before} variants passed")
 
     return {
         "status": "success",
@@ -501,9 +534,7 @@ def apply_qc_filters(
     }
 
 
-def write_filtered_vcf(
-    filtered_data: Dict[str, Any], output_path: Union[str, Path]
-) -> None:
+def write_filtered_vcf(filtered_data: Dict[str, Any], output_path: Union[str, Path]) -> None:
     """Write filtered VCF data to a new file.
 
     Args:
@@ -528,9 +559,7 @@ def write_filtered_vcf(
 
         # Write standard VCF header definitions if not already present
         if "INFO" not in metadata:
-            f.write(
-                '##INFO=<ID=.,Number=.,Type=String,Description="Variant information">\n'
-            )
+            f.write('##INFO=<ID=.,Number=.,Type=String,Description="Variant information">\n')
         if "FORMAT" not in metadata:
             f.write('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n')
         if "FILTER" not in metadata:
@@ -569,9 +598,7 @@ def write_filtered_vcf(
                         f.write(f"\t{gt}/{gt}")  # Generic case
             f.write("\n")
 
-    logger.info(
-        f"Filtered VCF written with {len(filtered_data.get('variants', []))} variants"
-    )
+    logger.info(f"Filtered VCF written with {len(filtered_data.get('variants', []))} variants")
 
 
 def subset_vcf_data(
@@ -717,10 +744,7 @@ def extract_variant_regions(
 
         # Check if variant falls within any region
         for region_chrom, region_start, region_end in regions:
-            if (
-                chrom == region_chrom
-                and region_start - padding <= pos <= region_end + padding
-            ):
+            if chrom == region_chrom and region_start - padding <= pos <= region_end + padding:
                 filtered_variants.append(variant)
                 filtered_indices.append(i)
                 break
@@ -737,8 +761,6 @@ def extract_variant_regions(
     if len(filtered_genotypes) > 0:
         result["genotypes"] = filtered_genotypes
 
-    logger.info(
-        f"Extracted {len(filtered_variants)} variants from {len(regions)} regions"
-    )
+    logger.info(f"Extracted {len(filtered_variants)} variants from {len(regions)} regions")
 
     return result

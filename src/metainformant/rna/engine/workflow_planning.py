@@ -11,7 +11,7 @@ import os
 import shutil
 import time as time_mod
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from metainformant.core.utils import logging
 from metainformant.rna.engine.workflow_cleanup import (
@@ -258,7 +258,7 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
             step_params["work_dir"] = str(config.work_dir)
         if "out_dir" not in step_params:
             step_params["out_dir"] = str(config.work_dir)
-            
+
         # Hardcode canonical config directory for parsing validation on bootstrap steps
         if step in ("select", "cstmm", "csca", "index", "config"):
             if "config_dir" not in step_params:
@@ -737,7 +737,7 @@ def verify_getfastq_prerequisites(config: AmalgkitWorkflowConfig, steps_planned:
         parts = list(getfastq_dir.glob("**/*.sra.part"))
         fastqs = list(getfastq_dir.glob("**/*.fastq.gz*"))
 
-        logger.info(f"Files Found:")
+        logger.info("Files Found:")
         logger.info(f"  - SRA files (.sra): {len(sras)}")
         logger.info(f"  - Partial downloads (.part): {len(parts)}")
         logger.info(f"  - Extracted FASTQ (.fastq.gz): {len(fastqs)}")
@@ -758,11 +758,11 @@ def sanitize_params_for_cli(subcommand: str, params: Dict[str, Any]) -> Dict[str
     """Sanitize parameters to ensure compatibility with the raw amalgkit CLI tool.
 
     Critically, the base amalgkit R/CLI tool does not know how to handle arguments
-    introduced purely by the MetaInformAnt Python wrapper (e.g., `num_retries`, 
-    `retry_delay`, `validate_md5`). If these args are passed as `--num_retries 3` 
+    introduced purely by the MetaInformAnt Python wrapper (e.g., `num_retries`,
+    `retry_delay`, `validate_md5`). If these args are passed as `--num_retries 3`
     to `amalgkit getfastq`, the underlying parser will fail with `code 2`.
 
-    This function aggressively filters out high-level python orchestration 
+    This function aggressively filters out high-level python orchestration
     parameters before passing the sanitized dict downward.
 
     Args:
@@ -823,7 +823,7 @@ def _is_step_completed(step_name: str, step_params: dict, config: AmalgkitWorkfl
         Tuple of (is_completed: bool, completion_indicator: Optional[str])
     """
     work_dir = config.work_dir
-    steps_config = config.extra_config.get("steps", {})
+    config.extra_config.get("steps", {})
 
     if step_name == "metadata":
         metadata_file = work_dir / "metadata" / "metadata.tsv"

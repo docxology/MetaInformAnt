@@ -5,9 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
-import pytest
 
-from metainformant.core.io.io import write_delimited, write_tsv
+from metainformant.core.io.io import write_tsv
 from metainformant.gwas.analysis.association import association_test_linear, association_test_logistic
 from metainformant.gwas.workflow.workflow_execution import run_gwas
 

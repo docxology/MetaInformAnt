@@ -7,7 +7,7 @@ and biological data handling.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -17,7 +17,6 @@ logger = get_logger(__name__)
 
 # Optional imports for ML functionality
 try:
-    from sklearn.base import BaseEstimator
     from sklearn.ensemble import GradientBoostingClassifier, RandomForestClassifier, VotingClassifier
     from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import (
@@ -133,6 +132,7 @@ class BiologicalClassifier:
 
         self.model.fit(X, y)
         self.feature_names = feature_names
+        self.classes_ = getattr(self.model, "classes_", np.unique(y))
         self._is_fitted = True
 
         logger.info(f"Trained {self.model_type} classifier with {X.shape[1]} features")

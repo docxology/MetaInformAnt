@@ -12,6 +12,8 @@ Usage:
     python3 scripts/rna/discover_species.py --species "Camponotus floridanus" --output config/amalgkit/
 """
 
+# ruff: noqa: E402 - setup utilities intentionally run before importing metainformant.
+
 from __future__ import annotations
 
 import argparse

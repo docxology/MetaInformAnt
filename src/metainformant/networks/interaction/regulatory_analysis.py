@@ -11,6 +11,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional
 
 from metainformant.core.utils import logging
+from metainformant.networks.interaction.regulatory_core import GeneRegulatoryNetwork
 
 logger = logging.get_logger(__name__)
 
@@ -21,8 +22,6 @@ try:
     HAS_NETWORKX = True
 except ImportError:
     HAS_NETWORKX = False
-
-from metainformant.networks.interaction.regulatory_core import GeneRegulatoryNetwork
 
 
 def infer_regulatory_network_from_expression(

@@ -12,11 +12,9 @@ from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from scipy import stats
 
 from metainformant.core.data import validation
-from metainformant.core.utils import errors
-from metainformant.core.utils import logging
+from metainformant.core.utils import errors, logging
 
 logger = logging.get_logger(__name__)
 
@@ -130,6 +128,7 @@ class MultiOmicsData:
 
         # Warn if samples don't fully overlap
         import warnings
+
         all_samples = set()
         for df in self.data.values():
             all_samples.update(df.index)
@@ -219,7 +218,9 @@ class MultiOmicsData:
             if meta_available:
                 subset_metadata = self._metadata.loc[meta_available]
 
-        return MultiOmicsData(data=subset_data, sample_ids=available_samples, feature_ids=self.feature_ids, metadata=subset_metadata)
+        return MultiOmicsData(
+            data=subset_data, sample_ids=available_samples, feature_ids=self.feature_ids, metadata=subset_metadata
+        )
 
     def subset_features(self, feature_dict: Dict[str, List[str]]) -> "MultiOmicsData":
         """Create subset with specified features per layer.
@@ -281,6 +282,9 @@ def integrate_omics_data(
     Raises:
         ValueError: If no data provided or incompatible data shapes
     """
+    sample_mapping = kwargs.pop("sample_mapping", None)
+    feature_mapping = kwargs.pop("feature_mapping", None)
+
     # Handle dict input
     if data is not None:
         # Process dict - load files if needed
@@ -299,6 +303,16 @@ def integrate_omics_data(
                     raise errors.ValidationError(f"Unsupported file format: {path.suffix}")
             else:
                 processed_data[key] = value
+
+        if sample_mapping:
+            for layer, mapping in sample_mapping.items():
+                if layer in processed_data:
+                    processed_data[layer] = processed_data[layer].rename(index=mapping)
+
+        if feature_mapping:
+            for layer, mapping in feature_mapping.items():
+                if layer in processed_data:
+                    processed_data[layer] = processed_data[layer].rename(columns=mapping)
 
         # Load metadata from file if it's a path
         if "metadata" in kwargs and isinstance(kwargs["metadata"], (str, Path)):
@@ -323,6 +337,15 @@ def integrate_omics_data(
 
     # Filter out None values
     available_omics = {k: v for k, v in omics_data.items() if v is not None}
+    if sample_mapping:
+        for layer, mapping in sample_mapping.items():
+            if layer in available_omics:
+                available_omics[layer] = available_omics[layer].rename(index=mapping)
+
+    if feature_mapping:
+        for layer, mapping in feature_mapping.items():
+            if layer in available_omics:
+                available_omics[layer] = available_omics[layer].rename(columns=mapping)
 
     if not available_omics:
         raise errors.ValidationError("At least one omics dataset must be provided")
@@ -559,9 +582,15 @@ def canonical_correlation(
         corr = np.corrcoef(X_c[:, i], Y_c[:, i])[0, 1]
         correlations.append(abs(corr))
     correlations = np.array(correlations)
+    order = np.argsort(correlations)[::-1]
+    X_c = X_c[:, order]
+    Y_c = Y_c[:, order]
+    x_weights = cca.x_weights_[:, order]
+    y_weights = cca.y_weights_[:, order]
+    correlations = correlations[order]
 
     logger.info(f"CCA completed: {len(correlations)} components")
-    return X_c, Y_c, cca.x_weights_, cca.y_weights_, correlations
+    return X_c, Y_c, x_weights, y_weights, correlations
 
 
 def from_dna_variants(vcf_data: pd.DataFrame, **kwargs) -> pd.DataFrame:

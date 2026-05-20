@@ -4,10 +4,9 @@ Zero-mock tests that validate CloudConfig dataclass behavior,
 validation logic, and GCPDeployer static methods without requiring
 any GCP credentials or network access.
 """
+
 import sys
 from pathlib import Path
-
-import pytest
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
@@ -94,12 +93,14 @@ class TestGCPDeployerStatic:
     def test_gcloud_installed_returns_bool(self):
         """gcloud_installed returns a boolean."""
         from metainformant.cloud.gcp_deployer import GCPDeployer
+
         result = GCPDeployer.gcloud_installed()
         assert isinstance(result, bool)
 
     def test_deployer_init(self):
         """GCPDeployer can be instantiated with a config."""
         from metainformant.cloud.gcp_deployer import GCPDeployer
+
         cfg = CloudConfig(project="test-project")
         deployer = GCPDeployer(cfg)
         assert deployer.cfg.project == "test-project"
@@ -146,6 +147,7 @@ class TestDeployScript:
         sys.path.insert(0, script_dir)
         try:
             import deploy_gcp
+
             parser = deploy_gcp.build_parser()
             assert parser is not None
         finally:
@@ -157,7 +159,9 @@ class TestDeployScript:
         sys.path.insert(0, script_dir)
         try:
             import importlib
+
             import deploy_gcp
+
             importlib.reload(deploy_gcp)  # Ensure fresh import
             parser = deploy_gcp.build_parser()
             # Parse each command to verify it exists
@@ -166,4 +170,3 @@ class TestDeployScript:
                 assert args.command == cmd
         finally:
             sys.path.pop(0)
-

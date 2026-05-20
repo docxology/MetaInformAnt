@@ -7,9 +7,6 @@ Uses real algorithmic implementations (no mocking).
 
 from __future__ import annotations
 
-import math
-import os
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -84,7 +81,7 @@ def sample_alignments() -> list[dict[str, Any]]:
                 "pos": 4900 + i * 10,
                 "mapq": 50,
                 "cigar": "80M70S",
-                "sa_tag": f"chr1,8000,+,70M80S,50,0;",
+                "sa_tag": "chr1,8000,+,70M80S,50,0;",
                 "mate_chrom": "chr1",
                 "mate_pos": 4900 + i * 10 + 400,
                 "insert_size": 400,
@@ -898,7 +895,7 @@ class TestVisualization:
         from metainformant.structural_variants.visualization.plots import plot_sv_type_summary
 
         output = tmp_path / "sv_types.png"
-        fig = plot_sv_type_summary(sample_variants, output_path=str(output))
+        plot_sv_type_summary(sample_variants, output_path=str(output))
 
         assert output.exists()
         assert output.stat().st_size > 0
@@ -909,7 +906,7 @@ class TestVisualization:
         from metainformant.structural_variants.visualization.plots import plot_sv_size_distribution
 
         output = tmp_path / "sv_sizes.png"
-        fig = plot_sv_size_distribution(sample_variants, output_path=str(output))
+        plot_sv_size_distribution(sample_variants, output_path=str(output))
 
         assert output.exists()
         assert output.stat().st_size > 0
@@ -924,7 +921,7 @@ class TestVisualization:
         region = ("chr1", 0, 100000)
 
         output = tmp_path / "coverage.png"
-        fig = plot_coverage_track(coverage, variants, region, output_path=str(output))
+        plot_coverage_track(coverage, variants, region, output_path=str(output))
 
         assert output.exists()
 
@@ -935,7 +932,7 @@ class TestVisualization:
         chromosomes = {"chr1": 100_000, "chr2": 80_000}
         output = tmp_path / "circos.png"
 
-        fig = plot_circos(sample_variants, chromosomes, str(output))
+        plot_circos(sample_variants, chromosomes, str(output))
         assert output.exists()
         assert output.stat().st_size > 0
 
@@ -953,7 +950,7 @@ class TestVisualization:
         chromosomes = {"chr1": 100_000, "chr2": 80_000}
 
         output = tmp_path / "cnv_profile.png"
-        fig = plot_cnv_profile(segments, chromosomes, output_path=str(output))
+        plot_cnv_profile(segments, chromosomes, output_path=str(output))
 
         assert output.exists()
 
@@ -974,7 +971,7 @@ class TestVisualization:
         ]
 
         output = tmp_path / "breakpoint.png"
-        fig = plot_breakpoint_detail(variant, reads, output_path=str(output))
+        plot_breakpoint_detail(variant, reads, output_path=str(output))
 
         assert output.exists()
 
@@ -1022,13 +1019,8 @@ class TestModuleImports:
         assert SVType.INS.value == "INS"
 
     def test_import_dataclasses(self) -> None:
-        from metainformant.structural_variants.annotation.functional_impact import FunctionalImpact
-        from metainformant.structural_variants.annotation.overlap import GenomicInterval, OverlapResult
-        from metainformant.structural_variants.detection.breakpoints import Breakpoint, BreakpointPair
-        from metainformant.structural_variants.detection.cnv import CNVResult, CNVSegment
-        from metainformant.structural_variants.detection.sv_calling import StructuralVariant, SVEvidence
-        from metainformant.structural_variants.filtering.merge import MergedVariant
-        from metainformant.structural_variants.filtering.quality_filter import FilterStats
+        from metainformant.structural_variants.annotation.overlap import GenomicInterval
+        from metainformant.structural_variants.detection.cnv import CNVSegment
 
         # Verify they are constructible
         seg = CNVSegment(chrom="chr1", start=0, end=1000, mean_log2ratio=0.0, n_bins=10)

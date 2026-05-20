@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 
 import numpy as np
@@ -18,10 +19,8 @@ from metainformant.visualization.analysis.timeseries import (
 
 # Check for optional dependencies
 try:
-    from statsmodels.tsa.seasonal import seasonal_decompose
-
-    HAS_STATSMODELS = True
-except ImportError:
+    HAS_STATSMODELS = importlib.util.find_spec("statsmodels.tsa.seasonal") is not None
+except ModuleNotFoundError:
     HAS_STATSMODELS = False
 
 

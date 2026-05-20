@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 from pathlib import Path
 
 import numpy as np
@@ -25,10 +26,8 @@ except ImportError:
     HAS_SKLEARN = False
 
 try:
-    import umap
-
-    HAS_UMAP = True
-except ImportError:
+    HAS_UMAP = importlib.util.find_spec("umap") is not None
+except ModuleNotFoundError:
     HAS_UMAP = False
 
 

@@ -2,17 +2,12 @@
 
 NO MOCKING POLICY: All tests use real implementations.
 """
-from __future__ import annotations
 
-import json
-from pathlib import Path
+from __future__ import annotations
 
 import pytest
 
 from metainformant.ontology.core.types import (
-    Ontology,
-    Relationship,
-    Term,
     create_ontology,
     create_relationship,
     create_term,
@@ -24,7 +19,6 @@ from metainformant.ontology.query.serialize import (
     ontology_to_graph,
     save_ontology,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers

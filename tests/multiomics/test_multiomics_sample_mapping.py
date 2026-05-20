@@ -1,7 +1,6 @@
 """Tests for multiomics sample mapping functionality."""
 
 import pandas as pd
-import pytest
 
 from metainformant.multiomics.analysis.integration import integrate_omics_data
 

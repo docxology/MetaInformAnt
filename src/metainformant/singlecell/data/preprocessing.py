@@ -8,16 +8,13 @@ to be compatible with AnnData structures while providing graceful fallbacks.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Tuple
 
 import numpy as np
 import pandas as pd
 
 from metainformant.core.data import validation
-from metainformant.core.utils import errors
-from metainformant.core.io import paths
-from metainformant.core.utils import logging
-from metainformant.core import io
+from metainformant.core.utils import errors, logging
 
 # Import scipy.sparse for sparse matrix support
 try:

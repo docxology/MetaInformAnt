@@ -14,7 +14,6 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import Any
 
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))

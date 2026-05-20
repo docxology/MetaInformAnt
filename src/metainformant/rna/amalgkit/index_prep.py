@@ -10,8 +10,6 @@ for pseudoaligners like kallisto. It handles filtering of:
 """
 
 import gzip
-import logging
-import shutil
 from pathlib import Path
 from typing import List, Optional, Union
 
@@ -19,6 +17,7 @@ from typing import List, Optional, Union
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
+
 
 class IndexComplexityManager:
     """Manages transcriptome complexity by filtering problematic sequences."""
@@ -52,13 +51,8 @@ class IndexComplexityManager:
         """
         input_path = Path(input_path)
         output_path = Path(output_path)
-        
-        stats = {
-            "total": 0,
-            "kept": 0,
-            "removed_pattern": 0,
-            "removed_length": 0
-        }
+
+        stats = {"total": 0, "kept": 0, "removed_pattern": 0, "removed_length": 0}
 
         # Determine open function based on extension
         is_gzip = input_path.suffix == ".gz"
@@ -93,7 +87,7 @@ class IndexComplexityManager:
                     line = line.strip()
                     if not line:
                         continue
-                        
+
                     if line.startswith(">"):
                         if header:
                             process_entry(header, sequence)
@@ -101,7 +95,7 @@ class IndexComplexityManager:
                         sequence = []
                     else:
                         sequence.append(line)
-                
+
                 # Process last entry
                 if header:
                     process_entry(header, sequence)

@@ -4,11 +4,13 @@ from __future__ import annotations
 
 from datetime import datetime
 
-import numpy as np
-import pytest
-
 from metainformant.life_events.core.events import Event, EventSequence
-from metainformant.life_events.core.utils import add_temporal_noise, generate_cohort_sequences, generate_event_chain, generate_synthetic_life_events
+from metainformant.life_events.core.utils import (
+    add_temporal_noise,
+    generate_cohort_sequences,
+    generate_event_chain,
+    generate_synthetic_life_events,
+)
 
 
 def test_generate_event_chain(tmp_path):
@@ -105,17 +107,15 @@ def test_generate_realistic_with_noise(tmp_path):
 
 def test_generate_realistic_cooccurrence(tmp_path):
     """Test realistic generation with co-occurrence patterns."""
-    sequences, _ = generate_realistic_life_events(
+    sequences, _ = generate_synthetic_life_events(
         n_sequences=20, cooccurrence_patterns={"job_change": ["move"], "degree": ["job_change"]}, random_state=42
     )
 
     assert len(sequences) == 20
     # Check that some co-occurrences exist
-    has_cooccurrence = False
     for seq in sequences:
         tokens = [f"{e.domain}:{e.event_type}" for e in seq.events]
         if "occupation:job_change" in tokens and "address:move" in tokens:
-            has_cooccurrence = True
             break
 
     # This is probabilistic, so we just check sequences were generated

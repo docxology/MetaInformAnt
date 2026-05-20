@@ -5,14 +5,12 @@ Downloads real genome data, generates realistic population-level variant data
 using actual Apis mellifera HAv3.1 chromosome coordinates, and runs the
 complete GWAS analysis pipeline with all visualizations.
 """
+
 from __future__ import annotations
 
 import gzip
 import json
-import math
-import os
 import random
-import struct
 import subprocess
 import sys
 import time
@@ -673,6 +671,10 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
     plots_dir.mkdir(parents=True, exist_ok=True)
 
     from metainformant.gwas.visualization.general import kinship_heatmap, manhattan_plot, qq_plot
+    from metainformant.gwas.visualization.genomic.variants import (
+        maf_distribution,
+        variant_density_plot,
+    )
     from metainformant.gwas.visualization.population.population import (
         pca_plot,
         pca_scree_plot,
@@ -680,10 +682,6 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
     from metainformant.gwas.visualization.statistical.statistical import (
         power_plot,
         volcano_plot,
-    )
-    from metainformant.gwas.visualization.genomic.variants import (
-        maf_distribution,
-        variant_density_plot,
     )
 
     plot_results = {}
@@ -697,7 +695,7 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
 
     # Extract data for plots
     p_values = [r.get("p_value", 1.0) for r in assoc_results]
-    betas = [r.get("beta", 0) for r in assoc_results]
+    [r.get("beta", 0) for r in assoc_results]
 
     # 1. Manhattan plot
     logger.info("Generating Manhattan plot...")
@@ -734,7 +732,7 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
                 "pcs": np.array(pcs) if pcs else np.array([]),
                 "explained_variance": np.array(var_ratio) if var_ratio else np.array([]),
             }
-            result = pca_plot(pca_data, output_file=str(plots_dir / "pca.png"))
+            pca_plot(pca_data, output_file=str(plots_dir / "pca.png"))
             plot_results["pca"] = str(plots_dir / "pca.png")
             logger.info("  -> pca.png")
         except Exception as e:
@@ -744,7 +742,7 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
         logger.info("Generating PCA scree plot...")
         try:
             var_list = [float(v) for v in var_ratio] if var_ratio else []
-            result = pca_scree_plot(var_list, output_file=str(plots_dir / "pca_scree.png"))
+            pca_scree_plot(var_list, output_file=str(plots_dir / "pca_scree.png"))
             plot_results["pca_scree"] = str(plots_dir / "pca_scree.png")
             logger.info("  -> pca_scree.png")
         except Exception as e:
@@ -769,7 +767,7 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
     logger.info("Generating variant density plot...")
     try:
         variant_dicts = [{"CHROM": r.get("chrom", ""), "POS": r.get("pos", 0)} for r in assoc_results]
-        result = variant_density_plot(
+        variant_density_plot(
             variant_dicts,
             output_file=str(plots_dir / "variant_density.png"),
         )
@@ -787,7 +785,7 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
             maf = abs(r.get("beta", 0.0))
             maf = min(maf, 0.5)
             mafs.append(maf)
-        result = maf_distribution(mafs, output_file=str(plots_dir / "maf_distribution.png"))
+        maf_distribution(mafs, output_file=str(plots_dir / "maf_distribution.png"))
         plot_results["maf_distribution"] = str(plots_dir / "maf_distribution.png")
         logger.info("  -> maf_distribution.png")
     except Exception as e:
@@ -796,7 +794,7 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
     # 7. Power plot
     logger.info("Generating power plot...")
     try:
-        result = power_plot(
+        power_plot(
             sample_sizes=[20, 40, 60, 80, 100],
             effect_sizes=[0.1, 0.2, 0.5, 1.0],
             output_file=str(plots_dir / "power_analysis.png"),
@@ -809,7 +807,7 @@ def generate_visualizations(gwas_results: dict, output_dir: Path) -> dict:
     # 8. Volcano plot (expects list of result dicts)
     logger.info("Generating volcano plot...")
     try:
-        result = volcano_plot(
+        volcano_plot(
             results=assoc_results,
             output_path=str(plots_dir / "volcano.png"),
         )
@@ -935,7 +933,7 @@ def main():
             output_dir=output_base / "results",
         )
         if gwas_results.get("status") == "success":
-            print(f"  Status: SUCCESS")
+            print("  Status: SUCCESS")
             print(f"  Traits analyzed: {list(gwas_results.get('trait_results', {}).keys())}")
         else:
             print(f"  Status: {gwas_results.get('status', 'unknown')}")
@@ -948,7 +946,7 @@ def main():
         gwas_results = run_full_gwas(vcf_path, pheno_path, gff_path, output_base)
 
         if gwas_results.get("status") == "success":
-            print(f"  Status: SUCCESS")
+            print("  Status: SUCCESS")
             print(f"  Steps completed: {gwas_results.get('steps_completed', [])}")
         else:
             print(f"  Status: {gwas_results.get('status', 'unknown')}")

@@ -7,7 +7,7 @@ from metainformant.rna.engine.pipeline import summarize_curate_tables
 
 
 def test_rna_curate_summary_apis_mellifera():
-    repo_root = Path(__file__).resolve().parents[1]
+    repo_root = Path(__file__).resolve().parents[2]
     curate_dir = repo_root / "tests/data/rna/curate/Apis_mellifera"
     counts = summarize_curate_tables(curate_dir)
     assert any(name.endswith("metadata.tsv") for name in counts)
@@ -15,7 +15,7 @@ def test_rna_curate_summary_apis_mellifera():
 
 
 def test_protein_taxon_ids_readable():
-    repo_root = Path(__file__).resolve().parents[1]
+    repo_root = Path(__file__).resolve().parents[2]
     path = repo_root / "tests/data/protein/taxon_id_list.txt"
     ids = read_taxon_ids(path)
     assert len(ids) >= 5
@@ -23,7 +23,7 @@ def test_protein_taxon_ids_readable():
 
 
 def test_phenotype_antwiki_json_loads():
-    repo_root = Path(__file__).resolve().parents[1]
+    repo_root = Path(__file__).resolve().parents[2]
     path = repo_root / "tests/data/phenotype/antwiki_dataset_sorted_final_01.json"
     entries = load_antwiki_json(path)
     assert isinstance(entries, list)
@@ -31,7 +31,7 @@ def test_phenotype_antwiki_json_loads():
 
 
 def test_ontology_go_dir_counts():
-    repo_root = Path(__file__).resolve().parents[1]
+    repo_root = Path(__file__).resolve().parents[2]
     go_dir = repo_root / "tests/data/ontology/GO_v3"
     n = count_go_scripts(go_dir)
     assert n >= 3

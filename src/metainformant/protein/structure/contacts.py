@@ -6,7 +6,7 @@ residue-residue contacts, hydrogen bonds, salt bridges, and hydrophobic interact
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
@@ -87,7 +87,7 @@ def identify_hydrogen_bonds(
 
     for i, atom in enumerate(atoms):
         element = atom.get("element", "").upper()
-        name = atom.get("name", "").upper()
+        atom.get("name", "").upper()
 
         # Nitrogen atoms (potential donors)
         if element == "N":
@@ -518,7 +518,7 @@ def compute_ca_contact_pairs(
     arr = np.asarray(coords, dtype=np.float64)
 
     try:
-        from scipy.spatial.distance import pdist, squareform
+        from scipy.spatial.distance import pdist
 
         condensed = pdist(arr)
         # Convert condensed index back to (i, j) pairs

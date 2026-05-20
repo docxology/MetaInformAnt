@@ -6,7 +6,6 @@ All tests follow NO_MOCKING_POLICY and use real implementations.
 from __future__ import annotations
 
 from datetime import datetime
-from pathlib import Path
 
 import pytest
 

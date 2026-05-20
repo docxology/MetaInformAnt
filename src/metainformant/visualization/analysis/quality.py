@@ -8,14 +8,11 @@ single-cell data, and multi-omics quality assessment.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from matplotlib.axes import Axes
-from matplotlib.collections import PatchCollection
-from matplotlib.patches import Rectangle
 
 from metainformant.core.data import validation
 from metainformant.core.io import paths

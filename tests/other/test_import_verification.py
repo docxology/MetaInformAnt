@@ -108,7 +108,7 @@ class TestCanonicalImportPaths:
 
     def test_visualization_config_themes(self) -> None:
         """Visualization config.themes should expose theme functions."""
-        from metainformant.visualization.config.themes import get_theme, apply_theme  # noqa: F401
+        from metainformant.visualization.config.themes import apply_theme, get_theme  # noqa: F401
 
     def test_visualization_config_palettes(self) -> None:
         """Visualization config.palettes should expose palette functions."""
@@ -159,8 +159,8 @@ class TestCanonicalImportPaths:
     def test_information_metrics_core_syntactic(self) -> None:
         """Information metrics core.syntactic should expose entropy functions."""
         from metainformant.information.metrics.core.syntactic import (  # noqa: F401
-            shannon_entropy,
             mutual_information,
+            shannon_entropy,
         )
 
     def test_information_metrics_core_continuous(self) -> None:
@@ -196,8 +196,8 @@ class TestCanonicalImportPaths:
     def test_math_population_genetics_coalescent(self) -> None:
         """Math population_genetics.coalescent should be the canonical path."""
         from metainformant.math.population_genetics.coalescent import (  # noqa: F401
-            watterson_theta,
             tajimas_D,
+            watterson_theta,
         )
 
     def test_rna_engine_progress_tracker(self) -> None:

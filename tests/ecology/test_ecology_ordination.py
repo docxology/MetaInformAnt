@@ -25,17 +25,10 @@ Uses real implementations only (NO mocking per project policy).
 from __future__ import annotations
 
 import math
-from typing import Dict, List
+from typing import List
 
 import pytest
 
-from metainformant.ecology.analysis.ordination import (
-    cca,
-    distance_matrix,
-    nmds,
-    pcoa,
-    procrustes,
-)
 from metainformant.ecology.analysis.indicators import (
     anosim,
     cluster_communities,
@@ -43,6 +36,13 @@ from metainformant.ecology.analysis.indicators import (
     multivariate_dispersion,
     permanova,
     simper,
+)
+from metainformant.ecology.analysis.ordination import (
+    cca,
+    distance_matrix,
+    nmds,
+    pcoa,
+    procrustes,
 )
 from metainformant.ecology.phylogenetic.diversity import (
     build_simple_tree,

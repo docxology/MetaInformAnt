@@ -10,11 +10,10 @@ This script:
 Usage:
     python scripts/reorganize/build_import_map.py [--module MODULE] [--fix] [--dry-run]
 """
+
 from __future__ import annotations
 
 import ast
-import re
-import sys
 from pathlib import Path
 
 SRC = Path(__file__).resolve().parent.parent.parent / "src" / "metainformant"
@@ -22,11 +21,31 @@ TESTS = Path(__file__).resolve().parent.parent.parent / "tests"
 ROOT = Path(__file__).resolve().parent.parent.parent
 
 MODULES = [
-    "menu", "quality", "singlecell", "phenotype", "multiomics",
-    "ontology", "protein", "ml", "structural_variants", "metagenomics",
-    "networks", "dna", "epigenome", "pharmacogenomics", "longread", "spatial",
-    "ecology", "simulation", "life_events", "math", "information",
-    "rna", "gwas", "visualization", "core",
+    "menu",
+    "quality",
+    "singlecell",
+    "phenotype",
+    "multiomics",
+    "ontology",
+    "protein",
+    "ml",
+    "structural_variants",
+    "metagenomics",
+    "networks",
+    "dna",
+    "epigenome",
+    "pharmacogenomics",
+    "longread",
+    "spatial",
+    "ecology",
+    "simulation",
+    "life_events",
+    "math",
+    "information",
+    "rna",
+    "gwas",
+    "visualization",
+    "core",
 ]
 
 
@@ -125,12 +144,14 @@ def find_shortcut_imports_in_file(filepath: Path, module_name: str) -> list[dict
             # Match: from metainformant.<module> import <symbol>
             if node.module == f"metainformant.{module_name}":
                 for alias in node.names:
-                    results.append({
-                        "line_num": node.lineno,
-                        "module": node.module,
-                        "symbol": alias.name,
-                        "asname": alias.asname,
-                    })
+                    results.append(
+                        {
+                            "line_num": node.lineno,
+                            "module": node.module,
+                            "symbol": alias.name,
+                            "asname": alias.asname,
+                        }
+                    )
 
     return results
 
@@ -174,14 +195,16 @@ def scan_files_for_shortcuts(full_map: dict[str, dict[str, str]]) -> list[dict]:
             shortcuts = find_shortcut_imports_in_file(test_file, mod)
             for s in shortcuts:
                 if s["symbol"] in symbol_map:
-                    issues.append({
-                        "file": str(test_file),
-                        "line": s["line_num"],
-                        "module": mod,
-                        "symbol": s["symbol"],
-                        "asname": s["asname"],
-                        "canonical_path": symbol_map[s["symbol"]],
-                    })
+                    issues.append(
+                        {
+                            "file": str(test_file),
+                            "line": s["line_num"],
+                            "module": mod,
+                            "symbol": s["symbol"],
+                            "asname": s["asname"],
+                            "canonical_path": symbol_map[s["symbol"]],
+                        }
+                    )
 
     # Scan source files (cross-module imports)
     for py_file in sorted(SRC.rglob("*.py")):
@@ -198,14 +221,16 @@ def scan_files_for_shortcuts(full_map: dict[str, dict[str, str]]) -> list[dict]:
             shortcuts = find_shortcut_imports_in_file(py_file, mod)
             for s in shortcuts:
                 if s["symbol"] in symbol_map:
-                    issues.append({
-                        "file": str(py_file),
-                        "line": s["line_num"],
-                        "module": mod,
-                        "symbol": s["symbol"],
-                        "asname": s["asname"],
-                        "canonical_path": symbol_map[s["symbol"]],
-                    })
+                    issues.append(
+                        {
+                            "file": str(py_file),
+                            "line": s["line_num"],
+                            "module": mod,
+                            "symbol": s["symbol"],
+                            "asname": s["asname"],
+                            "canonical_path": symbol_map[s["symbol"]],
+                        }
+                    )
 
     return issues
 
@@ -227,6 +252,7 @@ def generate_fix(issue: dict) -> tuple[str, str]:
 
 def main():
     import argparse
+
     parser = argparse.ArgumentParser(description="Build import mapping and find shortcut imports")
     parser.add_argument("--module", "-m", help="Only process specific module")
     parser.add_argument("--fix", action="store_true", help="Apply fixes to files")

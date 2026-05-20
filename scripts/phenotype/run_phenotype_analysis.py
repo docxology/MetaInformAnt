@@ -210,11 +210,10 @@ def analyze_correlations(data: dict[str, Any], output_dir: Path) -> dict[str, An
     }
 
     try:
-        import numpy as np
         import pandas as pd
     except ImportError:
-        logger.warning("pandas/numpy required for correlation analysis")
-        results["error"] = "pandas/numpy not available"
+        logger.warning("pandas required for correlation analysis")
+        results["error"] = "pandas not available"
         return results
 
     if data["format"] == "antwiki_json":

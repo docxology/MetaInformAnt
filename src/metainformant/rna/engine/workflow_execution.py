@@ -16,9 +16,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from metainformant.core.utils import logging
-from metainformant.rna.amalgkit.metadata_filter import filter_selected_metadata
-from metainformant.rna.amalgkit.metadata_utils import deduplicate_metadata
-from metainformant.rna.amalgkit.metadata_utils import deduplicate_metadata
 from metainformant.rna.engine.sra_extraction import manual_integration_fallback
 from metainformant.rna.engine.workflow_cleanup import (
     check_disk_space,
@@ -64,7 +61,9 @@ def _execute_streaming_mode(
 
     for name, params in steps_remaining:
         if name == "integrate":
-            logger.info("Skipping 'integrate' step in streaming mode (incompatible with per-sample subdirectory layout)")
+            logger.info(
+                "Skipping 'integrate' step in streaming mode (incompatible with per-sample subdirectory layout)"
+            )
             continue
         elif name in ("getfastq", "quant"):
             chunk_steps.append((name, params))
@@ -81,10 +80,10 @@ def _execute_streaming_mode(
         samples = list(reader)
 
     total_samples = len(samples)
-    num_chunks = math.ceil(total_samples / chunk_size)
+    math.ceil(total_samples / chunk_size)
 
     all_step_results = []
-    
+
     # Symlink getfastq output dir to work dir so `quant` can find it
     fastq_src_dir = config.work_dir.parent / "fastq" / "getfastq"
     fastq_link_dir = config.work_dir / "getfastq"
@@ -98,10 +97,12 @@ def _execute_streaming_mode(
             logger.warning(f"  Failed to create getfastq symlink, quant may not find files: {e}")
 
     # We define a helper that processes exactly ONE sample at a time.
-    def process_single_sample(sample_row: Dict[str, str], current_chunk_idx: int, sample_idx_in_chunk: int) -> list[WorkflowStepResult]:
+    def process_single_sample(
+        sample_row: Dict[str, str], current_chunk_idx: int, sample_idx_in_chunk: int
+    ) -> list[WorkflowStepResult]:
         sample_results = []
-        sample_id = sample_row.get(u"run", str(sample_idx_in_chunk))
-        
+        sample_id = sample_row.get("run", str(sample_idx_in_chunk))
+
         # Create single-sample metadata file
         single_meta_file = config.work_dir / "metadata" / f"metadata_chunk_{current_chunk_idx}_sample_{sample_id}.tsv"
         with open(single_meta_file, "w", newline="") as sf:
@@ -112,30 +113,36 @@ def _execute_streaming_mode(
         sample_success = True
         for step_name, step_params in chunk_steps:
             logger.info(f"  > [Sample {sample_id}] Step: {step_name}")
-            
+
             # Use the single-sample metadata, but scale down threads/jobs
             # so 16 concurrent samples don't spawn 16x16=256 threads.
             single_params = step_params.copy()
             single_params["metadata"] = str(single_meta_file)
-            
+
             # FAST PYTHON SKIP LOGIC
             # Avoid paying the 1.5 second penalty per skipped sample during spot reboots
             if step_name == "quant":
                 abundance_file = config.work_dir / "quant" / sample_id / f"{sample_id}_abundance.tsv"
                 if abundance_file.exists() and str(single_params.get("redo", "no")).lower() not in ("yes", "true", "1"):
                     logger.debug(f"  [Sample {sample_id}] Step {step_name} output found. Native quick bypass!")
-                    sample_results.append(WorkflowStepResult(step_name=f"{step_name}_{sample_id}", return_code=0, success=True))
+                    sample_results.append(
+                        WorkflowStepResult(step_name=f"{step_name}_{sample_id}", return_code=0, success=True)
+                    )
                     continue
             elif step_name == "getfastq":
                 sra_dir = config.work_dir / "getfastq" / sample_id
                 fastq_file = sra_dir / f"{sample_id}.amalgkit.fastq.gz"
                 abundance_file = config.work_dir / "quant" / sample_id / f"{sample_id}_abundance.tsv"
                 # If abundance exists, getfastq is intrinsically handled. If fastq exists, it's also handled.
-                if (abundance_file.exists() or fastq_file.exists()) and str(single_params.get("redo", "no")).lower() not in ("yes", "true", "1"):
+                if (abundance_file.exists() or fastq_file.exists()) and str(
+                    single_params.get("redo", "no")
+                ).lower() not in ("yes", "true", "1"):
                     logger.debug(f"  [Sample {sample_id}] Step {step_name} target found. Native quick bypass!")
-                    sample_results.append(WorkflowStepResult(step_name=f"{step_name}_{sample_id}", return_code=0, success=True))
+                    sample_results.append(
+                        WorkflowStepResult(step_name=f"{step_name}_{sample_id}", return_code=0, success=True)
+                    )
                     continue
-            
+
             # Dynamically throttle cores to prevent system choking
             # If total threads=16, and chunk_size=16, give each sample 1 thread.
             base_threads = int(single_params.get("threads", 1))
@@ -143,7 +150,7 @@ def _execute_streaming_mode(
             single_params["threads"] = alloc_threads
             if "jobs" in single_params:
                 single_params["jobs"] = alloc_threads
-                
+
             if walk:
                 sample_results.append(
                     WorkflowStepResult(step_name=f"{step_name}_{sample_id}", return_code=0, success=True)
@@ -177,7 +184,7 @@ def _execute_streaming_mode(
 
                     sample_success = False
                     break  # Stop processing this specific sample
-                    
+
             except Exception as e:
                 logger.error(f"  [Sample {sample_id}] Exception in {step_name}: {e}")
                 sample_results.append(WorkflowStepResult(f"{step_name}_{sample_id}", 1, False, str(e)))
@@ -190,20 +197,21 @@ def _execute_streaming_mode(
             cleanup_fastqs(config, [sample_id])
         else:
             logger.warning(f"  [Sample {sample_id}] Failed. Skipping cleanup to preserve FASTQ files for debugging.")
-            
+
         return sample_results
 
     # Continuous pool — as soon as one sample finishes, the next starts immediately.
     # No chunk barriers; max_workers limits concurrency to chunk_size.
     import concurrent.futures
+
     logger.info(f"Processing ALL {total_samples} samples with max {chunk_size} concurrent workers (no chunk barriers)")
-    
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=chunk_size) as executor:
         futures = {}
         for i, sample in enumerate(samples):
             fut = executor.submit(process_single_sample, sample, 0, i)
             futures[fut] = sample.get("run", str(i))
-            
+
         # Process results as they complete — each finished slot immediately picks up next sample
         for fut in concurrent.futures.as_completed(futures):
             sample_id = futures[fut]
@@ -215,7 +223,7 @@ def _execute_streaming_mode(
             except Exception as exc:
                 logger.error(f"  [Pool] {sample_id} raised an unhandled exception: {exc}")
                 all_step_results.append(WorkflowStepResult("async_sample_task", 1, False, str(exc)))
-                
+
         # Check if failures should trigger early return
         if check and any(not s.success for s in all_step_results):
             return WorkflowExecutionResult(all_step_results, False, len(all_step_results), 0, 1)
@@ -275,8 +283,8 @@ def execute_workflow(
     Returns:
         WorkflowExecutionResult with detailed step results
     """
+    from metainformant.rna.amalgkit.amalgkit import config as amalgkit_config
     from metainformant.rna.amalgkit.amalgkit import (
-        config as amalgkit_config,
         csca,
         cstmm,
         curate,
@@ -533,7 +541,7 @@ def execute_workflow(
                 command_str = " ".join(command)
                 logger.info(f"Command: {command_str}")
 
-            # Note: config_dir is purposefully injected in workflow_planning.py to point 
+            # Note: config_dir is purposefully injected in workflow_planning.py to point
             # to the global repository config/amalgkit directory and should not be mutated here.
 
             # STREAMING MODE DETECTION
@@ -618,27 +626,28 @@ def execute_workflow(
 
             # NATIVE PYTHON CURATE SHIM INTERCEPT
             if step_name == "curate":
-                logger.warning(f"Intercepting `curate` with Native Python Shim to bypass R-script timeout hangs!")
-                import pandas as pd
+                logger.warning("Intercepting `curate` with Native Python Shim to bypass R-script timeout hangs!")
                 import numpy as np
+                import pandas as pd
 
                 try:
                     # Resolve species name
                     sp_name = config.species_list[0]
                     sp_cap = sp_name.capitalize()
-                    
+
                     # Core search paths for both local and cloud-synced git data
                     search_bases = [
                         config.work_dir.parent,
-                        Path("projects/hymenoptera_amalgkit/data") / sp_name.lower()
+                        Path("projects/hymenoptera_amalgkit/data") / sp_name.lower(),
                     ]
-                    
+
                     tpm_file = None
                     is_gzipped = False
-                    
+
                     for base in search_bases:
-                        if not base.exists(): continue
-                        
+                        if not base.exists():
+                            continue
+
                         potential_paths = [
                             base / "merged" / "merge" / sp_cap / f"{sp_cap}_tpm.tsv",
                             base / "merged" / "merge" / sp_cap / f"{sp_cap}_tpm.tsv.gz",
@@ -647,7 +656,7 @@ def execute_workflow(
                             base / "work" / "merge" / sp_cap / f"{sp_cap}_tpm.tsv",
                             base / "work" / "merge" / sp_cap / f"{sp_cap}_tpm.tsv.gz",
                         ]
-                        
+
                         for p in potential_paths:
                             if p.exists():
                                 tpm_file = p
@@ -655,36 +664,38 @@ def execute_workflow(
                                 break
                         if tpm_file:
                             break
-                    
+
                     if not tpm_file:
-                        raise FileNotFoundError(f"Missing required TPM matrix for native curation (checked local and git submodule): {sp_name}")
-                    
+                        raise FileNotFoundError(
+                            f"Missing required TPM matrix for native curation (checked local and git submodule): {sp_name}"
+                        )
+
                     logger.info(f"Loading {tpm_file} for native curation logic...")
                     if is_gzipped:
-                        df = pd.read_csv(tpm_file, sep="\t", index_col=0, compression='gzip')
+                        df = pd.read_csv(tpm_file, sep="\t", index_col=0, compression="gzip")
                     else:
                         df = pd.read_csv(tpm_file, sep="\t", index_col=0)
-                    
+
                     # Compute pseudo-normalized shifted log2 matrix (mock TMM substitution)
                     df_tc = np.log2(df + 0.1)
-                    
+
                     # Determine the exact base directory to output the curated tables
                     out_base = Path("projects/hymenoptera_amalgkit/data") / sp_name.lower()
                     if not out_base.exists():
                         out_base = config.work_dir.parent
-                    
+
                     # Create curate hierarchy mimicking amalgkit
                     tables_dir = out_base / "work" / "curate" / sp_cap / "tables"
                     tables_dir.mkdir(parents=True, exist_ok=True)
-                    
+
                     # Write uncorrected.tc.tsv and mock sva.tc.tsv
                     tc_path = tables_dir / f"{sp_cap}.uncorrected.tc.tsv"
                     sva_path = tables_dir / f"{sp_cap}.sva.tc.tsv"
-                    
+
                     # Retain original index name from TPM (typically target_id)
                     df_tc.to_csv(tc_path, sep="\t")
                     logger.info(f"Wrote native uncorrected tc matrix: {tc_path}")
-                    
+
                     # Copy to SVA placeholder to unblock any downstream strict checks
                     shutil.copy2(tc_path, sva_path)
                     logger.info(f"Created SVA placeholder: {sva_path}")
@@ -695,17 +706,21 @@ def execute_workflow(
                             self.returncode = 0
                             self.stdout = "Native Python Shim Execution Completed successfully."
                             self.stderr = ""
+
                     result = MockResult()
 
                 except Exception as e:
                     logger.error(f"Native Python Curate Shim failed: {e}")
                     import traceback
+
                     logger.debug(traceback.format_exc())
+
                     class MockError:
                         def __init__(self, e):
                             self.returncode = 1
                             self.stdout = ""
                             self.stderr = str(e)
+
                     result = MockError(e)
             else:
                 result = step_func(
@@ -723,11 +738,11 @@ def execute_workflow(
                     logger.warning(
                         f"Step {step_name} reported error (return code {result.returncode}) but outputs exist: {completion_indicator}"
                     )
-                    logger.warning(f"Continuing workflow - step appears to have completed successfully despite error")
+                    logger.warning("Continuing workflow - step appears to have completed successfully despite error")
                     result.returncode = 0
                     logger.info(f"Step {step_name} marked as successful based on output validation")
                 elif step_name == "integrate":
-                    logger.warning(f"Step integrate reported error. Attempting manual integration fallback...")
+                    logger.warning("Step integrate reported error. Attempting manual integration fallback...")
                     try:
                         if manual_integration_fallback(config):
                             logger.info("Manual integration fallback successful")
@@ -786,7 +801,7 @@ def execute_workflow(
             import time
 
             if "tqdm" in str(e).lower() or "refresh" in str(e).lower():
-                logger.warning(f"tqdm error detected - waiting for subprocess to complete (up to 30 seconds)")
+                logger.warning("tqdm error detected - waiting for subprocess to complete (up to 30 seconds)")
                 for i in range(30):
                     time.sleep(1)
                     is_completed, completion_indicator = _is_step_completed(step_name, step_params, config)
@@ -800,7 +815,7 @@ def execute_workflow(
             is_completed, completion_indicator = _is_step_completed(step_name, step_params, config)
             if is_completed:
                 logger.warning(f"Step {step_name} raised exception but outputs exist: {completion_indicator}")
-                logger.warning(f"Continuing workflow - step appears to have completed successfully despite exception")
+                logger.warning("Continuing workflow - step appears to have completed successfully despite exception")
                 step_results.append(
                     WorkflowStepResult(
                         step_name=step_name,

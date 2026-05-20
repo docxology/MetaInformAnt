@@ -30,8 +30,7 @@ def normal_cdf(x: float) -> float:
     x_abs = abs(x) / math.sqrt(2)
     t = 1.0 / (1.0 + 0.3275911 * x_abs)
     y = 1.0 - (
-        (((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t
-        + 0.254829592
+        (((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592
     ) * t * math.exp(-x_abs * x_abs)
     return 0.5 * (1.0 + sign * y)
 
@@ -237,9 +236,7 @@ def create_synthetic_data(
     # Generate phenotypes: y = Σ(β_i × g_i) + noise
     phenotypes = []
     for si in range(n_samples):
-        genetic_value = sum(
-            effect_sizes[vi] * genotype_matrix[vi][si] for vi in range(n_variants)
-        )
+        genetic_value = sum(effect_sizes[vi] * genotype_matrix[vi][si] for vi in range(n_variants))
         noise = random.gauss(0, noise_sd)
         phenotypes.append(genetic_value + noise)
 
@@ -281,8 +278,7 @@ def create_synthetic_data(
         json.dump(params, f, indent=2)
 
     logger.info(
-        "Generated synthetic dataset: %d samples × %d variants, "
-        "%d causal (mode=%s, h²=%.2f, mean_power=%.3f)",
+        "Generated synthetic dataset: %d samples × %d variants, " "%d causal (mode=%s, h²=%.2f, mean_power=%.3f)",
         n_samples,
         n_variants,
         n_causal,
@@ -319,8 +315,4 @@ def _write_vcf(
                     gt_strs.append("0/1")
                 else:
                     gt_strs.append("1/1")
-            f.write(
-                f"{chrom}\t{pos}\t{snp_id}\tA\tT\t999\tPASS\t.\tGT\t"
-                + "\t".join(gt_strs)
-                + "\n"
-            )
+            f.write(f"{chrom}\t{pos}\t{snp_id}\tA\tT\t999\tPASS\t.\tGT\t" + "\t".join(gt_strs) + "\n")

@@ -8,6 +8,8 @@ Usage:
     python scripts/rna/run_workflow_tui.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 """
 
+# ruff: noqa: E402 - setup utilities intentionally run before importing metainformant.
+
 from __future__ import annotations
 
 import argparse
@@ -150,7 +152,7 @@ def main() -> int:
     failed = len(results) - success
 
     print(f"\n{'='*60}")
-    print(f"Workflow Complete")
+    print("Workflow Complete")
     print(f"{'='*60}")
     print(f"  ✓ Successful: {success}")
     print(f"  ✗ Failed: {failed}")

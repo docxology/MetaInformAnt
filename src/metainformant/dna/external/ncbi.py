@@ -6,7 +6,6 @@ Entrez, BLAST, and other NCBI services for genomic data retrieval.
 
 from __future__ import annotations
 
-import time
 from typing import Any, Dict, List, Optional
 
 import requests

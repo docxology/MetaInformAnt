@@ -5,9 +5,9 @@ This module provides configuration classes and loading functions for life events
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from metainformant.core.utils import config as core_config
 from metainformant.core.utils import logging
@@ -35,7 +35,10 @@ class LifeEventsWorkflowConfig:
         min_event_count: Minimum event frequency for embedding
         sequence_max_length: Maximum sequence length for models
         threads: Number of threads for parallel processing
-        embedding: Alias for embedding_dim (backward compatibility)
+        embedding: Nested embedding section from config files
+        model: Nested model section from config files
+        workflow: Nested workflow section from config files
+        output: Nested output section from config files
     """
 
     work_dir: Path
@@ -54,24 +57,49 @@ class LifeEventsWorkflowConfig:
     embedding_window: int = 5
     min_event_count: int = 5
     sequence_max_length: int = 100
-    threads: int = 1
-    # Aliases for backward compatibility
-    embedding: Optional[int] = None  # Alias for embedding_dim
-    model: Optional[str] = None  # Alias for model_type
-    log_dir: Optional[Path] = None  # Alias for output_dir
+    threads: int = 4
+    embedding: Dict[str, Any] = field(default_factory=dict)
+    model: Dict[str, Any] = field(default_factory=dict)
+    workflow: Dict[str, Any] = field(default_factory=dict)
+    output: Dict[str, Any] = field(default_factory=dict)
+    log_dir: Optional[Path] = None
 
     def __post_init__(self):
         """Post-initialization validation and setup."""
-        # Handle parameter aliases
-        if self.embedding is not None:
-            self.embedding_dim = self.embedding
-        if self.model is not None:
-            self.model_type = self.model
+        self.work_dir = self.work_dir.expanduser().resolve()
+
+        # Older callers passed scalar aliases. Preserve them while normalizing
+        # the public config sections to dictionaries.
+        if not isinstance(self.embedding, dict):
+            self.embedding_dim = int(self.embedding)
+            self.embedding = {"embedding_dim": self.embedding_dim}
+        if not isinstance(self.model, dict):
+            self.model_type = str(self.model)
+            self.model = {"model_type": self.model_type}
+        if not isinstance(self.workflow, dict):
+            self.workflow = {}
+        if not isinstance(self.output, dict):
+            self.output = {}
+
+        if self.embedding:
+            self.embedding_dim = int(self.embedding.get("embedding_dim", self.embedding_dim))
+            self.embedding_window = int(self.embedding.get("window_size", self.embedding_window))
+            self.epochs = int(self.embedding.get("epochs", self.epochs))
+            self.learning_rate = float(self.embedding.get("learning_rate", self.learning_rate))
+        if self.model:
+            self.model_type = str(self.model.get("model_type", self.model_type))
+            if "random_state" in self.model:
+                self.random_seed = int(self.model["random_state"])
+
         if self.log_dir is not None and self.output_dir is None:
+            self.log_dir = self.log_dir.expanduser().resolve()
             self.output_dir = self.log_dir
 
         if self.output_dir is None:
-            self.output_dir = self.work_dir / "output"
+            output_dir = self.output.get("output_dir")
+            self.output_dir = Path(output_dir).expanduser().resolve() if output_dir else self.work_dir / "output"
+        else:
+            self.output_dir = self.output_dir.expanduser().resolve()
 
         # Ensure directories exist
         self.work_dir.mkdir(parents=True, exist_ok=True)
@@ -97,16 +125,31 @@ class LifeEventsWorkflowConfig:
             "min_event_count": self.min_event_count,
             "sequence_max_length": self.sequence_max_length,
             "threads": self.threads,
+            "embedding": self.embedding,
+            "model": self.model,
+            "workflow": self.workflow,
+            "output": self.output,
+            "log_dir": str(self.log_dir) if self.log_dir else None,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> LifeEventsWorkflowConfig:
         """Create config from dictionary."""
+        data = dict(data)
+
         # Convert string paths to Path objects
         if "work_dir" in data:
-            data["work_dir"] = Path(data["work_dir"])
+            data["work_dir"] = Path(data["work_dir"]).expanduser().resolve()
         if "output_dir" in data and data["output_dir"]:
-            data["output_dir"] = Path(data["output_dir"])
+            data["output_dir"] = Path(data["output_dir"]).expanduser().resolve()
+        if "log_dir" in data and data["log_dir"]:
+            data["log_dir"] = Path(data["log_dir"]).expanduser().resolve()
+
+        if "threads" in data:
+            try:
+                data["threads"] = int(data["threads"])
+            except (TypeError, ValueError):
+                data["threads"] = cls.__dataclass_fields__["threads"].default
 
         return cls(**data)
 

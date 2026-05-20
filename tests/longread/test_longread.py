@@ -7,9 +7,7 @@ with synthetic data -- NO MOCKING.
 
 from __future__ import annotations
 
-import math
 import random
-import string
 from pathlib import Path
 from typing import Any
 
@@ -35,7 +33,6 @@ from metainformant.longread.analysis.modified_bases import (
 from metainformant.longread.analysis.phasing import (
     PhaseBlock,
     PhaseBlockStats,
-    Variant,
     build_haplotype_blocks,
     calculate_phase_block_stats,
     phase_reads,
@@ -124,8 +121,6 @@ from metainformant.longread.io.formats import (
 # ---------------------------------------------------------------------------
 from metainformant.longread.quality.filtering import (
     ONT_ADAPTERS,
-    PACBIO_ADAPTERS,
-    AdapterMatch,
     ReadRecord,
     detect_adapters,
     filter_by_length,
@@ -1539,7 +1534,7 @@ class TestVisualization:
         """Accepts dicts with 'length' key."""
         reads = [{"length": i * 1000} for i in range(1, 10)]
         out = tmp_path / "length_hist_dict.png"
-        result = plot_read_length_histogram(reads, out)
+        plot_read_length_histogram(reads, out)
         assert out.exists()
         assert out.stat().st_size > 0
 
@@ -1553,7 +1548,7 @@ class TestVisualization:
             reads.append({"sequence": "A" * length, "quality_string": q_str})
 
         out = tmp_path / "qvl.png"
-        result = plot_quality_vs_length(reads, out)
+        plot_quality_vs_length(reads, out)
         assert out.exists()
         assert out.stat().st_size > 0
 
@@ -1562,7 +1557,7 @@ class TestVisualization:
         seq1 = _random_dna(500, seed=100)
         seq2 = seq1  # identical => strong diagonal
         out = tmp_path / "dotplot.png"
-        result = plot_dotplot(seq1, seq2, out, word_size=7)
+        plot_dotplot(seq1, seq2, out, word_size=7)
         assert out.exists()
         assert out.stat().st_size > 0
 
@@ -1581,7 +1576,7 @@ class TestVisualization:
             for i in range(20)
         ]
         out = tmp_path / "alignment.png"
-        result = plot_alignment_view(
+        plot_alignment_view(
             alignments,
             region="chr1:0-10000",
             output_path=out,
@@ -1593,7 +1588,7 @@ class TestVisualization:
         """Methylation track plot is saved."""
         meth_data = [{"chromosome": "chr1", "position": 100 + i * 50, "probability": 0.1 + 0.05 * i} for i in range(20)]
         out = tmp_path / "meth_track.png"
-        result = plot_methylation_track(
+        plot_methylation_track(
             meth_data,
             region={"chromosome": "chr1", "start": 0, "end": 2000},
             output_path=out,
@@ -1609,13 +1604,13 @@ class TestVisualization:
             {"chromosome": "chr2", "start": 10000, "end": 25000, "num_variants": 30, "quality": 0.92},
         ]
         out = tmp_path / "phasing.png"
-        result = plot_phasing_blocks(blocks, out)
+        plot_phasing_blocks(blocks, out)
         assert out.exists()
         assert out.stat().st_size > 0
 
     def test_plot_phasing_blocks_empty(self, tmp_path: Path) -> None:
         """Empty phase blocks still create a valid (empty) plot file."""
         out = tmp_path / "phasing_empty.png"
-        result = plot_phasing_blocks([], out)
+        plot_phasing_blocks([], out)
         assert out.exists()
         assert out.stat().st_size > 0

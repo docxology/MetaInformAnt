@@ -16,10 +16,9 @@ NO MOCKING -- all tests use real filesystem fixtures and real implementations.
 
 from __future__ import annotations
 
-import math
 import textwrap
 from pathlib import Path
-from typing import Any, Dict, List, Set
+from typing import Any, Dict, List
 
 import pytest
 
@@ -95,13 +94,11 @@ def _seed_metadata(work_dir: Path, filename: str = "metadata.tsv") -> Path:
     meta_dir = work_dir / "metadata"
     meta_dir.mkdir(parents=True, exist_ok=True)
     meta_file = meta_dir / filename
-    content = textwrap.dedent(
-        """\
+    content = textwrap.dedent("""\
         run\torganism\tlayout
         SRR000001\tApis mellifera\tPAIRED
         SRR000002\tApis mellifera\tPAIRED
-    """
-    )
+    """)
     meta_file.write_text(content)
     return meta_file
 
@@ -128,16 +125,12 @@ def _seed_yaml_config(config_dir: Path, species_name: str) -> Path:
     """Write a minimal YAML config file for discover_species_configs."""
     config_dir.mkdir(parents=True, exist_ok=True)
     cfg_file = config_dir / f"amalgkit_{species_name}.yaml"
-    cfg_file.write_text(
-        textwrap.dedent(
-            f"""\
+    cfg_file.write_text(textwrap.dedent(f"""\
             work_dir: /tmp/work
             threads: 4
             species_list:
               - {species_name}
-        """
-        )
-    )
+        """))
     return cfg_file
 
 
@@ -811,16 +804,12 @@ class TestRunWorkflowForSpecies:
 
         # Write a minimal YAML config
         config_file = tmp_path / "test_config.yaml"
-        config_file.write_text(
-            textwrap.dedent(
-                """\
+        config_file.write_text(textwrap.dedent("""\
                 work_dir: {work_dir}
                 threads: 2
                 species_list:
                   - Apis_mellifera
-            """
-            ).format(work_dir=str(tmp_path / "work"))
-        )
+            """).format(work_dir=str(tmp_path / "work")))
 
         # Will likely fail downstream but should parse config and attempt execution
         try:
@@ -836,16 +825,12 @@ class TestRunWorkflowForSpecies:
         from metainformant.rna.engine.orchestration import run_workflow_for_species
 
         config_file = tmp_path / "test_config.yaml"
-        config_file.write_text(
-            textwrap.dedent(
-                """\
+        config_file.write_text(textwrap.dedent("""\
                 work_dir: {work_dir}
                 threads: 2
                 species_list:
                   - Apis_mellifera
-            """
-            ).format(work_dir=str(tmp_path / "work"))
-        )
+            """).format(work_dir=str(tmp_path / "work")))
 
         try:
             result = run_workflow_for_species(config_file, species="Bombus_terrestris")
@@ -872,16 +857,12 @@ class TestCleanupUnquantifiedSamples:
         from metainformant.rna.engine.orchestration import cleanup_unquantified_samples
 
         config_file = tmp_path / "cfg.yaml"
-        config_file.write_text(
-            textwrap.dedent(
-                """\
+        config_file.write_text(textwrap.dedent("""\
                 work_dir: {work_dir}
                 threads: 2
                 species_list:
                   - Apis_mellifera
-            """
-            ).format(work_dir=str(tmp_path / "work"))
-        )
+            """).format(work_dir=str(tmp_path / "work")))
         (tmp_path / "work").mkdir(parents=True, exist_ok=True)
 
         result = cleanup_unquantified_samples(config_file)
@@ -897,16 +878,12 @@ class TestCleanupUnquantifiedSamples:
 
         config_file = tmp_path / "cfg.yaml"
         work_dir = tmp_path / "work"
-        config_file.write_text(
-            textwrap.dedent(
-                """\
+        config_file.write_text(textwrap.dedent("""\
                 work_dir: {work_dir}
                 threads: 2
                 species_list:
                   - TestSpecies
-            """
-            ).format(work_dir=str(work_dir))
-        )
+            """).format(work_dir=str(work_dir)))
         work_dir.mkdir(parents=True, exist_ok=True)
 
         quantified, failed = cleanup_unquantified_samples(config_file)

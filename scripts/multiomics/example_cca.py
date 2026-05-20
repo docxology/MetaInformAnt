@@ -86,7 +86,7 @@ print("\n3. Analyzing feature contributions...")
 # Top features for transcriptomics (first component)
 top_genes_idx = np.argsort(np.abs(X_w[:, 0]))[::-1][:10]
 top_genes = [omics_data.get_layer("transcriptomics").columns[i] for i in top_genes_idx]
-print(f"   Top 10 genes contributing to first canonical variate:")
+print("   Top 10 genes contributing to first canonical variate:")
 for i, gene in enumerate(top_genes, 1):
     weight = X_w[top_genes_idx[i - 1], 0]
     print(f"     {i}. {gene}: {weight:.4f}")
@@ -94,7 +94,7 @@ for i, gene in enumerate(top_genes, 1):
 # Top features for proteomics (first component)
 top_proteins_idx = np.argsort(np.abs(Y_w[:, 0]))[::-1][:10]
 top_proteins = [omics_data.get_layer("proteomics").columns[i] for i in top_proteins_idx]
-print(f"\n   Top 10 proteins contributing to first canonical variate:")
+print("\n   Top 10 proteins contributing to first canonical variate:")
 for i, protein in enumerate(top_proteins, 1):
     weight = Y_w[top_proteins_idx[i - 1], 0]
     print(f"     {i}. {protein}: {weight:.4f}")

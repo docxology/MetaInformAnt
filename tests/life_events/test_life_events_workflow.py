@@ -6,9 +6,8 @@ from datetime import datetime
 from pathlib import Path
 
 import numpy as np
-import pytest
 
-from metainformant.life_events.core.config import LifeEventsWorkflowConfig, load_life_events_config
+from metainformant.life_events.core.config import LifeEventsWorkflowConfig
 from metainformant.life_events.core.events import Event, EventSequence
 from metainformant.life_events.workflow.workflow import analyze_life_course, compare_populations, intervention_analysis
 
@@ -204,9 +203,7 @@ embedding:
 model:
   model_type: embedding
   random_state: 42
-""".format(
-        work_dir=str(tmp_path / "work")
-    )
+""".format(work_dir=str(tmp_path / "work"))
     config_file.write_text(config_content)
 
     results = analyze_life_course(sequences, outcomes=outcomes, config_path=config_file, output_dir=tmp_path / "output")

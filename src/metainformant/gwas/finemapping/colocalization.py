@@ -13,10 +13,9 @@ References:
 
 from __future__ import annotations
 
-
 from metainformant.core.utils.logging import get_logger
+from metainformant.gwas.finemapping.credible_sets import colocalization as _pairwise_coloc
 from metainformant.gwas.finemapping.credible_sets import (
-    colocalization as _pairwise_coloc,
     compute_bayes_factors,
 )
 
@@ -79,9 +78,7 @@ def multi_trait_coloc(
     if n_variants == 0:
         return {"status": "error", "message": "Z-score lists are empty"}
 
-    logger.info(
-        f"Running multi-trait colocalization: {n_traits} traits, {n_variants} variants"
-    )
+    logger.info(f"Running multi-trait colocalization: {n_traits} traits, {n_variants} variants")
 
     # Step 1: Run all pairwise colocalization tests
     pairwise_results: dict[str, dict] = {}
@@ -201,15 +198,11 @@ def eqtl_coloc(
     if len(gwas_z) != len(eqtl_z):
         return {
             "status": "error",
-            "message": (
-                f"Z-score lengths differ: GWAS={len(gwas_z)}, eQTL={len(eqtl_z)}"
-            ),
+            "message": (f"Z-score lengths differ: GWAS={len(gwas_z)}, eQTL={len(eqtl_z)}"),
         }
 
     n_variants = len(gwas_z)
-    logger.info(
-        f"Running GWAS-eQTL colocalization for gene {gene_id} ({n_variants} variants)"
-    )
+    logger.info(f"Running GWAS-eQTL colocalization for gene {gene_id} ({n_variants} variants)")
 
     # Run pairwise colocalization
     coloc_result = _pairwise_coloc(
@@ -314,10 +307,7 @@ def compute_clpp(
     if len(pip_1) != len(pip_2):
         return {
             "status": "error",
-            "message": (
-                f"PIP lengths differ: trait 1 has {len(pip_1)}, "
-                f"trait 2 has {len(pip_2)}"
-            ),
+            "message": (f"PIP lengths differ: trait 1 has {len(pip_1)}, " f"trait 2 has {len(pip_2)}"),
         }
 
     n_variants = len(pip_1)
@@ -424,15 +414,11 @@ def regional_coloc(
     if len(positions) != n_variants:
         return {
             "status": "error",
-            "message": (
-                f"Positions length ({len(positions)}) does not match "
-                f"Z-score length ({n_variants})"
-            ),
+            "message": (f"Positions length ({len(positions)}) does not match " f"Z-score length ({n_variants})"),
         }
 
     logger.info(
-        f"Running regional colocalization: {n_traits} traits, "
-        f"{n_variants} variants, chr{chrom}:{start}-{end}"
+        f"Running regional colocalization: {n_traits} traits, " f"{n_variants} variants, chr{chrom}:{start}-{end}"
     )
 
     # Determine window size and windows
@@ -451,9 +437,7 @@ def regional_coloc(
         # Slice LD matrix if provided
         window_ld: list[list[float]] | None = None
         if ld_matrix is not None:
-            window_ld = [
-                row[w_start_idx:w_end_idx] for row in ld_matrix[w_start_idx:w_end_idx]
-            ]
+            window_ld = [row[w_start_idx:w_end_idx] for row in ld_matrix[w_start_idx:w_end_idx]]
 
         # Run multi-trait coloc for this window
         window_result = multi_trait_coloc(

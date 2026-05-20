@@ -8,8 +8,9 @@ from bulk RNA-seq expression data, including:
 - Marker gene selection
 - Deconvolution result validation
 - Batch deconvolution across multiple samples"""
+
 from __future__ import annotations
 
 from . import bulk_deconvolution
 
-__all__ = ['bulk_deconvolution']
+__all__ = ["bulk_deconvolution"]

@@ -5,8 +5,9 @@ This module provides high-level interfaces for running expression Quantitative
 Trait Locus (eQTL) analysis, linking genotype data with RNA-seq expression levels.
 """
 
-import pandas as pd
 from typing import Optional
+
+import pandas as pd
 
 from metainformant.core.utils.logging import get_logger
 from metainformant.gwas.analysis.association import association_test_linear
@@ -64,22 +65,23 @@ def run_eqtl_analysis(
     for transcript_id in transcripts:
         phenotype = E[transcript_id]
 
-        # Run association test (Variant vs Phenotype)
-        # This returns specific stats for each variant against THIS transcript
-        try:
-            assoc_stats = association_test_linear(
-                genotypes=G, phenotypes=phenotype, covariates=C
-            )
+        for variant_id in G.columns:
+            try:
+                covariate_rows = C.T.values.tolist() if C is not None else None
+                assoc_stats = association_test_linear(
+                    genotypes=G[variant_id].astype(float).tolist(),
+                    phenotypes=phenotype.astype(float).tolist(),
+                    covariates=covariate_rows,
+                )
 
-            # Add transcript ID
-            assoc_stats["transcript"] = transcript_id
-            results.append(assoc_stats)
+                assoc_stats["transcript"] = transcript_id
+                assoc_stats["variant"] = variant_id
+                results.append(assoc_stats)
 
-        except Exception as e:
-            logger.warning(f"Failed eQTL for {transcript_id}: {e}")
+            except Exception as e:
+                logger.warning(f"Failed eQTL for {variant_id}/{transcript_id}: {e}")
 
     if not results:
         return pd.DataFrame()
 
-    final_df = pd.concat(results, ignore_index=True)
-    return final_df
+    return pd.DataFrame(results)

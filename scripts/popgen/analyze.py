@@ -29,7 +29,6 @@ from metainformant.gwas.structure import compute_kinship_matrix, compute_pca
 from metainformant.math.demography import (
     bottleneck_effective_size,
     exponential_growth_effective_size,
-    two_epoch_effective_size,
 )
 
 # Note: Additional neutrality tests are imported where used

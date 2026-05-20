@@ -8,7 +8,7 @@ capacity formulas for standard noisy channel models.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence
 
 import numpy as np
 
@@ -217,10 +217,9 @@ def rate_distortion(
 
     # Maximum distortion (rate = 0): D_max = min_j sum_i p(x_i) * d(x_i, j)
     expected_distortions = np.array([np.sum(p_x * distortion_matrix[:, j]) for j in range(n_x_hat)])
-    d_max = float(np.min(expected_distortions))
+    float(np.min(expected_distortions))
 
     # Minimum distortion (maximum rate): D_min = 0 if identity reproduction is possible
-    d_min = 0.0
 
     # Sweep over beta (Lagrange multiplier) values to trace R(D) curve
     # Higher beta -> lower distortion, higher rate

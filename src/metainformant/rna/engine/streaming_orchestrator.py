@@ -1,30 +1,27 @@
-
 """Streaming RNA-seq Orchestrator implementation.
 
-This module provides robust orchestration for running the amalgkit pipeline 
+This module provides robust orchestration for running the amalgkit pipeline
 with ENA-first download streaming, concurrent processing, and automatic cleanup.
 """
+
 from __future__ import annotations
 
-import argparse
 import concurrent.futures
 import logging
 import os
 import subprocess
-import sys
 import threading
 import time
 import urllib.request
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 import yaml
 
-from pathlib import Path
-from typing import List, Dict, Any, Optional, Tuple
-
 from metainformant.core.utils import logging as log_utils
-from metainformant.rna.amalgkit import amalgkit
 from metainformant.rna.amalgkit.tissue_normalizer import apply_tissue_normalization
-from metainformant.rna.retrieval.ena_downloader import ENADownloader
 from metainformant.rna.engine.progress_db import ProgressDB
+from metainformant.rna.retrieval.ena_downloader import ENADownloader
 
 # Determine project root if possible, or use relative paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
@@ -35,21 +32,21 @@ LOG_DIR = PROJECT_ROOT / "output/amalgkit"
 
 logger = log_utils.get_logger(__name__)
 
+
 class StreamingPipelineOrchestrator:
     """Orchestrator for streaming ENA download -> Quant processing."""
 
-    def __init__(self, config_dir: Path = CONFIG_DIR, log_dir: Path = LOG_DIR,
-                 db_path: Optional[Path] = None):
+    def __init__(self, config_dir: Path = CONFIG_DIR, log_dir: Path = LOG_DIR, db_path: Optional[Path] = None):
         self.config_dir = Path(config_dir)
         self.log_dir = Path(log_dir)
         self.log_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # SQLite progress database
         self.db = ProgressDB(db_path) if db_path else ProgressDB()
-        
+
         # Lock for filesystem operations (symlink cleanup, directory creation)
         self._fs_lock = threading.Lock()
-        
+
         # Configure logging to file as well
         timestamp = time.strftime("%Y%m%d_%H%M%S")
         log_file = self.log_dir / f"streaming_orchestrator_{timestamp}.log"
@@ -66,14 +63,14 @@ class StreamingPipelineOrchestrator:
         )
         try:
             with urllib.request.urlopen(url, timeout=30) as resp:
-                lines = resp.read().decode().strip().split('\n')
+                lines = resp.read().decode().strip().split("\n")
                 if len(lines) < 2:
                     return []
-                ftp_field = lines[1].split('\t')[1] if '\t' in lines[1] else ''
+                ftp_field = lines[1].split("\t")[1] if "\t" in lines[1] else ""
                 if not ftp_field:
                     return []
                 # Ensure protocol is https
-                return [f"https://{p}" if not p.startswith("http") else p for p in ftp_field.split(';') if p]
+                return [f"https://{p}" if not p.startswith("http") else p for p in ftp_field.split(";") if p]
         except Exception as e:
             logger.warning(f"ENA query failed for {srr_id}: {e}")
             return []
@@ -102,25 +99,30 @@ class StreamingPipelineOrchestrator:
                     check_path.unlink()
             sample_dir.mkdir(parents=True, exist_ok=True)
 
-        # Disk space throttle: Prevent starting new enormous downloads if 
+        # Disk space throttle: Prevent starting new enormous downloads if
         # the storage volume is nearing capacity (e.g. < 50GB free space).
         throttle_attempts = 0
         while True:
             import shutil
+
             try:
                 free_gb = shutil.disk_usage(out_dir).free / (1024**3)
                 if free_gb < 8.0:
                     if throttle_attempts % 6 == 0:  # Log every ~5 mins
-                        logger.warning(f"[Disk Throttle] Only {free_gb:.1f}GB free. Worker pausing to allow other threads to finish quantification and cleanup FASTQ files...")
+                        logger.warning(
+                            f"[Disk Throttle] Only {free_gb:.1f}GB free. Worker pausing to allow other threads to finish quantification and cleanup FASTQ files..."
+                        )
                     time.sleep(60)  # Wait 1 minute and re-check
                     throttle_attempts += 1
                 else:
                     if throttle_attempts > 0:
-                        logger.info(f"[Disk Throttle] Space freed up ({free_gb:.1f}GB free). Resuming download for {srr_id}.")
+                        logger.info(
+                            f"[Disk Throttle] Space freed up ({free_gb:.1f}GB free). Resuming download for {srr_id}."
+                        )
                     break
             except Exception as e:
                 logger.error(f"Failed to check disk space: {e}")
-                break # Proceed anyway if check fails
+                break  # Proceed anyway if check fails
 
         downloader = ENADownloader(timeout=7200, retries=3)
         success, message, downloaded_files = downloader.download_run(srr_id, sample_dir)
@@ -139,31 +141,29 @@ class StreamingPipelineOrchestrator:
             for f in sample_dir.iterdir():
                 if f.is_file():
                     f.unlink(missing_ok=True)
-            
+
             # NCBI fasterq-dump fallback
             try:
                 fqd_cmd = [
-                    "fasterq-dump", srr_id,
-                    "--outdir", str(sample_dir),
+                    "fasterq-dump",
+                    srr_id,
+                    "--outdir",
+                    str(sample_dir),
                     "--split-3",
-                    "--threads", "4",
+                    "--threads",
+                    "4",
                     "--skip-technical",
                 ]
-                fqd_result = subprocess.run(
-                    fqd_cmd, capture_output=True, text=True, timeout=7200
-                )
+                fqd_result = subprocess.run(fqd_cmd, capture_output=True, text=True, timeout=7200)
                 if fqd_result.returncode == 0:
                     # Compress the output FASTQ files
                     for fq in sample_dir.glob("*.fastq"):
                         gz_path = fq.with_suffix(".fastq.gz")
-                        subprocess.run(
-                            ["pigz", "-p", "2", str(fq)],
-                            capture_output=True, timeout=1800
-                        )
+                        subprocess.run(["pigz", "-p", "2", str(fq)], capture_output=True, timeout=1800)
                         if gz_path.exists() and gz_path.stat().st_size > 0:
                             sz_gb = gz_path.stat().st_size / (1024**3)
                             logger.info(f"Downloaded (NCBI) {gz_path.name}: {sz_gb:.2f} GB")
-                    
+
                     # Check if any fastq.gz files now exist
                     gz_files = list(sample_dir.glob("*.fastq.gz"))
                     valid_files = [f for f in gz_files if f.stat().st_size > 0]
@@ -181,7 +181,7 @@ class StreamingPipelineOrchestrator:
                 logger.error(f"NCBI fasterq-dump timeout for {srr_id} (>2h)")
             except Exception as e:
                 logger.error(f"NCBI fasterq-dump exception for {srr_id}: {e}")
-        
+
         if not success:
             # Final cleanup on total failure
             for f in sample_dir.iterdir():
@@ -192,7 +192,7 @@ class StreamingPipelineOrchestrator:
 
     def quant_sample(self, config_path: Path, batch_index: int, species_name: str, threads: int) -> tuple:
         """Run amalgkit quant for a single sample using --batch.
-        
+
         Returns:
             Tuple of (success: bool, error_msg: str or None).
         """
@@ -203,7 +203,7 @@ class StreamingPipelineOrchestrator:
         quant_cfg = steps_cfg.get("quant", {})
         # Always use the work dir for quant output so results land in the expected location
         quant_out = f"output/amalgkit/{species_name}/work"
-        
+
         # Determine metadata path
         work_dir = Path(f"output/amalgkit/{species_name}/work")
         meta_path = None
@@ -211,20 +211,25 @@ class StreamingPipelineOrchestrator:
             if mp.exists():
                 meta_path = str(mp)
                 break
-        
+
         if not meta_path:
             logger.error(f"No metadata found for {species_name} batch {batch_index}")
             return False, f"No metadata found for {species_name}"
 
         # Build command
         cmd = [
-            "amalgkit", "quant",
-            "--out_dir", quant_out,
-            "--metadata", meta_path,
-            "--threads", str(threads),
-            "--batch", str(batch_index),
+            "amalgkit",
+            "quant",
+            "--out_dir",
+            quant_out,
+            "--metadata",
+            meta_path,
+            "--threads",
+            str(threads),
+            "--batch",
+            str(batch_index),
         ]
-        
+
         # Handle cleanup settings
         keep_fastq = str(quant_cfg.get("keep_fastq", "yes")).lower()
         if keep_fastq in ("no", "false"):
@@ -241,7 +246,7 @@ class StreamingPipelineOrchestrator:
                 f"output/amalgkit/{species_name}/work/index",
                 f"output/amalgkit/shared/genome/{species_name}/index",
             ]
-            for sp in cfg.get('species_list', []):
+            for sp in cfg.get("species_list", []):
                 candidates.append(f"output/amalgkit/shared/genome/{sp}/index")
             for candidate in candidates:
                 if Path(candidate).exists() and list(Path(candidate).glob("*.idx")):
@@ -250,39 +255,47 @@ class StreamingPipelineOrchestrator:
                     break
         if index_dir and Path(index_dir).exists():
             cmd.extend(["--index_dir", index_dir])
-        
+
         log_path = self.log_dir / f"{species_name}_quant.log"
-        
+
         try:
-            with open(log_path, 'a') as log_f:
-                log_f.write(f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] Quant batch {batch_index} START: {' '.join(cmd)}\n")
-            
+            with open(log_path, "a") as log_f:
+                log_f.write(
+                    f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] Quant batch {batch_index} START: {' '.join(cmd)}\n"
+                )
+
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=7200)
-            
-            with open(log_path, 'a') as log_f:
-                log_f.write(f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Quant batch {batch_index} END (Exit {result.returncode})\n")
-                if result.stdout: log_f.write(f"-- STDOUT --\n{result.stdout}\n")
-                if result.stderr: log_f.write(f"-- STDERR --\n{result.stderr}\n")
-            
+
+            with open(log_path, "a") as log_f:
+                log_f.write(
+                    f"[{time.strftime('%Y-%m-%d %H:%M:%S')}] Quant batch {batch_index} END (Exit {result.returncode})\n"
+                )
+                if result.stdout:
+                    log_f.write(f"-- STDOUT --\n{result.stdout}\n")
+                if result.stderr:
+                    log_f.write(f"-- STDERR --\n{result.stderr}\n")
+
             if result.returncode == 0:
                 return True, None
-            
+
             # Extract meaningful error from amalgkit output
             error_msg = "Quantification Failed"
             for line in (result.stdout + result.stderr).splitlines():
                 line_lower = line.strip().lower()
-                if any(kw in line_lower for kw in ["error", "exiting", "no sample", "not found", "failed", "exception"]):
+                if any(
+                    kw in line_lower for kw in ["error", "exiting", "no sample", "not found", "failed", "exception"]
+                ):
                     error_msg = line.strip()[:120]
                     break
             return False, error_msg
         except subprocess.TimeoutExpired:
             logger.error(f"Quant timeout batch {batch_index} after 2h")
-            with open(log_path, 'a') as log_f:
-                log_f.write(f"TIMEOUT after 7200s\n")
+            with open(log_path, "a") as log_f:
+                log_f.write("TIMEOUT after 7200s\n")
             return False, "Quant timeout (>2h)"
         except Exception as e:
             logger.error(f"Quant exception batch {batch_index}: {e}")
-            with open(log_path, 'a') as log_f:
+            with open(log_path, "a") as log_f:
                 log_f.write(f"EXCEPTION: {e}\n")
             return False, f"Exception: {e}"
 
@@ -296,21 +309,27 @@ class StreamingPipelineOrchestrator:
             pass  # Fall through to filesystem check on DB errors
         # Filesystem fallback for samples not yet in DB
         quant_dir = Path(f"output/amalgkit/{species_name}/work/quant/{srr_id}")
-        return (quant_dir / "abundance.tsv").exists() or (quant_dir / "quant.sf").exists() if quant_dir.exists() else False
+        return (
+            (quant_dir / "abundance.tsv").exists() or (quant_dir / "quant.sf").exists() if quant_dir.exists() else False
+        )
 
-    def process_single_sample(self, srr_id: str, batch_idx: int, fastq_dir: Path, 
-                            config_path: Path, species_name: str, threads: int) -> Dict[str, Any]:
+    def process_single_sample(
+        self, srr_id: str, batch_idx: int, fastq_dir: Path, config_path: Path, species_name: str, threads: int
+    ) -> Dict[str, Any]:
         """Processing unit for a single sample."""
         result = {
-            "srr": srr_id, "batch": batch_idx, 
-            "downloaded": False, "quantified": False, 
-            "skipped": False, "error": None
+            "srr": srr_id,
+            "batch": batch_idx,
+            "downloaded": False,
+            "quantified": False,
+            "skipped": False,
+            "error": None,
         }
 
         if self.is_quantified(species_name, srr_id):
             result.update({"downloaded": True, "quantified": True, "skipped": True})
             return result
-        
+
         # Download
         self.db.set_state(species_name, srr_id, "downloading")
         if not self.download_fastq(srr_id, fastq_dir):
@@ -320,7 +339,7 @@ class StreamingPipelineOrchestrator:
             return result
         self.db.set_state(species_name, srr_id, "downloaded")
         result["downloaded"] = True
-        
+
         # Quantify
         self.db.set_state(species_name, srr_id, "quantifying")
         success, quant_error = self.quant_sample(config_path, batch_idx, species_name, threads)
@@ -332,7 +351,7 @@ class StreamingPipelineOrchestrator:
         result["quantified"] = success
         if not success:
             result["error"] = quant_error or "Quantification Failed"
-        
+
         return result
 
     def verify_genome_index(self, config_path: Path, species_name: str) -> bool:
@@ -343,16 +362,16 @@ class StreamingPipelineOrchestrator:
         except Exception as e:
             logger.error(f"Failed to load config {config_path}: {e}")
             return False
-            
+
         # Check multiple possible index locations
         # 1. From quant config (has the correct capitalized path)
-        quant_index_dir = cfg.get('steps', {}).get('quant', {}).get('index_dir', '')
+        quant_index_dir = cfg.get("steps", {}).get("quant", {}).get("index_dir", "")
         # 2. From genome config dest_dir + /index
-        genome_dest = cfg.get('genome', {}).get('dest_dir', '')
-        genome_index_dir = f"{genome_dest}/index" if genome_dest else ''
+        genome_dest = cfg.get("genome", {}).get("dest_dir", "")
+        genome_index_dir = f"{genome_dest}/index" if genome_dest else ""
         # 3. Legacy genome.index_dir
-        legacy_index_dir = cfg.get('genome', {}).get('index_dir', '')
-        
+        legacy_index_dir = cfg.get("genome", {}).get("index_dir", "")
+
         search_dirs = [
             quant_index_dir,
             genome_index_dir,
@@ -360,26 +379,26 @@ class StreamingPipelineOrchestrator:
             f"output/amalgkit/{species_name}/work/index",
             f"output/amalgkit/shared/genome/{species_name}/index",
         ]
-        
+
         # Also check shared paths using species_list names (may differ from config name)
         # e.g., config name "amellifera" → species_list "Apis_mellifera"
-        for sp in cfg.get('species_list', []):
+        for sp in cfg.get("species_list", []):
             search_dirs.append(f"output/amalgkit/shared/genome/{sp}/index")
-        
+
         logger.info(f"Verifying index for {species_name}...")
         for d in search_dirs:
             if not d:
                 continue
-                
+
             path_obj = Path(d)
             abs_path = path_obj.resolve() if path_obj.exists() else path_obj.absolute()
-            
+
             logger.info(f"  Checking {d} -> {abs_path}")
-            
+
             if not path_obj.exists():
                 logger.warning(f"  Path does not exist: {d}")
                 continue
-                
+
             # Check permissions by attempting listdir
             try:
                 files = list(path_obj.glob("*.idx"))
@@ -389,13 +408,13 @@ class StreamingPipelineOrchestrator:
                 else:
                     logger.warning(f"  Path exists but no .idx files found in {d}")
                     try:
-                        contents = os.listdir(d) 
+                        contents = os.listdir(d)
                         logger.info(f"  Directory contents: {contents[:5]}...")
                     except Exception as e:
                         logger.error(f"  Failed to list directory {d}: {e}")
             except Exception as e:
                 logger.error(f"  Permission/Error accessing {d}: {e}")
-                
+
         logger.error(f"No genome index found for {species_name}")
         return False
 
@@ -403,7 +422,7 @@ class StreamingPipelineOrchestrator:
         """Run tissue normalization on the metadata file."""
         mapping_path = self.config_dir / "tissue_mapping.yaml"
         patches_path = self.config_dir / "tissue_patches.yaml"
-        
+
         if not mapping_path.exists():
             logger.warning(f"Tissue mapping not found at {mapping_path}, skipping normalization.")
             return
@@ -411,49 +430,50 @@ class StreamingPipelineOrchestrator:
         logger.info(f"Normalizing tissues in {metadata_path}")
         try:
             import pandas as pd
+
             df = pd.read_csv(metadata_path, sep="\t", low_memory=False)
-            
+
             # Apply normalization
             df_norm = apply_tissue_normalization(
-                df, 
+                df,
                 mapping_path=mapping_path,
                 patches_path=patches_path if patches_path.exists() else None,
-                output_column="tissue_normalized" # Amalgkit curate looks for 'tissue' usually, but let's be safe
+                output_column="tissue_normalized",  # Amalgkit curate looks for 'tissue' usually, but let's be safe
             )
-            
-            # For curation to work seamlessly without code changes in amalgkit, 
+
+            # For curation to work seamlessly without code changes in amalgkit,
             # we might want to update the 'tissue' column itself or ensure curate uses 'tissue_normalized'
-            # The 'curate' step often uses the 'tissue' column. 
+            # The 'curate' step often uses the 'tissue' column.
             # Strategy: Overwrite 'tissue' with normalized values, keep original in 'tissue_original'
             if "tissue_normalized" in df_norm.columns:
                 df_norm["tissue_original"] = df_norm["tissue"]
                 df_norm["tissue"] = df_norm["tissue_normalized"]
                 # Drop temporary column if desired, or keep it
-            
+
             df_norm.to_csv(metadata_path, sep="\t", index=False)
             logger.info("Tissue normalization complete and saved.")
-            
+
         except Exception as e:
             logger.error(f"Tissue normalization failed: {e}")
 
     def discover_species_tasks(self, config_name: str, max_gb: float, threads: int) -> List[Dict[str, Any]]:
-        """Main processing loop for a species. 
+        """Main processing loop for a species.
         Returns a list of tasks instead of executing them immediately.
         """
         config_path = self.config_dir / config_name
         if not config_path.exists():
             logger.error(f"Config not found: {config_path}")
             return False
-            
+
         species_name = config_name.replace("amalgkit_", "").replace(".yaml", "")
         logger.info(f"=== Processing {species_name} ===")
-        
+
         # Autonomous Preprocessing Detection
         work_dir = Path(f"output/amalgkit/{species_name}/work")
         metadata_path = work_dir / "metadata/metadata.tsv"
         if not metadata_path.exists():
             metadata_path = work_dir / "metadata/metadata_selected.tsv"
-            
+
         needs_prep = False
         if not metadata_path.exists():
             logger.info(f"Metadata missing for {species_name}. Queuing autonomous preprocessing...")
@@ -461,10 +481,10 @@ class StreamingPipelineOrchestrator:
         elif not self.verify_genome_index(config_path, species_name):
             logger.info(f"Genome index missing for {species_name}. Queuing autonomous preprocessing...")
             needs_prep = True
-            
+
         if needs_prep:
             logger.info(f"Running preprocessing stages (config -> select -> metadata -> index) for {species_name}...")
-            
+
             # Amalgkit ete4 dependency fix: copy the pre-downloaded taxdump to the species workspace
             ete_dir = work_dir / "downloads" / "ete4"
             try:
@@ -472,22 +492,31 @@ class StreamingPipelineOrchestrator:
                 taxdump_dest = ete_dir / "taxdump.tar.gz"
                 if not taxdump_dest.exists():
                     import urllib.request
+
                     logger.info(f"Downloading NCBI Taxdump directly to {taxdump_dest}...")
                     urllib.request.urlretrieve("https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz", taxdump_dest)
-                    logger.info(f"Successfully seeded NCBI Taxdump locally!")
+                    logger.info("Successfully seeded NCBI Taxdump locally!")
             except Exception as e:
                 logger.warning(f"Failed to seed taxdump.tar.gz: {e}")
-                
+
             prep_cmd = [
-                "python3", "scripts/rna/run_workflow.py",
-                "--config", str(config_path),
+                "python3",
+                "scripts/rna/run_workflow.py",
+                "--config",
+                str(config_path),
                 "--no-progress",
-                "--steps", "metadata", "config", "select", "index"
+                "--steps",
+                "metadata",
+                "config",
+                "select",
+                "index",
             ]
             try:
                 prep_result = subprocess.run(prep_cmd, capture_output=True, text=True, timeout=7200)
                 if prep_result.returncode != 0:
-                    logger.error(f"Preprocessing failed for {species_name}:\n{prep_result.stderr}\n{prep_result.stdout}")
+                    logger.error(
+                        f"Preprocessing failed for {species_name}:\n{prep_result.stderr}\n{prep_result.stdout}"
+                    )
                     return False
                 logger.info(f"Preprocessing complete for {species_name}.")
             except subprocess.TimeoutExpired:
@@ -496,7 +525,7 @@ class StreamingPipelineOrchestrator:
             except Exception as e:
                 logger.error(f"Preprocessing exception for {species_name}: {e}")
                 return False
-                
+
             # Post-prep explicit verification
             if not self.verify_genome_index(config_path, species_name):
                 logger.error(f"Genome index still missing for {species_name} after successful prep spawn.")
@@ -505,7 +534,7 @@ class StreamingPipelineOrchestrator:
             metadata_path = work_dir / "metadata/metadata.tsv"
             if not metadata_path.exists():
                 metadata_path = work_dir / "metadata/metadata_selected.tsv"
-                
+
             if not metadata_path.exists():
                 logger.error(f"No metadata generated for {species_name} after successful prep spawn.")
                 return False
@@ -515,19 +544,20 @@ class StreamingPipelineOrchestrator:
 
         # Load samples
         import pandas as pd
+
         df = pd.read_csv(metadata_path, sep="\t")
-        
+
         # Filter logic (simplified from run_all_species.py)
         # Ensure total_bases is numeric
         df["total_bases"] = pd.to_numeric(df["total_bases"], errors="coerce").fillna(0)
-        
+
         # Filter by size
         max_bases = max_gb * 1e9
         filtered = df[df["total_bases"] <= max_bases].copy()
         filtered = filtered.sort_values("total_bases")
-        
+
         logger.info(f"Samples: {len(df)} total -> {len(filtered)} filtered (<= {max_gb} GB)")
-        
+
         if filtered.empty:
             logger.info("No samples to process.")
             return []
@@ -536,7 +566,7 @@ class StreamingPipelineOrchestrator:
         srr_col = "run" if "run" in filtered.columns else "run_accession"
         all_srr_ids = filtered[srr_col].tolist()
         self.db.init_species(species_name, all_srr_ids)
-        
+
         quant_dir = Path(f"output/amalgkit/{species_name}/work/quant")
         reconciled = self.db.reconcile(species_name, quant_dir)
         if reconciled:
@@ -544,12 +574,12 @@ class StreamingPipelineOrchestrator:
 
         # Mark all filtered samples as sampled so amalgkit quant processes them
         filtered["is_sampled"] = "yes"
-        
+
         # Write sorted metadata for batch processing
         filtered.to_csv(metadata_path, sep="\t", index=False)
-        
+
         fastq_dir = Path(f"output/amalgkit/{species_name}/work/getfastq")
-        
+
         tasks = []
         for i, (_, row) in enumerate(filtered.iterrows()):
             srr = row[srr_col]
@@ -557,14 +587,16 @@ class StreamingPipelineOrchestrator:
             # Check DB to skip appending fully quantified tasks
             if self.is_quantified(species_name, srr):
                 continue
-            tasks.append({
-                "srr": srr,
-                "batch_idx": batch_idx,
-                "fastq_dir": fastq_dir,
-                "config_path": config_path,
-                "species_name": species_name,
-            })
-            
+            tasks.append(
+                {
+                    "srr": srr,
+                    "batch_idx": batch_idx,
+                    "fastq_dir": fastq_dir,
+                    "config_path": config_path,
+                    "species_name": species_name,
+                }
+            )
+
         return tasks
 
     def run_all(self, species_list: List[str], max_gb: float, workers: int, threads: int):
@@ -576,10 +608,10 @@ class StreamingPipelineOrchestrator:
         threads_per_worker = max(1, threads // workers)
         SAMPLE_TIMEOUT = 7200
         quantified_by_species: Dict[str, int] = defaultdict(int)
-        
+
         all_futures = {}
         total_discovered = 0
-        
+
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as executor:
             for idx, config_name in enumerate(species_list, 1):
                 try:
@@ -588,19 +620,27 @@ class StreamingPipelineOrchestrator:
                         # Shuffle locally for this species to distribute long-running tasks
                         random.shuffle(tasks)
                         total_discovered += len(tasks)
-                        logger.info(f"Yielding {len(tasks)} tasks for {config_name} into global executor queue. (Total queued: {total_discovered})")
+                        logger.info(
+                            f"Yielding {len(tasks)} tasks for {config_name} into global executor queue. (Total queued: {total_discovered})"
+                        )
                         for task in tasks:
                             f = executor.submit(
-                                self.process_single_sample, 
-                                task["srr"], task["batch_idx"], task["fastq_dir"], 
-                                task["config_path"], task["species_name"], threads_per_worker
+                                self.process_single_sample,
+                                task["srr"],
+                                task["batch_idx"],
+                                task["fastq_dir"],
+                                task["config_path"],
+                                task["species_name"],
+                                threads_per_worker,
                             )
                             all_futures[f] = task
                 except Exception as e:
                     logger.error(f"Fatal error discovering tasks for {config_name}: {e}")
-            
-            logger.info("=== Phase 1 Complete: All metadata parsed. Phase 2 (Execution) continuing until queue exhaustion. ===")
-            
+
+            logger.info(
+                "=== Phase 1 Complete: All metadata parsed. Phase 2 (Execution) continuing until queue exhaustion. ==="
+            )
+
             # Now block until all submitted tasks in the global executor finish
             for idx, future in enumerate(concurrent.futures.as_completed(all_futures), 1):
                 task = all_futures[future]
@@ -621,7 +661,7 @@ class StreamingPipelineOrchestrator:
                     logger.error(f"[{idx}/{total_discovered}] {sp} {srr}: Unexpected error — {e}")
 
         logger.info("=== Phase 3: Global Downstream Finalization ===")
-        # We run downstream steps for ALL species in the list, just to be safe, because 
+        # We run downstream steps for ALL species in the list, just to be safe, because
         # previous runs might have quantified samples but crashed before downstream.
         for config_name in species_list:
             species_name = config_name.replace("amalgkit_", "").replace(".yaml", "")
@@ -634,18 +674,28 @@ class StreamingPipelineOrchestrator:
                     logger.info(f"Running downstream steps for {species_name} ({q} quantified samples)...")
                     config_path = self.config_dir / config_name
                     workflow_log = self.log_dir / f"{species_name}_workflow.log"
-                    
+
                     try:
                         with open(workflow_log, "w") as f:
-                            cmd = ["python3", "scripts/rna/run_workflow.py", 
-                                   "--config", str(config_path), "--no-progress", 
-                                   "--steps", "merge", "curate", "sanity"]
-                            
+                            cmd = [
+                                "python3",
+                                "scripts/rna/run_workflow.py",
+                                "--config",
+                                str(config_path),
+                                "--no-progress",
+                                "--steps",
+                                "merge",
+                                "curate",
+                                "sanity",
+                            ]
+
                             result = subprocess.run(
-                                cmd, stdout=f, stderr=subprocess.STDOUT,
+                                cmd,
+                                stdout=f,
+                                stderr=subprocess.STDOUT,
                                 timeout=1800,  # 30-minute timeout
                             )
-                        
+
                         if result.returncode == 0:
                             logger.info(f"  ✓ {species_name} downstream complete!")
                         else:
@@ -669,10 +719,6 @@ class StreamingPipelineOrchestrator:
                 p = c.get("pending", 0)
                 d = c.get("downloaded", 0) + c.get("downloading", 0)
                 pct = (q / total * 100) if total > 0 else 0
-                logger.info(
-                    f"{sp.ljust(30)} | {q}/{total} ({pct:3.0f}%) | "
-                    f"Fail: {f:3} | Pend: {p:3} | DL: {d:3}"
-                )
+                logger.info(f"{sp.ljust(30)} | {q}/{total} ({pct:3.0f}%) | " f"Fail: {f:3} | Pend: {p:3} | DL: {d:3}")
         except Exception:
             pass
-

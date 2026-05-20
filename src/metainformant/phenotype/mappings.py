@@ -6,12 +6,14 @@ orchestrator script (``04b_phenotype_analysis.py``) makes them
 importable by any downstream module that needs consistent caste/strain
 semantics.
 """
+
 from __future__ import annotations
 
 from typing import Dict
 
 try:
     import pandas as pd
+
     HAS_PANDAS = True
 except ImportError:
     HAS_PANDAS = False

@@ -32,6 +32,11 @@ except ImportError:
     HAS_NUMPY = False
 
 
+def _as_networkx_graph(graph: Any) -> Any:
+    """Return the underlying NetworkX graph for BiologicalNetwork inputs."""
+    return graph.graph if isinstance(graph, BiologicalNetwork) else graph
+
+
 class BiologicalNetwork:
     """A biological network class wrapping NetworkX functionality.
 
@@ -62,7 +67,6 @@ class BiologicalNetwork:
         """Whether the network is directed."""
         return self.graph.is_directed()
 
-
     def add_node(self, node_id: str, **attributes):
         """Add a node to the network.
 
@@ -81,6 +85,14 @@ class BiologicalNetwork:
             **attributes: Edge attributes (e.g., weight, interaction_type, etc.)
         """
         self.graph.add_edge(source, target, **attributes)
+
+    def add_nodes_from(self, nodes, **attributes) -> None:
+        """Add multiple nodes to the network."""
+        self.graph.add_nodes_from(nodes, **attributes)
+
+    def add_edges_from(self, edges, **attributes) -> None:
+        """Add multiple edges to the network."""
+        self.graph.add_edges_from(edges, **attributes)
 
     def remove_node(self, node_id: str):
         """Remove a node from the network.
@@ -127,7 +139,7 @@ class BiologicalNetwork:
         """Check if an edge exists between two nodes."""
         return self.graph.has_edge(source, target)
 
-    def get_edge_weight(self, source: str, target: str, weight_key: str = "weight") -> float:
+    def get_edge_weight(self, source: str, target: str, weight_key: str = "weight") -> float | None:
         """Get the weight of an edge.
 
         Args:
@@ -140,7 +152,7 @@ class BiologicalNetwork:
         """
         if self.graph.has_edge(source, target):
             return self.graph[source][target].get(weight_key, 1.0)
-        return 0.0
+        return None
 
     def size(self, weight: str | None = None) -> int | float:
         """Return the number of edges or total of all edge weights.
@@ -170,13 +182,46 @@ class BiologicalNetwork:
         """Return number of nodes."""
         return len(self.graph)
 
-    def nodes(self, data=False):
+    @property
+    def nodes(self):
         """Return a NodeView of the graph."""
-        return self.graph.nodes(data=data)
+        return self.graph.nodes
 
-    def edges(self, data=False, default=None):
+    @property
+    def edges(self):
         """Return an EdgeView of the graph."""
-        return self.graph.edges(data=data, default=default)
+        return self.graph.edges
+
+    @property
+    def node_attrs(self):
+        """Return node attributes keyed by node ID."""
+        return self.graph.nodes
+
+    def get_neighbors(self, node: str) -> list[str]:
+        """Return neighboring node IDs."""
+        if node not in self.graph:
+            return []
+        return list(self.graph.neighbors(node))
+
+    def density(self) -> float:
+        """Return graph density."""
+        return float(nx.density(self.graph))
+
+    def copy(self):
+        """Return a copy of the underlying NetworkX graph."""
+        return self.graph.copy()
+
+    def subgraph(self, nodes):
+        """Return a NetworkX subgraph view for selected nodes."""
+        return self.graph.subgraph(nodes)
+
+    def is_multigraph(self) -> bool:
+        """Return whether the underlying graph is a multigraph."""
+        return self.graph.is_multigraph()
+
+    def to_networkx(self):
+        """Return the underlying NetworkX graph."""
+        return self.graph
 
     def neighbors(self, node):
         """Return neighbors of a node."""
@@ -188,21 +233,24 @@ class BiologicalNetwork:
             return self.graph.degree(weight=weight)
         return self.graph.degree(node, weight=weight)
 
+    @property
     def adj(self):
         """Return adjacency object."""
         return self.graph.adj
 
 
-def create_network(edges: List[Tuple[str, str]], directed: bool = False, **kwargs: Any) -> Any:
-    """Create a network from edge list.
+def create_network(
+    edges: List[Tuple[str, str]] | list[str], directed: bool = False, **kwargs: Any
+) -> BiologicalNetwork:
+    """Create a biological network from nodes or an edge list.
 
     Args:
-        edges: List of (source, target) tuples
+        edges: Node IDs or a list of (source, target) tuples
         directed: Whether to create a directed graph
         **kwargs: Additional arguments for graph creation
 
     Returns:
-        NetworkX graph object
+        BiologicalNetwork object
 
     Raises:
         ImportError: If networkx not available
@@ -210,17 +258,28 @@ def create_network(edges: List[Tuple[str, str]], directed: bool = False, **kwarg
     if not HAS_NETWORKX:
         raise ImportError("networkx required for network creation")
 
-    if directed:
-        G = nx.DiGraph(**kwargs)
+    network = BiologicalNetwork(directed=directed, **kwargs)
+    values = list(edges)
+    if values and all(isinstance(edge, tuple) and len(edge) in (2, 3) for edge in values):
+        for edge in values:
+            if len(edge) == 2:
+                source, target = edge
+                network.add_edge(source, target)
+            else:
+                source, target, attrs = edge
+                if isinstance(attrs, dict):
+                    network.add_edge(source, target, **attrs)
+                else:
+                    network.add_edge(source, target, weight=attrs)
     else:
-        G = nx.Graph(**kwargs)
-
-    G.add_edges_from(edges)
+        for node in values:
+            network.add_node(str(node))
 
     logger.info(
-        f"Created {'directed' if directed else 'undirected'} network with {len(G.nodes())} nodes and {len(G.edges())} edges"
+        f"Created {'directed' if directed else 'undirected'} network with "
+        f"{network.num_nodes()} nodes and {network.num_edges()} edges"
     )
-    return G
+    return network
 
 
 def load_network(path: Union[str, Path], format: str = "edgelist", **kwargs: Any) -> Any:
@@ -282,6 +341,7 @@ def save_network(graph: Any, path: Union[str, Path], format: str = "edgelist", *
     if not HAS_NETWORKX:
         raise ImportError("networkx required for network saving")
 
+    graph = _as_networkx_graph(graph)
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -610,6 +670,7 @@ def get_network_summary(graph: Any) -> Dict[str, Any]:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for network summary")
 
+    graph = _as_networkx_graph(graph)
     summary = {
         "n_nodes": len(graph.nodes()),
         "n_edges": len(graph.edges()),
@@ -675,6 +736,7 @@ def validate_network(graph: Any) -> Tuple[bool, List[str]]:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for network validation")
 
+    graph = _as_networkx_graph(graph)
     errors = []
 
     # Check for isolated nodes
@@ -755,12 +817,15 @@ def add_edges_from_interactions(
     logger.info(f"Added {len(interactions)} interaction edges (threshold={weight_threshold})")
 
 
-def add_edges_from_correlation(graph: Any, correlation_matrix: Any, threshold: float = 0.5) -> None:
+def add_edges_from_correlation(
+    graph: Any, correlation_matrix: Any, node_names: list[str] | None = None, threshold: float = 0.5
+) -> None:
     """Add edges to graph based on correlation matrix.
 
     Args:
         graph: NetworkX graph
         correlation_matrix: Correlation matrix (pandas DataFrame or numpy array)
+        node_names: Optional node names for numpy matrix input
         threshold: Minimum absolute correlation for edge creation
 
     Raises:
@@ -779,7 +844,9 @@ def add_edges_from_correlation(graph: Any, correlation_matrix: Any, threshold: f
             corr_data = correlation_matrix.values
         else:
             # Assume numpy array with nodes as indices
-            nodes = [f"Node_{i}" for i in range(len(correlation_matrix))]
+            if node_names is not None and len(node_names) != len(correlation_matrix):
+                raise ValueError("correlation matrix dimensions don't match node names")
+            nodes = node_names if node_names is not None else [f"Node_{i}" for i in range(len(correlation_matrix))]
             corr_data = correlation_matrix
 
         # Ensure graph has all nodes

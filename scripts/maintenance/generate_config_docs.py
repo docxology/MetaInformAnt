@@ -57,35 +57,36 @@ PREFIXES = {
     "ncbi": "DNA",
     "networks": "NET",
     "phenotype": "PHEN",
-    "singlecell": "SC"
+    "singlecell": "SC",
 }
+
 
 def main():
     print(f"Checking config directories in {CONFIG_DIR}...")
-    
+
     for module_dir in CONFIG_DIR.iterdir():
         if not module_dir.is_dir() or module_dir.name.startswith("__"):
             continue
-            
+
         module = module_dir.name
         print(f"Processing {module}...")
-        
+
         prefix = PREFIXES.get(module, module.upper())
-        
+
         # README.md
         readme = module_dir / "README.md"
         if not readme.exists():
             with open(readme, "w") as f:
                 f.write(README_TEMPLATE.format(module_name=module, prefix=prefix))
             print(f"Created {readme.name}")
-            
+
         # AGENTS.md
         agents = module_dir / "AGENTS.md"
         if not agents.exists():
             with open(agents, "w") as f:
                 f.write(AGENTS_TEMPLATE.format(module_name=module))
             print(f"Created {agents.name}")
-            
+
         # SPEC.md
         spec = module_dir / "SPEC.md"
         if not spec.exists():
@@ -94,6 +95,7 @@ def main():
             print(f"Created {spec.name}")
 
     print("Done.")
+
 
 if __name__ == "__main__":
     main()

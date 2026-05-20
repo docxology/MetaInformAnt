@@ -15,7 +15,6 @@ CPIC levels:
 from __future__ import annotations
 
 import csv
-import os
 from pathlib import Path
 from typing import Any
 

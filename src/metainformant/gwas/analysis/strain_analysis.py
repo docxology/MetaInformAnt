@@ -107,11 +107,7 @@ def compute_fst_per_variant(
     strains_present = sorted(strain_map.keys())
 
     if strain_pairs is None:
-        strain_pairs = [
-            (a, b)
-            for i, a in enumerate(strains_present)
-            for b in strains_present[i + 1 :]
-        ]
+        strain_pairs = [(a, b) for i, a in enumerate(strains_present) for b in strains_present[i + 1 :]]
 
     af_by_strain = compute_allele_frequencies_by_strain(genotype_matrix, sample_ids)
     n_variants = len(genotype_matrix)
@@ -186,15 +182,8 @@ def _weir_cockerham_fst(p1: float, p2: float, n1: int, n2: int) -> float:
     h_bar = (n1 * h1 + n2 * h2) / n_total
 
     # Variance components (Weir & Cockerham eq. 2, 3, 4)
-    a = (n_bar / n_c) * (
-        s_sq
-        - (1 / (n_bar - 1)) * (p_bar * (1 - p_bar) - ((r - 1) / r) * s_sq - h_bar / 4)
-    )
-    b = (n_bar / (n_bar - 1)) * (
-        p_bar * (1 - p_bar)
-        - ((r - 1) / r) * s_sq
-        - ((2 * n_bar - 1) / (4 * n_bar)) * h_bar
-    )
+    a = (n_bar / n_c) * (s_sq - (1 / (n_bar - 1)) * (p_bar * (1 - p_bar) - ((r - 1) / r) * s_sq - h_bar / 4))
+    b = (n_bar / (n_bar - 1)) * (p_bar * (1 - p_bar) - ((r - 1) / r) * s_sq - ((2 * n_bar - 1) / (4 * n_bar)) * h_bar)
     c = h_bar / 2
 
     denom = a + b + c
@@ -225,9 +214,7 @@ def strain_specific_variants(
     for v in range(n_variants):
         for target_strain in strains:
             target_af = af_by_strain[target_strain][v]
-            target_maf = (
-                min(target_af, 1 - target_af) if not math.isnan(target_af) else 0
-            )
+            target_maf = min(target_af, 1 - target_af) if not math.isnan(target_af) else 0
 
             if target_maf < maf_threshold:
                 continue
@@ -238,9 +225,7 @@ def strain_specific_variants(
                 if other_strain == target_strain:
                     continue
                 other_af = af_by_strain[other_strain][v]
-                other_maf = (
-                    min(other_af, 1 - other_af) if not math.isnan(other_af) else 0
-                )
+                other_maf = min(other_af, 1 - other_af) if not math.isnan(other_af) else 0
                 if other_maf >= maf_threshold:
                     is_private = False
                     break
@@ -249,9 +234,7 @@ def strain_specific_variants(
                 result[target_strain].append(v)
 
     for strain, variants in result.items():
-        logger.info(
-            f"Strain {strain}: {len(variants)} private variants (MAF>{maf_threshold})"
-        )
+        logger.info(f"Strain {strain}: {len(variants)} private variants (MAF>{maf_threshold})")
 
     return result
 
@@ -280,9 +263,7 @@ def compute_global_fst(
             }
             all_means.append(mean_fst)
 
-    summary["global_mean_fst"] = (
-        round(sum(all_means) / len(all_means), 6) if all_means else 0.0
-    )
+    summary["global_mean_fst"] = round(sum(all_means) / len(all_means), 6) if all_means else 0.0
     return summary
 
 
@@ -358,18 +339,14 @@ def run_strain_analysis(
             if components and isinstance(components[0], list):
                 n_pcs = len(components)
                 n_samples = len(components[0])
-                pcs_sample_major = [
-                    [components[pc][s] for pc in range(n_pcs)] for s in range(n_samples)
-                ]
+                pcs_sample_major = [[components[pc][s] for pc in range(n_pcs)] for s in range(n_samples)]
             else:
                 pcs_sample_major = pca_data.get("pcs", [])
                 n_samples = len(pcs_sample_major)
 
             effective_ids = sample_ids[:n_samples]
             pca_dict = {"pcs": pcs_sample_major, "explained_variance_ratio": variance}
-            fig = strain_pca_plot(
-                pca_dict, effective_ids, output_path=strain_dir / "strain_pca_grid.png"
-            )
+            fig = strain_pca_plot(pca_dict, effective_ids, output_path=strain_dir / "strain_pca_grid.png")
             if fig:
                 _plt.close(fig)
                 report["strain_pca"] = str(strain_dir / "strain_pca_grid.png")
@@ -392,9 +369,7 @@ def run_strain_analysis(
             n_kin = len(kinship_matrix)
             effective_ids = sample_ids[:n_kin]
 
-            fig = dendrogram_plot(
-                kinship_matrix, effective_ids, output_path=strain_dir / "dendrogram.png"
-            )
+            fig = dendrogram_plot(kinship_matrix, effective_ids, output_path=strain_dir / "dendrogram.png")
             if fig:
                 _plt.close(fig)
                 report["dendrogram"] = str(strain_dir / "dendrogram.png")
@@ -413,11 +388,11 @@ def run_strain_analysis(
     # ── 3. Fst + AF Heatmap + Private Variants ──
     if sample_ids:
         try:
-            from metainformant.gwas.visualization.strain_plots import (
-                fst_manhattan_plot,
-                allele_frequency_heatmap,
-            )
             from metainformant.gwas.analysis.quality import parse_vcf_full
+            from metainformant.gwas.visualization.strain_plots import (
+                allele_frequency_heatmap,
+                fst_manhattan_plot,
+            )
 
             logger.info(f"Re-parsing VCF for Fst: {vcf_path}")
             vcf_data = parse_vcf_full(vcf_path)
@@ -432,9 +407,7 @@ def run_strain_analysis(
                 else:
                     n_s = len(genotypes)
                     n_v = len(genotypes[0]) if genotypes else 0
-                    geno_vm = [
-                        [genotypes[s][v] for s in range(n_s)] for v in range(n_v)
-                    ]
+                    geno_vm = [[genotypes[s][v] for s in range(n_s)] for v in range(n_v)]
 
                 effective_ids = vcf_samples if vcf_samples else sample_ids
 
@@ -443,9 +416,7 @@ def run_strain_analysis(
                 with open(strain_dir / "fst_summary.json", "w") as f:
                     _json.dump(fst_summary, f, indent=2)
                 report["fst_summary"] = fst_summary
-                logger.info(
-                    f"Global mean Fst: {fst_summary.get('global_mean_fst', 'N/A')}"
-                )
+                logger.info(f"Global mean Fst: {fst_summary.get('global_mean_fst', 'N/A')}")
 
                 # Fst Manhattan
                 fst_data = compute_fst_per_variant(geno_vm, effective_ids)

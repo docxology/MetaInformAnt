@@ -9,7 +9,6 @@ from __future__ import annotations
 
 from math import pi
 from pathlib import Path
-from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -116,7 +115,7 @@ def plot_parallel_coordinates(
     # Create parallel coordinates plot
     if HAS_SEABORN and color_col:
         # Use seaborn for better coloring
-        palette = kwargs.pop("palette", "husl")
+        kwargs.pop("palette", "husl")
         for category in plot_data[color_col].unique():
             subset = plot_data[plot_data[color_col] == category]
             ax.plot(subset.drop(columns=[color_col]).T.values, alpha=0.7, label=str(category))

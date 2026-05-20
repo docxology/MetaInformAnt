@@ -75,9 +75,7 @@ class ComputeTimeEstimate:
         for step, secs in sorted(self.per_step.items()):
             secs / 3600
             factor = self.scaling_factors.get(step, 1.0)
-            lines.append(
-                f"  {step:30s}  {_format_duration(secs):>12s}  (×{factor:.1f})"
-            )
+            lines.append(f"  {step:30s}  {_format_duration(secs):>12s}  (×{factor:.1f})")
         return "\n".join(lines)
 
 
@@ -208,12 +206,8 @@ def benchmark_subset_run(
     actual_n_samples = len(vcf_data.get("samples", []))
     actual_n_variants = len(vcf_data.get("variants", []))
 
-    n_samples_used = (
-        min(max_samples, actual_n_samples) if max_samples else actual_n_samples
-    )
-    n_variants_used = (
-        min(max_variants, actual_n_variants) if max_variants else actual_n_variants
-    )
+    n_samples_used = min(max_samples, actual_n_samples) if max_samples else actual_n_samples
+    n_variants_used = min(max_variants, actual_n_variants) if max_variants else actual_n_variants
 
     logger.info(
         f"Benchmarking subset: {n_samples_used}/{actual_n_samples} samples, "
@@ -276,9 +270,7 @@ def benchmark_subset_run(
             ),
         )
 
-    logger.info(
-        f"Benchmark complete: {len(timings)} steps timed, total {total_time:.2f}s"
-    )
+    logger.info(f"Benchmark complete: {len(timings)} steps timed, total {total_time:.2f}s")
     return timings
 
 

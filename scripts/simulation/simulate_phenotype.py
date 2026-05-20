@@ -21,7 +21,7 @@ import pandas as pd
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, logging, paths, validation
+from metainformant.core import io, logging, paths
 
 logger = logging.get_logger(__name__)
 
@@ -33,7 +33,7 @@ def simulate_morphological(
 ) -> dict:
     """Simulate morphological traits."""
     logger.info(f"Generating morphological traits: {n_samples} samples")
-    rng = random.Random(seed)
+    random.Random(seed)
     np.random.seed(seed)
 
     # Common morphological traits
@@ -73,7 +73,7 @@ def simulate_behavioral(
 ) -> dict:
     """Simulate behavioral traits."""
     logger.info(f"Generating behavioral traits: {n_samples} samples")
-    rng = random.Random(seed)
+    random.Random(seed)
     np.random.seed(seed)
 
     # Common behavioral traits

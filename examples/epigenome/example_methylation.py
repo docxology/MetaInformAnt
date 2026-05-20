@@ -35,9 +35,9 @@ def main():
     methylation_matrix = np.random.beta(2, 5, (n_sites, n_samples))
 
     # Calculate methylation statistics
-    mean_methylation = np.mean(methylation_matrix, axis=1)
-    hyper_methylated = np.sum(methylation_matrix > 0.8, axis=1)  # Sites with high methylation
-    hypo_methylated = np.sum(methylation_matrix < 0.2, axis=1)  # Sites with low methylation
+    np.mean(methylation_matrix, axis=1)
+    np.sum(methylation_matrix > 0.8, axis=1)  # Sites with high methylation
+    np.sum(methylation_matrix < 0.2, axis=1)  # Sites with low methylation
 
     # Differential methylation (compare first 10 vs last 10 samples)
     group1_mean = np.mean(methylation_matrix[:, :10], axis=1)

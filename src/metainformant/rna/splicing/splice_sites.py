@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 import re
 from collections import defaultdict
-from typing import Any, Dict, Literal
+from typing import Any, Literal
 
 from metainformant.core.utils.logging import get_logger
 
@@ -181,8 +181,6 @@ def _parse_cigar_junctions(
         return junctions
 
     ref_pos = start
-    left_match_len = 0  # Matched bases before current junction
-    found_n = False
 
     # First pass: calculate total matched bases for right overhang
     all_ops: list[tuple[int, str]] = [(int(length), op) for length, op in ops]

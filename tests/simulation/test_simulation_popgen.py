@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import random
 
-import pytest
-
 from metainformant.simulation.models.popgen import (
     generate_genotype_matrix,
     generate_linkage_disequilibrium_data,
@@ -178,7 +176,7 @@ class TestGenerateGenotypeMatrix:
         # Both should have similar allele frequencies
         # But HWE should have more heterozygotes (2pq = 0.5 for p=0.5)
         hwe_het = sum(1 for row in genotypes_hwe if row[0] == 1)
-        non_hwe_het = sum(1 for row in genotypes_non_hwe if row[0] == 1)
+        sum(1 for row in genotypes_non_hwe if row[0] == 1)
 
         # HWE should have ~50% heterozygotes for p=0.5
         assert hwe_het > 30  # Should be around 50

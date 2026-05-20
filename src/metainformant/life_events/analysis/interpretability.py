@@ -6,8 +6,7 @@ including feature attribution, attention weights, and temporal pattern analysis.
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -97,25 +96,64 @@ def attention_weights(
     }
 
 
+def _sequence_to_tokens(sequence: Any) -> List[str]:
+    if hasattr(sequence, "events"):
+        return [
+            f"{event.domain}:{event.event_type}" if getattr(event, "domain", None) else str(event.event_type)
+            for event in sequence.events
+        ]
+    if isinstance(sequence, str):
+        return [sequence]
+    return [str(event) for event in sequence]
+
+
 def event_importance(
-    sequences: List[Any], method: str = "frequency", normalize: bool = True, **kwargs: Any
+    predictor_or_sequences: Any,
+    sequences: Optional[List[Any]] = None,
+    embeddings: Optional[Dict[str, np.ndarray]] = None,
+    method: str = "frequency",
+    normalize: bool = True,
+    **kwargs: Any,
 ) -> Dict[str, float]:
-    """Calculate event importance scores (imported from workflow module).
+    """Calculate event importance scores from frequencies or fitted predictors."""
+    if sequences is None:
+        predictor = None
+        sequences = predictor_or_sequences
+    else:
+        predictor = predictor_or_sequences
 
-    This is a wrapper around the workflow.event_importance function.
+    if not sequences:
+        raise ValueError("sequences cannot be empty")
+    if method not in {"frequency", "permutation"}:
+        raise ValueError("Invalid method")
+    if predictor is not None and not getattr(predictor, "is_fitted", False):
+        raise ValueError("Predictor must be fitted before computing event importance")
 
-    Args:
-        sequences: List of EventSequence objects
-        method: Method for calculating importance
-        normalize: Whether to normalize scores
-        **kwargs: Additional arguments
+    scores: dict[str, float] = {}
+    if method == "frequency" or predictor is None:
+        for seq in sequences:
+            for event in _sequence_to_tokens(seq):
+                scores[event] = scores.get(event, 0.0) + 1.0
+    else:
+        baseline = predictor.predict(sequences)
+        for i, seq in enumerate(sequences):
+            tokens = _sequence_to_tokens(seq)
+            for j, event in enumerate(tokens):
+                reduced = tokens[:j] + tokens[j + 1 :]
+                if not reduced:
+                    delta = 0.0
+                else:
+                    changed = predictor.predict([reduced])[0]
+                    delta = abs(float(baseline[i]) - float(changed))
+                if embeddings and event in embeddings:
+                    delta += float(np.linalg.norm(embeddings[event])) * 1e-6
+                scores[event] = scores.get(event, 0.0) + delta
 
-    Returns:
-        Dictionary mapping event types to importance scores
-    """
-    from .workflow import event_importance as _event_importance
+    if normalize and scores:
+        max_score = max(scores.values()) or 1.0
+        scores = {event: float(score / max_score) for event, score in scores.items()}
 
-    return _event_importance(sequences, method=method, normalize=normalize)
+    return scores
 
 
 def feature_attribution(
@@ -137,11 +175,11 @@ def feature_attribution(
     Returns:
         Dictionary with feature attribution results
     """
-    if not hasattr(predictor, "model") or predictor.model is None:
+    if not getattr(predictor, "is_fitted", False):
         raise ValueError("Predictor must be fitted before feature attribution")
 
     if not sequences:
-        return {"attributions": {}, "method": "none"}
+        raise ValueError("sequences cannot be empty")
 
     attributions = {}
 
@@ -191,9 +229,10 @@ def feature_attribution(
         for i, seq in enumerate(sequences):
             seq_attributions = {}
 
-            for j, event in enumerate(seq):
+            tokens = _sequence_to_tokens(seq)
+            for j, event in enumerate(tokens):
                 # Create permuted sequence
-                permuted_seq = seq.copy()
+                permuted_seq = tokens.copy()
                 # Remove the event (simple ablation)
                 permuted_seq.pop(j)
 
@@ -230,7 +269,7 @@ def feature_attribution(
         return {"attributions": {}, "method": "failed", "error": str(e)}
 
 
-def temporal_patterns(sequences: List[Any], time_window: int = 30) -> Dict[str, Any]:
+def temporal_patterns(sequences: List[Any], predictions: Optional[Any] = None, time_window: int = 30) -> Dict[str, Any]:
     """Analyze temporal patterns in event sequences.
 
     Args:
@@ -241,16 +280,32 @@ def temporal_patterns(sequences: List[Any], time_window: int = 30) -> Dict[str, 
         Dictionary with temporal pattern analysis
     """
     if not sequences:
-        return {"patterns": [], "statistics": {}}
+        raise ValueError("sequences cannot be empty")
+
+    if predictions is not None and not isinstance(predictions, (int, float)):
+        predictions_arr = np.asarray(predictions)
+        if len(predictions_arr) != len(sequences):
+            raise ValueError("predictions length must match sequences")
+        token_sequences = [_sequence_to_tokens(seq) for seq in sequences]
+        max_len = max((len(seq) for seq in token_sequences), default=0)
+        position_scores = np.zeros(max_len)
+        position_counts = np.zeros(max_len)
+        for seq, pred in zip(token_sequences, predictions_arr):
+            for i, _event in enumerate(seq):
+                position_scores[i] += float(pred)
+                position_counts[i] += 1
+        position_importance = {
+            i: float(position_scores[i] / position_counts[i]) if position_counts[i] else 0.0 for i in range(max_len)
+        }
+        return {"position_importance": position_importance, "max_sequence_length": max_len}
 
     patterns = []
     event_counts_by_time = {}
 
     for seq in sequences:
-        if hasattr(seq, "events"):
-            events = seq.events
-        else:
+        if not hasattr(seq, "events"):
             continue
+        events = seq.events
 
         for i, event in enumerate(events):
             if hasattr(event, "timestamp") and hasattr(event, "event_type"):
@@ -324,7 +379,7 @@ def learn_event_embeddings(
     Returns:
         Dictionary mapping events to embedding vectors
     """
-    from collections import Counter, defaultdict
+    from collections import Counter
 
     logger.info(f"Learning embeddings for {len(sequences)} sequences")
 
@@ -414,7 +469,6 @@ def shapley_values(
 
     # Placeholder for actual KernelSHAP or similar
     # Using random approximation for interface compatibility
-    base_prediction = 0.5  # Dummy base value
 
     for event in events:
         event_str = str(event.event_type) if hasattr(event, "event_type") else str(event)

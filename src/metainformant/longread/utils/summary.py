@@ -7,7 +7,6 @@ run summaries with statistics, comparisons, and exportable reports.
 from __future__ import annotations
 
 import json
-import os
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -76,8 +75,6 @@ def generate_qc_summary(
         Dict with QC summary statistics.
     """
     from metainformant.longread.quality.metrics import (
-        calculate_n50,
-        calculate_nx,
         read_length_stats,
     )
 
@@ -317,7 +314,7 @@ def export_run_summary(
     elif format == "text":
         lines = [
             f"{'=' * 60}",
-            f"LONG-READ SEQUENCING RUN SUMMARY",
+            "LONG-READ SEQUENCING RUN SUMMARY",
             f"{'=' * 60}",
             f"Run ID:    {summary.run_id}",
             f"Sample:    {summary.sample_name}",
@@ -329,7 +326,7 @@ def export_run_summary(
         if summary.qc_stats:
             lines.extend(
                 [
-                    f"--- Quality Control ---",
+                    "--- Quality Control ---",
                     f"  Total reads:   {summary.qc_stats.get('total_reads', 'N/A'):,}",
                     f"  Total bases:   {summary.qc_stats.get('total_bases', 'N/A'):,}",
                     f"  N50:           {summary.qc_stats.get('n50', 'N/A'):,}",
@@ -342,7 +339,7 @@ def export_run_summary(
         if summary.assembly_stats:
             lines.extend(
                 [
-                    f"--- Assembly ---",
+                    "--- Assembly ---",
                     f"  Contigs:       {summary.assembly_stats.get('total_contigs', 'N/A'):,}",
                     f"  Total bases:   {summary.assembly_stats.get('total_bases', 'N/A'):,}",
                     f"  N50:           {summary.assembly_stats.get('n50', 'N/A'):,}",
@@ -354,7 +351,7 @@ def export_run_summary(
         if summary.methylation_stats:
             lines.extend(
                 [
-                    f"--- Methylation ---",
+                    "--- Methylation ---",
                     f"  Mod type:      {summary.methylation_stats.get('modification_type', 'N/A')}",
                     f"  Total sites:   {summary.methylation_stats.get('total_sites', 'N/A'):,}",
                     f"  Methylated:    {summary.methylation_stats.get('methylated_sites', 'N/A'):,}",
@@ -366,7 +363,7 @@ def export_run_summary(
         if summary.sv_stats:
             lines.extend(
                 [
-                    f"--- Structural Variants ---",
+                    "--- Structural Variants ---",
                     f"  Total SVs:     {summary.sv_stats.get('total_variants', 'N/A')}",
                     f"  By type:       {summary.sv_stats.get('by_type', {})}",
                     "",
@@ -376,7 +373,7 @@ def export_run_summary(
         if summary.warnings:
             lines.extend(
                 [
-                    f"--- Warnings ---",
+                    "--- Warnings ---",
                     *[f"  - {w}" for w in summary.warnings],
                     "",
                 ]

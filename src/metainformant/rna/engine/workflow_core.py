@@ -11,8 +11,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from metainformant.core.utils import logging
 from metainformant.core import io
+from metainformant.core.utils import logging
 from metainformant.core.utils.config import load_mapping_from_file
 
 logger = logging.get_logger(__name__)

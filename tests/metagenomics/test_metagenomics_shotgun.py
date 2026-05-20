@@ -196,7 +196,7 @@ class TestCalculateTetranucleotideFreq:
 
     def test_homo_polymer_profile(self) -> None:
         tnf_a = calculate_tetranucleotide_freq("AAAAAAAAAA")
-        tnf_t = calculate_tetranucleotide_freq("TTTTTTTTTT")
+        calculate_tetranucleotide_freq("TTTTTTTTTT")
         # Due to reverse complement, poly-A and poly-T should be similar
         assert tnf_a[0] > 0  # AAAA
 

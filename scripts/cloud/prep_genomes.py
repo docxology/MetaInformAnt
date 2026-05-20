@@ -7,10 +7,9 @@ YAML config, downloads from NCBI FTP, then runs `kallisto index`.
 Usage:
     python3 scripts/cloud/prep_genomes.py [--config-dir config/amalgkit] [--threads 8]
 """
+
 import argparse
-import os
 import subprocess
-import sys
 from pathlib import Path
 
 import yaml
@@ -35,13 +34,13 @@ def process_species(config_path: Path, threads: int) -> bool:
     dest_dir = Path(genome.get("dest_dir", f"output/amalgkit/shared/genome/{species}"))
 
     if not ftp_url or not transcriptome:
-        print(f"  ⚠ Missing ftp_url or transcriptome_fasta, skipping")
+        print("  ⚠ Missing ftp_url or transcriptome_fasta, skipping")
         return False
 
     # Check if index already exists
     index_dir = dest_dir / "index"
     if index_dir.exists() and list(index_dir.glob("*.idx")):
-        print(f"  ✓ Index already exists")
+        print("  ✓ Index already exists")
         return True
 
     # Create directories
@@ -54,12 +53,9 @@ def process_species(config_path: Path, threads: int) -> bool:
 
     if not fasta_path.exists():
         print(f"  ▸ Downloading {transcriptome}...")
-        result = subprocess.run(
-            ["wget", "-q", "-O", str(fasta_path), download_url],
-            timeout=300
-        )
+        result = subprocess.run(["wget", "-q", "-O", str(fasta_path), download_url], timeout=300)
         if result.returncode != 0 or not fasta_path.exists():
-            print(f"  ✗ Download failed")
+            print("  ✗ Download failed")
             return False
         print(f"  ✓ Downloaded ({fasta_path.stat().st_size / 1e6:.1f} MB)")
     else:
@@ -80,17 +76,16 @@ def process_species(config_path: Path, threads: int) -> bool:
     idx_path = index_dir / idx_name
 
     if not idx_path.exists():
-        print(f"  ▸ Building kallisto index...")
+        print("  ▸ Building kallisto index...")
         result = subprocess.run(
-            ["kallisto", "index", "-i", str(idx_path), str(fasta_path)],
-            capture_output=True, text=True, timeout=600
+            ["kallisto", "index", "-i", str(idx_path), str(fasta_path)], capture_output=True, text=True, timeout=600
         )
         if result.returncode != 0:
             print(f"  ✗ Index build failed: {result.stderr[:200]}")
             return False
         print(f"  ✓ Index built: {idx_path.name}")
     else:
-        print(f"  ✓ Index already exists")
+        print("  ✓ Index already exists")
 
     return True
 

@@ -38,7 +38,7 @@ def main():
 
     # Train classifier
     print("\nTraining classifier...")
-    model = train_ensemble_classifier(X, y, algorithms=["random_forest"])
+    train_ensemble_classifier(X, y, algorithms=["random_forest"])
 
     # Cross-validation
     cv_results = cross_validate_biological(X, y, algorithm="random_forest", cv_folds=5)

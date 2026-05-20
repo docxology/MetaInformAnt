@@ -203,12 +203,15 @@ def main() -> int:
         # No config provided
         if not files:
             print("No config provided, and no configs were found under `config/amalgkit/`.", file=sys.stderr)
-            print(f"Tip: create one under `config/amalgkit/` or pass `--config <path>`.", file=sys.stderr)
+            print("Tip: create one under `config/amalgkit/` or pass `--config <path>`.", file=sys.stderr)
             return 2
         print("No config provided. Available configs:", file=sys.stderr)
         for p in files:
             print(f"  - {p.relative_to(REPO_ROOT)}", file=sys.stderr)
-        print(f"Next:\n  {hint} config/amalgkit/<file>.yaml --plan\n  {hint} config/amalgkit/<file>.yaml --check", file=sys.stderr)
+        print(
+            f"Next:\n  {hint} config/amalgkit/<file>.yaml --plan\n  {hint} config/amalgkit/<file>.yaml --check",
+            file=sys.stderr,
+        )
         return 0
 
     # ── Deferred heavy imports (after argparse so --help is fast) ──────────

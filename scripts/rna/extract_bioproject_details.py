@@ -1,6 +1,6 @@
-import yaml
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
 
 CONFIG_DIR = Path("config/amalgkit")
 AMALGKIT_DIR = Path("output/amalgkit")
@@ -21,21 +21,21 @@ for species, bps in missing_bps.items():
     meta_path = AMALGKIT_DIR / species / "work/metadata/metadata.tsv"
     if not meta_path.exists():
         continue
-        
+
     try:
         df = pd.read_csv(meta_path, sep="\t", low_memory=False)
     except Exception as e:
         print(f"Error reading {species}: {e}")
         continue
-        
+
     for bp in bps:
-        proj_df = df[df['bioproject'] == bp]
+        proj_df = df[df["bioproject"] == bp]
         if proj_df.empty:
             continue
-            
+
         print(f"\n{'='*80}")
         print(f"Species: {species} | BioProject: {bp} | Samples: {len(proj_df)}")
-        
+
         # Look at the first valid non-empty value for useful columns
         for col in ["study_title", "study_abstract", "title", "sample_title", "description"]:
             if col in proj_df.columns:

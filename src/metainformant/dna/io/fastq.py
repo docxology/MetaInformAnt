@@ -56,7 +56,7 @@ def read_fastq(path: str | Path) -> Dict[str, Tuple[str, str]]:
                 raise ValueError(f"Invalid FASTQ format: expected '@' at line start, got '{header_line[:20]}...'")
 
             seq_line = f.readline().strip()
-            plus_line = f.readline().strip()
+            f.readline().strip()
             qual_line = f.readline().strip()
 
             if not seq_line or not qual_line:

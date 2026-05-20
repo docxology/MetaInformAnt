@@ -8,15 +8,12 @@ analysis results.
 
 from __future__ import annotations
 
-import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 from matplotlib.axes import Axes
-from matplotlib.patches import Circle, Rectangle
 
 from metainformant.core.data import validation
 from metainformant.core.io import paths
@@ -300,9 +297,7 @@ def plot_multiomics_pca(
                 pca_coords[mask, 0], pca_coords[mask, 1], c=[colors[i]], label=f"Omics {omics_type}", alpha=0.7, s=50
             )
     else:
-        scatter = ax.scatter(
-            pca_coords[:, 0], pca_coords[:, 1], c=range(len(pca_coords)), cmap="viridis", alpha=0.7, s=50
-        )
+        ax.scatter(pca_coords[:, 0], pca_coords[:, 1], c=range(len(pca_coords)), cmap="viridis", alpha=0.7, s=50)
 
     ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0]:.1%} variance)")
     ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1]:.1%} variance)")
@@ -599,7 +594,7 @@ def create_interactive_multiomics_dashboard(
 
     # Add network plot (simplified)
     if "network_data" in multiomics_data:
-        network_data = multiomics_data["network_data"]
+        multiomics_data["network_data"]
         # Simplified network visualization
         fig.add_trace(go.Scatter(x=[0, 1, 2], y=[0, 1, 0], mode="markers+lines"), row=2, col=1)
 

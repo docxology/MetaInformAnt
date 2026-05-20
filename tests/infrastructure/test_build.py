@@ -5,8 +5,6 @@ Tests for validating build artifacts, package installation,
 and build process integrity.
 """
 
-import os
-import shutil
 import subprocess
 import sys
 import tempfile
@@ -33,11 +31,11 @@ class TestBuildArtifacts:
     def test_core_modules_importable(self):
         """Test that core modules can be imported."""
         try:
-            from metainformant.core.io import paths
-            from metainformant.core.utils import config
-            from metainformant.core.utils import logging
             from metainformant.core import io
+            from metainformant.core.io import paths
+            from metainformant.core.utils import config, logging
 
+            assert all(module is not None for module in (io, paths, config, logging))
             assert True  # Import successful
         except ImportError as e:
             pytest.fail(f"Core module import failed: {e}")

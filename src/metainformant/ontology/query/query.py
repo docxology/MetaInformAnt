@@ -7,14 +7,11 @@ statistics and filters.
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Dict, Iterable, List, Set, Tuple
 
 from metainformant.core.data import validation
-from metainformant.core.utils import errors
-from metainformant.core.utils import logging
-
-from metainformant.ontology.core.types import Ontology, Relationship, Term
+from metainformant.core.utils import errors, logging
+from metainformant.ontology.core.types import Ontology
 
 logger = logging.get_logger(__name__)
 
@@ -185,8 +182,7 @@ def path_to_root(onto: Ontology, term_id: str, relation_type: str = "is_a") -> L
     validation.validate_not_empty(term_id, "term_id")
 
     # Find root terms (terms with no parents)
-    all_targets = {rel.target for rel in onto.relationships if rel.relation_type == relation_type}
-    roots = [t for t in onto.terms.keys() if t not in all_targets]
+    roots = [term for term in onto.terms if not onto.get_parents(term, relation_type)]
 
     if term_id in roots:
         return [term_id]
@@ -285,7 +281,7 @@ def get_subontology(onto: Ontology, root_terms: Iterable[str], relation_type: st
     """
     validation.validate_type(onto, Ontology, "onto")
     validation.validate_type(root_terms, Iterable, "root_terms")
-    
+
     roots_list = list(root_terms)
     validation.validate_not_empty(roots_list, "root_terms")
 
@@ -596,47 +592,6 @@ def subgraph(onto: Ontology, term_ids: List[str], relation_type: str = "is_a") -
     )
 
 
-def path_to_root(onto: Ontology, term_id: str, relation_type: str = "is_a") -> List[str]:
-    """Find the path from a term to the root of the ontology.
-
-    Args:
-        onto: Ontology to analyze.
-        term_id: Starting term ID.
-        relation_type: Type of relationship to traverse.
-
-    Returns:
-        List of term IDs from the given term to the root (inclusive).
-
-    Examples:
-        >>> path = path_to_root(go_ontology, "GO:0008150")
-        >>> print(path)  # ['GO:0008150', 'GO:0003674', 'GO:0005575']
-    """
-    validation.validate_type(onto, Ontology, "onto")
-    validation.validate_not_empty(term_id, "term_id")
-
-    if term_id not in onto.terms:
-        raise errors.TermNotFoundError(f"Term '{term_id}' not found in ontology.")
-
-    path = [term_id]
-    current = term_id
-
-    # Traverse up to parents until we reach a root
-    visited = set()
-    while current not in visited:
-        visited.add(current)
-        parents = list(onto.get_parents(current, relation_type))
-
-        if not parents:
-            break  # Reached a root
-
-        # For simplicity, follow the first parent (in real ontologies, there might be multiple paths)
-        current = parents[0]
-        if current not in path:  # Avoid cycles
-            path.append(current)
-
-    return path
-
-
 def distance(onto: Ontology, term1: str, term2: str, relation_type: str = "is_a") -> int:
     """Calculate the graph distance between two terms.
 
@@ -752,27 +707,3 @@ def filter_by_namespace(onto: Ontology, namespace: str) -> Ontology:
         relationships=filtered_relationships,
         metadata={**onto.metadata, "filtered_by_namespace": namespace},
     )
-
-
-# Cache management (simple in-memory cache)
-_CACHE_ENABLED = True
-_QUERY_CACHE = {}
-
-
-def clear_cache() -> None:
-    """Clear the query cache."""
-    global _QUERY_CACHE
-    _QUERY_CACHE = {}
-
-
-def set_cache_enabled(enabled: bool) -> None:
-    """Enable or disable query caching.
-
-    Args:
-        enabled: Whether to enable caching.
-    """
-    global _CACHE_ENABLED
-    _CACHE_ENABLED = enabled
-
-    if not enabled:
-        clear_cache()

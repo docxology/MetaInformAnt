@@ -13,11 +13,10 @@ from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 
-from metainformant.core.utils import logging
 from metainformant.core import io
+from metainformant.core.utils import logging
 from metainformant.information.metrics import analysis
-from metainformant.information.metrics.core import continuous, estimation, syntactic
-from metainformant.information.metrics.advanced import semantic
+from metainformant.information.metrics.core import estimation
 
 logger = logging.get_logger(__name__)
 
@@ -245,15 +244,15 @@ def _aggregate_sequence_analyses(analyses: List[Dict[str, Any]]) -> Dict[str, An
     }
 
     # Aggregate sequence types
-    seq_types = [analysis.get("sequence_type", "unknown") for analysis in analyses]
+    seq_types = [item.get("sequence_type", "unknown") for item in analyses]
     from collections import Counter
 
     aggregate["sequence_types"] = dict(Counter(seq_types))
 
     # Aggregate k-mer statistics
     all_k_stats = {}
-    for analysis in analyses:
-        for k_key, k_stats in analysis.get("k_mer_analysis", {}).items():
+    for item in analyses:
+        for k_key, k_stats in item.get("k_mer_analysis", {}).items():
             if k_key not in all_k_stats:
                 all_k_stats[k_key] = []
             all_k_stats[k_key].append(k_stats)
@@ -272,8 +271,8 @@ def _aggregate_sequence_analyses(analyses: List[Dict[str, Any]]) -> Dict[str, An
 
     # Aggregate entropy statistics
     entropies = []
-    for analysis in analyses:
-        entropy_data = analysis.get("methods", {}).get("entropy", {})
+    for item in analyses:
+        entropy_data = item.get("methods", {}).get("entropy", {})
         if "shannon_entropy" in entropy_data:
             entropies.append(entropy_data["shannon_entropy"])
 
@@ -428,7 +427,6 @@ def _compare_entropy_distributions(analysis1: Dict, analysis2: Dict) -> Dict[str
 
 def _compare_sequence_diversity(seqs1: List[str], seqs2: List[str], k: int = 1) -> Dict[str, Any]:
     """Compare sequence diversity between two datasets."""
-    from collections import Counter
 
     # Calculate k-mer diversity for each dataset
     kmers1 = []

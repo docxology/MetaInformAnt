@@ -7,13 +7,13 @@ Verifies that the IndexComplexityManager correctly filters:
 3. Ribosomal RNA (rRNA)
 """
 
-import gzip
 import shutil
 import tempfile
 import unittest
 from pathlib import Path
 
 from metainformant.rna.amalgkit.index_prep import IndexComplexityManager
+
 
 class TestIndexComplexityManager(unittest.TestCase):
     def setUp(self):
@@ -35,7 +35,7 @@ class TestIndexComplexityManager(unittest.TestCase):
             ">XR_bad_transcript_1 len=300",
             "G" * 300,  # discard (XR_ prefix)
             ">short_transcript_1 len=50",
-            "C" * 50,   # discard (Short < 200bp)
+            "C" * 50,  # discard (Short < 200bp)
             ">ribosomal_rna_1",
             "T" * 250,  # discard (rRNA in header)
             ">NR_bad_transcript_2 len=250",
@@ -43,14 +43,14 @@ class TestIndexComplexityManager(unittest.TestCase):
             ">valid_transcript_2 len=200",
             "A" * 200,  # Keep (Exactly 200bp)
         ]
-        
+
         # Write to file
         with open(self.input_fasta, "w") as f:
             f.write("\n".join(content))
 
         # Initialize manager
         manager = IndexComplexityManager(min_length=200, exclude_patterns=["XR_", "NR_", "rRNA", "ribosomal"])
-        
+
         # Run filtering
         stats = manager.filter_fasta(self.input_fasta, self.output_fasta)
 
@@ -63,13 +63,14 @@ class TestIndexComplexityManager(unittest.TestCase):
         # Verify output file content
         with open(self.output_fasta, "r") as f:
             output_content = f.read()
-            
+
         self.assertIn(">valid_transcript_1", output_content)
         self.assertIn(">valid_transcript_2", output_content)
         self.assertNotIn(">XR_", output_content)
         self.assertNotIn(">short_", output_content)
         self.assertNotIn(">ribosomal_", output_content)
         self.assertNotIn(">NR_", output_content)
+
 
 if __name__ == "__main__":
     unittest.main()

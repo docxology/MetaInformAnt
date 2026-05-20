@@ -17,7 +17,6 @@ Uses real implementations only (NO mocking per project policy).
 
 from __future__ import annotations
 
-import math
 from typing import List
 
 import pytest

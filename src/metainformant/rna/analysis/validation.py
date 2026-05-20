@@ -6,12 +6,11 @@ through the complete pipeline: download → extract → quant → merge.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-from metainformant.core.utils import logging
 from metainformant.core import io
+from metainformant.core.utils import logging
 from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
 
 logger = logging.get_logger(__name__)

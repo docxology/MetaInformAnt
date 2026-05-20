@@ -103,7 +103,7 @@ class TestGetProteomeMetadata:
             pytest.skip("No network connectivity to UniProt API")
 
         try:
-            metadata = get_proteome_metadata("999999")  # Non-existent taxon
+            get_proteome_metadata("999999")  # Non-existent taxon
             # Should either return None or raise an exception
             # The actual behavior depends on API response
         except Exception:
@@ -323,7 +323,7 @@ class TestProteomesNetworkConnectivity:
             # Use a very short timeout that should cause timeout
             import requests
 
-            response = requests.get("https://httpbin.org/delay/10", timeout=0.001)
+            requests.get("https://httpbin.org/delay/10", timeout=0.001)
         except (requests.Timeout, requests.RequestException):
             # This is expected
             pass

@@ -6,15 +6,13 @@ from the AlphaFold Protein Structure Database.
 
 from __future__ import annotations
 
-import re
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List
 
 import numpy as np
 import requests
 
 from metainformant.core.utils import logging
-from metainformant.core import io
 
 logger = logging.get_logger(__name__)
 

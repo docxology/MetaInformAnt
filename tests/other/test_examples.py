@@ -15,8 +15,6 @@ from typing import Any, Dict, List
 
 import pytest
 
-from metainformant.core import io
-
 
 class TestExamples:
     """Pytest-based example testing."""
@@ -251,7 +249,7 @@ class TestExamples:
                     content = f.read()
 
                 # Should import from multiple domains
-                import_lines = [line for line in content.split("\n") if line.startswith("from metainformant.")]
+                [line for line in content.split("\n") if line.startswith("from metainformant.")]
                 # Allow some flexibility - integration examples might use different patterns
                 assert len(content.split("\n")) > 50, f"Integration example {example_file} seems too simple"
 
@@ -278,7 +276,7 @@ class TestExamples:
 
         try:
             urllib.request.urlopen("http://httpbin.org/get", timeout=5)
-        except:
+        except Exception:
             pytest.skip("Network not available")
 
         # If network is available, examples should still work

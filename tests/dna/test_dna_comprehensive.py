@@ -8,9 +8,6 @@ and use real implementations.
 
 from __future__ import annotations
 
-import tempfile
-from pathlib import Path
-
 import pytest
 
 from metainformant.core.utils.errors import ValidationError
@@ -403,8 +400,8 @@ class TestSequenceOperations:
 
         # Test all three reading frames
         frame1 = [sequence[i : i + 3] for i in range(0, len(sequence) - 2, 3)]
-        frame2 = [sequence[i : i + 3] for i in range(1, len(sequence) - 1, 3)]
-        frame3 = [sequence[i : i + 3] for i in range(2, len(sequence), 3)]
+        [sequence[i : i + 3] for i in range(1, len(sequence) - 1, 3)]
+        [sequence[i : i + 3] for i in range(2, len(sequence), 3)]
 
         assert len(frame1) >= 1
         assert all(len(codon) == 3 for codon in frame1)

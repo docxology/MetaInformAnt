@@ -13,7 +13,6 @@ is provided, or returned for interactive display.
 from __future__ import annotations
 
 import math
-import os
 import random
 from collections import defaultdict
 from pathlib import Path
@@ -38,20 +37,6 @@ try:
 except ImportError:
     HAS_MATPLOTLIB = False
     logger.warning("matplotlib not available; visualization functions will return data only")
-
-try:
-    import numpy as np
-
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
-
-try:
-    import seaborn as sns
-
-    HAS_SEABORN = True
-except ImportError:
-    HAS_SEABORN = False
 
 
 def _ensure_matplotlib() -> None:
@@ -114,7 +99,7 @@ def plot_krona_chart(
     # Build hierarchical structure
     tree: dict[str, Any] = {}
     for lineage, abundance in normalized.items():
-        levels = [l.strip() for l in lineage.split(";") if l.strip()][:max_depth]
+        levels = [level.strip() for level in lineage.split(";") if level.strip()][:max_depth]
         node = tree
         for level in levels:
             if level not in node:

@@ -2,18 +2,14 @@
 
 from __future__ import annotations
 
-import subprocess
-import tempfile
 from pathlib import Path
 
 import pytest
 
-from metainformant.menu.core.discovery import ScriptInfo
 from metainformant.menu.core.executor import (
     execute_bash_script,
     execute_python_script,
     execute_script,
-    prompt_for_args,
     validate_script_executable,
 )
 

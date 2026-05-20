@@ -5,8 +5,6 @@ real configuration objects, and real function calls.
 """
 
 import csv
-import tempfile
-import pytest
 from pathlib import Path
 
 from metainformant.rna.engine.workflow_core import (
@@ -86,7 +84,9 @@ class TestWorkflowRobustness:
         steps = [
             WorkflowStepResult(step_name="metadata", return_code=0, success=True),
             WorkflowStepResult(
-                step_name="quant", return_code=1, success=False,
+                step_name="quant",
+                return_code=1,
+                success=False,
                 error_message="Quantification failed",
             ),
         ]

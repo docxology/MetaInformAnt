@@ -12,7 +12,7 @@ from __future__ import annotations
 import math
 import re
 from collections import defaultdict
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Dict, Tuple
 
 from metainformant.core.utils import logging
 

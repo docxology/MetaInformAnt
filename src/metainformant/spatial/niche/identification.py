@@ -8,7 +8,7 @@ spatial extent, and boundary properties.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 import numpy as np
 
@@ -67,9 +67,7 @@ def identify_niches(
     names = cell_type_names or [f"CellType_{i}" for i in range(n_types)]
 
     # Spatial smoothing
-    smoothed = _spatial_smooth(
-        cell_type_proportions, coordinates, n_neighbors, spatial_weight
-    )
+    smoothed = _spatial_smooth(cell_type_proportions, coordinates, n_neighbors, spatial_weight)
 
     # K-Means clustering on smoothed proportions
     labels = _kmeans(smoothed, n_niches, rng)
@@ -158,9 +156,7 @@ def _kmeans(
 
     for _ in range(max_iter):
         # Assign
-        dists = np.array([
-            np.sqrt(np.sum((data - c) ** 2, axis=1)) for c in centers
-        ])
+        dists = np.array([np.sqrt(np.sum((data - c) ** 2, axis=1)) for c in centers])
         new_labels = np.argmin(dists, axis=0)
 
         if np.array_equal(new_labels, labels):

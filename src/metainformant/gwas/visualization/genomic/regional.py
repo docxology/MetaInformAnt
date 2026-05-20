@@ -59,15 +59,11 @@ def gene_annotation_plot(
         results_df = pd.DataFrame(results)
         # Normalize column names
         col_map = {"CHROM": "CHR", "POS": "BP", "p_value": "P"}
-        results_df = results_df.rename(
-            columns={k: v for k, v in col_map.items() if k in results_df.columns}
-        )
+        results_df = results_df.rename(columns={k: v for k, v in col_map.items() if k in results_df.columns})
     elif hasattr(results, "columns"):
         results_df = results.copy()
         col_map = {"CHROM": "CHR", "POS": "BP", "p_value": "P"}
-        results_df = results_df.rename(
-            columns={k: v for k, v in col_map.items() if k in results_df.columns}
-        )
+        results_df = results_df.rename(columns={k: v for k, v in col_map.items() if k in results_df.columns})
     else:
         logger.error("Input data must be a list of dicts or DataFrame")
         return {"status": "failed", "reason": "Invalid input data format"}
@@ -87,9 +83,7 @@ def gene_annotation_plot(
         logger.warning(f"No data found for region {chrom}:{start}-{end}")
         return {"status": "success", "reason": "No data in region", "n_variants": 0}
 
-    fig, (ax1, ax2) = plt.subplots(
-        2, 1, figsize=(12, 8), gridspec_kw={"height_ratios": [3, 1]}
-    )
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), gridspec_kw={"height_ratios": [3, 1]})
 
     # Plot 1: Manhattan plot for region
     region_data["neg_log_p"] = -np.log10(region_data["P"].clip(lower=1e-50))
@@ -159,7 +153,7 @@ def gene_annotation_plot(
 def plot_gene_track(ax, chrom: str, start: int, end: int, gene_data: Dict[str, Any]):
     """Plot gene annotation track."""
     from matplotlib.patches import Rectangle
-    
+
     # Simplified gene plotting - in practice would use genomic annotation data
     if "genes" in gene_data:
         genes = gene_data["genes"]
@@ -238,9 +232,7 @@ def recombination_rate_plot(
 
     # If called with explicit recombination data, use the legacy path
     if recombination_rates is not None and positions is not None:
-        return _recombination_rate_plot_legacy(
-            recombination_rates, positions, output_file, title
-        )
+        return _recombination_rate_plot_legacy(recombination_rates, positions, output_file, title)
 
     # Otherwise, this requires external recombination map data which we don't have
     # Create a placeholder plot noting that recombination data is needed
@@ -278,9 +270,7 @@ def _recombination_rate_plot_legacy(
         n_cols = 3
         n_rows = (n_chroms + n_cols - 1) // n_cols
 
-    fig, axes = plt.subplots(
-        n_rows, n_cols, figsize=(6 * n_cols, 4 * n_rows), squeeze=False, sharey=True
-    )
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(6 * n_cols, 4 * n_rows), squeeze=False, sharey=True)
     fig.suptitle(title, fontsize=16, y=0.95)
 
     colors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#d62728", "#9467bd"]
@@ -309,9 +299,7 @@ def _recombination_rate_plot_legacy(
                 if window_size % 2 == 0:
                     window_size += 1
                 smoothed = signal.savgol_filter(rates, window_size, 3)
-                ax.plot(
-                    pos, smoothed, color="red", linewidth=2, alpha=0.6, label="Smoothed"
-                )
+                ax.plot(pos, smoothed, color="red", linewidth=2, alpha=0.6, label="Smoothed")
             except ImportError:
                 pass
 
@@ -482,15 +470,11 @@ def regional_plot(
         results_df = pd.DataFrame(results)
         # Normalize column names
         col_map = {"CHROM": "CHR", "POS": "BP", "p_value": "P"}
-        results_df = results_df.rename(
-            columns={k: v for k, v in col_map.items() if k in results_df.columns}
-        )
+        results_df = results_df.rename(columns={k: v for k, v in col_map.items() if k in results_df.columns})
     elif hasattr(results, "columns"):
         results_df = results.copy()
         col_map = {"CHROM": "CHR", "POS": "BP", "p_value": "P"}
-        results_df = results_df.rename(
-            columns={k: v for k, v in col_map.items() if k in results_df.columns}
-        )
+        results_df = results_df.rename(columns={k: v for k, v in col_map.items() if k in results_df.columns})
     else:
         return {"status": "failed", "reason": "Invalid input data format"}
 
@@ -513,9 +497,7 @@ def regional_plot(
     # Convert p-values to -log10 scale
     region_data["NEG_LOG_P"] = -np.log10(region_data["P"].clip(lower=1e-50))
 
-    fig, (ax1, ax2) = plt.subplots(
-        2, 1, figsize=figsize, gridspec_kw={"height_ratios": [3, 1]}
-    )
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={"height_ratios": [3, 1]})
 
     # Main plot: -log10(p) vs position
     ax1.scatter(
@@ -683,9 +665,7 @@ def regional_ld_plot(
                 genotypes.append(sample_genotypes)
 
         if len(positions) < 2:
-            logger.warning(
-                f"Insufficient SNPs in region {chrom}:{start}-{end} for LD calculation"
-            )
+            logger.warning(f"Insufficient SNPs in region {chrom}:{start}-{end} for LD calculation")
             return {
                 "status": "skipped",
                 "reason": f"Only {len(positions)} SNPs found in region (need at least 2)",
@@ -717,9 +697,7 @@ def regional_ld_plot(
         logger.error(f"Failed to parse VCF for LD calculation: {e}")
         return {"status": "error", "reason": f"VCF parsing error: {e}"}
 
-    fig, (ax1, ax2) = plt.subplots(
-        2, 1, figsize=figsize, gridspec_kw={"height_ratios": [1, 3]}
-    )
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={"height_ratios": [1, 3]})
 
     # Top plot: SNP positions
     ax1.scatter(positions, [1] * n_snps, c="blue", s=50, alpha=0.7)

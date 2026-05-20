@@ -12,7 +12,7 @@ from __future__ import annotations
 import math
 import random
 from collections import defaultdict
-from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple
+from typing import Literal
 
 from metainformant.core.utils.logging import get_logger
 
@@ -29,8 +29,6 @@ except ImportError:
 
 try:
     from scipy import stats as scipy_stats
-    from scipy.special import beta as beta_func
-    from scipy.special import betainc
 
     HAS_SCIPY = True
 except ImportError:

@@ -14,18 +14,6 @@ single-cell data.
 
 from __future__ import annotations
 
-# Re-export everything from the split modules so that existing imports
-# like ``from metainformant.singlecell.analysis.dimensionality import pca_reduction``
-# continue to work.
-
-from .pca_methods import (
-    compute_pca,
-    factor_analysis_reduction,
-    ica_reduction,
-    pca_reduction,
-    run_pca,
-    select_hvgs,
-)
 from .nonlinear_methods import (
     SKLEARN_AVAILABLE,
     compute_diffusion_map,
@@ -40,6 +28,19 @@ from .nonlinear_methods import (
     tsne_reduction,
     umap_reduction,
 )
+from .pca_methods import (
+    compute_pca,
+    factor_analysis_reduction,
+    ica_reduction,
+    pca_reduction,
+    run_pca,
+    select_hvgs,
+)
+
+# Re-export everything from the split modules so that existing imports
+# like ``from metainformant.singlecell.analysis.dimensionality import pca_reduction``
+# continue to work.
+
 
 __all__ = [
     # Linear methods (pca_methods)

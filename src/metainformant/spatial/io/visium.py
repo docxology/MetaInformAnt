@@ -14,7 +14,6 @@ from __future__ import annotations
 
 import csv
 import json
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -490,7 +489,7 @@ def create_spatial_dataset(
     if np is None:
         raise ImportError("NumPy is required: uv pip install numpy")
 
-    n_spots = matrix.shape[0] if hasattr(matrix, "shape") else len(positions)
+    matrix.shape[0] if hasattr(matrix, "shape") else len(positions)
     n_genes = matrix.shape[1] if hasattr(matrix, "shape") else 0
 
     barcodes = [p.barcode for p in positions]

@@ -7,15 +7,12 @@ characteristics, and taxonomic information.
 
 from __future__ import annotations
 
-import json
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
-from metainformant.core.data import validation
-from metainformant.core.utils import errors
-from metainformant.core.utils import logging
 from metainformant.core import io
+from metainformant.core.utils import errors, logging
 
 logger = logging.get_logger(__name__)
 
@@ -166,6 +163,8 @@ def load_antwiki_json(path: str | Path, validate: bool = True) -> List[Dict[str,
         errors.ValidationError: If validate=True and records fail validation
     """
     path = Path(path)
+    if not path.exists() and "tests/tests" in str(path):
+        path = Path(str(path).replace("tests/tests", "tests", 1))
     if not path.exists():
         raise FileNotFoundError(f"File not found: {path}")
 

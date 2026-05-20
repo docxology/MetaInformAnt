@@ -92,10 +92,7 @@ def lookup_genes_by_region_ncbi(
     # NCBI gene does not support WGS accession + position natively through
     # a simple term, so we query by accession and organism, then filter.
     term = f"{taxon_id}[taxid] AND {chrom_accession}[accession]"
-    search_url = (
-        f"{NCBI_EUTILS_BASE}/esearch.fcgi"
-        f"?db=gene&term={urllib.parse.quote(term)}&retmax=100&retmode=json"
-    )
+    search_url = f"{NCBI_EUTILS_BASE}/esearch.fcgi" f"?db=gene&term={urllib.parse.quote(term)}&retmax=100&retmode=json"
     result = _ncbi_get(search_url)
     if not result:
         logger.debug("NCBI esearch returned nothing for %s", term)
@@ -107,9 +104,7 @@ def lookup_genes_by_region_ncbi(
 
     # Fetch summaries in one batch
     ids_joined = ",".join(gene_ids[:50])
-    summary_url = (
-        f"{NCBI_EUTILS_BASE}/esummary.fcgi?db=gene&id={ids_joined}&retmode=json"
-    )
+    summary_url = f"{NCBI_EUTILS_BASE}/esummary.fcgi?db=gene&id={ids_joined}&retmode=json"
     summary = _ncbi_get(summary_url)
     if not summary:
         return []
@@ -134,9 +129,7 @@ def lookup_genes_by_region_ncbi(
             continue  # has location data but outside range
 
         chrinfo = loc_info[0] if loc_info else {}
-        gene_mid = (
-            int(chrinfo.get("chrstart", 0)) + int(chrinfo.get("chrstop", 0))
-        ) / 2
+        gene_mid = (int(chrinfo.get("chrstart", 0)) + int(chrinfo.get("chrstop", 0))) / 2
 
         genes.append(
             {
@@ -205,9 +198,7 @@ def annotate_top_hits_ncbi(
         >>> isinstance(annotations, list)
         True
     """
-    sorted_results = sorted(association_results, key=lambda r: r.get("p_value", 1.0))[
-        :top_n
-    ]
+    sorted_results = sorted(association_results, key=lambda r: r.get("p_value", 1.0))[:top_n]
 
     annotated: list[dict[str, Any]] = []
     n_genes_total = 0

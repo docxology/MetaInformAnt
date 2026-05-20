@@ -6,11 +6,7 @@ No mocking used - all tests use real computational methods and data.
 
 from __future__ import annotations
 
-from typing import Dict, List, Set
-
 import numpy as np
-import pandas as pd
-import pytest
 
 from metainformant.networks.analysis.graph import BiologicalNetwork
 from metainformant.networks.interaction.regulatory import (
@@ -397,7 +393,6 @@ class TestRegulatoryMotifs:
         assert len(motifs) >= 1
 
         # Might find feed-forward loop (TF1 -> TF2 -> TARGET, TF1 -> TARGET)
-        expected_types = {"feed_forward_loop", "auto_regulation", "mutual_regulation"}
         found_types = set(motif_types)
 
         # At least one expected type should be found

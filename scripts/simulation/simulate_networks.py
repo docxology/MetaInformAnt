@@ -20,7 +20,7 @@ import pandas as pd
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, logging, paths, validation
+from metainformant.core import io, logging, paths
 
 logger = logging.get_logger(__name__)
 
@@ -94,7 +94,7 @@ def simulate_regulatory(
     n_tfs = n_nodes // 3
     tfs = [f"TF_{i:04d}" for i in range(n_tfs)]
     targets = [f"gene_{i:04d}" for i in range(n_tfs, n_nodes)]
-    all_nodes = tfs + targets
+    tfs + targets
 
     # Generate regulatory edges (TFs -> targets)
     edges = []

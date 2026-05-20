@@ -121,12 +121,12 @@ def main():
 
     except ValidationError as e:
         print(f"✗ Validation error: {e}")
-        print(f"  The data structure is invalid. Try --no-validate to skip validation.")
+        print("  The data structure is invalid. Try --no-validate to skip validation.")
         return 1
 
     except CoreIOError as e:
         print(f"✗ I/O error: {e}")
-        print(f"  Failed to read or parse the JSON file.")
+        print("  Failed to read or parse the JSON file.")
         return 1
 
     except Exception as e:

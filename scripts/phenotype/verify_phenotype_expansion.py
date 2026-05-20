@@ -3,8 +3,8 @@
 Verification script for phenotype module expansion.
 Attempts to import and instantiate classes from all new submodules.
 """
+
 import sys
-from datetime import datetime
 
 import numpy as np
 

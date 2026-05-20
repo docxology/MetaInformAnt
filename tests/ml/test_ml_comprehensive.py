@@ -6,8 +6,6 @@ No mocking used - all tests use real computational methods and data.
 
 from __future__ import annotations
 
-from typing import List, Tuple
-
 import numpy as np
 import pytest
 
@@ -41,7 +39,6 @@ from metainformant.ml.evaluation.validation import (
     cross_validate,
     k_fold_split,
     learning_curve,
-    train_test_split_biological,
 )
 
 
@@ -53,7 +50,6 @@ class TestBiologicalClassifier:
         np.random.seed(42)
 
         # Create synthetic biological data
-        n_samples = 200
         n_features = 50
 
         # Generate features representing gene expression levels
@@ -294,8 +290,8 @@ class TestBiologicalRegressor:
         if "predictions" in results:
             assert len(results["predictions"]) == len(self.y)
 
-    def test_regressor_different_algorithms(self):
-        """Test different regression algorithms."""
+    def test_regressor_core_algorithms(self):
+        """Test core regression algorithms."""
         algorithms = ["linear", "random_forest"]
 
         for algorithm in algorithms:

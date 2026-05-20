@@ -2,9 +2,8 @@
 
 NO MOCKING POLICY: All tests use real implementations.
 """
-from __future__ import annotations
 
-import math
+from __future__ import annotations
 
 import numpy as np
 import pytest
@@ -16,7 +15,6 @@ from metainformant.math.decision_theory.ddm import (
     fit_ddm_parameters,
     island_model_update,
 )
-
 
 # ---------------------------------------------------------------------------
 # ddm_mean_decision_time

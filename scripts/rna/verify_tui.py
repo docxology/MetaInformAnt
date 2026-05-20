@@ -4,7 +4,6 @@ Simulates parallel downloads to demonstrate the TUI.
 """
 
 import time
-from pathlib import Path
 
 from metainformant.core.ui.tui import BLUE, GREEN, YELLOW, TerminalInterface
 

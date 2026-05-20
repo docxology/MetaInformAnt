@@ -2,16 +2,14 @@
 
 NO MOCKING POLICY: All tests use real implementations.
 """
-from __future__ import annotations
 
-import math
+from __future__ import annotations
 
 import pytest
 
 from metainformant.core.utils.errors import ValidationError
 from metainformant.phenotype.behavior.ethogram import BehaviorDefinition, Ethogram
 from metainformant.phenotype.behavior.sequence import BehaviorEvent, BehaviorSequence
-
 
 # ---------------------------------------------------------------------------
 # Helpers

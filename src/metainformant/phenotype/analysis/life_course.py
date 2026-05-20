@@ -11,11 +11,10 @@ import statistics
 from collections import defaultdict
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from metainformant.core.data import validation
-from metainformant.core.utils import errors
-from metainformant.core.utils import logging
+from metainformant.core.utils import errors, logging
 
 logger = logging.get_logger(__name__)
 
@@ -77,7 +76,8 @@ class EventSequence:
 
 
 def extract_phenotypes_from_events(
-    event_sequence, phenotype_categories: Optional[Dict[str, List[str]]] = None,
+    event_sequence,
+    phenotype_categories: Optional[Dict[str, List[str]]] = None,
     trait_mapping: Optional[Dict[str, List[str]]] = None,
 ) -> Dict[str, Any]:
     """Extract phenotypic traits from an event sequence.
@@ -181,7 +181,8 @@ def extract_phenotypes_from_events(
 
 
 def aggregate_temporal_phenotypes(
-    sequences, time_window_years: float = 5.0,
+    sequences,
+    time_window_years: float = 5.0,
     time_windows: Optional[List[Tuple[float, float]]] = None,
     trait_categories: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
@@ -243,6 +244,7 @@ def aggregate_temporal_phenotypes(
     # Auto-generate time windows if not provided
     if time_windows is None:
         from datetime import timedelta
+
         generated_windows = []
         current = first
         while current < last:
@@ -255,8 +257,7 @@ def aggregate_temporal_phenotypes(
             generated_windows.append({"start_time": current, "end_time": window_end})
 
             # Count events and people in this window
-            window_events = [e for e in all_events
-                             if current <= getattr(e, "timestamp", current) <= window_end]
+            window_events = [e for e in all_events if current <= getattr(e, "timestamp", current) <= window_end]
             window_people = set()
             for seq in sequences:
                 seq_events = getattr(seq, "events", [])
@@ -294,7 +295,8 @@ def aggregate_temporal_phenotypes(
 
 
 def map_events_to_traits(
-    event_sequence, trait_mapping: Optional[Dict[str, List[str]]] = None,
+    event_sequence,
+    trait_mapping: Optional[Dict[str, List[str]]] = None,
     trait_definitions: Optional[Dict[str, List[str]]] = None,
 ) -> Dict[str, Any]:
     """Map events to phenotypic traits based on definitions.

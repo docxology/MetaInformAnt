@@ -8,7 +8,7 @@ and sample-specific patches.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Optional
 
 import pandas as pd
 import yaml
@@ -203,7 +203,7 @@ def apply_tissue_normalization(
         result.at[idx, output_column] = normalized
 
     # Log statistics
-    logger.info(f"Tissue normalization complete:")
+    logger.info("Tissue normalization complete:")
     logger.info(f"  Total samples: {stats['total']}")
     logger.info(f"  Normalized via mapping: {stats['normalized']}")
     logger.info(f"  Patched (sample): {stats['patched_sample']}")

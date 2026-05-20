@@ -12,12 +12,11 @@ from __future__ import annotations
 
 import os
 import random
-import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import Generator, Iterator
+from typing import Iterator
 
 import pytest
 

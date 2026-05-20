@@ -1,6 +1,5 @@
 import ast
 import os
-import textwrap
 from pathlib import Path
 
 # Exclusion list
@@ -152,7 +151,7 @@ def get_import_path(path: Path) -> str:
             idx = parts.index("src")
             return ".".join(parts[idx + 1 :])
         return path.name
-    except:
+    except Exception:
         return path.name
 
 
@@ -239,7 +238,7 @@ def walk_and_generate(root_path: Path):
             current_path = Path(root)
 
             # Additional filter: if it's a python package or specific folders
-            has_init = (current_path / "__init__.py").exists()
+            (current_path / "__init__.py").exists()
             is_valid_dir = any(x in current_path.parts for x in relevant_roots)
 
             if is_valid_dir:

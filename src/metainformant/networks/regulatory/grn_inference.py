@@ -12,7 +12,6 @@ from __future__ import annotations
 import math
 import random
 from collections import defaultdict
-from itertools import combinations, permutations
 from typing import Any
 
 from metainformant.core.utils.logging import get_logger
@@ -254,7 +253,7 @@ def infer_grn_correlation(
     else:
         tf_indices = list(range(n_genes))
 
-    tf_set = set(tf_indices)
+    set(tf_indices)
 
     # Select correlation function
     if method == "pearson":
@@ -374,7 +373,7 @@ def infer_grn_mutual_info(
     else:
         tf_indices = list(range(n_genes))
 
-    tf_set = set(tf_indices)
+    set(tf_indices)
 
     # Compute MI matrix
     mi_matrix: list[list[float]] = [[0.0] * n_genes for _ in range(n_genes)]
@@ -839,7 +838,6 @@ def compute_network_motifs(
         # Three-node motifs
         feed_forward_loop = 0  # A->B, A->C, B->C
         cascade = 0  # A->B->C (no A->C)
-        mutual_cascade = 0  # A<->B, B->C
         three_chain = 0  # A->B, C->B (co-regulation)
 
         for a in node_list:

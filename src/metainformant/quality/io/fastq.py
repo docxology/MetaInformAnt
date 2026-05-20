@@ -7,16 +7,14 @@ and various quality metrics.
 
 from __future__ import annotations
 
-import gzip
 import statistics
 from collections import Counter, defaultdict
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Tuple
+from typing import Any, Dict, Iterator, List
 
-from metainformant.core.data import validation
-from metainformant.core.utils import errors
-from metainformant.core.utils import logging
 from metainformant.core import io
+from metainformant.core.data import validation
+from metainformant.core.utils import errors, logging
 
 logger = logging.get_logger(__name__)
 
@@ -100,7 +98,7 @@ def read_fastq_records(path: str | Path, max_records: int | None = None) -> Iter
                     line = f.readline()
                     if not line:
                         if lines:  # Incomplete record
-                            raise ValueError(f"Incomplete FASTQ record at end of file")
+                            raise ValueError("Incomplete FASTQ record at end of file")
                         break  # End of file
                     lines.append(line.rstrip("\n\r"))
 

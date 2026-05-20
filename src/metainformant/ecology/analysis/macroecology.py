@@ -21,10 +21,9 @@ from __future__ import annotations
 import math
 import random
 import statistics
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 from metainformant.core.data import validation
-from metainformant.core.utils import errors
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)

@@ -7,8 +7,6 @@ use real sklearn models and computed results.
 
 from __future__ import annotations
 
-import math
-
 import numpy as np
 import pytest
 from sklearn.datasets import make_classification, make_regression

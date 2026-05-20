@@ -20,18 +20,17 @@ import math
 import os
 import shutil
 import subprocess
-import sys
 import tempfile
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-from metainformant.core.utils import logging
 from metainformant.core.io.download import (
     monitor_subprocess_directory_growth,
     monitor_subprocess_file_count,
     monitor_subprocess_sample_progress,
 )
+from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
@@ -148,7 +147,13 @@ def build_cli_args(
                 continue
 
             # Skip arguments not supported by specific subcommands
-            if subcommand in ("merge", "sanity", "select", "curate", "cstmm", "csca") and key in ("out", "threads", "priority", "redo", "jobs"):
+            if subcommand in ("merge", "sanity", "select", "curate", "cstmm", "csca") and key in (
+                "out",
+                "threads",
+                "priority",
+                "redo",
+                "jobs",
+            ):
                 continue
             if subcommand in ("getfastq", "metadata", "config", "quant") and key == "jobs":
                 continue
@@ -163,7 +168,16 @@ def build_cli_args(
                 elif value:
                     args.append(f"--{cli_key}")
             elif isinstance(value, (int, float)):
-                if key == "threads" and subcommand in ("merge", "metadata", "config", "sanity", "select", "curate", "cstmm", "csca"):
+                if key == "threads" and subcommand in (
+                    "merge",
+                    "metadata",
+                    "config",
+                    "sanity",
+                    "select",
+                    "curate",
+                    "cstmm",
+                    "csca",
+                ):
                     continue
                 args.extend([f"--{cli_key}", str(value)])
             elif isinstance(value, list):
@@ -336,17 +350,21 @@ def ensure_cli_available(*, auto_install: bool = False, min_version: str = "0.4.
         # Check version
         valid_version, version_msg = validate_amalgkit_version(min_version)
         if not valid_version:
-             logger.warning(f"Amalgkit version issue: {version_msg}")
-             # If auto_install is True, we might want to upgrade?
-             # For now, just warn but allow strict checks to fail if needed by caller
-             # But if we really need a feature, we should fail.
-             # However, existing logic returns True if available.
-             # Let's verify if we should try to upgrade.
-             if auto_install:
-                 logger.info("Attempting upgrade due to version mismatch...")
-                 # Proceed to install block
-             else:
-                 return False, f"Amalgkit available but version mismatch: {version_msg}", {"version": "unknown", "valid": False}
+            logger.warning(f"Amalgkit version issue: {version_msg}")
+            # If auto_install is True, we might want to upgrade?
+            # For now, just warn but allow strict checks to fail if needed by caller
+            # But if we really need a feature, we should fail.
+            # However, existing logic returns True if available.
+            # Let's verify if we should try to upgrade.
+            if auto_install:
+                logger.info("Attempting upgrade due to version mismatch...")
+                # Proceed to install block
+            else:
+                return (
+                    False,
+                    f"Amalgkit available but version mismatch: {version_msg}",
+                    {"version": "unknown", "valid": False},
+                )
 
         # Get version info again for return
         try:
@@ -358,7 +376,7 @@ def ensure_cli_available(*, auto_install: bool = False, min_version: str = "0.4.
 
         if valid_version:
             return True, message, version_info
-    
+
     if not auto_install:
         return False, message, None
 
@@ -437,7 +455,7 @@ def run_amalgkit(
     try:
         # Environmental setup
         env = os.environ.copy()
-        
+
         # Monitor Branch
         if monitor and isinstance(params, dict):
             out_dir_val = params.get("out_dir")
@@ -445,8 +463,9 @@ def run_amalgkit(
             if out_dir_val:
                 out_dir = Path(str(out_dir_val))
                 import uuid
+
                 hb_path = out_dir / ".downloads" / f"amalgkit-{subcommand}-{uuid.uuid4().hex[:8]}.heartbeat.json"
-                
+
                 # Determine watch directory
                 watch_dir = out_dir
                 if subcommand in {"getfastq", "quant", "metadata", "merge", "cstmm", "curate", "csca"}:
@@ -471,6 +490,7 @@ def run_amalgkit(
                     # Check tqdm compatibility
                     try:
                         import tqdm
+
                         if tuple(map(int, tqdm.__version__.split("."))) < (4, 60, 0):
                             env["AMALGKIT_PROGRESS"] = "false"
                     except (ImportError, ValueError, AttributeError):
@@ -552,18 +572,18 @@ def run_amalgkit(
                         show_progress=show_progress,
                         desc=f"amalgkit {subcommand}",
                     )
-                
+
                 # Wait for process to complete if monitor function didn't (most do)
                 if proc.poll() is None:
                     proc.wait()
-                    
+
                 # Create a CompletedProcess to return
                 # We can't get stdout/stderr if they were streamed/logged, but that's expected
                 return subprocess.CompletedProcess(
                     args=command,
                     returncode=proc.returncode,
                     stdout="" if log_dir else "Output monitored/streamed",
-                    stderr="" if log_dir else "Output monitored/streamed"
+                    stderr="" if log_dir else "Output monitored/streamed",
                 )
 
         # Non-monitored execution
@@ -581,7 +601,7 @@ def run_amalgkit(
                 proc_kwargs["text"] = True
 
         result = subprocess.run(command, **proc_kwargs)
-        
+
         # Log failure info if captured
         if result.returncode != 0:
             logger.warning(f"amalgkit {subcommand} failed with code {result.returncode}")
@@ -592,7 +612,7 @@ def run_amalgkit(
                 for line in lines[start_line:]:
                     logger.warning(f"  [stderr] {line}")
             if result.stdout:
-                 # Log last few lines of stdout if potentially relevant
+                # Log last few lines of stdout if potentially relevant
                 lines = result.stdout.strip().splitlines()
                 start_line = max(0, len(lines) - 10)
                 for line in lines[start_line:]:
@@ -735,7 +755,7 @@ def _run_getfastq_via_metainformant(
     # Extract parameters
     p_dict = params.to_dict() if isinstance(params, AmalgkitParams) else (params or {})
     work_dir = Path(kwargs.get("work_dir") or p_dict.get("work_dir") or ".")
-    
+
     # Locate metadata
     metadata_path = None
     if p_dict.get("metadata"):
@@ -763,35 +783,32 @@ def _run_getfastq_via_metainformant(
         )
 
     if not run_ids:
-         return subprocess.CompletedProcess(
+        return subprocess.CompletedProcess(
             args=["internal_ena_downloader"], returncode=0, stderr="No run IDs found in metadata"
         )
 
     getfastq_dir = work_dir / "getfastq"
     getfastq_dir.mkdir(parents=True, exist_ok=True)
-    
+
     logger.info(f"Downloading {len(run_ids)} samples using metainformant backend to {getfastq_dir}")
-    
+
     # We pass work_dir as base_out_dir so it creates proper structure
     success_count, fail_count = ena_downloader.download_sra_samples(
-        sra_ids=run_ids,
-        base_out_dir=work_dir, 
-        sort_by_size=True,
-        use_fallback=True
+        sra_ids=run_ids, base_out_dir=work_dir, sort_by_size=True, use_fallback=True
     )
-    
+
     if fail_count > 0:
-         logger.warning(f"ENA/SRA download completed with {fail_count} failures")
-         if success_count == 0:
-             return subprocess.CompletedProcess(
+        logger.warning(f"ENA/SRA download completed with {fail_count} failures")
+        if success_count == 0:
+            return subprocess.CompletedProcess(
                 args=["internal_ena_downloader"], returncode=1, stderr="All downloads failed"
             )
 
     return subprocess.CompletedProcess(
-        args=["internal_ena_downloader"], 
-        returncode=0, 
+        args=["internal_ena_downloader"],
+        returncode=0,
         stdout=f"Downloaded {success_count} samples, {fail_count} failed",
-        stderr=""
+        stderr="",
     )
 
 
@@ -808,7 +825,7 @@ def getfastq(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: An
     # Check backend
     p_dict = params.to_dict() if isinstance(params, AmalgkitParams) else (params or {})
     backend = p_dict.get("backend", "amalgkit")
-    
+
     if backend == "metainformant":
         return _run_getfastq_via_metainformant(params, **kwargs)
 
@@ -847,7 +864,7 @@ def getfastq(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: An
             check = kwargs.get("check", False)
             if result.returncode != 0 and check:
                 raise subprocess.CalledProcessError(
-                    result.returncode, command, output=result.stdout, stderr=result.stderr
+                    result.returncode, result.args, output=result.stdout, stderr=result.stderr
                 )
 
             # Check if partial success (some files downloaded)

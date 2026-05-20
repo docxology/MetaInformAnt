@@ -46,10 +46,15 @@ def sync_species(species_dir: Path, dest_dir: Path, dry_run: bool = False) -> in
         dst.mkdir(parents=True, exist_ok=True)
 
         cmd = [
-            "rsync", "-av", "--checksum",
-            "--exclude", "*.fastq*",
-            "--exclude", "*.sra",
-            "--exclude", "*.fq*",
+            "rsync",
+            "-av",
+            "--checksum",
+            "--exclude",
+            "*.fastq*",
+            "--exclude",
+            "*.sra",
+            "--exclude",
+            "*.fq*",
             f"{src}/",
             f"{dst}/",
         ]
@@ -64,7 +69,8 @@ def sync_species(species_dir: Path, dest_dir: Path, dry_run: bool = False) -> in
 
         # Count transferred files (lines that don't start with special chars)
         transferred = [
-            line for line in result.stdout.strip().split("\n")
+            line
+            for line in result.stdout.strip().split("\n")
             if line and not line.startswith(("sending", "sent", "total", "created", "./"))
         ]
         total += len(transferred)
@@ -84,10 +90,7 @@ def main() -> int:
 
     DEST_BASE.mkdir(parents=True, exist_ok=True)
 
-    species_dirs = sorted(
-        p for p in SOURCE_BASE.iterdir()
-        if p.is_dir() and not p.name.startswith(".")
-    )
+    species_dirs = sorted(p for p in SOURCE_BASE.iterdir() if p.is_dir() and not p.name.startswith("."))
 
     if args.species:
         species_dirs = [d for d in species_dirs if d.name == args.species]

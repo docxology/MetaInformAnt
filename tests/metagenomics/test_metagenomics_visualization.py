@@ -101,7 +101,7 @@ class TestPlotStackedBar:
 
     def test_creates_png(self, tmp_path: Path, abundance_data: dict[str, dict[str, float]]) -> None:
         out = tmp_path / "stacked.png"
-        result = plot_stacked_bar(abundance_data, output_path=out)
+        plot_stacked_bar(abundance_data, output_path=out)
         assert out.exists()
         assert out.stat().st_size > 0
 
@@ -121,7 +121,7 @@ class TestPlotRarefactionCurves:
 
     def test_creates_png(self, tmp_path: Path, otu_table: dict[str, dict[str, int]]) -> None:
         out = tmp_path / "rarefaction.png"
-        result = plot_rarefaction_curves(otu_table, step=20, output_path=out, seed=42)
+        plot_rarefaction_curves(otu_table, step=20, output_path=out, seed=42)
         assert out.exists()
         assert out.stat().st_size > 0
 
@@ -141,7 +141,7 @@ class TestPlotOrdination:
 
     def test_creates_png(self, tmp_path: Path, distance_matrix_dict: dict[str, dict[str, float]]) -> None:
         out = tmp_path / "ordination.png"
-        result = plot_ordination(distance_matrix_dict, output_path=out)
+        plot_ordination(distance_matrix_dict, output_path=out)
         assert out.exists()
         assert out.stat().st_size > 0
 
@@ -168,7 +168,7 @@ class TestPlotAlphaDiversity:
 
     def test_creates_png(self, tmp_path: Path, otu_table: dict[str, dict[str, int]]) -> None:
         out = tmp_path / "alpha.png"
-        result = plot_alpha_diversity(otu_table, output_path=out)
+        plot_alpha_diversity(otu_table, output_path=out)
         assert out.exists()
         assert out.stat().st_size > 0
 
@@ -194,7 +194,7 @@ class TestPlotHeatmap:
 
     def test_creates_png(self, tmp_path: Path, abundance_data: dict[str, dict[str, float]]) -> None:
         out = tmp_path / "heatmap.png"
-        result = plot_heatmap(abundance_data, output_path=out)
+        plot_heatmap(abundance_data, output_path=out)
         assert out.exists()
         assert out.stat().st_size > 0
 

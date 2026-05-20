@@ -11,9 +11,8 @@ from __future__ import annotations
 
 import math
 import random
-from collections import defaultdict
 from itertools import product
-from typing import Any, Callable
+from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -30,7 +29,6 @@ except ImportError:
 
 try:
     from sklearn.model_selection import cross_val_score
-    from sklearn.preprocessing import LabelEncoder, StandardScaler
 
     HAS_SKLEARN = True
 except ImportError:
@@ -490,7 +488,7 @@ def _maximize_expected_improvement(
 
     n = len(X_obs)
     best_y = max(y_obs)
-    mean_y = sum(y_obs) / n
+    sum(y_obs) / n
 
     # Compute kernel matrix K(X_obs, X_obs)
     K = [[0.0] * n for _ in range(n)]

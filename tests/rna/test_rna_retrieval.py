@@ -6,13 +6,9 @@ downloading FASTQ files from ENA/SRA.
 
 from __future__ import annotations
 
-import hashlib
 import gzip
-import shutil
-import subprocess
+import hashlib
 from pathlib import Path
-
-import pytest
 
 # Import the module under test
 from metainformant.rna.retrieval import ena_downloader
@@ -90,46 +86,46 @@ class TestCleanStagnantFile:
 
 class TestGzipIntegrity:
     """Tests for Gzip integrity verification."""
-    
+
     def test_verify_gzip_integrity_valid(self, tmp_path: Path) -> None:
         """Test verification of a valid gzip file."""
         test_file = tmp_path / "valid.gz"
         content = b"This is some test content for gzip."
-        
+
         with gzip.open(test_file, "wb") as f:
             f.write(content)
-            
+
         assert ena_downloader.verify_gzip_integrity(test_file) is True
-        
+
     def test_verify_gzip_integrity_invalid(self, tmp_path: Path) -> None:
         """Test verification of an invalid gzip file (corrupted)."""
         test_file = tmp_path / "invalid.gz"
-        
+
         # Write random garbage bytes, not a valid gzip
         test_file.write_bytes(b"This is not a gzip file but has .gz extension")
-        
+
         assert ena_downloader.verify_gzip_integrity(test_file) is False
-        
+
     def test_verify_gzip_integrity_truncated(self, tmp_path: Path) -> None:
         """Test verification of a truncated gzip file."""
         test_file = tmp_path / "truncated.gz"
         content = b"This is some test content for gzip."
-        
+
         # Create valid gzip
         with gzip.open(test_file, "wb") as f:
             f.write(content)
-            
+
         # Truncate it
         data = test_file.read_bytes()
-        test_file.write_bytes(data[:-5]) # Remove trailer
-        
+        test_file.write_bytes(data[:-5])  # Remove trailer
+
         assert ena_downloader.verify_gzip_integrity(test_file) is False
 
     def test_verify_gzip_integrity_non_gz_extension(self, tmp_path: Path) -> None:
         """Test that non-.gz files are assumed valid (skipped)."""
         test_file = tmp_path / "test.txt"
         test_file.write_text("Not a gzip file")
-        
+
         assert ena_downloader.verify_gzip_integrity(test_file) is True
 
 

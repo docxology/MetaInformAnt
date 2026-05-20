@@ -6,7 +6,7 @@ performing virtual DNA digestion, and analyzing restriction fragment patterns.
 
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 from metainformant.core.utils import logging
 

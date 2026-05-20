@@ -15,7 +15,6 @@ Optional dependencies:
 
 from __future__ import annotations
 
-import math
 from collections import defaultdict
 from typing import Any
 
@@ -218,7 +217,7 @@ def spatial_interaction_score(
 
     data = np.asarray(expression, dtype=np.float64)
     coords = np.asarray(coordinates, dtype=np.float64)
-    n_cells = data.shape[0]
+    data.shape[0]
 
     # Compute pairwise distances
     if HAS_SCIPY:

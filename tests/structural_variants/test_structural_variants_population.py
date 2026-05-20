@@ -10,7 +10,6 @@ real numpy/scipy computations against hand-verified expected values.
 
 from __future__ import annotations
 
-import math
 from typing import Any
 
 import pytest
@@ -702,7 +701,6 @@ class TestSvLdAnalysis:
         """LD matrix has correct dimensions for multiple SVs and SNPs."""
         from metainformant.structural_variants.population import sv_ld_analysis
 
-        n_samples = 8
         sv_gt = [
             [0, 0, 1, 1, 2, 2, 0, 1],
             [2, 2, 1, 1, 0, 0, 2, 1],
@@ -1015,10 +1013,6 @@ class TestModuleImports:
         """Population functions are accessible from the population submodule."""
         from metainformant.structural_variants.population import (
             genotype_sv_population,
-            merge_sv_callsets,
-            sv_allele_frequency,
-            sv_association_test,
-            sv_ld_analysis,
             sv_population_structure,
         )
 

@@ -11,21 +11,19 @@ Usage:
 Target: Check all 506+ documentation files for broken code references.
 """
 
-import ast
-import os
-import re
-import sys
 import argparse
-import subprocess
-from pathlib import Path
-from typing import Dict, List, Set, Tuple, Optional, Any
-from collections import defaultdict
-from dataclasses import dataclass, field
+import ast
 import importlib.util
 import logging
+import re
+import sys
+from collections import defaultdict
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Dict, List, Optional, Set
 
 # Configure logging
-logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
 logger = logging.getLogger(__name__)
 
 # Add src directory to sys.path to enable imports of metainformant package
@@ -38,6 +36,7 @@ if str(SRC_DIR) not in sys.path:
 @dataclass
 class Symbol:
     """Represents a Python symbol (module, class, function, method)."""
+
     name: str
     module_path: str
     full_name: str
@@ -50,6 +49,7 @@ class Symbol:
 @dataclass
 class CodeExample:
     """Represents a code example found in documentation."""
+
     file_path: str
     line_number: int
     code_type: str  # 'python', 'bash', 'inline'
@@ -60,6 +60,7 @@ class CodeExample:
 @dataclass
 class Violation:
     """Represents a broken code reference."""
+
     doc_file: str
     line_number: int
     code_example: str
@@ -97,19 +98,19 @@ class PythonSymbolIndex:
     def _parse_file(self, file_path: Path):
         """Parse a single Python file and extract symbols."""
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 content = f.read()
             tree = ast.parse(content, filename=str(file_path))
 
             # Determine module path relative to src_dir
             rel_path = file_path.relative_to(self.src_dir)
             module_parts = list(rel_path.parts)
-            if module_parts[-1] == '__init__.py':
+            if module_parts[-1] == "__init__.py":
                 module_parts = module_parts[:-1]
-            elif module_parts[-1].endswith('.py'):
+            elif module_parts[-1].endswith(".py"):
                 module_parts[-1] = module_parts[-1][:-3]
 
-            module_name = '.'.join(['metainformant'] + module_parts)
+            module_name = ".".join(["metainformant"] + module_parts)
 
             # Register module
             self.modules[module_name] = file_path
@@ -120,7 +121,7 @@ class PythonSymbolIndex:
             # Walk AST and collect symbols
             for node in ast.walk(tree):
                 if isinstance(node, ast.ClassDef):
-                    self._add_symbol(node, 'class', module_name, file_path)
+                    self._add_symbol(node, "class", module_name, file_path)
                     # Track methods for this class
                     for item in node.body:
                         if isinstance(item, ast.FunctionDef):
@@ -128,8 +129,8 @@ class PythonSymbolIndex:
 
                 elif isinstance(node, ast.FunctionDef):
                     # Top-level function
-                    if isinstance(node.parent, ast.Module) if hasattr(node, 'parent') else True:
-                        self._add_symbol(node, 'function', module_name, file_path)
+                    if isinstance(node.parent, ast.Module) if hasattr(node, "parent") else True:
+                        self._add_symbol(node, "function", module_name, file_path)
 
         except Exception as e:
             logger.warning(f"Failed to parse {file_path}: {e}")
@@ -149,7 +150,7 @@ class PythonSymbolIndex:
             line=node.lineno,
             kind=kind,
             docstring=docstring,
-            signature=signature
+            signature=signature,
         )
         self.symbols[full_name] = symbol
 
@@ -183,7 +184,7 @@ class PythonSymbolIndex:
             elif isinstance(node, ast.ImportFrom):
                 if node.module:
                     for alias in node.names:
-                        imported.add(f"{node.module}.{alias.name}" if alias.name != '*' else f"{node.module}.*")
+                        imported.add(f"{node.module}.{alias.name}" if alias.name != "*" else f"{node.module}.*")
         self.imports_cache[module_name] = imported
 
     def get_symbol(self, full_name: str) -> Optional[Symbol]:
@@ -194,7 +195,7 @@ class PythonSymbolIndex:
         """Get all public members exported by a module."""
         members = set()
         for sym in self.symbols.values():
-            if sym.module_path.endswith(module_name.replace('.', '/')):
+            if sym.module_path.endswith(module_name.replace(".", "/")):
                 # Check if it's 'module.submodule.symbol' - complex
                 pass
         # Also check __all__ if defined
@@ -209,10 +210,10 @@ class DocumentationParser:
     """Parses documentation files and extracts code examples."""
 
     # Regex patterns for inline code
-    INLINE_CODE_PATTERN = r'`([^`]+)`'
+    INLINE_CODE_PATTERN = r"`([^`]+)`"
 
     # Code block patterns: ```python, ```bash, ```, etc.
-    CODE_BLOCK_PATTERN = r'```(\w*)\n(.*?)```'
+    CODE_BLOCK_PATTERN = r"```(\w*)\n(.*?)```"
 
     def __init__(self, docs_dir: Path):
         self.docs_dir = docs_dir
@@ -229,45 +230,49 @@ class DocumentationParser:
         examples = []
 
         try:
-            with open(file_path, 'r', encoding='utf-8') as f:
+            with open(file_path, "r", encoding="utf-8") as f:
                 lines = f.readlines()
 
-            content = ''.join(lines)
+            content = "".join(lines)
 
             # Find all code blocks
-            for match in re.finditer(r'```(\w*)\n(.*?)```', content, re.DOTALL):
+            for match in re.finditer(r"```(\w*)\n(.*?)```", content, re.DOTALL):
                 lang = match.group(1).strip()
                 code = match.group(2)
                 # Find line number by counting newlines before the match
-                line_num = content[:match.start()].count('\n') + 1
+                line_num = content[: match.start()].count("\n") + 1
 
-                examples.append(CodeExample(
-                    file_path=str(file_path),
-                    line_number=line_num,
-                    code_type='block',
-                    language=lang,
-                    code=code.strip()
-                ))
+                examples.append(
+                    CodeExample(
+                        file_path=str(file_path),
+                        line_number=line_num,
+                        code_type="block",
+                        language=lang,
+                        code=code.strip(),
+                    )
+                )
 
             # Find inline code (but not inside code blocks)
             # Simple approach: split by code blocks first, then search remainder
-            parts = re.split(r'```.*?```', content, flags=re.DOTALL)
+            parts = re.split(r"```.*?```", content, flags=re.DOTALL)
             current_line = 0
             for part in parts:
-                for match in re.finditer(r'`([^`]+)`', part):
+                for match in re.finditer(r"`([^`]+)`", part):
                     inline_code = match.group(1)
-                    line_num = part[:match.start()].count('\n') + current_line + 1
+                    line_num = part[: match.start()].count("\n") + current_line + 1
 
                     # Filter: only inline code that looks like Python or shell
                     if self._is_code_candidate(inline_code):
-                        examples.append(CodeExample(
-                            file_path=str(file_path),
-                            line_number=line_num,
-                            code_type='inline',
-                            language=self._guess_language(inline_code),
-                            code=inline_code
-                        ))
-                current_line += part.count('\n')
+                        examples.append(
+                            CodeExample(
+                                file_path=str(file_path),
+                                line_number=line_num,
+                                code_type="inline",
+                                language=self._guess_language(inline_code),
+                                code=inline_code,
+                            )
+                        )
+                current_line += part.count("\n")
 
         except Exception as e:
             logger.warning(f"Failed to parse {file_path}: {e}")
@@ -277,7 +282,7 @@ class DocumentationParser:
     def _is_code_candidate(self, code: str) -> bool:
         """Check if inline code looks like actual code (not just a filename)."""
         # Skip single words, filenames, paths
-        if len(code.split()) == 1 and ('.' in code or '/' in code or code.endswith('.md')):
+        if len(code.split()) == 1 and ("." in code or "/" in code or code.endswith(".md")):
             return False
         # Skip just commands that are clearly not importable
         return True
@@ -285,12 +290,12 @@ class DocumentationParser:
     def _guess_language(self, code: str) -> str:
         """Guess the language of a code snippet."""
         # Python indicators
-        if any(kw in code for kw in ['import ', 'def ', 'class ', 'from ', 'print(']):
-            return 'python'
+        if any(kw in code for kw in ["import ", "def ", "class ", "from ", "print("]):
+            return "python"
         # Shell/bash indicators
-        if any(kw in code for kw in ['$', 'bash', 'sh ', '&&', '||', ';']):
-            return 'bash'
-        return 'unknown'
+        if any(kw in code for kw in ["$", "bash", "sh ", "&&", "||", ";"]):
+            return "bash"
+        return "unknown"
 
 
 class CodeValidator:
@@ -310,9 +315,9 @@ class CodeValidator:
             import tomli as tomllib
 
         try:
-            with open(pyproject, 'rb') as f:
+            with open(pyproject, "rb") as f:
                 data = tomllib.load(f)
-            scripts = data.get('project', {}).get('scripts', {})
+            scripts = data.get("project", {}).get("scripts", {})
             entry_points.update(scripts.keys())
             logger.info(f"Loaded {len(entry_points)} CLI entry points: {entry_points}")
         except Exception as e:
@@ -323,9 +328,9 @@ class CodeValidator:
         """Validate all code examples and return violations."""
         for ex in examples:
             try:
-                if ex.language == 'python':
+                if ex.language == "python":
                     self._validate_python_example(ex)
-                elif ex.language == 'bash':
+                elif ex.language == "bash":
                     self._validate_bash_example(ex)
                 # else: skip unknown languages
             except Exception as e:
@@ -340,14 +345,16 @@ class CodeValidator:
         try:
             tree = ast.parse(code)
         except SyntaxError as e:
-            self.violations.append(Violation(
-                doc_file=example.file_path,
-                line_number=example.line_number,
-                code_example=code[:100],
-                issue_type='SyntaxError',
-                details=f"Invalid Python syntax: {e.msg} at line {e.lineno}",
-                severity='error'
-            ))
+            self.violations.append(
+                Violation(
+                    doc_file=example.file_path,
+                    line_number=example.line_number,
+                    code_example=code[:100],
+                    issue_type="SyntaxError",
+                    details=f"Invalid Python syntax: {e.msg} at line {e.lineno}",
+                    severity="error",
+                )
+            )
             return
 
         # Walk the AST and check imports, attribute accesses, function calls
@@ -358,31 +365,34 @@ class CodeValidator:
                     module_name = alias.name
                     # Check if module exists (try to resolve)
                     if not self._module_exists(module_name):
-                        self.violations.append(Violation(
-                            doc_file=example.file_path,
-                            line_number=example.line_number,
-                            code_example=f"import {module_name}",
-                            issue_type='ModuleNotFoundError',
-                            details=f"Module '{module_name}' not found in project or standard library",
-                            severity='error'
-                        ))
+                        self.violations.append(
+                            Violation(
+                                doc_file=example.file_path,
+                                line_number=example.line_number,
+                                code_example=f"import {module_name}",
+                                issue_type="ModuleNotFoundError",
+                                details=f"Module '{module_name}' not found in project or standard library",
+                                severity="error",
+                            )
+                        )
 
             elif isinstance(node, ast.ImportFrom):
-                module_name = node.module or ''
+                module_name = node.module or ""
                 for alias in node.names:
                     imported_name = alias.name
-                    full_import = f"{module_name}.{imported_name}" if module_name else imported_name
 
                     # Check if this specific import exists
                     if not self._import_exists(module_name, imported_name):
-                        self.violations.append(Violation(
-                            doc_file=example.file_path,
-                            line_number=example.line_number,
-                            code_example=f"from {module_name} import {imported_name}",
-                            issue_type='ImportError',
-                            details=f"Cannot import '{imported_name}' from module '{module_name}'",
-                            severity='error'
-                        ))
+                        self.violations.append(
+                            Violation(
+                                doc_file=example.file_path,
+                                line_number=example.line_number,
+                                code_example=f"from {module_name} import {imported_name}",
+                                issue_type="ImportError",
+                                details=f"Cannot import '{imported_name}' from module '{module_name}'",
+                                severity="error",
+                            )
+                        )
 
             # Check attribute access (e.g., module.function() or obj.method())
             elif isinstance(node, ast.Attribute):
@@ -412,7 +422,7 @@ class CodeValidator:
         if not module_name:
             return True
 
-        full_module = f"metainformant.{module_name}" if not module_name.startswith('metainformant') else module_name
+        full_module = f"metainformant.{module_name}" if not module_name.startswith("metainformant") else module_name
 
         # If full_module exists in modules, check if item is a submodule or symbol
         if full_module in self.symbol_index.modules:
@@ -422,8 +432,8 @@ class CodeValidator:
                 return True
             # Second: check if item is a symbol (class/function) defined in that module
             for sym_full_name in self.symbol_index.keys():
-                if sym_full_name.startswith(full_module + '.'):
-                    if sym_full_name.endswith('.' + item_name):
+                if sym_full_name.startswith(full_module + "."):
+                    if sym_full_name.endswith("." + item_name):
                         return True
             return False
 
@@ -438,15 +448,15 @@ class CodeValidator:
         """Check dotted attribute access patterns (e.g., metainformant.core.io.read_file)."""
         # Extract all dotted names from code
         # Pattern: word(.word)* where not inside string
-        dotted_pattern = r'\b([a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)+)\b'
+        dotted_pattern = r"\b([a-zA-Z_][a-zA-Z0-9_]*(\.[a-zA-Z_][a-zA-Z0-9_]*)+)\b"
 
         for match in re.finditer(dotted_pattern, code):
             dotted_name = match.group(1)
             context_start = max(0, match.start() - 20)
-            context = code[context_start:match.end() + 20]
+            context = code[context_start : match.end() + 20]
 
             # Skip if it looks like an attribute access after parentheses
-            if '(' in context and context.index('(') < context.index(dotted_name.split('.')[0]):
+            if "(" in context and context.index("(") < context.index(dotted_name.split(".")[0]):
                 continue
 
             # Check if the chain is valid
@@ -454,7 +464,7 @@ class CodeValidator:
 
     def _validate_attribute_chain(self, chain: str, full_code: str, example: CodeExample):
         """Validate an attribute access chain."""
-        parts = chain.split('.')
+        parts = chain.split(".")
         if len(parts) < 2:
             return
 
@@ -490,14 +500,16 @@ class CodeValidator:
                         else:
                             # Unknown, give up
                             if i == 0:  # First attribute access failed
-                                self.violations.append(Violation(
-                                    doc_file=example.file_path,
-                                    line_number=example.line_number,
-                                    code_example=chain,
-                                    issue_type='AttributeError',
-                                    details=f"'{parts[0]}' has no attribute '{parts[1]}' (module not found)",
-                                    severity='error'
-                                ))
+                                self.violations.append(
+                                    Violation(
+                                        doc_file=example.file_path,
+                                        line_number=example.line_number,
+                                        code_example=chain,
+                                        issue_type="AttributeError",
+                                        details=f"'{parts[0]}' has no attribute '{parts[1]}' (module not found)",
+                                        severity="error",
+                                    )
+                                )
                             return
                 else:
                     # It's a Symbol or module object
@@ -513,18 +525,20 @@ class CodeValidator:
                                 current = sub
                             else:
                                 # Not found - report error
-                                self.violations.append(Violation(
-                                    doc_file=example.file_path,
-                                    line_number=example.line_number,
-                                    code_example=chain,
-                                    issue_type='AttributeError',
-                                    details=f"'{parts[i]}' object has no attribute '{part}'",
-                                    severity='error'
-                                ))
+                                self.violations.append(
+                                    Violation(
+                                        doc_file=example.file_path,
+                                        line_number=example.line_number,
+                                        code_example=chain,
+                                        issue_type="AttributeError",
+                                        details=f"'{parts[i]}' object has no attribute '{part}'",
+                                        severity="error",
+                                    )
+                                )
                                 return
                         else:
                             return  # Can't verify further
-            except Exception as e:
+            except Exception:
                 # Could not resolve - possibly dynamic or external dependency
                 break
 
@@ -545,31 +559,33 @@ class CodeValidator:
     def _validate_bash_example(self, example: CodeExample):
         """Validate a bash/shell command example."""
         code = example.code.strip()
-        lines = code.split('\n')
+        lines = code.split("\n")
 
         for line in lines:
             line = line.strip()
-            if not line or line.startswith('#'):
+            if not line or line.startswith("#"):
                 continue
 
             # Get the command (first word, handling $ and other prefixes)
-            cmd_match = re.match(r'^\$?\s*([a-zA-Z0-9_-]+)', line)
+            cmd_match = re.match(r"^\$?\s*([a-zA-Z0-9_-]+)", line)
             if cmd_match:
                 cmd = cmd_match.group(1)
 
                 # Check if it's a known entry point
-                if cmd == 'metainformant':
-                    if 'metainformant' not in self.entry_points:
-                        self.violations.append(Violation(
-                            doc_file=example.file_path,
-                            line_number=example.line_number,
-                            code_example=line[:80],
-                            issue_type='NonExistentCommand',
-                            details="'metainformant' command not found in entry points",
-                            severity='error'
-                        ))
+                if cmd == "metainformant":
+                    if "metainformant" not in self.entry_points:
+                        self.violations.append(
+                            Violation(
+                                doc_file=example.file_path,
+                                line_number=example.line_number,
+                                code_example=line[:80],
+                                issue_type="NonExistentCommand",
+                                details="'metainformant' command not found in entry points",
+                                severity="error",
+                            )
+                        )
                 # Check other common CLI tools (uv, pytest, etc.)
-                elif cmd in ['uv', 'pytest', 'git', 'python', 'python3', 'pip']:
+                elif cmd in ["uv", "pytest", "git", "python", "python3", "pip"]:
                     # These are external, assume they exist. Optionally verify with which
                     pass
 
@@ -589,7 +605,7 @@ class ReportGenerator:
 
         total = len(self.violations)
 
-        with open(output_path, 'w', encoding='utf-8') as f:
+        with open(output_path, "w", encoding="utf-8") as f:
             f.write("# Cross-Code Verification Report\n\n")
             f.write(f"**Total violations found:** {total}\n\n")
 
@@ -612,8 +628,8 @@ class ReportGenerator:
             f.write("|------|------|------|-------|--------------|\n")
 
             for v in sorted(self.violations, key=lambda x: (x.doc_file, x.line_number)):
-                file_rel = v.doc_file.replace('/home/trim/Documents/Git/MetaInformAnt/', '')
-                code_preview = v.code_example.replace('\n', ' ')[:60]
+                file_rel = v.doc_file.replace("/home/trim/Documents/Git/MetaInformAnt/", "")
+                code_preview = v.code_example.replace("\n", " ")[:60]
                 f.write(f"| {file_rel} | {v.line_number} | {v.issue_type} | {v.details} | `{code_preview}` |\n")
 
         logger.info(f"Report written to {output_path}")
@@ -621,7 +637,7 @@ class ReportGenerator:
     def print_summary(self):
         """Print a concise summary."""
         print(f"\n{'='*70}")
-        print(f"CROSS-CODE VERIFICATION SUMMARY")
+        print("CROSS-CODE VERIFICATION SUMMARY")
         print(f"{'='*70}")
         print(f"Total issues found: {len(self.violations)}")
 
@@ -649,14 +665,12 @@ class ReportGenerator:
 
 def main():
     parser = argparse.ArgumentParser(description="Verify code examples in documentation")
-    parser.add_argument('--docs-dir', type=Path, default=Path('docs'),
-                       help="Documentation directory (default: docs/)")
-    parser.add_argument('--src-dir', type=Path, default=Path('src'),
-                       help="Source code directory (default: src/)")
-    parser.add_argument('--output', type=Path, default=Path('cross_code_verification_report.md'),
-                       help="Output report file")
-    parser.add_argument('--verbose', '-v', action='store_true',
-                       help="Verbose logging")
+    parser.add_argument("--docs-dir", type=Path, default=Path("docs"), help="Documentation directory (default: docs/)")
+    parser.add_argument("--src-dir", type=Path, default=Path("src"), help="Source code directory (default: src/)")
+    parser.add_argument(
+        "--output", type=Path, default=Path("cross_code_verification_report.md"), help="Output report file"
+    )
+    parser.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
 
     args = parser.parse_args()
 
@@ -667,7 +681,7 @@ def main():
     repo_root = Path(__file__).parent.parent  # Assuming script is in scripts/
     docs_dir = (repo_root / args.docs_dir).resolve()
     src_dir = (repo_root / args.src_dir).resolve()
-    pyproject = repo_root / 'pyproject.toml'
+    pyproject = repo_root / "pyproject.toml"
 
     if not docs_dir.exists():
         logger.error(f"Docs directory not found: {docs_dir}")
@@ -710,5 +724,5 @@ def main():
     sys.exit(0 if not violations else 1)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

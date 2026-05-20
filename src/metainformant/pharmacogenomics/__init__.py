@@ -1,4 +1,5 @@
 """Pharmacogenomics module for METAINFORMANT."""
+
 from __future__ import annotations
 
 from . import alleles, annotations, clinical, interaction, metabolism, visualization

@@ -71,9 +71,7 @@ def maf_distribution(
     # Validate MAF values are in valid range
     invalid_maf = [maf for maf in values if not (0 <= maf <= 0.5)]
     if invalid_maf:
-        logger.warning(
-            f"Found {len(invalid_maf)} invalid MAF values (should be 0-0.5), clipping"
-        )
+        logger.warning(f"Found {len(invalid_maf)} invalid MAF values (should be 0-0.5), clipping")
         values = [min(0.5, max(0, maf)) for maf in values]
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
@@ -188,11 +186,7 @@ def variant_density_plot(
         return {"status": "failed", "error": "matplotlib not available"}
 
     # Parse input: accept list-of-dicts with CHROM/POS keys
-    if (
-        isinstance(variants, (list, tuple))
-        and len(variants) > 0
-        and isinstance(variants[0], dict)
-    ):
+    if isinstance(variants, (list, tuple)) and len(variants) > 0 and isinstance(variants[0], dict):
         # Extract chromosome and position from list of dicts
         chrom_positions: Dict[str, List[int]] = {}
         for v in variants:
@@ -224,9 +218,7 @@ def variant_density_plot(
     # Sort chromosomes by name/number
     chroms = sorted(
         chromosome_lengths.keys(),
-        key=lambda x: int(x.replace("chr", ""))
-        if x.replace("chr", "").isdigit()
-        else float("inf"),
+        key=lambda x: int(x.replace("chr", "")) if x.replace("chr", "").isdigit() else float("inf"),
     )
 
     # Calculate cumulative positions for chromosome boundaries
@@ -243,9 +235,7 @@ def variant_density_plot(
 
     # Build all positions with cumulative offset
     all_positions = []
-    chrom_offset = {
-        chrom: boundary[0] for chrom, boundary in zip(chroms, chrom_boundaries)
-    }
+    chrom_offset = {chrom: boundary[0] for chrom, boundary in zip(chroms, chrom_boundaries)}
     for chrom in chroms:
         for pos in chrom_positions.get(chrom, []):
             all_positions.append(pos + chrom_offset[chrom])
@@ -333,17 +323,13 @@ def hwe_deviation_plot(
         return {"status": "failed", "error": "No HWE p-values provided"}
 
     # Convert p-values to -log10 for visualization
-    log_p_values = [
-        -np.log10(p) if p > 0 else 50 for p in values
-    ]  # Cap at 50 for very small p-values
+    log_p_values = [-np.log10(p) if p > 0 else 50 for p in values]  # Cap at 50 for very small p-values
 
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 
     # Plot 1: Histogram of -log10(p-values)
     ax1.hist(log_p_values, bins=30, alpha=0.7, color="skyblue", edgecolor="navy")
-    ax1.axvline(
-        x=-np.log10(0.05), color="red", linestyle="--", label="p=0.05 threshold"
-    )
+    ax1.axvline(x=-np.log10(0.05), color="red", linestyle="--", label="p=0.05 threshold")
     ax1.set_xlabel("-log10(p-value)")
     ax1.set_ylabel("Frequency")
     ax1.set_title("HWE Test -log10(p-values)")
@@ -455,20 +441,14 @@ def missingness_plot(
     for sample_idx in range(n_samples):
         missing_count = 0
         for variant_idx in range(n_variants):
-            if (
-                genotypes[variant_idx][sample_idx] is None
-                or genotypes[variant_idx][sample_idx] == -1
-            ):
+            if genotypes[variant_idx][sample_idx] is None or genotypes[variant_idx][sample_idx] == -1:
                 missing_count += 1
         sample_missingness.append(missing_count / n_variants)
 
     for variant_idx in range(n_variants):
         missing_count = 0
         for sample_idx in range(n_samples):
-            if (
-                genotypes[variant_idx][sample_idx] is None
-                or genotypes[variant_idx][sample_idx] == -1
-            ):
+            if genotypes[variant_idx][sample_idx] is None or genotypes[variant_idx][sample_idx] == -1:
                 missing_count += 1
         variant_missingness.append(missing_count / n_samples)
 
@@ -491,9 +471,7 @@ def missingness_plot(
     ax1.legend()
 
     # Plot 2: Variant missingness distribution
-    ax2.hist(
-        variant_missingness, bins=20, alpha=0.7, color="lightcoral", edgecolor="darkred"
-    )
+    ax2.hist(variant_missingness, bins=20, alpha=0.7, color="lightcoral", edgecolor="darkred")
     ax2.set_xlabel("Missingness Rate")
     ax2.set_ylabel("Number of Variants")
     ax2.set_title("Variant Missingness Distribution")
@@ -590,11 +568,7 @@ def transition_transversion_plot(
     # Define transition pairs
     transition_pairs = {("A", "G"), ("G", "A"), ("C", "T"), ("T", "C")}
 
-    if (
-        isinstance(variants, (list, tuple))
-        and len(variants) > 0
-        and isinstance(variants[0], dict)
-    ):
+    if isinstance(variants, (list, tuple)) and len(variants) > 0 and isinstance(variants[0], dict):
         # Check if it's list-of-dicts with REF/ALT
         if "REF" in variants[0] and "ALT" in variants[0]:
             # Compute Ts/Tv from individual variant records
@@ -616,9 +590,7 @@ def transition_transversion_plot(
             categories = ["Transitions", "Transversions"]
             counts = [ts_count, tv_count]
             colors = ["steelblue", "coral"]
-            bars = ax1.bar(
-                categories, counts, color=colors, alpha=0.8, edgecolor="black"
-            )
+            bars = ax1.bar(categories, counts, color=colors, alpha=0.8, edgecolor="black")
             ax1.set_ylabel("Count")
             ax1.set_title("Transition vs Transversion Counts")
             ax1.grid(True, alpha=0.3, axis="y")
@@ -687,9 +659,7 @@ def transition_transversion_plot(
         positions = variants.get("positions", [])
 
         if not transitions_list or not transversions_list:
-            logger.error(
-                "Transition/transversion data must include 'transitions' and 'transversions' arrays"
-            )
+            logger.error("Transition/transversion data must include 'transitions' and 'transversions' arrays")
             return {
                 "status": "failed",
                 "error": "Missing transitions/transversions data",

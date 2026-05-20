@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 from metainformant.math.decision_theory.ddm import island_model_update
-from metainformant.math.population_genetics.core import heterozygosity_decay, inbreeding_coefficient, mutation_selection_balance_dominant, mutation_selection_balance_recessive
+from metainformant.math.population_genetics.core import (
+    heterozygosity_decay,
+    inbreeding_coefficient,
+    mutation_selection_balance_dominant,
+    mutation_selection_balance_recessive,
+)
 from metainformant.math.population_genetics.statistics import equilibrium_heterozygosity_infinite_alleles
 
 

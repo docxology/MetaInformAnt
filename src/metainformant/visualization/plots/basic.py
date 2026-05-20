@@ -7,7 +7,7 @@ heatmaps, bar charts, pie charts, area plots, and step plots.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np

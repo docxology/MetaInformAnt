@@ -4,10 +4,11 @@ Follows NO_MOCKING_POLICY: all tests use real filesystem operations,
 real configuration files, and real class methods.
 """
 
-import pytest
-import pandas as pd
-import yaml
 from pathlib import Path
+
+import pandas as pd
+import pytest
+import yaml
 
 from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
 
@@ -61,10 +62,12 @@ class TestStreamingOrchestrator:
         """Test tissue normalization with real metadata and mapping files."""
         # Create real metadata TSV
         metadata_path = tmp_path / "metadata.tsv"
-        df = pd.DataFrame({
-            "run": ["SRR001", "SRR002", "SRR003"],
-            "tissue": ["Brain", "brain", "BRAIN"],
-        })
+        df = pd.DataFrame(
+            {
+                "run": ["SRR001", "SRR002", "SRR003"],
+                "tissue": ["Brain", "brain", "BRAIN"],
+            }
+        )
         df.to_csv(metadata_path, sep="\t", index=False)
 
         # Create real tissue mapping YAML in config_dir

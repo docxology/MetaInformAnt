@@ -10,7 +10,6 @@ Tests all timing utilities with real implementations (NO mocking):
 from __future__ import annotations
 
 import time
-from pathlib import Path
 
 import pytest
 
@@ -22,7 +21,6 @@ class TestTimedDecorator:
 
     def test_timed_without_arguments(self, caplog) -> None:
         """Test @timed decorator without arguments (default debug level)."""
-        import logging
 
         @timed
         def fast_function() -> str:
@@ -411,15 +409,13 @@ class TestTimeoutAfter:
 
     def test_timeout_after_event_set_on_timeout(self) -> None:
         """Test that the yielded Event is set when timeout occurs."""
-        import threading
 
-        event_was_set = False
         with pytest.raises(TimeoutError):
             with timeout_after(0.05) as event:
                 time.sleep(0.1)  # Sleep longer than timeout
                 # Check if event was set during sleep
                 if event.is_set():
-                    event_was_set = True
+                    pass
 
         # The event should have been set
         # Note: This is timing-dependent, so we just verify TimeoutError was raised

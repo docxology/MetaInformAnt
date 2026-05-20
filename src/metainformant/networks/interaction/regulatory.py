@@ -9,6 +9,14 @@ This module re-exports all public symbols from :mod:`regulatory_core` and
 
 from __future__ import annotations
 
+from metainformant.networks.interaction.regulatory_analysis import (
+    detect_regulatory_cascades,
+    infer_grn,
+    infer_regulatory_network_from_expression,
+    pathway_regulation_analysis,
+    regulatory_motifs,
+    validate_regulation,
+)
 from metainformant.networks.interaction.regulatory_core import (
     GeneRegulatoryNetwork,
     _find_feed_forward_loops,
@@ -21,14 +29,6 @@ from metainformant.networks.interaction.regulatory_core import (
     export_regulatory_network,
     identify_regulatory_hubs,
     regulatory_network_stability_analysis,
-)
-from metainformant.networks.interaction.regulatory_analysis import (
-    detect_regulatory_cascades,
-    infer_grn,
-    infer_regulatory_network_from_expression,
-    pathway_regulation_analysis,
-    regulatory_motifs,
-    validate_regulation,
 )
 
 __all__ = [

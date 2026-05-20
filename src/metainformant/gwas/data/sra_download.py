@@ -17,9 +17,7 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 
-def download_sra_experiment(
-    experiment_acc: str, output_dir: str | Path, threads: int = 1
-) -> List[Path]:
+def download_sra_experiment(experiment_acc: str, output_dir: str | Path, threads: int = 1) -> List[Path]:
     """Download all runs from an SRA experiment.
 
     Args:
@@ -69,9 +67,7 @@ def _get_experiment_runs(experiment_acc: str) -> List[str]:
     }
 
     try:
-        response = requests.get(
-            f"{base_url}/esearch.fcgi", params=search_params, timeout=30
-        )
+        response = requests.get(f"{base_url}/esearch.fcgi", params=search_params, timeout=30)
         response.raise_for_status()
 
         data = response.json()
@@ -87,9 +83,7 @@ def _get_experiment_runs(experiment_acc: str) -> List[str]:
         # Get run accessions
         summary_params = {"db": "sra", "id": ",".join(id_list), "retmode": "json"}
 
-        summary_response = requests.get(
-            f"{base_url}/esummary.fcgi", params=summary_params, timeout=30
-        )
+        summary_response = requests.get(f"{base_url}/esummary.fcgi", params=summary_params, timeout=30)
         summary_response.raise_for_status()
 
         summary_data = summary_response.json()
@@ -117,9 +111,7 @@ def _get_experiment_runs(experiment_acc: str) -> List[str]:
         return []
 
 
-def download_sra_biosample(
-    biosample_acc: str, output_dir: str | Path, threads: int = 1
-) -> List[Path]:
+def download_sra_biosample(biosample_acc: str, output_dir: str | Path, threads: int = 1) -> List[Path]:
     """Download all SRA data for a BioSample.
 
     Args:
@@ -163,9 +155,7 @@ def _get_biosample_runs(biosample_acc: str) -> List[str]:
     }
 
     try:
-        response = requests.get(
-            f"{base_url}/esearch.fcgi", params=search_params, timeout=30
-        )
+        response = requests.get(f"{base_url}/esearch.fcgi", params=search_params, timeout=30)
         response.raise_for_status()
 
         data = response.json()
@@ -183,9 +173,7 @@ def _get_biosample_runs(biosample_acc: str) -> List[str]:
                 "retmode": "json",
             }  # Limit
 
-            summary_response = requests.get(
-                f"{base_url}/esummary.fcgi", params=summary_params, timeout=30
-            )
+            summary_response = requests.get(f"{base_url}/esummary.fcgi", params=summary_params, timeout=30)
             summary_response.raise_for_status()
 
             summary_data = summary_response.json()
@@ -260,9 +248,7 @@ def batch_download_sra(
     return results
 
 
-def find_sra_data_by_phenotype(
-    phenotype: str, organism: str, max_results: int = 50
-) -> List[Dict[str, Any]]:
+def find_sra_data_by_phenotype(phenotype: str, organism: str, max_results: int = 50) -> List[Dict[str, Any]]:
     """Find SRA data by phenotype/trait.
 
     Args:
@@ -284,9 +270,7 @@ def find_sra_data_by_phenotype(
 
     for record in all_data:
         # Check various fields for phenotype keywords
-        searchable_text = " ".join(
-            [record.get("experiment", ""), str(record.get("sample_attributes", {}))]
-        ).lower()
+        searchable_text = " ".join([record.get("experiment", ""), str(record.get("sample_attributes", {}))]).lower()
 
         if phenotype_lower in searchable_text:
             filtered_data.append(record)
@@ -297,9 +281,7 @@ def find_sra_data_by_phenotype(
     return filtered_data
 
 
-def download_sra_with_retry(
-    accession: str, output_dir: str | Path, max_retries: int = 3, threads: int = 1
-) -> Path:
+def download_sra_with_retry(accession: str, output_dir: str | Path, max_retries: int = 3, threads: int = 1) -> Path:
     """Download SRA data with retry logic.
 
     Args:
@@ -320,9 +302,7 @@ def download_sra_with_retry(
             return download_sra_run(accession, output_dir, threads)
         except Exception as e:
             last_error = e
-            logger.warning(
-                f"Download attempt {attempt + 1} failed for {accession}: {e}"
-            )
+            logger.warning(f"Download attempt {attempt + 1} failed for {accession}: {e}")
 
             if attempt < max_retries - 1:
                 # Exponential backoff
@@ -331,9 +311,7 @@ def download_sra_with_retry(
                 time.sleep(delay)
 
     # All attempts failed
-    raise RuntimeError(
-        f"Failed to download {accession} after {max_retries} attempts: {last_error}"
-    )
+    raise RuntimeError(f"Failed to download {accession} after {max_retries} attempts: {last_error}")
 
 
 def validate_sra_download(accession: str, download_dir: Path) -> Dict[str, Any]:
@@ -411,9 +389,7 @@ def prefetch_sra_metadata(accessions: List[str]) -> Dict[str, Dict[str, Any]]:
         }
 
         try:
-            response = requests.get(
-                f"{base_url}/esearch.fcgi", params=search_params, timeout=30
-            )
+            response = requests.get(f"{base_url}/esearch.fcgi", params=search_params, timeout=30)
             response.raise_for_status()
 
             search_data = response.json()
@@ -429,9 +405,7 @@ def prefetch_sra_metadata(accessions: List[str]) -> Dict[str, Dict[str, Any]]:
                         "retmode": "json",
                     }
 
-                    summary_response = requests.get(
-                        f"{base_url}/esummary.fcgi", params=summary_params, timeout=30
-                    )
+                    summary_response = requests.get(f"{base_url}/esummary.fcgi", params=summary_params, timeout=30)
                     summary_response.raise_for_status()
 
                     summary_data = summary_response.json()
@@ -452,21 +426,11 @@ def prefetch_sra_metadata(accessions: List[str]) -> Dict[str, Dict[str, Any]]:
 
                                 if accession:
                                     metadata[accession] = {
-                                        "spots": record.get("runs", {})
-                                        .get("run", {})
-                                        .get("@spots"),
-                                        "bases": record.get("runs", {})
-                                        .get("run", {})
-                                        .get("@bases"),
-                                        "size_mb": record.get("runs", {})
-                                        .get("run", {})
-                                        .get("@size_MB"),
-                                        "platform": record.get("expxml", {}).get(
-                                            "platform"
-                                        ),
-                                        "library_strategy": record.get(
-                                            "expxml", {}
-                                        ).get("library_strategy"),
+                                        "spots": record.get("runs", {}).get("run", {}).get("@spots"),
+                                        "bases": record.get("runs", {}).get("run", {}).get("@bases"),
+                                        "size_mb": record.get("runs", {}).get("run", {}).get("@size_MB"),
+                                        "platform": record.get("expxml", {}).get("platform"),
+                                        "library_strategy": record.get("expxml", {}).get("library_strategy"),
                                     }
 
         except requests.RequestException as e:
@@ -503,9 +467,7 @@ def check_sra_tools_available() -> bool:
         return False
 
 
-def download_sra_project(
-    project_id: str, output_dir: str | Path, threads: int = 1
-) -> List[Path]:
+def download_sra_project(project_id: str, output_dir: str | Path, threads: int = 1) -> List[Path]:
     """Download all experiments/runs from an SRA project.
 
     Args:
@@ -538,9 +500,7 @@ def download_sra_project(
             logger.error(f"Failed to download experiment {exp_acc}: {e}")
             continue
 
-    logger.info(
-        f"Downloaded {len(downloaded_runs)} total runs from project {project_id}"
-    )
+    logger.info(f"Downloaded {len(downloaded_runs)} total runs from project {project_id}")
     return downloaded_runs
 
 
@@ -599,9 +559,7 @@ def _get_project_experiments(project_id: str, email: str | None = None) -> List[
         return []
 
 
-def download_sra_run(
-    sra_accession: str, output_dir: str | Path, threads: int = 1
-) -> Path:
+def download_sra_run(sra_accession: str, output_dir: str | Path, threads: int = 1) -> Path:
     """Download a single SRA run.
 
     Args:
@@ -648,9 +606,7 @@ def download_sra_run(
 
         # Fall back to fastq-dump
         cmd = ["fastq-dump", "--split-files", "--gzip", sra_accession]
-        result = subprocess.run(
-            cmd, cwd=run_dir, capture_output=True, text=True, timeout=3600
-        )
+        result = subprocess.run(cmd, cwd=run_dir, capture_output=True, text=True, timeout=3600)
 
         if result.returncode == 0:
             logger.info(f"Downloaded SRA run {sra_accession} using fastq-dump")
@@ -664,9 +620,7 @@ def download_sra_run(
         return run_dir
 
 
-def search_sra_for_organism(
-    organism: str, max_results: int = 100, email: str | None = None
-) -> List[Dict[str, Any]]:
+def search_sra_for_organism(organism: str, max_results: int = 100, email: str | None = None) -> List[Dict[str, Any]]:
     """Search SRA for experiments from a specific organism using NCBI Entrez API.
 
     Args:
@@ -684,9 +638,7 @@ def search_sra_for_organism(
     try:
         from Bio import Entrez
     except ImportError:
-        raise ImportError(
-            "biopython is required for SRA search. Install with: uv pip install biopython"
-        )
+        raise ImportError("biopython is required for SRA search. Install with: uv pip install biopython")
 
     if not email:
         email = os.environ.get("NCBI_EMAIL", "metainformant@example.com")  # noqa: F821
@@ -697,9 +649,7 @@ def search_sra_for_organism(
     try:
         # Search SRA database for the organism
         search_term = f'"{organism}"[Organism] AND "RNA-Seq"[Strategy]'
-        handle = Entrez.esearch(
-            db="sra", term=search_term, retmax=max_results, usehistory="y"
-        )
+        handle = Entrez.esearch(db="sra", term=search_term, retmax=max_results, usehistory="y")
         search_results = Entrez.read(handle)
         handle.close()
 
@@ -740,9 +690,7 @@ def search_sra_for_organism(
 
                 # Get library info
                 lib_strat_elem = exp.find(".//LIBRARY_STRATEGY")
-                library_strategy = (
-                    lib_strat_elem.text if lib_strat_elem is not None else ""
-                )
+                library_strategy = lib_strat_elem.text if lib_strat_elem is not None else ""
 
                 # Get run accessions
                 runs = []

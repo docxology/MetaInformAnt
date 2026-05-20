@@ -1,4 +1,5 @@
 """Mathematical biology and theoretical modeling module for METAINFORMANT."""
+
 from __future__ import annotations
 
 from . import (

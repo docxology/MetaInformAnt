@@ -11,7 +11,6 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
 from metainformant.core.utils import logging
-from metainformant.core import io
 
 logger = logging.get_logger(__name__)
 
@@ -419,14 +418,13 @@ def assess_alphafold_quality(
     results: Dict[str, Any] = {"path": str(pdb_path)}
 
     # Parse confidence scores (pLDDT from B-factor column)
-    from metainformant.protein.structure.alphafold import get_alphafold_structure_quality, parse_alphafold_confidence
+    from metainformant.protein.structure.alphafold import get_alphafold_structure_quality
 
     quality = get_alphafold_structure_quality(pdb_path)
     results["confidence"] = quality
 
     # Structure statistics
     from metainformant.protein.structure.general import (
-        calculate_radius_of_gyration,
         calculate_structural_statistics,
     )
     from metainformant.protein.structure.io import parse_pdb_file
@@ -523,7 +521,6 @@ def batch_compare_structures(
     Returns:
         Dictionary with all pairwise comparisons and summary matrix
     """
-    import numpy as np
 
     paths = [Path(p) for p in pdb_paths]
     n = len(paths)

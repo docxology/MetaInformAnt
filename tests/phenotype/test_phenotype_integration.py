@@ -2,9 +2,8 @@
 
 NO MOCKING POLICY: All tests use real implementations.
 """
-from __future__ import annotations
 
-import pytest
+from __future__ import annotations
 
 from metainformant.phenotype.integration.cross_omic import (
     multi_phenotype_integration,
@@ -12,7 +11,6 @@ from metainformant.phenotype.integration.cross_omic import (
     phenotype_genotype_association,
     trait_expression_correlation,
 )
-
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -204,9 +202,7 @@ class TestPhenotypeEnvironmentInteraction:
         phenotypes = _make_phenotypes()
         genotypes = _make_genotypes()
         environment = {f"sample_{i}": float(i * 0.5) for i in range(20)}
-        result = phenotype_environment_interaction(
-            phenotypes, genotypes, environment, interaction_model="additive"
-        )
+        result = phenotype_environment_interaction(phenotypes, genotypes, environment, interaction_model="additive")
         assert result["model"] == "additive"
 
     def test_empty_input(self):

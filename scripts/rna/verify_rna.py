@@ -54,9 +54,7 @@ def verify_module_docs(key_modules: list[tuple[str, Path]]) -> None:
                                 missing_docs.append(name)
 
                     if missing_docs:
-                        issues.extend(
-                            [f"{module_name}.{name}: Missing/incomplete docstring" for name in missing_docs]
-                        )
+                        issues.extend([f"{module_name}.{name}: Missing/incomplete docstring" for name in missing_docs])
                         print(f"  ❌ {module_name}: {len(missing_docs)} undocumented items")
                     else:
                         print(f"  ✅ {module_name}: All documented")

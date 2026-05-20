@@ -6,23 +6,18 @@ training models, and generating predictions.
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
 
-from metainformant.core.utils import logging
 from metainformant.core import io
+from metainformant.core.utils import logging
+from metainformant.life_events.core.config import LifeEventsWorkflowConfig, load_life_events_config
+from metainformant.life_events.core.events import EventSequence
+from metainformant.life_events.core.utils import convert_sequences_to_tokens, get_event_statistics
+from metainformant.life_events.models.embeddings import learn_event_embeddings
+from metainformant.life_events.models.predictor import EventSequencePredictor
 
 logger = logging.get_logger(__name__)
-
-# Optional imports for ML functionality
-try:
-    from . import config, embeddings, models
-
-    EMBEDDINGS_AVAILABLE = True
-except ImportError:
-    EMBEDDINGS_AVAILABLE = False
-    logger.warning("Life events ML components not available")
 
 
 def analyze_life_course(
@@ -30,6 +25,7 @@ def analyze_life_course(
     outcomes: Optional[List[str]] = None,
     output_dir: Optional[Union[str, Path]] = None,
     config_obj: Optional[Any] = None,
+    config_path: Optional[Union[str, Path]] = None,
     **kwargs: Any,
 ) -> Dict[str, Any]:
     """Analyze life event sequences with optional outcome prediction.
@@ -52,7 +48,30 @@ def analyze_life_course(
     if not sequences:
         raise ValueError("No sequences provided for analysis")
 
-    # Set up output directory
+    config = config_obj
+    if config is None and config_path is not None:
+        config = load_life_events_config(config_path)
+
+    embedding_config: dict[str, Any] = {}
+    model_config: dict[str, Any] = {}
+    workflow_config: dict[str, Any] = {}
+    if isinstance(config, LifeEventsWorkflowConfig):
+        embedding_config = dict(config.embedding)
+        model_config = dict(config.model)
+        workflow_config = dict(config.workflow)
+        if output_dir is None:
+            output_dir = config.work_dir
+    elif isinstance(config, dict):
+        embedding_config = dict(config.get("embedding", {}))
+        model_config = dict(config.get("model", {}))
+        workflow_config = dict(config.get("workflow", {}))
+        for key in ("embedding_dim", "window_size", "epochs", "learning_rate"):
+            if key in config:
+                embedding_config.setdefault(key, config[key])
+        for key in ("model_type", "task_type", "random_state"):
+            if key in config:
+                model_config.setdefault(key, config[key])
+
     if output_dir is None:
         output_dir = Path("output") / "life_events"
     else:
@@ -60,62 +79,66 @@ def analyze_life_course(
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    embedding_dim = int(kwargs.get("embedding_dim", embedding_config.get("embedding_dim", 100)))
+    window_size = int(kwargs.get("window_size", embedding_config.get("window_size", 5)))
+    epochs = int(kwargs.get("epochs", embedding_config.get("epochs", 5)))
+    random_state = int(kwargs.get("random_state", model_config.get("random_state", 42)))
+    model_type = str(kwargs.get("model_type", model_config.get("model_type", "embedding")))
+    task_type = str(kwargs.get("task_type", model_config.get("task_type", "classification")))
+
+    token_sequences = convert_sequences_to_tokens(sequences)
+    embeddings_result = learn_event_embeddings(
+        token_sequences,
+        embedding_dim=embedding_dim,
+        window_size=window_size,
+        epochs=epochs,
+        random_state=random_state,
+    )
+
+    embeddings_path = output_dir / "event_embeddings.json"
+    io.dump_json({event: vector.tolist() for event, vector in embeddings_result.items()}, embeddings_path)
+
+    stats = get_event_statistics(sequences)
+
     results = {
         "n_sequences": len(sequences),
+        "n_events": stats.get("total_events", 0),
         "output_dir": str(output_dir),
-        "config_used": {},
-        "sequence_stats": {},
-        "model_results": {},
-        "predictions": {},
+        "config_used": {
+            "embedding": embedding_config,
+            "model": model_config,
+            "workflow": workflow_config,
+        },
+        "sequence_stats": stats,
+        "embeddings": str(embeddings_path),
+        "embedding_dim": embedding_dim,
+        "model_type": model_type,
+        "task_type": task_type,
+        "predictions": [],
         "visualizations": [],
     }
 
-    # Basic sequence statistics
-    results["sequence_stats"] = _compute_sequence_stats(sequences)
-
-    # If outcomes provided, do supervised analysis
     if outcomes is not None:
         if len(outcomes) != len(sequences):
             raise ValueError("Number of outcomes must match number of sequences")
 
-        if not EMBEDDINGS_AVAILABLE:
-            logger.warning("ML components not available, skipping supervised analysis")
-            results["model_results"] = {"error": "ML components not available"}
-        else:
-            # Learn embeddings
-            logger.info("Learning event embeddings...")
-            embedding_results = embeddings.learn_event_embeddings(sequences, output_dir=output_dir, **kwargs)
+        predictor = EventSequencePredictor(
+            model_type=model_type,
+            task_type=task_type,
+            embedding_dim=embedding_dim,
+            random_state=random_state,
+        )
+        predictor.fit(token_sequences, outcomes, event_embeddings=embeddings_result)
+        predictions = predictor.predict(token_sequences)
+        results["predictions"] = predictions.tolist() if hasattr(predictions, "tolist") else list(predictions)
 
-            # Train prediction model
-            logger.info("Training prediction model...")
-            model_results = models.train_event_predictor(
-                sequences, outcomes, embedding_results=embedding_results, output_dir=output_dir, **kwargs
-            )
+        if kwargs.get("save_model", workflow_config.get("save_model", True)):
+            model_path = output_dir / "trained_model.json"
+            predictor.save_model(model_path)
+            results["model"] = str(model_path)
+            results["model_path"] = str(model_path)
 
-            # Generate predictions
-            logger.info("Generating predictions...")
-            predictions = models.predict_outcomes(
-                sequences, model_results["model"], embedding_results=embedding_results
-            )
-
-            results["model_results"] = model_results
-            results["predictions"] = predictions
-
-            # Save model if requested
-            if kwargs.get("save_model", True):
-                model_path = output_dir / "trained_model.json"
-                models.save_model(model_results["model"], model_path)
-                results["model_path"] = str(model_path)
-
-    # Generate visualizations if matplotlib available
-    try:
-        from . import visualization
-
-        vis_results = _generate_analysis_visualizations(sequences, outcomes, output_dir, results)
-        results["visualizations"] = vis_results
-    except ImportError:
-        logger.warning("Visualization not available")
-        results["visualizations"] = []
+    results["visualizations"] = _generate_analysis_visualizations(sequences, outcomes, output_dir, results)
 
     # Save results
     results_file = output_dir / "analysis_results.json"
@@ -222,13 +245,20 @@ def compare_populations(
 
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    group1_stats = _compute_sequence_stats(sequences1)
+    group2_stats = _compute_sequence_stats(sequences2)
+
     results = {
         "group1_name": group_names[0],
         "group2_name": group_names[1],
-        "group1_stats": _compute_sequence_stats(sequences1),
-        "group2_stats": _compute_sequence_stats(sequences2),
+        "group1_stats": group1_stats,
+        "group2_stats": group2_stats,
+        # Backward-compatible aliases used by older tests and scripts.
+        "group1": {"n_sequences": len(sequences1), **group1_stats},
+        "group2": {"n_sequences": len(sequences2), **group2_stats},
         "comparison": {},
         "visualizations": [],
+        "output_dir": str(output_dir),
     }
 
     # Statistical comparisons
@@ -290,79 +320,23 @@ def _compare_sequence_groups(
         "jaccard_similarity": len(types1 & types2) / len(types1 | types2) if (types1 | types2) else 0,
     }
 
+    common_event_types = sorted(types1 & types2)
+    unique_to_group1 = sorted(types1 - types2)
+    unique_to_group2 = sorted(types2 - types1)
+    comparison.update(
+        {
+            "common_event_types": common_event_types,
+            "unique_to_group1": unique_to_group1,
+            "unique_to_group2": unique_to_group2,
+            "sequence_length": comparison["length_comparison"],
+            "event_diversity": {
+                "group1_unique_events": len(types1),
+                "group2_unique_events": len(types2),
+            },
+        }
+    )
+
     return comparison
-
-
-def compare_populations(
-    group1: List[EventSequence], group2: List[EventSequence], output_dir: Optional[Union[str, Path]] = None
-) -> Dict[str, Any]:
-    """Compare two populations of life event sequences.
-
-    Args:
-        group1: First group of EventSequence objects
-        group2: Second group of EventSequence objects
-        output_dir: Directory to save comparison results (optional)
-
-    Returns:
-        Dictionary containing comparison statistics and plots
-    """
-    from pathlib import Path
-
-    if output_dir:
-        output_dir = Path(output_dir)
-        output_dir.mkdir(parents=True, exist_ok=True)
-
-    # Analyze group 1
-    group1_stats = analyze_life_course(group1, outcomes=None)
-    group1_stats["n_sequences"] = len(group1)
-
-    # Analyze group 2
-    group2_stats = analyze_life_course(group2, outcomes=None)
-    group2_stats["n_sequences"] = len(group2)
-
-    # Compute comparison metrics
-    comparison = {
-        "sequence_length": {
-            "group1_mean": np.mean([len(seq.events) for seq in group1]),
-            "group2_mean": np.mean([len(seq.events) for seq in group2]),
-            "difference": abs(
-                np.mean([len(seq.events) for seq in group1]) - np.mean([len(seq.events) for seq in group2])
-            ),
-        },
-        "event_diversity": {
-            "group1_unique_events": len(set(event.event_type for seq in group1 for event in seq.events)),
-            "group2_unique_events": len(set(event.event_type for seq in group2 for event in seq.events)),
-        },
-        "temporal_range": {
-            "group1_days": (
-                max(event.timestamp for seq in group1 for event in seq.events)
-                - min(event.timestamp for seq in group1 for event in seq.events)
-            ).days,
-            "group2_days": (
-                max(event.timestamp for seq in group2 for event in seq.events)
-                - min(event.timestamp for seq in group2 for event in seq.events)
-            ).days,
-        },
-    }
-
-    # Generate comparison plots if output directory provided
-    if output_dir:
-        try:
-            from .visualization import plot_population_comparison
-
-            plot_path = output_dir / "population_comparison.png"
-            plot_population_comparison(
-                group1, group2, group1_label="Group 1", group2_label="Group 2", output_path=plot_path
-            )
-        except ImportError:
-            logger.warning("Population comparison plot not available")
-
-    return {
-        "group1": group1_stats,
-        "group2": group2_stats,
-        "comparison": comparison,
-        "output_dir": str(output_dir) if output_dir else None,
-    }
 
 
 def intervention_analysis(
@@ -370,6 +344,8 @@ def intervention_analysis(
     intervention_time: float,
     output_dir: Optional[Union[str, Path]] = None,
     outcomes: Optional[List[Any]] = None,
+    pre_intervention_outcomes: Optional[Any] = None,
+    post_intervention_outcomes: Optional[Any] = None,
 ) -> Dict[str, Any]:
     """Analyze the effects of an intervention on life event sequences.
 
@@ -408,13 +384,20 @@ def intervention_analysis(
         if post_events:
             post_sequences.append(EventSequence(person_id=f"{seq.person_id}_post", events=post_events))
 
+    pre_outcomes = pre_intervention_outcomes
+    post_outcomes = post_intervention_outcomes
+    if outcomes is not None and pre_outcomes is None and post_outcomes is None:
+        pre_outcomes = outcomes[: len(pre_sequences)]
+        post_outcomes = outcomes[len(pre_sequences) :] if len(outcomes) > len(pre_sequences) else None
+
+    pre_output = output_dir / "pre" if output_dir else None
+    post_output = output_dir / "post" if output_dir else None
+
     # Analyze pre-intervention
-    pre_analysis = analyze_life_course(pre_sequences, outcomes[: len(pre_sequences)] if outcomes else None)
+    pre_analysis = analyze_life_course(pre_sequences, pre_outcomes, output_dir=pre_output) if pre_sequences else {}
 
     # Analyze post-intervention
-    post_analysis = analyze_life_course(
-        post_sequences, outcomes[len(pre_sequences) :] if outcomes and len(outcomes) > len(pre_sequences) else None
-    )
+    post_analysis = analyze_life_course(post_sequences, post_outcomes, output_dir=post_output) if post_sequences else {}
 
     # Calculate differences
     differences = {}
@@ -423,15 +406,26 @@ def intervention_analysis(
             if isinstance(post_analysis[key], (int, float)):
                 differences[f"{key}_change"] = post_analysis[key] - pre_analysis[key]
 
+    outcome_change = {}
+    if pre_outcomes is not None and post_outcomes is not None:
+        import numpy as np
+
+        pre_arr = np.asarray(pre_outcomes, dtype=float)
+        post_arr = np.asarray(post_outcomes, dtype=float)
+        if len(pre_arr) and len(post_arr):
+            outcome_change = {
+                "mean": float(post_arr.mean() - pre_arr.mean()),
+                "pre_mean": float(pre_arr.mean()),
+                "post_mean": float(post_arr.mean()),
+            }
+
     # Generate intervention effect plots if output directory provided
     if output_dir:
         try:
             from .visualization import plot_intervention_effects
 
             plot_path = output_dir / "intervention_effects.png"
-            plot_intervention_effects(
-                pre_sequences, post_sequences, intervention_time=intervention_datetime, output_path=plot_path
-            )
+            plot_intervention_effects(pre_sequences, post_sequences, output_path=plot_path)
         except ImportError:
             logger.warning("Intervention effects plot not available")
 
@@ -439,6 +433,7 @@ def intervention_analysis(
         "pre_intervention": pre_analysis,
         "post_intervention": post_analysis,
         "differences": differences,
+        "outcome_change": outcome_change,
         "intervention_time": intervention_time,
         "n_pre_sequences": len(pre_sequences),
         "n_post_sequences": len(post_sequences),

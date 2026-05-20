@@ -19,10 +19,10 @@ from metainformant.gwas.analysis.summary_stats import (
 def sample_results() -> list:
     """Generate sample association results."""
     return [
-        {"beta": 0.5, "se": 0.1, "p_value": 1e-6, "n_samples": 100, "maf": 0.3},
-        {"beta": 0.1, "se": 0.05, "p_value": 0.5, "n_samples": 100, "maf": 0.2},
-        {"beta": -0.3, "se": 0.08, "p_value": 1e-10, "n_samples": 100, "maf": 0.15},
-        {"beta": 0.0, "se": 0.2, "p_value": 0.99, "n_samples": 100, "maf": 0.4},
+        {"beta": 0.5, "se": 0.1, "p_value": 1e-6, "q_value": 2e-6, "n_samples": 100, "maf": 0.3},
+        {"beta": 0.1, "se": 0.05, "p_value": 0.5, "q_value": 0.6, "n_samples": 100, "maf": 0.2},
+        {"beta": -0.3, "se": 0.08, "p_value": 1e-10, "q_value": 4e-10, "n_samples": 100, "maf": 0.15},
+        {"beta": 0.0, "se": 0.2, "p_value": 0.99, "q_value": 0.99, "n_samples": 100, "maf": 0.4},
     ]
 
 
@@ -54,7 +54,11 @@ class TestWriteSummaryStatistics:
         assert "CHR" in header
         assert "POS" in header
         assert "P" in header
+        assert "Q_FDR" in header
         assert "BETA" in header
+
+        q_fdr_index = header.index("Q_FDR")
+        assert float(lines[1].split("\t")[q_fdr_index]) == pytest.approx(2e-6)
 
     def test_write_creates_directories(self, tmp_path: Path, sample_results: list, sample_variant_info: list) -> None:
         """Should create parent directories if needed."""
@@ -80,6 +84,19 @@ class TestWriteSummaryStatistics:
 
         content = output.read_text()
         assert "G,T" in content
+
+    def test_uppercase_n_and_maf_are_supported(self, tmp_path: Path) -> None:
+        """Dynamic GWAS dispatch may provide N/MAF keys."""
+        results = [{"beta": 0.1, "se": 0.05, "p_value": 0.5, "q_fdr": 0.75, "N": 50, "MAF": 0.2}]
+        variants = [{"chrom": "1", "pos": 100, "id": "rs1", "ref": "A", "alt": "G"}]
+        output = tmp_path / "uppercase_keys.tsv"
+        write_summary_statistics(results, variants, output)
+
+        header, row = output.read_text().strip().split("\n")
+        values = dict(zip(header.split("\t"), row.split("\t")))
+        assert values["N"] == "50"
+        assert values["MAF"] == "0.2000"
+        assert float(values["Q_FDR"]) == pytest.approx(0.75)
 
 
 class TestWriteSignificantHits:

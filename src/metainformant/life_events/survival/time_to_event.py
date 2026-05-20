@@ -11,7 +11,6 @@ methods (Newton-Raphson for Cox PH, step-function estimation for KM).
 from __future__ import annotations
 
 import math
-from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -288,20 +287,20 @@ def cox_ph_model(
             sum_exp += risk_exp[i]
             for k in range(p):
                 sum_x_exp[k] += x_sorted[i][k] * risk_exp[i]
-                for l in range(k, p):
-                    val = x_sorted[i][k] * x_sorted[i][l] * risk_exp[i]
-                    sum_xx_exp[k][l] += val
-                    if k != l:
-                        sum_xx_exp[l][k] += val
+                for col in range(k, p):
+                    val = x_sorted[i][k] * x_sorted[i][col] * risk_exp[i]
+                    sum_xx_exp[k][col] += val
+                    if k != col:
+                        sum_xx_exp[col][k] += val
 
             if e_sorted[i] == 1 and sum_exp > 0:
                 for k in range(p):
                     gradient[k] += x_sorted[i][k] - sum_x_exp[k] / sum_exp
-                    for l in range(p):
-                        expected_kl = sum_xx_exp[k][l] / sum_exp
+                    for col in range(p):
+                        expected_kl = sum_xx_exp[k][col] / sum_exp
                         mean_k = sum_x_exp[k] / sum_exp
-                        mean_l = sum_x_exp[l] / sum_exp
-                        hessian[k][l] -= expected_kl - mean_k * mean_l
+                        mean_l = sum_x_exp[col] / sum_exp
+                        hessian[k][col] -= expected_kl - mean_k * mean_l
 
         # Newton step: beta += H^{-1} * gradient
         # Use simple diagonal approximation for stability

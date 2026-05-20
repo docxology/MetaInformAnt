@@ -6,7 +6,6 @@ import math
 from pathlib import Path
 
 import numpy as np
-import pytest
 
 from metainformant.gwas.visualization.interactive.finemapping import (
     compute_credible_set,

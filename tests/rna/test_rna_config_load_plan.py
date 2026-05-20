@@ -12,7 +12,7 @@ def test_load_workflow_config_and_plan_uses_yaml_values():
     """Test that workflow config loading and planning uses YAML values correctly."""
     from metainformant.rna.engine.workflow import load_workflow_config, plan_workflow
 
-    repo_root = Path(__file__).resolve().parents[1]
+    repo_root = Path(__file__).resolve().parents[2]
     # Use test config file with threads: 6 instead of production config with threads: 12
     cfg_path = repo_root / "config" / "amalgkit" / "amalgkit_test.yaml"
     if not cfg_path.exists():
@@ -60,7 +60,7 @@ def test_env_overrides_for_config_threads(tmp_path: Path):
     """Test that environment variables can override config values."""
     from metainformant.rna.engine.workflow import load_workflow_config
 
-    repo_root = Path(__file__).resolve().parents[1]
+    repo_root = Path(__file__).resolve().parents[2]
     # Use test config if available, otherwise use pbarbatus
     cfg_path = repo_root / "config" / "amalgkit" / "amalgkit_test.yaml"
     if not cfg_path.exists():

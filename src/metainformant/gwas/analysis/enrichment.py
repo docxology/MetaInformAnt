@@ -21,12 +21,13 @@ import math
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
+
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
 try:
-    from scipy.stats import fisher_exact, chi2  # noqa: F401
+    from scipy.stats import chi2, fisher_exact  # noqa: F401
 
     HAS_SCIPY = True
 except ImportError:
@@ -135,9 +136,7 @@ def go_term_info(go_id: str) -> Dict[str, Any]:
     """
     url = f"{QUICKGO_BASE}/ontology/go/terms/{go_id}"
     try:
-        resp = requests.get(
-            url, timeout=QUICKGO_TIMEOUT, headers={"Accept": "application/json"}
-        )
+        resp = requests.get(url, timeout=QUICKGO_TIMEOUT, headers={"Accept": "application/json"})
         resp.raise_for_status()
         data = resp.json()
         results = data.get("results", [{}])
@@ -250,10 +249,7 @@ def pathway_enrichment_from_annotations(
 
     results.sort(key=lambda r: r["p_value"])
     n_sig = sum(1 for r in results if r["significant_fdr05"])
-    logger.info(
-        f"Pathway enrichment: {len(results)} sets tested, "
-        f"{n_sig} significant at FDR<0.05"
-    )
+    logger.info(f"Pathway enrichment: {len(results)} sets tested, " f"{n_sig} significant at FDR<0.05")
     return results
 
 

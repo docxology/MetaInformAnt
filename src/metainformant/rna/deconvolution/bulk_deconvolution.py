@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
-from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple, Union
+from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 

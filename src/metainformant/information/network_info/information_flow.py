@@ -274,14 +274,14 @@ def granger_causality(
         # Restricted model: Y_t ~ Y_{t-1} + ... + Y_{t-lag}
         x_restricted: list[list[float]] = []
         for t in range(n_obs):
-            row = [target[t + lag - l - 1] for l in range(lag)]
+            row = [target[t + lag - offset - 1] for offset in range(lag)]
             x_restricted.append(row)
 
         # Unrestricted model: Y_t ~ Y_{t-1} + ... + Y_{t-lag} + X_{t-1} + ... + X_{t-lag}
         x_unrestricted: list[list[float]] = []
         for t in range(n_obs):
-            row_r = [target[t + lag - l - 1] for l in range(lag)]
-            row_s = [source[t + lag - l - 1] for l in range(lag)]
+            row_r = [target[t + lag - offset - 1] for offset in range(lag)]
+            row_s = [source[t + lag - offset - 1] for offset in range(lag)]
             x_unrestricted.append(row_r + row_s)
 
         rss_r = _ols_rss(y, x_restricted)
@@ -390,7 +390,7 @@ def _f_sf(f: float, df1: int, df2: int) -> float:
         return 0.5 * math.erfc(z / math.sqrt(2.0))
 
     # Beta approximation
-    x = df2 / (df2 + df1 * f)
+    df2 / (df2 + df1 * f)
     # For small df, use rough normal approximation
     mean_f = df2 / max(df2 - 2, 1)
     var_f = 2.0 * df2**2 * (df1 + df2 - 2) / (df1 * max(df2 - 2, 1) ** 2 * max(df2 - 4, 1)) if df2 > 4 else mean_f**2
@@ -461,7 +461,7 @@ def network_entropy(adjacency_matrix: list[list[float]]) -> dict:
     # S = -Tr(rho * log2(rho))
     # Approximate using Taylor expansion: -x*log(x) ~ x*(1-x) + ... for eigenvalue estimation
     # Use trace of rho^k for k=1,2,3
-    tr_rho = sum(rho[i][i] for i in range(n))  # Should be 1
+    sum(rho[i][i] for i in range(n))  # Should be 1
     tr_rho2 = sum(rho[i][j] * rho[j][i] for i in range(n) for j in range(n))
 
     # Renyi-2 entropy approximation: S2 = -log2(tr_rho2)

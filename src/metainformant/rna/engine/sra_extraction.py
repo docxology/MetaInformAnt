@@ -11,7 +11,7 @@ import concurrent.futures
 import shutil
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List
+from typing import TYPE_CHECKING
 
 from metainformant.core.utils import logging
 

@@ -7,16 +7,20 @@ and workflow summary reporting.
 
 from __future__ import annotations
 
-import csv
-import json
 import shutil
 import subprocess
-import time as time_mod
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from metainformant.core.utils import logging
-from metainformant.rna.engine.sra_extraction import extract_sra_directly, manual_integration_fallback
+from metainformant.rna.engine.sra_extraction import extract_sra_directly
+from metainformant.rna.engine.workflow_cleanup import (
+    check_disk_space_or_fail,
+    cleanup_after_quant,
+    cleanup_incorrectly_placed_sra_files,
+    cleanup_temp_files,
+    filter_metadata_for_unquantified,
+)
 
 if TYPE_CHECKING:
     from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, WorkflowStepResult
@@ -344,8 +348,8 @@ def _validate_merge_prerequisites(
         )
         if check_ggplot2.returncode != 0:
             return (
-                f"PREREQUISITE CHECK FAILED: R package 'ggplot2' not available for merge step.\n"
-                f"  Installation: Rscript -e \"install.packages('ggplot2', repos='https://cloud.r-project.org')\"\n"
+                "PREREQUISITE CHECK FAILED: R package 'ggplot2' not available for merge step.\n"
+                "  Installation: Rscript -e \"install.packages('ggplot2', repos='https://cloud.r-project.org')\"\n"
             )
     except Exception as e:
         logger.warning(f"Failed to check R packages: {e}")
@@ -426,7 +430,6 @@ def handle_post_step_actions(
         check: Whether to stop on first failure
         step_results: Mutable list to append additional step results to
     """
-    from metainformant.rna.amalgkit.metadata_filter import filter_selected_metadata
     from metainformant.rna.amalgkit.metadata_utils import deduplicate_metadata
 
     if step_results is None:
@@ -521,7 +524,6 @@ def _validate_getfastq_results(
     config: AmalgkitWorkflowConfig, steps_config: Dict[str, Any], check: bool, step_results: List
 ) -> None:
     """Validate getfastq results and run fallback extraction if needed."""
-    from metainformant.rna.engine.workflow import WorkflowStepResult
 
     try:
         from metainformant.rna.analysis.validation import save_validation_report, validate_all_samples
@@ -585,7 +587,6 @@ def _attempt_fallback_extraction(
         f"  4. Try re-running with redo: yes if files may be corrupted"
     )
     logger.error(error_msg)
-    from metainformant.rna.engine.workflow import WorkflowStepResult
 
     step_results.append(
         WorkflowStepResult(step_name="getfastq_validation", return_code=1, success=False, error_message=error_msg)

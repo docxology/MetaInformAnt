@@ -11,7 +11,6 @@ from typing import Dict, List, Sequence
 
 import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
-import numpy as np
 
 from metainformant.core.utils import logging
 

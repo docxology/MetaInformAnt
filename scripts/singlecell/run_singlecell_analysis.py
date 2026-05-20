@@ -14,7 +14,6 @@ import argparse
 import logging
 import sys
 from pathlib import Path
-from typing import Any
 
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
@@ -133,7 +132,6 @@ def run_workflow(args):
         logger.info(f"Loaded count matrix: {df.shape[0]} cells, {df.shape[1]} genes")
 
         # Convert to SingleCellData format
-        import numpy as np
 
         from metainformant.singlecell import SingleCellData
 

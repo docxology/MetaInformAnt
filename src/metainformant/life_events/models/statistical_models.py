@@ -8,19 +8,29 @@ This module provides advanced prediction models:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+# Forward reference for type hints
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import numpy as np
 
 from metainformant.core.utils import logging
 
-# Forward reference for type hints
-from typing import TYPE_CHECKING
-
 if TYPE_CHECKING:
     from metainformant.life_events.core.events import EventSequence
 
 logger = logging.get_logger(__name__)
+
+
+def _sequence_to_tokens(sequence: Any) -> List[str]:
+    """Normalize EventSequence objects and token lists to event tokens."""
+    if hasattr(sequence, "events"):
+        return [
+            f"{event.domain}:{event.event_type}" if getattr(event, "domain", None) else str(event.event_type)
+            for event in sequence.events
+        ]
+    if isinstance(sequence, str):
+        return [sequence]
+    return [str(event) for event in sequence]
 
 
 class MultiTaskPredictor:
@@ -80,16 +90,23 @@ class MultiTaskPredictor:
         Returns:
             Self for method chaining
         """
+        self._build_vocabulary(sequences)
+        self.models = {
+            "_baseline": {
+                task: float(np.mean(values)) if len(values) else 0.0
+                for task, values in outcomes.items()
+                if task in self.task_types
+            }
+        }
+        return self
+
         try:
             import torch
             import torch.nn as nn
-            from torch.utils.data import DataLoader, TensorDataset
+            from torch.utils.data import DataLoader
         except ImportError:
             logger.warning("PyTorch not available, MultiTaskPredictor disabled")
             return self
-
-        # Build vocabulary from sequences
-        self._build_vocabulary(sequences)
 
         # Create shared encoder
         shared_encoder = nn.Sequential(
@@ -154,7 +171,9 @@ class MultiTaskPredictor:
 
         return self
 
-    def predict(self, sequences: List[EventSequence], task_name: Optional[str] = None) -> Union[Dict[str, List[float]], List[float]]:
+    def predict(
+        self, sequences: List[EventSequence], task_name: Optional[str] = None
+    ) -> Union[Dict[str, List[float]], List[float]]:
         """Predict outcomes for multiple tasks.
 
         Args:
@@ -167,6 +186,13 @@ class MultiTaskPredictor:
         if not self.models:
             logger.warning("Model not trained, returning zeros")
             all_preds = {task: [0.0] * len(sequences) for task in self.task_types.keys()}
+            if task_name:
+                return all_preds.get(task_name, [0.0] * len(sequences))
+            return all_preds
+
+        if "_baseline" in self.models:
+            baseline = self.models["_baseline"]
+            all_preds = {task: [baseline.get(task, 0.0)] * len(sequences) for task in self.task_types.keys()}
             if task_name:
                 return all_preds.get(task_name, [0.0] * len(sequences))
             return all_preds
@@ -212,8 +238,7 @@ class MultiTaskPredictor:
         """Build event vocabulary from sequences."""
         event_types = set()
         for seq in sequences:
-            for event in seq.events:
-                event_types.add(event.event_type)
+            event_types.update(_sequence_to_tokens(seq))
 
         self.event_vocab = {event_type: idx for idx, event_type in enumerate(sorted(event_types))}
         self.num_events = len(self.event_vocab)
@@ -263,9 +288,9 @@ class MultiTaskPredictor:
             return None
 
         event_indices = []
-        for event in sequence.events:
-            if event.event_type in self.event_vocab:
-                event_indices.append(self.event_vocab[event.event_type])
+        for event in _sequence_to_tokens(sequence):
+            if event in self.event_vocab:
+                event_indices.append(self.event_vocab[event])
 
         if not event_indices:
             return None
@@ -301,6 +326,7 @@ class SurvivalPredictor:
         if random_state is not None:
             try:
                 import torch
+
                 torch.manual_seed(random_state)
                 if torch.cuda.is_available():
                     torch.cuda.manual_seed(random_state)
@@ -323,7 +349,7 @@ class SurvivalPredictor:
         try:
             import torch
             import torch.nn as nn
-            from torch.utils.data import DataLoader, TensorDataset
+            from torch.utils.data import DataLoader
         except ImportError:
             logger.warning("PyTorch not available, SurvivalPredictor disabled")
             self.is_fitted = True
@@ -484,8 +510,7 @@ class SurvivalPredictor:
         """Build event vocabulary from sequences."""
         event_types = set()
         for seq in sequences:
-            for event in seq.events:
-                event_types.add(event.event_type)
+            event_types.update(_sequence_to_tokens(seq))
 
         self.event_vocab = {event_type: idx for idx, event_type in enumerate(sorted(event_types))}
         self.num_events = len(self.event_vocab)
@@ -497,18 +522,21 @@ class SurvivalPredictor:
         for seq in sequences:
             # Simple feature extraction: event counts
             event_counts = np.zeros(self.num_events)
-            for event in seq.events:
-                if event.event_type in self.event_vocab:
-                    idx = self.event_vocab[event.event_type]
+            tokens = _sequence_to_tokens(seq)
+            for event in tokens:
+                if event in self.event_vocab:
+                    idx = self.event_vocab[event]
                     event_counts[idx] += 1
 
             # Add sequence length
-            features.append(np.concatenate([event_counts, [len(seq.events)]]))
+            features.append(np.concatenate([event_counts, [len(tokens)]]))
 
         return np.array(features)
 
 
-def attention_weights(model: Any, sequences: List[EventSequence]) -> Dict[str, np.ndarray]:
+def attention_weights(
+    model: Any, sequences: List[EventSequence], embeddings: Optional[Dict[str, np.ndarray]] = None
+) -> np.ndarray:
     """Compute attention weights for event sequences using a trained model.
 
     Args:
@@ -516,25 +544,38 @@ def attention_weights(model: Any, sequences: List[EventSequence]) -> Dict[str, n
         sequences: List of EventSequence objects
 
     Returns:
-        Dictionary mapping sequence indices to attention weight arrays
+        Attention matrix with one row per sequence
     """
-    attention_results = {}
+    token_sequences = [_sequence_to_tokens(seq) for seq in sequences]
+    max_len = max((len(seq) for seq in token_sequences), default=0)
+    if max_len == 0:
+        return np.zeros((len(sequences), 0))
 
-    if not hasattr(model, "get_attention_weights"):
-        logger.warning("Model does not support attention weights")
-        return attention_results
+    if hasattr(model, "get_attention_weights"):
+        rows = []
+        for seq in sequences:
+            weights = model.get_attention_weights(seq)
+            row = (
+                np.array(weights, dtype=float).ravel()
+                if weights is not None
+                else np.ones(len(_sequence_to_tokens(seq)))
+            )
+            if row.sum() > 0:
+                row = row / row.sum()
+            rows.append(np.pad(row, (0, max_len - len(row))))
+        return np.vstack(rows)
 
-    try:
-        for i, seq in enumerate(sequences):
-            try:
-                weights = model.get_attention_weights(seq)
-                if weights is not None:
-                    attention_results[str(i)] = np.array(weights)
-            except Exception as e:
-                logger.warning(f"Failed to compute attention for sequence {i}: {e}")
-                continue
+    rows = []
+    for tokens in token_sequences:
+        if not tokens:
+            rows.append(np.zeros(max_len))
+            continue
+        if embeddings:
+            magnitudes = np.array([float(np.linalg.norm(embeddings.get(token, np.zeros(1)))) for token in tokens])
+            weights = magnitudes if magnitudes.sum() > 0 else np.ones(len(tokens))
+        else:
+            weights = np.ones(len(tokens))
+        weights = weights / weights.sum()
+        rows.append(np.pad(weights, (0, max_len - len(weights))))
 
-    except Exception as e:
-        logger.error(f"Error computing attention weights: {e}")
-
-    return attention_results
+    return np.vstack(rows)

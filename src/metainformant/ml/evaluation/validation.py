@@ -7,7 +7,7 @@ and permutation importance analysis.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
@@ -17,18 +17,12 @@ logger = get_logger(__name__)
 
 # Optional imports for ML functionality
 try:
-    from sklearn.base import BaseEstimator
     from sklearn.metrics import (
         accuracy_score,
-        f1_score,
         mean_squared_error,
-        precision_score,
         r2_score,
-        recall_score,
-        roc_auc_score,
     )
     from sklearn.model_selection import KFold, StratifiedKFold, cross_val_score, cross_validate, train_test_split
-    from sklearn.utils import resample
 
     HAS_SKLEARN = True
 except ImportError:

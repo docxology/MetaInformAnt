@@ -66,8 +66,16 @@ repos:
       - id: trailing-whitespace
         exclude: '\.md$|\.rst$'
 
-  # Check for private keys
-  - id: detect-private-key
+      # Check for private keys
+      - id: detect-private-key
+
+      # Check for AWS credentials
+      - id: detect-aws-credentials
+        args: [--allow-missing-credentials]
+
+      # Fix mixed line endings
+      - id: mixed-line-ending
+        args: [--fix=lf]
 
   # Example validation
   - repo: local
@@ -79,14 +87,6 @@ repos:
         files: ^examples/.*\.py$
         pass_filenames: false
         description: Fast validation of example files for syntax and import errors
-
-      # Check for AWS credentials
-      - id: detect-aws-credentials
-        args: [--allow-missing-credentials]
-
-      # Fix mixed line endings
-      - id: mixed-line-ending
-        args: [--fix=lf]
 
   # Python security checks with bandit (disabled due to dependency issues)
   # - repo: https://github.com/pycqa/bandit

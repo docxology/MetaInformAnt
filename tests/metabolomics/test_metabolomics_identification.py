@@ -1,11 +1,11 @@
 """Tests for metabolomics identification and quantification."""
+
 from __future__ import annotations
 
 import numpy as np
 import pytest
 
 from metainformant.metabolomics.analysis.identification import (
-    AdductMatch,
     COMMON_ADDUCTS,
     MetaboliteMatch,
     cosine_spectral_similarity,
@@ -230,11 +230,13 @@ class TestMissingValueImputation:
 
     def test_knn_imputation(self) -> None:
         """KNN should fill missing values using correlated rows."""
-        data = np.array([
-            [10.0, 20.0, 0.0, 40.0],
-            [10.0, 20.0, 30.0, 40.0],
-            [5.0, 10.0, 15.0, 20.0],
-        ])
+        data = np.array(
+            [
+                [10.0, 20.0, 0.0, 40.0],
+                [10.0, 20.0, 30.0, 40.0],
+                [5.0, 10.0, 15.0, 20.0],
+            ]
+        )
         result = missing_value_imputation(data, method="knn")
         # Row 0 missing value at col 2 should be imputed from neighbors
         assert result[0, 2] > 0  # no longer zero

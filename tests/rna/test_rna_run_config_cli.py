@@ -57,7 +57,7 @@ def test_cli_run_config_smoke_real_amalgkit(tmp_path: Path):
                 pass
             else:
                 raise  # Unexpected exit code should be investigated
-        except Exception as e:
+        except Exception:
             # Accept any exception as real-world behavior (may fail due to missing deps, etc.)
             # Other exceptions are acceptable for real tool execution
             pass
@@ -107,7 +107,7 @@ def test_cli_run_config_offline_behavior(tmp_path: Path):
             # Exit codes: 0 = success, 1 = error, 2 = invalid args, 127 = command not found, 204 = no content
             # This documents real failure modes from the external tool
             assert e.code in (0, 1, 2, 127, 204), f"Unexpected exit code: {e.code}"
-        except Exception as e:
+        except Exception:
             # Accept any exception as real-world behavior (may fail due to missing deps, etc.)
             # Other exceptions are acceptable for real tool execution
             pass

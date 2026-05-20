@@ -1,8 +1,6 @@
 """Tests for amalgkit integration functionality."""
 
 import json
-import os
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -356,7 +354,6 @@ class TestPerformanceAndRobustness:
     def test_concurrent_workflow_execution(self):
         """Test that multiple workflows can be planned concurrently."""
         import threading
-        import time
 
         config_data = {
             "work_dir": str(self.test_dir / "work"),
@@ -548,7 +545,7 @@ def test_curate_summary_counts_from_fixture(tmp_path: Path):
     from metainformant.rna.engine.pipeline import summarize_curate_tables
 
     # Use repo test data under tests/data/rna/curate/Apis_mellifera/tables
-    repo_root = Path(__file__).resolve().parents[1]
+    repo_root = Path(__file__).resolve().parents[2]
     tables_dir = repo_root / "tests" / "data" / "rna" / "curate" / "Apis_mellifera" / "tables"
 
     counts = summarize_curate_tables(tables_dir)

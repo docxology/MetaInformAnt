@@ -14,7 +14,7 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 
-def logistic_map(r: float, x0: float, n_iterations: int) -> List[float]:
+def logistic_map(r: float, x0: float, n_iterations: int | None = None, *, steps: int | None = None) -> List[float]:
     """Generate logistic map sequence.
 
     Args:
@@ -25,6 +25,10 @@ def logistic_map(r: float, x0: float, n_iterations: int) -> List[float]:
     Returns:
         List of population values over time
     """
+    if steps is not None:
+        n_iterations = steps
+    if n_iterations is None:
+        raise ValueError("n_iterations or steps must be provided")
     if not (0 < r <= 4):
         raise ValueError("Growth parameter r must be in (0, 4]")
     if not (0 < x0 < 1):

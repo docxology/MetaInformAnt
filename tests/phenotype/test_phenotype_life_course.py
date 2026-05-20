@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from datetime import datetime
-from pathlib import Path
 
 import pytest
 
@@ -281,7 +280,7 @@ class TestIntegration:
         phenotypes_list = []
         for seq in sequences:
             phenotypes = extract_phenotypes_from_events(seq)
-            traits = map_events_to_traits(seq)
+            map_events_to_traits(seq)
             phenotypes_list.append(phenotypes)
 
         # Aggregate temporal patterns

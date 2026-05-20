@@ -6,8 +6,6 @@ and fast5_to_fastq error cases. All tests use real implementations -- NO MOCKING
 
 from __future__ import annotations
 
-import os
-import tempfile
 from pathlib import Path
 
 import pytest

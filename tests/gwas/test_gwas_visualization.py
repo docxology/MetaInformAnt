@@ -114,7 +114,7 @@ class TestQQPlot:
     def test_qq_plot_returns_figure(self):
         """Test that qq_plot returns a real matplotlib Figure."""
         p_values = [0.001, 0.01, 0.05, 0.1, 0.5, 0.9]
-        results = [{"p_value": p} for p in p_values]
+        [{"p_value": p} for p in p_values]
 
         fig = qq_plot(p_values)
 
@@ -206,12 +206,7 @@ class TestPCAPlot:
         xlabel = ax.get_xlabel().lower()
         ylabel = ax.get_ylabel().lower()
         title = ax.get_title().lower()
-        has_variance = (
-            "variance" in xlabel
-            or "variance" in ylabel
-            or "variance" in title
-            or len(ax.texts) > 0
-        )
+        has_variance = "variance" in xlabel or "variance" in ylabel or "variance" in title or len(ax.texts) > 0
         assert has_variance, "Should show variance information in labels, title, or annotations"
 
 

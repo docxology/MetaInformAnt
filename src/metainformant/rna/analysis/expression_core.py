@@ -10,7 +10,7 @@ All implementations are pure Python using numpy, scipy, and pandas.
 
 from __future__ import annotations
 
-from typing import Dict, List, Literal, Optional, Union
+from typing import List, Literal, Optional
 
 import numpy as np
 import pandas as pd

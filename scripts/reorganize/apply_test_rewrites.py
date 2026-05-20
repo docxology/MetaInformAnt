@@ -5,6 +5,7 @@ This script reads each test file, finds imports from metainformant.<module> that
 shortcut imports (which no longer exist after __init__.py cleanup), and rewrites them
 to use canonical submodule paths.
 """
+
 from __future__ import annotations
 
 import re

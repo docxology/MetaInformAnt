@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
-
 from metainformant.dna.population.analysis import (
     calculate_fst,
     calculate_nucleotide_diversity,

@@ -7,7 +7,6 @@ using Signal Detection Theory (Sensitivity d', Bias).
 from __future__ import annotations
 
 import math
-from typing import Optional, Tuple, Union
 
 import numpy as np
 

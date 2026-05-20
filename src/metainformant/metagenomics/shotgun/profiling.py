@@ -16,10 +16,8 @@ K-mer profiling approach:
 
 from __future__ import annotations
 
-import os
 from collections import Counter, defaultdict
 from dataclasses import dataclass, field
-from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 

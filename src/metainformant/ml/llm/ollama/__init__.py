@@ -11,8 +11,9 @@ Example:
     >>> client = OllamaClient(config)
     >>> response = client.generate("Explain DNA in one sentence.")
     >>> print(response.text)"""
+
 from __future__ import annotations
 
 from . import chains, client, config, prompts
 
-__all__ = ['chains', 'client', 'config', 'prompts']
+__all__ = ["chains", "client", "config", "prompts"]

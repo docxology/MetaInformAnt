@@ -5,6 +5,8 @@ This script runs the unified download-quant workflow in sequential mode,
 processing one sample at a time for maximum disk efficiency.
 """
 
+# ruff: noqa: E402 - setup utilities intentionally run before importing metainformant.
+
 from __future__ import annotations
 
 import sys

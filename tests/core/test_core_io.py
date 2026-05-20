@@ -7,8 +7,8 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.core.io import paths
 from metainformant.core import io
+from metainformant.core.io import paths
 
 
 def _check_online(url: str, timeout: int = 5) -> bool:

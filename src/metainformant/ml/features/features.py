@@ -7,7 +7,8 @@ elimination, and stability-based selection.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+import warnings
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
@@ -17,20 +18,16 @@ logger = get_logger(__name__)
 
 # Optional imports for ML functionality
 try:
-    from sklearn.base import BaseEstimator
-    from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+    from sklearn.ensemble import RandomForestClassifier
     from sklearn.feature_selection import (
         RFE,
         RFECV,
-        SelectFdr,
-        SelectFpr,
         SelectFromModel,
         SelectKBest,
         SelectPercentile,
     )
-    from sklearn.linear_model import Lasso, LogisticRegression
+    from sklearn.linear_model import LogisticRegression
     from sklearn.model_selection import StratifiedKFold, cross_val_score
-    from sklearn.preprocessing import StandardScaler
 
     HAS_SKLEARN = True
 except ImportError:
@@ -40,7 +37,7 @@ except ImportError:
 
 def select_features_univariate(
     X: np.ndarray, y: np.ndarray, method: str = "f_classif", k: int | str = "all", **kwargs: Any
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, list[int]]:
     """Select features using univariate statistical tests.
 
     Args:
@@ -64,6 +61,11 @@ def select_features_univariate(
     """
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for feature selection")
+
+    X = np.asarray(X)
+    y = np.asarray(y)
+    if X.ndim != 2:
+        raise ValueError("X must be 2D array")
 
     # Validate input dimensions
     if len(y) != X.shape[0]:
@@ -93,21 +95,24 @@ def select_features_univariate(
     else:
         raise ValueError(f"Unknown univariate method: {method}")
 
+    selector_kwargs = dict(kwargs)
+    selector_kwargs.pop("p_threshold", None)
+
     # Create selector
     if k == "all":
-        selector = SelectKBest(score_func=score_func, k="all", **kwargs)
+        selector = SelectKBest(score_func=score_func, k="all", **selector_kwargs)
     elif isinstance(k, int):
-        selector = SelectKBest(score_func=score_func, k=k, **kwargs)
+        selector = SelectKBest(score_func=score_func, k=min(k, X.shape[1]), **selector_kwargs)
     elif isinstance(k, str) and k.endswith("%"):
         # Percentage-based selection
         percentile = int(k[:-1])
-        selector = SelectPercentile(score_func=score_func, percentile=percentile, **kwargs)
+        selector = SelectPercentile(score_func=score_func, percentile=percentile, **selector_kwargs)
     else:
         raise ValueError(f"Invalid k parameter: {k}")
 
     # Fit and transform
     X_selected = selector.fit_transform(X, y)
-    selected_indices = selector.get_support(indices=True)
+    selected_indices = selector.get_support(indices=True).tolist()
 
     logger.info(f"Selected {len(selected_indices)} features using {method} " f"(k={k} from {X.shape[1]} total)")
 
@@ -122,7 +127,7 @@ def select_features_recursive(
     step: float = 0.1,
     cv: int = 5,
     **kwargs: Any,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, list[int]]:
     """Select features using recursive elimination.
 
     Args:
@@ -143,9 +148,33 @@ def select_features_recursive(
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for recursive feature selection")
 
+    X = np.asarray(X)
+    y = np.asarray(y)
+    if X.ndim != 2:
+        raise ValueError("X must be 2D array")
+    if len(y) != X.shape[0]:
+        raise ValueError(f"y length must match X samples: {len(y)} != {X.shape[0]}")
+
+    estimator_type = kwargs.pop("estimator_type", None)
+    if "n_features" in kwargs:
+        n_features_to_select = kwargs.pop("n_features")
+    random_state = kwargs.pop("random_state", 42)
+
     # Default estimator
     if estimator is None:
-        estimator = RandomForestClassifier(n_estimators=100, random_state=42)
+        if estimator_type in (None, "random_forest", "rf"):
+            estimator = RandomForestClassifier(n_estimators=100, random_state=random_state)
+        elif estimator_type in ("linear", "logistic"):
+            estimator = LogisticRegression(max_iter=1000, solver="liblinear", random_state=random_state)
+        elif estimator_type == "svm":
+            from sklearn.svm import LinearSVC
+
+            estimator = LinearSVC(dual=False, max_iter=5000, random_state=random_state)
+        else:
+            raise ValueError(f"Unknown importance method: {estimator_type}")
+
+    if n_features_to_select is not None:
+        n_features_to_select = min(int(n_features_to_select), X.shape[1])
 
     # Use RFECV if no specific number requested
     if n_features_to_select is None:
@@ -155,7 +184,7 @@ def select_features_recursive(
 
     # Fit and transform
     X_selected = selector.fit_transform(X, y)
-    selected_indices = selector.get_support(indices=True)
+    selected_indices = selector.get_support(indices=True).tolist()
 
     logger.info(f"Selected {len(selected_indices)} features using recursive elimination " f"(from {X.shape[1]} total)")
 
@@ -170,7 +199,7 @@ def select_features_stability(
     threshold: float = 0.5,
     random_state: int | None = None,
     **kwargs: Any,
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[np.ndarray, list[int]]:
     """Select features using stability-based selection.
 
     This method runs feature selection multiple times on bootstrapped samples
@@ -194,8 +223,22 @@ def select_features_stability(
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for stability selection")
 
-    np.random.seed(random_state)
+    if "n_bootstrap" in kwargs:
+        n_bootstraps = int(kwargs.pop("n_bootstrap"))
+    if "stability_threshold" in kwargs:
+        threshold = float(kwargs.pop("stability_threshold"))
+    subsample_ratio = float(kwargs.pop("subsample_ratio", 1.0))
+
+    X = np.asarray(X)
+    y = np.asarray(y)
+    if X.ndim != 2:
+        raise ValueError("X must be 2D array")
+    if len(y) != X.shape[0]:
+        raise ValueError(f"y length must match X samples: {len(y)} != {X.shape[0]}")
+
+    rng = np.random.default_rng(random_state)
     n_samples, n_features = X.shape
+    bootstrap_size = max(1, min(n_samples, int(round(n_samples * subsample_ratio))))
 
     # Track feature selection frequency
     selection_counts = np.zeros(n_features)
@@ -203,13 +246,13 @@ def select_features_stability(
     # Perform bootstrap iterations
     for i in range(n_bootstraps):
         # Bootstrap sample
-        indices = np.random.choice(n_samples, size=n_samples, replace=True)
+        indices = rng.choice(n_samples, size=bootstrap_size, replace=True)
         X_boot = X[indices]
         y_boot = y[indices]
 
         try:
             # Apply base selection method
-            if method == "rf":
+            if method in ("rf", "random_forest"):
                 selector = SelectFromModel(
                     RandomForestClassifier(n_estimators=50, random_state=random_state, **kwargs), threshold="median"
                 )
@@ -218,7 +261,12 @@ def select_features_stability(
                     LogisticRegression(penalty="l1", solver="liblinear", random_state=random_state, **kwargs)
                 )
             elif method == "univariate":
-                selector = SelectKBest(k=int(n_features * 0.5), **kwargs)  # Select 50% in each iteration
+                from sklearn.feature_selection import f_classif
+
+                selector = SelectKBest(
+                    score_func=f_classif,
+                    k=max(1, int(n_features * 0.5)),
+                )
             else:
                 raise ValueError(f"Unknown stability method: {method}")
 
@@ -235,18 +283,29 @@ def select_features_stability(
 
     # Select features above threshold
     selected_indices = np.where(selection_freq >= threshold)[0]
+    if len(selected_indices) == 0:
+        warnings.warn(
+            "No features meet stability threshold; returning top-ranked features instead",
+            UserWarning,
+            stacklevel=2,
+        )
+        n_fallback = max(1, min(n_features, int(np.ceil(n_features * 0.2))))
+        selected_indices = np.argsort(selection_freq)[::-1][:n_fallback]
+        selected_indices = np.sort(selected_indices)
+
     X_selected = X[:, selected_indices]
+    selected_indices_list = selected_indices.tolist()
 
     logger.info(
         f"Selected {len(selected_indices)} stable features " f"(threshold={threshold}, bootstraps={n_bootstraps})"
     )
 
-    return X_selected, selected_indices
+    return X_selected, selected_indices_list
 
 
 def biological_feature_ranking(
     X: np.ndarray, y: np.ndarray, feature_names: List[str] | None = None, method: str = "importance", **kwargs: Any
-) -> Dict[str, Any]:
+) -> Dict[str, Any] | list[tuple[int, str, float]]:
     """Rank features for biological interpretation.
 
     Args:
@@ -265,8 +324,37 @@ def biological_feature_ranking(
     if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for feature ranking")
 
+    X = np.asarray(X)
+    y = np.asarray(y)
+    if X.ndim != 2:
+        raise ValueError("X must be 2D array")
+
     if feature_names is None:
         feature_names = [f"feature_{i}" for i in range(X.shape[1])]
+    if len(feature_names) != X.shape[1]:
+        raise ValueError("feature_names length must match X columns")
+
+    if method in ("statistical", "biological", "combined"):
+        from sklearn.feature_selection import f_classif
+
+        f_scores, _ = f_classif(X, y)
+        statistical_scores = np.nan_to_num(f_scores, nan=0.0, posinf=0.0, neginf=0.0)
+        gene_weights = kwargs.get("gene_weights") or {}
+        biological_scores = np.array([float(gene_weights.get(name, 1.0)) for name in feature_names])
+
+        if method == "statistical":
+            scores = statistical_scores
+        elif method == "biological":
+            scores = biological_scores
+        else:
+            stat_max = float(np.max(statistical_scores)) if len(statistical_scores) else 0.0
+            bio_max = float(np.max(biological_scores)) if len(biological_scores) else 0.0
+            stat_norm = statistical_scores / stat_max if stat_max > 0 else statistical_scores
+            bio_norm = biological_scores / bio_max if bio_max > 0 else biological_scores
+            scores = stat_norm + bio_norm
+
+        ranked_indices = np.argsort(scores)[::-1]
+        return [(int(i), feature_names[int(i)], float(scores[int(i)])) for i in ranked_indices]
 
     results = {
         "method": method,
@@ -314,7 +402,7 @@ def biological_feature_ranking(
         ]
 
     else:
-        raise ValueError(f"Unknown ranking method: {method}")
+        raise ValueError(f"Unknown method: {method}")
 
     logger.info(f"Ranked {len(results['rankings'])} features using {method} method")
     return results
@@ -371,7 +459,7 @@ def select_features_biological(
             results["methods"][method] = {
                 "selected_features": selected_features,
                 "n_selected": len(selected_features),
-                "selected_indices": indices.tolist(),
+                "selected_indices": indices if isinstance(indices, list) else indices.tolist(),
             }
 
         except Exception as e:

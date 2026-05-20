@@ -17,7 +17,6 @@ from typing import Any
 from metainformant.core.utils.logging import get_logger
 
 from ..alleles.phenotype import MetabolizerPhenotype, classify_phenotype
-from ..annotations.cpic import get_dosing_recommendation
 from .drug_interaction import (
     DrugRecommendation,
     InteractionSeverity,

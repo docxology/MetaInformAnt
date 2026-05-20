@@ -6,7 +6,7 @@ for biological data analysis, including PCA, ICA, UMAP, and t-SNE.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -516,7 +516,7 @@ def biological_embedding(
     if X is not None:
         data = X
     elif sequences is not None:
-        if not sequences:
+        if len(sequences) == 0:
             raise ValueError("No sequences provided")
         if isinstance(sequences[0], str):
             features = []

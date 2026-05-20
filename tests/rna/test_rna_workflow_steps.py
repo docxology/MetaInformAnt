@@ -10,7 +10,7 @@ from __future__ import annotations
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 import pytest
 
@@ -1091,7 +1091,7 @@ class TestSetupVdbConfig:
             ("quant", {}),
         ]
         result = setup_vdb_config(config, steps)
-        step_names = [name for name, _ in result]
+        [name for name, _ in result]
         # getfastq might be removed if all samples are quantified
         # (depends on filter_metadata_for_unquantified's exact logic)
         assert isinstance(result, list)

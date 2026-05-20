@@ -1,8 +1,5 @@
 """Tests for quality metrics and statistical analysis."""
 
-import numpy as np
-import pytest
-
 from metainformant.quality.analysis.metrics import (
     calculate_complexity_metrics,
     calculate_coverage_metrics,

@@ -13,6 +13,12 @@ This module re-exports all public symbols from :mod:`qc_metrics` and
 
 from __future__ import annotations
 
+from metainformant.rna.analysis.qc_filtering import (
+    detect_batch_effects,
+    detect_gc_bias,
+    detect_length_bias,
+    generate_qc_report,
+)
 from metainformant.rna.analysis.qc_metrics import (
     classify_expression_level,
     compute_correlation_matrix,
@@ -21,12 +27,6 @@ from metainformant.rna.analysis.qc_metrics import (
     compute_saturation_curve,
     detect_outlier_samples,
     estimate_library_complexity,
-)
-from metainformant.rna.analysis.qc_filtering import (
-    detect_batch_effects,
-    detect_gc_bias,
-    detect_length_bias,
-    generate_qc_report,
 )
 
 __all__ = [

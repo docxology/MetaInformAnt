@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 try:
     import numpy as np
@@ -94,8 +94,7 @@ def compute_power(
         threshold = z_alpha**2
 
     logger.debug(
-        f"Power calc: N={n_samples}, MAF={maf:.3f}, β={beta:.3f}, "
-        f"α={alpha:.2e} → NCP={ncp:.2f}, power={power:.4f}"
+        f"Power calc: N={n_samples}, MAF={maf:.3f}, β={beta:.3f}, " f"α={alpha:.2e} → NCP={ncp:.2f}, power={power:.4f}"
     )
 
     return {
@@ -133,9 +132,7 @@ def power_curve(
     powers = []
     for n in sample_sizes:
         result = compute_power(n, maf, beta, alpha, h2)
-        powers.append(
-            result.get("power", 0.0) if result.get("status") == "success" else 0.0
-        )
+        powers.append(result.get("power", 0.0) if result.get("status") == "success" else 0.0)
 
     logger.info(
         f"Power curve: {len(sample_sizes)} sample sizes, MAF={maf:.3f}, β={beta:.3f}, "
@@ -201,8 +198,7 @@ def subsample_convergence(
         return {"status": "error", "message": "Empty genotype matrix"}
 
     logger.info(
-        f"Convergence analysis: {n_variants} variants, {len(fractions)} fractions, "
-        f"{n_replicates} replicates each"
+        f"Convergence analysis: {n_variants} variants, {len(fractions)} fractions, " f"{n_replicates} replicates each"
     )
 
     metrics: Dict[str, List[Dict[str, float]]] = {
@@ -246,9 +242,7 @@ def subsample_convergence(
 
             # Genomic control lambda
             gc_result = genomic_control(p_values=p_values)
-            lambda_val = (
-                gc_result.get("lambda_gc", 1.0) if isinstance(gc_result, dict) else 1.0
-            )
+            lambda_val = gc_result.get("lambda_gc", 1.0) if isinstance(gc_result, dict) else 1.0
 
             frac_lambdas.append(lambda_val)
             frac_hits.append(n_sig)
@@ -352,9 +346,7 @@ def jackknife_se(
     logger.info(f"Jackknife SE: {n_blocks} blocks, statistic={statistic}")
 
     # Full-dataset estimate
-    full_stat = _compute_statistic(
-        genotype_matrix, actual_traits, list(range(n_variants)), statistic, alpha
-    )
+    full_stat = _compute_statistic(genotype_matrix, actual_traits, list(range(n_variants)), statistic, alpha)
 
     # Leave-one-block-out estimates
     block_estimates = []
@@ -365,16 +357,12 @@ def jackknife_se(
             if bb != b:
                 keep_indices.extend(blocks[bb])
 
-        theta_minus_j = _compute_statistic(
-            genotype_matrix, actual_traits, keep_indices, statistic, alpha
-        )
+        theta_minus_j = _compute_statistic(genotype_matrix, actual_traits, keep_indices, statistic, alpha)
         block_estimates.append(theta_minus_j)
 
     # Jackknife SE
     theta_bar = sum(block_estimates) / n_blocks
-    variance = (
-        (n_blocks - 1.0) / n_blocks * sum((t - theta_bar) ** 2 for t in block_estimates)
-    )
+    variance = (n_blocks - 1.0) / n_blocks * sum((t - theta_bar) ** 2 for t in block_estimates)
     se = math.sqrt(variance) if variance > 0 else 0.0
 
     # 95% CI
@@ -383,8 +371,7 @@ def jackknife_se(
     ci_upper = full_stat + z * se
 
     logger.info(
-        f"Jackknife {statistic}: estimate={full_stat:.4f}, SE={se:.4f}, "
-        f"95% CI=[{ci_lower:.4f}, {ci_upper:.4f}]"
+        f"Jackknife {statistic}: estimate={full_stat:.4f}, SE={se:.4f}, " f"95% CI=[{ci_lower:.4f}, {ci_upper:.4f}]"
     )
 
     return {
@@ -455,9 +442,7 @@ def saturation_analysis(
     for k_inf_mult in [0.8, 0.9, 1.0, 1.1, 1.2, 1.5, 2.0]:
         k_inf_try = max(observed) * k_inf_mult if max(observed) > 0 else 1.0
         for kappa_try in [0.5, 1.0, 1.5, 2.0, 3.0, 5.0, 7.0, 10.0]:
-            predicted = [
-                k_inf_try * (1.0 - math.exp(-kappa_try * f)) for f in fractions
-            ]
+            predicted = [k_inf_try * (1.0 - math.exp(-kappa_try * f)) for f in fractions]
             r2 = _r_squared(observed, predicted)
             if r2 > best_r2:
                 best_r2 = r2
@@ -486,9 +471,7 @@ def saturation_analysis(
         "metric": metric,
         "fractions": fractions,
         "observed": observed,
-        "predicted": [
-            best_k_inf * (1.0 - math.exp(-best_kappa * f)) for f in fractions
-        ],
+        "predicted": [best_k_inf * (1.0 - math.exp(-best_kappa * f)) for f in fractions],
     }
 
 
@@ -581,8 +564,6 @@ def _norm_ppf(p: float) -> float:
     d2 = 0.189269
     d3 = 0.001308
 
-    result = t - (c0 + c1 * t + c2 * t * t) / (
-        1.0 + d1 * t + d2 * t * t + d3 * t * t * t
-    )
+    result = t - (c0 + c1 * t + c2 * t * t) / (1.0 + d1 * t + d2 * t * t + d3 * t * t * t)
 
     return result if p > 0.5 else -result

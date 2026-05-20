@@ -9,8 +9,7 @@ scanning against known motif libraries.
 from __future__ import annotations
 
 import math
-from collections import Counter, defaultdict
-from typing import Any
+from collections import Counter
 
 from metainformant.core.utils.logging import get_logger
 
@@ -95,7 +94,7 @@ def build_pwm(
 
     logger.info("Building PWM from %d sequences of length %d", len(sequences), seq_len)
 
-    n_seqs = len(sequences)
+    len(sequences)
     pwm: list[dict[str, float]] = []
 
     for pos in range(seq_len):

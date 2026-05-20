@@ -6,7 +6,7 @@ This module provides general mathematical utility functions for statistical anal
 from __future__ import annotations
 
 import math
-from typing import List, Sequence, Union
+from typing import List, Sequence
 
 import numpy as np
 
@@ -26,17 +26,21 @@ def correlation(x: Sequence[float] | np.ndarray, y: Sequence[float] | np.ndarray
         Pearson correlation coefficient
     """
     if len(x) != len(y):
-        raise ValueError("Input lists must have equal length")
+        raise ValueError("Input lists must have the same length")
 
     if len(x) < 2:
-        return 0.0
+        if len(x) == 1 and x[0] != y[0]:
+            return 0.0
+        raise ValueError("Input lists must contain at least 2 elements")
 
     # Convert to numpy arrays
     x_arr = np.asarray(x)
     y_arr = np.asarray(y)
 
-    # Calculate correlation
-    return np.corrcoef(x_arr, y_arr)[0, 1]
+    if np.var(x_arr) == 0 or np.var(y_arr) == 0:
+        return 0.0
+
+    return float(np.corrcoef(x_arr, y_arr)[0, 1])
 
 
 def correlation_coefficient(x: List[float], y: List[float]) -> float:
@@ -63,14 +67,17 @@ def linear_regression(x: Sequence[float] | np.ndarray, y: Sequence[float] | np.n
         Tuple of (slope, intercept, r_squared)
     """
     if len(x) != len(y):
-        raise ValueError("Input lists must have equal length")
+        raise ValueError("Input lists must have the same length")
 
     if len(x) < 2:
-        raise ValueError("Need at least 2 data points for regression")
+        raise ValueError("Input lists must contain at least 2 elements")
 
     # Convert to numpy arrays
     x_arr = np.asarray(x)
     y_arr = np.asarray(y)
+
+    if np.var(x_arr) == 0:
+        return 0.0, 0.0, 0.0
 
     # Perform linear regression
     slope, intercept = np.polyfit(x_arr, y_arr, 1)
@@ -152,6 +159,14 @@ def fisher_exact_test(a: int, b: int, c: int, d: int) -> tuple[float, float]:
         >>> odds_ratio, p_val = fisher_exact_test(8, 2, 1, 9)
         >>> print(f"p-value: {p_val:.4f}, odds ratio: {odds_ratio:.2f}")
     """
+    try:
+        from scipy.stats import fisher_exact
+
+        odds_ratio, p_value = fisher_exact([[a, b], [c, d]], alternative="two-sided")
+        return float(odds_ratio), float(p_value)
+    except ImportError:
+        pass
+
     # Calculate odds ratio
     if b * c == 0:
         odds_ratio = float("inf") if a * d != 0 else 0.0

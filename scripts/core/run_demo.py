@@ -11,7 +11,6 @@ Usage:
     python3 scripts/core/run_demo.py
 """
 
-import logging
 import sys
 from pathlib import Path
 

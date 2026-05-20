@@ -95,9 +95,7 @@ def generate_html_report(
     gene_rows = ""
     for ann in (gene_annotations or [])[:5]:
         genes = ann.get("nearby_genes", [])
-        gene_str = (
-            ", ".join([g.get("gene_name", "?") for g in genes[:3]]) if genes else "—"
-        )
+        gene_str = ", ".join([g.get("gene_name", "?") for g in genes[:3]]) if genes else "—"
         gene_rows += f"""<tr>
             <td>{ann.get("snp", "?")}</td>
             <td>{ann.get("chrom", "?")}:{ann.get("pos", "?")}</td>
@@ -117,11 +115,7 @@ def generate_html_report(
         </tr>"""
 
     lambda_gc = cal.get("lambda_gc", float("nan"))
-    lambda_warn = (
-        "⚠️ Inflated λ_GC — check for stratification or strong signal"
-        if lambda_gc > 2
-        else ""
-    )
+    lambda_warn = "⚠️ Inflated λ_GC — check for stratification or strong signal" if lambda_gc > 2 else ""
 
     html = f"""<!DOCTYPE html>
 <html lang="en">

@@ -6,12 +6,12 @@ Tests are skipped gracefully when there is no internet connectivity.
 Run with:
     uv run pytest tests/ontology/test_ontology_api.py -v
 """
+
 from __future__ import annotations
 
 import socket
 
 import pytest
-
 
 # ---------------------------------------------------------------------------
 # Connectivity guard — skip entire module if no internet
@@ -59,7 +59,7 @@ class TestFetchGoTerm:
         assert term == {} or isinstance(term, dict)
 
     def test_caches_on_second_call(self):
-        from metainformant.ontology.core.go_api import fetch_go_term, _term_cache
+        from metainformant.ontology.core.go_api import _term_cache, fetch_go_term
 
         fetch_go_term("GO:0005575")  # cellular_component
         assert "GO:0005575" in _term_cache
@@ -118,8 +118,7 @@ class TestBuildTaxonGoGeneSets:
         gene_sets = build_taxon_go_gene_sets(taxon_id=7460, max_pages=1)
         assert isinstance(gene_sets, dict)
         assert len(gene_sets) > 0, (
-            "Expected ≥1 GO term for Apis mellifera (taxon 7460) from QuickGO. "
-            "Ensure QuickGO is reachable."
+            "Expected ≥1 GO term for Apis mellifera (taxon 7460) from QuickGO. " "Ensure QuickGO is reachable."
         )
 
     def test_gene_set_values_are_sets_of_strings(self):
@@ -136,9 +135,7 @@ class TestBuildTaxonGoGeneSets:
         from metainformant.ontology.core.go_api import build_taxon_go_gene_sets
 
         all_aspects = build_taxon_go_gene_sets(taxon_id=7460, max_pages=1)
-        bp_only = build_taxon_go_gene_sets(
-            taxon_id=7460, max_pages=1, go_aspects=["biological_process"]
-        )
+        bp_only = build_taxon_go_gene_sets(taxon_id=7460, max_pages=1, go_aspects=["biological_process"])
         # BP-only should have equal or fewer GO terms
         assert len(bp_only) <= len(all_aspects)
 
@@ -178,9 +175,7 @@ class TestMapSymbolsToUniprot:
         # TP53 maps to UniProtKB:P04637 (canonical) — should appear
         if result:
             accessions = result.get("TP53", [])
-            assert any("P04637" in a for a in accessions), (
-                f"Expected P04637 in TP53 mapping, got {accessions}"
-            )
+            assert any("P04637" in a for a in accessions), f"Expected P04637 in TP53 mapping, got {accessions}"
 
 
 # ---------------------------------------------------------------------------

@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import logging
 
-import pytest
-
 from metainformant.core.utils import logging as core_logging
 
 

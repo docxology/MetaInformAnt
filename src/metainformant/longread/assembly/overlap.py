@@ -17,7 +17,6 @@ Optional dependencies:
 
 from __future__ import annotations
 
-import hashlib
 from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Sequence
@@ -164,7 +163,6 @@ def minimizer_sketch(
         return minimizers
 
     # Slide window and extract minimizers
-    prev_min_hash = -1
     prev_min_pos = -1
 
     for window_start in range(len(kmer_hashes) - w + 1):
@@ -193,7 +191,6 @@ def minimizer_sketch(
                     kmer=min_kmer,
                 )
             )
-            prev_min_hash = min_hash
             prev_min_pos = min_pos
 
     return minimizers

@@ -2,6 +2,7 @@
 
 NO MOCKING POLICY: All tests use real implementations.
 """
+
 from __future__ import annotations
 
 import pytest
@@ -55,9 +56,30 @@ def _make_go_graph():
 
 def _make_enrichment_results():
     return [
-        {"term_id": "GO:0006950", "name": "response_to_stress", "p_value": 0.001, "adjusted_p": 0.005, "count": 15, "fold_enrichment": 2.5},
-        {"term_id": "GO:0009987", "name": "cellular_process", "p_value": 0.01, "adjusted_p": 0.03, "count": 30, "fold_enrichment": 1.8},
-        {"term_id": "GO:0007154", "name": "cell_communication", "p_value": 0.05, "adjusted_p": 0.08, "count": 10, "fold_enrichment": 1.5},
+        {
+            "term_id": "GO:0006950",
+            "name": "response_to_stress",
+            "p_value": 0.001,
+            "adjusted_p": 0.005,
+            "count": 15,
+            "fold_enrichment": 2.5,
+        },
+        {
+            "term_id": "GO:0009987",
+            "name": "cellular_process",
+            "p_value": 0.01,
+            "adjusted_p": 0.03,
+            "count": 30,
+            "fold_enrichment": 1.8,
+        },
+        {
+            "term_id": "GO:0007154",
+            "name": "cell_communication",
+            "p_value": 0.05,
+            "adjusted_p": 0.08,
+            "count": 10,
+            "fold_enrichment": 1.5,
+        },
     ]
 
 

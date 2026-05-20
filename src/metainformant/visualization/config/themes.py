@@ -11,7 +11,6 @@ import contextlib
 from typing import Any, Dict, Generator
 
 import matplotlib as mpl
-import matplotlib.pyplot as plt
 
 from metainformant.core.utils import logging
 

@@ -3,10 +3,13 @@
 import tempfile
 from pathlib import Path
 
-import pytest
-
-from metainformant.core.execution.workflow import create_sample_config, download_and_process_data, run_config_based_workflow, validate_config_file
 from metainformant.core import io
+from metainformant.core.execution.workflow import (
+    create_sample_config,
+    download_and_process_data,
+    run_config_based_workflow,
+    validate_config_file,
+)
 
 
 class TestConfigBasedProcessing:

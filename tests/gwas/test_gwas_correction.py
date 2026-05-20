@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import numpy as np
-import pytest
 
 from metainformant.gwas.analysis.correction import bonferroni_correction, fdr_correction, genomic_control
 

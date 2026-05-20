@@ -6,8 +6,7 @@ intensity to perceived sensation.
 
 from __future__ import annotations
 
-import math
-from typing import Sequence, Union
+from typing import Union
 
 import numpy as np
 

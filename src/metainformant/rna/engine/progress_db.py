@@ -18,7 +18,7 @@ import sqlite3
 import threading
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Dict, List, Optional
 
 from metainformant.core.utils.logging import get_logger
 
@@ -26,14 +26,16 @@ logger = get_logger(__name__)
 
 # ---------- Constants ----------
 
-VALID_STATES = frozenset({
-    "pending",
-    "downloading",
-    "downloaded",
-    "quantifying",
-    "quantified",
-    "failed",
-})
+VALID_STATES = frozenset(
+    {
+        "pending",
+        "downloading",
+        "downloaded",
+        "quantifying",
+        "quantified",
+        "failed",
+    }
+)
 
 DEFAULT_DB_PATH = Path("output/amalgkit/pipeline_progress.db")
 
@@ -53,6 +55,7 @@ CREATE INDEX IF NOT EXISTS idx_species_state
 
 
 # ---------- ProgressDB ----------
+
 
 class ProgressDB:
     """SQLite-backed sample progress tracker.
@@ -100,9 +103,7 @@ class ProgressDB:
             logger.info(f"init_species({species}): {inserted} new / {len(srr_ids)} total")
             return inserted
 
-    def set_state(
-        self, species: str, srr_id: str, state: str, error: Optional[str] = None
-    ) -> None:
+    def set_state(self, species: str, srr_id: str, state: str, error: Optional[str] = None) -> None:
         """Atomically transition a sample to a new state."""
         if state not in VALID_STATES:
             raise ValueError(f"Invalid state '{state}'. Must be one of {VALID_STATES}")
@@ -122,9 +123,7 @@ class ProgressDB:
                 else:
                     raise
 
-    def bulk_set_state(
-        self, species: str, srr_ids: List[str], state: str, error: Optional[str] = None
-    ) -> None:
+    def bulk_set_state(self, species: str, srr_ids: List[str], state: str, error: Optional[str] = None) -> None:
         """Set state for multiple samples at once."""
         if state not in VALID_STATES:
             raise ValueError(f"Invalid state '{state}'. Must be one of {VALID_STATES}")
@@ -160,8 +159,7 @@ class ProgressDB:
         with self._lock:
             if species:
                 rows = self._conn.execute(
-                    "SELECT species, state, COUNT(*) FROM samples "
-                    "WHERE species = ? GROUP BY species, state",
+                    "SELECT species, state, COUNT(*) FROM samples " "WHERE species = ? GROUP BY species, state",
                     (species,),
                 ).fetchall()
             else:
@@ -183,9 +181,7 @@ class ProgressDB:
             {"amellifera": 3154, "atta_cephalotes": 220, ...}
         """
         with self._lock:
-            rows = self._conn.execute(
-                "SELECT species, COUNT(*) FROM samples GROUP BY species"
-            ).fetchall()
+            rows = self._conn.execute("SELECT species, COUNT(*) FROM samples GROUP BY species").fetchall()
         return {sp: count for sp, count in rows}
 
     def get_samples(self, species: str, state: str) -> List[str]:
@@ -211,17 +207,14 @@ class ProgressDB:
                     "SELECT species, srr_id, error, updated_at FROM samples "
                     "WHERE state = 'failed' ORDER BY species, updated_at DESC",
                 ).fetchall()
-        return [
-            {"species": r[0], "srr_id": r[1], "error": r[2], "updated_at": r[3]}
-            for r in rows
-        ]
+        return [{"species": r[0], "srr_id": r[1], "error": r[2], "updated_at": r[3]} for r in rows]
 
     # ---- Reconciliation ----
 
     def reconcile(self, species: str, quant_dir: Path) -> int:
         """Detect already-quantified samples from filesystem and update DB.
 
-        Scans ``quant_dir`` for subdirectories containing ``*_abundance.tsv``
+        Scans ``quant_dir`` for subdirectories containing abundance output
         and marks those samples as 'quantified' in the database.
 
         Args:
@@ -240,7 +233,8 @@ class ProgressDB:
             for subdir in quant_dir.iterdir():
                 if not subdir.is_dir():
                     continue
-                if (subdir / "abundance.tsv").exists() or (subdir / "quant.sf").exists():
+                has_abundance = (subdir / "abundance.tsv").exists() or any(subdir.glob("*_abundance.tsv"))
+                if has_abundance or (subdir / "quant.sf").exists():
                     reconciled.append(subdir.name)
         except Exception as e:
             logger.warning(f"Reconciliation scan failed for {species}: {e}")

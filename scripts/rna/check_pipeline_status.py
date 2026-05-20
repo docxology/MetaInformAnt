@@ -23,6 +23,7 @@ Usage:
     # Generate visual dashboard (PDF + PNG)
     python3 scripts/rna/check_pipeline_status.py --dashboard
 """
+
 from __future__ import annotations
 
 import argparse
@@ -76,6 +77,7 @@ ALL_STATES = ["pending", "downloading", "downloaded", "quantifying", "quantified
 
 # ---------- helpers ----------
 
+
 def check_downstream(species: str) -> str:
     """Check if merge/curate/sanity outputs exist."""
     work_dir = DATA_ROOT / species / "work"
@@ -83,10 +85,10 @@ def check_downstream(species: str) -> str:
     merge_dir = DATA_ROOT / species / "merged"
     if not merge_dir.exists():
         merge_dir = work_dir / "merge"
-    
+
     has_merge = merge_dir.exists() and any(merge_dir.rglob("*.tsv"))
     has_curate = curate_dir.exists() and any(curate_dir.rglob("*.tsv"))
-    
+
     if has_merge and has_curate:
         return "✅ Complete"
     elif has_merge:
@@ -99,9 +101,9 @@ def check_process_running() -> bool:
     """Quick check if any pipeline processes are active."""
     try:
         import subprocess
+
         result = subprocess.run(
-            ["pgrep", "-f", "run_all_species|streaming_orchestrator|run_workflow"],
-            capture_output=True, text=True
+            ["pgrep", "-f", "run_all_species|streaming_orchestrator|run_workflow"], capture_output=True, text=True
         )
         return result.returncode == 0
     except Exception:
@@ -110,13 +112,13 @@ def check_process_running() -> bool:
 
 # ---------- main ----------
 
+
 def main():
     parser = argparse.ArgumentParser(description="Amalgkit pipeline status checker")
     parser.add_argument("-v", "--verbose", action="store_true", help="Show per-state breakdown")
     parser.add_argument("--species", type=str, help="Check a single species only")
     parser.add_argument("--failed", action="store_true", help="Show failed samples")
-    parser.add_argument("--dashboard", action="store_true",
-                        help="Generate visual dashboard PDF+PNG to output/")
+    parser.add_argument("--dashboard", action="store_true", help="Generate visual dashboard PDF+PNG to output/")
     args = parser.parse_args()
 
     # Change to project root so relative paths resolve
@@ -202,8 +204,10 @@ def main():
 
     if not running:
         print("\n  ⚠  No active pipeline processes detected.")
-        print("  To restart:  cd /home/trim/Documents/Git/MetaInformAnt && "
-              ".venv/bin/python scripts/rna/run_all_species.py")
+        print(
+            "  To restart:  cd /home/trim/Documents/Git/MetaInformAnt && "
+            ".venv/bin/python scripts/rna/run_all_species.py"
+        )
     print()
 
     db.close()
@@ -211,6 +215,7 @@ def main():
     # Generate dashboard if requested
     if args.dashboard:
         from metainformant.rna.engine.progress_dashboard import generate_dashboard
+
         generate_dashboard(db_path=DB_PATH, output_dir=Path("output/amalgkit"))
 
 

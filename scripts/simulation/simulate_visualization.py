@@ -21,7 +21,7 @@ import pandas as pd
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import io, logging, paths, validation
+from metainformant.core import io, logging, paths
 
 logger = logging.get_logger(__name__)
 
@@ -35,7 +35,7 @@ def simulate_timeseries(
 ) -> dict:
     """Simulate time-series data."""
     logger.info(f"Generating time-series data: {n_points} points, {n_series} series")
-    rng = random.Random(seed)
+    random.Random(seed)
     np.random.seed(seed)
 
     time_points = np.linspace(0, 10, n_points)

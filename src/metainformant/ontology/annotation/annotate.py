@@ -68,7 +68,7 @@ def gwas_hits_to_genes(
 
     # Build SNP -> nearest_gene map from step-8g annotations
     snp_to_genes: dict[str, list[str]] = {}
-    for ann in (gene_annotations or []):
+    for ann in gene_annotations or []:
         snp = ann.get("snp", "")
         nearby = ann.get("nearby_genes", [])
         nearest = ann.get("nearest_gene", "")
@@ -97,8 +97,7 @@ def gwas_hits_to_genes(
         # Real gene annotations come from step 8g (NCBI/Ensembl API).
 
     logger.info(
-        "gwas_hits_to_genes: %d unique genes from top %d hits "
-        "(pvalue_threshold=%.2e)",
+        "gwas_hits_to_genes: %d unique genes from top %d hits " "(pvalue_threshold=%.2e)",
         len(genes),
         top_n,
         pvalue_threshold,
@@ -132,7 +131,7 @@ def rank_genes_by_pvalue(
         True
     """
     snp_to_gene: dict[str, str] = {}
-    for ann in (gene_annotations or []):
+    for ann in gene_annotations or []:
         snp = ann.get("snp", "")
         nn = ann.get("nearest_gene", "")
         if snp and nn:
@@ -248,8 +247,8 @@ def _load_gaf_annotations(
         logger.warning("GAF source requested but no annotation_file provided")
         return {}
 
-    import pathlib
     import gzip
+    import pathlib
 
     gene_set = set(gene_list)
     aspect_map = {

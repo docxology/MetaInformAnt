@@ -2,9 +2,8 @@
 
 NO MOCKING POLICY: All tests use real implementations.
 """
-from __future__ import annotations
 
-import math
+from __future__ import annotations
 
 import pytest
 
@@ -17,7 +16,6 @@ from metainformant.math.bayesian.inference import (
     conjugate_normal,
     metropolis_hastings,
 )
-
 
 # ---------------------------------------------------------------------------
 # metropolis_hastings

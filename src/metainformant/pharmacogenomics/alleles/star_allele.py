@@ -11,7 +11,6 @@ represent variant haplotypes defined by specific combinations of SNPs and indels
 
 from __future__ import annotations
 
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -815,7 +814,7 @@ def handle_cyp2d6_cnv(
     total_score = duplicated_allele.activity_value * (1 + extra_copies) + other_allele.activity_value
 
     dup_name = f"{duplicated_allele.name}x{1 + extra_copies}"
-    alleles_sorted = sorted([duplicated_allele, other_allele], key=lambda a: a.name)
+    sorted([duplicated_allele, other_allele], key=lambda a: a.name)
     diplotype_str = f"{dup_name}/{other_allele.name}"
 
     return {
