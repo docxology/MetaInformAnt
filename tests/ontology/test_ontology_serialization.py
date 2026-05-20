@@ -65,7 +65,6 @@ class TestSaveLoadJSON:
         save_ontology(onto, path, format="json")
         assert path.exists()
 
-    @pytest.mark.xfail(reason="Source bug: serialize.py uses 'from .types' instead of 'from ..types'")
     def test_load_json(self, tmp_path):
         onto = _make_test_ontology()
         path = tmp_path / "test_ontology.json"
@@ -75,7 +74,6 @@ class TestSaveLoadJSON:
         assert len(loaded) == 3
         assert loaded.get_term("GO:0008150") is not None
 
-    @pytest.mark.xfail(reason="Source bug: serialize.py uses 'from .types' instead of 'from ..types'")
     def test_roundtrip_preserves_terms(self, tmp_path):
         onto = _make_test_ontology()
         path = tmp_path / "roundtrip.json"
@@ -85,7 +83,6 @@ class TestSaveLoadJSON:
         for term_id in onto.terms:
             assert loaded.has_term(term_id)
 
-    @pytest.mark.xfail(reason="Source bug: serialize.py uses 'from .types' instead of 'from ..types'")
     def test_roundtrip_preserves_relationships(self, tmp_path):
         onto = _make_test_ontology()
         path = tmp_path / "roundtrip_rels.json"
@@ -101,7 +98,6 @@ class TestSaveLoadJSON:
 
 
 class TestSaveLoadOBO:
-    @pytest.mark.xfail(reason="Source bug: serialize.py uses io.write_text which does not exist")
     def test_save_obo(self, tmp_path):
         onto = _make_test_ontology()
         path = tmp_path / "test_ontology.obo"
@@ -144,7 +140,6 @@ class TestOntologyToGraph:
 
 
 class TestGraphToOntology:
-    @pytest.mark.xfail(reason="Source bug: serialize.py uses 'from .types' instead of 'from ..types'")
     def test_roundtrip_graph(self):
         onto = _make_test_ontology()
         graph = ontology_to_graph(onto)
@@ -162,7 +157,6 @@ class TestGraphToOntology:
 
 
 class TestMergeOntologies:
-    @pytest.mark.xfail(reason="Source bug: serialize.py uses 'from .types' instead of 'from ..types'")
     def test_merge_two_ontologies(self):
         onto1 = _make_test_ontology()
         onto2 = _make_second_ontology()
@@ -173,7 +167,6 @@ class TestMergeOntologies:
         merged = merge_ontologies()
         assert len(merged) == 0
 
-    @pytest.mark.xfail(reason="Source bug: serialize.py uses 'from .types' instead of 'from ..types'")
     def test_merge_conflict_first(self):
         onto1 = _make_test_ontology()
         # Create a conflicting ontology with same term ID but different name
@@ -183,7 +176,6 @@ class TestMergeOntologies:
         # Should keep the first ontology's version
         assert merged.get_term("GO:0008150").name == "biological_process"
 
-    @pytest.mark.xfail(reason="Source bug: serialize.py uses 'from .types' instead of 'from ..types'")
     def test_merge_conflict_last(self):
         onto1 = _make_test_ontology()
         t_conflict = create_term(id="GO:0008150", name="different_name")
@@ -198,7 +190,6 @@ class TestMergeOntologies:
         with pytest.raises(ValueError, match="conflict"):
             merge_ontologies(onto1, onto2, conflict_resolution="error")
 
-    @pytest.mark.xfail(reason="Source bug: serialize.py uses 'from .types' instead of 'from ..types'")
     def test_merge_deduplicates_relationships(self):
         onto1 = _make_test_ontology()
         onto2 = _make_test_ontology()  # Same relationships
