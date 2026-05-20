@@ -978,6 +978,11 @@ class TestPackageImports:
     def test_import_visualization(self):
         pass
 
-    @pytest.mark.skip(reason="ecology.beta_diversity not yet implemented")
     def test_top_level_re_exports(self):
         """Test that key functions are available at the ecology package level."""
+        import metainformant.ecology as ecology
+
+        assert callable(ecology.calculate_diversity)
+        assert callable(ecology.species_richness)
+        assert callable(ecology.beta_diversity)
+        assert ecology.beta_diversity([1, 0], [0, 1]) == 1.0
