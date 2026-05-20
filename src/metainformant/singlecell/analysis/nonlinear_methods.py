@@ -644,6 +644,7 @@ def compute_neighbors(
     use_rep: str = "X_pca",
     *,
     n_pcs: int | None = None,
+    method: str = "sklearn",
 ) -> SingleCellData:
     """Compute neighbor graph for single-cell data.
 
@@ -653,12 +654,15 @@ def compute_neighbors(
         metric: Distance metric
         use_rep: Representation to use for neighbor calculation
         n_pcs: Number of principal components to use (optional)
+        method: Neighbor-search backend. Currently supports ``"sklearn"``.
 
     Returns:
         SingleCellData with neighbor graph
     """
     if not SKLEARN_AVAILABLE:
         raise ImportError("scikit-learn required for neighbor computation")
+    if method != "sklearn":
+        raise ValueError("compute_neighbors currently supports only method='sklearn'")
 
     from sklearn.neighbors import NearestNeighbors
 
@@ -701,7 +705,7 @@ def compute_neighbors(
         "indices": indices,
         "distances": distances,
         "connectivities": connectivities,
-        "params": {"n_neighbors": n_neighbors, "metric": metric, "use_rep": use_rep, "n_pcs": n_pcs},
+        "params": {"n_neighbors": n_neighbors, "metric": metric, "use_rep": use_rep, "n_pcs": n_pcs, "method": method},
     }
 
     logger.info(f"Computed neighbor graph with {n_neighbors} neighbors for {len(X)} cells")
