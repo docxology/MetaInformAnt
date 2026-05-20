@@ -124,6 +124,24 @@ def codon_usage(seq: str) -> Dict[str, float]:
     return codon_frequencies
 
 
+def codon_counts(seq: str) -> Dict[str, int]:
+    """Count valid codons in a DNA sequence."""
+    if len(seq) % 3 != 0:
+        raise ValueError("Sequence length must be divisible by 3")
+
+    counts: Dict[str, int] = {}
+    for i in range(0, len(seq), 3):
+        codon = seq[i : i + 3].upper()
+        if codon in GENETIC_CODE:
+            counts[codon] = counts.get(codon, 0) + 1
+    return counts
+
+
+def codon_frequencies(seq: str) -> Dict[str, float]:
+    """Calculate codon usage frequencies from a DNA sequence."""
+    return codon_usage(seq)
+
+
 def cai(sequence: str, reference_usage: Optional[Dict[str, float]] = None) -> float:
     """Calculate Codon Adaptation Index (CAI) for a sequence.
 

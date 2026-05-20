@@ -8,7 +8,7 @@ construction for phylogenetic analysis.
 from __future__ import annotations
 
 import math
-from typing import Dict
+from typing import Dict, Sequence
 
 import numpy as np
 import pandas as pd
@@ -16,6 +16,13 @@ import pandas as pd
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
+
+
+def _coerce_sequence_mapping(sequences: Dict[str, str] | Sequence[str]) -> Dict[str, str]:
+    """Normalize dict or list sequence input to an ID-to-sequence mapping."""
+    if isinstance(sequences, dict):
+        return sequences
+    return {f"seq{i + 1}": seq for i, seq in enumerate(sequences)}
 
 
 def jukes_cantor_distance(seq1: str, seq2: str) -> float:
@@ -433,7 +440,7 @@ def tamura_nei_distance(seq1: str, seq2: str, kappa: float = 2.0) -> float:
         return float("inf")
 
 
-def kmer_distance_matrix(sequences: Dict[str, str], k: int = 3) -> pd.DataFrame:
+def kmer_distance_matrix(sequences: Dict[str, str] | Sequence[str], k: int = 3) -> pd.DataFrame:
     """Calculate k-mer distance matrix for a set of sequences.
 
     Args:
@@ -449,6 +456,7 @@ def kmer_distance_matrix(sequences: Dict[str, str], k: int = 3) -> pd.DataFrame:
         >>> matrix.shape
         (3, 3)
     """
+    sequences = _coerce_sequence_mapping(sequences)
     if not sequences:
         raise ValueError("Must provide at least one sequence")
 
@@ -480,7 +488,7 @@ def kmer_distance_matrix(sequences: Dict[str, str], k: int = 3) -> pd.DataFrame:
     return df
 
 
-def sequence_identity_matrix(sequences: Dict[str, str]) -> pd.DataFrame:
+def sequence_identity_matrix(sequences: Dict[str, str] | Sequence[str]) -> pd.DataFrame:
     """Calculate sequence identity matrix (1 - p_distance).
 
     Args:
@@ -495,6 +503,7 @@ def sequence_identity_matrix(sequences: Dict[str, str]) -> pd.DataFrame:
         >>> matrix.shape
         (3, 3)
     """
+    sequences = _coerce_sequence_mapping(sequences)
     if not sequences:
         raise ValueError("Must provide at least one sequence")
 

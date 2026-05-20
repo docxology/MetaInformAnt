@@ -8,23 +8,47 @@ metrics used in population genomics.
 from __future__ import annotations
 
 import math
-from typing import Iterable, List, Sequence, Tuple
+from typing import Dict, Iterable, List, Sequence, Tuple
 
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
 
-def allele_frequencies(genotype_matrix: Sequence[Sequence[int]]) -> List[float]:
-    """Calculate allele frequencies from genotype matrix.
+def allele_frequencies(
+    genotype_matrix: Sequence[Sequence[int]] | Sequence[str],
+) -> List[float] | List[Dict[str, float]]:
+    """Calculate allele frequencies from genotype counts or aligned sequences.
 
     Args:
-        genotype_matrix: Matrix where each row is a locus and each column is an individual.
-                        Values should be 0, 1, or 2 representing allele counts.
+        genotype_matrix: Either a genotype matrix where each row is a locus
+            and each column is an individual (0/1/2 allele counts), or a
+            sequence of aligned DNA strings.
 
     Returns:
-        List of allele frequencies (one per locus)
+        Genotype input returns one alternate-allele frequency per locus.
+        Sequence input returns one base-frequency mapping per alignment site.
     """
+    if len(genotype_matrix) == 0:
+        return []
+
+    first_item = genotype_matrix[0]
+    if isinstance(first_item, str):
+        seqs = [str(seq).upper() for seq in genotype_matrix]
+        if not _check_alignment(seqs):
+            raise ValueError("Sequences must be aligned (same length)")
+
+        site_frequencies: List[Dict[str, float]] = []
+        for site_idx in range(len(seqs[0])):
+            counts: Dict[str, int] = {}
+            for seq in seqs:
+                base = seq[site_idx]
+                if base in "ATCG":
+                    counts[base] = counts.get(base, 0) + 1
+            total = sum(counts.values())
+            site_frequencies.append({base: count / total for base, count in counts.items()} if total else {})
+        return site_frequencies
+
     frequencies = []
 
     for locus in genotype_matrix:

@@ -8,7 +8,7 @@ statistics.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple
 
 import numpy as np
@@ -34,9 +34,19 @@ class AlignmentResult:
     seq1_aligned: str
     seq2_aligned: str
     score: float
-    score_matrix: np.ndarray
-    traceback_matrix: np.ndarray
+    score_matrix: np.ndarray = field(default_factory=lambda: np.empty((0, 0)))
+    traceback_matrix: np.ndarray = field(default_factory=lambda: np.empty((0, 0), dtype=int))
     start_positions: Optional[Tuple[int, int]] = None
+
+    @property
+    def aligned_seq1(self) -> str:
+        """Backward-compatible alias for ``seq1_aligned``."""
+        return self.seq1_aligned
+
+    @property
+    def aligned_seq2(self) -> str:
+        """Backward-compatible alias for ``seq2_aligned``."""
+        return self.seq2_aligned
 
 
 def global_align(seq1: str, seq2: str, match: int = 1, mismatch: int = -1, gap: int = -2) -> AlignmentResult:
