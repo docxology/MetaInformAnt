@@ -1,21 +1,12 @@
 # ECOLOGY
 
 ## Overview
-Functionality for ecology.
+Command-line helpers for Ecology workflows. Scripts should remain thin wrappers around `src/metainformant/` implementations and be run from the repository root with `uv`.
 
 ## Contents
-- `[run_ecology_analysis.py](run_ecology_analysis.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    ecology[ecology]
-    style ecology fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [run_ecology_analysis.py](run_ecology_analysis.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.ecology import ...
+```bash
+uv run python scripts/ecology/run_ecology_analysis.py --help
 ```

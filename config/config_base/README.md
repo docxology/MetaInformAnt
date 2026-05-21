@@ -1,21 +1,12 @@
 # CONFIG_BASE
 
 ## Overview
-Functionality for config_base.
+Configuration assets for Config Base workflows. Keep templates and examples synchronized with the shared loaders in `metainformant.core.utils.config`.
 
 ## Contents
-
-
-## Structure
-
-```mermaid
-graph TD
-    config_base[config_base]
-    style config_base fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [control_term.config](control_term.config)
+- [exclude_keyword.config](exclude_keyword.config)
+- [group_attribute.config](group_attribute.config)
 
 ## Usage
-Import module:
-```python
-from metainformant.config_base import ...
-```
+See the parent directory README for workflow entry points.

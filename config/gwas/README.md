@@ -1,21 +1,16 @@
 # GWAS
 
 ## Overview
-Functionality for gwas.
+Configuration assets for GWAS workflows. Keep templates and examples synchronized with the shared loaders in `metainformant.core.utils.config`.
 
 ## Contents
-
-
-## Structure
-
-```mermaid
-graph TD
-    gwas[gwas]
-    style gwas fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [gwas_amellifera.yaml](gwas_amellifera.yaml)
+- [gwas_pbarbatus.yaml](gwas_pbarbatus.yaml)
+- [gwas_template.yaml](gwas_template.yaml)
 
 ## Usage
-Import module:
 ```python
-from metainformant.gwas import ...
+from metainformant.core.utils.config import load_mapping_from_file
+
+config = load_mapping_from_file("config/gwas/gwas_amellifera.yaml")
 ```

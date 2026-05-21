@@ -1,21 +1,10 @@
 # PHENOTYPE
 
 ## Overview
-Functionality for phenotype.
+Test fixture data for Phenotype coverage. Keep fixtures small, deterministic, and compatible with the no-mocking test policy.
 
 ## Contents
-
-
-## Structure
-
-```mermaid
-graph TD
-    phenotype[phenotype]
-    style phenotype fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [antwiki_dataset_sorted_final_01.json](antwiki_dataset_sorted_final_01.json)
 
 ## Usage
-Import module:
-```python
-from metainformant.phenotype import ...
-```
+These files are loaded by tests and fixtures; they are not importable package modules.

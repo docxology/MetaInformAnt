@@ -1,21 +1,11 @@
 # ONTOLOGY
 
 ## Overview
-Functionality for ontology.
+Test fixture data for Ontology coverage. Keep fixtures small, deterministic, and compatible with the no-mocking test policy.
 
 ## Contents
-- **[GO_v3/](GO_v3/)**
-
-## Structure
-
-```mermaid
-graph TD
-    ontology[ontology]
-    style ontology fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [GO_v3/](GO_v3/)
+- [go_mini.obo](go_mini.obo)
 
 ## Usage
-Import module:
-```python
-from metainformant.ontology import ...
-```
+These files are loaded by tests and fixtures; they are not importable package modules.

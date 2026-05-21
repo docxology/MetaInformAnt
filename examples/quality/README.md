@@ -1,21 +1,12 @@
 # QUALITY
 
 ## Overview
-Functionality for quality.
+Runnable examples for Quality workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_qc.py](example_qc.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    quality[quality]
-    style quality fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_qc.py](example_qc.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.quality import ...
+```bash
+uv run python examples/quality/example_qc.py
 ```

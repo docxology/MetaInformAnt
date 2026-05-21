@@ -1,21 +1,12 @@
 # INFORMATION
 
 ## Overview
-Functionality for information.
+Runnable examples for Information workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_entropy.py](example_entropy.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    information[information]
-    style information fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_entropy.py](example_entropy.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.information import ...
+```bash
+uv run python examples/information/example_entropy.py
 ```

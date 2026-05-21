@@ -1,22 +1,13 @@
 # RNA
 
 ## Overview
-Functionality for rna.
+Runnable examples for RNA workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_amalgkit.py](example_amalgkit.py)`
-- `[example_quantification.py](example_quantification.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    rna[rna]
-    style rna fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_amalgkit.py](example_amalgkit.py)
+- [example_quantification.py](example_quantification.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.rna import ...
+```bash
+uv run python examples/rna/example_amalgkit.py
 ```

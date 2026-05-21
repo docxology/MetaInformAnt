@@ -28,8 +28,8 @@ This project follows the **MetaInformAnt Thin Orchestration Pattern**. All heavy
 
 | Stage | Script | Key MetaInformAnt Module |
 | :--- | :--- | :--- |
-| 1 | `scripts/01_process_data.py` | `metainformant.core.io`, `metainformant.core.paths` |
-| 2 | `scripts/02_analyze_results.py` | `metainformant.core.io`, `metainformant.core.validation` |
+| 1 | `scripts/01_process_data.py` | `metainformant.core.io`, `metainformant.core.io.paths` |
+| 2 | `scripts/02_analyze_results.py` | `metainformant.core.io`, `metainformant.core.data.validation` |
 | 3 | `scripts/03_visualize.py` | `metainformant.core.io` |
 | 99 | `scripts/99_create_synthetic_data.py` | stdlib + pyyaml |
 

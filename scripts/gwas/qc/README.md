@@ -1,21 +1,12 @@
 # QC
 
 ## Overview
-Functionality for qc.
+Command-line helpers for GWAS QC workflows. Scripts should remain thin wrappers around `src/metainformant/` implementations and be run from the repository root with `uv`.
 
 ## Contents
-- `[run_qc.py](run_qc.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    qc[qc]
-    style qc fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [run_qc.py](run_qc.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.qc import ...
+```bash
+uv run python scripts/gwas/qc/run_qc.py --help
 ```

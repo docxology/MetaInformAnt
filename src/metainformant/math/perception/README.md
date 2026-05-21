@@ -4,9 +4,9 @@
 Perception and Psychophysics submodule.
 
 ## Contents
-- `[__init__.py](__init__.py)`
-- `[psychophysics.py](psychophysics.py)`
-- `[signal_detection.py](signal_detection.py)`
+- [__init__.py](__init__.py)
+- [psychophysics.py](psychophysics.py)
+- [signal_detection.py](signal_detection.py)
 
 ## Structure
 

@@ -7,7 +7,7 @@ Machine learning module for METAINFORMANT.
 - **[evaluation/](evaluation.md)**
 - **[features/](features.md)**
 - **[models/](models.md)**
-- `[__init__.py](__init__.py)`
+- [src/metainformant/ml/__init__.py](../../src/metainformant/ml/__init__.py)
 
 ## Structure
 

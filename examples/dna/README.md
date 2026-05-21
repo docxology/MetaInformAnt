@@ -1,24 +1,15 @@
 # DNA
 
 ## Overview
-Functionality for dna.
+Runnable examples for DNA workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_alignment.py](example_alignment.py)`
-- `[example_phylogeny.py](example_phylogeny.py)`
-- `[example_population.py](example_population.py)`
-- `[example_sequences.py](example_sequences.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    dna[dna]
-    style dna fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_alignment.py](example_alignment.py)
+- [example_phylogeny.py](example_phylogeny.py)
+- [example_population.py](example_population.py)
+- [example_sequences.py](example_sequences.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.dna import ...
+```bash
+uv run python examples/dna/example_alignment.py
 ```

@@ -1,21 +1,12 @@
 # MULTIOMICS
 
 ## Overview
-Functionality for multiomics.
+Runnable examples for Multiomics workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_integration.py](example_integration.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    multiomics[multiomics]
-    style multiomics fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_integration.py](example_integration.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.multiomics import ...
+```bash
+uv run python examples/multiomics/example_integration.py
 ```

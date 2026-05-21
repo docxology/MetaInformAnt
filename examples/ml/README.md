@@ -1,21 +1,12 @@
 # ML
 
 ## Overview
-Functionality for ml.
+Runnable examples for ML workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_pipeline.py](example_pipeline.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    ml[ml]
-    style ml fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_pipeline.py](example_pipeline.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.ml import ...
+```bash
+uv run python examples/ml/example_pipeline.py
 ```

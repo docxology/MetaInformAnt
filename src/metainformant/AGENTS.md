@@ -6,7 +6,7 @@ Specialized agent context for the `metainformant` component.
 
 ## Tools & Capabilities
 
-- **Context**: METAINFORMANT: Comprehensive Bioinformatics Toolkit for Multi-Omic Analysis (27 modules).
+- **Context**: METAINFORMANT: Comprehensive Bioinformatics Toolkit for Multi-Omic Analysis (28 modules).
 - **Core & Utils**: `core` (I/O, logging, config), `menu` (interactive CLI), `quality` (QC, batch effects), `visualization` (plotting)
 - **Molecular Omics**: `dna`, `rna`, `protein`, `epigenome`, `longread`, `structural_variants`
 - **Higher-order Omics**: `singlecell`, `spatial`, `multiomics`, `metabolomics`, `metagenomics`, `pharmacogenomics`

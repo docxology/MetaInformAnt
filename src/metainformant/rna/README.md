@@ -160,7 +160,7 @@ See [metainformant.multiomics](../multiomics/) for comprehensive integration met
 - [API Reference](SPEC.md) — Type signatures, error codes, data structures
 
 - [Agent Coordination Hub](../../../docs/agents/README.md) — Multi-agent orchestration patterns, workflows, safety
-- [scripts/rna/](../../scripts/rna/) - Workflow scripts
-- [config/amalgkit/](../../config/amalgkit/) - Configuration files
+- [scripts/rna/](../../../scripts/rna/) - Workflow scripts
+- [config/amalgkit/](../../../config/amalgkit/) - Configuration files
 - [config/amalgkit/amalgkit_faq.md](../../../config/amalgkit/amalgkit_faq.md) - FAQ
 - [metainformant.multiomics](../multiomics/) - GWAS-expression integration

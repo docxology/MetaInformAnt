@@ -1,21 +1,12 @@
 # EPIGENOME
 
 ## Overview
-Functionality for epigenome.
+Command-line helpers for Epigenome workflows. Scripts should remain thin wrappers around `src/metainformant/` implementations and be run from the repository root with `uv`.
 
 ## Contents
-- `[run_epigenome_analysis.py](run_epigenome_analysis.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    epigenome[epigenome]
-    style epigenome fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [run_epigenome_analysis.py](run_epigenome_analysis.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.epigenome import ...
+```bash
+uv run python scripts/epigenome/run_epigenome_analysis.py --help
 ```

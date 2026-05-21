@@ -27,7 +27,7 @@ Quality control workflows:
 
 ### Upstream
 - **Core I/O**: `metainformant.core.io` — FASTQ/BAM reading, file handling
-- **Core config**: `metainformant.core.config` — QC thresholds (min_quality, min_length, adapter patterns)
+- **Core config**: `metainformant.core.utils.config` — QC thresholds (min_quality, min_length, adapter patterns)
 
 ### Downstream (consumers of QC metrics)
 - **RNA**: `metainformant.rna.engine` — Reads pass QC before alignment; low-quality samples flagged

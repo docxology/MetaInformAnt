@@ -33,13 +33,13 @@ examples/
 
 ```bash
 # Run a single example
-uv run python examples/core/io_example.py
+uv run python examples/core/example_io.py
 
 # Run all examples in a domain
 uv run python -m pytest examples/dna/ -v
 
 # Validate all examples work
-bash scripts/test_examples/validate_examples.sh
+uv run python scripts/test_examples/validate_examples.py --fast
 ```
 
 ## Example Format
@@ -74,24 +74,24 @@ if __name__ == "__main__":
 ## Key Examples
 
 ### Core
-- `io_example.py` - JSON/CSV file operations
-- `config_example.py` - Configuration loading
+- `example_io.py` - JSON/CSV file operations
+- `example_config.py` - Configuration loading
 
 ### DNA
-- `sequence_analysis.py` - GC content, k-mers
-- `phylogeny_example.py` - Tree construction
-- `population_genetics.py` - Diversity statistics
+- `example_sequences.py` - GC content, k-mers
+- `example_phylogeny.py` - Tree construction
+- `example_population.py` - Diversity statistics
 
 ### RNA
-- `workflow_example.py` - Amalgkit workflow
-- `quantification.py` - Expression quantification
+- `example_amalgkit.py` - Amalgkit workflow
+- `example_quantification.py` - Expression quantification
 
 ### GWAS
-- `association_test.py` - Association testing
-- `visualization.py` - Manhattan/QQ plots
+- `example_association.py` - Association testing
+- `example_visualization.py` - Manhattan/QQ plots
 
 ### Visualization
-- `plots_gallery.py` - All plot types
+- `example_plots.py` - All plot types
 - `genomics_plots.py` - Genomic visualizations
 
 ## Output

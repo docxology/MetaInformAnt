@@ -1,21 +1,12 @@
 # DNA
 
 ## Overview
-Functionality for dna.
+Command-line helpers for DNA workflows. Scripts should remain thin wrappers around `src/metainformant/` implementations and be run from the repository root with `uv`.
 
 ## Contents
-- `[run_dna_analysis.py](run_dna_analysis.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    dna[dna]
-    style dna fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [run_dna_analysis.py](run_dna_analysis.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.dna import ...
+```bash
+uv run python scripts/dna/run_dna_analysis.py --help
 ```

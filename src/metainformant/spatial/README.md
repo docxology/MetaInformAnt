@@ -16,7 +16,7 @@ Spatial transcriptomics analysis: platform I/O (Visium, MERFISH, Xenium), spatia
   - [Spatial Statistics](#spatial-statistics)
   - [Spatial Clustering](#spatial-clustering)
   - [Cell-Cell Communication](#cell-cell-communication)
-  - [Deconvolution & Integration](#deconvolution--integration)
+  - [Deconvolution & Integration](#deconvolution-integration)
 - [Quick Start](#quick-start)
 - [Related](#related)
 

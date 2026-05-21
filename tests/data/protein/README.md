@@ -1,21 +1,10 @@
 # PROTEIN
 
 ## Overview
-Functionality for protein.
+Test fixture data for Protein coverage. Keep fixtures small, deterministic, and compatible with the no-mocking test policy.
 
 ## Contents
-
-
-## Structure
-
-```mermaid
-graph TD
-    protein[protein]
-    style protein fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [taxon_id_list.txt](taxon_id_list.txt)
 
 ## Usage
-Import module:
-```python
-from metainformant.protein import ...
-```
+These files are loaded by tests and fixtures; they are not importable package modules.

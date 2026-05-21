@@ -1,21 +1,10 @@
 # RNA
 
 ## Overview
-Functionality for rna.
+Test fixture data for RNA coverage. Keep fixtures small, deterministic, and compatible with the no-mocking test policy.
 
 ## Contents
-- **[curate/](curate/)**
-
-## Structure
-
-```mermaid
-graph TD
-    rna[rna]
-    style rna fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [curate/](curate/)
 
 ## Usage
-Import module:
-```python
-from metainformant.rna import ...
-```
+These files are loaded by tests and fixtures; they are not importable package modules.

@@ -4,8 +4,8 @@
 Electronic phenotype analysis module.
 
 ## Contents
-- `[__init__.py](__init__.py)`
-- `[tracking.py](tracking.py)`
+- [__init__.py](__init__.py)
+- [tracking.py](tracking.py)
 
 ## Structure
 

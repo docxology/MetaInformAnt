@@ -11,8 +11,13 @@ Configuration files for expression Quantitative Trait Loci (eQTL) analysis.
 ## Quick Start
 
 ```bash
-# Run eQTL analysis with config
-uv run python scripts/eqtl/run_eqtl_analysis.py --config config/eqtl/eqtl_amellifera.yaml
+# Verify the eQTL YAML loads with the shared config helper
+uv run python - <<'PY'
+from metainformant.core.utils.config import load_mapping_from_file
+
+config = load_mapping_from_file("config/eqtl/eqtl_amellifera.yaml")
+print(sorted(config))
+PY
 ```
 
 ## Configuration Sections

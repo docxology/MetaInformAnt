@@ -1,21 +1,12 @@
 # PROTEIN
 
 ## Overview
-Functionality for protein.
+Runnable examples for Protein workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_sequences.py](example_sequences.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    protein[protein]
-    style protein fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_sequences.py](example_sequences.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.protein import ...
+```bash
+uv run python examples/protein/example_sequences.py
 ```

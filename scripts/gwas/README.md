@@ -1,26 +1,20 @@
 # GWAS
 
 ## Overview
-Functionality for gwas.
+Command-line helpers for GWAS workflows. Scripts should remain thin wrappers around `src/metainformant/` implementations and be run from the repository root with `uv`.
 
 ## Contents
-- **[association/](association/)**
-- **[pipelines/](pipelines/)**
-- **[preparation/](preparation/)**
-- **[qc/](qc/)**
-- **[structure/](structure/)**
-- **[visualization/](visualization/)**
-
-## Structure
-
-```mermaid
-graph TD
-    gwas[gwas]
-    style gwas fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [association/](association/)
+- [pipelines/](pipelines/)
+- [preparation/](preparation/)
+- [qc/](qc/)
+- [structure/](structure/)
+- [visualization/](visualization/)
+- [run_amellifera_gwas.py](run_amellifera_gwas.py)
+- [run_pbarbatus_gwas.py](run_pbarbatus_gwas.py)
+- [validate_all_methods.py](validate_all_methods.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.gwas import ...
+```bash
+uv run python scripts/gwas/run_amellifera_gwas.py --help
 ```

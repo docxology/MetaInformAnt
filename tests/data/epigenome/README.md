@@ -1,21 +1,11 @@
 # EPIGENOME
 
 ## Overview
-Functionality for epigenome.
+Test fixture data for Epigenome coverage. Keep fixtures small, deterministic, and compatible with the no-mocking test policy.
 
 ## Contents
-
-
-## Structure
-
-```mermaid
-graph TD
-    epigenome[epigenome]
-    style epigenome fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [cpg_counts.tsv](cpg_counts.tsv)
+- [example.bedgraph](example.bedgraph)
 
 ## Usage
-Import module:
-```python
-from metainformant.epigenome import ...
-```
+These files are loaded by tests and fixtures; they are not importable package modules.

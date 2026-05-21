@@ -31,7 +31,7 @@ End-to-end DNA workflows:
 
 ### Upstream (dependencies on core/math)
 - **Core I/O**: `metainformant.core.io` — FASTA/VCF/BAM reading, serialization
-- **Core config**: `metainformant.core.config` — Pipeline parameters
+- **Core config**: `metainformant.core.utils.config` — Pipeline parameters
 - **Math population**: `metainformant.math.fst`, `metainformant.math.coalescent` — Theoretical formulas
 
 ### Downstream (modules that depend on DNA)

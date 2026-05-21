@@ -32,7 +32,7 @@ All configs support environment variable overrides with module-specific prefixes
 ### Usage
 
 ```python
-from metainformant.core.config import load_mapping_from_file, apply_env_overrides
+from metainformant.core.utils.config import load_mapping_from_file, apply_env_overrides
 
 config = load_mapping_from_file("config/amalgkit/species.yaml")
 config = apply_env_overrides(config, prefix="AK")

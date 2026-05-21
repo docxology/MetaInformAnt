@@ -1,21 +1,10 @@
 # DNA
 
 ## Overview
-Functionality for dna.
+Test fixture data for DNA coverage. Keep fixtures small, deterministic, and compatible with the no-mocking test policy.
 
 ## Contents
-
-
-## Structure
-
-```mermaid
-graph TD
-    dna[dna]
-    style dna fill:#f9f,stroke:#333,stroke-width:2px
-```
+- No runnable files are stored directly in this directory yet.
 
 ## Usage
-Import module:
-```python
-from metainformant.dna import ...
-```
+These files are loaded by tests and fixtures; they are not importable package modules.

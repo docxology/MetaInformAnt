@@ -7,7 +7,7 @@ Single-cell analysis module for METAINFORMANT.
 - **[analysis/](index.md)**
 - **[data/](preprocessing.md)**
 - **[visualization/](visualization.md)**
-- `[__init__.py](__init__.py)`
+- [src/metainformant/singlecell/__init__.py](../../src/metainformant/singlecell/__init__.py)
 
 ## Structure
 

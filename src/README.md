@@ -37,10 +37,12 @@ src/
 ## Usage
 
 ```python
-# Import modules
-from metainformant.core import io, config, paths
-from metainformant.dna import sequences, alignment
-from metainformant.rna import workflow
+# Import modules using the current package layout
+from metainformant.core import io
+from metainformant.core.io import paths
+from metainformant.core.utils import config
+from metainformant.dna.sequence import core as dna_core
+from metainformant.rna.engine import workflow
 from metainformant.visualization import plots
 
 # All operations use real implementations (NO MOCKING policy)
@@ -48,7 +50,7 @@ from metainformant.visualization import plots
 
 ## Key Patterns
 
-- **Core utilities**: Use `metainformant.core` for I/O, config, logging
+- **Core utilities**: Use `metainformant.core.io`, `metainformant.core.utils.config`, and `metainformant.core.utils.logging`
 - **Output**: All results go to `output/` directory
 - **Configuration**: YAML configs with environment variable overrides
 - **Type hints**: Python 3.11+ with comprehensive typing

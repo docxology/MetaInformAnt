@@ -1,22 +1,13 @@
 # VISUALIZATION
 
 ## Overview
-Functionality for visualization.
+Command-line helpers for GWAS Visualization workflows. Scripts should remain thin wrappers around `src/metainformant/` implementations and be run from the repository root with `uv`.
 
 ## Contents
-- `[generate_missing_plots.py](generate_missing_plots.py)`
-- `[visualizations.py](visualizations.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    visualization[visualization]
-    style visualization fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [generate_missing_plots.py](generate_missing_plots.py)
+- [visualizations.py](visualizations.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.visualization import ...
+```bash
+uv run python scripts/gwas/visualization/generate_missing_plots.py --help
 ```

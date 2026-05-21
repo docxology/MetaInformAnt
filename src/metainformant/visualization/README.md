@@ -11,9 +11,9 @@
 
 - [Architecture](#architecture)
 - [Key Capabilities](#key-capabilities)
-  - [Basic & Statistical Plots](#basic--statistical-plots)
+  - [Basic & Statistical Plots](#basic-statistical-plots)
   - [Genomic Visualizations](#genomic-visualizations)
-  - [Themes, Palettes & Dashboards](#themes-palettes--dashboards)
+  - [Themes, Palettes & Dashboards](#themes-palettes-dashboards)
 - [Submodules](#submodules)
 - [Quick Start](#quick-start)
 - [Related](#related)

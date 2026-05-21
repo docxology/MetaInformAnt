@@ -1,21 +1,12 @@
 # ONTOLOGY
 
 ## Overview
-Functionality for ontology.
+Runnable examples for Ontology workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_go.py](example_go.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    ontology[ontology]
-    style ontology fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_go.py](example_go.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.ontology import ...
+```bash
+uv run python examples/ontology/example_go.py
 ```

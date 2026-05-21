@@ -30,7 +30,7 @@ End-to-end plotting workflows:
 
 ### Upstream
 - **Core I/O**: `metainformant.core.io` — Load TSV/CSV/Parquet for plotting
-- **Core config**: `metainformant.core.config` — Theme/style/config (DARK/LIGHT, COLORMAPS)
+- **Core config**: `metainformant.core.utils.config` — Theme/style/config (DARK/LIGHT, COLORMAPS)
 - **DNA**: `metainformant.dna.phylogeny` — Tree data structures
 
 ### Downstream (consumers of visualizations)

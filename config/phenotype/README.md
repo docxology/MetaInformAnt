@@ -1,21 +1,14 @@
 # PHENOTYPE
 
 ## Overview
-Functionality for phenotype.
+Configuration assets for Phenotype workflows. Keep templates and examples synchronized with the shared loaders in `metainformant.core.utils.config`.
 
 ## Contents
-
-
-## Structure
-
-```mermaid
-graph TD
-    phenotype[phenotype]
-    style phenotype fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [antwiki_scraper.yaml](antwiki_scraper.yaml)
 
 ## Usage
-Import module:
 ```python
-from metainformant.phenotype import ...
+from metainformant.core.utils.config import load_mapping_from_file
+
+config = load_mapping_from_file("config/phenotype/antwiki_scraper.yaml")
 ```

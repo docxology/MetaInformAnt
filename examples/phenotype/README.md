@@ -1,21 +1,12 @@
 # PHENOTYPE
 
 ## Overview
-Functionality for phenotype.
+Runnable examples for Phenotype workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_traits.py](example_traits.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    phenotype[phenotype]
-    style phenotype fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_traits.py](example_traits.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.phenotype import ...
+```bash
+uv run python examples/phenotype/example_traits.py
 ```

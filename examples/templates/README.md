@@ -1,23 +1,12 @@
 # TEMPLATES
 
 ## Overview
-Functionality for templates.
+Runnable examples for Templates workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[base_template.py.j2](base_template.py.j2)`
-- `[dna_template.py.j2](dna_template.py.j2)`
-- `[ml_template.py.j2](ml_template.py.j2)`
-
-## Structure
-
-```mermaid
-graph TD
-    templates[templates]
-    style templates fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [base_template.py.j2](base_template.py.j2)
+- [dna_template.py.j2](dna_template.py.j2)
+- [ml_template.py.j2](ml_template.py.j2)
 
 ## Usage
-Import module:
-```python
-from metainformant.templates import ...
-```
+See the parent directory README for workflow entry points.

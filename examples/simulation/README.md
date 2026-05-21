@@ -1,21 +1,12 @@
 # SIMULATION
 
 ## Overview
-Functionality for simulation.
+Runnable examples for Simulation workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_simulation.py](example_simulation.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    simulation[simulation]
-    style simulation fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_simulation.py](example_simulation.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.simulation import ...
+```bash
+uv run python examples/simulation/example_simulation.py
 ```

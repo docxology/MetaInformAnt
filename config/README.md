@@ -120,7 +120,7 @@ All configuration parameters can be overridden via environment variables:
 ## Loading Configurations
 
 ```python
-from metainformant.core.config import load_mapping_from_file, apply_env_overrides
+from metainformant.core.utils.config import load_mapping_from_file, apply_env_overrides
 
 # Load with environment overrides
 config = load_mapping_from_file("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
@@ -133,7 +133,7 @@ config = apply_env_overrides(config, prefix="AK")
 |---------|--------|---------------|
 | *Pogonomyrmex barbatus* | `amalgkit_pogonomyrmex_barbatus.yaml` | GCF_000187915.1 |
 
-See `config/amalgkit/` for all species configurations (22 ant species + honeybee).
+See `config/amalgkit/` for 27 species configurations plus template, test, and cross-species configs.
 
 ## NCBI Configuration
 
@@ -151,4 +151,4 @@ Override with `NCBI_EMAIL` environment variable.
 
 - [RNA Workflow Guide](../docs/rna/workflow.md)
 - [GWAS Workflow Guide](../docs/gwas/workflow.md)
-- [Core Config Module](../src/metainformant/core/config.py)
+- [Core Config Module](../src/metainformant/core/utils/config.py)

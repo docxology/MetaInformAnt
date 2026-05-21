@@ -1,21 +1,12 @@
 # VISUALIZATION
 
 ## Overview
-Functionality for visualization.
+Runnable examples for Visualization workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_plots.py](example_plots.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    visualization[visualization]
-    style visualization fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_plots.py](example_plots.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.visualization import ...
+```bash
+uv run python examples/visualization/example_plots.py
 ```

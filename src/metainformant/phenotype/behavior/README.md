@@ -4,9 +4,9 @@
 Behavioral phenotype analysis module.
 
 ## Contents
-- `[__init__.py](__init__.py)`
-- `[ethogram.py](ethogram.py)`
-- `[sequence.py](sequence.py)`
+- [__init__.py](__init__.py)
+- [ethogram.py](ethogram.py)
+- [sequence.py](sequence.py)
 
 ## Structure
 

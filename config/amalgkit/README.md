@@ -124,4 +124,4 @@ This allows processing hundreds of samples with only ~80 GB free disk space.
 
 - [Amalgkit Documentation](https://github.com/kfuku52/amalgkit)
 - [Amalgkit FAQ](./amalgkit_faq.md) - Common errors and solutions
-- [RNA Scripts](../../../scripts/rna/)
+- [RNA Scripts](../../scripts/rna/)

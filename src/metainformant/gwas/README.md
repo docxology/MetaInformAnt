@@ -12,7 +12,7 @@ Genome-Wide Association Studies analysis, fine-mapping, variant-expression integ
 - [Architecture](#architecture)
 - [Key Capabilities](#key-capabilities)
   - [Association Testing](#association-testing)
-  - [Fine-Mapping & Colocalization](#fine-mapping--colocalization)
+  - [Fine-Mapping & Colocalization](#fine-mapping-colocalization)
   - [Compute-Time Benchmarking](#compute-time-benchmarking)
   - [Data I/O](#data-io)
   - [Heritability Estimation](#heritability-estimation)
@@ -171,9 +171,9 @@ results = cis_eqtl_scan(
 
 ## Related
 
-- [metainformant.multiomics](../../docs/multiomics/) — Multi-omic integration
-- [metainformant.rna](../../docs/rna/) — RNA-seq analysis
-- [config/gwas/](../../../docs/config/gwas/) — Configuration files
+- [metainformant.multiomics](../../../docs/multiomics/) — Multi-omic integration
+- [metainformant.rna](../../../docs/rna/) — RNA-seq analysis
+- [config/gwas/](../../../config/gwas/) — Configuration files
 
 ---
 
@@ -183,4 +183,4 @@ results = cis_eqtl_scan(
 - **API Reference**: [docs/gwas/SPEC.md](../../../docs/gwas/SPEC.md) — Data structures, function signatures
 - **Tutorial**: [docs/TUTORIALS.md](../../../docs/TUTORIALS.md#3-gwas-analysis-tutorial) — Step-by-step walkthrough
 - **eQTL integration**: [docs/eqtl/README.md](../../../docs/eqtl/README.md) — Combined RNA × GWAS analysis
-- **Configuration**: [config/gwas/](../../config/gwas/) — YAML config files for pipelines
+- **Configuration**: [config/gwas/](../../../config/gwas/) — YAML config files for pipelines

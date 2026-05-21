@@ -4,12 +4,12 @@
 Test examples package for METAINFORMANT.
 
 ## Contents
-- `[__init__.py](__init__.py)`
-- `[discover.py](discover.py)`
-- `[main.py](main.py)`
-- `[reporting.py](reporting.py)`
-- `[runner.py](runner.py)`
-- `[validator.py](validator.py)`
+- [__init__.py](__init__.py)
+- [discover.py](discover.py)
+- [main.py](main.py)
+- [reporting.py](reporting.py)
+- [runner.py](runner.py)
+- [validator.py](validator.py)
 
 ## Structure
 

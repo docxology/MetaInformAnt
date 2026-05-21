@@ -8,7 +8,7 @@ Protein sequence and structure analysis module for METAINFORMANT.
 - **sequence/**
 - **[structure/](alphafold.md)**
 - **visualization/**
-- `[__init__.py](__init__.py)`
+- [src/metainformant/protein/__init__.py](../../src/metainformant/protein/__init__.py)
 
 ## Structure
 

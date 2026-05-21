@@ -32,8 +32,8 @@ METAINFORMANT: Comprehensive Bioinformatics Toolkit for Multi-Omic Analysis.
 - **[spatial/](spatial/)**
 - **[structural_variants/](structural_variants/)**
 - **[visualization/](visualization/)**
-- `[__init__.py](__init__.py)`
-- `[__main__.py](__main__.py)`
+- [__init__.py](__init__.py)
+- [__main__.py](__main__.py)
 
 ## Structure
 

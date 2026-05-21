@@ -4,12 +4,12 @@
 Population genetics analysis scripts package.
 
 ## Contents
-- `[__init__.py](__init__.py)`
-- `[analysis.py](analysis.py)`
-- `[analyze.py](analyze.py)`
-- `[generate_dataset.py](generate_dataset.py)`
-- `[report.py](report.py)`
-- `[visualize.py](visualize.py)`
+- [__init__.py](__init__.py)
+- [analysis.py](analysis.py)
+- [analyze.py](analyze.py)
+- [generate_dataset.py](generate_dataset.py)
+- [report.py](report.py)
+- [visualize.py](visualize.py)
 
 ## Structure
 

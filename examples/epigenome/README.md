@@ -1,21 +1,12 @@
 # EPIGENOME
 
 ## Overview
-Functionality for epigenome.
+Runnable examples for Epigenome workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_methylation.py](example_methylation.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    epigenome[epigenome]
-    style epigenome fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_methylation.py](example_methylation.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.epigenome import ...
+```bash
+uv run python examples/epigenome/example_methylation.py
 ```

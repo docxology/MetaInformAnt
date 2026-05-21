@@ -4,9 +4,9 @@
 Chemical phenotype analysis module.
 
 ## Contents
-- `[__init__.py](__init__.py)`
-- `[compound.py](compound.py)`
-- `[profile.py](profile.py)`
+- [__init__.py](__init__.py)
+- [compound.py](compound.py)
+- [profile.py](profile.py)
 
 ## Structure
 

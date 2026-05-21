@@ -4,11 +4,11 @@
 Core utilities and configurations for RNA analysis.
 
 ## Contents
-- `[__init__.py](__init__.py)`
-- `[cleanup.py](cleanup.py)`
-- `[configs.py](configs.py)`
-- `[deps.py](deps.py)`
-- `[environment.py](environment.py)`
+- [__init__.py](__init__.py)
+- [cleanup.py](cleanup.py)
+- [configs.py](configs.py)
+- [deps.py](deps.py)
+- [environment.py](environment.py)
 
 ## Structure
 

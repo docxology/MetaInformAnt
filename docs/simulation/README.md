@@ -7,7 +7,7 @@ Evolutionary and Population Genetics Simulation module for METAINFORMANT.
 - **[models/](popgen.md)**
 - **visualization/**
 - **workflow/**
-- `[__init__.py](__init__.py)`
+- [src/metainformant/simulation/__init__.py](../../src/metainformant/simulation/__init__.py)
 
 ## Structure
 

@@ -68,60 +68,60 @@ bash scripts/package/validate_build.sh
 ### RNA Workflows (`rna/`)
 
 ```bash
-# Run amalgkit workflow
-python3 scripts/rna/run_workflow.py --config config/amalgkit/species.yaml
+# List available amalgkit workflow configs
+uv run python scripts/rna/run_workflow.py --list-configs
 
 # Check workflow status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/species.yaml --status
+uv run python scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
 # Discover new species
-python3 scripts/rna/discover_species.py --species "Apis_mellifera"
+uv run python scripts/rna/discover_species.py --species "Apis_mellifera"
 
-# Recover missing samples
-python3 scripts/rna/recover_missing_parallel.py --config config/amalgkit/species.yaml
+# Validate amalgkit species configs
+uv run python scripts/rna/validate_configs.py
 ```
 
 ### GWAS Workflows (`gwas/`)
 
 ```bash
 # Run GWAS pipeline
-python3 scripts/gwas/run_genome_scale_gwas.py --config config/gwas/species.yaml
+uv run python scripts/gwas/run_amellifera_gwas.py --config config/gwas/gwas_amellifera.yaml --output output/gwas/amellifera
 
 # Generate all visualizations
-python3 scripts/gwas/generate_plots.py --results output/gwas/results.tsv
+uv run python scripts/gwas/visualization/visualizations.py --help
 ```
 
 ### Quality & Auditing (`quality/`)
 
 ```bash
 # Audit documentation presence
-python3 scripts/quality/audit_docs.py
+uv run python scripts/quality/audit_docs.py
 
 # Check export completeness
-python3 scripts/quality/check_exports.py
+uv run python scripts/quality/check_exports.py
 
 # Audit docstring coverage
-python3 scripts/quality/audit_docstrings.py
+uv run python scripts/quality/audit_docstrings.py
 ```
 
 ### Example Testing (`test_examples/`)
 
 ```bash
-# Run all examples
-python3 scripts/test_examples/test_examples.py --continue-on-error
+# Validate examples
+uv run python scripts/test_examples/validate_examples.py --fast
 
 # Fast validation (pre-commit)
-python3 scripts/test_examples/validate_examples.py --fast
+uv run python scripts/test_examples/validate_examples.py --fast
 
 # Benchmark examples
-python3 scripts/test_examples/benchmark_examples.py
+uv run python scripts/test_examples/benchmark_examples.py
 ```
 
 ### Visualization (`visualization/`)
 
 ```bash
 # Generate batch plots
-python3 scripts/visualization/batch_plots.py --input data/ --output output/plots/
+uv run python scripts/visualization/run_visualization.py --input data/matrix.csv --plot-type heatmap --output output/plots --dry-run
 ```
 
 ## Script Pattern

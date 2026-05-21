@@ -1,21 +1,11 @@
 # TABLES
 
 ## Overview
-Functionality for tables.
+Test fixture data for Tables coverage. Keep fixtures small, deterministic, and compatible with the no-mocking test policy.
 
 ## Contents
-
-
-## Structure
-
-```mermaid
-graph TD
-    tables[tables]
-    style tables fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [Apis_mellifera.metadata.tsv](Apis_mellifera.metadata.tsv)
+- [Apis_mellifera.uncorrected.tc.tsv](Apis_mellifera.uncorrected.tc.tsv)
 
 ## Usage
-Import module:
-```python
-from metainformant.tables import ...
-```
+These files are loaded by tests and fixtures; they are not importable package modules.

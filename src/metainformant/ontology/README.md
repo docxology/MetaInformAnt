@@ -11,9 +11,9 @@ Gene ontology parsing, querying, enrichment analysis, and visualization for META
 
 - [Architecture](#architecture)
 - [Key Capabilities](#key-capabilities)
-  - [GO Loading & Enrichment](#go-loading--enrichment)
+  - [GO Loading & Enrichment](#go-loading-enrichment)
   - [Querying and Traversal](#querying-and-traversal)
-  - [Serialization & Visualization](#serialization--visualization)
+  - [Serialization & Visualization](#serialization-visualization)
 - [Submodules](#submodules)
 - [Quick Start](#quick-start)
 - [Integration](#integration)

@@ -1,21 +1,10 @@
 # CONFIG
 
 ## Overview
-Functionality for config.
+Documentation notes for Config. Keep this reference synchronized with the corresponding source module and domain guide.
 
 ## Contents
-
-
-## Structure
-
-```mermaid
-graph TD
-    config[config]
-    style config fill:#f9f,stroke:#333,stroke-width:2px
-```
+- No runnable files are stored directly in this directory yet.
 
 ## Usage
-Import module:
-```python
-from metainformant.config import ...
-```
+Use this alongside the parent domain documentation and source module README.

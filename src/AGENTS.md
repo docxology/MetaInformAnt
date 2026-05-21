@@ -39,8 +39,8 @@ src/
 Always use `metainformant.core` for:
 
 - **I/O**: `from metainformant.core import io` (never `import json` directly)
-- **Paths**: `from metainformant.core import paths`
-- **Config**: `from metainformant.core import config`
+- **Paths**: `from metainformant.core.io import paths`
+- **Config**: `from metainformant.core.utils import config`
 - **Logging**: `from metainformant.core.utils.logging import get_logger`
 
 ### Output Directory

@@ -15,7 +15,7 @@ Clinical pharmacogenomic analysis: star allele calling, metabolizer phenotyping,
   - [Star Allele Calling](#star-allele-calling)
   - [Metabolizer Prediction](#metabolizer-prediction)
   - [Guideline Annotations](#guideline-annotations)
-  - [Drug Interactions & Clinical](#drug-interactions--clinical)
+  - [Drug Interactions & Clinical](#drug-interactions-clinical)
 - [Quick Start](#quick-start)
 - [Related](#related)
 

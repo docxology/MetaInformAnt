@@ -1,22 +1,13 @@
 # GWAS
 
 ## Overview
-Functionality for gwas.
+Runnable examples for GWAS workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_association.py](example_association.py)`
-- `[example_visualization.py](example_visualization.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    gwas[gwas]
-    style gwas fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_association.py](example_association.py)
+- [example_visualization.py](example_visualization.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.gwas import ...
+```bash
+uv run python examples/gwas/example_association.py
 ```

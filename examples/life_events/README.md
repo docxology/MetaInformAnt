@@ -1,21 +1,12 @@
 # LIFE_EVENTS
 
 ## Overview
-Functionality for life_events.
+Runnable examples for Life Events workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_events.py](example_events.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    life_events[life_events]
-    style life_events fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_events.py](example_events.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.life_events import ...
+```bash
+uv run python examples/life_events/example_events.py
 ```

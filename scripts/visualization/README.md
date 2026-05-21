@@ -1,21 +1,12 @@
 # VISUALIZATION
 
 ## Overview
-Functionality for visualization.
+Command-line helpers for Visualization workflows. Scripts should remain thin wrappers around `src/metainformant/` implementations and be run from the repository root with `uv`.
 
 ## Contents
-- `[run_visualization.py](run_visualization.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    visualization[visualization]
-    style visualization fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [run_visualization.py](run_visualization.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.visualization import ...
+```bash
+uv run python scripts/visualization/run_visualization.py --help
 ```

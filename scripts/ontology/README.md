@@ -1,21 +1,12 @@
 # ONTOLOGY
 
 ## Overview
-Functionality for ontology.
+Command-line helpers for Ontology workflows. Scripts should remain thin wrappers around `src/metainformant/` implementations and be run from the repository root with `uv`.
 
 ## Contents
-- `[run_ontology_analysis.py](run_ontology_analysis.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    ontology[ontology]
-    style ontology fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [run_ontology_analysis.py](run_ontology_analysis.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.ontology import ...
+```bash
+uv run python scripts/ontology/run_ontology_analysis.py --help
 ```

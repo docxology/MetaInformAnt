@@ -265,4 +265,4 @@ See [CHANGELOG.md](CHANGELOG.md) for the full version history.
 
 ## License
 
-MIT © MetaInformAnt contributors. See [LICENSE](LICENSE) for details.
+MIT © MetaInformAnt contributors. See [LICENSE](../../LICENSE) for details.

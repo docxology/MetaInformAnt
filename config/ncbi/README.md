@@ -12,4 +12,4 @@ NCBI Entrez API configuration for all modules that access NCBI services.
 
 ## Related
 
-- [Core Config Module](../../src/metainformant/core/config.py)
+- [Core Config Module](../../src/metainformant/core/utils/config.py)

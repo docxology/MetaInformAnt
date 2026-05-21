@@ -96,4 +96,4 @@ multiomics = integration.integrate_omics_data(
 
 - [metainformant.gwas](../gwas/) - GWAS analysis and fine-mapping
 - [metainformant.rna](../rna/) - RNA-seq quantification
-- [docs/multiomics/](../../../docs/multiomics/) - Extended documentation
+- [docs/multiomics/](./) - Extended documentation

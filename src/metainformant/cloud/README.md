@@ -11,8 +11,8 @@ Cloud deployment and infrastructure automation for METAINFORMANT bioinformatics 
 
 - [Architecture](#architecture)
 - [Key Components](#key-components)
-  - [CloudConfig (`cloud_config.py`)](#cloudconfig-cloud_configpy)
-  - [GCPDeployer (`gcp_deployer.py`)](#gcpdeployer-gcp_deployerpy)
+  - [CloudConfig (`cloud_config.py`)](#cloudconfig-cloudconfigpy)
+  - [GCPDeployer (`gcp_deployer.py`)](#gcpdeployer-gcpdeployerpy)
 - [Genome Preparation](#genome-preparation)
   - [Reference Genome Indexing](#reference-genome-indexing)
   - [Caching Strategy](#caching-strategy)

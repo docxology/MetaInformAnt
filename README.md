@@ -12,16 +12,16 @@
 
 ## Overview
 
-METAINFORMANT provides production-ready bioinformatics analysis across genomics, transcriptomics, proteomics, epigenomics, and systems biology. Built with Python 3.11+ and [`uv`](https://astral.sh/uv) for fast dependency management.
+METAINFORMANT provides broad bioinformatics analysis modules across genomics, transcriptomics, proteomics, epigenomics, and systems biology. Built with Python 3.11+ and [`uv`](https://astral.sh/uv) for fast dependency management.
 
 ### At a Glance
 
 | Metric | Value |
 |--------|-------|
 | **Modules** | 28 specialized analysis modules |
-| **Python Files** | 603 implementation files |
+| **Python Files** | 639 implementation files under `src/metainformant/` |
 | **Plot Types** | 70+ visualization methods |
-| **Documentation** | 310+ README files |
+| **Documentation** | 439 project-owned `README.md` and `AGENTS.md` files |
 
 ### Core Capabilities
 
@@ -305,43 +305,41 @@ graph TD
 
 **Analyze DNA sequences:**
 ```bash
-# One-liner: GC content, k-mer analysis, phylogeny
-uv run python -c "
-from metainformant.dna import sequences, composition, phylogeny
-seqs = sequences.read_fasta('data/sequences.fasta')
-gc = [composition.gc_content(s) for s in seqs.values()]
-print(f'Avg GC: {sum(gc)/len(gc):.1f}%')
-"
+# One-liner: GC content for a short sequence
+uv run python - <<'PY'
+from metainformant.dna.sequence.composition import gc_content
+
+seq = "ATGCGC"
+print(f"GC: {gc_content(seq) * 100:.1f}%")
+PY
 ```
 
 **Run RNA-seq pipeline (amalgkit):**
 ```bash
-# 28-species workflow in ~6 hours on n1-standard-16
-python3 scripts/rna/orchestrate_species.py \
-  --species-list config/hymenoptera_28_species.txt \
-  --output output/rna_complete/
+# List available species configs before running an amalgkit workflow
+uv run python scripts/rna/run_workflow.py --list-configs
 ```
 
 **Perform GWAS analysis:**
 ```bash
-# Association testing with population structure correction
-python3 scripts/gwas/pipelines/run_analysis.py \
-  --vcf data/genotypes.vcf.gz \
-  --pheno data/phenotypes.tsv \
-  --config config/gwas/amellifera.yaml
+# End-to-end Apis mellifera GWAS workflow
+uv run python scripts/gwas/run_amellifera_gwas.py \
+  --config config/gwas/gwas_amellifera.yaml \
+  --output output/gwas/amellifera
 ```
 
 **Visualize results:**
 ```python
-from metainformant.visualization import plots
-fig = plots.manhattan(gwas_results)  # or heatmap, network, tree...
-fig.savefig('output/figures/manhattan.png', dpi=300)
+import numpy as np
+from metainformant.visualization.plots.basic import heatmap
+
+ax = heatmap(np.array([[1.0, 0.5], [0.5, 1.0]]), output_path="output/figures/heatmap.png")
 ```
 
 **Deploy to cloud (GCP):**
 ```bash
-# Spin up VM, run pipeline, collect results, tear down
-python3 scripts/cloud/deploy_gcp.py --config config/cloud.yaml
+# Inspect the GCP deployment subcommands
+uv run python scripts/cloud/deploy_gcp.py --help
 ```
 
 ---
@@ -468,8 +466,8 @@ All modules live in [`src/metainformant/`](src/metainformant/) with documentatio
 | [`visualization/`](src/metainformant/visualization/) | 22 | 70+ plot types, heatmaps, networks, animations, publication-ready | [`plots/`](src/metainformant/visualization/plots/), [`genomics/`](src/metainformant/visualization/genomics/), [`analysis/`](src/metainformant/visualization/analysis/) | [README](src/metainformant/visualization/README.md) |
 | **Specialized Domains** |||||
 | [`longread/`](src/metainformant/longread/) | 19 | Long-read sequencing (PacBio, ONT), assembly, error correction | [`assembly/`](src/metainformant/longread/assembly/), [`quality/`](src/metainformant/longread/quality/) | [README](src/metainformant/longread/README.md) |
-| [`metagenomics/`](src/metainformant/metagenomics/) | 11 | Metagenomic analysis, taxonomic profiling, functional annotation | [`taxonomy/`](src/metainformant/metagenomics/taxonomy/), [`functional/`](src/metainformant/metagenomics/functional/) | [README](src/metainformant/metagenomics/README.md) |
-| [`pharmacogenomics/`](src/metainformant/pharmacogenomics/) | 12 | Drug-gene interactions, pharmacokinetics, variant interpretation | [`interactions/`](src/metainformant/pharmacogenomics/interactions/) | [README](src/metainformant/pharmacogenomics/README.md) |
+| [`metagenomics/`](src/metainformant/metagenomics/) | 11 | Metagenomic analysis, taxonomic profiling, functional annotation | [`amplicon/`](src/metainformant/metagenomics/amplicon/), [`functional/`](src/metainformant/metagenomics/functional/) | [README](src/metainformant/metagenomics/README.md) |
+| [`pharmacogenomics/`](src/metainformant/pharmacogenomics/) | 12 | Drug-gene interactions, pharmacokinetics, variant interpretation | [`interaction/`](src/metainformant/pharmacogenomics/interaction/) | [README](src/metainformant/pharmacogenomics/README.md) |
 | [`spatial/`](src/metainformant/spatial/) | 11 | Spatial transcriptomics, tissue mapping, spatial statistics | [`analysis/`](src/metainformant/spatial/analysis/) | [README](src/metainformant/spatial/README.md) |
 | [`structural_variants/`](src/metainformant/structural_variants/) | 9 | SV detection, CNV analysis, breakpoint resolution | [`detection/`](src/metainformant/structural_variants/detection/) | [README](src/metainformant/structural_variants/README.md) |
 | [`menu/`](src/metainformant/menu/) | 4 | Interactive CLI menu system, workflow navigation | [`ui/`](src/metainformant/menu/ui/) | [README](src/metainformant/menu/README.md) |
@@ -500,7 +498,7 @@ Each module has documentation in `src/metainformant/<module>/README.md` and `doc
 
 ## Scripts & Workflows
 
-The [`scripts/`](scripts/) directory contains production-ready workflow orchestrators:
+The [`scripts/`](scripts/) directory contains workflow orchestrators and utilities:
 
 - **Package Management**: Setup, testing, quality control
 - **RNA-seq (Amalgkit)**: Multi-species workflows, amalgkit integration
@@ -522,8 +520,8 @@ uv run metainformant protein comp --fasta data/proteins.fasta
 uv run metainformant protein rmsd-ca --pdb-a data/structure1.pdb --pdb-b data/structure2.pdb
 uv run metainformant quality batch-detect --data samples.csv --batches batches.txt
 
-# RNA-seq (config-driven script; see docs/cli.md for Python API)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+# RNA-seq workflow config discovery
+uv run python scripts/rna/run_workflow.py --list-configs
 ```
 
 See [`docs/cli.md`](docs/cli.md) for CLI documentation.
@@ -533,353 +531,77 @@ See [`docs/cli.md`](docs/cli.md) for CLI documentation.
 ### DNA Analysis
 
 ```python
-from metainformant.dna import alignment, population
+from metainformant.dna.alignment.pairwise import global_align
+from metainformant.dna.population import nucleotide_diversity
 
-# Pairwise alignment
-align_result = alignment.pairwise.global_align("ACGTACGT", "ACGTAGGT")
-print(f"Score: {align_result.score}")
+alignment = global_align("ACGTACGT", "ACGTAGGT")
+print(f"Alignment score: {alignment.score}")
 
-# Population genetics
-sequences = ["ATCGATCG", "ATCGTTCG", "ATCGATCG"]
-diversity = population.nucleotide_diversity(sequences)
-print(f"π = {diversity:.4f}")
+seqs = ["ATCGATCG", "ATCGTTCG", "ATCGATCG"]
+print(f"Nucleotide diversity: {nucleotide_diversity(seqs):.4f}")
 ```
 
 ### RNA-seq Workflow
 
 ```python
-from pathlib import Path
+from metainformant.rna.engine.workflow import load_workflow_config, plan_workflow
 
-from metainformant.rna.amalgkit import check_cli_available
-from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, execute_workflow, plan_workflow
-
-available, help_text = check_cli_available()
-if not available:
-    print(f"Amalgkit not available: {help_text}")
-
-config = AmalgkitWorkflowConfig(
-    work_dir=Path("output/amalgkit/work"),
-    threads=8,
-    species_list=["Apis_mellifera"],
-)
-
-steps = plan_workflow(config)
-print(f"Planned {len(steps)} workflow steps")
-
-results = execute_workflow(config)
-for step_result in results.steps_executed:
-    print(f"{step_result.step_name}: exit code {step_result.return_code}")
+config = load_workflow_config("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
+for step_name, _params in plan_workflow(config):
+    print(step_name)
 ```
 
 ```bash
-# End-to-end workflow for a single species (recommended)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
-
-# Check status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
-
-# Alternative: Bash-based orchestrator
-bash scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+# Inspect available species configs, then run a workflow after amalgkit is installed
+uv run python scripts/rna/run_workflow.py --list-configs
+uv run python scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 ### GWAS Analysis
 
 ```python
-from metainformant.gwas import manhattan_plot, run_gwas
+from metainformant.gwas.analysis.association import association_test_linear
 
-results = run_gwas(
-    vcf_path="data/variants/cohort.vcf.gz",
-    phenotype_path="data/phenotypes/traits.tsv",
-    config={"association": {"model": "linear"}},
-    output_dir="output/gwas"
+result = association_test_linear(
+    genotypes=[0, 1, 2, 0, 1, 2, 0, 1],
+    phenotypes=[10.1, 11.0, 12.2, 9.8, 10.9, 12.0, 10.0, 11.2],
 )
-
-# Visualize results
-manhattan_plot(results["association_results"], output_path="output/gwas/manhattan.png")
+print(result["beta"], result["p_value"])
 ```
 
-### eQTL Integration Pipeline
-
-The eQTL pipeline bridges the genomic variants from the **GWAS** pipeline with the gene expression matrices provided by the **Amalgkit (RNA)** pipeline.
-
 ```bash
-# Run the pipeline leveraging real Amalgkit RNA-seq quantification data
-uv run python scripts/eqtl/run_eqtl_real.py
+uv run python scripts/gwas/run_amellifera_gwas.py --config config/gwas/gwas_amellifera.yaml --output output/gwas/amellifera
+```
 
-# Or explore the logic with synthetic data
-uv run python scripts/eqtl/run_eqtl_demo.py
+### Configuration
 
-# Call SNP variants directly from transcriptome RNA-seq data
-uv run python scripts/eqtl/rna_snp_pipeline.py --species amellifera --n-samples 3
+```python
+from metainformant.core.utils.config import apply_env_overrides, load_mapping_from_file
+
+config = load_mapping_from_file("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
+config = apply_env_overrides(config, prefix="AK")
 ```
 
 ### Visualization
 
 ```python
-from metainformant.visualization import heatmap, animate_time_series
+import numpy as np
+from metainformant.visualization.plots.basic import heatmap
 
-# Heatmap
-heatmap(correlation_matrix, cmap="viridis", annot=True)
-
-# Animation
-fig, anim = animate_time_series(time_series_data)
-anim.save("output/animation.gif")
-```
-
-### Network Analysis
-
-```python
-from metainformant.networks import create_network, detect_communities, centrality_measures
-
-# Create network from interactions
-network = create_network(edges, directed=False)
-
-# Detect communities
-communities = detect_communities(network)
-
-# Calculate centrality
-centrality = centrality_measures(network)
-```
-
-### Multi-Omics Integration
-
-```python
-from metainformant.multiomics import integrate_omics_data, joint_pca
-
-# Integrate multiple omics datasets
-multiomics = integrate_omics_data(
-    genomics=genomics_data,
-    transcriptomics=rna_data,
-    proteomics=protein_data
-)
-
-# Joint dimensionality reduction
-pca_result = joint_pca(multiomics)
-```
-
-### Information Theory
-
-```python
-from metainformant.information import shannon_entropy, mutual_information, information_content
-
-# Calculate Shannon entropy
-probs = [0.5, 0.3, 0.2]
-entropy = shannon_entropy(probs)
-
-# Mutual information between sequences
-mi = mutual_information(sequence_x, sequence_y)
-
-# Information content for hierarchical terms
-ic = information_content(term_frequencies, "GO:0008150")
-```
-
-### Life Events Analysis
-
-```python
-from metainformant.life_events import EventSequence, Event, analyze_life_course
-from datetime import datetime
-
-# Create event sequences
-events = [
-    Event("degree", datetime(2010, 6, 1), "education"),
-    Event("job_change", datetime(2015, 3, 1), "occupation"),
-]
-sequence = EventSequence(person_id="person_001", events=events)
-
-# Analyze life course
-results = analyze_life_course([sequence], outcomes=None)
-```
-
-### Protein Analysis
-
-```python
-from metainformant.protein import sequences, alignment, structure
-
-# Read protein sequences
-proteins = sequences.read_fasta("data/proteins.fasta")
-
-# Pairwise alignment
-align_result = alignment.global_align(proteins["seq1"], proteins["seq2"])
-
-# Structure analysis
-structure_data = structure.load_pdb("data/structure.pdb")
-contacts = structure.analyze_contacts(structure_data)
-```
-
-### Epigenome Analysis
-
-```python
-from metainformant.epigenome import methylation, chipseq
-
-# Methylation analysis
-meth_data = methylation.load_bedgraph("data/methylation.bedgraph")
-regions = methylation.find_dmr(meth_data, threshold=0.3)
-
-# ChIP-seq peak calling
-peaks = chipseq.call_peaks("data/chipseq.bam", "data/control.bam")
-```
-
-### Ontology Analysis
-
-```python
-from metainformant.ontology.core import go
-from metainformant.ontology.query import query
-
-# Load Gene Ontology
-go_graph = go.load_obo("data/go.obo")
-
-# Query ontology
-terms = query.get_ancestors(go_graph, "GO:0008150")
-similarity = query.semantic_similarity(go_graph, "GO:0008150", "GO:0008151")
-```
-
-### Phenotype Analysis
-
-```python
-from metainformant.phenotype import life_course, antwiki
-
-# Life course analysis
-traits = life_course.load_traits("data/traits.csv")
-curated = life_course.curate_traits(traits)
-
-# AntWiki integration
-species_data = antwiki.fetch_species("Pogonomyrmex_barbatus")
-```
-
-### Ecology Analysis
-
-```python
-from metainformant.ecology import community, environmental
-
-# Community analysis
-species_matrix = community.load_matrix("data/species.csv")
-diversity = community.calculate_diversity(species_matrix)
-
-# Environmental data
-env_data = environmental.load_data("data/environment.csv")
-correlations = environmental.analyze_correlations(species_matrix, env_data)
-```
-
-### Mathematical Biology
-
-```python
-from metainformant.math import popgen, coalescent
-
-# Population genetics
-sequences = ["ATCGATCG", "ATCGTTCG", "ATCGATCG"]
-fst = popgen.fst(sequences, populations=[0, 0, 1])
-
-# Coalescent simulation
-tree = coalescent.simulate_coalescent(n_samples=10, Ne=1000)
-```
-
-### Single-Cell Analysis
-
-```python
-from metainformant.singlecell import preprocessing, clustering
-
-# Load single-cell data
-adata = preprocessing.load_h5ad("data/counts.h5ad")
-
-# Preprocessing
-adata = preprocessing.filter_cells(adata, min_genes=200)
-adata = preprocessing.normalize(adata)
-
-# Clustering
-clusters = clustering.leiden(adata, resolution=0.5)
-```
-
-### Quality Control
-
-```python
-from metainformant.quality import fastq, metrics
-
-# FASTQ quality assessment
-qc_report = fastq.assess_quality("data/reads.fastq")
-print(f"Mean quality: {qc_report['mean_quality']}")
-
-# General metrics
-quality_score = metrics.calculate_quality(data_matrix)
-```
-
-### Machine Learning
-
-```python
-from metainformant.ml import classification, features
-
-# Feature extraction
-features = features.extract_features(data, method="pca", n_components=50)
-
-# Classification
-model = classification.train_classifier(
-    X_train, y_train, method="random_forest"
-)
-predictions = model.predict(X_test)
-```
-
-### Simulation
-
-```python
-from metainformant.simulation import sequences, ecosystems
-
-# Sequence simulation
-sim_seqs = sequences.simulate_sequences(
-    n_sequences=100, length=1000, mutation_rate=0.01
-)
-
-# Ecosystem simulation
-ecosystem = ecosystems.simulate_community(
-    n_species=50, interactions="random"
-)
+heatmap(np.array([[1.0, 0.2], [0.2, 1.0]]), output_path="output/figures/correlation.png")
 ```
 
 ### Core Utilities
 
 ```python
-from metainformant.core import io, paths, logging
+from metainformant.core import io
+from metainformant.core.io import paths
+from metainformant.core.utils.logging import get_logger
 
-# I/O operations
-data = io.load_json("config/example.yaml")
-io.dump_json(results, "output/results.json")
-
-# Path handling
-resolved = paths.expand_and_resolve("~/data/input.txt")
-is_safe = paths.is_within(resolved, base_path="/safe/directory")
-
-# Logging
-logger = logging.get_logger(__name__)
-logger.info("Processing data")
-```
-
-## Development
-
-**Getting started?** Read [SETUP.md](docs/SETUP.md) first.
-
-
-### Running Tests
-
-```bash
-# All tests
-bash scripts/package/test.sh
-
-# Fast tests only
-bash scripts/package/test.sh --mode fast
-
-# Specific module
-pytest tests/dna/ -v
-```
-
-### Code Quality
-
-```bash
-# Check code quality
-bash scripts/package/uv_quality.sh
-
-# Run linting
-ruff check src/
-
-# Type checking
-mypy src/metainformant
+logger = get_logger(__name__)
+resolved = paths.expand_and_resolve("output/results.json")
+io.dump_json({"ok": True}, resolved)
+logger.info("Wrote %s", resolved)
 ```
 
 ## Project Structure
@@ -907,7 +629,7 @@ MetaInformAnt/
 
 ## AI-Assisted Development
 
-This project was developed with AI assistance (grok-code-fast-1 via Cursor) to enhance:
+This project uses AI assistance to enhance:
 
 - Code generation and algorithm implementation
 - Comprehensive documentation

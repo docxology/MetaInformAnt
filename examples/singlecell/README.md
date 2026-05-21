@@ -1,21 +1,12 @@
 # SINGLECELL
 
 ## Overview
-Functionality for singlecell.
+Runnable examples for Singlecell workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_scrna.py](example_scrna.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    singlecell[singlecell]
-    style singlecell fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_scrna.py](example_scrna.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.singlecell import ...
+```bash
+uv run python examples/singlecell/example_scrna.py
 ```

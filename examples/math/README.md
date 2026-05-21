@@ -1,21 +1,12 @@
 # MATH
 
 ## Overview
-Functionality for math.
+Runnable examples for Math workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_dynamics.py](example_dynamics.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    math[math]
-    style math fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_dynamics.py](example_dynamics.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.math import ...
+```bash
+uv run python examples/math/example_dynamics.py
 ```

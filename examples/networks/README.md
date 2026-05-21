@@ -1,21 +1,12 @@
 # NETWORKS
 
 ## Overview
-Functionality for networks.
+Runnable examples for Networks workflows. Keep these examples small, deterministic, and aligned with the current public APIs.
 
 ## Contents
-- `[example_networks.py](example_networks.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    networks[networks]
-    style networks fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [example_networks.py](example_networks.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.networks import ...
+```bash
+uv run python examples/networks/example_networks.py
 ```

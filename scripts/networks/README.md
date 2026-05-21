@@ -1,21 +1,12 @@
 # NETWORKS
 
 ## Overview
-Functionality for networks.
+Command-line helpers for Networks workflows. Scripts should remain thin wrappers around `src/metainformant/` implementations and be run from the repository root with `uv`.
 
 ## Contents
-- `[run_network_analysis.py](run_network_analysis.py)`
-
-## Structure
-
-```mermaid
-graph TD
-    networks[networks]
-    style networks fill:#f9f,stroke:#333,stroke-width:2px
-```
+- [run_network_analysis.py](run_network_analysis.py)
 
 ## Usage
-Import module:
-```python
-from metainformant.networks import ...
+```bash
+uv run python scripts/networks/run_network_analysis.py --help
 ```
