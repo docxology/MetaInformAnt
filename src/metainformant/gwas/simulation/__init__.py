@@ -1,1 +1,7 @@
-"""GWAS simulation package — synthetic data generation."""
+"""GWAS simulation package: synthetic data generation."""
+
+from __future__ import annotations
+
+from . import synthetic
+
+__all__ = ["synthetic"]

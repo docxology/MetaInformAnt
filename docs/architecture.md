@@ -448,7 +448,7 @@ flowchart LR
 
 ## Project directories and conventions
 
-- **`config/`**: Declarative configuration and options for runs. Read by `metainformant.core.config` and consumed across domains. Environment variables may override values.
+- **`config/`**: Declarative configuration and options for runs. Read by `metainformant.core.utils.config` and consumed across domains. Environment variables may override values.
 - **`data/`**: Canonical datasets and local databases. Treated as read-mostly inputs and long-lived artifacts under versioned subfolders.
 - **`output/`**: All run and test outputs. Ephemeral, reproducible, safe to delete. Modules must default to writing here unless a user-specified path is provided.
 
@@ -687,7 +687,7 @@ RNA (FASTQ) → Quality
 ### Data Flow Patterns
 
 1. **Input → Processing → Output**: Most modules follow this pattern using `core.io` for I/O
-2. **Configuration → Workflow → Results**: Workflow modules use `core.config` for configuration
+2. **Configuration → Workflow → Results**: Workflow modules use `core.utils.config` for configuration
 3. **Cache → Compute → Cache**: Expensive operations use `core.cache` for results
 4. **Logging**: All modules use `core.logging` for consistent log messages
 

@@ -40,7 +40,7 @@ data = metab_io.load_mzml("data/metabolomics/sample.mzML")
 ### Configuration
 
 ```python
-from metainformant.core.config import load_mapping_from_file, apply_env_overrides
+from metainformant.core.utils.config import load_mapping_from_file, apply_env_overrides
 
 config = load_mapping_from_file("config/metabolomics/default.yaml")
 config = apply_env_overrides(config, prefix="METAB")

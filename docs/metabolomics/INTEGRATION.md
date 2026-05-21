@@ -30,7 +30,7 @@ config = core_io.load_json("config.json")
 
 **Key touchpoints**:
 - **`core.io`** — Reading/writing JSON, YAML config files; MS data uses own `io.formats`
-- **`core.config`** — Environment variable handling (`METAINFORMANT_OUTPUT`, etc.)
+- **`core.utils.config`** — Environment variable handling (`METAINFORMANT_OUTPUT`, etc.)
 - **`core.utils.logging`** — Structured logging across all functions
 
 ---

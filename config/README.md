@@ -43,7 +43,13 @@ Or from Python: `metainformant.rna.engine.workflow.load_workflow_config` and `ex
 
 ### Run GWAS Workflow
 
-Use Python (`metainformant.gwas`) or a script under `scripts/gwas/` with this config path; the main `metainformant` CLI does not implement `gwas run` (see [docs/cli.md](../docs/cli.md)).
+Use the main CLI for config-driven GWAS validation or execution:
+
+```bash
+uv run metainformant gwas run --config config/gwas/gwas_pbarbatus.yaml --check
+```
+
+Python APIs and scripts under `scripts/gwas/` remain available for specialized workflows; see [docs/cli.md](../docs/cli.md).
 
 ## Configuration Format
 

@@ -38,7 +38,7 @@ src/
 
 Always use `metainformant.core` for:
 
-- **I/O**: `from metainformant.core import io` (never `import json` directly)
+- **I/O**: use `metainformant.core.io` for domain data file I/O. Direct stdlib parsing is allowed in core, protocol adapters, subprocess/CLI glue, and narrow parser internals when covered by tests.
 - **Paths**: `from metainformant.core.io import paths`
 - **Config**: `from metainformant.core.utils import config`
 - **Logging**: `from metainformant.core.utils.logging import get_logger`

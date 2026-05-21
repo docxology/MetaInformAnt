@@ -18,7 +18,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 from metainformant.core import io
-from metainformant.core.paths import ensure_directory
+from metainformant.core.io.paths import ensure_directory
 from metainformant.core.utils.logging import setup_logger
 
 

@@ -10,7 +10,7 @@ METAINFORMANT documentation organized by biological domain.
 | [DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md) | How to navigate docs |
 | [architecture.md](architecture.md) | System architecture |
 | [cli.md](cli.md) | CLI reference |
-| [setup.md](setup.md) | Installation guide |
+| [SETUP.md](SETUP.md) | Installation guide |
 | [testing.md](testing.md) | Testing documentation |
 
 ## Domain Documentation
@@ -46,7 +46,8 @@ METAINFORMANT documentation organized by biological domain.
 | Cloud | [cloud/](cloud/) | GCP deployment, Docker pipelines |
 | eQTL | [eqtl/](eqtl/) | Expression QTL integration |
 | Agents | [agents/](agents/) | Per-module agent rules for development |
-| MCP | [mcp/](mcp/) | Model Context Protocol notes |
+| Tasks | [tasks/](tasks/) | Goal-oriented workflow guides |
+| MCP | [mcp/](mcp/) | Standalone monitor notes; MCP server not implemented |
 
 ## Key Guides
 

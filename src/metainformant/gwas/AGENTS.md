@@ -72,7 +72,7 @@ End-to-end GWAS pipelines for social insect genomics: VCF parsing, QC, associati
 ## Rules
 
 - Use `metainformant.core.utils.logging` for all logging
-- Use `metainformant.core.io` for file operations — never `import json` directly
+- Use `metainformant.core.io` for domain data file I/O. Direct stdlib parsing is allowed in core, protocol adapters, subprocess/CLI glue, and narrow parser internals when covered by tests.
 - Follow NO MOCKING policy — all tests must use real implementations
 - Use `uv` for dependency management
 - Pure Python fallbacks for all numpy/scipy operations (graceful degradation)

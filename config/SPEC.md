@@ -63,7 +63,7 @@ log_level: INFO              # Logging verbosity
 ### Loading Configurations
 
 ```python
-from metainformant.core.config import load_mapping_from_file, apply_env_overrides
+from metainformant.core.utils.config import load_mapping_from_file, apply_env_overrides
 
 # Load with environment variable overrides
 config = load_mapping_from_file("config/amalgkit/species.yaml")

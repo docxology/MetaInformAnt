@@ -112,7 +112,7 @@ io.write_csv(df, "output/protein/alignments/alignment.csv")
 ```
 
 ### Path Handling
-- Always use `metainformant.core.paths` utilities for path operations
+- Always use `metainformant.core.io.paths` utilities for path operations
 - Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
 
 **Pattern**:

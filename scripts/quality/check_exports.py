@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
-"""Check export completeness across METAINFORMANT modules.
+"""Check package export consistency across METAINFORMANT modules.
 
-This script verifies that all public functions and classes defined in module
-__init__.py files are properly exported in the __all__ list.
+The checker validates ``__all__`` declarations in package ``__init__.py`` files:
+
+- every exported name must be bound by the package initializer;
+- every public immediate child module/package should either be exported or the
+  initializer must intentionally have an empty ``__all__``;
+- Python files that define public functions/classes must export those local
+  definitions unless they are package-only facades.
 """
 
 from __future__ import annotations
@@ -87,6 +92,62 @@ def extract_all_exports(content: str) -> set[str]:
     return exports
 
 
+def has_all_assignment(content: str) -> bool:
+    """Return True if ``content`` assigns ``__all__``."""
+    tree = ast.parse(content)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "__all__":
+                    return True
+        if isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name) and node.target.id == "__all__":
+            return True
+    return False
+
+
+def extract_bound_names(content: str) -> set[str]:
+    """Extract top-level names bound by imports, assignments, classes, and functions."""
+    tree = ast.parse(content)
+    names: set[str] = set()
+    public_dunders = {"__version__", "__author__", "__license__"}
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            if not node.name.startswith("_"):
+                names.add(node.name)
+        elif isinstance(node, ast.Import):
+            for alias in node.names:
+                bound = alias.asname or alias.name.split(".")[0]
+                if not bound.startswith("_"):
+                    names.add(bound)
+        elif isinstance(node, ast.ImportFrom):
+            for alias in node.names:
+                if alias.name == "*":
+                    continue
+                bound = alias.asname or alias.name
+                if not bound.startswith("_"):
+                    names.add(bound)
+        elif isinstance(node, (ast.Assign, ast.AnnAssign)):
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            for target in targets:
+                if isinstance(target, ast.Name) and (not target.id.startswith("_") or target.id in public_dunders):
+                    names.add(target.id)
+    names.discard("__all__")
+    return names
+
+
+def public_children(package_dir: Path) -> set[str]:
+    """Return immediate public child module/package names for ``package_dir``."""
+    children: set[str] = set()
+    for child in package_dir.iterdir():
+        if child.name.startswith("_"):
+            continue
+        if child.is_file() and child.suffix == ".py" and child.name != "__init__.py":
+            children.add(child.stem)
+        elif child.is_dir() and (child / "__init__.py").exists():
+            children.add(child.name)
+    return children
+
+
 def check_module_exports(module_path: Path) -> dict[str, Any]:
     """Check export completeness for a single module."""
     try:
@@ -103,29 +164,63 @@ def check_module_exports(module_path: Path) -> dict[str, Any]:
 
     defined = extract_functions_and_classes(content)
     exported = extract_all_exports(content)
+    bound = extract_bound_names(content)
+    children = public_children(module_path.parent)
+    has_all = has_all_assignment(content)
+
+    if not has_all:
+        return {
+            "status": "ok" if not (defined or children) else "missing_all",
+            "defined": defined,
+            "exported": exported,
+            "missing": defined | children,
+            "extra": set(),
+            "bound": bound,
+            "children": children,
+            "note": "Missing __all__",
+        }
+
+    unbound_exports = exported - bound
+    missing_defs = defined - exported
 
     # Special handling for submodule __init__.py files vs package __init__.py files
     if not is_submodule_init(module_path):
-        # This is a package __init__.py that imports submodules
-        # The __all__ list contains submodule names, which is correct
+        # This is a package __init__.py that imports submodules. Empty __all__
+        # is permitted for scaffold packages with intentionally no public API.
+        unbound_package_exports = unbound_exports - children
         return {
-            "status": "ok",
+            "status": "ok" if not unbound_package_exports else "bad_exports",
             "defined": defined,
             "exported": exported,
             "missing": set(),
-            "extra": set(),
+            "extra": unbound_package_exports,
+            "bound": bound,
+            "children": children,
             "note": "Package __init__.py with submodule exports",
         }
 
-    missing = defined - exported
-    extra = exported - defined
+    missing = missing_defs
+    extra = unbound_exports
 
-    return {"status": "ok", "defined": defined, "exported": exported, "missing": missing, "extra": extra}
+    return {
+        "status": "ok",
+        "defined": defined,
+        "exported": exported,
+        "missing": missing,
+        "extra": extra,
+        "bound": bound,
+        "children": children,
+    }
+
+
+def repo_root_from_script() -> Path:
+    """Resolve the repository root from this script location."""
+    return Path(__file__).resolve().parents[2]
 
 
 def main():
     """Main function."""
-    repo_root = Path(__file__).parent.parent
+    repo_root = repo_root_from_script()
     src_dir = repo_root / "src" / "metainformant"
 
     if not src_dir.exists():
@@ -151,6 +246,18 @@ def main():
             print(f"❌ {module_name}: {result['error']}")
             all_good = False
             continue
+        if result["status"] == "bad_exports":
+            print(f"⚠️  {module_name}: exported names are not bound or child modules")
+            all_good = False
+            if result["extra"]:
+                print(f"    Unbound exports: {sorted(result['extra'])}")
+            continue
+        if result["status"] == "missing_all":
+            print(f"⚠️  {module_name}: missing __all__")
+            all_good = False
+            if result["missing"]:
+                print(f"    Public names/children need an export policy: {sorted(result['missing'])}")
+            continue
 
         defined_count = len(result["defined"])
         exported_count = len(result["exported"])
@@ -171,7 +278,7 @@ def main():
             if result["missing"]:
                 print(f"    Missing exports: {sorted(result['missing'])}")
             if result["extra"]:
-                print(f"    Extra exports: {sorted(result['extra'])}")
+                print(f"    Unbound exports: {sorted(result['extra'])}")
             if note:
                 print(f"    Note: {note}")
 

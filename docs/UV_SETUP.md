@@ -509,7 +509,7 @@ On FAT filesystems:
 
 ## Related Documentation
 
-- **[Setup Guide](setup.md)** - General setup instructions
+- **[Setup Guide](SETUP.md)** - General setup instructions
 - **[Testing Guide](testing.md)** - Testing documentation
 - **[External Drive Setup](rna/EXTERNAL_DRIVE_SETUP.md)** - Detailed external drive guide
 - **[Quick Start](../QUICKSTART.md)** - Quick start guide
@@ -530,4 +530,3 @@ METAINFORMANT's UV setup is **fully automatic** on all filesystems:
 
 *Last Updated: January 2026*  
 *Tested on: ext4, NTFS, exFAT, FAT32 filesystems*
-

@@ -1,53 +1,34 @@
-# MCP Module (Model Context Protocol)
+# MCP Package
 
-METAINFORMANT tools exposed via Model Context Protocol for LLM-based development environments.
+This package contains MCP-adjacent helper code for METAINFORMANT. The current
+public interface is a standalone monitor script; a full MCP server is not
+implemented in this checkout.
 
-## Overview
+## Public Surface
 
-METAINFORMANT tools exposed via Model Context Protocol for LLM-based development environments.
-
-
-## Table of Contents
-
-- [Quick Start](#quick-start)
-  - [Claude Desktop](#claude-desktop)
-  - [Cursor](#cursor)
-- [Available Tools](#available-tools)
-- [See Also](#see-also)
-
-## Quick Start
-
-### Claude Desktop
-
-1. Install: `uv pip install -e .`
-2. Create `~/.config/Claude/mcp_config.json`:
-```json
-{
-  "mcpServers": {
-    "metainformant": {
-      "command": "uv",
-      "args": ["run", "python", "-m", "metainformant.mcp.server"]
-    }
-  }
-}
+```bash
+uv run python -m metainformant.mcp.tools.amalgkit_monitor
 ```
-3. Restart Claude Desktop
 
-### Cursor
+```python
+from metainformant.mcp.tools import amalgkit_monitor
+```
 
-Settings → AI Agents → MCP Servers → Add:
-- Command: `uv`
-- Args: `["run", "python", "-m", "metainformant.mcp.server"]`
+## Available Modules
 
-## Available Tools
+| Module | Purpose | Status |
+|--------|---------|--------|
+| `tools.amalgkit_monitor` | Inspect local Amalgkit/RNA workflow progress | Implemented |
 
-| Tool | Description | Status |
-|------|-------------|--------|
-| `amalgkit_status` | Check RNA pipeline status for species | [DONE] Implemented |
-| `run_workflow` | Trigger METAINFORMANT workflow | [PARTIAL] |
-| `list_outputs` | List output files for module | [PLANNED] |
+## Deferred Interfaces
 
-## See Also
+Do not document or depend on these names until implementation and tests land:
 
-- [RNA Module](../rna/) — Amalgkit pipeline
-- [MCP SPEC](SPEC.md) — Technical API reference
+- `metainformant.mcp.server`
+- `run_workflow` as an MCP tool
+- `list_outputs` as an MCP tool
+
+## Related
+
+- [docs/mcp/](../../../docs/mcp/)
+- [RNA package](../rna/)

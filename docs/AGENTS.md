@@ -50,7 +50,7 @@ Documentation is organized by module domain:
 - `ERROR_HANDLING.md` - Error handling patterns
 - `NO_MOCKING_POLICY.md` - Testing policy (no mocks allowed)
 - `UV_SETUP.md` - UV package manager setup guide
-- `setup.md` - Environment setup instructions
+- `SETUP.md` - Environment setup instructions (`setup.md` is a lowercase mirror)
 - `DISK_SPACE_MANAGEMENT.md` - Disk space management for large datasets
 
 ## Cursor project skills

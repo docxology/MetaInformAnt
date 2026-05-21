@@ -359,7 +359,7 @@ You've completed a basic METAINFORMANT workflow. Continue exploring:
 A: See the [Module Selection Decision Tree](../docs/index.md#module-selection-decision-tree) in the documentation index. It maps your data type and goal to the appropriate module.
 
 **Q: Where should I put my data files?**
-A: Use the `data/` directory for input datasets (gitignored). Outputs go to `output/`. See [docs/setup.md](setup.md) for directory policies.
+A: Use the `data/` directory for input datasets (gitignored). Outputs go to `output/`. See [SETUP.md](SETUP.md) for directory policies.
 
 **Q: How do I enable debug logging?**
 A: Call `setup_logging(level="DEBUG")` at the start of your script, or pass `--log-level DEBUG` to the CLI if available.

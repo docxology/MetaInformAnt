@@ -8,6 +8,7 @@ description: METAINFORMANT rules for directory docs/tasks. Use when editing, add
 Before editing files in this subtree:
 
 - Read [`AGENTS.md`](../../../docs/tasks/AGENTS.md) for this folder (canonical technical context).
+- Optional overview: [`README.md`](../../../docs/tasks/README.md).
 - Global rules: [`CLAUDE.md`](../../../CLAUDE.md) at repo root (uv, `output/`, `.tmp/`, no mocks).
 - Testing policy: [`docs/NO_MOCKING_POLICY.md`](../../../docs/NO_MOCKING_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.

@@ -240,7 +240,7 @@ src/metainformant/<module>/
 - Use `metainformant.core` utilities:
   - `metainformant.core.io` for file I/O
   - `metainformant.core.utils.logging` for logging
-  - `metainformant.core.paths` for path manipulation
+  - `metainformant.core.io.paths` for path manipulation
 
 ### Dependency Management
 

@@ -331,11 +331,11 @@ if __name__ == "__main__":
 |-----------|---------------|---------|
 | `core.io` | `download_file()`, `open_text_auto()`, `dump_json()` | File I/O and downloads |
 | `core.cache` | `cache_json()`, `load_cached_json()` | TTL-based caching |
-| `core.paths` | `ensure_directory()` | Directory creation |
+| `core.io.paths` | `ensure_directory()` | Directory creation |
 | `core.utils.logging` | `get_logger()`, `configure_logging_from_env()` | Structured logging |
 | `core.parallel` | `thread_map()` | Parallel I/O execution |
 | `core.data.db` | `get_connection()`, `execute_query()` | Database operations |
-| `core.config` | (Not shown) `load_mapping_from_file()` | Config file loading |
+| `core.utils.config` | (Not shown) `load_mapping_from_file()` | Config file loading |
 
 ## Configuration Files
 

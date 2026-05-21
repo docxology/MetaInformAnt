@@ -569,7 +569,7 @@ Used in:
 
 - **I/O**: `metainformant.core.io` used for reading/writing configs, JSON (but MS data uses own `io/formats.py`)
 - **Logging**: All submodules use `metainformant.core.utils.logging.get_logger()`
-- **Config**: Future: `metainformant.core.config` for module-specific YAML/JSON config loading
+- **Config**: Future: `metainformant.core.utils.config` for module-specific YAML/JSON config loading
 
 ---
 
@@ -637,7 +637,7 @@ Unlike RNA module, metagenomics does not have a dedicated configuration file sys
 | Variable | Purpose | Scope |
 |----------|---------|-------|
 | `META_OTU_THRESHOLD` | Override default OTU clustering identity threshold | `cluster_otus()` |
-| `META_` prefix (generic) | Future module-specific settings via `core.config` | — |
+| `META_` prefix (generic) | Future module-specific settings via `core.utils.config` | — |
 
 No other module-specific env vars yet.
 

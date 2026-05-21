@@ -172,7 +172,7 @@ Individual step functions return standardized result dictionaries:
 Workflows use the standard METAINFORMANT configuration loading pattern:
 
 ```python
-from metainformant.core.config import load_mapping_from_file, apply_env_overrides
+from metainformant.core.utils.config import load_mapping_from_file, apply_env_overrides
 
 def load_workflow_config(config_path: str | Path, prefix: str = "WORKFLOW") -> Dict[str, Any]:
     """Load workflow configuration with environment overrides."""

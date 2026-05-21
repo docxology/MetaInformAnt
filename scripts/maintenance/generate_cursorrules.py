@@ -62,7 +62,7 @@ TEMPLATE = """# Cursor Rules for {module_name} Module ({prefix}_)
 - **Output**: `output/{module_name}/` (Default for all artifacts)
 
 ## ⚙️ Configuration
-- Use `metainformant.core.config` to load config.
+- Use `metainformant.core.utils.config` to load config.
 - Support env checks with `{prefix}_` prefix.
 - Example:
   ```python

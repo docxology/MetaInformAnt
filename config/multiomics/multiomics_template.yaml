@@ -1,7 +1,7 @@
 # Multi-Omics Integration Configuration Template
 #
 # This template provides configuration options for multi-omics data integration workflows.
-# Environment variables can override these values (see core.config documentation).
+# Environment variables can override these values (see core.utils.config documentation).
 
 # Input data sources
 inputs:

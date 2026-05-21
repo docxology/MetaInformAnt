@@ -225,7 +225,7 @@ def _lazy_import_biopython():
 
 ### File Path Handling
 - Functions accept `Path` or `str` for file paths
-- Always use `metainformant.core.paths` utilities for path operations
+- Always use `metainformant.core.io.paths` utilities for path operations
 - Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
 - Default outputs to `output/dna/<analysis_type>/`
 

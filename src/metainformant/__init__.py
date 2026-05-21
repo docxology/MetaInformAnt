@@ -38,9 +38,15 @@ Modules:
 - metabolomics: Metabolite identification and pathway analysis
 - metagenomics: Microbiome and metagenomic analysis
 - pharmacogenomics: Clinical pharmacogenomic variant analysis
+- cloud: Cloud deployment helpers
+- mcp: Standalone helper tools for future MCP integration
+- menu: Interactive discovery and navigation
 """
 
 from __future__ import annotations
+
+import importlib
+from types import ModuleType
 
 __version__ = "0.3.0"  # Bumped for engine refactor
 __author__ = "MetaInformAnt Development Team"
@@ -53,3 +59,48 @@ __license__ = "Apache License 2.0"
 # Users should import submodules directly:
 #   from metainformant import rna
 #   import metainformant.gwas as gwas
+
+__all__ = [
+    "__version__",
+    "__author__",
+    "__license__",
+    "cloud",
+    "core",
+    "dna",
+    "ecology",
+    "epigenome",
+    "gwas",
+    "information",
+    "life_events",
+    "longread",
+    "math",
+    "mcp",
+    "menu",
+    "metabolomics",
+    "metagenomics",
+    "ml",
+    "multiomics",
+    "networks",
+    "ontology",
+    "pharmacogenomics",
+    "phenotype",
+    "protein",
+    "quality",
+    "rna",
+    "simulation",
+    "singlecell",
+    "spatial",
+    "structural_variants",
+    "visualization",
+]
+
+_SUBMODULES = {name for name in __all__ if not name.startswith("__")}
+
+
+def __getattr__(name: str) -> ModuleType:
+    """Lazily import top-level subpackages listed in ``__all__``."""
+    if name in _SUBMODULES:
+        module = importlib.import_module(f"{__name__}.{name}")
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

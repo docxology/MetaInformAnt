@@ -73,7 +73,7 @@ plot_timeseries(res.series)
 ## Shared Infrastructure
 | Service | Provided By | Used By |
 |---------|-------------|---------|
-| Config | `core.config` | All modules (including spatial) |
+| Config | `core.utils.config` | All modules (including spatial) |
 | Logging | `core.logging` | Structured logs across pipeline |
 | I/O | `core.io` | Format-agnostic read/write |
 | Caching | `core.cache` | Expensive computations |

@@ -8,7 +8,6 @@ Core utilities for METAINFORMANT bioinformatics toolkit.
 - **[engine/](workflow.md)**
 - **[execution/](parallel.md)**
 - **[io/](io.md)**
-- **[output/](logging.md)**
 - **ui/**
 - **[utils/](config.md)**
 - `__init__.py`
@@ -48,5 +47,10 @@ See [Agent Coordination Hub](../agents/README.md) for multi-agent workflow patte
 ## Usage
 Import module:
 ```python
-from metainformant.core import ...
+from metainformant.core.io import paths
+from metainformant.core.utils import config
 ```
+
+Deprecated compatibility shims `metainformant.core.config` and
+`metainformant.core.paths` are tested for older imports, but new code should use
+the canonical paths above.

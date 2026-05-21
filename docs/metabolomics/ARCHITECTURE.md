@@ -153,7 +153,7 @@ flowchart TD
 | `multiomics` | metabolite-gene integration | Correlate metabolites with transcriptomic features |
 | `visualization` | plotting functions | Volcano plots, PCA, heatmaps (shared plotting utilities) |
 | `core.io` | file operations | Unified JSON/CSV reading/writing |
-| `core.config` | configuration | Environment variable handling |
+| `core.utils.config` | configuration | Environment variable handling |
 
 **Integration Pattern**:
 

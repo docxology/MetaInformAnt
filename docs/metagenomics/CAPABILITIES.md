@@ -979,7 +979,7 @@ Compositional data (relative abundances) have sum constraint → spurious correl
 | Variable | Purpose | Default |
 |----------|---------|--------|
 | `META_OTU_THRESHOLD` | Default OTU identity threshold for `cluster_otus()` | `0.97` |
-| `META_` prefix (future) | General module overrides via `core.config` | N/A |
+| `META_` prefix (future) | General module overrides via `core.utils.config` | N/A |
 
 All other parameters are function arguments.
 

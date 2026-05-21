@@ -4,7 +4,7 @@
 Comprehensive documentation for the DNA sequence analysis domain in MetaInformAnt, covering sequence processing, alignment, phylogenetics, population genetics, variant analysis, and NCBI genome retrieval.
 
 ## Architecture
-- **Dependency Level**: Domain (relies on core.io, core.config, math.population)
+- **Dependency Level**: Domain (relies on core.io, core.utils.config, math.population)
 - **Component Type**: Analysis Module
 - **Location**: `docs/dna/`
 - **Source Root**: `src/metainformant/dna/`
@@ -27,7 +27,7 @@ Comprehensive documentation for the DNA sequence analysis domain in MetaInformAn
 - **Scripts**: `scripts/dna/` — CLI wrappers for common tasks
 - **Tests**: `tests/test_dna_sequence.py`, `tests/test_dna_alignment.py`, `tests/test_dna_population.py`, `tests/test_dna_variants.py`
 - **Dependencies**:
-  - Core: `metainformant.core.io`, `metainformant.core.config`
+  - Core: `metainformant.core.io`, `metainformant.core.utils.config`
   - Math: `metainformant.math.coalescent`, `metainformant.math.fst`
   - Visualization: `metainformant.visualization.phylogeny`
 

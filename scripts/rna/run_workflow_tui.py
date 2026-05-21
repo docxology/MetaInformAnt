@@ -36,8 +36,8 @@ enable_optional_warnings()
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from metainformant.core.engine.workflow_manager import WorkflowManager
 from metainformant.core.utils.logging import get_logger
+from metainformant.rna.engine.tui_workflow import WorkflowManager
 
 logger = get_logger("run_workflow_tui")
 

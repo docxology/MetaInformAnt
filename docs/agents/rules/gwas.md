@@ -152,7 +152,7 @@ io.write_csv(df, "output/gwas/variants/variants.csv")
 ```
 
 ### Path Handling
-- Always use `metainformant.core.paths` utilities for path operations
+- Always use `metainformant.core.io.paths` utilities for path operations
 - Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
 
 **Pattern**:
@@ -172,7 +172,7 @@ output_path = paths.expand_and_resolve("output/gwas/analysis/")
 - Use `GWASWorkflowConfig` for configuration
 - Config files in `config/gwas/<name>.yaml`
 - Environment prefix: `GWAS_` (e.g., `GWAS_THREADS`, `GWAS_WORK_DIR`)
-- Use `metainformant.core.config.load_mapping_from_file()` and `apply_env_overrides()`
+- Use `metainformant.core.utils.config.load_mapping_from_file()` and `apply_env_overrides()`
 
 **Config Structure**:
 ```yaml

@@ -24,7 +24,7 @@ METAINFORMANT documentation is organized hierarchically by domain and purpose:
 - **[index.md](index.md)** - Complete documentation index with navigation
 - **[architecture.md](architecture.md)** - System design, module dependencies, data flow
 - **[cli.md](cli.md)** - Unified CLI reference for all modules
-- **[setup.md](setup.md)** - Installation and environment configuration
+- **[SETUP.md](SETUP.md)** - Installation and environment configuration
 - **[testing.md](testing.md)** - Test suite documentation and guidelines
 - **[UV_SETUP.md](UV_SETUP.md)** - Package management with `uv`
 
@@ -61,7 +61,7 @@ Each biological domain has its own subdirectory with consistent structure:
 | **Pharmacogenomics** | `docs/pharmacogenomics/` | Clinical variants, CPIC, PharmGKB |
 | **Metabolomics** | `docs/metabolomics/` | Mass spectrometry, pathway mapping |
 | **Cloud** | `docs/cloud/` | GCP deployment, Docker pipelines, VM lifecycle |
-| **Agents** | `docs/agents/` | Agent-based modeling, ecosystem simulation |
+| **Agents** | `docs/agents/` | Agent and Cursor rule documentation |
 
 ### Domain Documentation Structure
 
@@ -80,7 +80,7 @@ docs/<domain>/
 
 | Task | Documentation |
 |------|---------------|
-| Install METAINFORMANT | [QUICKSTART.md](../QUICKSTART.md), [setup.md](setup.md) |
+| Install METAINFORMANT | [QUICKSTART.md](../QUICKSTART.md), [SETUP.md](SETUP.md) |
 | Run CLI commands | [cli.md](cli.md) |
 | Analyze DNA sequences | [docs/dna/](dna/index.md) |
 | Run RNA-seq workflow | [docs/rna/workflow.md](rna/workflow.md) |
@@ -168,8 +168,6 @@ Source code documentation mirrors the `src/metainformant/` structure:
 ---
 
 *This guide provides navigation for documentation organized across 30 domains, ensuring coverage of METAINFORMANT's bioinformatics capabilities.*
-
-
 
 
 

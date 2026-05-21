@@ -3,8 +3,8 @@
 This module provides:
 - ``BasePipelineManager``: A generic, domain-agnostic pipeline manager that
   coordinates sequential phases of work items with real-time TUI visualization.
-- ``WorkflowManager``: An RNA-seq-specific subclass (backward compatible) that
-  wires up download, getfastq, and quant phases using amalgkit.
+- ``WorkflowManager``: A backward-compatible RNA-shaped manager that owns sample
+  state but receives domain execution hooks by dependency injection.
 
 The generic pipeline is built around three primitives:
 - ``Stage``: Minimal lifecycle enum (PENDING, RUNNING, DONE, FAILED).
@@ -14,7 +14,9 @@ The generic pipeline is built around three primitives:
 Backward compatibility
 ----------------------
 ``SampleStage``, ``SampleState``, and ``WorkflowManager`` retain their original
-public API.  Existing callers (e.g. ``run_workflow_tui.py``) require zero changes.
+construction/add-sample API.  Domain entry points should use
+``metainformant.rna.engine.tui_workflow.WorkflowManager`` so core stays free of
+RNA imports.
 """
 
 from __future__ import annotations
@@ -40,6 +42,8 @@ from metainformant.core.ui.tui import (
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+AmalgkitRunner = Callable[[str, Dict[str, Any]], Any]
 
 
 # ---------------------------------------------------------------------------
@@ -382,7 +386,6 @@ def _update_download_progress(manager: WorkflowManager) -> None:
 def _rna_getfastq_phase(manager: BasePipelineManager, items: List[PipelineItem]) -> None:
     """Phase handler: run amalgkit getfastq on downloaded samples."""
     assert isinstance(manager, WorkflowManager)
-    from metainformant.rna.amalgkit.amalgkit import run_amalgkit
 
     downloaded = [manager.samples[item.item_id] for item in items]
 
@@ -401,7 +404,7 @@ def _rna_getfastq_phase(manager: BasePipelineManager, items: List[PipelineItem])
             "metadata": str(metadata_path),
             "threads": manager.config.get("threads", 8),
         }
-        result = run_amalgkit("getfastq", params)
+        result = manager.run_amalgkit("getfastq", params)
 
         if result.returncode == 0:
             for state in downloaded:
@@ -430,7 +433,6 @@ def _rna_getfastq_phase(manager: BasePipelineManager, items: List[PipelineItem])
 def _rna_quant_phase(manager: BasePipelineManager, items: List[PipelineItem]) -> None:
     """Phase handler: run amalgkit quant on extracted samples."""
     assert isinstance(manager, WorkflowManager)
-    from metainformant.rna.amalgkit.amalgkit import run_amalgkit
 
     extracted = [manager.samples[item.item_id] for item in items]
 
@@ -447,7 +449,7 @@ def _rna_quant_phase(manager: BasePipelineManager, items: List[PipelineItem]) ->
             "metadata": str(metadata_path),
             "threads": manager.config.get("threads", 8),
         }
-        result = run_amalgkit("quant", params)
+        result = manager.run_amalgkit("quant", params)
 
         if result.returncode == 0:
             for state in extracted:
@@ -500,9 +502,15 @@ class WorkflowManager(BasePipelineManager):
 
     STAGE_COLORS = _RNA_STAGE_COLORS
 
-    def __init__(self, config_path: Path, max_threads: int = 5) -> None:
+    def __init__(
+        self,
+        config_path: Path,
+        max_threads: int = 5,
+        run_amalgkit: AmalgkitRunner | None = None,
+    ) -> None:
         self.config_path = Path(config_path)
         self.samples: Dict[str, SampleState] = {}
+        self._run_amalgkit = run_amalgkit
 
         # Load YAML config first so we can feed it to the base class.
         self._load_config()
@@ -533,6 +541,21 @@ class WorkflowManager(BasePipelineManager):
         ]
 
         super().__init__(phases=phases, max_threads=max_threads, config=self.config)
+
+    def run_amalgkit(self, step: str, params: Dict[str, Any]) -> Any:
+        """Run an injected amalgkit step.
+
+        Core does not import RNA modules.  RNA-owned callers should instantiate
+        :class:`metainformant.rna.engine.tui_workflow.WorkflowManager`, which
+        injects the real amalgkit runner.
+        """
+        if self._run_amalgkit is None:
+            raise RuntimeError(
+                "No amalgkit runner configured. Use "
+                "metainformant.rna.engine.tui_workflow.WorkflowManager for RNA workflows "
+                "or pass run_amalgkit=... explicitly."
+            )
+        return self._run_amalgkit(step, params)
 
     # -- Config loading -----------------------------------------------------
 

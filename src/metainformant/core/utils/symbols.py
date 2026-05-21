@@ -40,9 +40,18 @@ class SymbolReference:
     is_definition: bool = False
 
 
+def _resolve_cache_root(path: str | Path) -> Path:
+    """Resolve cache root to the repository root when ``path`` is inside it."""
+    candidate = Path(path).resolve()
+    for current in (candidate, *candidate.parents):
+        if (current / "pyproject.toml").exists() and (current / "src" / "metainformant").exists():
+            return current
+    return candidate
+
+
 def _get_cache_dir(repo_root: Path) -> Path:
     """Get cache directory for symbol index."""
-    cache_dir = Path(repo_root) / "output" / ".discovery_cache"
+    cache_dir = _resolve_cache_root(repo_root) / "output" / ".discovery_cache"
     cache_dir.mkdir(parents=True, exist_ok=True)
     return cache_dir
 

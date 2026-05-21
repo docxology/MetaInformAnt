@@ -10,7 +10,7 @@ The metabolomics module does not currently have a dedicated configuration file s
 
 ## Environment Variables
 
-Metabolomics respects the **generic METAINFORMANT environment variables** defined in `metainformant.core.config`:
+Metabolomics respects the **generic METAINFORMANT environment variables** defined in `metainformant.core.utils.config`:
 
 | Variable | Purpose | Default | Applies To |
 |----------|---------|--------|------------|

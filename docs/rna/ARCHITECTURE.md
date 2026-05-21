@@ -229,7 +229,7 @@ amalgkit CLI (subprocess)
 ```
 config/amalgkit/species.yaml
     ↓
-metainformant.core.config.load_workflow_config()
+metainformant.core.utils.config.load_workflow_config()
     ↓
 AmalgkitWorkflowConfig
     ↓

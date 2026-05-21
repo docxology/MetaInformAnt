@@ -4,7 +4,7 @@
 Comprehensive documentation for the visualization domain producing 70+ plot types (Manhattan, heatmaps, network graphs, phylogenetic trees, Circos, dashboards, animations) with Matplotlib, Seaborn, Plotly, and Graph-tool backends. Publication-quality vector and raster outputs, accessible color palettes, and reproducible figure generation.
 
 ## Architecture
-- **Dependency Level**: Domain (depends on core.io, core.config; used by all analysis modules)
+- **Dependency Level**: Domain (depends on core.io, core.utils.config; used by all analysis modules)
 - **Component Type**: Presentation Layer
 - **Location**: `docs/visualization/`
 - **Source Root**: `src/metainformant/visualization/`
@@ -45,7 +45,7 @@ src/metainformant/visualization/
 - **Visual regression**: `tests/visualization/baseline/` (PNG references compared via `pytest-mpl`)
 - **Dependencies**:
   - **Core**: `metainformant.core.io` — Data loading (TSV/CSV/Parquet)
-  - **Core**: `metainformant.core.config` — Theme configuration (colors, fonts, DPI)
+  - **Core**: `metainformant.core.utils.config` — Theme configuration (colors, fonts, DPI)
   - **DNA**: `metainformant.dna.phylogeny` — Tree objects (Newick)
   - **GWAS**: `metainformant.gwas.visualization` — Manhattan/QQ (wrappers)
   - **RNA**: `metainformant.rna.analysis` — PCA/heatmap integration

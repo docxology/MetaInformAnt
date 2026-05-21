@@ -234,6 +234,12 @@ def _nx_to_igraph(nx_graph: Any) -> Any:
     return ig_graph
 
 
+def _networkx_greedy_kwargs(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    """Keep only kwargs accepted by NetworkX greedy modularity."""
+    allowed = {"weight", "resolution", "cutoff", "best_n"}
+    return {key: value for key, value in kwargs.items() if key in allowed}
+
+
 def greedy_modularity_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
     """Detect communities using greedy modularity optimization.
 
@@ -258,11 +264,14 @@ def greedy_modularity_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
     if graph.number_of_edges() == 0:
         return [[node] for node in graph.nodes()]
 
+    greedy_kwargs = _networkx_greedy_kwargs(kwargs)
     try:
-        communities = list(nx.algorithms.community.greedy_modularity_communities(graph, **kwargs))
+        communities = list(nx.algorithms.community.greedy_modularity_communities(graph, **greedy_kwargs))
     except AttributeError:
         # Fallback for older NetworkX versions
-        communities = list(nx.algorithms.community.modularity_max.greedy_modularity_communities(graph, **kwargs))
+        communities = list(
+            nx.algorithms.community.modularity_max.greedy_modularity_communities(graph, **greedy_kwargs)
+        )
 
     # Convert frozensets to lists and sort by size
     community_lists = [list(comm) for comm in communities]

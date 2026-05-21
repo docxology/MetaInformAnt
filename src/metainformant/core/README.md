@@ -51,7 +51,7 @@ graph TD
 | [`engine/`](engine/) | `BasePipelineManager` with TUI visualization, `PipelineItem`, `Stage` lifecycle |
 | [`execution/`](execution/) | Config-driven workflow execution with `validate_config_file` |
 | [`ui/`](ui/) | `TerminalInterface` for real-time pipeline monitoring |
-| [`output/`](output/) | Discovery cache and output management |
+| Runtime output | Discovery caches and generated files belong under repository `output/`, not under `src/metainformant/core/` |
 
 ## Key Capabilities
 
@@ -78,6 +78,10 @@ safe = paths.is_within(resolved, parent="/allowed/dir")
 cfg = config.load_mapping_from_file("config/workflow.yaml")
 cfg = config.apply_env_overrides(cfg, prefix="RNA")
 ```
+
+Compatibility shims `metainformant.core.config` and
+`metainformant.core.paths` re-export these canonical APIs for older callers.
+Use the canonical imports in new code.
 
 ### Pipeline Orchestration
 

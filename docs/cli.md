@@ -24,6 +24,7 @@ uv run metainformant quality batch-detect --data samples.csv --batches batches.t
 
 uv run metainformant rna info
 uv run metainformant gwas info
+uv run metainformant gwas run --config config/gwas/gwas_pbarbatus.yaml --check
 ```
 
 | Command | Purpose |
@@ -34,10 +35,12 @@ uv run metainformant gwas info
 | **quality batch-detect** | Batch-effect report from a numeric matrix (CSV) and per-sample batch labels file |
 | **rna info** | Prints RNA sub-package summary (use Python API for workflows) |
 | **gwas info** | Prints GWAS sub-package summary (use Python API or scripts for full runs) |
+| **gwas run** | Validate or execute a config-driven GWAS workflow |
 
-## RNA-seq and GWAS workflows (not via main CLI)
+## RNA-seq and GWAS workflows
 
-The main `metainformant` CLI does **not** implement `rna run`, `rna plan`, `gwas run`, `dna fetch`, or `setup`. Use one of:
+The main `metainformant` CLI implements `gwas run` but does **not** implement
+`rna run`, `rna plan`, `dna fetch`, or `setup`. Use one of:
 
 **Python API** (see [RNA Workflow](./rna/workflow.md), [GWAS Workflow](./gwas/workflow.md)):
 
@@ -48,6 +51,13 @@ from metainformant.rna.engine.workflow import load_workflow_config, plan_workflo
 config = load_workflow_config(Path("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml"))
 steps = plan_workflow(config)
 result = execute_workflow(config, check=False)
+```
+
+**GWAS CLI:**
+
+```bash
+uv run metainformant gwas run --config config/gwas/gwas_pbarbatus.yaml --check
+uv run metainformant gwas run --config config/gwas/gwas_pbarbatus.yaml --output-dir output/gwas/pbarbatus
 ```
 
 **Module entry (amalgkit):**

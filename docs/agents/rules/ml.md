@@ -108,7 +108,7 @@ io.dump_json(feature_importance, "output/ml/features/importance.json")
 ```
 
 ### Path Handling
-- Always use `metainformant.core.paths` utilities for path operations
+- Always use `metainformant.core.io.paths` utilities for path operations
 - Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
 
 **Pattern**:

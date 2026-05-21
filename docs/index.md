@@ -97,7 +97,7 @@ graph TD
 | **Pharmacogenomics** | [pharmacogenomics](pharmacogenomics/) | Clinical genomics | Drug-gene interactions, variant interpretation |
 | **Metabolomics** | [metabolomics](metabolomics/) | Metabolomic analysis | MS data processing, pathway mapping |
 | **eQTL** | [eqtl](eqtl/) | eQTL integration *(cross-cutting)* | RNA×GWAS integration — logic in `gwas` and `multiomics` |
-| **MCP** | [mcp](mcp/) | Model Context Protocol | LLM tool integrations |
+| **MCP** | [mcp](mcp/) | MCP helper package | Standalone Amalgkit monitor; server not implemented |
 | **Menu** | [menu](menu/) | Interactive navigation | CLI menu system, workflow discovery |
 
 
@@ -248,11 +248,12 @@ The guide provides both minimal and full-featured implementations with performan
 
 ### Command Line Interface
 
-The `metainformant` command exposes a small CLI (`--version`, `--modules`, `protein`, `quality batch-detect`, `rna info`, `gwas info`). RNA and GWAS pipelines use Python APIs or `scripts/*/run_*.py`. See [cli.md](cli.md).
+The `metainformant` command exposes `--version`, `--modules`, protein utilities, quality checks, `rna info`, and `gwas run`. RNA workflows use Python APIs or `scripts/rna/run_workflow.py`. See [cli.md](cli.md).
 
 ```bash
 uv run metainformant --help
 uv run metainformant protein comp --fasta data/example.faa
+uv run metainformant gwas run --config config/gwas/gwas_pbarbatus.yaml --check
 python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
@@ -264,7 +265,7 @@ python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrm
 :maxdepth: 2
 :caption: User Guides
 
-setup
+SETUP
 UV_SETUP
 DOCUMENTATION_GUIDE
 TUTORIALS
@@ -319,14 +320,13 @@ life_events/index
 longread/index
 cloud/index
 mcp/index
+tasks/index
 metagenomics/index
 structural_variants/index
 spatial/index
 pharmacogenomics/index
 metabolomics/index
 menu/index
-mcp/index
-cloud/README
 agents/rules/index
 ```
 

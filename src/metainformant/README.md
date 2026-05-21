@@ -7,6 +7,7 @@ METAINFORMANT: Comprehensive Bioinformatics Toolkit for Multi-Omic Analysis.
 ## Contents
 
 - **[core/](core/)**
+- **[cloud/](cloud/)**
 - **[dna/](dna/)**
 - **[ecology/](ecology/)**
 - **[epigenome/](epigenome/)**
@@ -15,6 +16,7 @@ METAINFORMANT: Comprehensive Bioinformatics Toolkit for Multi-Omic Analysis.
 - **[life_events/](life_events/)**
 - **[longread/](longread/)**
 - **[math/](math/)**
+- **[mcp/](mcp/)**
 - **[menu/](menu/)**
 - **[metabolomics/](metabolomics/)**
 - **[metagenomics/](metagenomics/)**
@@ -44,6 +46,8 @@ graph TD
 
     subgraph "Core & Utils"
         core[core]
+        cloud[cloud]
+        mcp[mcp]
         menu[menu]
         visualization[visualization]
         quality[quality]
@@ -78,6 +82,8 @@ graph TD
     end
 
     metainformant --> core
+    metainformant --> cloud
+    metainformant --> mcp
     metainformant --> dna
     metainformant --> rna
     metainformant --> protein
@@ -91,4 +97,5 @@ Import modules directly:
 from metainformant import dna, rna, protein
 from metainformant.gwas.analysis import association
 from metainformant.longread.workflow.orchestrator import LongReadOrchestrator
+from metainformant.mcp.tools import amalgkit_monitor
 ```

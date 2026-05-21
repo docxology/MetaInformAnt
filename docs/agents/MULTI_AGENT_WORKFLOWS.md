@@ -12,7 +12,7 @@ This guide documents concrete examples of multi-agent workflows in METAINFORMANT
 
 | Workflow | Agents Involved | Pattern | Complexity |
 |----------|-----------------|---------|------------|
-| [1. RNA-seq Amalgkit Pipeline](#1-rna-seq-amalgkit-pipeline) | `rna.amalgkit`, `core.io`, `core.paths` | Parallel fan-out + sequential | High |
+| [1. RNA-seq Amalgkit Pipeline](#1-rna-seq-amalgkit-pipeline) | `rna.amalgkit`, `core.io`, `core.io.paths` | Parallel fan-out + sequential | High |
 | [2. GWAS Association + Fine-Mapping](#2-gwas-association--fine-mapping) | `gwas.assoc`, `gwas.finemap`, `gwas.coloc` | Sequential with branching | Medium |
 | [3. Multi-Omic Integration](#3-multi-omic-integration) | `multiomics`, `dna`, `rna`, `gwas` | Fan-in aggregation | High |
 | [4. Single-Cell Analysis Pipeline](#4-single-cell-analysis-pipeline) | `singlecell.preprocess`, `singlecell.cluster`, `singlecell.trajectory` | Sequential with quality gates | High |

@@ -21,7 +21,7 @@ End-to-end RNA-seq pipelines: ENA/SRA metadata retrieval, FASTQ streaming, Kalli
 ## Rules
 
 - Use `metainformant.core.utils.logging` for all logging
-- Use `metainformant.core.io` for file operations — never `import json` directly
+- Use `metainformant.core.io` for domain data file I/O. Direct stdlib parsing is allowed in core, protocol adapters, subprocess/CLI glue, and narrow parser internals when covered by tests.
 - Prefer absolute imports from `metainformant`
 - Follow NO MOCKING policy — all tests must use real implementations
 - Use `uv` for dependency management

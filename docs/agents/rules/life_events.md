@@ -100,7 +100,7 @@ io.write_csv(df, "output/life_events/workflow/predictions.csv")
 ```
 
 ### Path Handling
-- Always use `metainformant.core.paths` utilities for path operations
+- Always use `metainformant.core.io.paths` utilities for path operations
 - Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
 
 **Pattern**:
@@ -120,7 +120,7 @@ work_dir = paths.expand_and_resolve(config.work_dir)
 - Use `LifeEventsWorkflowConfig` for configuration
 - Config files in `config/life_events_template.yaml`
 - Environment prefix: `LE_` (e.g., `LE_THREADS`, `LE_EMBEDDING_DIM`)
-- Use `metainformant.core.config.load_mapping_from_file()` and `apply_env_overrides()`
+- Use `metainformant.core.utils.config.load_mapping_from_file()` and `apply_env_overrides()`
 
 **Config Structure**:
 ```yaml

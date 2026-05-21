@@ -170,7 +170,7 @@ def load_workflow_config(config_file: Union[str, Path]) -> AmalgkitWorkflowConfi
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
     try:
-        # Load config using core.config which supports YAML/TOML/JSON
+        # Load config using core.utils.config which supports YAML/TOML/JSON
         config_dict = load_mapping_from_file(config_path)
 
         # Apply defaults

@@ -669,7 +669,7 @@ Consider using `download_robust.py`'s `Downloader` class for resumable multi-par
 | Component | How It Relates |
 |-----------|----------------|
 | `core.cache` | Stores downloaded data for reuse |
-| `core.paths` | Path manipulation before I/O |
+| `core.io.paths` | Path manipulation before I/O |
 | `core.download` | Robust download with retry, resume, heartbeat |
 | `core.utils.logging` | I/O errors logged consistently |
 | `core.utils.hash` | Verify downloaded file integrity |

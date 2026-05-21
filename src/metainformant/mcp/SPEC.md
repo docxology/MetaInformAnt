@@ -1,51 +1,43 @@
-# MCP Module Technical Specification
+# MCP Package Specification
 
-## Module: `metainformant.mcp`
+## Module
 
-**Status:** Minimal (40% complete)
-**Version:** 0.3.0
+`metainformant.mcp`
 
-## Public API
+## Status
 
-### `server.py` — Entry Point
+Experimental helper package. There is no MCP server entry point in the current
+checkout.
 
-```python
-def main() -> None:
-    """Start MCP server (stdio or SSE transport)."""
-```
+## Implemented Interface
 
-**CLI:**
+### `metainformant.mcp.tools.amalgkit_monitor`
+
+Command:
+
 ```bash
-python -m metainformant.mcp.server --transport stdio
-python -m metainformant.mcp.server --transport sse --port 8080
+uv run python -m metainformant.mcp.tools.amalgkit_monitor
 ```
 
-### Tool Registration
+Responsibilities:
+
+- inspect local Amalgkit/RNA pipeline processes;
+- parse available log progress;
+- return a small status payload suitable for terminal use and future adapters.
+
+## Package Exports
 
 ```python
-from metainformant.mcp import register_tool
-
-@register_tool(
-    name="amalgkit_status",
-    description="Get RNA pipeline status",
-    input_schema={"type": "object", "properties": {...}}
-)
-def amalgkit_status(species: str) -> dict:
-    ...
+from metainformant.mcp import tools
+from metainformant.mcp.tools import amalgkit_monitor
 ```
 
-## Transport Modes
+## Non-Goals For This Pass
 
-1. **STDIO** (default): Pipe-based for desktop LLMs
-2. **SSE** (planned): HTTP endpoint for web-based LLMs
+- no `metainformant.mcp.server` module;
+- no stdio/SSE MCP transport;
+- no MCP tool registry;
+- no `run_workflow` or `list_outputs` MCP tools.
 
-## See Also
-
-- [MCP Specification](https://spec.modelcontextprotocol.io)
-- [RNA Module](../rna/amalgkit/)
-
----
-
-**Changelog**
-
-v0.3.0 (2025-04-15): Initial scaffold, STDIO transport, amalgkit_status tool
+Those interfaces must stay undocumented as available until they have source
+implementation and tests.

@@ -39,17 +39,26 @@ WORK_DIR = Path("output/amalgkit")
 LOG_FILE = Path("output/amalgkit/run_all_species_incremental.log")
 
 
+def is_pipeline_cmdline(cmdline):
+    """Return True when a process command line looks like an Amalgkit workflow."""
+    if any("amalgkit_monitor" in arg for arg in cmdline):
+        return False
+    if any("run_all_species" in arg for arg in cmdline):
+        return True
+    if any("run_workflow.py" in arg for arg in cmdline):
+        return True
+    return any(Path(arg).name == "amalgkit" for arg in cmdline)
+
+
 def get_process_status():
     """Find the active Amalgkit process."""
+    current_pid = os.getpid()
     for proc in psutil.process_iter(["pid", "name", "cmdline"]):
         try:
+            if proc.info["pid"] == current_pid:
+                continue
             cmdline = proc.info["cmdline"] or []
-            # Check for our pipeline scripts
-            if (
-                any("run_all_species" in arg for arg in cmdline)
-                or any("run_workflow.py" in arg for arg in cmdline)
-                or any("amalgkit" in arg for arg in cmdline)
-            ):
+            if is_pipeline_cmdline(cmdline):
                 return {"running": True, "pid": proc.info["pid"], "cmd": " ".join(cmdline)}
         except (psutil.NoSuchProcess, psutil.AccessDenied):
             continue

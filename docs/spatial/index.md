@@ -5,12 +5,14 @@ High‑level map.
 ## Getting started
 
 - **[GETTING_STARTED.md](GETTING_STARTED.md)** — first‑time demo
+- **[README.md](README.md)** — concise entry point and source links
 - **[io.md](io.md)** — loaders per platform
 
 ## Core guides
 
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** — module design + data‑flow
 - **[CONFIGURATION.md](CONFIGURATION.md)** — all `spatial.*` keys
+- **[SPEC.md](SPEC.md)** — interface and boundary policy
 - **[PERFORMANCE.md](PERFORMANCE.md)** — benchmarks & tuning
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** — error → fix table
 
@@ -29,6 +31,7 @@ High‑level map.
 
 ## Integration
 
+- **[INTEGRATION.md](INTEGRATION.md)** — cross-module integration overview
 - **[integration.md](integration.md)** — batch‑correction, label‑transfer, registration
 
 ## API

@@ -510,7 +510,7 @@ print(f"Cache load: {elapsed*1000:.1f}ms")  # Typically <10ms for small objects
 |--------|--------------|
 | `core.io` | Cache uses `io.dump_json()` and `io.load_json()` for atomic file operations |
 | `core.utils.logging` | Cache operations log warnings for corruption/errors |
-| `core.paths` | Cache directories often created via `paths.ensure_directory()` |
+| `core.io.paths` | Cache directories often created via `paths.ensure_directory()` |
 | `core.download` | Download heartbeat files use JSON cache format for state persistence |
 
 ### Typical Usage Patterns

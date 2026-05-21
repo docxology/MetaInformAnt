@@ -25,7 +25,7 @@ Examples:
   metainformant --help
 
 For detailed usage of specific modules, import them directly in Python:
-  python -c "from metainformant.dna import sequences; help(sequences.read_fasta)"
+  python -c "from metainformant.dna.sequence import composition; help(composition.gc_content)"
         """,
     )
 
@@ -475,6 +475,8 @@ def _list_modules() -> None:
         ("metagenomics", "Microbiome and metagenomic analysis"),
         ("pharmacogenomics", "Clinical pharmacogenomic variant analysis"),
         ("metabolomics", "Metabolite identification and pathway analysis"),
+        ("cloud", "Cloud deployment helpers and GCP workflow utilities"),
+        ("mcp", "Standalone MCP helper tools; no server entry point yet"),
         ("menu", "Interactive menu and discovery system"),
     ]
 

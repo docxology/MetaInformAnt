@@ -815,7 +815,7 @@ uv run python -m metainformant menu
 
 **Rules**:
 - Domain modules (`dna`, `rna`, `gwas`, etc.) **do not import each other directly**; cross-domain coordination happens via `multiomics`, `eqtl`, or shared configs.
-- All modules use `core` infrastructure (`core.io`, `core.parallel`, `core.config`).
+- All modules use `core` infrastructure (`core.io`, `core.parallel`, `core.utils.config`).
 
 ---
 

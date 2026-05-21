@@ -1,53 +1,32 @@
-# MCP Module (Model Context Protocol)
+# MCP Notes
 
-METAINFORMANT tools exposed via Model Context Protocol for LLM-based development environments.
+METAINFORMANT currently ships a lightweight MCP-adjacent helper module, not a
+full Model Context Protocol server.
 
-## Overview
+## Current Interface
 
-METAINFORMANT tools exposed via Model Context Protocol for LLM-based development environments.
+The implemented command is the standalone Amalgkit monitor:
 
-
-## Table of Contents
-
-- [Quick Start](#quick-start)
-  - [Claude Desktop](#claude-desktop)
-  - [Cursor](#cursor)
-- [Available Tools](#available-tools)
-- [See Also](#see-also)
-
-## Quick Start
-
-### Claude Desktop
-
-1. Install: `uv pip install -e .`
-2. Create `~/.config/Claude/mcp_config.json`:
-```json
-{
-  "mcpServers": {
-    "metainformant": {
-      "command": "uv",
-      "args": ["run", "python", "-m", "metainformant.mcp.server"]
-    }
-  }
-}
+```bash
+uv run python -m metainformant.mcp.tools.amalgkit_monitor
 ```
-3. Restart Claude Desktop
 
-### Cursor
+It inspects local RNA/Amalgkit workflow state and reports process/log progress.
+The helper can be imported from `metainformant.mcp.tools.amalgkit_monitor`.
 
-Settings → AI Agents → MCP Servers → Add:
-- Command: `uv`
-- Args: `["run", "python", "-m", "metainformant.mcp.server"]`
+## Not Yet Implemented
 
-## Available Tools
+The checkout does not provide:
 
-| Tool | Description | Status |
-|------|-------------|--------|
-| `amalgkit_status` | Check RNA pipeline status for species | [DONE] Implemented |
-| `run_workflow` | Trigger METAINFORMANT workflow | [PARTIAL] |
-| `list_outputs` | List output files for module | [PLANNED] |
+- `metainformant.mcp.server`
+- MCP stdio or SSE transports
+- registered MCP tools named `run_workflow` or `list_outputs`
+
+Keep examples and integrations on this page limited to the standalone monitor
+until a real server module and tests are added.
 
 ## See Also
 
-- [RNA Module](../rna/) — Amalgkit pipeline
-- [MCP SPEC](SPEC.md) — Technical API reference
+- [MCP SPEC](SPEC.md)
+- [RNA docs](../rna/)
+- [Source README](../../src/metainformant/mcp/README.md)

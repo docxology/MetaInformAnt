@@ -53,7 +53,7 @@ src/metainformant/core/
 **Patterns**:
 
 ```python
-from metainformant.core.config import load_mapping_from_file, apply_env_overrides
+from metainformant.core.utils.config import load_mapping_from_file, apply_env_overrides
 
 raw = load_mapping_from_file("config/file.yaml")
 config = apply_env_overrides(raw, prefix="MODULE")
@@ -264,7 +264,7 @@ All other modules depend on `core` utilities:
 - Use core utilities for all I/O, logging, and path operations
 - Do not reimplement core functionality in domain modules
 - **NEVER** use direct `json` or `csv` imports - always use `metainformant.core.io`
-- **NEVER** use direct `Path()` manipulation without `metainformant.core.paths` utilities
+- **NEVER** use direct `Path()` manipulation without `metainformant.core.io.paths` utilities
 
 ## Reference
 

@@ -425,7 +425,7 @@ export TMPDIR="/path/to/large/disk/tmp"
 
 3. **Monitor disk usage**:
 ```python
-from metainformant.core.paths import get_directory_size
+from metainformant.core.io.paths import get_directory_size
 
 size = get_directory_size("output/")
 print(f"Directory size: {size / 1e9:.2f} GB")
