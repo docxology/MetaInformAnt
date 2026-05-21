@@ -16,8 +16,8 @@ import pytest
 
 # Import all available modules
 try:
-    from metainformant.dna.phylogeny.distance.distance.distance.distance import neighbor_joining_tree
-    from metainformant.dna.population.metrics.metrics.metrics.metrics import hudson_fst, nucleotide_diversity
+    from metainformant.dna.phylogeny import basic_tree_stats, neighbor_joining_tree
+    from metainformant.dna.population import hudson_fst, nucleotide_diversity
     from metainformant.dna.sequences import gc_content, read_fasta, reverse_complement
 
     _DNA_IMPORT_PROBES = (hudson_fst,)
@@ -27,9 +27,7 @@ except ImportError:
 
 try:
     from metainformant.protein.sequence.sequences import parse_fasta as parse_protein_fasta
-    from metainformant.protein.structure.general.general.general.general.general.general.general.general import (
-        compute_rmsd_kabsch,
-    )
+    from metainformant.protein.structure.general import compute_rmsd_kabsch
 
     _PROTEIN_IMPORT_PROBES = (compute_rmsd_kabsch,)
     PROTEIN_AVAILABLE = True
@@ -45,10 +43,7 @@ except ImportError:
     NETWORKS_AVAILABLE = False
 
 try:
-    from metainformant.ml.features.features.features.features.features.features.features.features.features import (
-        biological_feature_ranking,
-        select_features_univariate,
-    )
+    from metainformant.ml.features.features import biological_feature_ranking, select_features_univariate
 
     ML_AVAILABLE = True
 except ImportError:
@@ -130,7 +125,7 @@ class TestBioinformaticsWorkflow:
         # Simple phylogenetic analysis
         tree = neighbor_joining_tree(sequences)
         assert tree is not None
-        assert len(tree.get_terminals()) == 4
+        assert basic_tree_stats(tree)["leaves"] == 4
 
     @pytest.mark.skipif(not (NETWORKS_AVAILABLE and ML_AVAILABLE), reason="Networks or ML modules not available")
     @pytest.mark.slow
@@ -483,9 +478,7 @@ class TestModuleInteroperability:
 
         # Should work with ML if available
         if ML_AVAILABLE:
-            from metainformant.ml.features.features.features.features.features.features.features.features.features import (
-                select_features_univariate,
-            )
+            from metainformant.ml.features.features import select_features_univariate
 
             y = np.random.randint(0, 2, 20)
             X_selected, indices = select_features_univariate(test_matrix, y, k=10)

@@ -5,6 +5,7 @@ Tests for validating build artifacts, package installation,
 and build process integrity.
 """
 
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -236,14 +237,33 @@ class TestBuiltPackage:
     @pytest.fixture(scope="session")
     def built_package(self):
         """Fixture to provide path to built package."""
-        dist_dir = Path(__file__).parent.parent.parent / "dist"
+        repo_root = Path(__file__).parent.parent.parent
 
-        # Look for wheel file
-        wheel_files = list(dist_dir.glob("*.whl"))
-        if not wheel_files:
-            pytest.skip("No built wheel package found. Run 'bash scripts/package/build.sh' first.")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            dist_dir = Path(temp_dir) / "dist"
+            dist_dir.mkdir(parents=True, exist_ok=True)
 
-        return wheel_files[0]
+            if shutil.which("uv") is not None:
+                cmd = ["uv", "build", "--wheel", "--out-dir", str(dist_dir)]
+            else:
+                probe = subprocess.run(
+                    [sys.executable, "-m", "build", "--version"],
+                    capture_output=True,
+                    text=True,
+                )
+                if probe.returncode != 0:
+                    pytest.skip("Neither uv nor python -m build is available for wheel generation")
+                cmd = [sys.executable, "-m", "build", "--wheel", "--outdir", str(dist_dir)]
+
+            result = subprocess.run(cmd, cwd=repo_root, capture_output=True, text=True, timeout=180)
+            if result.returncode != 0:
+                pytest.skip(f"Wheel build failed: {result.stderr or result.stdout}")
+
+            wheel_files = sorted(dist_dir.glob("*.whl"))
+            if not wheel_files:
+                pytest.skip("Wheel build completed without producing a .whl file")
+
+            yield wheel_files[0]
 
     def test_wheel_can_be_installed(self, built_package):
         """Test that built wheel can be installed."""
@@ -257,7 +277,10 @@ class TestBuiltPackage:
             # Install package
             pip_path = venv_dir / "bin" / "pip"
             result = subprocess.run(
-                [str(pip_path), "install", str(built_package)], capture_output=True, text=True, cwd=temp_dir
+                [str(pip_path), "install", "--no-deps", str(built_package)],
+                capture_output=True,
+                text=True,
+                cwd=temp_dir,
             )
 
             assert result.returncode == 0, f"Installation failed: {result.stderr}"

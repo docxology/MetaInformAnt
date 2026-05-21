@@ -787,14 +787,20 @@ def validate_network(graph: Any) -> Tuple[bool, List[str]]:
 
 
 def add_edges_from_interactions(
-    graph: Any, interactions: List[Tuple[str, str, float]], weight_threshold: float = 0.0
+    graph: Any,
+    interactions: List[Tuple[str, str, float]] | list[dict[str, Any]],
+    weight_threshold: float = 0.0,
+    *,
+    confidence_threshold: float | None = None,
 ) -> None:
     """Add edges to graph based on interaction data.
 
     Args:
         graph: NetworkX graph
-        interactions: List of (source, target, weight) tuples
+        interactions: List of (source, target, weight) tuples or dictionaries
+            with source/target/confidence fields
         weight_threshold: Minimum interaction weight for edge creation
+        confidence_threshold: Alias for weight_threshold used by docs
 
     Raises:
         ImportError: If networkx not available
@@ -802,31 +808,59 @@ def add_edges_from_interactions(
     if not HAS_NETWORKX:
         raise ImportError("networkx required for graph operations")
 
+    threshold = weight_threshold if confidence_threshold is None else confidence_threshold
+    normalized_interactions = []
+    for interaction in interactions:
+        if isinstance(interaction, dict):
+            source = interaction["source"]
+            target = interaction["target"]
+            weight = float(interaction.get("confidence", interaction.get("weight", 1.0)))
+            interaction_type = str(interaction.get("type", "interaction"))
+            attrs = {
+                key: value
+                for key, value in interaction.items()
+                if key not in {"source", "target", "weight", "confidence", "type"}
+            }
+        else:
+            source, target, weight = interaction
+            weight = float(weight)
+            interaction_type = "protein_interaction"
+            attrs = {}
+        normalized_interactions.append((source, target, weight, interaction_type, attrs))
+
     # Ensure all nodes exist
     all_nodes = set()
-    for source, target, weight in interactions:
+    for source, target, _, _, _ in normalized_interactions:
         all_nodes.add(source)
         all_nodes.add(target)
     graph.add_nodes_from(all_nodes)
 
     # Add edges with weights above threshold
-    for source, target, weight in interactions:
-        if abs(weight) >= weight_threshold:
-            graph.add_edge(source, target, weight=weight, interaction_type="protein_interaction")
+    for source, target, weight, interaction_type, attrs in normalized_interactions:
+        if abs(weight) >= threshold:
+            graph.add_edge(source, target, weight=weight, interaction_type=interaction_type, **attrs)
 
-    logger.info(f"Added {len(interactions)} interaction edges (threshold={weight_threshold})")
+    logger.info(f"Added {len(normalized_interactions)} interaction edges (threshold={threshold})")
 
 
 def add_edges_from_correlation(
-    graph: Any, correlation_matrix: Any, node_names: list[str] | None = None, threshold: float = 0.5
+    graph: Any,
+    correlation_matrix: Any,
+    node_names: list[str] | None = None,
+    threshold: float = 0.5,
+    *,
+    method: str = "pearson",
+    max_edges: int | None = None,
 ) -> None:
     """Add edges to graph based on correlation matrix.
 
     Args:
         graph: NetworkX graph
-        correlation_matrix: Correlation matrix (pandas DataFrame or numpy array)
+        correlation_matrix: Correlation matrix or node feature matrix
         node_names: Optional node names for numpy matrix input
         threshold: Minimum absolute correlation for edge creation
+        method: Correlation method for feature matrices ('pearson' or 'spearman')
+        max_edges: Optional maximum number of strongest edges to add
 
     Raises:
         ImportError: If networkx not available
@@ -840,24 +874,48 @@ def add_edges_from_correlation(
         is_dataframe = isinstance(correlation_matrix, pd.DataFrame)
 
         if is_dataframe:
-            nodes = list(correlation_matrix.index)
-            corr_data = correlation_matrix.values
+            if correlation_matrix.shape[0] == correlation_matrix.shape[1] and list(correlation_matrix.index) == list(
+                correlation_matrix.columns
+            ):
+                nodes = list(correlation_matrix.index)
+                corr_data = correlation_matrix.values
+            else:
+                nodes = list(correlation_matrix.index)
+                ranked = correlation_matrix.rank(axis=1) if method == "spearman" else correlation_matrix
+                corr_data = np.corrcoef(ranked.values)
         else:
-            # Assume numpy array with nodes as indices
-            if node_names is not None and len(node_names) != len(correlation_matrix):
+            matrix = np.asarray(correlation_matrix, dtype=float)
+            if matrix.ndim != 2:
+                raise ValueError("correlation_matrix must be a 2D matrix")
+            if node_names is not None and len(node_names) not in matrix.shape:
                 raise ValueError("correlation matrix dimensions don't match node names")
-            nodes = node_names if node_names is not None else [f"Node_{i}" for i in range(len(correlation_matrix))]
-            corr_data = correlation_matrix
+            if matrix.shape[0] == matrix.shape[1] and (node_names is None or len(node_names) == matrix.shape[0]):
+                nodes = node_names if node_names is not None else [f"Node_{i}" for i in range(matrix.shape[0])]
+                corr_data = matrix
+            else:
+                nodes = node_names if node_names is not None else [f"Node_{i}" for i in range(matrix.shape[0])]
+                ranked = (
+                    np.apply_along_axis(lambda row: np.argsort(np.argsort(row)), 1, matrix)
+                    if method == "spearman"
+                    else matrix
+                )
+                corr_data = np.corrcoef(ranked)
 
         # Ensure graph has all nodes
         graph.add_nodes_from(nodes)
 
-        # Add edges based on correlation threshold
+        candidate_edges = []
         for i in range(len(nodes)):
             for j in range(i + 1, len(nodes)):
                 corr_value = abs(corr_data[i, j])
                 if corr_value >= threshold:
-                    graph.add_edge(nodes[i], nodes[j], weight=corr_value)
+                    candidate_edges.append((nodes[i], nodes[j], float(corr_value)))
+
+        if max_edges is not None:
+            candidate_edges = sorted(candidate_edges, key=lambda edge: edge[2], reverse=True)[:max_edges]
+
+        for source, target, corr_value in candidate_edges:
+            graph.add_edge(source, target, weight=corr_value)
 
         logger.info(f"Added edges from correlation matrix (threshold={threshold})")
 

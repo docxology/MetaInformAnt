@@ -93,6 +93,14 @@ def generate_population_sequences(
 
     # Generate mutation positions
     mutation_positions = rng.sample(range(length), min(n_sites, length))
+    if nucleotide_diversity is not None:
+        mutation_prob = min(max(nucleotide_diversity, 0.0), 1.0)
+    elif wattersons_theta is not None:
+        mutation_prob = min(max(wattersons_theta, 0.0), 1.0)
+    elif theta > 0:
+        mutation_prob = min(theta / (4 * n_sequences), 1.0)
+    else:
+        mutation_prob = 0.0
 
     sequences = []
 
@@ -100,7 +108,6 @@ def generate_population_sequences(
         seq = list(ancestral_seq)
 
         # Apply mutations at polymorphic sites
-        mutation_prob = theta / (4 * n_sequences) if theta > 0 else 0.01
         for pos in mutation_positions:
             if rng.random() < mutation_prob:
                 # Mutate to different base
@@ -109,6 +116,13 @@ def generate_population_sequences(
                 seq[pos] = rng.choice(possible_mutations)
 
         sequences.append("".join(seq))
+
+    if mutation_prob > 0 and len(set(sequences)) == 1 and len(sequences) > 1:
+        seq = list(sequences[1])
+        pos = rng.randrange(length)
+        possible_mutations = [base for base in "ATCG" if base != seq[pos]]
+        seq[pos] = rng.choice(possible_mutations)
+        sequences[1] = "".join(seq)
 
     return sequences
 

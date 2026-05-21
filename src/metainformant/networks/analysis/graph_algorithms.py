@@ -52,6 +52,8 @@ def network_metrics(graph: Any) -> Dict[str, Any]:
         # Basic properties
         metrics["num_nodes"] = graph.number_of_nodes()
         metrics["num_edges"] = graph.number_of_edges()
+        metrics["n_nodes"] = metrics["num_nodes"]
+        metrics["n_edges"] = metrics["num_edges"]
         metrics["is_directed"] = graph.is_directed()
         metrics["is_multigraph"] = graph.is_multigraph()
 
@@ -77,10 +79,13 @@ def network_metrics(graph: Any) -> Dict[str, Any]:
             # Clustering
             if not metrics["is_directed"]:
                 metrics["avg_clustering"] = nx.average_clustering(graph)
+                metrics["clustering_coeff"] = metrics["avg_clustering"]
                 try:
                     metrics["transitivity"] = nx.transitivity(graph)
                 except (nx.NetworkXError, ZeroDivisionError):
                     metrics["transitivity"] = None
+            else:
+                metrics["clustering_coeff"] = None
 
             # Connected components
             if metrics["is_directed"]:
@@ -98,6 +103,7 @@ def network_metrics(graph: Any) -> Dict[str, Any]:
                 {
                     "density": 0.0,
                     "avg_degree": 0.0,
+                    "clustering_coeff": 0.0,
                     "max_degree": 0,
                     "min_degree": 0,
                     "num_components": 0,
@@ -521,7 +527,7 @@ def centrality_measures(graph: Any) -> Dict[str, Dict[str, float]]:
 
     if graph.number_of_nodes() == 0:
         if was_biological:
-            return {"degree": {}, "betweenness": {}, "closeness": {}, "eigenvector": {}}
+            return {"degree": {}, "betweenness": {}, "closeness": {}, "eigenvector": {}, "pagerank": {}}
         return {}
 
     results = {}
@@ -549,6 +555,11 @@ def centrality_measures(graph: Any) -> Dict[str, Dict[str, float]]:
         results["eigenvector"] = dict(nx.eigenvector_centrality(graph, max_iter=100))
     except (nx.NetworkXError, nx.PowerIterationFailedConvergence, ZeroDivisionError):
         results["eigenvector"] = {}
+
+    try:
+        results["pagerank"] = dict(nx.pagerank(graph))
+    except (nx.NetworkXError, ZeroDivisionError):
+        results["pagerank"] = {}
 
     return results
 

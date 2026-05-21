@@ -26,92 +26,67 @@ Ecological analysis including community composition, biodiversity metrics, and e
 
 ### Biodiversity Assessment
 ```python
-from metainformant.ecology import community
+from metainformant.ecology.analysis import community
 
-# Load community data (species abundance matrix)
-community_data = community.load_community_data("species_abundance.csv")
+community_data = [12, 7, 3, 1]
 
 # Calculate diversity metrics
 shannon_diversity = community.shannon_diversity(community_data)
 simpson_diversity = community.simpson_diversity(community_data)
 species_richness = community.species_richness(community_data)
-
-# Analyze community composition
-composition_analysis = community.analyze_composition(community_data)
-evenness = community.calculate_evenness(community_data)
+metrics = community.community_metrics(community_data)
 ```
 
 ### Community Comparison
 ```python
-from metainformant.ecology import community
+from metainformant.ecology.analysis import community, indicators, ordination
 
 # Compare communities using different metrics
-bray_curtis = community.bray_curtis_similarity(site1_data, site2_data)
-jaccard = community.jaccard_similarity(site1_data, site2_data)
+bray_curtis = community.beta_diversity(site1_data, site2_data, method="bray_curtis")
+jaccard = community.beta_diversity(site1_data, site2_data, method="jaccard")
 
 # Ordination analysis
-ordination_result = community.perform_ordination(
-    community_matrix,
-    method="nmds",
-    distance_metric="braycurtis"
-)
+distance = ordination.distance_matrix(community_matrix, method="bray_curtis")
+ordination_result = ordination.nmds(distance)
 
 # Clustering of communities
-clusters = community.cluster_communities(
-    community_matrix,
-    method="kmeans",
-    n_clusters=3
-)
+clusters = indicators.cluster_communities(distance, method="average")
 ```
 
 ### Environmental Correlations
+The functions below are conceptual workflow placeholders, not public APIs. Use
+the implemented `ordination`, `indicators`, and `functional` modules to build
+these analyses from concrete distance matrices, group labels, and trait tables.
+
 ```python
-from metainformant.ecology import community
+from metainformant.ecology.analysis import indicators, ordination
 
-# Analyze relationships between species and environment
-correlation_matrix = community.species_environment_correlation(
-    community_data,
-    environmental_data
-)
-
-# Identify indicator species for environmental conditions
-indicator_species = community.indicator_species_analysis(
-    community_data,
-    environmental_categories
-)
-
-# Gradient analysis
-gradient_analysis = community.gradient_analysis(
-    community_data,
-    environmental_gradient
-)
+distance = ordination.distance_matrix(community_matrix, method="bray_curtis")
+indicator_values = indicators.indval(community_matrix, environmental_categories)
 ```
 
 ## Integration with Other Modules
 
 ### With Phenotype Data
 ```python
-from metainformant.ecology import community
+from metainformant.ecology.analysis import functional
 from metainformant.phenotype import antwiki
 
-# Combine ecological and phenotypic data
+# Combine ecological and phenotypic data, then pass a concrete trait matrix.
 species_traits = antwiki.get_species_traits(species_list)
-trait_community = community.trait_based_community_analysis(
-    community_data,
-    species_traits
-)
+trait_summary = functional.functional_diversity_suite(trait_matrix, abundances)
 ```
 
 ### With Statistical Analysis
 ```python
-from metainformant.ecology import community
+from metainformant.ecology.analysis import community
 
 # Calculate diversity indices
 shannon = community.shannon_diversity(abundances)
 simpson = community.simpson_diversity(abundances)
 
 # Community comparison
-beta_diversity = community.bray_curtis_dissimilarity(community1, community2)
+beta_diversity = community.beta_diversity(community1, community2, method="bray_curtis")
 ```
 
 ## Planned Extensions

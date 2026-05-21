@@ -69,29 +69,78 @@ except ImportError:
 logger = logging.get_logger(__name__)
 
 
+def _as_dense_matrix(matrix: Any) -> np.ndarray:
+    """Convert supported matrix-like inputs to a dense float array."""
+    dense = matrix.toarray() if hasattr(matrix, "toarray") else matrix
+    return np.asarray(dense, dtype=float)
+
+
+def _cluster_feature_matrix(
+    feature_matrix: Any,
+    *,
+    resolution: float = 1.0,
+    random_state: int | None = None,
+) -> np.ndarray:
+    """Deterministically cluster a raw feature matrix for lightweight callers."""
+    X = _as_dense_matrix(feature_matrix)
+    if X.ndim != 2:
+        raise ValueError("feature_matrix must be a 2D matrix")
+    if X.shape[0] == 0:
+        return np.array([], dtype=int)
+    if X.shape[0] == 1:
+        return np.zeros(1, dtype=int)
+
+    n_clusters = max(2, int(round(max(resolution, 0.1) * 4)))
+    n_clusters = min(n_clusters, X.shape[0], 10)
+
+    if HAS_SKLEARN:
+        kmeans = KMeans(n_clusters=n_clusters, random_state=0 if random_state is None else random_state, n_init=10)
+        return kmeans.fit_predict(X).astype(int)
+
+    centered = X - np.mean(X, axis=0)
+    try:
+        _, _, vh = np.linalg.svd(centered, full_matrices=False)
+        scores = centered @ vh[0]
+    except np.linalg.LinAlgError:
+        scores = centered[:, 0]
+
+    quantiles = np.linspace(0.0, 1.0, n_clusters + 1)[1:-1]
+    thresholds = np.quantile(scores, quantiles)
+    return np.digitize(scores, thresholds).astype(int)
+
+
 def leiden_clustering(
-    data: SingleCellData,
+    data: SingleCellData | Any | None = None,
     resolution: float = 1.0,
     n_neighbors: int = 15,
     random_state: int | None = None,
     use_weights: bool = True,
-) -> SingleCellData:
+    *,
+    feature_matrix: Any | None = None,
+) -> SingleCellData | np.ndarray:
     """Perform Leiden clustering on single-cell data.
 
     Args:
-        data: SingleCellData object with preprocessed expression matrix
+        data: SingleCellData object with preprocessed expression matrix, or a
+            matrix-like object for compatibility callers
         resolution: Resolution parameter for Leiden algorithm
         n_neighbors: Number of neighbors for kNN graph construction
         random_state: Random seed for reproducibility
         use_weights: Whether to use edge weights in clustering
+        feature_matrix: Matrix-style alias for callers that only need labels
 
     Returns:
-        SingleCellData with cluster assignments added to obs
+        SingleCellData with cluster assignments added to obs, or a label array
+        for matrix-style input.
 
     Raises:
         ImportError: If required packages are not available
         TypeError: If data is not SingleCellData
     """
+    if feature_matrix is not None or not isinstance(data, SingleCellData):
+        matrix = feature_matrix if feature_matrix is not None else data
+        return _cluster_feature_matrix(matrix, resolution=resolution, random_state=random_state)
+
     validation.validate_type(data, SingleCellData, "data")
 
     if not HAS_NETWORKX or not HAS_IGRAPH or not HAS_LEIDEN:
@@ -261,6 +310,57 @@ def kmeans_clustering(
 
     logger.info(f"K-means clustering completed: found {n_clusters} clusters")
     return result
+
+
+def find_markers(
+    expression_matrix: Any,
+    cluster_labels: Any,
+    *,
+    n_markers: int = 10,
+    gene_names: list[str] | None = None,
+) -> dict[Any, list[dict[str, float | int | str]]]:
+    """Find simple marker genes from an expression matrix and cluster labels."""
+    X = _as_dense_matrix(expression_matrix)
+    labels = np.asarray(cluster_labels)
+
+    if X.ndim != 2:
+        raise ValueError("expression_matrix must be a 2D matrix")
+    if X.shape[0] != labels.shape[0]:
+        raise ValueError("Number of rows in expression_matrix must match cluster_labels")
+    if n_markers <= 0:
+        return {cluster.item() if hasattr(cluster, "item") else cluster: [] for cluster in np.unique(labels)}
+
+    names = gene_names if gene_names is not None else [f"gene_{idx}" for idx in range(X.shape[1])]
+    if len(names) != X.shape[1]:
+        raise ValueError("gene_names length must match number of genes")
+
+    markers: dict[Any, list[dict[str, float | int | str]]] = {}
+    eps = 1e-10
+
+    for cluster in np.unique(labels):
+        cluster_mask = labels == cluster
+        in_group = X[cluster_mask]
+        out_group = X[~cluster_mask]
+        mean_in = np.mean(in_group, axis=0)
+        mean_out = np.mean(out_group, axis=0) if out_group.size else np.zeros(X.shape[1])
+        log_fold_change = np.log2((mean_in + eps) / (mean_out + eps))
+        scores = mean_in - mean_out
+        ranked = np.argsort(scores)[::-1][: min(n_markers, X.shape[1])]
+
+        cluster_key = cluster.item() if hasattr(cluster, "item") else cluster
+        markers[cluster_key] = [
+            {
+                "gene": names[int(gene_idx)],
+                "gene_index": int(gene_idx),
+                "score": float(scores[gene_idx]),
+                "mean_expr": float(mean_in[gene_idx]),
+                "mean_expr_other": float(mean_out[gene_idx]),
+                "log_fold_change": float(log_fold_change[gene_idx]),
+            }
+            for gene_idx in ranked
+        ]
+
+    return markers
 
 
 def hierarchical_clustering(

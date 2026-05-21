@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 # isort: skip_file
-from . import data, engine, execution, io, ui, utils
+from . import data, db, engine, execution, io, ui, utils
 
 __all__ = [
     "data",
+    "db",
     "engine",
     "execution",
     "io",
