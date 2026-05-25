@@ -1,6 +1,6 @@
 """Tests for core discovery utilities.
 
-Tests function discovery, config discovery, and workflow discovery following NO_MOCKING policy.
+Tests function discovery, config discovery, and workflow discovery following real-implementation policy.
 """
 
 from __future__ import annotations

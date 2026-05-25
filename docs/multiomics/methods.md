@@ -30,7 +30,7 @@ high-dimensional data.
 
 ### joint_nmf
 
-```python
+```python-snippet
 def joint_nmf(
     data_matrices: dict[str, Any],
     k: int = 10,
@@ -44,7 +44,7 @@ Returns `W` (shared factor matrix), `H_dict` (per-omic coefficients),
 
 ### mofa_simple
 
-```python
+```python-snippet
 def mofa_simple(
     data_matrices: dict[str, Any],
     k: int = 10,
@@ -59,7 +59,7 @@ Requires numpy.
 
 ### tensor_decomposition
 
-```python
+```python-snippet
 def tensor_decomposition(
     tensor: list[list[list[float]]] | Any,
     rank: int = 5,
@@ -74,7 +74,7 @@ explained), and `core_consistency` (0--100%). Requires numpy.
 
 ### similarity_network_fusion
 
-```python
+```python-snippet
 def similarity_network_fusion(
     networks: list[list[list[float]]] | list[Any],
     k_neighbors: int = 20,
@@ -89,7 +89,7 @@ Fuses >= 2 similarity networks via iterative diffusion. Returns
 
 ### canonical_correlation
 
-```python
+```python-snippet
 def canonical_correlation(
     X: Any, Y: Any,
     n_components: int = 2,
@@ -104,7 +104,7 @@ SVD-based regularised CCA for two omic matrices. Returns `x_scores`,
 
 ### multi_omic_clustering
 
-```python
+```python-snippet
 def multi_omic_clustering(
     data_matrices: dict[str, Any],
     n_clusters: int,
@@ -118,7 +118,7 @@ Integrates and clusters using `"snf"`, `"concatenation"`, or
 
 ### consensus_clustering
 
-```python
+```python-snippet
 def consensus_clustering(
     data: Any,
     k_range: range | list[int] | None = None,
@@ -133,7 +133,7 @@ Ambiguous Clustering) scores. Returns `optimal_k`, `labels`,
 
 ### multi_view_spectral
 
-```python
+```python-snippet
 def multi_view_spectral(
     similarity_matrices: list[Any],
     n_clusters: int,
@@ -146,7 +146,7 @@ performs spectral clustering. Returns `labels`, `eigenvalues`, `eigenvectors`.
 
 ### evaluate_integration
 
-```python
+```python-snippet
 def evaluate_integration(
     labels: list[int],
     omic_data: dict[str, Any],

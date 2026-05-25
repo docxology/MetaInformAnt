@@ -1,7 +1,7 @@
 """Tests for longread batch analysis operations not covered by test_longread.py.
 
 Tests BatchResult, process_batch, batch_filter_reads, and batch_compute_metrics.
-All tests use real implementations -- NO MOCKING.
+All tests use real implementations -- REAL IMPLEMENTATION.
 """
 
 from __future__ import annotations

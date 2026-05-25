@@ -1,6 +1,6 @@
 """Tests for Ollama client functionality.
 
-These tests use real Ollama API calls - no mocks.
+These tests use real Ollama API calls - real implementations.
 Requires Ollama server running with at least smollm2 model.
 """
 

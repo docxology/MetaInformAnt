@@ -33,7 +33,7 @@ Generate a population of sequences with specified diversity.
 **Returns**: List of sequences
 
 **Example**:
-```python
+```python-snippet
 from metainformant.simulation.popgen import generate_population_sequences
 
 # Generate 10 sequences with π = 0.01
@@ -63,7 +63,7 @@ Generate two populations with specified Fst.
 **Returns**: Tuple of (pop1_sequences, pop2_sequences)
 
 **Example**:
-```python
+```python-snippet
 from metainformant.simulation.popgen import generate_two_populations
 from metainformant.dna.population import hudson_fst
 
@@ -97,7 +97,7 @@ Generate a genotype matrix with specified allele frequencies.
 **Returns**: Genotype matrix (list of lists). For diploid: 0=AA, 1=AB, 2=BB.
 
 **Example**:
-```python
+```python-snippet
 from metainformant.simulation.popgen import generate_genotype_matrix
 from metainformant.dna.population import allele_frequencies
 
@@ -129,7 +129,7 @@ Simulate a population that went through a bottleneck.
 **Returns**: List of sequences reflecting bottleneck signature
 
 **Example**:
-```python
+```python-snippet
 from metainformant.simulation.popgen import simulate_bottleneck_population
 from metainformant.dna.population import nucleotide_diversity, tajimas_d
 
@@ -163,7 +163,7 @@ Simulate a population that underwent recent expansion.
 **Returns**: List of sequences reflecting expansion signature
 
 **Example**:
-```python
+```python-snippet
 from metainformant.simulation.popgen import simulate_population_expansion
 
 # Simulate 10x expansion
@@ -193,7 +193,7 @@ Generate a site frequency spectrum with specified properties.
 **Returns**: List of counts per frequency bin
 
 **Example**:
-```python
+```python-snippet
 from metainformant.simulation.popgen import generate_site_frequency_spectrum
 
 # Generate folded SFS for 10 samples, 100 sites
@@ -222,7 +222,7 @@ Generate genotype data with specified linkage disequilibrium.
 **Returns**: Genotype matrix with specified LD patterns
 
 **Example**:
-```python
+```python-snippet
 from metainformant.simulation.popgen import generate_linkage_disequilibrium_data
 
 # Generate genotypes with LD
@@ -246,7 +246,7 @@ print(f"Observed r²: {ld:.4f}")
 
 Generate synthetic data to test analysis methods:
 
-```python
+```python-snippet
 from metainformant.simulation.popgen import generate_population_sequences
 from metainformant.dna.population_analysis import calculate_summary_statistics
 
@@ -268,7 +268,7 @@ print(f"θ_W: {stats['wattersons_theta']:.4f}")
 
 Compare different demographic scenarios:
 
-```python
+```python-snippet
 from metainformant.simulation.popgen import (
     simulate_bottleneck_population,
     simulate_population_expansion,
@@ -303,7 +303,7 @@ print(f"Expansion D: {expansion_results['tajimas_d']:.4f}")
 
 Create datasets for machine learning:
 
-```python
+```python-snippet
 from metainformant.simulation.popgen import generate_genotype_matrix
 
 # Generate large genotype matrix
@@ -324,7 +324,7 @@ pca_result = compute_pca(genotypes, n_components=10)
 
 Generate populations with different levels of differentiation:
 
-```python
+```python-snippet
 from metainformant.simulation.popgen import generate_two_populations
 from metainformant.dna.population import hudson_fst
 
@@ -348,7 +348,7 @@ print(f"High Fst: {fst_high:.4f}")
 
 ### Full Workflow Example
 
-```python
+```python-snippet
 from metainformant.simulation.popgen import generate_two_populations
 from metainformant.dna.population_analysis import compare_populations
 from metainformant.math.demography import bottleneck_effective_size
@@ -401,7 +401,7 @@ sequences = generate_population_sequences(
 
 Always check that generated data matches expectations:
 
-```python
+```python-snippet
 from metainformant.simulation.popgen import generate_population_sequences
 from metainformant.dna.population import nucleotide_diversity
 

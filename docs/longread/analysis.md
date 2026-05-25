@@ -20,7 +20,7 @@ Long reads can phase heterozygous variants by linking alleles that appear on the
 
 ### Structural Variant Detection
 
-```python
+```python-snippet
 def detect_sv_from_long_reads(
     alignments: list[Any],
     min_sv_size: int = 50,
@@ -30,7 +30,7 @@ def detect_sv_from_long_reads(
 
 Detect structural variants from long-read alignments. Analyzes supplementary alignments and large CIGAR operations. Returns a list of SV records with type, coordinates, size, and supporting read count.
 
-```python
+```python-snippet
 def detect_insertions(alignments: list[Any], min_size: int = 50) -> list[dict]
 def detect_inversions(alignments: list[Any], min_size: int = 500) -> list[dict]
 def phase_structural_variants(svs: list[dict], phase_data: dict) -> list[dict]
@@ -40,7 +40,7 @@ Specialized detectors for insertions and inversions. `phase_structural_variants`
 
 ### Modified Base Detection
 
-```python
+```python-snippet
 def detect_methylation(alignments: list[Any]) -> dict[str, Any]
 def call_5mc(signal_data: Any, positions: list[int]) -> dict[str, Any]
 def call_6ma(signal_data: Any, positions: list[int]) -> dict[str, Any]
@@ -57,7 +57,7 @@ def differential_methylation(
 
 ### Haplotype Phasing
 
-```python
+```python-snippet
 def phase_reads(
     alignments: list[Any],
     heterozygous_sites: list[dict],

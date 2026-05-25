@@ -37,7 +37,7 @@ Documentation is organized by module domain:
 - `metabolomics/` - Metabolomics (mass spectrometry, pathway mapping, metabolite-gene integration)
 - `cloud/` - Cloud deployment (GCP VM lifecycle, Docker pipelines, genome prep)
 - `menu/` - Interactive menu and discovery system
-- `mcp/` - Model Context Protocol documentation (`src/metainformant/mcp/`, currently minimal tool stubs)
+- `mcp/` - Model Context Protocol documentation (`src/metainformant/mcp/`, currently minimal minimal tool implementations)
 - `eqtl/` - eQTL integration docs (implementation lives under `gwas/finemapping/` and `scripts/eqtl/`)
 
 ## Key Root Files
@@ -48,7 +48,7 @@ Documentation is organized by module domain:
 - `FAQ.md` - Frequently asked questions
 - `TUTORIALS.md` - Step-by-step tutorials
 - `ERROR_HANDLING.md` - Error handling patterns
-- `NO_MOCKING_POLICY.md` - Testing policy (no mocks allowed)
+- `REAL_IMPLEMENTATION_POLICY.md` - Testing policy (real implementations allowed)
 - `UV_SETUP.md` - UV package manager setup guide
 - `SETUP.md` - Environment setup instructions (`setup.md` is a lowercase mirror)
 - `DISK_SPACE_MANAGEMENT.md` - Disk space management for large datasets

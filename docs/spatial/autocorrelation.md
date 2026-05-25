@@ -28,7 +28,7 @@ Fast (≈5 ms) but inaccurate for N < 200 or extremely skewed distributions.
 
 Spot‑level contribution to global Moran: reveals hot/cold spots.
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.autocorrelation import local_moran
 lisa = local_moran(adata, 'MKI67', n_permutations=99)
 adata.obs['lisa_quad'] = lisa.quadrant  # 0=LL, 1=LH, 2=HL, 3=HH
@@ -43,7 +43,7 @@ Quadrants:
 
 Visualise:
 
-```python
+```python-snippet
 from metainformant.spatial.visualization import plot_spatial_categorical
 plot_spatial_categorical(adata, 'lisa_quad', palette='RdBu')
 ```
@@ -64,7 +64,7 @@ No permutation by default; set `n_permutations=999` for p‑value.
 
 Hot‑spot detection; more sensitive than LISA HH quadrant.
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.autocorrelation import getis_ord
 gi = getis_ord(adata, 'CXCL12')
 hotspots = (gi.z_scores > 1.96) & (gi.pvalues < 0.05)

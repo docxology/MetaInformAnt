@@ -15,7 +15,7 @@ Default: **spatial_leiden** with resolution 0.8; robust and widely adopted.
 
 ## Usage
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.clustering import spatial_leiden
 adata.obs['domain'] = spatial_leiden(
     adata,
@@ -45,7 +45,7 @@ a biologically plausible area on the tissue image.
 
 ## Marker gene discovery
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.clustering import find_markers
 markers = find_markers(adata, groupby='domain', method='wilcoxon')
 # markers is a dict {domain: DataFrame with genes, pvals, logfc}
@@ -57,7 +57,7 @@ Wilcoxon rank‑sum (Scanpy implementation) is fast; for >20 k spots consider
 
 ## Visualisation
 
-```python
+```python-snippet
 from metainformant.spatial.visualization import spatial_scatter
 spatial_scatter(adata, color='domain', palette='tab20', show=True)
 
@@ -70,7 +70,7 @@ domain_outlines(adata, linewidth=0.8, show=True)
 
 Post‑hoc merge domains with similar expression profiles:
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.clustering import merge_domains
 adata.obs['domain_merged'] = merge_domains(
     adata,
@@ -83,7 +83,7 @@ adata.obs['domain_merged'] = merge_domains(
 
 Fast but less accurate for irregular tissues:
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.clustering import spatial_kmeans
 adata.obs['kmeans'] = spatial_kmeans(adata, n_clusters=8, coord_weight=0.3)
 ```

@@ -1,6 +1,6 @@
 """Tests for SQLite-backed progress tracking (progress_db).
 
-All tests use real SQLite databases on disk following NO_MOCKING_POLICY.
+All tests use real SQLite databases on disk following the real-implementation policy.
 """
 
 from __future__ import annotations

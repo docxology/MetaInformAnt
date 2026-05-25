@@ -719,14 +719,14 @@ def handler(manager, items):
 
 ## Testing Orchestration Code
 
-### Test Philosophy (Zero Mocking)
+### Test Philosophy (Real Implementation)
 
 All tests use real implementations:
 - Real file I/O to `tmp_path` (fixture)
-- Real subprocesses (no `unittest.mock.patch` on `subprocess.Popen`)
+- Real subprocesses (no `test-double patching APIs` on `subprocess.Popen`)
 - Real thread pools
 
-See: [../../tests/NO_MOCKING_POLICY.md](../../tests/NO_MOCKING_POLICY.md)
+See: [../../tests/REAL_IMPLEMENTATION_TESTING_POLICY.md](../../tests/REAL_IMPLEMENTATION_TESTING_POLICY.md)
 
 ### Example Test
 

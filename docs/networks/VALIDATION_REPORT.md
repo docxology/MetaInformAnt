@@ -521,7 +521,7 @@ regulators = get_regulators(reg_network, "gene1")
    - Correct `load_pathway_database()` signature to match actual APIs
    - Document that `pathway_enrichment()` returns a dict, not list
 8. **Consolidate duplicate implementations**: The `regulatory/` package and `interaction/regulatory_*` modules contain overlapping GRN inference code. This should be unified or clearly documented as separate modules with different purposes.
-9. **Add missing function stubs** if any of the documented-but-missing functions are intended to be implemented.
+9. **Add missing function implementations** if any of the documented-but-missing functions are intended to be implemented.
 
 ---
 

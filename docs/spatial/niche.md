@@ -18,7 +18,7 @@ spot). Output: niche label per spot + niche‑specific cell type signatures.
 
 ## Usage
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.niche import discover_niches
 
 niches = discover_niches(
@@ -32,7 +32,7 @@ adata.obs['niche'] = niches
 
 ## Visualisation
 
-```python
+```python-snippet
 from metainformant.spatial.visualization import plot_niche_summary
 plot_niche_summary(adata, top_n_celltypes=5)
 ```
@@ -41,7 +41,7 @@ Creates a stacked bar chart: each niche → top contributing cell types.
 
 ## Niche annotation
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.niche import annotate_niche
 annotations = annotate_niche(adata, niche_column='niche')
 # Returns dict {niche_id: 'T cell rich', 'Fibroblast core', …}
@@ -57,7 +57,7 @@ Annotation rules:
 
 Compute marker genes *within* each niche:
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.clustering import find_markers
 markers = find_markers(adata, groupby='niche')
 ```

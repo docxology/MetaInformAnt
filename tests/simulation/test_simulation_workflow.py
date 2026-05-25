@@ -4,7 +4,7 @@ Tests cover SimulationConfig validation, create_simulation_config factory,
 run_simulation_workflow for all six simulation types, output validation,
 parameter calibration, benchmark runs, and reproducibility guarantees.
 
-All tests use real implementations (NO MOCKING) per project policy.
+All tests use real implementations (REAL IMPLEMENTATION) per project policy.
 """
 
 from __future__ import annotations

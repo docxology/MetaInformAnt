@@ -60,7 +60,7 @@ Rapid (RM), or Ultrarapid (UM) metabolizer. Thresholds are gene-specific.
 
 ## Batch processing
 
-```python
+```python-snippet
 import pandas as pd
 from metainformant import parallel, pharmacogenomics
 
@@ -77,7 +77,7 @@ df['CYP2D6_phenotype'] = [r['phenotype'] for r in results]
 For >100k samples increase `chunk_size` to reduce overhead; for massive cohorts switch
 to Dask:
 
-```python
+```python-snippet
 import dask.dataframe as dd
 from dask.distributed import Client
 client = Client(n_workers=8)

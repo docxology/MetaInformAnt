@@ -1,7 +1,7 @@
 """Tests for biological network community detection functionality.
 
 Real implementation testing for community detection algorithms in biological networks.
-No mocking used - all tests use real computational methods and data.
+Real implementationing used - all tests use real computational methods and data.
 """
 
 from __future__ import annotations

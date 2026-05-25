@@ -6,7 +6,7 @@ Quick links:
 - [Development setup](SETUP.md#development-mode)
 - [Testing guide](testing.md) (comprehensive testing documentation)
 - [Documentation guide](DOCUMENTATION_GUIDE.md)
-- [No Mocking policy](NO_MOCKING_POLICY.md)
+- [Real Implementation policy](REAL_IMPLEMENTATION_POLICY.md)
 
 All contributions require documentation updates alongside code changes.
 
@@ -109,7 +109,7 @@ Hooks run automatically on `git commit`. The `fail_fast` setting is `false`, so 
 
 ### Testing Requirements
 
-METAINFORMANT has a **strict no-mocking policy** and emphasizes real-data, integration-style testing.
+METAINFORMANT has a **strict real-implementation policy** and emphasizes real-data, integration-style testing.
 
 #### Test Framework: pytest
 - Tests reside in `tests/` mirroring the `src/metainformant/` structure
@@ -117,11 +117,11 @@ METAINFORMANT has a **strict no-mocking policy** and emphasizes real-data, integ
 - Run tests via `scripts/run_tests.sh` (CI-parity wrapper) or directly: `uv run pytest`
 - Add options: `-v` (verbose), `-x` (stop on first failure), `-m "not slow"` (exclude slow tests), `--timeout=300` (per-test timeout)
 
-#### No Mocking Policy
-**Read [NO_MOCKING_POLICY.md](NO_MOCKING_POLICY.md)** for the complete policy. Key points:
+#### Real Implementation Policy
+**Read [REAL_IMPLEMENTATION_POLICY.md](REAL_IMPLEMENTATION_POLICY.md)** for the complete policy. Key points:
 
 - **ALL functions must perform real computations or genuine external calls** (UniProt, PDB, NCBI, etc.)
-- **Zero tolerance for placeholders**: no `return [[0,1,2]*100]`, no dummy data, no `return None` stub plots
+- **Zero tolerance for placeholders**: no `return [[0,1,2]*100]`, no dummy data, no `return None` inert plots
 - **Tests use real data or generated synthetic data** (via `numpy.random`, actual algorithms)
 - The purpose: ensure every function does real work; avoid false confidence
 
@@ -133,7 +133,7 @@ METAINFORMANT has a **strict no-mocking policy** and emphasizes real-data, integ
 
 #### Test Organization
 - `tests/conftest.py` – shared fixtures
-- Markers: `slow`, `network` (real API calls), `external_tool` (requires external binaries), `integration`, `no_mock`
+- Markers: `slow`, `network` (real API calls), `external_tool` (requires external binaries), `integration`, `real_impl`
 - Parallel execution via `pytest-xdist`: `uv run pytest -n auto`
 
 ---
@@ -266,7 +266,7 @@ METAINFORMANT is an open, welcoming community. We adhere to the [Contributor Cov
 | Setup instructions | [docs/SETUP.md](SETUP.md) |
 | Testing guide | [docs/testing.md](testing.md) |
 | Documentation guide | [docs/DOCUMENTATION_GUIDE.md](DOCUMENTATION_GUIDE.md) |
-| No-mocking policy | [docs/NO_MOCKING_POLICY.md](NO_MOCKING_POLICY.md) |
+| Real-implementation policy | [docs/REAL_IMPLEMENTATION_POLICY.md](REAL_IMPLEMENTATION_POLICY.md) |
 | CI/CD workflows | `.github/workflows/` |
 | Code of Conduct | [Contributor Covenant](https://www.contributor-covenant.org/) |
 | Community chat | `#metainformant:matrix.org` |

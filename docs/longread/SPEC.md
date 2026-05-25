@@ -20,4 +20,4 @@ Documentation for the longread domain in MetaInformAnt.
 - **Tests**: `tests/longread/test_longread_*.py`
 
 ## Testing Policy
-- **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.
+- **Real Implementation**: All tests must use real implementations. Mocks are strictly prohibited.

@@ -143,7 +143,7 @@ class TestAnimateClustering:
         np.random.seed(42)
         data = np.random.randn(20, 2)
 
-        # Create mock cluster assignments over time
+        # Create ann_data cluster assignments over time
         cluster_labels_over_time = [np.random.randint(0, 3, 20) for _ in range(5)]  # 5 time steps
 
         fig, anim = animate_clustering(data, cluster_labels_over_time)
@@ -207,7 +207,7 @@ class TestAnimateNetwork:
         if HAS_NETWORKX:
             pytest.skip("NetworkX is available")
 
-        graphs = ["fake graph"]
+        graphs = ["invalid graph"]
 
         with pytest.raises(ImportError, match="NetworkX required"):
             animate_network(graphs)

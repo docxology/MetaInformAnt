@@ -1,6 +1,6 @@
 """Tests for ontology types module.
 
-All tests follow NO_MOCKING_POLICY and use real implementations.
+All tests follow real-implementation policy and use real implementations.
 """
 
 from __future__ import annotations

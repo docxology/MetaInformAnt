@@ -11,7 +11,7 @@ Tests all 9 public functions in metainformant.rna.engine.orchestration:
     8. get_workflow_status
     9. estimate_workflow_resources
 
-NO MOCKING -- all tests use real filesystem fixtures and real implementations.
+REAL IMPLEMENTATION -- all tests use real filesystem fixtures and real implementations.
 """
 
 from __future__ import annotations
@@ -69,7 +69,7 @@ def _make_result(
 
 
 def _seed_quant_sample(work_dir: Path, sample_id: str) -> Path:
-    """Create a fake quantification output for *sample_id* inside quant/."""
+    """Create a minimal quantification output for *sample_id* inside quant/."""
     quant_dir = work_dir / "quant" / sample_id
     quant_dir.mkdir(parents=True, exist_ok=True)
     abundance = quant_dir / "abundance.tsv"
@@ -81,11 +81,11 @@ def _seed_quant_sample(work_dir: Path, sample_id: str) -> Path:
 
 
 def _seed_fastq_sample(work_dir: Path, sample_id: str) -> Path:
-    """Create a fake FASTQ directory entry for *sample_id*."""
+    """Create a minimal FASTQ directory entry for *sample_id*."""
     fq_dir = work_dir / "fastq" / "getfastq" / sample_id
     fq_dir.mkdir(parents=True, exist_ok=True)
     fq_file = fq_dir / f"{sample_id}_1.fastq.gz"
-    fq_file.write_bytes(b"\x1f\x8b" + b"\x00" * 50)  # fake gzip header
+    fq_file.write_bytes(b"\x1f\x8b" + b"\x00" * 50)  # minimal gzip header
     return fq_file
 
 
@@ -104,7 +104,7 @@ def _seed_metadata(work_dir: Path, filename: str = "metadata.tsv") -> Path:
 
 
 def _seed_merge(work_dir: Path) -> Path:
-    """Create a fake merge output directory."""
+    """Create a minimal merge output directory."""
     merge_dir = work_dir / "merge"
     merge_dir.mkdir(parents=True, exist_ok=True)
     merged = merge_dir / "merged_abundance.tsv"
@@ -113,7 +113,7 @@ def _seed_merge(work_dir: Path) -> Path:
 
 
 def _seed_curate(work_dir: Path) -> Path:
-    """Create a fake curate output directory."""
+    """Create a minimal curate output directory."""
     curate_dir = work_dir / "curate"
     curate_dir.mkdir(parents=True, exist_ok=True)
     curated = curate_dir / "curated_abundance.tsv"

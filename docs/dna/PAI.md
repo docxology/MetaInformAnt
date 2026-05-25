@@ -11,7 +11,7 @@
 
 ## Maintenance Notes
 - **System**: Part of the METAINFORMANT Domain layer (DNA analysis).
-- **Style**: Strict type hinting, no mocks in tests, reproducible examples.
+- **Style**: Strict type hinting, real implementations in tests, reproducible examples.
 - **Stability**: Core API stable; new algorithms added through submodules.
 
 ## AI Workflows

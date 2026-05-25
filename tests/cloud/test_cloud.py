@@ -1,6 +1,6 @@
 """Tests for cloud deployment configuration and GCPDeployer.
 
-Zero-mock tests that validate CloudConfig dataclass behavior,
+Real-implementation tests that validate CloudConfig dataclass behavior,
 validation logic, and GCPDeployer static methods without requiring
 any GCP credentials or network access.
 """

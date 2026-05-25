@@ -5,7 +5,7 @@ using ortholog mappings. Supports multi-species comparative studies
 including expression conservation scoring, divergence analysis,
 phylogenetic expression profiling, and cross-species PCA.
 
-All implementations use numpy, scipy, and pandas. No mocking, no
+All implementations use numpy, scipy, and pandas. Real implementationing, no
 placeholder data.
 
 Main Functions:

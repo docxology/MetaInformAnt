@@ -232,16 +232,16 @@ output_dir = paths.expand_and_resolve("output/simulation/sequences/")
 See Global Project Rules (root `.cursorrules`) for:
 - Common directory structure and path handling
 - Configuration patterns with env overrides
-- Testing policy (NO_MOCKING_POLICY)
+- Testing policy (real-implementation policy)
 - Import patterns and code style
 - Documentation guidelines
 
 ## Testing
 
-- **STRICTLY NO MOCKING**: Test real implementations only (see Global Project Rules (root `.cursorrules`) NO_MOCKING_POLICY)
+- **STRICTLY REAL IMPLEMENTATION**: Test real implementations only (see Global Project Rules (root `.cursorrules`) real-implementation policy)
 - Test with deterministic seeds
 - Verify simulated data properties
 - Write test outputs to `output/simulation/test/` using `tmp_path` fixture
-- No mocks, fakes, or stubs - use real simulation operations
+- Real implementations only - use real simulation operations
 
 

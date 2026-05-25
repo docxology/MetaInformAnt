@@ -34,6 +34,9 @@ from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
 
+AMALGKIT_INSTALL_SPEC = "git+https://github.com/kfuku52/amalgkit"
+MIN_AMALGKIT_VERSION = "0.12.20"
+
 
 class AmalgkitParams:
     """Parameters for amalgkit commands."""
@@ -270,7 +273,7 @@ def check_cli_available() -> Tuple[bool, str]:
         return False, f"Error checking amalgkit CLI: {e}"
 
 
-def parse_and_check_version(version_output: str, min_version: str = "0.4.0") -> Tuple[bool, str]:
+def parse_and_check_version(version_output: str, min_version: str = MIN_AMALGKIT_VERSION) -> Tuple[bool, str]:
     """Parse version string and check against minimum requirement.
 
     Args:
@@ -314,7 +317,7 @@ def parse_and_check_version(version_output: str, min_version: str = "0.4.0") -> 
         return True, f"Could not parse version {current_version}, assuming compatible"
 
 
-def validate_amalgkit_version(min_version: str = "0.4.0") -> Tuple[bool, str]:
+def validate_amalgkit_version(min_version: str = MIN_AMALGKIT_VERSION) -> Tuple[bool, str]:
     """Validate that the installed amalgkit version meets requirements.
 
     Args:
@@ -334,7 +337,9 @@ def validate_amalgkit_version(min_version: str = "0.4.0") -> Tuple[bool, str]:
         return False, f"Version check error: {e}"
 
 
-def ensure_cli_available(*, auto_install: bool = False, min_version: str = "0.4.0") -> Tuple[bool, str, Dict | None]:
+def ensure_cli_available(
+    *, auto_install: bool = True, min_version: str = MIN_AMALGKIT_VERSION
+) -> Tuple[bool, str, Dict | None]:
     """Ensure amalgkit CLI is available and meets version requirements.
 
     Args:
@@ -381,22 +386,35 @@ def ensure_cli_available(*, auto_install: bool = False, min_version: str = "0.4.
         return False, message, None
 
     # Attempt automatic installation using UV package manager
-    logger.info("Attempting to install/upgrade amalgkit via UV package manager...")
+    logger.info("Attempting to install/upgrade amalgkit from kfuku52/amalgkit via UV package manager...")
     try:
         # Use UV package manager (per METAINFORMANT policy)
         # Note: subprocess is imported at module level
         install_result = subprocess.run(
-            ["uv", "pip", "install", "--upgrade", "amalgkit"], capture_output=True, text=True, timeout=300
+            ["uv", "pip", "install", "--upgrade", AMALGKIT_INSTALL_SPEC],
+            capture_output=True,
+            text=True,
+            timeout=300,
         )
 
         if install_result.returncode == 0:
-            logger.info("Successfully installed/upgraded amalgkit via UV")
+            logger.info("Successfully installed/upgraded amalgkit from kfuku52/amalgkit via UV")
             # Verify installation after install
             return ensure_cli_available(auto_install=False, min_version=min_version)
         else:
             error_msg = install_result.stderr if install_result.stderr else "Installation failed with no error message"
-            logger.error(f"UV installation of amalgkit failed: {error_msg}")
-            return False, f"Installation failed: {error_msg}", None
+            logger.error(f"UV installation of amalgkit from {AMALGKIT_INSTALL_SPEC} failed: {error_msg}")
+            return (
+                False,
+                f"Installation failed for {AMALGKIT_INSTALL_SPEC}: {error_msg}",
+                {
+                    "attempted": True,
+                    "install_spec": AMALGKIT_INSTALL_SPEC,
+                    "return_code": install_result.returncode,
+                    "stdout": install_result.stdout,
+                    "stderr": install_result.stderr,
+                },
+            )
     except subprocess.TimeoutExpired:
         return False, "Installation timed out (timeout: 300s)", None
     except FileNotFoundError:

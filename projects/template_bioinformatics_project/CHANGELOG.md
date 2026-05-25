@@ -21,7 +21,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Version: [SemV
 - `scripts/02_analyze_results.py` — downstream statistical analysis (summary, correlation, PCA)
 - `scripts/03_visualize.py` — distribution grid + correlation heatmap with all parameters from config
 - `scripts/99_create_synthetic_data.py` — reproducible synthetic test data generator
-- `tests/conftest.py` and `tests/test_pipeline.py` — Zero-Mock end-to-end test suite
+- `tests/conftest.py` and `tests/test_pipeline.py` — Real-Implementation end-to-end test suite
 - `doc/` documentation suite: `index.md`, `architecture.md`, `configuration.md`, `data.md`
 - `doc/stages/` per-stage technical references for all four pipeline stages
 - `AGENTS.md` — AI agent responsibilities and thin-orchestration standards
@@ -45,5 +45,5 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Version: [SemV
 - **Zero hardcoding**: all paths and thresholds from `config/default.yaml`
 - **Immutability**: `data/raw/` is read-only
 - **Idempotency**: every stage skips existing outputs; use `--force` to reprocess
-- **Zero-Mock testing**: tests exercise real code against synthetic data
+- **Real-Implementation testing**: tests exercise real code against synthetic data
 - **uv-first**: environment management via `uv sync`

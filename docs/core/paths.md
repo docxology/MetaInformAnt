@@ -1044,11 +1044,11 @@ def normalize_to_relative(path: str | Path, base: Path) -> Path:
 
 ### Test with Temporary Directories
 
-```python
+```python-snippet
 from pathlib import Path
 
-def test_expand_and_resolve(tmp_path, monkeypatch):
-    monkeypatch.setenv("HOME", str(tmp_path / "home"))
+def test_expand_and_resolve(tmp_path, explicit restoration):
+    explicit restoration.setenv("HOME", str(tmp_path / "home"))
     result = paths.expand_and_resolve("~/data")
     assert result.is_absolute()
     assert str(result).startswith(str(tmp_path / "home"))

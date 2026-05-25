@@ -1,7 +1,7 @@
 """Tests for longread IO functions not covered by test_longread.py.
 
 Tests read_long_read_bam error handling, convert_pod5_to_fast5 error cases,
-and fast5_to_fastq error cases. All tests use real implementations -- NO MOCKING.
+and fast5_to_fastq error cases. All tests use real implementations -- REAL IMPLEMENTATION.
 """
 
 from __future__ import annotations

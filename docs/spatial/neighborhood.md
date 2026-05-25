@@ -26,7 +26,7 @@ L(r) = sqrt(K/π) − r; L(r)=0 under complete spatial randomness (CSR).
 
 ### Interaction index (pairwise)
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.neighborhood import interaction_index
 II = interaction_index(
     adata,
@@ -44,7 +44,7 @@ Monte‑Carlo randomisation (999 iterations, `n_permutations=`).
 
 Ligand from cell type A, receptor on type B within a radius.
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.communication import ligand_receptor_score
 lr = ligand_receptor_score(
     adata,
@@ -62,7 +62,7 @@ score distribution.
 
 ## Nearest‑neighbour enrichment
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.neighborhood import nearest_neighbor_enrichment
 nne = nearest_neighbor_enrichment(
     adata,
@@ -77,7 +77,7 @@ expected by frequency.
 
 ## Workflow end‑to‑end
 
-```python
+```python-snippet
 # 1. Deconvolution
 from metainformant.spatial.analysis.deconvolution import stereoscope
 adata = stereoscope(adata, max_epochs=400)

@@ -5,7 +5,7 @@ Tests cover all public functions in:
 - metainformant.information.metrics.channel
 - metainformant.information.metrics.geometry
 
-All tests use real implementations (NO mocking policy).
+All tests use real implementations (real-implementation policy).
 """
 
 from __future__ import annotations

@@ -31,7 +31,7 @@ score. C = 0.5 is random; C = 1.0 is perfect.
 
 ### cox_regression
 
-```python
+```python-snippet
 def cox_regression(
     time: list[float],
     event: list[int],
@@ -46,7 +46,7 @@ Fits a Cox PH model. Returns `coefficients`, `hazard_ratios` (exp(beta)),
 
 ### kaplan_meier
 
-```python
+```python-snippet
 def kaplan_meier(
     time: list[float],
     event: list[int],
@@ -60,7 +60,7 @@ If `groups` is provided, returns `{"groups": {group_label: curve_dict}}`.
 
 ### log_rank_test
 
-```python
+```python-snippet
 def log_rank_test(
     time: list[float],
     event: list[int],
@@ -73,7 +73,7 @@ Mantel-Haenszel test comparing survival between >= 2 groups. Returns `chi2`,
 
 ### multi_omic_survival_model
 
-```python
+```python-snippet
 def multi_omic_survival_model(
     omic_features: dict[str, Any],
     time: list[float],
@@ -89,7 +89,7 @@ Returns `selected_features` (non-zero coefficients), `coefficients`,
 
 ### risk_stratification
 
-```python
+```python-snippet
 def risk_stratification(
     risk_scores: list[float],
     time: list[float],
@@ -105,7 +105,7 @@ Kaplan-Meier curves per group and computes a log-rank test. Returns
 
 ### compute_concordance_index
 
-```python
+```python-snippet
 def compute_concordance_index(
     risk_scores: list[float],
     time: list[float],

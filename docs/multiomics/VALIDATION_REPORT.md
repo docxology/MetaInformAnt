@@ -287,7 +287,7 @@ for omics_type, components in nmf_results["omics_components"].items():
 
 **Implementation:** `src/metainformant/multiomics/visualization/visualization.py` exists.
 
-**Findings:** No detailed documentation of visualization functions found in the reviewed docs. Module appears to be stub/placeholder (contents not examined in this validation). **Recommend:** Add a visualization.md reference page or include visualization section in main README.
+**Findings:** No detailed documentation of visualization functions found in the reviewed docs. Module appears to be incomplete (contents not examined in this validation). **Recommend:** Add a visualization.md reference page or include visualization section in main README.
 
 ---
 
@@ -389,7 +389,7 @@ No dedicated `tests/multiomics/test_multiomics_*.py` files found in the reposito
 - All survival analysis functions
 - Edge cases: empty data, mismatched samples, negative values (NMF), singular matrices
 
-Follow NO MOCKING policy — use real data fixtures.
+Follow REAL IMPLEMENTATION policy — use real data fixtures.
 
 ---
 

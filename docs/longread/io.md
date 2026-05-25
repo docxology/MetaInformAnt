@@ -71,7 +71,7 @@ class LongReadAlignment:
 
 ### FAST5/POD5
 
-```python
+```python-snippet
 def read_fast5(filepath: str | Path) -> list[Fast5Read]
 def extract_signal(filepath: str | Path, read_id: str | None = None) -> Any
 def extract_basecalls(filepath: str | Path) -> list[dict[str, Any]]
@@ -82,7 +82,7 @@ def get_read_metadata(filepath: str | Path) -> list[dict[str, Any]]
 
 ### BAM
 
-```python
+```python-snippet
 def read_long_read_bam(filepath: str | Path, region: str | None = None) -> list[LongReadAlignment]
 def extract_methylation_tags(alignment: LongReadAlignment) -> dict[str, Any]
 def get_supplementary_alignments(filepath: str | Path, read_name: str) -> list[LongReadAlignment]
@@ -93,7 +93,7 @@ def calculate_alignment_stats(alignments: list[LongReadAlignment]) -> dict[str, 
 
 ### Format Conversion
 
-```python
+```python-snippet
 def fast5_to_fastq(fast5_path: str | Path, output_path: str | Path,
                    min_quality: float = 0.0, gzip_output: bool = False) -> int
 def convert_pod5_to_fast5(pod5_path: str | Path, output_path: str | Path) -> int

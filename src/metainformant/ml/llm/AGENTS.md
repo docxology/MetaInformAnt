@@ -24,7 +24,7 @@ Provides local LLM inference capabilities for bioinformatics workflows using Oll
 
 ### Testing Strategy
 
-- **Real functional tests only** - no mocks
+- **Real functional tests only** - real implementations
 - Use smallest available model (`smollm2:135m`)
 - Test with short prompts to minimize latency
 - Skip tests gracefully if Ollama unavailable

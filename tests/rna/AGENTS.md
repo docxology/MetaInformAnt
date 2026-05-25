@@ -11,5 +11,5 @@ Separates RNA-specific test infrastructure from main test directory when tests r
 
 ## Rules
 - Tests here extend the main `test_rna_*.py` tests in parent directory
-- Follow same NO MOCKING policy as all other tests
+- Follow same REAL IMPLEMENTATION policy as all other tests
 - Use real amalgkit commands when `@pytest.mark.external_tool` is appropriate

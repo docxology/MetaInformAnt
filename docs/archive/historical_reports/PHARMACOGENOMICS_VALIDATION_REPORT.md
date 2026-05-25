@@ -1,3 +1,5 @@
+> Historical snapshot: retained for provenance. Current code, tests, and domain docs are the source of truth.
+
 # Pharmacogenomics Documentation Validation Report
 
 > Historical snapshot: this validation report is retained for provenance and may

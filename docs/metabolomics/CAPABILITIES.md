@@ -706,7 +706,7 @@ Metabolomics does not currently have module-specific environment variables; all 
 3. **No retention time prediction**: RT information not used for scoring.
 4. **Single charge state**: Assumes z=1; multi-charge not handled.
 5. **No quantification algorithms**: Peak integration assumed done by upstream tools (XCMS, MZmine).
-6. **Limited visualization**: Basic plot stubs; use `metainformant.visualization` instead.
+6. **Limited visualization**: Basic plot implementations; use `metainformant.visualization` instead.
 
 ### Planned Enhancements
 

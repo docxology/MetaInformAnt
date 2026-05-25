@@ -46,6 +46,6 @@ graph TD
 
 ## Usage
 Import module:
-```python
+```python-snippet
 from metainformant.visualization import ...
 ```

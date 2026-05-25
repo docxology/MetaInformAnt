@@ -5,7 +5,7 @@ Modular tools for protein sequences and structures. Examples write to `output/` 
 - Sequences (`metainformant.protein.sequences`)
   - Parse FASTA, validate sequences, amino-acid composition, k-mer frequencies
   - Example:
-    ```python
+    ```python-snippet
     from pathlib import Path
     from metainformant.protein.sequences import parse_fasta, calculate_aa_composition
 
@@ -21,7 +21,7 @@ Modular tools for protein sequences and structures. Examples write to `output/` 
 - UniProt (`metainformant.protein.uniprot`)
   - ID mapping API polling, and FASTA retrieval
   - Example:
-    ```python
+    ```python-snippet
     from metainformant.protein.uniprot import map_ids_uniprot, fetch_uniprot_fasta
     mapping = map_ids_uniprot(["P69905"])  # {"P69905": "P69905"}
     fasta_text = fetch_uniprot_fasta("P69905")
@@ -32,7 +32,7 @@ Modular tools for protein sequences and structures. Examples write to `output/` 
 - PDB (`metainformant.protein.pdb`)
   - Download structures in PDB/CIF
   - Example:
-    ```python
+    ```python-snippet
     from pathlib import Path
     from metainformant.protein.pdb import fetch_pdb_structure
     out = fetch_pdb_structure("1CRN", Path("output/protein/structures"), fmt="pdb")
@@ -41,7 +41,7 @@ Modular tools for protein sequences and structures. Examples write to `output/` 
 - AlphaFold (`metainformant.protein.alphafold`)
   - Build model URLs and fetch models
   - Example:
-    ```python
+    ```python-snippet
     from pathlib import Path
     from metainformant.protein.alphafold import fetch_alphafold_model
     fetch_alphafold_model("P69905", Path("output/protein/alphafold"), version=4, fmt="pdb")
@@ -50,7 +50,7 @@ Modular tools for protein sequences and structures. Examples write to `output/` 
 - InterPro (`metainformant.protein.interpro`)
   - Fetch InterPro entries for a UniProt accession
   - Example:
-    ```python
+    ```python-snippet
     from metainformant.protein.interpro import fetch_interpro_domains
     entries = fetch_interpro_domains("P69905")
     ```
@@ -58,7 +58,7 @@ Modular tools for protein sequences and structures. Examples write to `output/` 
 - Structure alignment (`metainformant.protein.structure`, `structure_io`)
   - Read CA coordinates from PDB; compute Kabsch RMSD
   - Example:
-    ```python
+    ```python-snippet
     import numpy as np
     from pathlib import Path
     from metainformant.protein.structure import compute_rmsd_kabsch

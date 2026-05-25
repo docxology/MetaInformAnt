@@ -1,7 +1,7 @@
 """Tests for GWAS compute-time benchmarking module.
 
 Tests scaling models, extrapolation, formatting, and data-driven estimate_runtime().
-All tests use real functional methods — zero mocks.
+All tests use real functional methods — real implementations.
 """
 
 from __future__ import annotations

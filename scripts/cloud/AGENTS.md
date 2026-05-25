@@ -15,5 +15,5 @@ Thin orchestrator scripts for GCP cloud deployment and data exfiltration.
 
 ## Rules
 - Scripts are thin wrappers that call `metainformant.cloud` library code
-- Follow NO MOCKING policy
+- Follow REAL IMPLEMENTATION policy
 - Use `uv` for Python dependencies

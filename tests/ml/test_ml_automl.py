@@ -1,7 +1,7 @@
 """Tests for ML AutoML optimization, model selection, and preprocessing.
 
 Real implementation testing for automated machine learning methods.
-No mocking used - all tests use real sklearn models and data.
+Real implementationing used - all tests use real sklearn models and data.
 """
 
 from __future__ import annotations

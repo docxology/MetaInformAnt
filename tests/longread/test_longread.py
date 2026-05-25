@@ -2,7 +2,7 @@
 
 Tests all public functions in quality, filtering, analysis, assembly,
 io, and visualization subpackages. All tests use real implementations
-with synthetic data -- NO MOCKING.
+with synthetic data -- REAL IMPLEMENTATION.
 """
 
 from __future__ import annotations
@@ -420,7 +420,7 @@ class TestQualityFiltering:
         # Use a very short, non-matching adapter set
         trimmed = trim_adapters(
             reads,
-            adapter_sequences={"fake": "NNNNNNNNNNNNNNNN"},
+            adapter_sequences={"invalid": "NNNNNNNNNNNNNNNN"},
             min_identity=0.99,
         )
         assert len(trimmed) == 1
@@ -450,7 +450,7 @@ class TestQualityFiltering:
         reads = [{"sequence": seq, "read_id": "r1"}]
         result = split_chimeric_reads(
             reads,
-            known_adapters={"fake": "NNNNNNNNNNNNNNNN"},
+            known_adapters={"invalid": "NNNNNNNNNNNNNNNN"},
             min_adapter_identity=0.99,
         )
         assert len(result) == 1

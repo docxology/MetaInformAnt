@@ -2,7 +2,7 @@
 
 Tests cover all major functionality: CNV detection, SV calling, breakpoint
 refinement, annotation, filtering, merging, and visualization.
-Uses real algorithmic implementations (no mocking).
+Uses real algorithmic implementations (real implementation).
 """
 
 from __future__ import annotations

@@ -20,7 +20,7 @@ This directory serves as the authoritative hub for agent coordination in METAINF
 | Aspect | Detail |
 |--------|--------|
 | **System** | Part of METAINFORMANT Core infrastructure (affects all 28 modules) |
-| **Style** | Strict type hints enforced, zero mocks in tests, `uv` package management |
+| **Style** | Strict type hints enforced, real implementations in tests, `uv` package management |
 | **Stability** | Coordinator APIs (BasePipelineManager) stable; workflows evolve |
 | **Scope** | Every module participates in multi-agent workflows to some degree |
 
@@ -96,7 +96,7 @@ docs/agents/
 - **Parallel execution**: `src/metainformant/core/execution/parallel.py`
 - **Config workflows**: `src/metainformant/core/execution/workflow.py`
 - **Module AGENTS.md**: Per-module rules in `src/*/AGENTS.md` and `docs/*/AGENTS.md`
-- **No-mocking policy**: `tests/NO_MOCKING_POLICY.md` (enforced in tests)
+- **Real-implementation policy**: `tests/REAL_IMPLEMENTATION_TESTING_POLICY.md` (enforced in tests)
 
 ## Version History
 

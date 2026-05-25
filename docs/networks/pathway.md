@@ -136,7 +136,7 @@ for pathway in network_enriched[:5]:
 
 Integrate pathway analysis across multiple omics layers:
 
-```python
+```python-snippet
 from metainformant.multiomics import integration
 from metainformant.networks import multi_omics_pathway_analysis
 
@@ -166,7 +166,7 @@ for result in pathway_results:
 
 Infer pathway activity from expression data:
 
-```python
+```python-snippet
 from metainformant.networks import pathway_activity_inference
 
 # Infer pathway activities
@@ -257,7 +257,7 @@ plt.show()
 
 ### With Expression Data
 
-```python
+```python-snippet
 from metainformant.rna import workflow
 from metainformant.networks import pathway_enrichment
 
@@ -295,7 +295,7 @@ enrichment_df.to_csv("pathway_enrichment_results.csv", index=False)
 
 ### With Protein Data
 
-```python
+```python-snippet
 from metainformant.protein import proteomes
 from metainformant.networks import pathway_enrichment
 

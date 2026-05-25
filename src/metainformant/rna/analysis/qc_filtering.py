@@ -4,7 +4,7 @@ Provides batch effect detection, GC/length bias detection, and comprehensive
 QC report generation for RNA-seq count data.
 
 This module provides REAL implementations using numpy, scipy, and pandas.
-No mocking, no placeholder data.
+Real implementationing, no placeholder data.
 """
 
 from __future__ import annotations

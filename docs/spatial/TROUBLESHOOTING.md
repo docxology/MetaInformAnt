@@ -59,7 +59,7 @@ Console will print per‑epoch ELBO, gradient norms, and convergence flags.
 
 ## Benchmarking your hardware
 
-```python
+```python-snippet
 from metainformant.spatial.performance import benchmark
 benchmark.run(platform='visium', n_spots=5000, n_genes=20000, n_jobs=1)
 ```

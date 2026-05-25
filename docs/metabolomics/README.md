@@ -35,7 +35,7 @@ graph TD
 
 ## Usage
 
-```python
+```python-snippet
 from metainformant.metabolomics.io import formats
 from metainformant.metabolomics.analysis import identification, quantification, normalization
 from metainformant.metabolomics.pathways import mapping, enrichment

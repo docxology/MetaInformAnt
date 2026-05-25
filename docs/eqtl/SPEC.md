@@ -21,4 +21,4 @@ Documentation for the eqtl domain in MetaInformAnt.
 - **Tests**: `tests/gwas/test_gwas_finemapping_eqtl.py`, `tests/gwas/test_gwas_analysis_eqtl.py`
 
 ## Testing Policy
-- **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.
+- **Real Implementation**: All tests must use real implementations. Mocks are strictly prohibited.

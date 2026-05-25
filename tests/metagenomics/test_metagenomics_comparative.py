@@ -1,7 +1,7 @@
 """Tests for metagenomics comparative submodule.
 
 Tests differential abundance, CLR transform, indicator species, biomarkers.
-Uses real implementations -- NO mocking per project policy.
+Uses real implementations -- real-implementation policy.
 """
 
 from __future__ import annotations

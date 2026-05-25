@@ -29,6 +29,6 @@ graph TD
 
 ## Usage
 Import module:
-```python
+```python-snippet
 from metainformant.quality import ...
 ```

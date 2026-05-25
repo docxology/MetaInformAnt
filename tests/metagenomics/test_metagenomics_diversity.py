@@ -1,7 +1,7 @@
 """Tests for metagenomics diversity submodule.
 
 Tests alpha/beta diversity, rarefaction, ordination.
-Uses real implementations -- NO mocking per project policy.
+Uses real implementations -- real-implementation policy.
 """
 
 from __future__ import annotations
@@ -216,7 +216,7 @@ class TestBetaDiversity:
 
     def test_invalid_metric_raises(self) -> None:
         with pytest.raises(ValueError, match="Invalid metric"):
-            beta_diversity([[1.0], [2.0]], metric="fake")
+            beta_diversity([[1.0], [2.0]], metric="invalid")
 
 
 # ---------------------------------------------------------------------------
@@ -338,4 +338,4 @@ class TestOrdination:
     def test_invalid_method_raises(self) -> None:
         dm = [[0.0, 0.5], [0.5, 0.0]]
         with pytest.raises(ValueError, match="Invalid method"):
-            ordination(dm, method="fake")
+            ordination(dm, method="invalid")

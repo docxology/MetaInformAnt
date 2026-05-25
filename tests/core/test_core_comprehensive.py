@@ -1,7 +1,7 @@
 """Comprehensive tests for core functionality modules.
 
 These tests expand coverage for core utilities that form the foundation
-of the METAINFORMANT toolkit. All tests follow the NO_MOCKING policy
+of the METAINFORMANT toolkit. All tests follow the real-implementation policy
 and use real implementations.
 """
 

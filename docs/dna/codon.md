@@ -10,7 +10,7 @@ flowchart LR
 
 Example
 
-```python
+```python-snippet
 from metainformant.dna import codon
 
 # Count codons in sequence

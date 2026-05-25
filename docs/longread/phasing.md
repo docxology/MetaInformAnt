@@ -28,7 +28,7 @@ With phased reads, allele-specific analyses quantify differences between the two
 
 ### phase_reads
 
-```python
+```python-snippet
 def phase_reads(
     alignments: list[Any],
     heterozygous_sites: list[dict],
@@ -40,7 +40,7 @@ Phase reads using heterozygous variant alleles. Input `heterozygous_sites` are d
 
 ### build_phase_blocks
 
-```python
+```python-snippet
 def build_phase_blocks(
     phased_data: dict[str, Any],
     min_block_size: int = 2,
@@ -51,7 +51,7 @@ Construct contiguous phase blocks from phased variant data. Returns a list of bl
 
 ### haplotag_reads
 
-```python
+```python-snippet
 def haplotag_reads(
     alignments: list[Any],
     phase_blocks: list[dict],
@@ -62,7 +62,7 @@ Assign haplotype tags to reads based on phase block information. Returns annotat
 
 ### compute_switch_errors
 
-```python
+```python-snippet
 def compute_switch_errors(
     inferred_phases: dict[str, Any],
     truth_phases: dict[str, Any],
@@ -73,7 +73,7 @@ Compute switch error rate by comparing inferred and truth haplotypes. Returns `s
 
 ### allele_specific_analysis
 
-```python
+```python-snippet
 def allele_specific_analysis(
     haplotagged_reads: list[dict],
     feature_data: dict[str, Any] | None = None,

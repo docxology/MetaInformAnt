@@ -33,7 +33,7 @@ The `GCF_` prefix denotes RefSeq (curated) assemblies, while `GCA_` denotes GenB
 Validates strictly against the NCBI assembly accession pattern (`GCF_` or `GCA_`
 prefix followed by at least 9 digits, with an optional version suffix).
 
-```python
+```python-snippet
 from metainformant.dna.genomes import is_valid_assembly_accession
 
 # Valid assembly accessions

@@ -138,7 +138,7 @@ deployer.delete_instance(instance.name)
 
 ### Reference Genome Indexing
 
-```python
+```python-snippet
 from metainformant.cloud.genome_prep import prepare_genome_index
 
 # Download and index genome (runs on cloud VM)

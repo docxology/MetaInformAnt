@@ -36,7 +36,7 @@ fig.savefig("manhattan.png", dpi=300, bbox_inches='tight')
 
 ## PCA Plot (Multi-omics)
 
-```python
+```python-snippet
 from metainformant.visualization import pca_plots
 
 # From expression matrix
@@ -47,7 +47,7 @@ fig.savefig("pca_by_tissue.png")
 
 ## Heatmap (DEGs)
 
-```python
+```python-snippet
 from metainformant.visualization import heatmaps
 
 deseq = pd.read_csv("deseq2_results.tsv", sep='	')
@@ -83,7 +83,7 @@ fig.savefig("phylogeny.pdf")
 
 ## Network Graph
 
-```python
+```python-snippet
 from metainformant.networks import graph, visualize
 
 ppi = graph.read_edgelist("string_ppi.tsv")
@@ -99,7 +99,7 @@ fig.savefig("ppi_network.png")
 ## Advanced Examples
 
 ### Circos plot for multi-omics integration
-```python
+```python-snippet
 from metainformant.visualization import circos
 
 fig = circos.genome_view(
@@ -132,7 +132,7 @@ dashboard.save("explorer.html")
 ```
 
 ### Animated trajectory plot (single-cell pseudotime)
-```python
+```python-snippet
 from metainformant.visualization import animation
 
 # Requires monotonic ordering of cells (e.g., from Slingshot/palantir)
@@ -149,7 +149,7 @@ fig.save("trajectory.mp4")
 ```
 
 ### 3D protein structure with PyMOL rendering
-```python
+```python-snippet
 from metainformant.protein import visualize as prot_viz
 
 # Load AlphaFold structure

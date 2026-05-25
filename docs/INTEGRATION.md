@@ -50,7 +50,7 @@ graph TD
 
 ## Minimal Example (Simple Pipeline)
 
-```python
+```python-snippet
 """
 Minimal DNA → GWAS → Visualization pipeline.
 Assumes VCF + phenotype CSV already prepared.
@@ -119,7 +119,7 @@ gwas.io.write_sumstats(results, "gwas_results.tsv", format="tsv")
 
 For a production-quality run with subsampling, caching, logging, and error recovery:
 
-```python
+```python-snippet
 """
 Production dna→gwas→visualization pipeline with:
   - Caching (expensive steps memoized via core.io.cache)
@@ -274,7 +274,7 @@ log.harmony("Pipeline complete — see figures/ directory for outputs")
 
 ### Pattern A: Variant-By-Name Pipeline
 
-```python
+```python-snippet
 # Often you need to go from VCF → GWAS → Plot in one continuous flow:
 from metainformant.dna.variants import parse_vcf, filter_maf, to_genotypes
 from metainformant.gwas.analysis import linear_regression
@@ -303,7 +303,7 @@ qq(results_df)
 
 Long GWAS runs can fail mid-way. Use checkpointing:
 
-```python
+```python-snippet
 from metainformant.core import checkpoint
 
 ckpt = checkpoint.load("gwas_ckpt.pkl", create=True)
@@ -332,7 +332,7 @@ if not ckpt.get("viz_completed"):
 
 Large biobank-scale VCFs (N > 500k variants) demand parallelism:
 
-```python
+```python-snippet
 # For chromosomes 1–22 in parallel (independent):
 from metainformant.core.parallel import map_over_chromosomes
 from metainformant.cloud import submit_batch
@@ -396,7 +396,7 @@ Result = GWASResult(...)
 
 ### Conversion Utilities
 
-```python
+```python-snippet
 # DNA module → GWAS module (variant ID normalization)
 clean_ids = dna.variants.normalize_variant_ids(
     raw_vcf_ids,
@@ -488,7 +488,7 @@ visualization.genomics.locuszoom(
 
 ### 3. PheWAS (Phenotype-Wide Association Scan)
 
-```python
+```python-snippet
 from metainformant.dna.variants import parse_vcf, dosage_matrix
 from metainformant.gwas.analysis import association_map
 from metainformant.visualization.genomics import heatmap_pvalues
@@ -518,7 +518,7 @@ visualization.genomics.phewas_heatmap(
 
 ### 4. Summary Statistics QC & Meta-Analysis
 
-```python
+```python-snippet
 from metainformant.gwas import data, analysis
 from metainformant.visualization.genomics import meta_forest
 
@@ -597,7 +597,7 @@ fig.save("figures/multi_trait_dashboard.png")
 
 ### Interactive LocusZoom (Plotly)
 
-```python
+```python-snippet
 from metainformant.visualization.interactive import genomics as vig
 
 # Generate standalone HTML file with tooltips & hover data

@@ -1,7 +1,7 @@
 """Tests for metagenomics amplicon submodule.
 
 Tests OTU clustering, ASV denoising, chimera detection, taxonomy classification.
-Uses real implementations -- NO mocking per project policy.
+Uses real implementations -- real-implementation policy.
 """
 
 from __future__ import annotations

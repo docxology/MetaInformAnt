@@ -1,7 +1,7 @@
 """Tests for single-cell preprocessing module.
 
 Real implementation testing for single-cell data loading, quality control,
-and preprocessing functions. No mocking used - all tests use real data
+and preprocessing functions. Real implementationing used - all tests use real data
 and computational methods.
 """
 

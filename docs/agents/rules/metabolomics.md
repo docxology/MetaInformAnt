@@ -67,7 +67,7 @@ config = apply_env_overrides(config, prefix="METAB")
 
 ## Testing
 
-- **NO MOCKING POLICY**: All tests use real data and implementations
+- **REAL IMPLEMENTATION POLICY**: All tests use real data and implementations
 - **Test files**: `tests/metabolomics/test_metabolomics_*.py`
 - Use `tmp_path` fixture for all test outputs
 - Skip gracefully when optional dependencies unavailable

@@ -204,9 +204,7 @@ def main():
 
     if not running:
         print("\n  ⚠  No active pipeline processes detected.")
-        print(
-            "  To restart:  uv run python scripts/rna/run_all_species.py"
-        )
+        print("  To restart:  uv run python scripts/rna/run_all_species.py")
     print()
 
     db.close()

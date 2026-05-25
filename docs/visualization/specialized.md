@@ -11,7 +11,7 @@ Specialized visualization includes advanced plotting types commonly used in syst
 ### Set Analysis
 
 #### Venn Diagrams
-```python
+```python-snippet
 from metainformant.visualization import specialized as spec_viz
 
 # Create Venn diagram for set intersections
@@ -125,7 +125,7 @@ ax = spec_viz.plot_circular_barplot(values, labels, figsize=(8, 8))
 ## Integration Examples
 
 ### With Multi-Omics Data
-```python
+```python-snippet
 from metainformant.multiomics import integration, visualization as multi_viz
 from metainformant.visualization import specialized as spec_viz
 
@@ -149,7 +149,7 @@ fig = spec_viz.plot_upset_plot(feature_sets)
 ```
 
 ### With GWAS Results
-```python
+```python-snippet
 from metainformant.gwas import visualization as gwas_viz
 from metainformant.visualization import specialized as spec_viz
 
@@ -168,7 +168,7 @@ fig = spec_viz.plot_sankey_diagram(workflow_flows)
 ```
 
 ### With Ontology Analysis
-```python
+```python-snippet
 from metainformant.ontology.core import go
 from metainformant.ontology.visualization import visualization as ont_viz
 from metainformant.visualization import specialized as spec_viz
@@ -237,7 +237,7 @@ radar_colors = plt.cm.tab10(np.linspace(0, 1, 10))  # Up to 10 series
 ## Examples
 
 ### Complete Specialized Visualization Workflow
-```python
+```python-snippet
 from metainformant.visualization import specialized as spec_viz
 import numpy as np
 import pandas as pd

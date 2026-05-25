@@ -4,7 +4,7 @@ Generate module-specific cursorrules files.
 
 This script automates the creation of .cursorrules files for each domain module
 in the MetaInformAnt repository, ensuring consistent application of:
-1. Zero Mock Policy
+1. Real Implementation Policy
 2. UV Package Management
 3. Output Isolation
 4. Domain-specific configuration
@@ -69,9 +69,9 @@ TEMPLATE = """# Cursor Rules for {module_name} Module ({prefix}_)
   config = load_domain_config("config/{module_name}/default.yaml", prefix="{prefix}")
   ```
 
-## 🧪 Testing (ZERO MOCK POLICY)
-- **STRICTLY NO MOCKS**: Use real implementations only.
-- **External Tools**: Skip if not found (don't mock).
+## 🧪 Testing (REAL IMPLEMENTATION POLICY)
+- **STRICTLY REAL IMPLEMENTATIONS**: Use real implementations only.
+- **External Tools**: Skip if not found (keep real external-tool behavior).
 - **Network**: Use real API calls with `@pytest.mark.network`.
 - **Output**: Write all test artifacts to `output/` via `tmp_path`.
 

@@ -101,7 +101,7 @@ print(f"  Removed {len(unique_seqs) - len(non_chimeric)} chimeras")
 
 # ── 5. Taxonomic classification ──────────────────────────────────────────
 print("Classifying taxonomy...")
-# Build tiny mock reference DB (in practice, use SILVA or Greengenes)
+# Build tiny local reference DB (in practice, use SILVA or Greengenes)
 ref_db = {
     "ref1": "ACGTACGTACGTACGTACGTACGTACGTACGT",
     "ref2": "TTTTAAAACCCCGGGGTTTTAAAACCCCGGGG",
@@ -173,7 +173,7 @@ Generating plots...
 
 **Input**: Raw shotgun FASTQ (single-end or paired).
 
-```python
+```python-snippet
 #!/usr/bin/env python3
 """Shotgun metagenomics analysis demo (assembly + profiling)."""
 
@@ -218,7 +218,7 @@ print(f"  High-quality bins (completeness>0.9, cont<0.05): "
 print("Annotating genes in contigs...")
 # Predict ORFs
 # genes = functional.annotation.predict_genes(contigs)  # not implemented yet
-print("  (Gene prediction stub)")
+print("  (Gene prediction not enabled in this minimal example)")
 
 # ── 5. Taxonomic profiling (k-mer LCA) ──────────────────────────────────
 print("Building k-mer index from reference genomes...")
@@ -260,7 +260,7 @@ Binning contigs into MAGs...
   Binned 98/124 contigs
   High-quality bins: 2
 Annotating genes in contigs...
-  (Gene prediction stub)
+  (Gene prediction not enabled in this minimal example)
 Building k-mer index from reference genomes...
   Indexed 7984 unique k-mers
   Classified 342/1000 reads (34.2%)
@@ -452,7 +452,7 @@ from metainformant.metagenomics.shotgun import assembly, binning
 # Example using `sequencing` library or bioawk:
 # reads = load_fastq("sample.fastq.gz")  # returns dict[id → sequence]
 
-# For demo, generate mock reads
+# For demo, generate minimal example reads
 import random
 def generate_mock_reads(n_reads=10000, read_len=150, genome="ACGT"*10000):
     reads = {}

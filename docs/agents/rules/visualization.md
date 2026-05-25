@@ -207,16 +207,16 @@ trees.visualize_tree(
 See Global Project Rules (root `.cursorrules`) for:
 - Common directory structure and path handling
 - Configuration patterns with env overrides
-- Testing policy (NO_MOCKING_POLICY)
+- Testing policy (real-implementation policy)
 - Import patterns and code style
 - Documentation guidelines
 
 ## Testing
 
-- **STRICTLY NO MOCKING**: Test real implementations only (see Global Project Rules (root `.cursorrules`) NO_MOCKING_POLICY)
+- **STRICTLY REAL IMPLEMENTATION**: Test real implementations only (see Global Project Rules (root `.cursorrules`) real-implementation policy)
 - Test that output files are created
 - Verify plot dimensions and format
 - Write test outputs to `output/visualization/test/` using `tmp_path` fixture
-- No mocks, fakes, or stubs - use real plotting operations
+- Real implementations only - use real plotting operations
 
 

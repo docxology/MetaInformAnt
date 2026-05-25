@@ -28,7 +28,7 @@ Measures pairwise interaction strength between features using H-statistic or sim
 
 ### compute_permutation_importance
 
-```python
+```python-snippet
 def compute_permutation_importance(
     model: Any,
     X: Any,
@@ -43,7 +43,7 @@ Compute permutation importance for all features. Returns a dictionary with `impo
 
 ### compute_shap_values_kernel
 
-```python
+```python-snippet
 def compute_shap_values_kernel(
     model: Any,
     X: Any,
@@ -56,7 +56,7 @@ Compute Kernel SHAP values for each sample and feature. Returns `shap_values` (m
 
 ### compute_lime_explanation
 
-```python
+```python-snippet
 def compute_lime_explanation(
     model: Any,
     X: Any,
@@ -70,7 +70,7 @@ Generate a LIME explanation for a single instance. Returns `feature_weights` (li
 
 ### partial_dependence
 
-```python
+```python-snippet
 def partial_dependence(
     model: Any,
     X: Any,
@@ -83,7 +83,7 @@ Compute partial dependence of a single feature. Returns `feature_values` (grid o
 
 ### feature_interaction
 
-```python
+```python-snippet
 def feature_interaction(
     model: Any,
     X: Any,
@@ -95,7 +95,7 @@ Measure pairwise feature interaction strength. Returns `interaction_scores` mapp
 
 ### compute_attention_weights
 
-```python
+```python-snippet
 def compute_attention_weights(
     model: Any,
     X: Any,
@@ -106,7 +106,7 @@ Extract or compute attention-like weights showing which features the model focus
 
 ### Feature Selection (interpretability-based)
 
-```python
+```python-snippet
 def boruta_selection(model, X, y, max_iter=100, random_state=None) -> dict
 def recursive_elimination(model, X, y, n_features=None, cv=5) -> dict
 def stability_selection(model, X, y, n_iterations=100, threshold=0.6) -> dict

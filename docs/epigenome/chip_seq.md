@@ -63,7 +63,7 @@ Discover enriched sequence motifs within peak regions using k-mer frequency anal
 
 ## Usage Examples
 
-```python
+```python-snippet
 from metainformant.epigenome import (
     ChIPPeak,
     load_peaks,

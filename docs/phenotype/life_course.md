@@ -57,7 +57,7 @@ seq.get_events_by_type("job_start")   # filter by type
 
 ### extract_phenotypes_from_events
 
-```python
+```python-snippet
 def extract_phenotypes_from_events(
     event_sequence: EventSequence,
     trait_mapping: Optional[Dict[str, List[str]]] = None,
@@ -70,7 +70,7 @@ mapping covers five domains; provide a custom mapping to override.
 
 ### aggregate_temporal_phenotypes
 
-```python
+```python-snippet
 def aggregate_temporal_phenotypes(
     sequences: List[EventSequence],
     time_windows: List[Tuple[float, float]],
@@ -84,7 +84,7 @@ distributions with most-common values.
 
 ### analyze_life_course_trajectories
 
-```python
+```python-snippet
 def analyze_life_course_trajectories(
     sequences: List[EventSequence],
     outcome_measures: Optional[List[str]] = None,
@@ -97,7 +97,7 @@ factors (high health events, job instability).
 
 ### identify_critical_periods
 
-```python
+```python-snippet
 def identify_critical_periods(
     sequences: List[EventSequence],
     age_ranges: List[Tuple[float, float]],
@@ -109,7 +109,7 @@ exceeding one standard deviation above the mean as high-significance clusters.
 
 ### predict_life_course_outcomes
 
-```python
+```python-snippet
 def predict_life_course_outcomes(
     sequences: List[EventSequence],
     prediction_horizon: float = 5.0,
@@ -122,7 +122,7 @@ confidence intervals.
 
 ### identify_trajectory_patterns
 
-```python
+```python-snippet
 def identify_trajectory_patterns(
     sequences: List[EventSequence],
 ) -> Dict[str, Any]
@@ -134,7 +134,7 @@ simple_low). Computes transition probability matrices between event types.
 
 ### analyze_life_course
 
-```python
+```python-snippet
 def analyze_life_course(
     sequences: List[EventSequence],
     outcomes: List[str] | None = None,
@@ -146,7 +146,7 @@ complexity metrics, outcome analysis, and trajectory pattern identification.
 
 ### create_life_course_report
 
-```python
+```python-snippet
 def create_life_course_report(
     sequences: List[EventSequence],
     output_path: Optional[str | Path] = None,

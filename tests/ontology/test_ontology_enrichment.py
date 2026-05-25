@@ -1,6 +1,6 @@
 """Tests for pathway enrichment: ORA, GSEA, enrichment scores, pathway networks.
 
-NO MOCKING POLICY: All tests use real implementations.
+REAL IMPLEMENTATION POLICY: All tests use real implementations.
 """
 
 from __future__ import annotations

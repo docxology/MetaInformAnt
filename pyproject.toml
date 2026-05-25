@@ -98,6 +98,11 @@ visualization = [
     "graphviz>=0.20.1",  # Network visualization
 ]
 
+# RNA workflow external tool integration
+rna = [
+    "amalgkit @ git+https://github.com/kfuku52/amalgkit",
+]
+
 # Development and testing
 dev = [
     "pytest>=8.0.0",
@@ -105,7 +110,6 @@ dev = [
     "pytest-xdist>=3.5.0",  # For parallel test execution
     "pytest-benchmark>=4.0.0",  # Performance benchmarking
     "pytest-asyncio>=0.23.0",  # Async test support
-    "pytest-mock>=3.12.0",  # Mock detection for NO_MOCKING_POLICY enforcement
     "pytest-repeat>=0.9.3",  # For flaky test detection
     "pytest-rerunfailures>=13.0",  # For retrying failed tests
     "pytest-clarity>=1.0.1",  # Better assertion output
@@ -181,7 +185,7 @@ all = [
 [project.scripts]
 metainformant = "metainformant.__main__:main"
 
-# Test configuration - STRICTLY NO MOCKING POLICY
+# Test configuration - STRICTLY REAL IMPLEMENTATION POLICY
 [tool.pytest.ini_options]
 minversion = "7.0"
 testpaths = ["tests"]
@@ -205,7 +209,7 @@ markers = [
     "network: marks tests requiring network access - REAL API CALLS ONLY",
     "external_tool: marks tests requiring external tools (muscle, amalgkit, etc.)",
     "integration: marks tests as integration tests with real implementations",
-    "no_mock: enforces that NO mocking/faking is allowed in any test",
+    "real_impl: enforces that tests exercise real implementations",
 ]
 filterwarnings = [
     "error",
@@ -214,8 +218,6 @@ filterwarnings = [
     "ignore::UserWarning",
     "ignore::RuntimeWarning",
     "ignore::ImportWarning:umap.*",  # Ignore umap tensorflow import warning
-    # Warn about any mock usage as it violates our policy
-    "error::pytest.PytestUnraisableExceptionWarning:.*mock.*",
 ]
 
 # Coverage configuration
@@ -382,7 +384,6 @@ test-all = [
     "pytest-xdist>=3.0.0",  # For parallel test execution
     "pytest-benchmark>=4.0.0",  # Performance benchmarking
     "pytest-asyncio>=0.21.0",  # Async test support
-    "pytest-mock>=3.11.0",  # Mock detection for NO_MOCKING_POLICY enforcement
     "pytest-repeat>=0.9.1",  # For flaky test detection
     "pytest-rerunfailures>=11.1.0",  # For retrying failed tests
     "pytest-clarity>=1.0.1",  # Better assertion output

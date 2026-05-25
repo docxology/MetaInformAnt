@@ -2,7 +2,7 @@
 
 Tests for global_align (Needleman-Wunsch) and local_align (Smith-Waterman)
 functions that were converted from placeholder implementations to real
-functional algorithms. Following NO_MOCKING policy - all tests use real implementations.
+functional algorithms. Following real-implementation policy - all tests use real implementations.
 """
 
 from __future__ import annotations

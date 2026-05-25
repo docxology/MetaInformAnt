@@ -1,7 +1,7 @@
 """Comprehensive tests for the phenotype module.
 
 Tests all submodules: behavior, chemical, electronic, morphological, sonic,
-analysis, workflow, and integration. No mocking — all real computations.
+analysis, workflow, and integration. Real implementationing — all real computations.
 """
 
 from __future__ import annotations

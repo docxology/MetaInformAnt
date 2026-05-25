@@ -411,7 +411,7 @@ When matrices are too large for RAM:
    ```
 
 3. **Dask arrays** (out-of-core, parallel):
-   ```python
+   ```python-snippet
    import dask.array as da
    X = da.from_array(intensities, chunks=(1000, 100))
    # Lazy computation; call .compute() when needed

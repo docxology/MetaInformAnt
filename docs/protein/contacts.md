@@ -28,7 +28,7 @@ phylogenetic comparison.
 
 ### calculate_residue_contacts
 
-```python
+```python-snippet
 def calculate_residue_contacts(
     coords: np.ndarray,
     residue_ranges: List[Tuple[int, int]],
@@ -42,7 +42,7 @@ each residue to its (start_atom, end_atom) index range. Returns an
 
 ### identify_hydrogen_bonds
 
-```python
+```python-snippet
 def identify_hydrogen_bonds(
     atoms: List[Dict[str, Any]],
     coords: np.ndarray,
@@ -57,7 +57,7 @@ Identifies potential hydrogen bonds between nitrogen (donor) and oxygen
 
 ### identify_salt_bridges
 
-```python
+```python-snippet
 def identify_salt_bridges(
     atoms: List[Dict[str, Any]],
     coords: np.ndarray,
@@ -71,7 +71,7 @@ residue identifiers and centre-of-charge distances.
 
 ### identify_hydrophobic_contacts
 
-```python
+```python-snippet
 def identify_hydrophobic_contacts(
     atoms: List[Dict[str, Any]],
     coords: np.ndarray,
@@ -84,7 +84,7 @@ PRO) based on sidechain carbon atom centres.
 
 ### identify_disulfide_bonds
 
-```python
+```python-snippet
 def identify_disulfide_bonds(
     atoms: List[Dict[str, Any]],
     coords: np.ndarray,
@@ -96,7 +96,7 @@ Identifies covalent S-S bonds between cysteine SG atoms.
 
 ### classify_contact_types
 
-```python
+```python-snippet
 def classify_contact_types(
     atoms: List[Dict[str, Any]],
     coords: np.ndarray,
@@ -109,7 +109,7 @@ keys: `residue_contacts`, `hydrogen_bonds`, `salt_bridges`,
 
 ### analyze_contact_network
 
-```python
+```python-snippet
 def analyze_contact_network(
     contact_map: np.ndarray,
 ) -> Dict[str, Any]
@@ -123,7 +123,7 @@ Graph analysis of the contact map. Returns:
 
 ### calculate_contact_persistence
 
-```python
+```python-snippet
 def calculate_contact_persistence(
     contact_maps: List[np.ndarray],
 ) -> np.ndarray
@@ -134,7 +134,7 @@ Useful for comparing homologous structures or MD trajectory snapshots.
 
 ### compute_ca_contact_pairs
 
-```python
+```python-snippet
 def compute_ca_contact_pairs(
     coords: list,
     threshold: float = 8.0,
@@ -145,7 +145,7 @@ Returns all (i, j) pairs (i < j) of C-alpha atoms within the distance
 threshold. Uses scipy `pdist` when available, falls back to numpy
 broadcasting.
 
-```python
+```pycon
 >>> coords = [(0.0, 0.0, 0.0), (3.0, 0.0, 0.0), (10.0, 0.0, 0.0)]
 >>> compute_ca_contact_pairs(coords, threshold=4.0)
 [(0, 1)]

@@ -33,6 +33,143 @@ LOG_DIR = PROJECT_ROOT / "output/amalgkit"
 logger = log_utils.get_logger(__name__)
 
 
+def _species_name_from_config(config_name: str) -> str:
+    """Derive the output species key from an amalgkit config filename."""
+    return config_name.replace("amalgkit_", "").replace(".yaml", "")
+
+
+def _species_work_dir(species_name: str) -> Path:
+    """Return the canonical streaming work directory for a species."""
+    return Path(f"output/amalgkit/{species_name}/work")
+
+
+def _resolve_metadata_path(work_dir: Path) -> Path:
+    """Prefer full metadata, then selected metadata, for orchestration steps."""
+    metadata_path = work_dir / "metadata/metadata.tsv"
+    if metadata_path.exists():
+        return metadata_path
+    return work_dir / "metadata/metadata_selected.tsv"
+
+
+def _filter_metadata_by_size(df: Any, max_gb: float) -> Any:
+    """Return metadata rows whose total_bases fit the per-sample size budget."""
+    import pandas as pd
+
+    filtered_df = df.copy()
+    filtered_df["total_bases"] = pd.to_numeric(filtered_df["total_bases"], errors="coerce").fillna(0)
+    max_bases = max_gb * 1e9
+    return filtered_df[filtered_df["total_bases"] <= max_bases].copy().sort_values("total_bases")
+
+
+def _sample_run_column(df: Any) -> str:
+    """Resolve the sample accession column used by amalgkit metadata."""
+    return "run" if "run" in df.columns else "run_accession"
+
+
+def _resolve_quant_metadata_path(work_dir: Path) -> Optional[str]:
+    """Find the metadata file consumed by amalgkit quant."""
+    for metadata_path in [work_dir / "metadata/metadata.tsv", work_dir / "metadata/metadata_selected.tsv"]:
+        if metadata_path.exists():
+            return str(metadata_path)
+    return None
+
+
+def _quant_index_candidates(cfg: Dict[str, Any], species_name: str) -> List[str]:
+    """Build candidate Kallisto index directories from current and legacy config shapes."""
+    quant_index_dir = cfg.get("steps", {}).get("quant", {}).get("index_dir", "")
+    genome_dest = cfg.get("genome", {}).get("dest_dir", "")
+    genome_index_dir = f"{genome_dest}/index" if genome_dest else ""
+    legacy_index_dir = cfg.get("genome", {}).get("index_dir", "")
+
+    candidates = [
+        quant_index_dir,
+        genome_index_dir,
+        legacy_index_dir,
+        f"output/amalgkit/{species_name}/work/index",
+        f"output/amalgkit/shared/genome/{species_name}/index",
+    ]
+    for species in cfg.get("species_list", []):
+        candidates.append(f"output/amalgkit/shared/genome/{species}/index")
+    return candidates
+
+
+def _resolve_index_dir(cfg: Dict[str, Any], species_name: str) -> str:
+    """Resolve the first existing index directory containing index files."""
+    explicit_index_dir = cfg.get("genome", {}).get("index_dir", "")
+    if explicit_index_dir and Path(explicit_index_dir).exists():
+        return explicit_index_dir
+
+    for candidate in _quant_index_candidates(cfg, species_name):
+        if candidate and Path(candidate).exists() and list(Path(candidate).glob("*.idx")):
+            return candidate
+    return ""
+
+
+def _build_quant_command(
+    cfg: Dict[str, Any],
+    species_name: str,
+    batch_index: int,
+    threads: int,
+    metadata_path: str,
+) -> List[str]:
+    """Build the amalgkit quant command for one streaming batch."""
+    quant_cfg = cfg.get("steps", {}).get("quant", {})
+    cmd = [
+        "amalgkit",
+        "quant",
+        "--out_dir",
+        f"output/amalgkit/{species_name}/work",
+        "--metadata",
+        metadata_path,
+        "--threads",
+        str(threads),
+        "--batch",
+        str(batch_index),
+    ]
+
+    keep_fastq = str(quant_cfg.get("keep_fastq", "yes")).lower()
+    cmd.extend(["--clean_fastq", "yes" if keep_fastq in ("no", "false") else "no"])
+
+    index_dir = _resolve_index_dir(cfg, species_name)
+    if index_dir:
+        cmd.extend(["--index_dir", index_dir])
+
+    return cmd
+
+
+def _build_sample_tasks(
+    filtered: Any, srr_col: str, fastq_dir: Path, config_path: Path, species_name: str
+) -> List[Dict[str, Any]]:
+    """Build task dictionaries from filtered metadata rows."""
+    tasks = []
+    for i, (_, row) in enumerate(filtered.iterrows()):
+        tasks.append(
+            {
+                "srr": row[srr_col],
+                "batch_idx": i + 1,
+                "fastq_dir": fastq_dir,
+                "config_path": config_path,
+                "species_name": species_name,
+            }
+        )
+    return tasks
+
+
+def _downstream_workflow_command(config_path: Path) -> List[str]:
+    """Return the downstream merge/curate/sanity command."""
+    return [
+        "python3",
+        "scripts/rna/run_workflow.py",
+        "--config",
+        str(config_path),
+        "--no-progress",
+        "--steps",
+        "merge",
+        "curate",
+        "sanity",
+    ]
+
+
 class StreamingPipelineOrchestrator:
     """Orchestrator for streaming ENA download -> Quant processing."""
 
@@ -199,62 +336,14 @@ class StreamingPipelineOrchestrator:
         with open(config_path) as f:
             cfg = yaml.safe_load(f)
 
-        steps_cfg = cfg.get("steps", {})
-        quant_cfg = steps_cfg.get("quant", {})
-        # Always use the work dir for quant output so results land in the expected location
-        quant_out = f"output/amalgkit/{species_name}/work"
-
-        # Determine metadata path
-        work_dir = Path(f"output/amalgkit/{species_name}/work")
-        meta_path = None
-        for mp in [work_dir / "metadata/metadata.tsv", work_dir / "metadata/metadata_selected.tsv"]:
-            if mp.exists():
-                meta_path = str(mp)
-                break
+        work_dir = _species_work_dir(species_name)
+        meta_path = _resolve_quant_metadata_path(work_dir)
 
         if not meta_path:
             logger.error(f"No metadata found for {species_name} batch {batch_index}")
             return False, f"No metadata found for {species_name}"
 
-        # Build command
-        cmd = [
-            "amalgkit",
-            "quant",
-            "--out_dir",
-            quant_out,
-            "--metadata",
-            meta_path,
-            "--threads",
-            str(threads),
-            "--batch",
-            str(batch_index),
-        ]
-
-        # Handle cleanup settings
-        keep_fastq = str(quant_cfg.get("keep_fastq", "yes")).lower()
-        if keep_fastq in ("no", "false"):
-            cmd.extend(["--clean_fastq", "yes"])
-        else:
-            cmd.extend(["--clean_fastq", "no"])
-
-        # Add genome/index paths
-        genome_cfg = cfg.get("genome", {})
-        index_dir = genome_cfg.get("index_dir", "")
-        if not index_dir or not Path(index_dir).exists():
-            # Fallback: check shared genome paths (config name, then species_list names)
-            candidates = [
-                f"output/amalgkit/{species_name}/work/index",
-                f"output/amalgkit/shared/genome/{species_name}/index",
-            ]
-            for sp in cfg.get("species_list", []):
-                candidates.append(f"output/amalgkit/shared/genome/{sp}/index")
-            for candidate in candidates:
-                if Path(candidate).exists() and list(Path(candidate).glob("*.idx")):
-                    index_dir = candidate
-                    logger.info(f"Using fallback index_dir: {index_dir}")
-                    break
-        if index_dir and Path(index_dir).exists():
-            cmd.extend(["--index_dir", index_dir])
+        cmd = _build_quant_command(cfg, species_name, batch_index, threads, meta_path)
 
         log_path = self.log_dir / f"{species_name}_quant.log"
 
@@ -363,30 +452,8 @@ class StreamingPipelineOrchestrator:
             logger.error(f"Failed to load config {config_path}: {e}")
             return False
 
-        # Check multiple possible index locations
-        # 1. From quant config (has the correct capitalized path)
-        quant_index_dir = cfg.get("steps", {}).get("quant", {}).get("index_dir", "")
-        # 2. From genome config dest_dir + /index
-        genome_dest = cfg.get("genome", {}).get("dest_dir", "")
-        genome_index_dir = f"{genome_dest}/index" if genome_dest else ""
-        # 3. Legacy genome.index_dir
-        legacy_index_dir = cfg.get("genome", {}).get("index_dir", "")
-
-        search_dirs = [
-            quant_index_dir,
-            genome_index_dir,
-            legacy_index_dir,
-            f"output/amalgkit/{species_name}/work/index",
-            f"output/amalgkit/shared/genome/{species_name}/index",
-        ]
-
-        # Also check shared paths using species_list names (may differ from config name)
-        # e.g., config name "amellifera" → species_list "Apis_mellifera"
-        for sp in cfg.get("species_list", []):
-            search_dirs.append(f"output/amalgkit/shared/genome/{sp}/index")
-
         logger.info(f"Verifying index for {species_name}...")
-        for d in search_dirs:
+        for d in _quant_index_candidates(cfg, species_name):
             if not d:
                 continue
 
@@ -465,14 +532,12 @@ class StreamingPipelineOrchestrator:
             logger.error(f"Config not found: {config_path}")
             return False
 
-        species_name = config_name.replace("amalgkit_", "").replace(".yaml", "")
+        species_name = _species_name_from_config(config_name)
         logger.info(f"=== Processing {species_name} ===")
 
         # Autonomous Preprocessing Detection
-        work_dir = Path(f"output/amalgkit/{species_name}/work")
-        metadata_path = work_dir / "metadata/metadata.tsv"
-        if not metadata_path.exists():
-            metadata_path = work_dir / "metadata/metadata_selected.tsv"
+        work_dir = _species_work_dir(species_name)
+        metadata_path = _resolve_metadata_path(work_dir)
 
         needs_prep = False
         if not metadata_path.exists():
@@ -531,9 +596,7 @@ class StreamingPipelineOrchestrator:
                 logger.error(f"Genome index still missing for {species_name} after successful prep spawn.")
                 return False
 
-            metadata_path = work_dir / "metadata/metadata.tsv"
-            if not metadata_path.exists():
-                metadata_path = work_dir / "metadata/metadata_selected.tsv"
+            metadata_path = _resolve_metadata_path(work_dir)
 
             if not metadata_path.exists():
                 logger.error(f"No metadata generated for {species_name} after successful prep spawn.")
@@ -547,14 +610,7 @@ class StreamingPipelineOrchestrator:
 
         df = pd.read_csv(metadata_path, sep="\t")
 
-        # Filter logic (simplified from run_all_species.py)
-        # Ensure total_bases is numeric
-        df["total_bases"] = pd.to_numeric(df["total_bases"], errors="coerce").fillna(0)
-
-        # Filter by size
-        max_bases = max_gb * 1e9
-        filtered = df[df["total_bases"] <= max_bases].copy()
-        filtered = filtered.sort_values("total_bases")
+        filtered = _filter_metadata_by_size(df, max_gb)
 
         logger.info(f"Samples: {len(df)} total -> {len(filtered)} filtered (<= {max_gb} GB)")
 
@@ -563,7 +619,7 @@ class StreamingPipelineOrchestrator:
             return []
 
         # Register samples in progress DB and reconcile existing results
-        srr_col = "run" if "run" in filtered.columns else "run_accession"
+        srr_col = _sample_run_column(filtered)
         all_srr_ids = filtered[srr_col].tolist()
         self.db.init_species(species_name, all_srr_ids)
 
@@ -578,24 +634,12 @@ class StreamingPipelineOrchestrator:
         # Write sorted metadata for batch processing
         filtered.to_csv(metadata_path, sep="\t", index=False)
 
-        fastq_dir = Path(f"output/amalgkit/{species_name}/work/getfastq")
-
-        tasks = []
-        for i, (_, row) in enumerate(filtered.iterrows()):
-            srr = row[srr_col]
-            batch_idx = i + 1
-            # Check DB to skip appending fully quantified tasks
-            if self.is_quantified(species_name, srr):
-                continue
-            tasks.append(
-                {
-                    "srr": srr,
-                    "batch_idx": batch_idx,
-                    "fastq_dir": fastq_dir,
-                    "config_path": config_path,
-                    "species_name": species_name,
-                }
-            )
+        fastq_dir = work_dir / "getfastq"
+        tasks = [
+            task
+            for task in _build_sample_tasks(filtered, srr_col, fastq_dir, config_path, species_name)
+            if not self.is_quantified(species_name, task["srr"])
+        ]
 
         return tasks
 
@@ -664,7 +708,7 @@ class StreamingPipelineOrchestrator:
         # We run downstream steps for ALL species in the list, just to be safe, because
         # previous runs might have quantified samples but crashed before downstream.
         for config_name in species_list:
-            species_name = config_name.replace("amalgkit_", "").replace(".yaml", "")
+            species_name = _species_name_from_config(config_name)
             try:
                 # Check DB to see if we have ANY quantified samples for this species
                 counts = self.db.get_counts(species_name)
@@ -677,17 +721,7 @@ class StreamingPipelineOrchestrator:
 
                     try:
                         with open(workflow_log, "w") as f:
-                            cmd = [
-                                "python3",
-                                "scripts/rna/run_workflow.py",
-                                "--config",
-                                str(config_path),
-                                "--no-progress",
-                                "--steps",
-                                "merge",
-                                "curate",
-                                "sanity",
-                            ]
+                            cmd = _downstream_workflow_command(config_path)
 
                             result = subprocess.run(
                                 cmd,

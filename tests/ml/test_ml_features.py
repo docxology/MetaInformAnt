@@ -1,7 +1,7 @@
 """Tests for machine learning feature selection functionality.
 
 Real implementation testing for biological feature selection methods.
-No mocking used - all tests use real computational methods and data.
+Real implementationing used - all tests use real computational methods and data.
 """
 
 from __future__ import annotations

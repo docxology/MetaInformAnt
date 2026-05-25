@@ -15,7 +15,7 @@ Covers:
     - taylors_power_law (variance-mean scaling)
     - All visualization plot_* functions (Agg backend)
 
-Uses real implementations only (NO mocking per project policy).
+Uses real implementations only (real-implementation policy).
 """
 
 from __future__ import annotations

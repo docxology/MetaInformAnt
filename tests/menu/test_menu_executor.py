@@ -130,31 +130,31 @@ class TestPromptForArgs:
     """Tests for argument prompting.
 
     Note: Interactive input tests are skipped as they require
-    input mocking/stubbing, which violates the NO_MOCKING_POLICY.
+    input stdin/stdout replacement, which violates the real-implementation policy.
     The prompt_for_args function is tested through integration tests
     with real user input in actual menu scenarios.
     """
 
-    @pytest.mark.skip("NO_MOCKING_POLICY: Interactive input tests require mocking")
+    @pytest.mark.skip("real-implementation policy: Interactive input tests require stdin replacement")
     def test_prompt_for_args_no_args(self) -> None:
         """Test prompting when script has no arguments."""
-        # This test would require mocking builtin input
+        # This test would require stdin replacement builtin input
         pass
 
-    @pytest.mark.skip("NO_MOCKING_POLICY: Interactive input tests require mocking")
+    @pytest.mark.skip("real-implementation policy: Interactive input tests require stdin replacement")
     def test_prompt_for_args_required(self) -> None:
         """Test prompting for required arguments."""
-        # This test would require mocking builtin input
+        # This test would require stdin replacement builtin input
         pass
 
-    @pytest.mark.skip("NO_MOCKING_POLICY: Interactive input tests require mocking")
+    @pytest.mark.skip("real-implementation policy: Interactive input tests require stdin replacement")
     def test_prompt_for_args_optional(self) -> None:
         """Test prompting for optional arguments."""
-        # This test would require mocking builtin input
+        # This test would require stdin replacement builtin input
         pass
 
-    @pytest.mark.skip("NO_MOCKING_POLICY: Interactive input tests require mocking")
+    @pytest.mark.skip("real-implementation policy: Interactive input tests require stdin replacement")
     def test_prompt_for_args_mixed(self) -> None:
         """Test prompting for both required and optional arguments."""
-        # This test would require mocking builtin input
+        # This test would require stdin replacement builtin input
         pass

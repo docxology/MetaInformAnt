@@ -11,7 +11,7 @@ from metainformant.core.ui.tui import BLUE, GREEN, YELLOW, TerminalInterface
 def test_tui():
     ui = TerminalInterface()
 
-    # Add fake tasks
+    # Add deterministic demonstration tasks
     ui.add_bar("task1", "SRR12345678", 100)
     ui.add_bar("task2", "SRR87654321", 100)
     ui.add_bar("task3", "SRR00000000", 100)

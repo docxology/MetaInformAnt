@@ -24,7 +24,7 @@ Calculate effective population size under exponential growth.
 **Formula**: Under exponential growth N(t) = N₀ × e^(r×t), the effective size is the harmonic mean: Ne = t / Σ(1/N_i)
 
 **Example**:
-```python
+```python-snippet
 from metainformant.math.demography import exponential_growth_effective_size
 
 # Population growing from ~1000 to 10000 over 10 generations
@@ -49,7 +49,7 @@ Calculate effective population size through a bottleneck.
 **Returns**: Effective population size (harmonic mean)
 
 **Example**:
-```python
+```python-snippet
 from metainformant.math.demography import bottleneck_effective_size
 
 # Severe bottleneck: 10000 → 100 for 5 generations
@@ -82,7 +82,7 @@ Calculate effective population size for two-epoch model.
 **Returns**: Effective population size (harmonic mean)
 
 **Example**:
-```python
+```python-snippet
 from metainformant.math.demography import two_epoch_effective_size
 
 # Population expansion: 1000 → 10000, 50 generations ago
@@ -100,7 +100,7 @@ ne = two_epoch_effective_size(
 
 Effective population size affects genetic diversity:
 
-```python
+```python-snippet
 from metainformant.math.demography import exponential_growth_effective_size
 from metainformant.dna.population import nucleotide_diversity
 
@@ -123,7 +123,7 @@ ne = exponential_growth_effective_size(
 
 Combine multiple demographic events:
 
-```python
+```python-snippet
 from metainformant.math.demography import (
     bottleneck_effective_size,
     exponential_growth_effective_size,
@@ -152,7 +152,7 @@ ne_growth = exponential_growth_effective_size(
 
 Compare different demographic scenarios:
 
-```python
+```python-snippet
 from metainformant.math.demography import (
     exponential_growth_effective_size,
     two_epoch_effective_size,
@@ -206,7 +206,7 @@ Bottlenecks dramatically reduce effective population size because:
 
 ### With Coalescent Theory
 
-```python
+```python-snippet
 from metainformant.math.demography import exponential_growth_effective_size
 from metainformant.math.population_genetics.coalescent import expected_segregating_sites
 
@@ -222,7 +222,7 @@ S_expected = expected_segregating_sites(
 
 ### With Effective Size Estimators
 
-```python
+```python-snippet
 from metainformant.math.demography import bottleneck_effective_size
 from metainformant.math.popgen import effective_population_size_from_heterozygosity
 

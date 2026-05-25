@@ -2,7 +2,7 @@
 
 Tests cover all 12 public functions in ``metainformant.dna.sequence.kmer``
 with normal cases, edge cases (empty sequence, k > length, single base),
-and mathematically verified expected values.  NO mocking -- real
+and mathematically verified expected values.  real-implementation policy -- real
 implementations only.
 """
 

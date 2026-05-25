@@ -1,7 +1,7 @@
 """Comprehensive tests for the ecology module.
 
 Tests all analysis submodules: community, ordination, indicators, functional, macroecology.
-Uses real data only (NO mocking per project policy).
+Uses real data only (real-implementation policy).
 """
 
 from __future__ import annotations

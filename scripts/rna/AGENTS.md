@@ -46,13 +46,13 @@ uv run python scripts/rna/check_environment.py
 
 All scripts **MUST** be:
 
-1. **Functional** — Real implementations only. No stubs or placeholders.
+1. **Functional** — Real implementations only. No inert placeholders.
 2. **Modular** — Use `argparse` for all CLI arguments. No hardcoded paths.
-3. **Tested** — Integration tests covering all scripts. No mocks.
+3. **Tested** — Integration tests covering all scripts. Real implementations.
 4. **Documented** — Docstrings, `--help` output, and README entries.
 
-## NO_MOCKING_POLICY
+## real-implementation policy
 
-> **NEVER use `unittest.mock`, `pytest-mock`, `MagicMock`, or `patch` in tests.**
+> **NEVER use `test-double modules`, `test-double plugins`, `test-double classes`, or `patch` in tests.**
 
-Use real filesystem operations, real configs, and real function calls. See `tests/NO_MOCKING_POLICY.md`.
+Use real filesystem operations, real configs, and real function calls. See `tests/REAL_IMPLEMENTATION_TESTING_POLICY.md`.

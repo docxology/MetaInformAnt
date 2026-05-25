@@ -1,7 +1,7 @@
 """Tests for longread quality summary functions and QCReport not covered by test_longread.py.
 
 Tests generate_qc_summary, QCReport dataclass, and related reporting functions.
-All tests use real implementations -- NO MOCKING.
+All tests use real implementations -- REAL IMPLEMENTATION.
 """
 
 from __future__ import annotations

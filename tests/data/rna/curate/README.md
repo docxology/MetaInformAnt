@@ -1,7 +1,7 @@
 # CURATE
 
 ## Overview
-Test fixture data for Curate coverage. Keep fixtures small, deterministic, and compatible with the no-mocking test policy.
+Test fixture data for Curate coverage. Keep fixtures small, deterministic, and compatible with the real-implementation test policy.
 
 ## Contents
 - [Apis_mellifera/](Apis_mellifera/)

@@ -1,6 +1,6 @@
 """Tests for spatial deconvolution: NNLS, cell fractions, enrichment, deconvolve_spots.
 
-NO MOCKING POLICY: All tests use real implementations.
+REAL IMPLEMENTATION POLICY: All tests use real implementations.
 """
 
 from __future__ import annotations

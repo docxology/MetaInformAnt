@@ -35,7 +35,7 @@ Practical, end-to-end analysis scenarios demonstrating the full capabilities of 
 
 **Code:**
 
-```python
+```python-snippet
 import pysam
 import numpy as np
 from metainformant.structural_variants.detection.cnv import detect_cnv_from_depth
@@ -103,7 +103,7 @@ Detected 47 CNV segments
 
 **Code:**
 
-```python
+```python-snippet
 import pysam
 from metainformant.structural_variants.detection.sv_calling import (
     call_structural_variants,
@@ -217,7 +217,7 @@ io.dump_json([{
 
 **Approach:** Compute log2(tumor/normal) depth ratios with GC correction.
 
-```python
+```python-snippet
 import pysam
 import numpy as np
 from metainformant.structural_variants.detection.cnv import (
@@ -316,7 +316,7 @@ print(f"\nSomatic CNV calls: {len(somatic_cnvs)}")
 
 **Input:** Three VCF files (or JSON after parsing).
 
-```python
+```python-snippet
 import pysam
 from metainformant.structural_variants.filtering.merge import merge_callsets
 from metainformant.core import io
@@ -534,7 +534,7 @@ filtered, _ = filter_by_frequency(
 
 **Input:** SV calls + CNV segments.
 
-```python
+```python-snippet
 from metainformant.structural_variants.visualization.plots import (
     plot_circos,
     plot_coverage_track,
@@ -749,7 +749,7 @@ io.dump_json([{
 
 **Strategy:** Chromosome-wise parallelization + per-sample parallelization.
 
-```python
+```python-snippet
 from metainformant import parallel, config
 from metainformant.structural_variants import detection, annotation, filtering
 from pathlib import Path
@@ -834,7 +834,7 @@ logging.info("\n".join(summary))
 
 **Goal:** Use `metainformant.dna` gene and transcript models to compute precise variant effects (exon deletion, fusion).
 
-```python
+```python-snippet
 from metainformant.dna import variants as dna_variants
 from metainformant.structural_variants.annotation.overlap import annotate_gene_overlap
 from metainformant.structural_variants.annotation.functional_impact import predict_functional_impact
@@ -973,7 +973,7 @@ for sv in intragenic:
 
 **VCF Export:**
 
-```python
+```python-snippet
 from metainformant.structural_variants.io import write_vcf
 
 # From list of StructuralVariant objects

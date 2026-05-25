@@ -149,7 +149,7 @@ Raw reads (Illumina, PacBio, ONT)
 
 **`assemble_contigs()`** in `shotgun/assembly.py`:
 
-- **Algorithm**: De Bruijn graph (not full implementation; currently stub with placeholder)
+- **Algorithm**: De Bruijn graph (not full production assembler; currently a limited graph implementation)
 - **k-mer sizes**: Multiple k values (21, 33, 55 by default) to balance contiguity and repeat resolution
 - **Node**: (k-1)-mer, **Edge**: k-mer
 - **Tip removal**: Low-coverage tips (likely errors) are trimmed
@@ -594,7 +594,7 @@ krona = meta_viz.krona_chart(taxonomic_abundances)
 
 **Synergy**: `metagenomics.diversity` and `ecology` both implement diversity indices; `ecology` focuses on theoretical derivations and rare-event statistics.
 
-```python
+```python-snippet
 # ecology module provides more mathematically detailed implementations
 from metainformant.ecology import metrics as eco_metrics
 
@@ -613,7 +613,7 @@ rarefaction_approx = diversity.rarefaction_curve(abundances)
 
 Post-binning: Build co-occurrence networks between MAGs or taxa.
 
-```python
+```python-snippet
 from metainformant.networks import construction as net
 
 # Correlation-based network from normalized abundances

@@ -2,7 +2,7 @@
 
 Tests for manhattan_plot, qq_plot, pca_plot, kinship_heatmap functions that
 were converted from placeholder implementations to real matplotlib plotting.
-Following NO_MOCKING policy - all tests use real implementations.
+Following real-implementation policy - all tests use real implementations.
 """
 
 from __future__ import annotations
@@ -181,7 +181,7 @@ class TestPCAPlot:
     @pytest.mark.skipif(not HAS_NUMPY, reason="numpy not available")
     def test_pca_plot_returns_figure(self):
         """Test that pca_plot returns a real matplotlib Figure."""
-        # Create mock PCA data
+        # Create example PCA data
         components = [np.random.randn(20) for _ in range(3)]
         variance = np.random.rand(3)
         loadings = np.random.randn(3, 20)

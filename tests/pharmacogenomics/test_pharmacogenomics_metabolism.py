@@ -4,7 +4,7 @@ Tests metabolizer classification from activity scores, activity score computatio
 from diplotype strings, the built-in allele function table, dose adjustment
 recommendations, and the predict_metabolizer alias.
 
-NO MOCKING -- all tests use real implementations.
+REAL IMPLEMENTATION -- all tests use real implementations.
 """
 
 from __future__ import annotations

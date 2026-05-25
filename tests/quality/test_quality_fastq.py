@@ -1,7 +1,7 @@
 """Tests for FASTQ quality control module.
 
 Real implementation testing for FASTQ quality assessment functions.
-No mocking used - all tests use real data and computational methods.
+Real implementationing used - all tests use real data and computational methods.
 """
 
 from __future__ import annotations

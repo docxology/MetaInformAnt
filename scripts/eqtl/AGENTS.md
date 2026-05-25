@@ -10,5 +10,5 @@ Thin orchestrator scripts for eQTL integration pipelines.
 
 ## Rules
 - Scripts are thin wrappers that call `metainformant.gwas.finemapping.eqtl` library code
-- Follow NO MOCKING policy
+- Follow REAL IMPLEMENTATION policy
 - Use `uv` for Python dependencies

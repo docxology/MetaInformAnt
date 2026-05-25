@@ -1,8 +1,8 @@
 """
-test_pipeline.py — End-to-end pipeline tests (Zero-Mock policy).
+test_pipeline.py — End-to-end pipeline tests (Real-Implementation policy).
 
 All tests exercise real code against synthetic data generated from
-the scripts themselves.  No mocking, no patching.
+the scripts themselves.  Real implementationing, no patching.
 """
 
 import subprocess

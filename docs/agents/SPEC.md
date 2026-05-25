@@ -35,7 +35,7 @@ This specification describes the agent coordination documentation hub — the au
 
 ### Core Types (referenced by docs)
 
-```python
+```python-snippet
 from metainformant.core.engine.workflow_manager import (
     BasePipelineManager,
     PipelinePhase,
@@ -93,7 +93,7 @@ Stage.PENDING → Stage.RUNNING → Stage.DONE | Stage.FAILED
 
 - `tests/core/test_core_pipeline.py` — BasePipelineManager unit tests
 - `tests/core/test_core_parallel.py` — Parallel execution tests
-- `tests/NO_MOCKING_POLICY.md` — Zero mock policy enforced
+- `tests/REAL_IMPLEMENTATION_TESTING_POLICY.md` — Real implementation policy enforced
 
 ## Interface (for Writers)
 
@@ -125,7 +125,7 @@ External cross-module links:
 
 ## Testing Policy
 
-- **Zero Mock**: All examples and doctests must use real implementations (see `tests/NO_MOCKING_POLICY.md`)
+- **Real Implementation**: All examples and doctests must use real implementations (see `tests/REAL_IMPLEMENTATION_TESTING_POLICY.md`)
 - **Runnable code**: Example snippets must be executable as-is
 - **Type-checked**: All code snippets follow project's type hint conventions
 

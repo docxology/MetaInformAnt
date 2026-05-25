@@ -8,7 +8,7 @@ The FASTQ quality analysis module provides quality assessment for high-throughpu
 
 Perform comprehensive quality analysis on FASTQ files:
 
-```python
+```python-snippet
 from metainformant.quality.fastq import analyze_fastq_quality
 
 # Basic analysis
@@ -42,7 +42,7 @@ print(f"Mean quality: {results['basic_stats']['mean_quality']:.2f}")
 
 ### Basic Statistics
 
-```python
+```python-snippet
 from metainformant.quality.fastq import basic_statistics
 
 # Get basic statistics
@@ -67,7 +67,7 @@ print(stats)
 
 ### Per-Base Quality Scores
 
-```python
+```python-snippet
 from metainformant.quality.fastq import per_base_quality
 
 # Analyze quality scores by position
@@ -79,7 +79,7 @@ print(f"Quality data shape: {quality_data.shape}")  # (sequence_length, 6)
 
 ### Per-Sequence Quality Scores
 
-```python
+```python-snippet
 from metainformant.quality.fastq import per_sequence_quality
 
 # Quality score distribution across sequences
@@ -91,7 +91,7 @@ print(f"Quality bins: {len(seq_quality)}")
 
 ### Sequence Length Distribution
 
-```python
+```python-snippet
 from metainformant.quality.fastq import sequence_length_distribution
 
 # Distribution of sequence lengths
@@ -103,7 +103,7 @@ print(f"Length range: {min(length_dist.keys())} - {max(length_dist.keys())}")
 
 ### GC Content Distribution
 
-```python
+```python-snippet
 from metainformant.quality.fastq import gc_content_distribution
 
 # GC content distribution across sequences
@@ -115,7 +115,7 @@ print(f"GC content range: 0-100%")
 
 ### Adapter Content Analysis
 
-```python
+```python-snippet
 from metainformant.quality.fastq import adapter_content
 
 # Detect adapter contamination
@@ -139,7 +139,7 @@ for position, adapters in adapter_data['position_data'].items():
 
 ### Overrepresented Sequences
 
-```python
+```python-snippet
 from metainformant.quality.fastq import overrepresented_sequences
 
 # Find highly abundant sequences
@@ -159,7 +159,7 @@ for seq_info in overrep:
 
 ### Duplication Levels
 
-```python
+```python-snippet
 from metainformant.quality.fastq import duplication_levels
 
 # Assess sequence duplication
@@ -176,7 +176,7 @@ for level, percentage in dup_data['duplication_levels'].items():
 
 ### N Content per Position
 
-```python
+```python-snippet
 from metainformant.quality.fastq import n_content_per_position
 
 # Analyze N content across sequence positions
@@ -193,7 +193,7 @@ for position, n_pct in n_content.items():
 
 ### Quality Score Distribution
 
-```python
+```python-snippet
 from metainformant.quality.fastq import quality_score_distribution
 
 # Overall quality score distribution
@@ -311,7 +311,7 @@ interpret_quality_scores(results)
 
 ### GC Content Assessment
 
-```python
+```python-snippet
 def assess_gc_content(results, expected_gc=None):
     """Assess GC content against expected values."""
     
@@ -579,7 +579,7 @@ def process_chunk(sequences, qualities, per_base_acc, length_acc):
 
 ### Pipeline Integration
 
-```python
+```python-snippet
 def qc_guided_preprocessing(fastq_file, output_dir="output/processed"):
     """Use QC results to guide preprocessing parameters."""
     

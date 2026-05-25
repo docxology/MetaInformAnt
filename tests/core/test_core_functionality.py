@@ -1,7 +1,7 @@
 """Test core functionality that doesn't require external dependencies.
 
 Comprehensive tests for basic functions that should work without scipy, sklearn, etc.
-Following the no-mocking policy - all tests use real implementations.
+Following the real-implementation policy - all tests use real implementations.
 """
 
 from __future__ import annotations

@@ -1,6 +1,6 @@
 """Tests for spatial neighborhood analysis: enrichment, interaction, L-R, niches, Ripley K.
 
-NO MOCKING POLICY: All tests use real implementations.
+REAL IMPLEMENTATION POLICY: All tests use real implementations.
 """
 
 from __future__ import annotations

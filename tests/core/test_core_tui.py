@@ -3,7 +3,7 @@
 Covers TerminalInterface lifecycle, bar management, ProgressState,
 terminal state helpers, thread safety, _format_elapsed, and set_footer.
 
-NO MOCKING: all tests exercise real implementations. Rendering tests
+REAL IMPLEMENTATION: all tests exercise real implementations. Rendering tests
 redirect or inspect internal state rather than writing to the real stdout.
 """
 
@@ -13,8 +13,6 @@ import io
 import sys
 import threading
 import time
-
-import pytest
 
 from metainformant.core.ui.tui import (
     BLUE,
@@ -282,11 +280,15 @@ class TestTerminalState:
         result = TerminalInterface._is_tty()
         assert isinstance(result, bool)
 
-    def test_is_tty_false_for_stringio(self, monkeypatch: pytest.MonkeyPatch) -> None:
+    def test_is_tty_false_for_stringio(self) -> None:
         """When stdout is a StringIO (not a tty), _is_tty() returns False."""
-        fake_stdout = io.StringIO()
-        monkeypatch.setattr(sys, "stdout", fake_stdout)
-        assert TerminalInterface._is_tty() is False
+        string_stdout = io.StringIO()
+        original_stdout = sys.stdout
+        sys.stdout = string_stdout
+        try:
+            assert TerminalInterface._is_tty() is False
+        finally:
+            sys.stdout = original_stdout
 
     def test_get_terminal_width_returns_positive_int(self) -> None:
         """_get_terminal_width() returns a positive integer."""

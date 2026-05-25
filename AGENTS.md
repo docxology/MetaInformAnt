@@ -18,7 +18,7 @@ Use the nearest nested `AGENTS.md` for folder-specific rules. Important entry po
 
 - Use `uv` for dependency management and command execution.
 - Keep runtime outputs under `output/` or a documented temporary/cache directory.
-- Follow the no-mocking testing policy: exercise real implementations with small deterministic data.
+- Follow the real-implementation testing policy: exercise real implementations with small deterministic data.
 - Prefer absolute imports from `metainformant` inside package code.
 - Keep public APIs synchronized with `README.md`, domain docs, and `SPEC.md` files when behavior changes.
 

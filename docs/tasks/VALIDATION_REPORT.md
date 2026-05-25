@@ -376,7 +376,7 @@ Illustrative; not cross-checked against actual runs.
 #### Single-Species Quick Run (Step 1)
 
 ```bash
-bash scripts/rna/install_amalgkit.sh
+uv pip install git+https://github.com/kfuku52/amalgkit
 ```
 **Status:** ❌ **MISSING SCRIPT** — File does not exist. Only `install_r_packages.sh` and `install_r_deps.R` present. Amalgkit itself is a separate external tool; the script to install it is not in repo.
 

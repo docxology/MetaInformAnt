@@ -1,20 +1,20 @@
-# METAINFORMANT No-Mocking Policy
+# METAINFORMANT Real-Implementation Policy
 
-## Absolute Prohibition on Mocks, Fakes, Placeholders, and Stubs
+## Source And Test Code Must Do Real Work
 
-**METAINFORMANT enforces a STRICT NO MOCKING policy across all source code and tests.**
+**METAINFORMANT requires real implementations across all source code and tests.**
 
 This policy goes beyond traditional testing practices and applies to **all production code**, ensuring that every function performs real, meaningful computations or makes genuine external API calls.
 
-### Why No Mocking in Source Code?
+### Why Real Implementations?
 
-Based on industry best practices and research showing that mocking/placeholders are anti-patterns:
+Based on industry best practices and research software experience:
 
-1. **Source Code Integrity**: Mocked functions in production code provide no real functionality
-2. **False Confidence**: Placeholder implementations hide the fact that features don't work
-3. **Maintenance Burden**: Placeholder code requires eventual replacement with real implementations
-4. **Integration Blindness**: Placeholders prevent discovering real integration issues
-5. **User Experience**: Users expect working features, not placeholder responses
+1. **Source Code Integrity**: Production functions must provide real functionality
+2. **False Confidence Prevention**: Non-functional examples hide broken features
+3. **Maintenance Discipline**: Deferred implementation work becomes technical debt
+4. **Integration Visibility**: Real calls reveal real integration issues
+5. **User Experience**: Users expect working features, not stand-ins
 
 ### Policy Implementation
 
@@ -26,14 +26,14 @@ Based on industry best practices and research showing that mocking/placeholders 
 - **Genuine computations** using numpy/scipy with real mathematical operations
 - **External tool integration** with real command execution and output parsing
 
-#### **PROHIBITED: All Forms of Mocking/Placeholders**
+#### **PROHIBITED: Test Doubles And Non-Functional Stand-Ins**
 - `return [[0, 1, 2] * 100]` (dummy genotype matrices)
 - `return [1.0, 0.5, 1.2] * 100` (dummy phenotype data)
 - `return {'scientific_name': f"Species_{taxon_id}"}` (placeholder API responses)
 - `return None` (placeholder plot objects that should return matplotlib Figures)
 - `return [1.0] * size` (dummy eigenvalues)
 - `return 0.3, 0.15, 2.0, 0.05` (hardcoded statistical results)
-- Any function that returns dummy/placeholder data instead of performing real computations
+- Any function that returns manufactured data instead of performing real computations
 
 ### Source Code Standards
 
@@ -141,12 +141,12 @@ def fetch_uniprot_record(uniprot_id: str) -> Dict[str, Any]:
 
 ### Testing Implications
 
-While the no-mocking policy applies to source code, testing has additional considerations:
+Tests have additional considerations:
 
 #### **Test Implementation Guidelines**
 - Tests should use real implementations from source code
 - When external dependencies unavailable, skip tests gracefully with clear messages
-- No test should rely on placeholder implementations
+- No test should rely on non-functional stand-ins
 - Integration tests verify real API/file operations
 
 #### **Skip Conditions for Tests**
@@ -173,10 +173,10 @@ The codebase should be checked for:
 - Functions returning obviously dummy data patterns
 - Placeholder comments in implementation
 - Hardcoded values that should be computed
-- Import patterns indicating mocking libraries (unittest.mock, pytest-mock)
+- Import patterns indicating test-double libraries such as `test-double modules` or `test-double plugins`
 
-#### **Migration from Placeholders**
-When replacing placeholder implementations:
+#### **Migration from Non-Functional Stand-Ins**
+When replacing stand-in implementations:
 1. Implement real algorithms using numpy/scipy where appropriate
 2. Make genuine API calls with proper error handling
 3. Return real computed results, not dummy values
@@ -216,6 +216,5 @@ Some fallback implementations are acceptable when they:
 This policy ensures METAINFORMANT provides **genuine functionality** at every level. Users can rely on all documented features actually working, and developers can trust that the codebase contains real implementations that perform meaningful computations.
 
 **Remember: If you can't implement it with real algorithms and real data, consider whether the functionality should exist at all.**
-
 
 

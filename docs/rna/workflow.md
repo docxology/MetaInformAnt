@@ -72,7 +72,7 @@ class AmalgkitWorkflowConfig:
     species_list: list[str] = field(default_factory=list)
     log_dir: Path | None = None             # Optional log directory
     manifest_path: Path | None = None       # Workflow manifest
-    auto_install_amalgkit: bool = False     # Auto-install amalgkit
+    auto_install_amalgkit: bool = True     # Auto-install amalgkit
 
     # Advanced configuration
     genome: dict[str, Any] | None = None    # Genome configuration
@@ -167,7 +167,7 @@ Workflows support resuming from any failed step:
 
 Errors are categorized for appropriate handling:
 
-```python
+```python-snippet
 # Network errors (retry)
 if "connection" in str(error).lower():
     # Implement retry logic
@@ -277,7 +277,7 @@ wait
 
 ### Workflow testing
 
-Use real configs and `tmp_path` (see project NO_MOCKING policy). Smoke-test planning without running amalgkit:
+Use real configs and `tmp_path` (see project real-implementation policy). Smoke-test planning without running amalgkit:
 
 ```python
 from pathlib import Path

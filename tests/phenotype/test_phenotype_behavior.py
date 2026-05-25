@@ -1,6 +1,6 @@
 """Tests for phenotype behavior: Ethogram, BehaviorSequence, time budgets, diversity.
 
-NO MOCKING POLICY: All tests use real implementations.
+REAL IMPLEMENTATION POLICY: All tests use real implementations.
 """
 
 from __future__ import annotations

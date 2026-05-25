@@ -2,7 +2,7 @@
 
 Tests all submodules: sequences, alignment, structure, contacts,
 secondary structure, visualization, and orchestration.
-All tests use real implementations per NO_MOCKING policy.
+All tests use real implementations per real-implementation policy.
 """
 
 from __future__ import annotations

@@ -31,7 +31,7 @@ print(response)
 
 ### Basic Setup
 
-```python
+```python-snippet
 from metainformant.ml.llm import OllamaClient
 from metainformant.ml.llm.config import LLMConfig
 
@@ -122,7 +122,7 @@ Ollama supports various models. Install models with `ollama pull <model>`:
 
 The module includes pre-built prompts for common biological tasks:
 
-```python
+```python-snippet
 from metainformant.ml.llm import prompts
 
 # Use pre-built prompts

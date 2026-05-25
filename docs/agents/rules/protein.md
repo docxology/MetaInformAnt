@@ -180,16 +180,16 @@ def download_structure(pdb_id):
 See Global Project Rules (root `.cursorrules`) for:
 - Common directory structure and path handling
 - Configuration patterns with env overrides
-- Testing policy (NO_MOCKING_POLICY)
+- Testing policy (real-implementation policy)
 - Import patterns and code style
 - Documentation guidelines
 
 ## Testing
 
-- **STRICTLY NO MOCKING**: Test real implementations only (see Global Project Rules (root `.cursorrules`) NO_MOCKING_POLICY)
+- **STRICTLY REAL IMPLEMENTATION**: Test real implementations only (see Global Project Rules (root `.cursorrules`) real-implementation policy)
 - Skip tests if optional dependencies unavailable using `@pytest.mark.external_tool`
 - Test with real PDB files from `data/`
 - Write test outputs to `output/protein/test/` using `tmp_path` fixture
-- No mocks, fakes, or stubs - use real file operations and database queries
+- Real implementations only - use real file operations and database queries
 
 

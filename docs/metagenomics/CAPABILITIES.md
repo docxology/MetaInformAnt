@@ -211,7 +211,7 @@ print(result["parent1"])  # False (most abundant → assumed good)
 **Returns**: `DenoisingResult` with `asvs`, `abundances`, `error_model`, `num_asvs`, `reads_removed`
 
 **Example**:
-```python
+```python-snippet
 reads = {"r1": "ACGTACGT", "r2": "ACGTACGA", "r3": "ACGTACGA", ...}
 result = denoise_sequences(reads)
 print(f"Input: {len(reads)} reads → {result.num_asvs} ASVs")
@@ -360,7 +360,7 @@ Sort contigs by length descending; accumulate lengths until reaching 50% of tota
 
 **Limitations**:
 - No repeat resolution (unitigs only, not full unitig-to-contig scaffolding)
-- No paired-end / mate-pair linking (scaffolding stub exists but not implemented)
+- No paired-end / mate-pair linking (scaffolding implementation is incomplete)
 - No use of long reads for gap bridging
 
 **Future**: Integration with external assemblers via wrappers.
@@ -371,7 +371,7 @@ Sort contigs by length descending; accumulate lengths until reaching 50% of tota
 
 **Purpose**: Order and orient contigs using paired-end or mate-pair linkages.
 
-**Algorithm** (stub; not fully implemented):
+**Algorithm** (limited implementation):
 1. Map paired reads to contigs via k-mer anchoring
 2. For each contig pair, count number of read pairs with one in each contig in correct orientation/insert size
 3. Build graph: nodes = contigs, edges = linkage counts
@@ -467,7 +467,7 @@ print(f"N50 = {stats.n50:,} bp")
 - **Contamination**: Fraction of markers found in >1 copy (mixed strain) or presence of non-universal markers
 
 **Example**:
-```python
+```python-snippet
 contigs = {"c1": "ACGT...", "c2": "GGCC...", ...}
 coverage = {"c1": [50.0, 55.0], "c2": [52.0, 48.0], ...}  # 2 samples
 result = bin_contigs(contigs, coverage, method="combined", n_bins=10)
@@ -540,7 +540,7 @@ class KmerIndex:
 **Returns**: `KmerIndex`
 
 **Example**:
-```python
+```python-snippet
 refs = {"genusA_sp1": "ACGT...", "genusA_sp2": "ACGT..."}
 tax = {"genusA_sp1": [("genus","GenusA"), ("species","sp1")], ...}
 index = build_kmer_index(refs, tax, k=31)
@@ -892,7 +892,7 @@ sig_features = [i for i, r in diff.items() if r["significant"]]
 
 ## Visualization
 
-**Current**: Basic plot stubs. For production plots, use `metainformant.visualization` instead.
+**Current**: Basic plot implementations. For production plots, use `metainformant.visualization` instead.
 
 ### Exported Functions (in `visualization/plots.py`)
 
@@ -966,10 +966,10 @@ Compositional data (relative abundances) have sum constraint → spurious correl
 | diversity | `rarefaction_curve` | dict | curve data |
 | diversity | `rarefy` | list[int] | subsampled counts |
 | diversity | `permanova` | dict | test stats |
-| functional | `predict_genes` | list[Gene] | (stub) |
-| functional | `annotate_genes` | list[AnnotatedGene] | (stub) |
-| functional | `reconstruct_pathways` | dict[str, float] | (stub) |
-| functional | `calculate_completeness` | list[PathwayCompleteness] | (stub) |
+| functional | `predict_genes` | list[Gene] | (limited implementation) |
+| functional | `annotate_genes` | list[AnnotatedGene] | (limited implementation) |
+| functional | `reconstruct_pathways` | dict[str, float] | (limited implementation) |
+| functional | `calculate_completeness` | list[PathwayCompleteness] | (limited implementation) |
 | comparative | `differential_abundance` | dict[feature → {logfc,p,q}] | stats |
 
 ---

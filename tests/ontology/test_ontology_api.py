@@ -1,6 +1,6 @@
 """Real API tests for ontology submodules: go_api, hpo, ncbi gene annotation.
 
-NO MOCK POLICY: All tests use live API calls.
+REAL IMPLEMENTATION POLICY: All tests use live API calls.
 Tests are skipped gracefully when there is no internet connectivity.
 
 Run with:
@@ -197,10 +197,10 @@ class TestNCBIGeneAnnotation:
             annotate_top_hits_ncbi,
         )
 
-        fake_hits = [
+        alignment_hits = [
             {"snp": "rs1", "chrom": "CM009934.2", "pos": 4744854, "p_value": 1e-8},
         ]
-        result = annotate_top_hits_ncbi(fake_hits, taxon_id=7460, top_n=1)
+        result = annotate_top_hits_ncbi(alignment_hits, taxon_id=7460, top_n=1)
         assert isinstance(result, list)
         assert len(result) == 1
         assert "nearby_genes" in result[0]
@@ -211,10 +211,10 @@ class TestNCBIGeneAnnotation:
             annotate_top_hits_ensembl,
         )
 
-        fake_hits = [
+        alignment_hits = [
             {"snp": "rs1", "chrom": "CM009934.2", "pos": 1000000, "p_value": 0.001},
         ]
-        result = annotate_top_hits_ensembl(fake_hits, species="apis_mellifera", top_n=1)
+        result = annotate_top_hits_ensembl(alignment_hits, species="apis_mellifera", top_n=1)
         assert isinstance(result, list)
         assert len(result) == 1
 

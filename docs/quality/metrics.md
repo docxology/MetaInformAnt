@@ -34,7 +34,7 @@ variant quality, filter pass rates, depth, mapping quality, and duplication.
 
 ### calculate_quality_score
 
-```python
+```python-snippet
 def calculate_quality_score(
     data: Dict[str, Any],
     data_type: str = "fastq",
@@ -47,7 +47,7 @@ breakdown, and letter `grade`. Supported data types: `"fastq"`, `"vcf"`,
 
 ### detect_outliers
 
-```python
+```python-snippet
 def detect_outliers(
     data: List[float],
     method: str = "iqr",
@@ -61,7 +61,7 @@ Returns `outliers`, `outlier_indices`, `method`, `threshold`,
 
 ### calculate_data_integrity_score
 
-```python
+```python-snippet
 def calculate_data_integrity_score(
     data: Dict[str, Any],
     data_type: str = "fastq",
@@ -74,7 +74,7 @@ individual check results.
 
 ### compare_quality_metrics
 
-```python
+```python-snippet
 def compare_quality_metrics(
     dataset1: Dict[str, Any],
     dataset2: Dict[str, Any],
@@ -87,7 +87,7 @@ Computes quality scores for two datasets and compares basic statistics
 
 ### generate_quality_report
 
-```python
+```python-snippet
 def generate_quality_report(
     quality_data: Dict[str, Any],
     data_type: str = "fastq",
@@ -101,7 +101,7 @@ to file.
 
 ### batch_quality_analysis
 
-```python
+```python-snippet
 def batch_quality_analysis(
     file_paths: List[str | Path],
     data_type: str = "fastq",
@@ -114,7 +114,7 @@ Analyses multiple files and produces per-file results plus summary statistics
 
 ### calculate_coverage_metrics
 
-```python
+```python-snippet
 def calculate_coverage_metrics(
     coverage_values: List[float],
     target_coverage: float = 30.0,
@@ -126,7 +126,7 @@ low/high coverage percentages, breadth (>= 1x), and target achievement rate.
 
 ### calculate_duplication_metrics
 
-```python
+```python-snippet
 def calculate_duplication_metrics(
     duplication_levels: Dict[int, int],
 ) -> Dict[str, Any]
@@ -137,7 +137,7 @@ mean duplication level; and per-level distribution.
 
 ### calculate_gc_metrics
 
-```python
+```python-snippet
 def calculate_gc_metrics(gc_content: List[float]) -> Dict[str, Any]
 ```
 
@@ -146,7 +146,7 @@ Mean/median/min/max/std GC, binned distribution, and GC bias (deviation from
 
 ### calculate_length_metrics
 
-```python
+```python-snippet
 def calculate_length_metrics(lengths: List[int]) -> Dict[str, Any]
 ```
 
@@ -155,7 +155,7 @@ of short (< 50 bp) and long (> 1000 bp) reads.
 
 ### calculate_quality_metrics
 
-```python
+```python-snippet
 def calculate_quality_metrics(
     quality_scores: List[float],
 ) -> Dict[str, Any]
@@ -166,7 +166,7 @@ percentages, and Q20/Q30 pass rates.
 
 ### calculate_complexity_metrics
 
-```python
+```python-snippet
 def calculate_complexity_metrics(
     sequences: List[str],
 ) -> Dict[str, Any]

@@ -1,7 +1,7 @@
 """Tests for metagenomics functional submodule.
 
 Tests ORF prediction, gene annotation, pathway analysis.
-Uses real implementations -- NO mocking per project policy.
+Uses real implementations -- real-implementation policy.
 """
 
 from __future__ import annotations

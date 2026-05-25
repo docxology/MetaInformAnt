@@ -1,7 +1,7 @@
 """Tests for metagenomics visualization submodule.
 
 Tests all plot functions output valid files.
-Uses real implementations -- NO mocking per project policy.
+Uses real implementations -- real-implementation policy.
 """
 
 from __future__ import annotations

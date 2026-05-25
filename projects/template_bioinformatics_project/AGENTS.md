@@ -9,7 +9,7 @@ This project follows the **MetaInformAnt Thin Orchestration Pattern**. All heavy
 - Enforces the **Thin Orchestration Pattern**: scripts call `metainformant.core`, `metainformant.dna`, `metainformant.rna`, etc. — no reimplementing algorithms inline.
 - Validates correct API usage: function signatures, parameter names, and return types.
 - Ensures all file outputs route to `data/`, `results/`, or `logs/` — **never** the project root.
-- Maintains **Zero-Mock** compliance: all tests exercise real code against real or synthetic data.
+- Maintains **Real-Implementation** compliance: all tests exercise real code against real or synthetic data.
 - Ensures every script has: argparse CLI with `--config`, idempotency guard, timed logging, and graceful error handling.
 
 ### Documentation Agent
@@ -39,7 +39,7 @@ This project follows the **MetaInformAnt Thin Orchestration Pattern**. All heavy
 - **Immutability**: `data/raw/` is read-only; all mutations go to `data/processed/`.
 - **Idempotency**: every stage checks for existing outputs and skips if present.
 - **Logging**: every script writes structured logs to `logs/`.
-- **Testing**: `tests/` contains real end-to-end pipeline tests (Zero-Mock).
+- **Testing**: `tests/` contains real end-to-end pipeline tests (Real-Implementation).
 
 ## Documentation
 

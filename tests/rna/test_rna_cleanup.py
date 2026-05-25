@@ -1,6 +1,6 @@
 """Tests for RNA cleanup functions.
 
-This module tests cleanup functionality following NO_MOCKING_POLICY.
+This module tests cleanup functionality following the real-implementation policy.
 All tests use real file operations.
 """
 

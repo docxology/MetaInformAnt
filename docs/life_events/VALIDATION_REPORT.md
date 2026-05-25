@@ -451,7 +451,7 @@ predictor.fit(sequences[:400], outcomes[:400], task="classification")  # 'task' 
 
 1. **Fix workflow module** — Either implement `train_event_predictor`, `predict_outcomes`, `save_model` wrappers OR refactor `workflow.py` to use classes directly.
 2. **Remove duplicate `compare_populations()`** — Consolidate to single function.
-3. **Add missing visualization functions** — At minimum, stub implementations for `plot_embedding_clusters`, `plot_prediction_accuracy`, `plot_event_cooccurrence`, `plot_sequence_similarity`.
+3. **Add missing visualization functions** — At minimum, initial implementations for `plot_embedding_clusters`, `plot_prediction_accuracy`, `plot_event_cooccurrence`, `plot_sequence_similarity`.
 4. **Complete Word2Vec embedding** — Replace placeholder in `learn_event_embeddings()` with real training, or prominently mark as experimental/prototype in docs.
 
 ### Short-term Improvements

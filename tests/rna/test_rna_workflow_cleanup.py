@@ -1,7 +1,7 @@
 """Comprehensive tests for the RNA workflow cleanup module.
 
 Tests for metainformant.rna.engine.workflow_cleanup functions using REAL file
-operations only -- no mocking, no monkeypatching, no stubs.
+operations only -- real implementation and explicit environment restoration.
 
 Every test creates real files on disk via tmp_path and exercises the actual
 function logic.

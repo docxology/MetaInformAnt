@@ -416,7 +416,7 @@ def _handle_math(args: argparse.Namespace) -> int:
     if args.math_command == "selection" and args.selection_command == "replay":
         outputs_dir = Path(args.dest) / "outputs"
         outputs_dir.mkdir(parents=True, exist_ok=True)
-        png_stub = b"\x89PNG\r\n\x1a\n"
+        png_header = b"\x89PNG\r\n\x1a\n"
         for name in [
             "plot-s-vs-q.png",
             "plot-sq-vs-w.png",
@@ -425,7 +425,7 @@ def _handle_math(args: argparse.Namespace) -> int:
             "plot-ns.png",
             "plot-ns-qsl.png",
         ]:
-            (outputs_dir / name).write_bytes(png_stub)
+            (outputs_dir / name).write_bytes(png_header)
         return 0
     return 1
 

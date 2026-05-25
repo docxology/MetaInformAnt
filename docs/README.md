@@ -59,7 +59,7 @@ should be written under `output/`.
 ## Key Guides
 
 - [UV_SETUP.md](UV_SETUP.md) - Package management with UV
-- [NO_MOCKING_POLICY.md](NO_MOCKING_POLICY.md) - Testing philosophy
+- [REAL_IMPLEMENTATION_POLICY.md](REAL_IMPLEMENTATION_POLICY.md) - Testing philosophy
 - [ERROR_HANDLING.md](ERROR_HANDLING.md) - Error handling patterns
 - [FAQ.md](FAQ.md) - Frequently asked questions
 

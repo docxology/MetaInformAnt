@@ -18,7 +18,7 @@ Use `performance_tuning` when pipelines run too slowly or crash with `MemoryErro
 
 ---
 
-```python
+```python-snippet
 from metainformant.core.caching import memoize_disk
 
 @memoize_disk(cache_dir=".cache/")
@@ -29,7 +29,7 @@ def expensive_computation(data):
 
 ## Parallel Processing
 
-```python
+```python-snippet
 from metainformant.core.parallel import parallel_map
 
 # Process 1000 genomes in parallel (auto-chunks)
@@ -51,7 +51,7 @@ results = parallel_map(
 ## I/O Optimization
 
 ### Batch reads/writes
-```python
+```python-snippet
 # Bad: one-by-one
 for sample in samples:
     df = pd.read_csv(f"{sample}.tsv")  # Slow open/close per file
@@ -85,7 +85,7 @@ For intermediate files, use `zstd`; for final distribution, use `bgzf` (blocked 
 ## Advanced Examples
 
 ### Numba JIT compilation for custom loops
-```python
+```python-snippet
 from numba import jit
 import numpy as np
 
@@ -147,7 +147,7 @@ results = Parallel(n_jobs=-1, backend="loky")(
 ```
 
 ### Chunked processing with iterators
-```python
+```python-snippet
 from metainformant.core.io import read_csv_chunks
 
 # Process 10M-row CSV on 8GB RAM laptop
@@ -158,7 +158,7 @@ for chunk in read_csv_chunks("huge.tsv", chunksize=100000):
 ```
 
 ### Dask for distributed-like parallelism on single machine
-```python
+```python-snippet
 import dask.array as da
 
 # Create lazy computation graph (1000×1000 matrix in chunks)

@@ -1,7 +1,7 @@
 # RNA
 
 ## Overview
-Test fixture data for RNA coverage. Keep fixtures small, deterministic, and compatible with the no-mocking test policy.
+Test fixture data for RNA coverage. Keep fixtures small, deterministic, and compatible with the real-implementation test policy.
 
 ## Contents
 - [curate/](curate/)

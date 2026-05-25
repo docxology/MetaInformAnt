@@ -28,7 +28,7 @@
 -**ENA-first strategy documented** — Updated RNA README with streaming orchestrator architecture and dual-tier download strategy
 -**TUI tools documented** — Added `monitor_tui.py` and `run_workflow_tui.py` sections to `docs/cli.md`
 -**Directory conventions documented** — `work/` vs `fastq/` vs `output/` hierarchy with symlink explanation in `docs/cli.md`
--**Zero-Mock audit passed** — Only 1 dead mock import found and removed (`tests/rna/test_ena_downloader.py`); no actual mock usage in test suite
+-**Real-Implementation audit passed** — Only 1 dead mock import found and removed (`tests/rna/test_ena_downloader.py`); no actual mock usage in test suite
 -**Stale configs verified** — `amalgkit_test.yaml` and `amalgkit_template.yaml` are referenced by tests/scripts and remain valid
 
 ---

@@ -49,7 +49,7 @@ These rules are **automatically loaded** by AI agents (Cursor, Hermes) when work
    - Logging via `metainformant.core.utils.logging`
    - Package management with `uv`
    - Output to `output/{module}/`
-   - Zero-mocking policy enforcement
+   - Real-implementation policy enforcement
 
 2. **Then consult module-specific rule** for your domain:
    - Domain-specific import patterns
@@ -69,12 +69,12 @@ All rule files reinforce these universal project standards:
 | Standard | How Enforced |
 |----------|--------------|
 | **UV Package Manager** | All examples use `uv add`, `uv run`, never `pip` |
-| **No Mocks** | Tests explicitly forbid `@patch`, `Mock()` — use real implementations |
+| **Real Implementations** | Tests explicitly forbid runtime function replacement and test-double objects — use real implementations |
 | **Core I/O** | All file ops via `metainformant.core.io` (`load_json`, `dump_json`, etc.) |
 | **Structured Logging** | `from metainformant.core.utils.logging import get_logger` |
 | **Type Hints** | Python 3.11+, full annotations |
 | **Output Discipline** | Write only to `output/{module}/`, never `src/` |
-| **Absolute Imports** | `from metainformant.dna import align` (not `..core` relative) |
+| **Absolute Imports** | `from metainformant.dna import alignment` (not `..core` relative) |
 
 ## Coordination with Other Agents
 
@@ -117,7 +117,7 @@ All rule files specify testing patterns:
 ```markdown
 ## Testing
 - Use `tmp_path` fixture for file isolation
-- Use real implementations only — NO MOCKING (see ../../../tests/NO_MOCKING_POLICY.md)
+- Use real implementations only — REAL IMPLEMENTATION (see ../../../tests/REAL_IMPLEMENTATION_TESTING_POLICY.md)
 - Test at least one happy path and one error path per public function
 - Include integration test of end-to-end workflow (optional but encouraged)
 ```
@@ -134,7 +134,7 @@ All rule files specify testing patterns:
 
  DON'T:
   - Import json/csv directly — use metainformant.core.io
-  - Use unittest.mock.patch for external calls
+  - Use test-double patching APIs for external calls
   - Write to src/ or repository root
   - Hardcode thread counts — compute resource_aware_workers()
   - Assume other modules' internal APIs are stable
@@ -151,7 +151,7 @@ All rule files specify testing patterns:
 | Communication patterns | [../../COMMUNICATION_PROTOCOLS.md](../COMMUNICATION_PROTOCOLS.md) |
 | Safety & error handling | [../SAFETY.md](../SAFETY.md) |
 | Operational best practices | [../BEST_PRACTICES.md](../BEST_PRACTICES.md) |
-| No-mocking test policy | [../../../tests/NO_MOCKING_POLICY.md](../../../tests/NO_MOCKING_POLICY.md) |
+| Real-implementation test policy | [../../../tests/REAL_IMPLEMENTATION_TESTING_POLICY.md](../../../tests/REAL_IMPLEMENTATION_TESTING_POLICY.md) |
 
 ## Maintenance
 

@@ -42,12 +42,12 @@ Comprehensive documentation for the DNA sequence analysis domain in MetaInformAn
 | variants  | `call_snps()`, `filter_vcf()`, `annotate_vep()` | Variant discovery and annotation |
 
 ## Testing Policy
-- **Zero Mock**: All tests must use real implementations with actual genomic data. Synthetic data allowed only for edge cases.
+- **Real Implementation**: All tests must use real implementations with actual genomic data. Synthetic data allowed only for edge cases.
 - **Data**: Test datasets in `tests/data/dna/` (small FASTA, VCF, BAM fixtures).
 - **Benchmarks**: Performance tests in `tests/benchmark/test_dna_speed.py` using `pytest-benchmark`.
 
 ## Public API
-```python
+```python-snippet
 # All submodules importable from top-level
 from metainformant.dna import (
     sequences,      # FASTA I/O, transformations

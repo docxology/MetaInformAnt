@@ -160,7 +160,7 @@ fig = sim_viz.create_interactive_simulation_dashboard(simulation_results)
 ## Integration with Simulation Module
 
 ### With Sequence Simulations
-```python
+```python-snippet
 from metainformant.simulation import sequences, visualization as sim_viz
 
 # Generate and evolve sequences
@@ -173,7 +173,7 @@ ax = sim_viz.plot_sequence_evolution(sequence_history)
 ```
 
 ### With Population Genetics
-```python
+```python-snippet
 from metainformant.simulation import popgen, visualization as sim_viz
 
 # Simulate population evolution
@@ -185,7 +185,7 @@ ax = sim_viz.plot_population_dynamics_simulation(population_sizes)
 ```
 
 ### With Agent-Based Models
-```python
+```python-snippet
 from metainformant.simulation import agents, visualization as sim_viz
 
 # Run agent-based simulation
@@ -236,7 +236,7 @@ fig = sim_viz.create_interactive_simulation_dashboard(results, output_path="dash
 ## Examples
 
 ### Complete Simulation Analysis Workflow
-```python
+```python-snippet
 from metainformant.simulation import sequences, popgen, visualization as sim_viz
 import numpy as np
 

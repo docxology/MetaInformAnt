@@ -68,7 +68,7 @@ indicator_values = indicators.indval(community_matrix, environmental_categories)
 ## Integration with Other Modules
 
 ### With Phenotype Data
-```python
+```python-snippet
 from metainformant.ecology.analysis import functional
 from metainformant.phenotype import antwiki
 

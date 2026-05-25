@@ -130,7 +130,7 @@ N download workers (parallel):
 
 Both modes are implemented in a single function: `run_download_quant_workflow()` in `process_samples.py`. The `num_workers` parameter controls the mode:
 
-```python
+```python-snippet
 from metainformant.rna.engine.pipeline import run_download_quant_workflow
 
 # Sequential mode
@@ -163,7 +163,7 @@ stats = run_download_quant_workflow(
 
 All step runners follow this pattern:
 
-```python
+```python-snippet
 def run(
     params: Mapping[str, Any] | None = None,
     *,
@@ -380,7 +380,7 @@ What do you want to do?
 ### Adding a New Step
 
 1. **Create step module** (`steps/new_step.py`):
-```python
+```python-snippet
 from ..amalgkit import new_step as _new_step
 
 def run(params, *, work_dir=None, log_dir=None, check=False):
@@ -389,7 +389,7 @@ def run(params, *, work_dir=None, log_dir=None, check=False):
 ```
 
 2. **Register in `engine/workflow_steps.py`**:
-```python
+```python-snippet
 from .new_step import run as run_new_step
 
 STEP_RUNNERS["new_step"] = run_new_step

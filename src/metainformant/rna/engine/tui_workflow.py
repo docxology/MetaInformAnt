@@ -16,8 +16,8 @@ from metainformant.core.engine.workflow_manager import (
     SampleStage,
     SampleState,
     Stage,
-    WorkflowManager as _CoreWorkflowManager,
 )
+from metainformant.core.engine.workflow_manager import WorkflowManager as _CoreWorkflowManager
 from metainformant.rna.amalgkit.amalgkit import run_amalgkit
 
 

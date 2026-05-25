@@ -9,7 +9,7 @@ Quality control visualization functions for quality control metrics including QC
 Plot multiple quality control metrics.
 
 **Example:**
-```python
+```python-snippet
 from metainformant.visualization import qc_metrics_plot
 import numpy as np
 

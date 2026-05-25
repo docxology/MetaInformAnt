@@ -4,7 +4,7 @@ Tests cover: step execution/timing, DAG topological sort, cycle detection,
 dependency propagation, failed-step skipping, config-based step loading,
 function resolution via importlib, and run_config_based_workflow integration.
 
-NO MOCKING. All implementations are real.
+REAL IMPLEMENTATION. All implementations are real.
 """
 
 from __future__ import annotations
@@ -23,7 +23,7 @@ from metainformant.core.execution.workflow import (
 )
 
 # ---------------------------------------------------------------------------
-# Real helper functions used as step callables (no mocks)
+# Real helper functions used as step callables (real implementations)
 # ---------------------------------------------------------------------------
 
 

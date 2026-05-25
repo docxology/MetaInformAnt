@@ -3,7 +3,7 @@
 Parametrized test that imports all 25 modules, verifies __all__ exports
 are accessible, and checks canonical import paths.
 
-NO MOCKING POLICY: All tests use real imports.
+REAL IMPLEMENTATION POLICY: All tests use real imports.
 """
 
 from __future__ import annotations

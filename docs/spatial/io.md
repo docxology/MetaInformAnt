@@ -99,7 +99,7 @@ Aggregates transcripts → spots (typically cell segmentation already applied).
 
 ## Slide-seqV2 (`load_slide_seq`)
 
-```python
+```python-snippet
 from metainformant.spatial.io.slideseq import load_slide_seq
 adata = load_slide_seq(
     folder='data/slideseq_v2/',
@@ -114,7 +114,7 @@ so downstream deconvolution is usually unnecessary.
 
 ## CosMx / Nanostring (`load_cosmx`)
 
-```python
+```python-snippet
 from metainformant.spatial.io.cosmx import load_cosmx
 adata = load_cosmx(
     folder='data/cosmx_lung/',
@@ -133,7 +133,7 @@ be concatenated after loading all FOVs.
 All loaders are registered in `io/__init__.py` → `_PLATFORM_LOADERS`. To add a new
 platform:
 
-```python
+```python-snippet
 # io/mypatform.py
 def load_myplatform(folder: str) -> AnnData:
     # implement parsing logic

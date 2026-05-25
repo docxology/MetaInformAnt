@@ -70,45 +70,45 @@ class TestGetChoice:
     """Tests for user choice input.
 
     Note: Interactive choice input tests are skipped as they require
-    input/output mocking/stubbing, which violates the NO_MOCKING_POLICY.
+    input/output stdin/stdout replacement, which violates the real-implementation policy.
     The get_choice function is tested through integration tests with
     real user input in actual menu scenarios.
     """
 
-    @pytest.mark.skip("NO_MOCKING_POLICY: Interactive input tests require mocking")
+    @pytest.mark.skip("real-implementation policy: Interactive input tests require stdin replacement")
     def test_get_choice_valid(self) -> None:
         """Test getting valid choice."""
-        # This test would require mocking builtin input
+        # This test would require stdin replacement builtin input
         pass
 
-    @pytest.mark.skip("NO_MOCKING_POLICY: Interactive input tests require mocking")
+    @pytest.mark.skip("real-implementation policy: Interactive input tests require stdin replacement")
     def test_get_choice_invalid_then_valid(self) -> None:
         """Test invalid choice followed by valid choice."""
-        # This test would require mocking builtin input
+        # This test would require stdin replacement builtin input
         pass
 
-    @pytest.mark.skip("NO_MOCKING_POLICY: Interactive input tests require mocking")
+    @pytest.mark.skip("real-implementation policy: Interactive input tests require stdin replacement")
     def test_get_choice_no_validation(self) -> None:
         """Test getting choice without validation."""
-        # This test would require mocking builtin input
+        # This test would require stdin replacement builtin input
         pass
 
-    @pytest.mark.skip("NO_MOCKING_POLICY: Interactive input tests require mocking")
+    @pytest.mark.skip("real-implementation policy: Interactive input tests require stdin replacement")
     def test_get_choice_empty_then_valid(self) -> None:
         """Test empty input followed by valid input."""
-        # This test would require mocking builtin input
+        # This test would require stdin replacement builtin input
         pass
 
-    @pytest.mark.skip("NO_MOCKING_POLICY: Interactive input tests require mocking")
+    @pytest.mark.skip("real-implementation policy: Interactive input tests require stdin replacement")
     def test_get_choice_keyboard_interrupt(self) -> None:
         """Test handling KeyboardInterrupt."""
-        # This test would require mocking builtin input
+        # This test would require stdin replacement builtin input
         pass
 
-    @pytest.mark.skip("NO_MOCKING_POLICY: Interactive input tests require mocking")
+    @pytest.mark.skip("real-implementation policy: Interactive input tests require stdin replacement")
     def test_get_choice_eof(self) -> None:
         """Test handling EOFError."""
-        # This test would require mocking builtin input
+        # This test would require stdin replacement builtin input
         pass
 
 
@@ -140,19 +140,19 @@ class TestFormatBreadcrumb:
 class TestClearScreen:
     """Tests for screen clearing.
 
-    Note: System state mocking tests are skipped as they violate the
-    NO_MOCKING_POLICY. The clear_screen function works with real TTY
+    Note: System state replacement tests are skipped as they violate the
+    real-implementation policy. The clear_screen function works with real TTY
     detection and should be tested through integration tests.
     """
 
-    @pytest.mark.skip("NO_MOCKING_POLICY: TTY state mocking violates policy")
+    @pytest.mark.skip("real-implementation policy: TTY state replacement violates policy")
     def test_clear_screen_tty(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test clearing screen when TTY."""
-        # This test would require mocking sys.stdout.isatty
+        # This test would require stdin replacement sys.stdout.isatty
         pass
 
-    @pytest.mark.skip("NO_MOCKING_POLICY: TTY state mocking violates policy")
+    @pytest.mark.skip("real-implementation policy: TTY state replacement violates policy")
     def test_clear_screen_non_tty(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test clearing screen when not TTY."""
-        # This test would require mocking sys.stdout.isatty
+        # This test would require stdin replacement sys.stdout.isatty
         pass

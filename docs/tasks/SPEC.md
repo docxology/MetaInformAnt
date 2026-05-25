@@ -20,4 +20,4 @@ Task-oriented quick-reference documentation for common METAINFORMANT workflows.
   - `visualize_results.md`: Visualization tasks
 
 ## Testing
-- **Zero-Mock Policy**: All tests use real implementations
+- **Real-Implementation Policy**: All tests use real implementations

@@ -288,7 +288,7 @@ graph TD
     subgraph "Testing Framework"
         R["pytest"] -.-> E
         S["Real Data"] -.-> E
-        T["No Mocks"] -.-> E
+        T["Real Implementations"] -.-> E
         U["Integration"] -.-> F
     end
 

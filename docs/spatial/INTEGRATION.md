@@ -14,7 +14,7 @@ results = spatial.analyze(data)
 ```
 
 ### Full integration
-```python
+```python-snippet
 from metainformant.spatial import load_visium, load_merfish, load_xenium
 from metainformant.core import io, config, cache, logging
 from metainformant.visualization import quickplot
@@ -52,7 +52,7 @@ visualization.manhattan(gwas_res)
 ```
 
 ### spatial + cloud
-```python
+```python-snippet
 from metainformant.cloud import submit_batch
 job = submit_batch(
     module="spatial",
@@ -62,7 +62,7 @@ results = job.wait().download()
 ```
 
 ### spatial + visualization (detailed)
-```python
+```python-snippet
 from metainformant.spatial import analyze
 from metainformant.visualization import plot_heatmap, plot_timeseries, plot_network
 res = analyze(data)
@@ -81,7 +81,7 @@ plot_timeseries(res.series)
 
 ## Data Contract
 Spatial produces standardized result containers compatible with downstream modules:
-```python
+```python-snippet
 class Result:
     values: dict            # Primary output data
     stats: dict             # Summary statistics

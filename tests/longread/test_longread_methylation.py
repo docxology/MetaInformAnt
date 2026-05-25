@@ -1,7 +1,7 @@
 """Tests for longread methylation summary functions not covered by test_longread.py.
 
 Tests generate_methylation_summary from the utils/summary module.
-All tests use real implementations -- NO MOCKING.
+All tests use real implementations -- REAL IMPLEMENTATION.
 """
 
 from __future__ import annotations

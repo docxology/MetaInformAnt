@@ -1,7 +1,7 @@
 """Tests for ML interpretability and advanced feature selection.
 
 Real implementation testing for model explainability methods and
-advanced feature selection techniques. No mocking used - all tests
+advanced feature selection techniques. Real implementationing used - all tests
 use real sklearn models and computed results.
 """
 

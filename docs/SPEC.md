@@ -21,7 +21,7 @@ docs/
  FAQ.md # Frequently asked questions
  TUTORIALS.md # Step-by-step tutorials
  ERROR_HANDLING.md # Error handling patterns
- NO_MOCKING_POLICY.md # Testing policy
+ REAL_IMPLEMENTATION_POLICY.md # Testing policy
  UV_SETUP.md # UV package manager guide
  {module}/ # Domain-specific documentation
  index.md # Module entry point
@@ -79,4 +79,4 @@ bash scripts/package/uv_docs.sh
 
 ## Testing Policy
 
-- **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.
+- **Real Implementation**: All tests must use real implementations. Mocks are strictly prohibited.

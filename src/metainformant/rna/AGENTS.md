@@ -23,13 +23,13 @@ End-to-end RNA-seq pipelines: ENA/SRA metadata retrieval, FASTQ streaming, Kalli
 - Use `metainformant.core.utils.logging` for all logging
 - Use `metainformant.core.io` for domain data file I/O. Direct stdlib parsing is allowed in core, protocol adapters, subprocess/CLI glue, and narrow parser internals when covered by tests.
 - Prefer absolute imports from `metainformant`
-- Follow NO MOCKING policy — all tests must use real implementations
+- Follow REAL IMPLEMENTATION policy — all tests must use real implementations
 - Use `uv` for dependency management
 - Use `build_cli_args()` / `build_amalgkit_command()` to test command construction without subprocesses
 - Use `tmp_path` and real YAML configs for orchestrator tests
 - Use real `AmalgkitWorkflowConfig`, `WorkflowExecutionResult`, and `WorkflowStepResult` classes
 
-See `tests/NO_MOCKING_POLICY.md` for the full policy.
+See `tests/REAL_IMPLEMENTATION_TESTING_POLICY.md` for the full policy.
 
 ## Related Documentation
 

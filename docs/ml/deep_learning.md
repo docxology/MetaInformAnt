@@ -12,7 +12,7 @@ The deep learning module provides neural network architectures specifically desi
 
 ## Quick Start
 
-```python
+```python-snippet
 from metainformant.ml.deep_learning import sequences
 
 # Generate embeddings for DNA sequences
@@ -46,7 +46,7 @@ The module supports various neural network architectures for biological sequence
 
 ### Sequence Embedding
 
-```python
+```python-snippet
 from metainformant.ml.deep_learning import sequences
 
 # Generate embeddings
@@ -113,7 +113,7 @@ embeddings = dl_seqs.embed_sequences(
 
 ### With ML Classification
 
-```python
+```python-snippet
 from metainformant.ml import classification
 
 # Use deep learning embeddings with ML classifiers

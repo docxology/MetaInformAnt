@@ -5,7 +5,7 @@ This file provides line-by-line fixes for the broken examples in `docs/ml/index.
 ## 1. Deep Learning Example (Lines 197-208)
 
 ### Current (Broken):
-```python
+```python-snippet
 from metainformant.dna import sequences
 from metainformant.ml import classification
 
@@ -61,7 +61,7 @@ raise NotImplementedError("k-mer extraction not yet implemented")
 ## 2. Regression Example (Lines 212-231)
 
 ### Current (Broken):
-```python
+```python-snippet
 from metainformant.rna import workflow
 from metainformant.ml import regression
 
@@ -111,7 +111,7 @@ importances = model.get_feature_importance()
 ## 3. Network Features Example (Lines 234-250)
 
 ### Current (Broken):
-```python
+```python-snippet
 from metainformant.networks import ppi
 from metainformant.ml import classification
 
@@ -204,7 +204,7 @@ top_genes = [(gene_names[i], importances[i]) for i in top_indices]
 ## 5. Model Explanation Example (Lines 278-293)
 
 ### Current (Broken):
-```python
+```python-snippet
 from metainformant.ml import explain
 
 # Explain individual predictions
@@ -221,7 +221,7 @@ print(f"Top negative features: {explanation['top_negative']}")
 ```
 
 ### Issues:
-- `from metainformant.ml import explain` — **NO `explain` SUBMODULE**
+- The old `metainformant.ml` explain import path has no `explain` submodule.
 - `explain.explain_prediction()` — **NOT FOUND**
 
 ### Corrected Version (using SHAP):
@@ -259,7 +259,7 @@ lime_result = compute_lime_explanation(
 ## 6. Multi-omics Example (Lines 300-321)
 
 ### Current (Seems OK but verify module exists):
-```python
+```python-snippet
 from metainformant.multiomics import integration  # ✗ Does multiomics module exist?
 from metainformant.ml import classification
 
@@ -280,7 +280,7 @@ model = classification.train_classifier(
 ## 7. Time Series Example (Lines 324-339)
 
 ### Current (Broken):
-```python
+```python-snippet
 from metainformant.ml import regression
 
 time_series_data = load_time_series_expression()
@@ -321,4 +321,4 @@ model = regression.train_regressor(
 4. **Fix model explanation**: use `interpretability.explainers` instead of `explain`
 5. **Time series**: either implement `extract_time_features()` and LSTM support, or remove example
 6. **Multi-omics**: verify module exists before keeping example
-7. **Standardize imports** throughout: `from metainformant.ml.models.classification import BiologicalClassifier` not `from metainformant.ml import classification`
+7. **Standardize imports** throughout: `from metainformant.ml.models.classification import BiologicalClassifier`, not the old top-level classification alias.

@@ -3,7 +3,7 @@
 This test suite demonstrates the integration and interoperability of all
 major modules in the METAINFORMANT bioinformatics toolkit. It shows how
 different biological domains can be analyzed together using real
-computational methods without any mocking.
+computational methods without test doubles.
 """
 
 from __future__ import annotations

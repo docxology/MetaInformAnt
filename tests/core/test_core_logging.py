@@ -3,8 +3,28 @@
 from __future__ import annotations
 
 import logging
+import os
+from contextlib import contextmanager
+from typing import Iterator
 
 from metainformant.core.utils import logging as core_logging
+
+
+@contextmanager
+def _temporary_env(name: str, value: str | None) -> Iterator[None]:
+    """Temporarily set or unset an environment variable."""
+    original = os.environ.get(name)
+    if value is None:
+        os.environ.pop(name, None)
+    else:
+        os.environ[name] = value
+    try:
+        yield
+    finally:
+        if original is None:
+            os.environ.pop(name, None)
+        else:
+            os.environ[name] = original
 
 
 def test_get_logger_returns_configured_logger() -> None:
@@ -24,23 +44,22 @@ def test_get_logger_with_level() -> None:
     assert logger_info.level == logging.INFO
 
 
-def test_get_logger_with_level_from_env(tmp_path, monkeypatch) -> None:
+def test_get_logger_with_level_from_env() -> None:
     """Test that get_logger_with_level reads from CORE_LOG_LEVEL env var."""
-    monkeypatch.setenv("CORE_LOG_LEVEL", "WARNING")
-    logger = core_logging.get_logger_with_level("metainformant.test.env")
+    with _temporary_env("CORE_LOG_LEVEL", "WARNING"):
+        logger = core_logging.get_logger_with_level("metainformant.test.env")
     assert logger.level == logging.WARNING
 
 
-def test_configure_logging_from_env(monkeypatch) -> None:
+def test_configure_logging_from_env() -> None:
     """Test configure_logging_from_env function."""
-    monkeypatch.setenv("CORE_LOG_LEVEL", "ERROR")
-    core_logging.configure_logging_from_env()
-    assert logging.root.level == logging.ERROR
+    with _temporary_env("CORE_LOG_LEVEL", "ERROR"):
+        core_logging.configure_logging_from_env()
+        assert logging.root.level == logging.ERROR
 
-    # Reset
-    monkeypatch.delenv("CORE_LOG_LEVEL", raising=False)
-    core_logging.configure_logging_from_env(default_level="INFO")
-    assert logging.root.level == logging.INFO
+    with _temporary_env("CORE_LOG_LEVEL", None):
+        core_logging.configure_logging_from_env(default_level="INFO")
+        assert logging.root.level == logging.INFO
 
 
 def test_log_with_metadata_basic() -> None:

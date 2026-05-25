@@ -8,7 +8,7 @@ The clustering module provides various algorithms for identifying cell populatio
 
 Leiden algorithm for community detection in cell similarity graphs:
 
-```python
+```python-snippet
 from metainformant.singlecell.clustering import leiden_clustering
 
 # Standard Leiden clustering
@@ -29,7 +29,7 @@ print(f"Found {n_clusters} clusters")
 
 Louvain algorithm (predecessor to Leiden):
 
-```python
+```python-snippet
 from metainformant.singlecell.clustering import louvain_clustering
 
 data = louvain_clustering(
@@ -51,7 +51,7 @@ data = louvain_clustering(
 
 K-means clustering for predetermined number of clusters:
 
-```python
+```python-snippet
 from metainformant.singlecell.clustering import kmeans_clustering
 
 # K-means with known number of clusters
@@ -76,7 +76,7 @@ data = kmeans_clustering(
 
 Agglomerative clustering with various linkage methods:
 
-```python
+```python-snippet
 from metainformant.singlecell.clustering import hierarchical_clustering
 
 # Hierarchical clustering
@@ -100,7 +100,7 @@ data = hierarchical_clustering(
 
 Identify genes that characterize each cluster:
 
-```python
+```python-snippet
 from metainformant.singlecell.clustering import find_markers
 
 # Find marker genes for each cluster
@@ -126,7 +126,7 @@ print(markers.head())
 
 Analyze cluster composition and relationships:
 
-```python
+```python-snippet
 from metainformant.singlecell.clustering import cluster_composition
 
 # Get cluster statistics
@@ -141,7 +141,7 @@ print(composition)
 
 Calculate silhouette scores to assess clustering quality:
 
-```python
+```python-snippet
 from metainformant.singlecell.clustering import silhouette_scores
 
 # Calculate silhouette scores
@@ -216,7 +216,7 @@ print(cluster_comparison)
 
 ### Subclustering
 
-```python
+```python-snippet
 # Subcluster specific cell populations
 # 1. Extract cells from cluster of interest
 cluster_of_interest = '3'
@@ -240,7 +240,7 @@ data.obs.loc[mask, 'subcluster'] = [
 
 ### Clustering in Different Spaces
 
-```python
+```python-snippet
 # Compare clustering in different representations
 representations = ['neighbors', 'X_pca', 'X_umap']
 

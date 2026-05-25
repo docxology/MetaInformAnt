@@ -1,7 +1,7 @@
 """Tests for biological network graph functionality.
 
 Real implementation testing for network analysis methods.
-No mocking used - all tests use real computational methods.
+Real implementationing used - all tests use real computational methods.
 """
 
 from __future__ import annotations

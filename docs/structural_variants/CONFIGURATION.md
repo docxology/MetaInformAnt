@@ -233,7 +233,7 @@ else:
 
 Some modules expose `configure()` function:
 
-```python
+```python-snippet
 from metainformant.structural_variants import configure
 
 # High-level configuration
@@ -328,7 +328,7 @@ hi_db = paths.resolve_data_path("dosage/clingen_hi.json")
 
 **Register custom data location:**
 
-```python
+```python-snippet
 config.set("core.data_dir", "/my/data")
 # or
 export METAINFORMANT_DATA="/my/data"
@@ -397,7 +397,7 @@ config.get("structural_variants")["detection"]["min_support"]  # works but fragi
 
 ## Complete Example: Configuration-Driven Run
 
-```python
+```python-snippet
 #!/usr/bin/env python3
 """Run SV pipeline with full configuration control."""
 
@@ -435,7 +435,7 @@ print(f"Completed: {len(results['filtered_svs'])} variants")
 
 Resolved effective configuration can be printed:
 
-```python
+```python-snippet
 from metainformant import config
 from metainformant.structural_variants import get_default_config
 

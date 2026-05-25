@@ -4,7 +4,7 @@ Tests matrix factorization (joint NMF, MOFA, tensor decomposition, SNF, CCA),
 multi-omic clustering (concatenation, SNF-based, late integration), consensus
 clustering, multi-view spectral clustering, and integration evaluation.
 
-All tests use real implementations with small synthetic datasets (NO mocking).
+All tests use real implementations with small synthetic datasets (real-implementation policy).
 """
 
 from __future__ import annotations

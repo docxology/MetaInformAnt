@@ -1,4 +1,4 @@
-"""Zero-mock tests for the cross-species parallel pipeline orchestrator.
+"""Real-implementation tests for the cross-species parallel pipeline orchestrator.
 
 Tests cover:
 - SpeciesContext.mark_done() thread safety and completion detection
@@ -6,7 +6,7 @@ Tests cover:
 - get_quantified_samples() scanning accuracy
 - sanitize_params_for_cli() stripping MetaInformAnt-only defaults
 
-Uses REAL file operations only -- no mocking, no monkeypatching, no stubs.
+Uses REAL file operations only -- real implementation and explicit environment restoration.
 """
 
 import sys
@@ -76,7 +76,7 @@ def _create_flat_fastqs(fastq_dir: Path, sample_id: str) -> list[Path]:
     files = []
     for suffix in [f"{sample_id}_1.fastq.gz", f"{sample_id}_2.fastq.gz"]:
         f = fastq_dir / suffix
-        f.write_bytes(b"fake_fastq_data")
+        f.write_bytes(b"test_fastq_data")
         files.append(f)
     return files
 
@@ -88,7 +88,7 @@ def _create_subdir_fastqs(fastq_dir: Path, sample_id: str) -> list[Path]:
     files = []
     for suffix in [f"{sample_id}_1.fastq.gz", f"{sample_id}_2.fastq.gz"]:
         f = sample_dir / suffix
-        f.write_bytes(b"fake_fastq_data")
+        f.write_bytes(b"test_fastq_data")
         files.append(f)
     return files
 
@@ -115,7 +115,7 @@ class TestCleanupFastqsFlatFiles:
         """Flat single-end file (SRR.fastq.gz) is cleaned."""
         fastq_dir = config_with_fastq_dir.work_dir / "fastq"
         single_file = fastq_dir / "SRR99999.fastq.gz"
-        single_file.write_bytes(b"fake_data")
+        single_file.write_bytes(b"test_data")
         assert single_file.exists()
 
         cleanup_fastqs(config_with_fastq_dir, ["SRR99999"])

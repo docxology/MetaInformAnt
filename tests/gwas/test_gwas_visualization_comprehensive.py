@@ -1,6 +1,6 @@
 """Tests for all GWAS visualization modules.
 
-Tests all visualization modules in gwas/visualization_*.py following NO_MOCKING policy.
+Tests all visualization modules in gwas/visualization_*.py following real-implementation policy.
 """
 
 from __future__ import annotations

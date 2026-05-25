@@ -1,7 +1,7 @@
 """Tests for longread assembly summary functions not covered by test_longread.py.
 
 Tests generate_assembly_summary, generate_sv_summary, and related summary functions.
-All tests use real implementations -- NO MOCKING.
+All tests use real implementations -- REAL IMPLEMENTATION.
 """
 
 from __future__ import annotations

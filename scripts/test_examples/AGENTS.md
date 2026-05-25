@@ -15,4 +15,4 @@ Ensure all example files in `examples/` directory:
 - Execute without errors
 - Produce expected outputs
 - Follow project conventions
-- Demonstrate real functionality (NO MOCKING)
+- Demonstrate real functionality (REAL IMPLEMENTATION)

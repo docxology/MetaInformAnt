@@ -40,7 +40,7 @@ for name, seq in sequences.items():
 
 #### Advanced Analysis
 
-```python
+```python-snippet
 # Calculate pairwise distances
 from metainformant.dna import distances
 
@@ -80,7 +80,7 @@ sequences = [
 
 #### Coalescent Analysis
 
-```python
+```python-snippet
 from metainformant.math import coalescent
 
 # Calculate coalescent parameters
@@ -143,7 +143,7 @@ phenotype = genotypes[:, 0] * 0.5 + np.random.normal(0, 0.1, n_samples)  # SNP 0
 
 #### GWAS Analysis
 
-```python
+```python-snippet
 from metainformant.gwas import association
 
 # Perform association tests
@@ -240,7 +240,7 @@ for fastq_file in fastq_files:
 
 #### Expression Quantification
 
-```python
+```python-snippet
 from metainformant.rna.engine.workflow_steps import quant
 
 # Quantify gene expression (would use real BAM files)
@@ -264,7 +264,7 @@ Apply information-theoretic methods to analyze sequence complexity and patterns.
 
 #### Sequence Complexity Analysis
 
-```python
+```python-snippet
 from metainformant.information import analysis
 
 # Analyze sequence information content
@@ -288,7 +288,7 @@ for i, seq in enumerate(test_sequences):
 
 #### Batch Processing
 
-```python
+```python-snippet
 from metainformant.information import workflows
 
 # Batch entropy analysis
@@ -350,7 +350,7 @@ protein_data = {
 
 #### Integration Analysis
 
-```python
+```python-snippet
 # Combine multi-omics data
 integrated_data = {
     "expression": expression_data,
@@ -503,7 +503,7 @@ Learn to build custom analysis pipelines using METAINFORMANT components.
 
 #### Workflow Orchestration
 
-```python
+```python-snippet
 from pathlib import Path
 from metainformant.core.workflow import run_config_based_workflow
 
@@ -555,7 +555,7 @@ Techniques for optimizing METAINFORMANT performance with large datasets.
 
 #### Parallel Processing
 
-```python
+```python-snippet
 from metainformant.core.execution import parallel
 import time
 
@@ -587,7 +587,7 @@ print(f"Results identical: {sequential_results == parallel_results}")
 
 #### Caching for Repeated Computations
 
-```python
+```python-snippet
 from metainformant.math import coalescent
 import time
 

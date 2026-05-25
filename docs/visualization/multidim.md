@@ -9,7 +9,7 @@ Multi-dimensional visualization functions including pair plots, parallel coordin
 Pairplot for a tidy DataFrame, returns seaborn PairGrid or matplotlib figure.
 
 **Example:**
-```python
+```python-snippet
 from metainformant.visualization import pairplot_dataframe
 import pandas as pd
 import numpy as np

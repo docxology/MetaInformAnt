@@ -3,7 +3,7 @@
 Tests call_peaks_simple, call_peaks_broad, merge_peaks, filter_peaks,
 compute_frip, differential_peaks, compute_local_lambda, and
 peak_summit_refinement using real implementations with synthetic
-epigenomic signal data. NO MOCKING.
+epigenomic signal data. REAL IMPLEMENTATION.
 """
 
 from __future__ import annotations

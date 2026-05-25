@@ -25,7 +25,7 @@ usage() {
 METAINFORMANT Unified Test Runner - REAL IMPLEMENTATIONS ONLY
 
 This test suite uses REAL external APIs, databases, and file systems.
-NO mocking, faking, or stubbing is allowed per project policy.
+Only real implementation testing is allowed per project policy.
 
 Usage: $0 [OPTIONS] [--mode MODE]
 

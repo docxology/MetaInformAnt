@@ -57,7 +57,7 @@ Compute Shannon entropy of methylation patterns within sliding windows. High ent
 
 ## Usage Examples
 
-```python
+```python-snippet
 from metainformant.epigenome import (
     MethylationSite,
     compute_beta_values,

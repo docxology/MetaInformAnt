@@ -7,7 +7,7 @@ Tests cover:
 - calculate_ld_decay (analysis.py) - LD decay (r-squared vs distance)
 - detect_population_structure (analysis.py) - Distance-based clustering
 
-All tests use real implementations per project NO MOCKING policy.
+All tests use real implementations per project REAL IMPLEMENTATION policy.
 """
 
 from __future__ import annotations

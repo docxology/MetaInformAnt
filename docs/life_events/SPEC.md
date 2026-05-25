@@ -20,4 +20,4 @@ Documentation for the life_events domain in MetaInformAnt.
 - **Tests**: `tests/life_events/test_life_events_*.py`
 
 ## Testing Policy
-- **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.
+- **Real Implementation**: All tests must use real implementations. Mocks are strictly prohibited.

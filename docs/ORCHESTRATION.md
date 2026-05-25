@@ -58,7 +58,7 @@ flowchart TD
 
 #### 1. CLI Interface (`metainformant`)
 
-**Purpose**: Narrow entry point for a few utilities (`protein`, `quality batch-detect`, module `info` stubs). Not used for full RNA or GWAS pipelines.
+**Purpose**: Narrow entry point for a few utilities (`protein`, `quality batch-detect`, module `info` utilities). Not used for full RNA or GWAS pipelines.
 
 **When to use:**
 - Protein FASTA/PDB one-liners

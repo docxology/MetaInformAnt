@@ -10,7 +10,7 @@ Tests cover all eight RNA simulation functions in metainformant.simulation.model
 - simulate_spatial_expression
 - add_technical_noise
 
-All tests use real numpy arrays and real implementations (NO MOCKING).
+All tests use real numpy arrays and real implementations (REAL IMPLEMENTATION).
 """
 
 from __future__ import annotations

@@ -20,7 +20,7 @@ The numbered scripts in `scripts/` are lightweight wrappers that load configurat
 
 -**Immutable raw data** — `data/raw/` is never modified by any script
 -**Idempotent stages** — safe to re-run; existing outputs are preserved unless `--force`
--**Zero-Mock testing** — tests run real code on synthetic data, no patching
+-**Real-Implementation testing** — tests run real code on synthetic data, no patching
 -**Config-driven** — all paths and thresholds in `config/default.yaml`; no hardcoding
 -**uv-managed** — reproducible environment via `pyproject.toml` + lockfile
 
@@ -91,7 +91,7 @@ template_bioinformatics_project/
  notebooks/ # Exploratory analysis (EDA only, not pipeline)
 
  tests/
- conftest.py # Shared fixtures (real file I/O, Zero-Mock)
+ conftest.py # Shared fixtures (real file I/O, Real-Implementation)
  test_pipeline.py # End-to-end tests for all stages
 
  doc/
@@ -198,7 +198,7 @@ See [Configuration Reference →](doc/configuration.md)
 # Install dev dependencies
 uv sync --extra dev
 
-# Run the full Zero-Mock test suite
+# Run the full Real-Implementation test suite
 uv run pytest tests/ -v
 
 # Run with coverage

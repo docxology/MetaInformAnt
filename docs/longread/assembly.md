@@ -73,7 +73,7 @@ class ConsensusResult:
 
 ### Overlap Finding
 
-```python
+```python-snippet
 def minimizer_sketch(
     sequence: str, k: int = 15, w: int = 10,
 ) -> list[Minimizer]
@@ -81,7 +81,7 @@ def minimizer_sketch(
 
 Compute minimizer sketch for a sequence. `k` is k-mer size, `w` is window size.
 
-```python
+```python-snippet
 def find_overlaps(
     reads: dict[str, str],
     k: int = 15, w: int = 10, min_overlap: int = 500,
@@ -90,7 +90,7 @@ def find_overlaps(
 
 Find all pairwise overlaps using minimizer index. `reads` maps read_name to sequence.
 
-```python
+```python-snippet
 def compute_overlap_graph(overlaps: list[Overlap]) -> dict[str, Any]
 def filter_contained_reads(overlaps: list[Overlap]) -> list[Overlap]
 ```
@@ -99,7 +99,7 @@ Build and clean the overlap graph. `filter_contained_reads` removes reads fully 
 
 ### Consensus
 
-```python
+```python-snippet
 def generate_consensus(reads: list[str], backbone_idx: int | None = None) -> ConsensusResult
 def polish_consensus(consensus: str, reads: list[str], n_rounds: int = 2) -> ConsensusResult
 def multiple_sequence_alignment(sequences: list[str]) -> MSAResult
@@ -110,7 +110,7 @@ def calculate_consensus_quality(consensus: ConsensusResult) -> dict[str, Any]
 
 ### Hybrid Assembly
 
-```python
+```python-snippet
 def hybrid_assemble(
     long_reads: dict[str, str], short_reads: dict[str, str],
 ) -> dict[str, Any]
@@ -126,7 +126,7 @@ def scaffold_with_long_reads(
 
 ## Usage Examples
 
-```python
+```python-snippet
 from metainformant.longread import assembly
 
 # Compute minimizer sketches

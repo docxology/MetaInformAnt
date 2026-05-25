@@ -13,9 +13,9 @@
     {
       "file": "CONTRIBUTING.md",
       "line": 54,
-      "text": "NO_MOCKING_POLICY.md",
-      "url": "NO_MOCKING_POLICY.md",
-      "target": "/home/trim/Documents/Git/MetaInformAnt/NO_MOCKING_POLICY.md",
+      "text": "REAL_IMPLEMENTATION_POLICY.md",
+      "url": "REAL_IMPLEMENTATION_POLICY.md",
+      "target": "/home/trim/Documents/Git/MetaInformAnt/REAL_IMPLEMENTATION_POLICY.md",
       "severity": "HIGH",
       "reason": "Target file does not exist"
     },
@@ -57,7 +57,7 @@
       "reason": "Anchor \"dna\" not found in target file"
     },
     {
-      "file": "docs/NO_MOCKING_POLICY.md",
+      "file": "docs/REAL_IMPLEMENTATION_POLICY.md",
       "line": 84,
       "text": "-1",
       "url": "-1",

@@ -32,7 +32,7 @@ indicates concordant signals.
 
 ### multi_omic_enrichment
 
-```python
+```python-snippet
 def multi_omic_enrichment(
     gene_sets: dict[str, list[str]],
     omic_results: dict[str, dict[str, float]],
@@ -53,7 +53,7 @@ Methods: `"fisher_combined"`, `"stouffer"`, `"min_p"`.
 
 ### active_module_detection
 
-```python
+```python-snippet
 def active_module_detection(
     network: dict[str, list[str]],
     scores: dict[str, float],
@@ -68,7 +68,7 @@ permutation p-value, each with `module_genes`, `module_score`, `p_value`, and
 
 ### pathway_topology_analysis
 
-```python
+```python-snippet
 def pathway_topology_analysis(
     pathway_graph: dict[str, list[str]],
     gene_scores: dict[str, float],
@@ -85,7 +85,7 @@ Returns `impact_factor`, `p_value`, `perturbed_genes` (p < 0.05), and
 
 ### cross_omic_pathway_concordance
 
-```python
+```python-snippet
 def cross_omic_pathway_concordance(
     pathway_results: dict[str, dict[str, float]],
 ) -> dict[str, Any]

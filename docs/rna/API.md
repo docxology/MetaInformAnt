@@ -26,7 +26,7 @@ High-level wrapper functions for each amalgkit subcommand. These functions provi
 
 ### `metadata`
 
-```python
+```python-snippet
 def metadata(
     params: AmalgkitParams | None = None,
     **kwargs: Any
@@ -47,7 +47,7 @@ def metadata(
 
 ### `integrate`
 
-```python
+```python-snippet
 def integrate(
     params: AmalgkitParams | None = None,
     **kwargs: Any
@@ -62,7 +62,7 @@ def integrate(
 
 ### `config`
 
-```python
+```python-snippet
 def config(
     params: AmalgkitParams | None = None,
     **kwargs: Any
@@ -77,7 +77,7 @@ def config(
 
 ### `select`
 
-```python
+```python-snippet
 def select(
     params: AmalgkitParams | None = None,
     **kwargs: Any
@@ -92,7 +92,7 @@ def select(
 
 ### `getfastq`
 
-```python
+```python-snippet
 def getfastq(
     params: AmalgkitParams | None = None,
     **kwargs: Any
@@ -107,7 +107,7 @@ def getfastq(
 
 ### `quant`
 
-```python
+```python-snippet
 def quant(
     params: AmalgkitParams | None = None,
     **kwargs: Any
@@ -122,7 +122,7 @@ def quant(
 
 ### `merge`
 
-```python
+```python-snippet
 def merge(
     params: AmalgkitParams | None = None,
     **kwargs: Any
@@ -137,7 +137,7 @@ def merge(
 
 ### `cstmm`
 
-```python
+```python-snippet
 def cstmm(
     params: AmalgkitParams | None = None,
     **kwargs: Any
@@ -152,7 +152,7 @@ def cstmm(
 
 ### `curate`
 
-```python
+```python-snippet
 def curate(
     params: AmalgkitParams | None = None,
     **kwargs: Any
@@ -167,7 +167,7 @@ def curate(
 
 ### `csca`
 
-```python
+```python-snippet
 def csca(
     params: AmalgkitParams | None = None,
     **kwargs: Any
@@ -182,7 +182,7 @@ def csca(
 
 ### `sanity`
 
-```python
+```python-snippet
 def sanity(
     params: AmalgkitParams | None = None,
     **kwargs: Any
@@ -201,7 +201,7 @@ Low-level step execution functions that provide more control over step execution
 
 ### `run_metadata`
 
-```python
+```python-snippet
 def run_metadata(
     params: Mapping[str, Any] | None = None,
     *,
@@ -219,7 +219,7 @@ def run_metadata(
 
 ### `run_integrate`
 
-```python
+```python-snippet
 def run_integrate(
     params: Mapping[str, Any] | None = None,
     *,
@@ -235,7 +235,7 @@ def run_integrate(
 
 ### `run_config`
 
-```python
+```python-snippet
 def run_config(
     params: Mapping[str, Any] | None = None,
     *,
@@ -251,7 +251,7 @@ def run_config(
 
 ### `run_select`
 
-```python
+```python-snippet
 def run_select(
     params: Mapping[str, Any] | None = None,
     *,
@@ -267,7 +267,7 @@ def run_select(
 
 ### `run_getfastq`
 
-```python
+```python-snippet
 def run_getfastq(
     params: Mapping[str, Any] | None = None,
     *,
@@ -285,7 +285,7 @@ def run_getfastq(
 
 ### `run_quant`
 
-```python
+```python-snippet
 def run_quant(
     params: Mapping[str, Any] | None = None,
     *,
@@ -301,7 +301,7 @@ def run_quant(
 
 ### `run_merge`
 
-```python
+```python-snippet
 def run_merge(
     params: Mapping[str, Any] | None = None,
     *,
@@ -317,7 +317,7 @@ def run_merge(
 
 ### `run_cstmm`
 
-```python
+```python-snippet
 def run_cstmm(
     params: Mapping[str, Any] | None = None,
     *,
@@ -333,7 +333,7 @@ def run_cstmm(
 
 ### `run_curate`
 
-```python
+```python-snippet
 def run_curate(
     params: Mapping[str, Any] | None = None,
     *,
@@ -349,7 +349,7 @@ def run_curate(
 
 ### `run_csca`
 
-```python
+```python-snippet
 def run_csca(
     params: Mapping[str, Any] | None = None,
     *,
@@ -365,7 +365,7 @@ def run_csca(
 
 ### `run_sanity`
 
-```python
+```python-snippet
 def run_sanity(
     params: Mapping[str, Any] | None = None,
     *,
@@ -385,7 +385,7 @@ Functions for planning and executing complete RNA-seq workflows.
 
 ### `load_workflow_config`
 
-```python
+```python-snippet
 def load_workflow_config(config_file: str | Path) -> AmalgkitWorkflowConfig
 ```
 
@@ -404,7 +404,7 @@ def load_workflow_config(config_file: str | Path) -> AmalgkitWorkflowConfig
 
 ### `plan_workflow`
 
-```python
+```python-snippet
 def plan_workflow(config: AmalgkitWorkflowConfig) -> list[tuple[str, AmalgkitParams]]
 ```
 
@@ -423,7 +423,7 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> list[tuple[str, AmalgkitPar
 
 ### `plan_workflow_with_params`
 
-```python
+```python-snippet
 def plan_workflow_with_params(
     config: AmalgkitWorkflowConfig,
     step_params: dict[str, AmalgkitParams],
@@ -438,7 +438,7 @@ def plan_workflow_with_params(
 
 ### `execute_workflow`
 
-```python
+```python-snippet
 def execute_workflow(
     config: AmalgkitWorkflowConfig,
     *,
@@ -446,7 +446,7 @@ def execute_workflow(
     walk: bool = False,
     progress: bool = True,
     show_commands: bool = False,
-) -> list[int]
+) -> WorkflowExecutionResult
 ```
 
 **Module**: `metainformant.rna.engine.workflow`
@@ -477,7 +477,7 @@ class AmalgkitWorkflowConfig:
     log_dir: Path | None = None
     manifest_path: Path | None = None
     per_step: dict[str, AmalgkitParams] = field(default_factory=dict)
-    auto_install_amalgkit: bool = False
+    auto_install_amalgkit: bool = True
     genome: dict[str, Any] | None = None
     filters: dict[str, Any] = field(default_factory=dict)
 ```
@@ -496,7 +496,7 @@ Functions for downloading genomes, preparing transcriptomes, and building kallis
 
 ### `prepare_genome_for_quantification`
 
-```python
+```python-snippet
 def prepare_genome_for_quantification(
     genome_dir: Path,
     species_name: str,
@@ -520,7 +520,7 @@ def prepare_genome_for_quantification(
 
 ### `prepare_transcriptome_for_kallisto`
 
-```python
+```python-snippet
 def prepare_transcriptome_for_kallisto(
     genome_dir: Path,
     species_name: str,
@@ -540,7 +540,7 @@ def prepare_transcriptome_for_kallisto(
 
 ### `build_kallisto_index`
 
-```python
+```python-snippet
 def build_kallisto_index(
     fasta_path: Path,
     index_path: Path,
@@ -566,7 +566,7 @@ def build_kallisto_index(
 
 ### `find_rna_fasta_in_genome_dir`
 
-```python
+```python-snippet
 def find_rna_fasta_in_genome_dir(
     genome_dir: Path,
     accession: str
@@ -581,7 +581,7 @@ def find_rna_fasta_in_genome_dir(
 
 ### `download_rna_fasta_from_ftp`
 
-```python
+```python-snippet
 def download_rna_fasta_from_ftp(
     ftp_url: str,
     genome_dir: Path,
@@ -599,7 +599,7 @@ def download_rna_fasta_from_ftp(
 
 ### `download_cds_fasta_from_ftp`
 
-```python
+```python-snippet
 def download_cds_fasta_from_ftp(
     ftp_url: str,
     genome_dir: Path,
@@ -616,7 +616,7 @@ def download_cds_fasta_from_ftp(
 
 ### `extract_transcripts_from_gff`
 
-```python
+```python-snippet
 def extract_transcripts_from_gff(
     gff_path: Path,
     genome_fasta: Path,
@@ -632,7 +632,7 @@ def extract_transcripts_from_gff(
 
 ### `get_expected_index_path`
 
-```python
+```python-snippet
 def get_expected_index_path(work_dir: Path, species_name: str) -> Path
 ```
 
@@ -644,7 +644,7 @@ def get_expected_index_path(work_dir: Path, species_name: str) -> Path
 
 ### `verify_genome_status`
 
-```python
+```python-snippet
 def verify_genome_status(
     genome_dir: Path,
     work_dir: Path,
@@ -663,7 +663,7 @@ def verify_genome_status(
 
 ### `orchestrate_genome_setup`
 
-```python
+```python-snippet
 def orchestrate_genome_setup(
     config_dir: Path = Path("config/amalgkit"),
     *,
@@ -688,7 +688,7 @@ Functions for managing multi-species workflows and monitoring progress.
 
 ### `discover_species_configs`
 
-```python
+```python-snippet
 def discover_species_configs(
     config_dir: Path = Path("config/amalgkit")
 ) -> dict[str, dict[str, Any]]
@@ -704,7 +704,7 @@ def discover_species_configs(
 
 ### `run_workflow_for_species`
 
-```python
+```python-snippet
 def run_workflow_for_species(
     config_path: Path,
     steps: Sequence[str] | None = None,
@@ -728,7 +728,7 @@ def run_workflow_for_species(
 
 ### `check_workflow_status`
 
-```python
+```python-snippet
 def check_workflow_status(
     config_path: Path,
     *,
@@ -754,7 +754,7 @@ def check_workflow_status(
 
 ### `cleanup_unquantified_samples`
 
-```python
+```python-snippet
 def cleanup_unquantified_samples(
     config_path: Path,
     *,
@@ -776,7 +776,7 @@ def cleanup_unquantified_samples(
 
 ### `monitor_workflows`
 
-```python
+```python-snippet
 def monitor_workflows(
     species_configs: dict[str, Path],
     watch_interval: int = 60,
@@ -801,7 +801,7 @@ Core utilities for CLI interaction and parameter handling.
 
 ### `check_cli_available`
 
-```python
+```python-snippet
 def check_cli_available() -> tuple[bool, str]
 ```
 
@@ -815,10 +815,10 @@ def check_cli_available() -> tuple[bool, str]
 
 ### `ensure_cli_available`
 
-```python
+```python-snippet
 def ensure_cli_available(
     *,
-    auto_install: bool = False
+    auto_install: bool = True
 ) -> tuple[bool, str, dict | None]
 ```
 
@@ -832,7 +832,7 @@ def ensure_cli_available(
 
 ### `build_cli_args`
 
-```python
+```python-snippet
 def build_cli_args(
     params: AmalgkitParams | None,
     *,
@@ -854,7 +854,7 @@ def build_cli_args(
 
 ### `build_amalgkit_command`
 
-```python
+```python-snippet
 def build_amalgkit_command(
     subcommand: str,
     params: AmalgkitParams | None = None
@@ -871,7 +871,7 @@ def build_amalgkit_command(
 
 ### `run_amalgkit`
 
-```python
+```python-snippet
 def run_amalgkit(
     subcommand: str,
     params: AmalgkitParams | None = None,
@@ -909,7 +909,7 @@ Functions for sample-level processing pipelines.
 
 ### `quantify_sample`
 
-```python
+```python-snippet
 def quantify_sample(
     sample_id: str,
     metadata_rows: list[dict[str, Any]],
@@ -930,7 +930,7 @@ def quantify_sample(
 
 ### `convert_sra_to_fastq`
 
-```python
+```python-snippet
 def convert_sra_to_fastq(
     sample_id: str,
     sra_file: Path,
@@ -964,7 +964,7 @@ def convert_sra_to_fastq(
 
 ### `delete_sample_fastqs`
 
-```python
+```python-snippet
 def delete_sample_fastqs(
     sample_id: str,
     fastq_dir: Path
@@ -979,7 +979,7 @@ def delete_sample_fastqs(
 
 ### `run_download_quant_workflow`
 
-```python
+```python-snippet
 def run_download_quant_workflow(
     metadata_path: str | Path,
     getfastq_params: Mapping[str, Any] | None = None,
@@ -1046,7 +1046,7 @@ Functions for tracking workflow progress and sample status.
 
 ### `count_quantified_samples`
 
-```python
+```python-snippet
 def count_quantified_samples(config_path: Path) -> tuple[int, int]
 ```
 
@@ -1060,7 +1060,7 @@ def count_quantified_samples(config_path: Path) -> tuple[int, int]
 
 ### `get_sample_status`
 
-```python
+```python-snippet
 def get_sample_status(config_path: Path, sample_id: str) -> dict[str, Any]
 ```
 
@@ -1079,7 +1079,7 @@ def get_sample_status(config_path: Path, sample_id: str) -> dict[str, Any]
 
 ### `analyze_species_status`
 
-```python
+```python-snippet
 def analyze_species_status(config_path: Path) -> dict[str, Any]
 ```
 
@@ -1101,7 +1101,7 @@ def analyze_species_status(config_path: Path) -> dict[str, Any]
 
 ### `find_unquantified_samples`
 
-```python
+```python-snippet
 def find_unquantified_samples(config_path: Path) -> list[str]
 ```
 
@@ -1115,7 +1115,7 @@ def find_unquantified_samples(config_path: Path) -> list[str]
 
 ### `check_active_downloads`
 
-```python
+```python-snippet
 def check_active_downloads() -> set[str]
 ```
 
@@ -1129,7 +1129,7 @@ def check_active_downloads() -> set[str]
 
 ### `check_workflow_progress`
 
-```python
+```python-snippet
 def check_workflow_progress(config_path: Path) -> dict[str, Any]
 ```
 
@@ -1151,7 +1151,7 @@ def check_workflow_progress(config_path: Path) -> dict[str, Any]
 
 ### `assess_all_species_progress`
 
-```python
+```python-snippet
 def assess_all_species_progress(
     config_dir: Path,
     *,
@@ -1169,7 +1169,7 @@ def assess_all_species_progress(
 
 ### `initialize_progress_tracking`
 
-```python
+```python-snippet
 def initialize_progress_tracking(
     config_path: Path,
     *,
@@ -1191,7 +1191,7 @@ Functions for checking tool availability and environment validation.
 
 ### `check_amalgkit`
 
-```python
+```python-snippet
 def check_amalgkit() -> tuple[bool, str]
 ```
 
@@ -1205,7 +1205,7 @@ def check_amalgkit() -> tuple[bool, str]
 
 ### `check_sra_toolkit`
 
-```python
+```python-snippet
 def check_sra_toolkit() -> tuple[bool, str]
 ```
 
@@ -1219,7 +1219,7 @@ def check_sra_toolkit() -> tuple[bool, str]
 
 ### `check_kallisto`
 
-```python
+```python-snippet
 def check_kallisto() -> tuple[bool, str]
 ```
 
@@ -1233,7 +1233,7 @@ def check_kallisto() -> tuple[bool, str]
 
 ### `check_metainformant`
 
-```python
+```python-snippet
 def check_metainformant() -> tuple[bool, str]
 ```
 
@@ -1247,7 +1247,7 @@ def check_metainformant() -> tuple[bool, str]
 
 ### `check_virtual_env`
 
-```python
+```python-snippet
 def check_virtual_env() -> tuple[bool, str]
 ```
 
@@ -1261,7 +1261,7 @@ def check_virtual_env() -> tuple[bool, str]
 
 ### `check_rscript`
 
-```python
+```python-snippet
 def check_rscript() -> tuple[bool, str]
 ```
 
@@ -1275,7 +1275,7 @@ def check_rscript() -> tuple[bool, str]
 
 ### `check_dependencies`
 
-```python
+```python-snippet
 def check_dependencies() -> dict[str, tuple[bool, str]]
 ```
 
@@ -1289,7 +1289,7 @@ def check_dependencies() -> dict[str, tuple[bool, str]]
 
 ### `validate_environment`
 
-```python
+```python-snippet
 def validate_environment() -> dict[str, Any]
 ```
 
@@ -1310,7 +1310,7 @@ Functions for cleaning up partial downloads and fixing file naming issues.
 
 ### `cleanup_partial_downloads`
 
-```python
+```python-snippet
 def cleanup_partial_downloads(
     config_path: Path,
     *,
@@ -1332,7 +1332,7 @@ def cleanup_partial_downloads(
 
 ### `fix_abundance_naming`
 
-```python
+```python-snippet
 def fix_abundance_naming(quant_dir: Path, sample_id: str) -> bool
 ```
 
@@ -1350,7 +1350,7 @@ def fix_abundance_naming(quant_dir: Path, sample_id: str) -> bool
 
 ### `fix_abundance_naming_for_species`
 
-```python
+```python-snippet
 def fix_abundance_naming_for_species(
     config_path: Path,
 ) -> tuple[int, int]
@@ -1370,7 +1370,7 @@ Functions for RNA-protein integration, translation efficiency analysis, and ribo
 
 ### `calculate_translation_efficiency`
 
-```python
+```python-snippet
 def calculate_translation_efficiency(
     rna_df: pd.DataFrame,
     protein_df: pd.DataFrame,
@@ -1393,7 +1393,7 @@ def calculate_translation_efficiency(
 
 ### `predict_protein_abundance_from_rna`
 
-```python
+```python-snippet
 def predict_protein_abundance_from_rna(
     rna_df: pd.DataFrame,
     training_rna: pd.DataFrame | None = None,
@@ -1418,7 +1418,7 @@ def predict_protein_abundance_from_rna(
 
 ### `ribosome_profiling_integration`
 
-```python
+```python-snippet
 def ribosome_profiling_integration(
     rna_df: pd.DataFrame,
     ribo_df: pd.DataFrame,
@@ -1448,7 +1448,7 @@ Functions for validating RNA-seq pipeline outputs and sample quality.
 
 ### `validate_all_samples`
 
-```python
+```python-snippet
 def validate_all_samples(config: AmalgkitWorkflowConfig) -> dict[str, Any]
 ```
 
@@ -1469,7 +1469,7 @@ Functions for discovering species with RNA-seq data and generating configuration
 
 ### `search_species_with_rnaseq`
 
-```python
+```python-snippet
 def search_species_with_rnaseq(
     search_query: str,
     *,
@@ -1493,7 +1493,7 @@ def search_species_with_rnaseq(
 
 ### `get_genome_info`
 
-```python
+```python-snippet
 def get_genome_info(taxonomy_id: str, species_name: str) -> dict[str, Any] | None
 ```
 
@@ -1511,7 +1511,7 @@ def get_genome_info(taxonomy_id: str, species_name: str) -> dict[str, Any] | Non
 
 ### `generate_config_yaml`
 
-```python
+```python-snippet
 def generate_config_yaml(
     species_name: str,
     species_data: dict[str, Any],

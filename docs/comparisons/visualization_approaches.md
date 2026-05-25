@@ -182,7 +182,7 @@ flowchart TD
 
 Genomics-specific plots for variant and expression analysis.
 
-```python
+```python-snippet
 from metainformant.visualization.genomics import (
     manhattan_plot,
     volcano_plot,
@@ -218,7 +218,7 @@ regional_plot(
 
 Gene expression visualization across samples/conditions.
 
-```python
+```python-snippet
 from metainformant.visualization.expression import (
     expression_heatmap,
     ma_plot,
@@ -250,7 +250,7 @@ ma_plot(
 
 Phylogenetic tree visualization in multiple layouts.
 
-```python
+```python-snippet
 from metainformant.visualization.trees import (
     plot_phylo_tree,
     plot_tree_rectangular,
@@ -280,7 +280,7 @@ plot_tree_radial(tree, show_confidence=True)
 
 Biological network visualization (PPI, regulatory, pathways).
 
-```python
+```python-snippet
 from metainformant.visualization.networks import (
     plot_network,
     plot_network_circular,
@@ -313,7 +313,7 @@ plot_pathway(
 
 Statistical diagnostic and summary plots.
 
-```python
+```python-snippet
 from metainformant.visualization.statistical import (
     histogram,
     boxplot,
@@ -355,7 +355,7 @@ violin_plot(
 
 Dimensionality reduction visualizations.
 
-```python
+```python-snippet
 from metainformant.visualization.dimred import (
     pca_plot,
     umap_plot,
@@ -394,7 +394,7 @@ scree_plot(
 
 Quality control visualizations for sequencing data.
 
-```python
+```python-snippet
 from metainformant.visualization.quality import (
     quality_scores,
     adapter_content,
@@ -430,7 +430,7 @@ gc_content(
 
 Information theory visualizations.
 
-```python
+```python-snippet
 from metainformant.visualization.information import (
     entropy_plot,
     mutual_information_heatmap,
@@ -465,7 +465,7 @@ information_content_profile(
 
 Animated visualizations for dynamic processes.
 
-```python
+```python-snippet
 from metainformant.visualization.animations import (
     animate_time_series,
     animate_evolution,
@@ -510,7 +510,7 @@ animate_clustering(
 
 **Recommended**: `plots/` + `styling/` with publication theme
 
-```python
+```python-snippet
 from metainformant.visualization import set_publication_style
 set_publication_style()  # Font: Helvetica, 8pt; DPI: 300
 
@@ -541,7 +541,7 @@ histogram(df['expression'], bins=50)
 
 **Recommended**: Enable Plotly backend
 
-```python
+```python-snippet
 from metainformant.visualization import enable_interactive
 enable_interactive()  # Switches to Plotly
 
@@ -557,7 +557,7 @@ fig.show()  # Opens in browser
 
 **Recommended**: `dashboards/` module
 
-```python
+```python-snippet
 from metainformant.visualization.dashboards import (
     create_dashboard,
     multi_panel_figure
@@ -579,7 +579,7 @@ fig.save("gwas_dashboard.pdf")
 
 **Recommended**: `animations/` + high-contrast styling
 
-```python
+```python-snippet
 from metainformant.visualization import set_presentation_style
 set_presentation_style()  # Larger fonts, bold colors
 
@@ -618,7 +618,7 @@ animate_time_series(data, save_as="trend.mp4")
 | `default` | General use | Matplotlib default | DejaVu Sans |
 | `dark` | Dark background talks | Neon/bright | Sans-serif white |
 
-```python
+```python-snippet
 from metainformant.visualization.styling import (
     set_theme,
     set_color_palette,
@@ -641,7 +641,7 @@ set_color_palette('colorblind')  # Okabe-Ito scale
 
 ## 8. Example: Multi-Panel Figure Assembly
 
-```python
+```python-snippet
 from metainformant.visualization.dashboards import create_figure_grid
 from metainformant.visualization.genomics import manhattan_plot, qq_plot
 from metainformant.visualization.statistical import histogram
@@ -667,7 +667,7 @@ fig.save("gwas_manuscript_figure.pdf", dpi=300)
 
 ### Equivalence: GWAS Plotting Across Modules
 
-```python
+```python-snippet
 # Option 1: Direct from gwas module (has built-in viz)
 from metainformant.gwas.visualization import plot_manhattan, plot_qq
 plot_manhattan(gwas_results)
@@ -685,7 +685,7 @@ manhattan_plot(
 
 ### Equivalence: Expression Visualization
 
-```python
+```python-snippet
 # From rna module
 from metainformant.rna import analysis as rna_analysis
 rna_analysis.plot_expression_heatmap(expression_matrix)
@@ -704,7 +704,7 @@ expression_heatmap(
 
 If existing plots don't fit your needs, extend via `visualization.plots`:
 
-```python
+```python-snippet
 from metainformant.visualization.plots.base import BasePlotter
 import matplotlib.pyplot as plt
 

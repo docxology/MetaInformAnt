@@ -140,6 +140,6 @@ class TestDownloadFile:
         dest.parent.mkdir(parents=True, exist_ok=True)
 
         # The actual download will fail (no real curl call in unit test)
-        # but we're testing the path handling if we mock subprocess
+        # but we're testing the path handling with the real subprocess path
         # Here we just verify the path setup logic in the test setup
         assert dest.parent.exists()

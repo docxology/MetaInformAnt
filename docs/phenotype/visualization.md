@@ -19,7 +19,7 @@ for phenotype network plots.
 
 ### plot_trait_distribution
 
-```python
+```python-snippet
 def plot_trait_distribution(
     trait_values: np.ndarray,
     trait_name: str = "Trait",
@@ -36,7 +36,7 @@ available, falls back to matplotlib histogram with `scipy.stats.gaussian_kde`.
 
 ### plot_trait_correlation_matrix
 
-```python
+```python-snippet
 def plot_trait_correlation_matrix(
     trait_data: pd.DataFrame,
     *,
@@ -52,7 +52,7 @@ correlation values when seaborn is available.
 
 ### plot_life_course_trajectory
 
-```python
+```python-snippet
 def plot_life_course_trajectory(
     life_events: List[Dict[str, Any]],
     individual_id: str | None = None,
@@ -69,7 +69,7 @@ Timeline plot of life events. Each event dictionary must contain `age` and
 
 ### plot_morphological_measurements
 
-```python
+```python-snippet
 def plot_morphological_measurements(
     measurements: Dict[str, np.ndarray],
     *,
@@ -85,7 +85,7 @@ seaborn `boxplot` or colour-coded matplotlib patches.
 
 ### plot_behavioral_patterns
 
-```python
+```python-snippet
 def plot_behavioral_patterns(
     behavioral_data: pd.DataFrame,
     time_column: str = "time",
@@ -103,7 +103,7 @@ behaviour categories.
 
 ### plot_phenotype_pca
 
-```python
+```python-snippet
 def plot_phenotype_pca(
     phenotype_data: np.ndarray,
     trait_names: List[str] | None = None,
@@ -120,7 +120,7 @@ scikit-learn for PCA computation.
 
 ### plot_trait_heritability
 
-```python
+```python-snippet
 def plot_trait_heritability(
     heritability_estimates: Dict[str, float],
     confidence_intervals: Dict[str, Tuple[float, float]] | None = None,
@@ -137,7 +137,7 @@ bars for confidence intervals. Y-axis is clamped to [0, 1].
 
 ### plot_life_history_comparison
 
-```python
+```python-snippet
 def plot_life_history_comparison(
     species_data: Dict[str, List[Dict[str, Any]]],
     *,
@@ -152,7 +152,7 @@ Cumulative event curves across species for comparative life history analysis.
 
 ### plot_phenotype_network
 
-```python
+```python-snippet
 def plot_phenotype_network(
     phenotype_correlations: np.ndarray,
     phenotype_names: List[str],
@@ -170,7 +170,7 @@ Requires networkx.
 
 ### create_interactive_phenotype_browser
 
-```python
+```python-snippet
 def create_interactive_phenotype_browser(
     phenotype_data: pd.DataFrame,
     *,

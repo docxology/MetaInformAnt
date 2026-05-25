@@ -30,7 +30,7 @@ def test_regional_plot_detailed(tmp_path: Path) -> None:
 
 def test_regional_ld_plot(tmp_path: Path) -> None:
     """Test regional LD plot generation."""
-    # Create a mock VCF file path (function expects VCF path, not results)
+    # Create a ann_data VCF file path (function expects VCF path, not results)
     vcf_path = tmp_path / "test.vcf"
     vcf_path.touch()  # Create empty file for testing
 

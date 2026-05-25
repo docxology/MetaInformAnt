@@ -113,4 +113,4 @@ Review [Safety](SAFETY.md) for error handling, validation, and rollback strategi
 - [RNA Module](../rna/) - Example of sophisticated orchestration (8,300+ samples across 28 species)
 - [Workflow Manager API](../../src/metainformant/core/engine/workflow_manager.py) - Source code reference
 - [Parallel Execution](../../src/metainformant/core/execution/parallel.py) - ThreadPoolExecutor patterns
-- [Zero-Mocking Policy](../../tests/NO_MOCKING_POLICY.md) - Testing philosophy requiring real implementations
+- [Real-Implementation Policy](../../tests/REAL_IMPLEMENTATION_TESTING_POLICY.md) - Testing philosophy requiring real implementations

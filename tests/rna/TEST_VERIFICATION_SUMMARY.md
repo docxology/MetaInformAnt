@@ -136,7 +136,7 @@ While there is some overlap in test coverage (e.g., `build_cli_args` tested in m
 
 ## Test Functionality Verification
 
-### All Tests Follow NO_MOCKING_POLICY
+### All Tests Follow real-implementation policy
 
 - Real implementations only
 - Real CLI calls when amalgkit available
@@ -189,7 +189,7 @@ All v0.12.20 features work correctly in code:
 - Complementary coverage across files
 
 ### Test Functionality: Verified
-- All tests follow NO_MOCKING_POLICY
+- All tests follow real-implementation policy
 - All tests are functional and correct
 - All v0.12.20 features verified
 

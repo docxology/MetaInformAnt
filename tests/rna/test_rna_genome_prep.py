@@ -1,6 +1,6 @@
 """Tests for RNA genome preparation functions.
 
-This module tests genome preparation functionality following NO_MOCKING_POLICY.
+This module tests genome preparation functionality following the real-implementation policy.
 All tests use real file operations.
 """
 

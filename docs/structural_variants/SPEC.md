@@ -2,7 +2,7 @@
 
 ## Public API
 
-```python
+```python-snippet
 def detect_svs(bam: str, reference: str, callers: list[str], output_dir: str) -> pd.DataFrame
 def annotate_svs(sv_calls: pd.DataFrame, gencode_gff: str, repeatmasker: str, gnomad_sv: str) -> pd.DataFrame
 def merge_caller_outputs(calls_dict: dict[str,str], strategy: str, min_callers: int) -> list[SVRecord]

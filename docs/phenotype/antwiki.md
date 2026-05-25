@@ -4,7 +4,7 @@
 
 Function: `load_antwiki_json`
 
-```python
+```python-snippet
 from pathlib import Path
 from metainformant.phenotype import antwiki
 
@@ -16,7 +16,7 @@ entries = antwiki.load_antwiki_json(Path("tests/data/phenotype/antwiki_dataset_s
 Comprehensive web scraping functionality for extracting species data from AntWiki.
 
 **Basic Usage:**
-```python
+```python-snippet
 from metainformant.phenotype.scraper import AntWikiScraper, load_scraper_config
 
 # Load configuration

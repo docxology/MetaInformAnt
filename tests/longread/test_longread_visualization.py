@@ -1,7 +1,7 @@
 """Tests for longread workflow orchestrator and pipeline config not covered by test_longread.py.
 
 Tests LongReadOrchestrator, PipelineStep, PipelineResult, and pipeline configuration.
-All tests use real implementations -- NO MOCKING.
+All tests use real implementations -- REAL IMPLEMENTATION.
 
 Note: Visualization functions are fully tested in test_longread.py (TestVisualization class).
 This file tests the workflow orchestration layer that drives those visualizations.

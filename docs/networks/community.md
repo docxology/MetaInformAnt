@@ -155,7 +155,7 @@ communities = detect_communities(
 
 ### With Protein Interaction Networks
 
-```python
+```python-snippet
 from metainformant.networks import ppi, community
 from metainformant.ontology.core import go
 
@@ -173,7 +173,7 @@ for module_id, proteins in modules.items():
 
 ### With Gene Expression Data
 
-```python
+```python-snippet
 from metainformant.networks import regulatory, community
 
 # Build regulatory network

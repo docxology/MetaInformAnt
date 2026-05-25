@@ -219,7 +219,7 @@ Core functions:
 ## Integration Examples
 
 ### With DNA Module
-```python
+```python-snippet
 from metainformant.dna import variants
 from metainformant.gwas import parse_vcf_full, apply_qc_filters
 

@@ -23,7 +23,7 @@ to restrict which edge types are followed.
 
 ### ancestors
 
-```python
+```python-snippet
 def ancestors(
     onto: Ontology, term_id: str, relation_type: str = "is_a",
 ) -> Set[str]
@@ -34,7 +34,7 @@ specified relationship type. Raises `TermNotFoundError` if term_id is absent.
 
 ### descendants
 
-```python
+```python-snippet
 def descendants(
     onto: Ontology, term_id: str, relation_type: str = "is_a",
 ) -> Set[str]
@@ -44,7 +44,7 @@ Returns all descendants of a term (including the term itself).
 
 ### common_ancestors
 
-```python
+```python-snippet
 def common_ancestors(
     onto: Ontology, term1: str, term2: str, relation_type: str = "is_a",
 ) -> Set[str]
@@ -54,7 +54,7 @@ Intersection of ancestor sets for two terms.
 
 ### most_informative_common_ancestor
 
-```python
+```python-snippet
 def most_informative_common_ancestor(
     onto: Ontology, term1: str, term2: str,
     ic_map: Dict[str, float], relation_type: str = "is_a",
@@ -66,7 +66,7 @@ Returns the common ancestor with the highest information content. Raises
 
 ### path_to_root
 
-```python
+```python-snippet
 def path_to_root(
     onto: Ontology, term_id: str, relation_type: str = "is_a",
 ) -> List[str]
@@ -77,7 +77,7 @@ first parent at each step.
 
 ### shortest_path
 
-```python
+```python-snippet
 def shortest_path(
     onto: Ontology, term1: str, term2: str, relation_type: str = "is_a",
 ) -> List[str]
@@ -88,7 +88,7 @@ if no path exists.
 
 ### distance
 
-```python
+```python-snippet
 def distance(
     onto: Ontology, term1: str, term2: str, relation_type: str = "is_a",
 ) -> int
@@ -98,7 +98,7 @@ Minimum edge count between two terms, or -1 if not connected.
 
 ### get_subontology
 
-```python
+```python-snippet
 def get_subontology(
     onto: Ontology, root_terms: Iterable[str], relation_type: str = "is_a",
 ) -> Ontology
@@ -109,7 +109,7 @@ terms and the relationships between them.
 
 ### subgraph
 
-```python
+```python-snippet
 def subgraph(
     onto: Ontology, term_ids: List[str], relation_type: str = "is_a",
 ) -> Ontology
@@ -120,7 +120,7 @@ relationships that connect them.
 
 ### find_terms_by_name / find_terms_by_namespace / filter_by_namespace
 
-```python
+```python-snippet
 def find_terms_by_name(onto: Ontology, name_pattern: str, case_sensitive: bool = False) -> List[str]
 def find_terms_by_namespace(onto: Ontology, namespace: str) -> List[str]
 def filter_by_namespace(onto: Ontology, namespace: str) -> Ontology
@@ -132,7 +132,7 @@ def filter_by_namespace(onto: Ontology, namespace: str) -> Ontology
 
 ### get_roots / get_leaves
 
-```python
+```python-snippet
 def get_roots(onto: Ontology, relation_type: str = "is_a") -> Set[str]
 def get_leaves(onto: Ontology, relation_type: str = "is_a") -> Set[str]
 ```
@@ -141,7 +141,7 @@ Root terms have no parents; leaf terms have no children.
 
 ### information_content / calculate_ic_map
 
-```python
+```python-snippet
 def information_content(onto: Ontology, term_id: str, corpus_size: int | None = None) -> float
 def calculate_ic_map(onto: Ontology, corpus_size: int | None = None) -> Dict[str, float]
 ```
@@ -150,7 +150,7 @@ IC for a single term or for all terms in the ontology.
 
 ### get_subontology_stats
 
-```python
+```python-snippet
 def get_subontology_stats(onto: Ontology) -> Dict[str, Any]
 ```
 
@@ -160,7 +160,7 @@ counts, and definition coverage.
 
 ### validate_ontology_integrity
 
-```python
+```python-snippet
 def validate_ontology_integrity(onto: Ontology) -> Tuple[bool, List[str]]
 ```
 
@@ -169,7 +169,7 @@ self-loops, and duplicate relationships.
 
 ### Cache Management
 
-```python
+```python-snippet
 def clear_cache() -> None
 def set_cache_enabled(enabled: bool) -> None
 ```

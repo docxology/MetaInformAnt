@@ -45,7 +45,7 @@ High‑level map of the module's documentation.
 
 ## Module API summary
 
-```python
+```python-snippet
 from metainformant.pharmacogenomics import (
     call_star_alleles,
     determine_diplotype,

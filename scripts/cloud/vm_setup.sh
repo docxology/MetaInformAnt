@@ -30,7 +30,7 @@ fi
 echo "▸ Installing Python dependencies..."
 cd /opt/MetaInformAnt
 pip3 install --break-system-packages -e "." 2>&1 | tail -3
-pip3 install --break-system-packages amalgkit 2>&1 | tail -3
+pip3 install --break-system-packages git+https://github.com/kfuku52/amalgkit 2>&1 | tail -3
 echo "  ✓ Python deps installed"
 
 # Verify all tools

@@ -1,6 +1,6 @@
 """Tests for metainformant.spatial.io -- data loading for Visium, MERFISH, Xenium.
 
-All tests use real implementations (NO mocking policy).
+All tests use real implementations (real-implementation policy).
 """
 
 from __future__ import annotations

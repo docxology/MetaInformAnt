@@ -241,7 +241,7 @@ def validate_environment() -> Dict[str, Any]:
         recommendations.append("Virtual environment recommended: python -m venv .venv && source .venv/bin/activate")
 
     if not deps["amalgkit"][0]:
-        recommendations.append("Install amalgkit: uv pip install amalgkit")
+        recommendations.append("Install amalgkit: uv pip install git+https://github.com/kfuku52/amalgkit")
 
     if not deps["sra_toolkit"][0]:
         recommendations.append("Install SRA Toolkit: apt-get install sra-toolkit or conda install sra-tools")

@@ -621,7 +621,7 @@ if errors:
 ```
 
 Or use `pydantic` (optional):
-```python
+```python-snippet
 from pydantic import BaseModel, Field
 
 class PipelineConfig(BaseModel):
@@ -665,7 +665,7 @@ logger.info(f"Running with {threads} threads on {input_dir}")
 
 ## Testing
 
-Config functions are pure; no mocking needed:
+Config functions are pure; real implementation needed:
 ```python
 def test_merge_configs():
     base = {"a": 1, "b": {"x": 10}}

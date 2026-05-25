@@ -422,7 +422,7 @@ joint = joint_pca(multi, n_components=20)
 | **Primary Use Cases** | Predict phenotypes from genotypes/omics, feature discovery, biomarker identification, classification of disease states |
 
 **Example**:
-```python
+```python-snippet
 from metainformant.ml import classification, features
 
 # Feature selection
@@ -535,7 +535,7 @@ cv_results = classification.cross_validate_classifier(clf, X_selected, y, cv=5)
 | **Primary Use Cases** | Biodiversity assessment, community composition comparison, environmental drivers of community structure, phylogenetic diversity analysis |
 
 **Example**:
-```python
+```python-snippet
 from metainformant.ecology.analysis import shannon_index, bray_curtis, nmds
 alpha = shannon_index(abundance_matrix)
 beta_dm = bray_curtis(abundance_matrix)
@@ -560,7 +560,7 @@ nmds_coords = nmds(beta_dm, n_components=2)
 | **Primary Use Cases** | Method validation (truth-known), power analysis, null hypothesis generation, benchmark dataset creation, educational demos |
 
 **Example**: Simulate neutral dataset to test Tajima's D → should be ~0:
-```python
+```python-snippet
 from metainformant.simulation.models.coalescent import simulate_sequences
 seqs = simulate_sequences(n=100, length=1000, theta=10)
 from metainformant.dna.population import tajimas_d

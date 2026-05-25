@@ -31,7 +31,7 @@ Generate HTML fragment via `export_report(report, format='html')` and embed.
 
 ## REST API pattern (FastAPI)
 
-```python
+```python-snippet
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -79,7 +79,7 @@ CREATE INDEX idx_pgx_patient ON patient_pgx(patient_id);
 
 Bulk insert from Pandas:
 
-```python
+```python-snippet
 import psycopg2, pandas as pd
 df = pd.read_csv('cohort_phenotypes.tsv', sep='	')
 conn = psycopg2.connect(dsn)
@@ -93,7 +93,7 @@ conn.commit()
 
 ## Snakemake / Nextflow pipeline embedding
 
-```python
+```snakemake
 rule pgx_phenotype:
     input:
         vcf='data/{sample}.vcf.gz',

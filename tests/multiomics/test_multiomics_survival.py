@@ -4,7 +4,7 @@ Tests Cox proportional hazards, Kaplan-Meier estimation, log-rank tests,
 multi-omic survival models (Lasso-Cox), risk stratification, and
 concordance index computation.
 
-All tests use real implementations with realistic survival data (NO mocking).
+All tests use real implementations with realistic survival data (real-implementation policy).
 """
 
 from __future__ import annotations

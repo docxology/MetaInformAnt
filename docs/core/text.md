@@ -699,7 +699,7 @@ def remove_control_chars_fast(text: str) -> str:
 
 ### Property-Based Testing (Hypothesis)
 
-```python
+```python-snippet
 from hypothesis import given, strategies as st
 
 @given(st.text())

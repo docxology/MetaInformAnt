@@ -9,7 +9,7 @@ flowchart LR
 
 Example
 
-```python
+```python-snippet
 from metainformant.dna import variants
 
 # Parse VCF file for basic statistics

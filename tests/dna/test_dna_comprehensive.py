@@ -2,7 +2,7 @@
 
 These tests cover the core DNA analysis functionality including
 composition analysis, distance calculations, sequence manipulation,
-and phylogenetic analysis. All tests follow the NO_MOCKING policy
+and phylogenetic analysis. All tests follow the real-implementation policy
 and use real implementations.
 """
 

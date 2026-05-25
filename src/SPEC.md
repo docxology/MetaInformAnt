@@ -74,4 +74,4 @@ python -m metainformant --help
 - All source code resides in src/metainformant/
 - Use absolute imports from metainformant.*
 - Each module has its own SPEC.md documenting internals
-- Follow NO MOCKING policy in all implementations
+- Follow REAL IMPLEMENTATION policy in all implementations

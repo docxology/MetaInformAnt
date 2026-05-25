@@ -26,6 +26,24 @@ def check_amalgkit_availability() -> Tuple[bool, str]:
     return available, msg
 
 
+def ensure_required_amalgkit(auto_install: bool = True) -> Tuple[bool, str]:
+    """Ensure the required upstream amalgkit CLI is installed and current."""
+    from metainformant.rna.amalgkit.amalgkit import (
+        AMALGKIT_INSTALL_SPEC,
+        MIN_AMALGKIT_VERSION,
+        ensure_cli_available,
+    )
+
+    ok, msg, install_record = ensure_cli_available(auto_install=auto_install, min_version=MIN_AMALGKIT_VERSION)
+    if ok:
+        return True, msg
+
+    install_hint = f"Install with: uv pip install --upgrade {AMALGKIT_INSTALL_SPEC}"
+    if install_record and install_record.get("attempted"):
+        return False, f"{msg}. Auto-install attempted from {AMALGKIT_INSTALL_SPEC}. {install_hint}"
+    return False, f"{msg}. {install_hint}"
+
+
 def check_quantification_tools() -> Dict[str, Tuple[bool, str]]:
     """Check availability of quantification tools.
 
@@ -240,9 +258,9 @@ def check_step_dependencies(step_name: str, params: Dict[str, Any], config: Any)
         "sanity",
     }
     if step_name in amalgkit_steps:
-        ok, msg = check_amalgkit_availability()
+        ok, msg = ensure_required_amalgkit(auto_install=bool(getattr(config, "auto_install_amalgkit", True)))
         if not ok:
-            return False, f"Amalgkit CLI not available: {msg}"
+            return False, f"Required amalgkit CLI unavailable: {msg}"
 
     if step_name == "quant":
         # Kallisto or Salmon required depending on tool

@@ -19,7 +19,7 @@ Covers:
     - phylogenetic_signal (Blomberg's K, Pagel's lambda)
     - build_simple_tree (UPGMA, NJ)
 
-Uses real implementations only (NO mocking per project policy).
+Uses real implementations only (real-implementation policy).
 """
 
 from __future__ import annotations

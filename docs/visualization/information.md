@@ -9,7 +9,7 @@ Information theory visualization functions for information-theoretic analysis in
 Plot entropy values across positions or sequences.
 
 **Example:**
-```python
+```python-snippet
 from metainformant.visualization import entropy_plot
 import numpy as np
 

@@ -15,7 +15,7 @@
 ## Maintenance Notes
 
 - **System**: Part of the METAINFORMANT Domain layer.
-- **Style**: Strict type hinting, no mocks in tests, pure Python fallbacks for numpy.
+- **Style**: Strict type hinting, real implementations in tests, pure Python fallbacks for numpy.
 - **Stability**: API boundaries should be respected.
 - **Benchmarking**: `analysis/benchmarking.py` provides pilot-run → full-genome time extrapolation using known computational complexity models (O(n·m), O(n²·m), etc.).
 - **Expression**: `data/expression.py` provides `ExpressionLoader` for integrating Amalgkit kallisto quantification with GWAS/eQTL pipelines.

@@ -295,7 +295,7 @@ cli
 SPEC
 ORCHESTRATION
 COMPARISON_GUIDES
-NO_MOCKING_POLICY
+real-implementation policy
 ```
 
 ### Module Documentation
@@ -359,7 +359,7 @@ testing
 
 ### **Production Ready**
 
-- **Real Implementations**: No mocks or fakes - actual external API calls and tool integration
+- **Real Implementations**: Actual external API calls and tool integrations
 - **Scalable**: Parallel processing, memory-efficient algorithms for large datasets
 - **Robust**: Comprehensive error handling and validation
 - **Tested**: Extensive test suite with real-world validation

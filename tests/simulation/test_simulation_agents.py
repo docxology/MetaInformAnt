@@ -14,7 +14,7 @@ Tests cover:
 - Edge cases (single agent, boundary positions, empty data)
 - Reproducibility with seeded RNGs
 
-All tests use real implementations (NO mocking).
+All tests use real implementations (real-implementation policy).
 """
 
 from __future__ import annotations

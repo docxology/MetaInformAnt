@@ -1,3 +1,5 @@
+> Historical snapshot: retained for provenance. Current code, tests, and domain docs are the source of truth.
+
 # Markdown Link Validation Report
 
 > Historical snapshot: this link validation report is retained for provenance
@@ -66,7 +68,7 @@
 - **.cursor/skills/metainformant-docs-spatial/SKILL.md** (line 11): `../../../docs/spatial/README.md` → Target file does not exist [text: '`README.md`']
 - **.uv-cache/archive-v0/HPUV5eY1Egy2sbZam-7ei/mdit_py_plugins/texmath/README.md** (line 135): `./license.txt` → Target file does not exist [text: 'MIT License']
 - **.uv-cache/archive-v0/zuLo9T1ymzqfAryXNEKZL/nltk-3.9.2.dist-info/licenses/README.md** (line 15): `CONTRIBUTING.md` → Target file does not exist [text: 'CONTRIBUTING.md']
-- **CONTRIBUTING.md** (line 54): `NO_MOCKING_POLICY.md` → Target file does not exist [text: 'NO_MOCKING_POLICY.md']
+- **CONTRIBUTING.md** (line 54): `REAL_IMPLEMENTATION_POLICY.md` → Target file does not exist [text: 'REAL_IMPLEMENTATION_POLICY.md']
 - **README.md** (line 471): `src/metainformant/metagenomics/taxonomy/` → Target file does not exist [text: '`taxonomy/`']
 - **README.md** (line 472): `src/metainformant/pharmacogenomics/interactions/` → Target file does not exist [text: '`interactions/`']
 - **config/README.md** (line 154): `../src/metainformant/core/config.py` → Target file does not exist [text: 'Core Config Module']
@@ -77,7 +79,7 @@
 - **docs/FAQ.md** (line 205): `:, :10` → Undefined reference [text: '"pcs"']
 - **docs/FAQ.md** (line 325): `:` → Undefined reference [text: '"dataset"']
 - **docs/GETTING_STARTED.md** (line 340): `tasks/` → Target file does not exist [text: 'docs/tasks/']
-- **docs/NO_MOCKING_POLICY.md** (line 84): `-1` → Undefined reference [text: '-1']
+- **docs/REAL_IMPLEMENTATION_POLICY.md** (line 84): `-1` → Undefined reference [text: '-1']
 - **docs/TUTORIALS.md** (line 284): `k` → Undefined reference [text: '"kmer_analyses"']
 - **docs/TUTORIALS.md** (line 305): `'total_sequences'` → Undefined reference [text: ''summary'']
 - **docs/TUTORIALS.md** (line 306): `'mean_entropy'` → Undefined reference [text: ''summary'']
@@ -419,7 +421,7 @@
 - docs/COMPARISON_GUIDES.md: 1 broken link(s)
 - docs/CONTRIBUTING.md: 1 broken link(s)
 - docs/GETTING_STARTED.md: 1 broken link(s)
-- docs/NO_MOCKING_POLICY.md: 1 broken link(s)
+- docs/REAL_IMPLEMENTATION_POLICY.md: 1 broken link(s)
 - docs/agents/SPEC.md: 1 broken link(s)
 - docs/agents/TROUBLESHOOTING.md: 1 broken link(s)
 - docs/agents/index.md: 1 broken link(s)

@@ -5,7 +5,7 @@ Comprehensive bioinformatics toolkit for multi-omic analysis. Domain-driven, mod
 ## Design Philosophy
 
 - **Domain-Driven Design (DDD)**: Logic partitioned into biological domains (DNA, RNA, Protein, etc.)
-- **No-Mock Testing**: All tests use real implementations; mocks are strictly prohibited
+- **Real-Implementation Testing**: All tests use real implementations; mocks are strictly prohibited
 - **UV Package Management**: Dependencies managed exclusively via `uv` (never pip)
 - **AI-Native Documentation**: High-fidelity function indices for AI agent navigation
 
@@ -70,7 +70,7 @@ All program-generated results go to `output/`. Never create documentation or rep
 
 ### Testing Policy
 
-- **No Mocking**: Tests use real implementations with actual file I/O and API calls
+- **Real Implementation**: Tests use real implementations with actual file I/O and API calls
 - **Graceful Skips**: When external dependencies unavailable, skip with clear messages
 - **Markers**: `@pytest.mark.network`, `@pytest.mark.external_tool`, `@pytest.mark.slow`
 

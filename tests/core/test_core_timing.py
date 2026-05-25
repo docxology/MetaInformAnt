@@ -1,6 +1,6 @@
 """Comprehensive tests for metainformant.core.utils.timing module.
 
-Tests all timing utilities with real implementations (NO mocking):
+Tests all timing utilities with real implementations (real-implementation policy):
 - timed decorator (with and without arguments)
 - Timer context manager
 - rate_limiter decorator

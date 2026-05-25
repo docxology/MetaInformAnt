@@ -12,7 +12,7 @@ Minimal, streaming FASTQ utilities with gzip support. These helper functions are
 
 #### Usage
 
-```python
+```python-snippet
 from metainformant.dna import fastq
 
 avg = fastq.average_phred_by_position("/path/to/reads.fastq.gz")

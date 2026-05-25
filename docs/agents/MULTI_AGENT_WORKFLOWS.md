@@ -75,7 +75,7 @@ flowchart TB
 
 ### Code Structure
 
-```python
+```python-snippet
 # src/metainformant/rna/engine/workflow.py
 
 from metainformant.core.engine.workflow_manager import (

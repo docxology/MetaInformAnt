@@ -8,7 +8,7 @@ The integration module provides tools for combining multiple single-cell dataset
 
 Combine multiple datasets along the cell axis:
 
-```python
+```python-snippet
 from metainformant.singlecell.integration import concatenate_datasets
 
 # Combine datasets from different samples/experiments
@@ -29,7 +29,7 @@ print(f"Integrated: {integrated_data.n_obs} cells × {integrated_data.n_vars} ge
 
 Keep only genes present in all datasets:
 
-```python
+```python-snippet
 from metainformant.singlecell.integration import intersect_datasets
 
 # Find common genes across datasets
@@ -48,7 +48,7 @@ integrated_data = concatenate_datasets(
 
 Keep all genes, filling missing values with zeros:
 
-```python
+```python-snippet
 from metainformant.singlecell.integration import union_datasets
 
 # Union of all genes
@@ -68,7 +68,7 @@ integrated_data = concatenate_datasets(
 
 Simple scaling-based batch correction:
 
-```python
+```python-snippet
 from metainformant.singlecell.integration import batch_correction_scaling
 
 # Scale-based batch correction
@@ -83,7 +83,7 @@ corrected_data = batch_correction_scaling(
 
 ComBat batch correction (requires additional dependencies):
 
-```python
+```python-snippet
 from metainformant.singlecell.integration import batch_correction_combat
 
 try:
@@ -102,7 +102,7 @@ except ImportError:
 
 Harmony integration (requires harmony-pytorch):
 
-```python
+```python-snippet
 from metainformant.singlecell.integration import batch_correction_harmony
 
 try:
@@ -122,7 +122,7 @@ except ImportError:
 
 ### Standard Integration Pipeline
 
-```python
+```python-snippet
 from metainformant.singlecell.preprocessing import *
 from metainformant.singlecell.dimensionality import *
 from metainformant.singlecell.integration import *
@@ -186,7 +186,7 @@ integrated_data = integrate_datasets(datasets, batch_labels, method='scaling')
 
 Assess integration quality:
 
-```python
+```python-snippet
 from metainformant.singlecell.integration import integration_metrics
 
 # Calculate integration metrics
@@ -207,7 +207,7 @@ print(f"  ARI (batch vs clusters): {metrics['batch_ari']:.3f}")
 
 Visualize integration quality:
 
-```python
+```python-snippet
 from metainformant.singlecell.integration import plot_integration_assessment
 
 # Before and after batch correction comparison

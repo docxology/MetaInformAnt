@@ -17,11 +17,11 @@ class TestOrthologGeneration(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             tmp_path = Path(tmpdir)
 
-            # Create a mock regular amalgkit config
+            # Create a minimal regular amalgkit config
             with open(tmp_path / "amalgkit_good.yaml", "w") as f:
                 yaml.dump({"taxon_id": 12345, "species_list": ["Good_Species"]}, f)
 
-            # Create a mock with string taxon
+            # Create a config with string taxon
             with open(tmp_path / "amalgkit_string.yaml", "w") as f:
                 yaml.dump({"taxon_id": "67890"}, f)
 

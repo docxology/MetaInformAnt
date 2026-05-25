@@ -25,7 +25,7 @@ src/metainformant/metabolomics/
 ├── analysis/               # Analysis functions
 │   ├── __init__.py
 │   ├── identification.py   # Metabolite ID, adduct handling, normalization
-│   └── visualization/      # Plotting utilities (stub)
+│   └── visualization/      # Plotting utilities (limited implementation)
 │
 ├── io/                     # Input/Output
 │   ├── __init__.py
@@ -157,7 +157,7 @@ flowchart TD
 
 **Integration Pattern**:
 
-```python
+```python-snippet
 from metainformant.metabolomics import analysis, pathways
 from metainformant.multiomics import integration  # metabolite-gene correlation
 from metainformant.visualization import plots

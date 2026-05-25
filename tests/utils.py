@@ -1,7 +1,7 @@
 """Common test utilities and helpers for METAINFORMANT.
 
 This module provides shared utilities for test development, following the
-STRICT NO-MOCKING policy. All utilities use real implementations and
+STRICT REAL-IMPLEMENTATION policy. All utilities use real implementations and
 graceful degradation for missing dependencies.
 """
 

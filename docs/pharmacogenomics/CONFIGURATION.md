@@ -55,7 +55,7 @@ When processing large DataFrames, use `parallel.map` or `parallel.batch_map`.
 
 Example workflow:
 
-```python
+```python-snippet
 from metainformant import parallel, pharmacogenomics
 def allele_predict(row):
     return pharmacogenomics.predict_metabolizer(set(row['rsids'].split(';')), gene='CYP2D6')
@@ -94,7 +94,7 @@ Required allele keys: `name` (star allele designation), `variants` (list of dbSN
 
 Load from a directory that holds one or more json files:
 
-```python
+```python-snippet
 from metainformant.pharmacogenomics.alleles.star_allele import load_all_allele_definitions
 load_all_allele_definitions('/my/custom/path/')
 ```
@@ -126,7 +126,7 @@ First network call downloads the latest PharmGKB annotation TSV (~9 MB) into `~/
 
 To force re-download (e.g., monthly update):
 
-```python
+```python-snippet
 from metainformant.pharmacogenomics.annotations.pharmgkb import refresh_pharmgkb_cache
 refresh_pharmgkb_cache(force=True)
 ```

@@ -73,5 +73,5 @@ python scripts/quality/audit_docs.py
 - Use `metainformant.core` utilities for I/O and logging
 - Write all outputs to `output/` directory
 - Support `--help` flag for argument documentation
-- Follow NO MOCKING policy (real implementations only)
+- Follow REAL IMPLEMENTATION policy (real implementations only)
 - Use argparse or click for CLI argument handling

@@ -133,7 +133,7 @@ scripts/rna/
  run_workflow.py # Single-species workflow runner
 
 tests/
- test_cloud.py # Zero-mock tests for cloud config, deployer, scripts
+ test_cloud.py # Real-implementation tests for cloud config, deployer, scripts
 
 Dockerfile                # Full pipeline container image
 .dockerignore             # Keeps image small
@@ -159,7 +159,7 @@ gcloud compute ssh metainformant-pipeline --zone us-central1-a
 
 # Install tools
 sudo apt-get install -y python3-pip r-base
-sudo pip3 install --break-system-packages -e . amalgkit
+sudo pip3 install --break-system-packages -e . git+https://github.com/kfuku52/amalgkit
 wget -qO /usr/local/bin/fastp https://github.com/OpenGene/fastp/releases/download/v0.24.0/fastp && chmod +x /usr/local/bin/fastp
 
 # Build genome indices (must run before pipeline)

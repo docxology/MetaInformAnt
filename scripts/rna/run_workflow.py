@@ -83,6 +83,17 @@ def _resolve_config_path(raw: Path) -> Path:
         return p
 
 
+def _positive_int(raw: str) -> int:
+    """Parse a positive integer for argparse."""
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError(f"expected a positive integer, got {raw!r}") from exc
+    if value < 1:
+        raise argparse.ArgumentTypeError(f"expected a positive integer, got {value}")
+    return value
+
+
 def main() -> int:
     """Main entry point."""
     parser = argparse.ArgumentParser(
@@ -178,7 +189,7 @@ def main() -> int:
     )
     parser.add_argument(
         "--chunk-size",
-        type=int,
+        type=_positive_int,
         default=5,
         help="Number of samples to process per chunk in streaming mode (use 1 for maximum robustness)",
     )

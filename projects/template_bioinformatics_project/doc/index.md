@@ -42,7 +42,7 @@ template_bioinformatics_project/
  figures/ # Stage 3 plots
  tables/ # Stage 2 summary tables
  logs/ # Per-stage execution logs
- tests/ # Zero-Mock end-to-end tests
+ tests/ # Real-Implementation end-to-end tests
  doc/ # This documentation suite
  stages/ # Per-stage technical references
 ```

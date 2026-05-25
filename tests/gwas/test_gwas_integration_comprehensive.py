@@ -5,7 +5,7 @@ metadata, heritability, association, structure, correction, fine-mapping,
 and all visualization sub-modules (phenotype, LD, composite, geography,
 interactive, fine-mapping, config).
 
-NO MOCKING -- all real implementations, real numpy/matplotlib computations.
+REAL IMPLEMENTATION -- all real implementations, real numpy/matplotlib computations.
 """
 
 from __future__ import annotations

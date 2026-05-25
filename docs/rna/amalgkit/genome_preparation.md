@@ -118,7 +118,7 @@ output/amalgkit/{species}/work/
 
 You can also prepare genomes manually using the `genome_prep` module:
 
-```python
+```python-snippet
 from metainformant.rna.genome_prep import (
     prepare_transcriptome_for_kallisto,
     build_kallisto_index,
@@ -408,7 +408,7 @@ Results are written to `output/genome_index_status.json` with detailed informati
    ```
 
 3. Manually build index:
-   ```python
+   ```python-snippet
    from metainformant.rna.genome_prep import build_kallisto_index
    from pathlib import Path
    
@@ -458,7 +458,7 @@ Results are written to `output/genome_index_status.json` with detailed informati
 
 Complete genome preparation pipeline.
 
-```python
+```python-snippet
 prepare_genome_for_quantification(
     genome_dir: Path,
     species_name: str,
@@ -480,7 +480,7 @@ prepare_genome_for_quantification(
 
 Extract and prepare transcriptome FASTA.
 
-```python
+```python-snippet
 prepare_transcriptome_for_kallisto(
     genome_dir: Path,
     species_name: str,
@@ -496,7 +496,7 @@ prepare_transcriptome_for_kallisto(
 
 Build kallisto index from FASTA.
 
-```python
+```python-snippet
 build_kallisto_index(
     fasta_path: Path,
     index_path: Path,

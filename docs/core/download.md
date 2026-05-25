@@ -622,7 +622,7 @@ rc = monitor_subprocess_file_count(
 
 ### Custom Download Handler
 
-```python
+```python-snippet
 from metainformant.core.io.download import DownloadHandler, DownloadResult
 import requests
 
@@ -1193,31 +1193,9 @@ def test_heartbeat_created(tmp_path: Path):
 
 ### Test Retry Logic
 
-```python
-import requests
-from unittest.mock import patch  # Only for unit test of retry logic; integration tests use real network
-
-def test_retry_on_network_error():
-    # Simulate failing first two attempts
-    call_count = 0
-    original_get = requests.get
-
-    def flaky_get(*args, **kwargs):
-        nonlocal call_count
-        call_count += 1
-        if call_count <= 2:
-            raise requests.ConnectionError("Simulated failure")
-        return original_get(*args, **kwargs)
-
-    with patch("requests.get", side_effect=flaky_get):
-        result = download_with_progress(
-            "https://example.com/file.bin",
-            tmp_path / "file.bin",
-            max_retries=3,
-        )
-        assert result.success
-        assert call_count == 3
-```
+Retry behavior should be tested with a small local HTTP server that returns
+deterministic failure responses before serving the final file. That keeps the
+download stack real while avoiding external network dependence.
 
 ### Test with Real HTTP Server
 

@@ -40,7 +40,7 @@ Complete environment setup for METAINFORMANT across platforms and use cases.
 - Works on FAT filesystems via cache redirection
 - Drop-in replacement for `pip` + `venv`
 
-**Never use `pip install` directly** — see [NO_MOCKING_POLICY.md](NO_MOCKING_POLICY.md).
+**Never use `pip install` directly** — see [REAL_IMPLEMENTATION_POLICY.md](REAL_IMPLEMENTATION_POLICY.md).
 
 ---
 
@@ -186,4 +186,4 @@ python3 scripts/core/run_demo.py
 
 ---
 
-**Related:** [UV_SETUP.md](UV_SETUP.md) | [EXTERNAL_DRIVE_SETUP](rna/EXTERNAL_DRIVE_SETUP.md) | [NO_MOCKING_POLICY](NO_MOCKING_POLICY.md)
+**Related:** [UV_SETUP.md](UV_SETUP.md) | [EXTERNAL_DRIVE_SETUP](rna/EXTERNAL_DRIVE_SETUP.md) | [real-implementation policy](REAL_IMPLEMENTATION_POLICY.md)

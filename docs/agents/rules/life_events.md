@@ -160,16 +160,16 @@ model:
 See Global Project Rules (root `.cursorrules`) for:
 - Common directory structure and path handling
 - Configuration patterns with env overrides
-- Testing policy (NO_MOCKING_POLICY)
+- Testing policy (real-implementation policy)
 - Import patterns and code style
 - Documentation guidelines
 
 ## Testing
 
-- **STRICTLY NO MOCKING**: Test real implementations only (see Global Project Rules (root `.cursorrules`) NO_MOCKING_POLICY)
+- **STRICTLY REAL IMPLEMENTATION**: Test real implementations only (see Global Project Rules (root `.cursorrules`) real-implementation policy)
 - Test with real event sequences from `data/`
 - Write test outputs to `output/life_events/test/` using `tmp_path` fixture
 - Test embedding generation with known results
-- No mocks, fakes, or stubs - use real computations and file operations
+- Real implementations only - use real computations and file operations
 
 

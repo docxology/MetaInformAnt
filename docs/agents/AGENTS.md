@@ -13,4 +13,4 @@ Documents AI agent guidelines, coding standards, and enforcement rules.
 | Path | Description |
 |------|-------------|
 | `src/metainformant/` | All source modules governed by these rules |
-| `tests/NO_MOCKING_POLICY.md` | Zero-mock testing policy |
+| `tests/REAL_IMPLEMENTATION_TESTING_POLICY.md` | Real-implementation testing policy |

@@ -57,8 +57,8 @@ src/metainformant/core/
 
 ## Core Design Principles
 
-### 1. **Zero Mocking**
-All tests use real implementations. No mock objects. This ensures production reliability.
+### 1. **Real Implementation**
+All tests use real implementations. Real implementation objects. This ensures production reliability.
 
 ### 2. **Atomicity**
 All file writes use atomic replacement (temp file → rename) to prevent corruption.
@@ -139,7 +139,7 @@ sphinx-build -b html . _build
 
 When modifying core components:
 
-1. **Add tests** in `tests/core/test_core_*.py` (no mocks!)
+1. **Add tests** in `tests/core/test_core_*.py` (real implementations!)
 2. **Update documentation** in `docs/core/*.md`
 3. **Follow conventions**: `pathlib.Path`, type hints, `get_logger(__name__)`
 4. **Check AGENTS.md**: `src/metainformant/core/AGENTS.md` has agent-specific rules

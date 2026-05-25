@@ -1,7 +1,7 @@
 """Tests for epigenome workflow orchestration.
 
 Tests EpigenomeConfig, load_epigenome_config, and
-integrate_epigenome_results using real implementations. NO MOCKING.
+integrate_epigenome_results using real implementations. REAL IMPLEMENTATION.
 
 Note: run_methylation_workflow, run_chipseq_workflow, and
 run_atacseq_workflow require input directories with actual data files

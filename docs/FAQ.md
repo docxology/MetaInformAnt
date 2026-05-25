@@ -71,7 +71,7 @@ See [Disk Space Management](DISK_SPACE_MANAGEMENT.md) for complete setup instruc
 
 **A:** METAINFORMANT provides several approaches:
 
-```python
+```python-snippet
 # 1. Streaming processing
 from metainformant.core.io import read_jsonl
 for record in read_jsonl("large_file.jsonl"):
@@ -88,9 +88,9 @@ for chunk in pd.read_csv("large_file.csv", chunksize=10000):
     process_chunk(chunk)
 ```
 
-### Q: Why am I getting "No Mocking" errors?
+### Q: Why am I getting "Real Implementation" errors?
 
-**A:** METAINFORMANT uses real implementations only (no mocks or fakes). This ensures reliable results but requires:
+**A:** METAINFORMANT uses real implementations only (real implementations and live integrations). This ensures reliable results but requires:
 
 1. **Real data**: Use actual biological data files
 2. **Real dependencies**: Install external tools (bcftools, amalgkit, etc.)
@@ -101,7 +101,7 @@ for chunk in pd.read_csv("large_file.csv", chunksize=10000):
 
 **A:** Several optimization strategies:
 
-```python
+```python-snippet
 # Enable parallel processing
 from metainformant.core.execution import parallel
 results = parallel.run_parallel(analyze_function, data_items, max_workers=8)
@@ -126,7 +126,7 @@ result = np.mean(data_array)  # Fast vectorized operation
 
 **A:** Sequence alignment complexity is O(n×m) where n and m are sequence lengths. For long sequences:
 
-```python
+```python-snippet
 # Use local alignment for similarity search
 from metainformant.dna import alignment
 result = alignment.local_align(query_seq, target_seq)
@@ -140,7 +140,7 @@ info = analyze_sequence_information(sequence, k_values=[5, 10])
 
 **A:** METAINFORMANT supports multiple genetic codes:
 
-```python
+```python-snippet
 from metainformant.dna import codon
 
 # Standard genetic code (default)
@@ -192,7 +192,7 @@ config = AmalgkitWorkflowConfig(
 
 **A:** This is likely population stratification. Control for it:
 
-```python
+```python-snippet
 from metainformant.gwas import structure, association
 
 # Compute PCA for population structure
@@ -210,7 +210,7 @@ result = association.association_test_linear(
 
 **A:** METAINFORMANT handles multiple formats:
 
-```python
+```python-snippet
 from metainformant.gwas import download, parsing
 
 # Download from public databases
@@ -237,7 +237,7 @@ plink_data = parsing.parse_plink_files(
 
 **A:** Syntactic information measures statistical patterns, semantic information measures biological meaning:
 
-```python
+```python-snippet
 from metainformant.information import syntactic, semantic
 
 # Syntactic: Statistical patterns
@@ -290,7 +290,7 @@ print(f"Best method: {best_method} (accuracy: {results[best_method]:.3f})")
 
 **A:** Use appropriate techniques:
 
-```python
+```python-snippet
 from imblearn.over_sampling import SMOTE
 from metainformant import ml
 
@@ -318,7 +318,7 @@ for chunk in read_jsonl("large_file.jsonl"):
 ```
 
 2. **Use memory-efficient formats**:
-```python
+```python-snippet
 # Use HDF5 for large arrays
 import h5py
 with h5py.File("data.h5", "r") as f:
@@ -391,7 +391,7 @@ uv pip install -e .[dev]
 
 2. **Make changes** following the [Cursor Rules](../.cursorrules)
 
-3. **Add tests** (no mocks, real implementations)
+3. **Add tests** (real implementations, real implementations)
 
 4. **Run tests**:
 ```bash
@@ -461,7 +461,7 @@ CMD ["python"]
 
 **A:** Use the workflow orchestration system:
 
-```python
+```python-snippet
 from metainformant.core.workflow import run_config_based_workflow
 
 workflow = {
@@ -494,7 +494,7 @@ results = run_config_based_workflow(workflow)
 
 **A:** Yes! METAINFORMANT works great in Jupyter:
 
-```python
+```python-notebook
 # Install in notebook
 !curl -LsSf https://astral.sh/uv/install.sh | sh
 !uv pip install metainformant[scientific]

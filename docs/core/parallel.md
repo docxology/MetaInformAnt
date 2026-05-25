@@ -896,9 +896,9 @@ perf stat -e cycles,instructions,cache-misses python script.py
 
 ## Testing Guidelines
 
-### Unit Tests with Mock-Like Fixtures (No Mocking!)
+### Unit Tests with Mock-Like Fixtures (Real Implementation!)
 
-Follow METAINFORMANT NO MOCKING policy: tests use real implementations, not mocks.
+Follow METAINFORMANT REAL IMPLEMENTATION policy: tests use real implementations, not mocks.
 
 ```python
 from metainformant.core.execution import parallel
@@ -1126,8 +1126,8 @@ results = parallel.thread_map(
 
 ## Testing Policy Alignment
 
-All tests MUST follow NO MOCKING policy:
-- Use real thread pools, not `unittest.mock`
+All tests MUST follow REAL IMPLEMENTATION policy:
+- Use real thread pools, not `test-double modules`
 - Use real functions with actual computation or I/O
 - For slow tests, mark `@pytest.mark.slow` or `@pytest.mark.integration`
 - Skip network-dependent tests gracefully with `pytest.skip()` if network unavailable

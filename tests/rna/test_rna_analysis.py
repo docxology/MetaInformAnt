@@ -1,7 +1,7 @@
 """Tests for RNA analysis module functions.
 
 Tests protein integration, translation efficiency, and ribosome profiling
-functions following the NO_MOCKING policy.
+functions following the real-implementation policy.
 """
 
 from __future__ import annotations

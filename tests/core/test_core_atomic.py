@@ -1,6 +1,6 @@
 """Comprehensive tests for metainformant.core.io.atomic module.
 
-NO MOCKING - All tests use real file operations via tmp_path.
+REAL IMPLEMENTATION - All tests use real file operations via tmp_path.
 """
 
 from __future__ import annotations

@@ -3,7 +3,7 @@
 Tests learn_chromatin_states, assign_states, interpret_states,
 compute_state_enrichment, segment_genome, compare_chromatin_states,
 and compute_state_transition_rates using real implementations with
-synthetic histone modification data. NO MOCKING.
+synthetic histone modification data. REAL IMPLEMENTATION.
 """
 
 from __future__ import annotations

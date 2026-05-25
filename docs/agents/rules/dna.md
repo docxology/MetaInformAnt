@@ -288,16 +288,16 @@ if paths.is_within(user_path, base_dir):
 See Global Project Rules (root `.cursorrules`) for:
 - Common directory structure and path handling
 - Configuration patterns with env overrides
-- Testing policy (NO_MOCKING_POLICY)
+- Testing policy (real-implementation policy)
 - Import patterns and code style
 - Documentation guidelines
 
 ## Testing
 
-- **STRICTLY NO MOCKING**: Test real implementations only (see Global Project Rules (root `.cursorrules`) NO_MOCKING_POLICY)
+- **STRICTLY REAL IMPLEMENTATION**: Test real implementations only (see Global Project Rules (root `.cursorrules`) real-implementation policy)
 - Test with real FASTA/FASTQ files from `data/`
 - Optional dependency tests should skip gracefully with `@pytest.mark.external_tool`
 - Write test outputs to `output/dna/test/` using `tmp_path` fixture
-- No mocks, fakes, or stubs - use real file operations
+- Real implementations only - use real file operations
 
 

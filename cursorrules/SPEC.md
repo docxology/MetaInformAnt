@@ -17,7 +17,7 @@ Defines the behavior and structure of module-specific coding rules for AI assist
   - Context & Intent
   - Directory Structure (Module specific)
   - Code Style
-  - Testing Rules (Zero Mock)
+  - Testing Rules (Real Implementation)
 
 ## Integration
 

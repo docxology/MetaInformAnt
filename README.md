@@ -295,7 +295,7 @@ graph TD
 - **Visualization Suite**: 14 specialized plotting modules with 70+ plot types and publication-quality output
 - **Modular Architecture**: Individual modules or complete end-to-end workflows
 - **Comprehensive Documentation**: Repo-wide README, AGENTS, SPEC, and task guides with current signposting
-- **Implementation Testing**: Real methods in tests, no mocks or stubs
+- **Implementation Testing**: Real methods in tests, real implementations with explicit unsupported-feature errors
 - **Quality Assurance**: Rigorous validation and error handling throughout
 - **Performance Optimization**: Efficient algorithms for large-scale biological data
 
@@ -655,10 +655,10 @@ See [Testing Guide](docs/testing.md) for detailed testing documentation and cove
 - Configuration saved with results
 - Visualizations in subdirectories with metadata
 
-### No Mocking Policy
+### Real Implementation Policy
 
 - All tests use implementations
-- No fake/mocked/stubbed methods
+- No test-double or inert placeholder methods
 - Real API calls or graceful skips
 - Ensures actual functionality
 

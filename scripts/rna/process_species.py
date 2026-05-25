@@ -135,13 +135,13 @@ def main():
     )
 
     # Load Samples
-    # In a dry run without metadata, we might mock samples
+    # In a dry run without metadata, we might deterministic sample identifiers
     samples = load_metadata_samples(paths["work_dir"])
 
     if not samples:
         if args.dry_run:
-            logger.info("[DRY RUN] No metadata found. Using mock sample list.")
-            samples = ["SRR11092056", "SRR_MOCK_2"]
+            logger.info("[DRY RUN] No metadata found. Using deterministic sample list.")
+            samples = ["SRR11092056", "SRR11092057"]
         else:
             logger.error("No samples found in metadata. Cannot proceed.")
             sys.exit(1)

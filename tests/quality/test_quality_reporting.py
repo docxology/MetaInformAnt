@@ -1,6 +1,6 @@
 """Tests for quality reporting, metric aggregation, and threshold checking.
 
-NO MOCKING POLICY: All tests use real implementations.
+REAL IMPLEMENTATION POLICY: All tests use real implementations.
 """
 
 from __future__ import annotations

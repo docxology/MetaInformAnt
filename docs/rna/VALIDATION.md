@@ -39,7 +39,7 @@ python3 scripts/rna/run_workflow.py config/amalgkit/my_species.yaml --validate -
 
 ### Programmatic Validation
 
-```python
+```python-snippet
 from metainformant.rna.engine.workflow import load_workflow_config
 from metainformant.rna.validation import validate_all_samples, get_sample_pipeline_status
 
@@ -328,7 +328,7 @@ if 'quantification_issue' in sample_status['diagnostics']:
 
 ### Custom Validation Logic
 
-```python
+```python-snippet
 from metainformant.rna.validation import get_sample_pipeline_status
 
 def check_sample_ready_for_analysis(sample_id: str, work_dir: Path) -> bool:
@@ -348,7 +348,7 @@ ready_samples = [
 
 ### Batch Validation Script
 
-```python
+```python-snippet
 #!/usr/bin/env python3
 """Validate multiple species workflows."""
 

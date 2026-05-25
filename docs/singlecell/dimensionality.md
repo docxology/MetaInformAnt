@@ -8,7 +8,7 @@ The dimensionality module provides tools for reducing the complexity of high-dim
 
 Identify genes with high biological variability across cells:
 
-```python
+```python-snippet
 from metainformant.singlecell.dimensionality import select_hvgs
 
 # Seurat-style HVG selection (default)
@@ -51,7 +51,7 @@ data = select_hvgs(data, n_top_genes=2000, method='cellranger')
 
 Perform PCA on expression data:
 
-```python
+```python-snippet
 from metainformant.singlecell.dimensionality import compute_pca
 
 # Standard PCA
@@ -109,7 +109,7 @@ plt.show()
 
 Build k-nearest neighbor graph for downstream analysis:
 
-```python
+```python-snippet
 from metainformant.singlecell.dimensionality import compute_neighbors
 
 # Compute neighbor graph
@@ -139,7 +139,7 @@ data = compute_neighbors(
 
 Uniform Manifold Approximation and Projection for non-linear dimensionality reduction:
 
-```python
+```python-snippet
 from metainformant.singlecell.dimensionality import compute_umap
 
 # Standard UMAP
@@ -174,7 +174,7 @@ uv pip install umap-learn
 
 t-distributed Stochastic Neighbor Embedding:
 
-```python
+```python-snippet
 from metainformant.singlecell.dimensionality import compute_tsne
 
 # Standard t-SNE
@@ -202,7 +202,7 @@ tsne_coords = data.obsm['X_tsne']  # Shape: (n_cells, 2)
 
 Diffusion maps for trajectory analysis and pseudotime inference:
 
-```python
+```python-snippet
 from metainformant.singlecell.dimensionality import compute_diffusion_map
 
 # Compute diffusion components
@@ -318,7 +318,7 @@ For datasets > 1M cells, consider:
 
 ### Standard Dimensionality Reduction Pipeline
 
-```python
+```python-snippet
 # Complete dimensionality reduction workflow
 from metainformant.singlecell.dimensionality import *
 
@@ -402,7 +402,7 @@ except ValueError as e:
 
 The dimensionality reduction results are used by clustering algorithms:
 
-```python
+```python-snippet
 from metainformant.singlecell.clustering import leiden_clustering
 
 # Use neighbor graph for clustering

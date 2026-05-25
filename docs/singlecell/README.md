@@ -31,6 +31,6 @@ graph TD
 
 ## Usage
 Import module:
-```python
+```python-snippet
 from metainformant.singlecell import ...
 ```

@@ -105,7 +105,7 @@ flowchart TD
 
 #### Basic quantification/analysis across modules:
 
-```python
+```python-snippet
 # === DNA: Variant calling and annotation ===
 from metainformant.dna import calling, annotation
 variants = calling.call_variants("sample.bam", "ref.fa")

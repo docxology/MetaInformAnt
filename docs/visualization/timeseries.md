@@ -9,7 +9,7 @@ Time series visualization functions including time series plots, autocorrelation
 Create a time series plot.
 
 **Example:**
-```python
+```python-snippet
 from metainformant.visualization import time_series_plot
 import numpy as np
 

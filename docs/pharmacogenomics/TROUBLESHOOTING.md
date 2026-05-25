@@ -39,7 +39,7 @@
    ```
 
 5. **Activity table sanity**
-   ```python
+   ```python-snippet
    from metainformant.pharmacogenomics.alleles.activity import _ACTIVITY_SCORE_TABLES
    table = _ACTIVITY_SCORE_TABLES['CYP2D6']
    print('*1' in table, table['*1'])

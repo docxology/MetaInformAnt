@@ -8,7 +8,7 @@ This module validates the robust ENA download and quantification workflow:
 - Auto-detection of single vs paired-end data
 - Integration with kallisto quantification
 
-Tests use real network requests and real tools (no mocks per project policy).
+Tests use real network requests and real tools (real implementations per project policy).
 """
 
 import subprocess

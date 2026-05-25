@@ -101,7 +101,7 @@ flowchart TD
 
 ### Basic Classification
 
-```python
+```python-snippet
 from metainformant.ml import classification
 
 # Prepare biological data
@@ -157,7 +157,7 @@ biological_features = features.interpret_features(
 
 ### Model Validation
 
-```python
+```python-snippet
 from metainformant.ml import validation
 
 # Comprehensive model validation
@@ -190,7 +190,7 @@ p_value = validation.permutation_test(
 
 ### With DNA Sequences
 
-```python
+```python-snippet
 from metainformant.dna import sequences
 from metainformant.ml import classification
 
@@ -209,7 +209,7 @@ predictions = classification.predict(model, new_features)
 
 ### With Expression Data
 
-```python
+```python-snippet
 from metainformant.rna import workflow
 from metainformant.ml import regression
 
@@ -232,7 +232,7 @@ top_genes = importance.nlargest(50)  # Top 50 predictive genes
 
 ### With Network Data
 
-```python
+```python-snippet
 from metainformant.networks import ppi
 from metainformant.ml import classification
 
@@ -277,7 +277,7 @@ features.plot_feature_importance(importance, top_n=20)
 
 ### Model Explanation
 
-```python
+```python-snippet
 from metainformant.ml import explain
 
 # Explain individual predictions
@@ -297,7 +297,7 @@ print(f"Top negative features: {explanation['top_negative']}")
 
 ### Multi-omics Prediction
 
-```python
+```python-snippet
 from metainformant.multiomics import integration
 from metainformant.ml import classification
 
@@ -323,7 +323,7 @@ model = classification.train_classifier(
 
 ### Time Series Analysis
 
-```python
+```python-snippet
 from metainformant.ml import regression
 
 # Time series prediction

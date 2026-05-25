@@ -2,7 +2,7 @@
 
 Real implementation testing for DE statistical tests, pseudobulk DE,
 fold-change computation, volcano plot data, and gene set scoring.
-No mocking used - all tests use real computational methods and data.
+Real implementationing used - all tests use real computational methods and data.
 """
 
 from __future__ import annotations

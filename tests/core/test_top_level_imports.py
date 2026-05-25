@@ -6,7 +6,6 @@ import importlib
 
 import pytest
 
-
 TOP_LEVEL_PACKAGES = [
     "metainformant.cloud",
     "metainformant.core",

@@ -11,7 +11,7 @@ graph TD
 
 Examples
 
-```python
+```python-snippet
 from metainformant.math import price
 
 # Moments

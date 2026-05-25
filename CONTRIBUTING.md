@@ -51,7 +51,7 @@ import numpy as np, from metainformant.dna import sequences
 - **One assertion per test** (one concern per test)
 - **Fixtures** in `tests/conftest.py` (reusable)
 - **Run**: `scripts/run_tests.sh` (CI-parity wrapper)
-- **No mocks** for internal functions — use real code ([NO_MOCKING_POLICY.md](NO_MOCKING_POLICY.md))
+- **Real implementations** for internal functions — use real code ([REAL_IMPLEMENTATION_POLICY.md](REAL_IMPLEMENTATION_POLICY.md))
 
 ### Commit Messages
 

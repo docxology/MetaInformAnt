@@ -2,7 +2,7 @@
 
 Tests validate_step_prerequisites, check_step_completion_status,
 handle_post_step_actions, log_workflow_summary, and setup_vdb_config
-using real file system operations (NO mocking).
+using real file system operations (real-implementation policy).
 """
 
 from __future__ import annotations
@@ -109,7 +109,7 @@ class TestValidateStepPrerequisites:
         config = _make_config(tmp_path)
         fastq_dir = tmp_path / "fastq"
         fastq_dir.mkdir(parents=True, exist_ok=True)
-        _write_file(fastq_dir / "SRR1001" / "SRR1001.fastq.gz", "fake fastq")
+        _write_file(fastq_dir / "SRR1001" / "SRR1001.fastq.gz", "minimal fastq")
 
         error = validate_step_prerequisites(
             step_name="integrate",

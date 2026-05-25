@@ -17,7 +17,7 @@ This repository is the **canonical template** for new bioinformatics projects wi
 | All paths from config | Prevents environment-specific breakage; ensures reproducibility |
 | `data/raw/` is immutable | Raw data is the source of truth; never overwrite it |
 | Idempotent stages | Re-running any stage should be safe and fast (skip existing outputs) |
-| Zero-Mock tests | Tests must exercise real code; no patching or stubbing of logic |
+| Real-Implementation tests | Tests must exercise real code; no patching or stubbing of logic |
 | `uv` for environments | Reproducible, fast, PEP 723—compatible dependency management |
 
 ## Directory Layout

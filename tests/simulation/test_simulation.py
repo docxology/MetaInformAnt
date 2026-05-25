@@ -4,7 +4,7 @@ Tests cover sequence generation, mutation, translation, similarity analysis,
 RNA-seq count simulation, GridWorld agent-based models, and integration
 across multiple simulation components.
 
-All tests use real implementations (NO MOCKING).
+All tests use real implementations (REAL IMPLEMENTATION).
 Reproducibility is ensured via seeded random.Random instances.
 """
 

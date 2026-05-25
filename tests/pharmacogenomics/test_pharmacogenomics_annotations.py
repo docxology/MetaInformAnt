@@ -5,7 +5,7 @@ listing, allele definition parsing, PharmGKB annotation queries, evidence level
 interpretation, variant annotations, drug label parsing, biomarker extraction,
 and label type classification.
 
-NO MOCKING -- all tests use real implementations.
+REAL IMPLEMENTATION -- all tests use real implementations.
 """
 
 from __future__ import annotations

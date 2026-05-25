@@ -41,7 +41,7 @@ Standard chromosome-wide association plot optimized for millions of SNPs.
 - Publication figures
 
 **Example**:
-```python
+```python-snippet
 from metainformant.gwas.visualization_genome import manhattan_plot
 
 result = manhattan_plot(
@@ -93,7 +93,7 @@ Quantile-quantile plot with 95% CI and genomic inflation factor.
 - Global inflation: population stratification or relatedness
 
 **Example**:
-```python
+```python-snippet
 from metainformant.gwas.visualization_statistical import qq_plot
 
 result = qq_plot(
@@ -160,7 +160,7 @@ Detailed association view for genomic window.
 - Examining local LD structure
 
 **Example**:
-```python
+```python-snippet
 from metainformant.gwas.visualization_regional import regional_plot
 
 result = regional_plot(
@@ -218,7 +218,7 @@ Principal component scatter plot (2D or 3D).
 - Adjusting for ancestry
 
 **Example**:
-```python
+```python-snippet
 from metainformant.gwas.visualization_population import pca_plot
 
 result = pca_plot(
@@ -285,7 +285,7 @@ Allele frequency spectrum histogram.
 - Assessing QC filter effects
 
 **Example**:
-```python
+```python-snippet
 from metainformant.gwas.visualization_variants import maf_distribution
 
 result = maf_distribution(
@@ -353,7 +353,7 @@ Effect estimates with 95% confidence intervals.
 - Publication figures
 
 **Example**:
-```python
+```python-snippet
 from metainformant.gwas.visualization_effects import effect_size_forest_plot
 
 result = effect_size_forest_plot(
@@ -404,7 +404,7 @@ Back-to-back Manhattan plots for two traits.
 - Publication figures for trait pairs
 
 **Example**:
-```python
+```python-snippet
 from metainformant.gwas.visualization_comparison import miami_plot
 
 result = miami_plot(

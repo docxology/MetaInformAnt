@@ -1,6 +1,6 @@
 # Test Suite
 
-METAINFORMANT test suite using pytest with **real implementations only** (NO MOCKING policy).
+METAINFORMANT test suite using pytest with **real implementations only** (REAL IMPLEMENTATION policy).
 
 ## Quick Start
 
@@ -84,7 +84,7 @@ pytest -m "network" tests/        # Only network tests
 pytest -m "not slow" tests/       # Skip slow tests
 ```
 
-## NO MOCKING Policy
+## REAL IMPLEMENTATION Policy
 
 **All tests use real implementations:**
 
@@ -106,10 +106,8 @@ def test_uniprot_fetch():
     except requests.RequestException as e:
         pytest.skip(f"API unavailable: {e}")
 
-# WRONG: Never mock
-def test_bad_example():
-    with mock.patch("module.function"):  # PROHIBITED
-        ...
+# WRONG: Replacing project functions with test doubles is prohibited. Use
+# deterministic local data or an explicit external-service skip instead.
 ```
 
 ## Test Data
@@ -179,5 +177,5 @@ Coverage threshold: 85% minimum for CI.
 ## Related
 
 - [Testing Guide](../docs/testing.md)
-- [NO_MOCKING_POLICY](../docs/NO_MOCKING_POLICY.md)
+- [real-implementation policy](../docs/REAL_IMPLEMENTATION_POLICY.md)
 - [Test Script](../scripts/package/test.sh)

@@ -77,7 +77,7 @@ ax = volcano_plot(data, 'log2fc', 'neg_log10_p')
 
 ## Dimensionality Reduction
 
-```python
+```python-snippet
 from metainformant.visualization import pca_plot, umap_plot, pca_scree_plot
 import pandas as pd
 import numpy as np
@@ -97,7 +97,7 @@ ax = pca_scree_plot(variance)
 
 ## Multi-panel Figures
 
-```python
+```python-snippet
 from metainformant.visualization.layout import create_multi_panel, add_shared_axis_labels
 import matplotlib.pyplot as plt
 
@@ -109,7 +109,7 @@ plt.savefig('output/multi_panel.png')
 
 ## Publication-quality Export
 
-```python
+```python-snippet
 from metainformant.visualization.export import save_figure_multiformat
 import matplotlib.pyplot as plt
 

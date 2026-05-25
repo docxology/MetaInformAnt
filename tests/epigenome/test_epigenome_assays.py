@@ -5,7 +5,7 @@ summarize_beta_by_chromosome, MethylationSite, calculate_methylation_statistics)
 ChIP-seq (ChIPPeak, calculate_peak_statistics, filter_peaks_by_score,
 find_overlapping_peaks, merge_overlapping_peaks), and
 ATAC-seq (ATACPeak, calculate_atac_statistics, calculate_atac_specific_metrics,
-compare_atac_conditions) using real implementations. NO MOCKING.
+compare_atac_conditions) using real implementations. REAL IMPLEMENTATION.
 """
 
 from __future__ import annotations

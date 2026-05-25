@@ -59,7 +59,7 @@ def test_fetch_interpro_domains_invalid_accession():
     if not _check_online("https://www.ebi.ac.uk/interpro"):
         pytest.skip("No network access for InterPro API - real implementation requires connectivity")
 
-    # Test with obviously fake accession
+    # Test with invalid accession
     try:
         results = fetch_interpro_domains("FAKE_PROTEIN_12345")
         # Real API should return empty list or handle gracefully
@@ -122,7 +122,7 @@ def test_fetch_interpro_domains_case_sensitivity():
 
 def test_fetch_interpro_domains_with_timeout():
     """Test behavior with network timeout scenarios."""
-    # This tests real timeout behavior without mocking
+    # This tests real timeout behavior without test doubles
     try:
         # Use a very short timeout to potentially trigger real timeout
         results = fetch_interpro_domains("P69905")

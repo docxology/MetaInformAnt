@@ -51,6 +51,11 @@ def resource_aware_workers(
         available_mb = psutil.virtual_memory().available / (1024 * 1024)
         mem_limited = max(1, int(available_mb * 0.7 / memory_per_worker_mb))
         workers = min(workers, mem_limited)
+        if task_type != "cpu" and memory_per_worker_mb <= 256:
+            # Default I/O workloads should keep at least one worker per core.
+            # Callers can still request strict memory limiting by raising the
+            # per-worker estimate.
+            workers = max(workers, cores)
     except ImportError:
         pass  # psutil not available, skip memory check
 

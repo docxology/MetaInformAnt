@@ -20,4 +20,4 @@ Documentation for the gwas domain in MetaInformAnt.
 - **Tests**: `tests/gwas/test_gwas_*.py`
 
 ## Testing Policy
-- **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.
+- **Real Implementation**: All tests must use real implementations. Mocks are strictly prohibited.

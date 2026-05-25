@@ -26,7 +26,7 @@ Plot model performance as a function of training set size to diagnose overfittin
 
 ### train_test_split_biological
 
-```python
+```python-snippet
 def train_test_split_biological(
     X: np.ndarray,
     y: np.ndarray,
@@ -41,7 +41,7 @@ Split biological data into train/test sets with automatic stratification for cla
 
 ### cross_validate_biological
 
-```python
+```python-snippet
 def cross_validate_biological(
     model: Any,
     X: np.ndarray,
@@ -57,7 +57,7 @@ Perform cross-validation with biological data considerations. Supports multiple 
 
 ### bootstrap_validation
 
-```python
+```python-snippet
 def bootstrap_validation(
     model: Any,
     X: np.ndarray,
@@ -72,7 +72,7 @@ Bootstrap validation with confidence intervals. Returns metric distributions, me
 
 ### learning_curve_analysis
 
-```python
+```python-snippet
 def learning_curve_analysis(
     model: Any,
     X: np.ndarray,
@@ -87,7 +87,7 @@ Compute learning curves. Default train sizes are [0.1, 0.2, 0.4, 0.6, 0.8, 1.0].
 
 ### permutation_test
 
-```python
+```python-snippet
 def permutation_test(
     model: Any,
     X: np.ndarray,
@@ -101,7 +101,7 @@ Permutation test to assess whether model performance is significantly better tha
 
 ## Usage Examples
 
-```python
+```python-snippet
 from metainformant.ml.evaluation.validation import (
     train_test_split_biological,
     cross_validate_biological,

@@ -1,6 +1,6 @@
 """Tests for the multi-species RNA-seq orchestrator.
 
-Follows NO_MOCKING_POLICY: all tests use real YAML configurations,
+Follows real-implementation policy: all tests use real YAML configurations,
 real class instantiation, and real method calls.
 """
 

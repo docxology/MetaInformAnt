@@ -1,6 +1,6 @@
 """Tests for core symbol indexing utilities.
 
-Tests symbol indexing, lookup, and reference finding following NO_MOCKING policy.
+Tests symbol indexing, lookup, and reference finding following real-implementation policy.
 """
 
 from __future__ import annotations

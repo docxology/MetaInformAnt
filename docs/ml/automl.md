@@ -28,7 +28,7 @@ Automatic preprocessing pipeline that handles missing values, scaling, encoding,
 
 ### random_search
 
-```python
+```python-snippet
 def random_search(
     model: Any,
     X: Any,
@@ -45,7 +45,7 @@ Perform random hyperparameter search. Returns `best_params`, `best_score`, `all_
 
 ### bayesian_optimization
 
-```python
+```python-snippet
 def bayesian_optimization(
     model: Any,
     X: Any,
@@ -63,7 +63,7 @@ Bayesian optimization with a Gaussian process surrogate. `param_space` maps para
 
 ### grid_search
 
-```python
+```python-snippet
 def grid_search(
     model: Any,
     X: Any,
@@ -78,7 +78,7 @@ Exhaustive grid search over all parameter combinations. Returns `best_params`, `
 
 ### model_selection
 
-```python
+```python-snippet
 def model_selection(
     X: Any,
     y: Any,
@@ -93,7 +93,7 @@ Evaluate multiple model types and select the best. Task must be `"classification
 
 ### auto_preprocess
 
-```python
+```python-snippet
 def auto_preprocess(
     X: Any,
     y: Any | None = None,

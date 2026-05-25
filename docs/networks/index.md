@@ -159,7 +159,7 @@ for pathway in enriched_pathways[:5]:
 
 ### With Expression Data
 
-```python
+```python-snippet
 from metainformant.rna import workflow
 from metainformant.networks import infer_grn
 
@@ -179,7 +179,7 @@ modules = detect_communities(regulatory_network)
 
 ### With Protein Data
 
-```python
+```python-snippet
 from metainformant.networks import ppi, community
 from metainformant.ontology.core import go
 

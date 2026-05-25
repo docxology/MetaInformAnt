@@ -120,7 +120,7 @@ Load MultiOmicsData from directory using core.io.
 
 Load and integrate multiple omics datasets into unified structure.
 
-```python
+```python-snippet
 def integrate_omics_data(
     data_dict: Dict[str, Union[pd.DataFrame, str, Path]],
     sample_mapping: Optional[Dict[str, Dict[str, str]]] = None,
@@ -148,7 +148,7 @@ def integrate_omics_data(
 
 Perform joint Principal Component Analysis across multiple omics layers.
 
-```python
+```python-snippet
 def joint_pca(
     omics_data: MultiOmicsData,
     n_components: int = 50,
@@ -178,7 +178,7 @@ def joint_pca(
 
 Perform joint Non-negative Matrix Factorization across omics layers.
 
-```python
+```python-snippet
 def joint_nmf(
     omics_data: MultiOmicsData,
     n_components: int = 20,
@@ -210,7 +210,7 @@ def joint_nmf(
 
 Perform Canonical Correlation Analysis between two omics layers.
 
-```python
+```python-snippet
 def canonical_correlation(
     omics_data: MultiOmicsData,
     layer_pair: Tuple[str, str],
@@ -241,7 +241,7 @@ def canonical_correlation(
 
 Convert DNA variant data (VCF) to genomics layer DataFrame.
 
-```python
+```python-snippet
 def from_dna_variants(
     vcf_path: Union[str, Path],
     sample_ids: Optional[List[str]] = None,
@@ -267,7 +267,7 @@ def from_dna_variants(
 
 Convert RNA expression data to transcriptomics layer DataFrame.
 
-```python
+```python-snippet
 def from_rna_expression(
     expression_path: Union[str, Path],
     sample_ids: Optional[List[str]] = None,
@@ -294,7 +294,7 @@ def from_rna_expression(
 
 Convert protein abundance data to proteomics layer DataFrame.
 
-```python
+```python-snippet
 def from_protein_abundance(
     protein_path: Union[str, Path],
     sample_ids: Optional[List[str]] = None,

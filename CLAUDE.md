@@ -8,7 +8,7 @@ METAINFORMANT is a bioinformatics toolkit for multi-omic analysis (genomics, tra
 
 **Critical Rules:**
 
-- **NO MOCKING**: Real implementations only. Never return dummy/placeholder data. See `docs/NO_MOCKING_POLICY.md`
+- **REAL IMPLEMENTATION**: Real implementations only. Never return dummy/placeholder data. See `docs/REAL_IMPLEMENTATION_POLICY.md`
 - **UV Only**: Use `uv` for all package operations (never `pip`)
 - **Output to `output/`**: All execution outputs go to `output/` directory
 - **Temp files in `.tmp/`**: Use repository-local `.tmp/` (not system `/tmp`)
@@ -139,7 +139,7 @@ logger = get_logger(__name__)
 
 ## Testing Requirements
 
-**All tests use real implementations** (NO mocking policy):
+**All tests use real implementations** (real-implementation policy):
 
 ```python
 def test_real_functionality(tmp_path: Path) -> None:

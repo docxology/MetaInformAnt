@@ -21,10 +21,10 @@ Tests follow the naming convention `tests/<domain>/test_{module}_{feature}.py`:
 
 ## Rules and Constraints
 
-### NO MOCKING POLICY
-**CRITICAL**: This project enforces a strict NO MOCKING policy:
+### REAL IMPLEMENTATION POLICY
+**CRITICAL**: This project enforces a strict REAL IMPLEMENTATION policy:
 - All tests use REAL implementations, REAL API calls, REAL algorithms
-- Never use `unittest.mock`, `pytest-mock`, or fake data
+- Never use `test-double modules`, `test-double plugins`, or unvalidated data
 - When external services unavailable, use `pytest.skip()` not mocks
 - Test fixtures contain REAL sample data, not generated placeholders
 
@@ -50,9 +50,8 @@ def test_api_call() -> None:
     except requests.RequestException as e:
         pytest.skip(f"API unavailable: {e}")
 
-# WRONG: Never mock
-def test_bad_example(mocker):  # PROHIBITED
-    mocker.patch("module.function")  # NEVER DO THIS
+# WRONG: Replacing project functions with test doubles is prohibited. Exercise
+# real code paths with small fixtures, local services, or documented skips.
 ```
 
 ## Running Tests
@@ -74,6 +73,6 @@ bash scripts/package/test.sh --pattern "test_rna_*"
 ```
 
 ## Key Files
-- `NO_MOCKING_POLICY.md` - Detailed policy documentation
+- `REAL_IMPLEMENTATION_POLICY.md` - Detailed policy documentation
 - `README.md` - Test suite overview
 - `README_tests.md` - Additional test guidelines

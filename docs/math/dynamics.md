@@ -36,7 +36,7 @@ Where α, β, γ, δ are competition coefficients.
 
 Example
 
-```python
+```python-snippet
 from metainformant.math import dynamics
 
 # Logistic growth simulation

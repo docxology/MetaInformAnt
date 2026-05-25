@@ -21,7 +21,7 @@ summary_path = write_go_summary(onto)
 
 ## GO Term Queries
 
-```python
+```python-snippet
 from metainformant.ontology.core.go import (
     ancestors, descendants, common_ancestors,
     path_to_root, distance, find_term_by_name,

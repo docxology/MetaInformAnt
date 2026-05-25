@@ -3,7 +3,7 @@
 Tests that each plot function creates valid PNG files using realistic
 pharmacogenomic data.
 
-NO MOCKING -- all tests use real implementations.
+REAL IMPLEMENTATION -- all tests use real implementations.
 """
 
 from __future__ import annotations

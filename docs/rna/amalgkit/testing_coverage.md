@@ -162,9 +162,9 @@ Each of 11 steps has 3 tests:
 
 ## Testing Philosophy
 
-All tests follow the repository's **NO_MOCKING_POLICY**:
+All tests follow the repository's **real-implementation policy**:
 - Real implementations only
-- No mocks, fakes, or stubs
+- Real implementations only
 - Tests with amalgkit require actual CLI
 - Graceful skipping when dependencies unavailable
 
@@ -290,7 +290,7 @@ Each step has documentation at three levels:
 - No shared state between tests
 
 ### Real Implementation Testing
-- No mocks used (repository policy)
+- Real implementations used (repository policy)
 - Real amalgkit CLI invoked when available
 - Graceful skipping when dependencies missing
 - Clear skip messages explaining requirements
@@ -339,7 +339,7 @@ The getfastq execution test takes ~5 minutes because it:
 - Tests retry logic with real network calls
 - Validates multiple fallback paths
 
-**This is by design** - real implementation testing, not mocking.
+**This is by design** - real implementation testing, not test doubles.
 
 ## Recommendations
 
@@ -347,7 +347,7 @@ The getfastq execution test takes ~5 minutes because it:
 1. Run `test_rna_amalgkit_steps.py` for quick validation (all tests pass)
 2. Update `test_rna_amalgkit_comprehensive.py` to fix workflow expectations
 3. All new step additions require 3 tests (exists, in dict, execution)
-4. Maintain NO_MOCKING_POLICY for all new tests
+4. Maintain real-implementation policy for all new tests
 
 ### For CI/CD
 1. Use `test_rna_amalgkit_steps.py` as primary validation
@@ -393,7 +393,7 @@ The amalgkit integration is **comprehensively tested** with:
 -**100% method coverage**: All 19 public methods tested
 -**100% step coverage**: All 11 steps tested
 -**100% module documentation**: All methods documented
--**Real implementation testing**: No mocks, following repository policy
+-**Real implementation testing**: Real implementations, following repository policy
 -**Production-ready**: Successfully deployed and validated with 4,548 samples across 20 ant species
 
 The test suite provides strong confidence in the reliability and correctness of the amalgkit integration for production transcriptomic analysis workflows.

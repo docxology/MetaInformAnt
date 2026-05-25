@@ -2,7 +2,7 @@
 
 Function: `read_taxon_ids`
 
-```python
+```python-snippet
 from pathlib import Path
 from metainformant.protein import proteomes
 

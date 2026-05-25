@@ -29,7 +29,7 @@ severity score:
 
 ### ContaminationDetector
 
-```python
+```python-snippet
 class ContaminationDetector:
     def __init__(self, reference_genomes: Optional[Dict[str, str]] = None)
 ```
@@ -39,7 +39,7 @@ Ships with built-in signatures for E. coli, yeast, and human.
 
 **Methods:**
 
-```python
+```python-snippet
 def detect_microbial_contamination(
     self, sequences: List[str], threshold: float = 0.01,
 ) -> Dict[str, Any]
@@ -49,7 +49,7 @@ k-mer Jaccard similarity against known contaminant signatures. Returns
 `detected`, `contaminants` (list of matches with contamination rate and average
 similarity), and `total_sequences_analyzed`.
 
-```python
+```python-snippet
 def detect_cross_species_contamination(
     self, sequences: List[str], target_species: str,
     other_species: List[str],
@@ -60,7 +60,7 @@ Compares k-mer overlap with target vs potential contaminant reference genomes.
 A read is flagged when its similarity to the contaminant exceeds 1.5x its
 similarity to the target.
 
-```python
+```python-snippet
 def detect_adapter_contamination(
     self, sequences: List[str],
     adapters: Optional[List[str]] = None,
@@ -70,7 +70,7 @@ def detect_adapter_contamination(
 Scans for exact and partial adapter matches. Defaults to Illumina TruSeq and
 Nextera adapters. Reports per-adapter contamination rates and match positions.
 
-```python
+```python-snippet
 def detect_duplication_contamination(
     self, sequences: List[str], max_duplicates: int = 10,
 ) -> Dict[str, Any]
@@ -79,7 +79,7 @@ def detect_duplication_contamination(
 Counts exact sequence duplicates. Reports duplication rate, unique count, and
 the most duplicated sequences with percentages.
 
-```python
+```python-snippet
 def comprehensive_contamination_analysis(
     self, sequences: List[str],
     target_species: Optional[str] = None,
@@ -93,7 +93,7 @@ results, an overall severity score, and severity classification.
 
 ### detect_rna_contamination
 
-```python
+```python-snippet
 def detect_rna_contamination(dna_sequences: List[str]) -> Dict[str, Any]
 ```
 
@@ -101,7 +101,7 @@ Checks for uracil (U) bases in DNA sequencing data. Threshold: 0.1%.
 
 ### detect_vector_contamination
 
-```python
+```python-snippet
 def detect_vector_contamination(
     sequences: List[str],
     vector_sequences: Optional[List[str]] = None,
@@ -113,7 +113,7 @@ custom vector sequences. Threshold: 1%.
 
 ### detect_mycoplasma_contamination
 
-```python
+```python-snippet
 def detect_mycoplasma_contamination(sequences: List[str]) -> Dict[str, Any]
 ```
 
@@ -122,7 +122,7 @@ pipeline.
 
 ### detect_rrna_contamination
 
-```python
+```python-snippet
 def detect_rrna_contamination(sequences: List[str]) -> Dict[str, Any]
 ```
 
@@ -131,7 +131,7 @@ sequences.
 
 ### generate_contamination_report
 
-```python
+```python-snippet
 def generate_contamination_report(
     contamination_results: Dict[str, Any],
     output_path: Optional[str | Path] = None,

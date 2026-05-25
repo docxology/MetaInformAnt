@@ -2,7 +2,7 @@
 
 Tests cover all submodules: syntactic, semantic, continuous, estimation,
 analysis, advanced measures, network analysis, integration, and workflows.
-All tests use real implementations per NO_MOCKING_POLICY.
+All tests use real implementations per real-implementation policy.
 """
 
 from __future__ import annotations

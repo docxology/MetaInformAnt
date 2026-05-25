@@ -61,7 +61,7 @@ class ReadRecord:
 
 ### Quality Metrics
 
-```python
+```python-snippet
 def calculate_n50(read_lengths: list[int]) -> int
 def calculate_nx(read_lengths: list[int], x: float = 50.0) -> int
 def read_length_stats(read_lengths: list[int]) -> ReadLengthStatistics
@@ -76,7 +76,7 @@ def calculate_throughput(
 
 ### Read Filtering
 
-```python
+```python-snippet
 def filter_by_length(
     reads: list[ReadRecord],
     min_length: int = 0, max_length: int | None = None,
@@ -92,7 +92,7 @@ Filter reads by length range or minimum mean quality score.
 
 ### Adapter Handling
 
-```python
+```python-snippet
 def detect_adapters(
     reads: list[ReadRecord],
     adapter_sequences: dict[str, str] | None = None,

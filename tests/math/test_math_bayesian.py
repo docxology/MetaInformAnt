@@ -1,6 +1,6 @@
 """Tests for Bayesian inference: MH MCMC, ABC, Bayes factor, conjugate priors, DIC, WAIC.
 
-NO MOCKING POLICY: All tests use real implementations.
+REAL IMPLEMENTATION POLICY: All tests use real implementations.
 """
 
 from __future__ import annotations

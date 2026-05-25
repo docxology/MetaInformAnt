@@ -20,7 +20,7 @@ print(rec['recommendation'])
 
 ### 2. Batch processing of a large cohort
 
-```python
+```python-snippet
 import pandas as pd
 from metainformant import parallel, pharmacogenomics
 
@@ -60,7 +60,7 @@ for entry in actionable:
 
 ### 4. Drug–drug and drug–gene interaction analysis
 
-```python
+```python-snippet
 from metainformant.pharmacogenomics.interaction.drug_interactions import (
     analyze_drug_gene_interactions,
     polypharmacy_risk,
@@ -118,7 +118,7 @@ print('Evidence:', result['evidence_summary'])
 
 ### 6. Full clinical report generation (CLIA-ready structure)
 
-```python
+```python-snippet
 from metainformant.pharmacogenomics.clinical.reporting import (
     generate_clinical_report,
     export_report,
@@ -215,7 +215,7 @@ plot_metabolizer_status(
 
 ### 10. PharmGKB annotation enrichment
 
-```python
+```python-snippet
 from metainformant.pharmacogenomics.annotations.pharmgkb import (
     query_pharmgkb_annotations,
     get_evidence_level,
@@ -271,7 +271,7 @@ df.to_csv('drug_gene_matrix.csv')
 
 ### 13. Parallel MapReduce via Dask for >1M records
 
-```python
+```python-snippet
 import dask.dataframe as dd
 from dask.distributed import Client
 client = Client(n_workers=8, threads_per_worker=1)
@@ -309,7 +309,7 @@ else:
 
 ### 15. PharmGKB annotation caching across runs
 
-```python
+```python-snippet
 from metainformant.pharmacogenomics.annotations.pharmgkb import get_cached_pharmgkb_path
 import os
 
@@ -333,7 +333,7 @@ alleles = call_star_alleles(variants, gene='CYP2D6')
 
 ### 17. Activity score table export for regulatory submission
 
-```python
+```python-snippet
 from metainformant.pharmacogenomics.alleles.activity import _ACTIVITY_SCORE_TABLES
 import json
 gene = 'CYP2D6'
@@ -370,7 +370,7 @@ with open('report.html', 'w') as fh:
 
 ### 20. Integration into FastAPI micro-service
 
-```python
+```python-snippet
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
@@ -420,7 +420,7 @@ for f in findings:
 
 ### 22. Export phenotype to VCF INFO field (for downstream genomics pipelines)
 
-```python
+```python-snippet
 import vcfpy  # pip install vcfpy
 
 reader = vcf.Reader(open('cohort.vcf.gz'))

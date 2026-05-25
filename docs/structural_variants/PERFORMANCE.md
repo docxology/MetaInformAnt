@@ -59,7 +59,7 @@ config.set("structural_variants.max_workers", 8)  # ≤ physical core count
 
 **Per-sample parallelism:**
 
-```python
+```python-snippet
 from metainformant import parallel
 
 def process_sample(bam_path):
@@ -163,7 +163,7 @@ depth = np.memmap("depth.dat", dtype=np.float64, mode="w+", shape=(n_bins,))
 
 ### Profile with `cProfile`
 
-```python
+```python-snippet
 import cProfile
 import pstats
 from metainformant.structural_variants import pipeline
@@ -212,7 +212,7 @@ Logs include:
 pip install memory-profiler
 ```
 
-```python
+```python-snippet
 from memory_profiler import profile
 
 @profile
@@ -232,7 +232,7 @@ run_pipeline()
 
 Use `metainformant.cloud` or custom Dask:
 
-```python
+```python-snippet
 from dask.distributed import Client
 from metainformant import parallel
 
@@ -353,7 +353,7 @@ export SV_FILTER_MIN_QUAL=10
 
 Use structured logging to a file:
 
-```python
+```python-snippet
 import logging
 from metainformant.core.utils.logging import setup_logging
 

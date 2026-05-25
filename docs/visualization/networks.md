@@ -9,7 +9,7 @@ Network visualization functions for network graphs including basic network plots
 Create a network graph visualization.
 
 **Example:**
-```python
+```python-snippet
 from metainformant.visualization import network_plot
 
 nodes = ['A', 'B', 'C']

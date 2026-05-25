@@ -148,7 +148,7 @@ fig = epi_viz.create_interactive_epigenome_browser(epigenetic_tracks)
 ## Integration with Epigenome Module
 
 ### With Methylation Analysis
-```python
+```python-snippet
 from metainformant.epigenome import methylation, visualization as epi_viz
 
 # Load methylation data
@@ -163,7 +163,7 @@ ax = epi_viz.plot_methylation_profile(np.array(levels), np.array(positions))
 ```
 
 ### With ChIP-seq Analysis
-```python
+```python-snippet
 from metainformant.epigenome import chipseq, visualization as epi_viz
 
 # Load ChIP-seq peaks
@@ -174,7 +174,7 @@ ax = epi_viz.plot_chipseq_peaks(peaks, chromosome="chr1")
 ```
 
 ### With ATAC-seq Analysis
-```python
+```python-snippet
 from metainformant.epigenome import atacseq, visualization as epi_viz
 
 # Load ATAC-seq peaks
@@ -221,7 +221,7 @@ fig = epi_viz.create_interactive_epigenome_browser(tracks, output_path="browser.
 ## Examples
 
 ### Complete Epigenetic Analysis Workflow
-```python
+```python-snippet
 from metainformant.epigenome import methylation, chipseq, visualization as epi_viz
 import numpy as np
 

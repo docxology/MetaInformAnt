@@ -8,7 +8,7 @@ Tests cover:
 - Edge cases: empty files, large files, missing files, invalid algorithms
 - Chunk size handling for large files
 
-NO mocking - all tests use real files via tmp_path fixture.
+real-implementation policy - all tests use real files via tmp_path fixture.
 """
 
 from __future__ import annotations

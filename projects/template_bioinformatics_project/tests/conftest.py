@@ -1,7 +1,7 @@
 """
 conftest.py — Shared pytest fixtures for the template bioinformatics project.
 
-All fixtures use real file I/O on temporary directories (Zero-Mock policy).
+All fixtures use real file I/O on temporary directories (Real-Implementation policy).
 """
 
 import shutil

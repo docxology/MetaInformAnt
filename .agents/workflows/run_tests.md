@@ -1,9 +1,9 @@
 ---
-description: Running the zero-mock test suite
+description: Running the real-implementation test suite
 ---
 # Run the Test Suite
 
-Our tests mandate a strict Zero-Mock policy, testing real I/O and outputs.
+Our tests mandate a strict Real-Implementation policy, testing real I/O and outputs.
 
 1. **Run Full Test Suite**
 

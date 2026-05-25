@@ -20,4 +20,4 @@ Documentation for the rna domain in MetaInformAnt.
 - **Tests**: `tests/rna/test_rna_*.py`
 
 ## Testing Policy
-- **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.
+- **Real Implementation**: All tests must use real implementations. Mocks are strictly prohibited.

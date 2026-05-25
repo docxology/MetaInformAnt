@@ -98,7 +98,7 @@ def test_fetch_alphafold_model_nonexistent_protein(tmp_path: Path):
     if not _check_online("https://alphafold.ebi.ac.uk"):
         pytest.skip("No network access for AlphaFold - real implementation requires connectivity")
 
-    # Test with obviously fake protein ID
+    # Test with invalid protein ID
     with pytest.raises(Exception):
         fetch_alphafold_model("FAKE_PROTEIN_12345", tmp_path, version=4, fmt="pdb")
 

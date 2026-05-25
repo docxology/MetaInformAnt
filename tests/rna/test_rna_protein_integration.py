@@ -1,6 +1,6 @@
 """Tests for RNA-Protein integration functions.
 
-This module tests protein integration functionality following NO_MOCKING_POLICY.
+This module tests protein integration functionality following the real-implementation policy.
 All tests use real data structures and calculations.
 """
 

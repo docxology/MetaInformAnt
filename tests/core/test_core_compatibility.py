@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from metainformant.core.config import apply_env_overrides, load_mapping_from_file
+from metainformant.core.io import paths as canonical_paths
 from metainformant.core.paths import expand_and_resolve, get_project_root
 from metainformant.core.utils import config as canonical_config
-from metainformant.core.io import paths as canonical_paths
 
 
 def test_core_config_compatibility_exports_canonical_functions() -> None:

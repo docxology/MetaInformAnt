@@ -1,3 +1,5 @@
+> Historical snapshot: retained for provenance. Current code, tests, and domain docs are the source of truth.
+
 # MetaInformAnt Documentation Audit — Executive Summary Dashboard
 
 > Historical snapshot: this dashboard is retained for provenance and may not

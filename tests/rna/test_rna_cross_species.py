@@ -10,7 +10,7 @@ Tests all 7 public functions in metainformant.rna.analysis.cross_species:
     - phylogenetic_expression_profile
     - cross_species_pca
 
-All tests use real numpy/pandas/scipy data. No mocking. No external fixtures.
+All tests use real numpy/pandas/scipy data. Real implementationing. No external fixtures.
 """
 
 from __future__ import annotations

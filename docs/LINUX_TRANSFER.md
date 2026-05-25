@@ -18,7 +18,7 @@ cd MetaInformAnt
 uv sync
 
 # 3. Install amalgkit
-uv pip install amalgkit
+uv pip install git+https://github.com/kfuku52/amalgkit
 
 # 4. Check pipeline status (instant, uses SQLite DB)
 uv run python scripts/rna/check_pipeline_status.py -v

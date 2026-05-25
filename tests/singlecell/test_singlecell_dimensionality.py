@@ -1,7 +1,7 @@
 """Tests for single-cell dimensionality reduction module.
 
 Real implementation testing for PCA, UMAP, t-SNE, and neighbor graph computation.
-No mocking used - all tests use real computational methods and data.
+Real implementationing used - all tests use real computational methods and data.
 """
 
 # ruff: noqa: E402 - scipy availability gates imports for this optional test module.

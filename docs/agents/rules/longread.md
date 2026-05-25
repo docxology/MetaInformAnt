@@ -56,5 +56,5 @@ from metainformant.longread.workflow import orchestrator
 
 ## Testing
 - Use `@pytest.mark.external_tool` for tests requiring minimap2, samtools
-- Generate test FAST5/BAM data programmatically, never mock file I/O
+- Generate test FAST5/BAM data programmatically, use real file I/O
 - All test outputs to `tmp_path`

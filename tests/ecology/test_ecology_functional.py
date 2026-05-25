@@ -12,7 +12,7 @@ Covers:
     - functional_beta_diversity (turnover and nestedness decomposition)
     - functional_diversity_suite (convenience wrapper)
 
-Uses real implementations only (NO mocking per project policy).
+Uses real implementations only (real-implementation policy).
 """
 
 from __future__ import annotations

@@ -26,7 +26,7 @@ This per-sample workflow ensures maximum disk efficiency — only one sample's F
 
 For manual processing or recovery of individual samples:
 
-```python
+```python-snippet
 from metainformant.rna.engine.workflow_steps import quantify_sample
 from metainformant.rna.engine.sra_extraction import delete_sample_fastqs
 from pathlib import Path
@@ -49,7 +49,7 @@ if success and abundance_path and abundance_path.exists():
 
 The `cleanup_unquantified_samples()` function processes all downloaded but unquantified samples:
 
-```python
+```python-snippet
 from metainformant.rna.orchestration import cleanup_unquantified_samples
 from pathlib import Path
 

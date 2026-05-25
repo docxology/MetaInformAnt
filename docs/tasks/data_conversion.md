@@ -16,7 +16,7 @@ Use `data_conversion` for format translation during pipeline interoperability (e
 
 ---
 
-```python
+```python-snippet
 from metainformant.core.io import convert
 
 # VCF → BED
@@ -48,7 +48,7 @@ convert.bam_to_bigwig("sample.bam", "coverage.bw", scale=True)
 ## Advanced Examples
 
 ### Batch conversion with progress bar
-```python
+```python-snippet
 from metainformant.core.io import convert
 from tqdm import tqdm
 import glob
@@ -66,7 +66,7 @@ Converting VCF→BED: 100%|██████████| 28/28 [00:42<00:00,  
 ```
 
 ### BAM quality metrics extraction (before/after conversion)
-```python
+```python-snippet
 from metainformant.core.io import bam_metrics
 
 # Compute per-sample stats during conversion
@@ -93,7 +93,7 @@ CRAM compression: 8.2 GB → 1.9 GB (4.3x)
 ```
 
 ### Merge multiple VCFs (cohort joint-calling)
-```python
+```python-snippet
 from metainformant.variants import merge
 
 # Merge per-sample VCFs into cohort VCF
@@ -115,7 +115,7 @@ Sites present in: [min=1, median=412, max=8432]
 ```
 
 ### GFF3 → BED12 (exon features)
-```python
+```python-snippet
 from metainformant.core.io import gff
 
 # Extract all exon features as BED12
@@ -137,7 +137,7 @@ chr1    12613   12721   ENST00000456328.2_1 0   +   12613   12721   color=0,0,25
 ```
 
 ### FASTQ quality filtering (conversion + filter)
-```python
+```python-snippet
 from metainformant.core.io import fastq
 
 # Read, filter low-quality reads, write new FASTQ

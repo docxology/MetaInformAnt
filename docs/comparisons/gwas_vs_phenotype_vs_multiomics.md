@@ -321,7 +321,7 @@ sp002        head_length       1.92   mm    caliper  1          healthy
 
 ### multiomics: Container Format
 
-```python
+```python-snippet
 from metainformant.multiomics import integration
 
 # Create container
@@ -465,7 +465,7 @@ uv run python -m metainformant multiomics integrate \
   --method joint_pca
 ```
 
-```python
+```python-snippet
 from metainformant.multiomics import integration
 multi = integration.MultiOmicsData()
 multi.add_omics("dna", dna_df)
@@ -475,7 +475,7 @@ result = integration.joint_pca(multi, n_components=20)
 
 ### Cross-Module Pipeline Example: GWAS → eQTL → Multi-omics
 
-```python
+```python-snippet
 # Step 1: Run GWAS
 from metainformant.gwas.workflow import run_gwas_workflow
 gwas_results = run_gwas_workflow(config="config/gwas/gwas.yaml")

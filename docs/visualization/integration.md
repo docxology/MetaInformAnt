@@ -6,7 +6,7 @@ The visualization module integrates with domain-specific modules to provide unif
 
 Access GWAS visualization functions through the integration module:
 
-```python
+```python-snippet
 from metainformant.visualization.gwas_integration import (
     manhattan_plot,
     circular_manhattan_plot,
@@ -21,7 +21,7 @@ from metainformant.visualization.gwas_integration import (
 
 Access single-cell visualization functions:
 
-```python
+```python-snippet
 from metainformant.visualization.singlecell_integration import (
     plot_qc_metrics,
     plot_embedding,
@@ -34,7 +34,7 @@ from metainformant.visualization.singlecell_integration import (
 
 Access information theory visualization functions:
 
-```python
+```python-snippet
 from metainformant.visualization.information_integration import (
     plot_entropy_distribution,
     plot_mutual_information_matrix,
@@ -47,7 +47,7 @@ from metainformant.visualization.information_integration import (
 
 Access life events visualization functions:
 
-```python
+```python-snippet
 from metainformant.visualization.life_events_integration import (
     plot_event_timeline,
     plot_event_embeddings,

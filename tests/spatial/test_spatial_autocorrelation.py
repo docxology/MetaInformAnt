@@ -1,6 +1,6 @@
 """Tests for spatial autocorrelation: Moran's I, Geary's C, LISA, Getis-Ord, variogram.
 
-NO MOCKING POLICY: All tests use real implementations.
+REAL IMPLEMENTATION POLICY: All tests use real implementations.
 """
 
 from __future__ import annotations

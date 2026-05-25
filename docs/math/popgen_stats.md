@@ -26,7 +26,7 @@ Calculate bootstrap confidence intervals for any statistic.
 Dictionary with statistic value, CI bounds, confidence level, and number of bootstrap replicates.
 
 **Example:**
-```python
+```python-snippet
 from metainformant.math.popgen_stats import bootstrap_confidence_interval
 import numpy as np
 
@@ -54,7 +54,7 @@ Perform permutation test to compare two groups.
 Dictionary with test statistic, p-value, number of permutations, and alternative hypothesis.
 
 **Example:**
-```python
+```python-snippet
 from metainformant.math.popgen_stats import permutation_test
 
 pop1_diversity = [0.01, 0.02, 0.03]
@@ -79,7 +79,7 @@ Detect outliers in a sequence of values.
 Dictionary with outlier indices, outlier values, z-scores, and p-values.
 
 **Example:**
-```python
+```python-snippet
 from metainformant.math.popgen_stats import detect_outliers
 
 tajimas_d_values = [-0.5, -0.3, 0.1, 5.0, 0.2]

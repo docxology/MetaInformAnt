@@ -14,7 +14,7 @@ Default: **Stereoscope**; switch via `spatial.deconvolution.backend`.
 
 ## Stereoscope workflow
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.deconvolution import stereoscope
 # 1. Prepare single‑cell reference (already annotated cell types)
 ref_adata = sc.read_h5ad('ref_panel.h5ad')
@@ -34,7 +34,7 @@ spatial_adata.obsm['deconvolution'] = deconv
 
 ## Tangram workflow (supervised)
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.deconvolution import tangram
 spatial_adata.obsm['deconvolution'] = tangram(
     spatial_adata,

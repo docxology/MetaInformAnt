@@ -1,5 +1,5 @@
 """
-Zero-Mock Unit Test for IndexComplexityManager.
+Real-Implementation Unit Test for IndexComplexityManager.
 
 Verifies that the IndexComplexityManager correctly filters:
 1. Low-complexity / non-coding sequences (XR_)

@@ -1,6 +1,6 @@
 #!/bin/bash
 # Comprehensive UV development setup script for METAINFORMANT
-# Follows .cursorrules and NO_MOCKING_POLICY for real implementation testing
+# Follows .cursorrules and real-implementation policy for real implementation testing
 
 set -euo pipefail
 

@@ -8,7 +8,7 @@ The trajectory module provides tools for inferring developmental trajectories an
 
 Infer pseudotime using diffusion maps:
 
-```python
+```python-snippet
 from metainformant.singlecell.trajectory import compute_pseudotime
 
 # Compute pseudotime from diffusion components
@@ -35,7 +35,7 @@ print(f"Pseudotime range: {pseudotime.min():.3f} - {pseudotime.max():.3f}")
 
 Perform comprehensive trajectory analysis:
 
-```python
+```python-snippet
 from metainformant.singlecell.trajectory import trajectory_analysis
 
 # Run full trajectory analysis
@@ -58,7 +58,7 @@ trajectory_results = trajectory_analysis(
 
 Identify genes with significant expression changes along trajectories:
 
-```python
+```python-snippet
 from metainformant.singlecell.trajectory import compute_gene_trends
 
 # Find genes that change along pseudotime
@@ -79,7 +79,7 @@ print(f"Found {len(trends)} genes with significant trends")
 
 Identify distinct developmental lineages:
 
-```python
+```python-snippet
 from metainformant.singlecell.trajectory import identify_lineages
 
 # Find developmental lineages
@@ -99,7 +99,7 @@ data.obs['lineage'] = lineages
 
 Identify genes associated with trajectory branch points:
 
-```python
+```python-snippet
 from metainformant.singlecell.trajectory import find_branch_genes
 
 # Find branch-associated genes
@@ -152,7 +152,7 @@ plt.show()
 
 ### Preprocessing for Trajectory Analysis
 
-```python
+```python-snippet
 # Recommended preprocessing for trajectory analysis
 from metainformant.singlecell.preprocessing import *
 from metainformant.singlecell.dimensionality import *

@@ -1,6 +1,6 @@
 """Tests for core validation utilities.
 
-Tests validation functions following NO_MOCKING policy.
+Tests validation functions following real-implementation policy.
 """
 
 from __future__ import annotations

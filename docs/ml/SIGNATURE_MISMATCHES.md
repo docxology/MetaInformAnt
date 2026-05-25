@@ -7,7 +7,7 @@ Use this file to align documentation with source or vice versa.
 ### random_search
 
 **Documented:**
-```python
+```python-snippet
 def random_search(
     model: Any,
     X: Any,
@@ -21,7 +21,7 @@ def random_search(
 ```
 
 **Actual Source:**
-```python
+```python-snippet
 def random_search(
     model_fn: Any,                              # Callable factory, NOT instantiated model
     param_distributions: dict,                  # Supports list, dict with low/high/log
@@ -41,7 +41,7 @@ def random_search(
 ### bayesian_optimization
 
 **Documented:**
-```python
+```python-snippet
 def bayesian_optimization(
     model: Any,
     X: Any,
@@ -56,7 +56,7 @@ def bayesian_optimization(
 ```
 
 **Actual Source:**
-```python
+```python-snippet
 def bayesian_optimization(
     objective_fn: Any,                          # Callable(params_dict) -> float score
     param_space: dict,                          # dict[name] = {'low': float, 'high': float, 'log': bool}
@@ -75,7 +75,7 @@ def bayesian_optimization(
 ### grid_search
 
 **Documented:**
-```python
+```python-snippet
 def grid_search(
     model: Any,
     X: Any,
@@ -87,7 +87,7 @@ def grid_search(
 ```
 
 **Actual Source:**
-```python
+```python-snippet
 def grid_search(
     model_fn: Any,                              # Callable factory
     param_grid: dict,                           # Exact choices, not distributions
@@ -101,7 +101,7 @@ def grid_search(
 ### auto_preprocess
 
 **Documented:**
-```python
+```python-snippet
 def auto_preprocess(
     X: Any,
     y: Any | None = None,
@@ -113,7 +113,7 @@ def auto_preprocess(
 ```
 
 **Actual Source (as of line 201):**
-```python
+```python-snippet
 def auto_preprocess(
     X: Any,
     y: Any | None = None,
@@ -130,7 +130,7 @@ def auto_preprocess(
 ### cross_validate_biological
 
 **Documented:**
-```python
+```python-snippet
 def cross_validate_biological(
     model: Any,
     X: np.ndarray,
@@ -145,7 +145,7 @@ def cross_validate_biological(
 **Actual Source:**
 - Function is named `cross_validation_scores()` NOT `cross_validate_biological`
 - Signature:
-```python
+```python-snippet
 def cross_validation_scores(
     model: Any,
     X: np.ndarray,
@@ -159,7 +159,7 @@ def cross_validation_scores(
 **Returns:** Dict mapping metric name → array of fold scores (NOT named `mean_accuracy` etc.)
 
 **Alternative source function:**
-```python
+```python-snippet
 def cross_validate(
     model: Any = None,
     X: np.ndarray = None,
@@ -204,7 +204,7 @@ Both take `model_factory` (callable) not a fitted model.
 ### compute_permutation_importance
 
 **Documented:**
-```python
+```python-snippet
 def compute_permutation_importance(
     model: Any,
     X: Any,
@@ -217,7 +217,7 @@ def compute_permutation_importance(
 ```
 
 **Actual Source:**
-```python
+```python-snippet
 def compute_permutation_importance(
     model: Any,
     X: Any,
@@ -233,7 +233,7 @@ def compute_permutation_importance(
 ### compute_lime_explanation
 
 **Documented:**
-```python
+```python-snippet
 def compute_lime_explanation(
     model: Any,
     X: Any,
@@ -249,7 +249,7 @@ def compute_lime_explanation(
 ### feature_interaction
 
 **Documented:**
-```python
+```python-snippet
 def feature_interaction(
     model: Any,
     X: Any,
@@ -262,7 +262,7 @@ def feature_interaction(
 ### compute_shap_values_kernel
 
 **Close match** — source uses:
-```python
+```python-snippet
 def compute_shap_values_kernel(
     predict_fn: Any,                      # Not 'model' — requires predict callable
     X: Any,
@@ -280,12 +280,12 @@ Docs show `model` as first param but source expects `predict_fn` (model.predict 
 ### boruta_selection
 
 **Documented:**
-```python
+```python-snippet
 def boruta_selection(model, X, y, max_iter=100, random_state=None) -> dict
 ```
 
 **Actual Source:**
-```python
+```python-snippet
 def boruta_selection(
     X: Any,
     y: Any,
@@ -299,12 +299,12 @@ def boruta_selection(
 ### recursive_elimination
 
 **Documented generically:**
-```python
+```python-snippet
 def recursive_elimination(model, X, y, n_features=None, cv=5) -> dict
 ```
 
 **Actual Source:**
-```python
+```python-snippet
 def recursive_elimination(
     model: Any,
     X: Any,
@@ -389,7 +389,7 @@ All domain-specific methods are missing:
 
 Docs sometimes use:
 
-```python
+```python-snippet
 from metainformant.ml import classification
 ```
 
@@ -402,7 +402,7 @@ from metainformant.ml.models.classification import BiologicalClassifier
 ```
 
 Not:
-```python
+```python-snippet
 from metainformant.ml import classification  # ✗ This fails unless added to __init__
 ```
 

@@ -1,6 +1,6 @@
 """Comprehensive tests for enhanced parallel execution module.
 
-Tests all parallel utilities with REAL implementations (no mocking).
+Tests all parallel utilities with REAL implementations (real implementation).
 """
 
 from __future__ import annotations

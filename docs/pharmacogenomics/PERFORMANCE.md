@@ -30,7 +30,7 @@ Choosing `chunk_size` is a trade-off between memory (larger chunks mean bigger i
 
 ## Parallel backend
 
-```python
+```python-snippet
 from metainformant import parallel
 parallel.configure(backend='loky', n_jobs=8)
 results = parallel.map(func, items)
@@ -80,7 +80,7 @@ Look for accumulated time in `alleles/star_allele.py:call_star_alleles` (matchin
 
 Repeated calls on identical variant sets can be memoized:
 
-```python
+```python-snippet
 from metainformant.core.io.cache import disk_cache
 
 @disk_cache(ttl=86400)
@@ -173,7 +173,7 @@ On the reference machine: ~1 400 samples/s single-core; with 8 workers → ~10 0
 
 If your cohort is stored in a CSV/Parquet file, I/O often dominates.
 
-```python
+```python-snippet
 import polars as pl  # faster than pandas for this
 
 df = pl.read_csv('cohort.csv', columns=['rsids'])

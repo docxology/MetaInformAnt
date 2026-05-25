@@ -1,6 +1,6 @@
 """Tests for RNA species discovery and configuration generation functions.
 
-This module tests discovery functionality following NO_MOCKING_POLICY.
+This module tests discovery functionality following the real-implementation policy.
 Network-dependent tests are skipped when offline.
 """
 

@@ -6,7 +6,7 @@ description: How to push the MetaInformAnt repository securely
 This workflow outlines the precise steps for pushing the `metainformant` repository, ensuring all tests pass, the environment is clean, and documentation is updated.
 
 1. **Verify Test Suite**
-   Ensure that the zero-mock test suite passes locally.
+   Ensure that the real-implementation test suite passes locally.
 
    ```bash
    uv run pytest tests/ -v

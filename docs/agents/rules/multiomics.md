@@ -104,16 +104,16 @@ output_path = paths.expand_and_resolve("output/multiomics/integration/")
 See Global Project Rules (root `.cursorrules`) for:
 - Common directory structure and path handling
 - Configuration patterns with env overrides
-- Testing policy (NO_MOCKING_POLICY)
+- Testing policy (real-implementation policy)
 - Import patterns and code style
 - Documentation guidelines
 
 ## Testing
 
-- **STRICTLY NO MOCKING**: Test real implementations only (see Global Project Rules (root `.cursorrules`) NO_MOCKING_POLICY)
+- **STRICTLY REAL IMPLEMENTATION**: Test real implementations only (see Global Project Rules (root `.cursorrules`) real-implementation policy)
 - Test with real multi-omic datasets from `data/`
 - Write test outputs to `output/multiomics/test/` using `tmp_path` fixture
 - Test integration methods with known results
-- No mocks, fakes, or stubs - use real integration operations
+- Real implementations only - use real integration operations
 
 

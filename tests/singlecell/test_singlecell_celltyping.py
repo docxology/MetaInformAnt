@@ -2,7 +2,7 @@
 
 Real implementation testing for marker-based annotation, label transfer,
 novel cell type detection, and cell type composition analysis.
-No mocking used - all tests use real computational methods and data.
+Real implementationing used - all tests use real computational methods and data.
 """
 
 from __future__ import annotations

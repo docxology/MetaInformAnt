@@ -143,7 +143,7 @@ Only one sample's FASTQ files exist at any time → maximum disk efficiency.
 
 For recovering or testing individual samples:
 
-```python
+```python-snippet
 from metainformant.rna.engine.workflow_steps import quantify_sample
 from metainformant.rna.engine.sra_extraction import delete_sample_fastqs
 from metainformant.rna.engine.workflow import load_workflow_config
@@ -172,7 +172,7 @@ if success and abundance_path and abundance_path.exists():
 
 Quantify all downloaded-but-unquantified samples and delete their FASTQs:
 
-```python
+```python-snippet
 from metainformant.rna.orchestration import cleanup_unquantified_samples
 from pathlib import Path
 

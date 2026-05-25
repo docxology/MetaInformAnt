@@ -434,7 +434,7 @@ bash scripts/package/setup.sh
 
 METAINFORMANT provides Python utilities for filesystem detection:
 
-```python
+```python-snippet
 from metainformant.core.filesystem import (
     detect_filesystem_type,
     supports_symlinks,

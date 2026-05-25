@@ -1,7 +1,7 @@
 # TABLES
 
 ## Overview
-Test fixture data for Tables coverage. Keep fixtures small, deterministic, and compatible with the no-mocking test policy.
+Test fixture data for Tables coverage. Keep fixtures small, deterministic, and compatible with the real-implementation test policy.
 
 ## Contents
 - [Apis_mellifera.metadata.tsv](Apis_mellifera.metadata.tsv)

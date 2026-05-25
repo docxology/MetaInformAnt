@@ -1,6 +1,6 @@
 """Tests for RNA SRA extraction and fallback recovery utilities.
 
-This module tests the sra_extraction module following NO_MOCKING_POLICY.
+This module tests the sra_extraction module following the real-implementation policy.
 All tests use real file operations, real directory structures, and real symlinks.
 Tests that require external tools (fasterq-dump, pigz/gzip) are marked with
 @pytest.mark.external_tool.
@@ -9,8 +9,11 @@ Tests that require external tools (fasterq-dump, pigz/gzip) are marked with
 from __future__ import annotations
 
 import gzip
+import os
 import shutil
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterator
 
 import pytest
 
@@ -55,15 +58,29 @@ def workflow_config_with_steps(tmp_path: Path) -> AmalgkitWorkflowConfig:
     return config
 
 
-def _create_fake_fastq_gz(path: Path, content: bytes = b"@read1\nACGT\n+\nIIII\n") -> None:
-    """Create a fake gzipped FASTQ file with real gzip compression."""
+@contextmanager
+def _temporary_path(path_value: str) -> Iterator[None]:
+    """Temporarily replace PATH and restore it after the assertion."""
+    original_path = os.environ.get("PATH")
+    os.environ["PATH"] = path_value
+    try:
+        yield
+    finally:
+        if original_path is None:
+            os.environ.pop("PATH", None)
+        else:
+            os.environ["PATH"] = original_path
+
+
+def _create_test_fastq_gz(path: Path, content: bytes = b"@read1\nACGT\n+\nIIII\n") -> None:
+    """Create a gzipped FASTQ file with real gzip compression."""
     path.parent.mkdir(parents=True, exist_ok=True)
     with gzip.open(path, "wb") as f:
         f.write(content)
 
 
-def _create_fake_sra(path: Path) -> None:
-    """Create a fake .sra file (just needs to exist for path logic tests)."""
+def _create_minimal_sra_file(path: Path) -> None:
+    """Create a minimal .sra file for path discovery tests."""
     path.parent.mkdir(parents=True, exist_ok=True)
     # Write a minimal binary blob -- fasterq-dump will reject it, but the
     # file discovery logic only cares that it exists and has an .sra extension.
@@ -98,82 +115,70 @@ class TestExtractSraDirectly:
         assert result == 0
 
     def test_returns_zero_when_fasterq_dump_not_available(
-        self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path
     ) -> None:
         """When fasterq-dump is not in PATH, should return 0 gracefully."""
         sra_dir = tmp_path / "sra"
         sra_dir.mkdir()
-        _create_fake_sra(sra_dir / "SRR99999.sra")
+        _create_minimal_sra_file(sra_dir / "SRR99999.sra")
         output_dir = tmp_path / "output"
         output_dir.mkdir()
 
-        # Remove fasterq-dump from PATH by giving shutil.which a PATH with no tools
-        monkeypatch.setenv("PATH", str(tmp_path / "empty_bin"))
-
-        result = extract_sra_directly(workflow_config, sra_dir, output_dir)
+        with _temporary_path(str(tmp_path / "empty_bin")):
+            result = extract_sra_directly(workflow_config, sra_dir, output_dir)
         assert result == 0
 
-    def test_discovers_sra_in_root_directory(
-        self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_discovers_sra_in_root_directory(self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path) -> None:
         """SRA files directly in the sra_dir root should be discovered."""
         sra_dir = tmp_path / "sra"
         sra_dir.mkdir()
-        _create_fake_sra(sra_dir / "SRR10001.sra")
-        _create_fake_sra(sra_dir / "SRR10002.sra")
+        _create_minimal_sra_file(sra_dir / "SRR10001.sra")
+        _create_minimal_sra_file(sra_dir / "SRR10002.sra")
 
         output_dir = tmp_path / "output"
         output_dir.mkdir()
 
-        # Remove fasterq-dump so we get 0 (tests discovery logic, not extraction)
-        monkeypatch.setenv("PATH", str(tmp_path / "empty_bin"))
-
-        # Even though extraction returns 0 due to missing tool, the function
-        # should still log discovery -- we verify the tool check happens first
-        result = extract_sra_directly(workflow_config, sra_dir, output_dir)
+        with _temporary_path(str(tmp_path / "empty_bin")):
+            result = extract_sra_directly(workflow_config, sra_dir, output_dir)
         assert result == 0
 
-    def test_discovers_sra_in_sra_subdirectory(
-        self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_discovers_sra_in_sra_subdirectory(self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path) -> None:
         """SRA files in sra_dir/sra/ subdirectory should be discovered."""
         sra_dir = tmp_path / "sra"
         sub_sra = sra_dir / "sra"
         sub_sra.mkdir(parents=True)
-        _create_fake_sra(sub_sra / "ERR20001.sra")
+        _create_minimal_sra_file(sub_sra / "ERR20001.sra")
 
         output_dir = tmp_path / "output"
         output_dir.mkdir()
 
-        monkeypatch.setenv("PATH", str(tmp_path / "empty_bin"))
-        result = extract_sra_directly(workflow_config, sra_dir, output_dir)
+        with _temporary_path(str(tmp_path / "empty_bin")):
+            result = extract_sra_directly(workflow_config, sra_dir, output_dir)
         assert result == 0
 
     def test_discovers_sra_in_sample_subdirectories(
-        self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+        self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path
     ) -> None:
         """SRA files in sample-named subdirectories should be discovered."""
         sra_dir = tmp_path / "sra"
         for acc in ["DRR30001", "SRR30002"]:
-            _create_fake_sra(sra_dir / acc / f"{acc}.sra")
+            _create_minimal_sra_file(sra_dir / acc / f"{acc}.sra")
 
         output_dir = tmp_path / "output"
         output_dir.mkdir()
 
-        monkeypatch.setenv("PATH", str(tmp_path / "empty_bin"))
-        result = extract_sra_directly(workflow_config, sra_dir, output_dir)
+        with _temporary_path(str(tmp_path / "empty_bin")):
+            result = extract_sra_directly(workflow_config, sra_dir, output_dir)
         assert result == 0
 
-    def test_deduplicates_sra_file_paths(
-        self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_deduplicates_sra_file_paths(self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path) -> None:
         """SRA files found via multiple glob patterns should be deduplicated."""
         sra_dir = tmp_path / "sra"
         # Create an SRA file in sra/ subdirectory -- it matches both */*.sra and sra/*.sra
         sub_sra = sra_dir / "sra"
         sub_sra.mkdir(parents=True)
         sra_file = sub_sra / "SRR50001.sra"
-        _create_fake_sra(sra_file)
+        _create_minimal_sra_file(sra_file)
 
         output_dir = tmp_path / "output"
         output_dir.mkdir()
@@ -191,12 +196,12 @@ class TestExtractSraDirectly:
     def test_skips_already_extracted_samples(self, workflow_config: AmalgkitWorkflowConfig, tmp_path: Path) -> None:
         """Samples with existing .fastq.gz files in output should be skipped."""
         sra_dir = tmp_path / "sra"
-        _create_fake_sra(sra_dir / "SRR60001.sra")
+        _create_minimal_sra_file(sra_dir / "SRR60001.sra")
 
         output_dir = tmp_path / "output"
         sample_out = output_dir / "SRR60001"
         sample_out.mkdir(parents=True)
-        _create_fake_fastq_gz(sample_out / "SRR60001_1.fastq.gz")
+        _create_test_fastq_gz(sample_out / "SRR60001_1.fastq.gz")
 
         # Even with fasterq-dump unavailable, we can verify the skip logic
         # by checking that the output dir already has fastq.gz
@@ -228,15 +233,15 @@ class TestExtractSraDirectly:
         sra_dir = tmp_path / "sra"
         sra_dir.mkdir()
         # Without a real SRA file, fasterq-dump will fail -- verify graceful handling
-        _create_fake_sra(sra_dir / "SRR_FAKE.sra")
+        _create_minimal_sra_file(sra_dir / "SRR_FAKE.sra")
 
         output_dir = tmp_path / "output"
         output_dir.mkdir()
 
-        # The fake .sra file will cause fasterq-dump to fail, returning 0 extracted
+        # The minimal .sra file will cause fasterq-dump to fail, returning 0 extracted
         result = extract_sra_directly(workflow_config, sra_dir, output_dir)
         assert isinstance(result, int)
-        assert result == 0  # fake SRA => extraction failure, but no crash
+        assert result == 0  # minimal SRA file => extraction failure, but no crash
 
     def test_thread_calculation_for_workers(self, workflow_config: AmalgkitWorkflowConfig) -> None:
         """max_workers should be at least 1, even with low thread counts."""
@@ -283,8 +288,8 @@ class TestManualIntegrationFallback:
         getfastq_dir = work_dir / "fastq" / "getfastq"
         sample_dir = getfastq_dir / "SRR12345"
         sample_dir.mkdir(parents=True)
-        _create_fake_fastq_gz(sample_dir / "SRR12345_1.fastq.gz")
-        _create_fake_fastq_gz(sample_dir / "SRR12345_2.fastq.gz")
+        _create_test_fastq_gz(sample_dir / "SRR12345_1.fastq.gz")
+        _create_test_fastq_gz(sample_dir / "SRR12345_2.fastq.gz")
 
         result = manual_integration_fallback(config)
         assert result is True
@@ -307,7 +312,7 @@ class TestManualIntegrationFallback:
         getfastq_dir = work_dir / "fastq" / "getfastq"
         sample_dir = getfastq_dir / "ERR67890"
         sample_dir.mkdir(parents=True)
-        _create_fake_fastq_gz(sample_dir / "ERR67890_1.fastq.gz")
+        _create_test_fastq_gz(sample_dir / "ERR67890_1.fastq.gz")
 
         result = manual_integration_fallback(config)
         assert result is True
@@ -325,7 +330,7 @@ class TestManualIntegrationFallback:
         getfastq_dir = work_dir / "fastq" / "getfastq"
         sample_dir = getfastq_dir / "DRR129201"
         sample_dir.mkdir(parents=True)
-        _create_fake_fastq_gz(sample_dir / "DRR129201_1.fastq.gz")
+        _create_test_fastq_gz(sample_dir / "DRR129201_1.fastq.gz")
 
         result = manual_integration_fallback(config)
         assert result is True
@@ -345,8 +350,8 @@ class TestManualIntegrationFallback:
         for acc in accessions:
             sample_dir = getfastq_dir / acc
             sample_dir.mkdir(parents=True)
-            _create_fake_fastq_gz(sample_dir / f"{acc}_1.fastq.gz")
-            _create_fake_fastq_gz(sample_dir / f"{acc}_2.fastq.gz")
+            _create_test_fastq_gz(sample_dir / f"{acc}_1.fastq.gz")
+            _create_test_fastq_gz(sample_dir / f"{acc}_2.fastq.gz")
 
         result = manual_integration_fallback(config)
         assert result is True
@@ -367,7 +372,7 @@ class TestManualIntegrationFallback:
         # Parent dir has a non-accession name but file contains SRR id
         misc_dir = getfastq_dir / "batch01"
         misc_dir.mkdir(parents=True)
-        _create_fake_fastq_gz(misc_dir / "SRR98765_1.fastq.gz")
+        _create_test_fastq_gz(misc_dir / "SRR98765_1.fastq.gz")
 
         result = manual_integration_fallback(config)
         assert result is True
@@ -385,7 +390,7 @@ class TestManualIntegrationFallback:
         getfastq_dir = work_dir / "fastq" / "getfastq"
         no_acc_dir = getfastq_dir / "unknown_sample"
         no_acc_dir.mkdir(parents=True)
-        _create_fake_fastq_gz(no_acc_dir / "mystery_reads.fastq.gz")
+        _create_test_fastq_gz(no_acc_dir / "mystery_reads.fastq.gz")
 
         result = manual_integration_fallback(config)
         # No recognizable accession => nothing linked
@@ -400,7 +405,7 @@ class TestManualIntegrationFallback:
         getfastq_dir = work_dir / "fastq" / "getfastq"
         sample_dir = getfastq_dir / "SRR44444"
         sample_dir.mkdir(parents=True)
-        _create_fake_fastq_gz(sample_dir / "SRR44444_1.fastq.gz")
+        _create_test_fastq_gz(sample_dir / "SRR44444_1.fastq.gz")
 
         # Pre-create the destination symlink
         quant_input = work_dir / "getfastq" / "SRR44444"
@@ -425,7 +430,7 @@ class TestManualIntegrationFallback:
         getfastq_dir = work_dir / "fastq" / "getfastq"
         sample_dir = getfastq_dir / "SRR55555"
         sample_dir.mkdir(parents=True)
-        _create_fake_fastq_gz(sample_dir / "SRR55555_1.fastq.gz")
+        _create_test_fastq_gz(sample_dir / "SRR55555_1.fastq.gz")
 
         # Create metadata_selected.tsv but NOT metadata.tsv
         metadata_dir = work_dir / "metadata"
@@ -450,7 +455,7 @@ class TestManualIntegrationFallback:
         getfastq_dir = work_dir / "fastq" / "getfastq"
         sample_dir = getfastq_dir / "SRR66666"
         sample_dir.mkdir(parents=True)
-        _create_fake_fastq_gz(sample_dir / "SRR66666_1.fastq.gz")
+        _create_test_fastq_gz(sample_dir / "SRR66666_1.fastq.gz")
 
         # Create BOTH metadata files with different content
         metadata_dir = work_dir / "metadata"
@@ -474,7 +479,7 @@ class TestManualIntegrationFallback:
         getfastq_dir = work_dir / "fastq" / "getfastq"
         sample_dir = getfastq_dir / "SRR77777"
         sample_dir.mkdir(parents=True)
-        _create_fake_fastq_gz(sample_dir / "SRR77777_1.fastq.gz")
+        _create_test_fastq_gz(sample_dir / "SRR77777_1.fastq.gz")
 
         quant_input = work_dir / "getfastq"
         assert not quant_input.exists()
@@ -513,7 +518,7 @@ class TestManualIntegrationFallback:
         sample_dir = getfastq_dir / "SRR99999"
         sample_dir.mkdir(parents=True)
         original = sample_dir / "SRR99999_1.fastq.gz"
-        _create_fake_fastq_gz(original)
+        _create_test_fastq_gz(original)
 
         manual_integration_fallback(config)
 
@@ -537,7 +542,7 @@ class TestManualIntegrationFallback:
 
         sample_dir = custom_fastq / "SRR11111"
         sample_dir.mkdir(parents=True)
-        _create_fake_fastq_gz(sample_dir / "SRR11111_1.fastq.gz")
+        _create_test_fastq_gz(sample_dir / "SRR11111_1.fastq.gz")
 
         result = manual_integration_fallback(config)
         assert result is True
@@ -561,7 +566,7 @@ class TestManualIntegrationFallback:
         default_getfastq = work_dir / "fastq" / "getfastq"
         sample_dir = default_getfastq / "SRR22222"
         sample_dir.mkdir(parents=True)
-        _create_fake_fastq_gz(sample_dir / "SRR22222_1.fastq.gz")
+        _create_test_fastq_gz(sample_dir / "SRR22222_1.fastq.gz")
 
         result = manual_integration_fallback(config)
         assert result is True
@@ -576,7 +581,7 @@ class TestManualIntegrationFallback:
         # Create a deeply nested structure
         deep_dir = getfastq_dir / "batch" / "sub" / "SRR33333"
         deep_dir.mkdir(parents=True)
-        _create_fake_fastq_gz(deep_dir / "SRR33333_1.fastq.gz")
+        _create_test_fastq_gz(deep_dir / "SRR33333_1.fastq.gz")
 
         result = manual_integration_fallback(config)
         assert result is True
@@ -594,7 +599,7 @@ class TestManualIntegrationFallback:
         getfastq_dir = work_dir / "fastq" / "getfastq"
         sample_dir = getfastq_dir / "SRR10101"
         sample_dir.mkdir(parents=True)
-        _create_fake_fastq_gz(sample_dir / "SRR10101_1.fastq.gz")
+        _create_test_fastq_gz(sample_dir / "SRR10101_1.fastq.gz")
 
         result1 = manual_integration_fallback(config)
         result2 = manual_integration_fallback(config)
@@ -648,7 +653,7 @@ class TestEdgeCases:
         for acc in accessions:
             sample_dir = getfastq_dir / acc
             sample_dir.mkdir(parents=True)
-            _create_fake_fastq_gz(sample_dir / f"{acc}_1.fastq.gz")
+            _create_test_fastq_gz(sample_dir / f"{acc}_1.fastq.gz")
 
         result = manual_integration_fallback(config)
         assert result is True
@@ -666,7 +671,7 @@ class TestEdgeCases:
         getfastq_dir = work_dir / "fastq" / "getfastq"
         sample_dir = getfastq_dir / "SRR42000"
         sample_dir.mkdir(parents=True)
-        _create_fake_fastq_gz(sample_dir / "SRR42000_1.fastq.gz")
+        _create_test_fastq_gz(sample_dir / "SRR42000_1.fastq.gz")
         (sample_dir / "SRR42000_2.fastq").write_text("@read\nACGT\n+\nIIII\n")
 
         result = manual_integration_fallback(config)

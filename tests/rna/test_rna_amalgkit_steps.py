@@ -1,7 +1,7 @@
 """Comprehensive tests for all amalgkit step runners.
 
 This test module ensures that every amalgkit step has proper test coverage.
-Tests follow the repository's NO_MOCKING_POLICY by using real implementations.
+Tests follow the repository's real-implementation policy by using real implementations.
 """
 
 from __future__ import annotations

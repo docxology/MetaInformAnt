@@ -258,7 +258,7 @@ class TestErrorHandling:
     def test_cli_unavailable_handling(self):
         """Test handling when amalgkit is not available.
 
-        Uses real check_cli_available() implementation following NO_MOCKING_POLICY.
+        Uses real check_cli_available() implementation following the real-implementation policy.
         If amalgkit is available, this test verifies the available case instead.
         """
         ok, help_text = amalgkit.check_cli_available()
@@ -449,7 +449,7 @@ class TestAmalgkitWrapperRobustness:
     def test_wrapper_with_missing_amalgkit(self):
         """Test wrapper behavior when amalgkit is not available.
 
-        Uses real check_cli_available() implementation following NO_MOCKING_POLICY.
+        Uses real check_cli_available() implementation following the real-implementation policy.
         Tests actual behavior regardless of whether amalgkit is installed.
         """
         ok, help_text = amalgkit.check_cli_available()

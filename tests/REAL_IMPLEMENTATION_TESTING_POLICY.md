@@ -1,18 +1,18 @@
-# METAINFORMANT Testing Policy: STRICTLY NO MOCKING
+# METAINFORMANT Real-Implementation Testing Policy
 
-## Absolute Prohibition on Mocks, Fakes, and Stubs
+## Tests Exercise Real Implementations
 
-**METAINFORMANT enforces a STRICT NO MOCKING policy across all test code.**
+**METAINFORMANT requires tests to exercise real code paths and real integrations.**
 
-### Why No Mocking?
+### Why Real Implementation Testing?
 
-Based on industry best practices and research showing that mocking is an anti-pattern:
+Based on industry best practices and research software experience:
 
-1. **Mocks Disconnect Tests from Reality**: Mocked tests often pass while the real implementation fails
-2. **Brittle Test Maintenance**: Changes to implementation require updating both code and mocks
-3. **False Confidence**: High test coverage with mocks can hide real integration issues
-4. **Performance Blindness**: Mocks hide real performance characteristics and bottlenecks
-5. **API Evolution Problems**: Mocks don't reveal when external APIs change or break
+1. **Reality Coverage**: Tests should fail when the real implementation fails
+2. **Lower Maintenance Drift**: Tests should follow production behavior, not copied stand-ins
+3. **Confidence**: Coverage should reveal real integration issues
+4. **Performance Visibility**: Tests should expose real resource behavior when relevant
+5. **API Evolution**: Tests should detect when external APIs change or break
 
 ### Policy Implementation
 
@@ -24,9 +24,9 @@ Based on industry best practices and research showing that mocking is an anti-pa
 - **Authentic network requests** with proper timeout and retry logic
 - **Environment variable configuration** for test setup (acceptable real configuration)
 
-#### **PROHIBITED: All Forms of Mocking**
-- `unittest.mock.Mock`, `unittest.mock.patch`, `unittest.mock.MagicMock`
-- `pytest-mock`, `pytest.MonkeyPatch` for function replacement
+#### **PROHIBITED: Test Doubles And Replacement Hooks**
+- `test-double modules.Mock`, `test-double patching APIs`, `test-double modules.test-double classes`
+- `test-double plugins`, `pytest.MonkeyPatch` for function replacement
 - HTTP mocking libraries (responses, httpretty, etc.)
 - Database mocking or in-memory fake databases  
 - Filesystem mocking or fake file systems
@@ -122,18 +122,18 @@ def test_ncbi_entrez_real():
 # pyproject.toml
 [tool.pytest.ini_options]
 markers = [
-    "no_mock: enforces that NO mocking/faking is allowed in any test",
+    "real_impl: tests exercise real implementations",
 ]
 filterwarnings = [
-    # Warn about any mock usage as it violates our policy
+    # Fail on suspicious unraisable warnings
     "error::pytest.PytestUnraisableExceptionWarning:.*mock.*",
 ]
 ```
 
 #### **Code Review Checklist**
-- No imports of `unittest.mock` or similar libraries
+- No imports of `test-double modules` or similar libraries
 - No `@patch` decorators or `monkeypatch` usage
-- No fake/stub/mock objects in test code
+- No test-double objects in test code
 - Real API calls with proper skip conditions
 - Actual file I/O with temporary directories
 - Genuine external tool execution
@@ -144,9 +144,9 @@ The test runner and CI/CD should flag:
 - Usage of mocking libraries
 - Tests that never exercise real external dependencies
 
-### Migration from Mocked Tests
+### Migration To Real-Implementation Tests
 
-When converting mocked tests to real implementations:
+When converting tests to real implementations:
 
 1. **Remove all mock imports and decorators**
 2. **Add connectivity checks** with appropriate skip conditions  

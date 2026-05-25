@@ -1,6 +1,6 @@
 """Tests for RNA environment and dependency checking functions.
 
-This module tests all environment checking functions following NO_MOCKING_POLICY.
+This module tests all environment checking functions following the real-implementation policy.
 All tests use real implementations and real CLI tools.
 """
 

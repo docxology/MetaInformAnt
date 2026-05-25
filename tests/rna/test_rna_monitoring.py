@@ -1,6 +1,6 @@
 """Tests for RNA monitoring and status checking functions.
 
-This module tests all monitoring functions following NO_MOCKING_POLICY.
+This module tests all monitoring functions following the real-implementation policy.
 All tests use real file operations and real implementations.
 """
 

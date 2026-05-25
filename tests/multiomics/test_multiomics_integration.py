@@ -1,7 +1,7 @@
 """Tests for multi-omics data integration functionality.
 
 Real implementation testing for multi-omics analysis methods.
-No mocking used - all tests use real computational methods and data structures.
+Real implementationing used - all tests use real computational methods and data structures.
 """
 
 from __future__ import annotations

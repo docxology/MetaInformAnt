@@ -178,7 +178,7 @@ for motif in motifs[:5]:  # Show first 5 motifs
 
 ### With Expression Data
 
-```python
+```python-snippet
 from metainformant.rna import workflow
 from metainformant.networks import infer_grn, regulatory_motifs
 
@@ -204,7 +204,7 @@ for motif in motifs:
 
 ### With Sequence Data
 
-```python
+```python-snippet
 from metainformant.dna import motifs as dna_motifs
 from metainformant.networks import add_transcription_factor
 

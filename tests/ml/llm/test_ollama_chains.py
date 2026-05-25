@@ -1,6 +1,6 @@
 """Tests for Ollama chains functionality.
 
-These tests use real Ollama API calls - no mocks.
+These tests use real Ollama API calls - real implementations.
 """
 
 import pytest

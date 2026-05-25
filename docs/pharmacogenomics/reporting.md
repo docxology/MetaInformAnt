@@ -43,7 +43,7 @@ html = export_report(report, format='html', template='my_clinic.html')
 Place your template under `~/.hermes/templates/pharmacogenomics/`. The context
 passed to Jinja2 is:
 
-```python
+```python-snippet
 {
   'patient': patient_dict,
   'genotype_table': list of per‑gene dicts,

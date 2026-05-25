@@ -10,7 +10,7 @@ flowchart LR
 
 Example
 
-```python
+```python-snippet
 from metainformant.math import ddm
 
 acc = ddm.ddm_analytic_accuracy(0.2, 1.0)

@@ -20,4 +20,4 @@ Documentation for the simulation domain in MetaInformAnt.
 - **Tests**: `tests/simulation/test_simulation_*.py`
 
 ## Testing Policy
-- **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.
+- **Real Implementation**: All tests must use real implementations. Mocks are strictly prohibited.

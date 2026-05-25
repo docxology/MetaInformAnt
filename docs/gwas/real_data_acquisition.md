@@ -204,7 +204,7 @@ tabix -p vcf data/variants/amellifera/real/published_variants.vcf.gz
 
 ### Python API
 
-```python
+```python-snippet
 from metainformant.gwas.download import download_variant_data
 from metainformant.gwas.sra_download import download_sra_run
 

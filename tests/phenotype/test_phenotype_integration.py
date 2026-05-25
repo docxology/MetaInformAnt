@@ -1,6 +1,6 @@
 """Tests for phenotype cross-omic integration: association, correlation, GxE.
 
-NO MOCKING POLICY: All tests use real implementations.
+REAL IMPLEMENTATION POLICY: All tests use real implementations.
 """
 
 from __future__ import annotations

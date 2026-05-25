@@ -7,7 +7,8 @@ aligns them via BWA, calls variants via bcftools, and runs the complete GWAS pip
 
 from __future__ import annotations
 
-import random
+import os
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -57,7 +58,7 @@ def check_dependencies():
 
 
 def download_genome_annotation(output_dir: Path) -> Path:
-    """Download the genome and generate mock GFF for the required scaffolds."""
+    """Download the genome and write a minimal GFF for the required scaffolds."""
     from metainformant.gwas.data.download import download_reference_genome
 
     genome_dir = output_dir / "genome"
@@ -71,7 +72,7 @@ def download_genome_annotation(output_dir: Path) -> Path:
         download_reference_genome("GCF_000187915.1", genome_dir)
 
     if not gff_path.exists():
-        logger.info("Generating mock GFF3...")
+        logger.info("Generating minimal GFF3 annotation for known scaffolds...")
         with open(gff_path, "w") as f:
             f.write("##gff-version 3\n")
             for chrom_acc, info in PBAR_SCAFFOLDS.items():
@@ -195,7 +196,18 @@ def download_and_call_variants(output_dir: Path, genome_dir: Path) -> Path:
     return vcf_path
 
 
-def generate_phenotypes(output_dir: Path, vcf_path: Path) -> Path:
+def _vcf_sample_ids(vcf_path: Path) -> list[str]:
+    """Return sample identifiers declared by a VCF header."""
+    with open(vcf_path) as f:
+        for line in f:
+            if line.startswith("#CHROM"):
+                raw_samples = line.strip().split("\t")[9:]
+                return [Path(s).stem for s in raw_samples]
+    return []
+
+
+def prepare_phenotypes(output_dir: Path, vcf_path: Path) -> Path:
+    """Copy and validate a real phenotype table for the VCF samples."""
     pheno_dir = output_dir / "phenotypes"
     pheno_dir.mkdir(parents=True, exist_ok=True)
     pheno_path = pheno_dir / "phenotypes.tsv"
@@ -203,23 +215,35 @@ def generate_phenotypes(output_dir: Path, vcf_path: Path) -> Path:
     if pheno_path.exists():
         return pheno_path
 
-    rng = random.Random(42)
-    samples = []
-    with open(vcf_path) as f:
-        for line in f:
-            if line.startswith("#CHROM"):
-                # Usually bcftools outputs the BAM filepath as sample name
-                raw_samples = line.strip().split("\t")[9:]
-                samples = [Path(s).stem for s in raw_samples]
-                break
+    source_value = os.environ.get("METAINFORMANT_PBARBATUS_PHENOTYPES")
+    if not source_value:
+        raise RuntimeError(
+            "Real phenotype TSV required. Set METAINFORMANT_PBARBATUS_PHENOTYPES "
+            "to a tab-delimited file containing sample_id and foraging_distance columns."
+        )
 
-    with open(pheno_path, "w") as f:
-        f.write("sample_id\tforaging_distance\n")
-        for sample in samples:
-            val = round(rng.gauss(5.0, 1.5), 2)
-            f.write(f"{sample}\t{val}\n")
+    source_path = Path(source_value).expanduser()
+    if not source_path.exists():
+        raise FileNotFoundError(f"Phenotype table not found: {source_path}")
 
-    logger.info(f"Generated mock phenotypes for {len(samples)} samples -> {pheno_path}")
+    expected_samples = set(_vcf_sample_ids(vcf_path))
+    with open(source_path) as f:
+        header = f.readline().rstrip("\n").split("\t")
+        if "sample_id" not in header or "foraging_distance" not in header:
+            raise ValueError("Phenotype table must contain sample_id and foraging_distance columns")
+        sample_idx = header.index("sample_id")
+        observed_samples = {line.rstrip("\n").split("\t")[sample_idx] for line in f if line.strip()}
+
+    missing_samples = sorted(expected_samples - observed_samples)
+    if missing_samples:
+        raise ValueError(
+            "Phenotype table is missing VCF samples: "
+            + ", ".join(missing_samples[:10])
+            + ("..." if len(missing_samples) > 10 else "")
+        )
+
+    shutil.copy2(source_path, pheno_path)
+    logger.info(f"Validated real phenotypes for {len(expected_samples)} samples -> {pheno_path}")
     return pheno_path
 
 
@@ -230,7 +254,7 @@ def run_main():
     print(f"Starting real data P. barbatus pipeline in {output_base}")
     ref_fasta = download_genome_annotation(output_base)
     vcf_path = download_and_call_variants(output_base, ref_fasta)
-    pheno_path = generate_phenotypes(output_base, vcf_path)
+    pheno_path = prepare_phenotypes(output_base, vcf_path)
 
     import yaml
 

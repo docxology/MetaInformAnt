@@ -212,7 +212,7 @@ log_level: str = "INFO"
 
 ### Unit Tests (Fast, No GCP)
 
-Mocked `gcloud` CLI calls via `subprocess.run` patch (allowed because mocking external CLI is not the same as mocking internal functions).
+External `gcloud` CLI calls via `subprocess.run` patch (allowed because replacing external CLI is not the same as replacing internal functions).
 
 ### Integration Tests (Real GCP)
 

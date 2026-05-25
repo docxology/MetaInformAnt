@@ -5,7 +5,7 @@ figure assembly (`plot_*` functions).
 
 ## Scatter / spot plot
 
-```python
+```python-snippet
 from metainformant.spatial.visualization import spatial_scatter
 spatial_scatter(
     adata,
@@ -21,7 +21,7 @@ spatial_scatter(
 
 ## Domain outlines
 
-```python
+```python-snippet
 from metainformant.spatial.visualization import domain_outlines
 domain_outlines(
     adata,
@@ -37,7 +37,7 @@ pass `img=adata.uns['tissue_image']`).
 
 ## Expression overlay
 
-```python
+```python-snippet
 from metainformant.spatial.visualization import expression_heatmap
 expression_heatmap(
     adata,
@@ -57,7 +57,7 @@ A multi‑panel figure with shared colour bar.
 
 ## Interactive (Plotly)
 
-```python
+```python-snippet
 from metainformant.spatial.visualization.interactive import spatial_scatter_plotly
 fig = spatial_scatter_plotly(
     adata,

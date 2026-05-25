@@ -374,7 +374,7 @@ python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbat
 ```
 
 **Check current temp directory:**
-```python
+```python-snippet
 from metainformant.core.disk import get_recommended_temp_dir
 from pathlib import Path
 

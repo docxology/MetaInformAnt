@@ -370,7 +370,7 @@ The math module is well-structured with comprehensive coverage of theoretical bi
 - Inconsistent error handling
 
 **Actions**:
-```python
+```python-snippet
 # Add to __all__:
 __all__ = [
     # ... existing exports ...
@@ -446,7 +446,7 @@ def fisher_exact_test(...) -> tuple[float, float]:
 ### 10.1 New Tests Needed
 
 1. **Unit Tests for `__init__.py` utilities**:
-   ```python
+   ```python-snippet
    # tests/math/test_math_utilities.py
    def test_correlation_coefficient():
        # Test perfect correlation
@@ -471,7 +471,7 @@ def fisher_exact_test(...) -> tuple[float, float]:
    ```
 
 2. **Edge Case Tests**:
-   ```python
+   ```python-snippet
    # tests/math/test_math_edge_cases.py
    def test_large_sample_sizes():
        # Test with n=1000000
@@ -484,7 +484,7 @@ def fisher_exact_test(...) -> tuple[float, float]:
    ```
 
 3. **Integration Tests**:
-   ```python
+   ```python-snippet
    # tests/math/test_math_integration.py
    def test_price_equation_with_popgen():
        # Combine price equation with population genetics

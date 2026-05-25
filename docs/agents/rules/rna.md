@@ -62,7 +62,7 @@ steps = plan_workflow(config)
 - Error handling and logging
 
 **Patterns**:
-```python
+```python-snippet
 from metainformant.rna.amalgkit import run_amalgkit_step
 
 result = run_amalgkit_step(
@@ -83,7 +83,7 @@ result = run_amalgkit_step(
 - Dashboard generation
 
 **Patterns**:
-```python
+```python-snippet
 from metainformant.rna.progress_tracker import ProgressTracker
 
 tracker = ProgressTracker(state_file="output/amalgkit/progress_state.json")
@@ -100,7 +100,7 @@ tracker.update_step("metadata", status="completed")
 - `download_progress.py`: Real-time progress tracking for downloads
 
 **Patterns**:
-```python
+```python-snippet
 from metainformant.rna.steps import (
     run_metadata,
     run_quant,
@@ -318,7 +318,7 @@ genome:
   # Optional genome configuration
 filters:
   # Optional filter configuration
-auto_install_amalgkit: false  # Optional
+auto_install_amalgkit: true  # Install required amalgkit from kfuku52/amalgkit when missing
 ```
 
 **Actual Config Loading**:
@@ -345,7 +345,7 @@ config = load_workflow_config("config/amalgkit/species.yaml")
 - Support both sequential and parallel processing modes
 
 **Workflow Execution Patterns**:
-```python
+```python-snippet
 from metainformant.rna.engine.workflow import load_workflow_config, plan_workflow, execute_workflow
 
 # Load and plan workflow
@@ -397,12 +397,12 @@ python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrm
 
 ## Testing
 
-- **STRICTLY NO MOCKING**: Test real implementations only (see Global Project Rules (root `.cursorrules`) NO_MOCKING_POLICY)
+- **STRICTLY REAL IMPLEMENTATION**: Test real implementations only (see Global Project Rules (root `.cursorrules`) real-implementation policy)
 - Skip tests if `amalgkit` not available using `@pytest.mark.external_tool`
 - Use real config files from `config/amalgkit/`
 - Write test outputs to `output/amalgkit/test/` using `tmp_path` fixture
 - Test workflow planning (not full execution in unit tests)
-- No mocks, fakes, or stubs - use real CLI calls and file operations
+- Real implementations only - use real CLI calls and file operations
 
 **Test Pattern**:
 ```python
@@ -427,7 +427,7 @@ def test_amalgkit_integration(tmp_path: Path):
 See Global Project Rules (root `.cursorrules`) for:
 - Common directory structure and path handling
 - Configuration patterns with env overrides
-- Testing policy (NO_MOCKING_POLICY)
+- Testing policy (real-implementation policy)
 - Import patterns and code style
 - Documentation guidelines
 

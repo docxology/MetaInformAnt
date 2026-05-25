@@ -23,6 +23,6 @@ min_edge_weight: 0.5
 ## Rules
 
 - Validate with schema before committing new configs
-- Follow NO MOCKING policy — tests use real config files
+- Follow REAL IMPLEMENTATION policy — tests use real config files
 - Use `uv` for dependency management
 - Environment overrides use `AK_` prefix

@@ -1,6 +1,6 @@
 """Tests for RNA progress tracker functionality.
 
-This module tests progress tracking following NO_MOCKING_POLICY.
+This module tests progress tracking following the real-implementation policy.
 All tests use real file operations.
 """
 

@@ -7,9 +7,9 @@ mode for disk-constrained environments, and backward-compatible helpers.
 
 from __future__ import annotations
 
+import concurrent.futures
 import csv
 import json
-import math
 import shutil
 import time as time_mod
 from pathlib import Path
@@ -32,6 +32,238 @@ _check_disk_space = check_disk_space
 _check_disk_space_or_fail = check_disk_space_or_fail
 
 
+def _workflow_result_from_steps(step_results: List[WorkflowStepResult]) -> WorkflowExecutionResult:
+    """Build a WorkflowExecutionResult from accumulated step results."""
+    successful_steps = sum(1 for step in step_results if step.success)
+    failed_steps = len(step_results) - successful_steps
+    return WorkflowExecutionResult(
+        steps_executed=step_results,
+        success=failed_steps == 0,
+        total_steps=len(step_results),
+        successful_steps=successful_steps,
+        failed_steps=failed_steps,
+    )
+
+
+def _split_streaming_steps(
+    steps_remaining: List[Tuple[str, Any]],
+) -> Tuple[List[Tuple[str, Any]], List[Tuple[str, Any]]]:
+    """Split remaining workflow steps into per-sample and post-process streaming phases."""
+    chunk_steps = []
+    post_process_steps = []
+    for name, params in steps_remaining:
+        if name == "integrate":
+            logger.info(
+                "Skipping 'integrate' step in streaming mode (incompatible with per-sample subdirectory layout)"
+            )
+        elif name in ("getfastq", "quant"):
+            chunk_steps.append((name, params))
+        else:
+            post_process_steps.append((name, params))
+    return chunk_steps, post_process_steps
+
+
+def _read_streaming_metadata(metadata_file: Path) -> Tuple[List[str], List[Dict[str, str]]]:
+    """Read metadata rows for streaming execution."""
+    with open(metadata_file, "r") as f:
+        reader = csv.DictReader(f, delimiter="\t")
+        fieldnames = list(reader.fieldnames or [])
+        samples = list(reader)
+    return fieldnames, samples
+
+
+def _ensure_streaming_getfastq_link(config: AmalgkitWorkflowConfig) -> None:
+    """Expose the external getfastq directory where quant expects it."""
+    fastq_src_dir = config.work_dir.parent / "fastq" / "getfastq"
+    fastq_link_dir = config.work_dir / "getfastq"
+    if not fastq_src_dir.exists():
+        return
+    try:
+        if fastq_link_dir.is_symlink() or fastq_link_dir.exists():
+            fastq_link_dir.unlink()
+        fastq_link_dir.symlink_to(fastq_src_dir.resolve(), target_is_directory=True)
+        logger.info("  Created symlink: work/getfastq -> fastq/getfastq")
+    except Exception as e:
+        logger.warning(f"  Failed to create getfastq symlink, quant may not find files: {e}")
+
+
+def _is_streaming_step_already_done(
+    config: AmalgkitWorkflowConfig,
+    sample_id: str,
+    step_name: str,
+    step_params: Dict[str, Any],
+) -> bool:
+    """Fast Python bypass for per-sample streaming outputs already present."""
+    redo_value = str(step_params.get("redo", "no")).lower()
+    if redo_value in ("yes", "true", "1"):
+        return False
+
+    abundance_file = config.work_dir / "quant" / sample_id / f"{sample_id}_abundance.tsv"
+    if step_name == "quant":
+        return abundance_file.exists()
+
+    if step_name == "getfastq":
+        fastq_file = config.work_dir / "getfastq" / sample_id / f"{sample_id}.amalgkit.fastq.gz"
+        return abundance_file.exists() or fastq_file.exists()
+
+    return False
+
+
+def _single_sample_metadata_file(
+    config: AmalgkitWorkflowConfig,
+    fieldnames: List[str],
+    sample_row: Dict[str, str],
+    current_chunk_idx: int,
+    sample_id: str,
+) -> Path:
+    """Write a one-row metadata TSV for a streaming sample."""
+    single_meta_file = config.work_dir / "metadata" / f"metadata_chunk_{current_chunk_idx}_sample_{sample_id}.tsv"
+    single_meta_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(single_meta_file, "w", newline="") as sf:
+        swriter = csv.DictWriter(sf, fieldnames=fieldnames, delimiter="\t")
+        swriter.writeheader()
+        swriter.writerow(sample_row)
+    return single_meta_file
+
+
+def _validate_streaming_chunk_size(chunk_size: int) -> int:
+    """Return a valid streaming chunk size or raise a clear error."""
+    try:
+        value = int(chunk_size)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"Streaming chunk_size must be a positive integer, got {chunk_size!r}") from exc
+    if value < 1:
+        raise ValueError(f"Streaming chunk_size must be >= 1, got {value}")
+    return value
+
+
+def _streaming_single_sample_params(
+    step_params: Dict[str, Any],
+    single_meta_file: Path,
+    chunk_size: int,
+) -> Dict[str, Any]:
+    """Prepare throttled single-sample parameters for a streaming step."""
+    chunk_size = _validate_streaming_chunk_size(chunk_size)
+    single_params = step_params.copy()
+    single_params["metadata"] = str(single_meta_file)
+    base_threads = int(single_params.get("threads", 1))
+    alloc_threads = max(1, base_threads // chunk_size)
+    single_params["threads"] = alloc_threads
+    if "jobs" in single_params:
+        single_params["jobs"] = alloc_threads
+    return single_params
+
+
+def _process_streaming_sample(
+    config: AmalgkitWorkflowConfig,
+    sample_row: Dict[str, str],
+    fieldnames: List[str],
+    current_chunk_idx: int,
+    sample_idx_in_chunk: int,
+    chunk_steps: List[Tuple[str, Dict[str, Any]]],
+    chunk_size: int,
+    step_functions: Dict[str, Any],
+    walk: bool,
+) -> List[WorkflowStepResult]:
+    """Run all per-sample streaming steps for one metadata row."""
+    sample_results = []
+    sample_id = sample_row.get("run", str(sample_idx_in_chunk))
+    single_meta_file = _single_sample_metadata_file(config, fieldnames, sample_row, current_chunk_idx, sample_id)
+    sample_success = True
+
+    for step_name, step_params in chunk_steps:
+        logger.info(f"  > [Sample {sample_id}] Step: {step_name}")
+
+        if _is_streaming_step_already_done(config, sample_id, step_name, step_params):
+            logger.debug(f"  [Sample {sample_id}] Step {step_name} target found. Native quick bypass!")
+            sample_results.append(WorkflowStepResult(step_name=f"{step_name}_{sample_id}", return_code=0, success=True))
+            continue
+
+        single_params = _streaming_single_sample_params(step_params, single_meta_file, chunk_size)
+
+        if walk:
+            sample_results.append(WorkflowStepResult(step_name=f"{step_name}_{sample_id}", return_code=0, success=True))
+            continue
+
+        try:
+            if step_name == "getfastq":
+                _check_disk_space_or_fail(
+                    config.work_dir, min_free_gb=5.0, step_name=f"{step_name} (sample {sample_id})"
+                )
+
+            step_func = step_functions.get(step_name)
+            if not step_func:
+                error_msg = f"Unknown streaming step: {step_name}"
+                logger.error(f"  [Sample {sample_id}] {error_msg}")
+                sample_results.append(
+                    WorkflowStepResult(
+                        step_name=f"{step_name}_{sample_id}",
+                        return_code=1,
+                        success=False,
+                        error_message=error_msg,
+                    )
+                )
+                sample_success = False
+                break
+            result = step_func(single_params)
+            step_res = WorkflowStepResult(
+                step_name=f"{step_name}_{sample_id}",
+                return_code=result.returncode,
+                success=result.returncode == 0,
+                error_message=result.stderr if result.returncode != 0 else None,
+            )
+            sample_results.append(step_res)
+
+            if result.returncode != 0:
+                logger.error(f"  [Sample {sample_id}] Step {step_name} failed with code {result.returncode}")
+                if result.stderr:
+                    logger.error(f"  [Sample {sample_id}] STDERR:\n{result.stderr.strip()}")
+                if result.stdout and not result.stderr:
+                    logger.error(f"  [Sample {sample_id}] STDOUT (no stderr):\n{result.stdout.strip()}")
+                sample_success = False
+                break
+        except Exception as e:
+            logger.error(f"  [Sample {sample_id}] Exception in {step_name}: {e}")
+            sample_results.append(WorkflowStepResult(f"{step_name}_{sample_id}", 1, False, str(e)))
+            sample_success = False
+            break
+
+    if sample_success:
+        logger.info(f"  [Sample {sample_id}] Success. Cleaning up FASTQ files...")
+        cleanup_fastqs(config, [sample_id])
+    else:
+        logger.warning(f"  [Sample {sample_id}] Failed. Skipping cleanup to preserve FASTQ files for debugging.")
+
+    return sample_results
+
+
+def _run_streaming_post_process_steps(
+    post_process_steps: List[Tuple[str, Dict[str, Any]]],
+    step_functions: Dict[str, Any],
+    walk: bool,
+) -> List[WorkflowStepResult]:
+    """Run post-chunk streaming steps such as merge and sanity."""
+    post_results = []
+    for step_name, step_params in post_process_steps:
+        logger.info(f"Step: {step_name}")
+        if walk:
+            post_results.append(WorkflowStepResult(step_name, 0, True))
+            continue
+
+        try:
+            step_func = step_functions.get(step_name)
+            if not step_func:
+                error_msg = f"Unknown streaming post-process step: {step_name}"
+                logger.error(error_msg)
+                post_results.append(WorkflowStepResult(step_name, 1, False, error_msg))
+                continue
+            result = step_func(step_params)
+            post_results.append(WorkflowStepResult(step_name, result.returncode, result.returncode == 0))
+        except Exception as e:
+            post_results.append(WorkflowStepResult(step_name, 1, False, str(e)))
+    return post_results
+
+
 def _execute_streaming_mode(
     config: AmalgkitWorkflowConfig,
     steps_remaining: List[Tuple[str, Any]],
@@ -48,210 +280,97 @@ def _execute_streaming_mode(
     This handles the getfastq -> integrate -> quant loop for small batches of samples
     to preserve disk space.
     """
+    chunk_size = _validate_streaming_chunk_size(chunk_size)
     logger.info(f"ENTERING STREAMING MODE: Processing remaining steps in chunks of {chunk_size} samples")
 
-    # Identify which steps are per-chunk (getfastq, quant) and which are post-process (merge, etc)
-    # NOTE: 'integrate' is SKIPPED in streaming mode because amalgkit's integrate.py does a flat
-    # os.listdir() scan for .fastq files, but getfastq places files in per-sample subdirectories
-    # (e.g., getfastq/SRR123/SRR123.amalgkit.fastq.gz). The integrate step is designed for
-    # enriching metadata with private FASTQ files — it's not needed when getfastq already manages
-    # the download-extract-name pipeline and metadata is already complete.
-    chunk_steps = []
-    post_process_steps = []
-
-    for name, params in steps_remaining:
-        if name == "integrate":
-            logger.info(
-                "Skipping 'integrate' step in streaming mode (incompatible with per-sample subdirectory layout)"
-            )
-            continue
-        elif name in ("getfastq", "quant"):
-            chunk_steps.append((name, params))
-        else:
-            post_process_steps.append((name, params))
-
+    chunk_steps, post_process_steps = _split_streaming_steps(steps_remaining)
     logger.info(f"Chunk loop steps: {[s[0] for s in chunk_steps]}")
     logger.info(f"Post-process steps: {[s[0] for s in post_process_steps]}")
 
-    # Read samples
-    with open(metadata_file, "r") as f:
-        reader = csv.DictReader(f, delimiter="\t")
-        fieldnames = reader.fieldnames
-        samples = list(reader)
-
+    fieldnames, samples = _read_streaming_metadata(metadata_file)
     total_samples = len(samples)
-    math.ceil(total_samples / chunk_size)
-
     all_step_results = []
-
-    # Symlink getfastq output dir to work dir so `quant` can find it
-    fastq_src_dir = config.work_dir.parent / "fastq" / "getfastq"
-    fastq_link_dir = config.work_dir / "getfastq"
-    if fastq_src_dir.exists():
-        try:
-            if fastq_link_dir.is_symlink() or fastq_link_dir.exists():
-                fastq_link_dir.unlink()
-            fastq_link_dir.symlink_to(fastq_src_dir.resolve(), target_is_directory=True)
-            logger.info("  Created symlink: work/getfastq -> fastq/getfastq")
-        except Exception as e:
-            logger.warning(f"  Failed to create getfastq symlink, quant may not find files: {e}")
-
-    # We define a helper that processes exactly ONE sample at a time.
-    def process_single_sample(
-        sample_row: Dict[str, str], current_chunk_idx: int, sample_idx_in_chunk: int
-    ) -> list[WorkflowStepResult]:
-        sample_results = []
-        sample_id = sample_row.get("run", str(sample_idx_in_chunk))
-
-        # Create single-sample metadata file
-        single_meta_file = config.work_dir / "metadata" / f"metadata_chunk_{current_chunk_idx}_sample_{sample_id}.tsv"
-        with open(single_meta_file, "w", newline="") as sf:
-            swriter = csv.DictWriter(sf, fieldnames=fieldnames, delimiter="\t")
-            swriter.writeheader()
-            swriter.writerow(sample_row)
-
-        sample_success = True
-        for step_name, step_params in chunk_steps:
-            logger.info(f"  > [Sample {sample_id}] Step: {step_name}")
-
-            # Use the single-sample metadata, but scale down threads/jobs
-            # so 16 concurrent samples don't spawn 16x16=256 threads.
-            single_params = step_params.copy()
-            single_params["metadata"] = str(single_meta_file)
-
-            # FAST PYTHON SKIP LOGIC
-            # Avoid paying the 1.5 second penalty per skipped sample during spot reboots
-            if step_name == "quant":
-                abundance_file = config.work_dir / "quant" / sample_id / f"{sample_id}_abundance.tsv"
-                if abundance_file.exists() and str(single_params.get("redo", "no")).lower() not in ("yes", "true", "1"):
-                    logger.debug(f"  [Sample {sample_id}] Step {step_name} output found. Native quick bypass!")
-                    sample_results.append(
-                        WorkflowStepResult(step_name=f"{step_name}_{sample_id}", return_code=0, success=True)
-                    )
-                    continue
-            elif step_name == "getfastq":
-                sra_dir = config.work_dir / "getfastq" / sample_id
-                fastq_file = sra_dir / f"{sample_id}.amalgkit.fastq.gz"
-                abundance_file = config.work_dir / "quant" / sample_id / f"{sample_id}_abundance.tsv"
-                # If abundance exists, getfastq is intrinsically handled. If fastq exists, it's also handled.
-                if (abundance_file.exists() or fastq_file.exists()) and str(
-                    single_params.get("redo", "no")
-                ).lower() not in ("yes", "true", "1"):
-                    logger.debug(f"  [Sample {sample_id}] Step {step_name} target found. Native quick bypass!")
-                    sample_results.append(
-                        WorkflowStepResult(step_name=f"{step_name}_{sample_id}", return_code=0, success=True)
-                    )
-                    continue
-
-            # Dynamically throttle cores to prevent system choking
-            # If total threads=16, and chunk_size=16, give each sample 1 thread.
-            base_threads = int(single_params.get("threads", 1))
-            alloc_threads = max(1, base_threads // chunk_size)
-            single_params["threads"] = alloc_threads
-            if "jobs" in single_params:
-                single_params["jobs"] = alloc_threads
-
-            if walk:
-                sample_results.append(
-                    WorkflowStepResult(step_name=f"{step_name}_{sample_id}", return_code=0, success=True)
-                )
-                continue
-
-            try:
-                if step_name == "getfastq":
-                    _check_disk_space_or_fail(
-                        config.work_dir, min_free_gb=5.0, step_name=f"{step_name} (sample {sample_id})"
-                    )
-
-                step_func = step_functions.get(step_name)
-                # Ensure the tool output differentiates from other parallel tasks
-                result = step_func(single_params)
-
-                step_res = WorkflowStepResult(
-                    step_name=f"{step_name}_{sample_id}",
-                    return_code=result.returncode,
-                    success=result.returncode == 0,
-                    error_message=result.stderr if result.returncode != 0 else None,
-                )
-                sample_results.append(step_res)
-
-                if result.returncode != 0:
-                    logger.error(f"  [Sample {sample_id}] Step {step_name} failed with code {result.returncode}")
-                    if result.stderr:
-                        logger.error(f"  [Sample {sample_id}] STDERR:\n{result.stderr.strip()}")
-                    if result.stdout and not result.stderr:
-                        logger.error(f"  [Sample {sample_id}] STDOUT (no stderr):\n{result.stdout.strip()}")
-
-                    sample_success = False
-                    break  # Stop processing this specific sample
-
-            except Exception as e:
-                logger.error(f"  [Sample {sample_id}] Exception in {step_name}: {e}")
-                sample_results.append(WorkflowStepResult(f"{step_name}_{sample_id}", 1, False, str(e)))
-                sample_success = False
-                break
-
-        # Only clean up if this specific sample succeeded completely
-        if sample_success:
-            logger.info(f"  [Sample {sample_id}] Success. Cleaning up FASTQ files...")
-            cleanup_fastqs(config, [sample_id])
-        else:
-            logger.warning(f"  [Sample {sample_id}] Failed. Skipping cleanup to preserve FASTQ files for debugging.")
-
-        return sample_results
-
-    # Continuous pool — as soon as one sample finishes, the next starts immediately.
-    # No chunk barriers; max_workers limits concurrency to chunk_size.
-    import concurrent.futures
+    _ensure_streaming_getfastq_link(config)
 
     logger.info(f"Processing ALL {total_samples} samples with max {chunk_size} concurrent workers (no chunk barriers)")
 
-    with concurrent.futures.ThreadPoolExecutor(max_workers=chunk_size) as executor:
-        futures = {}
-        for i, sample in enumerate(samples):
-            fut = executor.submit(process_single_sample, sample, 0, i)
-            futures[fut] = sample.get("run", str(i))
+    sample_iter = iter(enumerate(samples))
+    executor = concurrent.futures.ThreadPoolExecutor(max_workers=chunk_size)
+    futures: Dict[concurrent.futures.Future, str] = {}
 
-        # Process results as they complete — each finished slot immediately picks up next sample
-        for fut in concurrent.futures.as_completed(futures):
-            sample_id = futures[fut]
-            try:
-                res_list = fut.result()
-                all_step_results.extend(res_list)
-                completed = sum(1 for s in all_step_results if s.success and s.step_name.startswith("quant_"))
-                logger.info(f"  [Pool] {sample_id} done. Progress: {completed}/{total_samples} quantified")
-            except Exception as exc:
-                logger.error(f"  [Pool] {sample_id} raised an unhandled exception: {exc}")
-                all_step_results.append(WorkflowStepResult("async_sample_task", 1, False, str(exc)))
+    def submit_next_sample() -> bool:
+        try:
+            i, sample = next(sample_iter)
+        except StopIteration:
+            return False
+        fut = executor.submit(
+            _process_streaming_sample,
+            config,
+            sample,
+            fieldnames,
+            0,
+            i,
+            chunk_steps,
+            chunk_size,
+            step_functions,
+            walk,
+        )
+        futures[fut] = sample.get("run", str(i))
+        return True
 
-        # Check if failures should trigger early return
-        if check and any(not s.success for s in all_step_results):
-            return WorkflowExecutionResult(all_step_results, False, len(all_step_results), 0, 1)
+    try:
+        for _ in range(min(chunk_size, total_samples)):
+            submit_next_sample()
+
+        stop_scheduling = False
+        while futures:
+            done, _ = concurrent.futures.wait(futures, return_when=concurrent.futures.FIRST_COMPLETED)
+            for fut in done:
+                sample_id = futures.pop(fut)
+                try:
+                    res_list = fut.result()
+                    all_step_results.extend(res_list)
+                    completed = sum(1 for s in all_step_results if s.success and s.step_name.startswith("quant_"))
+                    logger.info(f"  [Pool] {sample_id} done. Progress: {completed}/{total_samples} quantified")
+                    if check and any(not s.success for s in res_list):
+                        stop_scheduling = True
+                except Exception as exc:
+                    logger.error(f"  [Pool] {sample_id} raised an unhandled exception: {exc}")
+                    all_step_results.append(WorkflowStepResult("async_sample_task", 1, False, str(exc)))
+                    if check:
+                        stop_scheduling = True
+
+            if stop_scheduling:
+                for fut in futures:
+                    fut.cancel()
+                if futures:
+                    remaining_done, _ = concurrent.futures.wait(futures)
+                    for fut in remaining_done:
+                        sample_id = futures[fut]
+                        if fut.cancelled():
+                            continue
+                        try:
+                            res_list = fut.result()
+                            all_step_results.extend(res_list)
+                            logger.info(f"  [Pool] {sample_id} finished after early failure signal")
+                        except Exception as exc:
+                            logger.error(f"  [Pool] {sample_id} raised an unhandled exception: {exc}")
+                            all_step_results.append(WorkflowStepResult("async_sample_task", 1, False, str(exc)))
+                    futures.clear()
+                return _workflow_result_from_steps(all_step_results)
+
+            while len(futures) < chunk_size and submit_next_sample():
+                pass
+    finally:
+        executor.shutdown(wait=True, cancel_futures=True)
 
     # After all chunks, run post-process steps (merge, etc)
     overall_success = all(s.success for s in all_step_results) if all_step_results else True
     if overall_success or not check:
         logger.info("Streaming chunks completed. processing post-chunk steps...")
-        for step_name, step_params in post_process_steps:
-            logger.info(f"Step: {step_name}")
-            if walk:
-                all_step_results.append(WorkflowStepResult(step_name, 0, True))
-                continue
+        all_step_results.extend(_run_streaming_post_process_steps(post_process_steps, step_functions, walk))
 
-            try:
-                step_func = step_functions.get(step_name)
-                result = step_func(step_params)  # Use original params with full metadata
-                all_step_results.append(WorkflowStepResult(step_name, result.returncode, result.returncode == 0))
-            except Exception as e:
-                all_step_results.append(WorkflowStepResult(step_name, 1, False, str(e)))
-
-    return WorkflowExecutionResult(
-        steps_executed=all_step_results,
-        success=all(s.return_code == 0 for s in all_step_results) if all_step_results else True,
-        total_steps=len(all_step_results),
-        successful_steps=sum(1 for s in all_step_results if s.success),
-        failed_steps=sum(1 for s in all_step_results if not s.success),
-    )
+    return _workflow_result_from_steps(all_step_results)
 
 
 def execute_workflow(
@@ -377,7 +496,7 @@ def execute_workflow(
         # Check dependencies
         deps_ok, deps_msg = check_step_dependencies(step_name, step_params, config)
         if not deps_ok:
-            logger.warning(f"Skipping step {step_name}: Dependencies not satisfied: {deps_msg}")
+            logger.error(f"Cannot run step {step_name}: Dependencies not satisfied: {deps_msg}")
             res = WorkflowStepResult(
                 step_name=step_name,
                 return_code=126,
@@ -391,15 +510,18 @@ def execute_workflow(
                     json.dumps(
                         {
                             "step": step_name,
-                            "status": "skipped",
+                            "status": "failed",
                             "return_code": 126,
+                            "success": False,
                             "duration_seconds": 0,
                             "timestamp": time_mod.time(),
-                            "note": f"Dependency skip: {deps_msg}",
+                            "note": f"Dependency failure: {deps_msg}",
                         }
                     )
                     + "\n"
                 )
+            if check:
+                break
             continue
 
         if walk:
@@ -624,111 +746,12 @@ def execute_workflow(
             # Sanitize parameters before passing to step function
             sanitized_params = sanitize_params_for_cli(step_name, step_params)
 
-            # NATIVE PYTHON CURATE SHIM INTERCEPT
-            if step_name == "curate":
-                logger.warning("Intercepting `curate` with Native Python Shim to bypass R-script timeout hangs!")
-                import numpy as np
-                import pandas as pd
-
-                try:
-                    # Resolve species name
-                    sp_name = config.species_list[0]
-                    sp_cap = sp_name.capitalize()
-
-                    # Core search paths for both local and cloud-synced git data
-                    search_bases = [
-                        config.work_dir.parent,
-                        Path("projects/hymenoptera_amalgkit/data") / sp_name.lower(),
-                    ]
-
-                    tpm_file = None
-                    is_gzipped = False
-
-                    for base in search_bases:
-                        if not base.exists():
-                            continue
-
-                        potential_paths = [
-                            base / "merged" / "merge" / sp_cap / f"{sp_cap}_tpm.tsv",
-                            base / "merged" / "merge" / sp_cap / f"{sp_cap}_tpm.tsv.gz",
-                            base / "merge" / sp_cap / f"{sp_cap}_tpm.tsv",
-                            base / "merge" / sp_cap / f"{sp_cap}_tpm.tsv.gz",
-                            base / "work" / "merge" / sp_cap / f"{sp_cap}_tpm.tsv",
-                            base / "work" / "merge" / sp_cap / f"{sp_cap}_tpm.tsv.gz",
-                        ]
-
-                        for p in potential_paths:
-                            if p.exists():
-                                tpm_file = p
-                                is_gzipped = p.name.endswith(".gz")
-                                break
-                        if tpm_file:
-                            break
-
-                    if not tpm_file:
-                        raise FileNotFoundError(
-                            f"Missing required TPM matrix for native curation (checked local and git submodule): {sp_name}"
-                        )
-
-                    logger.info(f"Loading {tpm_file} for native curation logic...")
-                    if is_gzipped:
-                        df = pd.read_csv(tpm_file, sep="\t", index_col=0, compression="gzip")
-                    else:
-                        df = pd.read_csv(tpm_file, sep="\t", index_col=0)
-
-                    # Compute pseudo-normalized shifted log2 matrix (mock TMM substitution)
-                    df_tc = np.log2(df + 0.1)
-
-                    # Determine the exact base directory to output the curated tables
-                    out_base = Path("projects/hymenoptera_amalgkit/data") / sp_name.lower()
-                    if not out_base.exists():
-                        out_base = config.work_dir.parent
-
-                    # Create curate hierarchy mimicking amalgkit
-                    tables_dir = out_base / "work" / "curate" / sp_cap / "tables"
-                    tables_dir.mkdir(parents=True, exist_ok=True)
-
-                    # Write uncorrected.tc.tsv and mock sva.tc.tsv
-                    tc_path = tables_dir / f"{sp_cap}.uncorrected.tc.tsv"
-                    sva_path = tables_dir / f"{sp_cap}.sva.tc.tsv"
-
-                    # Retain original index name from TPM (typically target_id)
-                    df_tc.to_csv(tc_path, sep="\t")
-                    logger.info(f"Wrote native uncorrected tc matrix: {tc_path}")
-
-                    # Copy to SVA placeholder to unblock any downstream strict checks
-                    shutil.copy2(tc_path, sva_path)
-                    logger.info(f"Created SVA placeholder: {sva_path}")
-
-                    # Mimic successful subprocess.returncode
-                    class MockResult:
-                        def __init__(self):
-                            self.returncode = 0
-                            self.stdout = "Native Python Shim Execution Completed successfully."
-                            self.stderr = ""
-
-                    result = MockResult()
-
-                except Exception as e:
-                    logger.error(f"Native Python Curate Shim failed: {e}")
-                    import traceback
-
-                    logger.debug(traceback.format_exc())
-
-                    class MockError:
-                        def __init__(self, e):
-                            self.returncode = 1
-                            self.stdout = ""
-                            self.stderr = str(e)
-
-                    result = MockError(e)
-            else:
-                result = step_func(
-                    sanitized_params,
-                    show_progress=progress,
-                    heartbeat_interval=5,
-                    check=check,
-                )
+            result = step_func(
+                sanitized_params,
+                show_progress=progress,
+                heartbeat_interval=5,
+                check=check,
+            )
 
             # Create step result
             error_message = None

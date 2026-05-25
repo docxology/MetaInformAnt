@@ -296,7 +296,7 @@ Pass `"module.path:function"` strings to `BaseWorkflowOrchestrator.add_step()` f
 
 ## Testing Philosophy
 
-**Zero Mocking Policy**: All tests use real implementations:
+**Real Implementation Policy**: All tests use real implementations:
 - Real file I/O with temporary directories
 - Real network calls (or simulated via `httpbin`/local servers)
 - Real database connections (PostgreSQL instance required)

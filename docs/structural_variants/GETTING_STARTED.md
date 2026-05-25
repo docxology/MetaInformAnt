@@ -27,7 +27,7 @@ uv pip install numpy scipy pysam matplotlib seaborn
 
 **Input:** Sorted, indexed BAM/CRAM file.
 
-```python
+```python-snippet
 import pysam
 import numpy as np
 from metainformant.structural_variants.detection.cnv import detect_cnv_from_depth
@@ -397,7 +397,7 @@ print(f"PC1 variance: {pca['explained_variance'][0]:.2%}")
 
 ### 10. Visualization
 
-```python
+```python-snippet
 from metainformant.structural_variants.visualization.plots import (
     plot_circos,
     plot_coverage_track,
@@ -435,7 +435,7 @@ fig_hist = plot_size_distribution(
 
 ### 11. Complete Pipeline (Single Command)
 
-```python
+```python-snippet
 from metainformant.structural_variants.pipeline import run_full_pipeline
 
 results = run_full_pipeline(

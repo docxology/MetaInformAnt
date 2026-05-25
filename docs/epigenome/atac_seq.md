@@ -63,7 +63,7 @@ Compare accessibility between two conditions. Returns shared peaks, condition-sp
 
 ## Usage Examples
 
-```python
+```python-snippet
 from metainformant.epigenome import (
     ATACPeak,
     load_peaks as load_atac_peaks,

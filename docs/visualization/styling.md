@@ -9,7 +9,7 @@ Utilities for creating publication-quality figures with consistent styling, colo
 Apply publication-quality style settings.
 
 **Example:**
-```python
+```python-snippet
 from metainformant.visualization.style import apply_publication_style
 
 apply_publication_style(font.size=12)
@@ -28,7 +28,7 @@ Get a color palette by name.
 - `'viridis_like'`: Viridis-like sequential colors
 
 **Example:**
-```python
+```python-snippet
 from metainformant.visualization.style import get_color_palette
 
 colors = get_color_palette('colorblind')

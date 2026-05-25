@@ -2,7 +2,7 @@
 
 ## Scope
 
-Comprehensive pytest test suite for METAINFORMANT. Contains real-implementation tests covering all 25 domain modules with strict adherence to the NO MOCKING policy. Tests validate functionality using actual algorithms, real file I/O, and genuine API calls.
+Comprehensive pytest test suite for METAINFORMANT. Contains real-implementation tests covering all 25 domain modules with strict adherence to the REAL IMPLEMENTATION policy. Tests validate functionality using actual algorithms, real file I/O, and genuine API calls.
 
 ## Architecture
 
@@ -80,6 +80,6 @@ def test_api_call() -> None:
 ```
 
 ### Policy Enforcement
-- **NO MOCKING**: Never use unittest.mock, pytest-mock, or fake data
+- **REAL IMPLEMENTATION**: Never use test-double modules, test-double plugins, or unvalidated data
 - **Real Fixtures**: All test data in data/ contains actual biological samples
 - **Graceful Skips**: Use pytest.skip() when external dependencies unavailable

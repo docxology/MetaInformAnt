@@ -19,7 +19,7 @@ Use `run_gwas` for genome-wide association studies on SNP genotype data—not fo
 
 ---
 
-```python
+```python-snippet
 from metainformant.gwas import run_association
 
 # One-line association
@@ -113,7 +113,7 @@ output/gwas/
 ## Advanced Examples
 
 ### REGENIE (efficient mixed-model for large cohorts)
-```python
+```python-snippet
 from metainformant.gwas import regenie
 
 # Step 1: Build genetic relationship matrix (GRM)
@@ -141,7 +141,7 @@ Expected output:
 ```
 
 ### Fine-mapping with SuSiE (Summarized Individual Effect)
-```python
+```python-snippet
 from metainformant.gwas.finemapping import susie
 
 # Load summary statistics and LD matrix
@@ -164,7 +164,7 @@ Lead SNP chr6:28538123 (HLA region) → CS size = 12 variants
 ```
 
 ### Colocalization with eQTL (COLOC)
-```python
+```python-snippet
 from metainformant.gwas.coloc import coloc
 
 # GWAS summary statistics per gene

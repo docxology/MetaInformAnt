@@ -1,7 +1,7 @@
 """Comprehensive tests for ML functionality.
 
 Real implementation testing for machine learning methods.
-No mocking used - all tests use real computational methods and data.
+Real implementationing used - all tests use real computational methods and data.
 """
 
 from __future__ import annotations
@@ -483,7 +483,7 @@ class TestValidation:
     def test_cross_validate(self):
         """Test cross-validation evaluation."""
 
-        # Simple test classifier function (real implementation, not a mock)
+        # Simple test classifier function (real implementation, not a test double)
         def simple_classifier(X_train, y_train, X_val, y_val):
             """Simple majority class classifier for testing."""
             majority_class = np.argmax(np.bincount(y_train))
@@ -508,7 +508,7 @@ class TestValidation:
     def test_bootstrap_validate(self):
         """Test bootstrap validation."""
 
-        # Simple test model function (real implementation, not a mock)
+        # Simple test model function (real implementation, not a test double)
         def simple_mean_model(X_train, y_train, X_test, y_test):
             """Simple mean predictor for regression testing."""
             mean_pred = np.mean(y_train)
@@ -535,7 +535,7 @@ class TestValidation:
     def test_learning_curve(self):
         """Test learning curve generation."""
 
-        # Simple test classifier that improves with more data (real implementation, not a mock)
+        # Simple test classifier that improves with more data (real implementation, not a test double)
         def improving_classifier(X_train, y_train, X_val, y_val):
             """Classifier that shows improved accuracy with more training data."""
             train_size = len(X_train)

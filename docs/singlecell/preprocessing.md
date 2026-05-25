@@ -25,7 +25,7 @@ class SingleCellData:
 
 ### Initialization
 
-```python
+```python-snippet
 from metainformant.singlecell.preprocessing import SingleCellData
 import numpy as np
 import pandas as pd
@@ -44,7 +44,7 @@ data = SingleCellData(X=X, obs=obs, var=var)
 
 Load count matrices from various file formats:
 
-```python
+```python-snippet
 from metainformant.singlecell.preprocessing import load_count_matrix
 
 # From CSV (genes as rows, cells as columns)
@@ -75,7 +75,7 @@ data = load_count_matrix("counts.h5", format="h5", h5_key="matrix")
 
 Calculate standard quality control metrics for cells:
 
-```python
+```python-snippet
 from metainformant.singlecell.preprocessing import calculate_qc_metrics
 
 # Calculate QC metrics
@@ -100,7 +100,7 @@ print(data.obs.columns)  # ['total_counts', 'n_genes', 'pct_mt', 'pct_ribo']
 
 Filter cells based on QC metrics:
 
-```python
+```python-snippet
 from metainformant.singlecell.preprocessing import filter_cells
 
 # Filter cells with basic thresholds
@@ -127,7 +127,7 @@ data_filtered = filter_cells(
 
 Filter genes based on detection across cells:
 
-```python
+```python-snippet
 from metainformant.singlecell.preprocessing import filter_genes
 
 # Filter rarely expressed genes
@@ -144,7 +144,7 @@ data_filtered = filter_genes(
 
 Normalize count data to account for differences in sequencing depth:
 
-```python
+```python-snippet
 from metainformant.singlecell.preprocessing import normalize_counts
 
 # Total count normalization (most common)
@@ -171,7 +171,7 @@ data_norm = normalize_counts(data, scaling_factors=scaling_factors)
 
 Apply log transformation to normalized counts:
 
-```python
+```python-snippet
 from metainformant.singlecell.preprocessing import log_transform
 
 # Log2 transformation with pseudocount
@@ -194,7 +194,7 @@ data_log = log_transform(data, base=10)
 
 Z-score standardization of expression data:
 
-```python
+```python-snippet
 from metainformant.singlecell.preprocessing import scale_data
 
 # Standard z-score scaling (mean=0, std=1)
@@ -218,7 +218,7 @@ data_scaled = scale_data(data, gene_subset=hvg_indices)
 
 Here's a typical preprocessing workflow:
 
-```python
+```python-snippet
 from metainformant.singlecell.preprocessing import (
     load_count_matrix, calculate_qc_metrics, filter_cells, 
     filter_genes, normalize_counts, log_transform, scale_data

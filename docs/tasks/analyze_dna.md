@@ -38,7 +38,7 @@ for frame in range(3):
 
 ## Sequence Statistics
 
-```python
+```python-snippet
 from metainformant.dna import composition
 
 gc = composition.gc_content(seq)
@@ -85,7 +85,7 @@ bootstraps = phylogeny.bootstrap(msa, n=1000)
 
 ## Variant Calling
 
-```python
+```python-snippet
 from metainformant.dna import variants
 
 # Call SNPs from BAM
@@ -110,7 +110,7 @@ variants.annotate_vep("filtered.vcf", "annotated.vcf")
 ## Advanced Examples
 
 ### K-mer spectrum and repeat detection
-```python
+```python-snippet
 from metainformant.dna import composition
 
 # Compute 5-mer frequencies
@@ -130,7 +130,7 @@ Repeat: AT × 8 at 89012
 ```
 
 ### Variant effect prediction with SnpEff
-```python
+```python-snippet
 from metainformant.dna import effects
 
 # Predict functional impacts

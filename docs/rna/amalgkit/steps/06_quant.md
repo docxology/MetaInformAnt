@@ -18,7 +18,7 @@ The `quant` step:
 
 ### Python API
 
-```python
+```python-snippet
 from metainformant.rna import amalgkit
 
 # High-level wrapper

@@ -27,7 +27,7 @@ Epigenetic data integrates closely with genomic analysis:
 ## Analysis Workflows
 
 ### Methylation Analysis Pipeline
-```python
+```python-snippet
 from metainformant.epigenome import methylation
 
 # Load methylation data (Bismark output)
@@ -51,7 +51,7 @@ promoter_methylation = methylation.analyze_promoter_methylation(
 ```
 
 ### Chromatin Accessibility Pipeline
-```python
+```python-snippet
 from metainformant.epigenome import tracks
 
 # Load ATAC-seq peaks

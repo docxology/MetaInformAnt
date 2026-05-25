@@ -458,7 +458,7 @@ steps:
 
 ### Accessing Sanity Results
 
-```python
+```python-snippet
 from pathlib import Path
 
 work_dir = Path("output/amalgkit/amellifera/work")

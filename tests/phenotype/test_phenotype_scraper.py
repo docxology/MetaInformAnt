@@ -1,6 +1,6 @@
 """Tests for AntWiki web scraping functionality.
 
-All tests use real HTTP requests (no mocks) following project policy.
+All tests use real HTTP requests (real implementations) following project policy.
 Tests are marked with @pytest.mark.network and will skip gracefully
 if network is unavailable.
 """

@@ -1,7 +1,7 @@
 """Tests for protein-protein interaction network functionality.
 
 Real implementation testing for PPI network analysis methods.
-No mocking used - all tests use real computational methods and data.
+Real implementationing used - all tests use real computational methods and data.
 """
 
 from __future__ import annotations

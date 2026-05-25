@@ -7,7 +7,7 @@ Common issues, error messages, and solutions for metabolomics analysis with META
 ### "No module named 'metainformant.metabolomics'"
 
 **Symptom**:
-```python
+```pycon
 >>> from metainformant.metabolomics import analysis
 ModuleNotFoundError: No module named 'metainformant.metabolomics'
 ```
@@ -375,7 +375,7 @@ pathway_db = {
 **Symptom**: `fig.show()` or `fig.write_html()` produces no output.
 
 **Fix**: For Plotly figures in Jupyter:
-```python
+```python-snippet
 # In Jupyter, use:
 fig.show(renderer="notebook")
 
@@ -446,7 +446,7 @@ plt.show()  # Only works in IPython with %matplotlib inline
 2. **Batch similar queries**: If running many enrichment analyses (e.g., per time point), pre-compute pathway member sets as Python `set` objects for fast intersection.
 
 3. **Parallelize by pathway** (advanced): Use `concurrent.futures` to distribute pathway tests across CPU cores. Each pathway test is independent:
-   ```python
+   ```python-snippet
    from concurrent.futures import ThreadPoolExecutor
    with ThreadPoolExecutor() as ex:
        futures = [ex.submit(_test_one_pathway, ...) for ...]

@@ -15,7 +15,7 @@ results = structural_variants.analyze(data)
 ```
 
 ### Full integration
-```python
+```python-snippet
 from metainformant.structural_variants import detect_cnvs, call_svs, annotate_svs
 from metainformant.core import io, config, cache, logging
 from metainformant.visualization import quickplot
@@ -53,7 +53,7 @@ visualization.manhattan(gwas_res)
 ```
 
 ### structural_variants + cloud
-```python
+```python-snippet
 from metainformant.cloud import submit_batch
 job = submit_batch(
     module="structural_variants",
@@ -63,7 +63,7 @@ results = job.wait().download()
 ```
 
 ### structural_variants + visualization (detailed)
-```python
+```python-snippet
 from metainformant.structural_variants import analyze
 from metainformant.visualization import plot_heatmap, plot_timeseries, plot_network
 res = analyze(data)
@@ -82,7 +82,7 @@ plot_timeseries(res.series)
 
 ## Data Contract
 Structural_variants produces standardized result containers compatible with downstream modules:
-```python
+```python-snippet
 class Result:
     values: dict            # Primary output data
     stats: dict             # Summary statistics

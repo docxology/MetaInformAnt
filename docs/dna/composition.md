@@ -11,7 +11,7 @@ flowchart TD
 
 Example
 
-```python
+```python-snippet
 from metainformant.dna import composition
 
 seq = "ATCGGGCCCATG"

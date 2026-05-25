@@ -1,6 +1,6 @@
 """Tests for orchestrator scripts.
 
-Tests follow the NO-MOCKING policy: all tests use real implementations
+Tests follow the REAL-IMPLEMENTATION policy: all tests use real implementations
 and call orchestrator scripts via subprocess to verify actual behavior.
 """
 

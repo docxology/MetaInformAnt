@@ -23,7 +23,7 @@ files. Values range from 0 to 100:
 
 ### build_alphafold_url
 
-```python
+```python-snippet
 def build_alphafold_url(
     uniprot_acc: str,
     *,
@@ -37,7 +37,7 @@ accepts `"pdb"` or `"cif"`.
 
 ### fetch_alphafold_model
 
-```python
+```python-snippet
 def fetch_alphafold_model(
     uniprot_acc: str,
     out_dir: Path,
@@ -52,7 +52,7 @@ downloaded file. Raises `requests.RequestException` on network failure.
 
 ### batch_download_alphafold_models
 
-```python
+```python-snippet
 def batch_download_alphafold_models(
     uniprot_accessions: List[str],
     out_dir: Path,
@@ -65,7 +65,7 @@ Downloads multiple structures. Returns a mapping from accession to file path
 
 ### get_alphafold_metadata
 
-```python
+```python-snippet
 def get_alphafold_metadata(uniprot_acc: str) -> Dict[str, Any]
 ```
 
@@ -74,7 +74,7 @@ given UniProt accession.
 
 ### parse_alphafold_confidence
 
-```python
+```python-snippet
 def parse_alphafold_confidence(pdb_path: Path) -> List[float]
 ```
 
@@ -83,7 +83,7 @@ AlphaFold PDB file.
 
 ### validate_alphafold_structure
 
-```python
+```python-snippet
 def validate_alphafold_structure(pdb_path: Path) -> Dict[str, Any]
 ```
 
@@ -96,7 +96,7 @@ Validates a downloaded PDB file. Returns a dictionary with:
 
 ### get_alphafold_structure_quality
 
-```python
+```python-snippet
 def get_alphafold_structure_quality(pdb_path: Path) -> Dict[str, float]
 ```
 
@@ -106,7 +106,7 @@ medium, high).
 
 ### find_alphafold_models_by_sequence
 
-```python
+```python-snippet
 def find_alphafold_models_by_sequence(
     sequence: str,
     identity_threshold: float = 0.9,
@@ -118,7 +118,7 @@ threshold. (API integration placeholder.)
 
 ### search_alphafold_by_keyword
 
-```python
+```python-snippet
 def search_alphafold_by_keyword(
     keyword: str,
     max_results: int = 100,
@@ -129,7 +129,7 @@ Keyword search against the AlphaFold database. (API integration placeholder.)
 
 ### get_alphafold_coverage
 
-```python
+```python-snippet
 def get_alphafold_coverage() -> Dict[str, Any]
 ```
 

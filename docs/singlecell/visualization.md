@@ -24,7 +24,7 @@ plt.show()
 
 Scatter plots of QC relationships:
 
-```python
+```python-snippet
 from metainformant.singlecell.visualization import plot_qc_scatter
 
 # Relationship between total counts and genes detected
@@ -44,7 +44,7 @@ plt.show()
 
 Plot cells in reduced dimensional space:
 
-```python
+```python-snippet
 from metainformant.singlecell.visualization import plot_embedding
 
 # UMAP colored by clusters
@@ -90,7 +90,7 @@ plt.show()
 
 Visualize individual gene expression:
 
-```python
+```python-snippet
 from metainformant.singlecell.visualization import plot_gene_expression
 
 # Violin plots by cluster
@@ -115,7 +115,7 @@ plt.show()
 
 Expression heatmaps:
 
-```python
+```python-snippet
 from metainformant.singlecell.visualization import plot_heatmap
 
 # Heatmap of marker genes by cluster
@@ -135,7 +135,7 @@ plt.show()
 
 Comprehensive cluster visualization:
 
-```python
+```python-snippet
 from metainformant.singlecell.visualization import plot_clusters
 
 # Multiple cluster views
@@ -153,7 +153,7 @@ plt.show()
 
 Cluster composition analysis:
 
-```python
+```python-snippet
 from metainformant.singlecell.visualization import plot_cluster_composition
 
 # Bar plot of cluster sizes
@@ -197,7 +197,7 @@ plt.show()
 
 Gene expression along trajectories:
 
-```python
+```python-snippet
 from metainformant.singlecell.visualization import plot_gene_trends
 
 # Expression trends along pseudotime
@@ -217,7 +217,7 @@ plt.show()
 
 Compare different analyses:
 
-```python
+```python-snippet
 from metainformant.singlecell.visualization import plot_comparison
 
 # Compare clusterings at different resolutions
@@ -234,7 +234,7 @@ plt.show()
 
 Split visualization by categories:
 
-```python
+```python-snippet
 from metainformant.singlecell.visualization import plot_split
 
 # Split by sample or condition
@@ -254,7 +254,7 @@ plt.show()
 
 Visualize marker gene results:
 
-```python
+```python-snippet
 from metainformant.singlecell.visualization import plot_marker_genes
 
 # Volcano plot of marker genes
@@ -308,7 +308,7 @@ fig.savefig(
 
 ### Plotly Integration
 
-```python
+```python-snippet
 try:
     import plotly.express as px
     import plotly.graph_objects as go
@@ -385,7 +385,7 @@ plt.show()
 
 The single-cell visualization module builds upon METAINFORMANT's core visualization utilities:
 
-```python
+```python-snippet
 from metainformant.visualization.plots import setup_matplotlib_style
 from metainformant.core.io import ensure_directory
 

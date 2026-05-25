@@ -1,3 +1,5 @@
+> Historical snapshot: retained for provenance. Current code, tests, and domain docs are the source of truth.
+
 # Cross-Code Verification Report
 
 > Historical snapshot: this generated report is retained for provenance and may

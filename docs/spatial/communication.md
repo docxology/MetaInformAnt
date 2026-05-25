@@ -5,7 +5,7 @@ receptor‑expressing spots / cells.
 
 ## Core functions
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.communication import (
     ligand_receptor_score,           # one pair
     spatial_ligand_receptor_pairs,   # many pairs, multiple testing
@@ -40,7 +40,7 @@ Methods:
 
 Built‑in LR database (CellChat / CellPhoneDB v2) accessed via `load_lr_database()`:
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.communication import load_lr_database, spatial_ligand_receptor_pairs
 lr_db = load_lr_database('human')   # ~2 300 pairs
 
@@ -61,7 +61,7 @@ each cell‑type pair; `qvalue` column is FDR.
 
 ## Visualisation
 
-```python
+```python-snippet
 from metainformant.spatial.visualization import lr_network_graph
 lr_network_graph(adata, results, min_score=0.3, edge_weight_scale=2.0)
 ```
@@ -71,7 +71,7 @@ score, colour by significance.
 
 ## Custom LR pair
 
-```python
+```python-snippet
 from metainformant.spatial.analysis.communication import register_custom_lr
 register_custom_lr(
     ligand='MYOKINE',

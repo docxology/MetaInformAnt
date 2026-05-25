@@ -20,4 +20,4 @@ Documentation for the menu domain in MetaInformAnt.
 - **Tests**: `tests/menu/test_menu_*.py`
 
 ## Testing Policy
-- **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.
+- **Real Implementation**: All tests must use real implementations. Mocks are strictly prohibited.

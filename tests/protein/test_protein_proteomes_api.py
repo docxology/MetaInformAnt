@@ -2,7 +2,7 @@
 
 Tests for get_proteome_metadata and download_proteome_fasta functions that
 were converted from placeholder implementations to real UniProt API calls.
-Following NO_MOCKING policy - all tests use real network calls or skip gracefully.
+Following real-implementation policy - all tests use real network calls or skip gracefully.
 """
 
 from __future__ import annotations
@@ -112,7 +112,7 @@ class TestGetProteomeMetadata:
 
     def test_get_proteome_metadata_network_error_handling(self):
         """Test graceful handling of network errors."""
-        # This would require mocking network calls, but we follow NO_MOCKING policy
+        # This would require stdin replacement network calls, but we follow real-implementation policy
         # Instead, we rely on the function to handle network errors internally
         # and raise appropriate exceptions
 
@@ -264,7 +264,7 @@ class TestDownloadProteomeFasta:
 
     def test_download_proteome_fasta_network_error_handling(self):
         """Test graceful handling of network errors during download."""
-        # This tests the function's error handling without mocking
+        # This tests the function's error handling without test doubles
         # We rely on the function to handle network errors internally
 
         with tempfile.NamedTemporaryFile() as tmp_file:
@@ -315,7 +315,7 @@ class TestProteomesNetworkConnectivity:
 
     def test_api_timeout_handling(self):
         """Test that API calls handle timeouts gracefully."""
-        # This tests the function's timeout handling without mocking
+        # This tests the function's timeout handling without test doubles
         import time
 
         start_time = time.time()

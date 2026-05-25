@@ -52,7 +52,7 @@ src/metainformant/ontology/
 - Term relationships and metadata
 
 **Patterns**:
-```python
+```python-snippet
 from metainformant.ontology.types import Term, Ontology
 
 # Create a term
@@ -127,7 +127,7 @@ cache_dir = paths.expand_and_resolve("output/ontology/cache/")
 - In-memory caching for expensive operations (ancestors/descendants)
 
 **Patterns**:
-```python
+```python-snippet
 from metainformant.ontology import set_cache_enabled, set_cache_ttl, clear_cache
 
 # Enable/disable caching
@@ -164,16 +164,16 @@ ancestors_set = ancestors(onto, "GO:0008150", use_cache=False)
 See Global Project Rules (root `.cursorrules`) for:
 - Common directory structure and path handling
 - Configuration patterns with env overrides
-- Testing policy (NO_MOCKING_POLICY)
+- Testing policy (real-implementation policy)
 - Import patterns and code style
 - Documentation guidelines
 
 ## Testing
 
-- **STRICTLY NO MOCKING**: Test real implementations only (see Global Project Rules (root `.cursorrules`) NO_MOCKING_POLICY)
+- **STRICTLY REAL IMPLEMENTATION**: Test real implementations only (see Global Project Rules (root `.cursorrules`) real-implementation policy)
 - Skip tests if ontology files unavailable using `@pytest.mark.external_tool`
 - Test with real GO ontology files from `data/`
 - Write test outputs to `output/ontology/test/` using `tmp_path` fixture
-- No mocks, fakes, or stubs - use real file operations
+- Real implementations only - use real file operations
 
 

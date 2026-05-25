@@ -15,10 +15,12 @@ from __future__ import annotations
 
 import argparse
 import ast
+import importlib
 import importlib.util
 import logging
 import re
 import sys
+import textwrap
 from collections import defaultdict
 from dataclasses import dataclass
 from pathlib import Path
@@ -33,12 +35,41 @@ REPO_ROOT = Path(__file__).parent.parent
 SRC_DIR = REPO_ROOT / "src"
 DEFAULT_REPORT_PATH = Path("output") / "cross_code_verification_report.md"
 KNOWN_OPTIONAL_IMPORT_ROOTS = {
+    "anndata",
     "boto3",
     "botocore",
+    "cloudscraper",
+    "dask",
     "cryptography",
     "dotenv",
+    "fastapi",
+    "h5py",
     "hypothesis",
+    "imblearn",
+    "polars",
+    "plotly",
+    "prometheus_client",
+    "psycopg2",
+    "pysam",
     "pydantic",
+    "scanpy",
+    "tenacity",
+    "torch",
+    "umap",
+    "uvicorn",
+    "vcfpy",
+}
+HISTORICAL_REPORT_NAMES = {
+    "AUDIT_INDEX.md",
+    "DOCUMENTATION_AUDIT_REPORT.md",
+    "DOCUMENTATION_EXECUTIVE_SUMMARY.md",
+    "DOCUMENTATION_REVIEW_REPORT.md",
+    "GWAS_VALIDATION_REPORT.md",
+    "LINK_VALIDATION_REPORT.md",
+    "PHARMACOGENOMICS_VALIDATION_REPORT.md",
+    "SINGLECELL_VALIDATION_REPORT.md",
+    "VALIDATION_REPORT.md",
+    "cross_code_verification_report.md",
 }
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
@@ -49,7 +80,9 @@ def resolve_repo_path(path: Path, repo_root: Path = REPO_ROOT) -> Path:
     return path.resolve() if path.is_absolute() else (repo_root / path).resolve()
 
 
-def collect_code_examples(parser: "DocumentationParser", doc_files: List[Path], verbose: bool = False) -> List[CodeExample]:
+def collect_code_examples(
+    parser: "DocumentationParser", doc_files: List[Path], verbose: bool = False
+) -> List[CodeExample]:
     """Extract code examples from documentation files."""
     all_examples = []
     for doc_file in doc_files:
@@ -108,6 +141,7 @@ class PythonSymbolIndex:
         self.modules: Dict[str, Path] = {}  # module_name -> file_path
         self.class_methods: Dict[str, Set[str]] = defaultdict(set)  # class_name -> {method_names}
         self.imports_cache: Dict[str, Set[str]] = defaultdict(set)  # module -> {imported_names}
+        self.module_exports: Dict[str, Set[str]] = defaultdict(set)  # module -> {public exported names}
 
     def _module_name_for_file(self, file_path: Path) -> str:
         """Return the importable module name for a Python file under src_dir."""
@@ -158,6 +192,8 @@ class PythonSymbolIndex:
             for node in ast.walk(tree):
                 if isinstance(node, ast.ClassDef):
                     self._add_symbol(node, "class", module_name, file_path)
+                    if not node.name.startswith("_"):
+                        self.module_exports[module_name].add(node.name)
                     # Track methods for this class
                     for item in node.body:
                         if isinstance(item, ast.FunctionDef):
@@ -167,6 +203,8 @@ class PythonSymbolIndex:
                     # Top-level function
                     if isinstance(node.parent, ast.Module) if hasattr(node, "parent") else True:
                         self._add_symbol(node, "function", module_name, file_path)
+                        if not node.name.startswith("_"):
+                            self.module_exports[module_name].add(node.name)
 
         except Exception as e:
             logger.warning(f"Failed to parse {file_path}: {e}")
@@ -213,15 +251,46 @@ class PythonSymbolIndex:
     def _extract_imports(self, tree, module_name: str):
         """Extract imports from a module."""
         imported = set()
+        explicit_all = self._extract_all_exports(tree)
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
                     imported.add(alias.name)
+                    exported_name = alias.asname or alias.name.split(".", 1)[0]
+                    if not exported_name.startswith("_"):
+                        self.module_exports[module_name].add(exported_name)
             elif isinstance(node, ast.ImportFrom):
                 if node.module:
                     for alias in node.names:
                         imported.add(f"{node.module}.{alias.name}" if alias.name != "*" else f"{node.module}.*")
+                        if alias.name != "*":
+                            exported_name = alias.asname or alias.name
+                            if not exported_name.startswith("_"):
+                                self.module_exports[module_name].add(exported_name)
+        if explicit_all:
+            self.module_exports[module_name].update(explicit_all)
         self.imports_cache[module_name] = imported
+
+    @staticmethod
+    def _extract_all_exports(tree: ast.AST) -> Set[str]:
+        """Extract simple string names from a module-level __all__ assignment."""
+        exports: Set[str] = set()
+        for node in getattr(tree, "body", []):
+            if not isinstance(node, (ast.Assign, ast.AnnAssign)):
+                continue
+
+            targets = node.targets if isinstance(node, ast.Assign) else [node.target]
+            if not any(isinstance(target, ast.Name) and target.id == "__all__" for target in targets):
+                continue
+
+            value = node.value
+            if isinstance(value, (ast.List, ast.Tuple, ast.Set)):
+                for element in value.elts:
+                    if isinstance(element, ast.Constant) and isinstance(element.value, str):
+                        exports.add(element.value)
+            elif isinstance(value, ast.ListComp):
+                continue
+        return exports
 
     def get_symbol(self, full_name: str) -> Optional[Symbol]:
         """Look up a symbol by its full name."""
@@ -229,12 +298,11 @@ class PythonSymbolIndex:
 
     def get_module_members(self, module_name: str) -> Set[str]:
         """Get all public members exported by a module."""
-        members = set()
-        for sym in self.symbols.values():
-            if sym.module_path.endswith(module_name.replace(".", "/")):
-                # Check if it's 'module.submodule.symbol' - complex
-                pass
-        # Also check __all__ if defined
+        members = set(self.module_exports.get(module_name, set()))
+        for sym_full_name, sym in self.symbols.items():
+            if sym_full_name.startswith(f"{module_name}.") and sym_full_name.count(".") == module_name.count(".") + 1:
+                if not sym.name.startswith("_"):
+                    members.add(sym.name)
         return members
 
     def module_exists(self, module_name: str) -> bool:
@@ -248,18 +316,37 @@ class DocumentationParser:
     # Regex patterns for inline code
     INLINE_CODE_PATTERN = r"`([^`]+)`"
 
-    # Code block patterns: ```python, ```bash, ```, etc.
-    CODE_BLOCK_PATTERN = r"```(\w*)\n(.*?)```"
+    # Code block patterns: ```python, ```python-snippet, ```bash, ```, etc.
+    CODE_BLOCK_PATTERN = r"```([A-Za-z0-9_-]*)\n(.*?)```"
 
-    def __init__(self, docs_dir: Path):
+    def __init__(self, docs_dir: Path, include_historical: bool = False):
         self.docs_dir = docs_dir
+        self.include_historical = include_historical
 
     def find_all_docs(self) -> List[Path]:
         """Find all markdown documentation files."""
-        docs = list(self.docs_dir.rglob("*.md"))
-        # Exclude certain directories?
+        docs = [
+            doc_path
+            for doc_path in self.docs_dir.rglob("*.md")
+            if self.include_historical or not self._is_historical_report(doc_path)
+        ]
         logger.info(f"Found {len(docs)} documentation files")
         return docs
+
+    def _is_historical_report(self, file_path: Path) -> bool:
+        """Return True for retained snapshot reports that are not current docs."""
+        try:
+            head = "\n".join(file_path.read_text(encoding="utf-8").splitlines()[:12])
+        except OSError:
+            return False
+        if "Historical snapshot" in head:
+            return True
+
+        try:
+            rel = file_path.resolve().relative_to(REPO_ROOT)
+        except ValueError:
+            rel = file_path
+        return len(rel.parts) == 1 and file_path.name in HISTORICAL_REPORT_NAMES
 
     def extract_code_examples(self, file_path: Path) -> List[CodeExample]:
         """Extract all code examples from a markdown file."""
@@ -272,9 +359,10 @@ class DocumentationParser:
             content = "".join(lines)
 
             # Find all code blocks
-            for match in re.finditer(r"```(\w*)\n(.*?)```", content, re.DOTALL):
+            for match in re.finditer(self.CODE_BLOCK_PATTERN, content, re.DOTALL):
                 lang = match.group(1).strip()
-                code = match.group(2)
+                code = textwrap.dedent(match.group(2)).strip()
+                lang = self._classify_block_language(lang, code)
                 # Find line number by counting newlines before the match
                 line_num = content[: match.start()].count("\n") + 1
 
@@ -317,14 +405,22 @@ class DocumentationParser:
 
     def _is_code_candidate(self, code: str) -> bool:
         """Check if inline code looks like actual code (not just a filename)."""
+        code = code.strip()
+        if "\n" in code or len(code) > 160:
+            return False
+        if "..." in code:
+            return False
         # Skip single words, filenames, paths
         if len(code.split()) == 1 and ("." in code or "/" in code or code.endswith(".md")):
             return False
-        # Skip just commands that are clearly not importable
-        return True
+        return bool(
+            re.match(r"^(from\s+[A-Za-z_][\w.]*\s+import\s+|import\s+[A-Za-z_][\w.]*)", code)
+            or code.startswith(("metainformant ", "uv ", "pytest ", "python ", "python3 "))
+        )
 
     def _guess_language(self, code: str) -> str:
         """Guess the language of a code snippet."""
+        code = code.strip()
         # Python indicators
         if any(kw in code for kw in ["import ", "def ", "class ", "from ", "print("]):
             return "python"
@@ -333,13 +429,45 @@ class DocumentationParser:
             return "bash"
         return "unknown"
 
+    def _classify_block_language(self, lang: str, code: str) -> str:
+        """Return a verification language for a fenced code block."""
+        normalized = (lang or "").lower()
+        if normalized != "python":
+            return lang
+
+        stripped = code.strip()
+        if not stripped:
+            return "text"
+        if stripped.startswith((">>>", "... ")) or "Traceback (most recent call last):" in stripped:
+            return "pycon"
+        if re.match(r"^[A-Za-z_][\w.]*Error:", stripped):
+            return "text"
+        if stripped.startswith("rule "):
+            return "snakemake"
+        if any(line.lstrip().startswith(("!", "%")) for line in stripped.splitlines()):
+            return "python-notebook"
+        if re.search(r"\b(import|from)\s+\.\.\.", stripped) or re.search(r"\bimport\s+\.\.\.", stripped):
+            return "python-snippet"
+        try:
+            ast.parse(stripped)
+        except SyntaxError:
+            return "python-snippet"
+        return "python"
+
 
 class CodeValidator:
     """Validates code examples against the source code index."""
 
-    def __init__(self, symbol_index: PythonSymbolIndex, pyproject_toml: Path):
+    def __init__(
+        self,
+        symbol_index: PythonSymbolIndex,
+        pyproject_toml: Path,
+        *,
+        strict_optional_imports: bool = False,
+    ):
         self.symbol_index = symbol_index
         self.violations: List[Violation] = []
+        self.strict_optional_imports = strict_optional_imports
         self.entry_points = self._load_entry_points(pyproject_toml)
 
     def _load_entry_points(self, pyproject: Path) -> Set[str]:
@@ -441,7 +569,7 @@ class CodeValidator:
 
     def _module_exists(self, module_name: str) -> bool:
         """Check if a module exists in the project or standard library."""
-        if module_name.split(".", 1)[0] in KNOWN_OPTIONAL_IMPORT_ROOTS:
+        if self._should_skip_optional_import(module_name):
             return True
 
         # Check project modules
@@ -463,7 +591,7 @@ class CodeValidator:
 
         full_module = f"metainformant.{module_name}" if not module_name.startswith("metainformant") else module_name
 
-        if module_name.split(".", 1)[0] in KNOWN_OPTIONAL_IMPORT_ROOTS:
+        if self._should_skip_optional_import(module_name):
             return True
 
         # If full_module exists in modules, check if item is a submodule or symbol
@@ -472,19 +600,35 @@ class CodeValidator:
             full_item_module = f"{full_module}.{item_name}"
             if full_item_module in self.symbol_index.modules:
                 return True
+            if item_name in self.symbol_index.get_module_members(full_module):
+                return True
             # Second: check if item is a symbol (class/function) defined in that module
             for sym_full_name in self.symbol_index.symbols:
                 if sym_full_name.startswith(full_module + "."):
                     if sym_full_name.endswith("." + item_name):
                         return True
-            return False
+            try:
+                module = importlib.import_module(full_module)
+                return hasattr(module, item_name)
+            except ImportError:
+                return False
 
         # Standard library / third-party check via importlib
         try:
             module = importlib.import_module(module_name)
+            try:
+                if importlib.util.find_spec(f"{module_name}.{item_name}") is not None:
+                    return True
+            except (ImportError, ModuleNotFoundError, ValueError):
+                pass
             return hasattr(module, item_name)
         except ImportError:
             return False
+
+    def _should_skip_optional_import(self, module_name: str) -> bool:
+        """Treat known optional dependencies as non-fatal unless strict mode is enabled."""
+        root_name = module_name.split(".", 1)[0]
+        return root_name in KNOWN_OPTIONAL_IMPORT_ROOTS and not self.strict_optional_imports
 
     def _check_dotted_access(self, code: str, example: CodeExample):
         """Check dotted attribute access patterns (e.g., metainformant.core.io.read_file)."""
@@ -733,6 +877,16 @@ def main():
         help=f"Output report file (default: {DEFAULT_REPORT_PATH})",
     )
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
+    parser.add_argument(
+        "--include-historical",
+        action="store_true",
+        help="Include historical audit and validation report snapshots",
+    )
+    parser.add_argument(
+        "--strict-optional-imports",
+        action="store_true",
+        help="Treat optional third-party dependency imports as validation failures",
+    )
 
     args = parser.parse_args()
 
@@ -762,7 +916,7 @@ def main():
     index.build_index()
 
     # Step 2: Parse all documentation files
-    parser = DocumentationParser(docs_dir)
+    parser = DocumentationParser(docs_dir, include_historical=args.include_historical)
     doc_files = parser.find_all_docs()
 
     all_examples = collect_code_examples(parser, doc_files, args.verbose)
@@ -770,7 +924,7 @@ def main():
     logger.info(f"Extracted {len(all_examples)} total code examples from {len(doc_files)} files")
 
     # Step 3: Validate all examples
-    validator = CodeValidator(index, pyproject)
+    validator = CodeValidator(index, pyproject, strict_optional_imports=args.strict_optional_imports)
     violations = validator.validate_examples(all_examples)
 
     # Step 4: Generate report

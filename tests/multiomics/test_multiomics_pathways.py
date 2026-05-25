@@ -3,7 +3,7 @@
 Tests multi-omic enrichment (Fisher, Stouffer, min-p), active module detection,
 pathway topology analysis, and cross-omic concordance scoring.
 
-All tests use real implementations with realistic pathway/gene data (NO mocking).
+All tests use real implementations with realistic pathway/gene data (real-implementation policy).
 """
 
 from __future__ import annotations

@@ -203,7 +203,7 @@ The cache persists between runs, avoiding recomputation.
 
 METAINFORMANT provides structured logging via `metainformant.core.utils.logging`. Use it in scripts.
 
-```python
+```python-snippet
 from metainformant.core.utils.logging import get_logger, setup_logging
 
 # Setup: can be done once at program start
@@ -228,7 +228,7 @@ setup_logging(level="DEBUG", file_path="output/getting_started/workflow.log")
 
 Putting it all together (saved as `scripts/getting_started_pipeline.py`):
 
-```python
+```python-snippet
 #!/usr/bin/env python
 """METAINFORMANT Getting Started Pipeline
 

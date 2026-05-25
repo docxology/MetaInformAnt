@@ -124,17 +124,20 @@ def temp_example_dir() -> Generator[Path, None, None]:
 
 
 @pytest.fixture
-def mock_example_environment(monkeypatch, temp_example_dir: Path) -> Dict[str, Any]:
-    """Set up a mock environment for example testing."""
-    # Mock output directory
-    mock_output = temp_example_dir / "output" / "examples"
-    mock_output.mkdir(parents=True)
+def real_example_environment(temp_example_dir: Path) -> Generator[Dict[str, Any], None, None]:
+    """Set up a real environment for example testing."""
+    output_dir = temp_example_dir / "output" / "examples"
+    output_dir.mkdir(parents=True)
 
-    # Set environment variables
-    monkeypatch.setenv("MPLBACKEND", "Agg")
-    monkeypatch.setattr("metainformant.core.io.paths.PLATFORM", "test")
-
-    return {"output_dir": mock_output, "temp_dir": temp_example_dir, "env_vars": dict(os.environ)}
+    original_backend = os.environ.get("MPLBACKEND")
+    os.environ["MPLBACKEND"] = "Agg"
+    try:
+        yield {"output_dir": output_dir, "temp_dir": temp_example_dir, "env_vars": dict(os.environ)}
+    finally:
+        if original_backend is None:
+            os.environ.pop("MPLBACKEND", None)
+        else:
+            os.environ["MPLBACKEND"] = original_backend
 
 
 @pytest.fixture(scope="session")

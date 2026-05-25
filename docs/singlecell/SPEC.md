@@ -20,4 +20,4 @@ Documentation for the singlecell domain in MetaInformAnt.
 - **Tests**: `tests/singlecell/test_singlecell_*.py`
 
 ## Testing Policy
-- **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.
+- **Real Implementation**: All tests must use real implementations. Mocks are strictly prohibited.

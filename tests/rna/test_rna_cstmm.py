@@ -1,7 +1,7 @@
 """Tests for amalgkit cstmm command wrapper.
 
-Follows NO_MOCKING_POLICY: all tests use real build_cli_args() and
-AmalgkitParams to verify command construction without mocking subprocess.
+Follows real-implementation policy: all tests use real build_cli_args() and
+AmalgkitParams to verify command construction without replacing subprocess.
 """
 
 from pathlib import Path

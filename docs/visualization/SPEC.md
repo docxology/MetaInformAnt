@@ -95,12 +95,12 @@ src/metainformant/visualization/
 | `Explorer` | dashboards | Single-page app with dropdowns/sliders |
 
 ## Testing Policy
-- **Zero Mock**: All tests use real data; small synthetic figures allowed for edge/error cases only.
+- **Real Implementation**: All tests use real data; small synthetic figures allowed for edge/error cases only.
 - **Visual regression**: Baseline images committed to `tests/visualization/baseline/`; updated via `pytest --mpl-update-baseline`.
 - **Performance**: Large-plot benchmarks in `tests/benchmark/test_plot_speed.py`; ensure <5s for 10k×10k heatmap.
 
 ## Public API
-```python
+```python-snippet
 # Top-level imports
 from metainformant.visualization import (
     # Genomic plots
@@ -121,7 +121,7 @@ from metainformant.visualization import (
 ```
 
 ## Examples
-```python
+```python-snippet
 from metainformant.visualization import manhattan, pca, heatmap
 import pandas as pd
 

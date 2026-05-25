@@ -92,7 +92,7 @@ Zero broken toctree links. All core entry points (README, docs/index, SETUP) pro
 | Gap | Priority | Notes |
 |-----|----------|-------|
 | `menu`, `metabolomics`, `pharmacogenomics` lack SPEC.md | Low | These modules are early-stage; SPEC optional until v1.0 |
-| Task pages are stubs (minimal content) | Low | Fill in when modules stabilize |
+| Task pages are minimal (minimal content) | Low | Fill in when modules stabilize |
 | All module docs need mermaid architecture diagrams | Medium | Cloud has one, rna has one — roll out to others |
 | CLI command reference not auto-generated from code | Medium | Could use Click introspection or custom script |
 | Missing CHANGELOG.md | Low | Semantic-release or towncrier could auto-generate |

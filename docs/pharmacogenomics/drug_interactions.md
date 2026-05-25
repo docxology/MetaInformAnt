@@ -5,7 +5,7 @@ PGx phenotype, returning actionable alerts.
 
 ## Core API
 
-```python
+```python-snippet
 from metainformant.pharmacogenomics.interaction.drug_interactions import (
     analyze_drug_gene_interactions,
     polypharmacy_risk,
@@ -92,7 +92,7 @@ pgx_class: anticoagulant
 
 Then register in `_DRUG_REGISTRY` inside `drug_interactions.py`:
 
-```python
+```python-snippet
 from metainformant.pharmacogenomics.interaction.data.my_drug import MY_DRUG
 _DRUG_REGISTRY['my_drug'] = MY_DRUG
 ```

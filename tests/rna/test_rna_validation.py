@@ -3,7 +3,7 @@
 This module tests the comprehensive validation functions that track samples
 through the complete pipeline: download → extract → quant → merge.
 
-All tests follow NO_MOCKING_POLICY and use real file system operations.
+All tests follow real-implementation policy and use real file system operations.
 """
 
 from __future__ import annotations
@@ -37,13 +37,13 @@ class TestGetSamplePipelineStatus:
 
         # Create SRA file
         sra_file = sample_dir / f"{sample_id}.sra"
-        sra_file.write_bytes(b"fake sra data")
+        sra_file.write_bytes(b"minimal sra bytes")
 
         # Create FASTQ files
         fastq1 = sample_dir / f"{sample_id}_1.fastq.gz"
         fastq2 = sample_dir / f"{sample_id}_2.fastq.gz"
-        fastq1.write_bytes(b"fake fastq data")
-        fastq2.write_bytes(b"fake fastq data")
+        fastq1.write_bytes(b"minimal fastq bytes")
+        fastq2.write_bytes(b"minimal fastq bytes")
 
         # Test with fastq_dir provided (from config)
         status = get_sample_pipeline_status(sample_id, work_dir, fastq_dir=fastq_dir)
@@ -67,7 +67,7 @@ class TestGetSamplePipelineStatus:
 
         # Create SRA file
         sra_file = sample_dir / f"{sample_id}.sra"
-        sra_file.write_bytes(b"fake sra data")
+        sra_file.write_bytes(b"minimal sra bytes")
 
         # Test
         status = get_sample_pipeline_status(sample_id, work_dir, fastq_dir=fastq_dir)
@@ -86,7 +86,7 @@ class TestGetSamplePipelineStatus:
         sample_dir.mkdir(parents=True)
 
         sra_file = sample_dir / f"{sample_id}.sra"
-        sra_file.write_bytes(b"fake sra data")
+        sra_file.write_bytes(b"minimal sra bytes")
 
         # Test with fastq_dir=None (should infer from work_dir)
         status = get_sample_pipeline_status(sample_id, work_dir, fastq_dir=None)

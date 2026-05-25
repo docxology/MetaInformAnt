@@ -1,3 +1,5 @@
+> Historical snapshot: retained for provenance. Current code, tests, and domain docs are the source of truth.
+
 # Agent Documentation Review Report
 
 > Historical snapshot: this report is retained for provenance and may not
@@ -346,8 +348,8 @@
    - Typo: "METAINFORMANT" vs "MetaInformAnt" (capitalization inconsistency)
    - Check project name styling — documents mix MetaInformAnt/METAINFORMANT
 
-2. **PAI.md** line 98: `tests/NO_MOCKING_POLICY.md` — this file exists? Check:
-   - Actual path in repo: `tests/NO_MOCKING_POLICY.md` referenced at top of AGENTS.md
+2. **PAI.md** line 98: `tests/REAL_IMPLEMENTATION_TESTING_POLICY.md` — this file exists? Check:
+   - Actual path in repo: `tests/REAL_IMPLEMENTATION_TESTING_POLICY.md` referenced at top of AGENTS.md
    - Need to verify file exists
 
 3. **Multiple files** reference `src/metainformant/core/engine/workflow_manager.py` and `src/metainformant/core/execution/parallel.py` — these paths assume repository root; verify actual locations
@@ -384,11 +386,11 @@ Based on module descriptions, the capabilities documented appear plausible:
 - Parallel execution via ThreadPoolExecutor ✅
 - TUI (Terminal Interface) ✅
 - Core I/O, logging, paths, cache ✅
-- Zero-mocking policy ✅
+- Real-implementation policy ✅
 
 **Missing Documentation**:
 - **Database backend**: `core.data.db` referenced in SAFETY.md but not documented in any module rule or core.md
-- **MCP integration**: `mcp/` directory mentioned in README.md as "currently minimal tool stubs" — adequate
+- **MCP integration**: `mcp/` directory mentioned in README.md as "currently minimal minimal tool implementations" — adequate
 - **Cloud deployment**: `cloud/` module not documented in rules/ — is this intended? (might be infrastructure not domain)
 - **Checkpoint persistence**: Mentioned in SAFETY.md but not fully implemented in BasePipelineManager (SAFETY.md itself notes this limitation)
 

@@ -5,7 +5,7 @@ sample-level and gene-level statistics, library complexity analysis,
 batch effect detection, and bias assessment.
 
 This module provides REAL implementations using numpy, scipy, and pandas.
-No mocking, no placeholder data.
+Real implementationing, no placeholder data.
 
 This module re-exports all public symbols from :mod:`qc_metrics` and
 :mod:`qc_filtering` for backward compatibility.

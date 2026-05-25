@@ -1,7 +1,7 @@
 """Tests for RNA-seq quality control module.
 
 Comprehensive tests for all QC functions using REAL implementations.
-NO MOCKING - all data is generated with numpy/pandas and processed
+REAL IMPLEMENTATION - all data is generated with numpy/pandas and processed
 through actual function logic.
 """
 

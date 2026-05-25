@@ -252,7 +252,7 @@ with db.transaction():
 
 ### Exponential Backoff for Transient Errors
 
-```python
+```python-snippet
 import time
 from tenacity import retry, stop_after_attempt, wait_exponential  # optional dependency
 
@@ -490,7 +490,7 @@ logger.info(
 
 If `prometheus_client` available:
 
-```python
+```python-snippet
 from prometheus_client import Counter, Histogram
 
 PHASE_DURATION = Histogram("phase_duration_seconds", "Time per phase", ["phase"])

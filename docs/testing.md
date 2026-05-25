@@ -38,7 +38,7 @@ graph TD
     subgraph "Test Categories"
         R[pytest] -.-> E
         SrealDataOnly[Real Data Only] -.-> E
-        TnoMocks[No Mocks] -.-> E
+        TnoMocks[Real Implementations] -.-> E
         U[Integration] -.-> F
     end
 
@@ -107,9 +107,9 @@ graph TD
     end
 ```
 
-## Code Quality Policy (STRICTLY NO MOCKS/FAKES/PLACEHOLDERS)
+## Code Quality Policy (STRICTLY REAL IMPLEMENTATIONS/FAKES/PLACEHOLDERS)
 
-**ABSOLUTE PROHIBITION**: Never use fake/mocked/stubbed methods, objects, or network shims in **source code** or tests.
+**ABSOLUTE PROHIBITION**: Never use test-double or inert placeholder methods, objects, or network shims in **source code** or tests.
 
 **Source Code Policy**: All production functions must perform real computations or make real API calls. **NO DUMMY DATA RETURNS**. Placeholder implementations that return hardcoded values are strictly prohibited.
 
@@ -123,7 +123,7 @@ graph TD
 
 **Quality Assurance**: Real implementations reveal actual bugs, performance issues, and integration problems.
 
-**Environment Setup**: It is acceptable to set environment variables for test setup, but do not monkeypatch or replace functions.
+**Environment Setup**: It is acceptable to set environment variables for test setup, but do not explicit restoration or replace functions.
 
 **Test Artifacts**: Tests must write all artifacts only under `output/` directory.
 
@@ -305,7 +305,7 @@ The test suite provides comprehensive coverage:
 
 #### Example Test Structure
 
-```python
+```python-snippet
 import pytest
 from metainformant.core.io import ensure_directory
 from metainformant.some_module import some_function
@@ -354,7 +354,7 @@ class TestSomeFunction:
 
 Network-dependent tests use real API calls with graceful offline handling:
 
-```python
+```python-snippet
 import requests
 import pytest
 

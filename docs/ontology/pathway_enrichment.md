@@ -22,7 +22,7 @@ related pathways.
 
 ### over_representation_analysis
 
-```python
+```python-snippet
 def over_representation_analysis(
     gene_list: list[str],
     gene_sets: dict,
@@ -41,7 +41,7 @@ Correction options: `"fdr_bh"` (default), `"bonferroni"`, `"none"`.
 
 ### compute_enrichment_score
 
-```python
+```python-snippet
 def compute_enrichment_score(
     ranked_list: list[str],
     gene_set: set,
@@ -56,7 +56,7 @@ Computes the running enrichment score for a single gene set. Returns `es`
 
 ### gsea
 
-```python
+```python-snippet
 def gsea(
     ranked_genes: list[tuple],
     gene_sets: dict,
@@ -73,7 +73,7 @@ are skipped. Returns per-gene-set results with `es`, `nes` (normalised),
 
 ### pathway_network
 
-```python
+```python-snippet
 def pathway_network(
     enrichment_results: list[dict],
     gene_sets: dict,
@@ -87,7 +87,7 @@ n_shared), and `clusters` (connected components via union-find).
 
 ### compare_enrichments
 
-```python
+```python-snippet
 def compare_enrichments(
     results_a: list[dict],
     results_b: list[dict],

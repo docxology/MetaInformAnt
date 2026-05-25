@@ -8,7 +8,7 @@ Tests cover:
 - download_with_progress with file:// URL
 - DownloadResult and DownloadHeartbeatState serialisation
 
-All tests use real implementations (NO mocking policy).
+All tests use real implementations (real-implementation policy).
 """
 
 from __future__ import annotations

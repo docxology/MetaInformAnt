@@ -12,7 +12,7 @@ This is the root of the **METAINFORMANT** executable.
 - `src/`: Core business logic.
 - `scripts/`: Thin orchestration layer.
 - `docs/`: User-facing documentation.
-- `tests/`: No-mock verification suite.
+- `tests/`: Real-implementation verification suite.
 
 ## Maintenance Notes
 

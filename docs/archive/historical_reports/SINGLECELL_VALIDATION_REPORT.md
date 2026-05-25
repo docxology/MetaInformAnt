@@ -1,3 +1,5 @@
+> Historical snapshot: retained for provenance. Current code, tests, and domain docs are the source of truth.
+
 # Single-Cell Analysis Documentation Validation Report
 
 > Historical snapshot: this validation report is retained for provenance and may

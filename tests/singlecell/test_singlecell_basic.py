@@ -1,7 +1,7 @@
 """Basic tests for single-cell analysis functionality.
 
 Real implementation testing for single-cell methods.
-No mocking used - all tests use real computational methods and data.
+Real implementationing used - all tests use real computational methods and data.
 """
 
 from __future__ import annotations

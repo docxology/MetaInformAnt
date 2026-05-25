@@ -166,7 +166,7 @@ To complete the full workflow, provide:
 | Association Tests | [DONE] Ready | Real regression models |
 | Visualization | [DONE] Ready | Real matplotlib plots |
 
-**100% real methods** - no simulation, mocking, or synthetic data used in executed steps.
+**100% real methods** - no simulation, test doubles, or synthetic data used in executed steps.
 
 ---
 

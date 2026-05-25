@@ -60,7 +60,7 @@ else:
 
 Simple function-based workflows for common operations:
 
-```python
+```python-snippet
 from metainformant.gwas.workflow import run_gwas_analysis
 
 # Simple GWAS analysis
@@ -107,7 +107,7 @@ class GWASWorkflowConfig:
 
 Load configuration from YAML files with environment variable overrides:
 
-```python
+```python-snippet
 from metainformant.gwas.config import load_gwas_config
 
 # Load from YAML with GWAS_ environment overrides

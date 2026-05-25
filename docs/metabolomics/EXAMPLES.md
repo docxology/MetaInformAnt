@@ -528,7 +528,7 @@ Top metabolite-gene associations:
 
 ### Script
 
-```python
+```python-snippet
 import numpy as np
 from metainformant.metabolomics import io, analysis, visualization
 

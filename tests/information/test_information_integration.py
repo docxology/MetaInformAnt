@@ -160,17 +160,17 @@ class TestSingleCellIntegration:
         except ImportError:
             pytest.skip("anndata not available")
 
-    def test_singlecell_integration_mock_adata(self) -> None:
-        """Test single-cell integration with mock AnnData structure."""
+    def test_singlecell_integration_minimal_adata(self) -> None:
+        """Test single-cell integration with a minimal AnnData-like structure."""
 
-        class MockAnnData:
+        class MinimalAnnData:
             def __init__(self, X: np.ndarray) -> None:
                 self.X = X
                 self.n_obs = X.shape[0]
                 self.n_vars = X.shape[1]
 
-        mock = MockAnnData(np.random.rand(50, 20))
-        results = singlecell_integration(mock)
+        ann_data = MinimalAnnData(np.random.rand(50, 20))
+        results = singlecell_integration(ann_data)
         assert results["n_cells"] == 50
         assert results["n_genes"] == 20
         assert results["method"] == "gene_entropy"

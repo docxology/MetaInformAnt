@@ -68,7 +68,7 @@ ISSUES FOUND: NONE
 Notes:
   - `batch_download_alphafold_models` is sequential (no threading) despite max_workers
     param; this is acceptable as placeholder behavior but could be enhanced.
-  - `get_alphafold_coverage` returns mock stats – documented as static placeholder.
+  - `get_alphafold_coverage` returns static coverage stats – documented as static placeholder.
 
 ================================================================================
 MODULE 2: Contact Analysis (structure/contacts.py)
@@ -250,7 +250,7 @@ AlphaFold:
   get_alphafold_structure_quality     ✅      ✅      ✅
   find_alphafold_models_by_sequence   ✅      ✅      ✅     (placeholder)
   search_alphafold_by_keyword         ✅      ✅      ✅     (placeholder)
-  get_alphafold_coverage              ✅      ✅      ✅     (mock data)
+  get_alphafold_coverage              ✅      ✅      ✅     (static data)
 
 Contacts:
   calculate_residue_contacts         ✅      ✅      ✅

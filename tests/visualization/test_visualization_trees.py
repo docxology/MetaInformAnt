@@ -68,10 +68,10 @@ class TestPlotPhyloTree:
         if HAS_NETWORKX:
             pytest.skip("NetworkX is available")
 
-        fake_tree = "not a tree"
+        invalid_tree = "not a tree"
 
         with pytest.raises(ImportError, match="NetworkX required"):
-            plot_phylo_tree(fake_tree)
+            plot_phylo_tree(invalid_tree)
 
 
 class TestCircularTreePlot:

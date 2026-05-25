@@ -140,7 +140,7 @@ ax = prot_viz.plot_contact_map(contacts)
 ```
 
 ### With Sequence Analysis
-```python
+```python-snippet
 from metainformant.protein import sequences, visualization as prot_viz
 
 # Analyze protein sequence
@@ -152,7 +152,7 @@ ax = prot_viz.plot_protein_properties(seq, properties=['hydrophobicity'])
 ```
 
 ### With Functional Annotation
-```python
+```python-snippet
 from metainformant.protein import interpro, visualization as prot_viz
 
 # Get domain annotations
@@ -198,7 +198,7 @@ fig = prot_viz.create_interactive_structure_viewer(pdb_data, output_path="struct
 ## Examples
 
 ### Complete Protein Analysis Workflow
-```python
+```python-snippet
 from metainformant.protein import sequences, structure, visualization as prot_viz
 import numpy as np
 

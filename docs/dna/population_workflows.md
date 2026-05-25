@@ -8,7 +8,7 @@ The `dna.population_analysis` module provides high-level orchestrators that comb
 
 ## Quick Start
 
-```python
+```python-snippet
 from metainformant.dna.population_analysis import (
     calculate_summary_statistics,
     compare_populations,
@@ -22,7 +22,7 @@ from metainformant.dna.population_analysis import (
 
 Calculate multiple population genetics statistics in a single call:
 
-```python
+```python-snippet
 from metainformant.dna.population_analysis import calculate_summary_statistics
 
 # Using sequence data
@@ -61,7 +61,7 @@ print(f"Observed heterozygosity: {stats['observed_heterozygosity']:.4f}")
 
 Compare two populations using multiple statistics:
 
-```python
+```python-snippet
 from metainformant.dna.population_analysis import compare_populations
 
 # Define two populations
@@ -92,7 +92,7 @@ print(f"Pop2 diversity: {comparison['pop2_stats']['nucleotide_diversity']:.4f}")
 
 Run a comprehensive suite of neutrality tests:
 
-```python
+```python-snippet
 from metainformant.dna.population_analysis import neutrality_test_suite
 
 sequences = ["AAAA", "AAAT", "AATT", "ATTT", "TTTT"]
@@ -114,7 +114,7 @@ print(f"Interpretation: {results['interpretation']}")
 
 ### Combining with Math Module
 
-```python
+```python-snippet
 from metainformant.dna.population_analysis import calculate_summary_statistics
 from metainformant.math.population_genetics.coalescent import tajimas_D, wattersons_theta
 
@@ -137,7 +137,7 @@ tajima_d_full = tajimas_D(
 
 ### Combining with GWAS Structure Analysis
 
-```python
+```python-snippet
 from metainformant.dna.population_analysis import compare_populations
 from metainformant.gwas.structure import compute_pca, compute_kinship_matrix
 
@@ -173,7 +173,7 @@ kinship_result = compute_kinship_matrix(genotype_matrix, method="vanraden")
 
 Always ensure sequences are aligned before analysis:
 
-```python
+```python-snippet
 from metainformant.dna.alignment import align_sequences
 
 # Align sequences first

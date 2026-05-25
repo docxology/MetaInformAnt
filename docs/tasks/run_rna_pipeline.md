@@ -20,7 +20,7 @@ Choose `run_rna_pipeline` for bulk RNA-seq analyses across multiple species with
 
 ```bash
 # 1. Install amalgkit (if not via metainformant)
-bash scripts/rna/install_amalgkit.sh
+uv pip install git+https://github.com/kfuku52/amalgkit
 
 # 2. Prepare reference genome
 python3 scripts/cloud/prep_genomes.py \
@@ -119,7 +119,7 @@ python3 scripts/rna/run_amalgkit_single.py \
 ```
 
 ### Differential expression with multiple contrasts
-```python
+```python-snippet
 from metainformant.rna import deseq2
 
 # Load counts matrix
@@ -141,7 +141,7 @@ results.to_csv("deseq2_batch_corrected.tsv", sep='\t')
 ```
 
 ### Cross-species gene ortholog mapping
-```python
+```python-snippet
 from metainformant.rna import orthologs
 
 # Map orthologs across 28 Hymenoptera species

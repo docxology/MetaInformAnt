@@ -1,6 +1,6 @@
 """Tests for GWAS SRA download module.
 
-All tests follow NO_MOCKING_POLICY and use real implementations.
+All tests follow real-implementation policy and use real implementations.
 Tests use real subprocess calls to check SRA tools availability.
 """
 
@@ -25,7 +25,7 @@ class TestCheckSRAToolsAvailable:
     def test_check_sra_tools_available_real(self):
         """Test real check for SRA tools availability.
 
-        Uses real subprocess calls following NO_MOCKING_POLICY.
+        Uses real subprocess calls following the real-implementation policy.
         """
         available = check_sra_tools_available()
         assert isinstance(available, bool)

@@ -4,7 +4,7 @@ Covers population-level SV analysis: genotyping across samples, allele
 frequency calculation, association testing, PCA-based population structure,
 LD analysis between SVs and SNPs, and multi-sample callset merging.
 
-Uses real implementations only (no mocking). All numerical checks use
+Uses real implementations only (real implementation). All numerical checks use
 real numpy/scipy computations against hand-verified expected values.
 """
 

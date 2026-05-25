@@ -2,7 +2,7 @@
 
 Real implementation testing for UMAP, tSNE, PCA, trajectory, marker
 expression, QC, and cluster comparison plots.
-No mocking used - all tests use real data and matplotlib Agg backend.
+Real implementationing used - all tests use real data and matplotlib Agg backend.
 """
 
 from __future__ import annotations

@@ -31,7 +31,7 @@ Single-read methylation patterns reveal co-methylation and allele-specific methy
 
 ### call_methylation_from_signal
 
-```python
+```python-snippet
 def call_methylation_from_signal(
     signal_data: Any,
     reference_positions: list[int],
@@ -44,7 +44,7 @@ Call methylation from raw nanopore signal. Returns per-position methylation call
 
 ### compute_methylation_stats
 
-```python
+```python-snippet
 def compute_methylation_stats(
     methylation_calls: list[dict[str, Any]],
     region: str | None = None,
@@ -55,7 +55,7 @@ Compute summary statistics for methylation data. Returns `total_sites`, `mean_me
 
 ### aggregate_methylation
 
-```python
+```python-snippet
 def aggregate_methylation(
     per_read_calls: list[dict],
     min_coverage: int = 5,
@@ -66,7 +66,7 @@ Aggregate per-read methylation calls into per-site methylation levels. Requires 
 
 ### detect_dmrs
 
-```python
+```python-snippet
 def detect_dmrs(
     group1_methylation: dict[str, Any],
     group2_methylation: dict[str, Any],
@@ -80,7 +80,7 @@ Detect differentially methylated regions between two groups. Returns a list of D
 
 ### methylation_pattern_analysis
 
-```python
+```python-snippet
 def methylation_pattern_analysis(
     per_read_calls: list[dict],
     region: str | None = None,

@@ -66,7 +66,7 @@ volcano = metab_viz.volcano_plot(t_stats, pvals, labels=dataset.metabolites)
 
 **Primary integration point**: Metabolite-gene correlation and integrated network analysis.
 
-```python
+```python-snippet
 from metainformant.metabolomics import analysis as meta
 from metainformant.multiomics import integration as multi
 
@@ -91,7 +91,7 @@ strong_pairs = [(m, g, r) for (m, g), r in correlations.items() if abs(r) > 0.7]
 
 Similar to RNA integration but with proteomics data:
 
-```python
+```python-snippet
 from metainformant.protein import quant as prot
 from metainformant.metabolomics import analysis as metab
 
@@ -111,7 +111,7 @@ corr = correlate_layers(metab_matrix, P)
 
 QC metrics from MS runs (e.g., total ion current, number of features, retention time drift) can be analyzed using `metainformant.quality`:
 
-```python
+```python-snippet
 from metainformant.quality import qc_metrics
 from metainformant.metabolomics import io
 
@@ -174,7 +174,7 @@ for m_i, g_i in zip(metab_idx, gene_idx):
 
 Use `multiomics` module's latent factor models to find joint signals:
 
-```python
+```python-snippet
 from metainformant.multiomics import factor_analysis
 from metainformant.metabolomics import analysis as meta
 from metainformant.rna import amalgkit as rna
@@ -359,7 +359,7 @@ assay.txt    # metabolomics assay
 
 Real-world study: same samples underwent both metabolomics and RNA-seq. Want integrated analysis.
 
-```python
+```python-snippet
 #!/usr/bin/env python3
 """Integrated metabolomics + RNA pipeline."""
 
@@ -408,7 +408,7 @@ pd.DataFrame(corr).to_csv("integrated_correlation_matrix.csv")
 METAINFORMANT functions are **library calls**, not CLI-first. To integrate into workflow engines:
 
 **Snakemake** rule:
-```python
+```snakemake
 rule metabolomics_analysis:
     input:
         csv="data/metabolites.csv"

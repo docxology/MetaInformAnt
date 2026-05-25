@@ -25,7 +25,7 @@ Dimensionality reduction projects high-dimensional data into a lower-dimensional
 
 ### Feature Selection
 
-```python
+```python-snippet
 def select_features_univariate(
     X: np.ndarray,
     y: np.ndarray,
@@ -39,7 +39,7 @@ Select features using univariate statistical tests. Methods: `"f_classif"` (ANOV
 
 ### Dimensionality Reduction
 
-```python
+```python-snippet
 def pca_reduction(
     X: np.ndarray,
     n_components: int | None = None,
@@ -51,7 +51,7 @@ def pca_reduction(
 
 PCA dimensionality reduction. Optionally standardizes data first. Returns (transformed_data, fitted_pca_model).
 
-```python
+```python-snippet
 def tsne_reduction(
     X: np.ndarray,
     n_components: int = 2,
@@ -63,7 +63,7 @@ def tsne_reduction(
 
 t-SNE embedding for visualization. Returns (embedded_data, tsne_model).
 
-```python
+```python-snippet
 def umap_reduction(
     X: np.ndarray,
     n_components: int = 2,
@@ -76,7 +76,7 @@ def umap_reduction(
 
 UMAP embedding. Requires `umap-learn` package. Returns (embedded_data, umap_model).
 
-```python
+```python-snippet
 def ica_reduction(
     X: np.ndarray,
     n_components: int | None = None,

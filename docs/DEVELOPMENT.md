@@ -150,16 +150,16 @@ bash scripts/run_tests.sh
   - `@pytest.mark.network` – requires internet (real API calls)
   - `@pytest.mark.external_tool` – requires external binaries (e.g., muscle, amalgkit)
   - `@pytest.mark.integration` – full pipeline integration tests
-  - `@pytest.mark.no_mock` – explicitly marks tests adhering to No Mocking policy
+  - `@pytest.mark.real_impl` – explicitly marks tests adhering to Real Implementation policy
 
-### The No-Mocking Policy
+### The Real-Implementationing Policy
 
-**Zero tolerance for mocks, fakes, or placeholders.** All functions must perform real computations or genuine I/O. Tests must use real implementations:
+**Zero tolerance for test doubles or inert placeholders.** All functions must perform real computations or genuine I/O. Tests must use real implementations:
 
 - **Good**: actual file I/O, real API calls to UniProt/NCBI, genuine algorithms
-- **Bad**: returning hardcoded data, skipping computations with `return None`, using `unittest.mock.patch` to replace real functions with stubs
+- **Bad**: returning hardcoded data, skipping computations with `return None`, using `test-double patching APIs` to replace real functions with inert placeholders
 
-See [docs/NO_MOCKING_POLICY.md](NO_MOCKING_POLICY.md) for rationale, examples, and enforcement details.
+See [docs/REAL_IMPLEMENTATION_POLICY.md](REAL_IMPLEMENTATION_POLICY.md) for rationale, examples, and enforcement details.
 
 ### Writing New Tests
 
@@ -170,7 +170,7 @@ See [docs/NO_MOCKING_POLICY.md](NO_MOCKING_POLICY.md) for rationale, examples, a
 - Real data only: generate synthetic data with `numpy.random` or use small example files stored under `tests/data/`
 
 Example test:
-```python
+```python-snippet
 def test_gc_content_basic() -> None:
     from metainformant.dna.composition import gc_content
     assert gc_content("ATCG") == 0.5
@@ -236,7 +236,7 @@ src/metainformant/<module>/
 
 - Use small, focused subpackages (e.g., `dna/sequence/`, `dna/alignment/`, `visualization/plots/`)
 - Each submodule should have a clear purpose and public API (define in its `__init__.py`)
-- Follow the **no mocking** policy: every function must do real work
+- Follow the **real implementation** policy: every function must do real work
 - Use `metainformant.core` utilities:
   - `metainformant.core.io` for file I/O
   - `metainformant.core.utils.logging` for logging
@@ -279,7 +279,7 @@ uv run pytest --trace  # Start trace on first test
 ### Logging Debug Info
 
 Set logging level to DEBUG at program start:
-```python
+```python-snippet
 from metainformant.core.utils.logging import setup_logging
 setup_logging(level="DEBUG", file_path="output/debug.log")
 ```

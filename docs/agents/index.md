@@ -226,7 +226,7 @@ Running workflows at scale? See:
 - [Root AGENTS.md](../../AGENTS.md) — High-level AI agent philosophy
 - [Core Infrastructure](../core/README.md) — Shared utilities reference
 - [RNA Module](../rna/README.md) — Industrial-scale orchestration example (8,300 samples)
-- [Testing Guide](../../tests/NO_MOCKING_POLICY.md) — Zero mock policy
+- [Testing Guide](../../tests/REAL_IMPLEMENTATION_TESTING_POLICY.md) — Real implementation policy
 
 ## Contributing
 

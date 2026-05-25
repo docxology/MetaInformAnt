@@ -20,4 +20,4 @@ Documentation for the protein domain in MetaInformAnt.
 - **Tests**: `tests/protein/test_protein_*.py`
 
 ## Testing Policy
-- **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.
+- **Real Implementation**: All tests must use real implementations. Mocks are strictly prohibited.

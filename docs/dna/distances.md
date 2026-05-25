@@ -12,7 +12,7 @@ flowchart LR
 
 Example
 
-```python
+```python-snippet
 from metainformant.dna import distances
 
 # Simple proportion distance

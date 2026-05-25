@@ -1,7 +1,7 @@
 """Tests for biological pathway network functionality.
 
 Real implementation testing for pathway analysis methods.
-No mocking used - all tests use real computational methods and data.
+Real implementationing used - all tests use real computational methods and data.
 """
 
 from __future__ import annotations

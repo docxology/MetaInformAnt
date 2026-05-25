@@ -23,7 +23,7 @@ Plot comparison of nucleotide diversity (π) across scenarios.
 **Returns**: matplotlib Figure object
 
 **Example**:
-```python
+```python-snippet
 from metainformant.dna.population_viz import plot_diversity_comparison
 
 diversity = {
@@ -57,7 +57,7 @@ Plot comparison of Tajima's D across scenarios with color coding.
 - Reference lines at D = -2, 0, 2
 
 **Example**:
-```python
+```python-snippet
 from metainformant.dna.population_viz import plot_tajimas_d_comparison
 
 tajimas_d = {
@@ -88,7 +88,7 @@ Plot comparison of Fst values with interpretation thresholds.
 - Reference lines for Fst interpretation (0.05 = low, 0.15 = moderate, 0.25 = high)
 
 **Example**:
-```python
+```python-snippet
 from metainformant.dna.population_viz import plot_fst_comparison
 
 fst_values = {
@@ -119,7 +119,7 @@ Plot PCA results with multiple views.
 3. Cumulative explained variance
 
 **Example**:
-```python
+```python-snippet
 from metainformant.dna.population_viz import plot_pca_results
 from metainformant.gwas.structure import compute_pca
 
@@ -145,7 +145,7 @@ Plot kinship matrix as heatmap.
 **Returns**: matplotlib Figure object
 
 **Example**:
-```python
+```python-snippet
 from metainformant.dna.population_viz import plot_kinship_matrix
 from metainformant.gwas.structure import compute_kinship_matrix
 
@@ -170,7 +170,7 @@ Plot site frequency spectrum.
 **Returns**: matplotlib Figure object
 
 **Example**:
-```python
+```python-snippet
 from metainformant.dna.population_viz import plot_site_frequency_spectrum
 from metainformant.simulation.popgen import generate_site_frequency_spectrum
 
@@ -204,7 +204,7 @@ Plot comprehensive summary of neutrality tests across scenarios.
 4. Segregating sites by scenario
 
 **Example**:
-```python
+```python-snippet
 from metainformant.dna.population_viz import plot_neutrality_test_summary
 from metainformant.dna.population_analysis import neutrality_test_suite
 
@@ -237,7 +237,7 @@ Plot comparison of demographic models.
 2. Observed diversity (π)
 
 **Example**:
-```python
+```python-snippet
 from metainformant.dna.population_viz import plot_demographic_comparison
 
 demographic_results = {
@@ -278,7 +278,7 @@ Plot grid of summary statistics across scenarios.
 6. Sequence length
 
 **Example**:
-```python
+```python-snippet
 from metainformant.dna.population_viz import plot_summary_statistics_grid
 from metainformant.dna.population_analysis import calculate_summary_statistics
 
@@ -308,7 +308,7 @@ Plot linkage disequilibrium decay with distance.
 **Returns**: matplotlib Figure object
 
 **Example**:
-```python
+```python-snippet
 from metainformant.dna.population_viz import plot_linkage_disequilibrium_decay
 
 r_squared_values = [0.5, 0.4, 0.3, 0.2, 0.1, 0.05]
@@ -325,7 +325,7 @@ plot_linkage_disequilibrium_decay(
 
 ### Complete Workflow with Visualizations
 
-```python
+```python-snippet
 from metainformant.dna.population_analysis import (
     calculate_summary_statistics,
     compare_populations,
@@ -355,7 +355,7 @@ plot_neutrality_test_summary(
 
 ### Batch Visualization Generation
 
-```python
+```python-snippet
 from metainformant.dna.population_viz import (
     plot_diversity_comparison,
     plot_tajimas_d_comparison,

@@ -141,7 +141,7 @@ HMDB_DB = {
 | **Reactome** | SBML | Free | Pathway-to-metabolite mappings |
 
 **Loading from file** (future feature):
-```python
+```python-snippet
 from metainformant.metabolomics.io import load_database
 
 db = load_database("hmdb.csv")  # auto-detects format, parses m/z column
@@ -214,7 +214,7 @@ pathway_db = json.load(open("kegg_pathways.json"))
 | Large cohort with batches | `"median"` + ComBat | Median less sensitive to batch outliers |
 
 **Multi-step normalization** (common pattern):
-```python
+```python-snippet
 # Step 1: Sample-wise normalization (TIC)
 X_norm = normalize_intensities(X, method="total_ion_count")
 
@@ -305,7 +305,7 @@ db = load_database(Path("/absolute/path/to/hmdb.csv"))
 ### "Invalid ppm tolerance"
 
 **Problem**:
-```python
+```python-snippet
 identify_metabolites(..., ppm_tolerance=0)
 ValueError: ppm_tolerance must be > 0
 ```

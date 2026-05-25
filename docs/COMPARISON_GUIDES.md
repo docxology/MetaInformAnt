@@ -107,7 +107,7 @@ Compare different measures of genetic diversity and selection.
 
 #### Decision Guide
 
-```python
+```python-snippet
 from metainformant.dna import population
 from metainformant.math import coalescent
 
@@ -316,7 +316,7 @@ Compare different information-theoretic approaches to biological data analysis.
 
 #### Usage Comparison
 
-```python
+```python-snippet
 from metainformant.information import syntactic
 
 # Compare entropy measures

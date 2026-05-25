@@ -60,7 +60,7 @@ def test_chromosome_ideogram(tmp_path: Path) -> None:
 
 def test_genome_wide_ld_heatmap(tmp_path: Path) -> None:
     """Test genome-wide LD heatmap generation."""
-    # Create mock LD data
+    # Create example LD data
     ld_data = [
         {"CHROM": "chr1", "POS1": 1000, "POS2": 2000, "r2": 0.5},
         {"CHROM": "chr1", "POS1": 1000, "POS2": 3000, "r2": 0.3},

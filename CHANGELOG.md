@@ -155,6 +155,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Notes
 
-- NO_MOCKING_POLICY established: all tests use real implementations
+- Real-implementation policy established: all tests use real implementations
 - UV-only package management policy established
 - Output directory isolation policy established

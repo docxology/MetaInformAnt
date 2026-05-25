@@ -93,7 +93,7 @@ steps:
 ## Validation and Testing
 
 - **Config Validation**: usage of `scripts/rna/validate_configs.py` is mandatory for all new configurations.
-- **Zero-Mock Policy**: All Amalgkit tests strictly adhere to the Zero-Mock policy, ensuring real functional verification of the CLI and environment.
+- **Real-Implementation Policy**: All Amalgkit tests strictly adhere to the Real-Implementation policy, ensuring real functional verification of the CLI and environment.
 
 ## Environment Overrides
 

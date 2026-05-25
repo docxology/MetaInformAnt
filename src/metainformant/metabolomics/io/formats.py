@@ -1,7 +1,7 @@
 """Mass spectrometry file format reading and writing.
 
 Supports CSV-based metabolomics tables with metabolite × sample matrices,
-plus stub readers for mzML and mzXML formats.
+plus limited readers for mzML and mzXML formats.
 """
 
 from __future__ import annotations

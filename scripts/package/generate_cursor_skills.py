@@ -143,8 +143,8 @@ def build_skill_body(agents_file: Path, repo: Path, skill_md: Path) -> str:
         lines.append(f"- Optional overview: [`README.md`]({rl}).")
     lines.extend(
         [
-            f"- Global rules: [`CLAUDE.md`]({up}CLAUDE.md) at repo root (uv, `output/`, `.tmp/`, no mocks).",
-            f"- Testing policy: [`docs/NO_MOCKING_POLICY.md`]({up}docs/NO_MOCKING_POLICY.md).",
+            f"- Global rules: [`CLAUDE.md`]({up}CLAUDE.md) at repo root (uv, `output/`, `.tmp/`, real implementations).",
+            f"- Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`]({up}docs/REAL_IMPLEMENTATION_POLICY.md).",
             "- Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.",
             "",
             "Keep changes scoped; match existing patterns in this directory.",
@@ -158,7 +158,7 @@ def build_description(rel_folder: str) -> str:
     text = (
         f"METAINFORMANT rules for {where}. "
         f"Use when editing, adding tests, or reviewing code under this path. "
-        f"Read the linked AGENTS.md first; use uv only, write outputs to output/, no mocks."
+        f"Read the linked AGENTS.md first; use uv only, write outputs to output/, real implementations."
     )
     if len(text) > 1024:
         return text[:1021] + "..."

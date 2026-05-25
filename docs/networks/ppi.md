@@ -171,7 +171,7 @@ for evidence_type, count in stats['evidence_types'].items():
 
 ### With Expression Data
 
-```python
+```python-snippet
 from metainformant.rna import workflow
 from metainformant.networks import ppi
 
@@ -194,7 +194,7 @@ print(f"Found {len(partners)} interaction partners of differentially expressed p
 
 ### With Functional Annotation
 
-```python
+```python-snippet
 from metainformant.protein import proteomes
 from metainformant.networks import ppi
 from metainformant.ontology.core import go

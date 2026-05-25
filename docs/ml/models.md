@@ -36,7 +36,7 @@ Supported algorithms:
 
 ### BiologicalClassifier
 
-```python
+```python-snippet
 class BiologicalClassifier:
     def __init__(
         self,
@@ -57,7 +57,7 @@ class BiologicalClassifier:
 
 ### BiologicalRegressor
 
-```python
+```python-snippet
 class BiologicalRegressor:
     def __init__(
         self,

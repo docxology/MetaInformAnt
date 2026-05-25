@@ -269,9 +269,7 @@ def greedy_modularity_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
         communities = list(nx.algorithms.community.greedy_modularity_communities(graph, **greedy_kwargs))
     except AttributeError:
         # Fallback for older NetworkX versions
-        communities = list(
-            nx.algorithms.community.modularity_max.greedy_modularity_communities(graph, **greedy_kwargs)
-        )
+        communities = list(nx.algorithms.community.modularity_max.greedy_modularity_communities(graph, **greedy_kwargs))
 
     # Convert frozensets to lists and sort by size
     community_lists = [list(comm) for comm in communities]

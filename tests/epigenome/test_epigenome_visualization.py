@@ -4,7 +4,7 @@ Tests plot_methylation_profile, plot_chipseq_peaks, plot_atacseq_signal,
 plot_histone_modification_heatmap, plot_differential_methylation,
 plot_chromatin_states, plot_epigenetic_correlation_heatmap,
 plot_genome_browser_tracks, and plot_dna_methylation_clusters using
-real matplotlib rendering with the Agg backend. NO MOCKING.
+real matplotlib rendering with the Agg backend. REAL IMPLEMENTATION.
 """
 
 from __future__ import annotations

@@ -1,6 +1,6 @@
 """Tests for RNA workflow robustness and edge cases.
 
-Follows NO_MOCKING_POLICY: all tests use real filesystem operations,
+Follows real-implementation policy: all tests use real filesystem operations,
 real configuration objects, and real function calls.
 """
 

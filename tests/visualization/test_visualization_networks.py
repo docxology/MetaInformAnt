@@ -66,11 +66,11 @@ class TestPlotNetworkBasic:
         if HAS_NETWORKX:
             pytest.skip("NetworkX is available")
 
-        # Mock graph object (won't work, but tests import error)
-        fake_graph = "not a networkx graph"
+        # Invalid graph object (won't work, but tests import error)
+        invalid_graph = "not a networkx graph"
 
         with pytest.raises(ImportError, match="NetworkX required"):
-            plot_network_basic(fake_graph)
+            plot_network_basic(invalid_graph)
 
 
 class TestPlotNetworkCircular:
@@ -266,8 +266,8 @@ class TestPlotCommunityNetwork:
         if HAS_NETWORKX:
             pytest.skip("NetworkX is available")
 
-        fake_graph = "not a networkx graph"
+        invalid_graph = "not a networkx graph"
         communities = {0: 0, 1: 1}
 
         with pytest.raises(ImportError, match="NetworkX required"):
-            plot_community_network(fake_graph, communities)
+            plot_community_network(invalid_graph, communities)

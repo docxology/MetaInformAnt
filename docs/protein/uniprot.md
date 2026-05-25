@@ -22,7 +22,7 @@ subcellular locations, domains, and post-translational modifications.
 
 ### fetch_uniprot_record
 
-```python
+```python-snippet
 def fetch_uniprot_record(uniprot_id: str) -> Dict[str, Any]
 ```
 
@@ -33,7 +33,7 @@ keys: `accession`, `entry_name`, `protein_name`, `organism`, `taxon_id`,
 
 ### fetch_uniprot_fasta
 
-```python
+```python-snippet
 def fetch_uniprot_fasta(uniprot_id: str) -> Optional[str]
 ```
 
@@ -41,7 +41,7 @@ Returns the protein sequence in FASTA format, or `None` if the request fails.
 
 ### parse_uniprot_fasta_header
 
-```python
+```python-snippet
 def parse_uniprot_fasta_header(header: str) -> Dict[str, str]
 ```
 
@@ -49,14 +49,14 @@ Parses a UniProt FASTA header line (without the leading `>`) into a
 dictionary with keys: `database`, `accession`, `entry_name`, `description`,
 `organism`, `gene_name`.
 
-```python
+```pycon
 >>> parse_uniprot_fasta_header("sp|P12345|PROT_HUMAN Protein OS=Homo sapiens")
 {'database': 'sp', 'accession': 'P12345', 'entry_name': 'PROT_HUMAN', ...}
 ```
 
 ### get_uniprot_annotations
 
-```python
+```python-snippet
 def get_uniprot_annotations(uniprot_id: str) -> List[Dict[str, Any]]
 ```
 
@@ -64,7 +64,7 @@ Retrieves GO term and keyword annotations for a UniProt entry.
 
 ### search_uniprot_proteins
 
-```python
+```python-snippet
 def search_uniprot_proteins(
     query: str,
     max_results: int = 100,
@@ -77,7 +77,7 @@ The API caps at 500 results per request.
 
 ### get_uniprot_taxonomy_info
 
-```python
+```python-snippet
 def get_uniprot_taxonomy_info(taxon_id: int) -> Optional[Dict[str, Any]]
 ```
 
@@ -86,7 +86,7 @@ common name, rank, lineage, and parent ID.
 
 ### batch_fetch_uniprot_records
 
-```python
+```python-snippet
 def batch_fetch_uniprot_records(
     uniprot_ids: List[str],
 ) -> Dict[str, Dict[str, Any]]
@@ -97,13 +97,13 @@ Fetches multiple records sequentially. Returns a mapping from ID to record
 
 ### validate_uniprot_accession
 
-```python
+```python-snippet
 def validate_uniprot_accession(accession: str) -> bool
 ```
 
 Validates accession format against known UniProt patterns.
 
-```python
+```pycon
 >>> validate_uniprot_accession("P12345")
 True
 >>> validate_uniprot_accession("INVALID")
@@ -112,7 +112,7 @@ False
 
 ### map_ids_uniprot
 
-```python
+```python-snippet
 def map_ids_uniprot(
     protein_ids: List[str],
     source_db: str = "auto",

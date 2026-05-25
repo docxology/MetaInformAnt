@@ -159,16 +159,16 @@ def create_graph(edges):
 See Global Project Rules (root `.cursorrules`) for:
 - Common directory structure and path handling
 - Configuration patterns with env overrides
-- Testing policy (NO_MOCKING_POLICY)
+- Testing policy (real-implementation policy)
 - Import patterns and code style
 - Documentation guidelines
 
 ## Testing
 
-- **STRICTLY NO MOCKING**: Test real implementations only (see Global Project Rules (root `.cursorrules`) NO_MOCKING_POLICY)
+- **STRICTLY REAL IMPLEMENTATION**: Test real implementations only (see Global Project Rules (root `.cursorrules`) real-implementation policy)
 - Skip tests if networkx unavailable using `@pytest.mark.external_tool`
 - Test with real network data from `data/`
 - Write test outputs to `output/networks/test/` using `tmp_path` fixture
-- No mocks, fakes, or stubs - use real graph operations
+- Real implementations only - use real graph operations
 
 

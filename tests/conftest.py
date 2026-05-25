@@ -1,11 +1,11 @@
 """Test configuration and fixtures for the METAINFORMANT test suite.
 
 This module provides shared fixtures, test configuration, and utilities
-for the entire test suite following STRICT NO-MOCKING policy.
+for the entire test suite following STRICT REAL-IMPLEMENTATION policy.
 
-IMPORTANT: This test suite uses REAL implementations only. No mocks, fakes,
-or stubs are allowed. All external APIs use real network calls with graceful
-offline handling via skip conditions.
+IMPORTANT: This test suite uses REAL implementations only. Test doubles are
+not allowed. All external APIs use real network calls with graceful offline
+handling via skip conditions.
 """
 
 from __future__ import annotations
@@ -84,7 +84,7 @@ def sample_protein_sequences() -> dict[str, str]:
 
 
 @pytest.fixture(scope="function")
-def clean_environment(monkeypatch) -> Iterator[None]:
+def clean_environment() -> Iterator[None]:
     """Provide clean environment for tests by clearing relevant env vars."""
     env_vars_to_clear = [
         "NCBI_EMAIL",
@@ -99,14 +99,16 @@ def clean_environment(monkeypatch) -> Iterator[None]:
     original_values = {}
     for var in env_vars_to_clear:
         original_values[var] = os.environ.get(var)
-        monkeypatch.delenv(var, raising=False)
+        os.environ.pop(var, None)
 
     yield
 
     # Restore original values
     for var, value in original_values.items():
         if value is not None:
-            monkeypatch.setenv(var, value)
+            os.environ[var] = value
+        else:
+            os.environ.pop(var, None)
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -241,7 +243,7 @@ def ensure_amalgkit_available():
     """Ensure `amalgkit` CLI is available for tests that require it.
 
     Policy:
-    - Tests must use the real external tool (NO_MOCKING_POLICY).
+    - Tests must use the real external tool (real-implementation policy).
     - If `amalgkit` is not available, we SKIP tests that request this fixture
       (rather than failing the entire suite or attempting network installs unexpectedly).
     - Optional: set `METAINFORMANT_AK_AUTO_INSTALL=1` to attempt installation via `uv`.
@@ -286,7 +288,7 @@ def ensure_amalgkit_available():
 class TestFileSystem:
     """Helper filesystem for testing file operations using real I/O operations.
 
-    This class uses real file operations via tmp_path, following the NO_MOCKING_POLICY.
+    This class uses real file operations via tmp_path, following the real-implementation policy.
     It provides convenience methods for creating test files in isolated temporary directories.
     """
 
@@ -314,7 +316,7 @@ class TestFileSystem:
 def test_filesystem(isolated_tmp_dir) -> TestFileSystem:
     """Provide a test filesystem helper for testing.
 
-    Uses real file operations via tmp_path, following NO_MOCKING_POLICY.
+    Uses real file operations via tmp_path, following the real-implementation policy.
     """
     return TestFileSystem(isolated_tmp_dir)
 
@@ -342,7 +344,7 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "network: mark test as requiring network access")
     config.addinivalue_line("markers", "external_tool: mark test as requiring external tools")
     config.addinivalue_line("markers", "integration: mark test as integration test")
-    config.addinivalue_line("markers", "no_mock: enforces NO mocking/faking policy")
+    config.addinivalue_line("markers", "real_impl: tests exercise real implementations")
     config.addinivalue_line("markers", "requires_uv: mark test as requiring uv availability")
     config.addinivalue_line("markers", "requires_network_deps: mark test as requiring network dependencies")
     config.addinivalue_line("markers", "requires_external_deps: mark test as requiring external tool dependencies")
@@ -376,8 +378,8 @@ def pytest_collection_modifyitems(config, items):
         if "integration" in item.name.lower() or "slow" in item.name.lower():
             item.add_marker(pytest.mark.slow)
 
-        # All tests follow no_mock policy
-        item.add_marker(pytest.mark.no_mock)
+        # All tests follow the real-implementation policy
+        item.add_marker(pytest.mark.real_impl)
 
 
 # Skip conditions for various test scenarios

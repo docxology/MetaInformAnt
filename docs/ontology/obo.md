@@ -30,7 +30,7 @@ contains:
 
 ### parse_obo
 
-```python
+```python-snippet
 def parse_obo(path: str | Path) -> Ontology
 ```
 
@@ -42,7 +42,7 @@ relationships.
 Raises `FileNotFoundError` if the file does not exist; `ValueError` on
 format errors.
 
-```python
+```pycon
 >>> ontology = parse_obo("data/go.obo")
 >>> len(ontology)
 50000
@@ -50,7 +50,7 @@ format errors.
 
 ### validate_obo_format
 
-```python
+```python-snippet
 def validate_obo_format(path: str | Path) -> tuple[bool, List[str]]
 ```
 
@@ -63,7 +63,7 @@ Returns `(is_valid, error_messages)`.
 
 ### get_obo_statistics
 
-```python
+```python-snippet
 def get_obo_statistics(path: str | Path) -> Dict[str, Any]
 ```
 

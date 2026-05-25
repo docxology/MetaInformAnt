@@ -1,6 +1,6 @@
 """Tests for core disk utilities.
 
-Tests disk space monitoring and management functions following NO_MOCKING policy.
+Tests disk space monitoring and management functions following real-implementation policy.
 """
 
 from __future__ import annotations

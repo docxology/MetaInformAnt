@@ -37,4 +37,4 @@ Domain-specific scripts organized by module:
 - All scripts should be executable directly or via `uv run`
 - Scripts should use `metainformant.core.io` for domain data file I/O. Direct stdlib parsing is acceptable for CLI glue, subprocess wrappers, and narrow parser internals when tested.
 - Output goes to `output/` directory
-- Follow the NO MOCKING policy
+- Follow the REAL IMPLEMENTATION policy

@@ -1,6 +1,6 @@
 """Tests for metainformant.spatial.visualization -- all plot functions.
 
-All tests use real implementations (NO mocking policy).
+All tests use real implementations (real-implementation policy).
 """
 
 from __future__ import annotations
@@ -52,7 +52,7 @@ def categorical_values() -> np.ndarray:
 
 @pytest.fixture()
 def tissue_image() -> np.ndarray:
-    """Small fake tissue image (100x100 RGB)."""
+    """Small minimal tissue image (100x100 RGB)."""
     rng = np.random.RandomState(42)
     return rng.randint(0, 255, (100, 100, 3), dtype=np.uint8)
 

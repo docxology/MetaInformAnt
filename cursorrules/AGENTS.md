@@ -12,5 +12,5 @@
 
 ## Ethics
 
-- Rules are designed to enforce "Zero Mock" policy
+- Rules are designed to enforce "Real Implementation" policy
 - AI output matches project ethical standards for attribution

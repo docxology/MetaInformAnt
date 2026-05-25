@@ -3,7 +3,7 @@
 Tests GenomicTrack, load_bedgraph_track, load_bed_track,
 save_bed_track, save_bedgraph_track, merge_tracks,
 calculate_track_statistics, extract_track_region, compare_tracks,
-and generate_track_report using real implementations. NO MOCKING.
+and generate_track_report using real implementations. REAL IMPLEMENTATION.
 """
 
 from __future__ import annotations

@@ -108,7 +108,7 @@ flowchart TB
 
 ## Quick Start
 
-```python
+```python-snippet
 from metainformant.singlecell.preprocessing import load_count_matrix, calculate_qc_metrics
 from metainformant.singlecell.dimensionality import select_hvgs, compute_pca, compute_umap
 from metainformant.singlecell.clustering import leiden_clustering

@@ -5,7 +5,7 @@ novel allele detection, diplotype determination, activity scoring,
 ambiguous diplotype resolution, phenotype classification, and population
 phenotype frequency estimation.
 
-NO MOCKING -- all tests use real implementations.
+REAL IMPLEMENTATION -- all tests use real implementations.
 """
 
 from __future__ import annotations

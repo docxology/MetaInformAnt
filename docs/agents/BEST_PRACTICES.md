@@ -167,7 +167,7 @@ rna-pipeline --samples samples.tsv --output output/
 
 ### Strategy 2: Python API
 
-```python
+```python-snippet
 from pathlib import Path
 from metainformant.core.engine.workflow_manager import BasePipelineManager, PipelinePhase
 from metainformant.rna.engine.workflow import RNAWorkflowManager
@@ -328,7 +328,7 @@ workers = resource_aware_workers(
 
 ### Logging Configuration
 
-```python
+```python-snippet
 from metainformant.core.utils.logging import setup_logging
 
 setup_logging(
@@ -365,7 +365,7 @@ METAINFORMANT_NO_TUI=1 python -m metainformant.rna.workflow ...
 
 If `prometheus_client` installed:
 
-```python
+```python-snippet
 from metainformant.monitoring import start_metrics_server
 start_metrics_server(port=8000)  # exposes /metrics
 ```

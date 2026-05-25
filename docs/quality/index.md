@@ -83,7 +83,7 @@ flowchart TB
 
 ## Quick Start
 
-```python
+```python-snippet
 from metainformant.quality.fastq import analyze_fastq_quality
 
 # Analyze single FASTQ file
@@ -163,7 +163,7 @@ Future quality control modules will include:
 
 ### Preprocessing Integration
 
-```python
+```python-snippet
 from metainformant.quality.fastq import analyze_fastq_quality
 from metainformant.dna.fastq import process_fastq_file
 

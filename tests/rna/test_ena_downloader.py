@@ -1,5 +1,5 @@
 """
-Zero-Mock Integration Test for ENADownloader.
+Real-Implementation Integration Test for ENADownloader.
 
 Verifies that the ENADownloader can discover FASTQ URLs from the ENA API.
 Does NOT perform actual large file downloads to respect network/storage,
@@ -29,7 +29,7 @@ class TestENADownloader(unittest.TestCase):
         Using a small, public SRA run: SRR11092056 (Apis mellifera RNA-seq)
         """
         # This test actually hits the ENA API.
-        # It aligns with "Zero-Mock" philosophy for integration tests calling external APIs,
+        # It aligns with "Real-Implementation" philosophy for integration tests calling external APIs,
         # provided we handle network failures gracefully.
 
         sample_id = "SRR11092056"

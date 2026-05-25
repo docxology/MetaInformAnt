@@ -2,7 +2,7 @@
 
 Real implementation testing for velocity computation, embedding projection,
 pseudotime estimation, confidence metrics, and dynamical model fitting.
-No mocking used - all tests use real computational methods and data.
+Real implementationing used - all tests use real computational methods and data.
 """
 
 from __future__ import annotations

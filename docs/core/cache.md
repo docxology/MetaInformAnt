@@ -564,7 +564,7 @@ Cache files store plain JSON. Do **not** cache:
 - Decrypted private keys
 
 If needed, encrypt before caching:
-```python
+```python-snippet
 from cryptography.fernet import Fernet
 encrypted = fernet.encrypt(json.dumps(data).encode())
 cache.cache_json(cache_dir, "secure_key", encrypted.decode())
@@ -572,9 +572,9 @@ cache.cache_json(cache_dir, "secure_key", encrypted.decode())
 
 ## Testing Guidelines
 
-- Test with real filesystem (no mocking)
+- Test with real filesystem (real implementation)
 - Use temporary directories (`tmp_path` fixture in pytest)
-- Verify TTL expiration with `time.sleep()` or monkeypatch `time.time()`
+- Verify TTL expiration with `time.sleep()` or explicit restoration `time.time()`
 - Test concurrent access via `threading.Thread`
 
 See `tests/core/test_core_cache.py` for examples.

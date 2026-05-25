@@ -374,7 +374,7 @@ class TestBiplot:
             pytest.skip("scikit-learn is available")
 
         data = np.random.randn(20, 3)
-        fake_model = type("MockPCA", (), {"components_": np.random.randn(3, 2)})()
+        pca_like_model = type("PCAResultForTest", (), {"components_": np.random.randn(3, 2)})()
 
         with pytest.raises(ImportError, match="scikit-learn required"):
-            biplot(data, fake_model)
+            biplot(data, pca_like_model)

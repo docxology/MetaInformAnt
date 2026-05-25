@@ -167,7 +167,7 @@ prey_next, predator_next = lotka_volterra_step(
 - Multi-generation evolutionary experiments
 
 **Patterns**:
-```python
+```python-snippet
 from metainformant.math.selection_experiments import simulate_generations
 
 results = simulate_generations(
@@ -245,16 +245,16 @@ output_path = paths.expand_and_resolve("output/math/simulations/")
 See Global Project Rules (root `.cursorrules`) for:
 - Common directory structure and path handling
 - Configuration patterns with env overrides
-- Testing policy (NO_MOCKING_POLICY)
+- Testing policy (real-implementation policy)
 - Import patterns and code style
 - Documentation guidelines
 
 ## Testing
 
-- **STRICTLY NO MOCKING**: Test real implementations only (see Global Project Rules (root `.cursorrules`) NO_MOCKING_POLICY)
+- **STRICTLY REAL IMPLEMENTATION**: Test real implementations only (see Global Project Rules (root `.cursorrules`) real-implementation policy)
 - Test with known theoretical results
 - Test numerical accuracy
 - Write test outputs to `output/math/test/` using `tmp_path` fixture
-- No mocks, fakes, or stubs - use real computations
+- Real implementations only - use real computations
 
 

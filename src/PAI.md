@@ -14,7 +14,7 @@
 ## Maintenance Notes
 
 - **System**: Part of the METAINFORMANT Domain layer.
-- **Style**: Strict type hinting, no mocks in tests.
+- **Style**: Strict type hinting, real implementations in tests.
 - **Stability**: API boundaries should be respected.
 
 ## AI Workflows

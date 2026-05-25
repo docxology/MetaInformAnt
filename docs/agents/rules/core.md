@@ -210,7 +210,7 @@ logger.error("Error occurred", exc_info=True)
 
 ### Defensive Imports
 
-```python
+```python-snippet
 try:
     import optional_library
 except ImportError:
@@ -243,10 +243,10 @@ def function():
 ## Testing
 
 - Core utilities must have comprehensive tests
-- **STRICTLY NO MOCKING**: Test real implementations only (see Global Project Rules (root `.cursorrules`) NO_MOCKING_POLICY)
+- **STRICTLY REAL IMPLEMENTATION**: Test real implementations only (see Global Project Rules (root `.cursorrules`) real-implementation policy)
 - Use `tmp_path` fixture for test outputs
 - Write test artifacts to `output/` only
-- No `unittest.mock`, `@patch`, `MagicMock`, or function replacement
+- No test-double modules, test-double classes, or runtime function replacement
 - Use real implementations with graceful skipping for unavailable dependencies
 
 ## Documentation
@@ -272,6 +272,6 @@ See Global Project Rules (root `.cursorrules`) for:
 
 - Common directory structure and path handling
 - Configuration patterns with env overrides
-- Testing policy (NO_MOCKING_POLICY)
+- Testing policy (real-implementation policy)
 - Import patterns and code style
 - Documentation guidelines

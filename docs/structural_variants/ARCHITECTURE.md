@@ -659,7 +659,7 @@ No complex inheritance; simple dataclasses with default constructors. JSON-seria
 
 ## 13. Testing Philosophy
 
-- **No mocking**: Tests use small real BAM files with known SV ground truth.
+- **Real implementationing**: Tests use small real BAM files with known SV ground truth.
 - **Golden outputs**: CBS segmentation results against R `DNAcopy` package.
 - **Synthetic datasets**: `tests/fixtures/` contains simulated BAMs with injected SVs of known types/sizes.
 - **End-to-end**: Pipeline integration tests cover full detection→annotation→filtering.

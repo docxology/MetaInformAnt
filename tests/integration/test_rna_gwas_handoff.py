@@ -14,8 +14,8 @@ from metainformant.gwas.data.expression import ExpressionLoader
 
 
 @pytest.fixture
-def mock_amalgkit_output(tmp_path):
-    """Create a mock Amalgkit output directory structure."""
+def amalgkit_output_dir(tmp_path):
+    """Create an Amalgkit output directory structure."""
     work_dir = tmp_path / "amalgkit_work"
     quant_dir = work_dir / "quant"
     quant_dir.mkdir(parents=True)
@@ -28,7 +28,7 @@ def mock_amalgkit_output(tmp_path):
         sample_dir = quant_dir / sample
         sample_dir.mkdir()
 
-        # Create dummy data
+        # Create deterministic abundance data.
         data = {
             "target_id": transcripts,
             "est_counts": [10.0 * (i + 1), 20.0 * (i + 1), 5.0],
@@ -41,20 +41,20 @@ def mock_amalgkit_output(tmp_path):
 
 
 @pytest.fixture
-def mock_genotypes():
-    """Create a mock genotype matrix (Samples x Variants)."""
+def genotype_matrix():
+    """Create a genotype matrix (samples x variants)."""
     # 0, 1, 2 dosage
     data = {"VAR_1": [0, 1, 2], "VAR_2": [2, 1, 0]}  # Correlated with TR_1 (1, 2, 3)  # Anti-correlated
     df = pd.DataFrame(data, index=["SAMPLE_A", "SAMPLE_B", "SAMPLE_C"])
     return df
 
 
-def test_rna_gwas_handoff(mock_amalgkit_output, mock_genotypes):
+def test_rna_gwas_handoff(amalgkit_output_dir, genotype_matrix):
     """
     Test the full handoff pipeline.
     """
     # 1. Load Expression Data
-    loader = ExpressionLoader(mock_amalgkit_output)
+    loader = ExpressionLoader(amalgkit_output_dir)
     expression_matrix = loader.load_amalgkit_quant(metric="tpm")
 
     assert expression_matrix.shape == (3, 3)
@@ -66,7 +66,7 @@ def test_rna_gwas_handoff(mock_amalgkit_output, mock_genotypes):
 
     # 2. Run eQTL Analysis
     # We expect VAR_1 to be correlated with TR_1
-    results = run_eqtl_analysis(genotype_matrix=mock_genotypes, expression_matrix=expression_matrix)
+    results = run_eqtl_analysis(genotype_matrix=genotype_matrix, expression_matrix=expression_matrix)
 
     assert not results.empty
     assert "variant" in results.columns

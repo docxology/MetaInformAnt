@@ -20,4 +20,4 @@ Documentation for the information domain in MetaInformAnt.
 - **Tests**: `tests/information/test_information_*.py`
 
 ## Testing Policy
-- **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.
+- **Real Implementation**: All tests must use real implementations. Mocks are strictly prohibited.

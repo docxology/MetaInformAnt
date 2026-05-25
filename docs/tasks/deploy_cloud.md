@@ -132,7 +132,7 @@ python scripts/cloud/deploy_gcp.py deploy \
 ```
 
 ### Spot VM interruption handling with checkpointing
-```python
+```python-snippet
 # In your pipeline script, register checkpoint handlers
 from metainformant.cloud.interrupt import register_preempt_handler
 

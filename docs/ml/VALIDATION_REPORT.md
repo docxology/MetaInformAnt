@@ -539,7 +539,7 @@ importances = clf.feature_importances()  # ✗ No such method; use clf.get_featu
    - Signature mismatches (parameter names/types differ)
    - Broken examples (syntax errors, wrong API usage)
 
-All tests examined use **real implementations** (no mocking per project policy), confirming which functions truly work.
+All tests examined use **real implementations** (real implementation per project policy), confirming which functions truly work.
 
 ---
 

@@ -21,7 +21,7 @@ for record in read_jsonl("large_file.jsonl"):
 ```
 
 2. **Use streaming for VCF**:
-```python
+```python-snippet
 from metainformant.gwas.quality import parse_vcf_full
 
 # Parse VCF - processes in memory
@@ -40,7 +40,7 @@ vcf_data = parse_vcf_full(vcf_path, fields=["CHROM", "POS", "ID", "GT"])
 
 **Solutions**:
 
-```python
+```python-snippet
 # Enable gradient checkpointing
 model.enable_gradient_checkpointing()
 
@@ -62,7 +62,7 @@ trainer = Trainer(batch_size=16)  # Reduce from 32
 **Solutions**:
 
 1. **Check worker count**:
-```python
+```python-snippet
 from metainformant.core.parallel import ParallelProcessor
 
 # Don't exceed CPU count
@@ -173,7 +173,7 @@ bcftools --version | head -1
 ```
 
 3. **Validate input files**:
-```python
+```python-snippet
 from metainformant.gwas.quality import validate_vcf
 
 errors = validate_vcf("input.vcf.gz")
@@ -231,7 +231,7 @@ curl -s https://eutils.ncbi.nlm.nih.gov/entrez/eutils/ | head
 ```
 
 3. **Use fasterq-dump explicitly**:
-```python
+```python-snippet
 from metainformant.rna.sra_extraction import download_sra_run
 
 # Direct SRA download
@@ -276,7 +276,7 @@ cache = JsonCache("output/ncbi_cache", ttl_seconds=86400)  # 24h
 **Solutions**:
 
 1. **Validate VCF format**:
-```python
+```python-snippet
 from metainformant.gwas.quality import validate_vcf
 
 errors = validate_vcf(vcf_path)
@@ -301,7 +301,7 @@ tabix -p vcf input.vcf.gz
 **Solutions**:
 
 1. **Detect quality encoding**:
-```python
+```python-snippet
 from metainformant.quality.fastq import detect_quality_encoding
 
 encoding = detect_quality_encoding(fastq_path)
@@ -352,7 +352,7 @@ python -c "import yaml; yaml.safe_load(open('config.yaml'))"
 ```
 
 2. **Use schema validation**:
-```python
+```python-snippet
 from metainformant.core.validation import validate_config_schema
 
 errors = validate_config_schema(config, "gwas_schema")

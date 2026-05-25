@@ -2,20 +2,33 @@
 
 from __future__ import annotations
 
+import os
+from contextlib import contextmanager
 from pathlib import Path
+from typing import Iterator
 
 from metainformant.mcp.tools import amalgkit_monitor
 
 
-def test_parse_log_progress_reads_latest_progress_line(tmp_path: Path, monkeypatch) -> None:
+@contextmanager
+def _temporary_cwd(path: Path) -> Iterator[None]:
+    """Temporarily change working directory."""
+    original = Path.cwd()
+    os.chdir(path)
+    try:
+        yield
+    finally:
+        os.chdir(original)
+
+
+def test_parse_log_progress_reads_latest_progress_line(tmp_path: Path) -> None:
     """Progress parsing uses the real filesystem and the module's documented log path."""
     log_path = tmp_path / "output" / "amalgkit" / "run_all_species_incremental.log"
     log_path.parent.mkdir(parents=True)
     log_path.write_text("starting\n[3/10] SRR000003 complete\ntrailing status\n", encoding="utf-8")
 
-    monkeypatch.chdir(tmp_path)
-
-    progress = amalgkit_monitor.parse_log_progress()
+    with _temporary_cwd(tmp_path):
+        progress = amalgkit_monitor.parse_log_progress()
 
     assert progress["processed"] == 3
     assert progress["total"] == 10
@@ -23,11 +36,10 @@ def test_parse_log_progress_reads_latest_progress_line(tmp_path: Path, monkeypat
     assert progress["last_line"] == "[3/10] SRR000003 complete"
 
 
-def test_parse_log_progress_handles_missing_log(tmp_path: Path, monkeypatch) -> None:
+def test_parse_log_progress_handles_missing_log(tmp_path: Path) -> None:
     """Missing logs return a structured stopped-progress response."""
-    monkeypatch.chdir(tmp_path)
-
-    progress = amalgkit_monitor.parse_log_progress()
+    with _temporary_cwd(tmp_path):
+        progress = amalgkit_monitor.parse_log_progress()
 
     assert progress == {"processed": 0, "total": 0, "last_line": "No log file found"}
 

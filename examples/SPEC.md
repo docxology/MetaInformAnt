@@ -8,7 +8,7 @@ Working example scripts demonstrating METAINFORMANT functionality. Contains real
 
 - **Dependency Level**: Examples
 - **Component Type**: Demonstration Scripts
-- **Design Pattern**: Real Implementation Examples (NO MOCKING)
+- **Design Pattern**: Real Implementation Examples (REAL IMPLEMENTATION)
 
 ### Directory Structure
 ```
@@ -79,7 +79,7 @@ if __name__ == "__main__":
 - **Real Implementations Only**: Use actual functions and algorithms
 - **Real Outputs**: Produce genuine results, not placeholders
 - **Real API Calls**: Make actual API calls or skip gracefully
-- **No Mocks**: Never use mocks, stubs, or fake data
+- **Real Implementations**: Never use mocks, stubs, or fake data
 - **Self-Contained**: Each example should run independently
 - **Documented**: Include docstrings explaining purpose and usage
 - **Output to output/**: Write results to output/ directory

@@ -1,6 +1,7 @@
 """Tests for amalgkit integration functionality."""
 
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -59,9 +60,9 @@ class TestAmalgkitIntegration:
         assert not valid
         assert "Empty" in msg
 
-    def test_ensure_cli_available_with_dummy_executable(self, tmp_path, monkeypatch):
-        """Test ensure_cli_available using a dummy executable in PATH."""
-        # Create a dummy amalgkit script
+    def test_ensure_cli_available_with_real_temp_executable(self, tmp_path):
+        """Test ensure_cli_available using a temporary executable on PATH."""
+        # Create a minimal amalgkit script in a real temporary bin directory.
         dummy_dir = tmp_path / "bin"
         dummy_dir.mkdir()
         dummy_script = dummy_dir / "amalgkit"
@@ -70,7 +71,7 @@ class TestAmalgkitIntegration:
         with open(dummy_script, "w") as f:
             f.write("#!/bin/sh\n")
             f.write('if [ "$1" = "--version" ]; then\n')
-            f.write('  echo "amalgkit 0.5.0"\n')
+            f.write('  echo "amalgkit 0.12.20"\n')
             f.write('elif [ "$1" = "--help" ]; then\n')
             f.write('  echo "Usage: amalgkit ..."\n')
             f.write("fi\n")
@@ -83,14 +84,29 @@ class TestAmalgkitIntegration:
         old_path = os.environ.get("PATH", "")
         new_path = f"{dummy_dir}:{old_path}"
 
-        monkeypatch.setenv("PATH", new_path)
+        os.environ["PATH"] = new_path
+        try:
+            success, msg, info = amalgkit.ensure_cli_available(min_version="0.12.20")
 
-        # Should invoke our dummy script
-        success, msg, info = amalgkit.ensure_cli_available(min_version="0.4.0")
+            assert success, msg
+            assert info["valid"] is True
+            assert info["version"] == "0.12.20"
+        finally:
+            os.environ["PATH"] = old_path
 
-        assert success
-        assert info["valid"] is True
-        assert info["version"] == "0.5.0"
+    @pytest.mark.external_tool
+    @pytest.mark.network
+    def test_ensure_cli_available_auto_installs_from_github_when_enabled(self):
+        """Validate the real GitHub install path when explicitly enabled for the run."""
+        enabled = os.environ.get("METAINFORMANT_AK_AUTO_INSTALL", "").strip().lower() in {"1", "true", "yes"}
+        if not enabled:
+            pytest.skip("Set METAINFORMANT_AK_AUTO_INSTALL=1 to verify real amalgkit installation")
+
+        success, msg, info = amalgkit.ensure_cli_available(auto_install=True)
+
+        assert success, msg
+        assert info is not None
+        assert info.get("valid") is True
 
     def test_build_cli_args_basic(self):
         """Test basic CLI argument building."""
@@ -321,7 +337,7 @@ class TestErrorHandling:
     def test_cli_unavailable_handling(self):
         """Test handling when amalgkit is not available.
 
-        Uses real check_cli_available() implementation following NO_MOCKING_POLICY.
+        Uses real check_cli_available() implementation following the real-implementation policy.
         If amalgkit is available, this test verifies the available case instead.
         """
         ok, help_text = amalgkit.check_cli_available()
@@ -512,7 +528,7 @@ class TestAmalgkitWrapperRobustness:
     def test_wrapper_with_missing_amalgkit(self):
         """Test wrapper behavior when amalgkit is not available.
 
-        Uses real check_cli_available() implementation following NO_MOCKING_POLICY.
+        Uses real check_cli_available() implementation following the real-implementation policy.
         Tests actual behavior regardless of whether amalgkit is installed.
         """
         ok, help_text = amalgkit.check_cli_available()

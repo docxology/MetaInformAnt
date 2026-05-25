@@ -172,7 +172,7 @@ class TestFisherExactTest:
 
     def test_scipy_dependency_error(self):
         """Test behavior when scipy is not available."""
-        # This test would need to mock scipy import failure
+        # This test would need to replace scipy import failure
         # For now, just verify the function works normally
         odds_ratio, p_value = fisher_exact_test(1, 1, 1, 1)
         assert isinstance(odds_ratio, float)

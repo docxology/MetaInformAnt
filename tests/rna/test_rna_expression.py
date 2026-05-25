@@ -2,7 +2,7 @@
 
 Tests normalization, differential expression, PCA, gene filtering,
 and visualization data preparation using REAL implementations with
-realistic RNA-seq count matrices. NO MOCKING.
+realistic RNA-seq count matrices. REAL IMPLEMENTATION.
 """
 
 from __future__ import annotations

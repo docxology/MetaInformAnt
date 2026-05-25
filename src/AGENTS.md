@@ -28,7 +28,7 @@ src/
 - Never use `pip` directly
 - Editable install: `uv pip install -e .`
 
-### NO MOCKING Policy
+### REAL IMPLEMENTATION Policy
 
 - All functions must use real implementations
 - Never return dummy/placeholder data

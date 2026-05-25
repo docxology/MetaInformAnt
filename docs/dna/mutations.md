@@ -17,7 +17,7 @@ flowchart TD
 
 Example
 
-```python
+```python-snippet
 from metainformant.dna import mutations
 
 # Apply specific point mutations

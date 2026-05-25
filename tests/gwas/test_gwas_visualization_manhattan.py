@@ -1,7 +1,7 @@
 """Tests for enhanced Manhattan plot features: gene annotations, highlight regions,
 suggestive threshold, and label_top_n.
 
-Following NO_MOCKING policy - all tests use real matplotlib implementations.
+Following real-implementation policy - all tests use real matplotlib implementations.
 """
 
 from __future__ import annotations

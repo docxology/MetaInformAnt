@@ -45,7 +45,7 @@ from metainformant.dna.sequence import core as dna_core
 from metainformant.rna.engine import workflow
 from metainformant.visualization import plots
 
-# All operations use real implementations (NO MOCKING policy)
+# All operations use real implementations (REAL IMPLEMENTATION policy)
 ```
 
 ## Key Patterns

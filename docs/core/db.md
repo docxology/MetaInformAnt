@@ -1058,7 +1058,7 @@ PG_USER=dev_user
 PG_PASSWORD=dev_pass
 ```
 
-```python
+```python-snippet
 from dotenv import load_dotenv
 load_dotenv()  # Loads .env into os.environ
 
@@ -1194,9 +1194,9 @@ def db_conn(db_pool):
         conn.rollback()  # Or truncate tables
 ```
 
-### No Mocking Policy
+### Real Implementation Policy
 
-Follow METAINFORMANT's no-mocking policy—tests must use real PostgreSQL:
+Follow METAINFORMANT's real-implementation policy—tests must use real PostgreSQL:
 ```python
 # CORRECT: Real database test
 @pytest.mark.network
@@ -1209,9 +1209,9 @@ def test_bulk_insert_real():
             )
             assert count == 2
 
-# WRONG: Never mock database
-def test_bad(mocker):
-    mocker.patch("db.PostgresConnection")  # PROHIBITED
+# WRONG: Replacing the database connection layer with a test double hides
+# connection, transaction, and serialization behavior that this project tests
+# through real adapters.
 ```
 
 ### Temporary Test Tables

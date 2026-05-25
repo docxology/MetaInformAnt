@@ -7,9 +7,23 @@ without executing full workflows (which require external dependencies).
 from __future__ import annotations
 
 import ast
+import argparse
+import importlib.util
 from pathlib import Path
 
+import pytest
+
 SCRIPT_PATH = Path(__file__).resolve().parents[2] / "scripts" / "rna" / "run_workflow.py"
+
+
+def _load_run_workflow_module():
+    """Load the RNA workflow script as a real Python module."""
+    spec = importlib.util.spec_from_file_location("run_workflow_script", SCRIPT_PATH)
+    assert spec is not None
+    assert spec.loader is not None
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
 def test_run_workflow_has_config_block():
@@ -87,3 +101,17 @@ def test_run_workflow_has_required_structure():
     assert "--config" in content, "Missing --config argument"
     # run_workflow.py uses orchestration module which handles config loading
     assert "orchestration" in content or "run_workflow_for_species" in content, "Missing orchestration module usage"
+
+
+def test_run_workflow_chunk_size_requires_positive_integer():
+    """Test that --chunk-size uses the positive-integer parser."""
+    module = _load_run_workflow_module()
+
+    assert module._positive_int("1") == 1
+    assert module._positive_int("5") == 5
+    with pytest.raises(argparse.ArgumentTypeError):
+        module._positive_int("0")
+    with pytest.raises(argparse.ArgumentTypeError):
+        module._positive_int("-2")
+    with pytest.raises(argparse.ArgumentTypeError):
+        module._positive_int("abc")

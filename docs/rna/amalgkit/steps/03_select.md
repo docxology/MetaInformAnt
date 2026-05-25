@@ -148,7 +148,7 @@ flowchart LR
 
 ### Default Filters
 
-```python
+```python-snippet
 # Minimum quality thresholds
 min_nspots = 5,000,000           # At least 5M reads
 min_bases = implied via spots    # Calculated from spots × avgLength
