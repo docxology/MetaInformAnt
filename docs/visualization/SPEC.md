@@ -41,7 +41,7 @@ src/metainformant/visualization/
 
 ## Integration
 - **Source**: `src/metainformant/visualization/{plots,dashboards,animation,export}/`
-- **Tests**: `tests/test_visualization_plots.py`, `tests/test_visualization_dashboards.py`, `tests/test_visualization_animation.py`
+- **Tests**: `tests/visualization/test_visualization_plots.py`, `tests/visualization/test_visualization_dashboards.py`, `tests/visualization/test_visualization_animation.py`
 - **Visual regression**: `tests/visualization/baseline/` (PNG references compared via `pytest-mpl`)
 - **Dependencies**:
   - **Core**: `metainformant.core.io` — Data loading (TSV/CSV/Parquet)

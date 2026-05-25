@@ -299,6 +299,13 @@ graph TD
 - **Quality Assurance**: Rigorous validation and error handling throughout
 - **Performance Optimization**: Efficient algorithms for large-scale biological data
 
+### Current Validation Snapshot
+
+As of the 2026-05-25 stabilization pass, this checkout collects 7,736 tests and
+the local non-network/non-external suite passes (`7,495 passed, 71 skipped, 170
+deselected`). Root-level audit and validation reports are retained as historical
+snapshots; regenerate current verification outputs under `output/`.
+
 ## Quick Start
 
 ### I Want To...

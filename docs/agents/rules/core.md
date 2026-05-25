@@ -107,7 +107,7 @@ json.dump(data, f) # WRONG
 **Patterns**:
 
 ```python
-from metainformant.core import paths
+from metainformant.core.io import paths
 from pathlib import Path
 
 # Expand and resolve

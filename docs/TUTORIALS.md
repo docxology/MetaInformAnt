@@ -556,7 +556,7 @@ Techniques for optimizing METAINFORMANT performance with large datasets.
 #### Parallel Processing
 
 ```python
-from metainformant.core import parallel
+from metainformant.core.execution import parallel
 import time
 
 # Example: Parallel entropy calculation

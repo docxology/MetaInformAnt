@@ -15,10 +15,10 @@ bash scripts/package/test.sh --mode ultra-fast
 bash scripts/package/test.sh --mode coverage
 
 # Single test file
-pytest tests/test_core_functionality.py -v
+pytest tests/core/test_core_functionality.py -v
 
 # Single test function
-pytest tests/test_core_functionality.py::TestCoreIO::test_json_operations -v
+pytest tests/core/test_core_functionality.py::TestCoreIO::test_json_operations -v
 
 # Pattern match
 bash scripts/package/test.sh --pattern "test_dna_*"

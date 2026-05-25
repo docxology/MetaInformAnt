@@ -109,7 +109,8 @@ from metainformant.structural_variants.detection.sv_calling import (
     call_structural_variants,
 )
 from metainformant.structural_variants.detection.breakpoints import refine_breakpoints
-from metainformant.core import logging, io
+from metainformant.core import io
+from metainformant.core.utils import logging
 
 logging.setup_logging(level="INFO")
 

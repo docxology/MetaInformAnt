@@ -167,7 +167,7 @@ Mutable state written to heartbeat file.
 Download a file with full observability.
 
 **Signature**:
-```python
+```text
 def download_with_progress(
     url: str,
     dest_path: str | Path,
@@ -234,7 +234,7 @@ These functions are designed for external tools (e.g., `subprocess.Popen`) that 
 Monitor a subprocess by watching byte growth in a directory.
 
 **Signature**:
-```python
+```text
 def monitor_subprocess_directory_growth(
     *,
     process: Any,
@@ -290,7 +290,7 @@ if rc != 0:
 Monitor by counting expected output files.
 
 **Signature**:
-```python
+```text
 def monitor_subprocess_file_count(
     *,
     process: Any,
@@ -327,7 +327,7 @@ rc = monitor_subprocess_file_count(
 Monitor by counting files matching a glob pattern (for unknown exact filenames ahead of time).
 
 **Signature**:
-```python
+```text
 def monitor_subprocess_sample_progress(
     *,
     process: Any,
@@ -371,7 +371,7 @@ rc = monitor_subprocess_sample_progress(
 Handler for HTTP/HTTPS URLs. Supports resume via Range headers.
 
 **Methods**:
-```python
+```text
 get_file_size(url: str, *, timeout: int = 60) -> int | None
 download(url: str, dest_path: str | Path, **kwargs) -> DownloadResult
 ```
@@ -480,7 +480,7 @@ def monitor_heartbeat(heartbeat_path: Path, timeout: int = 3600):
 ### Batch Download with Parallelism
 
 ```python
-from metainformant.core import parallel
+from metainformant.core.execution import parallel
 from metainformant.core.io.download import download_with_progress
 
 def download_one(url_dest_pair):
@@ -986,7 +986,7 @@ def is_safe_url(url: str) -> bool:
 `download_with_progress()` does not sanitize destination paths—you must ensure dest_path is within allowed output directories:
 
 ```python
-from metainformant.core import paths
+from metainformant.core.io import paths
 
 dest = "output/" + user_provided_filename
 if not paths.is_safe_path(dest):
@@ -1029,7 +1029,7 @@ if "application/gzip" not in content_type and "application/x-gzip" not in conten
 ### With Parallel Processing
 
 ```python
-from metainformant.core import parallel
+from metainformant.core.execution import parallel
 from metainformant.core.io.download import download_with_progress
 
 urls = [
@@ -1087,7 +1087,7 @@ def download_and_cache(url, cache_dir):
 
 ```python
 from metainformant.core.io import download
-from metainformant.core import paths
+from metainformant.core.io import paths
 
 def safe_download(url, user_proposed_name, output_root="output"):
     # Sanitize and resolve destination
@@ -1107,7 +1107,8 @@ def safe_download(url, user_proposed_name, output_root="output"):
 ### With Configuration
 
 ```python
-from metainformant.core import config, download
+from metainformant.core.io import download
+from metainformant.core.utils import config
 
 cfg = config.load_mapping_from_file("config/downloads.yaml")
 
@@ -1124,7 +1125,7 @@ for source in cfg["sources"]:
 
 ### In a Snakemake Rule
 
-```python
+```text
 # In a Snakemake workflow, use heartbeat for resume across runs
 rule download_genome:
     output:

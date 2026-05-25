@@ -1,5 +1,9 @@
 # Agent Documentation Review Report
 
+> Historical snapshot: this report is retained for provenance and may not
+> describe the current checkout. Regenerate validation outputs under `output/`
+> when current evidence is needed.
+
 **Date**: 2025-04-29
 **Reviewer**: Hermes Agent
 **Workspace**: `/home/trim/Documents/Git/MetaInformAnt/docs/agents`
@@ -172,7 +176,7 @@
 - **Purpose**: Core infrastructure foundation
 - **Complete Sections**: Purpose, Dependencies, Source Structure, Package Management, Key Submodules (all 14), Patterns (I/O, Paths, Logging, Cache, Parallel, Errors, Progress, Validation, Workflow, Database, Disk, Hash, Discovery, Symbols), Output Paths
 - **Accuracy**: All submodule paths and descriptions match typical core module organization
-- **Cross-references**: Correctly references `metainformant.core.io`, `metainformant.core.paths`, `metainformant.core.utils.logging`
+- **Cross-references**: Correctly references `metainformant.core.io`, `metainformant.core.io.paths`, `metainformant.core.utils.logging`
 - **No issues**
 
 #### `rules/dna.md` ✅ (303 lines)
@@ -318,7 +322,7 @@
    - **Recommendation**: Standardize to `from metainformant.core import io` across all rules for consistency
 
 2. **Path Module Reference**:
-   - Consistent: `from metainformant.core import paths`
+   - Consistent: `from metainformant.core.io import paths`
    - ✅ OK
 
 3. **Logging Reference**:

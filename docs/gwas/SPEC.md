@@ -17,7 +17,7 @@ Documentation for the gwas domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/gwas/`
-- **Tests**: `tests/test_gwas_*.py`
+- **Tests**: `tests/gwas/test_gwas_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

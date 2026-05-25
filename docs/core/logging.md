@@ -513,7 +513,7 @@ logger.setLevel(logging.DEBUG)
 | Module | Relationship |
 |--------|--------------|
 | `core.io` | I/O errors logged via this module |
-| `core.cache` | Cache hits/misses logged |
+| `core.io.cache` | Cache hits/misses logged |
 | `core.download` | Download progress logged |
 | `core.parallel` | Worker task completion logged |
 | `core.workflow` | Step status changes logged |

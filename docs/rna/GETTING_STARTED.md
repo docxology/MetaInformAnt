@@ -492,4 +492,4 @@ See **[TROUBLESHOOTING_RNA.md](TROUBLESHOOTING_RNA.md)** for common issues:
 
 - **Source Code**: `src/metainformant/rna/` - Implementation details
 - **Module Documentation**: `src/metainformant/rna/README.md` - API reference
-- **Tests**: `tests/test_rna_*.py` - Comprehensive test coverage
+- **Tests**: `tests/rna/test_rna_*.py` - Comprehensive test coverage

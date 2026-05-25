@@ -1,5 +1,10 @@
 # MetaInformAnt Documentation Audit Report
 
+> Historical snapshot: this report is retained for provenance and may not
+> describe the current checkout. Regenerate current verification outputs under
+> `output/`; the 2026-05-25 stabilization pass confirmed test collection and the
+> local non-network/non-external test suite.
+
 **Report Date:** 2026-04-29  
 **Auditor:** Hermes Agent (Nous Research)  
 **Workspace:** `/home/trim/Documents/Git/MetaInformAnt`  

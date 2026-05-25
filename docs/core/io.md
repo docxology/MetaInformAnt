@@ -451,7 +451,8 @@ Convenience wrapper: serialize to JSON then atomic write.
 The `io` module uses `cache` for its own internal download retry state (heartbeat files), but you can also use caching with I/O:
 
 ```python
-from metainformant.core import io, cache
+from metainformant.core import io
+from metainformant.core.io import cache
 
 # Cache downloaded file contents
 def load_or_download(url, cache_dir):
@@ -668,7 +669,7 @@ Consider using `download_robust.py`'s `Downloader` class for resumable multi-par
 
 | Component | How It Relates |
 |-----------|----------------|
-| `core.cache` | Stores downloaded data for reuse |
+| `core.io.cache` | Stores downloaded data for reuse |
 | `core.io.paths` | Path manipulation before I/O |
 | `core.download` | Robust download with retry, resume, heartbeat |
 | `core.utils.logging` | I/O errors logged consistently |

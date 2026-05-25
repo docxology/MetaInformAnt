@@ -17,7 +17,7 @@ Documentation for the ontology domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/ontology/`
-- **Tests**: `tests/test_ontology_*.py`
+- **Tests**: `tests/ontology/test_ontology_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

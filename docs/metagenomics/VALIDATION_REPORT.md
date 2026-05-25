@@ -1,5 +1,9 @@
 # MetaInformAnt Metagenomics Documentation Validation Report
 
+> Historical snapshot: this report is retained for provenance and may not
+> describe the current checkout. Regenerate validation outputs under `output/`
+> when current evidence is needed.
+
 **Validation Date:** 2025-04-29
 **Workspace:** /home/trim/Documents/Git/MetaInformAnt
 **Scope:** Documentation in docs/metagenomics/ vs implementation in src/metainformant/metagenomics/

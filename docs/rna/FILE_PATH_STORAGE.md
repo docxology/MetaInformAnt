@@ -537,7 +537,7 @@ def plan_workflow_steps(config: AmalgkitWorkflowConfig) -> dict[str, dict]:
 
 ### Path Storage Tests
 
-**File**: `tests/test_rna_workflow_config.py`
+**File**: `tests/rna/test_rna_workflow_config.py`
 
 ```python
 def test_load_workflow_config_resolves_paths(tmp_path: Path):
@@ -563,7 +563,7 @@ genome:
     assert config.genome["dest_dir"].is_absolute()
 ```
 
-**File**: `tests/test_rna_genome_prep.py`
+**File**: `tests/rna/test_rna_genome_prep.py`
 
 ```python
 def test_get_expected_index_path():
@@ -576,7 +576,7 @@ def test_get_expected_index_path():
     assert index_path == work_dir / "index" / "Pogonomyrmex_barbatus_transcripts.idx"
 ```
 
-**File**: `tests/test_rna_cleanup.py`
+**File**: `tests/rna/test_rna_cleanup.py`
 
 ```python
 def test_find_partial_downloads(tmp_path: Path):
@@ -598,7 +598,7 @@ def test_find_partial_downloads(tmp_path: Path):
     assert partial[0][1] == sample_dir  # Path stored in result
 ```
 
-**File**: `tests/test_rna_monitoring.py`
+**File**: `tests/rna/test_rna_monitoring.py`
 
 ```python
 def test_count_quantified_samples(tmp_path: Path):

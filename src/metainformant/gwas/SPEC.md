@@ -75,6 +75,6 @@ Genome-Wide Association Studies (GWAS) module for METAINFORMANT. Provides end-to
 ## Testing
 
 - **41 GWAS test files** covering unit, integration, and end-to-end suites
-- **11/11 end-to-end tests pass** (`tests/test_gwas_end_to_end.py`)
+- **11/11 end-to-end tests pass** (`tests/gwas/test_gwas_end_to_end.py`)
 - Zero-mock policy: all tests use real functional methods
 - Compute-time benchmarking tests validate scaling model math

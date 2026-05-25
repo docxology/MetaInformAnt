@@ -472,7 +472,7 @@ Visualization tests are integrated into the single-cell test suite:
 
 ```bash
 # Run visualization tests
-uv run pytest tests/test_singlecell_visualization.py -v
+uv run pytest tests/singlecell/test_singlecell_visualization.py -v
 ```
 
 ## Related Documentation

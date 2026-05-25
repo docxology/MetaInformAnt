@@ -28,7 +28,7 @@ python3 analyze.py
 **Access in code**:
 ```python
 import os
-from metainformant.core import config
+from metainformant.core.utils import config
 
 output_base = config.get_output_base()  # reads METAINFORMANT_OUTPUT
 log_level = config.get_log_level()      # reads META_LOG_LEVEL

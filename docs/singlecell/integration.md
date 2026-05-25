@@ -522,7 +522,7 @@ Integration functionality is tested as part of the single-cell test suite:
 
 ```bash
 # Run single-cell tests (includes integration examples)
-uv run pytest tests/test_singlecell_*.py -v
+uv run pytest tests/singlecell/test_singlecell_*.py -v
 ```
 
 ## Related Documentation

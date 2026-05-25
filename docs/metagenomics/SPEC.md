@@ -17,7 +17,7 @@ Documentation for the metagenomics domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/metagenomics/`
-- **Tests**: `tests/test_metagenomics_*.py`
+- **Tests**: `tests/metagenomics/test_metagenomics_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

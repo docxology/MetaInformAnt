@@ -1,4 +1,9 @@
 # Simulation Documentation Validation Report
+
+> Historical snapshot: this report is retained for provenance and may not
+> describe the current checkout. Regenerate validation outputs under `output/`
+> when current evidence is needed.
+
 **Generated**: 2025-04-29  
 **Module**: `metainformant.simulation`  
 **Scope**: Population genetics, RNA-seq count, and sequence evolution simulation methods  

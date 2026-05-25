@@ -17,7 +17,7 @@ Documentation for the networks domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/networks/`
-- **Tests**: `tests/test_networks_*.py`
+- **Tests**: `tests/networks/test_networks_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

@@ -17,7 +17,7 @@ Documentation for the menu domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/menu/`
-- **Tests**: `tests/test_menu_*.py`
+- **Tests**: `tests/menu/test_menu_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

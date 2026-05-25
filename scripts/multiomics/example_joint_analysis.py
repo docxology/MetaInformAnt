@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 
 from metainformant.core import io as core_io
-from metainformant.core import paths as core_paths
+from metainformant.core.io import paths as core_paths
 from metainformant.multiomics import MultiOmicsData, joint_nmf, joint_pca
 
 # Set output directory

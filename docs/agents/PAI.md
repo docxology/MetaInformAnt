@@ -54,7 +54,7 @@ docs/agents/
 2. **Run functional tests** to ensure cross-links work:
 
    ```bash
-   pytest tests/test_documentation.py
+   uv run pytest --collect-only -q
    # or
    uv run python scripts/verify_docs.py
    ```

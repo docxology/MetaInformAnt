@@ -157,7 +157,7 @@ All rule files specify testing patterns:
 
 **Updating a rule file**:
 1. Edit `docs/agents/rules/{module}.md`
-2. Run test suite to ensure no broken cross-links: `pytest tests/test_docs.py`
+2. Run test suite to ensure no broken cross-links: `uv run python scripts/package/generate_cursor_skills.py --check`
 3. Regenerate Cursor skills if needed: `uv run python scripts/package/generate_cursor_skills.py --check`
 4. Commit with message: "docs(agents): update {module} rules for ..."
 

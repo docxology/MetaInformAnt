@@ -1,6 +1,9 @@
 # MetaInformAnt — Master TODO
 
-> **Version**: 0.2.7 · **Last Updated**: 2026-03-04
+> **Version**: 0.3.0 · **Last Updated**: 2026-05-25
+>
+> Historical note: earlier sections preserve the March 2026 pipeline roadmap.
+> Treat the status block below as the current checkout snapshot.
 
 ---
 
@@ -85,10 +88,11 @@
 
 ---
 
-## Technical Debt
+## Current Stabilization Status
 
-- [ ] **Import error backlog** — Reduce remaining ~63 import errors (currently at 72% improvement from baseline)
-- [ ] **Test collection rate** — Push from 87% to 95%+ by fixing remaining collection failures
+- [x] **Test collection** — `uv run pytest --collect-only -q` collected 7,736 tests in the 2026-05-25 stabilization pass
+- [x] **Local non-network suite** — `uv run pytest tests -q -m 'not network and not external_tool' --tb=short` passed with 7,495 passed, 71 skipped, 170 deselected
+- [ ] **Runner/doc drift** — Keep `scripts/package/test.sh`, README/SPEC examples, and generated report destinations synchronized with the nested test layout
 
 ---
 

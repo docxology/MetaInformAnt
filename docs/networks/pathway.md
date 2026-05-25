@@ -321,15 +321,15 @@ transcriptomic_enriched = pathway_enrichment(diff_genes, pathway_network)
 
 ## Testing
 
-Pathway analysis functionality is tested in `tests/test_networks_pathway.py`:
+Pathway analysis functionality is tested in `tests/networks/test_networks_pathway.py`:
 
 ```bash
 # Run pathway analysis tests
-uv run pytest tests/test_networks_pathway.py -v
+uv run pytest tests/networks/test_networks_pathway.py -v
 
 # Test specific functions
-uv run pytest tests/test_networks_pathway.py::test_pathway_enrichment -v
-uv run pytest tests/test_networks_pathway.py::test_load_pathway_database -v
+uv run pytest tests/networks/test_networks_pathway.py::test_pathway_enrichment -v
+uv run pytest tests/networks/test_networks_pathway.py::test_load_pathway_database -v
 ```
 
 ## Related Documentation

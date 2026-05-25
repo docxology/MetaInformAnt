@@ -505,7 +505,7 @@ esac
 
 - **Previous Step**: [`09_curate.md`](09_curate.md) - Quality control
 - **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
-- **Testing**: `tests/test_rna_amalgkit_steps.py::test_sanity_basic_execution`
+- **Testing**: `tests/rna/test_rna_amalgkit_steps.py::test_sanity_basic_execution`
 
 ---
 

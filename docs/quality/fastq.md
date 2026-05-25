@@ -625,15 +625,15 @@ processed_file = qc_guided_preprocessing("raw_sample.fastq.gz")
 
 ## Testing
 
-Comprehensive tests are available in `tests/test_quality_fastq.py`:
+Comprehensive tests are available in `tests/quality/test_quality_fastq.py`:
 
 ```bash
 # Run FASTQ quality tests
-uv run pytest tests/test_quality_fastq.py -v
+uv run pytest tests/quality/test_quality_fastq.py -v
 
 # Test specific functions
-uv run pytest tests/test_quality_fastq.py::test_basic_statistics -v
-uv run pytest tests/test_quality_fastq.py::test_per_base_quality -v
+uv run pytest tests/quality/test_quality_fastq.py::test_basic_statistics -v
+uv run pytest tests/quality/test_quality_fastq.py::test_per_base_quality -v
 ```
 
 ## Related Documentation

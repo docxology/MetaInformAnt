@@ -33,13 +33,13 @@ RNA-seq analysis and amalgkit workflow scripts.
 nohup bash scripts/rna/run_all_species.sh > output/amalgkit/run_all_species_incremental.log 2>&1 &
 
 # Run single species
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --stream --chunk-size 16
+uv run python scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --stream --chunk-size 16
 
 # Check progress
-.venv/bin/python scripts/package/generate_custom_summary.py
+uv run python scripts/package/generate_custom_summary.py
 
 # Check environment
-python3 scripts/rna/check_environment.py
+uv run python scripts/rna/check_environment.py
 ```
 
 ## Code Quality Policy

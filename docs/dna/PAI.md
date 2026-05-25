@@ -15,7 +15,7 @@
 - **Stability**: Core API stable; new algorithms added through submodules.
 
 ## AI Workflows
-- **Modification**: Run functional tests in `tests/test_dna_*.py` before committing.
+- **Modification**: Run functional tests in `tests/dna/test_dna_*.py` before committing.
 - **Documentation**: Update `SPEC.md` if architectural patterns change; add examples to `README.md`.
 
 ## Cross-References

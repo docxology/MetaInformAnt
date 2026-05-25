@@ -30,7 +30,7 @@ case "${1:-help}" in
         echo "Usage: $0 [cpu|memory|benchmark] [command...]"
         echo "Examples:"
         echo "  $0 cpu python -m metainformant.dna.sequences --help"
-        echo "  $0 memory tests/test_dna_phylogeny.py"
+        echo "  $0 memory tests/dna/test_dna_phylogeny.py"
         echo "  $0 benchmark"
         ;;
 esac

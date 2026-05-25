@@ -16,8 +16,9 @@ tests/
  conftest.py # Global fixtures and pytest configuration
  conftest_examples.py # Fixtures for example validation
  data/ # Real test data fixtures (not mocks)
+ core/ # Core-specific test modules
  rna/ # RNA-specific test modules
- test_{module}_{feature}.py # Module-specific tests
+ <domain>/test_{module}_{feature}.py # Module-specific tests
 ```
 
 ## Data Structures
@@ -50,13 +51,13 @@ bash scripts/package/test.sh --mode ultra-fast
 bash scripts/package/test.sh --mode coverage
 
 # Single file
-pytest tests/test_core_io.py -v
+pytest tests/core/test_core_io.py -v
 
 # Pattern match
 bash scripts/package/test.sh --pattern "test_rna_*"
 
 # Specific test
-pytest tests/test_core_functionality.py::TestCoreIO::test_json_operations -v
+pytest tests/core/test_core_functionality.py::TestCoreIO::test_json_operations -v
 ```
 
 ### Writing Tests

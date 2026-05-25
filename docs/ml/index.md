@@ -345,11 +345,11 @@ Machine learning functionality is tested comprehensively:
 
 ```bash
 # Run all ML tests
-uv run pytest tests/test_ml_*.py -v
+uv run pytest tests/ml/test_ml_*.py -v
 
 # Test specific components
-uv run pytest tests/test_ml_features.py::test_select_features -v
-uv run pytest tests/test_ml_validation.py::test_cross_validate -v
+uv run pytest tests/ml/test_ml_features.py::test_select_features -v
+uv run pytest tests/ml/test_ml_validation.py::test_cross_validate -v
 ```
 
 ## Related Documentation

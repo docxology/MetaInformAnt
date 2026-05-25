@@ -319,7 +319,7 @@ export METAINFORMANT_DATA=/path/to/metainformant_data
 References loaded via:
 
 ```python
-from metainformant.core import paths
+from metainformant.core.io import paths
 
 # Resolve with environment override
 gene_path = paths.resolve_data_path("annotations/genes.bed")

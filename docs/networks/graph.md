@@ -263,15 +263,15 @@ with ProcessPoolExecutor(max_workers=4) as executor:
 
 ## Testing
 
-Graph analysis functionality is tested in `tests/test_networks_graph.py`:
+Graph analysis functionality is tested in `tests/networks/test_networks_graph.py`:
 
 ```bash
 # Run graph analysis tests
-uv run pytest tests/test_networks_graph.py -v
+uv run pytest tests/networks/test_networks_graph.py -v
 
 # Test specific functions
-uv run pytest tests/test_networks_graph.py::test_create_network -v
-uv run pytest tests/test_networks_graph.py::test_centrality_measures -v
+uv run pytest tests/networks/test_networks_graph.py::test_create_network -v
+uv run pytest tests/networks/test_networks_graph.py::test_centrality_measures -v
 ```
 
 ## Related Documentation

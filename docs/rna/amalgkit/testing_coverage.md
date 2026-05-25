@@ -308,13 +308,13 @@ Each step has documentation at three levels:
 ### Test Execution
 ```bash
 # Run all amalgkit tests
-pytest tests/test_rna_amalgkit*.py -v
+pytest tests/rna/test_rna_amalgkit*.py -v
 
 # Run step-specific tests
-pytest tests/test_rna_amalgkit_steps.py -v
+pytest tests/rna/test_rna_amalgkit_steps.py -v
 
 # Run with coverage
-pytest tests/test_rna_amalgkit_steps.py --cov=src/metainformant/rna
+pytest tests/rna/test_rna_amalgkit_steps.py --cov=src/metainformant/rna
 ```
 
 ### Prerequisites
@@ -370,7 +370,7 @@ To generate coverage reports for critical modules:
 ```bash
 uv pip install pytest-cov
 export PYTHONPATH=src
-pytest tests/test_rna_*.py --cov=src/metainformant/rna/workflow \
+pytest tests/rna/test_rna_*.py --cov=src/metainformant/rna/workflow \
   --cov=src/metainformant/rna/amalgkit \
   --cov=src/metainformant/rna/engine \
   --cov-report=html --cov-report=term-missing
@@ -401,7 +401,6 @@ The test suite provides strong confidence in the reliability and correctness of 
 ---
 
 *Report updated: November 2025*  
-*Test suite: All `tests/test_rna_*.py` files*  
+*Test suite: All `tests/rna/test_rna_*.py` files*
 *137/137 tests passing (100% success rate)*  
 *28 tests skipped (expected when amalgkit CLI unavailable)*
-

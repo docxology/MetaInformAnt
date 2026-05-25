@@ -11,6 +11,8 @@ Usage:
 Target: Check all 506+ documentation files for broken code references.
 """
 
+from __future__ import annotations
+
 import argparse
 import ast
 import importlib.util
@@ -29,8 +31,33 @@ logger = logging.getLogger(__name__)
 # Add src directory to sys.path to enable imports of metainformant package
 REPO_ROOT = Path(__file__).parent.parent
 SRC_DIR = REPO_ROOT / "src"
+DEFAULT_REPORT_PATH = Path("output") / "cross_code_verification_report.md"
+KNOWN_OPTIONAL_IMPORT_ROOTS = {
+    "boto3",
+    "botocore",
+    "cryptography",
+    "dotenv",
+    "hypothesis",
+    "pydantic",
+}
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
+
+
+def resolve_repo_path(path: Path, repo_root: Path = REPO_ROOT) -> Path:
+    """Resolve an absolute or repo-relative path."""
+    return path.resolve() if path.is_absolute() else (repo_root / path).resolve()
+
+
+def collect_code_examples(parser: "DocumentationParser", doc_files: List[Path], verbose: bool = False) -> List[CodeExample]:
+    """Extract code examples from documentation files."""
+    all_examples = []
+    for doc_file in doc_files:
+        examples = parser.extract_code_examples(doc_file)
+        all_examples.extend(examples)
+        if verbose:
+            logger.debug(f"  {doc_file.name}: {len(examples)} code examples")
+    return all_examples
 
 
 @dataclass
@@ -76,11 +103,28 @@ class PythonSymbolIndex:
     """Builds and maintains an index of all Python symbols in the source code."""
 
     def __init__(self, src_dir: Path):
-        self.src_dir = src_dir
+        self.src_dir = src_dir.resolve()
         self.symbols: Dict[str, Symbol] = {}  # full_name -> Symbol
         self.modules: Dict[str, Path] = {}  # module_name -> file_path
         self.class_methods: Dict[str, Set[str]] = defaultdict(set)  # class_name -> {method_names}
         self.imports_cache: Dict[str, Set[str]] = defaultdict(set)  # module -> {imported_names}
+
+    def _module_name_for_file(self, file_path: Path) -> str:
+        """Return the importable module name for a Python file under src_dir."""
+        rel_parts = list(file_path.resolve().relative_to(self.src_dir).parts)
+        if rel_parts[-1] == "__init__.py":
+            rel_parts = rel_parts[:-1]
+        elif rel_parts[-1].endswith(".py"):
+            rel_parts[-1] = rel_parts[-1][:-3]
+
+        src_parts = list(self.src_dir.parts)
+        if "metainformant" in src_parts:
+            package_start = src_parts.index("metainformant")
+            module_parts = src_parts[package_start:] + rel_parts
+        else:
+            module_parts = rel_parts
+
+        return ".".join(module_parts)
 
     def build_index(self):
         """Scan all Python files and build symbol index."""
@@ -102,15 +146,7 @@ class PythonSymbolIndex:
                 content = f.read()
             tree = ast.parse(content, filename=str(file_path))
 
-            # Determine module path relative to src_dir
-            rel_path = file_path.relative_to(self.src_dir)
-            module_parts = list(rel_path.parts)
-            if module_parts[-1] == "__init__.py":
-                module_parts = module_parts[:-1]
-            elif module_parts[-1].endswith(".py"):
-                module_parts[-1] = module_parts[-1][:-3]
-
-            module_name = ".".join(["metainformant"] + module_parts)
+            module_name = self._module_name_for_file(file_path)
 
             # Register module
             self.modules[module_name] = file_path
@@ -405,6 +441,9 @@ class CodeValidator:
 
     def _module_exists(self, module_name: str) -> bool:
         """Check if a module exists in the project or standard library."""
+        if module_name.split(".", 1)[0] in KNOWN_OPTIONAL_IMPORT_ROOTS:
+            return True
+
         # Check project modules
         if self.symbol_index.module_exists(f"metainformant.{module_name}"):
             return True
@@ -424,6 +463,9 @@ class CodeValidator:
 
         full_module = f"metainformant.{module_name}" if not module_name.startswith("metainformant") else module_name
 
+        if module_name.split(".", 1)[0] in KNOWN_OPTIONAL_IMPORT_ROOTS:
+            return True
+
         # If full_module exists in modules, check if item is a submodule or symbol
         if full_module in self.symbol_index.modules:
             # First: check if the item is a submodule (package or module)
@@ -431,7 +473,7 @@ class CodeValidator:
             if full_item_module in self.symbol_index.modules:
                 return True
             # Second: check if item is a symbol (class/function) defined in that module
-            for sym_full_name in self.symbol_index.keys():
+            for sym_full_name in self.symbol_index.symbols:
                 if sym_full_name.startswith(full_module + "."):
                     if sym_full_name.endswith("." + item_name):
                         return True
@@ -593,8 +635,23 @@ class CodeValidator:
 class ReportGenerator:
     """Generates a comprehensive report of violations."""
 
-    def __init__(self, violations: List[Violation]):
+    def __init__(self, violations: List[Violation], repo_root: Path):
         self.violations = violations
+        self.repo_root = repo_root
+
+    def _format_doc_file(self, doc_file: str) -> str:
+        """Return a stable repo-relative path when possible."""
+        path = Path(doc_file)
+        try:
+            return str(path.resolve().relative_to(self.repo_root))
+        except ValueError:
+            return str(path)
+
+    @staticmethod
+    def _table_text(value: str, limit: Optional[int] = None) -> str:
+        """Make text safe for a Markdown table cell."""
+        text = value.replace("\n", " ").replace("|", "\\|")
+        return text[:limit] if limit is not None else text
 
     def generate_report(self, output_path: Path):
         """Write report to file."""
@@ -604,6 +661,7 @@ class ReportGenerator:
             by_file[v.doc_file].append(v)
 
         total = len(self.violations)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(output_path, "w", encoding="utf-8") as f:
             f.write("# Cross-Code Verification Report\n\n")
@@ -628,9 +686,10 @@ class ReportGenerator:
             f.write("|------|------|------|-------|--------------|\n")
 
             for v in sorted(self.violations, key=lambda x: (x.doc_file, x.line_number)):
-                file_rel = v.doc_file.replace("/home/trim/Documents/Git/MetaInformAnt/", "")
-                code_preview = v.code_example.replace("\n", " ")[:60]
-                f.write(f"| {file_rel} | {v.line_number} | {v.issue_type} | {v.details} | `{code_preview}` |\n")
+                file_rel = self._format_doc_file(v.doc_file)
+                details = self._table_text(v.details)
+                code_preview = self._table_text(v.code_example, limit=60)
+                f.write(f"| {file_rel} | {v.line_number} | {v.issue_type} | {details} | `{code_preview}` |\n")
 
         logger.info(f"Report written to {output_path}")
 
@@ -668,7 +727,10 @@ def main():
     parser.add_argument("--docs-dir", type=Path, default=Path("docs"), help="Documentation directory (default: docs/)")
     parser.add_argument("--src-dir", type=Path, default=Path("src"), help="Source code directory (default: src/)")
     parser.add_argument(
-        "--output", type=Path, default=Path("cross_code_verification_report.md"), help="Output report file"
+        "--output",
+        type=Path,
+        default=DEFAULT_REPORT_PATH,
+        help=f"Output report file (default: {DEFAULT_REPORT_PATH})",
     )
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose logging")
 
@@ -677,10 +739,10 @@ def main():
     if args.verbose:
         logger.setLevel(logging.DEBUG)
 
-    # Resolve paths
-    repo_root = Path(__file__).parent.parent  # Assuming script is in scripts/
-    docs_dir = (repo_root / args.docs_dir).resolve()
-    src_dir = (repo_root / args.src_dir).resolve()
+    repo_root = REPO_ROOT
+    docs_dir = resolve_repo_path(args.docs_dir, repo_root)
+    src_dir = resolve_repo_path(args.src_dir, repo_root)
+    output_path = resolve_repo_path(args.output, repo_root)
     pyproject = repo_root / "pyproject.toml"
 
     if not docs_dir.exists():
@@ -693,6 +755,7 @@ def main():
     logger.info(f"Repository root: {repo_root}")
     logger.info(f"Docs directory: {docs_dir}")
     logger.info(f"Source directory: {src_dir}")
+    logger.info(f"Report output: {output_path}")
 
     # Step 1: Build Python symbol index
     index = PythonSymbolIndex(src_dir)
@@ -702,12 +765,7 @@ def main():
     parser = DocumentationParser(docs_dir)
     doc_files = parser.find_all_docs()
 
-    all_examples = []
-    for doc_file in doc_files:
-        examples = parser.extract_code_examples(doc_file)
-        all_examples.extend(examples)
-        if args.verbose:
-            logger.debug(f"  {doc_file.name}: {len(examples)} code examples")
+    all_examples = collect_code_examples(parser, doc_files, args.verbose)
 
     logger.info(f"Extracted {len(all_examples)} total code examples from {len(doc_files)} files")
 
@@ -716,8 +774,8 @@ def main():
     violations = validator.validate_examples(all_examples)
 
     # Step 4: Generate report
-    report_gen = ReportGenerator(violations)
-    report_gen.generate_report(args.output)
+    report_gen = ReportGenerator(violations, repo_root)
+    report_gen.generate_report(output_path)
     report_gen.print_summary()
 
     # Exit code: 0 if no violations, 1 if violations found

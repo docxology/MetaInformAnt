@@ -112,7 +112,7 @@ io.dump_json(results, "results.json", compress="gzip")
 ### 5. Caching Intermediate Results
 
 ```python
-from metainformant.core import cache
+from metainformant.core.io import cache
 
 cache.enable(ttl=3600)  # Cache for 1 hour
 cache.disk_path = "/ssd/cache"  # Fast SSD

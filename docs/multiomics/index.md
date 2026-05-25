@@ -298,11 +298,11 @@ Multi-omics functionality is tested comprehensively:
 
 ```bash
 # Run all multi-omics tests
-uv run pytest tests/test_multiomics_*.py -v
+uv run pytest tests/multiomics/test_multiomics_*.py -v
 
 # Test specific components
-uv run pytest tests/test_multiomics_integration.py::TestMultiOmicsData::test_multiomics_data_initialization -v
-uv run pytest tests/test_multiomics_integration.py::test_joint_pca_basic -v
+uv run pytest tests/multiomics/test_multiomics_integration.py::TestMultiOmicsData::test_multiomics_data_initialization -v
+uv run pytest tests/multiomics/test_multiomics_integration.py::test_joint_pca_basic -v
 ```
 
 ## Related Documentation

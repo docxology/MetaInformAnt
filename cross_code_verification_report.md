@@ -1,5 +1,10 @@
 # Cross-Code Verification Report
 
+> Historical snapshot: this generated report is retained for provenance and may
+> not describe the current checkout. Regenerate it with
+> `uv run python scripts/verify_documentation_code.py`; the default output is
+> now `output/cross_code_verification_report.md`.
+
 **Total violations found:** 3141
 
 ## Summary by Issue Type

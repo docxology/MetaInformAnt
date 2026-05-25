@@ -17,7 +17,7 @@ Documentation for the singlecell domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/singlecell/`
-- **Tests**: `tests/test_singlecell_*.py`
+- **Tests**: `tests/singlecell/test_singlecell_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

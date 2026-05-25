@@ -74,7 +74,7 @@ io.write_csv(df, "output/ecology/diversity/diversity.csv")
 
 **Pattern**:
 ```python
-from metainformant.core import paths
+from metainformant.core.io import paths
 
 # Expand and resolve paths
 output_path = paths.expand_and_resolve("output/ecology/communities/")

@@ -1,5 +1,10 @@
 # Pharmacogenomics Documentation Validation Report
 
+> Historical snapshot: this validation report is retained for provenance and may
+> not describe the current checkout. Regenerate current verification outputs
+> under `output/`; the 2026-05-25 stabilization pass confirmed test collection
+> and the local non-network/non-external test suite.
+
 **Workspace:** `/home/trim/Documents/Git/MetaInformAnt`
 **Scope:** Validate pharmacogenomics documentation (docs/pharmacogenomics) against implementation (src/metainformant/pharmacogenomics)
 **Date:** 2025-12-19

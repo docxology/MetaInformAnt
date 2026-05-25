@@ -93,7 +93,7 @@ The `PostgresConnection` constructor accepts additional parameters:
 Wrapper around `psycopg2.pool.ThreadedConnectionPool` providing high-level database operations.
 
 **Constructor**:
-```python
+```text
 PostgresConnection(
     host: str = "localhost",
     port: int = 5432,
@@ -732,7 +732,9 @@ def query_with_logging(query: str, params: tuple = ()) -> list[dict]:
 ### In a Workflow Pipeline
 
 ```python
-from metainformant.core import db, parallel, io
+from metainformant.core import io
+from metainformant.core.data import db
+from metainformant.core.execution import parallel
 from typing import List
 
 def process_and_store_batch(
@@ -1103,7 +1105,7 @@ client = PostgresConnection(
     host="db.example.com",
     database="mydb",
     user="user",
-    password=pass,
+    password="secret",
     sslmode="require",  # In connection string or as parameter
 )
 # Or via connection parameter:

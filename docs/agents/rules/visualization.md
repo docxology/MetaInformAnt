@@ -146,7 +146,7 @@ io.dump_json(plot_data, "output/visualization/plots/data.json")
 
 **Pattern**:
 ```python
-from metainformant.core import paths
+from metainformant.core.io import paths
 
 # Expand and resolve plot output paths
 output_path = paths.expand_and_resolve("output/visualization/plots/")

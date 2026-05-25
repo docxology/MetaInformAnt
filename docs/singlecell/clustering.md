@@ -460,7 +460,7 @@ Single-cell clustering functionality is tested as part of the broader single-cel
 
 ```bash
 # Run single-cell tests (includes clustering examples)
-uv run pytest tests/test_singlecell_*.py -v
+uv run pytest tests/singlecell/test_singlecell_*.py -v
 ```
 
 ## Related Documentation

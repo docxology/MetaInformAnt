@@ -72,6 +72,61 @@ if HAS_MATPLOTLIB:
     set_accessible_style()
 
 
+def _get_visualization_style(style: Optional[Any] = None) -> Any:
+    """Return the provided style or load the configured GWAS visualization style."""
+    if style is not None:
+        return style
+
+    from metainformant.gwas.visualization.config import get_style
+
+    return get_style()
+
+
+def _ensure_axis(ax: Optional[Any], style: Any, figsize: Optional[Any] = None) -> tuple[Optional[Any], Any]:
+    """Return ``(fig, ax)`` while preserving caller-owned axes."""
+    if ax is not None:
+        return None, ax
+    fig, new_ax = plt.subplots(figsize=figsize or style.figsize)
+    return fig, new_ax
+
+
+def _save_owned_figure(
+    fig: Optional[Any],
+    output_path: Optional[Union[str, Path]],
+    style: Any,
+    plot_name: str,
+    dpi: Optional[int] = None,
+) -> None:
+    """Save only figures created by this module, not caller-owned axes."""
+    if output_path and fig is not None:
+        saved_path = Path(output_path)
+        fig.savefig(saved_path, dpi=dpi or style.dpi, bbox_inches="tight")
+        logger.info(f"Saved {plot_name} to {saved_path}")
+
+
+def _normalize_result_records(results: Union[List[Dict[str, Any]], Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Normalize GWAS result input to a list of dictionary records."""
+    if isinstance(results, dict):
+        return [results]
+    return [result for result in results if isinstance(result, dict)]
+
+
+def _neg_log10_p_value(p_value: Any, cap: float = 50.0) -> float:
+    """Convert a p-value to -log10 space with a cap for invalid or zero values."""
+    try:
+        numeric = float(p_value)
+    except (TypeError, ValueError):
+        return cap
+    return -math.log10(numeric) if numeric > 0 else cap
+
+
+def _sorted_valid_p_values(p_values: Union[List[float], List[int]]) -> Any:
+    """Return sorted finite p-values in the open-closed interval (0, 1]."""
+    p_vals = np.array(p_values, dtype=float)
+    p_vals = p_vals[~np.isnan(p_vals) & (p_vals > 0) & (p_vals <= 1)]
+    return np.sort(p_vals)
+
+
 def manhattan_plot(
     results: Union[List[Dict[str, Any]], Dict[str, Any]],
     output_path: Optional[Union[str, Path]] = None,
@@ -110,9 +165,7 @@ def manhattan_plot(
 
     logger.info("Creating Manhattan plot")
 
-    # Convert results to list of dictionaries if it's a single dict
-    if isinstance(results, dict):
-        results = [results]
+    result_records = _normalize_result_records(results)
 
     # Extract data for plotting
     chromosomes = []
@@ -120,16 +173,10 @@ def manhattan_plot(
     p_values = []
     colors = []
 
-    # Load style if not provided
-    if style is None:
-        from metainformant.gwas.visualization.config import get_style
-
-        style = get_style()
+    style = _get_visualization_style(style)
 
     # Create plot
-    fig = None
-    if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.get("figsize", style.figsize))
+    fig, ax = _ensure_axis(ax, style, kwargs.get("figsize"))
 
     # High-contrast aesthetic colors for Manhattan chromosomes
     chrom_colors = kwargs.get("colors", ["#0D47A1", "#64B5F6"])
@@ -137,19 +184,11 @@ def manhattan_plot(
     current_pos = 0
     chrom_offsets = {}
 
-    for result in results:
-        if not isinstance(result, dict):
-            continue
-
+    for result in result_records:
         chrom = str(result.get("chrom", result.get("chromosome", "1")))
         pos = result.get("pos", result.get("position", 0))
         p_val = result.get("p_value", result.get("pval", 1.0))
-
-        # Convert p-value to -log10 scale
-        if isinstance(p_val, (int, float)) and p_val > 0:
-            neg_log_p = -math.log10(p_val)
-        else:
-            neg_log_p = 50  # Cap very small p-values or invalid ones
+        neg_log_p = _neg_log10_p_value(p_val)
 
         # Handle chromosome positioning
         if chrom not in chrom_offsets:
@@ -258,7 +297,7 @@ def manhattan_plot(
             px = positions[idx]
             py = p_values[idx]
             # Use variant_id if available, otherwise chr:pos
-            result_entry = results[idx] if idx < len(results) else {}
+            result_entry = result_records[idx] if idx < len(result_records) else {}
             variant_label = result_entry.get(
                 "variant_id",
                 f"{result_entry.get('chrom', result_entry.get('chromosome', '?'))}:"
@@ -313,11 +352,7 @@ def manhattan_plot(
 
     plt.tight_layout()
 
-    # Save if output path provided and we own the figure
-    if output_path and fig is not None:
-        output_path = Path(output_path)
-        fig.savefig(output_path, dpi=style.dpi, bbox_inches="tight")
-        logger.info(f"Saved Manhattan plot to {output_path}")
+    _save_owned_figure(fig, output_path, style, "Manhattan plot")
 
     return ax if fig is None else fig
 
@@ -351,14 +386,12 @@ def qq_plot(
 
     logger.info("Creating enhanced Q-Q plot")
 
-    p_vals = np.array(p_values, dtype=float)
-    p_vals = p_vals[~np.isnan(p_vals) & (p_vals > 0) & (p_vals <= 1)]
+    p_vals = _sorted_valid_p_values(p_values)
 
     if len(p_vals) == 0:
         logger.warning("No valid p-values for Q-Q plot")
         return None
 
-    p_vals = np.sort(p_vals)
     n = len(p_vals)
     expected = np.arange(1, n + 1) / (n + 1)
     expected_log = -np.log10(expected)
@@ -407,15 +440,10 @@ def qq_plot(
             corrected_p = np.sort(corrected_p)
             gc_corrected_log = -np.log10(np.clip(corrected_p, 1e-300, 1.0))
 
-    if style is None:
-        from metainformant.gwas.visualization.config import get_style
-
-        style = get_style()
+    style = _get_visualization_style(style)
 
     # ── Create figure ──
-    fig = None
-    if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (9, 9)))
+    fig, ax = _ensure_axis(ax, style, kwargs.get("figsize", (9, 9)))
 
     # 95% CI band
     if _has_scipy:
@@ -541,10 +569,7 @@ def qq_plot(
 
     plt.tight_layout()
 
-    if output_path and fig is not None:
-        output_path = Path(output_path)
-        fig.savefig(output_path, dpi=style.dpi, bbox_inches="tight")
-        logger.info(f"Saved Q-Q plot to {output_path}")
+    _save_owned_figure(fig, output_path, style, "Q-Q plot")
 
     return ax if fig is None else fig
 
@@ -579,7 +604,7 @@ def regional_plot(
 
     # Filter results to the specified region
     region_results = []
-    for result in results:
+    for result in _normalize_result_records(results):
         r_chrom = str(result.get("chrom", result.get("chromosome", "")))
         r_pos = result.get("pos", result.get("position", 0))
         if r_chrom == str(chrom) and start <= r_pos <= end:
@@ -596,20 +621,12 @@ def regional_plot(
         pos = result.get("pos", result.get("position", 0))
         p_val = result.get("p_value", result.get("pval", 1.0))
         positions.append(pos)
-        if p_val > 0:
-            p_values.append(-math.log10(p_val))
-        else:
-            p_values.append(50)  # Cap very small p-values
+        p_values.append(_neg_log10_p_value(p_val))
 
-    if style is None:
-        from metainformant.gwas.visualization.config import get_style
-
-        style = get_style()
+    style = _get_visualization_style(style)
 
     # Create plot
-    fig = None
-    if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.get("figsize", style.figsize))
+    fig, ax = _ensure_axis(ax, style, kwargs.get("figsize"))
 
     # Plot points
     scatter_kwargs = kwargs.get("scatter_kwargs", {"s": style.point_size, "alpha": style.alpha})
@@ -653,10 +670,7 @@ def regional_plot(
 
     plt.tight_layout()
 
-    if output_path and fig is not None:
-        output_path = Path(output_path)
-        fig.savefig(output_path, dpi=style.dpi, bbox_inches="tight")
-        logger.info(f"Saved regional plot to {output_path}")
+    _save_owned_figure(fig, output_path, style, "regional plot")
 
     return ax if fig is None else fig
 

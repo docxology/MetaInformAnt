@@ -7,12 +7,12 @@
 
 ## 🧱 Directory Structure
 - **Source**: `src/metainformant/longread/`
-- **Tests**: `tests/test_longread_*.py`
+- **Tests**: `tests/longread/test_longread_*.py`
 - **Docs**: `docs/longread/`
 - **Output**: `output/longread/` (Default for all artifacts)
 
 ## ⚙️ Configuration
-- Use `metainformant.core.config` to load config.
+- Use `metainformant.core.utils.config` to load config.
 - Support env checks with `LR_` prefix.
 - Example:
   ```python
@@ -29,6 +29,7 @@
 - Manage via `uv`: `uv add`, `uv remove`.
 - Import pattern:
   ```python
-  from metainformant.core import io, logging
+  from metainformant.core import io
+  from metainformant.core.utils import logging
   from metainformant.longread import utils
   ```

@@ -56,7 +56,7 @@ Documentation for the {module_name} domain in MetaInformAnt.
 
 ## 🔌 Integration
 - **Source**: `src/metainformant/{module_name}/`
-- **Tests**: `tests/test_{module_name}_*.py`
+- **Tests**: `tests/{module_name}/test_{module_name}_*.py`
 """
 
 

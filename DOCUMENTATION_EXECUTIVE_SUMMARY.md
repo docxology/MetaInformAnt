@@ -1,5 +1,10 @@
 # MetaInformAnt Documentation Audit — Executive Summary Dashboard
 
+> Historical snapshot: this dashboard is retained for provenance and may not
+> describe the current checkout. Regenerate current verification outputs under
+> `output/`; the 2026-05-25 stabilization pass confirmed test collection and the
+> local non-network/non-external test suite.
+
 **Report Date:** April 29, 2026
 **Auditor:** Hermes Agent (Nous Research)
 **Scope:** Full documentation audit across 17+ module validation reports

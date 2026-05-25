@@ -447,7 +447,7 @@ def fisher_exact_test(...) -> tuple[float, float]:
 
 1. **Unit Tests for `__init__.py` utilities**:
    ```python
-   # tests/test_math_utilities.py
+   # tests/math/test_math_utilities.py
    def test_correlation_coefficient():
        # Test perfect correlation
        # Test no correlation
@@ -472,7 +472,7 @@ def fisher_exact_test(...) -> tuple[float, float]:
 
 2. **Edge Case Tests**:
    ```python
-   # tests/test_math_edge_cases.py
+   # tests/math/test_math_edge_cases.py
    def test_large_sample_sizes():
        # Test with n=1000000
    
@@ -485,7 +485,7 @@ def fisher_exact_test(...) -> tuple[float, float]:
 
 3. **Integration Tests**:
    ```python
-   # tests/test_math_integration.py
+   # tests/math/test_math_integration.py
    def test_price_equation_with_popgen():
        # Combine price equation with population genetics
    

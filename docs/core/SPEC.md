@@ -17,7 +17,7 @@ Documentation for the core domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/core/`
-- **Tests**: `tests/test_core_*.py`
+- **Tests**: `tests/core/test_core_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

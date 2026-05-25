@@ -17,7 +17,7 @@ Documentation for the information domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/information/`
-- **Tests**: `tests/test_information_*.py`
+- **Tests**: `tests/information/test_information_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

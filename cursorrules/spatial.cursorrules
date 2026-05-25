@@ -7,12 +7,12 @@
 
 ## 🧱 Directory Structure
 - **Source**: `src/metainformant/spatial/`
-- **Tests**: `tests/test_spatial_*.py`
+- **Tests**: `tests/spatial/test_spatial_*.py`
 - **Docs**: `docs/spatial/`
 - **Output**: `output/spatial/` (Default for all artifacts)
 
 ## ⚙️ Configuration
-- Use `metainformant.core.config` to load config.
+- Use `metainformant.core.utils.config` to load config.
 - Support env checks with `SPATIAL_` prefix.
 - Example:
   ```python
@@ -29,6 +29,7 @@
 - Manage via `uv`: `uv add`, `uv remove`.
 - Import pattern:
   ```python
-  from metainformant.core import io, logging
+  from metainformant.core import io
+  from metainformant.core.utils import logging
   from metainformant.spatial import utils
   ```

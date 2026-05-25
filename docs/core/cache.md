@@ -7,7 +7,7 @@ The `cache` module provides persistent, thread-safe JSON caching with Time-To-Li
 ## Design Principles
 
 ### 1. **Persistence Over Ephemeral Memory**
-Cache entries survive process restarts and system reboots. Unlike `functools.lru_cache` which is in-memory and per-process, `metainformant.core.cache` writes to disk.
+Cache entries survive process restarts and system reboots. Unlike `functools.lru_cache` which is in-memory and per-process, `metainformant.core.io.cache` writes to disk.
 
 ### 2. **Automatic Expiration**
 TTL-based eviction prevents stale data from being used indefinitely. Each cache entry records its creation time and expiry time.
@@ -66,7 +66,7 @@ The `CacheEntry` class encapsulates this format and provides `is_expired()` chec
 
 Represents a single cache entry with TTL metadata.
 
-```python
+```text
 CacheEntry(value: Any, ttl_seconds: int | None = None)
 ```
 
@@ -81,7 +81,7 @@ CacheEntry(value: Any, ttl_seconds: int | None = None)
 
 Thread-safe JSON cache manager.
 
-```python
+```text
 JsonCache(cache_dir: str | Path, ttl_seconds: int = 3600)
 ```
 
@@ -227,7 +227,8 @@ cache_dir = Path.home() / ".cache" / "metainformant"
 ### 1. Caching API Calls
 
 ```python
-from metainformant.core import cache, io
+from metainformant.core import io
+from metainformant.core.io import cache
 import requests
 
 def fetch_genome_info(species: str) -> dict:
@@ -257,7 +258,7 @@ human_genome = fetch_genome_info("homo_sapiens")
 ### 2. Caching Expensive Computations
 
 ```python
-from metainformant.core import cache
+from metainformant.core.io import cache
 import numpy as np
 
 def compute_pairwise_distances(sequences: list[str]) -> np.ndarray:
@@ -284,7 +285,7 @@ def compute_pairwise_distances(sequences: list[str]) -> np.ndarray:
 ### 3. Cache Invalidation Strategies
 
 ```python
-from metainformant.core import cache
+from metainformant.core.io import cache
 from datetime import datetime
 
 def conditional_refresh(cache_dir, key, data_source, max_age_hours=24):
@@ -576,7 +577,7 @@ cache.cache_json(cache_dir, "secure_key", encrypted.decode())
 - Verify TTL expiration with `time.sleep()` or monkeypatch `time.time()`
 - Test concurrent access via `threading.Thread`
 
-See `tests/test_core_cache.py` for examples.
+See `tests/core/test_core_cache.py` for examples.
 
 ## Future Enhancements
 

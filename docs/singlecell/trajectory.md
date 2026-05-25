@@ -314,7 +314,7 @@ Trajectory analysis functionality is tested as part of the single-cell test suit
 
 ```bash
 # Run single-cell tests (includes trajectory examples)
-uv run pytest tests/test_singlecell_*.py -v
+uv run pytest tests/singlecell/test_singlecell_*.py -v
 ```
 
 ## Related Documentation

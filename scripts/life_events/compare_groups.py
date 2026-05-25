@@ -13,7 +13,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import paths
+from metainformant.core.io import ensure_directory
 from metainformant.core.utils.logging import setup_logger
 from metainformant.life_events import (
     compare_populations,
@@ -83,7 +83,7 @@ def main():
     sequences_group2 = load_sequences_from_json(args.group2)
     logger.info(f"✅ Loaded {len(sequences_group2)} sequences for group 2")
 
-    paths.ensure_directory(args.output)
+    ensure_directory(args.output)
 
     logger.info("Comparing populations...")
     comparison = compare_populations(

@@ -17,7 +17,7 @@ Documentation for the longread domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/longread/`
-- **Tests**: `tests/test_longread_*.py`
+- **Tests**: `tests/longread/test_longread_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

@@ -9,14 +9,14 @@ Tests are organized to mirror the source code structure:
 
 ```
 tests/
- test_core_*.py # Core infrastructure tests
- test_dna_*.py # DNA analysis tests
- test_rna_*.py # RNA workflow tests
- test_protein_*.py # Protein analysis tests
- test_math_*.py # Mathematical biology tests
- test_simulation_*.py # Simulation tests
- test_visualization_*.py # Visualization tests
- test_*.py # Cross-cutting and integration tests
+ core/test_core_*.py # Core infrastructure tests
+ dna/test_dna_*.py # DNA analysis tests
+ rna/test_rna_*.py # RNA workflow tests
+ protein/test_protein_*.py # Protein analysis tests
+ math/test_math_*.py # Mathematical biology tests
+ simulation/test_simulation_*.py # Simulation tests
+ visualization/test_visualization_*.py # Visualization tests
+ integration/test_*.py # Cross-cutting and integration tests
 ```
 
 ### Test Data (`data/`)
@@ -36,13 +36,13 @@ uv run pytest tests/ --cov=src/metainformant --cov-report=html
 ### Module-Specific Tests
 ```bash
 # Core infrastructure
-uv run pytest tests/test_core_*.py
+uv run pytest tests/core/test_core_*.py
 
 # DNA analysis
-uv run pytest tests/test_dna_*.py
+uv run pytest tests/dna/test_dna_*.py
 
 # RNA workflows
-uv run pytest tests/test_rna_*.py
+uv run pytest tests/rna/test_rna_*.py
 ```
 
 ## Test Development Guidelines

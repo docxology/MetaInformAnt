@@ -81,7 +81,7 @@ Look for accumulated time in `alleles/star_allele.py:call_star_alleles` (matchin
 Repeated calls on identical variant sets can be memoized:
 
 ```python
-from metainformant.core.cache import disk_cache
+from metainformant.core.io.cache import disk_cache
 
 @disk_cache(ttl=86400)
 def batch_predict(variants_list):

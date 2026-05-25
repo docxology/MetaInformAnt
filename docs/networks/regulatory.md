@@ -303,15 +303,15 @@ plt.show()
 
 ## Testing
 
-Regulatory network functionality is tested in `tests/test_networks_regulatory.py`:
+Regulatory network functionality is tested in `tests/networks/test_networks_regulatory.py`:
 
 ```bash
 # Run regulatory network tests
-uv run pytest tests/test_networks_regulatory.py -v
+uv run pytest tests/networks/test_networks_regulatory.py -v
 
 # Test specific functions
-uv run pytest tests/test_networks_regulatory.py::test_infer_grn -v
-uv run pytest tests/test_networks_regulatory.py::test_regulatory_motifs -v
+uv run pytest tests/networks/test_networks_regulatory.py::test_infer_grn -v
+uv run pytest tests/networks/test_networks_regulatory.py::test_regulatory_motifs -v
 ```
 
 ## Related Documentation

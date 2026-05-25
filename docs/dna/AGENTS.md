@@ -25,7 +25,7 @@ End-to-end DNA workflows:
 | `src/metainformant/dna/population/` | Population stats (Tajima's D, Fst, π), PCA, LD decay, relatedness, admixture |
 | `src/metainformant/dna/variants/` | VCF parsing, variant calling (BAM → VCF), filtering, VEP/SnpEff annotation, effect prediction |
 | `scripts/dna/` | CLI wrappers: `call_variants.py`, `build_tree.py`, `compute_fst.py` |
-| `tests/test_dna_*.py` | Test suites for each submodule |
+| `tests/dna/test_dna_*.py` | Test suites for each submodule |
 
 ## Cross-Module Dependencies
 

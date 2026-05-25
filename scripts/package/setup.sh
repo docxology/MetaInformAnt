@@ -381,13 +381,13 @@ if [[ "$SKIP_TESTS" -eq 0 ]]; then
       stdbuf -oL -eL grep -v --line-buffered \
         -e "ModuleNotFoundError: No module named 'scipy'" \
         -e "ModuleNotFoundError: No module named 'psycopg2'" \
-        -e "^ERROR collecting tests/test_core_db.py" \
-        -e "^ERROR collecting tests/test_gwas" | \
+        -e "^ERROR collecting tests/core/test_core_db.py" \
+        -e "^ERROR collecting tests/gwas" | \
       tee /tmp/pytest_$$.log || true
   else
     # Fallback: use unbuffered Python if stdbuf not available
     $PYTEST_CMD -v --tb=short --durations=0 2>&1 | \
-      python3 -u -c "import sys; [sys.stdout.write(l) for l in sys.stdin if not any(x in l for x in ['ModuleNotFoundError: No module named \\'scipy\\'', 'ModuleNotFoundError: No module named \\'psycopg2\\'', 'ERROR collecting tests/test_core_db.py', 'ERROR collecting tests/test_gwas'])]" | \
+      python3 -u -c "import sys; [sys.stdout.write(l) for l in sys.stdin if not any(x in l for x in ['ModuleNotFoundError: No module named \\'scipy\\'', 'ModuleNotFoundError: No module named \\'psycopg2\\'', 'ERROR collecting tests/core/test_core_db.py', 'ERROR collecting tests/gwas'])]" | \
       tee /tmp/pytest_$$.log || true
   fi
   

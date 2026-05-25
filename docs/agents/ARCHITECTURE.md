@@ -434,7 +434,7 @@ if Path(output_path).exists():
 
 - Zero mocks — real file I/O, real external commands
 - `tmp_path` for test isolation
-- End-to-end validation of full workflow (e.g., `tests/test_workflow_manager.py`)
+- End-to-end validation of full workflow (e.g., `tests/core/test_core_pipeline.py`)
 
 ## Module Integration Guide
 

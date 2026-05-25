@@ -122,7 +122,7 @@ For a production-quality run with subsampling, caching, logging, and error recov
 ```python
 """
 Production dna→gwas→visualization pipeline with:
-  - Caching (expensive steps memoized via core.cache)
+  - Caching (expensive steps memoized via core.io.cache)
   - Residuals + LMM for population structure correction
   - Credible set construction (SuSiE)
   - Colocalization with expression (eQTL)
@@ -132,7 +132,8 @@ Production dna→gwas→visualization pipeline with:
 import logging
 from pathlib import Path
 
-from metainformant.core import cache, config, logging as melog
+from metainformant.core.io import cache
+from metainformant.core.utils import config, logging as melog
 from metainformant.dna import variants, preprocessing
 from metainformant.gwas import analysis, data, finemapping, visualization as gviz
 from metainformant.visualization import composite, config as vconfig
@@ -430,7 +431,7 @@ visualization.genomics.expression_heatmap(combined)
 from metainformant import dna, gwas, visualization, core
 
 # Load (cached) VCF
-variants = core.cache.read_pickle("cache/variants_filtered.pkl")
+variants = core.io.cache.read_pickle("cache/variants_filtered.pkl")
 genotypes = dna.variants.to_dosage(variants)      # float32 [snp × sample]
 
 # Principal components for population structure (saved for reuse)

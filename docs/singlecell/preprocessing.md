@@ -330,11 +330,11 @@ output_dir = ensure_directory("output/singlecell_analysis")
 
 ## Testing
 
-Preprocessing tests are available in `tests/test_singlecell_preprocessing.py`:
+Preprocessing tests are available in `tests/singlecell/test_singlecell_preprocessing.py`:
 
 ```bash
 # Run preprocessing tests
-uv run pytest tests/test_singlecell_preprocessing.py -v
+uv run pytest tests/singlecell/test_singlecell_preprocessing.py -v
 ```
 
 ## Related Functions

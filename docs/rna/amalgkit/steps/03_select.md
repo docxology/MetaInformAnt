@@ -560,7 +560,7 @@ for sample in samples[:5]:
 - **Previous Step**: [`02_config.md`](02_config.md) - Generating configuration files
 - **Next Step**: [`04_getfastq.md`](04_getfastq.md) - Downloading selected samples
 - **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
-- **Testing**: `tests/test_rna_amalgkit_steps.py::test_select_basic_execution`
+- **Testing**: `tests/rna/test_rna_amalgkit_steps.py::test_select_basic_execution`
 
 ---
 

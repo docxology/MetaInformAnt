@@ -18,7 +18,7 @@ Documentation for the eqtl domain in MetaInformAnt.
 ## Integration
 - **Source**: `src/metainformant/gwas/finemapping/eqtl.py` (primary), `src/metainformant/gwas/finemapping/colocalization.py`, `src/metainformant/gwas/analysis/eqtl.py`
 - **Scripts**: `scripts/eqtl/` (pipeline orchestrators)
-- **Tests**: `tests/test_gwas_finemapping_eqtl.py`, `tests/test_gwas_analysis_eqtl.py`
+- **Tests**: `tests/gwas/test_gwas_finemapping_eqtl.py`, `tests/gwas/test_gwas_analysis_eqtl.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

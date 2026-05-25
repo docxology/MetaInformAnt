@@ -13,7 +13,8 @@ from typing import Any
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import paths, validation
+from metainformant.core.data import validation
+from metainformant.core.io import ensure_directory
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
@@ -64,7 +65,7 @@ def validate_output_dir(output: Path) -> Path:
     """
     validation.validate_type(output, (Path, str), "output")
     output_path = Path(output) if isinstance(output, str) else output
-    return paths.ensure_directory(output_path)
+    return ensure_directory(output_path)
 
 
 def log_simulation_start(simulation_type: str, **params: Any) -> None:

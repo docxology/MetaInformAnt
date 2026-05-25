@@ -415,7 +415,7 @@ results = rate_limited_map(
 ### Parallel I/O: Download Many Files
 
 ```python
-from metainformant.core import parallel
+from metainformant.core.execution import parallel
 import requests
 
 def download_url(url: str) -> bytes:
@@ -433,7 +433,7 @@ print(f"Downloaded {len(contents)} files")
 ### Parallel CPU-Bound: K-mer Counting
 
 ```python
-from metainformant.core import parallel
+from metainformant.core.execution import parallel
 from collections import Counter
 
 def count_kmers(seq: str, k: int = 5) -> Counter:
@@ -457,7 +457,8 @@ print(f"Unique {k}-mers: {len(total_kmers)}")
 ### Batch Database Inserts
 
 ```python
-from metainformant.core import parallel, db
+from metainformant.core.data import db
+from metainformant.core.execution import parallel
 
 def batch_insert(batch: list[dict]) -> int:
     """Insert a batch of records."""
@@ -488,7 +489,7 @@ print(f"Total inserted: {sum(inserted)}")
 ### Parallel with Progress Callback
 
 ```python
-from metainformant.core import parallel
+from metainformant.core.execution import parallel
 
 processed_count = 0
 
@@ -562,7 +563,7 @@ results_unordered = parallel.thread_map_unordered(process_with_index, items, max
 ### Resource-Aware Worker Selection
 
 ```python
-from metainformant.core import parallel
+from metainformant.core.execution import parallel
 
 # Scenario 1: I/O-bound (downloading, reading files)
 io_workers = parallel.resource_aware_workers(
@@ -591,7 +592,7 @@ small_workers = parallel.resource_aware_workers(
 
 ```python
 import requests
-from metainformant.core import parallel
+from metainformant.core.execution import parallel
 
 def fetch_ensembl(ensembl_id: str) -> dict:
     """Fetch gene info from Ensembl REST API."""
@@ -821,7 +822,7 @@ def outer():
 **Measurement**:
 ```python
 import time
-from metainformant.core import parallel
+from metainformant.core.execution import parallel
 
 items = list(range(1000))
 
@@ -1032,7 +1033,8 @@ def test_parallelism_speedup():
 ### With Download Module
 
 ```python
-from metainformant.core import parallel, download
+from metainformant.core.execution import parallel
+from metainformant.core.io import download
 
 def download_batch(urls: list[tuple[str, Path]]) -> list[download.DownloadResult]:
     def download_one(pair):
@@ -1056,7 +1058,8 @@ results = download_batch(pairs)
 ### With DB Module
 
 ```python
-from metainformant.core import parallel, db
+from metainformant.core.data import db
+from metainformant.core.execution import parallel
 
 def store_sample_batch(batch: list[dict]) -> int:
     with db.get_connection() as conn_wrapper:
@@ -1082,7 +1085,8 @@ total_inserted = sum(
 ### With I/O Module
 
 ```python
-from metainformant.core import parallel, io
+from metainformant.core import io
+from metainformant.core.execution import parallel
 
 def convert_format_batch(input_paths: list[Path], output_dir: Path) -> list[Path]:
     outputs = []
@@ -1106,7 +1110,8 @@ outputs = parallel.parallel_batch(
 ### With Config Module
 
 ```python
-from metainformant.core import parallel, config
+from metainformant.core.execution import parallel
+from metainformant.core.utils import config
 
 cfg = config.load_mapping_from_file("config/pipeline.yaml")
 

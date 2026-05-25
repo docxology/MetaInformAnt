@@ -1,5 +1,10 @@
 # Markdown Link Validation Report
 
+> Historical snapshot: this link validation report is retained for provenance
+> and may not describe the current checkout. Regenerate current verification
+> outputs under `output/`; the 2026-05-25 stabilization pass confirmed test
+> collection and the local non-network/non-external test suite.
+
 **Repository:** /home/trim/Documents/Git/MetaInformAnt
 
 **Scanned:** 1526 markdown files

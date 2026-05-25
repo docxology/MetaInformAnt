@@ -17,7 +17,7 @@ Documentation for the multiomics domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/multiomics/`
-- **Tests**: `tests/test_multiomics_*.py`
+- **Tests**: `tests/multiomics/test_multiomics_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

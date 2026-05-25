@@ -5,7 +5,7 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 cd "$REPO_ROOT"
 
 echo "=========================================="
@@ -14,7 +14,7 @@ echo "=========================================="
 echo ""
 
 # Check if pytest-cov is available
-if python3 -c "import pytest_cov" 2>/dev/null; then
+if uv run python -c "import pytest_cov" 2>/dev/null; then
     COV_OPTS="--cov=src/metainformant/rna/workflow --cov=src/metainformant/rna/amalgkit --cov=src/metainformant/rna/steps --cov-report=html --cov-report=term-missing"
     echo "✓ Coverage reporting enabled"
 else
@@ -32,7 +32,7 @@ mkdir -p output
 
 # Run tests with PYTHONPATH set
 export PYTHONPATH="$REPO_ROOT/src:$PYTHONPATH"
-python3 -m pytest tests/test_rna_*.py -v --tb=short $COV_OPTS 2>&1 | tee output/test_results_rna.txt
+uv run pytest tests/rna/test_rna_*.py -v --tb=short $COV_OPTS 2>&1 | tee output/test_results_rna.txt
 
 EXIT_CODE=${PIPESTATUS[0]}
 
@@ -52,4 +52,3 @@ if [ -n "$COV_OPTS" ]; then
 fi
 
 exit $EXIT_CODE
-

@@ -25,7 +25,7 @@ SHA-256 provides collision resistance suitable for integrity checks. For non-cry
 `deterministic_seed()` converts arbitrary string (e.g., sample ID) into an integer suitable for `random.seed()` or `numpy.random.seed()`.
 
 ### 4. **Simple and Focused**
-No complex hash table implementations; raw hash functions only. Use `core.cache` for memoization of hash results if needed.
+No complex hash table implementations; raw hash functions only. Use `core.io.cache` for memoization of hash results if needed.
 
 ## API Reference
 
@@ -207,7 +207,8 @@ def process_sample(sample_id: str, shuffle: bool = True):
 ### Example 1: Download with Integrity Check
 
 ```python
-from metainformant.core import io, hash
+from metainformant.core import io
+from metainformant.core.utils import hash
 import requests
 
 def download_with_checksum(url: str, dest: Path, expected_sha256: str) -> None:
@@ -391,7 +392,7 @@ For download integrity, SHA256 is industry standard (Linux distributions, Git, e
 | Module | Relationship |
 |--------|--------------|
 | `core.io.download` | Download with optional post-hoc SHA256 verification |
-| `core.cache` | Cache could be keyed by hash of inputs |
+| `core.io.cache` | Cache could be keyed by hash of inputs |
 | `core.utils.text` | `clean_sequence_id()` may be combined with hashing for ID normalization |
 
 ## Testing

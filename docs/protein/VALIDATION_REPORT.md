@@ -1,6 +1,11 @@
 ================================================================================
 PROTEIN ANALYSIS DOCUMENTATION VALIDATION REPORT
 ================================================================================
+
+Historical snapshot: this report is retained for provenance and may not describe
+the current checkout. Regenerate validation outputs under output/ when current
+evidence is needed.
+
 Date: 2026-04-29
 Workspace: /home/trim/Documents/Git/MetaInformAnt
 Validator: Hermes Agent (automated cross-reference analysis)
@@ -293,7 +298,7 @@ CRITICAL ISSUES REQUIRING IMMEDIATE ACTION
 2. [CRITICAL] PROT_TIMEOUT configuration not implemented
    Files: alphafold.py, uniprot.py
    Problem: Documentation promises PROT_TIMEOUT env var; code hardcodes timeout=30
-   Fix:Use `from metainformant.core import config` and read PROT_TIMEOUT.
+   Fix:Use `from metainformant.core.utils import config` and read PROT_TIMEOUT.
    Priority:MEDIUM – usability issue, not functional break.
 
 ================================================================================

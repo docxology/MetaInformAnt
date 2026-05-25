@@ -142,7 +142,7 @@ Create directory and all missing parents. Safe to call on existing directories.
 
 **Example**:
 ```python
-from metainformant.core import paths
+from metainformant.core.io import paths
 
 # Create deep nested structure
 paths.ensure_directory("/mnt/raid/output/analysis/2026-01-15/results")
@@ -170,7 +170,7 @@ with open(file_path, 'w') as fh:
 
 **Combined with `expand_and_resolve`**:
 ```python
-from metainformant.core import paths
+from metainformant.core.io import paths
 
 user_provided = "~/analysis/../output/data.json"
 safe_path = paths.expand_and_resolve(user_provided)
@@ -498,7 +498,7 @@ Recursively map the entire `output/` directory structure with statistics.
 - `repo_root`: Repository root
 
 **Returns**: Nested dictionary:
-```python
+```text
 {
     "total_dirs": 150,
     "total_files": 12000,
@@ -544,11 +544,11 @@ get_temp_dir()      # → Path(root / "tmp")
 ```python
 root = paths.get_project_root()
 print(f"Project root: {root}")
-# /home/trim/Documents/Git/MetaInformAnt
+# /path/to/MetaInformAnt
 
 cache = paths.get_cache_dir()
 cache.mkdir(exist_ok=True)
-# → /home/trim/Documents/Git/MetaInformAnt/cache
+# -> /path/to/MetaInformAnt/cache
 ```
 
 ## Usage Examples
@@ -556,7 +556,7 @@ cache.mkdir(exist_ok=True)
 ### Standard Output Directory Setup
 
 ```python
-from metainformant.core import paths
+from metainformant.core.io import paths
 from datetime import datetime
 
 def setup_run_output(module: str, run_id: str | None = None) -> Path:
@@ -761,6 +761,7 @@ def process_with_temp_dir() -> Path:
     # Clean up when done
     shutil.rmtree(run_tmp)
     return run_tmp
+```
 
 ## Error Handling
 
@@ -885,7 +886,8 @@ df -h /mnt/raid
 ### With I/O Module
 
 ```python
-from metainformant.core import paths, io
+from metainformant.core import io
+from metainformant.core.io import paths
 
 def safe_read_and_write(input_path: str, output_path: str):
     """Read input, transform, write to output with all safety checks."""
@@ -909,7 +911,8 @@ def safe_read_and_write(input_path: str, output_path: str):
 ### With Config Module
 
 ```python
-from metainformant.core import paths, config
+from metainformant.core.io import paths
+from metainformant.core.utils import config
 
 def load_config_with_path_expansion(config_path: str) -> dict:
     """Load config file with ~ and env var expansion."""
@@ -946,7 +949,7 @@ def safe_download_to_output(url: str, filename: str) -> Path:
 
 ### In a Workflow Context
 
-```python
+```text
 # In a Snakemake rule, use paths for consistent directory structure
 rule align:
     output:
@@ -1158,7 +1161,7 @@ All paths module functions understand and operate within these conventions.
 ### Output Location Resolution
 
 ```python
-from metainformant.core import paths
+from metainformant.core.io import paths
 
 # Determine output location for module
 module = "gwas"

@@ -17,7 +17,7 @@ Documentation for the ml domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/ml/`
-- **Tests**: `tests/test_ml_*.py`
+- **Tests**: `tests/ml/test_ml_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

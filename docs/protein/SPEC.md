@@ -17,7 +17,7 @@ Documentation for the protein domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/protein/`
-- **Tests**: `tests/test_protein_*.py`
+- **Tests**: `tests/protein/test_protein_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

@@ -17,7 +17,7 @@ Documentation for the quality domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/quality/`
-- **Tests**: `tests/test_quality_*.py`
+- **Tests**: `tests/quality/test_quality_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

@@ -57,7 +57,7 @@ TEMPLATE = """# Cursor Rules for {module_name} Module ({prefix}_)
 
 ## 🧱 Directory Structure
 - **Source**: `src/metainformant/{module_name}/`
-- **Tests**: `tests/test_{module_name}_*.py`
+- **Tests**: `tests/{module_name}/test_{module_name}_*.py`
 - **Docs**: `docs/{module_name}/`
 - **Output**: `output/{module_name}/` (Default for all artifacts)
 

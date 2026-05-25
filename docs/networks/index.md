@@ -208,11 +208,11 @@ Comprehensive tests cover all network functionality:
 
 ```bash
 # Run all network tests
-uv run pytest tests/test_networks_*.py -v
+uv run pytest tests/networks/test_networks_*.py -v
 
 # Test specific components
-uv run pytest tests/test_networks_graph.py::test_centrality_measures -v
-uv run pytest tests/test_networks_community.py::test_detect_communities_louvain -v
+uv run pytest tests/networks/test_networks_graph.py::test_centrality_measures -v
+uv run pytest tests/networks/test_networks_community.py::test_detect_communities_louvain -v
 ```
 
 ## Related Documentation

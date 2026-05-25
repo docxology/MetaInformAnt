@@ -262,7 +262,7 @@ export NCBI_EMAIL="your.email@example.com"
 
 3. **Use caching**:
 ```python
-from metainformant.core.cache import JsonCache
+from metainformant.core.io.cache import JsonCache
 
 cache = JsonCache("output/ncbi_cache", ttl_seconds=86400)  # 24h
 ```

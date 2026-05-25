@@ -1,5 +1,9 @@
 # Multi-Omics Integration Documentation Validation Report
 
+> Historical snapshot: this report is retained for provenance and may not
+> describe the current checkout. Regenerate validation outputs under `output/`
+> when current evidence is needed.
+
 **Validation Date:** 2026-04-29
 **Repository:** /home/trim/Documents/Git/MetaInformAnt
 **Module:** src/metainformant/multiomics/
@@ -374,7 +378,7 @@ This matches the documentation structure:
 
 ## 16. TEST COVERAGE NOTE
 
-No dedicated `tests/test_multiomics_*.py` files found in the repository. This is a **significant gap**.
+No dedicated `tests/multiomics/test_multiomics_*.py` files found in the repository. This is a **significant gap**.
 
 **Recommendation:** Create comprehensive test suite covering:
 - MultiOmicsData construction, validation, subsetting

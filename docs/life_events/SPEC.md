@@ -17,7 +17,7 @@ Documentation for the life_events domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/life_events/`
-- **Tests**: `tests/test_life_events_*.py`
+- **Tests**: `tests/life_events/test_life_events_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

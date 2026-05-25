@@ -93,7 +93,7 @@ graph TD
     end
 
     subgraph "Test Organization"
-        Xtests/test*.py[tests/test_*.py] -.-> D
+        XtestsDomainPy["tests/<domain>/test_*.py"] -.-> D
         Y[Domain-specific] -.-> F
         ZintegrationTests[Integration Tests] -.-> F
         AAe2eTests[E2E Tests] -.-> F
@@ -171,7 +171,7 @@ uv run pytest -q
 uv run pytest --cov=src/metainformant --cov-report=html
 
 # Run specific test files
-uv run pytest tests/test_core_text.py -v
+uv run pytest tests/core/test_core_text.py -v
 ```
 
 **Note**: Test scripts automatically detect FAT filesystems and configure UV cache and virtual environment locations accordingly. On FAT filesystems, tests use `/tmp/metainformant_venv` if available. The setup script (`scripts/package/setup.sh`) shows real-time test progress with verbose output, making it easy to see which tests are running. See [UV Setup Guide](UV_SETUP.md) for details.
@@ -267,9 +267,9 @@ uv run pytest tests/ --timeout=30
 
 ### Directory Layout
 
-- **`tests/`**: All test files at repository root
+- **`tests/`**: Test package organized by domain subdirectories
 - **`tests/conftest.py`**: Shared pytest configuration and fixtures
-- **`tests/test_*.py`**: Individual test modules
+- **`tests/<domain>/test_*.py`**: Individual domain test modules
 - **`tests/data/`**: Test input fixtures and data
 - **`output/`**: All test outputs and artifacts
 
@@ -279,22 +279,22 @@ The test suite provides comprehensive coverage:
 
 | Module | Primary Tests | Coverage |
 |--------|---------------|----------|
-| Core Utilities | `test_core_*.py` | Config, I/O, text, logging, parallel, paths, cache, hash, db |
-| DNA Analysis | `test_dna_*.py` | Sequences, alignment, MSA, phylogeny, population genetics, FASTQ |
-| RNA Analysis | `test_rna_*.py` | amalgkit wrapper, workflow, configs, step runners |
-| Single-Cell | `test_singlecell_*.py` | Preprocessing, dimensionality, clustering, trajectory |
-| Quality Control | `test_quality_*.py` | FASTQ quality analysis, contamination detection |
-| Protein Analysis | `test_protein_*.py` | UniProt, PDB, AlphaFold, InterPro, structure analysis |
-| Mathematical Models | `test_math_*.py` | Population genetics, coalescent, epidemiology, selection |
-| Simulation | `test_simulation.py` | Sequence generation, RNA counts, agent-based models |
-| Visualization | `test_visualization_*.py` | Plots, trees, animations |
-| Ontology | `test_ontology_*.py` | Gene Ontology, OBO parsing |
-| CLI Interface | `test_cli.py` | Command-line argument parsing and dispatch |
+| Core Utilities | `tests/core/test_core_*.py` | Config, I/O, text, logging, parallel, paths, cache, hash, db |
+| DNA Analysis | `tests/dna/test_dna_*.py` | Sequences, alignment, MSA, phylogeny, population genetics, FASTQ |
+| RNA Analysis | `tests/rna/test_rna_*.py` | amalgkit wrapper, workflow, configs, step runners |
+| Single-Cell | `tests/singlecell/test_singlecell_*.py` | Preprocessing, dimensionality, clustering, trajectory |
+| Quality Control | `tests/quality/test_quality_*.py` | FASTQ quality analysis, contamination detection |
+| Protein Analysis | `tests/protein/test_protein_*.py` | UniProt, PDB, AlphaFold, InterPro, structure analysis |
+| Mathematical Models | `tests/math/test_math_*.py` | Population genetics, coalescent, epidemiology, selection |
+| Simulation | `tests/simulation/test_simulation*.py` | Sequence generation, RNA counts, agent-based models |
+| Visualization | `tests/visualization/test_visualization_*.py` | Plots, trees, animations |
+| Ontology | `tests/ontology/test_ontology_*.py` | Gene Ontology, OBO parsing |
+| CLI Interface | `tests/infrastructure/test_cli.py` | Command-line argument parsing and dispatch |
 
 ### Test Conventions
 
 #### File Organization
-- **One test file per source module**: `src/foo/bar.py` → `tests/test_foo_bar.py`
+- **One test file per source module**: `src/metainformant/foo/bar.py` -> `tests/foo/test_foo_bar.py`
 - **Class-based organization**: Group related tests in classes
 - **Descriptive test names**: Use clear, descriptive function names
 
@@ -504,14 +504,14 @@ def test_large_dataset_processing(self):
 
 ```bash
 # Run tests for specific module during development
-uv run pytest tests/test_core_text.py -v --tb=short
+uv run pytest tests/core/test_core_text.py -v --tb=short
 
 # Watch mode for continuous testing (with external tool)
 # uv pip install pytest-watch
-ptw tests/test_core_text.py
+ptw tests/core/test_core_text.py
 
 # Run with immediate failure reporting
-uv run pytest -x tests/test_core_text.py
+uv run pytest -x tests/core/test_core_text.py
 ```
 
 ## Troubleshooting
@@ -605,7 +605,7 @@ MemoryError: Out of memory
 
 **Solution**: Run fewer tests in parallel or increase system memory:
 ```bash
-uv run pytest tests/test_core_*.py  # Run smaller test sets
+uv run pytest tests/core/test_core_*.py  # Run smaller test sets
 ```
 
 Related: [CLI](./cli.md), [Core](./core/README.md)

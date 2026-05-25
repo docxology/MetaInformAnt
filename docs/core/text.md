@@ -568,7 +568,7 @@ def make_fasta_filenames(accessions: list[str], extension: str = ".fasta") -> di
 accessions = [
     ">ref|NM_001302504.2|",
     ">gb|AF123456.1|",
-    "gi|12345|ref|
+    "gi|12345|ref|",
 ]
 
 filenames = make_fasta_filenames(accessions)
@@ -673,7 +673,7 @@ Most functions are O(n) in input length and allocate minimal intermediate string
 
 For bulk processing of millions of strings, consider:
 ```python
-from metainformant.core import parallel
+from metainformant.core.execution import parallel
 
 # Parallel normalization
 normalized = parallel.thread_map(
@@ -768,7 +768,7 @@ def fuzz_text_functions():
         except Exception as e:
             print(f"Failed on {repr(text)}: {e}")
             raise
-    raise
+```
 
 ## Security Notes
 

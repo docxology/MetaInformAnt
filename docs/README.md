@@ -2,6 +2,13 @@
 
 METAINFORMANT documentation organized by biological domain.
 
+## Current Status
+
+As of the 2026-05-25 stabilization pass, the checkout collects 7,736 tests and
+the local non-network/non-external test suite passes. Root-level audit and
+validation reports are historical snapshots; generated verification reports
+should be written under `output/`.
+
 ## Navigation
 
 | Entry Point | Description |

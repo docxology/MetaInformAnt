@@ -1,3 +1,7 @@
+Historical snapshot: this generated import map is retained for migration
+provenance and may not describe the current checkout. Treat checked-out source,
+tests, and maintained docs as the source of truth.
+
 Building import map...
 
 === core (44 re-exports) ===

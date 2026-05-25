@@ -3,12 +3,12 @@
 ## Directory Structure
 
 ### Core Directories
-- **`output/`**: All outputs from tests and real runs must go here by default. Treat as ephemeral and reproducible. Safe to delete. **CRITICAL**: Only program-generated execution outputs belong here. Never create documentation, reports, test scripts, or planning documents in `output/`. See `output/.cursorrules` for the complete policy.
-- **`config/`**: Repository-level configuration files and options. Read via `metainformant.core.config`; allow env overrides.
+- **`output/`**: All outputs from tests and real runs must go here by default. Treat as ephemeral and reproducible. Safe to delete. **CRITICAL**: Program-generated execution outputs and generated validation reports belong here. Never create hand-written documentation, test scripts, or planning documents in `output/`. See `output/.cursorrules` for the complete policy.
+- **`config/`**: Repository-level configuration files and options. Read via `metainformant.core.utils.config`; allow env overrides.
 - **`data/`**: Inputs such as datasets and local databases. Read-mostly, organized by domain and version.
 - **`docs/`**: All documentation organized by domain (`docs/<domain>/<topic>.md`). NEVER create new docs in repo root.
 - **`src/metainformant/`**: Source code organized by domain modules.
-- **`tests/`**: Test files mirroring source structure (`tests/test_<module>_<submodule>.py`).
+- **`tests/`**: Test files mirror source domains (`tests/<domain>/test_<module>_<feature>.py`).
 
 ### Domain-Specific Output Paths
 - **Core**: `output/core/<utility>/` (e.g., `cache/`, `logs/`, `workflows/`)
@@ -43,8 +43,8 @@
 - **DO NOT write outside `output/`** unless an explicit user path is provided.
 - Prefer functional APIs that accept a destination path; if omitted, default to `output/` with a sensible subpath.
 - Use `metainformant.core.io` for file I/O (JSON/JSONL/CSV/TSV) and gzip-aware operations.
-- Use `metainformant.core.paths` for path handling and containment checks.
-- Use `metainformant.core.cache` for small JSON caches under `output/` if needed.
+- Use `metainformant.core.io.paths` for path handling and containment checks.
+- Use `metainformant.core.io.cache` for small JSON caches under `output/` if needed.
 - Always use `Path` objects from `pathlib` for path manipulation.
 - Expand user paths (`~`) and resolve to absolute paths using `paths.expand_and_resolve()`.
 - Validate paths with `paths.is_within()` to prevent directory traversal attacks.
@@ -148,7 +148,7 @@ with io.open_text_auto("data/large_file.txt.gz") as f:
 ## Configuration
 
 ### Configuration Loading
-- Centralize config loading in `metainformant.core.config`.
+- Centralize config loading in `metainformant.core.utils.config`.
 - Allow env vars to override files in `config/` using `apply_env_overrides()`.
 - Domain modules must not hardcode absolute paths; accept config objects/paths from callers.
 - Use type-safe config classes (dataclasses) for domain-specific configs.
@@ -192,7 +192,7 @@ domain_specific:
 
 ### Config Loading Pattern
 ```python
-from metainformant.core.config import load_mapping_from_file, apply_env_overrides
+from metainformant.core.utils.config import load_mapping_from_file, apply_env_overrides
 from dataclasses import dataclass
 
 # Define domain-specific config class
@@ -393,11 +393,11 @@ def graph_operation():
 - Use `metainformant.core.errors` for custom error types
 - Provide clear, actionable error messages
 - Handle missing optional dependencies gracefully
-- Log errors with context using `metainformant.core.logging`
+- Log errors with context using `metainformant.core.utils.logging`
 
 ### Logging Pattern
 ```python
-from metainformant.core.logging import get_logger
+from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -580,7 +580,7 @@ __all__ = [
 
 ### Core Principles
 1. **Package Management**: **ALWAYS use `uv`** for all Python package management - `uv venv`, `uv pip install`, `uv run`, `uv sync`, `uv add`, `uv remove`. Never use `pip` directly.
-2. **Output Directory**: Always write program execution outputs to `output/` by default. **NEVER** create documentation, reports, test scripts, or planning documents in `output/`. See `output/.cursorrules` for the complete policy.
+2. **Output Directory**: Always write program execution outputs and generated validation reports to `output/` by default. **NEVER** create hand-written documentation, test scripts, or planning documents in `output/`. See `output/.cursorrules` for the complete policy.
 3. **Configuration**: Use `config/` with env overrides
 4. **No Mocks**: Real implementations only in tests
 5. **Modular Design**: Clear interfaces, minimal dependencies
@@ -591,10 +591,9 @@ __all__ = [
 
 ### Quick Reference
 - **Package Management**: Always use `uv` - `uv venv`, `uv pip install`, `uv run`, `uv sync`, `uv add`, `uv remove`
-- **Config**: `metainformant.core.config.load_mapping_from_file()`
+- **Config**: `metainformant.core.utils.config.load_mapping_from_file()`
 - **I/O**: `metainformant.core.io.load_json()`, `dump_json()`, etc.
-- **Paths**: `metainformant.core.paths.expand_and_resolve()`, `is_within()`
-- **Logging**: `metainformant.core.logging.get_logger(__name__)`
+- **Paths**: `metainformant.core.io.paths.expand_and_resolve()`, `is_within()`
+- **Logging**: `metainformant.core.utils.logging.get_logger(__name__)`
 - **Tests**: Use `tmp_path` fixture, write to `output/`, no mocks
 - **Docs**: Update `docs/<domain>/<topic>.md`, never root-level
-

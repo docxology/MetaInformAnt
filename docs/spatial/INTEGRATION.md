@@ -74,9 +74,9 @@ plot_timeseries(res.series)
 | Service | Provided By | Used By |
 |---------|-------------|---------|
 | Config | `core.utils.config` | All modules (including spatial) |
-| Logging | `core.logging` | Structured logs across pipeline |
+| Logging | `core.utils.logging` | Structured logs across pipeline |
 | I/O | `core.io` | Format-agnostic read/write |
-| Caching | `core.cache` | Expensive computations |
+| Caching | `core.io.cache` | Expensive computations |
 | DB | `core.db` | Persistent metadata (optional) |
 
 ## Data Contract

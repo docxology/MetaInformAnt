@@ -99,7 +99,7 @@ io.write_csv(annotations, "output/ontology/annotations/go_terms.csv")
 
 **Pattern**:
 ```python
-from metainformant.core import paths
+from metainformant.core.io import paths
 
 # Expand and resolve cache paths
 cache_dir = paths.expand_and_resolve("output/ontology/cache/")

@@ -37,7 +37,10 @@ import time
 from pathlib import Path
 from typing import Any
 
-from metainformant.core import io, cache, config, paths, logging as core_logging
+from metainformant.core import io
+from metainformant.core.io import cache, paths
+from metainformant.core.utils import config
+from metainformant.core.utils import logging as core_logging
 from metainformant.core.execution import parallel
 from metainformant.core.data import db
 
@@ -71,7 +74,7 @@ SPECIES_DATA = {
 }
 
 # ----------------------------------------------------------------------
-# Step 3: Download with caching (using core.cache)
+# Step 3: Download with caching (using core.io.cache)
 # ----------------------------------------------------------------------
 def download_species_data(species: str, info: dict[str, Any]) -> dict[str, Any]:
     """Download and cache annotation file for a species."""
@@ -330,7 +333,7 @@ if __name__ == "__main__":
 | Component | Functions Used | Purpose |
 |-----------|---------------|---------|
 | `core.io` | `download_file()`, `open_text_auto()`, `dump_json()` | File I/O and downloads |
-| `core.cache` | `cache_json()`, `load_cached_json()` | TTL-based caching |
+| `core.io.cache` | `cache_json()`, `load_cached_json()` | TTL-based caching |
 | `core.io.paths` | `ensure_directory()` | Directory creation |
 | `core.utils.logging` | `get_logger()`, `configure_logging_from_env()` | Structured logging |
 | `core.parallel` | `thread_map()` | Parallel I/O execution |
@@ -359,7 +362,7 @@ data_sources:
 
 Load with:
 ```python
-from metainformant.core import config
+from metainformant.core.utils import config
 
 pipeline_config = config.load_mapping_from_file("config/pipeline.yaml")
 max_workers = pipeline_config["pipeline"]["max_download_workers"]

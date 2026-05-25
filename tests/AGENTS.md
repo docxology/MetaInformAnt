@@ -8,16 +8,16 @@ Test suite agent context for METAINFORMANT's comprehensive testing infrastructur
 - `conftest_examples.py` - fixtures for example validation tests
 - `utils.py` - shared test utilities and helper functions
 - `data/` - test data fixtures organized by module
-- `rna/` - RNA-specific test modules
+- `<domain>/` - domain-specific test modules, such as `core/`, `dna/`, `rna/`, and `gwas/`
 
 ## Test Organization
-Tests follow the naming convention `test_{module}_{feature}.py`:
-- `test_core_*` - Core infrastructure tests (I/O, config, paths, validation)
-- `test_dna_*` - DNA sequence analysis tests
-- `test_rna_*` - RNA/amalgkit workflow tests
-- `test_gwas_*` - GWAS pipeline tests
-- `test_visualization_*` - Plotting and visualization tests
-- `test_*_comprehensive.py` - Full coverage tests for modules
+Tests follow the naming convention `tests/<domain>/test_{module}_{feature}.py`:
+- `tests/core/test_core_*` - Core infrastructure tests (I/O, config, paths, validation)
+- `tests/dna/test_dna_*` - DNA sequence analysis tests
+- `tests/rna/test_rna_*` - RNA/amalgkit workflow tests
+- `tests/gwas/test_gwas_*` - GWAS pipeline tests
+- `tests/visualization/test_visualization_*` - Plotting and visualization tests
+- `tests/<domain>/test_*_comprehensive.py` - Full coverage tests for modules
 
 ## Rules and Constraints
 
@@ -67,7 +67,7 @@ bash scripts/package/test.sh --mode ultra-fast
 bash scripts/package/test.sh --mode coverage
 
 # Single file
-pytest tests/test_core_io.py -v
+pytest tests/core/test_core_io.py -v
 
 # Pattern match
 bash scripts/package/test.sh --pattern "test_rna_*"

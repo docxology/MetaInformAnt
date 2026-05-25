@@ -290,15 +290,15 @@ plt.show()
 
 ## Testing
 
-PPI functionality is tested in `tests/test_networks_ppi.py`:
+PPI functionality is tested in `tests/networks/test_networks_ppi.py`:
 
 ```bash
 # Run PPI tests
-uv run pytest tests/test_networks_ppi.py -v
+uv run pytest tests/networks/test_networks_ppi.py -v
 
 # Test specific functions
-uv run pytest tests/test_networks_ppi.py::test_load_string_interactions -v
-uv run pytest tests/test_networks_ppi.py::test_predict_interactions -v
+uv run pytest tests/networks/test_networks_ppi.py::test_load_string_interactions -v
+uv run pytest tests/networks/test_networks_ppi.py::test_predict_interactions -v
 ```
 
 ## Related Documentation

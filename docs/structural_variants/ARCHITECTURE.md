@@ -440,7 +440,7 @@ class FunctionalImpact:
 |--------|-------------|-------|
 | `core.io` | File I/O | `io.dump_json()`, `io.load_json()`, `io.load_bed()` — always use, never `open()` |
 | `core.utils.config` | Configuration | Environment variable overrides via `SV_` prefix |
-| `core.logging` | Logging | `get_logger(__name__)`; structured, level-controlled |
+| `core.utils.logging` | Logging | `get_logger(__name__)`; structured, level-controlled |
 | `dna` | Gene annotations, VCF | `dna.io.load_gtf()`, `dna.variants.parse_vcf()` |
 | `visualization` | Shared plotting utils | Color palettes, figure management |
 | `multiomics` | Integration across omic layers | Future: correlate SVs with RNA expression |

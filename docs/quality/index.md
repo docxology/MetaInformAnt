@@ -316,11 +316,11 @@ generate_html_report(qc_results, output_file="qc_report.html")
 
 ## Testing
 
-Comprehensive tests are available in `tests/test_quality_fastq.py`:
+Comprehensive tests are available in `tests/quality/test_quality_fastq.py`:
 
 ```bash
 # Run quality control tests
-uv run pytest tests/test_quality_fastq.py -v
+uv run pytest tests/quality/test_quality_fastq.py -v
 ```
 
 ## Related Documentation

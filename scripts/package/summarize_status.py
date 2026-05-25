@@ -1,13 +1,14 @@
 import ast
 import subprocess
 import sys
+from pathlib import Path
 
 
 def main():
     # Run the status command
     result = subprocess.run(
         ["bash", "scripts/rna/run_all_species.sh", "--status"],
-        cwd="/home/trim/Documents/Git/MetaInformAnt",
+        cwd=Path(__file__).resolve().parents[2],
         capture_output=True,
         text=True,
     )

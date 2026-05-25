@@ -590,7 +590,7 @@ steps:
 - **Next Step**: [`11_sanity.md`](11_sanity.md) - Integrity checking
 - **Next Step**: [`10_csca.md`](10_csca.md) - Cross-species correlation analysis
 - **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
-- **Testing**: `tests/test_rna_amalgkit_steps.py::test_curate_basic_execution`
+- **Testing**: `tests/rna/test_rna_amalgkit_steps.py::test_curate_basic_execution`
 
 ---
 

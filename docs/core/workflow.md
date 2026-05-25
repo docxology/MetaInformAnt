@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `metainformant.core.workflow` module provides the foundation for workflow orchestration in METAINFORMANT. It defines the `BaseWorkflowOrchestrator` abstract base class and related utilities for building consistent, robust workflows across all domains.
+The `metainformant.core.execution.workflow` module provides the foundation for workflow orchestration in METAINFORMANT. It defines the `BaseWorkflowOrchestrator` abstract base class and related utilities for building consistent, robust workflows across all domains.
 
 ## BaseWorkflowOrchestrator
 
@@ -53,7 +53,7 @@ class BaseWorkflowOrchestrator(ABC):
 ### Usage Pattern
 
 ```python
-from metainformant.core.workflow import BaseWorkflowOrchestrator
+from metainformant.core.execution.workflow import BaseWorkflowOrchestrator
 from pathlib import Path
 
 class MyWorkflow(BaseWorkflowOrchestrator):
@@ -400,7 +400,7 @@ class CompositeWorkflow(BaseWorkflowOrchestrator):
 ### Path Management
 
 ```python
-from metainformant.core import paths
+from metainformant.core.io import paths
 
 def pre_workflow(self) -> None:
     """Setup with path validation."""
@@ -417,7 +417,7 @@ def pre_workflow(self) -> None:
 ### Configuration Management
 
 ```python
-from metainformant.core import config
+from metainformant.core.utils import config
 
 def __init__(self, name: str, work_dir: Path, config: Optional[Dict[str, Any]] = None):
     # Load config with environment overrides
@@ -431,7 +431,7 @@ def __init__(self, name: str, work_dir: Path, config: Optional[Dict[str, Any]] =
 ### Progress Tracking
 
 ```python
-from metainformant.core import progress
+from metainformant.core.utils import progress
 
 def run_workflow(self, check: bool = False) -> Dict[str, Any]:
     """Run workflow with progress tracking."""
@@ -452,7 +452,7 @@ def run_workflow(self, check: bool = False) -> Dict[str, Any]:
 ```python
 import pytest
 from pathlib import Path
-from metainformant.core.workflow import BaseWorkflowOrchestrator
+from metainformant.core.execution.workflow import BaseWorkflowOrchestrator
 
 class TestWorkflow(BaseWorkflowOrchestrator):
     def get_steps(self) -> List[str]:
@@ -531,7 +531,7 @@ step3
 
 **After:**
 ```python
-from metainformant.core.workflow import BaseWorkflowOrchestrator
+from metainformant.core.execution.workflow import BaseWorkflowOrchestrator
 
 class BashWorkflow(BaseWorkflowOrchestrator):
     def get_steps(self) -> List[str]:
@@ -579,4 +579,3 @@ class BashWorkflow(BaseWorkflowOrchestrator):
 - **[Logging Guide](logging.md)** - Logging best practices
 - **[Testing Guide](../testing.md)** - Testing workflow orchestrators
 - **[RNA Workflow](../rna/workflow.md)** - Example domain workflow implementation
-

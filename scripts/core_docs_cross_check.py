@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Set, Tuple
 
 # Base paths
-WORKSPACE = Path("/home/trim/Documents/Git/MetaInformAnt")
+WORKSPACE = Path(__file__).resolve().parents[1]
 SRC_DIR = WORKSPACE / "src" / "metainformant" / "core"
 DOCS_DIR = WORKSPACE / "docs" / "core"
 

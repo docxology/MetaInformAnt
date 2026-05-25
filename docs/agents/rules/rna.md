@@ -270,7 +270,7 @@ io.dump_json(results, "output/amalgkit/results.json")
 
 **Pattern**:
 ```python
-from metainformant.core import paths
+from metainformant.core.io import paths
 
 # Expand and resolve paths
 work_dir = paths.expand_and_resolve(config.work_dir)

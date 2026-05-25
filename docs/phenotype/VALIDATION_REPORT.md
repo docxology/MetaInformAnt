@@ -1,5 +1,9 @@
 # PHENOTYPE DOCUMENTATION VALIDATION REPORT
 
+> Historical snapshot: this report is retained for provenance and may not
+> describe the current checkout. Regenerate validation outputs under `output/`
+> when current evidence is needed.
+
 **Date:** 2026-04-29
 **Workspace:** /home/trim/Documents/Git/MetaInformAnt
 **Scope:** Validate phenotype documentation against source implementation

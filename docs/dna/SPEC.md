@@ -25,7 +25,7 @@ Comprehensive documentation for the DNA sequence analysis domain in MetaInformAn
 ## Integration
 - **Source**: `src/metainformant/dna/sequence/`, `src/metainformant/dna/alignment/`, `src/metainformant/dna/population/`, `src/metainformant/dna/phylogeny/`, `src/metainformant/dna/variants/`
 - **Scripts**: `scripts/dna/` — CLI wrappers for common tasks
-- **Tests**: `tests/test_dna_sequence.py`, `tests/test_dna_alignment.py`, `tests/test_dna_population.py`, `tests/test_dna_variants.py`
+- **Tests**: `tests/dna/test_dna_sequence.py`, `tests/dna/test_dna_alignment.py`, `tests/dna/test_dna_population.py`, `tests/dna/test_dna_variants.py`
 - **Dependencies**:
   - Core: `metainformant.core.io`, `metainformant.core.utils.config`
   - Math: `metainformant.math.coalescent`, `metainformant.math.fst`

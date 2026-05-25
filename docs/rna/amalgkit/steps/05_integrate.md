@@ -414,7 +414,7 @@ amalgkit integrate --fastq_dir output/fastq
 - **Previous Step**: [`04_getfastq.md`](04_getfastq.md) - Downloading FASTQ files
 - **Next Step**: [`06_quant.md`](06_quant.md) - Transcript quantification
 - **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
-- **Testing**: `tests/test_rna_amalgkit_steps.py::test_integrate_basic_execution`
+- **Testing**: `tests/rna/test_rna_amalgkit_steps.py::test_integrate_basic_execution`
 
 ---
 

@@ -138,7 +138,7 @@ Load a configuration mapping from YAML, TOML, or JSON.
 
 **Example**:
 ```python
-from metainformant.core import config
+from metainformant.core.utils import config
 
 cfg = config.load_mapping_from_file("config/workflow.yaml")
 pipeline_name = cfg["pipeline"]["name"]
@@ -274,7 +274,7 @@ Convert configuration values to expected types in-place.
 **Supported types**: `bool`, `int`, `float`, `str`
 
 **Boolean coercion** (case-insensitive):
-```python
+```text
 _bool_map = {"1", "true", "yes", "y", "on"} → True
 _bool_map = {"0", "false", "no", "n", "off"} → False
 ```
@@ -322,7 +322,7 @@ Discover all configuration files under `config/` directory.
 Infer the structure of a configuration file without fully validating.
 
 **Returns**:
-```python
+```text
 {
     "top_level_keys": ["pipeline", "input", "reference"],
     "nested_structure": {
@@ -391,7 +391,8 @@ Each domain (`rna`, `gwas`, `dna`, etc.) may have its own config schema. The `di
 ### Config Loading Pattern
 
 ```python
-from metainformant.core import config, paths
+from metainformant.core.io import paths
+from metainformant.core.utils import config
 
 def load_pipeline_config(domain: str, env: str = "production") -> dict:
     """Load layered configuration for a domain."""
@@ -633,7 +634,9 @@ validated = PipelineConfig(**cfg["pipeline"])
 ## Integration with Other Core Modules
 
 ```python
-from metainformant.core import config, io, paths
+from metainformant.core import io
+from metainformant.core.io import paths
+from metainformant.core.utils import config
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)

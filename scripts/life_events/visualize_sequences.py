@@ -14,7 +14,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core import paths
+from metainformant.core.io import ensure_directory
 from metainformant.core.utils.logging import setup_logger
 from metainformant.life_events import (
     load_sequences_from_json,
@@ -85,7 +85,7 @@ def main():
     sequences = load_sequences_from_json(args.input)
     logger.info(f"✅ Loaded {len(sequences)} sequences")
 
-    paths.ensure_directory(args.output)
+    ensure_directory(args.output)
 
     generate_all = args.all_visualizations or (
         not args.timeline and not args.domain_distribution and not args.temporal_density and not args.sequence_lengths

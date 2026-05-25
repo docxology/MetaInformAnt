@@ -190,14 +190,14 @@ for module_id, genes in reg_modules.items():
 
 ## Testing
 
-Community detection functionality is tested in `tests/test_networks_community.py`:
+Community detection functionality is tested in `tests/networks/test_networks_community.py`:
 
 ```bash
 # Run community detection tests
-uv run pytest tests/test_networks_community.py -v
+uv run pytest tests/networks/test_networks_community.py -v
 
 # Test specific algorithms
-uv run pytest tests/test_networks_community.py::test_detect_communities_louvain -v
+uv run pytest tests/networks/test_networks_community.py::test_detect_communities_louvain -v
 ```
 
 ## Related Documentation

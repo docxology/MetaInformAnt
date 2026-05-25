@@ -22,7 +22,7 @@
 
 ## AI Workflows
 
-- **Modification**: Run functional tests in `tests/test_gwas_*.py` before committing.
+- **Modification**: Run functional tests in `tests/gwas/test_gwas_*.py` before committing.
 - **Documentation**: Update `SPEC.md` if architectural patterns change.
 - **Benchmarking**: Use `benchmark_subset_run()` on small data before running full-genome analysis to estimate compute costs.
 - **Expression Integration**: Use `ExpressionLoader` to bridge RNA-seq TPM data into eQTL analysis.

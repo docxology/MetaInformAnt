@@ -1,5 +1,10 @@
 # Single-Cell Analysis Documentation Validation Report
 
+> Historical snapshot: this validation report is retained for provenance and may
+> not describe the current checkout. Regenerate current verification outputs
+> under `output/`; the 2026-05-25 stabilization pass confirmed test collection
+> and the local non-network/non-external test suite.
+
 ## Executive Summary
 
 **Overall Status:** ⚠️ **SIGNIFICANT DISCREPANCIES FOUND**

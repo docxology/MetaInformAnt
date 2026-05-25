@@ -192,7 +192,7 @@ io.write_csv(df, "output/simulation/popgen/genotypes.csv")
 
 **Pattern**:
 ```python
-from metainformant.core import paths
+from metainformant.core.io import paths
 
 # Expand and resolve simulation output paths
 output_dir = paths.expand_and_resolve("output/simulation/sequences/")

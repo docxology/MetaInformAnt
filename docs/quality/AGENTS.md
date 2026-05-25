@@ -60,6 +60,6 @@ Quality control workflows:
 When adding QC metric:
 1. Implement in `src/metainformant/quality/analysis/<metric>.py`
 2. Add to `src/metainformant/quality/reporting/report.py` aggregation
-3. Write test in `tests/test_quality_<metric>.py` with small FASTQ fixture
+3. Write test in `tests/quality/test_quality_<metric>.py` with small FASTQ fixture
 4. Add MultiQC section in `src/metainformant/quality/reporting/multiqc.py`
 5. Document in `docs/quality/<metric>.md` with before/after example

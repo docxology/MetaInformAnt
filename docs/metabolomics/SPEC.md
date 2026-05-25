@@ -17,7 +17,7 @@ Documentation for the metabolomics domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/metabolomics/`
-- **Tests**: `tests/test_metabolomics_*.py`
+- **Tests**: `tests/metabolomics/test_metabolomics_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

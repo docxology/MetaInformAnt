@@ -137,7 +137,7 @@ Before running the full workflow, ensure you have:
 Run configuration tests:
 
 ```bash
-pytest tests/test_gwas_config_pbarbatus.py -v
+pytest tests/gwas/test_gwas_config_pbarbatus.py -v
 ```
 
 ## Related Documentation

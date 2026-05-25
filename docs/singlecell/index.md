@@ -190,8 +190,8 @@ The module is designed to complement existing single-cell analysis tools:
 ## Examples and Tutorials
 
 For detailed examples and analysis workflows, see:
-- `tests/test_singlecell_preprocessing.py`: Example preprocessing workflows
-- `tests/test_singlecell_dimensionality.py`: Dimensionality reduction examples
+- `tests/singlecell/test_singlecell_preprocessing.py`: Example preprocessing workflows
+- `tests/singlecell/test_singlecell_dimensionality.py`: Dimensionality reduction examples
 - `output/`: Generated example outputs from test runs
 
 ## Related Documentation

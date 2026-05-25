@@ -17,7 +17,7 @@ Documentation for the ecology domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/ecology/`
-- **Tests**: `tests/test_ecology_*.py`
+- **Tests**: `tests/ecology/test_ecology_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

@@ -17,7 +17,7 @@ Documentation for the phenotype domain in MetaInformAnt.
 
 ## Integration
 - **Source**: `src/metainformant/phenotype/`
-- **Tests**: `tests/test_phenotype_*.py`
+- **Tests**: `tests/phenotype/test_phenotype_*.py`
 
 ## Testing Policy
 - **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.

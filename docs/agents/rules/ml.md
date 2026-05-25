@@ -113,7 +113,7 @@ io.dump_json(feature_importance, "output/ml/features/importance.json")
 
 **Pattern**:
 ```python
-from metainformant.core import paths
+from metainformant.core.io import paths
 
 # Expand and resolve paths
 model_dir = paths.expand_and_resolve("output/ml/models/")

@@ -1,4 +1,9 @@
 # Life Events Documentation Validation Report
+
+> Historical snapshot: this report is retained for provenance and may not
+> describe the current checkout. Regenerate validation outputs under `output/`
+> when current evidence is needed.
+
 **Date:** 2026-04-29  
 **Validator:** Hermes Agent  
 **Scope:** Cross-reference of `/docs/life_events/` documentation against `/src/metainformant/life_events/` implementation

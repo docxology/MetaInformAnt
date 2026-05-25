@@ -174,25 +174,25 @@ build_pytest_args() {
 get_test_files() {
     case "$TEST_MODE" in
         "ultra-fast")
-            echo "tests/test_core_functionality.py"
+            echo "tests/core/test_core_functionality.py"
             ;;
         "fast")
-            echo "tests/test_core_functionality.py tests/test_core_comprehensive.py tests/test_dna_comprehensive.py"
+            echo "tests/core/test_core_functionality.py tests/core/test_core_comprehensive.py tests/dna/test_dna_comprehensive.py"
             ;;
         "coverage-fast")
-            echo "tests/test_core_functionality.py tests/test_core_*.py"
+            echo "tests/core/test_core_functionality.py tests/core/test_core_*.py"
             ;;
         "integration")
-            echo "tests/test_integration_comprehensive.py"
+            echo "tests/integration/test_integration_comprehensive.py"
             ;;
         "smoke")
-            echo "tests/test_core_functionality.py::TestCoreIO::test_json_operations tests/test_core_functionality.py::TestDNAAnalysis::test_gc_content_calculation tests/test_core_functionality.py::TestSimulation::test_sequence_generation"
+            echo "tests/core/test_core_functionality.py::TestCoreIO::test_json_operations tests/core/test_core_functionality.py::TestDNAAnalysis::test_gc_content_calculation tests/core/test_core_functionality.py::TestSimulation::test_sequence_generation"
             ;;
         "network-only")
-            echo "tests/test_networks_*.py"
+            echo "tests/networks/test_networks_*.py"
             ;;
         "ml-only")
-            echo "tests/test_ml_*.py"
+            echo "tests/ml/test_ml_*.py"
             ;;
         "network")
             echo "tests/ -m network"
@@ -368,4 +368,3 @@ main() {
 
 # Run main function
 main "$@"
-

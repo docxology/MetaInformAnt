@@ -91,8 +91,8 @@ Stage.PENDING → Stage.RUNNING → Stage.DONE | Stage.FAILED
 
 ### Testing
 
-- `tests/test_workflow_manager.py` — BasePipelineManager unit tests
-- `tests/test_parallel.py` — Parallel execution tests
+- `tests/core/test_core_pipeline.py` — BasePipelineManager unit tests
+- `tests/core/test_core_parallel.py` — Parallel execution tests
 - `tests/NO_MOCKING_POLICY.md` — Zero mock policy enforced
 
 ## Interface (for Writers)

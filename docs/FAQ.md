@@ -103,7 +103,7 @@ for chunk in pd.read_csv("large_file.csv", chunksize=10000):
 
 ```python
 # Enable parallel processing
-from metainformant.core import parallel
+from metainformant.core.execution import parallel
 results = parallel.run_parallel(analyze_function, data_items, max_workers=8)
 
 # Use caching for expensive operations
@@ -327,7 +327,7 @@ with h5py.File("data.h5", "r") as f:
 
 3. **Clear caches**:
 ```python
-from metainformant.core.cache import JsonCache
+from metainformant.core.io.cache import JsonCache
 cache = JsonCache("output/cache")
 cache.clear()  # Clear cache files
 ```

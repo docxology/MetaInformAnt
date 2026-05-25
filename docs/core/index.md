@@ -82,7 +82,8 @@ All file writes use atomic replacement (temp file → rename) to prevent corrupt
 
 ```python
 # Standard import pattern
-from metainformant.core import io, cache, paths
+from metainformant.core import io
+from metainformant.core.io import cache, paths
 from metainformant.core.utils import logging, config
 
 # Get logger
@@ -138,7 +139,7 @@ sphinx-build -b html . _build
 
 When modifying core components:
 
-1. **Add tests** in `tests/test_core_*.py` (no mocks!)
+1. **Add tests** in `tests/core/test_core_*.py` (no mocks!)
 2. **Update documentation** in `docs/core/*.md`
 3. **Follow conventions**: `pathlib.Path`, type hints, `get_logger(__name__)`
 4. **Check AGENTS.md**: `src/metainformant/core/AGENTS.md` has agent-specific rules

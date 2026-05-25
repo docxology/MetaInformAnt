@@ -1,5 +1,10 @@
 # GWAS Pipeline Documentation Validation Report
 
+> Historical snapshot: this validation report is retained for provenance and may
+> not describe the current checkout. Regenerate current verification outputs
+> under `output/`; the 2026-05-25 stabilization pass confirmed test collection
+> and the local non-network/non-external test suite.
+
 **Date**: 2025-10-30
 **Scope**: Validate all QC, association, and visualization methods in docs/gwas/ against src/metainformant/gwas/ implementations
 **Status**: ⚠️ Multiple discrepancies found (see prioritized fixes below)
