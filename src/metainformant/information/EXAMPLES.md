@@ -10,11 +10,11 @@ Analyze the information content and complexity of DNA sequences from different g
 ### Solution
 
 ```python
-from metainformant.dna import sequences
+from metainformant.dna.sequence.core import read_fasta
 from metainformant.information import information_profile, analyze_sequence_information
 
 # Load sequences
-dna_seqs = sequences.read_fasta("data/genomic_regions.fasta")
+dna_seqs = read_fasta("data/genomic_regions.fasta")
 
 # Analyze each sequence
 for seq_id, seq in dna_seqs.items():
@@ -262,8 +262,8 @@ all_results = {}
 
 for fasta_file in fasta_files:
     # Read sequences
-    from metainformant.dna import sequences
-    seqs = sequences.read_fasta(str(fasta_file))
+    from metainformant.dna.sequence.core import read_fasta
+    seqs = read_fasta(str(fasta_file))
     seq_list = list(seqs.values())
     
     # Analyze
@@ -397,11 +397,11 @@ print(f"Similarity matrix shape: {similarity_matrix.shape}")
 ### Pattern 1: DNA → Information → Visualization
 
 ```python
-from metainformant.dna import sequences
+from metainformant.dna.sequence.core import read_fasta
 from metainformant.information import information_profile
 from metainformant.information.visualization import plot_information_profile
 
-seqs = sequences.read_fasta("data/sequences.fasta")
+seqs = read_fasta("data/sequences.fasta")
 profile = information_profile(list(seqs.values()), k=2)
 plot_information_profile(profile, output_path="output/information/profile.png")
 ```
@@ -422,4 +422,3 @@ mi_results = ml_integration(X, y, method="feature_mi")
 ```
 
 These examples demonstrate practical applications of information theory in biological data analysis.
-

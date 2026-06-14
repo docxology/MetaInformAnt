@@ -43,10 +43,55 @@ def plot_demographic_comparison(
         logger.warning("matplotlib not available for plotting")
         return None
 
-    # Placeholder implementation - would need actual demographic data
     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
     fig.suptitle("Population Demographic Comparison")
-    axes[0].text(0.5, 0.5, "Demographic Comparison\n(Not implemented)", ha="center", va="center")
+    labels = list(pop1_data.keys())
+    ne_values = [float(pop1_data[label].get("estimated_ne", np.nan)) for label in labels]
+    diversity_values = [float(pop1_data[label].get("observed_diversity", np.nan)) for label in labels]
+
+    axes[0].bar(labels, ne_values, color="steelblue", alpha=0.8, edgecolor="black")
+    axes[0].set_ylabel("Estimated Ne")
+    axes[0].set_title("Effective Population Size")
+    axes[0].tick_params(axis="x", rotation=45)
+
+    axes[1].bar(labels, diversity_values, color="seagreen", alpha=0.8, edgecolor="black")
+    axes[1].set_ylabel("Observed Diversity")
+    axes[1].set_title("Observed Diversity")
+    axes[1].tick_params(axis="x", rotation=45)
+
+    if pop2_data:
+        comparison_labels = list(pop2_data.keys())
+        comparison_ne = [float(pop2_data[label].get("estimated_ne", np.nan)) for label in comparison_labels]
+        comparison_diversity = [
+            float(pop2_data[label].get("observed_diversity", np.nan)) for label in comparison_labels
+        ]
+        x = np.arange(max(len(labels), len(comparison_labels)))
+        axes[0].clear()
+        axes[1].clear()
+        width = 0.4
+        axes[0].bar(x[: len(ne_values)] - width / 2, ne_values, width, label="Population 1", alpha=0.8)
+        axes[0].bar(x[: len(comparison_ne)] + width / 2, comparison_ne, width, label="Population 2", alpha=0.8)
+        axes[0].set_xticks(x[: len(labels)])
+        axes[0].set_xticklabels(labels, rotation=45, ha="right")
+        axes[0].set_ylabel("Estimated Ne")
+        axes[0].set_title("Effective Population Size")
+        axes[0].legend()
+
+        axes[1].bar(x[: len(diversity_values)] - width / 2, diversity_values, width, label="Population 1", alpha=0.8)
+        axes[1].bar(
+            x[: len(comparison_diversity)] + width / 2,
+            comparison_diversity,
+            width,
+            label="Population 2",
+            alpha=0.8,
+        )
+        axes[1].set_xticks(x[: len(labels)])
+        axes[1].set_xticklabels(labels, rotation=45, ha="right")
+        axes[1].set_ylabel("Observed Diversity")
+        axes[1].set_title("Observed Diversity")
+        axes[1].legend()
+
+    fig.tight_layout()
 
     if output:
         plt.savefig(output, dpi=300, bbox_inches="tight")
@@ -297,7 +342,7 @@ def plot_kinship_matrix(
     return plt.gcf()
 
 
-# Additional placeholder functions for completeness
+# Additional statistical visualization functions
 def plot_linkage_disequilibrium_decay(
     ld_data: List[Tuple[int, float]] | List[float],
     distances: Optional[List[float]] = None,
@@ -314,17 +359,20 @@ def plot_linkage_disequilibrium_decay(
 
     plt.figure(figsize=(10, 6))
 
-    # Check if we have data to plot
     if distances is not None and isinstance(ld_data, list):
         plt.plot(distances, ld_data, "o-", alpha=0.7)
     elif ld_data and isinstance(ld_data[0], tuple):
-        # list of tuples
         dists, values = zip(*ld_data)
         plt.plot(dists, values, "o-", alpha=0.7)
+    elif ld_data:
+        plt.plot(range(len(ld_data)), ld_data, "o-", alpha=0.7)
     else:
-        plt.text(0.5, 0.5, "LD Decay Plot\n(Not fully implemented)", ha="center", va="center")
+        return None
 
     plt.title("Linkage Disequilibrium Decay")
+    plt.xlabel("Distance")
+    plt.ylabel("LD (r²)")
+    plt.grid(True, alpha=0.3)
 
     if output:
         plt.savefig(output, dpi=300, bbox_inches="tight")
@@ -342,12 +390,28 @@ def plot_neutrality_test_suite(
         logger.warning("matplotlib not available for plotting")
         return None
 
-    plt.figure(figsize=(12, 8))
-    plt.text(0.5, 0.5, "Neutrality Test Suite\n(Not fully implemented)", ha="center", va="center")
-    plt.title("Neutrality Test Results")
+    output = output_file or output_path
+    if not results:
+        return None
 
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches="tight")
+    test_names = list(results.keys())
+    statistics = [
+        float(value.get("statistic", value.get("value", np.nan))) if isinstance(value, dict) else float(value)
+        for value in results.values()
+    ]
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    colors = ["firebrick" if value < 0 else "steelblue" for value in statistics]
+    ax.bar(test_names, statistics, color=colors, alpha=0.8, edgecolor="black")
+    ax.axhline(0, color="black", linewidth=1, alpha=0.6)
+    ax.set_ylabel("Test Statistic")
+    ax.set_title("Neutrality Test Results")
+    ax.tick_params(axis="x", rotation=45)
+    ax.grid(True, axis="y", alpha=0.3)
+    fig.tight_layout()
+
+    if output:
+        plt.savefig(output, dpi=300, bbox_inches="tight")
 
     return plt.gcf()
 
@@ -363,10 +427,29 @@ def plot_neutrality_test_summary(
         logger.warning("matplotlib not available for plotting")
         return None
 
+    if not summary:
+        return None
+
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
     fig.suptitle("Neutrality Test Summary")
-    # Use axes so they exist
-    axes[0, 0].text(0.5, 0.5, "Neutrality Test Summary\n(Not fully implemented)", ha="center", va="center")
+    flat_axes = axes.ravel()
+    for ax, (test_name, result) in zip(flat_axes, summary.items()):
+        if isinstance(result, dict):
+            statistic = float(result.get("statistic", result.get("value", 0.0)))
+            p_value = result.get("p_value")
+        else:
+            statistic = float(result)
+            p_value = None
+        ax.bar([test_name], [statistic], color="steelblue", alpha=0.8, edgecolor="black")
+        ax.axhline(0, color="black", linewidth=1, alpha=0.6)
+        ax.set_ylabel("Statistic")
+        title = test_name if p_value is None else f"{test_name} (p={float(p_value):.3g})"
+        ax.set_title(title)
+        ax.tick_params(axis="x", rotation=30)
+
+    for ax in flat_axes[len(summary) :]:
+        ax.axis("off")
+    fig.tight_layout()
 
     if output:
         plt.savefig(output, dpi=300, bbox_inches="tight")
@@ -387,12 +470,32 @@ def plot_outlier_detection(
         logger.warning("matplotlib not available for plotting")
         return None
 
-    plt.figure(figsize=(10, 6))
-    plt.text(0.5, 0.5, "Outlier Detection\n(Not fully implemented)", ha="center", va="center")
-    plt.title("Outlier Detection Results")
+    output = output_file or output_path
+    if not results:
+        return None
 
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches="tight")
+    values = [
+        float(item.get("value", item.get("statistic", np.nan))) if isinstance(item, dict) else float(item)
+        for item in results
+    ]
+    indices = list(range(len(values)))
+    outlier_set = set(outliers or [])
+
+    plt.figure(figsize=(10, 6))
+    plt.scatter(indices, values, color="steelblue", alpha=0.75, label="Observed")
+    if outlier_set:
+        outlier_x = [idx for idx in indices if idx in outlier_set]
+        outlier_y = [values[idx] for idx in outlier_x]
+        plt.scatter(outlier_x, outlier_y, color="firebrick", s=80, label="Outlier", zorder=3)
+    plt.xlabel("Observation")
+    plt.ylabel("Statistic")
+    plt.title("Outlier Detection Results")
+    plt.grid(True, alpha=0.3)
+    if outlier_set:
+        plt.legend()
+
+    if output:
+        plt.savefig(output, dpi=300, bbox_inches="tight")
 
     return plt.gcf()
 
@@ -446,12 +549,32 @@ def plot_permutation_test(
         logger.warning("matplotlib not available for plotting")
         return None
 
-    plt.figure(figsize=(10, 6))
-    plt.text(0.5, 0.5, "Permutation Test\n(Not fully implemented)", ha="center", va="center")
-    plt.title("Permutation Test Results")
+    output = output_file or output_path
+    if isinstance(results, dict):
+        permuted_values = results.get("permuted_values", results.get("null_distribution", []))
+        observed = observed_value if observed_value is not None else results.get("observed_value")
+        p_val = p_value if p_value is not None else results.get("p_value")
+    else:
+        permuted_values = results
+        observed = observed_value
+        p_val = p_value
 
-    if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches="tight")
+    if not permuted_values:
+        return None
+
+    plt.figure(figsize=(10, 6))
+    plt.hist(permuted_values, bins=min(30, max(5, len(permuted_values))), color="lightgray", edgecolor="black")
+    if observed is not None:
+        label = "Observed" if p_val is None else f"Observed (p={float(p_val):.3g})"
+        plt.axvline(float(observed), color="firebrick", linestyle="--", linewidth=2, label=label)
+        plt.legend()
+    plt.xlabel("Permuted Statistic")
+    plt.ylabel("Frequency")
+    plt.title("Permutation Test Results")
+    plt.grid(True, alpha=0.3, axis="y")
+
+    if output:
+        plt.savefig(output, dpi=300, bbox_inches="tight")
 
     return plt.gcf()
 
@@ -617,7 +740,19 @@ def plot_summary_statistics_grid(
 
     fig, axes = plt.subplots(3, 2, figsize=(15, 12))
     fig.suptitle("Population Summary Statistics")
-    axes[0, 0].text(0.5, 0.5, "Summary Statistics Grid\n(Not fully implemented)", ha="center", va="center")
+    metrics = sorted({metric for stats in stats_dict.values() for metric in stats})
+    populations = list(stats_dict.keys())
+    flat_axes = axes.ravel()
+    for ax, metric in zip(flat_axes, metrics):
+        values = [stats_dict[population].get(metric, np.nan) for population in populations]
+        ax.bar(populations, values, alpha=0.8, edgecolor="black")
+        ax.set_title(metric.replace("_", " ").title())
+        ax.tick_params(axis="x", rotation=45)
+        ax.grid(True, axis="y", alpha=0.3)
+
+    for ax in flat_axes[len(metrics) :]:
+        ax.axis("off")
+    fig.tight_layout()
 
     if output:
         plt.savefig(output, dpi=300, bbox_inches="tight")

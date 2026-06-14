@@ -243,7 +243,7 @@ Convert DNA variant data (VCF) to genomics layer DataFrame.
 
 ```python-snippet
 def from_dna_variants(
-    vcf_path: Union[str, Path],
+    vcf_data: Union[str, Path, pd.DataFrame],
     sample_ids: Optional[List[str]] = None,
     variant_ids: Optional[List[str]] = None,
 ) -> pd.DataFrame:
@@ -251,7 +251,7 @@ def from_dna_variants(
 
 **Parameters:**
 
-- `vcf_path` (Union[str, Path]): Path to VCF file
+- `vcf_data` (Union[str, Path, pd.DataFrame]): Path to a VCF file, a VCF-style DataFrame, or an existing sample-by-variant matrix.
 - `sample_ids` (Optional[List[str]]): Optional list of sample IDs to include. If None, includes all samples.
 - `variant_ids` (Optional[List[str]]): Optional list of variant IDs to include. If None, includes all variants.
 
@@ -260,7 +260,7 @@ def from_dna_variants(
 
 **Raises:**
 - `FileNotFoundError`: If VCF file does not exist
-- `ValueError`: If VCF parsing fails
+- `ValueError`: If VCF parsing fails or requested sample/variant IDs are absent
 - `ImportError`: If DNA module not available
 
 ### from_rna_expression
@@ -269,7 +269,8 @@ Convert RNA expression data to transcriptomics layer DataFrame.
 
 ```python-snippet
 def from_rna_expression(
-    expression_path: Union[str, Path],
+    expression_data: Union[str, Path, pd.DataFrame],
+    normalize: bool = True,
     sample_ids: Optional[List[str]] = None,
     gene_ids: Optional[List[str]] = None,
     transpose: bool = False,
@@ -278,7 +279,8 @@ def from_rna_expression(
 
 **Parameters:**
 
-- `expression_path` (Union[str, Path]): Path to expression file (CSV or TSV)
+- `expression_data` (Union[str, Path, pd.DataFrame]): Path to expression file (CSV or TSV) or an existing expression matrix.
+- `normalize` (bool): If True, apply log1p for positive matrices followed by column-wise z-score normalization.
 - `sample_ids` (Optional[List[str]]): Optional list of sample IDs to include
 - `gene_ids` (Optional[List[str]]): Optional list of gene IDs to include
 - `transpose` (bool): If True, assumes file has genes as rows and samples as columns. If False (default), assumes samples as rows and genes as columns.
@@ -296,7 +298,8 @@ Convert protein abundance data to proteomics layer DataFrame.
 
 ```python-snippet
 def from_protein_abundance(
-    protein_path: Union[str, Path],
+    protein_data: Union[str, Path, pd.DataFrame],
+    normalize: bool = True,
     sample_ids: Optional[List[str]] = None,
     protein_ids: Optional[List[str]] = None,
     transpose: bool = False,
@@ -305,7 +308,8 @@ def from_protein_abundance(
 
 **Parameters:**
 
-- `protein_path` (Union[str, Path]): Path to protein file (CSV, TSV, or FASTA)
+- `protein_data` (Union[str, Path, pd.DataFrame]): Path to protein matrix file (CSV or TSV) or an existing abundance matrix.
+- `normalize` (bool): If True, apply column-wise z-score normalization.
 - `sample_ids` (Optional[List[str]]): Optional list of sample IDs to include
 - `protein_ids` (Optional[List[str]]): Optional list of protein IDs to include
 - `transpose` (bool): If True, assumes file has proteins as rows and samples as columns. If False (default), assumes samples as rows and proteins as columns. Not applicable for FASTA files.
@@ -341,5 +345,3 @@ The module uses structured logging via `metainformant.core.utils.logging`:
 ## Examples
 
 See [Module README](README.md) and [Index Documentation](./index.md) for comprehensive usage examples.
-
-

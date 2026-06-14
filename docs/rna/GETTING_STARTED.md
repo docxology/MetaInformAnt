@@ -13,11 +13,9 @@ cd /path/to/MetaInformAnt
 uv venv
 source .venv/bin/activate
 
-# Install metainformant
-uv pip install -e .
-
-# Install amalgkit
-uv pip install git+https://github.com/kfuku52/amalgkit
+# Install metainformant plus all uv-managed optional dependencies,
+# including amalgkit from https://github.com/kfuku52/amalgkit
+uv sync --all-extras --all-groups
 
 # Install system dependencies
 sudo apt-get install -y sra-toolkit kallisto fastp seqkit
@@ -63,7 +61,7 @@ See [scripts/rna/README.md](../../scripts/rna/README.md) for complete usage docu
 
 - **Python 3.11+** with virtual environment (`.venv/` or `/tmp/metainformant_venv` on ext6 filesystems)
 - **uv** (Python package manager) - **REQUIRED** for all setup and package management
-- **amalgkit** (installed in venv via `uv pip install`)
+- **amalgkit** (installed in venv via the `rna` extra from `https://github.com/kfuku52/amalgkit`)
 - **wget** (for ENA downloads) or **SRA Toolkit** (for SRA downloads)
 - **kallisto** or **salmon** (for quantification)
 - **fastp** and **seqkit** (for quality control)
@@ -87,11 +85,8 @@ uv venv
 # Activate virtual environment
 source .venv/bin/activate
 
-# Install metainformant in editable mode
-uv pip install -e .
-
-# Install amalgkit
-uv pip install git+https://github.com/kfuku52/amalgkit
+# Install metainformant and all uv-managed extras/groups
+uv sync --all-extras --all-groups
 ```
 
 **Verification:**

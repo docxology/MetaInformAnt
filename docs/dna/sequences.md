@@ -14,12 +14,13 @@ Examples
 
 ```python
 from pathlib import Path
-from metainformant.dna import sequences
+from metainformant.dna.sequence.core import gc_content, read_fasta, reverse_complement
+from metainformant.dna.sequence.kmer import count_kmers
 
 fasta = Path("tests/data/dna/toy.fasta")
-id_to_seq = sequences.read_fasta(str(fasta))
+id_to_seq = read_fasta(str(fasta))
 
-rc = {k: sequences.reverse_complement(v) for k, v in id_to_seq.items()}
-gc = {k: sequences.gc_content(v) for k, v in id_to_seq.items()}
-k2 = sequences.kmer_counts(next(iter(id_to_seq.values())), k=2)
+rc = {k: reverse_complement(v) for k, v in id_to_seq.items()}
+gc = {k: gc_content(v) for k, v in id_to_seq.items()}
+k2 = count_kmers(next(iter(id_to_seq.values())), k=2)
 ```

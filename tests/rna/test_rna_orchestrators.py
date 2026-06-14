@@ -6,8 +6,8 @@ without executing full workflows (which require external dependencies).
 
 from __future__ import annotations
 
-import ast
 import argparse
+import ast
 import importlib.util
 from pathlib import Path
 

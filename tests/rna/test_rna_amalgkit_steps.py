@@ -253,11 +253,14 @@ class TestGetfastqStep:
         assert hasattr(amalgkit, "getfastq")
         assert callable(amalgkit.getfastq)
 
+    @pytest.mark.network
+    @pytest.mark.external_tool
     @pytest.mark.slow
     def test_getfastq_basic_execution(self, tmp_path: Path, ensure_amalgkit_available):
         """Test getfastq step can execute with minimal params.
 
-        NOTE: This test is marked as slow because getfastq may attempt actual downloads.
+        NOTE: This test performs a real SRA download through amalgkit and should
+        only run in the explicit network/external-tool verification pass.
         """
         params = {
             "out_dir": str(tmp_path / "work"),

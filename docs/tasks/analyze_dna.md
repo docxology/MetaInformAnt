@@ -21,19 +21,20 @@ Use `analyze_dna` tasks when working with genomic sequences, variant discovery, 
 ## Basic Operations
 
 ```python
-from metainformant.dna import sequences
+from metainformant.dna.sequence.core import gc_content, read_fasta, reverse_complement
+from metainformant.dna.translation import translate_dna
 
 # Read FASTA
-seqs = sequences.read_fasta("data/genome.fasta")
+seqs = read_fasta("data/genome.fasta")
 for name, seq in seqs.items():
-    print(f"{name}: {len(seq)} bp, GC={sequences.gc_content(seq):.1f}%")
+    print(f"{name}: {len(seq)} bp, GC={gc_content(seq):.1%}")
 
 # Reverse complement
-rc = sequences.reverse_complement(seqs["chr1"])
+rc = reverse_complement(seqs["chr1"])
 
 # Translate DNA → protein (6-frame)
 for frame in range(3):
-    protein = sequences.translate(seqs["chr1"][frame:])
+    protein = translate_dna(seqs["chr1"][frame:])
 ```
 
 ## Sequence Statistics

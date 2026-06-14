@@ -123,13 +123,13 @@ source .venv/bin/activate
 ```bash
 uv venv
 source .venv/bin/activate
-uv pip install -e ".[dev,all]"
+uv sync --all-extras --all-groups
 ```
 
 ### Development Mode
 
 ```bash
-uv pip install -e ".[dev,test,docs]"
+uv sync --all-extras --all-groups
 pre-commit install  # Enable git hooks
 ```
 
@@ -171,7 +171,7 @@ python3 scripts/core/run_demo.py
 | `uv: command not found` | Not in PATH | `source ~/.bashrc` or reinstall |
 | `Python 3.9 detected` | System Python takes precedence | `export PATH="/opt/homebrew/bin:$PATH"` (macOS) |
 | venv creation fails on FAT drive | Symlink not supported | Use `/tmp` venv: `export UV_CACHE_DIR=/tmp/uv-cache` |
-| ImportError: No module named X | Dependencies not installed | `uv pip install -e ".[all]"` |
+| ImportError: No module named X | Dependencies not installed | `uv sync --all-extras --all-groups` |
 | `Permission denied` | Wrong Python interpreter | Check `which python` is from venv |
 
 **Logs:** Check `~/.hermes/logs/agent.log` if using Hermes agent.

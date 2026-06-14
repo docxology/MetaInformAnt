@@ -98,7 +98,7 @@ training:
 ### With DNA Module
 
 ```python
-from metainformant.dna import sequences as dna_seqs
+from metainformant.dna.sequence import core as dna_seqs
 from metainformant.ml.deep_learning import sequences as dl_seqs
 
 # Read DNA sequences

@@ -191,7 +191,7 @@ p_value = validation.permutation_test(
 ### With DNA Sequences
 
 ```python-snippet
-from metainformant.dna import sequences
+from metainformant.dna.sequence import core as sequences
 from metainformant.ml import classification
 
 # Extract features from DNA sequences

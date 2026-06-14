@@ -112,19 +112,14 @@ def setup_venv_and_dependencies(auto_setup: bool = True) -> bool:
     if not auto_setup:
         logger.error("Virtual environment not found!")
         if _check_uv():
-            logger.error(
-                "Run: uv venv .venv && uv pip install -e . --python .venv/bin/python3 && uv pip install git+https://github.com/kfuku52/amalgkit --python .venv/bin/python3"
-            )
+            logger.error("Run: uv venv .venv && uv sync --all-extras --all-groups")
         else:
-            logger.error(
-                "Run: python3 -m venv .venv && source .venv/bin/activate && pip install -e . && pip install git+https://github.com/kfuku52/amalgkit"
-            )
+            logger.error("Install uv first: curl -LsSf https://astral.sh/uv/install.sh | sh")
         return False
 
     if not _check_uv():
         logger.error("uv not found! Please install uv first:")
         logger.error("  curl -LsSf https://astral.sh/uv/install.sh | sh")
-        logger.error("Or use: pip install uv")
         return False
 
     # Auto-setup venv with uv
@@ -172,47 +167,27 @@ def setup_venv_and_dependencies(auto_setup: bool = True) -> bool:
         temp_dir = get_recommended_temp_dir(repo_root)
         logger.info(f"Using temporary directory: {temp_dir}")
 
-        # Install metainformant
-        # Use /tmp/uv-cache for cache to avoid symlink issues on ext6 filesystem
+        # Sync all uv-managed dependencies into the selected project environment.
         # The output/.uv-cache location doesn't support symlinks needed by uv
         uv_cache_dir = Path("/tmp/uv-cache")
         uv_cache_dir.mkdir(parents=True, exist_ok=True)
-        logger.info("Installing metainformant...")
+        logger.info("Syncing MetaInformAnt dependencies...")
         env = os.environ.copy()
         env["UV_CACHE_DIR"] = str(uv_cache_dir)
         env["TMPDIR"] = str(temp_dir)
+        env["UV_PROJECT_ENVIRONMENT"] = str(venv_dir)
         result = subprocess.run(
-            ["uv", "pip", "install", "-e", str(repo_root), "--python", str(venv_python)],
+            ["uv", "sync", "--all-extras", "--all-groups"],
             capture_output=True,
             text=True,
             timeout=300,
             env=env,
+            cwd=repo_root,
         )
         if result.returncode != 0:
-            logger.error(f"Failed to install metainformant: {result.stderr}")
+            logger.error(f"Failed to sync dependencies: {result.stderr}")
             return False
-        logger.info("✓ metainformant installed")
-
-        # Install amalgkit
-        # Use /tmp/uv-cache for cache to avoid symlink issues on ext6 filesystem
-        temp_dir = get_recommended_temp_dir(repo_root)
-        uv_cache_dir = Path("/tmp/uv-cache")
-        uv_cache_dir.mkdir(parents=True, exist_ok=True)
-        logger.info("Installing amalgkit...")
-        env = os.environ.copy()
-        env["UV_CACHE_DIR"] = str(uv_cache_dir)
-        env["TMPDIR"] = str(temp_dir)
-        result = subprocess.run(
-            ["uv", "pip", "install", "git+https://github.com/kfuku52/amalgkit", "--python", str(venv_python)],
-            capture_output=True,
-            text=True,
-            timeout=300,
-            env=env,
-        )
-        if result.returncode != 0:
-            logger.error(f"Failed to install amalgkit: {result.stderr}")
-            return False
-        logger.info("✓ amalgkit installed")
+        logger.info("✓ dependencies synced")
 
         logger.info("✓ Setup complete!")
 
@@ -231,14 +206,12 @@ def setup_venv_and_dependencies(auto_setup: bool = True) -> bool:
         if _check_uv():
             logger.info("Please setup manually:")
             logger.info("  1. uv venv .venv")
-            logger.info("  2. uv pip install -e . --python .venv/bin/python3")
-            logger.info("  3. uv pip install git+https://github.com/kfuku52/amalgkit --python .venv/bin/python3")
+            logger.info("  2. uv sync --all-extras --all-groups")
         else:
             logger.info("Please setup manually:")
-            logger.info("  1. python3 -m venv .venv")
-            logger.info("  2. source .venv/bin/activate")
-            logger.info("  3. pip install -e .")
-            logger.info("  4. pip install git+https://github.com/kfuku52/amalgkit")
+            logger.info("  1. curl -LsSf https://astral.sh/uv/install.sh | sh")
+            logger.info("  2. uv venv .venv")
+            logger.info("  3. uv sync --all-extras --all-groups")
         return False
 
 
@@ -293,13 +266,9 @@ def ensure_venv_activated(auto_setup: bool = True) -> bool:
         else:
             logger.error("Virtual environment not found!")
             if _check_uv():
-                logger.error(
-                    "Run: uv venv .venv && uv pip install -e . --python .venv/bin/python3 && uv pip install git+https://github.com/kfuku52/amalgkit --python .venv/bin/python3"
-                )
+                logger.error("Run: uv venv .venv && uv sync --all-extras --all-groups")
             else:
-                logger.error(
-                    "Run: python3 -m venv .venv && source .venv/bin/activate && pip install -e . && pip install git+https://github.com/kfuku52/amalgkit"
-                )
+                logger.error("Install uv first: curl -LsSf https://astral.sh/uv/install.sh | sh")
             return False
 
     # Activate venv by re-executing with venv Python
@@ -414,15 +383,13 @@ def check_environment_or_exit(auto_setup: bool = True) -> None:
             logger.error("\nSetup instructions (using uv):")
             if _check_uv():
                 logger.error("  1. uv venv .venv")
-                logger.error("  2. uv pip install -e . --python .venv/bin/python3")
-                logger.error("  3. uv pip install git+https://github.com/kfuku52/amalgkit --python .venv/bin/python3")
+                logger.error("  2. uv sync --all-extras --all-groups")
             else:
                 logger.error("  First install uv:")
                 logger.error("    curl -LsSf https://astral.sh/uv/install.sh | sh")
                 logger.error("  Then:")
                 logger.error("  1. uv venv .venv")
-                logger.error("  2. uv pip install -e . --python .venv/bin/python3")
-                logger.error("  3. uv pip install git+https://github.com/kfuku52/amalgkit --python .venv/bin/python3")
+                logger.error("  2. uv sync --all-extras --all-groups")
             sys.exit(1)
 
     if warnings:

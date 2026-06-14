@@ -224,6 +224,8 @@ class TestPlotDemographicComparison:
         assert fig is not None
         assert output_path.exists()
         assert len(fig.axes) == 2  # Two subplots
+        assert len(fig.axes[0].patches) == 2
+        assert len(fig.axes[1].patches) == 2
 
 
 class TestPlotSummaryStatisticsGrid:
@@ -256,6 +258,7 @@ class TestPlotSummaryStatisticsGrid:
         assert fig is not None
         assert output_path.exists()
         assert len(fig.axes) == 6  # Six subplots
+        assert sum(len(ax.patches) for ax in fig.axes) >= 12
 
 
 class TestPlotLinkageDisequilibriumDecay:
@@ -271,6 +274,7 @@ class TestPlotLinkageDisequilibriumDecay:
 
         assert fig is not None
         assert output_path.exists()
+        assert fig.axes[0].lines
 
     def test_ld_decay_plot_no_distances(self, tmp_path: Path):
         """Test LD decay plot without distances."""
@@ -279,6 +283,7 @@ class TestPlotLinkageDisequilibriumDecay:
         fig = plot_linkage_disequilibrium_decay(ld_values, output_path=str(tmp_path / "ld_decay2.png"))
 
         assert fig is not None
+        assert fig.axes[0].lines
 
 
 def test_plot_allele_frequency_spectrum():
@@ -349,6 +354,7 @@ def test_plot_neutrality_test_suite():
     fig = plot_neutrality_test_suite(test_results)
 
     assert fig is not None
+    assert len(fig.axes[0].patches) == 3
 
 
 def test_plot_hardy_weinberg_test():
@@ -382,6 +388,8 @@ def test_plot_permutation_test():
     fig = plot_permutation_test(permuted_values, observed_value, p_value=0.01)
 
     assert fig is not None
+    assert fig.axes[0].patches
+    assert fig.axes[0].lines
 
 
 def test_plot_outlier_detection():
@@ -391,3 +399,4 @@ def test_plot_outlier_detection():
     fig = plot_outlier_detection(statistic_values, outlier_indices)
 
     assert fig is not None
+    assert len(fig.axes[0].collections) >= 2

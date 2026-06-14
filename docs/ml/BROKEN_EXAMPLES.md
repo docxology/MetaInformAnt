@@ -6,7 +6,7 @@ This file provides line-by-line fixes for the broken examples in `docs/ml/index.
 
 ### Current (Broken):
 ```python-snippet
-from metainformant.dna import sequences
+from metainformant.dna.sequence import core as sequences
 from metainformant.ml import classification
 
 # Extract features from DNA sequences

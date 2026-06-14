@@ -16,9 +16,10 @@ Example
 
 ```python
 from pathlib import Path
-from metainformant.dna import sequences, phylogeny
+from metainformant.dna import phylogeny
+from metainformant.dna.sequence.core import read_fasta
 
-seqs = sequences.read_fasta(str(Path("tests/data/dna/toy.fasta")))
+seqs = read_fasta(str(Path("tests/data/dna/toy.fasta")))
 tree = phylogeny.neighbor_joining_tree(seqs)
 newick = phylogeny.to_newick(tree)
 

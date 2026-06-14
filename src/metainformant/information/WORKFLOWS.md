@@ -11,8 +11,8 @@ Analyze information content and complexity of biological sequences.
 
 1. **Load Sequences**
 ```python
-from metainformant.dna import sequences
-dna_seqs = sequences.read_fasta("data/sequences.fasta")
+from metainformant.dna.sequence.core import read_fasta
+dna_seqs = read_fasta("data/sequences.fasta")
 ```
 
 2. **Calculate Information Profile**
@@ -165,11 +165,11 @@ fasta_files = list(Path("data").glob("*.fasta"))
 2. **Batch Analysis**
 ```python
 from metainformant.information import batch_entropy_analysis
-from metainformant.dna import sequences
+from metainformant.dna.sequence.core import read_fasta
 
 all_results = {}
 for fasta_file in fasta_files:
-    seqs = sequences.read_fasta(str(fasta_file))
+    seqs = read_fasta(str(fasta_file))
     results = batch_entropy_analysis(list(seqs.values()), k=2)
     all_results[fasta_file.stem] = results
 ```
@@ -258,10 +258,10 @@ End-to-end information-theoretic analysis from raw data to visualization.
 
 1. **Data Loading and Preprocessing**
 ```python
-from metainformant.dna import sequences
+from metainformant.dna.sequence.core import read_fasta
 from metainformant.information import information_workflow
 
-seqs = sequences.read_fasta("data/sequences.fasta")
+seqs = read_fasta("data/sequences.fasta")
 seq_list = list(seqs.values())
 ```
 
@@ -302,5 +302,4 @@ if entropies:
 ```
 
 These workflows provide step-by-step guides for common information-theoretic analysis tasks in biological data.
-
 

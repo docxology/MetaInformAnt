@@ -101,7 +101,7 @@ def analyze_composition(sequences: dict[str, str], output_dir: Path) -> dict[str
     """
     logger.info("Analyzing sequence composition...")
 
-    from metainformant.dna import sequences as dna_sequences
+    from metainformant.dna.sequence import core as dna_sequences
 
     results = {
         "gc_content": {},
@@ -280,7 +280,7 @@ def run_workflow(args):
 
     # Load sequences
     logger.info(f"Loading sequences from {args.input}")
-    from metainformant.dna import sequences as dna_sequences
+    from metainformant.dna.sequence import core as dna_sequences
 
     try:
         all_sequences = dna_sequences.read_fasta(str(args.input))

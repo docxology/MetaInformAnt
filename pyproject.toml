@@ -86,7 +86,6 @@ singlecell = [
     "umap-learn>=0.5.4",
     "seaborn>=0.13.0",
     "leidenalg>=0.10.0",  # Leiden clustering
-    "louvain>=0.8.0",  # Louvain clustering
 ]
 
 # Visualization enhancements
@@ -144,6 +143,8 @@ external-tools = [
     # "pyvcf>=0.6.8",  # VCF file handling - temporarily disabled due to build issues
     "pysam>=0.21.0",  # SAM/BAM file handling
     "dendropy>=4.5.0",  # Phylogenetic analysis
+    "parallel-fastq-dump>=0.6.5",  # Local SRA extraction helper
+    "multiqc>=1.25.0",  # QC report aggregation
 ]
 
 # Web scraping and data collection
@@ -165,20 +166,37 @@ all = [
     "scikit-learn>=1.3.0",
     "seaborn>=0.13.0",
     "networkx>=3.2",
+    "llvmlite>=0.43.0",
     "umap-learn>=0.5.4",
     "scanpy>=1.9.6",
     "anndata>=0.10.0",
+    "optuna>=3.4.0",
+    "joblib>=1.3.0",
+    "xgboost>=2.0.0",
+    "lightgbm>=4.1.0",
     "python-louvain>=0.16",
     "cdlib>=0.3.0",
+    "psutil>=5.9.0",
+    "rich>=13.0.0",
+    "leidenalg>=0.10.0",
     "plotly>=5.18.0",
     "bokeh>=3.3.0",
     "altair>=5.2.0",
+    "graphviz>=0.20.1",
+    "amalgkit @ git+https://github.com/kfuku52/amalgkit",
     "psycopg2-binary>=2.9.9",
     "sqlalchemy>=2.0.25",
+    "pymongo>=4.0.0",
+    "redis>=4.3.0",
     # "ncbi-datasets-pylib>=16.0.0",
+    # "pyvcf>=0.6.8",
+    "pysam>=0.21.0",
+    "dendropy>=4.5.0",
+    "parallel-fastq-dump>=0.6.5",
+    "multiqc>=1.25.0",
     "numba>=0.59.0",
     "dask>=2024.1.0",
-    "joblib>=1.3.0",
+    "ray>=2.0.0",
     "cloudscraper>=1.2.71",  # Web scraping with Cloudflare bypass
 ]
 

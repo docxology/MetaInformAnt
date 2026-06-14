@@ -19,14 +19,14 @@ Usage: bash scripts/setup.sh [--skip-amalgkit] [--with-deps] [--with-all] [--wit
 
 Options:
   --skip-amalgkit       Skip AMALGKIT installation (installed by default for RNA workflows)
-  --with-deps           Install external CLI deps (seqkit, sra-tools, kallisto, R); uv pip install parallel-fastq-dump
+  --with-deps           Install external CLI deps through the system package manager where available
   --with-all            Install all optional dependencies (database, networks, scraping, etc.) - scientific deps installed by default
   --with-scraping       Install scraping dependencies (cloudscraper) for web scraping functionality
   --ncbi-email EMAIL    Export NCBI_EMAIL for this session and write to output/setup/ncbi_email.txt
   --skip-tests          Do not run repository tests during setup
   --dev                 Setup development environment (pre-commit, docs, output dirs, wrapper scripts)
 
-Default behavior: Installs dev, scientific dependencies (scipy, scikit-learn, etc.), and amalgkit
+Default behavior: Syncs all uv-managed dependency groups and extras, including RNA amalgkit.
 
 This script is idempotent and safe to re-run.
 EOF
@@ -196,6 +196,7 @@ fi
 
 echo "[2/5] Creating/using virtual environment ($VENV_DIR)"
 if [[ "$VENV_DIR" == "/tmp/metainformant_venv" ]]; then
+  export UV_PROJECT_ENVIRONMENT="$VENV_DIR"
   # For FAT filesystem, try to create venv in /tmp
   if [[ -d "$VENV_DIR" ]]; then
     echo "  → Using existing venv at $VENV_DIR"
@@ -211,63 +212,29 @@ else
 fi
 
 echo "[3/5] Installing project and dependencies"
-# Build dependency list - install scientific deps by default
-DEPS="dev,scientific"
-if [[ "$WITH_ALL" -eq 1 ]]; then
-  DEPS="${DEPS},all"
-elif [[ "$WITH_SCRAPING" -eq 1 ]]; then
-  DEPS="${DEPS},scraping"
-fi
-
-# Use venv Python explicitly if using alternative location
-if [[ "$VENV_DIR" == "/tmp/metainformant_venv" ]]; then
-  uv pip install -e ".[${DEPS}]" --python "$VENV_DIR/bin/python3"
+if [[ "$WITH_AMALGKIT" -eq 1 ]]; then
+  uv sync --all-extras --all-groups
+  echo "  → Synced all uv-managed dependency groups and extras"
 else
-  uv pip install -e ".[${DEPS}]"
-fi
-
-if [[ "$WITH_ALL" -eq 1 ]]; then
-  echo "  → Installed all optional dependencies (scientific, database, networks, scraping, etc.)"
-elif [[ "$WITH_SCRAPING" -eq 1 ]]; then
-  echo "  → Installed scientific dependencies (scipy, scikit-learn, etc.)"
-  echo "  → Installed scraping dependencies (cloudscraper)"
-  echo "  → Use --with-all to install additional optional dependencies (database, networks, etc.)"
-else
-  echo "  → Installed scientific dependencies (scipy, scikit-learn, etc.)"
-  echo "  → Use --with-scraping to install scraping dependencies (cloudscraper)"
-  echo "  → Use --with-all to install all optional dependencies (database, networks, scraping, etc.)"
+  uv sync --extra dev --extra scientific --all-groups
+  echo "  → Synced uv-managed dependencies without the RNA amalgkit extra"
 fi
 
 if [[ "$WITH_AMALGKIT" -eq 1 ]]; then
-  echo "[4/5] Installing AMALGKIT via uv"
-  if [[ "$VENV_DIR" == "/tmp/metainformant_venv" ]]; then
-    uv pip install "git+https://github.com/kfuku52/amalgkit" --python "$VENV_DIR/bin/python3"
-  else
-    uv pip install "git+https://github.com/kfuku52/amalgkit"
-  fi
-  # Verify amalgkit installation
-  if [[ "$VENV_DIR" == "/tmp/metainformant_venv" ]]; then
-    if "$VENV_DIR/bin/python3" -c "import amalgkit" 2>/dev/null; then
-      echo "  → ✓ AMALGKIT installed successfully"
-    else
-      echo "  → ⚠ AMALGKIT installation may have failed - check above for errors"
-    fi
-  else
-    if uv run python -c "import amalgkit" 2>/dev/null; then
-      echo "  → ✓ AMALGKIT installed successfully"
-    else
-      echo "  → ⚠ AMALGKIT installation may have failed - check above for errors"
-    fi
-  fi
+  echo "[4/5] Verifying AMALGKIT from GitHub source"
+  uv run python - <<'PY'
+from metainformant.rna.amalgkit import AMALGKIT_INSTALL_SPEC, MIN_AMALGKIT_VERSION, validate_amalgkit_version
+
+ok, message = validate_amalgkit_version(MIN_AMALGKIT_VERSION)
+if not ok:
+    raise SystemExit(f"AMALGKIT validation failed: {message}. Install source: {AMALGKIT_INSTALL_SPEC}")
+print(f"  -> AMALGKIT OK: {message}")
+PY
 
   echo "  → Patching amalgkit to prevent SRA toolkit concurrency locks..."
-  if [[ "$VENV_DIR" == "/tmp/metainformant_venv" ]]; then
-    "$VENV_DIR/bin/python3" scripts/package/patch_amalgkit.py
-  else
-    uv run python scripts/package/patch_amalgkit.py
-  fi
+  uv run python scripts/package/patch_amalgkit.py
 else
-  echo "[4/5] Skipping AMALGKIT install (use --skip-amalgkit to disable, or omit flag to install)"
+  echo "[4/5] Skipping AMALGKIT validation because --skip-amalgkit was provided"
 fi
 
 mkdir -p output/setup
@@ -296,14 +263,22 @@ if [[ "$WITH_DEPS" -eq 1 ]]; then
     # ── macOS via Homebrew ──────────────────────────────────────────────────
     echo "Installing external CLI dependencies via Homebrew..."
     brew tap brewsci/bio || true
-    for pkg in wget curl pigz parallel seqkit samtools kallisto r; do
+    brew tap mongodb/brew || true
+    for pkg in wget curl pigz parallel seqkit samtools bcftools bwa bowtie2 kallisto fastqc blast r postgresql redis mongosh; do
       echo "brew install $pkg (best-effort)"
       brew install "$pkg" || true
     done
-    echo "Attempting to install salmon (best-effort)"
-    brew install salmon || brew install brewsci/bio/salmon || true
+    for pkg in salmon hisat2 muscle; do
+      echo "brew install $pkg (best-effort)"
+      brew install "$pkg" || brew install "brewsci/bio/$pkg" || true
+    done
     echo "Attempting to install sratoolkit (best-effort)"
     brew install sratoolkit || brew install --cask sratoolkit || true
+    echo "Attempting to install MongoDB community server (best-effort)"
+    brew install mongodb/brew/mongodb-community || true
+    echo "Attempting to install cloud/container CLIs (best-effort)"
+    brew install --cask gcloud-cli || true
+    brew install --cask docker-desktop || true
     if [[ -d "/opt/homebrew/bin" ]]; then
       export PATH="/opt/homebrew/bin:$PATH"
     fi
@@ -332,14 +307,7 @@ if [[ "$WITH_DEPS" -eq 1 ]]; then
     fi
   else
     echo "No supported package manager found (brew/apt)." >&2
-    echo "Please install manually: kallisto, sra-toolkit, fastp, seqkit, samtools, R, wget, curl" >&2
-  fi
-
-  # Install parallel-fastq-dump as a Python console script into the venv
-  if [[ "$VENV_DIR" == "/tmp/metainformant_venv" ]]; then
-    uv pip install parallel-fastq-dump --python "$VENV_DIR/bin/python3" || true
-  else
-    uv pip install parallel-fastq-dump || true
+    echo "Please install manually: amalgkit, kallisto, SRA Toolkit, seqkit, samtools, bcftools, bwa, bowtie2, hisat2, fastqc, multiqc, MUSCLE, BLAST, R, PostgreSQL, Redis, MongoDB, Docker, and gcloud" >&2
   fi
 fi
 
@@ -431,44 +399,11 @@ else
   echo "Skipping tests as requested (--skip-tests)"
 fi
 
-echo "[Extra] Ensuring MUSCLE CLI availability (for MSA tests)"
-MUSCLE_PATH="$VENV_DIR/bin/muscle"
-if ! command -v muscle >/dev/null 2>&1; then
-  echo "MUSCLE not found in PATH. Installing lightweight fallback shim into $MUSCLE_PATH"
-  cat > "$MUSCLE_PATH" <<'PYSHIM'
-#!/usr/bin/env python3
-import sys, argparse
-from pathlib import Path
-from Bio import SeqIO
-from metainformant.dna.msa import align_msa
-
-def main():
-    p = argparse.ArgumentParser()
-    p.add_argument('-align', dest='align', help='input FASTA')
-    p.add_argument('-output', dest='output', help='output FASTA')
-    # Accept common no-op flags to be tolerant
-    p.add_argument('-quiet', action='store_true')
-    p.add_argument('-threads', type=int, default=1)
-    args, _ = p.parse_known_args()
-    if not args.align or not args.output:
-        sys.stderr.write('muscle shim error: require -align <in> -output <out>\n')
-        sys.exit(2)
-    id_to_seq = {}
-    for rec in SeqIO.parse(args.align, 'fasta'):
-        id_to_seq[rec.id] = str(rec.seq)
-    aligned = align_msa(id_to_seq)
-    with open(args.output, 'w') as fh:
-        for k, v in aligned.items():
-            fh.write(f'>{k}\n{v}\n')
-    return 0
-
-if __name__ == '__main__':
-    sys.exit(main())
-PYSHIM
-  chmod +x "$MUSCLE_PATH"
-  echo "Installed MUSCLE shim at $MUSCLE_PATH"
+echo "[Extra] Verifying real MUSCLE CLI availability (for MSA tests)"
+if command -v muscle >/dev/null 2>&1; then
+  echo "MUSCLE found in PATH: $(command -v muscle)"
 else
-  echo "MUSCLE found in PATH"
+  echo "MUSCLE not found in PATH. Install a real MUSCLE binary with Homebrew/bioconda before running external MSA CLI tests." >&2
 fi
 
 # Development environment setup (if requested)

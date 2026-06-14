@@ -7,8 +7,10 @@
 # BEFORE running this script, or Bioconductor packages (sva, RUVSeq) will fail to compile.
 #
 # Required packages:
-#   CRAN:         ggplot2, Rtsne
-#   Bioconductor: edgeR, RUVSeq, sva
+#   CRAN:         amap, RColorBrewer, colorspace, dendextend, NMF, MASS,
+#                 pvclust, Rtsne, ggplot2, patchwork, optparse, reshape2,
+#                 gridExtra
+#   Bioconductor: edgeR, limma, tximport, pcaMethods, RUVSeq, sva
 
 cat("═══ Amalgkit R Package Installer ═══\n\n")
 
@@ -19,7 +21,11 @@ if (!requireNamespace("BiocManager", quietly = TRUE)) {
 }
 
 # 2. CRAN packages
-cran_pkgs <- c("ggplot2", "Rtsne")
+cran_pkgs <- c(
+  "amap", "RColorBrewer", "colorspace", "dendextend", "NMF",
+  "MASS", "pvclust", "Rtsne", "ggplot2", "patchwork", "optparse",
+  "reshape2", "gridExtra"
+)
 for (pkg in cran_pkgs) {
   if (!requireNamespace(pkg, quietly = TRUE)) {
     cat(sprintf("Installing %s from CRAN...\n", pkg))
@@ -28,7 +34,7 @@ for (pkg in cran_pkgs) {
 }
 
 # 3. Bioconductor packages
-bioc_pkgs <- c("edgeR", "RUVSeq", "sva")
+bioc_pkgs <- c("edgeR", "limma", "tximport", "pcaMethods", "RUVSeq", "sva")
 for (pkg in bioc_pkgs) {
   if (!requireNamespace(pkg, quietly = TRUE)) {
     cat(sprintf("Installing %s from Bioconductor...\n", pkg))

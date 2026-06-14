@@ -3,6 +3,14 @@
 > Historical snapshot: this report is retained for provenance and may not
 > describe the current checkout. Regenerate validation outputs under `output/`
 > when current evidence is needed.
+>
+> Current note (2026-05-25): `from_dna_variants()` now accepts VCF paths,
+> VCF-style DataFrames, and existing sample-by-variant matrices with optional
+> sample and variant filtering. `from_rna_expression()` and
+> `from_protein_abundance()` now accept CSV/TSV paths or DataFrames with
+> optional transpose and sample/feature filtering. `find_multiomics_modules()`
+> now consumes the actual `joint_nmf()` return values. The older mismatch
+> entries below are retained as historical audit evidence, not current status.
 
 **Validation Date:** 2026-04-29
 **Repository:** /home/trim/Documents/Git/MetaInformAnt

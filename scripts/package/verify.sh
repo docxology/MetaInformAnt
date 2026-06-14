@@ -169,8 +169,8 @@ check_pytest_deps() {
     if ! uv run python -c "import pytest; print('pytest available')" >/dev/null 2>&1; then
         print_status "ERROR" "pytest not available"
         if [[ $FIX_MODE -eq 1 ]]; then
-            print_status "INFO" "Installing dev dependencies..."
-            uv pip install -e ".[dev]"
+            print_status "INFO" "Syncing all uv-managed dependencies..."
+            uv sync --all-extras --all-groups
             if uv run python -c "import pytest" >/dev/null 2>&1; then
                 print_status "FIXED" "pytest installed"
             else
@@ -202,8 +202,7 @@ check_pytest_deps() {
         if ! uv run python -c "import $plugin" >/dev/null 2>&1; then
             print_status "ERROR" "$plugin not available"
             if [[ $FIX_MODE -eq 1 ]]; then
-                # Install all dev dependencies - they include all test plugins
-                uv pip install -e ".[dev]"
+                uv sync --all-extras --all-groups
                 if uv run python -c "import $plugin" >/dev/null 2>&1; then
                     print_status "FIXED" "$plugin installed"
                 else
@@ -235,8 +234,8 @@ check_scientific_deps() {
         if ! uv run python -c "import $dep" >/dev/null 2>&1; then
             print_status "WARN" "$dep not available (optional)"
             if [[ $FIX_MODE -eq 1 ]]; then
-                print_status "INFO" "Installing scientific dependencies..."
-                uv sync
+                print_status "INFO" "Syncing all uv-managed dependencies..."
+                uv sync --all-extras --all-groups
                 if uv run python -c "import $dep" >/dev/null 2>&1; then
                     print_status "FIXED" "$dep installed"
                 fi
@@ -258,7 +257,23 @@ check_external_tools() {
 
     case "$test_type" in
         "external"|"all")
-            tools_to_check+=("amalgkit" "seqkit" "sra-tools")
+            tools_to_check+=(
+                "amalgkit"
+                "kallisto"
+                "fastq-dump"
+                "fasterq-dump"
+                "prefetch"
+                "seqkit"
+                "samtools"
+                "bcftools"
+                "bwa"
+                "bowtie2"
+                "hisat2"
+                "fastqc"
+                "multiqc"
+                "blastn"
+                "Rscript"
+            )
             ;;
     esac
 
@@ -267,16 +282,16 @@ check_external_tools() {
             print_status "WARN" "$tool not available on PATH"
             case "$tool" in
                 "amalgkit")
-                    echo "       Install from: https://github.com/jnarun/Amalgkit"
+                    echo "       Install from: uv sync --extra rna or uv pip install --upgrade git+https://github.com/kfuku52/amalgkit"
                     ;;
                 "muscle")
                     echo "       Install from: https://github.com/rcedgar/muscle"
                     ;;
+                "fastq-dump"|"fasterq-dump"|"prefetch")
+                    echo "       Install SRA Toolkit from: https://github.com/ncbi/sra-tools"
+                    ;;
                 "seqkit")
                     echo "       Install from: https://github.com/shenwei356/seqkit"
-                    ;;
-                "sra-tools")
-                    echo "       Install from: https://github.com/ncbi/sra-tools"
                     ;;
             esac
         else
@@ -462,4 +477,3 @@ main() {
 
 # Run main function
 main "$@"
-

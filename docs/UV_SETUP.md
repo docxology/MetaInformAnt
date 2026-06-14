@@ -174,17 +174,11 @@ bash scripts/package/test.sh --mode fast
 **`scripts/package/setup.sh`** - Complete environment setup:
 
 ```bash
-# Basic setup (installs dev + scientific deps + amalgkit by default)
+# Basic setup (syncs all uv-managed extras/groups, including amalgkit)
 bash scripts/package/setup.sh
 
 # Skip amalgkit installation
 bash scripts/package/setup.sh --skip-amalgkit
-
-# With all optional dependencies (database, networks, scraping, etc.)
-bash scripts/package/setup.sh --with-all
-
-# With scraping dependencies (cloudscraper) for web scraping
-bash scripts/package/setup.sh --with-scraping
 
 # With external CLI dependencies (seqkit, sra-tools, etc.)
 bash scripts/package/setup.sh --with-deps
@@ -328,14 +322,14 @@ pytest
 
 **Standard Filesystem**:
 ```bash
-uv pip install <package>
+uv sync --all-extras --all-groups
 ```
 
 **FAT Filesystem**:
 ```bash
 # Cache directory automatically set by scripts
 export UV_CACHE_DIR="/tmp/uv-cache"
-uv pip install <package> --python /tmp/metainformant_venv/bin/python3
+UV_PROJECT_ENVIRONMENT=/tmp/metainformant_venv uv sync --all-extras --all-groups
 ```
 
 ### Running Tests

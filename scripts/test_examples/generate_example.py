@@ -204,7 +204,10 @@ class ExampleGenerator:
     def _get_domain_imports(self, domain: str) -> List[str]:
         """Get domain-specific imports."""
         imports_map = {
-            "dna": ["from metainformant.dna import sequences, alignment"],
+            "dna": [
+                "from metainformant.dna import alignment",
+                "from metainformant.dna.sequence import core as sequences",
+            ],
             "rna": ["from metainformant.rna import workflow"],
             "gwas": ["from metainformant.gwas import association"],
             "protein": ["from metainformant.protein import sequences"],

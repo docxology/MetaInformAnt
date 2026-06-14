@@ -50,23 +50,23 @@ Comprehensive documentation for the DNA sequence analysis domain in MetaInformAn
 ```python-snippet
 # All submodules importable from top-level
 from metainformant.dna import (
-    sequences,      # FASTA I/O, transformations
     alignment,      # pairwise & MSA
     phylogeny,      # tree building
     population,     # statistics
-    variants,      # SNP calling
-    composition,    # k-mer, GC%, repeats
 )
+from metainformant.dna.sequence import composition, core as sequences
+from metainformant.dna.variation import variants
 ```
 
 ## Examples
 ```python
-from metainformant.dna import sequences, alignment, population
+from metainformant.dna import alignment, population
+from metainformant.dna.sequence.core import gc_content, read_fasta
 
 # 1. Read FASTA, compute GC%
-seqs = sequences.read_fasta("genome.fasta")
+seqs = read_fasta("genome.fasta")
 for name, seq in seqs.items():
-    print(f"{name}: GC={sequences.gc_content(seq):.1f}%")
+    print(f"{name}: GC={gc_content(seq):.1%}")
 
 # 2. Align two sequences (global)
 aligned1, aligned2 = alignment.global_align(seq1, seq2, match=2, mismatch=-1, gap=-2)

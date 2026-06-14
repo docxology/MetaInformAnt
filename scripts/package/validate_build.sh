@@ -172,14 +172,16 @@ print(f'✓ metainformant imported successfully (version: {metainformant.__versi
 
 # Test key submodules
 try:
-    from metainformant.core import io, paths, logging
+    from metainformant.core import io
+    from metainformant.core.io import paths
+    from metainformant.core.utils import logging
     print('✓ Core modules imported successfully')
 except ImportError as e:
     print(f'✗ Core module import failed: {e}')
     sys.exit(1)
 
 try:
-    from metainformant.dna import sequences, composition
+    from metainformant.dna.sequence import composition, core as sequences
     print('✓ DNA modules imported successfully')
 except ImportError as e:
     print(f'✗ DNA module import failed: {e}')

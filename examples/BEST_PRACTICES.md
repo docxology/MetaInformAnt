@@ -70,8 +70,9 @@ if __name__ == "__main__":
 #### Imports
 ```python
 # Good: Specific imports
-from metainformant.dna import sequences
-from metainformant.core import io, paths
+from metainformant.core import io
+from metainformant.core.io import paths
+from metainformant.dna.sequence import core as sequences
 
 # Avoid: Wildcard imports
 # from metainformant.dna import *

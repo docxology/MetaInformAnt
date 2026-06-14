@@ -52,11 +52,11 @@ Combine genetic variants with gene expression to identify regulatory mechanisms:
 from metainformant.gwas.finemapping.colocalization import eqtl_coloc
 from metainformant.multiomics.analysis import integration
 
-# Prepare expression data for integration
+# Prepare expression data for integration from a DataFrame or CSV/TSV matrix
 rna_data = integration.from_rna_expression(expression_df, normalize=True)
 
-# Prepare variant data
-dna_data = integration.from_dna_variants(vcf_df)
+# Prepare variant data from a VCF path or an existing sample-by-variant DataFrame
+dna_data = integration.from_dna_variants("variants.vcf")
 
 # Run colocalization analysis
 result = eqtl_coloc(
@@ -79,9 +79,9 @@ result = eqtl_coloc(
 
 | Function | Purpose |
 |----------|---------|
-| `from_dna_variants()` | VCF → integration-ready format |
-| `from_rna_expression()` | Expression data normalization |
-| `from_protein_abundance()` | Proteomics preprocessing |
+| `from_dna_variants()` | VCF path or variant matrix → integration-ready genotype dosage matrix |
+| `from_rna_expression()` | Expression matrix loading, filtering, and normalization |
+| `from_protein_abundance()` | Protein abundance matrix loading, filtering, and normalization |
 | `from_epigenome_data()` | Methylation/ChIP-seq data |
 
 ## Submodules

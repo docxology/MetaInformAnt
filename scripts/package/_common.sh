@@ -172,7 +172,10 @@ sync_dependencies() {
             uv sync --group test-external
             ;;
         "all")
-            uv sync --group test-all --extra all
+            uv sync --all-extras --all-groups
+            ;;
+        "complete")
+            uv sync --all-extras --all-groups
             ;;
         *)
             uv sync --group test-fast

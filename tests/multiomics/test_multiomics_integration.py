@@ -13,6 +13,10 @@ import pytest
 from metainformant.multiomics.analysis.integration import (
     MultiOmicsData,
     canonical_correlation,
+    find_multiomics_modules,
+    from_dna_variants,
+    from_protein_abundance,
+    from_rna_expression,
     integrate_omics_data,
     joint_nmf,
     joint_pca,
@@ -172,6 +176,36 @@ class TestMultiOmicsData:
         # Samples should remain the same
         assert subset_data.n_samples == 4
 
+    def test_to_dict_returns_copy_safe_dataframes(self):
+        """Serialization dictionary should not expose mutable internal DataFrames."""
+        omics_data = MultiOmicsData(transcriptomics=self.transcriptomics_data, metadata=self.metadata)
+
+        payload = omics_data.to_dict()
+        payload["data"]["transcriptomics"].iloc[0, 0] = -999
+        payload["metadata"].iloc[0, 0] = -1
+
+        assert omics_data.transcriptomics.iloc[0, 0] != -999
+        assert omics_data.metadata.iloc[0, 0] != -1
+        assert payload["sample_ids"] == omics_data.samples
+
+    def test_save_load_round_trip(self, tmp_path):
+        """MultiOmicsData persists layers, metadata, and labels through core I/O."""
+        omics_data = MultiOmicsData(
+            genomics=self.genomics_data,
+            transcriptomics=self.transcriptomics_data,
+            metadata=self.metadata,
+        )
+        output_dir = tmp_path / "multiomics"
+
+        omics_data.save(output_dir)
+        loaded = MultiOmicsData.load(output_dir)
+
+        assert set(loaded.layer_names) == {"genomics", "transcriptomics"}
+        assert loaded.samples == omics_data.samples
+        pd.testing.assert_frame_equal(loaded.genomics, omics_data.genomics)
+        pd.testing.assert_frame_equal(loaded.transcriptomics, omics_data.transcriptomics)
+        pd.testing.assert_frame_equal(loaded.metadata, omics_data.metadata)
+
 
 class TestIntegrateOmicsData:
     """Test omics data loading and integration."""
@@ -247,6 +281,149 @@ class TestIntegrateOmicsData:
 
         # Check data integrity
         np.testing.assert_array_equal(omics_data.get_layer("genomics").values, genomics_df.values)
+
+
+class TestDnaVariantConversion:
+    """Test conversion of real VCF-style variant data into integration matrices."""
+
+    def test_from_dna_variants_parses_vcf_path(self, tmp_path):
+        """VCF files are parsed into sample-by-variant dosage matrices."""
+        vcf_path = tmp_path / "variants.vcf"
+        vcf_path.write_text(
+            "\n".join(
+                [
+                    "##fileformat=VCFv4.2",
+                    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tS1\tS2\tS3",
+                    "1\t100\trs1\tA\tG\t.\tPASS\t.\tGT:DP\t0/0:12\t0/1:18\t1/1:20",
+                    "1\t200\t.\tC\tT\t.\tPASS\t.\tGT\t1|0\t./.\t0/0",
+                ]
+            )
+            + "\n"
+        )
+
+        matrix = from_dna_variants(vcf_path)
+
+        assert list(matrix.index) == ["S1", "S2", "S3"]
+        assert list(matrix.columns) == ["rs1", "1:200:C:T"]
+        assert matrix.loc["S1", "rs1"] == 0.0
+        assert matrix.loc["S2", "rs1"] == 1.0
+        assert matrix.loc["S3", "rs1"] == 2.0
+        assert matrix.loc["S1", "1:200:C:T"] == 1.0
+        assert np.isnan(matrix.loc["S2", "1:200:C:T"])
+
+    def test_from_dna_variants_filters_samples_and_variants(self, tmp_path):
+        """Sample and variant filters select a deterministic matrix subset."""
+        vcf_path = tmp_path / "variants.vcf"
+        vcf_path.write_text(
+            "\n".join(
+                [
+                    "##fileformat=VCFv4.2",
+                    "#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT\tS1\tS2",
+                    "2\t10\trs10\tG\tA\t.\tPASS\t.\tGT\t0/1\t1/1",
+                    "2\t20\trs20\tT\tC\t.\tPASS\t.\tGT\t0/0\t0/1",
+                ]
+            )
+            + "\n"
+        )
+
+        matrix = from_dna_variants(vcf_path, sample_ids=["S2"], variant_ids=["rs20"])
+
+        assert list(matrix.index) == ["S2"]
+        assert list(matrix.columns) == ["rs20"]
+        assert matrix.loc["S2", "rs20"] == 1.0
+
+    def test_from_dna_variants_preserves_existing_matrix_input(self):
+        """Existing DataFrame matrix input remains supported for callers."""
+        raw_matrix = pd.DataFrame({"rs1": [0, 1], "rs2": [2, 0]}, index=["S1", "S2"])
+
+        matrix = from_dna_variants(raw_matrix, sample_ids=["S2"], variant_ids=["rs1"])
+
+        assert list(matrix.index) == ["S2"]
+        assert list(matrix.columns) == ["rs1"]
+        assert matrix.loc["S2", "rs1"] == 1
+
+    def test_from_dna_variants_parses_vcf_style_dataframe(self):
+        """VCF records already loaded as a DataFrame are parsed the same way."""
+        vcf_df = pd.DataFrame(
+            [
+                {
+                    "#CHROM": "3",
+                    "POS": "30",
+                    "ID": "rs30",
+                    "REF": "A",
+                    "ALT": "T",
+                    "QUAL": ".",
+                    "FILTER": "PASS",
+                    "INFO": ".",
+                    "FORMAT": "GT:GQ",
+                    "S1": "0/1:99",
+                    "S2": "1/1:80",
+                }
+            ]
+        )
+
+        matrix = from_dna_variants(vcf_df)
+
+        assert matrix.loc["S1", "rs30"] == 1.0
+        assert matrix.loc["S2", "rs30"] == 2.0
+
+
+class TestTabularOmicsConverters:
+    """Test RNA and protein converters against real file-backed matrices."""
+
+    def test_from_rna_expression_reads_csv_transposes_and_filters(self, tmp_path):
+        """RNA converter supports documented path, transpose, and filtering behavior."""
+        expression = pd.DataFrame(
+            {"S1": [10, 20], "S2": [30, 40]},
+            index=["geneA", "geneB"],
+        )
+        expression_path = tmp_path / "expression.csv"
+        expression.to_csv(expression_path)
+
+        result = from_rna_expression(
+            expression_path,
+            normalize=False,
+            sample_ids=["S2"],
+            gene_ids=["geneA"],
+            transpose=True,
+        )
+
+        assert list(result.index) == ["S2"]
+        assert list(result.columns) == ["geneA"]
+        assert result.loc["S2", "geneA"] == 30
+
+    def test_from_protein_abundance_reads_tsv_and_filters(self, tmp_path):
+        """Protein converter supports TSV input and protein/sample filtering."""
+        abundance = pd.DataFrame(
+            {"proteinA": [1.5, 2.0], "proteinB": [3.5, 4.0]},
+            index=["S1", "S2"],
+        )
+        abundance_path = tmp_path / "protein.tsv"
+        abundance.to_csv(abundance_path, sep="\t")
+
+        result = from_protein_abundance(
+            abundance_path,
+            normalize=False,
+            sample_ids=["S1"],
+            protein_ids=["proteinB"],
+        )
+
+        assert list(result.index) == ["S1"]
+        assert list(result.columns) == ["proteinB"]
+        assert result.loc["S1", "proteinB"] == 3.5
+
+    def test_from_rna_expression_dataframe_normalization_preserves_labels(self):
+        """DataFrame input and normalization remain available for existing callers."""
+        expression = pd.DataFrame(
+            {"geneA": [1.0, 2.0, 4.0], "geneB": [2.0, 4.0, 8.0]},
+            index=["S1", "S2", "S3"],
+        )
+
+        result = from_rna_expression(expression, normalize=True)
+
+        assert list(result.index) == ["S1", "S2", "S3"]
+        assert list(result.columns) == ["geneA", "geneB"]
+        np.testing.assert_allclose(result.mean(axis=0).to_numpy(), [0.0, 0.0], atol=1e-12)
 
 
 class TestJointPCA:
@@ -385,6 +562,24 @@ class TestJointNMF:
             mse = np.mean((original - reconstructed) ** 2)
             relative_error = mse / np.mean(original**2)
             assert relative_error < 1.0  # Less than 100% error
+
+    def test_find_multiomics_modules_returns_features_and_weights(self):
+        """Module detection should use real joint NMF outputs without key mismatches."""
+        results = find_multiomics_modules(self.omics_data, n_modules=3, max_iter=50, random_state=42)
+
+        assert results["n_modules"] == 3
+        assert set(results["nmf_results"]) == {"W", "H_dict"}
+        assert results["nmf_results"]["W"].shape == (15, 3)
+
+        first_module = results["modules"]["module_1"]
+        assert set(first_module["features"]) == {"transcriptomics", "proteomics"}
+        assert len(first_module["sample_weights"]) == 15
+
+        transcript_features = first_module["features"]["transcriptomics"]["features"]
+        transcript_loadings = first_module["features"]["transcriptomics"]["loadings"]
+        assert 1 <= len(transcript_features) <= 10
+        assert len(transcript_features) == len(transcript_loadings)
+        assert all(feature.startswith("Gene_") for feature in transcript_features)
 
 
 class TestCanonicalCorrelation:

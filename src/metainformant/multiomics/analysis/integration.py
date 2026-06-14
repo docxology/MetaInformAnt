@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 
 from metainformant.core.data import validation
+from metainformant.core.io import dump_json, ensure_directory, load_json, open_text_auto
 from metainformant.core.utils import errors, logging
 
 logger = logging.get_logger(__name__)
@@ -254,6 +255,66 @@ class MultiOmicsData:
         if isinstance(self._metadata, pd.DataFrame) and key in self._metadata.columns:
             return self._metadata[key]
         return None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert the container to a dictionary with copy-safe DataFrames."""
+        metadata = self._metadata.copy() if isinstance(self._metadata, pd.DataFrame) else pd.DataFrame()
+        return {
+            "data": {layer_name: layer_data.copy() for layer_name, layer_data in self.data.items()},
+            "sample_ids": list(self.sample_ids or []),
+            "feature_ids": {layer: list(features) for layer, features in self.feature_ids.items()},
+            "metadata": metadata,
+        }
+
+    def save(self, output_path: Union[str, Path]) -> None:
+        """Save all omics layers and metadata to a directory."""
+        output_dir = ensure_directory(output_path)
+        manifest = {
+            "layers": list(self.data.keys()),
+            "sample_ids": list(self.sample_ids or []),
+            "feature_ids": {layer: list(features) for layer, features in self.feature_ids.items()},
+            "metadata": bool(isinstance(self._metadata, pd.DataFrame) and not self._metadata.empty),
+        }
+
+        for layer_name, layer_data in self.data.items():
+            layer_data.to_csv(output_dir / f"{layer_name}.csv")
+
+        if manifest["metadata"]:
+            self._metadata.to_csv(output_dir / "metadata.csv")
+
+        dump_json(manifest, output_dir / "manifest.json")
+
+    @classmethod
+    def load(cls, input_path: Union[str, Path]) -> "MultiOmicsData":
+        """Load a MultiOmicsData directory written by :meth:`save`."""
+        input_dir = Path(input_path)
+        manifest_path = input_dir / "manifest.json"
+        if not manifest_path.exists():
+            raise FileNotFoundError(f"MultiOmicsData manifest not found: {manifest_path}")
+
+        manifest = load_json(manifest_path)
+        layers = manifest.get("layers", [])
+        if not layers:
+            raise ValueError(f"MultiOmicsData manifest contains no layers: {manifest_path}")
+
+        data = {}
+        for layer_name in layers:
+            layer_path = input_dir / f"{layer_name}.csv"
+            if not layer_path.exists():
+                raise FileNotFoundError(f"Layer file not found for '{layer_name}': {layer_path}")
+            data[layer_name] = pd.read_csv(layer_path, index_col=0)
+
+        metadata = None
+        metadata_path = input_dir / "metadata.csv"
+        if manifest.get("metadata") and metadata_path.exists():
+            metadata = pd.read_csv(metadata_path, index_col=0)
+
+        return cls(
+            data=data,
+            sample_ids=manifest.get("sample_ids"),
+            feature_ids=manifest.get("feature_ids") or {},
+            metadata=metadata,
+        )
 
 
 def integrate_omics_data(
@@ -593,34 +654,238 @@ def canonical_correlation(
     return X_c, Y_c, x_weights, y_weights, correlations
 
 
-def from_dna_variants(vcf_data: pd.DataFrame, **kwargs) -> pd.DataFrame:
+def _normalize_variant_id(chrom: object, pos: object, variant_id: object, ref: object, alt: object) -> str:
+    """Return a stable variant identifier from VCF fields."""
+    variant_name = "" if pd.isna(variant_id) else str(variant_id)
+    if variant_name and variant_name != ".":
+        return variant_name
+    return f"{chrom}:{pos}:{ref}:{alt}"
+
+
+def _genotype_to_dosage(sample_value: object, format_keys: List[str]) -> float:
+    """Convert a VCF sample genotype field to reference-alt dosage."""
+    if sample_value is None or pd.isna(sample_value):
+        return np.nan
+
+    fields = str(sample_value).split(":")
+    gt_index = format_keys.index("GT") if "GT" in format_keys else 0
+    if gt_index >= len(fields):
+        return np.nan
+
+    genotype = fields[gt_index]
+    if not genotype or genotype == "." or "." in genotype:
+        return np.nan
+
+    alleles = genotype.replace("|", "/").split("/")
+    dosage = 0
+    for allele in alleles:
+        try:
+            dosage += 0 if int(allele) == 0 else 1
+        except ValueError:
+            return np.nan
+    return float(dosage)
+
+
+def _subset_variant_matrix(
+    matrix: pd.DataFrame,
+    sample_ids: Optional[List[str]] = None,
+    variant_ids: Optional[List[str]] = None,
+) -> pd.DataFrame:
+    """Subset a sample-by-variant matrix with clear missing-id errors."""
+    if sample_ids is not None:
+        missing_samples = [sample for sample in sample_ids if sample not in matrix.index]
+        if missing_samples:
+            raise ValueError(f"Sample IDs not found in variant data: {missing_samples}")
+        matrix = matrix.loc[sample_ids]
+
+    if variant_ids is not None:
+        missing_variants = [variant for variant in variant_ids if variant not in matrix.columns]
+        if missing_variants:
+            raise ValueError(f"Variant IDs not found in variant data: {missing_variants}")
+        matrix = matrix.loc[:, variant_ids]
+
+    return matrix
+
+
+def _read_tabular_omics_data(data: Union[pd.DataFrame, str, Path], data_name: str) -> pd.DataFrame:
+    """Read a DataFrame or CSV/TSV matrix with sample IDs in the first column."""
+    if isinstance(data, pd.DataFrame):
+        return data.copy()
+
+    if not isinstance(data, (str, Path)):
+        raise TypeError(f"{data_name} must be a path or pandas DataFrame, got {type(data).__name__}")
+
+    path = Path(data)
+    if not path.exists():
+        raise FileNotFoundError(f"{data_name} file not found: {path}")
+
+    suffix = path.suffix.lower()
+    if suffix in {".tsv", ".tab", ".txt"}:
+        return pd.read_csv(path, sep="\t", index_col=0)
+    if suffix == ".csv":
+        return pd.read_csv(path, index_col=0)
+    raise ValueError(f"Unsupported {data_name} file extension: {suffix}")
+
+
+def _subset_omics_matrix(
+    matrix: pd.DataFrame,
+    sample_ids: Optional[List[str]] = None,
+    feature_ids: Optional[List[str]] = None,
+    *,
+    feature_label: str,
+) -> pd.DataFrame:
+    """Subset a sample-by-feature matrix with explicit missing-id errors."""
+    if sample_ids is not None:
+        missing_samples = [sample for sample in sample_ids if sample not in matrix.index]
+        if missing_samples:
+            raise ValueError(f"Sample IDs not found in omics data: {missing_samples}")
+        matrix = matrix.loc[sample_ids]
+
+    if feature_ids is not None:
+        missing_features = [feature for feature in feature_ids if feature not in matrix.columns]
+        if missing_features:
+            raise ValueError(f"{feature_label} IDs not found in omics data: {missing_features}")
+        matrix = matrix.loc[:, feature_ids]
+
+    return matrix
+
+
+def _zscore_dataframe(data: pd.DataFrame) -> pd.DataFrame:
+    """Return column-wise z-scores, preserving DataFrame labels."""
+    if HAS_SKLEARN and StandardScaler is not None:
+        scaler = StandardScaler()
+        values = scaler.fit_transform(data)
+    else:
+        std = data.std(axis=0, ddof=0).replace(0, 1.0)
+        values = (data - data.mean(axis=0)) / std
+    return pd.DataFrame(values, index=data.index, columns=data.columns)
+
+
+def _vcf_dataframe_to_matrix(
+    vcf_df: pd.DataFrame,
+    sample_ids: Optional[List[str]] = None,
+    variant_ids: Optional[List[str]] = None,
+) -> pd.DataFrame:
+    """Convert a DataFrame containing VCF records into a genotype dosage matrix."""
+    chrom_column = "#CHROM" if "#CHROM" in vcf_df.columns else "CHROM"
+    required = {chrom_column, "POS", "REF", "ALT", "FORMAT"}
+    missing = required - set(vcf_df.columns)
+    if missing:
+        raise ValueError(f"VCF DataFrame missing required columns: {sorted(missing)}")
+
+    format_index = list(vcf_df.columns).index("FORMAT")
+    sample_columns = list(vcf_df.columns)[format_index + 1 :]
+    if not sample_columns:
+        raise ValueError("VCF data does not contain sample genotype columns")
+
+    variant_names: List[str] = []
+    sample_values: Dict[str, List[float]] = {sample: [] for sample in sample_columns}
+
+    for _, row in vcf_df.iterrows():
+        variant_name = _normalize_variant_id(
+            row[chrom_column],
+            row["POS"],
+            row["ID"] if "ID" in vcf_df.columns else ".",
+            row["REF"],
+            row["ALT"],
+        )
+        variant_names.append(variant_name)
+
+        format_keys = str(row["FORMAT"]).split(":") if not pd.isna(row["FORMAT"]) else ["GT"]
+        for sample in sample_columns:
+            sample_values[sample].append(_genotype_to_dosage(row[sample], format_keys))
+
+    matrix = pd.DataFrame(sample_values, index=variant_names, dtype=float).T
+    return _subset_variant_matrix(matrix, sample_ids=sample_ids, variant_ids=variant_ids)
+
+
+def _read_vcf_records(vcf_path: Path) -> pd.DataFrame:
+    """Read VCF records into a DataFrame without requiring external VCF packages."""
+    if not vcf_path.exists():
+        raise FileNotFoundError(f"VCF file not found: {vcf_path}")
+
+    header: Optional[List[str]] = None
+    records: List[List[str]] = []
+
+    with open_text_auto(vcf_path) as handle:
+        for line_number, raw_line in enumerate(handle, start=1):
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith("##"):
+                continue
+            if line.startswith("#CHROM"):
+                header = line.split("\t")
+                continue
+            if line.startswith("#"):
+                continue
+            if header is None:
+                raise ValueError(f"VCF record encountered before #CHROM header at {vcf_path}:{line_number}")
+
+            fields = line.split("\t")
+            if len(fields) != len(header):
+                raise ValueError(
+                    f"VCF row has {len(fields)} fields but header has {len(header)} at {vcf_path}:{line_number}"
+                )
+            records.append(fields)
+
+    if header is None:
+        raise ValueError(f"VCF header not found in {vcf_path}")
+    if not records:
+        raise ValueError(f"No variant records found in {vcf_path}")
+
+    return pd.DataFrame(records, columns=header)
+
+
+def from_dna_variants(
+    vcf_data: Union[pd.DataFrame, str, Path],
+    sample_ids: Optional[List[str]] = None,
+    variant_ids: Optional[List[str]] = None,
+    **kwargs,
+) -> pd.DataFrame:
     """Convert DNA variant data for multi-omics integration.
 
     Args:
-        vcf_data: VCF-style variant data
+        vcf_data: VCF path, VCF-style DataFrame, or sample-by-variant matrix
+        sample_ids: Optional sample IDs to retain
+        variant_ids: Optional variant IDs to retain
         **kwargs: Conversion parameters
 
     Returns:
-        Processed DNA data suitable for integration
+        Sample-by-variant genotype dosage matrix suitable for integration
     """
     logger.info("Converting DNA variant data for integration")
 
-    # Simple conversion - in practice this would handle VCF format properly
-    # Convert genotypes to numeric (0, 1, 2 for homozygous ref, het, homozygous alt)
+    if isinstance(vcf_data, (str, Path)):
+        vcf_records = _read_vcf_records(Path(vcf_data))
+        return _vcf_dataframe_to_matrix(vcf_records, sample_ids=sample_ids, variant_ids=variant_ids)
+
+    if not isinstance(vcf_data, pd.DataFrame):
+        raise TypeError(f"vcf_data must be a VCF path or pandas DataFrame, got {type(vcf_data).__name__}")
+
+    if "FORMAT" in vcf_data.columns and ({"#CHROM", "CHROM"} & set(vcf_data.columns)):
+        return _vcf_dataframe_to_matrix(vcf_data, sample_ids=sample_ids, variant_ids=variant_ids)
+
     processed_data = vcf_data.copy()
-
-    # This is a placeholder - real implementation would parse VCF properly
-    logger.warning("DNA variant conversion is simplified - implement proper VCF parsing for production use")
-
-    return processed_data
+    return _subset_variant_matrix(processed_data, sample_ids=sample_ids, variant_ids=variant_ids)
 
 
-def from_rna_expression(expression_data: pd.DataFrame, normalize: bool = True, **kwargs) -> pd.DataFrame:
+def from_rna_expression(
+    expression_data: Union[pd.DataFrame, str, Path],
+    normalize: bool = True,
+    sample_ids: Optional[List[str]] = None,
+    gene_ids: Optional[List[str]] = None,
+    transpose: bool = False,
+    **kwargs,
+) -> pd.DataFrame:
     """Convert RNA expression data for multi-omics integration.
 
     Args:
-        expression_data: RNA-seq or microarray expression data
+        expression_data: RNA-seq or microarray expression matrix path/DataFrame
         normalize: Whether to normalize the data
+        sample_ids: Optional sample IDs to retain
+        gene_ids: Optional gene IDs to retain
+        transpose: If True, transpose input from genes-by-samples to samples-by-genes
         **kwargs: Conversion parameters
 
     Returns:
@@ -628,27 +893,40 @@ def from_rna_expression(expression_data: pd.DataFrame, normalize: bool = True, *
     """
     logger.info("Converting RNA expression data for integration")
 
-    processed_data = expression_data.copy()
+    processed_data = _read_tabular_omics_data(expression_data, "expression_data")
+    if transpose:
+        processed_data = processed_data.T
+    processed_data = processed_data.apply(pd.to_numeric, errors="raise")
+    processed_data = _subset_omics_matrix(
+        processed_data, sample_ids=sample_ids, feature_ids=gene_ids, feature_label="Gene"
+    )
 
     if normalize:
         # Simple normalization - log transform and z-score
         if (processed_data > 0).all().all():
             processed_data = np.log1p(processed_data)
 
-        scaler = StandardScaler()
-        processed_data = pd.DataFrame(
-            scaler.fit_transform(processed_data), index=processed_data.index, columns=processed_data.columns
-        )
+        processed_data = _zscore_dataframe(processed_data)
 
     return processed_data
 
 
-def from_protein_abundance(protein_data: pd.DataFrame, normalize: bool = True, **kwargs) -> pd.DataFrame:
+def from_protein_abundance(
+    protein_data: Union[pd.DataFrame, str, Path],
+    normalize: bool = True,
+    sample_ids: Optional[List[str]] = None,
+    protein_ids: Optional[List[str]] = None,
+    transpose: bool = False,
+    **kwargs,
+) -> pd.DataFrame:
     """Convert protein abundance data for multi-omics integration.
 
     Args:
-        protein_data: Protein abundance measurements
+        protein_data: Protein abundance matrix path/DataFrame
         normalize: Whether to normalize the data
+        sample_ids: Optional sample IDs to retain
+        protein_ids: Optional protein IDs to retain
+        transpose: If True, transpose input from proteins-by-samples to samples-by-proteins
         **kwargs: Conversion parameters
 
     Returns:
@@ -656,14 +934,17 @@ def from_protein_abundance(protein_data: pd.DataFrame, normalize: bool = True, *
     """
     logger.info("Converting protein abundance data for integration")
 
-    processed_data = protein_data.copy()
+    processed_data = _read_tabular_omics_data(protein_data, "protein_data")
+    if transpose:
+        processed_data = processed_data.T
+    processed_data = processed_data.apply(pd.to_numeric, errors="raise")
+    processed_data = _subset_omics_matrix(
+        processed_data, sample_ids=sample_ids, feature_ids=protein_ids, feature_label="Protein"
+    )
 
     if normalize:
         # Z-score normalization
-        scaler = StandardScaler()
-        processed_data = pd.DataFrame(
-            scaler.fit_transform(processed_data), index=processed_data.index, columns=processed_data.columns
-        )
+        processed_data = _zscore_dataframe(processed_data)
 
     return processed_data
 
@@ -859,7 +1140,9 @@ def compute_multiomics_similarity(omics_data: Dict[str, pd.DataFrame], method: s
     return similarity
 
 
-def find_multiomics_modules(omics_data: Dict[str, pd.DataFrame], n_modules: int = 10, **kwargs) -> Dict[str, Any]:
+def find_multiomics_modules(
+    omics_data: Union["MultiOmicsData", Dict[str, pd.DataFrame]], n_modules: int = 10, **kwargs
+) -> Dict[str, Any]:
     """Identify multi-omics modules (co-regulated features across omics types).
 
     Args:
@@ -878,34 +1161,37 @@ def find_multiomics_modules(omics_data: Dict[str, pd.DataFrame], n_modules: int 
     logger.info(f"Finding multi-omics modules: {n_modules} modules")
 
     # Use joint NMF to find modules
-    nmf_results = joint_nmf(omics_data, n_components=n_modules, **kwargs)
+    sample_weights, feature_loadings = joint_nmf(omics_data, n_components=n_modules, **kwargs)
+    data_dict = omics_data.data if hasattr(omics_data, "data") else omics_data
+    actual_modules = sample_weights.shape[1]
 
     # Interpret modules
     modules = {}
 
-    for i in range(n_modules):
+    for i in range(actual_modules):
         module_features = {}
 
-        for omics_type, components in nmf_results["omics_components"].items():
+        for omics_type, components in feature_loadings.items():
             # Find features with high loading in this component
             loadings = components[i, :]
-            top_features = np.argsort(loadings)[-10:]  # Top 10 features
+            top_n = min(10, len(loadings))
+            top_features = np.argsort(loadings)[-top_n:][::-1]
 
             module_features[omics_type] = {
-                "features": [omics_data[omics_type].columns[j] for j in top_features],
+                "features": [data_dict[omics_type].columns[j] for j in top_features],
                 "loadings": loadings[top_features].tolist(),
             }
 
         modules[f"module_{i+1}"] = {
             "features": module_features,
-            "sample_weights": nmf_results["W_matrix"][:, i].tolist(),
+            "sample_weights": sample_weights[:, i].tolist(),
         }
 
     results = {
         "modules": modules,
-        "nmf_results": nmf_results,
-        "n_modules": n_modules,
+        "nmf_results": {"W": sample_weights, "H_dict": feature_loadings},
+        "n_modules": actual_modules,
     }
 
-    logger.info(f"Multi-omics module detection completed: {n_modules} modules found")
+    logger.info(f"Multi-omics module detection completed: {actual_modules} modules found")
     return results
