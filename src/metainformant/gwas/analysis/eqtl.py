@@ -20,6 +20,7 @@ def run_eqtl_analysis(
     expression_matrix: pd.DataFrame,
     covariates: Optional[pd.DataFrame] = None,
     cis_window: int = 1000000,
+    max_transcripts: Optional[int] = None,
 ) -> pd.DataFrame:
     """
     Run basic linear eQTL analysis for all transcripts.
@@ -32,6 +33,7 @@ def run_eqtl_analysis(
         expression_matrix: (Samples x Transcripts) - Normalized expression.
         covariates: (Samples x Covariates) - Optional.
         cis_window: Base pairs matching window (not used in simple linear test, placeholder).
+        max_transcripts: Optional cap for smoke/demo runs. If None, scan all transcripts.
 
     Returns:
         pd.DataFrame: Summary statistics (variant, transcript, beta, p_value).
@@ -58,9 +60,10 @@ def run_eqtl_analysis(
     # For this verification implementation, we run a naive loop
     # In production, use TensorQTL or MatrixeQTL approaches
 
-    # Limit to first few transcripts for speed/demo if matrix is huge
-    max_transcripts = 10
-    transcripts = E.columns[:max_transcripts]
+    if max_transcripts is not None and max_transcripts < 1:
+        raise ValueError("max_transcripts must be a positive integer or None")
+
+    transcripts = E.columns if max_transcripts is None else E.columns[:max_transcripts]
 
     for transcript_id in transcripts:
         phenotype = E[transcript_id]

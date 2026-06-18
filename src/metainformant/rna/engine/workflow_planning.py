@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from metainformant.core.utils import logging
+from metainformant.rna.core.sample_utils import extract_sample_id
 from metainformant.rna.engine.workflow_cleanup import (
     check_disk_space,
     check_disk_space_or_fail,
@@ -576,7 +577,7 @@ def create_extraction_metadata(getfastq_dir: Path, source_metadata: Path, output
     filtered_rows = []
     moved_count = 0
     for row in rows:
-        run_id = row.get("run", "")
+        run_id = extract_sample_id(row)
         if run_id in available_sra:
             filtered_rows.append(row)
 

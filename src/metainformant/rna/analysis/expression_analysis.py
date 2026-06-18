@@ -32,6 +32,37 @@ DEMethod = Literal["deseq2_like", "ttest", "wilcoxon"]
 PValueMethod = Literal["bh", "bonferroni", "fdr"]
 DistanceMethod = Literal["euclidean", "correlation", "cosine"]
 
+DE_RESULT_COLUMNS = ["gene", "log2_fold_change", "p_value", "adjusted_p_value", "base_mean", "stat"]
+
+
+def _empty_de_results() -> pd.DataFrame:
+    """Return an empty differential-expression result with the public schema."""
+    return pd.DataFrame(columns=DE_RESULT_COLUMNS)
+
+
+def _align_conditions_to_counts(counts_df: pd.DataFrame, conditions: Union[List[str], pd.Series]) -> pd.Series:
+    """Validate and align condition labels to count-matrix columns."""
+    if len(conditions) != len(counts_df.columns):
+        raise ValueError(f"Conditions length ({len(conditions)}) doesn't match samples ({len(counts_df.columns)})")
+
+    if isinstance(conditions, list):
+        aligned = pd.Series(conditions, index=counts_df.columns)
+    elif isinstance(conditions, pd.Series):
+        aligned = conditions.copy()
+        if aligned.index.equals(counts_df.columns):
+            aligned = aligned.loc[counts_df.columns]
+        elif isinstance(aligned.index, pd.RangeIndex) and aligned.index.equals(pd.RangeIndex(len(counts_df.columns))):
+            aligned.index = counts_df.columns
+        else:
+            raise ValueError("Conditions Series index must match count matrix columns or use a positional RangeIndex")
+    else:
+        raise TypeError("conditions must be a list or pandas Series")
+
+    if aligned.isna().any():
+        raise ValueError("Conditions contain missing values")
+
+    return aligned
+
 
 # =============================================================================
 # Differential Expression Analysis
@@ -88,11 +119,9 @@ def differential_expression(
     """
     if counts_df.empty:
         logger.warning("Empty count matrix provided")
-        return pd.DataFrame(columns=["gene", "log2_fold_change", "p_value", "adjusted_p_value", "base_mean", "stat"])
+        return _empty_de_results()
 
-    # Convert conditions to series
-    if isinstance(conditions, list):
-        conditions = pd.Series(conditions, index=counts_df.columns)
+    conditions = _align_conditions_to_counts(counts_df, conditions)
 
     # Validate conditions
     unique_conditions = conditions.unique()
@@ -105,6 +134,8 @@ def differential_expression(
     # Determine reference and treatment conditions
     if reference is None:
         reference = sorted(unique_conditions)[0]
+    elif reference not in unique_conditions:
+        raise ValueError(f"Reference condition '{reference}' is not present in conditions: {list(unique_conditions)}")
 
     treatment = [c for c in unique_conditions if c != reference][0]
     logger.info(f"Comparing {treatment} vs {reference} (reference)")
@@ -124,6 +155,9 @@ def differential_expression(
 
     logger.info(f"Analyzing {valid_genes.sum()}/{len(counts_df)} genes (min_count={min_count})")
 
+    if filtered_counts.empty:
+        return _empty_de_results()
+
     # Run differential expression
     if method == "deseq2_like":
         results = _de_deseq2_like(filtered_counts, ref_samples, treat_samples)
@@ -133,6 +167,9 @@ def differential_expression(
         results = _de_wilcoxon(filtered_counts, ref_samples, treat_samples)
     else:
         raise ValueError(f"Unknown DE method: {method}. Valid methods: deseq2_like, ttest, wilcoxon")
+
+    if results.empty:
+        return _empty_de_results()
 
     # Adjust p-values
     pvalue_method = kwargs.get("pvalue_method", "bh")
@@ -511,7 +548,7 @@ def pca_analysis(
 
     Example:
         >>> normalized = normalize_counts(counts, method="log2cpm")
-        >>> pca_result = pca_analysis(normalized.T, n_components=3)
+        >>> pca_result = pca_analysis(normalized, n_components=3)
         >>> pc_coords = pca_result["transformed"]
     """
     if expression_df.empty:

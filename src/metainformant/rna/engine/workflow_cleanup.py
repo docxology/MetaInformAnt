@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Set, Tuple
 
 from metainformant.core.utils import logging
+from metainformant.rna.core.sample_utils import extract_sample_id, find_quantification_file
 
 if TYPE_CHECKING:
     from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
@@ -211,13 +212,13 @@ def get_quantified_samples(config: AmalgkitWorkflowConfig) -> Set[str]:
     if not quant_dir.exists():
         return quantified
 
-    patterns = ["**/abundance.tsv", "**/*_abundance.tsv"]
-    for pattern in patterns:
-        for abundance_file in quant_dir.glob(pattern):
-            sample_id = abundance_file.parent.name
-            if sample_id.startswith(("SRR", "ERR", "DRR")):
-                if abundance_file.stat().st_size > 100:
-                    quantified.add(sample_id)
+    for sample_dir in quant_dir.iterdir():
+        if not sample_dir.is_dir():
+            continue
+        sample_id = sample_dir.name
+        quant_file = find_quantification_file(sample_dir, sample_id)
+        if sample_id.startswith(("SRR", "ERR", "DRR")) and quant_file is not None and quant_file.stat().st_size > 100:
+            quantified.add(sample_id)
 
     if quantified:
         logger.info(f"Found {len(quantified)} samples already quantified")
@@ -357,7 +358,7 @@ def filter_metadata_for_unquantified(
 
     filtered_rows = []
     for row in rows:
-        run_id = row.get("run", "")
+        run_id = extract_sample_id(row)
         if run_id not in quantified:
             filtered_rows.append(row)
         else:

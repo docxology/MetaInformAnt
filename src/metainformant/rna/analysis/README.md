@@ -38,6 +38,6 @@ from metainformant.rna.analysis.expression_analysis import differential_expressi
 from metainformant.rna.analysis.qc_metrics import compute_sample_metrics
 
 normalized = normalize_counts(raw_counts, method="tpm", gene_lengths=lengths)
-de_results = differential_expression(counts, groups, method="deseq2")
+de_results = differential_expression(counts, groups, method="deseq2_like")
 pca_result = pca_analysis(normalized, n_components=3)
 ```

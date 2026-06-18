@@ -20,8 +20,9 @@ import yaml
 
 from metainformant.core.utils import logging as log_utils
 from metainformant.rna.amalgkit.tissue_normalizer import apply_tissue_normalization
+from metainformant.rna.core.sample_utils import find_quantification_file
 from metainformant.rna.engine.progress_db import ProgressDB
-from metainformant.rna.retrieval.ena_downloader import ENADownloader
+from metainformant.rna.retrieval.ena_downloader import ENADownloader, verify_gzip_integrity
 
 # Determine project root if possible, or use relative paths
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent.parent
@@ -271,6 +272,9 @@ class StreamingPipelineOrchestrator:
                 if sz_gb == 0:
                     logger.error(f"Downloaded file {fq.name} is empty (0.00 GB). Marking as failed.")
                     success = False
+                elif not verify_gzip_integrity(fq):
+                    logger.error(f"Downloaded file {fq.name} failed gzip integrity check. Marking as failed.")
+                    success = False
         else:
             logger.warning(f"ENA download failed for {srr_id}: {message}")
             logger.info(f"Falling back to NCBI fasterq-dump for {srr_id}...")
@@ -303,7 +307,7 @@ class StreamingPipelineOrchestrator:
 
                     # Check if any fastq.gz files now exist
                     gz_files = list(sample_dir.glob("*.fastq.gz"))
-                    valid_files = [f for f in gz_files if f.stat().st_size > 0]
+                    valid_files = [f for f in gz_files if f.stat().st_size > 0 and verify_gzip_integrity(f)]
                     if valid_files and len(valid_files) == len(gz_files):
                         success = True
                         logger.info(f"NCBI fallback succeeded for {srr_id}: {len(valid_files)} non-empty files")
@@ -398,9 +402,7 @@ class StreamingPipelineOrchestrator:
             pass  # Fall through to filesystem check on DB errors
         # Filesystem fallback for samples not yet in DB
         quant_dir = Path(f"output/amalgkit/{species_name}/work/quant/{srr_id}")
-        return (
-            (quant_dir / "abundance.tsv").exists() or (quant_dir / "quant.sf").exists() if quant_dir.exists() else False
-        )
+        return find_quantification_file(quant_dir, srr_id) is not None if quant_dir.exists() else False
 
     def process_single_sample(
         self, srr_id: str, batch_idx: int, fastq_dir: Path, config_path: Path, species_name: str, threads: int

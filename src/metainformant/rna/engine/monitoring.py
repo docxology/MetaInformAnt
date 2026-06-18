@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
 from metainformant.core.utils import logging
+from metainformant.rna.core.sample_utils import extract_sample_id, find_quantification_file
 
 logger = logging.get_logger(__name__)
 
@@ -93,7 +94,7 @@ def count_quantified_samples(config_path: Path | str) -> Tuple[int, int]:
         quantified = 0
         if quant_dir.exists():
             for sample_dir in quant_dir.iterdir():
-                if sample_dir.is_dir() and (sample_dir / "abundance.tsv").exists():
+                if sample_dir.is_dir() and find_quantification_file(sample_dir, sample_dir.name) is not None:
                     quantified += 1
 
         return quantified, total
@@ -211,9 +212,7 @@ def analyze_species_status(species_dir: Path | str) -> Dict[str, Any]:
         q_count = 0
         if quant_dir.exists():
             for sample_dir in quant_dir.glob("*"):
-                if sample_dir.is_dir() and (
-                    len(list(sample_dir.glob("abundance.tsv"))) > 0 or len(list(sample_dir.glob("*_abundance.tsv"))) > 0
-                ):
+                if sample_dir.is_dir() and find_quantification_file(sample_dir, sample_dir.name) is not None:
                     q_count += 1
         status["quantified"] = q_count
 
@@ -282,8 +281,7 @@ def get_sample_status(config_path: Path, sample_id: str) -> Dict[str, Any]:
         }
 
         # Check quant
-        quant_file = config.work_dir / "quant" / sample_id / "abundance.tsv"
-        if quant_file.exists():
+        if find_quantification_file(config.work_dir / "quant" / sample_id, sample_id) is not None:
             status["quantified"] = True
             status["status"] = "quantified"
             return status
@@ -330,12 +328,12 @@ def find_unquantified_samples(config_path: Path) -> List[str]:
 
             with open(metadata_file, "r") as f:
                 reader = csv.DictReader(f, delimiter="\t")
-                sample_ids = [row["run"] for row in reader if "run" in row]
+                sample_ids = [sample_id for row in reader if (sample_id := extract_sample_id(row))]
 
         unquantified = []
         quant_dir = config.work_dir / "quant"
         for sid in sample_ids:
-            if not (quant_dir / sid / "abundance.tsv").exists():
+            if find_quantification_file(quant_dir / sid, sid) is None:
                 unquantified.append(sid)
 
         return unquantified
@@ -400,7 +398,7 @@ def initialize_progress_tracking(config_path: Path) -> Dict[str, Any]:
 
             with open(metadata_file, "r") as f:
                 reader = csv.DictReader(f, delimiter="\t")
-                sample_ids = [row["run"] for row in reader if "run" in row]
+                sample_ids = [sample_id for row in reader if (sample_id := extract_sample_id(row))]
         else:
             return {"success": False, "error": "Metadata not found"}
 

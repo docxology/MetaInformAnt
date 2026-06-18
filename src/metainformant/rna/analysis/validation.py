@@ -12,6 +12,7 @@ from typing import Any, Dict, Optional
 from metainformant.core import io
 from metainformant.core.utils import logging
 from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
+from metainformant.rna.core.sample_utils import extract_sample_id, find_quantification_file
 
 logger = logging.get_logger(__name__)
 
@@ -106,22 +107,11 @@ def get_sample_pipeline_status(
     # Amalgkit creates quant/{sample_id}/abundance.tsv (kallisto) or quant/{sample_id}/quant.sf (salmon)
     sample_quant_dir = quant_dir / sample_id
     if sample_quant_dir.exists():
-        abundance_tsv = sample_quant_dir / "abundance.tsv"
-        sample_abundance_tsv = sample_quant_dir / f"{sample_id}_abundance.tsv"
-        quant_sf = sample_quant_dir / "quant.sf"
-
-        if (abundance_tsv.exists() and abundance_tsv.stat().st_size > 0) or (
-            sample_abundance_tsv.exists() and sample_abundance_tsv.stat().st_size > 0
-        ):
-            target_abundance = abundance_tsv if abundance_tsv.exists() else sample_abundance_tsv
+        target_abundance = find_quantification_file(sample_quant_dir, sample_id)
+        if target_abundance is not None:
             status["quantification"] = True
             status["diagnostics"]["abundance_file"] = str(target_abundance)
             status["diagnostics"]["abundance_size"] = target_abundance.stat().st_size
-            status["stage"] = "quantification"
-        elif quant_sf.exists() and quant_sf.stat().st_size > 0:
-            status["quantification"] = True
-            status["diagnostics"]["abundance_file"] = str(quant_sf)
-            status["diagnostics"]["abundance_size"] = quant_sf.stat().st_size
             status["stage"] = "quantification"
 
     # Check merge stage: sample appears in merged abundance matrix
@@ -137,19 +127,10 @@ def get_sample_pipeline_status(
                     status["merge"] = True
                     status["stage"] = "merge"
                 else:
-                    # Check first 1000 data lines for sample ID (early exit optimization)
-                    # Most samples appear in first few rows, avoid reading entire large file
-                    max_lines_to_check = 1000
-                    lines_checked = 0
                     for line in f:
-                        lines_checked += 1
                         if line.startswith(sample_id + "\t") or line.startswith(sample_id + ","):
                             status["merge"] = True
                             status["stage"] = "merge"
-                            break
-                        if lines_checked >= max_lines_to_check:
-                            # For very large files, stop after checking reasonable number of lines
-                            # If sample not found in first 1000 rows, likely not present
                             break
         except Exception as e:
             logger.debug(
@@ -299,30 +280,8 @@ def validate_all_samples(config: AmalgkitWorkflowConfig, stage: Optional[str] = 
 
         with open(metadata_file, "r") as f:
             reader = csv.DictReader(f, delimiter="\t")
-            # Get column names (case-insensitive matching)
-            fieldnames_lower = {name.lower(): name for name in reader.fieldnames or []}
-
-            # Try various column name variations (case-insensitive)
-            sample_id_key = None
-            for key_variant in ["run", "sra_run", "sample_id", "accession"]:
-                if key_variant.lower() in fieldnames_lower:
-                    sample_id_key = fieldnames_lower[key_variant.lower()]
-                    break
-
-            # Fallback to original case-sensitive matching if needed
-            if sample_id_key is None:
-                sample_id_key = "run"  # Most common default
-
             for row in reader:
-                # Get sample ID with fallback to multiple column names
-                sample_id = (
-                    row.get(sample_id_key, "")
-                    or row.get("run", "")
-                    or row.get("Run", "")
-                    or row.get("SRA_Run", "")
-                    or row.get("sample_id", "")
-                    or row.get("accession", "")
-                )
+                sample_id = extract_sample_id(row)
                 if sample_id and sample_id.strip():  # Skip empty/whitespace-only IDs
                     sample_ids.append(sample_id.strip())
     except Exception as e:

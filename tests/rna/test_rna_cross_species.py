@@ -449,8 +449,8 @@ class TestComputeExpressionConservation:
             assert np.isnan(row["correlation"])
             assert bool(row["conserved"]) is False
 
-    def test_mismatched_sample_counts_truncated(self) -> None:
-        """Different sample counts are handled by truncating to minimum."""
+    def test_mismatched_sample_counts_use_shared_columns(self) -> None:
+        """Different sample counts are handled by aligning shared columns."""
         expr_a = pd.DataFrame(
             {"c1": [1.0], "c2": [2.0], "c3": [3.0], "c4": [4.0]},
             index=["gene1"],
@@ -460,11 +460,20 @@ class TestComputeExpressionConservation:
             index=["gene1"],
         )
 
-        # Should not raise; uses min_len = 2
+        # Should not raise; uses shared columns c1 and c2
         result = compute_expression_conservation(expr_a, expr_b, method="pearson")
 
         assert len(result) == 1
         # With only 2 points [1,2] vs [10,20] Pearson = 1.0
+        assert result.iloc[0]["correlation"] == pytest.approx(1.0, abs=1e-6)
+
+    def test_condition_columns_are_aligned_by_label(self) -> None:
+        """Comparable conditions should be matched by label, not input order."""
+        expr_a = pd.DataFrame({"c1": [1.0], "c2": [2.0], "c3": [3.0]}, index=["gene1"])
+        expr_b = pd.DataFrame({"c3": [3.0], "c2": [2.0], "c1": [1.0]}, index=["gene1"])
+
+        result = compute_expression_conservation(expr_a, expr_b, method="pearson")
+
         assert result.iloc[0]["correlation"] == pytest.approx(1.0, abs=1e-6)
 
     def test_partial_overlap_genes(self) -> None:

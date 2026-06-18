@@ -140,7 +140,8 @@ from metainformant.gwas.finemapping.colocalization import eqtl_coloc
 # Prepare expression data for integration
 rna_data = integration.from_rna_expression(
     expression_df,
-    normalize=True
+    normalize=True,
+    transpose=True,  # RNA matrices here are genes x samples
 )
 
 # Run colocalization with GWAS summary statistics

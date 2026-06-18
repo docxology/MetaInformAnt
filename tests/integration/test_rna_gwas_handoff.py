@@ -82,3 +82,46 @@ def test_rna_gwas_handoff(amalgkit_output_dir, genotype_matrix):
 
     print("\neQTL Results Head:")
     print(results.head())
+
+
+def test_expression_loader_accepts_prefixed_and_salmon_quant(tmp_path):
+    """GWAS handoff should load all RNA quant output variants validated upstream."""
+    work_dir = tmp_path / "amalgkit_work"
+    quant_dir = work_dir / "quant"
+
+    prefixed_dir = quant_dir / "SAMPLE_PREFIXED"
+    prefixed_dir.mkdir(parents=True)
+    pd.DataFrame({"target_id": ["TR_1"], "tpm": [3.0], "est_counts": [30.0]}).to_csv(
+        prefixed_dir / "SAMPLE_PREFIXED_abundance.tsv", sep="\t", index=False
+    )
+
+    salmon_dir = quant_dir / "SAMPLE_SALMON"
+    salmon_dir.mkdir(parents=True)
+    pd.DataFrame({"Name": ["TR_1"], "Length": [1000], "TPM": [4.0], "NumReads": [40.0]}).to_csv(
+        salmon_dir / "quant.sf", sep="\t", index=False
+    )
+
+    expression_matrix = ExpressionLoader(work_dir).load_amalgkit_quant(metric="tpm")
+
+    assert expression_matrix.shape == (2, 1)
+    assert expression_matrix.loc["SAMPLE_PREFIXED", "TR_1"] == 3.0
+    assert expression_matrix.loc["SAMPLE_SALMON", "TR_1"] == 4.0
+
+
+def test_run_eqtl_analysis_scans_all_transcripts_by_default(genotype_matrix):
+    """The verification wrapper should not silently cap analyses at 10 transcripts."""
+    transcript_ids = [f"TR_{i:02d}" for i in range(12)]
+    expression_matrix = pd.DataFrame(
+        {transcript_id: [float(i + 1), float(i + 2), float(i + 3)] for i, transcript_id in enumerate(transcript_ids)},
+        index=genotype_matrix.index,
+    )
+
+    results = run_eqtl_analysis(genotype_matrix=genotype_matrix[["VAR_1"]], expression_matrix=expression_matrix)
+    limited = run_eqtl_analysis(
+        genotype_matrix=genotype_matrix[["VAR_1"]],
+        expression_matrix=expression_matrix,
+        max_transcripts=5,
+    )
+
+    assert set(results["transcript"]) == set(transcript_ids)
+    assert set(limited["transcript"]) == set(transcript_ids[:5])

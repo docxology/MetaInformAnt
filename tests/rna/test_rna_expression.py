@@ -167,6 +167,15 @@ class TestNormalizeTPM:
         assert result.shape == count_matrix.shape
         assert not result.isna().any().any()
 
+    def test_tpm_rejects_nonpositive_gene_lengths(self, small_count_matrix: pd.DataFrame) -> None:
+        lengths = pd.Series(
+            [1000, 2000, 0, 1500, 3000],
+            index=small_count_matrix.index,
+            dtype=float,
+        )
+        with pytest.raises(ValueError, match="gene_lengths must be positive"):
+            normalize_counts(small_count_matrix, method="tpm", gene_lengths=lengths)
+
 
 class TestNormalizeRPKM:
     def test_rpkm_requires_gene_lengths(self, count_matrix: pd.DataFrame) -> None:
@@ -188,6 +197,15 @@ class TestNormalizeRPKM:
         gene_len_kb = small_gene_lengths["gene_A"] / 1000.0
         expected = (100.0 / gene_len_kb) / lib_size * 1e6
         assert abs(result.loc["gene_A", "ctrl_1"] - expected) < 0.01
+
+    def test_rpkm_rejects_negative_gene_lengths(self, small_count_matrix: pd.DataFrame) -> None:
+        lengths = pd.Series(
+            [1000, 2000, -500, 1500, 3000],
+            index=small_count_matrix.index,
+            dtype=float,
+        )
+        with pytest.raises(ValueError, match="gene_lengths must be positive"):
+            normalize_counts(small_count_matrix, method="rpkm", gene_lengths=lengths)
 
 
 class TestNormalizeLog2CPM:
@@ -477,6 +495,43 @@ class TestDifferentialExpressionEdgeCases:
         )
         result = differential_expression(small_count_matrix, conditions, method="ttest")
         assert len(result) > 0
+
+    def test_conditions_series_default_index_is_positional(self, small_count_matrix: pd.DataFrame) -> None:
+        conditions = pd.Series(["control", "control", "control", "treatment", "treatment", "treatment"])
+        result = differential_expression(small_count_matrix, conditions, method="ttest")
+        assert len(result) > 0
+
+    def test_conditions_series_wrong_index_raises(self, small_count_matrix: pd.DataFrame) -> None:
+        conditions = pd.Series(
+            ["control", "control", "control", "treatment", "treatment", "treatment"],
+            index=["a", "b", "c", "d", "e", "f"],
+        )
+        with pytest.raises(ValueError, match="Series index"):
+            differential_expression(small_count_matrix, conditions, method="ttest")
+
+    def test_invalid_reference_condition_raises(
+        self, small_count_matrix: pd.DataFrame, conditions_6sample: List[str]
+    ) -> None:
+        with pytest.raises(ValueError, match="Reference condition"):
+            differential_expression(small_count_matrix, conditions_6sample, method="ttest", reference="missing")
+
+    @pytest.mark.parametrize("method", ["deseq2_like", "ttest", "wilcoxon"])
+    def test_all_genes_filtered_returns_empty_schema(self, method: str) -> None:
+        counts = pd.DataFrame(
+            {
+                "ctrl_1": [1],
+                "ctrl_2": [1],
+                "treat_1": [1],
+                "treat_2": [1],
+            },
+            index=["low_gene"],
+        )
+        conditions = ["control", "control", "treatment", "treatment"]
+        result = differential_expression(counts, conditions, method=method, min_count=999)  # type: ignore[arg-type]
+        expected_cols = {"gene", "log2_fold_change", "p_value", "adjusted_p_value", "base_mean", "stat"}
+
+        assert result.empty
+        assert expected_cols.issubset(set(result.columns))
 
 
 # =============================================================================
@@ -1076,7 +1131,11 @@ class TestEndToEndWorkflow:
     ) -> None:
         """Verify every DE method runs without error and produces valid results."""
         for method in ["deseq2_like", "ttest", "wilcoxon"]:
-            result = differential_expression(small_count_matrix, conditions_6sample, method=method)  # type: ignore[arg-type]
+            result = differential_expression(
+                small_count_matrix,
+                conditions_6sample,
+                method=method,  # type: ignore[arg-type]
+            )
             assert "gene" in result.columns
             assert "log2_fold_change" in result.columns
             assert "p_value" in result.columns

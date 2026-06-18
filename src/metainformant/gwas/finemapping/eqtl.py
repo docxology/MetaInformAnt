@@ -354,20 +354,8 @@ def eqtl_summary_stats(
     if len(cis_results) == 0:
         return {"n_tests": 0, "n_egenes": 0, "n_eqtls": 0}
 
-    # FDR correction
-    from scipy import stats  # noqa: F811
-
-    pvals = cis_results["pvalue"].values
-    _, _fdr_pvals = stats.false_discovery_control(pvals, method="bh"), None
-
-    # Simple Benjamini-Hochberg
-    n = len(pvals)
-    sorted_idx = np.argsort(pvals)
-    sorted_pvals = pvals[sorted_idx]
-    fdr = np.zeros(n)
-    for i, p in enumerate(sorted_pvals):
-        fdr[sorted_idx[i]] = p * n / (i + 1)
-    fdr = np.minimum.accumulate(fdr[::-1])[::-1]
+    pvals = cis_results["pvalue"].astype(float).values
+    fdr = stats.false_discovery_control(pvals, method="bh")
 
     significant = fdr < fdr_threshold
 

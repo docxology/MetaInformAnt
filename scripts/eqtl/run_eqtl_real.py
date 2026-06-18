@@ -23,6 +23,7 @@ import pandas as pd
 # Add project to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
+from metainformant.rna.core.sample_utils import find_quantification_file
 from metainformant.gwas.finemapping.eqtl import (
     cis_eqtl_scan,
     eqtl_effect_sizes,
@@ -33,6 +34,16 @@ from metainformant.gwas.visualization.eqtl_visualization import (
     plot_eqtl_summary,
     plot_eqtl_volcano,
 )
+
+# Paths
+QUANT_DIR = Path("output/amalgkit/apis_mellifera_all/work/quant")
+OUTPUT_DIR = Path("output/eqtl/amellifera")
+RESULTS_DIR = OUTPUT_DIR / "results"
+PLOTS_DIR = OUTPUT_DIR / "plots"
+LOGS_DIR = OUTPUT_DIR / "logs"
+
+for directory in (RESULTS_DIR, PLOTS_DIR, LOGS_DIR):
+    directory.mkdir(parents=True, exist_ok=True)
 
 # Setup logging
 logging.basicConfig(
@@ -45,18 +56,11 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Paths
-QUANT_DIR = Path("output/amalgkit/apis_mellifera_all/work/quant")
-OUTPUT_DIR = Path("output/eqtl/amellifera")
-RESULTS_DIR = OUTPUT_DIR / "results"
-PLOTS_DIR = OUTPUT_DIR / "plots"
-LOGS_DIR = OUTPUT_DIR / "logs"
-
 
 def load_real_expression_data(
     quant_dir: Path, max_samples: int = 100, min_tpm: float = 1.0, max_genes: int = 1000
 ) -> tuple[pd.DataFrame, list[str]]:
-    """Load real kallisto expression data from abundance.tsv files.
+    """Load real expression data from recognized per-sample quant files.
 
     Args:
         quant_dir: Directory containing sample subdirectories.
@@ -77,20 +81,20 @@ def load_real_expression_data(
     logger.info(f"Loading {len(sample_dirs)} samples")
 
     expression_data = {}
-    gene_info = None
-
     for sample_dir in sample_dirs:
-        abundance_file = sample_dir / "abundance.tsv"
-        if not abundance_file.exists():
+        sample_id = sample_dir.name
+        abundance_file = find_quantification_file(sample_dir, sample_id)
+        if abundance_file is None:
             continue
 
-        sample_id = sample_dir.name
         df = pd.read_csv(abundance_file, sep="\t")
+        target_col = "target_id" if "target_id" in df.columns else "Name"
+        tpm_col = "tpm" if "tpm" in df.columns else "TPM"
+        if target_col not in df.columns or tpm_col not in df.columns:
+            logger.warning(f"Skipping {sample_id}: missing transcript or TPM column in {abundance_file}")
+            continue
 
-        if gene_info is None:
-            gene_info = df[["target_id", "length"]].copy()
-
-        expression_data[sample_id] = df.set_index("target_id")["tpm"]
+        expression_data[sample_id] = df.set_index(target_col)[tpm_col]
 
     if not expression_data:
         raise ValueError("No expression data loaded")

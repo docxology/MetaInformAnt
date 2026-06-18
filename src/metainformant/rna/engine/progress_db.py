@@ -21,6 +21,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from metainformant.core.utils.logging import get_logger
+from metainformant.rna.core.sample_utils import find_quantification_file
 
 logger = get_logger(__name__)
 
@@ -233,8 +234,7 @@ class ProgressDB:
             for subdir in quant_dir.iterdir():
                 if not subdir.is_dir():
                     continue
-                has_abundance = (subdir / "abundance.tsv").exists() or any(subdir.glob("*_abundance.tsv"))
-                if has_abundance or (subdir / "quant.sf").exists():
+                if find_quantification_file(subdir, subdir.name) is not None:
                     reconciled.append(subdir.name)
         except Exception as e:
             logger.warning(f"Reconciliation scan failed for {species}: {e}")

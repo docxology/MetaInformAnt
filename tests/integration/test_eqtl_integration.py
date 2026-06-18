@@ -359,3 +359,24 @@ class TestEqtlSummaryStats:
         summary = eqtl_summary_stats(results)
 
         assert summary["n_tests"] == 0
+
+    def test_summary_stats_uses_sorted_bh_order(self):
+        """BH monotonicity must be applied in sorted p-value order."""
+        import pandas as pd
+
+        from metainformant.gwas.finemapping.eqtl import eqtl_summary_stats
+
+        results = pd.DataFrame(
+            {
+                "gene_id": ["g1", "g2", "g3", "g4"],
+                "variant_id": ["v1", "v2", "v3", "v4"],
+                "beta": [1.0, 1.0, 1.0, 1.0],
+                "pvalue": [0.9, 0.001, 0.8, 0.7],
+            }
+        )
+
+        summary = eqtl_summary_stats(results, fdr_threshold=0.05)
+
+        assert summary["n_tests"] == 4
+        assert summary["n_eqtls"] == 1
+        assert summary["n_egenes"] == 1

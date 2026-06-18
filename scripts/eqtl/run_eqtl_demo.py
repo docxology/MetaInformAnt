@@ -33,6 +33,15 @@ from metainformant.gwas.visualization.eqtl_visualization import (
     plot_eqtl_volcano,
 )
 
+# Output directories
+OUTPUT_DIR = Path("output/eqtl/amellifera")
+RESULTS_DIR = OUTPUT_DIR / "results"
+PLOTS_DIR = OUTPUT_DIR / "plots"
+LOGS_DIR = OUTPUT_DIR / "logs"
+
+for directory in (RESULTS_DIR, PLOTS_DIR, LOGS_DIR):
+    directory.mkdir(parents=True, exist_ok=True)
+
 # Setup logging
 logging.basicConfig(
     level=logging.INFO,
@@ -43,12 +52,6 @@ logging.basicConfig(
     ],
 )
 logger = logging.getLogger(__name__)
-
-# Output directories
-OUTPUT_DIR = Path("output/eqtl/amellifera")
-RESULTS_DIR = OUTPUT_DIR / "results"
-PLOTS_DIR = OUTPUT_DIR / "plots"
-LOGS_DIR = OUTPUT_DIR / "logs"
 
 
 def create_synthetic_data(

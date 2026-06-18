@@ -259,8 +259,8 @@ def compute_expression_conservation(
             samples/conditions as columns. Should be normalized.
         expr_b: Expression matrix for species B with genes as rows and
             samples/conditions as columns. Gene IDs (index) must overlap
-            with expr_a (i.e., mapped to shared ortholog space). Column
-            count must match expr_a for correlation methods.
+            with expr_a (i.e., mapped to shared ortholog space). Columns are
+            aligned by shared sample/condition labels before scoring.
         method: Conservation metric:
             - "spearman": Spearman rank correlation across samples
             - "pearson": Pearson correlation across samples
@@ -297,18 +297,22 @@ def compute_expression_conservation(
             "No shared genes between expr_a and expr_b. " "Ensure both are mapped to the same ortholog space."
         )
 
+    expr_b_columns = set(expr_b.columns)
+    shared_columns = [col for col in expr_a.columns if col in expr_b_columns]
+    if not shared_columns:
+        raise ValueError(
+            "No shared sample/condition columns between expr_a and expr_b. "
+            "Column labels must represent comparable samples or conditions."
+        )
+
     logger.info(f"Computing expression conservation for {len(shared_genes)} shared genes " f"using {method} method")
 
     results = []
 
     for gene in shared_genes:
-        vals_a = expr_a.loc[gene].values.astype(float)
-        vals_b = expr_b.loc[gene].values.astype(float)
-
-        # Ensure matching dimensions by using the minimum length
-        min_len = min(len(vals_a), len(vals_b))
-        vals_a = vals_a[:min_len]
-        vals_b = vals_b[:min_len]
+        vals_a = expr_a.loc[gene, shared_columns].values.astype(float)
+        vals_b = expr_b.loc[gene, shared_columns].values.astype(float)
+        min_len = len(shared_columns)
 
         if min_len < 2:
             # Cannot compute correlation with fewer than 2 data points

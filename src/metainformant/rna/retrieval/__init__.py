@@ -10,6 +10,7 @@ from .ena_downloader import (
     ENADownloader,
     calculate_md5,
     clean_stagnant_file,
+    download_sra_samples,
     verify_gzip_integrity,
 )
 
@@ -18,5 +19,6 @@ __all__ = [
     "ENADownloader",
     "calculate_md5",
     "clean_stagnant_file",
+    "download_sra_samples",
     "verify_gzip_integrity",
 ]

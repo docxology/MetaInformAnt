@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from metainformant.core.utils import logging
+from metainformant.rna.core.sample_utils import extract_sample_id, find_quantification_file
 from metainformant.rna.engine.sra_extraction import manual_integration_fallback
 from metainformant.rna.engine.workflow_cleanup import (
     check_disk_space,
@@ -79,8 +80,13 @@ def _ensure_streaming_getfastq_link(config: AmalgkitWorkflowConfig) -> None:
     if not fastq_src_dir.exists():
         return
     try:
-        if fastq_link_dir.is_symlink() or fastq_link_dir.exists():
+        if fastq_link_dir.is_symlink() or fastq_link_dir.is_file():
             fastq_link_dir.unlink()
+        elif fastq_link_dir.exists():
+            if any(fastq_link_dir.iterdir()):
+                logger.warning(f"  Cannot replace non-empty getfastq directory with symlink: {fastq_link_dir}")
+                return
+            fastq_link_dir.rmdir()
         fastq_link_dir.symlink_to(fastq_src_dir.resolve(), target_is_directory=True)
         logger.info("  Created symlink: work/getfastq -> fastq/getfastq")
     except Exception as e:
@@ -98,13 +104,13 @@ def _is_streaming_step_already_done(
     if redo_value in ("yes", "true", "1"):
         return False
 
-    abundance_file = config.work_dir / "quant" / sample_id / f"{sample_id}_abundance.tsv"
+    abundance_file = find_quantification_file(config.work_dir / "quant" / sample_id, sample_id)
     if step_name == "quant":
-        return abundance_file.exists()
+        return abundance_file is not None
 
     if step_name == "getfastq":
         fastq_file = config.work_dir / "getfastq" / sample_id / f"{sample_id}.amalgkit.fastq.gz"
-        return abundance_file.exists() or fastq_file.exists()
+        return abundance_file is not None or (fastq_file.exists() and fastq_file.stat().st_size > 0)
 
     return False
 
@@ -167,7 +173,7 @@ def _process_streaming_sample(
 ) -> List[WorkflowStepResult]:
     """Run all per-sample streaming steps for one metadata row."""
     sample_results = []
-    sample_id = sample_row.get("run", str(sample_idx_in_chunk))
+    sample_id = extract_sample_id(sample_row, fallback=str(sample_idx_in_chunk))
     single_meta_file = _single_sample_metadata_file(config, fieldnames, sample_row, current_chunk_idx, sample_id)
     sample_success = True
 

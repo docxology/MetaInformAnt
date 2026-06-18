@@ -1,6 +1,6 @@
 """Core utilities and configurations for RNA analysis."""
 
-from . import cleanup, configs, deps, environment
+from . import cleanup, configs, deps, environment, sample_utils
 from .cleanup import (
     cleanup_partial_downloads,
     cleanup_unquantified_samples,
@@ -45,12 +45,19 @@ from .environment import (
     check_virtual_env,
     validate_environment,
 )
+from .sample_utils import (
+    extract_sample_id,
+    find_quantification_file,
+    quantification_file_candidates,
+    read_sample_ids_from_metadata,
+)
 
 __all__ = [
     "cleanup",
     "configs",
     "deps",
     "environment",
+    "sample_utils",
     "find_partial_downloads",
     "cleanup_partial_downloads",
     "fix_abundance_naming",
@@ -87,4 +94,8 @@ __all__ = [
     "check_rscript",
     "check_dependencies",
     "validate_environment",
+    "extract_sample_id",
+    "read_sample_ids_from_metadata",
+    "quantification_file_candidates",
+    "find_quantification_file",
 ]

@@ -21,6 +21,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from metainformant.core.utils.logging import get_logger
 from metainformant.core.utils.watchdog import ProcessWatchdog
+from metainformant.rna.core.sample_utils import find_quantification_file
 from metainformant.rna.retrieval.ena_downloader import ENADownloader
 
 logger = get_logger(__name__)
@@ -195,7 +196,7 @@ class StreamingPipeline:
             return processed
 
         for sample_dir in self.quant_dir.iterdir():
-            if sample_dir.is_dir() and (sample_dir / "abundance.tsv").exists():
+            if sample_dir.is_dir() and find_quantification_file(sample_dir, sample_dir.name) is not None:
                 processed.add(sample_dir.name)
         return processed
 
@@ -281,7 +282,7 @@ class StreamingPipeline:
 
         try:
             # 1. Check if done
-            if not self.dry_run and (self.quant_dir / sample_id / "abundance.tsv").exists():
+            if not self.dry_run and find_quantification_file(self.quant_dir / sample_id, sample_id) is not None:
                 return {**result, "success": True, "status": "Skipped (Exists)"}
 
             # 2. Download

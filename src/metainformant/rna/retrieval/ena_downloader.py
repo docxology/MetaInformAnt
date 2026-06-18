@@ -227,10 +227,14 @@ class ENADownloader:
             filename = url.split("/")[-1]
             output_file = output_dir / filename
 
-            # Check if already exists and non-empty
+            # Check if already exists and non-empty. Resume support must still
+            # reject corrupt gzip files from interrupted prior downloads.
             if output_file.exists() and output_file.stat().st_size > 0:
-                downloaded_files.append(output_file)
-                continue
+                if verify_gzip_integrity(output_file):
+                    downloaded_files.append(output_file)
+                    continue
+                logger.warning(f"Existing FASTQ failed gzip integrity check, redownloading: {output_file}")
+                output_file.unlink()
 
             # Use curl for reliability
             cmd = [
@@ -252,12 +256,19 @@ class ENADownloader:
             try:
                 result = subprocess.run(cmd, capture_output=True, text=True, timeout=self.timeout)
 
-                if result.returncode == 0 and output_file.exists() and output_file.stat().st_size > 0:
+                if (
+                    result.returncode == 0
+                    and output_file.exists()
+                    and output_file.stat().st_size > 0
+                    and verify_gzip_integrity(output_file)
+                ):
                     downloaded_files.append(output_file)
                 else:
                     # Clean up partial
                     if output_file.exists():
                         output_file.unlink()
+                    if result.returncode == 0:
+                        return False, f"Download failed gzip integrity check for {filename}", []
                     return False, f"Download failed for {filename}: {result.stderr}", []
 
             except subprocess.TimeoutExpired:
@@ -268,3 +279,46 @@ class ENADownloader:
                 return False, f"Download error: {str(e)}", []
 
         return True, f"Downloaded {len(downloaded_files)} files", downloaded_files
+
+
+def download_sra_samples(
+    sra_ids: List[str],
+    base_out_dir: Path,
+    *,
+    sort_by_size: bool = True,
+    use_fallback: bool = True,
+    downloader: ENADownloader | None = None,
+) -> Tuple[int, int]:
+    """Download a batch of SRA run accessions into amalgkit getfastq layout.
+
+    Args:
+        sra_ids: Run accessions to download.
+        base_out_dir: Amalgkit work directory. Files are written under
+            ``base_out_dir/getfastq/{run_id}/``.
+        sort_by_size: Reserved for compatibility with callers that may pass
+            size-sorted IDs. The current ENA API path does not pre-fetch sizes.
+        use_fallback: Reserved for compatibility; direct ENA download is the
+            only implementation in this helper.
+        downloader: Optional downloader instance for tests or custom timeouts.
+
+    Returns:
+        Tuple of ``(success_count, fail_count)``.
+    """
+    _ = sort_by_size, use_fallback
+    base_out_dir = Path(base_out_dir)
+    getfastq_dir = base_out_dir / "getfastq"
+    getfastq_dir.mkdir(parents=True, exist_ok=True)
+    downloader = downloader or ENADownloader()
+
+    success_count = 0
+    fail_count = 0
+    for sra_id in sra_ids:
+        sample_dir = getfastq_dir / sra_id
+        success, message, _files = downloader.download_run(sra_id, sample_dir)
+        if success:
+            success_count += 1
+        else:
+            fail_count += 1
+            logger.warning(f"Failed to download {sra_id}: {message}")
+
+    return success_count, fail_count

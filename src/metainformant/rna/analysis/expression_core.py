@@ -121,6 +121,27 @@ def _normalize_cpm(counts: pd.DataFrame) -> pd.DataFrame:
     return cpm
 
 
+def _prepare_gene_lengths(counts: pd.DataFrame, gene_lengths: pd.Series) -> pd.Series:
+    """Align gene lengths to counts and require positive base-pair lengths."""
+    lengths = gene_lengths.reindex(counts.index).astype(float)
+
+    nonpositive = lengths.notna() & (lengths <= 0)
+    if nonpositive.any():
+        bad_genes = ", ".join(map(str, lengths.index[nonpositive][:5]))
+        raise ValueError(f"gene_lengths must be positive for TPM/RPKM normalization; invalid genes: {bad_genes}")
+
+    if lengths.isna().any():
+        missing = lengths.isna().sum()
+        logger.warning(f"{missing} genes missing length information, using median length")
+        positive_lengths = lengths[lengths > 0]
+        median_length = positive_lengths.median()
+        if pd.isna(median_length):
+            median_length = 1000.0
+        lengths = lengths.fillna(median_length)
+
+    return lengths
+
+
 def _normalize_tpm(counts: pd.DataFrame, gene_lengths: pd.Series) -> pd.DataFrame:
     """Normalize counts to transcripts per million (TPM).
 
@@ -134,18 +155,7 @@ def _normalize_tpm(counts: pd.DataFrame, gene_lengths: pd.Series) -> pd.DataFram
     Returns:
         TPM-normalized expression matrix.
     """
-    # Align gene lengths with counts index
-    lengths = gene_lengths.reindex(counts.index)
-    if lengths.isna().any():
-        missing = lengths.isna().sum()
-        logger.warning(f"{missing} genes missing length information, using median length")
-        median_length = lengths.median()
-        if pd.isna(median_length):
-            median_length = 1000  # Default fallback
-        lengths = lengths.fillna(median_length)
-
-    # Avoid division by zero
-    lengths = lengths.replace(0, 1)
+    lengths = _prepare_gene_lengths(counts, gene_lengths)
 
     # Calculate reads per kilobase (RPK)
     rpk = counts.div(lengths / 1000, axis=0)
@@ -168,18 +178,7 @@ def _normalize_rpkm(counts: pd.DataFrame, gene_lengths: pd.Series) -> pd.DataFra
     Returns:
         RPKM-normalized expression matrix.
     """
-    # Align gene lengths with counts index
-    lengths = gene_lengths.reindex(counts.index)
-    if lengths.isna().any():
-        missing = lengths.isna().sum()
-        logger.warning(f"{missing} genes missing length information, using median length")
-        median_length = lengths.median()
-        if pd.isna(median_length):
-            median_length = 1000
-        lengths = lengths.fillna(median_length)
-
-    # Avoid division by zero
-    lengths = lengths.replace(0, 1)
+    lengths = _prepare_gene_lengths(counts, gene_lengths)
 
     # Calculate library sizes
     library_sizes = counts.sum(axis=0)

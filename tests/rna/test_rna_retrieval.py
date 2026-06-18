@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import subprocess
 from pathlib import Path
 
 # Import the module under test
@@ -143,3 +144,56 @@ class TestDownloadFile:
         # but we're testing the path handling with the real subprocess path
         # Here we just verify the path setup logic in the test setup
         assert dest.parent.exists()
+
+
+class TestENADownloaderIntegrity:
+    """Tests for ENADownloader download integrity gates."""
+
+    def test_existing_corrupt_gzip_is_redownloaded(self, tmp_path: Path, monkeypatch) -> None:
+        """A non-empty but corrupt .fastq.gz must not be accepted as complete."""
+
+        class FakeDownloader(ena_downloader.ENADownloader):
+            def get_fastq_urls(self, sample_id: str) -> list[str]:
+                return ["https://example.org/bad.fastq.gz"]
+
+        corrupt = tmp_path / "bad.fastq.gz"
+        corrupt.write_bytes(b"not gzip")
+        calls = []
+
+        def fake_run(cmd, **kwargs):
+            calls.append(cmd)
+            with gzip.open(corrupt, "wb") as fh:
+                fh.write(b"@r1\nACGT\n+\n!!!!\n")
+            return subprocess.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(ena_downloader.subprocess, "run", fake_run)
+
+        ok, message, files = FakeDownloader().download_run("SRR_FAKE", tmp_path)
+
+        assert ok is True
+        assert "Downloaded 1 files" in message
+        assert files == [corrupt]
+        assert calls, "corrupt existing file should trigger a replacement download"
+        assert ena_downloader.verify_gzip_integrity(corrupt) is True
+
+    def test_new_corrupt_gzip_download_fails(self, tmp_path: Path, monkeypatch) -> None:
+        """A successful curl exit code is not enough if the gzip payload is corrupt."""
+
+        class FakeDownloader(ena_downloader.ENADownloader):
+            def get_fastq_urls(self, sample_id: str) -> list[str]:
+                return ["https://example.org/bad.fastq.gz"]
+
+        output_file = tmp_path / "bad.fastq.gz"
+
+        def fake_run(cmd, **kwargs):
+            output_file.write_bytes(b"not gzip")
+            return subprocess.CompletedProcess(cmd, 0, "", "")
+
+        monkeypatch.setattr(ena_downloader.subprocess, "run", fake_run)
+
+        ok, message, files = FakeDownloader().download_run("SRR_FAKE", tmp_path)
+
+        assert ok is False
+        assert "gzip integrity" in message
+        assert files == []
+        assert not output_file.exists()

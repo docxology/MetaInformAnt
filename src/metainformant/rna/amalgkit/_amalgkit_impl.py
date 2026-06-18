@@ -31,11 +31,31 @@ from metainformant.core.io.download import (
     monitor_subprocess_sample_progress,
 )
 from metainformant.core.utils import logging
+from metainformant.rna.core.sample_utils import read_sample_ids_from_metadata
 
 logger = logging.get_logger(__name__)
 
 AMALGKIT_INSTALL_SPEC = "git+https://github.com/kfuku52/amalgkit"
 MIN_AMALGKIT_VERSION = "0.12.20"
+YES_NO_CLI_FLAGS = {
+    "redo",
+    "pfd",
+    "resolve_names",
+    "mark_redundant_biosamples",
+    "aws",
+    "ncbi",
+    "gcp",
+    "fastp",
+    "remove_sra",
+    "remove_tmp",
+    "pfd_print",
+    "fastp_print",
+    "build_index",
+    "overwrite",
+    "skip_curation",
+    "clip_negative",
+    "maintain_zero",
+}
 
 
 class AmalgkitParams:
@@ -124,27 +144,6 @@ def build_cli_args(
             "num_download_workers",
         }
 
-        # Flags that expect explicit yes/no instead of just being present/absent
-        yes_no_flags = {
-            "redo",
-            "pfd",
-            "resolve_names",
-            "mark_redundant_biosamples",
-            "aws",
-            "ncbi",
-            "gcp",
-            "fastp",
-            "remove_sra",
-            "remove_tmp",
-            "pfd_print",
-            "fastp_print",
-            "build_index",
-            "overwrite",
-            "skip_curation",
-            "clip_negative",
-            "maintain_zero",
-        }
-
         for key, value in params.items():
             if key in skip_keys or value is None:
                 continue
@@ -166,7 +165,7 @@ def build_cli_args(
             cli_key = key.replace("-", "_")
 
             if isinstance(value, bool):
-                if cli_key in yes_no_flags:
+                if cli_key in YES_NO_CLI_FLAGS:
                     args.extend([f"--{cli_key}", "yes" if value else "no"])
                 elif value:
                     args.append(f"--{cli_key}")
@@ -220,17 +219,19 @@ def build_cli_args(
 
     # Add extra parameters
     for key, value in params.extra_params.items():
+        cli_key = key.replace("-", "_")
         if isinstance(value, bool):
-            if value:
-                # Keep underscores for amalgkit compatibility
-                args.extend([f"--{key}", "yes"])
+            if cli_key in YES_NO_CLI_FLAGS:
+                args.extend([f"--{cli_key}", "yes" if value else "no"])
+            elif value:
+                args.append(f"--{cli_key}")
         elif isinstance(value, (int, float)):
-            args.extend([f"--{key}", str(value)])
+            args.extend([f"--{cli_key}", str(value)])
         elif isinstance(value, str):
-            args.extend([f"--{key}", value])
+            args.extend([f"--{cli_key}", value])
         elif isinstance(value, list):
             for item in value:
-                args.extend([f"--{key}", str(item)])
+                args.extend([f"--{cli_key}", str(item)])
 
     return args
 
@@ -786,15 +787,8 @@ def _run_getfastq_via_metainformant(
             args=["internal_ena_downloader"], returncode=1, stderr="Metadata file not found"
         )
 
-    # Parse run IDs
-    run_ids = []
     try:
-        with open(metadata_path, "r", encoding="utf-8") as fh:
-            reader = csv.DictReader(fh, delimiter="\t")
-            if "run" in (reader.fieldnames or []):
-                for row in reader:
-                    if row.get("run"):
-                        run_ids.append(row["run"])
+        run_ids = read_sample_ids_from_metadata(metadata_path)
     except Exception as e:
         return subprocess.CompletedProcess(
             args=["internal_ena_downloader"], returncode=1, stderr=f"Error reading metadata: {e}"
@@ -802,7 +796,9 @@ def _run_getfastq_via_metainformant(
 
     if not run_ids:
         return subprocess.CompletedProcess(
-            args=["internal_ena_downloader"], returncode=0, stderr="No run IDs found in metadata"
+            args=["internal_ena_downloader"],
+            returncode=1,
+            stderr="No run IDs found in metadata. Expected one of: run, Run, SRA_Run, sample_id, accession",
         )
 
     getfastq_dir = work_dir / "getfastq"
@@ -1002,11 +998,21 @@ def _run_parallel_getfastq(
         # Only one chunk needed (small sample size), run normally
         # MUST strip 'jobs' from params because CLI doesn't support it
         if isinstance(params, dict):
-            params.pop("jobs", None)
+            single_params = params.copy()
+            single_params.pop("jobs", None)
         elif isinstance(params, AmalgkitParams):
-            params.extra_params.pop("jobs", None)
+            extra_params = params.extra_params.copy()
+            extra_params.pop("jobs", None)
+            single_params = AmalgkitParams(
+                params.work_dir,
+                threads=params.threads,
+                species_list=list(params.species_list),
+                **extra_params,
+            )
+        else:
+            single_params = params
 
-        return run_amalgkit("getfastq", params, **kwargs)
+        return run_amalgkit("getfastq", single_params, **kwargs)
 
     logger.info(f"Parallelizing getfastq with {len(chunk_paths)} workers")
 

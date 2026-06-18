@@ -180,6 +180,24 @@ class TestGetSamplePipelineStatus:
 
         assert status["merge"] is True
 
+    def test_merge_stage_scans_beyond_first_1000_rows(self, tmp_path: Path):
+        """Large row-oriented merged matrices should not false-negative late samples."""
+        sample_id = "SRR_LATE"
+        work_dir = tmp_path / "work"
+
+        merge_dir = work_dir / "merge"
+        merge_dir.mkdir(parents=True)
+        merged_file = merge_dir / "merged_abundance.tsv"
+        with open(merged_file, "w") as f:
+            f.write("target_id\tvalue\n")
+            for i in range(1001):
+                f.write(f"SRR{i:06d}\t{i}\n")
+            f.write(f"{sample_id}\t1.0\n")
+
+        status = get_sample_pipeline_status(sample_id, work_dir)
+
+        assert status["merge"] is True
+
     def test_no_files_not_started(self, tmp_path: Path):
         """Test that samples with no files are marked as not_started."""
         sample_id = "SRR123456"

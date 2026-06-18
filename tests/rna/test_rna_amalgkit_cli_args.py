@@ -5,7 +5,8 @@ Tests parameter normalization, flag ordering, type conversion, and v0.12.20 feat
 
 from pathlib import Path
 
-from metainformant.rna.amalgkit.amalgkit import build_amalgkit_command, build_cli_args
+from metainformant.rna.amalgkit.amalgkit import AmalgkitParams, build_amalgkit_command, build_cli_args
+from metainformant.rna.amalgkit._amalgkit_impl import _run_getfastq_via_metainformant
 
 
 def test_build_cli_args_basic():
@@ -47,6 +48,42 @@ def test_build_cli_args_resolve_names_boolean():
     # Boolean True should convert to "yes"
     resolve_idx = args.index("--resolve_names")
     assert args[resolve_idx + 1] == "yes"
+
+
+def test_build_cli_args_amalgkit_params_boolean_false_yes_no_flags():
+    """Structured params should emit explicit no for yes/no Amalgkit flags."""
+    params = AmalgkitParams("work", threads=2, redo=False, pfd=False)
+
+    args = build_cli_args(params, subcommand="getfastq")
+
+    assert "--redo" in args
+    assert args[args.index("--redo") + 1] == "no"
+    assert "--pfd" in args
+    assert args[args.index("--pfd") + 1] == "no"
+
+
+def test_internal_getfastq_accepts_case_variant_run_column(tmp_path, monkeypatch):
+    """Internal ENA backend should read the same sample ID columns as validation."""
+    work_dir = tmp_path / "work"
+    metadata = tmp_path / "metadata.tsv"
+    metadata.write_text("SRA_Run\nSRR000001\n")
+    captured = {}
+
+    def fake_download_sra_samples(sra_ids, base_out_dir, sort_by_size, use_fallback):
+        captured["sra_ids"] = sra_ids
+        captured["base_out_dir"] = base_out_dir
+        captured["sort_by_size"] = sort_by_size
+        captured["use_fallback"] = use_fallback
+        return len(sra_ids), 0
+
+    from metainformant.rna.retrieval import ena_downloader
+
+    monkeypatch.setattr(ena_downloader, "download_sra_samples", fake_download_sra_samples)
+
+    result = _run_getfastq_via_metainformant({"metadata": str(metadata), "work_dir": str(work_dir)})
+
+    assert result.returncode == 0
+    assert captured["sra_ids"] == ["SRR000001"]
 
 
 def test_build_cli_args_mark_missing_rank():

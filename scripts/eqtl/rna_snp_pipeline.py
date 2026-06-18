@@ -25,6 +25,8 @@ from pathlib import Path
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
+from metainformant.rna.core.sample_utils import find_quantification_file
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(message)s",
@@ -73,7 +75,7 @@ def find_completed_samples(species: str, max_samples: int | None = None) -> list
     ]:
         if pattern.exists():
             for d in sorted(pattern.iterdir()):
-                if d.is_dir() and (d / "abundance.tsv").exists():
+                if d.is_dir() and find_quantification_file(d, d.name) is not None:
                     quant_dirs.append(d.name)
 
     # Deduplicate

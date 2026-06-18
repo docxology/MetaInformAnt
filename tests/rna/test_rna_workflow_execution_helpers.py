@@ -68,6 +68,22 @@ def test_streaming_step_already_done_detects_quant_output(tmp_path: Path) -> Non
     assert not _is_streaming_step_already_done(config, sample_id, "quant", {"redo": "yes"})
 
 
+def test_streaming_step_already_done_detects_standard_and_salmon_quant_outputs(tmp_path: Path) -> None:
+    """Streaming bypass should share the validation quant-output contract."""
+    config = _workflow_config(tmp_path)
+
+    abundance_dir = config.work_dir / "quant" / "SRR_ABUNDANCE"
+    abundance_dir.mkdir(parents=True)
+    (abundance_dir / "abundance.tsv").write_text("target_id\ttpm\nGENE1\t1.0\n")
+
+    salmon_dir = config.work_dir / "quant" / "SRR_SALMON"
+    salmon_dir.mkdir(parents=True)
+    (salmon_dir / "quant.sf").write_text("Name\tTPM\nGENE1\t1.0\n")
+
+    assert _is_streaming_step_already_done(config, "SRR_ABUNDANCE", "quant", {"redo": "no"})
+    assert _is_streaming_step_already_done(config, "SRR_SALMON", "quant", {"redo": "no"})
+
+
 def test_process_streaming_sample_walk_writes_single_metadata(tmp_path: Path) -> None:
     """Dry-run sample processing should create one-row metadata and planned step results."""
     config = _workflow_config(tmp_path)
@@ -90,3 +106,26 @@ def test_process_streaming_sample_walk_writes_single_metadata(tmp_path: Path) ->
     metadata_file = config.work_dir / "metadata" / "metadata_chunk_0_sample_SRR000001.tsv"
     assert metadata_file.exists()
     assert "SRR000001" in metadata_file.read_text()
+
+
+def test_process_streaming_sample_accepts_sra_run_metadata_column(tmp_path: Path) -> None:
+    """Streaming sample IDs should accept the same accession columns as validation."""
+    config = _workflow_config(tmp_path)
+    sample_row = {"SRA_Run": "SRR000002", "organism": "Apis mellifera"}
+
+    results = _process_streaming_sample(
+        config=config,
+        sample_row=sample_row,
+        fieldnames=["SRA_Run", "organism"],
+        current_chunk_idx=0,
+        sample_idx_in_chunk=0,
+        chunk_steps=[("getfastq", {"threads": 4})],
+        chunk_size=1,
+        step_functions={},
+        walk=True,
+    )
+
+    assert [result.step_name for result in results] == ["getfastq_SRR000002"]
+    metadata_file = config.work_dir / "metadata" / "metadata_chunk_0_sample_SRR000002.tsv"
+    assert metadata_file.exists()
+    assert "SRR000002" in metadata_file.read_text()
