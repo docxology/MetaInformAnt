@@ -136,4 +136,5 @@ output/
 
 # Sub-repositories and User Projects
 projects/*
+!projects/apis_gwas/
 !projects/template_bioinformatics_project/

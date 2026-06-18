@@ -1,3 +1,6 @@
 [submodule "projects/hymenoptera_amalgkit"]
 	path = projects/hymenoptera_amalgkit
 	url = https://github.com/docxology/hymenoptera_amalgkit.git
+[submodule "projects/apis_gwas"]
+	path = projects/apis_gwas
+	url = https://github.com/docxology/apis_gwas.git
