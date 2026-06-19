@@ -1,16 +1,20 @@
-# GWAS
+# GWAS Configurations
 
-## Overview
-Configuration assets for GWAS workflows. Keep templates and examples synchronized with the shared loaders in `metainformant.core.utils.config`.
+Configuration files for GWAS workflows.
 
-## Contents
-- [gwas_amellifera.yaml](gwas_amellifera.yaml)
-- [gwas_pbarbatus.yaml](gwas_pbarbatus.yaml)
-- [gwas_template.yaml](gwas_template.yaml)
+## Apis mellifera Profiles
 
-## Usage
-```python
-from metainformant.core.utils.config import load_mapping_from_file
+- The real BeeWAS 2026 read-cohort profile lives in the nested project at
+  `projects/apis_gwas/config/beewas_2026_full_guarded.yaml`. It points at
+  `/Volumes/blue/data/beewas_2026`, the Amel_HAv3.1 reference, the clean-main
+  FASTQ manifest, CRAM/VCF targets, curated phenotype workbook outputs,
+  genomic-estimator readiness artifacts, and the reviewed phenotype gate.
+- `gwas_amellifera.yaml` is the generated/demo Apis profile used by
+  `scripts/gwas/run_amellifera_gwas.py`. It contains `data_generation` and
+  should not be interpreted as real cohort evidence.
 
-config = load_mapping_from_file("config/gwas/gwas_amellifera.yaml")
-```
+## Other Profiles
+
+- `gwas_pbarbatus.yaml` - Pogonomyrmex barbatus profile
+- `gwas_pbarbatus_synthetic.yaml` - synthetic P. barbatus test profile
+- `gwas_template.yaml` - generic template

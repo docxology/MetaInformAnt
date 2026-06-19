@@ -57,8 +57,8 @@ Functions Documented: 10
   ✅ parse_alphafold_confidence
   ✅ validate_alphafold_structure
   ✅ get_alphafold_structure_quality
-  ✅ find_alphafold_models_by_sequence      (placeholder, properly noted)
-  ✅ search_alphafold_by_keyword            (placeholder, properly noted)
+  ⚠️ find_alphafold_models_by_sequence      (returns no results; search not implemented)
+  ⚠️ search_alphafold_by_keyword            (returns no results; search not implemented)
   ✅ get_alphafold_coverage
 
 Status: ALL FUNCTIONS PRESENT AND CORRECT.
@@ -67,8 +67,8 @@ ISSUES FOUND: NONE
 
 Notes:
   - `batch_download_alphafold_models` is sequential (no threading) despite max_workers
-    param; this is acceptable as placeholder behavior but could be enhanced.
-  - `get_alphafold_coverage` returns static coverage stats – documented as static placeholder.
+    param; callers should not assume parallel downloads.
+  - `get_alphafold_coverage` returns static coverage stats.
 
 ================================================================================
 MODULE 2: Contact Analysis (structure/contacts.py)
@@ -138,52 +138,28 @@ Functions Documented: 12
   ✅ fetch_uniprot_record
   ✅ fetch_uniprot_fasta
   ✅ parse_uniprot_fasta_header
-  ⚠️ get_uniprot_annotations          (incomplete – GO/keywords not extracted)
+  ✅ get_uniprot_annotations
   ✅ search_uniprot_proteins
   ✅ get_uniprot_taxonomy_info
   ✅ batch_fetch_uniprot_records
-  ⚠️ validate_uniprot_accession       (regex pattern incomplete)
+  ✅ validate_uniprot_accession       (6- and 10-character UniProtKB formats)
   ✅ map_ids_uniprot
 
-Status: 9/11 correct; 2 with minor gaps.
+Status: 10/11 correct; 1 with minor gap.
 
-ISSUES FOUND: 2 MINOR, 1 CRITICAL (unlisted function)
+ISSUES FOUND: 1 MINOR, 1 CONFIGURATION GAP
 
-  Issue U1 (CRITICAL) — get_uniprot_annotations always returns empty
-  -------------------------------------------------------------------
-  Documentation: "Retrieves GO term and keyword annotations"
-  Source (uniprot.py:211-251):
-    def get_uniprot_annotations(uniprot_id):
-        record = fetch_uniprot_record(uniprot_id)
-        if "go_terms" in record:  # <-- record does NOT have go_terms key
-            ...
-        if "keywords" in record:  # <-- record does NOT have keywords key
-            ...
-  Root cause: fetch_uniprot_record (lines 47-65) builds a record dict that does
-  NOT include GO terms or keywords. The raw UniProt JSON does contain:
-    - GO terms in:  data['uniProtKBCrossReferences'] (type 'GO')
-    - Keywords in: data['keywords'] list
-  Impact:Users cannot retrieve functional annotations via this function – it
-  silently returns [].
-  Fix location:Update fetch_uniprot_record to extract goTerms from
-  uniProtKBCrossReferences and keywords from data['keywords'] into the record
-  dict, OR rewrite get_uniprot_annotations to call the raw API endpoint that
-  returns annotations separately.
+  Resolved U1 — get_uniprot_annotations extracts GO and keyword annotations
+  ------------------------------------------------------------------------
+  `fetch_uniprot_record()` now extracts GO terms from `uniProtKBCrossReferences`
+  and keywords from `keywords`, and `get_uniprot_annotations()` returns those
+  normalized annotations.
 
-  Issue U2 (MINOR) — validate_uniprot_accession regex missing mixed format
+  Resolved U2 — validate_uniprot_accession covers current formats
   -------------------------------------------------------------------------
-  Documented patterns expected: P12345 (6-char), A0A1234567 (10-char with
-  letter+digit mix), and rare `P123A45`-style patterns.
-  Source patterns:
-    r"^[A-Z]\\d{5}$"          → matches P12345 ✓
-    r"^[A-Z]\\d{9}$"          → matches A0A1234567? NO – this expects 9 digits
-                                 after a letter, total 10 chars all-digits-aft
-  The pattern that would match A0A1234567 is: ^[A-Z]\d[A-Z]\d{7}$  (10-char
-  mixed). Source has r"^[A-Z]\\d{3}[A-Z]\\d{2}$" which is 1+3+1+2 = 7 chars.
-  Impact:False negative for valid accessions like A0A1234567 (AlphaFold uses
-  these consistently).
-  Recommendation:Add pattern r"^[A-Z]\\d[A-Z]\\d{7}$" to handle 10-char mixed
-  format; audit other mixed variants.
+  Validation now accepts canonical six-character accessions such as `P69905`
+  and ten-character accessions such as `A0A0B4J2F0`, and rejects lowercase,
+  malformed, and length-mismatched values.
 
   Issue U3 (MINOR) — map_ids_uniprot: default source_db="auto" logic may fail
   ---------------------------------------------------------------------------
@@ -203,8 +179,8 @@ ADDITIONAL OBSERVATIONS
 
 1. Environment Variable Configuration (PROT_TIMEOUT)
    - Documentation (alphafold.md, uniprot.md): Mentions PROT_TIMEOUT env var (default 30)
-   - Source: alphafold.py and uniprot.py both hardcode timeout=30. No env var reading.
-   - Status:Docs are ahead of code. Either implement config reading or remove env var claim.
+   - Current source honors PROT_TIMEOUT for UniProt, InterPro, proteome FASTA,
+     PDB, and AlphaFold model downloads through `metainformant.protein._network`.
 
 2. Error Handling – Network Exceptions
    - fetch_alphafold_model: Raises RequestException ✓
@@ -242,14 +218,14 @@ Function                              Docs    Impl    Match   Notes
 ----                                  ----    ----    -----   -----
 AlphaFold:
   build_alphafold_url                 ✅      ✅      ✅
-  fetch_alphafold_model               ✅      ✅      ⚠️     timeout not configurable via env
+  fetch_alphafold_model               ✅      ✅      ✅     honors PROT_TIMEOUT
   batch_download_alphafold_models     ✅      ✅      ✅
   get_alphafold_metadata              ✅      ✅      ✅
   parse_alphafold_confidence          ✅      ✅      ✅
   validate_alphafold_structure        ✅      ✅      ✅
   get_alphafold_structure_quality     ✅      ✅      ✅
-  find_alphafold_models_by_sequence   ✅      ✅      ✅     (placeholder)
-  search_alphafold_by_keyword         ✅      ✅      ✅     (placeholder)
+  find_alphafold_models_by_sequence   ✅      ⚠️      ⚠️     returns no results; search not implemented
+  search_alphafold_by_keyword         ✅      ⚠️      ⚠️     returns no results; search not implemented
   get_alphafold_coverage              ✅      ✅      ✅     (static data)
 
 Contacts:
@@ -275,47 +251,35 @@ UniProt:
   fetch_uniprot_record               ✅      ✅      ✅
   fetch_uniprot_fasta                ✅      ✅      ✅
   parse_uniprot_fasta_header         ✅      ✅      ✅
-  get_uniprot_annotations            ✅      ✅      ❌     GO/keywords never extracted
+  get_uniprot_annotations            ✅      ✅      ✅
   search_uniprot_proteins            ✅      ✅      ✅
   get_uniprot_taxonomy_info          ✅      ✅      ✅
   batch_fetch_uniprot_records        ✅      ✅      ✅
-  validate_uniprot_accession         ✅      ✅      ⚠️     regex incomplete
+  validate_uniprot_accession         ✅      ✅      ✅
   map_ids_uniprot                    ✅      ✅      ✅
 
 ================================================================================
 CRITICAL ISSUES REQUIRING IMMEDIATE ACTION
 ================================================================================
 
-1. [CRITICAL] UniProt annotations always empty
-   File: src/metainformant/protein/database/uniprot.py
-   Function: get_uniprot_annotations() (lines 211-251) and fetch_uniprot_record()
-   Problem: fetch_uniprot_record does not extract GO terms or keywords from API
-   response, so get_uniprot_annotations has nothing to return.
-   Fix:Extract goTerms from data['uniProtKBCrossReferences'] and keywords from
-   data['keywords'] into the record dict.
-   Priority:HIGH – core UniProt functionality broken.
-
-2. [CRITICAL] PROT_TIMEOUT configuration not implemented
-   Files: alphafold.py, uniprot.py
-   Problem: Documentation promises PROT_TIMEOUT env var; code hardcodes timeout=30
-   Fix:Use `from metainformant.core.utils import config` and read PROT_TIMEOUT.
-   Priority:MEDIUM – usability issue, not functional break.
+1. [RESOLVED] PROT_TIMEOUT configuration implemented
+   Files: protein/_network.py, alphafold.py, pdb.py, uniprot.py, interpro.py, proteomes.py
+   Current behavior: `PROT_TIMEOUT` controls documented protein HTTP client timeouts.
 
 ================================================================================
 MINOR / INFO ISSUES
 ================================================================================
 
-3. [MINOR] compute_ca_contact_pairs scipy claim
+2. [MINOR] compute_ca_contact_pairs scipy claim
    File: contacts.py
    Problem:Doc says "Uses scipy pdist when available", but no scipy in code.
    Action:Remove scipy claim or add optional scipy optimization.
    Priority:LOW
 
-4. [MINOR] validate_uniprot_accession regex incomplete
-   File: uniprot.py line 389-395
-   Problem:Pattern missing for 10-char mixed format (A0A1234567).
-   Action:Add r"^[A-Z]\d[A-Z]\d{7}$"
-   Priority:LOW
+4. [RESOLVED] validate_uniprot_accession supports current formats
+   File: uniprot.py
+   Current behavior: accepts canonical 6-character and 10-character UniProtKB
+   accessions and rejects malformed values.
 
 5. [MINOR] map_ids_uniprot auto-detection limited
    File: uniprot.py lines 432-441
@@ -339,16 +303,10 @@ MINOR / INFO ISSUES
 RECOMMENDATIONS
 ================================================================================
 
-Immediate (Fix before release):
-  1. Fix get_uniprot_annotations to actually extract GO terms and keywords from
-     fetch_uniprot_record response.
-  2. Add PROT_TIMEOUT configuration reading to alphafold.py and uniprot.py.
-
 Short-term (Next iteration):
-  3. Expand proteomes.md to document all proteome functions.
-  4. Remove or implement scipy claim for compute_ca_contact_pairs.
-  5. Add missing regex pattern to validate_uniprot_accession for A0A* mixed IDs.
-  6. Clarify map_ids_uniprot auto-detection scope in docs or code.
+  2. Expand proteomes.md to document all proteome functions.
+  3. Remove or implement scipy claim for compute_ca_contact_pairs.
+  4. Clarify map_ids_uniprot auto-detection scope in docs or code.
 
 Long-term (Polish):
   7. Consider parallelizing batch_download_alphafold_models with ThreadPoolExecutor
@@ -361,23 +319,20 @@ Long-term (Polish):
 CONCLUSION
 ================================================================================
 
-The protein analysis documentation is largely accurate (92.9%) with strong
-alignment between docs and implementation. The most critical issue is
-get_uniprot_annotations returning empty results due to incomplete data
-extraction in fetch_uniprot_record – this breaks a documented feature and
-must be fixed.
+The protein analysis documentation is largely accurate with strong alignment
+between docs and implementation. The previously critical
+`get_uniprot_annotations` gap has been resolved by extracting GO and keyword
+annotations in `fetch_uniprot_record`.
 
-Secondary issues are minor documentation gaps, optional dependency claims, and
-configuration that is promised but not implemented. No major architectural
-deviations were found.
+Secondary issues are minor documentation gaps and optional dependency claims.
+No major architectural deviations were found.
 
 The module follows project conventions: type hints present, logging used,
 core.io for file operations, outputs directed by caller, and no direct
 network timeout configuration via environment variables as claimed.
 
-Recommended action:Address Issue U1 (annotations extraction) and Issue A1
-(PROT_TIMEOUT) as highest priority, then incrementally resolve the minor
-gaps.
+Recommended action: incrementally resolve the remaining minor documentation
+and optional-dependency gaps.
 
 ================================================================================
 END OF REPORT

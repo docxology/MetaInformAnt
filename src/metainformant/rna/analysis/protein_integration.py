@@ -10,7 +10,7 @@ Main Functions:
     - ribosome_profiling_integration: Integrate ribosome profiling data
 
 Example:
-    >>> from metainformant.rna import protein_integration
+    >>> from metainformant.rna.analysis import protein_integration
     >>> import pandas as pd
     >>> rna_df = pd.DataFrame(...)  # genes × samples
     >>> protein_df = pd.DataFrame(...)  # genes × samples
@@ -29,6 +29,48 @@ import pandas as pd
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
+
+
+def _empty_translation_efficiency() -> pd.DataFrame:
+    """Return the stable empty translation-efficiency schema."""
+    return pd.DataFrame(columns=["gene_id", "efficiency", "method"])
+
+
+def _empty_ribosome_integration() -> pd.DataFrame:
+    """Return the stable empty ribosome-integration schema."""
+    return pd.DataFrame(
+        columns=["gene_id", "rna_level", "ribo_level", "translation_rate", "translationally_regulated"]
+    )
+
+
+def _coerce_abundance_frame(df: pd.DataFrame, name: str, *, allow_nan: bool = True) -> pd.DataFrame:
+    """Validate and coerce an RNA/protein abundance matrix to numeric values."""
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError(f"{name} must be a pandas DataFrame")
+
+    if df.empty:
+        return df.copy()
+
+    try:
+        numeric_df = df.apply(pd.to_numeric, errors="raise").astype(float)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must contain only numeric values") from exc
+
+    values = numeric_df.to_numpy(dtype=float)
+    if np.isinf(values).any():
+        raise ValueError(f"{name} cannot contain infinite values")
+    if not allow_nan and np.isnan(values).any():
+        raise ValueError(f"{name} cannot contain NaN values")
+    finite_values = values[~np.isnan(values)]
+    if finite_values.size and finite_values.min() < 0:
+        raise ValueError(f"{name} cannot contain negative values")
+
+    return numeric_df
+
+
+def _sorted_common(left: pd.Index, right: pd.Index) -> list:
+    """Return deterministic shared labels from two indexes."""
+    return sorted(set(left).intersection(right), key=lambda value: str(value))
 
 
 def calculate_translation_efficiency(
@@ -70,16 +112,22 @@ def calculate_translation_efficiency(
         >>> assert len(eff) > 0
         >>> assert "gene_id" in eff.columns
     """
+    if method not in ("ratio", "correlation"):
+        raise ValueError(f"Unknown method: {method}. Must be 'ratio' or 'correlation'")
+
+    rna_df = _coerce_abundance_frame(rna_df, "rna_df")
+    protein_df = _coerce_abundance_frame(protein_df, "protein_df")
+
     # Handle empty DataFrames
     if rna_df.empty or protein_df.empty:
-        return pd.DataFrame(columns=["gene_id", "efficiency", "method"])
+        return _empty_translation_efficiency()
 
     # Find common samples and genes
-    common_samples = rna_df.index.intersection(protein_df.index)
-    common_genes = rna_df.columns.intersection(protein_df.columns)
+    common_samples = _sorted_common(rna_df.index, protein_df.index)
+    common_genes = _sorted_common(rna_df.columns, protein_df.columns)
 
     if len(common_samples) == 0 or len(common_genes) == 0:
-        return pd.DataFrame(columns=["gene_id", "efficiency", "method"])
+        return _empty_translation_efficiency()
 
     # Get subset of data
     rna_subset = rna_df.loc[common_samples, common_genes]
@@ -94,7 +142,7 @@ def calculate_translation_efficiency(
             prot_vals = protein_subset[gene]
 
             # Filter zero and NaN values
-            valid_mask = (rna_vals > 0) & (prot_vals > 0) & rna_vals.notna() & prot_vals.notna()
+            valid_mask = (rna_vals > 0) & (prot_vals >= 0) & rna_vals.notna() & prot_vals.notna()
 
             if valid_mask.sum() > 0:
                 ratios = prot_vals[valid_mask] / rna_vals[valid_mask]
@@ -118,6 +166,8 @@ def calculate_translation_efficiency(
             valid_mask = rna_vals.notna() & prot_vals.notna()
 
             if valid_mask.sum() > 1:
+                if rna_vals[valid_mask].nunique() < 2 or prot_vals[valid_mask].nunique() < 2:
+                    continue
                 # Calculate Pearson correlation
                 correlation = float(rna_vals[valid_mask].corr(prot_vals[valid_mask]))
 
@@ -135,7 +185,7 @@ def calculate_translation_efficiency(
     if results:
         return pd.DataFrame(results)
     else:
-        return pd.DataFrame(columns=["gene_id", "efficiency", "method"])
+        return _empty_translation_efficiency()
 
 
 def predict_protein_abundance_from_rna(
@@ -154,8 +204,8 @@ def predict_protein_abundance_from_rna(
         training_rna: Optional RNA data from training set
         training_protein: Optional protein data from training set
         method: Prediction method:
-            - "linear": Simple linear scaling (default)
-            - "lognormal": Lognormal model
+            - "linear": Simple log2(x + 1) scaling without training data, or
+              per-gene linear scaling when training data are provided.
 
     Returns:
         DataFrame with same shape and indices as rna_df containing
@@ -171,16 +221,24 @@ def predict_protein_abundance_from_rna(
         >>> predictions = predict_protein_abundance_from_rna(rna_df, method="linear")
         >>> assert predictions.shape == rna_df.shape
     """
+    if method != "linear":
+        raise ValueError(f"Unknown method: {method}. Currently supported: 'linear'")
+
+    rna_df = _coerce_abundance_frame(rna_df, "rna_df")
+
     # Handle empty DataFrame
     if rna_df.empty:
         return pd.DataFrame()
 
     if training_rna is not None and training_protein is not None:
+        training_rna = _coerce_abundance_frame(training_rna, "training_rna")
+        training_protein = _coerce_abundance_frame(training_protein, "training_protein")
+
         # Learn relationship from training data
         if not training_rna.empty and not training_protein.empty:
             # Find common samples and genes
-            common_samples = training_rna.index.intersection(training_protein.index)
-            common_genes = training_rna.columns.intersection(training_protein.columns)
+            common_samples = _sorted_common(training_rna.index, training_protein.index)
+            common_genes = _sorted_common(training_rna.columns, training_protein.columns)
 
             if len(common_samples) > 0 and len(common_genes) > 0:
                 train_rna = training_rna.loc[common_samples, common_genes]
@@ -189,11 +247,18 @@ def predict_protein_abundance_from_rna(
                 # Calculate scaling factors per gene
                 scaling_factors = {}
                 for gene in common_genes:
-                    rna_mean = train_rna[gene].mean()
-                    prot_mean = train_prot[gene].mean()
+                    valid_mask = (
+                        train_rna[gene].notna()
+                        & train_prot[gene].notna()
+                        & (train_rna[gene] > 0)
+                        & (train_prot[gene] >= 0)
+                    )
+                    rna_mean = train_rna.loc[valid_mask, gene].mean()
+                    prot_mean = train_prot.loc[valid_mask, gene].mean()
 
-                    if rna_mean > 0:
-                        scaling_factors[gene] = prot_mean / rna_mean
+                    if pd.notna(rna_mean) and pd.notna(prot_mean) and rna_mean > 0:
+                        scaling = float(prot_mean / rna_mean)
+                        scaling_factors[gene] = scaling if np.isfinite(scaling) else 1.0
                     else:
                         scaling_factors[gene] = 1.0
 
@@ -206,7 +271,7 @@ def predict_protein_abundance_from_rna(
                         # No training data for this gene, use identity
                         predictions[gene] = predictions[gene]
 
-                return predictions
+                return predictions.fillna(0.0)
 
     # Simple linear method without training data
     # Scale to mean values
@@ -216,10 +281,10 @@ def predict_protein_abundance_from_rna(
         # Log transform to reduce skewness then scale
         # Use map for pandas >= 2.1 compatibility
         try:
-            predictions = predictions.map(lambda x: np.log2(x + 1) if x > 0 else 0)
+            predictions = predictions.map(lambda x: np.log2(x + 1) if pd.notna(x) and x > 0 else 0.0)
         except AttributeError:
             # Fallback for older pandas versions
-            predictions = predictions.applymap(lambda x: np.log2(x + 1) if x > 0 else 0)
+            predictions = predictions.applymap(lambda x: np.log2(x + 1) if pd.notna(x) and x > 0 else 0.0)
 
     logger.debug(f"Predicted protein abundance for {rna_df.shape[1]} genes")
 
@@ -263,20 +328,19 @@ def ribosome_profiling_integration(
         ... )
         >>> result = ribosome_profiling_integration(rna_df, ribo_df)
     """
+    rna_df = _coerce_abundance_frame(rna_df, "rna_df")
+    ribo_df = _coerce_abundance_frame(ribo_df, "ribo_df")
+
     # Handle empty DataFrames
     if rna_df.empty or ribo_df.empty:
-        return pd.DataFrame(
-            columns=["gene_id", "rna_level", "ribo_level", "translation_rate", "translationally_regulated"]
-        )
+        return _empty_ribosome_integration()
 
     # Find common data
-    common_samples = rna_df.index.intersection(ribo_df.index)
-    common_genes = rna_df.columns.intersection(ribo_df.columns)
+    common_samples = _sorted_common(rna_df.index, ribo_df.index)
+    common_genes = _sorted_common(rna_df.columns, ribo_df.columns)
 
     if len(common_samples) == 0 or len(common_genes) == 0:
-        return pd.DataFrame(
-            columns=["gene_id", "rna_level", "ribo_level", "translation_rate", "translationally_regulated"]
-        )
+        return _empty_ribosome_integration()
 
     rna_subset = rna_df.loc[common_samples, common_genes]
     ribo_subset = ribo_df.loc[common_samples, common_genes]
@@ -290,8 +354,12 @@ def ribosome_profiling_integration(
         ribo_vals = ribo_subset[gene]
 
         # Calculate mean levels (filter NaN)
-        rna_level = float(rna_vals[rna_vals.notna()].mean())
-        ribo_level = float(ribo_vals[ribo_vals.notna()].mean())
+        rna_level = float(rna_vals[rna_vals.notna()].mean()) if rna_vals.notna().any() else 0.0
+        ribo_level = float(ribo_vals[ribo_vals.notna()].mean()) if ribo_vals.notna().any() else 0.0
+        if not np.isfinite(rna_level):
+            rna_level = 0.0
+        if not np.isfinite(ribo_level):
+            ribo_level = 0.0
 
         # Calculate translation rate (Ribo/RNA)
         if rna_level > 0:
@@ -353,6 +421,4 @@ def ribosome_profiling_integration(
     if results:
         return pd.DataFrame(results)
     else:
-        return pd.DataFrame(
-            columns=["gene_id", "rna_level", "ribo_level", "translation_rate", "translationally_regulated"]
-        )
+        return _empty_ribosome_integration()

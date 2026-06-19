@@ -13,6 +13,7 @@ import numpy as np
 import requests
 
 from metainformant.core.utils import logging
+from metainformant.protein._network import get_protein_api_timeout
 
 logger = logging.get_logger(__name__)
 
@@ -74,7 +75,7 @@ def fetch_alphafold_model(uniprot_acc: str, out_dir: Path, *, version: int = 4, 
     logger.info(f"Downloading AlphaFold model for {uniprot_acc}")
 
     try:
-        response = requests.get(url, timeout=30)
+        response = requests.get(url, timeout=get_protein_api_timeout())
         response.raise_for_status()
 
         with open(output_path, "wb") as f:

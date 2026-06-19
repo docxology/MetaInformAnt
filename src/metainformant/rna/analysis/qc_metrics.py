@@ -19,6 +19,34 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 
+def _validate_numeric_matrix(
+    matrix_df: pd.DataFrame,
+    name: str,
+    *,
+    require_nonnegative: bool = False,
+) -> pd.DataFrame:
+    """Validate a non-empty numeric DataFrame and return a float copy."""
+    if not isinstance(matrix_df, pd.DataFrame):
+        raise TypeError(f"{name} must be a pandas DataFrame")
+
+    if matrix_df.empty:
+        raise ValueError(f"{name} cannot be empty")
+
+    try:
+        numeric_df = matrix_df.apply(pd.to_numeric, errors="raise").astype(float)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} must contain only numeric values") from exc
+
+    values = numeric_df.to_numpy(dtype=float)
+    if not np.isfinite(values).all():
+        raise ValueError(f"{name} cannot contain NaN or infinite values")
+
+    if require_nonnegative and (values < 0).any():
+        raise ValueError(f"{name} cannot contain negative values")
+
+    return numeric_df
+
+
 # =============================================================================
 # Sample Quality Metrics
 # =============================================================================
@@ -55,11 +83,7 @@ def compute_sample_metrics(counts_df: pd.DataFrame) -> pd.DataFrame:
         >>> metrics.columns.tolist()
         ['total_counts', 'detected_genes', 'median_expression', 'mean_expression', 'pct_zero', 'cv']
     """
-    if counts_df.empty:
-        raise ValueError("counts_df cannot be empty")
-
-    if (counts_df < 0).any().any():
-        raise ValueError("counts_df cannot contain negative values")
+    counts_df = _validate_numeric_matrix(counts_df, "counts_df", require_nonnegative=True)
 
     n_genes = len(counts_df)
     results = []
@@ -127,11 +151,10 @@ def detect_outlier_samples(
         >>> outliers = detect_outlier_samples(counts_df, method="mad", threshold=3.0)
         >>> print(f"Found {len(outliers)} outlier samples")
     """
-    if counts_df.empty:
-        raise ValueError("counts_df cannot be empty")
-
     if method not in ("mad", "isolation_forest", "pca_distance"):
         raise ValueError(f"Unknown method: {method}. Must be 'mad', 'isolation_forest', or 'pca_distance'")
+
+    counts_df = _validate_numeric_matrix(counts_df, "counts_df", require_nonnegative=True)
 
     samples = counts_df.columns.tolist()
     outliers: list[str] = []
@@ -278,11 +301,7 @@ def compute_gene_metrics(counts_df: pd.DataFrame) -> pd.DataFrame:
         >>> gene_metrics = compute_gene_metrics(counts_df)
         >>> lowly_expressed = gene_metrics[gene_metrics['mean_expression'] < 1.0]
     """
-    if counts_df.empty:
-        raise ValueError("counts_df cannot be empty")
-
-    if (counts_df < 0).any().any():
-        raise ValueError("counts_df cannot contain negative values")
+    counts_df = _validate_numeric_matrix(counts_df, "counts_df", require_nonnegative=True)
 
     n_samples = len(counts_df.columns)
     results = []
@@ -351,8 +370,7 @@ def classify_expression_level(
         >>> classified = classify_expression_level(counts_df)
         >>> print(classified['expression_level'].value_counts())
     """
-    if counts_df.empty:
-        raise ValueError("counts_df cannot be empty")
+    counts_df = _validate_numeric_matrix(counts_df, "counts_df", require_nonnegative=True)
 
     # Default thresholds if not provided
     if thresholds is None:
@@ -426,11 +444,7 @@ def estimate_library_complexity(counts_df: pd.DataFrame) -> pd.DataFrame:
         >>> complexity = estimate_library_complexity(counts_df)
         >>> low_complexity = complexity[complexity['normalized_entropy'] < 0.5]
     """
-    if counts_df.empty:
-        raise ValueError("counts_df cannot be empty")
-
-    if (counts_df < 0).any().any():
-        raise ValueError("counts_df cannot contain negative values")
+    counts_df = _validate_numeric_matrix(counts_df, "counts_df", require_nonnegative=True)
 
     n_genes = len(counts_df)
     max_entropy = np.log(n_genes) if n_genes > 1 else 1.0
@@ -524,8 +538,10 @@ def compute_saturation_curve(
         ...     data = saturation[saturation['sample'] == sample]
         ...     plt.plot(data['fraction'], data['detected_genes_mean'], label=sample)
     """
-    if counts_df.empty:
-        raise ValueError("counts_df cannot be empty")
+    counts_df = _validate_numeric_matrix(counts_df, "counts_df", require_nonnegative=True)
+
+    if n_iterations < 1:
+        raise ValueError("n_iterations must be >= 1")
 
     if fractions is None:
         fractions = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0]
@@ -610,11 +626,10 @@ def compute_correlation_matrix(
         >>> mean_corr = corr_matrix.mean(axis=1)
         >>> outliers = mean_corr[mean_corr < 0.8].index.tolist()
     """
-    if expression_df.empty:
-        raise ValueError("expression_df cannot be empty")
-
     if method not in ("pearson", "spearman"):
         raise ValueError(f"Unknown method: {method}. Must be 'pearson' or 'spearman'")
+
+    expression_df = _validate_numeric_matrix(expression_df, "expression_df")
 
     # pandas corr() computes column-column correlation
     if method == "pearson":

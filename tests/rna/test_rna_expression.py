@@ -26,6 +26,23 @@ from metainformant.rna.analysis.expression import (
     prepare_volcano_data,
 )
 
+
+def test_rna_analysis_import_smoke() -> None:
+    """Canonical RNA analysis modules and compatibility shims remain importable."""
+    import metainformant.rna.analysis as analysis
+    from metainformant.rna.analysis import expression, qc
+    from metainformant.rna.analysis.expression import differential_expression as shim_de
+    from metainformant.rna.analysis.expression_core import normalize_counts as core_normalize
+    from metainformant.rna.analysis.qc import compute_sample_metrics as qc_shim_metrics
+
+    assert hasattr(analysis, "expression_core")
+    assert hasattr(analysis, "expression_analysis")
+    assert hasattr(analysis, "protein_integration")
+    assert expression.normalize_counts is core_normalize
+    assert shim_de is differential_expression
+    assert qc.compute_sample_metrics is qc_shim_metrics
+
+
 # =============================================================================
 # Fixtures - Realistic RNA-seq data generated with numpy
 # =============================================================================

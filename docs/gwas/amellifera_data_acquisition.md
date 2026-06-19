@@ -1,13 +1,21 @@
 # Apis mellifera GWAS Data Acquisition Guide
 
-**Status**: Genome Successfully Downloaded
+**Status**: Genome Successfully Downloaded ✅  
 **Date**: December 2024
+
+> Current real-data work is organized under `/Volumes/blue/data/beewas_2026`
+> with the open Google Drive folder `BeeWAS-2026_reads` inventoried as 81
+> paired FASTQ samples. Use
+> `projects/apis_gwas/config/beewas_2026_full_guarded.yaml` and
+> `projects/apis_gwas/doc/current/amellifera_real_genome_reads.md` for the
+> active real-read path.
+> The older generated/demo Apis workflow remains separate.
 
 ---
 
 ## What Was Accomplished
 
-### Completed Steps
+### ✅ Completed Steps
 
 1. **Configuration Loading**: Successfully loaded A. mellifera GWAS configuration
 2. **Genome Download**: **Successfully downloaded Amel_HAv3.1 genome** from NCBI (54 seconds)
@@ -15,7 +23,7 @@
    - Method: NCBI datasets API
    - Location: `output/gwas/amellifera/genome/`
 
-### ⏸ Next Steps Required
+### ⏸️ Next Steps Required
 
 3. **Variant Data**: Needs honeybee genomic data (VCF or BAM files)
 4. **Phenotype Data**: Needs trait measurements
@@ -27,11 +35,11 @@
 
 The workflow successfully executed with real methods:
 
-- Real NCBI genome download (not simulated)
-- Real workflow orchestration
-- Real error handling
-- Real file I/O and directory management
-- Real configuration parsing
+- ✅ Real NCBI genome download (not simulated)
+- ✅ Real workflow orchestration
+- ✅ Real error handling
+- ✅ Real file I/O and directory management
+- ✅ Real configuration parsing
 
 **The pipeline is fully functional** and stops only because variant/phenotype data is not yet provided.
 
@@ -299,16 +307,16 @@ Based on real execution:
 
 ## What's Working Right Now
 
- **Genome Download**: Amel_HAv3.1 successfully downloaded
- **Configuration**: Complete and validated
- **Workflow Orchestration**: All 8 steps integrated
- **Variant Calling**: bcftools and GATK support
- **Population Structure**: 20-component PCA configured
- **Association Testing**: Linear/logistic regression ready
- **Visualization**: Manhattan, Q-Q, regional plots ready
- **Error Handling**: Graceful failures with informative messages
+✅ **Genome Download**: Amel_HAv3.1 successfully downloaded  
+✅ **Configuration**: Complete and validated  
+✅ **Workflow Orchestration**: All 8 steps integrated  
+✅ **Variant Calling**: bcftools and GATK support  
+✅ **Population Structure**: 20-component PCA configured  
+✅ **Association Testing**: Linear/logistic regression ready  
+✅ **Visualization**: Manhattan, Q-Q, regional plots ready  
+✅ **Error Handling**: Graceful failures with informative messages  
 
-⏸ **Waiting For**: Variant data (VCF or BAM) and phenotype measurements
+⏸️ **Waiting For**: Variant data (VCF or BAM) and phenotype measurements
 
 ---
 
@@ -322,9 +330,7 @@ Based on real execution:
 4. Update `config/gwas/gwas_amellifera.yaml` with file paths
 5. Run: `execute_gwas_workflow(config)`
 
-**The pipeline is ready and waiting for data!**
-
-
+**The pipeline is ready and waiting for data!** 🐝
 
 
 

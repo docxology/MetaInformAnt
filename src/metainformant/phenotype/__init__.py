@@ -13,19 +13,29 @@ Comprehensive phenotypic trait analysis including:
 
 from __future__ import annotations
 
-from . import (
-    analysis,
-    behavior,
-    chemical,
-    data,
-    electronic,
-    gwas_integration,
-    integration,
-    morphological,
-    sonic,
-    visualization,
-    workflow,
-)
+import importlib
+
+
+def _optional_import(name: str):
+    try:
+        return importlib.import_module(f"{__name__}.{name}")
+    except ModuleNotFoundError as exc:  # pragma: no cover - depends on optional scientific plotting stack
+        if exc.name and not exc.name.startswith(f"{__name__}.{name}"):
+            return None
+        raise
+
+
+analysis = _optional_import("analysis")
+behavior = _optional_import("behavior")
+chemical = _optional_import("chemical")
+data = _optional_import("data")
+electronic = _optional_import("electronic")
+gwas_integration = _optional_import("gwas_integration")
+integration = _optional_import("integration")
+morphological = _optional_import("morphological")
+sonic = _optional_import("sonic")
+visualization = _optional_import("visualization")
+workflow = _optional_import("workflow")
 
 __all__ = [
     "analysis",

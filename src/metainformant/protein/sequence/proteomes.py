@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Tuple, Union
 
 from metainformant.core import io
 from metainformant.core.utils import logging
+from metainformant.protein._network import get_protein_api_timeout
 
 logger = logging.get_logger(__name__)
 
@@ -118,7 +119,7 @@ def get_proteome_metadata(taxon_id: str) -> Dict[str, Any]:
     params = {"taxid": taxon_id, "size": 1}  # Get first result only
 
     try:
-        response = requests.get(base_url, params=params, timeout=30)
+        response = requests.get(base_url, params=params, timeout=get_protein_api_timeout())
         response.raise_for_status()
 
         data = response.json()
@@ -170,6 +171,14 @@ def get_proteome_metadata(taxon_id: str) -> Dict[str, Any]:
         raise ValueError(f"Invalid API response for taxonomy ID {taxon_id}")
 
 
+def _proteome_stream_params(proteome_id: str, include_isoforms: bool = False) -> Dict[str, str]:
+    """Build UniProtKB stream query parameters for proteome FASTA downloads."""
+    params = {"query": f"proteome:{proteome_id}", "format": "fasta"}
+    if include_isoforms:
+        params["includeIsoform"] = "true"
+    return params
+
+
 def download_proteome_fasta(taxon_id: str, output_path: Union[str, Path], include_isoforms: bool = False) -> bool:
     """Download proteome FASTA file for a taxonomy ID using UniProt API.
 
@@ -202,12 +211,9 @@ def download_proteome_fasta(taxon_id: str, output_path: Union[str, Path], includ
 
         # UniProt proteome download URL
         base_url = "https://rest.uniprot.org/uniprotkb/stream"
-        params = {"query": f"proteome:{proteome_id}", "format": "fasta"}
+        params = _proteome_stream_params(proteome_id, include_isoforms=include_isoforms)
 
-        # Note: includeIsoform parameter doesn't seem to be supported in this endpoint
-        # All canonical sequences are returned
-
-        response = requests.get(base_url, params=params, timeout=60)
+        response = requests.get(base_url, params=params, timeout=get_protein_api_timeout(default=60.0))
         response.raise_for_status()
 
         # Write FASTA content to file

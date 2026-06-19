@@ -2,7 +2,7 @@
 
 Genome-Wide Association Studies analysis, fine-mapping, and variant-expression integration.
 
-## Architecture
+## 📊 Architecture
 
 ```mermaid
 graph TD
@@ -28,7 +28,7 @@ graph TD
     end
 ```
 
-## Key Capabilities
+## 🔑 Key Capabilities
 
 ### Fine-Mapping & Colocalization
 
@@ -66,18 +66,18 @@ result = eqtl_coloc(
 | `read_plink()` | Load PLINK bed/bim/fam |
 | `write_sumstats()` | Export summary statistics |
 
-## Submodules
+## 📦 Submodules
 
 | Module | Purpose |
 |--------|---------|
-| [`analysis/`](workflow.md) | Association testing |
-| [`data/`](real_data_acquisition.md) | VCF, PLINK I/O |
-| `finemapping/` | Fine-mapping, colocalization |
-| `heritability/` | Heritability estimation |
-| [`visualization/`](visualization_gallery.md) | Manhattan, QQ, LocusZoom |
-| [`workflow/`](workflow.md) | Pipeline orchestration |
+| [`analysis/`](analysis/) | Association testing |
+| [`data/`](data/) | VCF, PLINK I/O |
+| [`finemapping/`](finemapping/) | Fine-mapping, colocalization |
+| [`heritability/`](heritability/) | Heritability estimation |
+| [`visualization/`](visualization/) | Manhattan, QQ, LocusZoom |
+| [`workflow/`](workflow/) | Pipeline orchestration |
 
-## Integration with Expression Data
+## 🧬 Integration with Expression Data
 
 The GWAS module integrates with RNA-seq via the multiomics module:
 
@@ -96,9 +96,19 @@ integrated = integration.integrate_omics_data(
 )
 ```
 
-## Related
+## 🔗 Related
 
-- **[eQTL Integration Pipeline](../eqtl/README.md)** - Maps DNA variants against RNA expression
 - [metainformant.multiomics](../multiomics/) - Multi-omic integration
 - [metainformant.rna](../rna/) - RNA-seq analysis
-- [config/gwas/](../../config/gwas/) - Configuration files
+- [config/gwas/](../../../config/gwas/) - Configuration files
+
+## Apis mellifera Real Data
+
+- [Real genome and read organization](../../projects/apis_gwas/doc/current/amellifera_real_genome_reads.md)
+- [Raw reads to genomic estimators runbook](../../projects/apis_gwas/doc/current/beewas_raw_reads_to_genomic_estimators.md)
+- [BeeWAS synthetic-phenotype validation](../../projects/apis_gwas/doc/current/beewas_synthetic_validation.md)
+- Real-cohort QC reporter: `scripts/gwas/pipelines/analyze_beewas_2026_real.py`
+- Genomic-estimator validator: `scripts/gwas/pipelines/validate_beewas_genomic_estimators.py`
+- Shared BeeWAS reporting helpers: `scripts/gwas/pipelines/beewas_reporting.py`
+- Real guarded config: `projects/apis_gwas/config/beewas_2026_full_guarded.yaml`
+- Generated/demo config: `config/gwas/gwas_amellifera.yaml`

@@ -9,7 +9,35 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.protein.sequence.alignment import calculate_alignment_identity, global_align, local_align
+from metainformant.protein.sequence.alignment import (
+    BLOSUM62,
+    calculate_alignment_identity,
+    global_align,
+    local_align,
+    matrix_align,
+)
+
+
+def _score_affine_alignment(aligned_seq1, aligned_seq2, gap_open=-11, gap_extend=-1):
+    score = 0
+    gap_in_seq1 = False
+    gap_in_seq2 = False
+
+    for aa1, aa2 in zip(aligned_seq1, aligned_seq2):
+        if aa1 == "-":
+            score += gap_extend if gap_in_seq1 else gap_open
+            gap_in_seq1 = True
+            gap_in_seq2 = False
+        elif aa2 == "-":
+            score += gap_extend if gap_in_seq2 else gap_open
+            gap_in_seq2 = True
+            gap_in_seq1 = False
+        else:
+            score += BLOSUM62.get(aa1, {}).get(aa2, -1)
+            gap_in_seq1 = False
+            gap_in_seq2 = False
+
+    return score
 
 
 class TestGlobalAlignNeedlemanWunsch:
@@ -364,3 +392,31 @@ class TestAlignmentEdgeCases:
         # Should treat as completely different
         assert result["score"] == -6  # All mismatches
         assert result["identity"] == 0.0
+
+
+class TestMatrixAlignAffineTraceback:
+    """Regression tests for substitution-matrix alignment with affine gaps."""
+
+    def test_matrix_align_reported_score_matches_alignment(self):
+        result = matrix_align("PLEASANTLY", "MEANLY")
+
+        assert len(result["aligned_seq1"]) == len(result["aligned_seq2"])
+        assert result["score"] == _score_affine_alignment(result["aligned_seq1"], result["aligned_seq2"])
+
+    def test_matrix_align_empty_global_sequence_uses_affine_gap_penalty(self):
+        result = matrix_align("", "ACD", mode="global")
+
+        assert result["aligned_seq1"] == "---"
+        assert result["aligned_seq2"] == "ACD"
+        assert result["score"] == -13
+
+    def test_matrix_align_empty_local_sequence_returns_empty_alignment(self):
+        result = matrix_align("", "ACD", mode="local")
+
+        assert result["aligned_seq1"] == ""
+        assert result["aligned_seq2"] == ""
+        assert result["score"] == 0
+
+    def test_matrix_align_rejects_unknown_mode(self):
+        with pytest.raises(ValueError, match="Unknown alignment mode"):
+            matrix_align("ACD", "ACD", mode="overlap")

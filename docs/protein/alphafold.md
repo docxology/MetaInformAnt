@@ -113,8 +113,9 @@ def find_alphafold_models_by_sequence(
 ) -> List[Dict[str, Any]]
 ```
 
-Searches for AlphaFold models matching a protein sequence above the identity
-threshold. (API integration placeholder.)
+Currently returns an empty list because AlphaFold DB does not expose a compact
+sequence-similarity search API through this module. Use accession-based fetches
+or run an external sequence-search workflow before calling `fetch_alphafold_model`.
 
 ### search_alphafold_by_keyword
 
@@ -125,7 +126,9 @@ def search_alphafold_by_keyword(
 ) -> List[Dict[str, Any]]
 ```
 
-Keyword search against the AlphaFold database. (API integration placeholder.)
+Currently returns an empty list because keyword search is not implemented in
+this module. Use UniProt or AlphaFold DB search externally, then pass accessions
+to `fetch_alphafold_model`.
 
 ### get_alphafold_coverage
 

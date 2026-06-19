@@ -2,42 +2,12 @@
 
 This module provides functions for performing association tests between
 genotypes and phenotypes, including linear and logistic regression.
-
-The module implements multiple regression approaches:
-- **Linear regression**: For continuous phenotypes (e.g., height, BMI, gene expression)
-- **Logistic regression**: For binary phenotypes (e.g., case/control status)
-
-Statistical Features:
-- Automatic covariate adjustment (PCA, age, sex, etc.)
-- Proper standard error estimation
-- P-value calculation with t/z-distribution
-- R-squared for effect size estimation
-- Odds ratio calculation for logistic models
-
-The implementation gracefully falls back from libraries to pure Python:
-1. statsmodels (preferred - full statistical inference)
-2. sklearn + scipy (good inference)
-3. Pure Python IRLS implementation (no external dependencies)
-
-Example:
-    >>> from metainformant.gwas.analysis.association import association_test_linear
-    >>> genotypes = [0, 1, 2, 0, 1, 2, 0, 1, 1, 2]
-    >>> phenotypes = [100.5, 102.3, 105.1, 98.2, 101.0, 104.8, 99.1, 103.2, 101.5, 105.5]
-    >>> result = association_test_linear(genotypes, phenotypes)
-    >>> print(f"Beta: {result['beta']:.4f}, p-value: {result['p_value']:.2e}")
-    Beta: 2.4500, p-value: 1.50e-05
-
-    >>> from metainformant.gwas.analysis.association import association_test_logistic
-    >>> case_control = [0, 0, 1, 0, 1, 1, 0, 1, 0, 1]
-    >>> result_log = association_test_logistic(genotypes, case_control)
-    >>> print(f"OR: {result_log['odds_ratio']:.2f}, p-value: {result_log['p_value']:.2e}")
-    OR: 3.25, p-value: 0.04
 """
 
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from metainformant.core.utils import logging
 
@@ -54,10 +24,7 @@ logger = logging.get_logger(__name__)
 
 
 def association_test_linear(
-    genotypes: Union[List[int], "np.ndarray"],
-    phenotypes: List[float],
-    covariates: Optional[List[List[float]]] = None,
-    **kwargs,
+    genotypes: List[int], phenotypes: List[float], covariates: Optional[List[List[float]]] = None, **kwargs
 ) -> Dict[str, Any]:
     """Perform linear regression association test.
 
@@ -123,180 +90,8 @@ def association_test_linear(
     return result
 
 
-def run_linear_model_gwas(
-    genotype_matrix: Union[List[List[int]], "np.ndarray"],
-    phenotypes: List[float],
-    variant_info: Optional[List[Dict[str, Any]]] = None,
-    covariates: Optional[List[List[float]]] = None,
-) -> List[Dict[str, Any]]:
-    """Run linear regression GWAS across all variants via fast batch matrix operations.
-
-    Args:
-        genotype_matrix: Genotype matrix (variants x samples)
-        phenotypes: Phenotype values
-        variant_info: Optional variant metadata
-        covariates: Optional covariate matrix (covariates x samples)
-
-    Returns:
-        List of result dictionaries
-    """
-    if not HAS_NUMPY:
-        raise ImportError("numpy is required for batch linear GWAS")
-
-    n_variants = len(genotype_matrix)
-    n_samples = len(phenotypes)
-    logger.info(f"Running high-performance linear GWAS: {n_variants} variants")
-
-    y = np.array(phenotypes, dtype=float)
-
-    # Base covariate matrix
-    X_base = [np.ones(n_samples)]
-    if covariates:
-        for cov in covariates:
-            X_base.append(np.array(cov, dtype=float))
-
-    # Pre-allocate results array
-    results = []
-
-    # We could do a purely vectorized approach with tensors, or just iterate numpy's lstsq
-    # rapidly since numpy releases the GIL and uses BLAS natively.
-    for i in range(n_variants):
-        snp = np.array(genotype_matrix[i], dtype=float)
-
-        # Build design matrix X = [Intercept, Covariates..., SNP]
-        X = np.column_stack([*X_base, snp])
-
-        try:
-            # lstsq: beta = (X'X)^-1 X'y
-            beta_vec, residuals, rank, sv = np.linalg.lstsq(X, y, rcond=None)
-
-            p = X.shape[1]
-            dof = n_samples - p
-
-            if len(residuals) == 0:
-                y_pred = X @ beta_vec
-                resid = y - y_pred
-                ss_res = np.sum(resid**2)
-            else:
-                ss_res = residuals[0]
-
-            mse = ss_res / dof if dof > 0 else 0.0
-
-            XtX_inv = np.linalg.inv(X.T @ X)
-
-            # SNP is at index p-1
-            snp_idx = p - 1
-            beta = float(beta_vec[snp_idx])
-            se = float(math.sqrt(max(mse * XtX_inv[snp_idx, snp_idx], 0.0)))
-
-            t_stat = beta / se if se > 1e-10 else 0.0
-
-            try:
-                from scipy import stats
-
-                p_value = float(2 * stats.t.sf(abs(t_stat), dof))
-            except ImportError:
-                p_value = float(2 * (1 - _normal_cdf(abs(t_stat))))
-
-            # R-squared
-            y_mean = np.mean(y)
-            ss_tot = np.sum((y - y_mean) ** 2)
-            r_squared = 1.0 - (ss_res / ss_tot) if ss_tot > 0 else 0.0
-
-            res = {
-                "status": "success",
-                "beta": beta,
-                "se": se,
-                "t_stat": t_stat,
-                "p_value": p_value,
-                "r_squared": float(r_squared),
-                "n_samples": n_samples,
-                "test_type": "linear",
-                "converged": True,
-            }
-        except np.linalg.LinAlgError:
-            res = {
-                "status": "error",
-                "beta": 0.0,
-                "se": 0.0,
-                "t_stat": 0.0,
-                "p_value": 1.0,
-                "r_squared": 0.0,
-                "n_samples": n_samples,
-                "test_type": "linear",
-                "converged": False,
-                "error": "LinAlgError",
-            }
-
-        if variant_info and i < len(variant_info):
-            res["chrom"] = variant_info[i].get("chrom", "1")
-            res["pos"] = variant_info[i].get("pos", 0)
-            res["variant_id"] = variant_info[i].get("id", f"var_{i}")
-
-        # Compute MAF from genotype vector
-        valid_genos = [g for g in genotype_matrix[i] if g >= 0]
-        if valid_genos:
-            alt_freq = sum(valid_genos) / (2.0 * len(valid_genos))
-            res["maf"] = min(alt_freq, 1.0 - alt_freq)
-        else:
-            res["maf"] = 0.0
-
-        results.append(res)
-
-    return results
-
-
-def run_logistic_model_gwas(
-    genotype_matrix: Union[List[List[int]], "np.ndarray"],
-    phenotypes: List[int],
-    variant_info: Optional[List[Dict[str, Any]]] = None,
-    covariates: Optional[List[List[float]]] = None,
-    max_iter: int = 100,
-) -> List[Dict[str, Any]]:
-    """Run logistic regression GWAS across all variants.
-
-    Args:
-        genotype_matrix: Genotype matrix (variants x samples)
-        phenotypes: Binary phenotype values (0, 1)
-        variant_info: Optional variant metadata
-        covariates: Optional covariate matrix
-        max_iter: Maximum iterations
-
-    Returns:
-        List of result dictionaries
-    """
-    results = []
-    n_variants = len(genotype_matrix)
-    logger.info(f"Running high-performance logistic GWAS: {n_variants} variants")
-
-    for i in range(n_variants):
-        genotype = genotype_matrix[i]
-        res = association_test_logistic(
-            genotype,
-            phenotypes,
-            covariates=covariates,
-            max_iter=max_iter,
-        )
-
-        if variant_info and i < len(variant_info):
-            res["chrom"] = variant_info[i].get("chrom", "1")
-            res["pos"] = variant_info[i].get("pos", 0)
-            res["variant_id"] = variant_info[i].get("id", f"var_{i}")
-
-        valid_genos = [g for g in genotype if g >= 0]
-        if valid_genos:
-            alt_freq = sum(valid_genos) / (2.0 * len(valid_genos))
-            res["maf"] = min(alt_freq, 1.0 - alt_freq)
-        else:
-            res["maf"] = 0.0
-
-        results.append(res)
-
-    return results
-
-
 def association_test_logistic(
-    genotypes: Union[List[int], "np.ndarray"],
+    genotypes: List[int],
     phenotypes: List[int],
     covariates: Optional[List[List[float]]] = None,
     max_iter: int = 100,
@@ -572,6 +367,8 @@ def _logistic_regression_with_stats(X: Any, y: Any, max_iter: int) -> Tuple[floa
 
     except ImportError:
         pass
+    except Exception as e:
+        logger.debug(f"Statsmodels logistic regression failed; falling back: {e}")
 
     # Try sklearn as fallback
     try:
@@ -591,6 +388,8 @@ def _logistic_regression_with_stats(X: Any, y: Any, max_iter: int) -> Tuple[floa
 
     except ImportError:
         pass
+    except Exception as e:
+        logger.debug(f"Sklearn logistic regression failed; falling back: {e}")
 
     # Pure Python fallback using IRLS
     return _logistic_regression_pure_python(X, y, max_iter)

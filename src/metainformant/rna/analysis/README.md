@@ -27,7 +27,8 @@ RNA-seq expression analysis including normalization, differential expression, qu
 | `detect_batch_effects()` | Identify confounding batch structure in expression data |
 | `build_ortholog_map()` | Load one-to-one ortholog mappings between species |
 | `compute_expression_conservation()` | Spearman correlation of orthologs across species |
-| `calculate_translation_efficiency()` | Estimate translation efficiency from RNA and protein data |
+| `calculate_translation_efficiency()` | Estimate translation efficiency from RNA and protein data using `ratio` or `correlation` |
+| `predict_protein_abundance_from_rna()` | Predict protein abundance from RNA with the implemented `linear` method |
 | `validate_all_samples()` | Check pipeline completion status for every sample |
 
 ## Usage
@@ -36,8 +37,19 @@ RNA-seq expression analysis including normalization, differential expression, qu
 from metainformant.rna.analysis.expression_core import normalize_counts, filter_low_expression
 from metainformant.rna.analysis.expression_analysis import differential_expression, pca_analysis
 from metainformant.rna.analysis.qc_metrics import compute_sample_metrics
+from metainformant.rna.analysis.protein_integration import calculate_translation_efficiency
 
 normalized = normalize_counts(raw_counts, method="tpm", gene_lengths=lengths)
 de_results = differential_expression(counts, groups, method="deseq2_like")
 pca_result = pca_analysis(normalized, n_components=3)
+rna_expression = normalized.T  # samples x genes for protein integration
+protein_abundance = rna_expression.copy()
+translation_efficiency = calculate_translation_efficiency(rna_expression, protein_abundance, method="ratio")
 ```
+
+## Validation Notes
+
+- Count/QC matrices must be numeric, finite, and non-negative where raw counts are expected.
+- Batch labels must include every expression sample; labels for extra samples are ignored.
+- GC content values for matched genes must be in `[0, 1]`; matched gene lengths must be positive.
+- RNA-protein integration filters NaN measurements deterministically and rejects unsupported methods instead of returning silent empty results.

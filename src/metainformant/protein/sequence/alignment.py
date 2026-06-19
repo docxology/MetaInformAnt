@@ -735,6 +735,9 @@ def matrix_align(
     Returns:
         Dictionary with alignment results
     """
+    if mode not in {"global", "local"}:
+        raise ValueError(f"Unknown alignment mode: {mode}. Valid modes: global, local")
+
     if matrix is None:
         matrix = BLOSUM62
 
@@ -743,13 +746,29 @@ def matrix_align(
     m, n = len(seq1), len(seq2)
 
     if m == 0 or n == 0:
+        if mode == "local":
+            aligned_seq1 = ""
+            aligned_seq2 = ""
+            score = 0
+        elif m > 0 or n > 0:
+            gap_length = max(m, n)
+            score = gap_open + (gap_length - 1) * gap_extend
+            aligned_seq1 = seq1 if n == 0 else "-" * n
+            aligned_seq2 = seq2 if m == 0 else "-" * m
+        else:
+            aligned_seq1 = ""
+            aligned_seq2 = ""
+            score = 0
+
         return {
-            "aligned_seq1": seq1 or "-" * n,
-            "aligned_seq2": seq2 or "-" * m,
-            "score": 0,
+            "aligned_seq1": aligned_seq1,
+            "aligned_seq2": aligned_seq2,
+            "score": score,
             "identity": 0.0,
             "method": mode,
             "matrix": "BLOSUM62",
+            "gap_open": gap_open,
+            "gap_extend": gap_extend,
         }
 
     NEG_INF = float("-inf")
@@ -758,22 +777,32 @@ def matrix_align(
     M_mat = [[NEG_INF] * (n + 1) for _ in range(m + 1)]
     X_mat = [[NEG_INF] * (n + 1) for _ in range(m + 1)]
     Y_mat = [[NEG_INF] * (n + 1) for _ in range(m + 1)]
+    M_ptr: List[List[Optional[Tuple[str, int, int]]]] = [[None] * (n + 1) for _ in range(m + 1)]
+    X_ptr: List[List[Optional[Tuple[str, int, int]]]] = [[None] * (n + 1) for _ in range(m + 1)]
+    Y_ptr: List[List[Optional[Tuple[str, int, int]]]] = [[None] * (n + 1) for _ in range(m + 1)]
 
     # Initialize
     if mode == "global":
         M_mat[0][0] = 0
         for i in range(1, m + 1):
             X_mat[i][0] = gap_open + (i - 1) * gap_extend
+            X_ptr[i][0] = ("M", 0, 0) if i == 1 else ("X", i - 1, 0)
         for j in range(1, n + 1):
             Y_mat[0][j] = gap_open + (j - 1) * gap_extend
+            Y_ptr[0][j] = ("M", 0, 0) if j == 1 else ("Y", 0, j - 1)
     else:
         for i in range(m + 1):
             M_mat[i][0] = 0
+            X_mat[i][0] = 0
+            Y_mat[i][0] = 0
         for j in range(n + 1):
             M_mat[0][j] = 0
+            X_mat[0][j] = 0
+            Y_mat[0][j] = 0
 
     max_score = 0
     max_i, max_j = 0, 0
+    max_state = "M"
 
     # Fill
     for i in range(1, m + 1):
@@ -781,56 +810,99 @@ def matrix_align(
             aa1, aa2 = seq1[i - 1], seq2[j - 1]
             sub_score = matrix.get(aa1, {}).get(aa2, -1)
 
-            best_prev = max(M_mat[i - 1][j - 1], X_mat[i - 1][j - 1], Y_mat[i - 1][j - 1])
+            best_prev, best_prev_state = max(
+                [
+                    (M_mat[i - 1][j - 1], "M"),
+                    (X_mat[i - 1][j - 1], "X"),
+                    (Y_mat[i - 1][j - 1], "Y"),
+                ],
+                key=lambda item: item[0],
+            )
             m_val = best_prev + sub_score
+            m_ptr = (best_prev_state, i - 1, j - 1)
 
-            x_val = max(M_mat[i - 1][j] + gap_open, X_mat[i - 1][j] + gap_extend)
-            y_val = max(M_mat[i][j - 1] + gap_open, Y_mat[i][j - 1] + gap_extend)
+            x_val, x_prev_state = max(
+                [(M_mat[i - 1][j] + gap_open, "M"), (X_mat[i - 1][j] + gap_extend, "X")],
+                key=lambda item: item[0],
+            )
+            x_ptr = (x_prev_state, i - 1, j)
+
+            y_val, y_prev_state = max(
+                [(M_mat[i][j - 1] + gap_open, "M"), (Y_mat[i][j - 1] + gap_extend, "Y")],
+                key=lambda item: item[0],
+            )
+            y_ptr = (y_prev_state, i, j - 1)
 
             if mode == "local":
-                M_mat[i][j] = max(0, m_val)
-                X_mat[i][j] = max(0, x_val)
-                Y_mat[i][j] = max(0, y_val)
-                cell_max = max(M_mat[i][j], X_mat[i][j], Y_mat[i][j])
-                if cell_max > max_score:
-                    max_score = cell_max
+                if m_val > 0:
+                    M_mat[i][j] = m_val
+                    M_ptr[i][j] = m_ptr
+                else:
+                    M_mat[i][j] = 0
+
+                if x_val > 0:
+                    X_mat[i][j] = x_val
+                    X_ptr[i][j] = x_ptr
+                else:
+                    X_mat[i][j] = 0
+
+                if y_val > 0:
+                    Y_mat[i][j] = y_val
+                    Y_ptr[i][j] = y_ptr
+                else:
+                    Y_mat[i][j] = 0
+
+                cell_score, cell_state = max(
+                    [(M_mat[i][j], "M"), (X_mat[i][j], "X"), (Y_mat[i][j], "Y")],
+                    key=lambda item: item[0],
+                )
+                if cell_score > max_score:
+                    max_score = cell_score
                     max_i, max_j = i, j
+                    max_state = cell_state
             else:
                 M_mat[i][j] = m_val
                 X_mat[i][j] = x_val
                 Y_mat[i][j] = y_val
+                M_ptr[i][j] = m_ptr
+                X_ptr[i][j] = x_ptr
+                Y_ptr[i][j] = y_ptr
 
     # Traceback
     aligned1, aligned2 = [], []
 
     if mode == "global":
         i, j = m, n
-        score = max(M_mat[m][n], X_mat[m][n], Y_mat[m][n])
+        score, state = max(
+            [(M_mat[m][n], "M"), (X_mat[m][n], "X"), (Y_mat[m][n], "Y")],
+            key=lambda item: item[0],
+        )
     else:
         i, j = max_i, max_j
         score = max_score
+        state = max_state
 
     while i > 0 or j > 0:
-        if mode == "local" and max(M_mat[i][j], X_mat[i][j], Y_mat[i][j]) <= 0:
+        current_score = {"M": M_mat, "X": X_mat, "Y": Y_mat}[state][i][j]
+        if mode == "local" and current_score <= 0:
             break
 
-        best = max(M_mat[i][j], X_mat[i][j], Y_mat[i][j])
-
-        if i > 0 and j > 0 and best == M_mat[i][j]:
+        if state == "M":
             aligned1.append(seq1[i - 1])
             aligned2.append(seq2[j - 1])
-            i -= 1
-            j -= 1
-        elif i > 0 and best == X_mat[i][j]:
+            pointer = M_ptr[i][j]
+        elif state == "X":
             aligned1.append(seq1[i - 1])
             aligned2.append("-")
-            i -= 1
-        elif j > 0:
+            pointer = X_ptr[i][j]
+        else:
             aligned1.append("-")
             aligned2.append(seq2[j - 1])
-            j -= 1
-        else:
+            pointer = Y_ptr[i][j]
+
+        if pointer is None:
             break
+        state, i, j = pointer
 
     aligned1.reverse()
     aligned2.reverse()

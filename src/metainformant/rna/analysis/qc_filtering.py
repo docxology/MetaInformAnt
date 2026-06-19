@@ -18,6 +18,7 @@ from scipy import stats
 from metainformant.core.utils import logging
 
 from .qc_metrics import (
+    _validate_numeric_matrix,
     classify_expression_level,
     compute_correlation_matrix,
     compute_gene_metrics,
@@ -82,11 +83,10 @@ def detect_batch_effects(
         >>> if result['batch_effect_detected']:
         ...     print("Warning: batch effects detected!")
     """
-    if expression_df.empty:
-        raise ValueError("expression_df cannot be empty")
-
     if method not in ("kruskal", "silhouette", "pvca"):
         raise ValueError(f"Unknown method: {method}. Must be 'kruskal', 'silhouette', or 'pvca'")
+
+    expression_df = _validate_numeric_matrix(expression_df, "expression_df")
 
     samples = expression_df.columns.tolist()
     missing_labels = [s for s in samples if s not in batch_labels.index]
@@ -95,7 +95,12 @@ def detect_batch_effects(
 
     # Align batch labels with expression data
     batch_aligned = batch_labels.loc[samples]
-    unique_batches = batch_aligned.unique()
+    missing_label_values = batch_aligned[batch_aligned.isna()].index.tolist()
+    if missing_label_values:
+        raise ValueError(f"Missing batch labels for samples: {missing_label_values[:5]}...")
+
+    batch_aligned = batch_aligned.astype(str)
+    unique_batches = sorted(batch_aligned.unique(), key=str)
 
     if len(unique_batches) < 2:
         return {
@@ -287,8 +292,7 @@ def detect_gc_bias(
         >>> if gc_bias['bias_detected']:
         ...     print("GC bias detected, consider correction")
     """
-    if expression_df.empty:
-        raise ValueError("expression_df cannot be empty")
+    expression_df = _validate_numeric_matrix(expression_df, "expression_df")
 
     genes = expression_df.index.tolist()
     common_genes = [g for g in genes if g in gc_content.index]
@@ -304,7 +308,16 @@ def detect_gc_bias(
 
     # Subset to common genes
     expr_subset = expression_df.loc[common_genes]
-    gc_subset = gc_content.loc[common_genes].values.astype(np.float64)
+    try:
+        gc_subset_series = pd.to_numeric(gc_content.loc[common_genes], errors="raise").astype(float)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("gc_content must contain only numeric values for matched genes") from exc
+
+    gc_subset = gc_subset_series.to_numpy(dtype=np.float64)
+    if not np.isfinite(gc_subset).all():
+        raise ValueError("gc_content cannot contain NaN or infinite values for matched genes")
+    if ((gc_subset < 0) | (gc_subset > 1)).any():
+        raise ValueError("gc_content values must be between 0 and 1")
 
     per_sample_results = {}
     correlations = []
@@ -320,9 +333,14 @@ def detect_gc_bias(
 
         expr_filtered = sample_expr[mask]
         gc_filtered = gc_subset[mask]
+        if np.std(expr_filtered) == 0 or np.std(gc_filtered) == 0:
+            per_sample_results[sample] = {"correlation": 0.0, "pvalue": 1.0}
+            continue
 
         # Pearson correlation
         corr, pval = stats.pearsonr(expr_filtered, gc_filtered)
+        if not np.isfinite(corr) or not np.isfinite(pval):
+            corr, pval = 0.0, 1.0
         per_sample_results[sample] = {"correlation": float(corr), "pvalue": float(pval)}
         correlations.append(corr)
 
@@ -389,8 +407,7 @@ def detect_length_bias(
         >>> if length_bias['bias_detected']:
         ...     print("Length bias detected, consider TPM/RPKM normalization")
     """
-    if expression_df.empty:
-        raise ValueError("expression_df cannot be empty")
+    expression_df = _validate_numeric_matrix(expression_df, "expression_df")
 
     genes = expression_df.index.tolist()
     common_genes = [g for g in genes if g in gene_lengths.index]
@@ -406,7 +423,16 @@ def detect_length_bias(
 
     # Subset to common genes
     expr_subset = expression_df.loc[common_genes]
-    length_subset = gene_lengths.loc[common_genes].values.astype(np.float64)
+    try:
+        length_subset_series = pd.to_numeric(gene_lengths.loc[common_genes], errors="raise").astype(float)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("gene_lengths must contain only numeric values for matched genes") from exc
+
+    length_subset = length_subset_series.to_numpy(dtype=np.float64)
+    if not np.isfinite(length_subset).all():
+        raise ValueError("gene_lengths cannot contain NaN or infinite values for matched genes")
+    if (length_subset <= 0).any():
+        raise ValueError("gene_lengths must contain positive values for matched genes")
 
     # Log-transform lengths for better correlation assessment
     log_lengths = np.log10(length_subset + 1)
@@ -426,9 +452,14 @@ def detect_length_bias(
         expr_filtered = sample_expr[mask]
         log_expr = np.log10(expr_filtered + 1)
         lengths_filtered = log_lengths[mask]
+        if np.std(log_expr) == 0 or np.std(lengths_filtered) == 0:
+            per_sample_results[sample] = {"correlation": 0.0, "pvalue": 1.0}
+            continue
 
         # Pearson correlation on log-transformed values
         corr, pval = stats.pearsonr(log_expr, lengths_filtered)
+        if not np.isfinite(corr) or not np.isfinite(pval):
+            corr, pval = 0.0, 1.0
         per_sample_results[sample] = {"correlation": float(corr), "pvalue": float(pval)}
         correlations.append(corr)
 
@@ -508,8 +539,7 @@ def generate_qc_report(
         >>> with open('qc_report.json', 'w') as f:
         ...     json.dump(report, f, indent=2)
     """
-    if counts_df.empty:
-        raise ValueError("counts_df cannot be empty")
+    counts_df = _validate_numeric_matrix(counts_df, "counts_df", require_nonnegative=True)
 
     logger.info(f"Generating QC report for {len(counts_df.columns)} samples and {len(counts_df)} genes")
 
@@ -626,22 +656,33 @@ def generate_qc_report(
     # Sample correlation
     # =================
     logger.info("Computing sample correlations...")
-    corr_matrix = compute_correlation_matrix(counts_df, method="spearman")
-    # Get off-diagonal correlations (copy to avoid read-only array issue)
-    corr_values = corr_matrix.to_numpy(copy=True)
-    np.fill_diagonal(corr_values, np.nan)
-    corr_matrix = pd.DataFrame(corr_values, index=corr_matrix.index, columns=corr_matrix.columns)
-    mean_corr = corr_matrix.mean(axis=1)
-    report["correlation_stats"] = {
-        "method": "spearman",
-        "mean_pairwise_correlation": float(np.nanmean(corr_matrix.values)),
-        "min_pairwise_correlation": float(np.nanmin(corr_matrix.values)),
-        "samples_with_low_correlation": mean_corr[mean_corr < 0.8].index.tolist(),
-    }
+    if len(counts_df.columns) < 2:
+        report["correlation_stats"] = {
+            "method": "spearman",
+            "mean_pairwise_correlation": 1.0,
+            "min_pairwise_correlation": 1.0,
+            "samples_with_low_correlation": [],
+            "message": "Only one sample present, pairwise correlation not computed",
+        }
+    else:
+        corr_matrix = compute_correlation_matrix(counts_df, method="spearman")
+        # Get off-diagonal correlations (copy to avoid read-only array issue)
+        corr_values = corr_matrix.to_numpy(copy=True)
+        np.fill_diagonal(corr_values, np.nan)
+        corr_matrix = pd.DataFrame(corr_values, index=corr_matrix.index, columns=corr_matrix.columns)
+        mean_corr = corr_matrix.mean(axis=1)
+        finite_corr = corr_matrix.to_numpy(dtype=float)
+        finite_corr = finite_corr[np.isfinite(finite_corr)]
+        report["correlation_stats"] = {
+            "method": "spearman",
+            "mean_pairwise_correlation": float(np.mean(finite_corr)) if finite_corr.size else 0.0,
+            "min_pairwise_correlation": float(np.min(finite_corr)) if finite_corr.size else 0.0,
+            "samples_with_low_correlation": mean_corr[mean_corr < 0.8].index.tolist(),
+        }
 
-    low_corr_samples = mean_corr[mean_corr < 0.7].index.tolist()
-    if low_corr_samples:
-        warnings.append(f"{len(low_corr_samples)} samples have low mean correlation (<0.7) with other samples")
+        low_corr_samples = mean_corr[mean_corr < 0.7].index.tolist()
+        if low_corr_samples:
+            warnings.append(f"{len(low_corr_samples)} samples have low mean correlation (<0.7) with other samples")
 
     # =================
     # Batch effects (if batch info provided)
@@ -683,8 +724,9 @@ def generate_qc_report(
         gc_result = detect_gc_bias(log_counts, gc_content)
         # Simplify per_sample for report
         gc_summary = {k: v for k, v in gc_result.items() if k != "per_sample"}
+        gc_correlations = [v["correlation"] for v in gc_result.get("per_sample", {}).values()]
         gc_summary["per_sample_summary"] = {
-            "mean_correlation": float(np.mean([v["correlation"] for v in gc_result.get("per_sample", {}).values()])),
+            "mean_correlation": float(np.mean(gc_correlations)) if gc_correlations else 0.0,
             "n_samples_with_bias": sum(1 for v in gc_result.get("per_sample", {}).values() if v["pvalue"] < 0.05),
         }
         report["gc_bias"] = gc_summary
@@ -703,10 +745,9 @@ def generate_qc_report(
         length_result = detect_length_bias(log_counts, gene_lengths)
         # Simplify per_sample for report
         length_summary = {k: v for k, v in length_result.items() if k != "per_sample"}
+        length_correlations = [v["correlation"] for v in length_result.get("per_sample", {}).values()]
         length_summary["per_sample_summary"] = {
-            "mean_correlation": float(
-                np.mean([v["correlation"] for v in length_result.get("per_sample", {}).values()])
-            ),
+            "mean_correlation": float(np.mean(length_correlations)) if length_correlations else 0.0,
             "n_samples_with_bias": sum(1 for v in length_result.get("per_sample", {}).values() if v["pvalue"] < 0.05),
         }
         report["length_bias"] = length_summary

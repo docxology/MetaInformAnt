@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "metainformant"
-version = "0.3.0"
+version = "0.2.6"
 description = "Comprehensive bioinformatics toolkit for multi-domain analysis"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -20,6 +20,7 @@ dependencies = [
     "setuptools",
     "numpy>=1.24.0",
     "pandas>=2.0.0",
+    "openpyxl>=3.1.0",
     "pyarrow>=14.0.0",  # Parquet file format support
     "matplotlib>=3.8.0",
     "biopython>=1.81",
@@ -32,8 +33,6 @@ dependencies = [
     "scikit-learn>=1.3.0",  # ML - required for multiomics integration
     "psutil>=7.2.1",
     "rich>=14.2.0",
-    "statsmodels>=0.14.0",
-    "seaborn>=0.13.0",
 ]
 
 [project.optional-dependencies]
@@ -86,6 +85,7 @@ singlecell = [
     "umap-learn>=0.5.4",
     "seaborn>=0.13.0",
     "leidenalg>=0.10.0",  # Leiden clustering
+    "louvain>=0.8.0",  # Louvain clustering
 ]
 
 # Visualization enhancements
@@ -97,11 +97,6 @@ visualization = [
     "graphviz>=0.20.1",  # Network visualization
 ]
 
-# RNA workflow external tool integration
-rna = [
-    "amalgkit @ git+https://github.com/kfuku52/amalgkit",
-]
-
 # Development and testing
 dev = [
     "pytest>=8.0.0",
@@ -109,6 +104,7 @@ dev = [
     "pytest-xdist>=3.5.0",  # For parallel test execution
     "pytest-benchmark>=4.0.0",  # Performance benchmarking
     "pytest-asyncio>=0.23.0",  # Async test support
+    "pytest-mock>=3.12.0",  # Mock detection for NO_MOCKING_POLICY enforcement
     "pytest-repeat>=0.9.3",  # For flaky test detection
     "pytest-rerunfailures>=13.0",  # For retrying failed tests
     "pytest-clarity>=1.0.1",  # Better assertion output
@@ -143,8 +139,6 @@ external-tools = [
     # "pyvcf>=0.6.8",  # VCF file handling - temporarily disabled due to build issues
     "pysam>=0.21.0",  # SAM/BAM file handling
     "dendropy>=4.5.0",  # Phylogenetic analysis
-    "parallel-fastq-dump>=0.6.5",  # Local SRA extraction helper
-    "multiqc>=1.25.0",  # QC report aggregation
 ]
 
 # Web scraping and data collection
@@ -166,44 +160,27 @@ all = [
     "scikit-learn>=1.3.0",
     "seaborn>=0.13.0",
     "networkx>=3.2",
-    "llvmlite>=0.43.0",
     "umap-learn>=0.5.4",
     "scanpy>=1.9.6",
     "anndata>=0.10.0",
-    "optuna>=3.4.0",
-    "joblib>=1.3.0",
-    "xgboost>=2.0.0",
-    "lightgbm>=4.1.0",
     "python-louvain>=0.16",
     "cdlib>=0.3.0",
-    "psutil>=5.9.0",
-    "rich>=13.0.0",
-    "leidenalg>=0.10.0",
     "plotly>=5.18.0",
     "bokeh>=3.3.0",
     "altair>=5.2.0",
-    "graphviz>=0.20.1",
-    "amalgkit @ git+https://github.com/kfuku52/amalgkit",
     "psycopg2-binary>=2.9.9",
     "sqlalchemy>=2.0.25",
-    "pymongo>=4.0.0",
-    "redis>=4.3.0",
     # "ncbi-datasets-pylib>=16.0.0",
-    # "pyvcf>=0.6.8",
-    "pysam>=0.21.0",
-    "dendropy>=4.5.0",
-    "parallel-fastq-dump>=0.6.5",
-    "multiqc>=1.25.0",
     "numba>=0.59.0",
     "dask>=2024.1.0",
-    "ray>=2.0.0",
+    "joblib>=1.3.0",
     "cloudscraper>=1.2.71",  # Web scraping with Cloudflare bypass
 ]
 
 [project.scripts]
 metainformant = "metainformant.__main__:main"
 
-# Test configuration - STRICTLY REAL IMPLEMENTATION POLICY
+# Test configuration - STRICTLY NO MOCKING POLICY
 [tool.pytest.ini_options]
 minversion = "7.0"
 testpaths = ["tests"]
@@ -227,15 +204,16 @@ markers = [
     "network: marks tests requiring network access - REAL API CALLS ONLY",
     "external_tool: marks tests requiring external tools (muscle, amalgkit, etc.)",
     "integration: marks tests as integration tests with real implementations",
-    "real_impl: enforces that tests exercise real implementations",
+    "no_mock: enforces that NO mocking/faking is allowed in any test",
 ]
 filterwarnings = [
     "error",
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
     "ignore::UserWarning",
-    "ignore::RuntimeWarning",
     "ignore::ImportWarning:umap.*",  # Ignore umap tensorflow import warning
+    # Warn about any mock usage as it violates our policy
+    "error::pytest.PytestUnraisableExceptionWarning:.*mock.*",
 ]
 
 # Coverage configuration
@@ -371,9 +349,6 @@ python-preference = "managed"
 # The filesystem detection utilities in metainformant.core.filesystem handle this automatically.
 cache-dir = ".uv-cache"
 
-[tool.uv.workspace]
-members = []
-
 [dependency-groups]
 dev = [
     "pre-commit>=4.3.0",
@@ -402,6 +377,7 @@ test-all = [
     "pytest-xdist>=3.0.0",  # For parallel test execution
     "pytest-benchmark>=4.0.0",  # Performance benchmarking
     "pytest-asyncio>=0.21.0",  # Async test support
+    "pytest-mock>=3.11.0",  # Mock detection for NO_MOCKING_POLICY enforcement
     "pytest-repeat>=0.9.1",  # For flaky test detection
     "pytest-rerunfailures>=11.1.0",  # For retrying failed tests
     "pytest-clarity>=1.0.1",  # Better assertion output

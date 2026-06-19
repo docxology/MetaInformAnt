@@ -162,6 +162,18 @@ class TestComputeSampleMetrics:
         with pytest.raises(ValueError, match="negative"):
             compute_sample_metrics(df)
 
+    def test_nonnumeric_values_raise(self) -> None:
+        """Nonnumeric count values should raise a clear error."""
+        df = pd.DataFrame({"s1": [10, "bad", 3]}, index=["g1", "g2", "g3"])
+        with pytest.raises(ValueError, match="numeric"):
+            compute_sample_metrics(df)
+
+    def test_nan_values_raise(self) -> None:
+        """NaN count values should be rejected for QC metrics."""
+        df = pd.DataFrame({"s1": [10.0, np.nan, 3.0]}, index=["g1", "g2", "g3"])
+        with pytest.raises(ValueError, match="NaN"):
+            compute_sample_metrics(df)
+
     def test_single_sample(self, single_sample_matrix: pd.DataFrame) -> None:
         """Single-sample input should still return valid metrics."""
         result = compute_sample_metrics(single_sample_matrix)
@@ -555,6 +567,20 @@ class TestDetectBatchEffects:
         with pytest.raises(ValueError, match="cannot be empty"):
             detect_batch_effects(pd.DataFrame(), labels, method="kruskal")
 
+    def test_nan_batch_labels_raise(self, count_matrix: pd.DataFrame, batch_labels: pd.Series) -> None:
+        """Batch labels present in the index but missing a value should raise."""
+        labels = batch_labels.copy()
+        labels.loc["sample_0"] = np.nan
+        with pytest.raises(ValueError, match="Missing batch labels"):
+            detect_batch_effects(count_matrix, labels, method="kruskal")
+
+    def test_extra_batch_labels_are_ignored(self, count_matrix: pd.DataFrame, batch_labels: pd.Series) -> None:
+        """Extra labels for samples not in the expression matrix should not change detection."""
+        labels = pd.concat([batch_labels, pd.Series(["extra_batch"], index=["extra_sample"])])
+        result = detect_batch_effects(count_matrix, labels, method="kruskal")
+        assert result["method"] == "kruskal"
+        assert isinstance(result["batch_effect_detected"], bool)
+
 
 # =============================================================================
 # Tests: compute_correlation_matrix
@@ -611,6 +637,12 @@ class TestComputeCorrelationMatrix:
         result = compute_correlation_matrix(df, method="pearson")
         assert abs(result.loc["s1", "s2"] - 1.0) < 1e-10
 
+    def test_nonnumeric_expression_values_raise(self) -> None:
+        """Correlation matrices require numeric expression values."""
+        df = pd.DataFrame({"s1": [1, 2], "s2": [3, "bad"]}, index=["g1", "g2"])
+        with pytest.raises(ValueError, match="numeric"):
+            compute_correlation_matrix(df)
+
 
 # =============================================================================
 # Tests: detect_gc_bias
@@ -664,6 +696,19 @@ class TestDetectGcBias:
         with pytest.raises(ValueError, match="cannot be empty"):
             detect_gc_bias(pd.DataFrame(), gc)
 
+    def test_invalid_gc_values_raise(self, count_matrix: pd.DataFrame, gc_content_series: pd.Series) -> None:
+        """Matched GC content must be finite and in [0, 1]."""
+        gc = gc_content_series.copy()
+        gc.loc["gene_0"] = 1.5
+        with pytest.raises(ValueError, match="between 0 and 1"):
+            detect_gc_bias(count_matrix, gc)
+
+    def test_nonnumeric_expression_values_raise_for_gc_bias(self, gc_content_series: pd.Series) -> None:
+        """Expression matrices for bias tests must be numeric."""
+        df = pd.DataFrame({"s1": [1, "bad"] * 10}, index=[f"gene_{i}" for i in range(20)])
+        with pytest.raises(ValueError, match="numeric"):
+            detect_gc_bias(df, gc_content_series)
+
 
 # =============================================================================
 # Tests: detect_length_bias
@@ -708,6 +753,15 @@ class TestDetectLengthBias:
         lengths = pd.Series([1000], index=["g1"])
         with pytest.raises(ValueError, match="cannot be empty"):
             detect_length_bias(pd.DataFrame(), lengths)
+
+    def test_nonpositive_gene_lengths_raise(
+        self, count_matrix: pd.DataFrame, gene_lengths_series: pd.Series
+    ) -> None:
+        """Matched gene lengths must be positive."""
+        lengths = gene_lengths_series.copy()
+        lengths.loc["gene_0"] = 0
+        with pytest.raises(ValueError, match="positive"):
+            detect_length_bias(count_matrix, lengths)
 
     def test_per_sample_correlations_present(self, count_matrix: pd.DataFrame, gene_lengths_series: pd.Series) -> None:
         """per_sample should map each sample to a dict with correlation and pvalue."""
@@ -795,6 +849,20 @@ class TestGenerateQcReport:
         """Empty DataFrame should raise ValueError."""
         with pytest.raises(ValueError, match="cannot be empty"):
             generate_qc_report(pd.DataFrame())
+
+    def test_single_sample_report_has_stable_correlation_section(self, single_sample_matrix: pd.DataFrame) -> None:
+        """Single-sample reports should not emit NaN pairwise correlation summaries."""
+        report = generate_qc_report(single_sample_matrix)
+        corr_stats = report["correlation_stats"]
+        assert corr_stats["mean_pairwise_correlation"] == 1.0
+        assert corr_stats["min_pairwise_correlation"] == 1.0
+        assert corr_stats["samples_with_low_correlation"] == []
+
+    def test_nonnumeric_counts_raise(self) -> None:
+        """Report generation should validate counts before summary math."""
+        df = pd.DataFrame({"s1": [1, "bad"]}, index=["g1", "g2"])
+        with pytest.raises(ValueError, match="numeric"):
+            generate_qc_report(df)
 
     def test_report_outlier_section_structure(self, count_matrix: pd.DataFrame) -> None:
         """outlier_samples section should have method, threshold, outliers, n_outliers."""

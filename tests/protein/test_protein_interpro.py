@@ -2,7 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.protein.database.interpro import fetch_interpro_domains
+from metainformant.protein.database.interpro import (
+    fetch_interpro_domains,
+    find_similar_interpro_entries,
+    get_interpro_hierarchy,
+    get_interpro_statistics,
+    parse_interpro_results,
+)
 
 
 def _check_online(url: str) -> bool:
@@ -130,3 +136,51 @@ def test_fetch_interpro_domains_with_timeout():
     except Exception:
         # Real timeout or network error - this is expected behavior
         assert True  # Documents real failure modes
+
+
+def test_parse_interpro_results_legacy_xml_match():
+    """Parse a deterministic InterProScan-style XML match."""
+    xml = """
+    <protein-matches>
+      <protein>
+        <matches>
+          <hmmer3-match>
+            <signature ac="PF00069" name="Protein kinase domain">
+              <entry ac="IPR000719" name="Protein kinase domain" type="Domain" />
+            </signature>
+            <locations>
+              <hmmer3-location start="10" end="250" evalue="1.2e-40" />
+            </locations>
+          </hmmer3-match>
+        </matches>
+      </protein>
+    </protein-matches>
+    """
+
+    matches = parse_interpro_results(xml)
+
+    assert matches == [
+        {
+            "interpro_id": "IPR000719",
+            "name": "Protein kinase domain",
+            "type": "Domain",
+            "database": None,
+            "start": 10,
+            "end": 250,
+            "score": 1.2e-40,
+        }
+    ]
+
+
+def test_parse_interpro_results_rejects_invalid_xml():
+    with pytest.raises(ValueError, match="Invalid InterPro XML"):
+        parse_interpro_results("<not-closed>")
+
+
+def test_interpro_unimplemented_surfaces_raise_explicitly():
+    with pytest.raises(NotImplementedError):
+        get_interpro_hierarchy("IPR000719")
+    with pytest.raises(NotImplementedError):
+        get_interpro_statistics()
+    with pytest.raises(NotImplementedError):
+        find_similar_interpro_entries("IPR000719")

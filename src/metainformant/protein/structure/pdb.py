@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import numpy as np
 
 from metainformant.core.utils import logging
+from metainformant.protein._network import get_protein_api_timeout
 
 logger = logging.get_logger(__name__)
 
@@ -52,7 +53,7 @@ def fetch_pdb_structure(pdb_id: str, out_dir: Path, *, fmt: str = "pdb") -> Path
     logger.info(f"Downloading PDB structure {pdb_id}")
 
     try:
-        response = requests.get(url, timeout=30)
+        response = requests.get(url, timeout=get_protein_api_timeout())
         response.raise_for_status()
 
         with open(output_path, "wb") as f:

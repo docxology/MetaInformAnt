@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from metainformant.protein.sequence.proteomes import read_taxon_ids
+from metainformant.protein.sequence.proteomes import _proteome_stream_params, read_taxon_ids
 
 
 def test_read_taxon_ids_basic(tmp_path: Path) -> None:
@@ -72,3 +72,16 @@ def test_read_taxon_ids_whitespace_handling(tmp_path: Path) -> None:
     expected = ["9606", "10090", "10116"]
 
     assert result == expected
+
+
+def test_proteome_stream_params_include_isoforms() -> None:
+    """The public include_isoforms flag must reach the UniProtKB stream query."""
+    assert _proteome_stream_params("UP000005640") == {
+        "query": "proteome:UP000005640",
+        "format": "fasta",
+    }
+    assert _proteome_stream_params("UP000005640", include_isoforms=True) == {
+        "query": "proteome:UP000005640",
+        "format": "fasta",
+        "includeIsoform": "true",
+    }

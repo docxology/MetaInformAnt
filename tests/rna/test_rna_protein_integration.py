@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from metainformant.rna.analysis import protein_integration
 
@@ -68,6 +69,28 @@ class TestCalculateTranslationEfficiency:
             assert "gene_id" in result.columns
             assert "efficiency" in result.columns
 
+    def test_calculate_translation_efficiency_unknown_method_raises(self):
+        """Unknown methods should fail explicitly."""
+        rna_df = pd.DataFrame({"gene1": [1, 2]}, index=["sample2", "sample1"])
+        protein_df = pd.DataFrame({"gene1": [1, 2]}, index=["sample1", "sample2"])
+
+        with pytest.raises(ValueError, match="Unknown method"):
+            protein_integration.calculate_translation_efficiency(rna_df, protein_df, method="bogus")
+
+    def test_calculate_translation_efficiency_sorts_common_genes(self):
+        """Common genes should be processed in deterministic sorted order."""
+        rna_df = pd.DataFrame(
+            {"gene_b": [10, 20], "gene_a": [5, 10]},
+            index=["sample2", "sample1"],
+        )
+        protein_df = pd.DataFrame(
+            {"gene_a": [1, 2], "gene_b": [2, 4]},
+            index=["sample1", "sample2"],
+        )
+
+        result = protein_integration.calculate_translation_efficiency(rna_df, protein_df, method="ratio")
+        assert result["gene_id"].tolist() == ["gene_a", "gene_b"]
+
 
 class TestPredictProteinAbundanceFromRna:
     """Test predict_protein_abundance_from_rna function."""
@@ -117,6 +140,38 @@ class TestPredictProteinAbundanceFromRna:
         assert isinstance(result, pd.DataFrame)
         assert result.shape[0] == rna_df.shape[0]
 
+    def test_predict_protein_abundance_unknown_method_raises(self):
+        """Only implemented prediction methods should be accepted."""
+        rna_df = pd.DataFrame({"gene1": [10, 20]}, index=["sample1", "sample2"])
+
+        with pytest.raises(ValueError, match="Unknown method"):
+            protein_integration.predict_protein_abundance_from_rna(rna_df, method="lognormal")
+
+    def test_predict_protein_abundance_with_training_handles_nan_and_zero(self):
+        """Training scale factors should remain finite with zero/NaN training values."""
+        training_rna = pd.DataFrame(
+            {"gene1": [0.0, np.nan, 10.0], "gene2": [0.0, np.nan, 0.0]},
+            index=["train1", "train2", "train3"],
+        )
+        training_protein = pd.DataFrame(
+            {"gene1": [0.0, 5.0, 2.0], "gene2": [1.0, 2.0, np.nan]},
+            index=["train1", "train2", "train3"],
+        )
+        rna_df = pd.DataFrame(
+            {"gene1": [20.0, np.nan], "gene2": [5.0, 10.0]},
+            index=["test1", "test2"],
+        )
+
+        result = protein_integration.predict_protein_abundance_from_rna(
+            rna_df,
+            training_rna=training_rna,
+            training_protein=training_protein,
+            method="linear",
+        )
+        assert np.isfinite(result.to_numpy()).all()
+        assert result.loc["test1", "gene1"] == pytest.approx(4.0)
+        assert result.loc["test2", "gene1"] == 0.0
+
 
 class TestRibosomeProfilingIntegration:
     """Test ribosome_profiling_integration function."""
@@ -164,6 +219,20 @@ class TestRibosomeProfilingIntegration:
         result = protein_integration.ribosome_profiling_integration(rna_df, ribo_df)
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 0
+
+    def test_ribosome_profiling_integration_sorts_common_genes(self):
+        """Ribosome integration should return genes in deterministic order."""
+        rna_df = pd.DataFrame(
+            {"gene_b": [10, 20], "gene_a": [5, 10]},
+            index=["sample2", "sample1"],
+        )
+        ribo_df = pd.DataFrame(
+            {"gene_a": [1, 2], "gene_b": [2, 4]},
+            index=["sample1", "sample2"],
+        )
+
+        result = protein_integration.ribosome_profiling_integration(rna_df, ribo_df)
+        assert result["gene_id"].tolist() == ["gene_a", "gene_b"]
 
 
 class TestProteinIntegrationDocumentation:
@@ -214,3 +283,11 @@ class TestProteinIntegrationEdgeCases:
         result = protein_integration.calculate_translation_efficiency(rna_df, protein_df, method="ratio")
         # Should filter out NaNs
         assert isinstance(result, pd.DataFrame)
+
+    def test_calculate_translation_efficiency_rejects_nonnumeric_values(self):
+        """Nonnumeric abundance values should raise a clear error."""
+        rna_df = pd.DataFrame({"gene1": [1, "bad"]}, index=["sample1", "sample2"])
+        protein_df = pd.DataFrame({"gene1": [1, 2]}, index=["sample1", "sample2"])
+
+        with pytest.raises(ValueError, match="numeric"):
+            protein_integration.calculate_translation_efficiency(rna_df, protein_df)

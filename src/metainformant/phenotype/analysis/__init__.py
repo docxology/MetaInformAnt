@@ -2,6 +2,13 @@
 
 from __future__ import annotations
 
-from . import life_course, statistical
+from . import life_course, multivariate
 
-__all__ = ["life_course", "statistical"]
+try:
+    from . import statistical
+except ModuleNotFoundError as exc:  # pragma: no cover - depends on optional statsmodels availability
+    if exc.name != "statsmodels":
+        raise
+    statistical = None  # type: ignore[assignment]
+
+__all__ = ["life_course", "multivariate", "statistical"]

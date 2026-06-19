@@ -40,6 +40,21 @@ except ImportError:
     px = None
 
 
+def _save_matplotlib_figure(output_path: str | Path, dpi: int = 300) -> Path:
+    """Save the current matplotlib figure after ensuring its parent exists."""
+    path = Path(output_path)
+    paths.ensure_directory(path.parent)
+    plt.savefig(str(path), dpi=dpi, bbox_inches="tight")
+    return path
+
+
+def _prepare_output_path(output_path: str | Path) -> Path:
+    """Return an output path after ensuring its parent exists."""
+    path = Path(output_path)
+    paths.ensure_directory(path.parent)
+    return path
+
+
 def plot_sequence_logo(
     sequences: Sequence[str],
     *,
@@ -106,9 +121,8 @@ def plot_sequence_logo(
     ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Sequence logo saved to {output_path}")
+        saved_path = _save_matplotlib_figure(output_path)
+        logger.info(f"Sequence logo saved to {saved_path}")
 
     return ax
 
@@ -137,6 +151,8 @@ def plot_domain_architecture(
     """
     validation.validate_type(domains, list, "domains")
     validation.validate_type(protein_length, int, "protein_length")
+    if protein_length <= 0:
+        raise ValueError("protein_length must be positive")
 
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
@@ -153,8 +169,23 @@ def plot_domain_architecture(
     type_counter = 0
 
     for domain in domains:
-        start = domain["start"]
-        end = domain["end"]
+        validation.validate_type(domain, dict, "domain")
+        missing = {"start", "end"} - set(domain)
+        if missing:
+            raise ValueError(f"Domain is missing required keys: {sorted(missing)}")
+
+        try:
+            start = int(domain["start"])
+            end = int(domain["end"])
+        except (TypeError, ValueError) as exc:
+            raise ValueError("Domain start and end must be integer-like positions") from exc
+
+        if not 0 <= start < end <= protein_length:
+            raise ValueError(
+                f"Domain bounds must satisfy 0 <= start < end <= protein_length; "
+                f"got start={start}, end={end}, protein_length={protein_length}"
+            )
+
         name = domain.get("name", "Unknown")
         domain_type = domain.get("type", "domain")
 
@@ -186,9 +217,8 @@ def plot_domain_architecture(
     ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc="upper left")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Domain architecture plot saved to {output_path}")
+        saved_path = _save_matplotlib_figure(output_path)
+        logger.info(f"Domain architecture plot saved to {saved_path}")
 
     return ax
 
@@ -244,9 +274,8 @@ def plot_secondary_structure(
     ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Secondary structure plot saved to {output_path}")
+        saved_path = _save_matplotlib_figure(output_path)
+        logger.info(f"Secondary structure plot saved to {saved_path}")
 
     return ax
 
@@ -290,9 +319,8 @@ def plot_contact_map(
     plt.colorbar(im, ax=ax, label="Contact Probability")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Contact map saved to {output_path}")
+        saved_path = _save_matplotlib_figure(output_path)
+        logger.info(f"Contact map saved to {saved_path}")
 
     return ax
 
@@ -353,9 +381,8 @@ def plot_ramachandran_plot(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Ramachandran plot saved to {output_path}")
+        saved_path = _save_matplotlib_figure(output_path)
+        logger.info(f"Ramachandran plot saved to {saved_path}")
 
     return ax
 
@@ -398,9 +425,8 @@ def plot_alignment_quality(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Alignment quality plot saved to {output_path}")
+        saved_path = _save_matplotlib_figure(output_path)
+        logger.info(f"Alignment quality plot saved to {saved_path}")
 
     return ax
 
@@ -443,9 +469,8 @@ def plot_conservation_scores(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Conservation plot saved to {output_path}")
+        saved_path = _save_matplotlib_figure(output_path)
+        logger.info(f"Conservation plot saved to {saved_path}")
 
     return ax
 
@@ -493,9 +518,8 @@ def plot_structure_superposition(
     ax.legend()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Structure superposition plot saved to {output_path}")
+        saved_path = _save_matplotlib_figure(output_path)
+        logger.info(f"Structure superposition plot saved to {saved_path}")
 
     return ax
 
@@ -595,9 +619,8 @@ def plot_protein_properties(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Protein properties plot saved to {output_path}")
+        saved_path = _save_matplotlib_figure(output_path)
+        logger.info(f"Protein properties plot saved to {saved_path}")
 
     return ax
 
@@ -640,9 +663,8 @@ def plot_pdb_structure_quality(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"PDB quality plot saved to {output_path}")
+        saved_path = _save_matplotlib_figure(output_path)
+        logger.info(f"PDB quality plot saved to {saved_path}")
 
     return ax
 
@@ -696,8 +718,7 @@ def create_interactive_structure_viewer(
     )
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        html_path = Path(output_path).with_suffix(".html")
+        html_path = _prepare_output_path(output_path).with_suffix(".html")
         fig.write_html(str(html_path))
         logger.info(f"Interactive structure viewer saved to {html_path}")
 
@@ -789,9 +810,8 @@ def plot_helical_wheel(
     ax.set_yticks([])
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(str(output_path), dpi=300, bbox_inches="tight")
-        logger.info(f"Helical wheel saved to {output_path}")
+        saved_path = _save_matplotlib_figure(output_path)
+        logger.info(f"Helical wheel saved to {saved_path}")
 
     return ax
 
@@ -828,6 +848,15 @@ def plot_msa_heatmap(
 
     n_seqs = len(aligned_sequences)
     aln_len = len(aligned_sequences[0])
+    for seq in aligned_sequences:
+        validation.validate_type(seq, str, "aligned sequence")
+        if len(seq) != aln_len:
+            raise ValueError("All aligned sequences must have the same length")
+
+    if labels is not None:
+        validation.validate_type(labels, list, "labels")
+        if len(labels) != n_seqs:
+            raise ValueError("labels length must match the number of aligned sequences")
 
     # Property groups
     aa_group = {}
@@ -847,22 +876,21 @@ def plot_msa_heatmap(
             if aa != "-":
                 matrix[i, j] = aa_group.get(aa, 2)
 
-    cmap = plt.cm.get_cmap("Set2", 4)
+    cmap = plt.get_cmap("Set2", 4)
     cmap.set_bad("white")
 
     ax.imshow(matrix, aspect="auto", cmap=cmap, vmin=-0.5, vmax=3.5, interpolation="nearest")
 
     if labels:
         ax.set_yticks(range(n_seqs))
-        ax.set_yticklabels(labels[:n_seqs], fontsize=8)
+        ax.set_yticklabels(labels, fontsize=8)
     ax.set_xlabel("Alignment Position")
     ax.set_ylabel("Sequence")
     ax.set_title("Multiple Sequence Alignment")
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(str(output_path), dpi=300, bbox_inches="tight")
-        logger.info(f"MSA heatmap saved to {output_path}")
+        saved_path = _save_matplotlib_figure(output_path)
+        logger.info(f"MSA heatmap saved to {saved_path}")
 
     return ax
 
@@ -889,6 +917,7 @@ def plot_property_distribution(
         matplotlib Axes object
     """
     validation.validate_type(properties, dict, "properties")
+    validation.validate_not_empty(properties, "properties")
 
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
@@ -906,15 +935,17 @@ def plot_property_distribution(
         df = pd.DataFrame(rows)
         sns.violinplot(data=df, x="Property", y="Value", ax=ax)
     else:
-        ax.boxplot(data, labels=names)
+        try:
+            ax.boxplot(data, tick_labels=names)
+        except TypeError:
+            ax.boxplot(data, labels=names)
 
     ax.set_ylabel("Value")
     ax.set_title("Protein Property Distributions")
     ax.grid(True, alpha=0.3, axis="y")
 
     if output_path:
-        paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(str(output_path), dpi=300, bbox_inches="tight")
-        logger.info(f"Property distribution saved to {output_path}")
+        saved_path = _save_matplotlib_figure(output_path)
+        logger.info(f"Property distribution saved to {saved_path}")
 
     return ax

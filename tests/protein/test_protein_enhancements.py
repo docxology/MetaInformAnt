@@ -9,6 +9,19 @@ from __future__ import annotations
 from pathlib import Path
 
 import numpy as np
+import pytest
+
+
+def test_protein_import_smoke():
+    """Canonical protein module hubs import and expose expected submodules."""
+    import metainformant.protein.database as database
+    import metainformant.protein.sequence as sequence
+
+    assert hasattr(sequence, "alignment")
+    assert hasattr(sequence, "proteomes")
+    assert hasattr(database, "uniprot")
+    assert hasattr(database, "interpro")
+
 
 # ---------------------------------------------------------------------------
 # DSSP Parser Tests
@@ -312,6 +325,32 @@ class TestMSAHeatmap:
 
         plt.close("all")
 
+    def test_msa_heatmap_rejects_unequal_lengths(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        from metainformant.protein.visualization.general import plot_msa_heatmap
+
+        with pytest.raises(ValueError, match="same length"):
+            plot_msa_heatmap(["AKLV", "AKL"])
+
+        import matplotlib.pyplot as plt
+
+        plt.close("all")
+
+    def test_msa_heatmap_rejects_label_count_mismatch(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        from metainformant.protein.visualization.general import plot_msa_heatmap
+
+        with pytest.raises(ValueError, match="labels length"):
+            plot_msa_heatmap(["AKLV", "EKLV"], labels=["seq1"])
+
+        import matplotlib.pyplot as plt
+
+        plt.close("all")
+
 
 class TestPropertyDistribution:
     """Tests for property distribution visualization."""
@@ -339,6 +378,69 @@ class TestPropertyDistribution:
         props = {"values": [1.0, 2.0, 3.0, 4.0]}
         plot_property_distribution(props, output_path=out)
         assert out.exists()
+        import matplotlib.pyplot as plt
+
+        plt.close("all")
+
+
+class TestProteinVisualizationOutputPaths:
+    """Regression tests for figure output paths."""
+
+    def test_sequence_logo_saves_requested_file(self, tmp_path):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        from metainformant.protein.visualization.general import plot_sequence_logo
+
+        out = tmp_path / "logo.png"
+        plot_sequence_logo(["ACDE", "ACDF"], output_path=out)
+        assert out.exists()
+
+        import matplotlib.pyplot as plt
+
+        plt.close("all")
+
+    def test_domain_architecture_saves_requested_file(self, tmp_path):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        from metainformant.protein.visualization.general import plot_domain_architecture
+
+        out = tmp_path / "domains.png"
+        domains = [{"start": 5, "end": 45, "name": "Kinase", "type": "domain"}]
+        plot_domain_architecture(domains, 100, output_path=out)
+        assert out.exists()
+
+        import matplotlib.pyplot as plt
+
+        plt.close("all")
+
+    def test_protein_properties_saves_requested_file(self, tmp_path):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        from metainformant.protein.visualization.general import plot_protein_properties
+
+        out = tmp_path / "properties.png"
+        plot_protein_properties("ACDEFGHIKLMNPQRSTVWY", output_path=out)
+        assert out.exists()
+
+        import matplotlib.pyplot as plt
+
+        plt.close("all")
+
+    def test_domain_architecture_rejects_invalid_bounds(self):
+        import matplotlib
+
+        matplotlib.use("Agg")
+        from metainformant.protein.visualization.general import plot_domain_architecture
+
+        with pytest.raises(ValueError, match="Domain bounds"):
+            plot_domain_architecture([{"start": 25, "end": 20, "name": "Bad"}], 100)
+
+        with pytest.raises(ValueError, match="protein_length"):
+            plot_domain_architecture([{"start": 1, "end": 20, "name": "Bad"}], 0)
+
         import matplotlib.pyplot as plt
 
         plt.close("all")

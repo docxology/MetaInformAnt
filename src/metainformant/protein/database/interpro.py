@@ -6,13 +6,73 @@ functional site annotations from the EMBL-EBI InterPro database.
 
 from __future__ import annotations
 
+import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
 import requests
 
 from metainformant.core.utils import logging
+from metainformant.protein._network import get_protein_api_timeout
 
 logger = logging.get_logger(__name__)
+
+
+def _local_name(tag: str) -> str:
+    """Return an XML tag name without namespace."""
+    return tag.rsplit("}", 1)[-1] if "}" in tag else tag
+
+
+def _coerce_number(value: Any) -> Any:
+    """Convert XML numeric strings to int/float where possible."""
+    if value is None:
+        return None
+    text = str(value)
+    try:
+        return int(text)
+    except ValueError:
+        try:
+            return float(text)
+        except ValueError:
+            return value
+
+
+def _interpro_entry_from_element(element: ET.Element) -> Optional[Dict[str, Any]]:
+    """Find InterPro entry metadata on an XML match element."""
+    for candidate in [element, *list(element.iter())]:
+        accession = candidate.attrib.get("ac") or candidate.attrib.get("accession") or candidate.attrib.get("id")
+        if accession and str(accession).startswith("IPR"):
+            return {
+                "interpro_id": accession,
+                "name": (
+                    candidate.attrib.get("name")
+                    or candidate.attrib.get("desc")
+                    or candidate.attrib.get("description")
+                ),
+                "type": candidate.attrib.get("type"),
+                "database": candidate.attrib.get("dbname") or candidate.attrib.get("database"),
+            }
+    return None
+
+
+def _locations_from_element(element: ET.Element) -> List[Dict[str, Any]]:
+    """Extract InterProScan-style location fragments from an XML match element."""
+    locations = []
+    for candidate in element.iter():
+        tag = _local_name(candidate.tag).lower()
+        start = candidate.attrib.get("start") or candidate.attrib.get("from")
+        end = candidate.attrib.get("end") or candidate.attrib.get("to")
+        if start is None or end is None:
+            continue
+        if "location" not in tag and tag != "lcn":
+            continue
+        locations.append(
+            {
+                "start": _coerce_number(start),
+                "end": _coerce_number(end),
+                "score": _coerce_number(candidate.attrib.get("score") or candidate.attrib.get("evalue")),
+            }
+        )
+    return locations
 
 
 def fetch_interpro_domains(uniprot_id: str) -> List[Dict[str, Any]]:
@@ -37,7 +97,7 @@ def fetch_interpro_domains(uniprot_id: str) -> List[Dict[str, Any]]:
     url = f"https://www.ebi.ac.uk/interpro/api/entry/interpro/protein/UniProt/{uniprot_id}"
 
     try:
-        response = requests.get(url, timeout=30)
+        response = requests.get(url, timeout=get_protein_api_timeout())
         response.raise_for_status()
 
         data = response.json()
@@ -84,7 +144,7 @@ def fetch_interpro_by_accession(interpro_id: str) -> Optional[Dict[str, Any]]:
     url = f"https://www.ebi.ac.uk/interpro/api/entry/InterPro/{interpro_id}"
 
     try:
-        response = requests.get(url, timeout=30)
+        response = requests.get(url, timeout=get_protein_api_timeout())
         response.raise_for_status()
 
         data = response.json()
@@ -131,7 +191,7 @@ def search_interpro_entries(query: str, max_results: int = 100) -> List[Dict[str
     params = {"search": query, "page_size": min(max_results, 200)}  # API limit
 
     try:
-        response = requests.get(url, params=params, timeout=30)
+        response = requests.get(url, params=params, timeout=get_protein_api_timeout())
         response.raise_for_status()
 
         data = response.json()
@@ -170,10 +230,7 @@ def get_interpro_hierarchy(interpro_id: str) -> Dict[str, Any]:
         >>> # isinstance(hierarchy, dict)
         >>> # True
     """
-    # This would typically require multiple API calls to get hierarchy
-    # Placeholder implementation
-    logger.info("InterPro hierarchy retrieval not fully implemented")
-    return {"entry": interpro_id, "parents": [], "children": [], "siblings": []}
+    raise NotImplementedError("InterPro hierarchy retrieval is not implemented against the current REST API")
 
 
 def batch_fetch_interpro_domains(uniprot_ids: List[str]) -> Dict[str, List[Dict[str, Any]]]:
@@ -219,10 +276,41 @@ def parse_interpro_results(xml_content: str) -> List[Dict[str, Any]]:
         >>> # isinstance(matches, list)
         >>> # True
     """
-    # This would require XML parsing
-    # Placeholder for legacy XML format support
-    logger.info("InterPro XML parsing not fully implemented")
-    return []
+    if not xml_content.strip():
+        return []
+
+    try:
+        root = ET.fromstring(xml_content)
+    except ET.ParseError as e:
+        raise ValueError(f"Invalid InterPro XML content: {e}") from e
+
+    matches = []
+    seen = set()
+
+    for element in root.iter():
+        tag = _local_name(element.tag).lower()
+        if tag != "match" and not tag.endswith("-match"):
+            continue
+
+        entry = _interpro_entry_from_element(element)
+        if entry is None:
+            continue
+
+        locations = _locations_from_element(element) or [{"start": None, "end": None, "score": None}]
+        for location in locations:
+            match = {**entry, **location}
+            key = (
+                match.get("interpro_id"),
+                match.get("start"),
+                match.get("end"),
+                match.get("score"),
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            matches.append(match)
+
+    return matches
 
 
 def get_interpro_statistics() -> Dict[str, Any]:
@@ -236,16 +324,7 @@ def get_interpro_statistics() -> Dict[str, Any]:
         >>> "total_entries" in stats
         True
     """
-    # Placeholder - would query InterPro API for statistics
-    stats = {
-        "total_entries": 39000,  # Approximate as of 2024
-        "total_proteins": 2000000,  # Approximate
-        "member_databases": 14,
-        "last_updated": "2024-01",
-        "source": "InterPro database",
-    }
-
-    return stats
+    raise NotImplementedError("InterPro database statistics are not implemented against the current REST API")
 
 
 def find_similar_interpro_entries(interpro_id: str, max_results: int = 10) -> List[Dict[str, Any]]:
@@ -264,10 +343,7 @@ def find_similar_interpro_entries(interpro_id: str, max_results: int = 10) -> Li
         >>> # isinstance(similar, list)
         >>> # True
     """
-    # This would use similarity measures based on GO terms, etc.
-    # Placeholder implementation
-    logger.info("InterPro similarity search not fully implemented")
-    return []
+    raise NotImplementedError("InterPro similarity search is not implemented against the current REST API")
 
 
 def validate_interpro_accession(interpro_id: str) -> bool:

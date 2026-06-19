@@ -2,7 +2,17 @@
 # Species: Apis mellifera (Western Honey Bee)
 # NCBI Taxonomy ID: 7460
 # Assembly: GCF_003254395.2_Amel_HAv3.1 (Amel_HAv3.1)
-# Notes: Extensive genomic datasets available - many samples for population-level GWAS
+#
+# NOTE: This file is the generated/demo Apis mellifera configuration used by
+# scripts/gwas/run_amellifera_gwas.py. It contains a data_generation section
+# that creates simulated VCF, phenotype, and metadata files over real bee
+# genome coordinates.
+#
+# For the real BeeWAS 2026 read cohort, use the nested guarded profile:
+#   projects/apis_gwas/config/beewas_2026_full_guarded.yaml
+# and the current organization/runbook docs:
+#   projects/apis_gwas/doc/current/amellifera_real_genome_reads.md
+#   projects/apis_gwas/doc/current/beewas_raw_reads_to_genomic_estimators.md
 
 work_dir: output/gwas/amellifera/work
 log_dir: output/gwas/amellifera/logs
@@ -264,4 +274,3 @@ output:
 finemapping:
   enabled: true
   credible_level: 0.95
-

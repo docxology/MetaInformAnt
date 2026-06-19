@@ -4,7 +4,13 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.protein.database.uniprot import map_ids_uniprot
+from metainformant.protein._network import get_protein_api_timeout
+from metainformant.protein.database.uniprot import (
+    _extract_go_terms,
+    _extract_keywords,
+    map_ids_uniprot,
+    validate_uniprot_accession,
+)
 from metainformant.protein.structure.pdb import fetch_pdb_structure
 
 
@@ -36,6 +42,67 @@ def test_uniprot_mapping_empty_input():
     """Test edge case: empty input list (no network required)."""
     result = map_ids_uniprot([])
     assert result == {}
+
+
+def test_uniprot_accession_validation_accepts_current_formats():
+    """Validate canonical six-character and ten-character UniProt accessions."""
+    assert validate_uniprot_accession("P69905")
+    assert validate_uniprot_accession("Q9H9K5")
+    assert validate_uniprot_accession("A0A0B4J2F0")
+
+
+def test_uniprot_accession_validation_rejects_invalid_values():
+    """Reject strings that do not match UniProt accession structure."""
+    assert not validate_uniprot_accession("INVALID")
+    assert not validate_uniprot_accession("p69905")
+    assert not validate_uniprot_accession("P1234")
+    assert not validate_uniprot_accession("O123456789")
+    assert not validate_uniprot_accession(None)  # type: ignore[arg-type]
+
+
+def test_protein_api_timeout_uses_env(monkeypatch):
+    """Protein network clients share the documented PROT_TIMEOUT setting."""
+    monkeypatch.setenv("PROT_TIMEOUT", "7.5")
+    assert get_protein_api_timeout() == 7.5
+
+
+def test_protein_api_timeout_invalid_env_falls_back(monkeypatch):
+    """Invalid timeout env values fall back to the caller default."""
+    monkeypatch.setenv("PROT_TIMEOUT", "not-a-number")
+    assert get_protein_api_timeout(default=12.0) == 12.0
+
+
+def test_uniprot_go_and_keyword_extraction_from_json():
+    """Extract GO terms and keywords from real-shaped UniProt JSON fields."""
+    record = {
+        "uniProtKBCrossReferences": [
+            {
+                "database": "GO",
+                "id": "GO:0005524",
+                "properties": [
+                    {"key": "GoTerm", "value": "F:ATP binding"},
+                    {"key": "GoEvidenceType", "value": "IEA"},
+                ],
+            },
+            {"database": "Pfam", "id": "PF00069", "properties": []},
+        ],
+        "keywords": [
+            {"id": "KW-0418", "name": "Kinase", "category": "Molecular function"},
+        ],
+    }
+
+    go_terms = _extract_go_terms(record)
+    keywords = _extract_keywords(record)
+
+    assert go_terms == [
+        {
+            "id": "GO:0005524",
+            "name": "ATP binding",
+            "aspect": "molecular_function",
+            "evidence": "IEA",
+        }
+    ]
+    assert keywords == [{"id": "KW-0418", "name": "Kinase", "category": "Molecular function"}]
 
 
 @pytest.mark.network

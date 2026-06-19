@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 import requests
 
 from metainformant.core.utils import logging
+from metainformant.protein._network import get_protein_api_timeout
 
 logger = logging.get_logger(__name__)
 
@@ -37,7 +38,7 @@ def fetch_uniprot_record(uniprot_id: str) -> Dict[str, Any]:
     url = f"{base_url}/{uniprot_id}.json"
 
     try:
-        response = requests.get(url, timeout=30)
+        response = requests.get(url, timeout=get_protein_api_timeout())
         response.raise_for_status()
 
         data = response.json()
@@ -61,6 +62,8 @@ def fetch_uniprot_record(uniprot_id: str) -> Dict[str, Any]:
             "subcellular_location": _extract_subcellular_location(data),
             "domains": _extract_domains(data),
             "ptms": _extract_ptms(data),
+            "go_terms": _extract_go_terms(data),
+            "keywords": _extract_keywords(data),
         }
 
         logger.info(f"Fetched UniProt record for {uniprot_id}")
@@ -121,6 +124,56 @@ def _extract_ptms(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     return ptms
 
 
+def _extract_go_terms(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Extract Gene Ontology cross-references from a UniProt JSON record."""
+    go_terms = []
+    aspect_names = {
+        "C": "cellular_component",
+        "F": "molecular_function",
+        "P": "biological_process",
+    }
+
+    for xref in data.get("uniProtKBCrossReferences", []):
+        if xref.get("database") != "GO":
+            continue
+
+        properties = {prop.get("key"): prop.get("value") for prop in xref.get("properties", [])}
+        go_term = properties.get("GoTerm")
+        aspect = None
+        name = go_term
+        if isinstance(go_term, str) and ":" in go_term:
+            aspect_code, name = go_term.split(":", 1)
+            aspect = aspect_names.get(aspect_code, aspect_code)
+
+        go_terms.append(
+            {
+                "id": xref.get("id"),
+                "name": name,
+                "aspect": properties.get("GoAspect") or aspect,
+                "evidence": properties.get("GoEvidenceType"),
+            }
+        )
+
+    return go_terms
+
+
+def _extract_keywords(data: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Extract keyword annotations from a UniProt JSON record."""
+    keywords = []
+    for keyword in data.get("keywords", []):
+        if isinstance(keyword, dict):
+            keywords.append(
+                {
+                    "id": keyword.get("id"),
+                    "name": keyword.get("name") or keyword.get("value"),
+                    "category": keyword.get("category"),
+                }
+            )
+        elif keyword:
+            keywords.append({"id": None, "name": str(keyword), "category": None})
+    return keywords
+
+
 def fetch_uniprot_fasta(uniprot_id: str) -> Optional[str]:
     """Fetch protein sequence in FASTA format from UniProt.
 
@@ -139,7 +192,7 @@ def fetch_uniprot_fasta(uniprot_id: str) -> Optional[str]:
     url = f"https://www.uniprot.org/uniprotkb/{uniprot_id}.fasta"
 
     try:
-        response = requests.get(url, timeout=30)
+        response = requests.get(url, timeout=get_protein_api_timeout())
         response.raise_for_status()
 
         return response.text
@@ -226,22 +279,26 @@ def get_uniprot_annotations(uniprot_id: str) -> List[Dict[str, Any]]:
         record = fetch_uniprot_record(uniprot_id)
         annotations = []
 
-        # Extract GO terms
-        if "go_terms" in record:  # Would need to parse from API response
-            for go_term in record.get("go_terms", []):
-                annotations.append(
-                    {
-                        "type": "GO",
-                        "id": go_term.get("id"),
-                        "name": go_term.get("name"),
-                        "aspect": go_term.get("aspect"),
-                    }
-                )
+        for go_term in record.get("go_terms", []):
+            annotations.append(
+                {
+                    "type": "GO",
+                    "id": go_term.get("id"),
+                    "name": go_term.get("name"),
+                    "aspect": go_term.get("aspect"),
+                    "evidence": go_term.get("evidence"),
+                }
+            )
 
-        # Extract keywords
-        if "keywords" in record:  # Would need to parse from API response
-            for keyword in record.get("keywords", []):
-                annotations.append({"type": "Keyword", "name": keyword})
+        for keyword in record.get("keywords", []):
+            annotations.append(
+                {
+                    "type": "Keyword",
+                    "id": keyword.get("id"),
+                    "name": keyword.get("name"),
+                    "category": keyword.get("category"),
+                }
+            )
 
         return annotations
 
@@ -270,7 +327,7 @@ def search_uniprot_proteins(query: str, max_results: int = 100) -> List[Dict[str
     params = {"query": query, "format": "json", "size": min(max_results, 500)}  # API limit
 
     try:
-        response = requests.get(base_url, params=params, timeout=30)
+        response = requests.get(base_url, params=params, timeout=get_protein_api_timeout())
         response.raise_for_status()
 
         data = response.json()
@@ -318,7 +375,7 @@ def get_uniprot_taxonomy_info(taxon_id: int) -> Optional[Dict[str, Any]]:
     url = f"https://www.uniprot.org/taxonomy/{taxon_id}.json"
 
     try:
-        response = requests.get(url, timeout=30)
+        response = requests.get(url, timeout=get_protein_api_timeout())
         response.raise_for_status()
 
         data = response.json()
@@ -384,11 +441,15 @@ def validate_uniprot_accession(accession: str) -> bool:
     """
     import re
 
-    # UniProt accession patterns
+    if not isinstance(accession, str):
+        return False
+
+    # UniProtKB accession format:
+    # - 6 chars: [OPQ][0-9][A-Z0-9]{3}[0-9]
+    # - 10 chars: [A-NR-Z][0-9][A-Z][A-Z0-9]{2}[0-9][A-Z][A-Z0-9]{2}[0-9]
     patterns = [
-        r"^[A-Z]\d{5}$",  # P12345
-        r"^[A-Z]\d{9}$",  # A0A1234567
-        r"^[A-Z]\d{3}[A-Z]\d{2}$",  # P123A45 (rare)
+        r"^[OPQ][0-9][A-Z0-9]{3}[0-9]$",
+        r"^[A-NR-Z][0-9][A-Z][A-Z0-9]{2}[0-9][A-Z][A-Z0-9]{2}[0-9]$",
     ]
 
     return any(re.match(pattern, accession) for pattern in patterns)
@@ -457,7 +518,9 @@ def map_ids_uniprot(
     try:
         # Make the API request
         response = requests.post(
-            base_url, data={"from": from_db, "to": to_db, "format": "tab", "query": ids_string}, timeout=60
+            base_url,
+            data={"from": from_db, "to": to_db, "format": "tab", "query": ids_string},
+            timeout=get_protein_api_timeout(default=60.0),
         )
         response.raise_for_status()
 

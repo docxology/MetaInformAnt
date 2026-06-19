@@ -2,6 +2,12 @@
 
 This document describes the GWAS configuration setup for *Apis mellifera* (Western Honey Bee).
 
+> Current real-data work uses
+> `projects/apis_gwas/config/beewas_2026_full_guarded.yaml` and
+> `/Volumes/blue/data/beewas_2026`. The older `gwas_amellifera.yaml` profile is
+> now explicitly the generated/demo Apis workflow. See
+> `projects/apis_gwas/doc/current/amellifera_real_genome_reads.md`.
+
 ## Configuration File
 
 **Location**: `config/gwas/gwas_amellifera.yaml`
@@ -246,7 +252,7 @@ Before running the full workflow, ensure you have:
 Run configuration tests:
 
 ```bash
-pytest tests/gwas/test_gwas_config_amellifera.py -v
+pytest tests/test_gwas_config_amellifera.py -v
 ```
 
 ## Related Documentation
@@ -260,8 +266,6 @@ pytest tests/gwas/test_gwas_config_amellifera.py -v
 1. Wallberg et al. (2014). A worldwide survey of genome sequence variation provides insight into the evolutionary history of the honeybee Apis mellifera. *Nature Genetics*.
 2. The Honey Bee Genome Sequencing Consortium (2006). Insights into social insects from the genome of the honeybee Apis mellifera. *Nature*.
 3. Cridland et al. (2017). The population genetics of structural variants in honeybees. *G3: Genes, Genomes, Genetics*.
-
-
 
 
 
