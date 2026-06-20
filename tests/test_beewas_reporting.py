@@ -429,6 +429,9 @@ def test_plot_manifest_html_and_output_manifest(tmp_path: Path) -> None:
             warning="Controls only <never biological>",
         )
     ]
+    table_path = tmp_path / "tables" / "missing_values.tsv"
+    table_path.parent.mkdir()
+    table_path.write_text("sample_id\tmetric\tnote\nA\t\t\nB\t1.25\tok\n", encoding="utf-8")
 
     plot_manifest = write_plot_manifest(tmp_path, records)
     html_path = write_html_report(
@@ -436,7 +439,7 @@ def test_plot_manifest_html_and_output_manifest(tmp_path: Path) -> None:
         title="BeeWAS <Report>",
         warning="Synthetic <warning>",
         summary_cards={"samples": 3},
-        sections=[],
+        sections=[{"title": "Missing Preview", "body": "Blank cells stay blank.", "table": table_path}],
         config={"profile": "smoke"},
     )
     output_manifest = write_output_manifest(tmp_path)
@@ -446,6 +449,8 @@ def test_plot_manifest_html_and_output_manifest(tmp_path: Path) -> None:
     assert plot_manifest["sections"][0]["id"] == "sampling_coverage"
     assert "Sampling &lt;Flow&gt;" in html_text
     assert "Controls only &lt;never biological&gt;" in html_text
+    assert "<td>NaN</td>" not in html_text
+    assert "<td>inf</td>" not in html_text.lower()
     assert output_manifest["plot_manifest"] == "plot_manifest.json"
     assert any(row["path"] == "plot_manifest.json" for row in output_manifest["files"])
 
@@ -593,6 +598,11 @@ def test_sample_processing_progress_outputs_status_tables_and_plot(tmp_path: Pat
                 "r2_repair_action": "none",
                 "r1_integrity_message": "unexpected end of file",
                 "r2_integrity_message": "",
+                "fastq_integrity_checked_mate_count": 2,
+                "fastq_integrity_ok_mate_count": 1,
+                "fastq_integrity_failed_mate_count": 1,
+                "fastq_integrity_failed_mates": "R1",
+                "fastq_integrity_repair_actions": "R1:redownload_or_replace_fastq",
                 "cram_exists": False,
                 "crai_exists": False,
                 "cram_size_gib": 0.0,
@@ -649,6 +659,8 @@ def test_sample_processing_progress_outputs_status_tables_and_plot(tmp_path: Pat
     assert by_sample.loc["M10G", "alignment_stage"] == "awaiting_alignment"
     assert by_sample.loc["M6ITQ", "alignment_stage"] == "fastq_integrity_failed"
     assert by_sample.loc["M6ITQ", "blocking_reason"] == "fastq_integrity_failed_redownload_required"
+    assert by_sample.loc["M6ITQ", "fastq_integrity_failed_mates"] == "R1"
+    assert by_sample.loc["M6ITQ", "fastq_integrity_repair_actions"] == "R1:redownload_or_replace_fastq"
     assert by_sample.loc["R14G", "alignment_stage"] == "fastq_integrity_suspected_from_alignment_log"
     assert by_sample.loc["R14G", "blocking_reason"] == "alignment_log_fastq_integrity_suspected_validate_or_redownload"
     assert "bwa_gzip_close_buffer_error" in by_sample.loc["R14G", "alignment_log_fastq_issue_code"]
@@ -657,12 +669,20 @@ def test_sample_processing_progress_outputs_status_tables_and_plot(tmp_path: Pat
     assert summary["alignment_in_progress"] == 1
     assert summary["awaiting_alignment"] == 1
     assert summary["fastq_integrity_failed"] == 1
+    assert summary["fastq_integrity_checked_mates"] == 2
+    assert summary["fastq_integrity_ok_mates"] == 1
+    assert summary["fastq_integrity_failed_mates"] == 1
+    assert summary["repair_action_counts"] == {"redownload_or_replace_fastq": 1}
+    assert summary["redownload_required_samples"] == ["M6ITQ"]
     assert summary["fastq_integrity_failed_samples"] == ["M6ITQ"]
     assert summary["fastq_integrity_suspected_from_logs"] == 1
     assert summary["fastq_integrity_suspected_from_log_samples"] == ["R14G"]
     assert (tables / "sample_processing_progress.tsv").exists()
     report_text = (tables / "sample_processing_progress_report.md").read_text(encoding="utf-8")
     assert report_text.startswith("# BeeWAS Sample Processing Progress")
+    assert "FASTQ Integrity Repair Actions" in report_text
+    assert "FASTQ integrity failed mates: 1" in report_text
+    assert "R1:redownload_or_replace_fastq" in report_text
     assert "FASTQ Integrity Failures" in report_text
     assert "Alignment-Log FASTQ Integrity Suspects" in report_text
     assert "unexpected end of file" in report_text
@@ -706,6 +726,11 @@ def test_manifest_status_uses_fastq_integrity_status_file(tmp_path: Path) -> Non
     assert bool(row["r1_complete"]) is False
     assert row["r1_integrity_status"] == "corrupt_gzip"
     assert row["r1_repair_action"] == "redownload_or_replace_fastq"
+    assert int(row["fastq_integrity_checked_mate_count"]) == 2
+    assert int(row["fastq_integrity_ok_mate_count"]) == 1
+    assert int(row["fastq_integrity_failed_mate_count"]) == 1
+    assert row["fastq_integrity_failed_mates"] == "R1"
+    assert row["fastq_integrity_repair_actions"] == "R1:redownload_or_replace_fastq"
     assert (tables / "manifest_download_alignment_status.tsv").exists()
 
 
