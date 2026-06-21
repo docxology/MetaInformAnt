@@ -587,7 +587,7 @@ def test_sample_processing_progress_outputs_status_tables_and_plot(tmp_path: Pat
                 "strain": "M",
                 "colony": "M6",
                 "library_label": "ITQ",
-                "status": "corrupt_pair",
+                "status": "upstream_fastq_replacement_required",
                 "r1_complete": False,
                 "r2_complete": False,
                 "r1_size_gib": 1.0,
@@ -603,6 +603,14 @@ def test_sample_processing_progress_outputs_status_tables_and_plot(tmp_path: Pat
                 "fastq_integrity_failed_mate_count": 1,
                 "fastq_integrity_failed_mates": "R1",
                 "fastq_integrity_repair_actions": "R1:redownload_or_replace_fastq",
+                "r1_download_status": "failed_integrity_corrupt_gzip",
+                "r2_download_status": "not_checked",
+                "r1_download_repair_action": "replace_upstream_fastq",
+                "r2_download_repair_action": "none",
+                "r1_download_message": "unexpected end of file after direct download",
+                "r2_download_message": "",
+                "fastq_download_repair_actions": "R1:replace_upstream_fastq",
+                "upstream_replacement_mates": "R1",
                 "cram_exists": False,
                 "crai_exists": False,
                 "cram_size_gib": 0.0,
@@ -657,10 +665,12 @@ def test_sample_processing_progress_outputs_status_tables_and_plot(tmp_path: Pat
     assert by_sample.loc["C1G", "alignment_stage"] == "cram_and_index_complete"
     assert by_sample.loc["C1ITQ", "alignment_stage"] == "alignment_in_progress"
     assert by_sample.loc["M10G", "alignment_stage"] == "awaiting_alignment"
-    assert by_sample.loc["M6ITQ", "alignment_stage"] == "fastq_integrity_failed"
-    assert by_sample.loc["M6ITQ", "blocking_reason"] == "fastq_integrity_failed_redownload_required"
+    assert by_sample.loc["M6ITQ", "alignment_stage"] == "upstream_fastq_replacement_required"
+    assert by_sample.loc["M6ITQ", "blocking_reason"] == "validated_download_integrity_failed_replace_source_fastq"
     assert by_sample.loc["M6ITQ", "fastq_integrity_failed_mates"] == "R1"
     assert by_sample.loc["M6ITQ", "fastq_integrity_repair_actions"] == "R1:redownload_or_replace_fastq"
+    assert by_sample.loc["M6ITQ", "fastq_download_repair_actions"] == "R1:replace_upstream_fastq"
+    assert by_sample.loc["M6ITQ", "upstream_replacement_mates"] == "R1"
     assert by_sample.loc["R14G", "alignment_stage"] == "fastq_integrity_suspected_from_alignment_log"
     assert by_sample.loc["R14G", "blocking_reason"] == "alignment_log_fastq_integrity_suspected_validate_or_redownload"
     assert "bwa_gzip_close_buffer_error" in by_sample.loc["R14G", "alignment_log_fastq_issue_code"]
@@ -668,21 +678,27 @@ def test_sample_processing_progress_outputs_status_tables_and_plot(tmp_path: Pat
     assert summary["complete_cram_crai_pairs"] == 1
     assert summary["alignment_in_progress"] == 1
     assert summary["awaiting_alignment"] == 1
-    assert summary["fastq_integrity_failed"] == 1
+    assert summary["fastq_integrity_failed"] == 0
+    assert summary["upstream_fastq_replacement_required"] == 1
     assert summary["fastq_integrity_checked_mates"] == 2
     assert summary["fastq_integrity_ok_mates"] == 1
     assert summary["fastq_integrity_failed_mates"] == 1
     assert summary["repair_action_counts"] == {"redownload_or_replace_fastq": 1}
-    assert summary["redownload_required_samples"] == ["M6ITQ"]
-    assert summary["fastq_integrity_failed_samples"] == ["M6ITQ"]
+    assert summary["download_repair_action_counts"] == {"replace_upstream_fastq": 1}
+    assert summary["redownload_required_samples"] == []
+    assert summary["fastq_integrity_failed_samples"] == []
+    assert summary["upstream_replacement_required_samples"] == ["M6ITQ"]
     assert summary["fastq_integrity_suspected_from_logs"] == 1
     assert summary["fastq_integrity_suspected_from_log_samples"] == ["R14G"]
     assert (tables / "sample_processing_progress.tsv").exists()
     report_text = (tables / "sample_processing_progress_report.md").read_text(encoding="utf-8")
     assert report_text.startswith("# BeeWAS Sample Processing Progress")
     assert "FASTQ Integrity Repair Actions" in report_text
+    assert "Download Repair Actions" in report_text
     assert "FASTQ integrity failed mates: 1" in report_text
     assert "R1:redownload_or_replace_fastq" in report_text
+    assert "R1:replace_upstream_fastq" in report_text
+    assert "Upstream FASTQ replacement required: 1" in report_text
     assert "FASTQ Integrity Failures" in report_text
     assert "Alignment-Log FASTQ Integrity Suspects" in report_text
     assert "unexpected end of file" in report_text
@@ -717,21 +733,31 @@ def test_manifest_status_uses_fastq_integrity_status_file(tmp_path: Path) -> Non
         f"2026-06-19T05:00:00+00:00\tM6ITQ\tR2\t{r2}\tok\tnone\t\n",
         encoding="utf-8",
     )
+    (manifests / "google_drive_download_status.tsv").write_text(
+        "timestamp_utc\tsample_id\tmate\tpath\tstatus\tsize_bytes\tmessage\n"
+        f"2026-06-19T05:10:00+00:00\tM6ITQ\tR1\t{r1}\tfailed_integrity_corrupt_gzip\t0\tunexpected end of file after direct download\n",
+        encoding="utf-8",
+    )
     paths = SimpleNamespace(base=base, manifest=manifest, tables=tables)
 
     status = build_manifest_status(paths)
 
     row = status.iloc[0]
-    assert row["status"] == "corrupt_pair"
+    assert row["status"] == "upstream_fastq_replacement_required"
     assert bool(row["r1_complete"]) is False
     assert row["r1_integrity_status"] == "corrupt_gzip"
     assert row["r1_repair_action"] == "redownload_or_replace_fastq"
+    assert row["r1_download_status"] == "failed_integrity_corrupt_gzip"
+    assert row["r1_download_repair_action"] == "replace_upstream_fastq"
+    assert row["upstream_replacement_mates"] == "R1"
     assert int(row["fastq_integrity_checked_mate_count"]) == 2
     assert int(row["fastq_integrity_ok_mate_count"]) == 1
     assert int(row["fastq_integrity_failed_mate_count"]) == 1
     assert row["fastq_integrity_failed_mates"] == "R1"
     assert row["fastq_integrity_repair_actions"] == "R1:redownload_or_replace_fastq"
+    assert row["fastq_download_repair_actions"] == "R1:replace_upstream_fastq"
     assert (tables / "manifest_download_alignment_status.tsv").exists()
+    assert (tables / "google_drive_download_status.tsv").exists()
 
 
 def test_phenotype_statistics_mosaic_is_manifest_backed(tmp_path: Path) -> None:
