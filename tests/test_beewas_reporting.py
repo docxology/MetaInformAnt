@@ -719,23 +719,30 @@ def test_manifest_status_uses_fastq_integrity_status_file(tmp_path: Path) -> Non
     manifests.mkdir(parents=True)
     r1 = fastq / "M6ITQ_R1.fastq.gz"
     r2 = fastq / "M6ITQ_R2.fastq.gz"
+    r9_r1 = fastq / "R9WORK_R1.fastq.gz"
+    r9_r2 = fastq / "R9WORK_R2.fastq.gz"
     r1.write_bytes(b"\x1f\x8btruncated")
     r2.write_bytes(b"\x1f\x8bok")
     manifest = manifests / "manifest.tsv"
     manifest.write_text(
         "sample_id\tlocal_r1\tlocal_r2\n"
-        f"M6ITQ\t{r1}\t{r2}\n",
+        f"M6ITQ\t{r1}\t{r2}\n"
+        f"R9WORK\t{r9_r1}\t{r9_r2}\n",
         encoding="utf-8",
     )
     (manifests / "fastq_integrity_status.tsv").write_text(
         "timestamp_utc\tsample_id\tmate\tpath\tintegrity_status\trepair_action\tmessage\n"
         f"2026-06-19T05:00:00+00:00\tM6ITQ\tR1\t{r1}\tcorrupt_gzip\tredownload_or_replace_fastq\tunexpected end of file\n"
-        f"2026-06-19T05:00:00+00:00\tM6ITQ\tR2\t{r2}\tok\tnone\t\n",
+        f"2026-06-19T05:00:00+00:00\tM6ITQ\tR2\t{r2}\tok\tnone\t\n"
+        f"2026-06-21T20:50:00+00:00\tR9WORK\tR1\t{r9_r1}\tmissing\tredownload_or_replace_fastq\tdirect repair failed\n"
+        f"2026-06-21T20:50:00+00:00\tR9WORK\tR2\t{r9_r2}\tmissing\tredownload_or_replace_fastq\tdirect repair failed\n",
         encoding="utf-8",
     )
     (manifests / "google_drive_download_status.tsv").write_text(
         "timestamp_utc\tsample_id\tmate\tpath\tstatus\tsize_bytes\tmessage\n"
-        f"2026-06-19T05:10:00+00:00\tM6ITQ\tR1\t{r1}\tfailed_integrity_corrupt_gzip\t0\tunexpected end of file after direct download\n",
+        f"2026-06-19T05:10:00+00:00\tM6ITQ\tR1\t{r1}\tfailed_integrity_corrupt_gzip\t0\tunexpected end of file after direct download\n"
+        f"2026-06-21T20:51:00+00:00\tR9WORK\tR1\t{r9_r1}\tfailed_rc_1\t0\tcurl --fail -r 50331648-51380223 https://drive.usercontent.google.com/download?id=abc logs/downloads/direct_tmp/R9WORK_R1.fastq.gz\n"
+        f"2026-06-21T20:52:00+00:00\tR9WORK\tR2\t{r9_r2}\tfailed_rc_1\t0\tcurl --fail -r 0-0 https://drive.usercontent.google.com/download?id=def logs/downloads/direct_tmp/R9WORK_R2.fastq.gz\n",
         encoding="utf-8",
     )
     paths = SimpleNamespace(base=base, manifest=manifest, tables=tables)
@@ -756,6 +763,13 @@ def test_manifest_status_uses_fastq_integrity_status_file(tmp_path: Path) -> Non
     assert row["fastq_integrity_failed_mates"] == "R1"
     assert row["fastq_integrity_repair_actions"] == "R1:redownload_or_replace_fastq"
     assert row["fastq_download_repair_actions"] == "R1:replace_upstream_fastq"
+    r9 = status.set_index("sample_id").loc["R9WORK"]
+    assert r9["status"] == "upstream_fastq_replacement_required"
+    assert r9["r1_download_status"] == "failed_rc_1"
+    assert r9["r1_download_repair_action"] == "replace_upstream_fastq"
+    assert r9["r2_download_repair_action"] == "replace_upstream_fastq"
+    assert r9["upstream_replacement_mates"] == "R1,R2"
+    assert r9["fastq_download_repair_actions"] == "R1:replace_upstream_fastq,R2:replace_upstream_fastq"
     assert (tables / "manifest_download_alignment_status.tsv").exists()
     assert (tables / "google_drive_download_status.tsv").exists()
 
