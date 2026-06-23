@@ -58,6 +58,7 @@ from beewas_reporting import (  # noqa: E402
 from analyze_beewas_2026_real import (  # noqa: E402
     build_manifest_status,
     build_sample_processing_progress,
+    build_variant_summary,
     build_phenotype_genotype_handoff_tables,
     final_genotype_estimators_ready,
     plot_sample_processing_progress,
@@ -69,6 +70,42 @@ def test_target_size_uses_smaller_count_or_percent() -> None:
     assert target_size(10, 3, 50) == 3
     assert target_size(10, None, 0.25) == 2
     assert target_size(10, None, None) == 10
+
+
+def test_variant_summary_prefers_requested_vcf_sidecars(tmp_path: Path) -> None:
+    vcf_dir = tmp_path / "variants" / "vcf"
+    tables = tmp_path / "tables"
+    vcf_dir.mkdir(parents=True)
+    tables.mkdir()
+    raw_vcf = vcf_dir / "beewas_2026_66cram_partial_20260621.vcf.gz"
+    qc_vcf = vcf_dir / "beewas_2026_66cram_partial_20260621.snps.qc.vcf.gz"
+    paths = SimpleNamespace(raw_vcf=raw_vcf, qc_vcf=qc_vcf, tables=tables)
+    (vcf_dir / "beewas_2026_66cram_partial_20260621.stats.txt").write_text(
+        "SN\t0\tnumber of samples:\t66\nSN\t0\tnumber of records:\t660\n",
+        encoding="utf-8",
+    )
+    (vcf_dir / "beewas_2026_66cram_partial_20260621.snps.qc.stats.txt").write_text(
+        "SN\t0\tnumber of samples:\t66\nSN\t0\tnumber of records:\t330\n",
+        encoding="utf-8",
+    )
+    (vcf_dir / "beewas_2026_cohort.stats.txt").write_text(
+        "SN\t0\tnumber of samples:\t11\nSN\t0\tnumber of records:\t110\n",
+        encoding="utf-8",
+    )
+    (vcf_dir / "beewas_2026_cohort.snps.qc.stats.txt").write_text(
+        "SN\t0\tnumber of samples:\t11\nSN\t0\tnumber of records:\t55\n",
+        encoding="utf-8",
+    )
+
+    summary = build_variant_summary(paths)
+
+    raw = summary[summary["callset"].eq("raw_bcftools")].iloc[0]
+    qc = summary[summary["callset"].eq("qc_biallelic_snps")].iloc[0]
+    assert raw["number of samples"] == 66
+    assert raw["number of records"] == 660
+    assert qc["number of samples"] == 66
+    assert qc["number of records"] == 330
+    assert (tables / "variant_callset_summary.tsv").exists()
 
 
 def test_sample_include_exclude_filters_apply_before_count(tmp_path: Path) -> None:
