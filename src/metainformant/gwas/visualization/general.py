@@ -1033,3 +1033,10 @@ def functional_enrichment_plot(
         logger.info(f"Saved functional enrichment plot to {output_path}")
 
     return fig
+
+
+from metainformant.gwas.visualization._general_impl import (  # noqa: E402
+    convergence_plot,
+    power_curve_plot,
+    saturation_plot,
+)

@@ -12,30 +12,34 @@ from metainformant.core.utils.logging import get_logger
 logger = get_logger(__name__)
 
 # Regex to parse BeeWAS sample names
-SAMPLE_RE = re.compile(r"^(?P<colony>[A-Z]\d+)(?P<caste>G|ITQ|ITW|IV|WORK)_(?P<read>R[12])\.fastq")
-STANDALONE_RE = re.compile(r"^(?P<colony>[A-Z]\d+)(?P<caste>G|ITQ|ITW|IV|WORK)_(?P<read>R[12])\.fastq-\d+\.gz$")
+SAMPLE_RE = re.compile(
+    r"^(?P<colony>[A-Z]\d+)(?P<biological_group_code>G|ITQ|ITW|IV|WORK)_(?P<read>R[12])\.fastq"
+)
+STANDALONE_RE = re.compile(
+    r"^(?P<colony>[A-Z]\d+)(?P<biological_group_code>G|ITQ|ITW|IV|WORK)_(?P<read>R[12])\.fastq-\d+\.gz$"
+)
 
 
 def parse_fastq_filename(filename: str) -> dict[str, str] | None:
-    """Parse a BeeWAS FASTQ filename into colony, caste, read components."""
+    """Parse a BeeWAS FASTQ filename into colony, biological group, and read components."""
     basename = Path(filename).name
 
     m = STANDALONE_RE.match(basename)
     if m:
         return {
             "colony": m.group("colony"),
-            "caste": m.group("caste"),
+            "biological_group_code": m.group("biological_group_code"),
             "read": m.group("read"),
-            "sample_id": f"{m.group('colony')}{m.group('caste')}",
+            "sample_id": f"{m.group('colony')}{m.group('biological_group_code')}",
         }
 
     m = SAMPLE_RE.match(basename)
     if m:
         return {
             "colony": m.group("colony"),
-            "caste": m.group("caste"),
+            "biological_group_code": m.group("biological_group_code"),
             "read": m.group("read"),
-            "sample_id": f"{m.group('colony')}{m.group('caste')}",
+            "sample_id": f"{m.group('colony')}{m.group('biological_group_code')}",
         }
     return None
 
