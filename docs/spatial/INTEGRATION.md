@@ -1,95 +1,67 @@
-# Integration: spatial
+# Multi-Sample Integration
 
-## Related Modules
-- [singlecell](../singlecell/README.md)
-- [networks](../networks/README.md)
-- [visualization](../visualization/README.md)
-- [quality](../quality/README.md)
+Batch-correct and spatially align multiple tissue sections.
 
-## Import Patterns
-### Minimal (standalone)
+## Concatenation + BBKNN
+
 ```python
-from metainformant import spatial
-results = spatial.analyze(data)
-```
+import scanpy as sc
+from metainformant.spatial.integration import spatial_batch_correct
 
-### Full integration
-```python-snippet
-from metainformant.spatial import load_visium, load_merfish, load_xenium
-from metainformant.core import io, config, cache, logging
-from metainformant.visualization import quickplot
-```
-
-## Data Flow Architecture
-```mermaid
-flowchart LR
-    A[Raw Input
-10x Visium HDF5] --> B[I/O
-spatial.io]
-    B --> C[Core
-spatial.core]
-    C --> D[Results
-dict/DataFrame]
-    D --> E[Visualization]
-    D --> F[Export
-JSON/CSV]
-    E --> G[Plot]
-    F --> H[File]
-    
-    style C fill:#e1f5e1
-    style D fill:#fff3e0
-```
-
-## Cross-Module Workflows
-
-### spatial + gwas + phenotype
-```python
-from metainformant import spatial, gwas, phenotype
-prep = spatial.load_visium(raw_data)
-gwas_res = gwas.associate(prep)
-pheno = phenotype.correlate(gwas_res)
-visualization.manhattan(gwas_res)
-```
-
-### spatial + cloud
-```python-snippet
-from metainformant.cloud import submit_batch
-job = submit_batch(
-    module="spatial",
-    parameters=dict(algorithm="accurate", workers=16)
+adatas = [load_visium(p) for p in dirs]
+adata_joint = spatial_batch_correct(
+    adatas,
+    batch_key='sample_id',
+    method='bbknn',        # also 'harmony' or 'scanorama'
+    n_pcs=30,
+    neighbors=15,
 )
-results = job.wait().download()
 ```
 
-### spatial + visualization (detailed)
-```python-snippet
-from metainformant.spatial import analyze
-from metainformant.visualization import plot_heatmap, plot_timeseries, plot_network
-res = analyze(data)
-plot_heatmap(res.matrix)
-plot_timeseries(res.series)
+After integration, re-run spatial clustering on the corrected embedding:
+
+```python
+sc.pp.neighbors(adata_joint, use_rep='X_pca')
+adata_joint.obs['integrated_domain'] = spatial_cluster(adata_joint, resolution=0.8)
 ```
 
-## Shared Infrastructure
-| Service | Provided By | Used By |
-|---------|-------------|---------|
-| Config | `core.utils.config` | All modules (including spatial) |
-| Logging | `core.utils.logging` | Structured logs across pipeline |
-| I/O | `core.io` | Format-agnostic read/write |
-| Caching | `core.io.cache` | Expensive computations |
-| DB | `core.db` | Persistent metadata (optional) |
+## Transfer of labels
 
-## Data Contract
-Spatial produces standardized result containers compatible with downstream modules:
-```python-snippet
-class Result:
-    values: dict            # Primary output data
-    stats: dict             # Summary statistics
-    metadata: dict          # Provenance, timestamps, config
-    to_table() -> pd.DataFrame
-    to_json() -> str
+Project labels from a reference section to a new query:
+
+```python
+from metainformant.spatial.integration import transfer_labels
+query = load_visium('new_sample/')
+pred_labels = transfer_labels(
+    reference=adata_joint,
+    query=query,
+    label_col='integrated_domain',
+    method='knn',
+)
+query.obs['predicted_domain'] = pred_labels
 ```
-All modules that accept `Result` objects can operate on spatial's output directly.
 
-## Multi-Module Orchestration
-See [docs/agents/](../agents/MULTI_AGENT_WORKFLOWS.md) for agent-driven multi-module pipelines.
+## Spatial alignment (registration)
+
+Rigid / non-rigid alignment of tissue shapes:
+
+```python
+from metainformant.spatial.integration import register_coordinates
+aligned = register_coordinates(
+    adatas,
+    reference_idx=0,
+    method=' affine',    # 'affine' or 'dense'
+    landmark_key='landmarks',   # optional user-supplied points
+)
+```
+
+Used when comparing histological landmarks across patients.
+
+## Harmonization across platforms
+
+If you mix Visium and Xenium data, down-sample Xenium to Visium-like spot spacing:
+
+```python
+from metainformant.spatial.integration import downsample_to_visium
+visium_like = downsample_to_visium(xenium_adata, target_diameter=55.0)
+```

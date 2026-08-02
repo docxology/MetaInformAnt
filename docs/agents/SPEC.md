@@ -1,152 +1,98 @@
-# Specification: agent-coordination-hub
-
-**Path**: `docs/agents/`  
-**Component Type**: Documentation Hub (Meta)  
-**Dependency Level**: Cross-cutting (Core documentation layer)
+# Specification: cursorrules
 
 ## Scope
 
-This specification describes the agent coordination documentation hub — the authoritative source for all multi-agent orchestration patterns, protocols, and best practices used throughout METAINFORMANT's 28-module ecosystem.
+Module-specific Cursor AI rules for consistent development patterns across METAINFORMANT. Contains domain-specific coding guidelines that are automatically loaded by Cursor AI when working in corresponding module directories.
 
 ## Architecture
 
-### Documentation Modules
+- **Dependency Level**: Development Tooling
+- **Component Type**: AI Assistant Rules
+- **Integration**: Cursor AI Editor
 
-| File | Role | Audience |
-|------|------|----------|
-| `README.md` | Hub overview with architecture diagram | Newcomers, architects |
-| `index.md` | Toctree navigation | All users |
-| `AGENTS.md` | Universal agent directives (rules) | All developers |
-| `ARCHITECTURE.md` | System coordination architecture | System architects |
-| `ORCHESTRATION.md` | Workflow manager API reference | Pipeline engineers |
-| `MULTI_AGENT_WORKFLOWS.md` | Real-world workflow examples | Workflow designers |
-| `COMMUNICATION_PROTOCOLS.md` | Inter-agent messaging patterns | Module developers |
-| `SAFETY.md` | Error handling, validation, recovery | All implementers |
-| `BEST_PRACTICES.md` | Operational excellence guide | Operators, maintainers |
-| `rules/` | 28 module-specific rule files | Domain developers |
+### File Structure
 
-### Reference Implementation(s)
-
-- **Primary**: `metainformant.core.engine.workflow_manager.BasePipelineManager`
-- **Secondary**: `metainformant.core.execution.workflow` (config-driven)
-- **Utilities**: `metainformant.core.execution.parallel`
+```text
+docs/agents/
+ README.md # Agents system documentation
+ spec.md # Specification
+ rules/ # Module-specific rules
+ core.md # Core patterns
+ dna.md # DNA patterns
+ {module}.md # Domain-specific patterns
+```
 
 ## Data Structures
 
-### Core Types (referenced by docs)
+### Agent Rule File Format
 
-```python-snippet
-from metainformant.core.engine.workflow_manager import (
-    BasePipelineManager,
-    PipelinePhase,
-    PipelineItem,
-    Stage,
-)
+Each `.md` file is a markdown file containing:
 
-# BasePipelineManager
-manager: BasePipelineManager
-manager.phases: List[PipelinePhase]
-manager.items: Dict[str, PipelineItem]
-manager.config: Dict[str, Any]
-manager.executor: ThreadPoolExecutor
-manager.ui: TerminalInterface
+- Module-specific coding patterns
+- Import conventions for the domain
+- Required utility usage patterns
+- Domain-specific validation rules
+- Common pitfalls to avoid
 
-# PipelinePhase
-phase = PipelinePhase(
-    name: str,
-    handler: Callable[[BasePipelineManager, List[PipelineItem]], None],
-    filter_fn: Callable[[PipelineItem], bool] = lambda i: i.stage == Stage.PENDING,
-    color: str = CYAN,
-)
+### Available Agent Rules
 
-# PipelineItem
-item = PipelineItem(
-    item_id: str,
-    metadata: Dict[str, Any] = field(default_factory=dict),
-    stage: Stage = Stage.PENDING,
-    error: str = "",
-)
+| File | Domain |
+|------|--------|
+| core.md | Core infrastructure (I/O, config, logging) |
+| dna.md | DNA sequence analysis, alignment |
+| rna.md | RNA-seq, amalgkit workflows |
+| gwas.md | GWAS pipelines, association |
+| protein.md | Protein analysis, structure |
+| epigenome.md | Methylation, ChIP-seq |
+| networks.md | Biological networks |
+| multiomics.md | Multi-omic integration |
+| singlecell.md | Single-cell RNA-seq |
+| visualization.md | Plotting, figures |
+| quality.md | Quality control |
+| ml.md | Machine learning |
+| math.md | Population genetics theory |
+| information.md | Information theory |
+| ontology.md | GO analysis |
+| phenotype.md | Trait analysis |
+| ecology.md | Community diversity |
+| simulation.md | Synthetic data |
+| life_events.md | Event sequences |
+| longread.md | Long-read sequencing (PacBio/Nanopore) |
+| metagenomics.md | Amplicon, shotgun metagenomics |
+| structural_variants.md | CNV/SV detection and annotation |
+| spatial.md | Spatial transcriptomics |
+| pharmacogenomics.md | Clinical pharmacogenomics |
+| metabolomics.md | Metabolomics analysis |
+| menu.md | Interactive menu system |
 
-# Stage enum
-Stage.PENDING → Stage.RUNNING → Stage.DONE | Stage.FAILED
+## Interface
+
+### Usage
+
+Cursorrules are automatically loaded by Cursor AI based on the working directory. No manual invocation required.
+
+### Key Patterns Enforced
+
+All cursorrules enforce these project-wide standards:
+
+```text
+- Use metainformant.core.io for file operations
+- Use metainformant.core.utils.logging for logging
+- Write outputs to output/ directory
+- Use absolute imports from metainformant
+- Never use mocks in tests
+- Use uv for package management
+- Use real implementations only; tests must exercise production code paths
 ```
 
-## Integration
+### Creating New Agent Identify Rules
 
-### Source Code
-
-| Module | Purpose |
-|--------|---------|
-| `src/metainformant/core/engine/workflow_manager.py` | Pipeline engine |
-| `src/metainformant/core/execution/workflow.py` | Config-driven execution |
-| `src/metainformant/core/execution/parallel.py` | Parallel utilities |
-| `src/metainformant/core/ui/tui.py` | Terminal UI |
-| `src/metainformant/core/utils/logging.py` | Structured logging |
-| `src/metainformant/core/io/*.py` | Atomic file I/O |
-
-### Module Rules
-
-- `docs/agents/rules/{module}.md` — Module-specific coding patterns
-- Reside alongside: `src/metainformant/{module}/AGENTS.md`, `docs/{module}/AGENTS.md`
-
-### Testing
-
-- `tests/core/test_core_pipeline.py` — BasePipelineManager unit tests
-- `tests/core/test_core_parallel.py` — Parallel execution tests
-- `tests/REAL_IMPLEMENTATION_TESTING_POLICY.md` — Real implementation policy enforced
-
-## Interface (for Writers)
-
-When extending documentation:
-
-1. **New agent coordination pattern**: Add section to `MULTI_AGENT_WORKFLOWS.md`
-2. **New safety protocol**: Append to `SAFETY.md` with example
-3. **Orchestration API change**: Update `ORCHESTRATION.md` and `AGENTS.md` directive set
-4. **New module**: Create `docs/agents/rules/{module}.md` and cross-link
-
-### Cross-Linking Conventions
-
-Internal links within `docs/agents/`:
-
-```markdown
-[AGENTS.md](AGENTS.md)                # sibling
-[Orchestration](ORCHESTRATION.md)      # implicit .md
-[rules/core.md](rules/core.md)        # subdirectory
-[../core/](../core/)                  # sibling of docs/ (go up one)
-```
-
-External cross-module links:
-
-```markdown
-[Core Infrastructure](../core/README.md)
-[RNA Workflow](../rna/README.md)
-[Workflow Manager API](../src/metainformant/core/engine/workflow_manager.py)
-```
+1. Create `{module}.md` in `docs/agents/rules/`
+2. Document module-specific import patterns
+3. Define required utility usage
+4. Include common patterns and anti-patterns
+5. Reference related rule files
 
 ## Testing Policy
 
-- **Real Implementation**: All examples and doctests must use real implementations (see `tests/REAL_IMPLEMENTATION_TESTING_POLICY.md`)
-- **Runnable code**: Example snippets must be executable as-is
-- **Type-checked**: All code snippets follow project's type hint conventions
-
-## Versioning
-
-Documentation version aligns with project version:
-
-```
-docs/agents/ — matches metainformant.__version__
-```
-
-## Change Log
-
-| Change | Date | File(s) |
-|--------|------|---------|
-| Initial comprehensive hub creation | 2025-04-27 | All new files |
-| Migration from minimal rules → full hub | 2025-04-27 | README.md, index.md, AGENTS.md + 6 new |
-
-## See Also
-
-- [Root AGENTS.md](../../AGENTS.md) — Project-wide AI agent philosophy
-- [Core Module SPEC](../core/SPEC.md) — Core utilities specification
-- [RNA Module Specification](../rna/SPEC.md) — Example of complex orchestration in action
-- [Documentation Improvement Plan](../../docs/DOCUMENTATION_IMPROVEMENT_PLAN.md) — Audit history
+- **Production paths**: All tests must use real implementations and real or synthetic inputs.

@@ -1,189 +1,65 @@
-# Installation & Setup Guide
+# Setup
 
-Complete environment setup for METAINFORMANT across platforms and use cases.
+Environment management uses `uv` with Python 3.11+.
 
-## Table of Contents
-
-- [Prerequisites](#prerequisites)
-- [Platform-Specific Setup](#platform-specific-setup)
-  - [Linux (Ubuntu/Debian)](#linux-ubuntudebian)
-  - [macOS](#macos)
-  - [Windows + WSL2](#windows--wsl2)
-  - [External Drive (exFAT/FAT32)](#external-drive-exfatfat32)
-- [Installation Methods](#installation-methods)
-  - [Automated Setup (Recommended)](#automated-setup-recommended)
-  - [Manual Setup](#manual-setup)
-  - [Development Mode](#development-mode)
-- [Post-Installation](#post-installation)
-  - [Verify Installation](#verify-installation)
-  - [Download Test Data](#download-test-data)
-  - [Run Demo](#run-demo)
-- [Troubleshooting](#troubleshooting)
-- [Next Steps](#next-steps)
-
----
-
-## Prerequisites
-
-| Tool | Purpose | Install Command |
-|------|---------|-----------------|
-| **Python 3.11+** | Runtime | `sudo apt install python3.11` (Ubuntu) |
-| **`uv`** | Package manager (required) | `curl -LsSf https://astral.sh/uv/install.sh \| sh` |
-| **Git** | Version control | `sudo apt install git` |
-| **gcloud CLI** *(optional)* | GCP cloud deployment | `bash scripts/cloud/install_gcloud.sh` |
-
-### Why `uv`?
-
-- Lightning-fast dependency resolution (Rust-based)
-- Composable virtual environments
-- Lockfile generation for reproducible installs
-- Works on FAT filesystems via cache redirection
-- Drop-in replacement for `pip` + `venv`
-
-**Never use `pip install` directly** — see [REAL_IMPLEMENTATION_POLICY.md](REAL_IMPLEMENTATION_POLICY.md).
-
----
-
-## Platform-Specific Setup
-
-### Linux (Ubuntu/Debian)
+## Quick Setup
 
 ```bash
-# Update system
-sudo apt update && sudo apt upgrade -y
-
-# Install uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
-source ~/.bashrc  # or restart shell
-
-# Clone and setup
 git clone https://github.com/docxology/metainformant.git
 cd metainformant
+bash scripts/package/setup.sh --ncbi-email "you@example.com"
+# Default setup installs dev + scientific dependencies + amalgkit
+# You can either use uv run directly, or activate the venv for the shell:
+# uv run python -V
+source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate on FAT filesystems
+```
+
+**Note**: Setup scripts automatically detect FAT filesystems (exFAT, FAT32) and configure UV cache and virtual environment locations accordingly. See [UV Setup Guide](UV_SETUP.md) for details.
+
+## FAT Filesystem Support
+
+On FAT-formatted external drives, setup is **automatic**:
+
+```bash
+# Same command works on FAT filesystems
 bash scripts/package/setup.sh
 
-# Activate
-source .venv/bin/activate
-
-# Verify
-python -c "import metainformant; print(metainformant.__version__)"
+# The script automatically:
+# - Detects FAT filesystem
+# - Sets UV_CACHE_DIR=/tmp/uv-cache
+# - Creates venv at /tmp/metainformant_venv (if needed)
 ```
 
-### macOS
+See [UV Setup Guide](UV_SETUP.md) for complete FAT filesystem documentation.
+
+## Verify Setup
 
 ```bash
-# Install Homebrew
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+# Standard verification
+uv run python -V
+uv run pytest -q
+uv run metainformant --help
 
-# Install uv and Python
-brew install uv python@3.11
-
-# Clone and setup
-git clone https://github.com/docxology/metainformant.git
-cd metainformant
-bash scripts/package/setup.sh
-
-# Activate
-source .venv/bin/activate
+# Comprehensive verification (includes FAT filesystem checks)
+bash scripts/package/verify.sh --mode setup
 ```
 
-### Windows + WSL2
+Directories policy
 
-WSL2 required — native Windows Python fails due to symlink limitations.
 
-```powershell
-# PowerShell (admin): Install WSL Ubuntu
-wsl --install -d Ubuntu
+- `config/`: repository-level configuration and options; read via `metainformant.core.config` with environment overrides.
+- `data/`: datasets and local databases (inputs), organized by domain/version.
+- `output/`: all outputs from tests and real runs. Ephemeral and reproducible; safe to delete.
 
-# In WSL Ubuntu terminal:
-sudo apt update
-curl -LsSf https://astral.sh/uv/install.sh | sh
-git clone https://github.com/docxology/metainformant.git
-cd metainformant
-bash scripts/package/setup.sh
-source .venv/bin/activate
-```
+Examples respect this policy by defaulting to `output/` when writing files.
 
-**Note:** Never install in `/mnt/c/...` (Windows filesystem). Use WSL `~/` path.
+External tools
 
----
+- RNA: `amalgkit` (installed automatically by default setup script, via uv)
+- Optional MSA: `muscle` or `clustalo` in PATH (MUSCLE shim installed automatically if not found)
+- Optional NCBI Datasets: `ncbi-datasets-pylib` is a dependency; verify availability in runtime
 
-## Installation Methods
-
-### Automated Setup (Recommended)
-
-`bash scripts/package/setup.sh` handles:
-- Python/uv detection
-- venv creation
-- Dependency installation
-- Test data download (optional)
-- Smoke test suite
-
-### Manual Setup
-
-```bash
-uv venv
-source .venv/bin/activate
-uv sync --all-extras --all-groups
-```
-
-### Development Mode
-
-```bash
-uv sync --all-extras --all-groups
-pre-commit install  # Enable git hooks
-```
-
----
-
-## Post-Installation
-
-### Verify Installation
-
-```bash
-# Check Python
-python --version  # 3.11+
-
-# Check package
-python -c "import metainformant; print(metainformant.__version__)"
-
-# Run test suite (optional but recommended)
-pytest tests/ -v --tb=short
-```
-
-### Download Test Data
-
-```bash
-bash scripts/data/download_test_datasets.sh
-```
-
-### Run Demo
-
-```bash
-python3 scripts/core/run_demo.py
-```
-
----
-
-## Troubleshooting
-
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| `uv: command not found` | Not in PATH | `source ~/.bashrc` or reinstall |
-| `Python 3.9 detected` | System Python takes precedence | `export PATH="/opt/homebrew/bin:$PATH"` (macOS) |
-| venv creation fails on FAT drive | Symlink not supported | Use `/tmp` venv: `export UV_CACHE_DIR=/tmp/uv-cache` |
-| ImportError: No module named X | Dependencies not installed | `uv sync --all-extras --all-groups` |
-| `Permission denied` | Wrong Python interpreter | Check `which python` is from venv |
-
-**Logs:** Check `~/.hermes/logs/agent.log` if using Hermes agent.
-
----
-
-## Next Steps
-
-1. Read [TUTORIALS.md](TUTORIALS.md) for hands-on examples
-2. Pick your [module](../README.md#choosing-the-right-module)
-3. Join [community](../CONTRIBUTING.md#community)
-
----
-
-**Related:** [UV_SETUP.md](UV_SETUP.md) | [EXTERNAL_DRIVE_SETUP](rna/EXTERNAL_DRIVE_SETUP.md) | [real-implementation policy](REAL_IMPLEMENTATION_POLICY.md)
+Next steps
+- Explore [CLI](./cli.md)
+- DNA quickstart: [DNA overview](./dna/index.md)
+- RNA workflow: [RNA overview](./rna/index.md)

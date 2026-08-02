@@ -1,17 +1,28 @@
-# Agent Directives: docs/simulation
+# Agent Directives: simulation
 
 ## Role
 
-Documentation for the simulation module.
+Documentation agent for METAINFORMANT's simulation module.
 
-## Module Scope
+## Scope
 
-Synthetic data generation for DNA/RNA sequences, agent-based ecosystem models, benchmark datasets, and workflow validation.
+- `src/metainformant/simulation/` — Synthetic data generators and simulation engines
+- `docs/simulation/` — User-facing simulation documentation
+- `scripts/simulation/` — Simulation workflow scripts
 
-## Key Source Files
+## Key Components
 
-| Path | Description |
-|------|-------------|
-| `src/metainformant/simulation/models/` | Simulation models |
-| `src/metainformant/simulation/workflow/` | Simulation pipelines |
-| `src/metainformant/simulation/benchmark/` | Benchmark generation |
+- **Sequence simulation**: Synthetic DNA/RNA/protein sequence generation
+- **RNA-seq simulation**: Simulated count matrices with known DE genes
+- **Population genetics**: Wright-Fisher, coalescent, and selection models
+- **Agent-based models**: Ecosystem and colony simulation
+- **Benchmark generation**: Reference datasets for method validation
+
+## Standards
+
+- **Real implementations only** — tests exercise production code paths
+- **Package management**: `uv` for all Python operations
+- **I/O**: Use `metainformant.core.io` for all file operations
+- **Paths**: Use `metainformant.core.paths` for path handling
+- **Environment variables**: Prefix with `SIM_`
+- **Output**: Write to `output/simulation/`
