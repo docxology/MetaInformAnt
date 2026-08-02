@@ -4,12 +4,12 @@ Real-world analysis scenarios demonstrating complete metabolomics workflows with
 
 ## Table of Contents
 
-1. [Example 1: Urine Metabolomics — Diabetic vs. Control](#example-1-urine-metabolomics--diabetic-vs-control)
+1. [Example 1: Urine Metabolomics — Diabetic vs. Control](#example-1-urine-metabolomics-diabetic-vs-control)
 2. [Example 2: Cancer Cell Line Metabolite Profiling](#example-2-cancer-cell-line-metabolite-profiling)
 3. [Example 3: Time-Course Drug Response](#example-3-time-course-drug-response)
 4. [Example 4: MS/MS Spectral Library Matching](#example-4-msms-spectral-library-matching)
-5. [Example 5: Multi-Omics Integration — Metabolite-Gene Correlation](#example-5-multi-omics-integration--metabolite-gene-correlation)
-6. [Example 6: Large Cohort — Quality Control and Batch Assessment](#example-6-large-cohort--quality-control-and-batch-assessment)
+5. [Example 5: Multi-Omics Integration — Metabolite-Gene Correlation](#example-5-multi-omics-integration-metabolite-gene-correlation)
+6. [Example 6: Large Cohort — Quality Control and Batch Assessment](#example-6-large-cohort-quality-control-and-batch-assessment)
 
 ---
 

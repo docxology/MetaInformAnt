@@ -2,6 +2,10 @@
 
 Key issues encountered and resolved during the first deployment.
 
+> These are historical GCP lessons. The original Hymenoptera cloud
+> infrastructure was decommissioned on 2026-04-15; do not treat these pages as
+> evidence that a current VM or cloud dataset exists.
+
 ## 1. CPU Quota Limits
 
 **Problem:** `Quota 'CPUS_ALL_REGIONS' exceeded. Limit: 32.0 globally.`
@@ -12,7 +16,7 @@ Key issues encountered and resolved during the first deployment.
 
 ## 2. Genome Indices Must Be Pre-Built
 
-**Problem:** All 28 species failed with `No genome index found`.
+**Problem:** All configured species failed with `No genome index found`.
 
 **Root cause:** The `streaming_orchestrator.py` assumes pre-built kallisto indices in `output/amalgkit/shared/genome/*/index/`. The orchestrator does NOT download genomes.
 
@@ -24,11 +28,12 @@ This reads `genome.ftp_url` and `genome.files.transcriptome_fasta` from each spe
 
 ## 3. amalgkit Not on PyPI
 
-**Problem:** `pip install amalgkit` fails — no matching distribution.
+**Problem:** a generic PyPI installation does not provide the project-pinned
+Amalgkit release.
 
-**Solution:** Install from GitHub:
+**Solution:** install the pinned project extra:
 ```bash
-pip3 install git+https://github.com/kfuku52/amalgkit.git
+uv sync --extra rna
 ```
 
 ## 4. kallisto index Has No `-t` Flag

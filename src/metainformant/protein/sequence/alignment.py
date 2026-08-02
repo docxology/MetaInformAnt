@@ -747,18 +747,18 @@ def matrix_align(
 
     if m == 0 or n == 0:
         if mode == "local":
-            aligned_seq1 = ""
-            aligned_seq2 = ""
-            score = 0
-        elif m > 0 or n > 0:
+            # A local alignment can choose the empty alignment when either
+            # input has no residues.
+            aligned_seq1, aligned_seq2, score = "", "", 0
+        elif m == 0 and n == 0:
+            aligned_seq1, aligned_seq2, score = "", "", 0
+        else:
+            # A global alignment must account for the one contiguous gap run.
+            # The first gap opens the run; remaining gaps extend it.
             gap_length = max(m, n)
             score = gap_open + (gap_length - 1) * gap_extend
             aligned_seq1 = seq1 if n == 0 else "-" * n
             aligned_seq2 = seq2 if m == 0 else "-" * m
-        else:
-            aligned_seq1 = ""
-            aligned_seq2 = ""
-            score = 0
 
         return {
             "aligned_seq1": aligned_seq1,

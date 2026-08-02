@@ -12,7 +12,7 @@ METAINFORMANT is a bioinformatics toolkit for multi-omic analysis (genomics, tra
 - **UV Only**: Use `uv` for all package operations (never `pip`)
 - **Output to `output/`**: All execution outputs go to `output/` directory
 - **Temp files in `.tmp/`**: Use repository-local `.tmp/` (not system `/tmp`)
-- **Cursor project skills**: Generated thin wrappers live under `.cursor/skills/` (one per folder that has `AGENTS.md`). After adding or moving `AGENTS.md`, run `uv run python scripts/package/generate_cursor_skills.py` and optionally `uv run python scripts/package/generate_cursor_skills.py --check`.
+- **Cursor project skills**: Generated thin wrappers live under `.cursor/skills/` (one per folder that has `AGENTS.md`). After adding or moving `AGENTS.md`, run `uv run python scripts/package/generate_cursor_skills.py` followed by the required `uv run python scripts/package/generate_cursor_skills.py --check` parity gate.
 
 ## Commands
 
@@ -131,7 +131,7 @@ logger = get_logger(__name__)
 
 ### Config Environment Prefixes
 
-- Core: `CORE_`, DNA: `DNA_`, RNA: `AK_`, GWAS: `GWAS_`
+- Core: `CORE_`, DNA: `DNA_`, RNA/Amalgkit: `AMALGKIT_`, GWAS: `GWAS_`
 - Protein: `PROT_`, Epigenome: `EPI_`, Ontology: `ONT_`
 - Metagenomics: `META_`, Structural Variants: `SV_`, Long Read: `LR_`
 - Spatial: `SPATIAL_`, Pharmacogenomics: `PHARMA_`
@@ -174,7 +174,7 @@ def test_api_integration() -> None:
 
 Optional tools for workflows:
 
-- **amalgkit**: `uv pip install amalgkit`
+- **amalgkit**: `uv sync --extra rna` (exact `0.16.32`)
 - **SRA Toolkit**: `apt-get install sra-toolkit`
 - **samtools/bcftools/bwa**: `apt-get install samtools bcftools bwa`
 - **muscle/clustalo**: `apt-get install muscle clustalo`

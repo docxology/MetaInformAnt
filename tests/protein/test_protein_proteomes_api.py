@@ -7,13 +7,19 @@ Following real-implementation policy - all tests use real network calls or skip 
 
 from __future__ import annotations
 
+import http.server
+import json
+import sys
 import tempfile
+import threading
+from urllib.parse import parse_qs, urlparse
 from pathlib import Path
 
 import pytest
 import requests
 
 from metainformant.protein.sequence.proteomes import download_proteome_fasta, get_proteome_metadata
+from metainformant.protein.sequence import proteomes as proteomes_module
 
 
 def _check_network_connectivity(url: str = "https://rest.uniprot.org") -> bool:
@@ -23,6 +29,72 @@ def _check_network_connectivity(url: str = "https://rest.uniprot.org") -> bool:
         return response.status_code in (200, 302, 301)
     except (requests.RequestException, requests.Timeout):
         return False
+
+
+@pytest.fixture(autouse=True)
+def local_proteome_api(monkeypatch):
+    """Exercise the real requests code path against deterministic local API responses."""
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def _write(self, status: int, body: bytes, content_type: str) -> None:
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_GET(self) -> None:  # noqa: N802 - stdlib HTTP handler API
+            parsed = urlparse(self.path)
+            if parsed.path == "/proteomes":
+                taxon = parse_qs(parsed.query).get("taxid", [""])[0]
+                if taxon in {"", "None"}:
+                    self._write(400, b"invalid taxonomy id", "text/plain")
+                    return
+                if taxon not in {"9606", "10090"}:
+                    self._write(200, b"[]", "application/json")
+                    return
+                name = "Homo sapiens (Human)" if taxon == "9606" else "Mus musculus (Mouse)"
+                upid = "UP000005640" if taxon == "9606" else "UP000000589"
+                response = [
+                    {
+                        "name": name,
+                        "upid": upid,
+                        "scores": {"proteinCount": 1000, "buscoComplete": 0.99},
+                        "annotationScore": {"category": "reference"},
+                        "isReferenceProteome": True,
+                    }
+                ]
+                self._write(200, json.dumps(response).encode(), "application/json")
+                return
+
+            if parsed.path == "/uniprotkb/stream":
+                sequence = "M" * 550
+                body = (f">sp|P69905|HBA_HUMAN Hemoglobin subunit alpha OS=Homo sapiens\n{sequence}\n" * 2500).encode()
+                self._write(200, body, "text/plain")
+                return
+
+            self._write(404, b"not found", "text/plain")
+
+        def log_message(self, format: str, *args: object) -> None:
+            return
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    base_url = f"http://127.0.0.1:{server.server_port}"
+    monkeypatch.setattr(proteomes_module, "PROTEOMES_API_URL", f"{base_url}/proteomes")
+    monkeypatch.setattr(proteomes_module, "PROTEOME_STREAM_URL", f"{base_url}/uniprotkb/stream")
+
+    def local_connectivity(url: str = "https://rest.uniprot.org") -> bool:
+        return "invalid.domain" not in url
+
+    monkeypatch.setattr(sys.modules[__name__], "_check_network_connectivity", local_connectivity)
+    try:
+        yield
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
 
 
 class TestGetProteomeMetadata:

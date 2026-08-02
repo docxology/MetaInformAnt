@@ -16,6 +16,7 @@ from metainformant.visualization.analysis.timeseries import (
     plot_time_series,
     plot_trend_analysis,
 )
+from metainformant.visualization.analysis import timeseries as timeseries_module
 
 # Check for optional dependencies
 try:
@@ -89,9 +90,6 @@ class TestPlotAutocorrelation:
 
     def test_basic_autocorrelation_plot(self):
         """Test basic autocorrelation plot creation."""
-        if not HAS_STATSMODELS:
-            pytest.skip("statsmodels required for autocorrelation plotting")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -107,9 +105,6 @@ class TestPlotAutocorrelation:
 
     def test_autocorrelation_plot_with_output_path(self, tmp_path: Path):
         """Test autocorrelation plot with output path."""
-        if not HAS_STATSMODELS:
-            pytest.skip("statsmodels required for autocorrelation plotting")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -125,19 +120,14 @@ class TestPlotAutocorrelation:
 
     def test_autocorrelation_plot_empty_data(self):
         """Test autocorrelation plot with empty data."""
-        if not HAS_STATSMODELS:
-            pytest.skip("statsmodels required for autocorrelation plotting")
-
         data = pd.Series([], dtype=float)
 
         with pytest.raises(ValueError, match="cannot be empty"):
             plot_autocorrelation(data)
 
-    def test_autocorrelation_plot_no_statsmodels(self):
-        """Test autocorrelation plot when statsmodels is not available."""
-        if HAS_STATSMODELS:
-            pytest.skip("statsmodels is available")
-
+    def test_autocorrelation_plot_dependency_guard(self, monkeypatch: pytest.MonkeyPatch):
+        """Test the autocorrelation dependency guard in an isolated runtime state."""
+        monkeypatch.setattr(timeseries_module, "HAS_STATSMODELS", False)
         data = pd.Series(np.random.randn(50))
 
         with pytest.raises(ImportError, match="statsmodels required"):
@@ -149,9 +139,6 @@ class TestPlotSeasonalDecomposition:
 
     def test_basic_seasonal_decomposition_plot(self):
         """Test basic seasonal decomposition plot creation."""
-        if not HAS_STATSMODELS:
-            pytest.skip("statsmodels required for seasonal decomposition")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -170,9 +157,6 @@ class TestPlotSeasonalDecomposition:
 
     def test_seasonal_decomposition_with_output_path(self, tmp_path: Path):
         """Test seasonal decomposition plot with output path."""
-        if not HAS_STATSMODELS:
-            pytest.skip("statsmodels required for seasonal decomposition")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -189,9 +173,6 @@ class TestPlotSeasonalDecomposition:
 
     def test_seasonal_decomposition_multiplicative(self):
         """Test seasonal decomposition with multiplicative model."""
-        if not HAS_STATSMODELS:
-            pytest.skip("statsmodels required for seasonal decomposition")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -206,19 +187,14 @@ class TestPlotSeasonalDecomposition:
 
     def test_seasonal_decomposition_empty_data(self):
         """Test seasonal decomposition plot with empty data."""
-        if not HAS_STATSMODELS:
-            pytest.skip("statsmodels required for seasonal decomposition")
-
         data = pd.Series([], dtype=float)
 
         with pytest.raises(ValueError, match="cannot be empty"):
             plot_seasonal_decomposition(data)
 
-    def test_seasonal_decomposition_no_statsmodels(self):
-        """Test seasonal decomposition when statsmodels is not available."""
-        if HAS_STATSMODELS:
-            pytest.skip("statsmodels is available")
-
+    def test_seasonal_decomposition_dependency_guard(self, monkeypatch: pytest.MonkeyPatch):
+        """Test the seasonal-decomposition dependency guard in isolation."""
+        monkeypatch.setattr(timeseries_module, "HAS_STATSMODELS", False)
         data = pd.Series(np.random.randn(50))
 
         with pytest.raises(ImportError, match="statsmodels required"):

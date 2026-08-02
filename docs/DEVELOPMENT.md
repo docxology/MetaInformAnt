@@ -30,7 +30,7 @@ source .venv/bin/activate
 uv run python -c "print('Hello')"
 ```
 
-On FAT filesystems (external drives), the setup scripts automatically configure a temp-based venv. See [UV_SETUP.md](UV_SETUP.md#fat-filesystem-support).
+On FAT filesystems (external drives), the setup scripts automatically configure a temp-based venv. See [UV_SETUP.md](UV_SETUP.md#fat-filesystem-setup-exfat-fat32).
 
 #### Install Dependencies
 
@@ -317,7 +317,7 @@ uv run pytest --benchmark-only tests/my_module/
 - Bugfix branches: `git checkout -b fix/<module>-<shortdesc>`
 - Docs branches: `git checkout -b docs/<area>-update`
 
-Commit messages: see [Conventional Commits](CONTRIBUTING.md#commit-messages).
+Commit messages: see [Conventional Commits](../CONTRIBUTING.md#commit-messages).
 
 Before pushing:
 ```bash

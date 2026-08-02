@@ -2,23 +2,32 @@
 
 ## Purpose
 
-Downloads FASTQ files for RNA-seq quantification. In METAINFORMANT, this step uses **ENA direct wget** as the primary download method, with SRA Toolkit as a fallback.
+Downloads FASTQ files for RNA-seq quantification. In METAINFORMANT, the
+implemented `ENADownloader` uses direct ENA HTTP retrieval as the primary
+method; `StreamingPipelineOrchestrator` can fall back to SRA Toolkit when
+configured and available.
 
 ## Download Method
 
-### Primary: ENA Direct wget (`download_ena.py`)
+### Primary: ENA direct retrieval (`ENADownloader`)
 
-```bash
-# How METAINFORMANT downloads FASTQs for each sample
-python3 scripts/rna/download_ena.py --srr <SRR_ID> --out-dir output/amalgkit/<species>/fastq
+```python
+from pathlib import Path
+
+from metainformant.rna.retrieval.ena_downloader import ENADownloader
+
+downloader = ENADownloader(timeout=1800, retries=3)
+success, message, files = downloader.download_run(
+    "<SRR_ID>", Path("output/amalgkit/<species>/work/getfastq/<SRR_ID>")
+)
 ```
 
 **ENA advantages:**
 - Pre-compressed `.fastq.gz` files (~5 GB/sample vs ~25 GB for SRA cache)
-- 100% reliable — no LITE file issue (NCBI/GCP LITE files have zero sequence data)
-- Resumable with `wget --continue`
+- Existing valid gzip files are reused; corrupt or partial files are removed
 - Supports 16+ concurrent workers without disk pressure
-- MD5 + gzip integrity verification built-in
+- Gzip integrity verification is built in; MD5 is an available utility, not an
+  automatic comparison in `download_run()`
 
 ### Fallback: SRA Toolkit
 
@@ -29,7 +38,7 @@ Used automatically when an accession is absent from ENA (< 5% of cases):
 conda install -c bioconda sra-tools
 ```
 
-## Amalgkit getfastq Parameters
+## Amalgkit 0.16.32 parameters
 
 `amalgkit getfastq` is still invoked as part of the pipeline for integration with metadata and file management. Key parameters:
 
@@ -42,16 +51,45 @@ conda install -c bioconda sra-tools
 | `--batch` | INT | None | Process one SRA record by 1-based index (for HPC array jobs). |
 | `--max_bp` | INT | `999999999999999` | Limit target sequence extraction (downsamples or skips massive sequences). Use 10000000000 for a 10 GB cap. Default: Unlimited. |
 | `--fastp` | yes/no | `yes` | Quality filtering and adapter trimming with fastp. |
+| `--fastp_exe` / `--fastp_option` | PATH/text | current | Select the fastp executable and pass additional fastp arguments. |
 | `--remove_sra` | yes/no | `yes` | Delete SRA files after FASTQ extraction. |
+| `--remove_tmp` | yes/no | `yes` | Remove temporary extraction files after a successful sample. |
+| `--fasterq_size_check` | yes/no | current | Validate available extraction space before `fasterq-dump`. |
+| `--fasterq_disk_limit` / `--fasterq_disk_limit_tmp` | INT | optional | Bound extraction and temporary-disk use when required by the host. |
 | `--aws` | yes/no | `yes` | Use AWS Open Data for SRA downloads (SRA fallback path). |
 | `--ncbi` | yes/no | `yes` | Use NCBI directly (SRA fallback path). |
 | `--gcp` | yes/no | `yes` | Use GCP (SRA fallback path). |
+| `--ena` / `--ddbj` | yes/no | current | Enable the corresponding SRA source. |
+| `--dump_print` | yes/no | `no` | Print extraction commands without running them. |
+
+### Resumable rRNA filtering
+
+Amalgkit 0.16.32 adds resumable rRNA filtering controls. They are optional
+and are disabled in the Hymenoptera configurations unless a run record
+documents the reference database, filter order, resource limits, and output
+validation:
+
+```yaml
+steps:
+  getfastq:
+    rrna_filter: no
+    # rrna_filter_sensitivity: 1.0
+    # rrna_filter_max_seqs: 20
+    # rrna_filter_chunk_spots: 5000000
+    # rrna_filter_memory_limit: 32G
+    # rrna_filter_jobs: 1
+    # filter_order: fastp,rrna,contam
+```
+
+Do not describe a cohort as rRNA-filtered unless the run manifest records
+these settings and the filtered FASTQ integrity checks pass. The resumable
+implementation is useful for interrupted large-sample runs, but it does not
+change the biological inclusion criteria.
 
 ### METAINFORMANT-Specific Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `num_download_workers` | INT | `16` | Parallel ENA download workers (not an amalgkit param; processed by METAINFORMANT). |
 | `accelerate` | bool | `true` | Enables all cloud sources for SRA fallback. |
 
 ## Configuration
@@ -61,7 +99,8 @@ steps:
   getfastq:
     out_dir: output/amalgkit/<species>/fastq
     threads: 24
-    num_download_workers: 16    # Parallel ENA workers
+    # Project-wide concurrency is supplied at runtime:
+    # --workers 4 --max-in-flight 8
     fastp: yes
     max_bp: 10000000000         # 10GB extraction cap / downsampling limit
     remove_sra: yes
@@ -135,8 +174,8 @@ Samples categorically skipped entirely (if bypasses trigger) will be logged as:
 ### Download Slow or Failing
 
 ```bash
-# Check active wget workers
-ps aux | grep wget | grep -v grep
+# Check active acquisition workers
+pgrep -af 'curl .*fastq|fasterq-dump' || true
 
 # Check ENA API availability
 curl -s "https://www.ebi.ac.uk/ena/portal/api/filereport?accession=SRR14740514&result=read_run&fields=fastq_ftp" | head
@@ -167,7 +206,8 @@ find output/amalgkit -name "*.sra" -delete   # remove SRA cache files
 If a sample downloaded via SRA Toolkit shows 0 reads, it likely has a LITE version:
 - NCBI and GCP sometimes serve metadata-only "LITE" SRA files
 - ENA never has LITE files — ENA always has full sequence data
-- Solution: use `download_ena.py` directly, or set `aws: yes, ncbi: no, gcp: no` in config
+- Solution: use the implemented `ENADownloader` path through the workflow, or
+  configure the SRA fallback explicitly and verify the resulting gzip files.
 
 ## See Also
 

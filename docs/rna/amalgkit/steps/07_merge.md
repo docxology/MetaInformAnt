@@ -167,19 +167,20 @@ SRR12345680     Apis mellifera      brain         5234567     62.8
 ```mermaid
 flowchart LR
     A[quant] --> B[merge]
-    B --> C[curate]
+    B --> C[wsfilter]
     B --> D[cstmm]
 ```
 
-**merge** runs **after quant**, **before curate/cstmm**.
+**merge** runs **after quant**, **before wsfilter/finalize** and the optional
+cross-species branches.
 
 ### Downstream Dependencies
 
 | Step | Uses | Description |
 |------|------|-------------|
-| `curate` | TPM and counts matrices | QC, outlier removal, batch correction |
+| `wsfilter` | Merged TPM and counts matrices | Within-species filtering |
 | `cstmm` | Counts matrix | Cross-species TMM normalization |
-| `csca` | Curated matrices | Cross-species correlation analysis |
+| `finalize` | Filtered matrices | Final analysis-ready tables |
 
 ## Matrix Formats
 
@@ -594,7 +595,7 @@ print(f"Loaded expression matrix: {tpm.shape[1]} samples, {tpm.shape[0]} transcr
 ## See Also
 
 - **Previous Step**: [`06_quant.md`](06_quant.md) - Transcript quantification
-- **Next Step**: [`09_curate.md`](09_curate.md) - Quality control and batch correction
+- **Next Step**: [`09_wsfilter.md`](09_wsfilter.md) - Within-species filtering
 - **Next Step**: [`08_cstmm.md`](08_cstmm.md) - Cross-species TMM normalization
 - **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
 - **Testing**: `tests/rna/test_rna_amalgkit_steps.py::test_merge_basic_execution`
@@ -602,7 +603,5 @@ print(f"Loaded expression matrix: {tpm.shape[1]} samples, {tpm.shape[0]} transcr
 ---
 
 **Last Updated**: October 29, 2025  
-**AMALGKIT Version**: 0.12.19  
+**AMALGKIT Version**: 0.16.32 (`v0.16.32`)
 **Status**: Production-ready, comprehensively tested
-
-

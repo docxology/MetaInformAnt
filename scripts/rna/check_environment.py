@@ -61,8 +61,12 @@ def main() -> int:
     if validation["all_passed"]:
         logger.info("✅ ALL CHECKS PASSED - Ready to run RNA-seq workflows!")
         logger.info("")
-        logger.info("To run workflow for a species:")
-        logger.info("  python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_<species>.yaml")
+        logger.info("To inspect the configured cohort:")
+        logger.info(
+            "  uv run python scripts/rna/run_all_species.py "
+            "--config-dir projects/hymenoptera_amalgkit/config/amalgkit "
+            "--data-root \"$AMALGKIT_DATA_ROOT\" --dry-run"
+        )
         return 0
     else:
         logger.error("❌ SOME CHECKS FAILED - Please fix issues before running workflows")

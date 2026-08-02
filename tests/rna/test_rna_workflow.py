@@ -15,16 +15,15 @@ def test_plan_workflow_orders_steps_and_inherits_common_params(tmp_path: Path):
     cfg = AmalgkitWorkflowConfig(work_dir=tmp_path, threads=6, species_list=["Apis_mellifera"])
     steps = plan_workflow(cfg)
 
-    # cstmm/csca are skipped by default unless ortholog inputs (orthogroup_table/dir_busco) are provided.
     expected_order = [
         "metadata",
-        "config",
         "select",
         "getfastq",
         "integrate",  # Moved after getfastq to integrate downloaded FASTQs
         "quant",
         "merge",
-        "curate",
+        "wsfilter",
+        "finalize",
         "sanity",
     ]
 
@@ -59,11 +58,12 @@ def test_plan_workflow_step_dependencies(tmp_path: Path):
     # - integrate comes after getfastq (to integrate downloaded FASTQs)
     assert step_names.index("getfastq") < step_names.index("integrate")
 
-    # - config comes after metadata
-    assert step_names.index("metadata") < step_names.index("config")
+    # - select follows metadata
+    assert step_names.index("metadata") < step_names.index("select")
 
-    # - select comes after config
-    assert step_names.index("config") < step_names.index("select")
+    # - filtering and finalization follow merge
+    assert step_names.index("merge") < step_names.index("wsfilter")
+    assert step_names.index("wsfilter") < step_names.index("finalize")
 
     # - sanity is last
     assert step_names[-1] == "sanity"
@@ -77,7 +77,7 @@ def test_plan_workflow_with_specific_steps(tmp_path: Path):
         species_list=["Apis_mellifera"],
         per_step={
             "metadata": {},
-            "config": {},
+            "finalize": {},
             "sanity": {},
         },
     )
@@ -90,7 +90,7 @@ def test_plan_workflow_with_specific_steps(tmp_path: Path):
     # Should include all steps (plan_workflow doesn't filter by per_step keys)
     # But verify the structure is correct
     assert "metadata" in step_names
-    assert "config" in step_names
+    assert "finalize" in step_names
     assert "sanity" in step_names
 
 
@@ -122,3 +122,18 @@ def test_plan_workflow_parameter_inheritance(tmp_path: Path):
     for step_name, params in steps:
         if step_name != "quant" and step_name in steps_with_threads:
             assert params.get("threads") == 6
+
+
+def test_plan_workflow_uses_optional_shared_amalgkit_download_cache(tmp_path: Path, monkeypatch) -> None:
+    """Route taxonomy-consuming stages to one validated campaign cache when requested."""
+
+    shared_cache = tmp_path / "shared" / "ncbi_taxonomy"
+    monkeypatch.setenv("AMALGKIT_SHARED_DOWNLOAD_DIR", str(shared_cache))
+    cfg = AmalgkitWorkflowConfig(work_dir=tmp_path / "work", threads=2)
+
+    steps = dict(plan_workflow(cfg))
+
+    for step_name in ("metadata", "integrate", "getfastq"):
+        assert steps[step_name]["download_dir"] == str(shared_cache.resolve())
+    for step_name in ("select", "quant", "merge", "wsfilter", "finalize", "sanity"):
+        assert "download_dir" not in steps[step_name]

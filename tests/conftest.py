@@ -280,7 +280,7 @@ def ensure_amalgkit_available():
         pytest.skip(f"amalgkit not available and auto-install failed: {msg2}{extra}")
 
     pytest.skip(
-        "amalgkit CLI not available on PATH. Install it (recommended: `uv pip install git+https://github.com/kfuku52/amalgkit`) "
+        "amalgkit CLI not available on PATH. Install the pinned release (recommended: `uv sync --extra rna`) "
         "or set `METAINFORMANT_AK_AUTO_INSTALL=1` to attempt installation for this test run."
     )
 
@@ -390,10 +390,8 @@ def pytest_runtest_setup(item):
         pytest.skip("Network tests skipped (--no-network flag)")
 
     # Skip external tool tests if tools not available
-    if item.get_closest_marker("external_tool"):
-        # Check if required tools are available
-        # This could be expanded to check specific tools
-        pass
+    if item.get_closest_marker("external_tool") and item.config.getoption("--no-external-tools", False):
+        pytest.skip("External-tool tests skipped (--no-external-tools flag)")
 
 
 def pytest_addoption(parser):

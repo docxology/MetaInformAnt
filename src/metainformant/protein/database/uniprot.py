@@ -15,6 +15,8 @@ from metainformant.protein._network import get_protein_api_timeout
 
 logger = logging.get_logger(__name__)
 
+UNIPROT_ID_MAPPING_URL = "https://www.uniprot.org/uploadlists/"
+
 
 def fetch_uniprot_record(uniprot_id: str) -> Dict[str, Any]:
     """Fetch complete UniProt record for a protein.
@@ -482,9 +484,6 @@ def map_ids_uniprot(
     if target_format not in ["accession", "entry_name", "id"]:
         raise ValueError(f"Invalid target format: {target_format}")
 
-    # UniProt ID mapping API endpoint
-    base_url = "https://www.uniprot.org/uploadlists/"
-
     # Prepare the request data
     ids_string = " ".join(protein_ids)
 
@@ -518,7 +517,7 @@ def map_ids_uniprot(
     try:
         # Make the API request
         response = requests.post(
-            base_url,
+            UNIPROT_ID_MAPPING_URL,
             data={"from": from_db, "to": to_db, "format": "tab", "query": ids_string},
             timeout=get_protein_api_timeout(default=60.0),
         )

@@ -123,7 +123,7 @@ def plot_eqtl_boxplot(
     valid_data = [(d, lbl) for d, lbl in zip(data, labels) if len(d) > 0]
     if valid_data:
         data, labels = zip(*valid_data)
-        bp = ax.boxplot(data, labels=labels, patch_artist=True)
+        bp = ax.boxplot(data, tick_labels=labels, patch_artist=True)
 
         colors = ["#4CAF50", "#FFC107", "#F44336"][: len(data)]
         for patch, color in zip(bp["boxes"], colors):

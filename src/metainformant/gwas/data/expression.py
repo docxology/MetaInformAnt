@@ -11,7 +11,7 @@ from typing import List, Optional, Union
 import pandas as pd
 
 from metainformant.core.utils.logging import get_logger
-from metainformant.rna.core.sample_utils import find_quantification_file
+from metainformant.gwas.workflow.rna_quantification import find_quantification_file
 
 logger = get_logger(__name__)
 

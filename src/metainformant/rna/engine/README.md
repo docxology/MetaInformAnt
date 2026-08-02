@@ -1,67 +1,53 @@
-# Engine Module
+# RNA engine
 
-Workflow execution, monitoring, and orchestration for RNA-seq pipelines.
+The engine implements the current Amalgkit workflow as a bounded producer,
+SQLite progress store, typed workflow planner, and hash-bound evidence layer.
 
 ## Components
 
-| File | Purpose |
-|------|---------|
-| [`streaming_orchestrator.py`](streaming_orchestrator.py) | **Production pipeline** — multi-species, parallel, ENA-first |
-| [`orchestrator.py`](orchestrator.py) | Per-sample `StreamingPipeline` (download→quant→cleanup) |
-| [`orchestration.py`](orchestration.py) | Single-species workflow orchestration |
-| [`orchestration_multi_species.py`](orchestration_multi_species.py) | Multi-species `PipelineOrchestrator` |
-| [`workflow.py`](workflow.py) | Re-export hub for workflow_core, workflow_planning, workflow_execution |
-| [`workflow_core.py`](workflow_core.py) | Config classes, validation, sample config creation |
-| [`workflow_planning.py`](workflow_planning.py) | Workflow planning, step defaults, genome prep |
-| [`workflow_execution.py`](workflow_execution.py) | Workflow execution engine, streaming mode |
-| [`workflow_steps.py`](workflow_steps.py) | Individual step implementations |
-| [`workflow_cleanup.py`](workflow_cleanup.py) | Disk cleanup, temp file removal |
-| [`monitoring.py`](monitoring.py) | Real-time progress monitoring |
-| [`discovery.py`](discovery.py) | Species and sample discovery via NCBI |
-| [`pipeline.py`](pipeline.py) | Pipeline abstraction |
-| [`progress_tracker.py`](progress_tracker.py) | Progress state persistence |
-| [`sra_extraction.py`](sra_extraction.py) | SRA data extraction utilities |
+| Module | Purpose |
+|---|---|
+| `streaming_orchestrator.py` | ENA-first metadata, acquisition, integration, and quantification |
+| `progress_db.py` | Concurrent-safe SQLite sample state and resume queries |
+| `workflow.py` | Public re-export hub for configuration, planning, and execution |
+| `workflow_core.py` | Typed configuration, path mapping, validation, and defaults |
+| `workflow_planning.py` | Current nine-stage plan and parameter resolution |
+| `workflow_execution.py` | Amalgkit step execution and result records |
+| `workflow_steps.py` | Individual current step implementations |
+| `workflow_cleanup.py` | Provenance-gated raw cleanup and disk checks |
+| `provenance.py` | Hash-bound metadata, quantification, and downstream receipts |
+| `species.py` | Shared config and data-root discovery |
+| `pipeline.py` | Matrix and downstream table helpers |
+| `discovery.py` | Read-only species and sample discovery utilities |
+| `sra_extraction.py` | SRA fallback extraction helpers |
 
-## Key Classes
+## Key interfaces
 
-### streaming_orchestrator.py
+- `StreamingPipelineOrchestrator.run_all()` starts the bounded producer for a
+  declared config set.
+- `ProgressDB` stores the states `pending`, `downloading`, `downloaded`,
+  `quantifying`, `quantified`, and `failed`.
+- `plan_workflow()` resolves the fixed per-species chain:
+  `metadata → select → getfastq → integrate → quant → merge → wsfilter → finalize → sanity`.
+- `provenance.py` rejects missing, stale, or hash-mismatched receipts.
 
-- `StreamingPipelineOrchestrator` - Multi-species end-to-end pipeline
-  - `run_all()` - Process all species sequentially
-  - `process_species()` - Download + quantify with ThreadPoolExecutor
-  - `process_single_sample()` - Download → quant → cleanup per sample
-  - ENA-first download with NCBI SRA fallback
-  - Per-sample 2-hour timeout, automatic skip on failure
-  - Downstream steps: merge → curate → sanity (30-min timeout)
-
-### workflow.py
-
-- `AmalgkitWorkflowConfig` - Load and validate YAML configs
-- `execute_workflow()` - Main workflow entry point
-- `_execute_streaming_mode()` - Disk-efficient chunked processing
-
-### monitoring.py
-
-- `WorkflowMonitor` - Real-time progress tracking
-- `HeartbeatMonitor` - Process health checks
-
-### progress_tracker.py
-
-- `ProgressTracker` - Persistent progress state
-
-## Usage
+## Python example
 
 ```python
-from metainformant.rna.engine.workflow import (
-    AmalgkitWorkflowConfig,
-    execute_workflow
-)
+from pathlib import Path
 
-config = AmalgkitWorkflowConfig.load("config/amalgkit/my_config.yaml")
-result = execute_workflow(config)
+from metainformant.rna.engine.progress_db import ProgressDB
+from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
+
+data_root = Path("/Volumes/blue/data/amalgkit")
+db = ProgressDB(data_root / "pipeline_progress.db")
+orchestrator = StreamingPipelineOrchestrator(
+    config_dir=Path("projects/hymenoptera_amalgkit/config/amalgkit"),
+    log_dir=data_root / "logs",
+    db_path=data_root / "pipeline_progress.db",
+)
 ```
 
-## Related
-
-- [amalgkit/](../amalgkit/) - Tool wrappers
-- [scripts/rna/](../../../../scripts/rna/) - CLI scripts
+The project shell entrypoint supplies bounded resource budgets and owns the
+producer/downstream lock boundary. See the [running guide](../../../../projects/hymenoptera_amalgkit/doc/00_setup/04_running_the_pipeline.md)
+and [storage contract](../../../../projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md).

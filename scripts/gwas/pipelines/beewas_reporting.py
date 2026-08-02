@@ -1,7 +1,7 @@
 """Compatibility wrapper for BeeWAS reporting helpers.
 
 The BeeWAS project implementation now lives in
-``projects/apis_gwas/scripts/beewas/beewas_reporting.py``.
+``projects/apis_gwas/beewas/reporting.py``.
 """
 
 from __future__ import annotations

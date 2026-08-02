@@ -8,7 +8,7 @@ Use `run_gwas` for genome-wide association studies on SNP genotype data—not fo
 
 ## Table of Contents
 
-- [Minimal Working Example](#minimal-working-example)
+- [End-to-End Pipeline](#end-to-end-pipeline)
 - [End-to-End Pipeline](#end-to-end-pipeline)
 - [Models](#models)
 - [Output Files](#output-files)

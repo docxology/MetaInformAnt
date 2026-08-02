@@ -123,6 +123,8 @@ coverage.xml
 # Generated verification outputs
 gwas_verification/
 check_numpy.py
+/LINK_VALIDATION_REPORT.md
+/link_validation_report.json
 
 # Pipeline sentinel files (transient, redundant once quant output exists)
 *.heartbeat.json

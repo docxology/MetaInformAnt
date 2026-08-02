@@ -1,77 +1,42 @@
-# Specification: scripts
+# Script specification
 
 ## Scope
 
-Executable scripts and utilities for running METAINFORMANT workflows. Contains thin wrapper orchestrators that invoke core library functions, package management tools, and utility scripts. Scripts are organized by domain module.
+Executable wrappers and utilities for MetaInformAnt workflows. Domain logic
+belongs in `src/metainformant`; scripts own CLI parsing, explicit paths, and
+evidence-safe orchestration.
 
-## Architecture
+## RNA production surface
 
-- **Dependency Level**: Orchestration
-- **Component Type**: Executable Scripts
-- **Design Pattern**: Thin Wrapper Orchestration
+| Script | Contract |
+|---|---|
+| `scripts/rna/run_all_species.py` | Discover the canonical config inventory and run the shared producer |
+| `scripts/rna/process_species.py` | Run one named species through the same producer |
+| `scripts/rna/check_pipeline_status.py` | Inspect SQLite progress and downstream evidence |
+| `scripts/rna/validate_configs.py` | Validate current Amalgkit YAML and selection rules |
+| `scripts/rna/validate_all_species_workflow.py` | Read-only inventory and nine-stage plan validation |
+| `projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh` | Lock-owned producer then downstream checkpoint campaign |
+| `projects/hymenoptera_amalgkit/scripts/run_all_finalization.sh` | Lock-owned downstream merge, filter, finalize, and sanity checkpoints |
 
-### Directory Structure
-```
-scripts/
- package/ # Package management and build scripts
- setup.sh # Environment setup
- test.sh # Test runner
- build.sh # Package builder
- uv_quality.sh # Code quality checks
- core/ # Core utility scripts
- {module}/ # Domain-specific scripts
- run_workflow.py # Workflow orchestration
- {feature}.py # Feature-specific scripts
- *.py # Root-level utility scripts
-```
+## Current invocation contract
 
-## Data Structures
-
-### Script Types
-- **Workflow Scripts**: Orchestrate multi-step pipelines (run_workflow.py, run_analysis.py)
-- **Utility Scripts**: Single-purpose tools (audit_docs.py, check_exports.py)
-- **Package Scripts**: Build, test, and quality tools (setup.sh, test.sh, build.sh)
-- **Generation Scripts**: Generate code, docs, or configs (generate_example.py, generate_specs.py)
-
-### Module Subdirectories
-Each domain has a corresponding scripts subdirectory:
-- core/, dna/, rna/, gwas/, protein/, epigenome/
-- networks/, multiomics/, singlecell/, visualization/
-- quality/, ml/, math/, menu/, ontology/
-- phenotype/, ecology/, simulation/, life_events/
-
-### Package Scripts (scripts/package/)
-| Script | Purpose |
-|--------|---------|
-| setup.sh | Install development environment |
-| test.sh | Run pytest with various modes |
-| build.sh | Build distributable package |
-| uv_quality.sh | Run formatters, linters, type checkers |
-| uv_docs.sh | Build Sphinx documentation |
-| validate_build.sh | Verify build artifacts |
-
-## Interface
-
-### Running Scripts
 ```bash
-# Package management
-bash scripts/package/setup.sh        # Setup environment
-bash scripts/package/test.sh         # Run tests
-bash scripts/package/uv_quality.sh   # Code quality
+export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+uv run python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 
-# Domain workflows
-python scripts/rna/run_workflow.py --config config/amalgkit/species.yaml
-uv run python scripts/gwas/run_analysis.py --config config/gwas/gwas.yaml
-
-# Utilities
-python scripts/test_examples/generate_example.py --module dna --feature alignment
-python scripts/quality/audit_docs.py
+bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 ```
 
-### Script Conventions
-- All scripts executable directly or via `uv run`
-- Use `metainformant.core` utilities for I/O and logging
-- Write all outputs to `output/` directory
-- Support `--help` flag for argument documentation
-- Follow REAL IMPLEMENTATION policy (real implementations only)
-- Use argparse or click for CLI argument handling
+All commands are resumable and data-root scoped. A producer lock, SQLite
+progress database, current provenance receipts, and downstream evidence
+manifest are part of the completion contract.
+
+## Script conventions
+
+- use `argparse` and expose `--help`;
+- resolve configuration and data roots explicitly;
+- write large artifacts outside Git;
+- make repeated discovery, validation, and checkpoint calls idempotent;
+- test real filesystem behavior and current CLI contracts.

@@ -18,7 +18,6 @@ from .configs import (
     get_config_template,
     load_workflow_config,
     save_config,
-    update_config_from_env,
     validate_config,
 )
 from .deps import (
@@ -68,7 +67,6 @@ __all__ = [
     "validate_config",
     "create_default_config",
     "save_config",
-    "update_config_from_env",
     "get_config_template",
     "RNAPipelineConfig",
     "AmalgkitRunLayout",

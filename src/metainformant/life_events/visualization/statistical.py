@@ -307,7 +307,7 @@ def plot_intervention_effects(
     pre_lengths = [len(seq.events) for seq in pre_sequences]
     post_lengths = [len(seq.events) for seq in post_sequences]
 
-    ax1.boxplot([pre_lengths, post_lengths], labels=["Pre-intervention", "Post-intervention"])
+    ax1.boxplot([pre_lengths, post_lengths], tick_labels=["Pre-intervention", "Post-intervention"])
     ax1.set_ylabel("Number of Events")
     ax1.set_title("Sequence Length Changes")
     ax1.grid(True, alpha=0.3)
@@ -726,7 +726,7 @@ def plot_population_comparison(
     group2_lengths = [len(seq.events) for seq in group2_sequences]
 
     # Plot 1: Sequence length comparison
-    axes[0, 0].boxplot([group1_lengths, group2_lengths], labels=[group1_label, group2_label])
+    axes[0, 0].boxplot([group1_lengths, group2_lengths], tick_labels=[group1_label, group2_label])
     axes[0, 0].set_ylabel("Number of Events")
     axes[0, 0].set_title("Sequence Length Comparison")
     axes[0, 0].grid(True, alpha=0.3)

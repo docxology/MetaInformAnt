@@ -7,7 +7,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 
+@pytest.mark.external_tool
 def test_workflow_skips_steps_when_missing_deps(tmp_path: Path):
     """Test that workflow execution skips steps when required dependencies are missing."""
     from metainformant.rna.amalgkit.amalgkit import check_cli_available

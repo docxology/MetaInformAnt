@@ -275,7 +275,7 @@ def plot_morphological_measurements(
         sns.boxplot(data=df_melted, x="Measurement", y="Value", ax=ax, **kwargs)
         ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right")
     else:
-        bp = ax.boxplot(data, labels=measurement_names, patch_artist=True, **kwargs)
+        bp = ax.boxplot(data, tick_labels=measurement_names, patch_artist=True, **kwargs)
         # Color boxes
         colors = plt.cm.Set3(np.linspace(0, 1, len(measurement_names)))
         for patch, color in zip(bp["boxes"], colors):

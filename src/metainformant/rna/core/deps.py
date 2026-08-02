@@ -30,11 +30,11 @@ def ensure_required_amalgkit(auto_install: bool = True) -> Tuple[bool, str]:
     """Ensure the required upstream amalgkit CLI is installed and current."""
     from metainformant.rna.amalgkit.amalgkit import (
         AMALGKIT_INSTALL_SPEC,
-        MIN_AMALGKIT_VERSION,
+        REQUIRED_AMALGKIT_VERSION,
         ensure_cli_available,
     )
 
-    ok, msg, install_record = ensure_cli_available(auto_install=auto_install, min_version=MIN_AMALGKIT_VERSION)
+    ok, msg, install_record = ensure_cli_available(auto_install=auto_install, min_version=REQUIRED_AMALGKIT_VERSION)
     if ok:
         return True, msg
 
@@ -247,14 +247,14 @@ def check_step_dependencies(step_name: str, params: Dict[str, Any], config: Any)
     amalgkit_steps = {
         "metadata",
         "integrate",
-        "config",
         "select",
         "getfastq",
         "quant",
         "merge",
-        "curate",
+        "wsfilter",
         "cstmm",
-        "csca",
+        "csfilter",
+        "finalize",
         "sanity",
     }
     if step_name in amalgkit_steps:
@@ -268,14 +268,5 @@ def check_step_dependencies(step_name: str, params: Dict[str, Any], config: Any)
         tools = check_quantification_tools()
         if tool in tools and not tools[tool][0]:
             return False, f"Quantification tool '{tool}' not available: {tools[tool][1]}"
-
-    if step_name in ("curate", "cstmm", "csca"):
-        # R required for these steps
-        try:
-            result = subprocess.run(["Rscript", "--version"], capture_output=True, text=True, timeout=5)
-            if result.returncode != 0:
-                return False, "Rscript not available (required for R-based steps)"
-        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError, OSError):
-            return False, "Rscript not available (required for R-based steps)"
 
     return True, ""

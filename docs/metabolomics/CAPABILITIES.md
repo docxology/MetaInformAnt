@@ -4,10 +4,10 @@ Exhaustive reference of all functions, classes, and algorithms in the metabolomi
 
 ## Table of Contents
 
-1. [Analysis (`analysis/`)](#analysis)
-2. [I/O (`io/`)](#io)
-3. [Pathways (`pathways/`)](#pathways)
-4. [Visualization (`visualization/`)](#visualization)
+1. [Analysis (`analysis/`)](#analysis-analysisidentificationpy)
+2. [I/O (`io/`)](#io-ioformatspy)
+3. [Pathways (`pathways/`)](#pathways-pathwaysenrichmentpy)
+4. [Visualization (`visualization/`)](#visualization-visualizationplotspy)
 5. [Algorithm Comparison](#algorithm-comparison)
 6. [Function Matrix](#function-matrix)
 

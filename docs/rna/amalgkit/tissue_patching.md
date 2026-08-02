@@ -1,6 +1,9 @@
-# Tissue Patching System
+# Tissue metadata normalization
 
-The Tissue Patching system in MetaInformAnt provides a robust mechanism for correcting and automating tissue metadata assignment across thousands of samples. This ensures that downstream analyses like `csca` (Cross-Species Correlation Analysis) use accurate, canonical tissue labels even when NCBI metadata is missing or ambiguous.
+The tissue normalization system provides a reproducible mechanism for assigning
+canonical tissue labels across large cohorts. This makes filtering,
+within-species comparisons, and optional cross-species analyses auditable when
+NCBI metadata is missing or ambiguous.
 
 ## Overview
 
@@ -9,7 +12,7 @@ NCBI SRA/ENA metadata often contains:
 2.  **Ambiguous Terms**: "Nervous system", "head", "central nervous system".
 3.  **Experimental Details**: "Brain of forager kept in a group for 2 days".
 
-The MetaInformAnt system uses a Two-Tier normalization strategy:
+The MetaInformAnt system uses a two-tier normalization strategy:
 -   **Synonym Mapping**: Mapping varied strings to canonical names (e.g., "Nervous system" → `brain`).
 -   **Patching**: Force-assigning tissues to specific Runs, BioProjects, or BioSamples based on manual research or study titles.
 
@@ -38,9 +41,10 @@ biosamples:
   SAMN00849801: brain
 ```
 
-## Normalization Logic
+## Normalization logic
 
-The `StreamingPipelineOrchestrator` and `scripts/rna/normalize_tissue_metadata.py` apply normalization in the following priority order:
+The streaming orchestrator and `scripts/rna/normalize_tissue_metadata.py` apply
+normalization in the following priority order:
 
 1.  **Sample Patch**: If the Run Accession (SRR) exists in `samples:`.
 2.  **BioSample Patch**: If the BioSample Accession exists in `biosamples:`.

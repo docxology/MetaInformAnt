@@ -7,7 +7,6 @@ with auto-documentation from Google-style docstrings.
 
 import os
 import sys
-from pathlib import Path
 
 # Add the src directory to the Python path for imports
 sys.path.insert(0, os.path.abspath('../src'))

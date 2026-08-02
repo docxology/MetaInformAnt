@@ -7,7 +7,6 @@ and workflow summary reporting.
 
 from __future__ import annotations
 
-import shutil
 import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
@@ -198,8 +197,8 @@ def validate_step_prerequisites(
         return _validate_quant_prerequisites(config, steps_config)
     elif step_name == "merge":
         return _validate_merge_prerequisites(config, step_params, steps_config)
-    elif step_name in ("curate", "cstmm"):
-        return _validate_r_step_prerequisites(step_name, step_params, config, steps_config)
+    elif step_name in ("wsfilter", "cstmm", "csfilter", "finalize"):
+        return _validate_current_downstream_prerequisites(step_name, step_params, config)
     return None
 
 
@@ -329,31 +328,6 @@ def _validate_merge_prerequisites(
             f"  2. Re-run quant step if quantification files are missing"
         )
 
-    # Check R/Rscript
-    from metainformant.rna.core.environment import check_rscript
-
-    r_available, r_message = check_rscript()
-    if not r_available:
-        return (
-            f"PREREQUISITE CHECK FAILED: R/Rscript not available for merge step.\n"
-            f"  Status: {r_message}\n\n"
-            f"REMEDIATION:\n"
-            f"  1. Install R: brew install r (on Mac) or apt-get install r-base-core\n"
-        )
-
-    # Check ggplot2
-    try:
-        check_ggplot2 = subprocess.run(
-            ["Rscript", "-e", "library(ggplot2)"], capture_output=True, text=True, timeout=10
-        )
-        if check_ggplot2.returncode != 0:
-            return (
-                "PREREQUISITE CHECK FAILED: R package 'ggplot2' not available for merge step.\n"
-                "  Installation: Rscript -e \"install.packages('ggplot2', repos='https://cloud.r-project.org')\"\n"
-            )
-    except Exception as e:
-        logger.warning(f"Failed to check R packages: {e}")
-
     # Bridge quant results for merge
     merge_out_dir_path = Path(step_params.get("out_dir", config.work_dir / "merge"))
     merge_quant_link = merge_out_dir_path / "quant"
@@ -375,35 +349,34 @@ def _validate_merge_prerequisites(
     return None
 
 
-def _validate_r_step_prerequisites(
+def _validate_current_downstream_prerequisites(
     step_name: str,
     step_params: Dict[str, Any],
     config: AmalgkitWorkflowConfig,
-    steps_config: Dict[str, Any],
 ) -> Optional[str]:
-    """Validate prerequisites for R-dependent steps (curate, cstmm)."""
-    if not shutil.which("Rscript"):
-        return f"PREREQUISITE CHECK FAILED: Rscript not found for {step_name} step."
+    """Validate inputs for current Amalgkit filtering/normalization commands."""
+    if step_name == "cstmm" and not (
+        step_params.get("orthogroup_table") or step_params.get("dir_busco")
+    ):
+        return "PREREQUISITE CHECK FAILED: cstmm requires orthogroup_table or dir_busco."
 
-    # Bridge merge results for curate
-    if step_name in ("curate", "cstmm"):
-        merge_params = steps_config.get("merge", {})
-        merge_out_dir = Path(merge_params.get("out_dir", config.work_dir / "merged"))
-        merge_results_dir = merge_out_dir / "merge"
-        curate_out_dir = Path(step_params.get("out_dir", config.work_dir / "curate"))
-        curate_merge_link = curate_out_dir / "merge"
-
-        if merge_results_dir.exists() and merge_results_dir.resolve() != curate_merge_link.resolve():
-            if not curate_merge_link.exists() or curate_merge_link.is_symlink():
-                logger.info(f"Bridging merge results for {step_name}: {merge_results_dir} -> {curate_merge_link}")
-                try:
-                    curate_merge_link.parent.mkdir(parents=True, exist_ok=True)
-                    if curate_merge_link.is_symlink():
-                        curate_merge_link.unlink()
-                    if not curate_merge_link.exists():
-                        curate_merge_link.symlink_to(merge_results_dir.resolve())
-                except Exception as e:
-                    logger.warning(f"Could not bridge merge results for {step_name}: {e}")
+    if step_name != "cstmm":
+        default_inputs = {
+            "wsfilter": config.work_dir / "merge",
+            "csfilter": config.work_dir / "wsfilter",
+            "finalize": config.work_dir / "wsfilter",
+        }
+        input_dir = Path(step_params.get("input_dir", default_inputs[step_name]))
+        metadata_path = step_params.get("metadata")
+        metadata_exists = bool(metadata_path and Path(str(metadata_path)).exists())
+        table_exists = input_dir.exists() and any(input_dir.glob("**/*.tsv"))
+        if not metadata_exists and not table_exists:
+            return (
+                f"PREREQUISITE CHECK FAILED: no current input tables found for {step_name}.\n"
+                f"  - Input directory: {input_dir}\n"
+                "  - Expected metadata.tsv or expression/count TSV files\n"
+                "  - Complete the upstream merge/filter step before continuing"
+            )
 
     return None
 
@@ -446,10 +419,6 @@ def handle_post_step_actions(
                 logger.info(f"Deduplicating metadata after integrate: {m_file}")
                 deduplicate_metadata(m_file)
 
-    # After config: create symlink for select step
-    if step_name == "config":
-        _ensure_config_symlink(config)
-
     # After select: create filtered metadata
     if step_name == "select" and result.returncode == 0:
         _create_filtered_metadata(config, check, step_results)
@@ -467,25 +436,6 @@ def handle_post_step_actions(
     # After quant: validate and cleanup
     if step_name == "quant" and result.returncode == 0:
         _validate_quant_results(config, check, step_results)
-
-
-def _ensure_config_symlink(config: AmalgkitWorkflowConfig) -> None:
-    """Create config -> config_base symlink for select step compatibility."""
-    config_base_dir = config.work_dir / "config_base"
-    config_dir = config.work_dir / "config"
-    if config_base_dir.exists() and not config_dir.exists():
-        try:
-            config_dir.symlink_to(config_base_dir.resolve())
-            logger.info(f"Created symlink: {config_dir} -> {config_base_dir.resolve()}")
-        except Exception as e:
-            logger.warning(f"Could not create config symlink: {e}")
-            try:
-                config_dir.mkdir(parents=True, exist_ok=True)
-                for config_file in config_base_dir.glob("*.config"):
-                    shutil.copy2(config_file, config_dir / config_file.name)
-                logger.info(f"Copied config files from {config_base_dir} to {config_dir} as fallback")
-            except Exception as e2:
-                logger.warning(f"Could not copy config files as fallback: {e2}")
 
 
 def _create_filtered_metadata(config: AmalgkitWorkflowConfig, check: bool, step_results: List) -> None:
@@ -685,10 +635,23 @@ def log_workflow_summary(
         "merge": (
             "    1. Ensure quant completed successfully\n"
             "    2. Check quant files exist\n"
-            "    3. Install ggplot2: Rscript -e \"install.packages('ggplot2')\""
+            "    3. Confirm the quantification outputs are non-empty TSV files"
         ),
-        "curate": (
-            "    1. Ensure merge completed successfully\n" "    2. Install R if missing: apt-get install r-base-core"
+        "wsfilter": (
+            "    1. Ensure merge completed successfully\n"
+            "    2. Check the configured input_dir for merged expression tables"
+        ),
+        "cstmm": (
+            "    1. Provide orthogroup_table or dir_busco\n"
+            "    2. Confirm per-species count tables are available"
+        ),
+        "csfilter": (
+            "    1. Ensure current cross-species inputs are prepared\n"
+            "    2. Check the configured input_dir and ortholog inputs"
+        ),
+        "finalize": (
+            "    1. Ensure wsfilter (and optional csfilter) completed successfully\n"
+            "    2. Check the configured input_dir for filtered expression tables"
         ),
     }
 

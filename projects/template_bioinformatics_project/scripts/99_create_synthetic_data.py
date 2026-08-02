@@ -19,7 +19,6 @@ Usage::
 
 import sys
 import time
-import random
 import argparse
 import datetime
 from datetime import UTC

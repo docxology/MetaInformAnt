@@ -21,7 +21,13 @@ Python wrapper for the amalgkit RNA-seq quantification tool.
 - `run_amalgkit()` — Execute any amalgkit CLI step
 - `build_amalgkit_command()` — CLI argument construction
 - `AmalgkitParams` — Step parameters dataclass
-- Step functions: `metadata()`, `select()`, `getfastq()`, `quant()`, `merge()`, `curate()`, `sanity()`
+- Step functions: `metadata()`, `select()`, `getfastq()`, `quant()`, `merge()`, `wsfilter()`, `finalize()`, `sanity()`
+
+Monitored download, quantification, merge, filtering, and finalization steps accept the
+standard `timeout` keyword. It bounds the monitored child process, writes a
+timeout heartbeat with an error message, terminates the child, and returns
+exit code `124`. Use `monitor_timeout` when the subprocess timeout and the
+progress-monitor timeout need different values.
 
 ### genome_prep.py
 
@@ -52,4 +58,4 @@ result = run_amalgkit("quant", AmalgkitParams(out_dir="work", threads=4))
 ## Related
 
 - [engine/](../engine/) - Workflow orchestration
-- [config/amalgkit/](../../../../config/amalgkit/) - Configurations
+- [Hymenoptera configurations](../../../../projects/hymenoptera_amalgkit/config/amalgkit/) - Canonical species YAMLs and rules

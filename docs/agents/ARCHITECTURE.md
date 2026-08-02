@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-METAINFORMANT employs a layered multi-agent architecture enabling 28 specialized bioinformatics modules to operate independently while coordinating through well-defined protocols. The system handles industrial-scale workflows (documented: 8,300+ samples across 28 Hymenoptera species) with robust error handling, parallel execution, and real-time visualization.
+METAINFORMANT employs a layered multi-agent architecture enabling 28 specialized bioinformatics modules to operate independently while coordinating through well-defined protocols. The RNA workflow processes the configured 27-species Hymenoptera cohort; the exact sample inventory is data-root dependent. The system provides robust error handling, parallel execution, and real-time visualization.
 
 ## System Context
 
@@ -183,7 +183,7 @@ flowchart TB
 
 **Implementation**: `PipelinePhase.handler` submits work to `manager.executor.submit()`, collects via `as_completed()`.
 
-**Example modules**: `rna` (download 8,300 SRAs concurrently), `gwas` (batch association tests), `metagenomics` (multiple samples).
+**Example modules**: `rna` (large-cohort SRA orchestration), `gwas` (batch association tests), `metagenomics` (multiple samples).
 
 ### Pattern 3: Conditional Branching
 
@@ -495,6 +495,6 @@ When adding a new module to the multi-agent ecosystem:
 ### Related Modules
 
 - [core](../core/) — Infrastructure used by all agents
-- [rna](../rna/) — Industrial-scale orchestration example (8,300+ samples)
+- [rna](../rna/) — Industrial-scale orchestration example with a historical 10,312-sample target
 - [cloud](../cloud/) — Distributed orchestration on GCP
 - [menu](../menu/) — Interactive workflow discovery & selection

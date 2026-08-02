@@ -255,13 +255,15 @@ The guide provides both minimal and full-featured implementations with performan
 
 ### Command Line Interface
 
-The `metainformant` command exposes `--version`, `--modules`, protein utilities, quality checks, `rna info`, and `gwas run`. RNA workflows use Python APIs or `scripts/rna/run_workflow.py`. See [cli.md](cli.md).
+The `metainformant` command exposes `--version`, `--modules`, protein utilities, quality checks, `rna info`, and `gwas run`. RNA workflows use Python APIs, `scripts/rna/run_all_species.py`, and `scripts/rna/process_species.py`. See [cli.md](cli.md).
 
 ```bash
 uv run metainformant --help
 uv run metainformant protein comp --fasta data/example.faa
 uv run metainformant gwas run --config config/gwas/gwas_pbarbatus.yaml --check
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+uv run python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 ```
 
 ## Documentation Contents

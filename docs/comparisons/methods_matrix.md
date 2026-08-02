@@ -7,9 +7,9 @@ This matrix provides a side-by-side comparison of all 28 core modules in METAINF
 ## Quick Navigation
 
 - **[Summary Table](#summary-table)** — 28-module overview at a glance
-- **[By Data Type](#by-data-type)** — Find modules by input data
-- **[By Analysis Goal](#by-analysis-goal)** — Find modules by research question
-- **[By Computational Scale](#by-computational-scale)** — Find modules by resource needs
+- **[By Data Type](#by-data-type-quick-reference)** — Find modules by input data
+- **[By Analysis Goal](#by-analysis-goal-decision-map)** — Find modules by research question
+- **[By Computational Scale](#by-computational-scale-resource-planning)** — Find modules by resource needs
 - **[Detailed Module Cards](#detailed-module-cards)** — Per-module deep dive
 - **[Cross-Module Dependencies](#cross-module-dependencies)** — How modules interact
 
@@ -218,11 +218,11 @@ Below are per-module summaries with capabilities, inputs/outputs, and example us
 | **Output** | `merged_abundance.tsv` (TPM/counts), `workflow/` directory with per-step logs, `amalgkit.manifest.jsonl` |
 | **Submodules** | `amalgkit` (CLI wrapper), `engine` (workflow steps), `retrieval` (ENA/SRA), `analysis` (post-quant) |
 | **External Deps** | `amalgkit` CLI, `kallisto`, `fastp`, `samtools` |
-| **Typical Runtime** | Hours (1 sample) → weeks (8,300+ samples, streaming) |
+| **Typical Runtime** | Hours (1 sample) → weeks for the historical 10,312-sample target (streaming) |
 | **Primary Use Cases** | Bulk RNA-seq quantification, meta-analysis across studies/species, ENA-first large-scale processing |
 
 **Key workflows**:
-- Standard: `FASTQ → quant (kallisto) → merge (cstmm) → curate`
+- Standard: `FASTQ → quant (kallisto) → merge → wsfilter → finalize`
 - ENA streaming: `metadata → integrate → getfastq → quant → merge` (orchestrated)
 - Cross-species: `mouse genes → orthologs → human → harmonized expression`
 
@@ -754,7 +754,7 @@ uv run python -m metainformant menu
 | **Submodules** | `cloud_config` (32-field dataclass), `gcp_deployer` (VM orchestration class) |
 | **External Deps** | `gcloud` CLI (thin wrapper), `docker`, `gsutil`, `ssh` |
 | **Typical Runtime** | VM create: 1–2 min; Pipeline run: hours–days; Download results: 10 min–hours |
-| **Primary Use Cases** | Large-scale genomic analysis at scale (e.g., 8,300 RNA-seq samples), cost-optimized compute (preemptible VMs), reproducible pipeline deployment, genome indexing at scale (gcp/prep_genomes.py) |
+| **Primary Use Cases** | Large-scale genomic analysis at scale (e.g., the historical 10,312-sample RNA-seq target), cost-optimized compute (preemptible VMs), reproducible pipeline deployment, genome indexing at scale (gcp/prep_genomes.py) |
 
 **Economics**: Preemptible VMs cost ~$0.01–0.03 per CPU-hour vs. normal $0.05–0.15.
 

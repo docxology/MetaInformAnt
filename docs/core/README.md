@@ -11,6 +11,8 @@ Core utilities for METAINFORMANT bioinformatics toolkit.
 - **ui/**
 - **[utils/](config.md)**
 - `__init__.py`
+- **[Source-derived API reference](API_REFERENCE.md)**
+- **[Documentation cross-check report](CROSS_CHECK_REPORT.md)**
 
 ## Structure
 
@@ -54,3 +56,10 @@ from metainformant.core.utils import config
 Deprecated compatibility shims `metainformant.core.config` and
 `metainformant.core.paths` are tested for older imports, but new code should use
 the canonical paths above.
+
+Regenerate and verify the public API inventory after changing a core module:
+
+```bash
+uv run python scripts/package/generate_core_api_reference.py
+uv run python scripts/core_docs_cross_check.py --strict
+```

@@ -96,7 +96,6 @@ class TestGenomePrepDocumentation:
             genome_prep.prepare_transcriptome_for_kallisto,
             genome_prep.build_kallisto_index,
             genome_prep.get_expected_index_path,
-            genome_prep.prepare_genome_for_quantification,
             genome_prep.verify_genome_status,
             genome_prep.orchestrate_genome_setup,
         ]

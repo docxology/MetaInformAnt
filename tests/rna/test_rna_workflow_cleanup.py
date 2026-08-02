@@ -25,6 +25,8 @@ from metainformant.rna.engine.workflow_cleanup import (
     filter_metadata_for_unquantified,
     get_quantified_samples,
 )
+from metainformant.rna.engine.raw_cleanup import reclaim_sample_raw_inputs
+from metainformant.rna.engine.provenance import write_quant_provenance
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -71,6 +73,13 @@ def _create_abundance(quant_dir: Path, sample_id: str, size: int = 200) -> Path:
     row = "gene_0001\t1000\t800.5\t42.0\t3.14\n"
     content = header + (row * max(1, (size - len(header)) // len(row)))
     abundance_file.write_text(content)
+    write_quant_provenance(
+        sample_dir,
+        species="test_species",
+        run_accession=sample_id,
+        config_path=sample_dir / "test_config.yaml",
+        command=["amalgkit", "quant"],
+    )
     return abundance_file
 
 
@@ -90,6 +99,36 @@ def _create_metadata_tsv(path: Path, rows: list[dict[str, str]]) -> None:
         writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter="\t")
         writer.writeheader()
         writer.writerows(rows)
+
+
+def test_reclaim_sample_raw_inputs_is_dry_run_then_exact_delete(tmp_path: Path) -> None:
+    """Reclamation removes only recognized raw inputs for one accession."""
+    work_dir = tmp_path / "work"
+    sample_dir = work_dir / "getfastq" / "SRR123456"
+    sample_dir.mkdir(parents=True)
+    (sample_dir / "SRR123456_1.fastq.gz").write_bytes(b"raw" * 100)
+    (sample_dir / "SRR123456_2.fastq.gz.invalid").write_bytes(b"invalid" * 20)
+    (sample_dir / "SRR123456_2.fastq.gz.safely_removed").write_text("redundant marker")
+    (sample_dir / "keep.me").write_text("evidence")
+
+    planned = reclaim_sample_raw_inputs(work_dir, "SRR123456", dry_run=True)
+    assert planned["files_deleted"] == 3
+    assert planned["bytes_freed"] > 0
+    assert (sample_dir / "SRR123456_1.fastq.gz").exists()
+    assert (sample_dir / "keep.me").exists()
+
+    executed = reclaim_sample_raw_inputs(work_dir, "SRR123456")
+    assert executed["files_deleted"] == 3
+    assert not (sample_dir / "SRR123456_1.fastq.gz").exists()
+    assert not (sample_dir / "SRR123456_2.fastq.gz.invalid").exists()
+    assert not (sample_dir / "SRR123456_2.fastq.gz.safely_removed").exists()
+    assert (sample_dir / "keep.me").exists()
+
+
+def test_reclaim_sample_raw_inputs_rejects_non_accession(tmp_path: Path) -> None:
+    """A broad or malformed identifier cannot select a cleanup target."""
+    with pytest.raises(ValueError):
+        reclaim_sample_raw_inputs(tmp_path / "work", "not-a-run")
 
 
 # ===========================================================================
@@ -250,6 +289,7 @@ class TestCleanupFastqs:
         """Should remove sample dirs under work_dir/fastq/getfastq/<sample>."""
         fastq_dir = workflow_config.work_dir / "fastq" / "getfastq"
         sample_dir = _create_fastq_files(fastq_dir, "SRR111111")
+        _create_abundance(workflow_config.work_dir / "quant", "SRR111111")
 
         assert sample_dir.exists()
         cleanup_fastqs(workflow_config, ["SRR111111"])
@@ -259,6 +299,7 @@ class TestCleanupFastqs:
         """Should also clean work_dir/fastq/<sample>."""
         alt_dir = workflow_config.work_dir / "fastq"
         sample_dir = _create_fastq_files(alt_dir, "SRR222222")
+        _create_abundance(workflow_config.work_dir / "quant", "SRR222222")
 
         cleanup_fastqs(workflow_config, ["SRR222222"])
         assert not sample_dir.exists()
@@ -267,6 +308,7 @@ class TestCleanupFastqs:
         """Should also clean work_dir/getfastq/<sample>."""
         gf_dir = workflow_config.work_dir / "getfastq"
         sample_dir = _create_fastq_files(gf_dir, "ERR333333")
+        _create_abundance(workflow_config.work_dir / "quant", "ERR333333")
 
         cleanup_fastqs(workflow_config, ["ERR333333"])
         assert not sample_dir.exists()
@@ -280,12 +322,24 @@ class TestCleanupFastqs:
         """Non-existent sample dirs should be handled gracefully."""
         cleanup_fastqs(workflow_config, ["SRR_NOT_REAL"])
 
+    def test_unproven_quantification_preserves_fastq(self, workflow_config: AmalgkitWorkflowConfig) -> None:
+        """Readable output without current provenance must never authorize deletion."""
+        fastq_dir = workflow_config.work_dir / "fastq" / "getfastq"
+        sample_dir = _create_fastq_files(fastq_dir, "SRR_UNPROVEN")
+        quant_dir = workflow_config.work_dir / "quant" / "SRR_UNPROVEN"
+        quant_dir.mkdir(parents=True)
+        (quant_dir / "abundance.tsv").write_text("target_id\ttpm\n" + ("GENE1\t1.0\n" * 30))
+
+        cleanup_fastqs(workflow_config, ["SRR_UNPROVEN"])
+        assert sample_dir.exists()
+
     def test_multiple_samples(self, workflow_config: AmalgkitWorkflowConfig) -> None:
         """Should clean all listed samples."""
         fastq_base = workflow_config.work_dir / "fastq" / "getfastq"
         dirs = []
         for sid in ["SRR100001", "SRR100002", "SRR100003"]:
             dirs.append(_create_fastq_files(fastq_base, sid))
+            _create_abundance(workflow_config.work_dir / "quant", sid)
 
         cleanup_fastqs(workflow_config, ["SRR100001", "SRR100002", "SRR100003"])
         for d in dirs:
@@ -307,6 +361,7 @@ class TestCleanupFastqs:
         sample_dir = custom_out / "getfastq" / "DRR444444"
         sample_dir.mkdir(parents=True)
         (sample_dir / "DRR444444_1.fastq.gz").write_bytes(b"data")
+        _create_abundance(work_dir / "quant", "DRR444444")
 
         cleanup_fastqs(config, ["DRR444444"])
         assert not sample_dir.exists()
@@ -380,6 +435,13 @@ class TestGetQuantifiedSamples:
         sample_dir.mkdir(parents=True)
         ab = sample_dir / "SRR777001_abundance.tsv"
         ab.write_text("target_id\tlength\teff_length\test_counts\ttpm\n" + "g\t100\t90\t10\t1.0\n" * 10)
+        write_quant_provenance(
+            sample_dir,
+            species="test_species",
+            run_accession="SRR777001",
+            config_path=sample_dir / "test_config.yaml",
+            command=["amalgkit", "quant"],
+        )
 
         result = get_quantified_samples(workflow_config)
         assert "SRR777001" in result

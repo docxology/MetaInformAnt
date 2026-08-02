@@ -86,11 +86,23 @@ def load_orthodb_proteins(genes_path: Path, target_org_prefixes: Set[str]) -> Di
     return result
 
 
+def _resolve_manifest_matrix_path(row: pd.Series) -> Path:
+    """Resolve a manifest matrix path using its optional data-root provenance."""
+
+    path = Path(str(row["finalize_path"])).expanduser()
+    if path.is_absolute():
+        return path
+    data_root = row.get("data_root")
+    if data_root is not None and not pd.isna(data_root):
+        return Path(str(data_root)).expanduser() / path
+    return path
+
+
 def load_expression_transcript_ids(manifest: pd.DataFrame) -> Dict[str, Dict[str, str]]:
     """Load transcript IDs and build RNA_accession -> full_transcript_id maps.
 
     Args:
-        manifest: DataFrame with columns 'species_title' and 'curate_path'
+        manifest: DataFrame with columns 'species_title' and 'finalize_path'
 
     Returns:
         Dictionary mapping species title -> (RNA_accession_base -> full_transcript_id)
@@ -98,12 +110,12 @@ def load_expression_transcript_ids(manifest: pd.DataFrame) -> Dict[str, Dict[str
     result = {}
     for _, row in manifest.iterrows():
         sp_title = row["species_title"]
-        curate_path = Path(row["curate_path"])
-        if not curate_path.exists():
+        finalize_path = _resolve_manifest_matrix_path(row)
+        if not finalize_path.exists():
             continue
         try:
             tid_map = {}
-            with open(curate_path) as f:
+            with open(finalize_path) as f:
                 f.readline()
                 for line in f:
                     tid = line.split("\t", 1)[0]

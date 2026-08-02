@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import http.server
 from pathlib import Path
+import threading
 
 import pytest
 
@@ -11,26 +13,61 @@ from metainformant.protein.database.uniprot import (
     map_ids_uniprot,
     validate_uniprot_accession,
 )
+from metainformant.protein.database import uniprot as uniprot_module
 from metainformant.protein.structure.pdb import fetch_pdb_structure
+from metainformant.protein.structure import pdb as pdb_module
 
 
-def _check_online(url: str) -> bool:
-    """Check if we can reach a URL within timeout."""
+@pytest.fixture
+def local_protein_api(monkeypatch):
+    """Serve deterministic UniProt and RCSB responses through real HTTP clients."""
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def _write(self, status: int, body: bytes, content_type: str) -> None:
+            self.send_response(status)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_POST(self) -> None:  # noqa: N802 - stdlib HTTP handler API
+            if self.path != "/mapping":
+                self._write(404, b"not found", "text/plain")
+                return
+            self._write(200, b"From\tTo\nP69905\tP69905\n", "text/plain")
+
+        def do_GET(self) -> None:  # noqa: N802 - stdlib HTTP handler API
+            if self.path.endswith("INVALID_ID_12345.pdb"):
+                self._write(404, b"not found", "text/plain")
+                return
+            if self.path.endswith(".cif"):
+                self._write(200, b"data_METAINFORMANT\n_atom_site.id 1\n", "chemical/x-mmcif")
+                return
+            self._write(
+                200,
+                b"HEADER    METAINFORMANT TEST STRUCTURE\nATOM      1  CA  ALA A   1       1.000   2.000   3.000  1.00 20.00           C\n",
+                "chemical/x-pdb",
+            )
+
+        def log_message(self, format: str, *args: object) -> None:
+            return
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    base_url = f"http://127.0.0.1:{server.server_port}"
+    monkeypatch.setattr(uniprot_module, "UNIPROT_ID_MAPPING_URL", f"{base_url}/mapping")
+    monkeypatch.setattr(pdb_module, "PDB_DOWNLOAD_BASE_URL", f"{base_url}/download")
     try:
-        import requests
-
-        resp = requests.get(url, timeout=5)
-        resp.raise_for_status()
-        return True
-    except Exception:
-        return False
+        yield
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
 
 
-def test_uniprot_id_mapping_real_network():
+def test_uniprot_id_mapping_real_network(local_protein_api):
     """Test real UniProt ID mapping with actual API calls."""
-    if not _check_online("https://rest.uniprot.org"):
-        pytest.skip("No network access for UniProt API - real implementation requires connectivity")
-
     # Test with a well-known protein (hemoglobin alpha chain)
     result = map_ids_uniprot(["P69905"])
     assert isinstance(result, dict)
@@ -107,33 +144,14 @@ def test_uniprot_go_and_keyword_extraction_from_json():
 
 @pytest.mark.network
 @pytest.mark.slow
-def test_uniprot_mapping_offline_behavior():
-    """Test behavior when UniProt API is unavailable.
-
-    This test checks network availability first to avoid long timeouts.
-    If online, makes a real API call to verify behavior. If offline,
-    skips gracefully. Marked as slow due to potential API polling delays.
-    """
-    # Check network availability first to avoid long timeouts
-    if not _check_online("https://rest.uniprot.org"):
-        pytest.skip("No network access for UniProt API - real implementation requires connectivity")
-
-    # If online, make real API call to verify behavior
-    try:
-        result = map_ids_uniprot(["P69905"])
-        # If this succeeds, we're online and got a result
-        assert isinstance(result, dict)
-    except Exception:
-        # Expected when API fails or times out
-        # This documents real failure modes
-        assert True  # This is acceptable real-world behavior
+def test_uniprot_mapping_transport_behavior(local_protein_api):
+    """Test successful ID mapping through the requests transport."""
+    result = map_ids_uniprot(["P69905"])
+    assert result == {"P69905": "P69905"}
 
 
-def test_pdb_download_real_network(tmp_path: Path):
+def test_pdb_download_real_network(tmp_path: Path, local_protein_api):
     """Test real PDB file download with actual HTTP requests."""
-    if not _check_online("https://files.rcsb.org"):
-        pytest.skip("No network access for PDB download - real implementation requires connectivity")
-
     # Test with a small, well-known structure (Crambin)
     out = fetch_pdb_structure("1CRN", tmp_path, fmt="pdb")
     assert out.exists() and out.suffix == ".pdb"
@@ -144,11 +162,8 @@ def test_pdb_download_real_network(tmp_path: Path):
     assert "HEADER" in content or "ATOM" in content
 
 
-def test_pdb_download_cif_format_real_network(tmp_path: Path):
+def test_pdb_download_cif_format_real_network(tmp_path: Path, local_protein_api):
     """Test real PDB download in CIF format."""
-    if not _check_online("https://files.rcsb.org"):
-        pytest.skip("No network access for PDB download - real implementation requires connectivity")
-
     # Test CIF format download
     out = fetch_pdb_structure("1CRN", tmp_path, fmt="cif")
     assert out.exists() and out.suffix == ".cif"
@@ -159,17 +174,14 @@ def test_pdb_download_cif_format_real_network(tmp_path: Path):
     assert "data_" in content or "_atom_site" in content
 
 
-def test_pdb_download_invalid_id_real_behavior(tmp_path: Path):
+def test_pdb_download_invalid_id_real_behavior(tmp_path: Path, local_protein_api):
     """Test real behavior with invalid PDB ID."""
-    if not _check_online("https://files.rcsb.org"):
-        pytest.skip("No network access for PDB download - real implementation requires connectivity")
-
     # Test with obviously invalid PDB ID
     with pytest.raises(Exception):
         fetch_pdb_structure("INVALID_ID_12345", tmp_path, fmt="pdb")
 
 
-def test_pdb_download_format_handling(tmp_path: Path):
+def test_pdb_download_format_handling(tmp_path: Path, local_protein_api):
     """Test PDB format parameter handling (no network required)."""
     # This tests the format logic without making network calls
     # The function should handle format parameters correctly regardless of network
@@ -207,32 +219,18 @@ def test_pdb_download_format_handling(tmp_path: Path):
     assert ".cif" == (".pdb" if "cif" == "pdb" else ".cif")
 
 
-def test_pdb_offline_behavior(tmp_path: Path):
-    """Document real offline behavior for PDB downloads."""
-    # When offline, the function should fail gracefully
-    try:
-        result = fetch_pdb_structure("1CRN", tmp_path, fmt="pdb")
-        # If this succeeds, we're online
-        assert result.exists()
-    except Exception:
-        # Expected when offline - this documents real failure modes
-        # Real implementations reveal actual network dependencies
-        assert True  # This is acceptable real-world behavior
+def test_pdb_download_transport_behavior(tmp_path: Path, local_protein_api):
+    """Document successful local transport and persisted PDB output."""
+    result = fetch_pdb_structure("1CRN", tmp_path, fmt="pdb")
+    assert result.exists()
 
 
-def test_protein_api_integration_real_world(tmp_path: Path):
+def test_protein_api_integration_real_world(tmp_path: Path, local_protein_api):
     """Integration test combining UniProt and PDB with real APIs."""
-    if not _check_online("https://rest.uniprot.org") or not _check_online("https://files.rcsb.org"):
-        pytest.skip("No network access - real integration testing requires connectivity")
-
     # Real-world workflow: get UniProt ID then fetch structure
     uniprot_result = map_ids_uniprot(["P69905"])
     if uniprot_result:
         # Now try to get a structure (hemoglobin has many PDB structures)
         # This tests real API integration
-        try:
-            pdb_result = fetch_pdb_structure("1A3N", tmp_path, fmt="pdb")  # Human hemoglobin structure
-            assert pdb_result.exists()
-        except Exception:
-            # PDB ID might not exist - this is real-world behavior
-            pytest.skip("PDB structure 1A3N not available - real API behavior")
+        pdb_result = fetch_pdb_structure("1A3N", tmp_path, fmt="pdb")  # Human hemoglobin structure
+        assert pdb_result.exists()

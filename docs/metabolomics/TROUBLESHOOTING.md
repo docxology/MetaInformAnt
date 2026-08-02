@@ -567,5 +567,5 @@ If you encounter an issue not covered here:
 
 4. **Alternative resources**:
    - [MetaboAnalyst documentation](https://www.metaboanalyst.ca/) for general metabolomics guidance
-   - [HMDB](https://hmdb.ca/) for metabolite information
+   - [HMDB 5.0 reference](https://pubmed.ncbi.nlm.nih.gov/34986597/) for metabolite information
    - Mass spectrometry community forums (ResearchGate, SEQanswers)

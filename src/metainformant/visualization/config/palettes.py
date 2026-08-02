@@ -108,7 +108,7 @@ def categorical(n: int, *, palette: str = "wong") -> List[str]:
     if n <= len(base):
         return base[:n]
     # Fall back to tab20 for larger needs
-    cmap = plt.cm.get_cmap("tab20", n)
+    cmap = plt.get_cmap("tab20").resampled(n)
     return [mcolors.to_hex(cmap(i)) for i in range(n)]
 
 

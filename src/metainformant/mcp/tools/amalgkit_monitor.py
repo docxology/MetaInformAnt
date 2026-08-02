@@ -45,7 +45,11 @@ def is_pipeline_cmdline(cmdline):
         return False
     if any("run_all_species" in arg for arg in cmdline):
         return True
-    if any("run_workflow.py" in arg for arg in cmdline):
+    if any(
+        marker in arg
+        for arg in cmdline
+        for marker in ("run_all_species.py", "process_species.py", "run_full_campaign.sh")
+    ):
         return True
     return any(Path(arg).name == "amalgkit" for arg in cmdline)
 

@@ -1,41 +1,41 @@
-# Cursor Rules for rna Module (AK_)
+# Cursor Rules for the current RNA module
 
-## 🧠 Context & Intent
-- **Domain**: rna
-- **Path**: `src/metainformant/rna/`
-- **Config Prefix**: `AK_` (e.g., `AK_THREADS`)
+## Scope
 
-## 🧱 Directory Structure
-- **Source**: `src/metainformant/rna/`
-- **Tests**: `tests/rna/test_rna_*.py`
-- **Docs**: `docs/rna/`
-- **Output**: `output/rna/` (Default for all artifacts)
+- Domain: RNA and Amalgkit 0.16.32
+- Source: `src/metainformant/rna/`
+- Tests: `tests/rna/test_rna_*.py`
+- Documentation: `docs/rna/` and `projects/hymenoptera_amalgkit/doc/`
+- Large data: `$AMALGKIT_DATA_ROOT`
 
-## ⚙️ Configuration
-- Use `metainformant.core.utils.config` to load config.
-- Support env checks with `AK_` prefix.
-- Example:
-  ```python
-  config = load_domain_config("config/rna/default.yaml", prefix="AK")
-  ```
+## Current entrypoints
 
-## 🧪 Testing (REAL IMPLEMENTATION POLICY)
-- **STRICTLY REAL IMPLEMENTATIONS**: Use real implementations only.
-- **External Tools**: Skip if not found (don't mock).
-- **Network**: Use real API calls with `@pytest.mark.network`.
-- **Output**: Write all test artifacts to `output/` via `tmp_path`.
+```bash
+uv run python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
+uv run python scripts/rna/process_species.py \
+  --species apis_mellifera \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT"
+bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
+```
 
-## ⚡ Performance & Safety
-- **SQLite Concurrency**: When querying `pipeline_progress.db` during active runs, ALWAYS use read-only mode (`?mode=ro`).
-- **Monitoring**: Prefer `scripts/rna/check_pipeline_status.py` over raw SQL for status reporting to the user.
-- **Disk Management**: Recommend `--cleanup-unquantified` flags when automating large-scale quantify steps.
-- **Troubleshooting**: Consult [docs/rna/amalgkit/TROUBLESHOOTING.md] for known IO and SRA tool issues.
+The project launcher is the only full-campaign owner. Do not start a second
+producer against a locked data root.
 
-## 📦 Dependencies
-- Manage via `uv`: `uv add`, `uv remove`.
-- Import pattern:
-  ```python
-  from metainformant.core import io
-  from metainformant.core.utils import logging
-  from metainformant.rna import utils
-  ```
+## Configuration and runtime
+
+Use project YAML files, explicit CLI options, and the `AMALGKIT_` namespace.
+The current producer uses `AMALGKIT_DATA_ROOT` and the project campaign uses
+the `AMALGKIT_PIPELINE_*` resource variables. Do not introduce alternate
+environment namespaces or hidden output roots.
+
+## Testing and safety
+
+- Use real implementations, real YAML, and real filesystem operations.
+- Keep network and external-tool tests explicitly marked.
+- Use `tmp_path` for temporary outputs; never write test data to the campaign root.
+- Read a live SQLite database in read-only mode when inspecting an active run.
+- Preserve partial downloads, receipts, failed samples, and negative evidence.
+- Validate current command options with the pinned Amalgkit registry.

@@ -649,7 +649,7 @@ def plot_heatmap(
             val = matrix[i][j]
             max_val = max(max(row) for row in matrix) if matrix else 1.0
             intensity = val / max_val if max_val > 0 else 0
-            color = plt.cm.get_cmap(cmap)(intensity)
+            color = plt.get_cmap(cmap)(intensity)
             ax.add_patch(plt.Rectangle((j, n_taxa - 1 - i), 1, 1, facecolor=color, edgecolor="white", linewidth=0.5))
 
     ax.set_xlim(0, n_samples)

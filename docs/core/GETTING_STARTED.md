@@ -384,9 +384,9 @@ export PG_USER=postgres
 export PG_PASSWORD=secret
 
 # General overrides
-export AK_THREADS=4          # Override thread pool size
-export AK_WORK_DIR=/data     # Working directory
-export AK_LOG_DIR=/var/log   # Log directory
+export AMALGKIT_THREADS=4          # Override thread pool size
+export AMALGKIT_WORK_DIR=/data     # Working directory
+export AMALGKIT_LOG_DIR=/var/log   # Log directory
 ```
 
 ## Running the Example

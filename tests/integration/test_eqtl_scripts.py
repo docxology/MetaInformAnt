@@ -26,3 +26,15 @@ def test_eqtl_scripts_import_with_fresh_output_tree(tmp_path: Path, monkeypatch)
     assert (tmp_path / "output/eqtl/amellifera/logs").is_dir()
     assert (tmp_path / "output/eqtl/amellifera/results").is_dir()
     assert (tmp_path / "output/eqtl/amellifera/plots").is_dir()
+
+
+def test_rna_snp_pipeline_uses_maintained_ena_downloader() -> None:
+    repo_root = Path(__file__).resolve().parents[2]
+    module = _import_script(
+        repo_root / "scripts/eqtl/rna_snp_pipeline.py",
+        "rna_snp_pipeline_import_test",
+    )
+
+    assert module.ENADownloader.__name__ == "ENADownloader"
+    assert not hasattr(module, "DOWNLOAD_SCRIPT")
+    assert "curl" in module.REQUIRED_TOOLS

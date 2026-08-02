@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, Dict, List, Set, Tuple
 
 from metainformant.core.utils import logging
 from metainformant.rna.core.sample_utils import extract_sample_id, find_quantification_file
+from metainformant.rna.engine.provenance import is_current_quantification
 
 if TYPE_CHECKING:
     from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
@@ -136,27 +137,112 @@ def cleanup_incorrectly_placed_sra_files(getfastq_dir: Path) -> None:
         logger.info(f"Moved {moved_count} SRA files from wrong locations to correct location")
 
 
+def _configured_step_output_dir(config: AmalgkitWorkflowConfig, step_name: str) -> Path | None:
+    """Return a configured step output directory, resolving relative paths."""
+
+    candidates = [
+        getattr(config, "per_step", {}) or {},
+        getattr(config, "extra_config", {}).get("steps", {}) or {},
+        getattr(config, "extra_config", {}).get("per_step", {}) or {},
+    ]
+    for step_config in candidates:
+        if not isinstance(step_config, dict):
+            continue
+        params = step_config.get(step_name, {})
+        if not isinstance(params, dict) or not params.get("out_dir"):
+            continue
+        output_dir = Path(params["out_dir"])
+        return output_dir if output_dir.is_absolute() else config.work_dir / output_dir
+    return None
+
+
+def quantification_output_roots(
+    config: AmalgkitWorkflowConfig,
+    step_params: Dict[str, Any] | None = None,
+) -> List[Path]:
+    """Return candidate roots containing per-sample quantification directories.
+
+    The supported workflow API has accepted both ``work/quant/<run>`` and an
+    ``out_dir`` that contains either ``<run>`` or ``quant/<run>``.  Keeping all
+    known layouts in one resolver makes resume, provenance recording, and raw
+    cleanup agree about what constitutes a sample result.
+    """
+
+    raw_roots: List[Path] = [config.work_dir / "quant"]
+    configured = _configured_step_output_dir(config, "quant")
+    if configured is not None:
+        raw_roots.extend([configured, configured / "quant"])
+    if step_params and step_params.get("out_dir"):
+        parameter_root = Path(step_params["out_dir"])
+        if not parameter_root.is_absolute():
+            parameter_root = config.work_dir / parameter_root
+        raw_roots.extend([parameter_root, parameter_root / "quant"])
+
+    roots: List[Path] = []
+    seen: set[Path] = set()
+    for root in raw_roots:
+        normalized = root.expanduser()
+        if normalized not in seen:
+            roots.append(normalized)
+            seen.add(normalized)
+    return roots
+
+
+def find_quantification_output(
+    config: AmalgkitWorkflowConfig,
+    sample_id: str,
+    *,
+    step_params: Dict[str, Any] | None = None,
+    require_current: bool = False,
+) -> Tuple[Path, Path] | None:
+    """Find a non-trivial abundance file and its sample directory.
+
+    When ``require_current`` is true, the exact pinned Amalgkit provenance
+    sidecar and its optional content digest must also validate.  This is the
+    shared completion contract used by resume checks and cleanup.
+    """
+
+    for root in quantification_output_roots(config, step_params):
+        sample_dir = root / sample_id
+        quant_file = find_quantification_file(sample_dir, sample_id)
+        if quant_file is None or not quant_file.is_file():
+            continue
+        try:
+            if quant_file.stat().st_size <= 100:
+                continue
+        except OSError:
+            continue
+        if require_current and not is_current_quantification(sample_dir, sample_id):
+            continue
+        return sample_dir, quant_file
+    return None
+
+
 def cleanup_fastqs(config: AmalgkitWorkflowConfig, sample_ids: List[str]) -> None:
-    """Delete FASTQ files for specific samples after quantification.
+    """Delete FASTQ files only for samples with current quant provenance.
 
     Args:
         config: Workflow configuration containing work_dir and step settings
         sample_ids: List of sample identifiers (SRR accessions) to clean up
-    """
-    getfastq_conf_dir = None
-    if config.per_step and "getfastq" in config.per_step:
-        gf_out = config.per_step["getfastq"].get("out_dir")
-        if gf_out:
-            getfastq_conf_dir = Path(gf_out)
 
-    quant_conf_dir = None
-    if config.per_step and "quant" in config.per_step:
-        q_out = config.per_step["quant"].get("out_dir")
-        if q_out:
-            quant_conf_dir = Path(q_out)
+    Raw reads are intentionally preserved when an abundance table is merely
+    readable or a quantification sidecar is missing/stale.  Callers that run
+    the current workflow executor therefore cannot turn a successful unrelated
+    step into irreversible raw-data deletion.
+    """
+    getfastq_conf_dir = _configured_step_output_dir(config, "getfastq")
+
+    quant_conf_dir = _configured_step_output_dir(config, "quant")
 
     for sample_id in sample_ids:
         if not sample_id:
+            continue
+        if find_quantification_output(config, sample_id, require_current=True) is None:
+            logger.warning(
+                "Preserving raw inputs for %s: no non-empty quantification with current "
+                "Amalgkit provenance was found",
+                sample_id,
+            )
             continue
         paths = [
             config.work_dir / "fastq" / "getfastq" / sample_id,
@@ -195,30 +281,29 @@ def cleanup_fastqs(config: AmalgkitWorkflowConfig, sample_ids: List[str]) -> Non
 
 
 def get_quantified_samples(config: AmalgkitWorkflowConfig) -> Set[str]:
-    """Get set of sample IDs that already have successful quantification results.
+    """Get current-contract sample IDs with validated quantification results.
 
     Args:
         config: Workflow configuration
 
     Returns:
-        Set of sample IDs that have abundance.tsv files
+        Set of sample IDs with non-empty abundance output and exact pinned
+        Amalgkit provenance. Readable tables without current provenance are not
+        treated as complete.
     """
     quantified: Set[str] = set()
 
-    steps_config = config.extra_config.get("steps", {})
-    quant_dir_raw = steps_config.get("quant", {}).get("out_dir", config.work_dir / "quant")
-    quant_dir = Path(quant_dir_raw)
-
-    if not quant_dir.exists():
-        return quantified
-
-    for sample_dir in quant_dir.iterdir():
-        if not sample_dir.is_dir():
+    for quant_dir in quantification_output_roots(config):
+        if not quant_dir.exists():
             continue
-        sample_id = sample_dir.name
-        quant_file = find_quantification_file(sample_dir, sample_id)
-        if sample_id.startswith(("SRR", "ERR", "DRR")) and quant_file is not None and quant_file.stat().st_size > 100:
-            quantified.add(sample_id)
+        for sample_dir in quant_dir.iterdir():
+            if not sample_dir.is_dir():
+                continue
+            sample_id = sample_dir.name
+            if sample_id.startswith(("SRR", "ERR", "DRR")) and find_quantification_output(
+                config, sample_id, require_current=True
+            ):
+                quantified.add(sample_id)
 
     if quantified:
         logger.info(f"Found {len(quantified)} samples already quantified")

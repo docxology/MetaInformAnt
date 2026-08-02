@@ -16,6 +16,8 @@ from metainformant.protein._network import get_protein_api_timeout
 
 logger = logging.get_logger(__name__)
 
+PDB_DOWNLOAD_BASE_URL = "https://files.rcsb.org/download"
+
 
 def fetch_pdb_structure(pdb_id: str, out_dir: Path, *, fmt: str = "pdb") -> Path:
     """Download PDB structure from RCSB PDB database.
@@ -38,10 +40,10 @@ def fetch_pdb_structure(pdb_id: str, out_dir: Path, *, fmt: str = "pdb") -> Path
     out_dir.mkdir(parents=True, exist_ok=True)
 
     if fmt == "pdb":
-        url = f"https://files.rcsb.org/download/{pdb_id}.pdb"
+        url = f"{PDB_DOWNLOAD_BASE_URL}/{pdb_id}.pdb"
         filename = f"{pdb_id}.pdb"
     elif fmt == "cif":
-        url = f"https://files.rcsb.org/download/{pdb_id}.cif"
+        url = f"{PDB_DOWNLOAD_BASE_URL}/{pdb_id}.cif"
         filename = f"{pdb_id}.cif"
     else:
         raise ValueError(f"Unsupported format: {fmt}")

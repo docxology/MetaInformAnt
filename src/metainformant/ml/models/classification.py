@@ -36,6 +36,20 @@ except ImportError:
     logger.warning("scikit-learn not available, ML classification disabled")
 
 
+def _calibrated_svm(**kwargs: Any) -> Any:
+    """Build an SVM with calibrated probabilities without deprecated SVC flags.
+
+    Recent scikit-learn releases are deprecating the internal probability
+    fitting path behind ``SVC(probability=True)``.  Calibration preserves the
+    public ``predict_proba`` contract while making the probabilistic behavior
+    explicit and version-stable.
+    """
+    from sklearn.calibration import CalibratedClassifierCV
+    from sklearn.svm import SVC
+
+    return CalibratedClassifierCV(estimator=SVC(**kwargs), cv=3)
+
+
 class BiologicalClassifier:
     """Wrapper for biological data classification with evaluation metrics.
 
@@ -46,9 +60,7 @@ class BiologicalClassifier:
 
     _ALGORITHM_MAP = {
         "random_forest": lambda **kw: RandomForestClassifier(**kw) if HAS_SKLEARN else None,
-        "svm": lambda **kw: (
-            __import__("sklearn.svm", fromlist=["SVC"]).SVC(probability=True, **kw) if HAS_SKLEARN else None
-        ),
+        "svm": lambda **kw: (_calibrated_svm(**kw) if HAS_SKLEARN else None),
         "logistic_regression": lambda **kw: LogisticRegression(max_iter=1000, **kw) if HAS_SKLEARN else None,
         "gradient_boosting": lambda **kw: GradientBoostingClassifier(**kw) if HAS_SKLEARN else None,
     }

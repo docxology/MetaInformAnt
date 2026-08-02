@@ -10,8 +10,8 @@ Production-ready amalgkit RNA-seq workflow configurations for automated transcri
 | :--- | :--- |
 | `amalgkit_template.yaml` | **Reference**: 400+ line template with all options documented |
 | `amalgkit_test.yaml` | Minimal test configuration for validation |
-| `amalgkit_pogonomyrmex_barbatus.yaml` | **Production**: Full P. barbatus dataset (95/110 quantified) |
-| `amalgkit_apis_mellifera_all.yaml` | **Production**: Full A. mellifera dataset (~7,270 samples) |
+| `amalgkit_pogonomyrmex_barbatus.yaml` | **Production**: P. barbatus configuration |
+| `amalgkit_apis_mellifera.yaml` | **Production**: A. mellifera configuration |
 | `amalgkit_cross_species.yaml` | Cross-species TMM normalization config |
 | `tissue_mapping.yaml` | Canonical tissue name synonyms for normalization |
 | `tissue_patches.yaml` | Per-bioproject/sample tissue overrides |
@@ -38,9 +38,10 @@ genome:
 steps:
   getfastq:
     redo: no           # Skip already-downloaded
-    keep_fastq: no     # Delete after quant
+    # Raw reclamation is provenance-gated after quantification below.
   quant:
     redo: no           # Skip already-quantified
+    clean_fastq: no    # MetaInformAnt reclaims only after writing current provenance
     index_dir: ...     # Reuse kallisto index
 ```
 
@@ -55,7 +56,7 @@ steps:
   getfastq:
     redo: no           # Resume capability
   quant:
-    keep_fastq: no     # Immediate cleanup
+    clean_fastq: no    # Reclaim only after current provenance is written
     redo: no           # Idempotent
 ```
 
@@ -87,7 +88,7 @@ steps:
 2. Update `species_list`, `taxon_id`, and `genome.accession`
 3. Adjust paths: `work_dir`, `log_dir`, `genome.dest_dir`
 4. **Validation**: Run `python3 scripts/rna/validate_configs.py` to ensure schema compliance.
-5. Test with small sample subset first (use `max_sample: 5`)
+5. Test with a small explicit metadata table or a dedicated test data root
 6. Scale to full dataset after validation
 
 ## Validation and Testing
@@ -95,12 +96,20 @@ steps:
 - **Config Validation**: usage of `scripts/rna/validate_configs.py` is mandatory for all new configurations.
 - **Real-Implementation Policy**: All Amalgkit tests strictly adhere to the Real-Implementation policy, ensuring real functional verification of the CLI and environment.
 
-## Environment Overrides
+## Runtime settings
 
-Prefix with `AK_`:
+The project launcher passes bounded runtime budgets explicitly and reserves
+`AMALGKIT_DATA_ROOT` for the external data location. For a direct producer
+run, use the command-line options documented by the script rather than
+mutating configuration files:
 
 ```bash
-export AK_THREADS=16
-export AK_WORK_DIR=/fast/storage/amalgkit
-export NCBI_EMAIL=your@email.com
+export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+uv run python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 ```
+
+Use `AMALGKIT_PIPELINE_THREADS`, `AMALGKIT_PIPELINE_WORKERS`, and the other
+project launcher variables only through
+`projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh`.

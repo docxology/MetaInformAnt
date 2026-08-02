@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Sync amalgkit quant/curate/sanity/metadata results to a git-trackable location.
+"""Sync current Amalgkit quantification and evidence to a review location.
 
 The pipeline stores results under blue/ which is a symlink to output/amalgkit.
 Git refuses to track files beyond symlinks, so we rsync the small, valuable
-result files (quant abundances, curate tables, metadata) to output/amalgkit_results/
+result files (quant abundances, filtered/finalized tables, metadata) to output/amalgkit_results/
 which is a real directory git can track.
 
 Usage:
@@ -22,7 +22,7 @@ SOURCE_BASE = Path("output/amalgkit")
 DEST_BASE = Path("output/amalgkit_results")
 
 # What to sync (small, valuable outputs only)
-SYNC_DIRS = ["work/quant", "work/curate", "work/sanity", "work/metadata"]
+SYNC_DIRS = ["work/quant", "work/wsfilter", "work/finalize", "work/sanity", "work/metadata"]
 
 
 def sync_species(species_dir: Path, dest_dir: Path, dry_run: bool = False) -> int:

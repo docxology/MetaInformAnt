@@ -1,8 +1,8 @@
 """RNA-seq workflow execution engine.
 
 This module provides the main workflow execution functions including the
-execute_workflow function that runs the complete amalgkit pipeline, streaming
-mode for disk-constrained environments, and backward-compatible helpers.
+complete current Amalgkit pipeline and a streaming mode for disk-constrained
+environments.
 """
 
 from __future__ import annotations
@@ -10,28 +10,24 @@ from __future__ import annotations
 import concurrent.futures
 import csv
 import json
-import shutil
 import time as time_mod
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple
 
 from metainformant.core.utils import logging
-from metainformant.rna.core.sample_utils import extract_sample_id, find_quantification_file
+from metainformant.rna.core.sample_utils import extract_sample_id
 from metainformant.rna.engine.sra_extraction import manual_integration_fallback
 from metainformant.rna.engine.workflow_cleanup import (
     check_disk_space,
     check_disk_space_or_fail,
     cleanup_fastqs,
+    find_quantification_output,
     filter_metadata_for_unquantified,
 )
+from metainformant.rna.engine.provenance import write_quant_provenance
 from metainformant.rna.engine.workflow_core import AmalgkitWorkflowConfig, WorkflowExecutionResult, WorkflowStepResult
 
 logger = logging.get_logger(__name__)
-
-# Private aliases for backward compatibility
-_check_disk_space = check_disk_space
-_check_disk_space_or_fail = check_disk_space_or_fail
-
 
 def _workflow_result_from_steps(step_results: List[WorkflowStepResult]) -> WorkflowExecutionResult:
     """Build a WorkflowExecutionResult from accumulated step results."""
@@ -104,13 +100,18 @@ def _is_streaming_step_already_done(
     if redo_value in ("yes", "true", "1"):
         return False
 
-    abundance_file = find_quantification_file(config.work_dir / "quant" / sample_id, sample_id)
+    quant_output = find_quantification_output(
+        config,
+        sample_id,
+        step_params=step_params,
+        require_current=True,
+    )
     if step_name == "quant":
-        return abundance_file is not None
+        return quant_output is not None
 
     if step_name == "getfastq":
         fastq_file = config.work_dir / "getfastq" / sample_id / f"{sample_id}.amalgkit.fastq.gz"
-        return abundance_file is not None or (fastq_file.exists() and fastq_file.stat().st_size > 0)
+        return quant_output is not None or (fastq_file.exists() and fastq_file.stat().st_size > 0)
 
     return False
 
@@ -193,7 +194,7 @@ def _process_streaming_sample(
 
         try:
             if step_name == "getfastq":
-                _check_disk_space_or_fail(
+                check_disk_space_or_fail(
                     config.work_dir, min_free_gb=5.0, step_name=f"{step_name} (sample {sample_id})"
                 )
 
@@ -218,9 +219,54 @@ def _process_streaming_sample(
                 success=result.returncode == 0,
                 error_message=result.stderr if result.returncode != 0 else None,
             )
+
+            # A zero process return code is not enough to establish a
+            # resumable quantification result.  Bind the exact abundance file
+            # to the current contract before allowing cleanup or a future
+            # bypass.  This also hardens the older workflow executor, whose
+            # outputs may coexist with the production streaming campaign.
+            if step_name == "quant" and result.returncode == 0:
+                quant_output = find_quantification_output(
+                    config,
+                    sample_id,
+                    step_params=step_params,
+                    require_current=False,
+                )
+                if quant_output is None:
+                    step_res.return_code = 1
+                    step_res.success = False
+                    step_res.error_message = "quant completed without a non-empty abundance output"
+                    logger.error("  [Sample %s] %s", sample_id, step_res.error_message)
+                else:
+                    sample_dir, abundance_file = quant_output
+                    command = getattr(result, "args", None)
+                    if isinstance(command, str):
+                        command_args = [command]
+                    elif command is None:
+                        command_args = ["amalgkit", "quant"]
+                    else:
+                        command_args = [str(item) for item in command]
+                    try:
+                        write_quant_provenance(
+                            sample_dir,
+                            species=(config.species_list[0] if config.species_list else "unknown"),
+                            run_accession=sample_id,
+                            config_path=(
+                                config.source_path
+                                if getattr(config, "source_path", None) is not None
+                                else config.work_dir / "workflow_config.yaml"
+                            ),
+                            command=command_args,
+                            quantification_file=abundance_file,
+                        )
+                    except (OSError, TypeError, ValueError) as exc:
+                        step_res.return_code = 1
+                        step_res.success = False
+                        step_res.error_message = f"unable to write quantification provenance: {exc}"
+                        logger.error("  [Sample %s] %s", sample_id, step_res.error_message)
             sample_results.append(step_res)
 
-            if result.returncode != 0:
+            if result.returncode != 0 or not step_res.success:
                 logger.error(f"  [Sample {sample_id}] Step {step_name} failed with code {result.returncode}")
                 if result.stderr:
                     logger.error(f"  [Sample {sample_id}] STDERR:\n{result.stderr.strip()}")
@@ -408,11 +454,10 @@ def execute_workflow(
     Returns:
         WorkflowExecutionResult with detailed step results
     """
-    from metainformant.rna.amalgkit.amalgkit import config as amalgkit_config
     from metainformant.rna.amalgkit.amalgkit import (
-        csca,
+        csfilter,
         cstmm,
-        curate,
+        finalize,
         getfastq,
         integrate,
         merge,
@@ -420,6 +465,7 @@ def execute_workflow(
         quant,
         sanity,
         select,
+        wsfilter,
     )
     from metainformant.rna.core.deps import check_step_dependencies
     from metainformant.rna.engine.workflow_planning import (
@@ -478,14 +524,14 @@ def execute_workflow(
     step_functions = {
         "metadata": metadata,
         "integrate": integrate,
-        "config": amalgkit_config,
         "select": select,
         "getfastq": getfastq,
         "quant": quant,
         "merge": merge,
+        "wsfilter": wsfilter,
         "cstmm": cstmm,
-        "curate": curate,
-        "csca": csca,
+        "csfilter": csfilter,
+        "finalize": finalize,
         "sanity": sanity,
     }
 
@@ -541,7 +587,7 @@ def execute_workflow(
         is_completed, completion_indicator = _is_step_completed(step_name, step_params, config)
 
         # Check redo setting
-        redo_value = step_params.get("redo", "no")
+        redo_value = kwargs.get("redo", step_params.get("redo", "no"))
         if isinstance(redo_value, bool):
             force_redo = redo_value
         else:
@@ -565,41 +611,6 @@ def execute_workflow(
                     )
                     + "\n"
                 )
-
-            # For config step, ensure symlink exists even if step was skipped
-            if step_name == "config":
-                config_base_dir = config.work_dir / "config_base"
-                config_dir = config.work_dir / "config"
-                if config_base_dir.exists():
-                    if config_dir.exists() or config_dir.is_symlink():
-                        if config_dir.is_symlink():
-                            target = config_dir.readlink()
-                            if target == config_base_dir or target.name == "config_base":
-                                logger.debug(f"Config symlink already exists and is correct: {config_dir}")
-                            else:
-                                logger.warning(f"Config symlink exists but points to wrong target: {target}")
-                        else:
-                            logger.debug(f"Config directory already exists: {config_dir}")
-                    else:
-                        try:
-                            config_dir.symlink_to(config_base_dir.resolve())
-                            logger.info(
-                                f"Created symlink: {config_dir} -> {config_base_dir.resolve()} (for select step compatibility)"
-                            )
-                        except (OSError, FileExistsError) as e:
-                            if config_dir.exists() or config_dir.is_symlink():
-                                logger.debug(f"Config symlink/directory already exists: {config_dir}")
-                            else:
-                                logger.warning(f"Could not create config symlink: {e}")
-                                try:
-                                    config_dir.mkdir(parents=True, exist_ok=True)
-                                    for config_file in config_base_dir.glob("*.config"):
-                                        shutil.copy2(config_file, config_dir / config_file.name)
-                                    logger.info(
-                                        f"Copied config files from {config_base_dir} to {config_dir} as fallback"
-                                    )
-                                except Exception as e2:
-                                    logger.warning(f"Could not copy config files as fallback: {e2}")
 
             step_results.append(
                 WorkflowStepResult(
@@ -628,7 +639,7 @@ def execute_workflow(
 
         try:
             # Late-binding metadata path
-            if step_name in ("getfastq", "integrate", "merge", "quant", "curate", "sanity"):
+            if step_name in ("getfastq", "integrate", "merge", "quant", "sanity"):
                 selected_metadata = (config.work_dir / "metadata" / "metadata_selected.tsv").absolute()
                 planned_metadata = step_params.get("metadata")
                 if selected_metadata.exists() and (
@@ -669,8 +680,8 @@ def execute_workflow(
                 command_str = " ".join(command)
                 logger.info(f"Command: {command_str}")
 
-            # Note: config_dir is purposefully injected in workflow_planning.py to point
-            # to the global repository config/amalgkit directory and should not be mutated here.
+            # Note: config_dir is injected by workflow_planning.py and should
+            # remain bound to the selected project configuration directory.
 
             # STREAMING MODE DETECTION
             if step_name == "getfastq" and any(s[0] == "quant" for s in steps_planned):
@@ -685,7 +696,7 @@ def execute_workflow(
                         reader = csv.DictReader(f, delimiter="\t")
                         remaining_count = sum(1 for _ in reader)
 
-                    ok, free_gb = _check_disk_space(config.work_dir, min_free_gb=10.0)
+                    ok, free_gb = check_disk_space(config.work_dir, min_free_gb=10.0)
                     estimated_need = remaining_count * 3.0
 
                     logger.debug(
@@ -751,6 +762,8 @@ def execute_workflow(
 
             # Sanitize parameters before passing to step function
             sanitized_params = sanitize_params_for_cli(step_name, step_params)
+            if kwargs.get("redo") and step_name != "sanity":
+                sanitized_params["redo"] = "yes"
 
             result = step_func(
                 sanitized_params,
@@ -900,28 +913,3 @@ def execute_workflow(
         successful_steps=successful_steps,
         failed_steps=failed_steps,
     )
-
-
-# Helper functions for backwards compatibility
-def run_config_based_workflow(config_path: Union[str, Path], **kwargs: Any) -> Dict[str, Any]:
-    """Run workflow from configuration file.
-
-    Args:
-        config_path: Path to configuration file
-        **kwargs: Additional workflow options
-
-    Returns:
-        Workflow results dictionary
-    """
-    from metainformant.rna.engine.workflow_core import load_workflow_config
-
-    config = load_workflow_config(config_path)
-
-    # Apply any overrides
-    for key, value in kwargs.items():
-        if hasattr(config, key):
-            setattr(config, key, value)
-
-    return_codes = execute_workflow(config, **kwargs)
-
-    return {"config": config.to_dict(), "return_codes": return_codes, "success": all(rc == 0 for rc in return_codes)}

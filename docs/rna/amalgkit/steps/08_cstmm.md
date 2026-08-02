@@ -2,6 +2,12 @@
 
 ## Purpose
 
+> [!NOTE]
+> `cstmm` is exposed by the latest verified Amalgkit 0.16.32 CLI, but it has not
+> been executed for the current Hymenoptera evidence bundle. Validate the
+> ortholog table, merged matrices, output files, and software version before
+> making a cross-species normalization claim.
+
 Performs cross-species transcript abundance normalization using TMM (Trimmed Mean of M-values) on orthologous genes identified via orthogroups. This step enables **comparative expression analysis** across multiple species.
 
 ## Overview
@@ -149,10 +155,12 @@ flowchart LR
     AmergeSpecies1[merge Species 1] --> B[cstmm]
     CmergeSpecies2[merge Species 2] --> B
     DmergeSpecies3[merge Species 3] --> B
-    B --> E[curate]
+    B --> E[finalize]
 ```
 
-**cstmm** runs **after merge** for all species, **before curate**.
+**cstmm** runs after merge when the optional ortholog-normalization branch is
+explicitly selected. The required per-species path continues through
+`wsfilter` and `finalize`.
 
 ### Single-Species Mode
 
@@ -511,14 +519,12 @@ steps:
 ## See Also
 
 - **Previous Step**: [`07_merge.md`](07_merge.md) - Merging expression matrices per species
-- **Next Step**: [`09_curate.md`](09_curate.md) - Quality control on normalized data
-- **Next Step**: [`10_csca.md`](10_csca.md) - Cross-species correlation analysis
+- **Next Step**: [`10_finalize.md`](10_finalize.md) - Final analysis tables
+- **Optional branch**: [`10_csfilter.md`](10_csfilter.md) - Cross-species filtering
 - **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
 
 ---
 
 **Last Updated**: October 29, 2025  
-**AMALGKIT Version**: 0.12.19  
+**AMALGKIT Version**: 0.16.32 (`v0.16.32`)
 **Status**: Production-ready, requires orthogroup tables from OrthoFinder
-
-

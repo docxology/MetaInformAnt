@@ -89,7 +89,17 @@ def main():
     # Note: These would normally run actual amalgkit commands
     # Here we demonstrate the API structure
 
-    step_functions = ["metadata", "select", "getfastq", "quant", "merge", "cstmm", "curate", "csca", "sanity"]
+    step_functions = [
+        "metadata",
+        "select",
+        "getfastq",
+        "integrate",
+        "quant",
+        "merge",
+        "wsfilter",
+        "finalize",
+        "sanity",
+    ]
 
     step_descriptions = {
         "metadata": "Download and process sample metadata from SRA",
@@ -97,9 +107,10 @@ def main():
         "getfastq": "Download FASTQ files from selected samples",
         "quant": "Quantify gene expression from RNA-seq reads",
         "merge": "Merge quantification results across samples",
-        "cstmm": "Normalize expression data",
-        "curate": "Apply quality filters and curation",
-        "csca": "Perform statistical analysis",
+        "integrate": "Attach local FASTQ paths to metadata",
+        "cstmm": "Optional cross-species normalization",
+        "wsfilter": "Apply within-species filters",
+        "finalize": "Produce analysis-ready expression tables",
         "sanity": "Final quality checks and validation",
     }
 

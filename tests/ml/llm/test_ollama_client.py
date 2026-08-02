@@ -10,13 +10,21 @@ from metainformant.ml.llm.ollama.client import ChatMessage, OllamaClient
 from metainformant.ml.llm.ollama.config import OllamaConfig
 
 
+# The local Ollama server is a single shared integration resource. Group all
+# real model calls onto one xdist worker so they cannot queue behind each
+# other. Unrelated real integration tests still share host resources, so the
+# fixture also uses an explicit three-minute inference timeout.
+pytestmark = pytest.mark.xdist_group(name="ollama")
+
+
 @pytest.fixture
 def client() -> OllamaClient:
     """Create an Ollama client with fast model."""
     config = OllamaConfig(
         model="smollm2:135m-instruct-q4_K_S",
         temperature=0.1,  # Low temp for deterministic tests
-        timeout=60.0,
+        timeout=180.0,
+        num_predict=16,
     )
     return OllamaClient(config)
 
@@ -159,6 +167,7 @@ class TestOllamaConfig:
         assert config.model == "smollm2:135m-instruct-q4_K_S"
         assert config.temperature == 0.7
         assert config.timeout == 120.0
+        assert config.num_predict is None
 
     def test_custom_config(self):
         """Test custom configuration."""
@@ -190,6 +199,12 @@ class TestOllamaConfig:
         with pytest.raises(ValueError, match="top_p"):
             OllamaConfig(top_p=1.5)
 
+    def test_validation_num_predict(self):
+        """A configured generation cap must be positive."""
+
+        with pytest.raises(ValueError, match="num_predict"):
+            OllamaConfig(num_predict=0)
+
     def test_api_urls(self):
         """Test API URL properties."""
         config = OllamaConfig()
@@ -215,6 +230,7 @@ class TestOllamaConfig:
             top_p=0.95,
             top_k=50,
             context_length=2048,
+            num_predict=32,
         )
 
         options = config.to_options_dict()
@@ -223,3 +239,4 @@ class TestOllamaConfig:
         assert options["top_p"] == 0.95
         assert options["top_k"] == 50
         assert options["num_ctx"] == 2048
+        assert options["num_predict"] == 32

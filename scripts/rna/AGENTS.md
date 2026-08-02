@@ -6,11 +6,10 @@ RNA-seq analysis and amalgkit workflow scripts.
 
 ## Key Scripts
 
-- `run_all_species.sh` - **Primary pipeline** — runs all species sequentially with per-sample concurrency
-- `run_workflow.py` - Single-species amalgkit workflow orchestrator
-- `run_workflow_tui.py` - TUI-based workflow runner
+- `run_all_species.py` - Configuration-derived multi-species launcher
+- `process_species.py` - Single-species producer using the shared streaming engine
 - `check_environment.py` - Verify environment setup
-- `check_pipeline_status.py` - Per-species progress dashboard
+- `check_pipeline_status.py` - Run-state and downstream evidence checker
 - `verify_rna.py` - Validate RNA module functionality
 - `setup_genome.py` - Genome preparation for quantification
 - `discover_species.py` - Discover available species
@@ -29,14 +28,20 @@ RNA-seq analysis and amalgkit workflow scripts.
 ## Usage
 
 ```bash
-# Run full pipeline (all species)
-nohup bash scripts/rna/run_all_species.sh > output/amalgkit/run_all_species_incremental.log 2>&1 &
+# Inspect the multi-species plan
+uv run python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 
 # Run single species
-uv run python scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --stream --chunk-size 16
+uv run python scripts/rna/process_species.py \
+  --species pogonomyrmex_barbatus \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT"
 
-# Check progress
-uv run python scripts/package/generate_custom_summary.py
+# Generate current project evidence
+bash projects/hymenoptera_amalgkit/scripts/verify_setup.sh \
+  --data-root "$AMALGKIT_DATA_ROOT" --require-data --report
 
 # Check environment
 uv run python scripts/rna/check_environment.py

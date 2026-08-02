@@ -9,7 +9,7 @@ Comprehensive architectural overview of the METAINFORMANT metagenomics module, c
 3. [Shotgun Workflow](#shotgun-workflow)
 4. [Component Responsibilities](#component-responsibilities)
 5. [Data Flow](#data-flow)
-6. [Integration with Diversity & Functional Analysis](#integration-with-diversity--functional-analysis)
+6. [Integration with Diversity & Functional Analysis](#integration-with-diversity-functional-analysis)
 7. [Design Patterns](#design-patterns)
 
 ---

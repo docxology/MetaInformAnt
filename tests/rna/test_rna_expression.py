@@ -28,7 +28,7 @@ from metainformant.rna.analysis.expression import (
 
 
 def test_rna_analysis_import_smoke() -> None:
-    """Canonical RNA analysis modules and compatibility shims remain importable."""
+    """Canonical RNA analysis namespaces remain importable."""
     import metainformant.rna.analysis as analysis
     from metainformant.rna.analysis import expression, qc
     from metainformant.rna.analysis.expression import differential_expression as shim_de

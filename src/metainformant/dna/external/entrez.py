@@ -7,6 +7,7 @@ sequence downloads, and metadata queries.
 
 from __future__ import annotations
 
+from io import StringIO
 import time
 from typing import Any, Dict, List, Optional
 
@@ -253,6 +254,46 @@ def fetch_fasta_sequence(accession: str, api_key: Optional[str] = None, email: O
     # Skip header and join sequence lines
     sequence = "".join(lines[1:]).replace("\n", "")
     return sequence
+
+
+def get_genome_from_ncbi(accession: str, email: Optional[str] = None, api_key: Optional[str] = None) -> Any:
+    """Fetch and parse one nucleotide record from NCBI as a ``SeqRecord``.
+
+    This compatibility-level convenience function keeps the public DNA API
+    aligned with the integration workflow while delegating transport to the
+    canonical :class:`EntrezClient` implementation.
+
+    Args:
+        accession: NCBI nucleotide accession, optionally with a version.
+        email: Contact email sent to NCBI.
+        api_key: Optional NCBI API key.
+
+    Returns:
+        A Biopython ``SeqRecord`` parsed from the FASTA response.
+
+    Raises:
+        ValueError: If ``accession`` is empty.
+        RuntimeError: If NCBI returns no sequence data.
+        ImportError: If Biopython is not installed.
+    """
+    if not accession or not accession.strip():
+        raise ValueError("NCBI accession must not be empty")
+
+    fasta_data = EntrezClient(api_key=api_key, email=email).fetch(
+        "nucleotide", [accession.strip()], rettype="fasta", retmode="text"
+    )
+    if not fasta_data.strip():
+        raise RuntimeError(f"NCBI returned no FASTA sequence for {accession}")
+
+    try:
+        from Bio import SeqIO
+    except ImportError as exc:
+        raise ImportError("Biopython is required to parse NCBI genome records") from exc
+
+    try:
+        return SeqIO.read(StringIO(fasta_data), "fasta")
+    except Exception as exc:
+        raise RuntimeError(f"Failed to parse NCBI FASTA record for {accession}: {exc}") from exc
 
 
 def get_sequence_features(

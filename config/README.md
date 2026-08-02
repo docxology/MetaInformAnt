@@ -6,10 +6,7 @@ Configuration files for METAINFORMANT workflows including RNA-seq, GWAS, and mul
 
 ```
 config/
- amalgkit/ # RNA-seq workflow configurations
- amalgkit_pogonomyrmex_barbatus.yaml # Pogonomyrmex barbatus (active)
- amalgkit_template.yaml # Template for new species
- amalgkit_test.yaml # Test configuration
+ amalgkit/ # Parent-repository configuration mirror
  eqtl/ # eQTL analysis configurations
  gwas/ # GWAS workflow configurations
  gwas_pbarbatus.yaml # P. barbatus GWAS config
@@ -26,7 +23,7 @@ config/
  phenotype/ # Phenotype analysis configurations
  singlecell/ # Single-cell analysis configurations
  singlecell_template.yaml
- archive/ # Inactive/deprecated configurations
+ archive/ # Inactive configurations retained for provenance
  config_base/ # Base configuration templates
 ```
 
@@ -35,8 +32,17 @@ config/
 ### Run RNA-seq Workflow
 
 ```bash
-# Config-driven script (recommended)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+# Inspect the canonical project inventory
+export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+uv run python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
+
+# Run one configured species
+uv run python scripts/rna/process_species.py \
+  --species pogonomyrmex_barbatus \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT"
 ```
 
 Or from Python: `metainformant.rna.engine.workflow.load_workflow_config` and `execute_workflow` (see [docs/rna/workflow.md](../docs/rna/workflow.md)).
@@ -67,22 +73,20 @@ genome:
   dest_dir: "output/amalgkit/species/genome"
   include: ["genome", "gff3", "rna", "cds", "protein"]
 
-# Workflow steps (each can be enabled/disabled)
-metadata:
-  enabled: true
-  max_samples: 50
-integrate:
-  enabled: true
-getfastq:
-  enabled: true
-  prefetch: true
-quant:
-  enabled: true
-  index: "kallisto"
-merge:
-  enabled: true
-curate:
-  enabled: true
+# Current Amalgkit steps
+steps:
+  metadata: {}
+  select:
+    select_rules_tsv: config/amalgkit/select_rules.tsv
+  getfastq:
+    redo: no
+  integrate: {}
+  quant:
+    redo: no
+  merge: {}
+  wsfilter: {}
+  finalize: {}
+  sanity: {}
 ```
 
 ### GWAS Configuration
@@ -118,7 +122,7 @@ All configuration parameters can be overridden via environment variables:
 
 | Prefix | Module | Example |
 |--------|--------|---------|
-| `AK_` | RNA/Amalgkit | `AK_THREADS=16` |
+| `AMALGKIT_` | RNA/Amalgkit runtime namespace | `AMALGKIT_PIPELINE_THREADS=16` |
 | `GWAS_` | GWAS | `GWAS_WORK_DIR=/scratch/gwas` |
 | `DNA_` | DNA | `DNA_WORK_DIR=output/dna` |
 | `NCBI_` | NCBI API | `NCBI_EMAIL=user@example.com` |
@@ -129,8 +133,10 @@ All configuration parameters can be overridden via environment variables:
 from metainformant.core.utils.config import load_mapping_from_file, apply_env_overrides
 
 # Load with environment overrides
-config = load_mapping_from_file("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
-config = apply_env_overrides(config, prefix="AK")
+config = load_mapping_from_file(
+    "projects/hymenoptera_amalgkit/config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml"
+)
+config = apply_env_overrides(config, prefix="AMALGKIT")
 ```
 
 ## Active Species
@@ -139,7 +145,8 @@ config = apply_env_overrides(config, prefix="AK")
 |---------|--------|---------------|
 | *Pogonomyrmex barbatus* | `amalgkit_pogonomyrmex_barbatus.yaml` | GCF_000187915.1 |
 
-See `config/amalgkit/` for 27 species configurations plus template, test, and cross-species configs.
+See `projects/hymenoptera_amalgkit/config/amalgkit/` for the 27 species
+configurations plus template, test, and cross-species configs.
 
 ## NCBI Configuration
 

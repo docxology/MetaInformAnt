@@ -68,11 +68,21 @@ bash scripts/package/validate_build.sh
 ### RNA Workflows (`rna/`)
 
 ```bash
-# List available amalgkit workflow configs
-uv run python scripts/rna/run_workflow.py --list-configs
+# Inspect the current Amalgkit cohort
+export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+uv run python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 
-# Check workflow status
-uv run python scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+# Run one species through the shared producer
+uv run python scripts/rna/process_species.py \
+  --species pogonomyrmex_barbatus \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT"
+
+# Check producer and downstream evidence
+uv run python projects/hymenoptera_amalgkit/scripts/report_campaign_status.py \
+  --data-root "$AMALGKIT_DATA_ROOT"
 
 # Discover new species
 uv run python scripts/rna/discover_species.py --species "Apis_mellifera"
@@ -184,7 +194,7 @@ Scripts respect these environment variables:
 | `METAINFORMANT_THREADS` | Parallel threads | 8 |
 | `METAINFORMANT_OUTPUT` | Output directory | `output/` |
 | `TMPDIR` | Temp directory | `.tmp/` |
-| `AK_*` | RNA config overrides | - |
+| `AMALGKIT_*` | RNA config overrides | - |
 | `GWAS_*` | GWAS config overrides | - |
 
 ## Output Structure

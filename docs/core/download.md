@@ -152,7 +152,7 @@ Mutable state written to heartbeat file.
 - `progress_percent: float | None`
 - `speed_mbps: float | None`
 - `eta_seconds: float | None`
-- `status: str` — One of: `starting`, `downloading`, `completed`, `failed`
+- `status: str` — One of: `starting`, `downloading`, `completed`, `failed`, `timeout`
 - `step: str | None` — Optional step description (for subprocess monitoring)
 - `progress: dict[str, Any] | None` — Structured progress object
 - `errors: list[str]` — Accumulated error messages
@@ -245,6 +245,7 @@ def monitor_subprocess_directory_growth(
     show_progress: bool = True,
     desc: str | None = None,
     errors: list[str] | None = None,
+    timeout_seconds: float | None = None,
 ) -> tuple[int, int]
 ```
 
@@ -257,6 +258,9 @@ def monitor_subprocess_directory_growth(
 - `show_progress` — Show tqdm progress bar
 - `desc` — Progress bar description
 - `errors` — Mutable list to accumulate error strings (passed by caller)
+- `timeout_seconds` — Optional wall-clock limit. On expiry the child is
+  terminated, the heartbeat is written with status `timeout`, and return code
+  `124` is returned.
 
 **Returns**: `(returncode, bytes_written)` tuple when process terminates
 
@@ -301,11 +305,14 @@ def monitor_subprocess_file_count(
     show_progress: bool = True,
     desc: str | None = None,
     errors: list[str] | None = None,
+    timeout_seconds: float | None = None,
 ) -> int
 ```
 
 **Parameters**:
 - `expected_files` — Iterable of relative file paths (from `watch_dir`) expected to be created
+- `timeout_seconds` — Optional wall-clock limit; timeout returns `124` and
+  records the failure in the heartbeat
 
 **Returns**: Process return code
 
@@ -339,12 +346,15 @@ def monitor_subprocess_sample_progress(
     show_progress: bool = True,
     desc: str | None = None,
     errors: list[str] | None = None,
+    timeout_seconds: float | None = None,
 ) -> int
 ```
 
 **Parameters**:
 - `completion_glob` — Glob pattern (relative to `watch_dir`) matching completed files (e.g., `"*.fastq.gz"` or `"sample_*/finished.txt"`)
 - `total_samples` — Expected final count (for percentage); if `None`, progress bar is indeterminate
+- `timeout_seconds` — Optional wall-clock limit; timeout returns `124` and
+  records the failure in the heartbeat
 
 **Returns**: Process return code
 

@@ -76,7 +76,7 @@ def effect_size_plot(results: Any, output_file: Optional[str | Path] = None) -> 
                 chrom_labels.append(str(chrom))
 
         if chrom_effects:
-            ax2.boxplot(chrom_effects, labels=chrom_labels)
+            ax2.boxplot(chrom_effects, tick_labels=chrom_labels)
             ax2.set_title("Effect Size by Chromosome")
             ax2.set_xlabel("Chromosome")
             ax2.set_ylabel("Effect Size (Beta)")
@@ -199,7 +199,7 @@ def compare_effect_sizes(study_results: Dict[str, Any], output_file: Optional[st
     # 2. Box plot comparison
     ax2 = axes[0, 1]
     beta_lists = list(study_data.values())
-    ax2.boxplot(beta_lists, labels=study_names)
+    ax2.boxplot(beta_lists, tick_labels=study_names)
     ax2.set_title("Effect Size Comparison")
     ax2.set_ylabel("Effect Size (Beta)")
     ax2.grid(True, alpha=0.3)

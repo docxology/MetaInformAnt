@@ -11,14 +11,6 @@ This is a re-export module that aggregates the public API from:
 
 from __future__ import annotations
 
-# Backward compatibility aliases
-from metainformant.rna.engine.workflow_cleanup import (
-    check_disk_space,
-    check_disk_space_or_fail,
-    cleanup_incorrectly_placed_sra_files,
-    cleanup_temp_files,
-)
-
 # Re-export core classes and config functions
 from metainformant.rna.engine.workflow_core import (
     AmalgkitWorkflowConfig,
@@ -32,10 +24,7 @@ from metainformant.rna.engine.workflow_core import (
 )
 
 # Re-export execution functions
-from metainformant.rna.engine.workflow_execution import (
-    execute_workflow,
-    run_config_based_workflow,
-)
+from metainformant.rna.engine.workflow_execution import execute_workflow
 
 # Re-export planning functions
 from metainformant.rna.engine.workflow_planning import (
@@ -50,11 +39,6 @@ from metainformant.rna.engine.workflow_planning import (
     sanitize_params_for_cli,
     verify_getfastq_prerequisites,
 )
-
-_cleanup_incorrectly_placed_sra_files = cleanup_incorrectly_placed_sra_files
-_cleanup_temp_files = cleanup_temp_files
-_check_disk_space = check_disk_space
-_check_disk_space_or_fail = check_disk_space_or_fail
 
 __all__ = [
     # Core classes
@@ -80,5 +64,4 @@ __all__ = [
     "_log_getfastq_summary",
     # Execution functions
     "execute_workflow",
-    "run_config_based_workflow",
 ]

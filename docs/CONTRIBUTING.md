@@ -3,7 +3,7 @@
 See the root-level [CONTRIBUTING.md](../CONTRIBUTING.md) for complete contribution guidelines, coding standards, and PR process.
 
 Quick links:
-- [Development setup](SETUP.md#development-mode)
+- [Development setup](DEVELOPMENT.md#development-environment)
 - [Testing guide](testing.md) (comprehensive testing documentation)
 - [Documentation guide](DOCUMENTATION_GUIDE.md)
 - [Real Implementation policy](REAL_IMPLEMENTATION_POLICY.md)
@@ -208,7 +208,7 @@ Every code contribution **must** include documentation updates. Incomplete docum
 - Clear, technical writing; avoid marketing fluff
 - Code examples must be **real and runnable** (copy-paste tested)
 - Use consistent Markdown formatting
-- Keep cross-references up to date (`[link text](relative/path.md)`)
+- Keep cross-references up to date; use a real target rather than the placeholder `relative/path.md`.
 - Place new documentation in the appropriate `docs/<domain>/` subdirectory
 
 #### Building Documentation

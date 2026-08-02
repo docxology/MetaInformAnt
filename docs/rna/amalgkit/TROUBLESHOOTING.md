@@ -28,15 +28,20 @@ This guide covers common issues, performance bottlenecks, and environment config
 export PATH=$PATH:/usr/local/ncbi/sra-tools/bin
 ```
 
-### `ete3`/`ete4` NCBITaxa Hang
-**Problem**: Downloading taxonomy databases (e.g., `ete3.NCBITaxa().update()`) hangs indefinitely in containerized environments.
+### Native Amalgkit taxonomy-cache preparation
+**Problem**: Metadata or acquisition startup spends excessive time rebuilding the
+shared NCBI taxonomy cache, or multiple species contend for the same cache.
 
-**Solution**: Pre-download the taxdump manually and provide it to the container.
+**Solution**: Use the native Amalgkit taxonomy cache under the selected data
+root and let the current launcher share it across species.
 ```bash
-# In Dockerfile or setup script
-wget https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz
-# ete4 will detect existing local files or can be pointed to them
+export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+export AMALGKIT_SHARED_DOWNLOAD_DIR="$AMALGKIT_DATA_ROOT/shared/ncbi_taxonomy"
+bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 ```
+The launcher records the cache provenance beside the native database. Do not
+seed a second taxonomy implementation or copy an incomplete database into a
+species work directory.
 
 ## Data Integrity
 
@@ -44,7 +49,8 @@ wget https://ftp.ncbi.nlm.nih.gov/pub/taxonomy/taxdump.tar.gz
 **Problem**: Inconsistent BioProject-to-Tissue mappings in `config/amalgkit/tissue_patches.yaml`.
 
 **Solution**: 
-- Use the `scripts/rna/test_tissue_normalization.py` to validate patches before bulk processing.
+- Use `uv run pytest tests/rna/test_rna_tissue_normalization.py` to validate
+  patches before bulk processing.
 - Ensure no duplicate BioProject entries exist in the `NCBI Batch Patches` section.
 
 ### Ortholog Generation Failures

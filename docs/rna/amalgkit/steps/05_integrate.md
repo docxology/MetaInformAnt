@@ -419,7 +419,5 @@ amalgkit integrate --fastq_dir output/fastq
 ---
 
 **Last Updated**: October 29, 2025  
-**AMALGKIT Version**: 0.12.19  
+**AMALGKIT Version**: 0.16.32 (`v0.16.32`)
 **Status**: Production-ready, comprehensively tested
-
-

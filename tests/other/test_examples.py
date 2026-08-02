@@ -271,16 +271,9 @@ class TestExamples:
     @pytest.mark.network
     def test_examples_with_network_dependencies(self):
         """Test examples that may require network access."""
-        # Skip if no network available
-        import urllib.request
-
-        try:
-            urllib.request.urlopen("http://httpbin.org/get", timeout=5)
-        except Exception:
-            pytest.skip("Network not available")
-
-        # If network is available, examples should still work
-        # (Most examples don't actually need network, but this tests the framework)
+        # The runner itself is responsible for handling network-dependent
+        # examples; an external connectivity probe would make this test
+        # nondeterministic.
         result = subprocess.run(
             [sys.executable, "scripts/test_examples/test_examples.py", "--domain", "core"],
             cwd=Path.cwd(),

@@ -159,10 +159,13 @@ plt.savefig("output/example_plot.png", dpi=300)
 python -c "from metainformant.rna.amalgkit import check_cli_available; print(check_cli_available())"
 
 # Run end-to-end workflow for a single species (recommended)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+uv run python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 
 # Check workflow status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+uv run python projects/hymenoptera_amalgkit/scripts/report_campaign_status.py \
+  --data-root "$AMALGKIT_DATA_ROOT"
 ```
 
 ### CLI (`metainformant` entry point)
@@ -215,7 +218,7 @@ Some workflows require external tools:
 
   ```bash
   # Install via UV (automatic with setup.sh --with-amalgkit)
-  uv pip install amalgkit
+  uv sync --extra rna  # exact Amalgkit 0.16.32
   ```
 
 ### GWAS Analysis

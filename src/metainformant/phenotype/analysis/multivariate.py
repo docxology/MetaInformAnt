@@ -13,8 +13,7 @@ from typing import Any, Iterable, Sequence
 import numpy as np
 import pandas as pd
 
-from metainformant.ecology.analysis.indicators import permanova
-from metainformant.ecology.analysis.ordination import pcoa
+from metainformant.phenotype.workflow.ecology_stats import permanova, pcoa
 
 try:
     from statsmodels.multivariate.manova import MANOVA
@@ -104,12 +103,20 @@ def phenotype_distance_matrix(
     """Compute a deterministic standardized Euclidean phenotype distance matrix."""
     trait_columns = [trait for trait in _as_list(trait_columns) if trait in matrix.columns]
     if not trait_columns or len(matrix) < 2:
-        labels = matrix[id_column].astype(str).tolist() if id_column and id_column in matrix.columns else matrix.index.astype(str).tolist()
+        labels = (
+            matrix[id_column].astype(str).tolist()
+            if id_column and id_column in matrix.columns
+            else matrix.index.astype(str).tolist()
+        )
         return pd.DataFrame(np.zeros((len(matrix), len(matrix))), index=labels, columns=labels)
     values = matrix[trait_columns].apply(pd.to_numeric, errors="coerce").to_numpy(dtype=float)
     valid = np.isfinite(values).all(axis=1)
     values = values[valid]
-    labels_source = matrix.loc[valid, id_column].astype(str) if id_column and id_column in matrix.columns else matrix.index[valid].astype(str)
+    labels_source = (
+        matrix.loc[valid, id_column].astype(str)
+        if id_column and id_column in matrix.columns
+        else matrix.index[valid].astype(str)
+    )
     labels = labels_source.tolist()
     if len(values) == 0:
         return pd.DataFrame()
@@ -125,7 +132,9 @@ def run_pcoa(distance_matrix: pd.DataFrame, *, n_components: int = 2) -> tuple[p
     actual_components = min(max(1, int(n_components)), max(1, len(distance_matrix)))
     result = pcoa(distance_matrix.to_numpy(dtype=float).tolist(), n_components=actual_components)
     labels = distance_matrix.index.astype(str).tolist()
-    coordinates = pd.DataFrame(result["coordinates"], columns=[f"PCoA{i + 1}" for i in range(len(result["coordinates"][0]))])
+    coordinates = pd.DataFrame(
+        result["coordinates"], columns=[f"PCoA{i + 1}" for i in range(len(result["coordinates"][0]))]
+    )
     coordinates.insert(0, "entity_id", labels)
     variance = pd.DataFrame(
         {
@@ -180,7 +189,9 @@ def run_permanova_terms(
     """Run one PERMANOVA row per grouping term."""
     rows: list[dict[str, Any]] = []
     for offset, term in enumerate(_as_list(terms)):
-        subset, groups, status = _aligned_labels(distance_matrix, metadata, term, id_column=id_column, min_group_size=min_group_size)
+        subset, groups, status = _aligned_labels(
+            distance_matrix, metadata, term, id_column=id_column, min_group_size=min_group_size
+        )
         row: dict[str, Any] = {
             "test_family": "permanova",
             "term": term,
@@ -227,18 +238,31 @@ def axis_trait_loadings(
     axis_columns = [column for column in ordination.columns if column.startswith("PCoA")]
     if not trait_columns or not axis_columns or id_column not in trait_matrix or id_column not in ordination:
         return pd.DataFrame()
-    merged = trait_matrix[[id_column, *trait_columns]].merge(ordination[[id_column, *axis_columns]], on=id_column, how="inner")
+    merged = trait_matrix[[id_column, *trait_columns]].merge(
+        ordination[[id_column, *axis_columns]], on=id_column, how="inner"
+    )
     rows: list[dict[str, Any]] = []
     for trait in trait_columns:
         values = pd.to_numeric(merged[trait], errors="coerce")
         for axis in axis_columns:
             axis_values = pd.to_numeric(merged[axis], errors="coerce")
             valid = values.notna() & axis_values.notna()
-            if valid.sum() >= 3 and float(values[valid].std(ddof=0)) > 0.0 and float(axis_values[valid].std(ddof=0)) > 0.0:
+            if (
+                valid.sum() >= 3
+                and float(values[valid].std(ddof=0)) > 0.0
+                and float(axis_values[valid].std(ddof=0)) > 0.0
+            ):
                 loading = float(values[valid].corr(axis_values[valid]))
             else:
                 loading = np.nan
-            rows.append({"trait": trait, "axis": axis, "loading": loading, "abs_loading": abs(loading) if np.isfinite(loading) else np.nan})
+            rows.append(
+                {
+                    "trait": trait,
+                    "axis": axis,
+                    "loading": loading,
+                    "abs_loading": abs(loading) if np.isfinite(loading) else np.nan,
+                }
+            )
     return pd.DataFrame(rows)
 
 
@@ -253,7 +277,11 @@ def multivariate_dispersion(
     axis_columns = [column for column in ordination.columns if column.startswith("PCoA")]
     if not axis_columns or term not in metadata.columns or id_column not in ordination or id_column not in metadata:
         return pd.DataFrame()
-    merged = ordination[[id_column, *axis_columns]].merge(metadata[[id_column, term]], on=id_column, how="inner").dropna(subset=[term])
+    merged = (
+        ordination[[id_column, *axis_columns]]
+        .merge(metadata[[id_column, term]], on=id_column, how="inner")
+        .dropna(subset=[term])
+    )
     rows: list[dict[str, Any]] = []
     for group, sub in merged.groupby(term, sort=True):
         coords = sub[axis_columns].to_numpy(dtype=float)

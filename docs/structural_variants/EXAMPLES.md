@@ -6,18 +6,18 @@ Practical, end-to-end analysis scenarios demonstrating the full capabilities of 
 
 ## Table of Contents
 
-1. [Example 1: Minimal CNV Calling from BAM](#1-minimal-cnv-calling-from-bam)
-2. [Example 2: Germline SV Discovery in WGS](#2-germline-sv-discovery-in-wgs-whole-genome-sequencing)
-3. [Example 3: Somatic CNV Detection (Tumor vs Normal)](#3-somatic-cnv-detection-tumor-vs-normal)
-4. [Example 4: Multi-Caller Consensus Building](#4-multi-caller-consensus-building)
-5. [Example 5: Clinical Interpretation — Gene Overlap + Functional Impact](#5-clinical-interpretation--gene-overlap--functional-impact)
-6. [Example 6: Population Frequency Comparison with gnomAD](#6-population-frequency-comparison-with-gnomad)
-7. [Example 7: Visualizing Complex Rearrangements — Circos + Coverage](#7-visualizing-complex-rearrangements--circos--coverage)
-8. [Example 8: Cohort SV Genotyping and Association Testing](#8-cohort-sv-genotyping-and-association-testing)
-9. [Example 9: Long-Read Breakpoint Refinement](#9-long-read-breakpoint-refinement)
-10. [Example 10: Batch Processing Pipeline for 1000+ Samples](#10-batch-processing-pipeline-for-1000-samples)
-11. [Example 11: Integration with DNA Module for Variant Effect Prediction](#11-integration-with-dna-module-for-variant-effect-prediction)
-12. [Example 12: Multi-Omics Correlation: SVs and Gene Expression](#12-multi-omics-correlation-svs-and-gene-expression)
+1. [Example 1: Minimal CNV Calling from BAM](#example-1-minimal-cnv-calling-from-bam)
+2. [Example 2: Germline SV Discovery in WGS](#example-2-germline-sv-discovery-in-wgs-whole-genome-sequencing)
+3. [Example 3: Somatic CNV Detection (Tumor vs Normal)](#example-3-somatic-cnv-detection-tumor-vs-normal)
+4. [Example 4: Multi-Caller Consensus Building](#example-4-multi-caller-consensus-building)
+5. [Example 5: Clinical Interpretation — Gene Overlap + Functional Impact](#example-5-clinical-interpretation-gene-overlap-functional-impact)
+6. [Example 6: Population Frequency Comparison with gnomAD](#example-6-population-frequency-comparison-with-gnomad)
+7. [Example 7: Visualizing Complex Rearrangements — Circos + Coverage](#example-7-visualizing-complex-rearrangements-circos-coverage)
+8. [Example 8: Cohort SV Genotyping and Association Testing](#example-8-cohort-sv-genotyping-and-association-testing)
+9. [Example 9: Long-Read Breakpoint Refinement](#example-9-long-read-breakpoint-refinement-pacbio-ont)
+10. [Example 10: Batch Processing Pipeline for 1000+ Samples](#example-10-batch-processing-pipeline-for-1000-samples)
+11. [Example 11: Integration with DNA Module for Variant Effect Prediction](#example-11-integration-with-dna-module-for-variant-effect-prediction)
+12. [Example 12: Multi-Omics Correlation: SVs and Gene Expression](#example-12-multi-omics-correlation-svs-and-gene-expression)
 
 ---
 

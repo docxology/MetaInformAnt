@@ -20,7 +20,7 @@ from pathlib import Path
 GENOME_DIR = Path("output/amalgkit/shared/genome/Harpegnathos_saltator")
 INPUT_FASTA = GENOME_DIR / "GCF_003227715.2_Hsal_v8.6_rna_from_genomic.fna.gz"
 OUTPUT_FASTA = GENOME_DIR / "Harpegnathos_saltator_filtered.fna"
-OUTPUT_INDEX = GENOME_DIR / "index/Harpegnathos_saltator_filtered.idx"
+OUTPUT_INDEX = GENOME_DIR / "index/Harpegnathos_saltator.idx"
 
 # Logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
@@ -121,7 +121,7 @@ def main():
 
     logger.info("Done.")
     logger.info(f"New index: {OUTPUT_INDEX}")
-    logger.info("Update your amalgkit config to point to this index_dir/index.")
+    logger.info("The current Amalgkit species-stem contract resolves this index automatically.")
 
 
 if __name__ == "__main__":

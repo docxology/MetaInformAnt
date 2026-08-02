@@ -115,5 +115,5 @@ except ValueError as e:
 ## See Also
 
 - **[NCBI Integration](ncbi.md)** -- Full NCBI API integration
-- **[Entrez Utilities](ncbi.md#entrez-client)** -- Entrez search and fetch
+- **[Entrez Utilities](ncbi.md#ncbi-client-dnaexternalncbi)** -- Entrez search and fetch
 - `metainformant.dna.external.genomes` -- Source module

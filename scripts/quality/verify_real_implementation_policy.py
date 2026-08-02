@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from dataclasses import dataclass
@@ -76,16 +77,43 @@ class PolicyViolation:
 
 def iter_policy_files(repo_root: Path = REPO_ROOT) -> Iterable[Path]:
     """Yield text files covered by the policy scanner."""
-    for path in repo_root.rglob("*"):
-        if not path.is_file():
+    repo_root = repo_root.resolve()
+    for current_root, dirnames, filenames in os.walk(
+        repo_root,
+        topdown=True,
+        followlinks=False,
+    ):
+        current = Path(current_root)
+        # A .git file identifies a submodule checkout; a .git directory
+        # identifies a nested repository. Prune either before enumerating any
+        # descendant files so a parent policy scan does not pay their I/O cost.
+        if current != repo_root and (current / ".git").exists():
+            dirnames.clear()
             continue
-        rel = path.relative_to(repo_root)
-        if any(part in SKIP_DIRS for part in rel.parts):
-            continue
-        if rel in SKIP_PATHS:
-            continue
-        if path.suffix in TEXT_SUFFIXES or path.name in {"AGENTS.md", "SPEC.md", "PAI.md"}:
-            yield path
+
+        retained_dirs: list[str] = []
+        for dirname in dirnames:
+            candidate = current / dirname
+            if dirname in SKIP_DIRS or dirname.endswith(".egg-info"):
+                continue
+            if candidate.is_symlink() or (candidate / ".git").exists():
+                continue
+            retained_dirs.append(dirname)
+        dirnames[:] = retained_dirs
+
+        for filename in filenames:
+            path = current / filename
+            if path.is_symlink() or not path.is_file():
+                continue
+            rel = path.relative_to(repo_root)
+            if rel in SKIP_PATHS:
+                continue
+            if path.suffix in TEXT_SUFFIXES or path.name in {
+                "AGENTS.md",
+                "SPEC.md",
+                "PAI.md",
+            }:
+                yield path
 
 
 def _scan_patterns(

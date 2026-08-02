@@ -7,12 +7,9 @@ using real file system operations (real-implementation policy).
 
 from __future__ import annotations
 
-import shutil
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
-
-import pytest
 
 from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, WorkflowStepResult
 from metainformant.rna.engine.workflow_steps import (
@@ -297,9 +294,9 @@ class TestValidateStepPrerequisites:
             steps_planned=[("merge", {"out_dir": str(tmp_path / "merged")})],
             steps_config={"quant": {"out_dir": str(quant_dir)}},
         )
-        # May pass entirely or fail on R/Rscript/ggplot2 check
+        # The current validator should report the missing FASTQ input.
         if error is not None:
-            assert "R" in error or "Rscript" in error or "ggplot2" in error
+            assert "FASTQ" in error
 
     def test_merge_passes_with_quant_sf(self, tmp_path: Path) -> None:
         """merge should also find Salmon quant.sf files."""
@@ -315,7 +312,7 @@ class TestValidateStepPrerequisites:
             steps_config={"quant": {"out_dir": str(quant_dir)}},
         )
         if error is not None:
-            assert "R" in error or "Rscript" in error or "ggplot2" in error
+            assert "quantification files" not in error.lower()
 
     def test_merge_uses_steps_config_quant_out_dir(self, tmp_path: Path) -> None:
         """merge should look for quant files in the out_dir from steps_config."""
@@ -355,30 +352,52 @@ class TestValidateStepPrerequisites:
             assert merge_quant_link.exists() or merge_quant_link.is_symlink()
 
     # ---------------------------------------------------------------
-    # curate / cstmm steps (R-dependent)
+    # Current downstream filtering, normalization, and finalization steps
     # ---------------------------------------------------------------
 
-    def test_curate_fails_without_rscript(self, tmp_path: Path) -> None:
-        """curate should fail when Rscript is not on PATH."""
-        if shutil.which("Rscript"):
-            pytest.skip("Rscript is available - cannot test missing-R path")
-
+    def test_wsfilter_requires_current_input_tables(self, tmp_path: Path) -> None:
+        """wsfilter should fail fast when merge tables are absent."""
         config = _make_config(tmp_path)
         error = validate_step_prerequisites(
-            step_name="curate",
+            step_name="wsfilter",
             step_params={},
             config=config,
-            steps_planned=[("curate", {})],
+            steps_planned=[("wsfilter", {})],
             steps_config={},
         )
         assert error is not None
-        assert "Rscript" in error
+        assert "current input tables" in error
 
-    def test_cstmm_fails_without_rscript(self, tmp_path: Path) -> None:
-        """cstmm should fail when Rscript is not on PATH."""
-        if shutil.which("Rscript"):
-            pytest.skip("Rscript is available - cannot test missing-R path")
+    def test_wsfilter_accepts_current_input_tables(self, tmp_path: Path) -> None:
+        """wsfilter should accept a real TSV input table."""
+        config = _make_config(tmp_path)
+        merge_dir = tmp_path / "merge"
+        _write_file(merge_dir / "expression.tsv", "gene\tSRR1\ng1\t1\n")
+        error = validate_step_prerequisites(
+            step_name="wsfilter",
+            step_params={"input_dir": str(merge_dir)},
+            config=config,
+            steps_planned=[("wsfilter", {"input_dir": str(merge_dir)})],
+            steps_config={},
+        )
+        assert error is None
 
+    def test_finalize_accepts_current_input_tables(self, tmp_path: Path) -> None:
+        """finalize should accept filtered expression tables."""
+        config = _make_config(tmp_path)
+        input_dir = tmp_path / "wsfilter"
+        _write_file(input_dir / "expression.tsv", "gene\tSRR1\ng1\t1\n")
+        error = validate_step_prerequisites(
+            step_name="finalize",
+            step_params={"input_dir": str(input_dir)},
+            config=config,
+            steps_planned=[("finalize", {"input_dir": str(input_dir)})],
+            steps_config={},
+        )
+        assert error is None
+
+    def test_cstmm_requires_ortholog_input(self, tmp_path: Path) -> None:
+        """cstmm should fail without an orthogroup table or BUSCO directory."""
         config = _make_config(tmp_path)
         error = validate_step_prerequisites(
             step_name="cstmm",
@@ -388,59 +407,17 @@ class TestValidateStepPrerequisites:
             steps_config={},
         )
         assert error is not None
-        assert "Rscript" in error
+        assert "orthogroup_table" in error
 
-    def test_curate_passes_with_rscript(self, tmp_path: Path) -> None:
-        """curate should pass when Rscript is available."""
-        if not shutil.which("Rscript"):
-            pytest.skip("Rscript not available")
-
+    def test_cstmm_accepts_ortholog_input(self, tmp_path: Path) -> None:
+        """cstmm should accept an existing orthogroup table."""
         config = _make_config(tmp_path)
-        error = validate_step_prerequisites(
-            step_name="curate",
-            step_params={"out_dir": str(tmp_path / "curate")},
-            config=config,
-            steps_planned=[("curate", {"out_dir": str(tmp_path / "curate")})],
-            steps_config={},
-        )
-        assert error is None
-
-    def test_curate_bridges_merge_results(self, tmp_path: Path) -> None:
-        """curate should create a symlink from curate/merge -> merge output dir."""
-        if not shutil.which("Rscript"):
-            pytest.skip("Rscript not available")
-
-        config = _make_config(tmp_path)
-        # Create merge results directory
-        merge_out = tmp_path / "merged"
-        merge_results = merge_out / "merge"
-        merge_results.mkdir(parents=True, exist_ok=True)
-        _write_file(merge_results / "merged_abundance.tsv", "data")
-
-        curate_out = tmp_path / "curate"
-        error = validate_step_prerequisites(
-            step_name="curate",
-            step_params={"out_dir": str(curate_out)},
-            config=config,
-            steps_planned=[("curate", {"out_dir": str(curate_out)})],
-            steps_config={"merge": {"out_dir": str(merge_out)}},
-        )
-        assert error is None
-        # Bridge symlink should have been created
-        curate_merge_link = curate_out / "merge"
-        assert curate_merge_link.exists() or curate_merge_link.is_symlink()
-
-    def test_cstmm_passes_with_rscript(self, tmp_path: Path) -> None:
-        """cstmm should pass when Rscript is available."""
-        if not shutil.which("Rscript"):
-            pytest.skip("Rscript not available")
-
-        config = _make_config(tmp_path)
+        orthogroups = _write_file(tmp_path / "orthogroups.tsv", "orthogroup\tApis_mellifera\ng1\tg1\n")
         error = validate_step_prerequisites(
             step_name="cstmm",
-            step_params={"out_dir": str(tmp_path / "cstmm")},
+            step_params={"orthogroup_table": str(orthogroups)},
             config=config,
-            steps_planned=[("cstmm", {"out_dir": str(tmp_path / "cstmm")})],
+            steps_planned=[("cstmm", {"orthogroup_table": str(orthogroups)})],
             steps_config={},
         )
         assert error is None
@@ -448,20 +425,6 @@ class TestValidateStepPrerequisites:
     # ---------------------------------------------------------------
     # config and select (no explicit validation defined - passthrough)
     # ---------------------------------------------------------------
-
-    def test_config_step_returns_none(self, tmp_path: Path) -> None:
-        """config step has no prerequisite validation -> None."""
-        config = _make_config(tmp_path)
-        assert (
-            validate_step_prerequisites(
-                step_name="config",
-                step_params={},
-                config=config,
-                steps_planned=[],
-                steps_config={},
-            )
-            is None
-        )
 
     def test_select_step_returns_none(self, tmp_path: Path) -> None:
         """select step has no prerequisite validation -> None."""
@@ -543,30 +506,6 @@ class TestCheckStepCompletionStatus:
         assert completed == []
         assert to_run == ["metadata"]
 
-    def test_config_completed_when_config_files_exist(self, tmp_path: Path) -> None:
-        """config step should be completed when config_base has .config files."""
-        config = _make_config(tmp_path)
-        config_base = tmp_path / "config_base"
-        config_base.mkdir(parents=True, exist_ok=True)
-        _write_file(config_base / "species.config", "[config]\nkey=value")
-
-        steps: List[Tuple[str, Dict[str, Any]]] = [("config", {})]
-        completed, to_run = check_step_completion_status(steps, config)
-
-        assert len(completed) == 1
-        assert completed[0][0] == "config"
-
-    def test_config_not_completed_when_empty(self, tmp_path: Path) -> None:
-        """config step should not be completed when config_base is empty."""
-        config = _make_config(tmp_path)
-        (tmp_path / "config_base").mkdir(parents=True, exist_ok=True)
-
-        steps: List[Tuple[str, Dict[str, Any]]] = [("config", {})]
-        completed, to_run = check_step_completion_status(steps, config)
-
-        assert completed == []
-        assert to_run == ["config"]
-
     def test_select_completed_when_metadata_selected_exists(self, tmp_path: Path) -> None:
         """select step should be completed when metadata_selected.tsv exists."""
         config = _make_config(tmp_path)
@@ -635,17 +574,17 @@ class TestCheckStepCompletionStatus:
         assert len(completed) == 1
         assert completed[0][0] == "merge"
 
-    def test_curate_completed_when_outputs_exist(self, tmp_path: Path) -> None:
-        """curate step is completed when curated_abundance.tsv exists."""
+    def test_finalize_completed_when_outputs_exist(self, tmp_path: Path) -> None:
+        """finalize step is completed when expression output exists."""
         config = _make_config(tmp_path)
-        curate_dir = tmp_path / "curate"
-        _write_file(curate_dir / "curated_abundance.tsv", "data")
+        finalize_dir = tmp_path / "finalize"
+        _write_file(finalize_dir / "gene_expression.tsv", "data")
 
-        steps: List[Tuple[str, Dict[str, Any]]] = [("curate", {"out_dir": str(curate_dir)})]
+        steps: List[Tuple[str, Dict[str, Any]]] = [("finalize", {"out_dir": str(finalize_dir)})]
         completed, to_run = check_step_completion_status(steps, config)
 
         assert len(completed) == 1
-        assert completed[0][0] == "curate"
+        assert completed[0][0] == "finalize"
 
     def test_force_redo_overrides_completion(self, tmp_path: Path) -> None:
         """force_redo=True should force completed steps into to_run."""
@@ -696,19 +635,16 @@ class TestCheckStepCompletionStatus:
         config = _make_config(tmp_path)
         # metadata is completed
         _write_metadata_tsv(tmp_path / "metadata" / "metadata.tsv")
-        # config is NOT completed (no config_base dir)
         # getfastq always runs
 
         steps: List[Tuple[str, Dict[str, Any]]] = [
             ("metadata", {}),
-            ("config", {}),
             ("getfastq", {}),
         ]
         completed, to_run = check_step_completion_status(steps, config)
 
         completed_names = [c[0] for c in completed]
         assert "metadata" in completed_names
-        assert "config" in to_run
         assert "getfastq" in to_run
 
     def test_sanity_completed_when_file_exists(self, tmp_path: Path) -> None:
@@ -730,64 +666,6 @@ class TestCheckStepCompletionStatus:
 
 class TestHandlePostStepActions:
     """Tests for handle_post_step_actions()."""
-
-    def test_config_step_creates_symlink(self, tmp_path: Path) -> None:
-        """After config step, a config -> config_base symlink should be created."""
-        config = _make_config(tmp_path)
-        config_base = tmp_path / "config_base"
-        config_base.mkdir(parents=True, exist_ok=True)
-        _write_file(config_base / "species.config", "data")
-
-        result = FakeResult(returncode=0)
-        handle_post_step_actions(
-            step_name="config",
-            step_params={},
-            result=result,
-            config=config,
-            steps_planned=[("config", {})],
-            steps_config={},
-        )
-
-        config_dir = tmp_path / "config"
-        assert config_dir.exists() or config_dir.is_symlink()
-
-    def test_config_step_no_crash_without_config_base(self, tmp_path: Path) -> None:
-        """config post-step should not crash when config_base does not exist."""
-        config = _make_config(tmp_path)
-        result = FakeResult(returncode=0)
-
-        # Should not raise
-        handle_post_step_actions(
-            step_name="config",
-            step_params={},
-            result=result,
-            config=config,
-            steps_planned=[("config", {})],
-            steps_config={},
-        )
-
-    def test_config_step_no_overwrite_existing_config_dir(self, tmp_path: Path) -> None:
-        """config post-step should not overwrite an existing config directory."""
-        config = _make_config(tmp_path)
-        config_base = tmp_path / "config_base"
-        config_base.mkdir(parents=True, exist_ok=True)
-        existing_config_dir = tmp_path / "config"
-        existing_config_dir.mkdir(parents=True, exist_ok=True)
-        _write_file(existing_config_dir / "existing.config", "preserve")
-
-        result = FakeResult(returncode=0)
-        handle_post_step_actions(
-            step_name="config",
-            step_params={},
-            result=result,
-            config=config,
-            steps_planned=[("config", {})],
-            steps_config={},
-        )
-
-        # Existing dir should still be a real dir, not replaced by a symlink
-        assert existing_config_dir.is_dir()
-        assert (existing_config_dir / "existing.config").exists()
 
     def test_integrate_deduplicates_metadata(self, tmp_path: Path) -> None:
         """After integrate (rc=0), metadata files should be deduplicated (function called without error)."""
@@ -848,7 +726,7 @@ class TestHandlePostStepActions:
         result = FakeResult(returncode=0)
 
         handle_post_step_actions(
-            step_name="config",
+            step_name="finalize",
             step_params={},
             result=result,
             config=config,
@@ -940,7 +818,7 @@ class TestLogWorkflowSummary:
         config = _make_config(tmp_path)
         results = [
             WorkflowStepResult(step_name="metadata", return_code=0, success=True),
-            WorkflowStepResult(step_name="config", return_code=0, success=True),
+            WorkflowStepResult(step_name="finalize", return_code=0, success=True),
             WorkflowStepResult(step_name="quant", return_code=0, success=True),
         ]
         # Should not raise
@@ -984,7 +862,7 @@ class TestLogWorkflowSummary:
         """Summary should handle failed step with None error_message."""
         config = _make_config(tmp_path)
         results = [
-            WorkflowStepResult(step_name="curate", return_code=1, success=False, error_message=None),
+            WorkflowStepResult(step_name="finalize", return_code=1, success=False, error_message=None),
         ]
         log_workflow_summary(results, config)
 
@@ -1051,7 +929,7 @@ class TestSetupVdbConfig:
     def test_no_getfastq_step_returns_unchanged(self, tmp_path: Path) -> None:
         """When no getfastq step is in steps_planned, return unchanged list."""
         config = _make_config(tmp_path)
-        steps: List[Tuple[str, Dict[str, Any]]] = [("metadata", {}), ("config", {})]
+        steps: List[Tuple[str, Dict[str, Any]]] = [("metadata", {})]
         result = setup_vdb_config(config, steps)
         assert result == steps
 
@@ -1178,20 +1056,16 @@ class TestWorkflowStepsIntegration:
         # Set up all completion indicators
         _write_metadata_tsv(tmp_path / "metadata" / "metadata.tsv")
         _write_metadata_tsv(tmp_path / "metadata" / "metadata_selected.tsv", rows=2)
-        config_base = tmp_path / "config_base"
-        config_base.mkdir(parents=True, exist_ok=True)
-        _write_file(config_base / "species.config", "data")
         _write_file(tmp_path / "integration" / "integrated_metadata.json", "{}")
 
         steps: List[Tuple[str, Dict[str, Any]]] = [
             ("metadata", {}),
-            ("config", {}),
             ("select", {}),
             ("integrate", {}),
         ]
 
         completed, to_run = check_step_completion_status(steps, config)
-        assert len(completed) == 4
+        assert len(completed) == 3
         assert to_run == []
 
         # Log all-success summary
@@ -1207,7 +1081,7 @@ class TestWorkflowStepsIntegration:
         step_results: List[WorkflowStepResult] = []
 
         for step_name, result_obj in [
-            ("config", success_result),
+            ("finalize", success_result),
             ("integrate", success_result),
             ("getfastq", failure_result),
             ("quant", success_result),

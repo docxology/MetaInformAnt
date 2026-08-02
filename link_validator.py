@@ -2,21 +2,22 @@
 """
 Comprehensive Markdown Link Validator
 
-Scans all markdown files in a repository, extracts all links, and validates:
+Scans source markdown files in a repository, extracts all links, and validates:
 - Internal links: file existence, case-sensitive paths, anchor references
 - External links: HTTP status (404 detection)
+
+Generated, cached, archived, and nested Git submodule trees are excluded by
+default; those projects should be validated from their own repository roots.
 
 Generates a detailed report sorted by severity.
 """
 
-import os
 import re
 import sys
 import argparse
 import subprocess
 from pathlib import Path
 from collections import defaultdict
-from urllib.parse import urlparse, unquote
 from typing import Dict, List, Tuple, Optional, Set
 import json
 
@@ -30,11 +31,66 @@ REFERENCE_DEF_PATTERN = re.compile(r'^\[([^\]]+)\]:\s*(.+)$', re.MULTILINE)
 # Anchor-only links: [text](#anchor)
 ANCHOR_ONLY_PATTERN = re.compile(r'\[([^\]]*)\]\(#([^)]+)\)')
 
+# Vendored caches, generated release trees, and historical archives are not
+# source documentation. Scanning them creates noisy findings and can traverse
+# very large dependency checkouts.
+EXCLUDED_PATH_PARTS = frozenset(
+    {".git", ".venv", ".uv-cache", "__pycache__", "output", "build", "_build", "archive"}
+)
+
+
+def _mask_fenced_code(content: str) -> str:
+    """Blank fenced code blocks while preserving offsets and line numbers."""
+
+    masked: list[str] = []
+    in_fence = False
+    fence_char = ""
+    for line in content.splitlines(keepends=True):
+        stripped = line.lstrip()
+        is_fence = stripped.startswith("```") or stripped.startswith("~~~")
+        blank = "".join(
+            "\n" if char == "\n" else "\r" if char == "\r" else " "
+            for char in line
+        )
+        if not in_fence and is_fence:
+            in_fence = True
+            fence_char = stripped[0]
+            masked.append(blank)
+        elif in_fence:
+            masked.append(blank)
+            if stripped.startswith(fence_char * 3):
+                in_fence = False
+                fence_char = ""
+        else:
+            masked.append(line)
+    return "".join(masked)
+
+
+def _mask_inline_code(content: str) -> str:
+    """Blank single-backtick code spans so bracket syntax is not misread."""
+
+    pattern = re.compile(r"(?<!`)`[^`\n]*`(?!`)")
+
+    def blank(match: re.Match[str]) -> str:
+        return "".join(
+            "\n" if char == "\n" else "\r" if char == "\r" else " "
+            for char in match.group(0)
+        )
+
+    return pattern.sub(blank, content)
+
 class LinkValidator:
-    def __init__(self, repo_path: str, check_external: bool = True, external_timeout: int = 10):
+    def __init__(
+        self,
+        repo_path: str,
+        check_external: bool = True,
+        external_timeout: int = 10,
+        include_submodules: bool = False,
+    ):
         self.repo_path = Path(repo_path).resolve()
         self.check_external = check_external
         self.external_timeout = external_timeout
+        self.include_submodules = include_submodules
         
         # Results storage
         self.all_files: List[Path] = []
@@ -55,11 +111,37 @@ class LinkValidator:
         self.reference_defs: Dict[str, str] = {}
     
     def find_markdown_files(self) -> List[Path]:
-        """Recursively find all .md files in the repository."""
+        """Find source Markdown files, excluding generated and vendored trees."""
         print(f"Scanning for markdown files in: {self.repo_path}")
-        md_files = list(self.repo_path.rglob("*.md"))
+        md_files = []
+        skipped = 0
+        skipped_submodules = 0
+        for path in self.repo_path.rglob("*.md"):
+            relative_parts = path.relative_to(self.repo_path).parts
+            if any(part in EXCLUDED_PATH_PARTS for part in relative_parts):
+                skipped += 1
+                continue
+            if not self.include_submodules and self._is_submodule_path(path):
+                skipped_submodules += 1
+                continue
+            md_files.append(path)
+        md_files.sort()
         print(f"Found {len(md_files)} markdown files")
+        if skipped:
+            print(f"Skipped {skipped} generated, cached, or archived Markdown files")
+        if skipped_submodules:
+            print(f"Skipped {skipped_submodules} Markdown files inside Git submodules")
         return md_files
+
+    def _is_submodule_path(self, path: Path) -> bool:
+        """Return whether a path is below a nested checkout marker."""
+
+        current = path.parent
+        while current != self.repo_path:
+            if (current / ".git").is_file():
+                return True
+            current = current.parent
+        return False
     
     def extract_links_from_file(self, file_path: Path) -> List[Dict]:
         """Extract all links from a markdown file."""
@@ -70,17 +152,16 @@ class LinkValidator:
             return []
         
         links = []
-        relative_to = file_path.parent
-        
+        scan_content = _mask_inline_code(_mask_fenced_code(content))
         # First, collect reference definitions
         self.reference_defs.clear()
-        for match in REFERENCE_DEF_PATTERN.finditer(content):
+        for match in REFERENCE_DEF_PATTERN.finditer(scan_content):
             ref_name = match.group(1)
             ref_url = match.group(2).strip()
             self.reference_defs[ref_name] = ref_url
         
         # Process inline links: [text](url)
-        for match in INLINE_LINK_PATTERN.finditer(content):
+        for match in INLINE_LINK_PATTERN.finditer(scan_content):
             text = match.group(1)
             url = match.group(2).strip()
             line_num = content[:match.start()].count('\n') + 1
@@ -95,7 +176,7 @@ class LinkValidator:
             links.append(link_info)
         
         # Process reference-style links: [text][ref]
-        for match in REFERENCE_LINK_PATTERN.finditer(content):
+        for match in REFERENCE_LINK_PATTERN.finditer(scan_content):
             text = match.group(1)
             ref_name = match.group(2)
             line_num = content[:match.start()].count('\n') + 1
@@ -182,7 +263,10 @@ class LinkValidator:
     def file_exists(self, path: str) -> bool:
         """Check if a file exists."""
         try:
-            return Path(path).is_file()
+            # Repository links commonly target directories on GitHub. The
+            # classifier resolves index/README landing pages when available;
+            # otherwise an existing directory is still a valid target.
+            return Path(path).exists()
         except Exception:
             return False
     
@@ -460,8 +544,8 @@ class LinkValidator:
 
 def main():
     parser = argparse.ArgumentParser(description='Validate markdown documentation links')
-    parser.add_argument('--repo', default='/home/trim/Documents/Git/MetaInformAnt',
-                       help='Repository path (default: provided workspace)')
+    parser.add_argument('--repo', default='.',
+                       help='Repository path (default: current working directory)')
     parser.add_argument('--no-external', action='store_true',
                        help='Skip checking external URLs (faster)')
     parser.add_argument('--timeout', type=int, default=10,
@@ -472,13 +556,16 @@ def main():
                        help='Output JSON report filename')
     parser.add_argument('--json-only', action='store_true',
                        help='Only generate JSON report (no console output)')
+    parser.add_argument('--include-submodules', action='store_true',
+                       help='Also scan nested Git submodule checkouts')
     
     args = parser.parse_args()
     
     validator = LinkValidator(
         repo_path=args.repo,
         check_external=not args.no_external,
-        external_timeout=args.timeout
+        external_timeout=args.timeout,
+        include_submodules=args.include_submodules,
     )
     
     try:

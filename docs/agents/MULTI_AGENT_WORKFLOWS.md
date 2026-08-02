@@ -13,20 +13,20 @@ This guide documents concrete examples of multi-agent workflows in METAINFORMANT
 | Workflow | Agents Involved | Pattern | Complexity |
 |----------|-----------------|---------|------------|
 | [1. RNA-seq Amalgkit Pipeline](#1-rna-seq-amalgkit-pipeline) | `rna.amalgkit`, `core.io`, `core.io.paths` | Parallel fan-out + sequential | High |
-| [2. GWAS Association + Fine-Mapping](#2-gwas-association--fine-mapping) | `gwas.assoc`, `gwas.finemap`, `gwas.coloc` | Sequential with branching | Medium |
+| [2. GWAS Association + Fine-Mapping](#2-gwas-association-fine-mapping) | `gwas.assoc`, `gwas.finemap`, `gwas.coloc` | Sequential with branching | Medium |
 | [3. Multi-Omic Integration](#3-multi-omic-integration) | `multiomics`, `dna`, `rna`, `gwas` | Fan-in aggregation | High |
 | [4. Single-Cell Analysis Pipeline](#4-single-cell-analysis-pipeline) | `singlecell.preprocess`, `singlecell.cluster`, `singlecell.trajectory` | Sequential with quality gates | High |
-| [5. Batch Download + QC](#5-batch-download--qc) | `core.workflow`, `core.io.download` | Parallel fan-out | Low |
+| [5. Batch Download + QC](#5-batch-download-qc) | `core.workflow`, `core.io.download` | Parallel fan-out | Low |
 | [6. Cloud VM Orchestration](#6-cloud-vm-orchestration) | `cloud.gcp`, `cloud.docker`, `core.workflow` | Conditional parallel | Medium |
 | [7. Metagenomics Taxonomic Profiling](#7-metagenomics-taxonomic-profiling) | `metagenomics.kraken2`, `metagenomics.bracken`, `metagenomics.report` | Sequential + parallel samples | Medium |
-| [8. Protein Structure + Function](#8-protein-structure--function) | `protein.alphafold`, `protein.uniprot`, `protein.interpro` | Parallel then merge | High |
+| [8. Protein Structure + Function](#8-protein-structure-function-integration) | `protein.alphafold`, `protein.uniprot`, `protein.interpro` | Parallel then merge | High |
 
 ---
 
 ## 1. RNA-seq Amalgkit Pipeline
 
-**Scale**: 8,300+ samples across 28 Hymenoptera species  
-**Agents**:  
+**Scale**: Historical production target of 10,312 samples across 27 configured Hymenoptera species; current inventory is data-root dependent.
+**Agents**:
 - `rna.retrieval` (metadata download from ENA)  
 - `rna.amalgkit` (SRA download, FASTQ extraction, quantification)  
 - `rna.analysis` (TMM normalization, quality assessment)  
@@ -45,7 +45,7 @@ flowchart TB
         W4 --> W5[Phase: analyze]
     end
 
-    subgraph Samples[Parallel Samples<br/>8,300 independent items]
+    subgraph Samples[Historical target<br/>10,312 configured items]
         S1[Sample A]
         S2[Sample B]
         S3[Sample C]
@@ -106,7 +106,9 @@ class RNAWorkflowManager(WorkflowManager):
 - Metadata (SRA URL, destination path) stored in `item.metadata` and `manager.samples`
 - Progress tracked via file size polling (`_update_download_progress()`)
 
-**Result**: 8,300 samples processed across 28 species with per-sample error isolation (one failed download doesn't block others).
+**Result**: The workflow records per-sample state and isolates failures; current
+completion must be read from the generated data-root report rather than this
+historical design example.
 
 ### Learning Points
 
@@ -637,13 +639,13 @@ def batch_handler(manager: BasePipelineManager, items: list[PipelineItem]) -> No
 
 ## Scaling: From 10 to 10,000 Samples
 
-| Metric | 10 samples | 100 samples | 8,300 samples (RNA) |
+| Metric | 10 samples | 100 samples | 10,312-sample historical RNA target |
 |--------|------------|-------------|---------------------|
 | Threads | 2 | 8 | 32 (download) / 4 (quant) |
 | Est. time | 2 min | 15 min | 3 weeks (distributed) |
 | Memory per thread | 2 GB | 2 GB | 2 GB |
 | Total RAM | 4 GB | 16 GB | 64-128 GB (phases separate) |
-| TUI items | 10 bars | 100 bars | 8,300 bars (one per sample) |
+| TUI items | 10 bars | 100 bars | 10,312 items (one per sample) |
 
 **Tuning for scale**:
 - Use phase-specific `max_threads`: downloads use many workers; CPU-intensive phases use few

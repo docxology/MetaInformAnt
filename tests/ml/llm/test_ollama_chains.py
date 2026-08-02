@@ -17,13 +17,21 @@ from metainformant.ml.llm.ollama.config import OllamaConfig
 from metainformant.ml.llm.ollama.prompts import PromptTemplate
 
 
+# These real model calls share one local Ollama server with the client tests.
+# Keep the resource serialized during xdist runs; the longer integration
+# timeout also accommodates model loading while unrelated workers exercise
+# CPU- and I/O-heavy real implementations.
+pytestmark = pytest.mark.xdist_group(name="ollama")
+
+
 @pytest.fixture
 def client() -> OllamaClient:
     """Create an Ollama client with fast model."""
     config = OllamaConfig(
         model="smollm2:135m-instruct-q4_K_S",
         temperature=0.1,
-        timeout=60.0,
+        timeout=180.0,
+        num_predict=16,
     )
     return OllamaClient(config)
 

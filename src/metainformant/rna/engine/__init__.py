@@ -1,25 +1,18 @@
-"""RNA workflow orchestration engine.
+"""Current RNA/Amalgkit execution engine.
 
-This subpackage provides the workflow execution engine including:
-- Workflow planning, execution, and validation
-- Species discovery via NCBI
-- Progress tracking and monitoring
-- Pipeline summarization
-- High-level orchestration"""
+The production path is the streaming producer backed by SQLite progress and
+the hash-bound downstream checkpoint runner. The workflow modules remain
+internal planning and command-construction helpers used by that producer.
+"""
 
 from __future__ import annotations
 
 from . import (
     discovery,
-    monitoring,
-    orchestration,
-    orchestration_multi_species,
-    orchestrator,
     pipeline,
-    progress_tracker,
+    progress_db,
     sra_extraction,
     streaming_orchestrator,
-    tui_workflow,
     workflow,
     workflow_cleanup,
     workflow_core,
@@ -30,15 +23,10 @@ from . import (
 
 __all__ = [
     "discovery",
-    "monitoring",
-    "orchestration",
-    "orchestration_multi_species",
-    "orchestrator",
     "pipeline",
-    "progress_tracker",
+    "progress_db",
     "sra_extraction",
     "streaming_orchestrator",
-    "tui_workflow",
     "workflow",
     "workflow_cleanup",
     "workflow_core",

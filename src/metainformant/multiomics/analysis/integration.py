@@ -464,12 +464,17 @@ def joint_pca(
     # Handle missing values
     concatenated_data = concatenated_data.fillna(concatenated_data.mean())
 
+    # Convert to a plain numeric array before sklearn sees it.  Different omics
+    # layers commonly reuse integer column labels (or contain duplicates), and
+    # recent sklearn versions reject non-unique DataFrame feature names.
+    numeric_data = concatenated_data.to_numpy(dtype=float)
+
     # Scale data if requested
     if standardize:
         scaler = StandardScaler()
-        scaled_data = scaler.fit_transform(concatenated_data)
+        scaled_data = scaler.fit_transform(numeric_data)
     else:
-        scaled_data = concatenated_data.values
+        scaled_data = numeric_data
 
     # Perform PCA
     n_comp = min(n_components, scaled_data.shape[1], scaled_data.shape[0])

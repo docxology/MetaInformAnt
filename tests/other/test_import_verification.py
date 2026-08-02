@@ -199,7 +199,3 @@ class TestCanonicalImportPaths:
             tajimas_D,
             watterson_theta,
         )
-
-    def test_rna_engine_progress_tracker(self) -> None:
-        """RNA engine.progress_tracker should be the canonical path."""
-        from metainformant.rna.engine.progress_tracker import ProgressTracker  # noqa: F401

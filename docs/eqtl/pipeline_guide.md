@@ -7,6 +7,7 @@ This document walks through the transcriptome SNP calling pipeline, which extrac
 - **hisat2** ≥ 2.2: Splice-aware RNA-seq aligner
 - **samtools** ≥ 1.21: BAM processing
 - **bcftools** ≥ 1.21: Variant calling and manipulation
+- **curl**: ENA FASTQ retrieval through the maintained downloader
 - Completed Amalgkit quantification (`abundance.tsv`) for target samples
 
 Install tools:
@@ -32,7 +33,12 @@ graph TD
 The pipeline discovers samples that have completed Amalgkit quantification (have `abundance.tsv`). You can also specify samples explicitly.
 
 ### Step 2: FASTQ Download
-Re-downloads FASTQs from ENA using `scripts/rna/download_ena.py`. FASTQs are deleted after alignment to save disk space.
+Re-downloads FASTQs from ENA through the maintained
+`metainformant.rna.retrieval.ena_downloader.ENADownloader` API, using `curl`
+with retries and gzip-integrity validation. Set `AMALGKIT_DATA_ROOT` when the
+completed Amalgkit outputs are on an external volume; otherwise the wrapper
+uses the repository-local `output/amalgkit` fallback. FASTQs are deleted after
+alignment unless `--no-cleanup` is supplied.
 
 ### Step 3: HISAT2 Index
 Builds a splice-aware index from the reference genome FASTA (e.g., `GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz`). Built once per species.

@@ -8,7 +8,6 @@ without eagerly importing the full workflow and visualization stack.
 from __future__ import annotations
 
 import importlib
-from types import ModuleType
 from typing import TYPE_CHECKING, Any
 
 _SUBPACKAGES = {

@@ -23,6 +23,7 @@ from metainformant.rna.engine.workflow_cleanup import (
     get_quantified_samples,
 )
 from metainformant.rna.engine.workflow_core import AmalgkitWorkflowConfig
+from metainformant.rna.engine.provenance import write_quant_provenance
 
 REPO_ROOT = Path(__file__).parent.parent
 
@@ -68,6 +69,16 @@ def _create_abundance(quant_dir: Path, sample_id: str, size: int = 200) -> Path:
     while len(content) < size:
         content += "gene_extra\t500\t450\t10.0\t5.0\n"
     abundance_file.write_text(content)
+    config_path = quant_dir.parent.parent / "amalgkit_test.yaml"
+    if not config_path.exists():
+        config_path.write_text("species_list: [test_species]\n")
+    write_quant_provenance(
+        sample_dir,
+        species="test_species",
+        run_accession=sample_id,
+        config_path=config_path,
+        command=["amalgkit", "quant"],
+    )
     return abundance_file
 
 
@@ -105,6 +116,7 @@ class TestCleanupFastqsFlatFiles:
         """Flat paired-end files (SRR_1.fastq.gz, SRR_2.fastq.gz) are cleaned."""
         fastq_dir = config_with_fastq_dir.work_dir / "fastq"
         files = _create_flat_fastqs(fastq_dir, "SRR12345")
+        _create_abundance(config_with_fastq_dir.work_dir / "quant", "SRR12345")
         assert all(f.exists() for f in files), "Pre-condition: files exist"
 
         cleanup_fastqs(config_with_fastq_dir, ["SRR12345"])
@@ -116,6 +128,7 @@ class TestCleanupFastqsFlatFiles:
         fastq_dir = config_with_fastq_dir.work_dir / "fastq"
         single_file = fastq_dir / "SRR99999.fastq.gz"
         single_file.write_bytes(b"test_data")
+        _create_abundance(config_with_fastq_dir.work_dir / "quant", "SRR99999")
         assert single_file.exists()
 
         cleanup_fastqs(config_with_fastq_dir, ["SRR99999"])
@@ -127,6 +140,7 @@ class TestCleanupFastqsFlatFiles:
         fastq_dir = config_with_fastq_dir.work_dir / "fastq"
         target_files = _create_flat_fastqs(fastq_dir, "SRR111")
         other_files = _create_flat_fastqs(fastq_dir, "SRR222")
+        _create_abundance(config_with_fastq_dir.work_dir / "quant", "SRR111")
 
         cleanup_fastqs(config_with_fastq_dir, ["SRR111"])
 
@@ -138,6 +152,7 @@ class TestCleanupFastqsFlatFiles:
         fastq_dir = config_with_fastq_dir.work_dir / "fastq"
         flat_files = _create_flat_fastqs(fastq_dir, "SRR333")
         _create_subdir_fastqs(fastq_dir, "SRR333")
+        _create_abundance(config_with_fastq_dir.work_dir / "quant", "SRR333")
 
         cleanup_fastqs(config_with_fastq_dir, ["SRR333"])
 
@@ -219,9 +234,9 @@ class TestGetQuantifiedSamples:
 
 
 # NOTE: TestDiscoverConfigs, TestDownloadEnaTimeout, and TestDoubleDownloadFix
-# were removed because they tested deleted legacy scripts (download_ena.py,
-# run_all_species_parallel.py). Download logic now lives in the streaming
-# orchestrator; config discovery is handled by run_all_species.py.
+# were removed because those helpers are no longer part of the active script
+# surface. Download logic now lives in the streaming orchestrator; config
+# discovery is handled by run_all_species.py.
 
 
 # ===========================================================================
@@ -243,7 +258,7 @@ class TestSanitizeParamsForCli:
             "bootstrap": 100,
             "fragment_length": 200,
             "fragment_sd": 20,
-            "keep_fastq": "no",
+            "clean_fastq": "yes",
             "metadata": "/path/to/metadata.tsv",
             "index_dir": "/path/to/index",
         }
@@ -253,7 +268,7 @@ class TestSanitizeParamsForCli:
         assert "bootstrap" not in sanitized, "bootstrap must be stripped"
         assert "fragment_length" not in sanitized, "fragment_length must be stripped"
         assert "fragment_sd" not in sanitized, "fragment_sd must be stripped"
-        assert "keep_fastq" not in sanitized, "keep_fastq must be stripped"
+        assert sanitized["clean_fastq"] == "yes"
 
         # These should remain
         assert sanitized["out_dir"] == "/some/path"

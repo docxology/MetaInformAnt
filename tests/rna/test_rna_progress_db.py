@@ -48,6 +48,18 @@ class TestProgressDB:
         assert db.get_state("test_ant", "SRR003") == "pending"
         db.close()
 
+    def test_prune_species_removes_only_stale_progress_rows(self, tmp_path: Path):
+        """A refreshed metadata cohort cannot inherit obsolete pending rows."""
+        db = ProgressDB(tmp_path / "test.db")
+        db.init_species("test_ant", ["SRR001", "SRR002", "SRR003"])
+        db.set_state("test_ant", "SRR001", "quantified")
+
+        assert db.prune_species("test_ant", ["SRR001", "SRR003"]) == 1
+        assert db.get_state("test_ant", "SRR001") == "quantified"
+        assert db.get_state("test_ant", "SRR002") is None
+        assert db.get_state("test_ant", "SRR003") == "pending"
+        db.close()
+
     def test_state_transitions(self, tmp_path: Path):
         """Full lifecycle: pending → downloading → downloaded → quantifying → quantified."""
         db = ProgressDB(tmp_path / "test.db")

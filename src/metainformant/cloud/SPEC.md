@@ -227,9 +227,9 @@ Cost: ~$0.50–2.00 per full integration test run.
 
 ## Related Modules
 
-- **[rna/](rna/)** — Amalgkit RNA-seq pipeline (primary cloud consumer)
-- **[gwas/](gwas/)** — GWAS analysis (can be deployed to cloud)
-- **[core/io/download.py](core/io/download.py)** — Download utilities (used by genome_prep)
+- **[RNA documentation](../../../docs/rna/)** — Amalgkit RNA-seq pipeline (primary cloud consumer)
+- **[GWAS documentation](../../../docs/gwas/)** — GWAS analysis (can be deployed to cloud)
+- **[core/io/download.py](../../../src/metainformant/core/io/download.py)** — Download utilities (used by genome_prep)
 
 ---
 

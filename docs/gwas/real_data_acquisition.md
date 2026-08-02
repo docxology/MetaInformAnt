@@ -189,9 +189,10 @@ Example: Check supplementary data from recent papers:
 ### Download Example
 
 ```bash
-# Example: Download from direct URL (hypothetical)
+# Example: Download from a published Zenodo record after replacing the ID.
+ZENODO_RECORD_ID="replace-with-record-id"
 wget -O data/variants/amellifera/real/published_variants.vcf.gz \
-    "https://zenodo.org/record/XXXXX/files/amellifera_variants.vcf.gz"
+    "https://zenodo.org/records/${ZENODO_RECORD_ID}/files/amellifera_variants.vcf.gz"
 
 # Verify and index
 gunzip -c data/variants/amellifera/real/published_variants.vcf.gz | head -20
@@ -428,7 +429,6 @@ print(f"Found {len(significant)} significant variants")
 - For publication: Download full cohort (50+ samples) or use pre-called VCF
 
 All methods integrate seamlessly with METAINFORMANT GWAS pipeline!
-
 
 
 

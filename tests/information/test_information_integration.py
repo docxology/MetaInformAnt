@@ -149,16 +149,17 @@ class TestSingleCellIntegration:
     """Integration tests with single-cell data."""
 
     def test_singlecell_integration_with_anndata(self) -> None:
-        """Test single-cell integration with AnnData object."""
-        try:
-            import anndata
+        """Test single-cell integration through the supported AnnData protocol."""
 
-            adata = anndata.AnnData(X=np.random.rand(100, 50))
-            results = singlecell_integration(adata)
-            assert results["n_cells"] == 100
-            assert results["n_genes"] == 50
-        except ImportError:
-            pytest.skip("anndata not available")
+        class MinimalAnnData:
+            def __init__(self, X: np.ndarray) -> None:
+                self.X = X
+                self.n_obs = X.shape[0]
+                self.n_vars = X.shape[1]
+
+        results = singlecell_integration(MinimalAnnData(np.random.rand(100, 50)))
+        assert results["n_cells"] == 100
+        assert results["n_genes"] == 50
 
     def test_singlecell_integration_minimal_adata(self) -> None:
         """Test single-cell integration with a minimal AnnData-like structure."""
@@ -310,74 +311,59 @@ class TestNetworkIntegration:
 
     def test_network_entropy(self) -> None:
         """Test network entropy calculation."""
-        try:
-            import networkx as nx
+        import networkx as nx
 
-            from metainformant.information.integration.networks import network_entropy
+        from metainformant.information.integration.networks import network_entropy
 
-            G = nx.karate_club_graph()
-            entropy = network_entropy(G)
-            assert entropy >= 0.0
-        except ImportError:
-            pytest.skip("NetworkX not available")
+        G = nx.karate_club_graph()
+        entropy = network_entropy(G)
+        assert entropy >= 0.0
 
     def test_network_entropy_with_attribute(self) -> None:
         """Test network entropy with node attribute."""
-        try:
-            import networkx as nx
+        import networkx as nx
 
-            from metainformant.information.integration.networks import network_entropy
+        from metainformant.information.integration.networks import network_entropy
 
-            G = nx.karate_club_graph()
-            for node in G.nodes():
-                G.nodes[node]["club"] = "A" if node < 17 else "B"
-            entropy_attr = network_entropy(G, attribute="club")
-            assert entropy_attr >= 0.0
-        except ImportError:
-            pytest.skip("NetworkX not available")
+        G = nx.karate_club_graph()
+        for node in G.nodes():
+            G.nodes[node]["club"] = "A" if node < 17 else "B"
+        entropy_attr = network_entropy(G, attribute="club")
+        assert entropy_attr >= 0.0
 
     def test_network_entropy_empty_graph(self) -> None:
         """Test network entropy on empty graph returns 0."""
-        try:
-            import networkx as nx
+        import networkx as nx
 
-            from metainformant.information.integration.networks import network_entropy
+        from metainformant.information.integration.networks import network_entropy
 
-            G = nx.Graph()
-            entropy = network_entropy(G)
-            assert entropy == 0.0
-        except ImportError:
-            pytest.skip("NetworkX not available")
+        G = nx.Graph()
+        entropy = network_entropy(G)
+        assert entropy == 0.0
 
     def test_information_flow(self) -> None:
         """Test information flow calculation."""
-        try:
-            import networkx as nx
+        import networkx as nx
 
-            from metainformant.information.integration.networks import information_flow
+        from metainformant.information.integration.networks import information_flow
 
-            G = nx.karate_club_graph()
-            flow = information_flow(G)
-            assert "flow_matrix" in flow
-            assert "method" in flow
-        except ImportError:
-            pytest.skip("NetworkX not available")
+        G = nx.karate_club_graph()
+        flow = information_flow(G)
+        assert "flow_matrix" in flow
+        assert "method" in flow
 
     def test_network_information_centrality(self) -> None:
         """Test network information centrality returns per-node scores."""
-        try:
-            import networkx as nx
+        import networkx as nx
 
-            from metainformant.information.integration.networks import network_information_centrality
+        from metainformant.information.integration.networks import network_information_centrality
 
-            G = nx.karate_club_graph()
-            centrality = network_information_centrality(G)
-            # Returns flat dict: {node_id: score}
-            assert isinstance(centrality, dict)
-            assert len(centrality) == len(G.nodes())
-            assert all(isinstance(v, (int, float, np.floating)) for v in centrality.values())
-        except ImportError:
-            pytest.skip("NetworkX not available")
+        G = nx.karate_club_graph()
+        centrality = network_information_centrality(G)
+        # Returns flat dict: {node_id: score}
+        assert isinstance(centrality, dict)
+        assert len(centrality) == len(G.nodes())
+        assert all(isinstance(v, (int, float, np.floating)) for v in centrality.values())
 
 
 # ============================================================

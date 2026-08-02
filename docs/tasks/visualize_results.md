@@ -8,7 +8,7 @@ Use `visualize_results` for publication-ready figures and exploratory data analy
 
 ## Table of Contents
 
-- [Manhattan Plot (GWAS)](#manhattan-plot-gwas)
+- [Expected Manhattan Plot Output](#manhattan-plot-file)
 - [PCA Plot (Multi-omics)](#pca-plot-multi-omics)
 - [Heatmap (DEGs)](#heatmap-degs)
 - [Phylogenetic Tree](#phylogenetic-tree)

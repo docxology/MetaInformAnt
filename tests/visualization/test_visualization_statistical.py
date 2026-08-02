@@ -22,6 +22,7 @@ from metainformant.visualization.analysis.statistical import (
     roc_curve,
     violin_plot,
 )
+from metainformant.visualization.analysis import statistical as statistical_module
 
 # Check for optional dependencies
 try:
@@ -260,13 +261,14 @@ class TestQQPlot:
 
     def test_qq_plot_no_scipy(self):
         """Test Q-Q plot when scipy is not available."""
-        if HAS_SCIPY:
-            pytest.skip("scipy is available")
-
         data = np.random.randn(100)
-
-        with pytest.raises(ImportError, match="scipy required"):
-            qq_plot(data)
+        original = statistical_module.HAS_SCIPY
+        statistical_module.HAS_SCIPY = False
+        try:
+            with pytest.raises(ImportError, match="scipy required"):
+                qq_plot(data)
+        finally:
+            statistical_module.HAS_SCIPY = original
 
 
 class TestCorrelationHeatmap:
@@ -430,25 +432,24 @@ class TestROCCurve:
 
     def test_roc_curve_mismatched_lengths(self):
         """Test ROC curve with mismatched array lengths."""
-        if not HAS_SCIPY:
-            pytest.skip("scipy required for ROC curve")
-
         y_true = np.array([0, 1, 0])
         y_scores = np.array([0.1, 0.5])
 
         with pytest.raises(ValueError, match="same length"):
             roc_curve(y_true, y_scores)
 
-    def test_roc_curve_no_scipy(self):
-        """Test ROC curve when scipy is not available."""
-        if HAS_SCIPY:
-            pytest.skip("scipy is available")
+    def test_roc_curve_no_sklearn(self):
+        """Test ROC curve when scikit-learn is not available."""
 
         y_true = np.array([0, 1, 0])
         y_scores = np.array([0.1, 0.5, 0.3])
-
-        with pytest.raises(ImportError, match="scipy required"):
-            roc_curve(y_true, y_scores)
+        original = statistical_module.metrics
+        statistical_module.metrics = None
+        try:
+            with pytest.raises(ImportError, match="scikit-learn required"):
+                roc_curve(y_true, y_scores)
+        finally:
+            statistical_module.metrics = original
 
 
 class TestPrecisionRecallCurve:
@@ -474,9 +475,6 @@ class TestPrecisionRecallCurve:
 
     def test_precision_recall_curve_mismatched_lengths(self):
         """Test precision-recall curve with mismatched array lengths."""
-        if not HAS_SCIPY:
-            pytest.skip("scipy required for precision-recall curve")
-
         y_true = np.array([0, 1, 0])
         y_scores = np.array([0.1, 0.5])
 
@@ -550,9 +548,6 @@ class TestLeveragePlot:
 
     def test_leverage_plot_mismatched_lengths(self):
         """Test leverage plot with mismatched array dimensions."""
-        if not HAS_SKLEARN:
-            pytest.skip("scikit-learn required for leverage plot")
-
         X = np.random.randn(50, 3)
         y = np.random.randn(30)
 
@@ -561,11 +556,12 @@ class TestLeveragePlot:
 
     def test_leverage_plot_no_sklearn(self):
         """Test leverage plot when scikit-learn is not available."""
-        if HAS_SKLEARN:
-            pytest.skip("scikit-learn is available")
-
         X = np.random.randn(50, 3)
         y = np.random.randn(50)
-
-        with pytest.raises(ImportError, match="scikit-learn required"):
-            leverage_plot(X, y)
+        original = statistical_module.HAS_SKLEARN
+        statistical_module.HAS_SKLEARN = False
+        try:
+            with pytest.raises(ImportError, match="scikit-learn required"):
+                leverage_plot(X, y)
+        finally:
+            statistical_module.HAS_SKLEARN = original

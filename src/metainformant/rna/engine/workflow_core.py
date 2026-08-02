@@ -18,6 +18,36 @@ from metainformant.core.utils.config import load_mapping_from_file
 logger = logging.get_logger(__name__)
 
 
+def _expand_workflow_config_values(value: Any) -> Any:
+    """Expand environment variables and the external Amalgkit data root.
+
+    Species YAML files use paths such as
+    ``output/amalgkit/<species>/work``.  The large production tree now lives
+    on a separate volume, so ``AMALGKIT_DATA_ROOT`` remaps that prefix while
+    leaving repository-relative paths such as ``config/config_base`` intact.
+    The recursive implementation also handles nested step and genome maps.
+    """
+
+    if isinstance(value, dict):
+        return {key: _expand_workflow_config_values(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_expand_workflow_config_values(item) for item in value]
+    if not isinstance(value, str):
+        return value
+
+    expanded = os.path.expanduser(os.path.expandvars(value))
+    data_root = os.environ.get("AMALGKIT_DATA_ROOT")
+    if data_root:
+        data_root = os.path.expanduser(os.path.expandvars(data_root))
+        relative = expanded[2:] if expanded.startswith("./") else expanded
+        prefix = "output/amalgkit/"
+        if relative == "output/amalgkit":
+            return data_root
+        if relative.startswith(prefix):
+            return str(Path(data_root) / relative[len(prefix) :])
+    return expanded
+
+
 @dataclass
 class WorkflowStepResult:
     """Result of executing a single workflow step."""
@@ -32,7 +62,7 @@ class WorkflowStepResult:
 class WorkflowExecutionResult(list):
     """Result of executing the entire amalgkit workflow.
 
-    Inherits from list to satisfy legacy tests checking isinstance(result, list).
+    Inherits from list to preserve the established sequence-like result API.
     """
 
     def __init__(
@@ -53,7 +83,7 @@ class WorkflowExecutionResult(list):
 
     @property
     def return_codes(self) -> List[int]:
-        """Return codes for backward compatibility."""
+        """Return one process code for each executed workflow step."""
         return [s.return_code for s in self.steps_executed]
 
     def __len__(self) -> int:
@@ -68,7 +98,7 @@ class WorkflowExecutionResult(list):
         return super().__getitem__(index)
 
     def get(self, step_name: str, default: Any = None) -> Any:
-        """Get step result by name for backward compatibility."""
+        """Return the process code for a named step, or ``default``."""
         for step in self.steps_executed:
             if step.step_name == step_name:
                 return step.return_code
@@ -89,6 +119,7 @@ class AmalgkitWorkflowConfig:
         taxon_id: Optional[str] = None,
         auto_install_amalgkit: bool = True,
         log_dir: Optional[str] = None,
+        source_path: Optional[Union[str, Path]] = None,
         **kwargs,
     ):
         """Initialize workflow configuration.
@@ -111,6 +142,10 @@ class AmalgkitWorkflowConfig:
         self.taxon_id = taxon_id
         self.auto_install_amalgkit = auto_install_amalgkit
         self.log_dir = Path(log_dir) if log_dir else self.work_dir / "logs"
+        # Retain the source configuration path when the object was loaded from
+        # disk.  Per-sample provenance can then bind current workflow execution
+        # to the exact configuration rather than to an invented placeholder.
+        self.source_path = Path(source_path) if source_path else None
 
         # New attributes for workflow control
         self.per_step = kwargs.get("per_step", {}) or kwargs.get("steps", {})
@@ -172,11 +207,14 @@ def load_workflow_config(config_file: Union[str, Path]) -> AmalgkitWorkflowConfi
     try:
         # Load config using core.utils.config which supports YAML/TOML/JSON
         config_dict = load_mapping_from_file(config_path)
+        config_dict = _expand_workflow_config_values(config_dict)
 
         # Apply defaults
         config_dict = apply_config_defaults(config_dict)
 
-        return AmalgkitWorkflowConfig.from_dict(config_dict)
+        config = AmalgkitWorkflowConfig.from_dict(config_dict)
+        config.source_path = config_path.resolve()
+        return config
 
     except (OSError, IOError) as e:
         raise ValueError(f"Error reading configuration file {config_path}: {e}") from e
@@ -197,16 +235,15 @@ def apply_config_defaults(config: Dict[str, Any]) -> Dict[str, Any]:
         "threads": 8,
         "species_list": [],
         "genome": {},
-        "resolve_names": "yes",  # v0.12.20+ feature
-        "mark_missing_rank": "species",  # v0.12.20+ feature
+        "resolve_names": "yes",  # current Amalgkit metadata option
     }
 
     # Merge defaults with provided config
     result = defaults.copy()
     result.update(config)
 
-    # Environment variable overrides
-    env_threads = os.environ.get("AK_THREADS")
+    # Environment variable override in the current Amalgkit namespace.
+    env_threads = os.environ.get("AMALGKIT_PIPELINE_THREADS")
     if env_threads:
         try:
             result["threads"] = int(env_threads)
@@ -288,7 +325,6 @@ def create_sample_config(output_path: Union[str, Path], sample_type: str = "basi
             "species_list": ["Apis_mellifera"],
             "genome": {"accession": "GCF_003254395.2", "assembly_name": "Amel_HAv3.1", "annotation_release": 104},
             "resolve_names": "yes",
-            "mark_missing_rank": "species",
         }
     else:
         sample_config = {
@@ -299,7 +335,6 @@ def create_sample_config(output_path: Union[str, Path], sample_type: str = "basi
             "max_samples": 100,
             "genome": {"accession": "GCF_003254395.2", "assembly_name": "Amel_HAv3.1", "annotation_release": 104},
             "resolve_names": "yes",
-            "mark_missing_rank": "species",
         }
 
     output_path = Path(output_path)

@@ -60,7 +60,7 @@ Scripts in `scripts/` are thin wrappers around core methods. Business logic resi
 
 ### 3. Configuration with Environment Overrides
 
-YAML configs in `config/` can be overridden via environment variables with domain prefixes (`AK_`, `GWAS_`, `DNA_`, etc.).
+YAML configs in `config/` can be overridden via environment variables with domain prefixes (`AMALGKIT_`, `GWAS_`, `DNA_`, etc.).
 
 ### 4. Output Isolation
 

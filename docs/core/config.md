@@ -152,11 +152,11 @@ Lower-level loader; similar to `load_mapping_from_file()` but returns raw dict (
 
 ### Environment Variable Overrides
 
-#### `apply_env_overrides(config: Mapping[str, Any], *, prefix: str = "AK") -> dict[str, Any]`
+#### `apply_env_overrides(config: Mapping[str, Any], *, prefix: str = "AMALGKIT") -> dict[str, Any]`
 
 Apply environment variable overrides to a configuration dictionary. Shallow merge only (no deep merging).
 
-**Recognized Variables** (with prefix `AK` by default):
+**Recognized Variables** (with prefix `AMALGKIT` by default):
 
 | Variable | Type | Description |
 |----------|------|-------------|
@@ -166,14 +166,14 @@ Apply environment variable overrides to a configuration dictionary. Shallow merg
 
 **Example**:
 ```bash
-export AK_THREADS=16
-export AK_WORK_DIR=/mnt/raid/output
+export AMALGKIT_THREADS=16
+export AMALGKIT_WORK_DIR=/mnt/raid/output
 ```
 
 ```python
 base_cfg = {"threads": 4, "work_dir": "output"}
 override_cfg = config.apply_env_overrides(base_cfg)
-# override_cfg["threads"] == 16 if AK_THREADS set
+# override_cfg["threads"] == 16 if AMALGKIT_THREADS set
 ```
 
 #### `load_typed_env(prefix: str, keys: Mapping[str, type]) -> dict[str, Any]`
@@ -425,19 +425,20 @@ def load_pipeline_config(domain: str, env: str = "production") -> dict:
 
 ### Standard METAINFORMANT Overrides
 
-All prefixed with `AK_` (AmalgKit legacy), configurable via `prefix` parameter:
+All prefixed with `AMALGKIT_` for the active Amalgkit workflow, configurable via the
+`prefix` parameter:
 
 | Variable | Type | Default | Description |
 |----------|------|---------|-------------|
-| `AK_THREADS` | `int` | CPU count | Number of worker threads |
-| `AK_WORK_DIR` | `str` | `"output"` | Output directory for results |
-| `AK_LOG_DIR` | `str` | `"logs"` | Directory for log files |
+| `AMALGKIT_THREADS` | `int` | CPU count | Number of worker threads |
+| `AMALGKIT_WORK_DIR` | `str` | `"output"` | Output directory for results |
+| `AMALGKIT_LOG_DIR` | `str` | `"logs"` | Directory for log files |
 
 **Example**:
 ```bash
-export AK_THREADS=32
-export AK_WORK_DIR=/mnt/raid/results
-export AK_LOG_DIR=/var/log/metainformant
+export AMALGKIT_THREADS=32
+export AMALGKIT_WORK_DIR=/mnt/raid/results
+export AMALGKIT_LOG_DIR=/var/log/metainformant
 ```
 
 ### PostgreSQL Variables
@@ -500,7 +501,7 @@ config = config.merge_configs(base, override)  # Deep merge
 
 **Symptom**: `ValueError: invalid literal for int() with base 10: 'abc'`
 
-**Cause**: Non-numeric string in numeric env var (`AK_THREADS=abc`).
+**Cause**: Non-numeric string in numeric env var (`AMALGKIT_THREADS=abc`).
 
 **Fix**: Validate or use defaults. `apply_env_overrides()` catches `ValueError` and logs warning, falling back to default.
 

@@ -40,28 +40,24 @@ class TestAmalgkitCstmm:
         assert "--threads" not in command  # cstmm does not support threads
         assert "--orthogroup_table" in command
         assert "groups.tsv" in command
-        assert "--species" in command
-        assert "Species_A" in command
+        assert "--species" not in command
 
     def test_cstmm_dict_params(self, temp_dir: Path) -> None:
         """Test cstmm with dictionary parameters."""
         params = {
             "work_dir": temp_dir,
             "threads": 4,  # Should be filtered for cstmm
-            "gff": "yes",
             "dir_busco": "/path/to/busco",
         }
 
         args = build_cli_args(params, subcommand="cstmm")
 
         assert "--threads" not in args
-        assert "--gff" in args
-        assert "yes" in args
         assert "--dir_busco" in args
         assert "/path/to/busco" in args
 
-    def test_cstmm_species_list_handling(self, temp_dir: Path) -> None:
-        """Verify species list is correctly passed to CLI args."""
+    def test_cstmm_omits_species_list_for_current_cli(self, temp_dir: Path) -> None:
+        """Verify species lists are not leaked into the current cstmm CLI."""
         params = AmalgkitParams(
             work_dir=temp_dir,
             species_list=["Sp_A", "Sp_B", "Sp_C"],
@@ -69,11 +65,8 @@ class TestAmalgkitCstmm:
 
         args = build_cli_args(params, subcommand="cstmm")
 
-        assert "--species" in args
-        # All species names should appear
-        assert "Sp_A" in args
-        assert "Sp_B" in args
-        assert "Sp_C" in args
+        assert "--species" not in args
+        assert all(species not in args for species in params.species_list)
 
     def test_cstmm_all_strings(self, temp_dir: Path) -> None:
         """Verify all command elements are strings for subprocess compatibility."""

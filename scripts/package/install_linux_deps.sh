@@ -10,7 +10,7 @@
 #   samtools      – SAM/BAM processing
 #   pigz          – Parallel gzip
 #   parallel      – GNU parallel (for batch operations)
-#   r-base        – R language (for amalgkit curate step)
+#   r-base        – Optional R language for downstream statistical analyses
 #   wget, curl    – Download tools
 #
 # Tools installed from binary releases:
@@ -138,7 +138,7 @@ else
 fi
 
 # ─────────────────────────────────────────────────────────────────────────────
-# 4. Install R packages for amalgkit curate step
+# 4. Install optional R packages for downstream analyses
 # ─────────────────────────────────────────────────────────────────────────────
 echo ""
 if [[ "$SKIP_R_PACKAGES" -eq 1 ]]; then
@@ -147,7 +147,7 @@ else
   if ! command -v R >/dev/null 2>&1; then
     warn "R not found – skipping R package installation"
   else
-    info "Installing R packages for amalgkit curate step..."
+    info "Installing optional R packages for downstream analyses..."
     # Install to user library to avoid needing sudo for R packages
     R_LIB_DIR="$HOME/R/library"
     mkdir -p "$R_LIB_DIR"
@@ -175,7 +175,7 @@ for (pkg in cran_pkgs) {
   }
 }
 
-# Bioconductor packages (for amalgkit curate)
+# Bioconductor packages for optional downstream models
 if (!requireNamespace("BiocManager", quietly = TRUE)) {
   cat("Installing BiocManager...\n")
   install.packages("BiocManager", repos = "https://cloud.r-project.org/", lib = lib_dir, quiet = TRUE)

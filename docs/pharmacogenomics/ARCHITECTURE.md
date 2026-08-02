@@ -1,6 +1,12 @@
 # Architecture: Pharmacogenomics
 
-![Layer diagram: Public API → Core → Data → External resources](diagram.png)
+```mermaid
+flowchart LR
+    API[Public API] --> Core[Core allele and phenotype logic]
+    Core --> Data[Built-in and custom allele data]
+    Core --> External[CPIC and PharmGKB annotations]
+    Core --> Clinical[Clinical report generation]
+```
 
 ## Layer cake
 

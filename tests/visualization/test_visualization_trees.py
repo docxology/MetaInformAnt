@@ -13,6 +13,7 @@ from metainformant.visualization.genomics.trees import (
     tree_comparison_plot,
     unrooted_tree_plot,
 )
+from metainformant.visualization.genomics import trees as tree_module
 
 # Check for optional dependencies
 try:
@@ -65,13 +66,14 @@ class TestPlotPhyloTree:
 
     def test_phylogenetic_tree_plot_no_networkx(self):
         """Test phylogenetic tree plot when NetworkX is not available."""
-        if HAS_NETWORKX:
-            pytest.skip("NetworkX is available")
-
         invalid_tree = "not a tree"
-
-        with pytest.raises(ImportError, match="NetworkX required"):
-            plot_phylo_tree(invalid_tree)
+        original = tree_module.HAS_NETWORKX
+        tree_module.HAS_NETWORKX = False
+        try:
+            with pytest.raises(ImportError, match="NetworkX required"):
+                plot_phylo_tree(invalid_tree)
+        finally:
+            tree_module.HAS_NETWORKX = original
 
 
 class TestCircularTreePlot:

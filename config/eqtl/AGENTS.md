@@ -15,7 +15,7 @@ eQTL integration pipeline configuration linking GWAS variants with RNA-seq expre
 ```yaml
 # eQTL-specific configuration
 gwas_results: output/gwas/association_results.tsv
-expression_matrix: output/amalgkit/amellifera/work/curate/curated_matrix.tsv
+expression_matrix: output/amalgkit/amellifera/work/finalize/expression_matrix.tsv
 species: apis_mellifera
 significance_threshold: 5e-8
 ```
@@ -25,4 +25,4 @@ significance_threshold: 5e-8
 - Validate with schema before committing new configs
 - Follow REAL IMPLEMENTATION policy — tests use real config files
 - Use `uv` for dependency management
-- Environment overrides use `AK_` prefix
+- Environment overrides use the eQTL namespace documented by the module

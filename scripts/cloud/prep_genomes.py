@@ -72,7 +72,8 @@ def process_species(config_path: Path, threads: int) -> bool:
 
     # Build kallisto index
     species_name = cfg.get("species_list", [species])[0]
-    idx_name = f"{species_name}_transcripts.idx"
+    # Amalgkit 0.16.32 resolves kallisto indexes by the exact species stem.
+    idx_name = f"{species_name}.idx"
     idx_path = index_dir / idx_name
 
     if not idx_path.exists():

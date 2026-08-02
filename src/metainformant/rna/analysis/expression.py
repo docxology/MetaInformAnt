@@ -40,11 +40,8 @@ Example:
     >>> # Prepare for volcano plot
     >>> volcano_df = expression.prepare_volcano_data(de_results, fc_threshold=1.0)
 
-.. deprecated::
-    This module is a backward-compatibility shim.  The implementation has
-    been split into :mod:`expression_core` (normalization, filtering) and
-    :mod:`expression_analysis` (differential expression, PCA, visualization).
-    Import directly from those modules for new code.
+The module re-exports the focused implementations in :mod:`expression_core`
+and :mod:`expression_analysis` through one coherent RNA analysis namespace.
 """
 
 from __future__ import annotations
@@ -69,9 +66,8 @@ from .expression_core import (
     normalize_counts,
 )
 
-# Re-export everything from the split modules so that existing imports
-# like ``from metainformant.rna.analysis.expression import normalize_counts``
-# continue to work.
+# Re-export the focused implementations through the public RNA analysis
+# namespace.
 
 
 __all__ = [

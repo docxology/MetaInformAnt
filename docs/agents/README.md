@@ -70,7 +70,7 @@ flowchart TB
 METAINFORMANT supports multiple coordination patterns:
 
 1. **Sequential Pipeline** - Stages executed in strict order (e.g., download → process → analyze)
-2. **Parallel Fan-Out** - Independent tasks processed concurrently (e.g., batch download of 8,300 samples)
+2. **Parallel Fan-Out** - Independent tasks processed concurrently (e.g., a large RNA-seq cohort)
 3. **Conditional Branching** - Workflow paths chosen based on data or config
 4. **Fan-In Aggregation** - Results collected from parallel workers for consolidation
 5. **Event-Driven** - Reactive execution triggered by data availability
@@ -110,7 +110,7 @@ Review [Safety](SAFETY.md) for error handling, validation, and rollback strategi
 ## Related Resources
 
 - [Core Module](../core/) - Shared utilities (I/O, logging, parallel execution)
-- [RNA Module](../rna/) - Example of sophisticated orchestration (8,300+ samples across 28 species)
+- [RNA Module](../rna/) - Example of bounded orchestration for the configured 27-species cohort
 - [Workflow Manager API](../../src/metainformant/core/engine/workflow_manager.py) - Source code reference
 - [Parallel Execution](../../src/metainformant/core/execution/parallel.py) - ThreadPoolExecutor patterns
 - [Real-Implementation Policy](../../tests/REAL_IMPLEMENTATION_TESTING_POLICY.md) - Testing philosophy requiring real implementations

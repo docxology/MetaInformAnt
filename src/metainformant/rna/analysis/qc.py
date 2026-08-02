@@ -7,8 +7,8 @@ batch effect detection, and bias assessment.
 This module provides REAL implementations using numpy, scipy, and pandas.
 Real implementationing, no placeholder data.
 
-This module re-exports all public symbols from :mod:`qc_metrics` and
-:mod:`qc_filtering` for backward compatibility.
+This module aggregates the public symbols from :mod:`qc_metrics` and
+:mod:`qc_filtering` under one quality-control namespace.
 """
 
 from __future__ import annotations

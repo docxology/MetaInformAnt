@@ -47,7 +47,7 @@ Configuration templates and schemas for {module_name}.
 
 # Map module to prefix
 PREFIXES = {
-    "amalgkit": "AK",
+    "amalgkit": "AMALGKIT",
     "config_base": "CORE",
     "eqtl": "GWAS",
     "gwas": "GWAS",

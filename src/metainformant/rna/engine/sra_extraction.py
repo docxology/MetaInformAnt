@@ -54,7 +54,9 @@ def extract_sra_directly(config: AmalgkitWorkflowConfig, sra_dir: Path, output_d
         >>> from metainformant.rna.engine.workflow import load_workflow_config
         >>> from metainformant.rna.engine.sra_extraction import extract_sra_directly
         >>>
-        >>> config = load_workflow_config("config/amalgkit_apis.yaml")
+        >>> config = load_workflow_config(
+        ...     "projects/hymenoptera_amalgkit/config/amalgkit/amalgkit_apis_mellifera.yaml"
+        ... )
         >>> sra_cache = Path("/path/to/sra_cache")
         >>> output = Path("output/fastq")
         >>>
@@ -201,7 +203,9 @@ def manual_integration_fallback(config: AmalgkitWorkflowConfig) -> bool:
         >>> from metainformant.rna.engine.workflow import load_workflow_config
         >>> from metainformant.rna.engine.sra_extraction import manual_integration_fallback
         >>>
-        >>> config = load_workflow_config("config/amalgkit_apis.yaml")
+        >>> config = load_workflow_config(
+        ...     "projects/hymenoptera_amalgkit/config/amalgkit/amalgkit_apis_mellifera.yaml"
+        ... )
         >>> success = manual_integration_fallback(config)
         >>> if success:
         ...     print("FASTQ files now accessible for quantification")

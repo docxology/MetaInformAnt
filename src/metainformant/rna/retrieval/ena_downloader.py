@@ -22,15 +22,86 @@ Example:
 
 import gzip
 import hashlib
+import os
+import signal
 import subprocess
+import time
 import urllib.error
 import urllib.request
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Mapping, Tuple
 
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+_RETRYABLE_CURL_EXIT_CODES = frozenset({6, 7, 18, 28, 35, 52, 55, 56, 92})
+_RETRYABLE_HTTP_STATUS_CODES = frozenset({403, 408, 425, 429, 500, 502, 503, 504})
+
+
+def _run_command_in_process_group(
+    command: list[str],
+    timeout: int,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> subprocess.CompletedProcess[str]:
+    """Run a transfer command and terminate its descendants on timeout.
+
+    ``curl`` normally has no descendants, but keeping all acquisition commands
+    in their own process group makes timeout recovery uniform and prevents a
+    future wrapper or retry helper from surviving as an orphan. Partial files
+    are intentionally left to the caller so a later run can resume them.
+    """
+
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+        env=dict(env) if env is not None else None,
+    )
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except (OSError, ProcessLookupError):
+            process.terminate()
+        try:
+            stdout, stderr = process.communicate(timeout=10)
+        except subprocess.TimeoutExpired:
+            try:
+                os.killpg(process.pid, signal.SIGKILL)
+            except (OSError, ProcessLookupError):
+                process.kill()
+            stdout, stderr = process.communicate()
+        raise subprocess.TimeoutExpired(
+            command,
+            timeout,
+            output=stdout if stdout else exc.output,
+            stderr=stderr if stderr else exc.stderr,
+        ) from exc
+    return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+
+
+def _curl_http_status(result: subprocess.CompletedProcess[str]) -> int | None:
+    """Return the HTTP status emitted by curl's ``--write-out`` option."""
+
+    output = result.stdout.strip()
+    if len(output) >= 3 and output[-3:].isdigit():
+        return int(output[-3:])
+    return None
+
+
+def _is_retryable_transfer_failure(result: subprocess.CompletedProcess[str]) -> bool:
+    """Classify failures that can safely resume the retained partial file."""
+
+    if result.returncode in _RETRYABLE_CURL_EXIT_CODES:
+        return True
+    if result.returncode == 22:
+        return _curl_http_status(result) in _RETRYABLE_HTTP_STATUS_CODES
+    return False
 
 
 def calculate_md5(file_path: Path, chunk_size: int = 4096) -> str:
@@ -62,6 +133,19 @@ def clean_stagnant_file(file_path: Path) -> None:
         logger.info(f"Cleaned stagnant file: {file_path}")
 
 
+def preserve_invalid_file(file_path: Path) -> Path:
+    """Move an invalid transfer aside without overwriting prior evidence."""
+    file_path = Path(file_path)
+    candidate = file_path.with_name(f"{file_path.name}.invalid")
+    counter = 1
+    while candidate.exists():
+        candidate = file_path.with_name(f"{file_path.name}.invalid.{counter}")
+        counter += 1
+    file_path.replace(candidate)
+    logger.warning("Preserved invalid transfer as %s", candidate)
+    return candidate
+
+
 def verify_gzip_integrity(file_path: Path) -> bool:
     """Verify the integrity of a gzip file.
 
@@ -72,7 +156,7 @@ def verify_gzip_integrity(file_path: Path) -> bool:
         True if the file is valid gzip or not a .gz file, False if corrupted.
     """
     file_path = Path(file_path)
-    if not file_path.suffix == ".gz":
+    if not (file_path.name.endswith(".gz") or file_path.name.endswith(".gz.part")):
         return True  # Non-gz files are assumed valid
 
     try:
@@ -91,18 +175,61 @@ class ENADownloader:
     Downloads FASTQ files directly from ENA.
     """
 
-    ENA_HTTP_BASE = "http://ftp.sra.ebi.ac.uk/vol1/fastq"
+    ENA_HTTP_BASE = "https://ftp.sra.ebi.ac.uk/vol1/fastq"
 
-    def __init__(self, timeout: int = 1800, retries: int = 3):
+    def __init__(
+        self,
+        timeout: int = 1800,
+        retries: int = 5,
+        retry_delay_seconds: int = 5,
+        speed_limit_bytes: int = 1024,
+        speed_time_seconds: int = 600,
+        api_retries: int = 2,
+        api_retry_delay_seconds: int = 2,
+    ):
         """
         Initialize the downloader.
 
         Args:
             timeout: Maximum download time in seconds (default: 1800/30mins).
-            retries: Number of curl retries (default: 3).
+            retries: Maximum consecutive resumable attempts that make no byte
+                progress (default: 5). Productive premature closes reset this
+                budget and continue within ``timeout``. Each retry starts a
+                new curl invocation so ``--continue-at -`` advances from the
+                retained ``.part`` file.
+            retry_delay_seconds: Initial retry delay in seconds (default: 5).
+                The delay doubles between attempts up to 60 seconds.
+            speed_limit_bytes: Minimum sustained transfer rate before curl
+                considers a transfer stalled (default: 1024 bytes/second).
+            speed_time_seconds: Seconds below ``speed_limit_bytes`` before
+                curl aborts the transfer and preserves its ``.part`` file
+                (default: 600 seconds).
+            api_retries: Number of retries for transient ENA API failures
+                (default: 2).
+            api_retry_delay_seconds: Seconds between ENA API retries
+                (default: 2).
         """
+        if timeout <= 0:
+            raise ValueError("timeout must be positive")
+        if retries < 0:
+            raise ValueError("retries must be non-negative")
+        if retry_delay_seconds <= 0:
+            raise ValueError("retry_delay_seconds must be positive")
+        if speed_limit_bytes <= 0:
+            raise ValueError("speed_limit_bytes must be positive")
+        if speed_time_seconds <= 0:
+            raise ValueError("speed_time_seconds must be positive")
+        if api_retries < 0:
+            raise ValueError("api_retries must be non-negative")
+        if api_retry_delay_seconds <= 0:
+            raise ValueError("api_retry_delay_seconds must be positive")
         self.timeout = timeout
         self.retries = retries
+        self.retry_delay_seconds = retry_delay_seconds
+        self.speed_limit_bytes = speed_limit_bytes
+        self.speed_time_seconds = speed_time_seconds
+        self.api_retries = api_retries
+        self.api_retry_delay_seconds = api_retry_delay_seconds
 
     def get_fastq_urls(self, sample_id: str) -> List[str]:
         """
@@ -139,39 +266,57 @@ class ENADownloader:
             f"accession={sample_id}&result=read_run&fields=fastq_ftp"
         )
 
-        try:
-            with urllib.request.urlopen(api_url, timeout=30) as response:
-                content = response.read().decode("utf-8")
-                lines = content.strip().split("\n")
+        for attempt in range(self.api_retries + 1):
+            try:
+                with urllib.request.urlopen(api_url, timeout=30) as response:
+                    content = response.read().decode("utf-8")
+                    lines = content.strip().split("\n")
 
-                if len(lines) < 2:
+                    if len(lines) < 2:
+                        return []
+
+                    # Second line contains the FTP URLs (semicolon-separated)
+                    # Header line is: run_accession\tfastq_ftp
+                    parts = lines[1].split("\t")
+                    if len(parts) < 2:
+                        return []
+
+                    ftp_field = parts[1].strip()
+
+                    # Check if field is valid/not empty/not just header
+                    if not ftp_field or ftp_field == "fastq_ftp":
+                        return []
+
+                    # Convert FTP paths to HTTP URLs for curl
+                    urls = []
+                    for ftp_path in ftp_field.split(";"):
+                        ftp_path = ftp_path.strip()
+                        if ftp_path:
+                            # ENA API returns "ftp.sra...".  Use HTTPS so that
+                            # large transfers are not downgraded to a less auditable
+                            # clear-text endpoint.
+                            urls.append(f"https://{ftp_path}")
+
+                    return urls
+            except Exception as exc:
+                if attempt >= self.api_retries:
+                    logger.warning(
+                        "ENA API query failed for %s after %d retries: %s",
+                        sample_id,
+                        self.api_retries,
+                        exc,
+                    )
                     return []
-
-                # Second line contains the FTP URLs (semicolon-separated)
-                # Header line is: run_accession	fastq_ftp
-                parts = lines[1].split("\t")
-                if len(parts) < 2:
-                    return []
-
-                ftp_field = parts[1].strip()
-
-                # Check if field is valid/not empty/not just header
-                if not ftp_field or ftp_field == "fastq_ftp":
-                    return []
-
-                # Convert FTP paths to HTTP URLs for curl
-                urls = []
-                for ftp_path in ftp_field.split(";"):
-                    ftp_path = ftp_path.strip()
-                    if ftp_path:
-                        # ENA API returns "ftp.sra...", so prepend http://
-                        http_url = f"http://{ftp_path}"
-                        urls.append(http_url)
-
-                return urls
-        except Exception as e:
-            logger.warning(f"ENA API query failed for {sample_id}: {e}")
-            return []
+                logger.info(
+                    "ENA API query failed for %s (%s); retrying in %ss (%d/%d)",
+                    sample_id,
+                    exc,
+                    self.api_retry_delay_seconds,
+                    attempt + 1,
+                    self.api_retries,
+                )
+                time.sleep(self.api_retry_delay_seconds)
+        return []
 
     def download_run(self, sample_id: str, output_dir: Path) -> Tuple[bool, str, List[Path]]:
         """
@@ -227,56 +372,128 @@ class ENADownloader:
             filename = url.split("/")[-1]
             output_file = output_dir / filename
 
+            partial_file = output_file.with_name(f"{output_file.name}.part")
+
             # Check if already exists and non-empty. Resume support must still
             # reject corrupt gzip files from interrupted prior downloads.
             if output_file.exists() and output_file.stat().st_size > 0:
                 if verify_gzip_integrity(output_file):
                     downloaded_files.append(output_file)
                     continue
-                logger.warning(f"Existing FASTQ failed gzip integrity check, redownloading: {output_file}")
-                output_file.unlink()
+                logger.warning(
+                    "Existing FASTQ failed gzip integrity check; preserving it and starting a fresh transfer: %s",
+                    output_file,
+                )
+                preserve_invalid_file(output_file)
 
-            # Use curl for reliability
+            # A previous interrupted curl is retained as ``.part``.  ENA
+            # advertises byte ranges, so curl can continue without repeating
+            # the already acquired portion of a multi-gigabyte FASTQ.
+
+            # Run each retry as a separate curl invocation. Curl's
+            # ``--retry-all-errors`` restarts a failed transfer within the
+            # same invocation and can discard bytes received during that
+            # attempt. Separate invocations allow ``--continue-at -`` to
+            # advance from the retained partial after exit 18/52 failures.
             cmd = [
                 "curl",
                 "-fsSL",
-                "--retry",
-                str(self.retries),
-                "--retry-delay",
-                "10",
-                "--retry-connrefused",
-                "--retry-all-errors",
                 "--connect-timeout",
                 "30",
+                "--speed-limit",
+                str(self.speed_limit_bytes),
+                "--speed-time",
+                str(self.speed_time_seconds),
+                "--continue-at",
+                "-",
                 "-o",
-                str(output_file),
+                str(partial_file),
+                "--write-out",
+                "%{http_code}",
                 url,
             ]
 
-            try:
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=self.timeout)
+            deadline = time.monotonic() + self.timeout
+            consecutive_no_progress = 0
+            retry_events = 0
+            while True:
+                remaining_seconds = deadline - time.monotonic()
+                if remaining_seconds <= 0:
+                    return False, f"Download timed out; retained partial {partial_file.name}", []
+
+                size_before = partial_file.stat().st_size if partial_file.exists() else 0
+                try:
+                    result = _run_command_in_process_group(
+                        cmd,
+                        timeout=max(1, int(remaining_seconds)),
+                    )
+                except subprocess.TimeoutExpired:
+                    return False, f"Download timed out; retained partial {partial_file.name}", []
+                except Exception as e:
+                    return False, f"Download error: {str(e)}", []
 
                 if (
                     result.returncode == 0
-                    and output_file.exists()
-                    and output_file.stat().st_size > 0
-                    and verify_gzip_integrity(output_file)
+                    and partial_file.exists()
+                    and partial_file.stat().st_size > 0
+                    and verify_gzip_integrity(partial_file)
                 ):
+                    partial_file.replace(output_file)
                     downloaded_files.append(output_file)
-                else:
-                    # Clean up partial
+                    break
+
+                if result.returncode == 0:
+                    if partial_file.exists():
+                        preserve_invalid_file(partial_file)
                     if output_file.exists():
-                        output_file.unlink()
-                    if result.returncode == 0:
-                        return False, f"Download failed gzip integrity check for {filename}", []
+                        preserve_invalid_file(output_file)
+                    return False, f"Download failed gzip integrity check for {filename}", []
+
+                if not _is_retryable_transfer_failure(result):
                     return False, f"Download failed for {filename}: {result.stderr}", []
 
-            except subprocess.TimeoutExpired:
-                if output_file.exists():
-                    output_file.unlink()
-                return False, "Download timed out", []
-            except Exception as e:
-                return False, f"Download error: {str(e)}", []
+                retained_bytes = partial_file.stat().st_size if partial_file.exists() else 0
+                gained_bytes = max(0, retained_bytes - size_before)
+                if gained_bytes > 0:
+                    consecutive_no_progress = 0
+                else:
+                    consecutive_no_progress += 1
+                if consecutive_no_progress > self.retries:
+                    return (
+                        False,
+                        f"Download retry budget exhausted after {self.retries} "
+                        f"consecutive no-progress failures; retained partial {partial_file.name}",
+                        [],
+                    )
+
+                retry_events += 1
+                delay_seconds = min(
+                    self.retry_delay_seconds
+                    * (2 ** min(max(consecutive_no_progress - 1, 0), 4)),
+                    60,
+                )
+                remaining_seconds = deadline - time.monotonic()
+                if remaining_seconds <= delay_seconds:
+                    return (
+                        False,
+                        f"Download retry budget exhausted; retained partial {partial_file.name}",
+                        [],
+                    )
+                logger.info(
+                    "Retrying resumable ENA transfer for %s after curl %d / HTTP %s "
+                    "(retry event %d; consecutive no-progress failures %d/%d; "
+                    "retained %.2f MiB, gained %.2f MiB, backoff %ds)",
+                    filename,
+                    result.returncode,
+                    _curl_http_status(result) or "unknown",
+                    retry_events,
+                    consecutive_no_progress,
+                    self.retries,
+                    retained_bytes / 1024 / 1024,
+                    gained_bytes / 1024 / 1024,
+                    delay_seconds,
+                )
+                time.sleep(delay_seconds)
 
         return True, f"Downloaded {len(downloaded_files)} files", downloaded_files
 

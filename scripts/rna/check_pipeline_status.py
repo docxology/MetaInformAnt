@@ -35,42 +35,12 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
 
 from metainformant.rna.engine.progress_db import ProgressDB
+from metainformant.rna.engine.species import configured_data_root, discover_species_names
 
 # ---------- constants ----------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
-DATA_ROOT = Path("output/amalgkit")
+DATA_ROOT = configured_data_root()
 DB_PATH = DATA_ROOT / "pipeline_progress.db"
-
-SPECIES_ORDER = [
-    "anoplolepis_gracilipes",
-    "acromyrmex_echinatior",
-    "dinoponera_quadriceps",
-    "vollenhovia_emeryi",
-    "odontomachus_brunneus",
-    "formica_exsecta",
-    "temnothorax_americanus",
-    "wasmannia_auropunctata",
-    "nylanderia_fulva",
-    "temnothorax_curvispinosus",
-    "pogonomyrmex_barbatus",
-    "cardiocondyla_obscurior",
-    "temnothorax_nylanderi",
-    "linepithema_humile",
-    "atta_cephalotes",
-    "ooceraea_biroi",
-    "camponotus_floridanus",
-    "solenopsis_invicta",
-    "monomorium_pharaonis",
-    "temnothorax_longispinosus",
-    "harpegnathos_saltator",
-    "nasonia_vitripennis",
-    "polistes_canadensis",
-    "polistes_fuscatus",
-    "megachile_rotundata",
-    "bombus_terrestris",
-    "athalia_rosae",
-    "apis_mellifera",
-]
 
 ALL_STATES = ["pending", "downloading", "downloaded", "quantifying", "quantified", "failed"]
 
@@ -78,23 +48,35 @@ ALL_STATES = ["pending", "downloading", "downloaded", "quantifying", "quantified
 # ---------- helpers ----------
 
 
-def check_downstream(species: str) -> str:
-    """Check if merge/curate/sanity outputs exist."""
-    work_dir = DATA_ROOT / species / "work"
-    curate_dir = work_dir / "curate"
-    merge_dir = DATA_ROOT / species / "merged"
-    if not merge_dir.exists():
-        merge_dir = work_dir / "merge"
+def check_downstream(species: str, data_root: Path = DATA_ROOT) -> str:
+    """Check current merge, filtering, finalization, and sanity evidence."""
+    species_dir = data_root / species
+    work_dir = species_dir / "work"
 
-    has_merge = merge_dir.exists() and any(merge_dir.rglob("*.tsv"))
-    has_curate = curate_dir.exists() and any(curate_dir.rglob("*.tsv"))
+    def has_table(*candidates: Path) -> bool:
+        return any(path.exists() and any(path.rglob("*.tsv")) for path in candidates)
 
-    if has_merge and has_curate:
+    has_merge = has_table(work_dir / "merge", species_dir / "merged", species_dir / "merged" / "merge")
+    has_wsfilter = has_table(work_dir / "wsfilter", species_dir / "wsfilter")
+    has_finalize = has_table(work_dir / "finalize", species_dir / "finalize")
+    has_sanity = any(
+        marker.exists()
+        for marker in (
+            work_dir / "sanity" / "sanity_check.txt",
+            work_dir / "sanity_check.txt",
+            species_dir / "sanity" / "sanity_check.txt",
+        )
+    )
+
+    if has_merge and has_finalize and has_sanity:
         return "✅ Complete"
-    elif has_merge:
+    if has_finalize:
+        return "⚠️  Finalized; sanity pending"
+    if has_wsfilter:
+        return "⚠️  Filtered; finalization pending"
+    if has_merge:
         return "⚠️  Merge only"
-    else:
-        return "❌ Not run"
+    return "❌ Not run"
 
 
 def check_process_running() -> bool:
@@ -103,7 +85,7 @@ def check_process_running() -> bool:
         import subprocess
 
         result = subprocess.run(
-            ["pgrep", "-f", "run_all_species|streaming_orchestrator|run_workflow"], capture_output=True, text=True
+            ["pgrep", "-f", "run_all_species|streaming_orchestrator"], capture_output=True, text=True
         )
         return result.returncode == 0
     except Exception:
@@ -119,20 +101,25 @@ def main():
     parser.add_argument("--species", type=str, help="Check a single species only")
     parser.add_argument("--failed", action="store_true", help="Show failed samples")
     parser.add_argument("--dashboard", action="store_true", help="Generate visual dashboard PDF+PNG to output/")
+    parser.add_argument("--data-root", type=Path, help="Data root containing pipeline_progress.db")
     args = parser.parse_args()
 
     # Change to project root so relative paths resolve
     os.chdir(PROJECT_ROOT)
 
-    if not DB_PATH.exists():
+    data_root = args.data_root.expanduser().resolve() if args.data_root else configured_data_root()
+    db_path = data_root / "pipeline_progress.db"
+
+    if not db_path.exists():
         print("  ⚠  No progress database found. Run the pipeline to initialize it.")
-        print(f"  Expected at: {DB_PATH}")
+        print(f"  Expected at: {db_path}")
         return
 
-    db = ProgressDB(DB_PATH)
+    db = ProgressDB(db_path)
     counts = db.get_counts()
 
-    species_list = [args.species] if args.species else SPECIES_ORDER
+    config_species = discover_species_names(PROJECT_ROOT / "config" / "amalgkit")
+    species_list = [args.species] if args.species else (config_species or sorted(counts))
 
     running = check_process_running()
     print("=" * 80)
@@ -156,7 +143,7 @@ def main():
         sp_counts = counts.get(sp, {})
         total = sum(sp_counts.values())
         quant = sp_counts.get("quantified", 0)
-        ds = check_downstream(sp)
+        ds = check_downstream(sp, data_root)
 
         grand_quant += quant
         grand_total += total
@@ -213,7 +200,7 @@ def main():
     if args.dashboard:
         from metainformant.rna.engine.progress_dashboard import generate_dashboard
 
-        generate_dashboard(db_path=DB_PATH, output_dir=Path("output/amalgkit"))
+        generate_dashboard(db_path=db_path, output_dir=data_root)
 
 
 if __name__ == "__main__":

@@ -383,7 +383,7 @@ if np.max(np.abs(data)) > 1e10:  # Very large numbers
 
 1. **Fork and clone**:
 ```bash
-git clone https://github.com/your-username/metainformant.git
+    git clone https://github.com/docxology/metainformant.git
 cd metainformant
 uv venv
 uv pip install -e .[dev]
@@ -391,7 +391,7 @@ uv pip install -e .[dev]
 
 2. **Make changes** following the [Cursor Rules](../.cursorrules)
 
-3. **Add tests** (real implementations, real implementations)
+3. **Add tests** using real implementations and evidence-backed fixtures.
 
 4. **Run tests**:
 ```bash
@@ -515,7 +515,7 @@ for seq in sequences:
 
 ```
 METAINFORMANT: A comprehensive toolkit for multi-omic biological data analysis.
-Available at: https://github.com/username/metainformant
+Available at: https://github.com/docxology/metainformant
 
 If you use specific modules, cite the underlying algorithms and the METAINFORMANT implementation.
 ```

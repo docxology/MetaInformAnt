@@ -3,6 +3,8 @@
 import tempfile
 from pathlib import Path
 
+import pytest
+
 from metainformant.core import io
 from metainformant.core.execution.workflow import (
     create_sample_config,
@@ -79,57 +81,68 @@ class TestConfigBasedProcessing:
             config_data = io.load_json(advanced_config)
             assert "advanced processing" in config_data["description"]
 
-    def test_download_and_process_data(self):
-        """Test the main processing function."""
-        # Test with valid config
+    def test_download_and_process_data(self, tmp_path: Path):
+        """Test the main processing function without an external service."""
+
+        source = tmp_path / "source.json"
+        source.write_text('{"source": "local fixture"}\n', encoding="utf-8")
         config = {
-            "downloads": {"test_data": {"url": "https://httpbin.org/json", "filename": "test.json"}},
+            "downloads": {
+                "test_data": {
+                    "url": source.as_uri(),
+                    "filename": "test.json",
+                }
+            },
             "processing": {"analyze": {"type": "json_analysis"}},
         }
+        output_dir = tmp_path / "output"
 
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_path = Path(tmp_dir)
+        results = download_and_process_data(
+            config,
+            output_dir=output_dir,
+            verbose=False,
+        )
 
-            try:
-                results = download_and_process_data(config, output_dir=tmp_path, verbose=False)
+        assert set(results) >= {
+            "config",
+            "downloads",
+            "processing",
+            "start_time",
+            "end_time",
+        }
+        assert results["downloads"]["test_data"]["status"] == "success"
+        assert (output_dir / "test.json").read_text(encoding="utf-8") == (
+            source.read_text(encoding="utf-8")
+        )
+        assert (output_dir / "processing_results.json").exists()
 
-                # Check results structure
-                assert "config" in results
-                assert "downloads" in results
-                assert "processing" in results
-                assert "start_time" in results
-                assert "end_time" in results
+    def test_run_config_based_workflow(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+    ):
+        """Test the config-file workflow against a deterministic local source."""
 
-                # Check that results file was created
-                results_file = tmp_path / "processing_results.json"
-                assert results_file.exists()
+        source = tmp_path / "source.json"
+        source.write_text('{"source": "local fixture"}\n', encoding="utf-8")
+        config = {
+            "downloads": {
+                "sample": {
+                    "url": source.as_uri(),
+                    "filename": "sample.json",
+                }
+            }
+        }
+        config_file = tmp_path / "test_config.json"
+        io.dump_json(config, config_file)
+        monkeypatch.chdir(tmp_path)
 
-            except Exception:
-                # Expected to fail without internet, but structure should be correct
-                pass
+        results = run_config_based_workflow(config_file, verbose=False)
 
-    def test_run_config_based_workflow(self):
-        """Test the main workflow function."""
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp_path = Path(tmp_dir)
-
-            # Create a sample config
-            config = {"downloads": {"sample": {"url": "https://httpbin.org/json", "filename": "sample.json"}}}
-
-            config_file = tmp_path / "test_config.json"
-            io.dump_json(config, config_file)
-
-            try:
-                # This will fail without internet, but should return proper structure
-                results = run_config_based_workflow(config_file, verbose=False)
-
-                # Should have success flag and error information
-                assert "success" in results
-                assert "config_path" in results
-
-            except Exception:
-                # Expected to fail without internet
-                pass
+        assert results["success"] is True
+        assert results["config_path"] == str(config_file)
+        assert results["downloads"]["sample"]["status"] == "success"
+        assert (tmp_path / "output" / "test_config" / "sample.json").exists()
 
     def test_config_processing_error_handling(self):
         """Test error handling in config processing."""

@@ -415,7 +415,8 @@ stats.sort_stats('cumulative').print_stats(20)
 1. **Use cleanup options**:
 ```bash
 # RNA workflow cleanup
-python3 scripts/rna/run_workflow.py config.yaml --cleanup-unquantified
+uv run python scripts/rna/reclaim_quantified_raw.py \
+  --data-root "$AMALGKIT_DATA_ROOT" --species <species> --report
 ```
 
 2. **Set custom temp directory**:
@@ -464,5 +465,5 @@ nproc
 
 - [FAQ](FAQ.md) - Common questions and answers
 - [Documentation Guide](DOCUMENTATION_GUIDE.md) - How to use documentation
-- [GitHub Issues](https://github.com/username/metainformant/issues) - Report bugs
-- [Discussions](https://github.com/username/metainformant/discussions) - Ask questions
+- [GitHub Issues](https://github.com/docxology/metainformant/issues) - Report bugs
+- [Discussions](https://github.com/docxology/metainformant/discussions) - Ask questions

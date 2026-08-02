@@ -1,234 +1,88 @@
-# RNA Workflow Orchestration
+# RNA orchestration
 
-Overview of scripts for running RNA-seq workflows across species.
+The current RNA execution model has one producer and one downstream checkpoint
+owner for a selected data root. The producer is implemented by
+`StreamingPipelineOrchestrator` and is exposed through the cohort and
+single-species scripts.
 
-## Quick Links
+## State flow
 
-- **[API Reference](API.md#orchestration-functions)** — Orchestration function documentation
-- **[Workflow Guide](workflow.md)** — Workflow planning and execution
-- **[Configuration Guide](CONFIGURATION.md)** — Configuration management
-- **[Amalgkit Monitoring](amalgkit/monitoring.md)** — Monitoring active pipelines
+```mermaid
+flowchart LR
+    C[Project YAML inventory] --> P[run_all_species.py]
+    P --> M[metadata]
+    M --> S[select]
+    S --> G[getfastq]
+    G --> I[integrate]
+    I --> Q[quant]
+    Q --> L[SQLite progress and provenance]
+    L --> R[producer lock released]
+    R --> D[merge]
+    D --> W[wsfilter]
+    W --> F[finalize]
+    F --> Y[sanity]
+    Y --> E[evidence manifest and analysis]
+```
 
----
-
-## Streaming Orchestrator: `streaming_orchestrator.py`
-
-**Script**: `src/metainformant/rna/engine/streaming_orchestrator.py`  
-**Entry Point**: `python3 -m metainformant.rna.engine.streaming_orchestrator`
-
-This is the **High-Performance Production Orchestrator** designed for massive datasets (7,000+ samples).
-
-### Key Features:
-- **ENA-First Streaming**: Queries ENA Portal API for direct HTTPS links; falls back to NCBI `fasterq-dump` only if necessary.
-- **Zero-Footprint Mode**: Downloads FASTQ -> Quantifies -> Deletes FASTQs immediately.
-- **Concurrent Processing**: Supports 24+ parallel download/quant workers using a **Global Threadpool Execution** model. Tasks from all species are pooled together, ensuring slow outlier samples do not stall the cluster.
-- **SQLite Progress DB**: Robust tracking of `pending`, `downloading`, `quantified`, and `failed` states.
-- **Autonomous Setup**: Automatically detects missing metadata or indices and spawns the `config` -> `select` -> `index` workflow.
-- **Tissue Normalization**: Integrates the [Tissue Patching System](amalgkit/tissue_patching.md) directly into the metadata stream.
-- **Robust Error Handling**: Automatically rejects corrupted empty (0.00 GB) ENA downloads and enforces `PIPELINE_MAX_GB` (now elevated to **350.0 GB**) to explicitly process mega-species while skipping the absolute largest dataset anomalies.
+## Inspect the cohort
 
 ```bash
-# Standard 24-core high-throughput run across all species concurrently
-python3 -m metainformant.rna.engine.streaming_orchestrator \
-    --config amalgkit_pogonomyrmex_barbatus.yaml \
-    --workers 24 --threads 2 --max-gb 350.0
+export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+uv run python scripts/rna/validate_all_species_workflow.py
+uv run python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 ```
 
----
+The dry run is read-only. It resolves the same config directory, species
+inventory, and data root that a real producer run will use.
 
-## Main Orchestrator: `run_workflow.py`
-
-**Script**: `scripts/rna/run_workflow.py`
-
-Executes the full 11-step amalgkit pipeline for a single species. This is generally superseded for bulk operation by `run_all_species.py` executing the Streaming Pipeline.
-
-| Feature | `run_workflow.py` |
-|---------|------------------|
-| Download method | ENA direct wget (100% reliable) |
-| Processing mode | Per-sample: download → quantify → delete FASTQ |
-| Parallel downloads | Configurable via `num_download_workers` in config |
-| Auto-cleanup | Yes — FASTQs deleted after quantification |
-| Status monitoring | `--status`, `--detailed` flags |
-| Quantification | Kallisto |
+## Execute the complete campaign
 
 ```bash
-# Full end-to-end workflow
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
-
-# Specific steps only
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml \
-    --steps getfastq quant merge
-
-# Check status
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
-
-# Cleanup downloaded but unquantified samples
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml \
-    --cleanup-unquantified
+bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 ```
 
-**Config for parallel downloads:**
+The project launcher acquires a lock, validates resource floors, starts the
+producer, waits for it to finish, and then invokes the downstream checkpoint
+runner only when the producer exits successfully. It preserves the progress
+database, partial downloads, quantification receipts, and logs on interruption.
 
-```yaml
-steps:
-  getfastq:
-    num_download_workers: 16
-    threads: 24
-    max_bp: 50000000000   # skip samples >50B bases (50GB)
-```
-
----
-
-## Multi-Species: `run_all_species.py`
-
-**Script**: `scripts/rna/run_all_species.py`
-
-Runs `run_workflow.py` for all configured species sequentially during Phase 1 (Task Discovery), then executes all pending samples concurrently in Phase 2 via the Global Threadpool. This is the main production orchestrator.
+Run one species through the same producer when a bounded diagnostic is needed:
 
 ```bash
-nohup python3 scripts/rna/run_all_species.py \
-  > output/amalgkit/run_all_species_incremental.log 2>&1 &
-
-# Monitor
-tail -f output/amalgkit/run_all_species_incremental.log
+uv run python scripts/rna/process_species.py \
+  --species apis_mellifera \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT"
 ```
 
----
+Do not start this command while the full campaign lock is held.
 
-## Multi-Species Parallel: `orchestrate_species.py`
+## Downstream checkpoints
 
-**Script**: `scripts/rna/orchestrate_species.py`
-
-Alternative orchestrator that runs species through a configurable multi-species YAML.
+After the producer has stopped and the cohort gate passes:
 
 ```bash
-python3 scripts/rna/orchestrate_species.py \
-    --config config/amalgkit/cross_species.yaml
+bash projects/hymenoptera_amalgkit/scripts/run_all_finalization.sh \
+  --data-root "$AMALGKIT_DATA_ROOT"
 ```
 
-**Features:**
-- Sequential/robust: one species at a time
-- Resumable: skips completed steps
-- Centralized logging: `output/amalgkit/logs/`
+The runner executes `merge`, `wsfilter`, `finalize`, and `sanity` in order. Each
+stage reuses a current valid checkpoint and otherwise writes its output through
+an atomic temporary path. A failed stage leaves its inputs intact and records
+the failure for a bounded retry.
 
----
-
-## Running Multiple Species in Parallel
-
-For maximum throughput, run `run_workflow.py` in parallel for each species:
+## Status and evidence
 
 ```bash
-# In separate terminals or with nohup:
-nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml \
-  > logs/species1.log 2>&1 &
-nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species2.yaml \
-  > logs/species2.log 2>&1 &
+uv run python projects/hymenoptera_amalgkit/scripts/report_campaign_status.py \
+  --data-root "$AMALGKIT_DATA_ROOT"
+uv run python projects/hymenoptera_amalgkit/scripts/generate_pipeline_report.py \
+  --data-root "$AMALGKIT_DATA_ROOT"
 ```
 
----
-
-## Per-Sample Processing Workflow
-
-The orchestrator implements an immediate per-sample processing workflow:
-
-1. **Download** — FASTQ files downloaded via ENA wget for each sample
-2. **Quantify** — Sample quantified immediately against the kallisto index
-3. **Delete** — FASTQ files deleted after successful quantification
-
-Only one sample's FASTQ files exist at any time → maximum disk efficiency.
-
----
-
-## Manual Per-Sample Processing
-
-For recovering or testing individual samples:
-
-```python-snippet
-from metainformant.rna.engine.workflow_steps import quantify_sample
-from metainformant.rna.engine.sra_extraction import delete_sample_fastqs
-from metainformant.rna.engine.workflow import load_workflow_config
-from metainformant.core.io import read_delimited
-from pathlib import Path
-
-cfg = load_workflow_config("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
-rows = list(read_delimited(cfg.work_dir / "metadata" / "metadata.tsv", delimiter="\t"))
-sample_rows = [r for r in rows if r.get("run") == "SRR14740514"]
-
-success, message, abundance_path = quantify_sample(
-    sample_id="SRR14740514",
-    metadata_rows=sample_rows,
-    quant_params={"out_dir": str(cfg.work_dir), "threads": 12},
-    log_dir=cfg.log_dir,
-)
-
-if success and abundance_path and abundance_path.exists():
-    fastq_dir = Path(cfg.per_step.get("getfastq", {}).get("out_dir", cfg.work_dir / "fastq"))
-    delete_sample_fastqs("SRR14740514", fastq_dir)
-```
-
----
-
-## Batch Cleanup
-
-Quantify all downloaded-but-unquantified samples and delete their FASTQs:
-
-```python-snippet
-from metainformant.rna.orchestration import cleanup_unquantified_samples
-from pathlib import Path
-
-quantified, failed = cleanup_unquantified_samples(
-    Path("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
-)
-```
-
----
-
-## Performance
-
-| Metric | Value |
-|--------|-------|
-| Download speed | Fast (ENA direct wget) |
-| Success rate | 100% (ENA-based) |
-| Disk usage | Low (per-sample immediate cleanup) |
-| Parallelism | `num_download_workers` downloads + 1 quant at a time |
-
----
-
-## Performance Monitoring
-
-For large-scale runs, monitoring progress via the SQLite database can become a bottleneck. Refer to the [Troubleshooting Guide](amalgkit/TROUBLESHOOTING.md) for best practices, including:
-- Using URI-based read-only connections.
-- Copying the database to `/tmp` for intensive status reporting.
-
-For live status, use the specialized monitoring script:
-```bash
-python3 scripts/rna/check_pipeline_status.py
-```
-
----
-
-## Troubleshooting
-
-**Downloads failing:**
-- Check `ps aux | grep wget | grep -v grep` for active workers
-- Check `num_download_workers` is set in config file
-- Verify network connectivity to ENA: `curl -s https://www.ebi.ac.uk/ena/portal/api/`
-
-**Disk space issues:**
-- Use `--cleanup-unquantified` to quantify and clean downloaded samples
-- Use `--cleanup-partial` to remove partial downloads
-- Reduce `num_download_workers` if disk is being exhausted
-
-**Virtual environment issues:**
-- Scripts auto-detect `.venv`
-- Manual activation: `source .venv/bin/activate`
-
----
-
-## Related Documentation
-
-- **[CONFIGURATION.md](CONFIGURATION.md)** — Configuration management
-- **[workflow.md](workflow.md)** — Workflow planning and execution
-- **[amalgkit/monitoring.md](amalgkit/monitoring.md)** — Pipeline monitoring
-- **[GETTING_STARTED.md](GETTING_STARTED.md)** — Setup and installation
-- **[LINUX_TRANSFER.md](../LINUX_TRANSFER.md)** — Cloud Standard VM Deployment & Resumption
+Status is observational. Completion requires valid metadata, selected sample
+IDs, readable abundance files, current provenance, downstream stage receipts,
+and a regenerated evidence manifest. See the [storage contract](../../projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md)
+and [analysis readiness](../../projects/hymenoptera_amalgkit/doc/manuscript/analysis_readiness.md).

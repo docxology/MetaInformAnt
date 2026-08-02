@@ -45,6 +45,6 @@ from metainformant.core.utils.errors import retry_with_backoff
 
 logger = get_logger(__name__)
 cfg = load_mapping_from_file("config/workflow.yaml")
-cfg = apply_env_overrides(cfg, prefix="AK")
+cfg = apply_env_overrides(cfg, prefix="AMALGKIT")
 result = retry_with_backoff(fetch_data, max_retries=3)
 ```

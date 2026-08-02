@@ -13,8 +13,18 @@ Arguments:
     --continue-on-error: Continue testing even if individual examples fail
 """
 
-# Backward compatibility wrapper - imports from the new modular package
-from test_examples.main import main
+# Backward compatibility wrapper - imports from the modular package.  When
+# this file is executed directly, its filename would otherwise shadow the
+# ``test_examples`` package name.
+if __package__ in {None, ""}:
+    from pathlib import Path
+
+    repo_root = Path(__file__).resolve().parents[2]
+    import sys
+
+    sys.path.insert(0, str(repo_root))
+
+from scripts.test_examples.main import main
 
 if __name__ == "__main__":
     main()

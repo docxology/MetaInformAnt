@@ -22,7 +22,7 @@ SRC_DIR = REPO_ROOT / "src" / "metainformant"
 MODULE_PREFIXES: Dict[str, str] = {
     "core": "CORE",
     "dna": "DNA",
-    "rna": "AK",
+    "rna": "AMALGKIT",
     "protein": "PROT",
     "epigenome": "EPI",
     "ontology": "ONT",

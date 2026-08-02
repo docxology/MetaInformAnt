@@ -37,14 +37,14 @@ def main():
     parser.add_argument(
         "--mapping",
         "-m",
-        default="config/amalgkit/tissue_mapping.yaml",
-        help="Path to tissue mapping YAML (default: config/amalgkit/tissue_mapping.yaml)",
+        default="projects/hymenoptera_amalgkit/config/amalgkit/tissue_mapping.yaml",
+        help="Path to tissue mapping YAML (default: project config directory)",
     )
     parser.add_argument(
         "--patches",
         "-p",
-        default="config/amalgkit/tissue_patches.yaml",
-        help="Path to tissue patches YAML (default: config/amalgkit/tissue_patches.yaml)",
+        default="projects/hymenoptera_amalgkit/config/amalgkit/tissue_patches.yaml",
+        help="Path to tissue patches YAML (default: project config directory)",
     )
     parser.add_argument("--output", "-o", help="Path for output TSV (default: input with _normalized suffix)")
     parser.add_argument("--report-unmapped", "-u", action="store_true", help="Print report of unmapped tissue values")

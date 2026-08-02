@@ -15,6 +15,7 @@ from metainformant.visualization.plots.multidim import (
     plot_parallel_coordinates,
     plot_radar_chart,
 )
+from metainformant.visualization.plots import multidim as multidim_module
 
 # Check for optional dependencies
 try:
@@ -64,13 +65,14 @@ class TestPlotPairwiseRelationships:
 
     def test_pairwise_relationships_no_seaborn(self):
         """Test pairwise relationships when seaborn is not available."""
-        if HAS_SEABORN:
-            pytest.skip("seaborn is available")
-
         data = pd.DataFrame({"var1": np.random.randn(10), "var2": np.random.randn(10)})
-
-        with pytest.raises(ImportError, match="seaborn required"):
-            plot_pairwise_relationships(data)
+        original = multidim_module.HAS_SEABORN
+        multidim_module.HAS_SEABORN = False
+        try:
+            with pytest.raises(ImportError, match="seaborn required"):
+                plot_pairwise_relationships(data)
+        finally:
+            multidim_module.HAS_SEABORN = original
 
 
 class TestPlotParallelCoordinates:

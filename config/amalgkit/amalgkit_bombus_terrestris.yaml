@@ -4,8 +4,8 @@
 # Assembly: GCF_910591885.1 (iyBomTerr1.2)
 # Note: Added for Hymenoptera cross-species tissue comparisons (bumblebee)
   
-work_dir: projects/hymenoptera_amalgkit/data/bombus_terrestris/work
-log_dir: projects/hymenoptera_amalgkit/data/bombus_terrestris/logs
+work_dir: output/amalgkit/bombus_terrestris/work
+log_dir: output/amalgkit/bombus_terrestris/logs
 threads: 16
 
 auto_install_amalgkit: true
@@ -18,6 +18,12 @@ filters:
 species_list:
   - Bombus_terrestris
 
+# Bombus terrestris audax records use the configured species-level iyBomTerr1.2
+# transcriptome because no separate project reference is available. The
+# mapping is explicit and audited under the external work/reference directory.
+reference_aliases:
+  Bombus terrestris audax: Bombus_terrestris
+
 # Alternative taxonomy specification
 taxon_id: 30195
 
@@ -25,7 +31,7 @@ taxon_id: 30195
 genome:
   accession: GCF_910591885.1
   assembly_name: iyBomTerr1.2
-  dest_dir: projects/hymenoptera_amalgkit/data/bombus_terrestris/genome
+  dest_dir: output/amalgkit/bombus_terrestris/genome
 
   # Files to download (based on available NCBI FTP resources)
   include:
@@ -49,33 +55,33 @@ genome:
 # Per-step parameters (merged on top of common params)
 steps:
   metadata:
-    out_dir: projects/hymenoptera_amalgkit/data/bombus_terrestris/work
+    out_dir: output/amalgkit/bombus_terrestris/work
     search_string: '"Bombus terrestris"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
     redo: no
   integrate:
-    fastq_dir: projects/hymenoptera_amalgkit/data/bombus_terrestris/fastq/getfastq
-  config: {}
-  select: {}
+    fastq_dir: output/amalgkit/bombus_terrestris/fastq/getfastq
+  select:
+    select_rules_tsv: config/amalgkit/select_rules.tsv
   getfastq:
-    max_bp: 10000000000
-    out_dir: projects/hymenoptera_amalgkit/data/bombus_terrestris/fastq
+    out_dir: output/amalgkit/bombus_terrestris/fastq
     remove_sra: yes
     threads: 16
-    pfd: yes
     redo: no
   quant:
-    jobs: 1
-    out_dir: projects/hymenoptera_amalgkit/data/bombus_terrestris/quant
+    out_dir: output/amalgkit/bombus_terrestris/quant
     threads: 16
     redo: no
-    keep_fastq: no
+    clean_fastq: no
   merge:
-    out: projects/hymenoptera_amalgkit/data/bombus_terrestris/merged/merged_abundance.tsv
-    out_dir: projects/hymenoptera_amalgkit/data/bombus_terrestris/merged
-  cstmm:
-    out_dir: projects/hymenoptera_amalgkit/data/bombus_terrestris/cstmm
-  curate:
-    out_dir: projects/hymenoptera_amalgkit/data/bombus_terrestris/curate
-  csca:
-    out_dir: projects/hymenoptera_amalgkit/data/bombus_terrestris/csca
+    out_dir: output/amalgkit/bombus_terrestris/work
+  wsfilter:
+    out_dir: output/amalgkit/bombus_terrestris/work
+    input_dir: output/amalgkit/bombus_terrestris/work/merge
+    norm: log2p1-fpkm
+    mapping_rate: 0.2
+  finalize:
+    out_dir: output/amalgkit/bombus_terrestris/work
+    input_dir: output/amalgkit/bombus_terrestris/work/wsfilter
+    norm: log2p1-fpkm
+    batch_effect_alg: no
   sanity: {}

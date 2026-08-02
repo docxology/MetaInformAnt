@@ -12,9 +12,10 @@ import numpy as np
 import pandas as pd
 from scipy.cluster.hierarchy import dendrogram, leaves_list, linkage
 from scipy.spatial.distance import squareform
+from scipy import stats
 
 matplotlib.use("Agg")
-from typing import Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 import matplotlib.gridspec as gridspec
 import matplotlib.pyplot as plt
@@ -24,6 +25,68 @@ from matplotlib.patches import Patch
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
+
+# Cross-species divergence matrices in this module use ``1 - correlation``.
+# Correlations range from -1 to 1, so keeping a fixed 0--2 scale makes figures
+# comparable across cohorts and prevents high-divergence pairs from being
+# clipped into the top color bin.
+_DIVERGENCE_VMIN = 0.0
+_DIVERGENCE_VMAX = 2.0
+_DIVERGENCE_TICKS = np.linspace(_DIVERGENCE_VMIN, _DIVERGENCE_VMAX, 5)
+
+
+def _relative_luminance(rgb: tuple[float, float, float]) -> float:
+    """Return WCAG relative luminance for an sRGB color."""
+
+    channels = np.asarray(rgb, dtype=float)
+    linear = np.where(
+        channels <= 0.04045,
+        channels / 12.92,
+        ((channels + 0.055) / 1.055) ** 2.4,
+    )
+    return float(np.dot(linear, np.array([0.2126, 0.7152, 0.0722])))
+
+
+def _cividis_annotation_color(value: float) -> str:
+    """Choose the higher-contrast annotation color for a cividis value."""
+
+    position = np.clip(
+        (value - _DIVERGENCE_VMIN)
+        / (_DIVERGENCE_VMAX - _DIVERGENCE_VMIN),
+        0.0,
+        1.0,
+    )
+    background = matplotlib.colormaps["cividis"](position)[:3]
+    background_luminance = _relative_luminance(background)
+    light_luminance = _relative_luminance((1.0, 1.0, 1.0))
+    dark_luminance = _relative_luminance((17 / 255, 17 / 255, 17 / 255))
+    light_contrast = (light_luminance + 0.05) / (background_luminance + 0.05)
+    dark_contrast = (background_luminance + 0.05) / (dark_luminance + 0.05)
+    return "#FFFFFF" if light_contrast >= dark_contrast else "#111111"
+
+
+def _validated_condensed(div_matrix: pd.DataFrame) -> np.ndarray:
+    """Validate a complete 0--2 divergence matrix before clustering."""
+
+    values = div_matrix.to_numpy(dtype=float)
+    if values.ndim != 2 or values.shape[0] != values.shape[1] or len(values) < 2:
+        raise ValueError("Divergence matrix must be square with at least two species")
+    if list(div_matrix.index) != list(div_matrix.columns):
+        raise ValueError("Divergence matrix row and column labels must match")
+    if not np.isfinite(values).all():
+        raise ValueError(
+            "Divergence matrix contains non-finite values; complete the cohort "
+            "before clustering or plotting"
+        )
+    if not np.allclose(values, values.T, rtol=0.0, atol=1e-12):
+        raise ValueError("Divergence matrix must be symmetric")
+    if not np.allclose(np.diag(values), 0.0, rtol=0.0, atol=1e-12):
+        raise ValueError("Divergence matrix diagonal must be zero")
+    if values.min() < -1e-9 or values.max() > 2.0 + 1e-9:
+        raise ValueError("Divergence values must lie in the theoretical 0--2 range")
+    return cast(np.ndarray[Any, np.dtype[Any]], squareform(values, checks=True))
+
+
 
 
 def _fmt(name: str) -> str:
@@ -46,7 +109,7 @@ def plot_divergence_heatmap(
     family_map: Optional[Dict[str, str]] = None,
     family_colors: Optional[Dict[str, str]] = None,
     title: str = "Expression Divergence Matrix",
-    cbar_label: str = "Divergence",
+    cbar_label: str = "Divergence (1 − Spearman ρ)",
 ) -> None:
     """Generate a clustered heatmap of expression divergence.
 
@@ -59,9 +122,10 @@ def plot_divergence_heatmap(
         cbar_label: Colorbar label
     """
     n = len(div_matrix)
-    condensed = squareform(div_matrix.values, checks=False)
-    condensed = np.nan_to_num(condensed, nan=0.5)
-    link = linkage(condensed, method="ward")
+    condensed = _validated_condensed(div_matrix)
+    # Correlation-derived dissimilarities are not guaranteed to be Euclidean;
+    # average linkage does not impose Ward's Euclidean-distance assumption.
+    link = linkage(condensed, method="average")
     order = [div_matrix.index[i] for i in leaves_list(link)]
     m = div_matrix.loc[order, order]
 
@@ -69,22 +133,29 @@ def plot_divergence_heatmap(
 
     sns.heatmap(
         m,
-        cmap="YlOrRd",
+        mask=np.eye(n, dtype=bool),
+        # Cividis is perceptually ordered and remains distinguishable for
+        # common color-vision deficiencies. Numeric annotations provide a
+        # redundant encoding for the manuscript-sized Hymenoptera cohort.
+        cmap="cividis",
         annot=True if n <= 30 else False,
         fmt=".2f",
         ax=ax,
         xticklabels=[_fmt(s) for s in order],
         yticklabels=[_fmt(s) for s in order],
         linewidths=0.4 if n <= 30 else 0.1,
-        vmin=0.25,
-        vmax=0.75,
+        vmin=_DIVERGENCE_VMIN,
+        vmax=_DIVERGENCE_VMAX,
         annot_kws={"fontsize": 6.5, "fontweight": "bold"},
-        cbar_kws={"label": cbar_label, "shrink": 0.8},
+        cbar_kws={"label": cbar_label, "shrink": 0.8, "ticks": _DIVERGENCE_TICKS},
     )
-
-    # Color diagonal
-    for i in range(n):
-        ax.add_patch(plt.Rectangle((i, i), 1, 1, fill=True, color="#2c3e50", zorder=3))
+    ax.set_facecolor("#E6E6E6")
+    for annotation in ax.texts:
+        try:
+            annotation_value = float(annotation.get_text())
+        except ValueError:
+            continue
+        annotation.set_color(_cividis_annotation_color(annotation_value))
 
     # Color tick labels by family
     if family_map and family_colors:
@@ -121,9 +192,9 @@ def plot_dendrogram(
         family_colors: Dictionary mapping families to hex colors
         title: Plot title
     """
-    condensed = squareform(div_matrix.values, checks=False)
-    condensed = np.nan_to_num(condensed, nan=0.5)
-    link = linkage(condensed, method="ward")
+    condensed = _validated_condensed(div_matrix)
+    # Average linkage is appropriate for the correlation-derived dissimilarity.
+    link = linkage(condensed, method="average")
 
     fig, ax = plt.subplots(figsize=(max(12, len(div_matrix) * 0.5), 8))
     labels = [_fmt(s) for s in div_matrix.index]
@@ -133,8 +204,10 @@ def plot_dendrogram(
         leaf_rotation=40,
         leaf_font_size=9,
         ax=ax,
-        color_threshold=0.4,
-        above_threshold_color="#7f8c8d",
+        # Cluster color is not an analytical variable; a monochrome tree
+        # avoids implying unsupported groups and survives grayscale printing.
+        color_threshold=0.0,
+        above_threshold_color="#333333",
     )
 
     if family_map and family_colors:
@@ -147,7 +220,7 @@ def plot_dendrogram(
         ax.legend(handles=legend, loc="upper right", fontsize=9, title="Family")
 
     ax.set_title(title, fontsize=14, fontweight="bold", pad=15)
-    ax.set_ylabel("Ward Distance", fontsize=11)
+    ax.set_ylabel("Average-linkage distance (1 − Spearman ρ)", fontsize=11)
     plt.tight_layout()
     plt.savefig(output_path, dpi=250, bbox_inches="tight")
     plt.close()
@@ -193,7 +266,8 @@ def plot_coverage(
 
     ax.set_xlabel("Number of Orthogroups with Mapped Transcripts", fontsize=11)
     ax.set_title(f"Ortholog Coverage per Species\nTotal orthogroups: {total_groups:,}", fontsize=13, fontweight="bold")
-    ax.set_xlim(0, cov.max() * 1.25)
+    max_coverage = float(cov.max()) if not cov.empty else 0.0
+    ax.set_xlim(0, max(1.0, max_coverage * 1.25))
 
     if family_map and family_colors:
         legend = [Patch(facecolor=c, label=f) for f, c in family_colors.items()]
@@ -216,7 +290,9 @@ def plot_top_pairs(div_matrix: pd.DataFrame, output_path: Path) -> None:
     n = len(div_matrix)
     for i in range(n):
         for j in range(i + 1, n):
-            pairs.append((div_matrix.index[i], div_matrix.columns[j], div_matrix.iloc[i, j]))
+            value = float(div_matrix.iloc[i, j])
+            if np.isfinite(value):
+                pairs.append((div_matrix.index[i], div_matrix.columns[j], value))
     pairs.sort(key=lambda x: x[2])
 
     top_sim = pairs[:10]
@@ -227,7 +303,7 @@ def plot_top_pairs(div_matrix: pd.DataFrame, output_path: Path) -> None:
     # Most similar
     labels_s = [f"{_fmt(a)}\n↔ {_fmt(b)}" for a, b, _ in top_sim]
     vals_s = [d for _, _, d in top_sim]
-    colors_s = plt.cm.YlGn(np.linspace(0.3, 0.8, 10))
+    colors_s = plt.cm.YlGn(np.linspace(0.3, 0.8, max(1, len(vals_s))))
     ax1.barh(range(len(vals_s)), vals_s, color=colors_s[::-1], edgecolor="white")
     ax1.set_yticks(range(len(vals_s)))
     ax1.set_yticklabels(labels_s, fontsize=8)
@@ -241,7 +317,7 @@ def plot_top_pairs(div_matrix: pd.DataFrame, output_path: Path) -> None:
     # Most divergent
     labels_d = [f"{_fmt(a)}\n↔ {_fmt(b)}" for a, b, _ in top_div]
     vals_d = [d for _, _, d in top_div]
-    colors_d = plt.cm.OrRd(np.linspace(0.3, 0.8, 10))
+    colors_d = plt.cm.OrRd(np.linspace(0.3, 0.8, max(1, len(vals_d))))
     ax2.barh(range(len(vals_d)), vals_d, color=colors_d, edgecolor="white")
     ax2.set_yticks(range(len(vals_d)))
     ax2.set_yticklabels(labels_d, fontsize=8)
@@ -279,6 +355,8 @@ def plot_family_violin(
             fam_a = family_map.get(sp_a, "Unknown")
             fam_b = family_map.get(sp_b, "Unknown")
             d = div_matrix.iloc[i, j]
+            if not np.isfinite(d):
+                continue
             if fam_a == fam_b:
                 records.append({"Category": f"Within {fam_a}", "Divergence": d, "Type": "Within-family"})
             else:
@@ -307,7 +385,11 @@ def plot_family_violin(
         data=df, x="Category", y="Divergence", order=order, color="#2c3e50", size=3, alpha=0.4, jitter=True, ax=ax
     )
 
-    ax.set_title("Expression Divergence by Taxonomic Relationship", fontsize=14, fontweight="bold")
+    ax.set_title(
+        "Expression Divergence by Taxonomic Relationship\n(descriptive; no inferential test)",
+        fontsize=14,
+        fontweight="bold",
+    )
     ax.set_ylabel("Divergence", fontsize=11)
     ax.set_xlabel("")
     plt.xticks(rotation=35, ha="right", fontsize=9)
@@ -347,7 +429,7 @@ def plot_method_comparison(
         for j in range(i + 1, n):
             o = orth.iloc[i, j]
             f = fing.iloc[i, j]
-            if o < 1.0:  # Valid pair
+            if np.isfinite(o) and np.isfinite(f) and 0.0 <= o <= 2.0 and 0.0 <= f <= 2.0:
                 sp_a, sp_b = shared[i], shared[j]
                 cat = "All Pairs"
                 if family_map:
@@ -385,13 +467,13 @@ def plot_method_comparison(
     ax.set_xlim(lims)
     ax.set_ylim(lims)
 
-    from scipy.stats import pearsonr
-
-    r, p = pearsonr(df["Fingerprint"], df["Ortholog"])
+    rho, _ = stats.spearmanr(df["Fingerprint"], df["Ortholog"])
     ax.text(
         0.05,
         0.95,
-        f"Pearson r = {r:.3f}\np = {p:.2e}\nn = {len(df)} pairs",
+        f"Descriptive Spearman rho = {rho:.3f}\n"
+        f"Dependent pair records; no p-value\n"
+        f"n = {len(df)} pairs",
         transform=ax.transAxes,
         fontsize=10,
         va="top",
@@ -424,7 +506,9 @@ def plot_mean_divergence_rank(
         family_map: Dictionary mapping species names to taxonomic families
         family_colors: Dictionary mapping families to hex colors
     """
-    means = div_matrix.replace(1.0, np.nan).mean(axis=1).sort_values()
+    values = div_matrix.to_numpy(dtype=float).copy()
+    np.fill_diagonal(values, np.nan)
+    means = pd.Series(np.nanmean(values, axis=1), index=div_matrix.index).dropna().sort_values()
     n = len(means)
 
     fig, ax = plt.subplots(figsize=(10, max(6, n * 0.3)))
@@ -435,7 +519,11 @@ def plot_mean_divergence_rank(
     for i, v in enumerate(means.values):
         ax.text(v + 0.002, i, f"{v:.3f}", va="center", fontsize=8)
     ax.set_xlabel("Mean Divergence from All Other Species", fontsize=11)
-    ax.set_title("Species Ranked by Mean Expression Divergence", fontsize=13, fontweight="bold")
+    ax.set_title(
+        "Species Ranked by Mean Expression Divergence (descriptive)",
+        fontsize=13,
+        fontweight="bold",
+    )
 
     if family_map and family_colors:
         legend = [Patch(facecolor=c, label=f) for f, c in family_colors.items()]
@@ -448,38 +536,96 @@ def plot_mean_divergence_rank(
     logger.info(f"Saved mean divergence rank plot to {output_path}")
 
 
-def plot_species_summary(gene_stats: pd.DataFrame, output_path: Path) -> None:
-    """Generate a bar chart of gene counts and expression levels per species.
+def plot_species_summary(feature_stats: pd.DataFrame, output_path: Path) -> None:
+    """Generate a bar chart of feature counts and expression per species.
 
-    Args:
-        gene_stats: DataFrame from compute_gene_count_overlap
-        output_path: Path to save the plot
+    The finalized-table workflow requires ``total_features`` and
+    ``expressed_features`` so the figure describes table rows without implying
+    cross-species gene or ortholog identity.
     """
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, max(8, len(gene_stats) * 0.4)))
+    if {"total_features", "expressed_features"}.issubset(feature_stats.columns):
+        total_column, expressed_column = "total_features", "expressed_features"
+    else:
+        raise ValueError(
+            "Feature summary requires total_features/expressed_features columns"
+        )
 
-    gene_stats_sorted = gene_stats.sort_values("expressed_genes", ascending=True)
+    feature_stats_sorted = feature_stats.sort_values(expressed_column, ascending=True)
+    fig, (ax1, ax2) = plt.subplots(
+        1, 2, figsize=(18, max(8, len(feature_stats_sorted) * 0.4))
+    )
 
-    # Gene counts
-    y_pos = range(len(gene_stats_sorted))
-    ax1.barh(y_pos, gene_stats_sorted["total_genes"], color="#90CAF9", label="Total Genes", height=0.6)
-    ax1.barh(y_pos, gene_stats_sorted["expressed_genes"], color="#1565C0", label="Expressed Genes", height=0.6)
+    y_pos = range(len(feature_stats_sorted))
+    ax1.barh(
+        y_pos,
+        feature_stats_sorted[total_column],
+        color="#D9EAF7",
+        edgecolor="#2F2F2F",
+        linewidth=0.5,
+        hatch="/",
+        label="Total features",
+        height=0.6,
+    )
+    ax1.barh(
+        y_pos,
+        feature_stats_sorted[expressed_column],
+        color="#0072B2",
+        edgecolor="#2F2F2F",
+        linewidth=0.5,
+        hatch="x",
+        label="Positive-expression features",
+        height=0.6,
+    )
+    max_feature_count = float(feature_stats_sorted[total_column].max())
+    feature_label_offset = max(0.5, max_feature_count * 0.012)
+    for row_index, (_, row) in enumerate(feature_stats_sorted.iterrows()):
+        total_features = int(row[total_column])
+        positive_features = int(row[expressed_column])
+        ax1.text(
+            max(total_features, positive_features) + feature_label_offset,
+            row_index,
+            f"{positive_features:,} / {total_features:,}",
+            va="center",
+            fontsize=7.5,
+            color="#111111",
+        )
     ax1.set_yticks(y_pos)
-    ax1.set_yticklabels([_fmt(s) for s in gene_stats_sorted["species"]], fontsize=9)
-    ax1.set_xlabel("Number of Genes")
-    ax1.set_title("Gene Counts per Species", fontsize=14, pad=15)
-    ax1.legend()
+    ax1.set_yticklabels([_fmt(s) for s in feature_stats_sorted["species"]], fontsize=9)
+    ax1.set_xlabel("Number of feature rows (labels: positive / total)")
+    ax1.set_title("Feature Counts per Species", fontsize=14, pad=15)
+    ax1.set_xlim(0, max(1.0, max_feature_count * 1.28))
+    ax1.legend(loc="lower right")
 
-    # Mean expression
-    ax2.barh(y_pos, gene_stats_sorted["mean_expression"], color="#4CAF50", height=0.6)
+    ax2.barh(
+        y_pos,
+        feature_stats_sorted["mean_expression"],
+        color="#009E73",
+        edgecolor="#2F2F2F",
+        linewidth=0.5,
+        hatch=".",
+        height=0.6,
+    )
+    max_mean_expression = float(feature_stats_sorted["mean_expression"].max())
+    mean_label_offset = max(1e-12, max_mean_expression * 0.015)
+    for row_index, value in enumerate(feature_stats_sorted["mean_expression"]):
+        ax2.text(
+            float(value) + mean_label_offset,
+            row_index,
+            f"{float(value):,.3g}",
+            va="center",
+            fontsize=7.5,
+            color="#111111",
+        )
     ax2.set_yticks(y_pos)
-    ax2.set_yticklabels([""] * len(gene_stats_sorted))
-    ax2.set_xlabel("Mean Expression (TPM)")
+    ax2.set_yticklabels([""] * len(feature_stats_sorted))
+    ax2.set_xlabel("Mean expression (input table units)")
     ax2.set_title("Mean Expression per Species", fontsize=14, pad=15)
+    ax2.set_xlim(0, max(1.0, max_mean_expression * 1.2))
 
     plt.tight_layout()
-    plt.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
     plt.close()
-    logger.info(f"Saved species gene summary plot to {output_path}")
+    logger.info(f"Saved species feature summary to {output_path}")
 
 
 def plot_combined_summary(
@@ -489,7 +635,7 @@ def plot_combined_summary(
     family_colors: Optional[Dict[str, str]] = None,
     title: str = "Cross-Species Expression Analysis",
 ) -> None:
-    """4-panel combined summary figure showing dendrogram, heatmap, and distribution.
+    """Three-panel combined summary figure showing dendrogram, heatmap, and distribution.
 
     Args:
         div_matrix: Symmetric divergence matrix
@@ -499,9 +645,8 @@ def plot_combined_summary(
         title: Overall figure title
     """
     n = len(div_matrix)
-    condensed = squareform(div_matrix.values, checks=False)
-    condensed = np.nan_to_num(condensed, nan=0.5)
-    link = linkage(condensed, method="ward")
+    condensed = _validated_condensed(div_matrix)
+    link = linkage(condensed, method="average")
     order = [div_matrix.index[i] for i in leaves_list(link)]
 
     fig = plt.figure(figsize=(22, 18))
@@ -527,9 +672,9 @@ def plot_combined_summary(
         ax1.legend(handles=legend, loc="upper right", fontsize=8)
 
     ax1.set_title(
-        f"A. Expression-Based Phylogeny ({n} species, Ward Linkage)", fontsize=12, fontweight="bold", loc="left"
+        f"A. Expression-Based Clustering ({n} species, Average Linkage)", fontsize=12, fontweight="bold", loc="left"
     )
-    ax1.set_ylabel("Ward Distance")
+    ax1.set_ylabel("Average Linkage Distance")
 
     # B: Heatmap
     ax2 = fig.add_subplot(gs[1, 0])
@@ -537,15 +682,20 @@ def plot_combined_summary(
     short = [_fmt(s) for s in order]
     sns.heatmap(
         ordered_div,
+        mask=np.eye(n, dtype=bool),
         cmap="YlOrRd",
         annot=False,
         ax=ax2,
         xticklabels=short,
         yticklabels=short,
-        vmin=0.25,
-        vmax=0.75,
+        vmin=_DIVERGENCE_VMIN,
+        vmax=_DIVERGENCE_VMAX,
         linewidths=0.2,
-        cbar_kws={"label": "Divergence", "shrink": 0.8},
+        cbar_kws={
+            "label": "Divergence (1 − Spearman ρ)",
+            "shrink": 0.8,
+            "ticks": _DIVERGENCE_TICKS,
+        },
     )
     ax2.set_title("B. Divergence Matrix", fontsize=12, fontweight="bold", loc="left")
     plt.setp(ax2.get_xticklabels(), rotation=45, ha="right", fontsize=6)
@@ -554,10 +704,13 @@ def plot_combined_summary(
     # C: Distribution
     ax3 = fig.add_subplot(gs[1, 1])
     upper = div_matrix.values[np.triu_indices(n, k=1)]
+    upper = upper[np.isfinite(upper)]
+    if upper.size == 0:
+        raise ValueError("Divergence matrix has no finite pairwise values to plot")
     ax3.hist(upper, bins=30, color="#6c5ce7", edgecolor="white", alpha=0.85)
     ax3.axvline(np.median(upper), color="#e74c3c", ls="--", lw=2, label=f"Median: {np.median(upper):.3f}")
     ax3.axvline(np.mean(upper), color="#f39c12", ls="--", lw=2, label=f"Mean: {np.mean(upper):.3f}")
-    ax3.set_xlabel("Expression Divergence", fontsize=10)
+    ax3.set_xlabel("Expression divergence (1 − Spearman ρ)", fontsize=10)
     ax3.set_ylabel("Number of Species Pairs", fontsize=10)
     ax3.set_title("C. Divergence Distribution", fontsize=12, fontweight="bold", loc="left")
     ax3.legend(fontsize=9)

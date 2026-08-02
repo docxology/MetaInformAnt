@@ -1,47 +1,38 @@
-import ast
-import subprocess
-import sys
 from pathlib import Path
 
+import sys
 
-def main():
-    # Run the status command
-    result = subprocess.run(
-        ["bash", "scripts/rna/run_all_species.sh", "--status"],
-        cwd=Path(__file__).resolve().parents[2],
-        capture_output=True,
-        text=True,
-    )
-    if result.returncode != 0:
-        print("Error running status command", file=sys.stderr)
-        sys.exit(1)
-    lines = result.stdout.splitlines()
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
+
+from metainformant.rna.engine.progress_db import ProgressDB
+from metainformant.rna.engine.species import configured_data_root
+
+
+def main() -> None:
+    """Print a summary directly from the current progress database."""
+
+    data_root = configured_data_root()
+    db_path = data_root / "pipeline_progress.db"
+    if not db_path.is_file():
+        raise SystemExit(f"Progress database not found: {db_path}")
+    db = ProgressDB(db_path)
+    counts = db.get_counts()
     summary = {
-        "total_species": 0,
+        "total_species": len(counts),
         "completed": 0,
         "failed": 0,
-        "undownloaded_samples": 0,
-        "quantified_and_deleted": 0,
-        "other": 0,
+        "unquantified_samples": 0,
+        "quantified_samples": 0,
     }
-    for line in lines:
-        if "Status:" in line:
-            # Extract the dict after 'Status:'
-            try:
-                dict_str = line.split("Status:")[1].strip()
-                data = ast.literal_eval(dict_str)
-                summary["total_species"] += 1
-                if data.get("completed"):
-                    summary["completed"] += 1
-                if data.get("failed"):
-                    summary["failed"] += 1
-                categories = data.get("categories", {})
-                summary["undownloaded_samples"] += categories.get("undownloaded", 0)
-                summary["quantified_and_deleted"] += categories.get("quantified_and_deleted", 0)
-            except Exception:
-                # ignore parsing errors
-                continue
-    # Print summary
+    for species_counts in counts.values():
+        total = sum(species_counts.values())
+        quantified = species_counts.get("quantified", 0)
+        summary["quantified_samples"] += quantified
+        summary["unquantified_samples"] += total - quantified
+        summary["failed"] += species_counts.get("failed", 0)
+        if total > 0 and quantified == total:
+            summary["completed"] += 1
+    db.close()
     print("Sample Status Summary:")
     for k, v in summary.items():
         print(f"{k}: {v}")

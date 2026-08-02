@@ -27,7 +27,7 @@ def parse_log_file(log_path: Path) -> list[dict]:
     Expected format (new):
     [56/4254] ✓ SRR5008299 (96.1s, 22.1MB) [dl:45s ex:40s qt:10s]
 
-    Expected format (legacy):
+    Expected format (alternate timing record):
     [56/4254] ✓ SRR5008299 (96.1s, 22.1MB)
     """
     data = []
@@ -37,7 +37,7 @@ def parse_log_file(log_path: Path) -> list[dict]:
         r"\[(\d+)/\d+\]\s+✓\s+(\S+)\s+" r"\((\d+\.?\d*)s,\s+(\d+\.?\d*)MB\)\s*" r"\[dl:(\d+)s\s+ex:(\d+)s\s+qt:(\d+)s\]"
     )
 
-    # Pattern without per-stage timing (legacy)
+    # Pattern without per-stage timing
     pattern_simple = re.compile(r"\[(\d+)/\d+\]\s+✓\s+(\S+)\s+" r"\((\d+\.?\d*)s,\s+(\d+\.?\d*)MB\)")
 
     with open(log_path, "r") as f:

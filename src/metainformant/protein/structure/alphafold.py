@@ -17,6 +17,8 @@ from metainformant.protein._network import get_protein_api_timeout
 
 logger = logging.get_logger(__name__)
 
+ALPHAFOLD_FILES_BASE_URL = "https://alphafold.ebi.ac.uk/files"
+
 
 def build_alphafold_url(uniprot_acc: str, *, version: int = 4, fmt: str = "pdb") -> str:
     """Build AlphaFold database URL for a UniProt accession.
@@ -37,7 +39,7 @@ def build_alphafold_url(uniprot_acc: str, *, version: int = 4, fmt: str = "pdb")
     if fmt not in ("pdb", "cif"):
         raise ValueError("fmt must be 'pdb' or 'cif'")
 
-    base_url = f"https://alphafold.ebi.ac.uk/files/AF-{uniprot_acc}-F1-model_v{version}"
+    base_url = f"{ALPHAFOLD_FILES_BASE_URL}/AF-{uniprot_acc}-F1-model_v{version}"
 
     if fmt == "pdb":
         url = f"{base_url}.pdb"

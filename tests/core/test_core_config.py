@@ -222,22 +222,22 @@ class TestApplyEnvOverrides:
 
     def test_apply_env_overrides_threads(self) -> None:
         """Test THREADS override."""
-        os.environ["AK_THREADS"] = "16"
+        os.environ["AMALGKIT_THREADS"] = "16"
 
         try:
             config = {"threads": 4}
-            result = core_config.apply_env_overrides(config, prefix="AK")
+            result = core_config.apply_env_overrides(config, prefix="AMALGKIT")
             assert result.get("threads") == 16
         finally:
-            os.environ.pop("AK_THREADS", None)
+            os.environ.pop("AMALGKIT_THREADS", None)
 
     def test_apply_env_overrides_work_dir(self) -> None:
         """Test WORK_DIR override."""
-        os.environ["AK_WORK_DIR"] = "/custom/work"
+        os.environ["AMALGKIT_WORK_DIR"] = "/custom/work"
 
         try:
             config = {"work_dir": "/default"}
-            result = core_config.apply_env_overrides(config, prefix="AK")
+            result = core_config.apply_env_overrides(config, prefix="AMALGKIT")
             assert result.get("work_dir") == "/custom/work"
         finally:
-            os.environ.pop("AK_WORK_DIR", None)
+            os.environ.pop("AMALGKIT_WORK_DIR", None)

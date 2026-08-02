@@ -1,4 +1,4 @@
-# Amalgkit Workflow Guide
+# Amalgkit workflow guide
 
 Quick-start guide for running RNA-seq analysis workflows with METAINFORMANT's amalgkit integration.
 
@@ -6,10 +6,10 @@ Quick-start guide for running RNA-seq analysis workflows with METAINFORMANT's am
 
 Before running workflows:
 
-1. **Python Environment**: Python 3.11+ with `uv` package manager
-2. **Amalgkit CLI**: `uv pip install git+https://github.com/kfuku52/amalgkit`
-3. **R Environment**: R with required packages (see [R_INSTALLATION.md](R_INSTALLATION.md))
-4. **Genome Files**: Transcriptome FASTA and kallisto index (see [genome_setup_guide.md](genome_setup_guide.md))
+1. **Python environment**: Python 3.11+ with `uv` package manager
+2. **Amalgkit CLI**: install the pinned project environment and verify `amalgkit --help`
+3. **Reference assets**: transcriptome FASTA and kallisto index (see [genome_setup_guide.md](genome_setup_guide.md))
+4. **External data root**: choose a mounted root with sufficient free space
 
 ## Quick Start
 
@@ -19,8 +19,8 @@ Before running workflows:
 # Check amalgkit availability
 python3 -c "from metainformant.rna import check_cli_available; print(check_cli_available())"
 
-# Check R availability
-R --version
+# Check the installed Amalgkit version
+amalgkit --version
 ```
 
 ### 2. Configure Workflow
@@ -41,62 +41,51 @@ genome:
 
 See existing configurations for examples.
 
-### 3. Run Workflow
+### 3. Run the current producer and downstream checkpoints
 
-**Full end-to-end workflow** (recommended):
-
-```bash
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
-```
-
-**Check status**:
+**Single-species dry run and execution**:
 
 ```bash
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
-```
-
-**Specific steps only**:
-
-```bash
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
-```
-
-**Inspect step order and commands**:
-
-```bash
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --plan
+uv run python scripts/rna/run_all_species.py \
+  --config-dir config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" \
+  --species pogonomyrmex_barbatus --dry-run
+uv run python scripts/rna/run_all_species.py \
+  --config-dir config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" \
+  --species pogonomyrmex_barbatus
+bash projects/hymenoptera_amalgkit/scripts/run_all_finalization.sh \
+  --data-root "$AMALGKIT_DATA_ROOT"
 ```
 
 ### 4. Monitor and Validate
 
 ```bash
-# Check quantified sample counts per species
-python3 scripts/rna/report_completed.py
-
-# Check one species via workflow status
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+# Check the current progress database and downstream evidence
+uv run python scripts/rna/check_pipeline_status.py \
+  --data-root "$AMALGKIT_DATA_ROOT" --verbose
 
 # Check output files
 ls output/amalgkit/pbarbatus/work/quant/ | wc -l
-tail -20 output/amalgkit/run_all_species_incremental.log
+tail -20 "$AMALGKIT_DATA_ROOT"/results/full_campaign_*.log
 ```
 
 ## Workflow Steps
 
-The amalgkit pipeline includes 11 steps:
+The current contract contains nine required per-species analysis stages plus
+the `dataset` workspace-preparation command:
 
 | Step | Purpose | Output |
 |------|---------|--------|
-| **metadata** | Download SRA metadata | `work/metadata/` |
-| **integrate** | Integrate external data | `work/metadata/` |
-| **config** | Generate configuration | `work/config_base/` |
-| **select** | Select samples | `work/pivot_qualified.tsv` |
-| **getfastq** | Download FASTQ files | `fastq/` |
+| **metadata** | Retrieve SRA/ENA metadata | `work/metadata/` |
+| **select** | Select samples with the pinned rules | `work/metadata/` |
+| **getfastq** | Acquire FASTQ files with resume/reuse | `work/getfastq/` |
+| **integrate** | Attach local read paths | `work/metadata/` |
 | **quant** | Quantify with kallisto | `quant/` |
 | **merge** | Merge expression data | `merged/` |
 | **cstmm** | Cross-species normalization | `cstmm/` |
-| **curate** | Quality control | `curate/` |
-| **csca** | Cross-species analysis | `csca/` |
+| **wsfilter** | Within-species filtering | `work/wsfilter/` |
+| **finalize** | Final analysis tables | `work/finalize/` |
 | **sanity** | Validate results | `work/sanity/` |
 
 See [steps/README.md](steps/README.md) for detailed step documentation.
@@ -123,7 +112,7 @@ results = workflow.execute_workflow(config)
 
 Install amalgkit:
 ```bash
-uv pip install git+https://github.com/kfuku52/amalgkit
+uv sync --extra rna  # installs the exact Amalgkit 0.16.32 project contract
 ```
 
 ### "No genome index"
@@ -139,31 +128,31 @@ python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_<species>.
 - Set `TMPDIR` to repository temp: `export TMPDIR="$(pwd)/.tmp/bash"`
 - See [DISK_SPACE_MANAGEMENT.md](../../DISK_SPACE_MANAGEMENT.md)
 
-### "R package missing"
+### "Output table missing"
 
-See [R_INSTALLATION.md](R_INSTALLATION.md) and [r_packages.md](r_packages.md).
+Run the step-specific prerequisite validator, inspect the JSONL manifest, and
+confirm that the configured input directory contains non-empty TSV tables.
 
 ## Related Documentation
 
 - **[README.md](README.md)** - Complete amalgkit integration overview
 - **[amalgkit.md](amalgkit.md)** - Detailed pipeline documentation
 - **[FUNCTIONS.md](FUNCTIONS.md)** - Quick function lookup
-- **[steps/README.md](steps/README.md)** - All 11 step guides
+- **[steps/README.md](steps/README.md)** — Current step guides
 - **[genome_setup_guide.md](genome_setup_guide.md)** - Genome preparation
 
 ## Production Tips
 
-1. **ENA direct downloads are the default**: 100% reliability, no LITE file issues
-2. **FASTQs are deleted after quant**: Minimizes disk usage automatically
-3. **Monitor with `report_completed.py`**: Disk-based quantified count per species
-4. **Monitor live log**: `tail -f output/amalgkit/run_all_species_incremental.log`
-5. **Resume safely**: `redo: no` (default) skips already-quantified samples
+1. **ENA HTTPS retrieval is the default**: valid local files are reused and
+   incomplete files remain resumable `.part` files
+2. **Raw reads are reclaimed after current quantification**: disable with
+   `AMALGKIT_RECLAIM_RAW_AFTER_QUANT=no`
+3. **Monitor with `check_pipeline_status.py`**: current-contract counts from
+   the selected data root
+4. **Monitor the current log**: `tail -f "$AMALGKIT_DATA_ROOT"/results/full_campaign_*.log`
+5. **Resume safely**: exact-current provenance skips already quantified
+   samples; outputs without the pinned provenance contract are reprocessed
 
 ---
 
 *For complete documentation, see [README.md](README.md) and the step-specific guides in `steps/`.*
-
-
-
-
-

@@ -15,6 +15,7 @@ from metainformant.visualization.analysis.information import (
     plot_mutual_information_matrix,
     plot_renyi_spectra,
 )
+from metainformant.visualization.analysis import information as information_module
 
 # Check for optional dependencies
 try:
@@ -312,11 +313,12 @@ class TestPlotInformationNetwork:
 
     def test_information_network_no_networkx(self):
         """Test information network plot when NetworkX is not available."""
-        if HAS_NETWORKX:
-            pytest.skip("NetworkX is available")
-
         nodes = ["A", "B"]
         edges = [("A", "B", 0.5)]
-
-        with pytest.raises(ImportError, match="NetworkX required"):
-            plot_information_network(nodes, edges)
+        original = information_module.HAS_NETWORKX
+        information_module.HAS_NETWORKX = False
+        try:
+            with pytest.raises(ImportError, match="NetworkX required"):
+                plot_information_network(nodes, edges)
+        finally:
+            information_module.HAS_NETWORKX = original

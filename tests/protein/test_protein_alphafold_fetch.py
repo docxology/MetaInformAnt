@@ -1,22 +1,50 @@
 from __future__ import annotations
 
+import http.server
 from pathlib import Path
+import threading
 
 import pytest
 
 from metainformant.protein.structure.alphafold import build_alphafold_url, fetch_alphafold_model
+from metainformant.protein.structure import alphafold as alphafold_module
 
 
-def _check_online(url: str) -> bool:
-    """Check if we can reach a URL within timeout."""
+@pytest.fixture
+def local_alphafold_api(monkeypatch):
+    """Serve valid PDB/CIF payloads through the real download implementation."""
+
+    class Handler(http.server.BaseHTTPRequestHandler):
+        def do_GET(self) -> None:  # noqa: N802 - stdlib HTTP handler API
+            if "FAKE_PROTEIN" in self.path:
+                self.send_response(404)
+                self.end_headers()
+                return
+            if self.path.endswith(".pdb"):
+                body = b"HEADER    METAINFORMANT TEST MODEL\nATOM      1  CA  ALA A   1       1.000   2.000   3.000  1.00 90.00           C\n"
+                content_type = "chemical/x-pdb"
+            else:
+                body = b"data_METAINFORMANT\n_atom_site.id 1\n"
+                content_type = "chemical/x-mmcif"
+            self.send_response(200)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def log_message(self, format: str, *args: object) -> None:
+            return
+
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    monkeypatch.setattr(alphafold_module, "ALPHAFOLD_FILES_BASE_URL", f"http://127.0.0.1:{server.server_port}")
     try:
-        import requests
-
-        resp = requests.get(url, timeout=5)
-        resp.raise_for_status()
-        return True
-    except Exception:
-        return False
+        yield
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
 
 
 def test_build_alphafold_url_pdb_format():
@@ -54,50 +82,27 @@ def test_build_alphafold_url_edge_cases():
     assert "AF-P123456789-F1" in url_long
 
 
-def test_fetch_alphafold_model_real_network(tmp_path: Path):
-    """Test real AlphaFold model download with actual HTTP requests."""
-    if not _check_online("https://alphafold.ebi.ac.uk"):
-        pytest.skip("No network access for AlphaFold - real implementation requires connectivity")
-
-    # Test with a well-known protein (hemoglobin alpha chain)
-    try:
-        result_path = fetch_alphafold_model("P69905", tmp_path, version=4, fmt="pdb")
-        assert result_path.exists()
-        assert result_path.suffix == ".pdb"
-        assert result_path.name.startswith("AF-P69905")
-        assert result_path.stat().st_size > 0
-
-        # Verify it contains PDB content
-        content = result_path.read_text()
-        assert "HEADER" in content or "ATOM" in content
-    except Exception as e:
-        # AlphaFold might not have this protein or service might be down
-        pytest.skip(f"AlphaFold model P69905 not available - real API behavior: {e}")
+def test_fetch_alphafold_model_real_network(tmp_path: Path, local_alphafold_api):
+    """Test AlphaFold model download with actual HTTP requests."""
+    result_path = fetch_alphafold_model("P69905", tmp_path, version=4, fmt="pdb")
+    assert result_path.exists()
+    assert result_path.suffix == ".pdb"
+    assert result_path.name.startswith("AF-P69905")
+    assert result_path.stat().st_size > 0
+    assert "HEADER" in result_path.read_text()
 
 
-def test_fetch_alphafold_model_cif_format_real_network(tmp_path: Path):
-    """Test real AlphaFold model download in CIF format."""
-    if not _check_online("https://alphafold.ebi.ac.uk"):
-        pytest.skip("No network access for AlphaFold - real implementation requires connectivity")
-
-    try:
-        result_path = fetch_alphafold_model("P69905", tmp_path, version=4, fmt="cif")
-        assert result_path.exists()
-        assert result_path.suffix == ".cif"
-        assert result_path.stat().st_size > 0
-
-        # Verify it contains CIF content
-        content = result_path.read_text()
-        assert "data_" in content or "_atom_site" in content
-    except Exception as e:
-        pytest.skip(f"AlphaFold CIF model P69905 not available - real API behavior: {e}")
+def test_fetch_alphafold_model_cif_format_real_network(tmp_path: Path, local_alphafold_api):
+    """Test AlphaFold model download in CIF format."""
+    result_path = fetch_alphafold_model("P69905", tmp_path, version=4, fmt="cif")
+    assert result_path.exists()
+    assert result_path.suffix == ".cif"
+    assert result_path.stat().st_size > 0
+    assert "data_" in result_path.read_text()
 
 
-def test_fetch_alphafold_model_nonexistent_protein(tmp_path: Path):
+def test_fetch_alphafold_model_nonexistent_protein(tmp_path: Path, local_alphafold_api):
     """Test real behavior with non-existent protein ID."""
-    if not _check_online("https://alphafold.ebi.ac.uk"):
-        pytest.skip("No network access for AlphaFold - real implementation requires connectivity")
-
     # Test with invalid protein ID
     with pytest.raises(Exception):
         fetch_alphafold_model("FAKE_PROTEIN_12345", tmp_path, version=4, fmt="pdb")
@@ -109,34 +114,18 @@ def test_fetch_alphafold_model_invalid_format_error(tmp_path: Path):
         fetch_alphafold_model("P69905", tmp_path, version=4, fmt="xyz")
 
 
-def test_fetch_alphafold_model_directory_creation(tmp_path: Path):
+def test_fetch_alphafold_model_directory_creation(tmp_path: Path, local_alphafold_api):
     """Test that output directory is created if it doesn't exist."""
-    if not _check_online("https://alphafold.ebi.ac.uk"):
-        pytest.skip("No network access for AlphaFold - real implementation requires connectivity")
-
     # Use a nested directory that doesn't exist yet
     nested_dir = tmp_path / "models" / "alphafold"
     assert not nested_dir.exists()
-
-    try:
-        result_path = fetch_alphafold_model("P69905", nested_dir, version=4, fmt="pdb")
-        assert nested_dir.exists()
-        assert result_path.parent == nested_dir
-        assert result_path.exists()
-    except Exception as e:
-        # Model might not be available, but directory should still be created
-        assert nested_dir.exists()
-        pytest.skip(f"AlphaFold model not available but directory creation tested: {e}")
+    result_path = fetch_alphafold_model("P69905", nested_dir, version=4, fmt="pdb")
+    assert nested_dir.exists()
+    assert result_path.parent == nested_dir
+    assert result_path.exists()
 
 
-def test_alphafold_offline_behavior(tmp_path: Path):
-    """Document real offline behavior for AlphaFold downloads."""
-    # When offline, the function should fail gracefully
-    try:
-        result = fetch_alphafold_model("P69905", tmp_path, version=4, fmt="pdb")
-        # If this succeeds, we're online
-        assert result.exists()
-    except Exception:
-        # Expected when offline - this documents real failure modes
-        # Real implementations reveal actual network dependencies
-        assert True  # This is acceptable real-world behavior
+def test_alphafold_download_behavior(tmp_path: Path, local_alphafold_api):
+    """Document successful local transport and persisted model output."""
+    result = fetch_alphafold_model("P69905", tmp_path, version=4, fmt="pdb")
+    assert result.exists()

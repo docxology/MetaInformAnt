@@ -19,22 +19,20 @@ from metainformant.rna.engine.workflow import (
 )
 
 
+@pytest.mark.external_tool
 class TestWorkflowErrorHandling:
     """Test that workflows handle errors gracefully."""
 
     def test_workflow_continues_after_non_critical_failure(self, tmp_path: Path):
-        """Test that workflow continues execution after non-critical step failure."""
-        # Create a config that will likely have some failures
+        """Test that a local prerequisite failure is recorded without a network call."""
+        # A missing selected-metadata file is a deterministic non-critical
+        # failure for merge.  The previous invalid metadata-search fixture
+        # launched an unbounded remote Amalgkit request and made this test
+        # dependent on external service latency.
         config_data = {
             "work_dir": str(tmp_path / "work"),
             "threads": 1,
             "species_list": ["Test_species"],
-            "per_step": {
-                "metadata": {
-                    "search_string": "invalid_search_string_that_will_fail",
-                },
-                "config": {},
-            },
         }
 
         config_file = tmp_path / "config.yaml"
@@ -43,8 +41,9 @@ class TestWorkflowErrorHandling:
         cfg = load_workflow_config(config_file)
         plan_workflow(cfg)
 
-        # Execute with check=False (should continue after failures)
-        return_codes = execute_workflow(cfg, check=False)
+        # Execute only the failing local step with check=False.
+        result = execute_workflow(cfg, steps=["merge"], check=False)
+        return_codes = [step.return_code for step in result.steps_executed]
 
         # Should have return codes for all executed steps (may be fewer than planned
         # if some steps are skipped due to missing dependencies or exceptions)
@@ -54,7 +53,7 @@ class TestWorkflowErrorHandling:
         # Even if some steps fail, should have attempted all steps that were runnable
         assert all(isinstance(rc, int) for rc in return_codes)
 
-        # Should have at least attempted some steps (metadata step should always run)
+        # The merge prerequisite should have been attempted and recorded.
         assert len(return_codes) >= 1
 
     def test_workflow_stops_on_critical_failure_with_check(self, tmp_path: Path):
@@ -104,10 +103,11 @@ class TestWorkflowErrorHandling:
             records = list(read_jsonl(manifest_path))
             skipped = [r for r in records if r.get("return_code") == 126]
             # Some steps may be skipped due to missing dependencies
-            # (e.g., R for curate/csca, kallisto for quant)
+            # (e.g., the installed Amalgkit backend for finalize, kallisto for quant)
             assert len(skipped) >= 0  # At least verify structure works
 
 
+@pytest.mark.external_tool
 class TestManifestTracking:
     """Test that workflow manifests track execution order correctly."""
 
@@ -196,6 +196,7 @@ class TestManifestTracking:
                 assert "timestamp" in record or "duration_seconds" in record
 
 
+@pytest.mark.external_tool
 class TestWorkflowResume:
     """Test that workflows can resume from manifests."""
 
@@ -336,6 +337,7 @@ class TestEarlyExitAndValidation:
                 "PREREQUISITE CHECK FAILED" in integrate_failed[0].error_message
                 or "No FASTQ files" in integrate_failed[0].error_message
                 or "Amalgkit CLI not available" in integrate_failed[0].error_message
+                or "Required amalgkit CLI unavailable" in integrate_failed[0].error_message
             )
 
     def test_pre_step_validation_quant(self, tmp_path: Path):
@@ -384,6 +386,7 @@ class TestEarlyExitAndValidation:
                 "PREREQUISITE CHECK FAILED" in quant_failed[0].error_message
                 or "No FASTQ files" in quant_failed[0].error_message
                 or "Amalgkit CLI not available" in quant_failed[0].error_message
+                or "Required amalgkit CLI unavailable" in quant_failed[0].error_message
             )
 
     def test_fastq_extraction_validation(self, tmp_path: Path):

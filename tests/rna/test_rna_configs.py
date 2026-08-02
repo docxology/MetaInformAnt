@@ -33,10 +33,12 @@ def test_build_step_params_includes_species_tissues_and_layout(tmp_path: Path):
     # directories for other steps
     assert params_map["getfastq"]["out-dir"] == layout.fastq_dir
     assert params_map["quant"]["out-dir"] == layout.quant_dir
-    assert params_map["merge"]["out"] == layout.merge_table
+    assert params_map["merge"]["out-dir"] == layout.work_dir
     assert params_map["cstmm"]["out-dir"] == layout.cstmm_dir
-    assert params_map["curate"]["out-dir"] == layout.curate_dir
-    assert params_map["csca"]["out-dir"] == layout.csca_dir
+    assert params_map["wsfilter"]["out-dir"] == layout.work_dir
+    assert params_map["wsfilter"]["input-dir"] == layout.merge_dir
+    assert params_map["csfilter"]["out-dir"] == layout.work_dir
+    assert params_map["finalize"]["out-dir"] == layout.work_dir
 
 
 def test_plan_workflow_with_params_merges_common_and_specific(tmp_path: Path):

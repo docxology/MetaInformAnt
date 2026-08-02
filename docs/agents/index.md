@@ -141,7 +141,7 @@ for future in as_completed(futures):
     # handle each result as it completes
 ```
 
-**Learn more**: [Multi-Agent Workflows — Pattern 2](MULTI_AGENT_WORKFLOWS.md#2-parallel-fan-out--fan-in)
+**Learn more**: [Multi-Agent Workflows — composition patterns](MULTI_AGENT_WORKFLOWS.md#workflow-composition-patterns)
 
 ## Architecture at a Glance
 
@@ -225,7 +225,7 @@ Running workflows at scale? See:
 
 - [Root AGENTS.md](../../AGENTS.md) — High-level AI agent philosophy
 - [Core Infrastructure](../core/README.md) — Shared utilities reference
-- [RNA Module](../rna/README.md) — Industrial-scale orchestration example (8,300 samples)
+- [RNA Module](../rna/README.md) — Industrial-scale orchestration example with a historical 10,312-sample target across 27 configured species
 - [Testing Guide](../../tests/REAL_IMPLEMENTATION_TESTING_POLICY.md) — Real implementation policy
 
 ## Contributing

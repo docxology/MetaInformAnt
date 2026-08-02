@@ -183,7 +183,7 @@ export META_LOG_LEVEL=DEBUG
 
 ```bash
 # Clone repository
-git clone https://github.com/your-org/MetaInformAnt.git
+git clone https://github.com/docxology/MetaInformAnt.git
 cd MetaInformAnt
 
 # Install with uv (editable mode)

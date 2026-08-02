@@ -8,7 +8,7 @@ Use `performance_tuning` when pipelines run too slowly or crash with `MemoryErro
 
 ## Table of Contents
 
-- [Caching](#caching)
+- [I/O Optimization](#io-optimization)
 - [Parallel Processing](#parallel-processing)
 - [Memory Optimization](#memory-optimization)
 - [I/O Optimization](#io-optimization)
@@ -219,7 +219,7 @@ HDF5        | 2.1 GB | 8.2 s     | 7.9 s      | 3.9:1
 zstd (lvl3) | 2.4 GB | 9.1 s     | 8.5 s      | 3.4:1
 ```
 
-### Wall-clock time breakdown (RNA-seq 28 species)
+### Wall-clock time breakdown (historical RNA-seq 27-species configuration)
 ```
 Task                      | Local (48h) | Cloud (parallel) | Speedup
 --------------------------|-------------|------------------|--------

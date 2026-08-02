@@ -26,6 +26,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.rna.core.sample_utils import find_quantification_file
+from metainformant.rna.retrieval.ena_downloader import ENADownloader
 
 logging.basicConfig(
     level=logging.INFO,
@@ -38,9 +39,10 @@ logger = logging.getLogger(__name__)
 # Configuration
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-AMALGKIT_OUTPUT = PROJECT_ROOT / "output" / "amalgkit"
+AMALGKIT_OUTPUT = Path(
+    os.environ.get("AMALGKIT_DATA_ROOT", str(PROJECT_ROOT / "output" / "amalgkit"))
+).expanduser()
 EQTL_OUTPUT = PROJECT_ROOT / "output" / "eqtl"
-DOWNLOAD_SCRIPT = PROJECT_ROOT / "scripts" / "rna" / "download_ena.py"
 
 # NCBI genome accession map per species
 GENOME_ACCESSIONS = {
@@ -49,7 +51,7 @@ GENOME_ACCESSIONS = {
 }
 
 # Minimum tools required
-REQUIRED_TOOLS = ["hisat2", "hisat2-build", "samtools", "bcftools", "wget"]
+REQUIRED_TOOLS = ["hisat2", "hisat2-build", "samtools", "bcftools", "curl"]
 
 
 def check_tools() -> bool:
@@ -162,16 +164,13 @@ def download_fastq(srr_id: str, output_dir: Path, species: str = "") -> list[Pat
                 linked.append(dest)
             return linked
 
-    logger.info(f"Downloading FASTQs for {srr_id}...")
-    cmd = ["python3", str(DOWNLOAD_SCRIPT), srr_id, str(output_dir)]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
-
-    if result.returncode != 0:
-        logger.warning(f"Download failed for {srr_id}: {result.stderr[:200]}")
+    logger.info(f"Downloading FASTQs for {srr_id} via ENA...")
+    downloader = ENADownloader(timeout=1800, retries=3)
+    success, message, fastqs = downloader.download_run(srr_id, output_dir)
+    if not success:
+        logger.warning(f"Download failed for {srr_id}: {message[:200]}")
         return []
-
-    fastqs = sorted(output_dir.glob(f"{srr_id}*.fastq.gz"))
-    logger.info(f"Downloaded {len(fastqs)} FASTQ files for {srr_id}")
+    logger.info(f"{message} for {srr_id}")
     return fastqs
 
 

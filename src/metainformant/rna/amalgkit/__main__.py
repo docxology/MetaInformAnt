@@ -1,78 +1,99 @@
-"""CLI entry point for amalgkit RNA-seq workflow.
+"""Run the current streaming Amalgkit producer for one configured species.
 
-Usage:
-    python -m metainformant.rna.amalgkit --config path/to/config.yaml
-    python -m metainformant.rna.amalgkit --config path/to/config.yaml --steps metadata select getfastq
+The producer owns metadata, acquisition, integration, and quantification.
+Merge, within-species filtering, finalization, and sanity are performed by the
+project's lock-owned downstream checkpoint runner after the producer stops.
 """
 
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from pathlib import Path
-from typing import List, Optional
 
 from metainformant.core.utils import logging
+
+REPO_ROOT = Path(__file__).resolve().parents[4]
+DEFAULT_CONFIG_DIR = REPO_ROOT / "projects" / "hymenoptera_amalgkit" / "config" / "amalgkit"
+if not DEFAULT_CONFIG_DIR.is_dir():
+    DEFAULT_CONFIG_DIR = REPO_ROOT / "config" / "amalgkit"
 
 logger = logging.get_logger(__name__)
 
 
-def main(argv: Optional[List[str]] = None) -> int:
-    """Main CLI entry point for amalgkit workflow execution.
+def _parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(
+        prog="metainformant.rna.amalgkit",
+        description="Run the current streaming Amalgkit producer for one species",
+    )
+    parser.add_argument("--config", "-c", type=Path, required=True, help="Path to a current species YAML configuration")
+    parser.add_argument("--data-root", type=Path, help="External Amalgkit data root")
+    parser.add_argument("--max-gb", type=float, default=float(os.environ.get("PIPELINE_MAX_GB", "50")))
+    parser.add_argument("--workers", type=int, default=int(os.environ.get("PIPELINE_WORKERS", "4")))
+    parser.add_argument("--threads", type=int, default=int(os.environ.get("PIPELINE_THREADS", "6")))
+    parser.add_argument("--quant-slots", type=int, default=None)
+    parser.add_argument("--fastq-threads", type=int, default=None)
+    parser.add_argument("--fastq-slots", type=int, default=None)
+    parser.add_argument("--compression-threads", type=int, default=None)
+    parser.add_argument("--validation-slots", type=int, default=None)
+    parser.add_argument("--max-in-flight", type=int, default=None)
+    parser.add_argument("--dry-run", action="store_true", help="Resolve the producer inputs without executing")
+    return parser
 
-    Args:
-        argv: Command line arguments (defaults to sys.argv[1:])
 
-    Returns:
-        Exit code (0 for success, non-zero for failure)
-    """
-    parser = argparse.ArgumentParser(prog="metainformant.rna.amalgkit", description="Run amalgkit RNA-seq workflow")
+def main(argv: list[str] | None = None) -> int:
+    """Resolve one current config and run its streaming producer."""
 
-    parser.add_argument("--config", "-c", type=str, required=True, help="Path to amalgkit YAML configuration file")
+    args = _parser().parse_args(argv)
+    config_path = args.config.expanduser().resolve()
+    if not config_path.is_file():
+        logger.error("Configuration file not found: %s", config_path)
+        return 2
+    if not config_path.name.startswith("amalgkit_") or config_path.name in {
+        "amalgkit_template.yaml",
+        "amalgkit_test.yaml",
+        "amalgkit_cross_species.yaml",
+    }:
+        logger.error("Configuration is not a runnable species config: %s", config_path)
+        return 2
 
-    parser.add_argument("--steps", "-s", nargs="*", help="Specific steps to run (default: all steps)")
+    if args.data_root:
+        os.environ["AMALGKIT_DATA_ROOT"] = str(args.data_root.expanduser().resolve())
 
-    parser.add_argument("--species", type=str, help="Species name (overrides config if specified)")
+    from metainformant.rna.engine.species import species_name_from_config, configured_data_root
+    from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
 
-    parser.add_argument("--dry-run", action="store_true", help="Print what would be executed without running")
+    config_dir = config_path.parent
+    data_root = configured_data_root()
+    species_config = config_path.name
+    species = species_name_from_config(species_config)
 
-    parser.add_argument("--verbose", "-v", action="store_true", help="Enable verbose output")
-
-    args = parser.parse_args(argv)
-
-    # Validate config file exists
-    config_path = Path(args.config)
-    if not config_path.exists():
-        logger.error(f"Configuration file not found: {config_path}")
-        return 1
-
+    print(f"Species: {species}")
+    print(f"Config directory: {config_dir}")
+    print(f"Data root: {data_root}")
+    print(f"Max sample size: {args.max_gb} GB | workers: {args.workers} | threads: {args.threads}")
     if args.dry_run:
-        logger.info("DRY RUN - would run amalgkit workflow with:")
-        logger.info(f"  Config: {config_path}")
-        logger.info(f"  Steps: {args.steps or 'all'}")
-        logger.info(f"  Species: {args.species or 'from config'}")
         return 0
 
-    # Import and run workflow
-    try:
-        from metainformant.rna.engine.orchestration import run_workflow_for_species
-
-        logger.info(f"Starting amalgkit workflow with config: {config_path}")
-
-        results = run_workflow_for_species(config_path=config_path, species=args.species, steps=args.steps)
-
-        # Report results
-        if results.get("success"):
-            logger.info(f"Workflow completed successfully: {results.get('successful_steps', 0)} steps successful")
-            return 0
-        else:
-            failed = results.get("failed", [])
-            logger.error(f"Workflow failed: {len(failed)} steps failed: {', '.join(failed)}")
-            return 1
-
-    except Exception as e:
-        logger.exception(f"Workflow execution failed: {e}")
-        return 1
+    orchestrator = StreamingPipelineOrchestrator(
+        config_dir=config_dir,
+        log_dir=data_root / "logs",
+        db_path=data_root / "pipeline_progress.db",
+    )
+    orchestrator.run_all(
+        [species_config],
+        args.max_gb,
+        args.workers,
+        args.threads,
+        quant_slots=args.quant_slots,
+        fasterq_threads=args.fastq_threads,
+        fasterq_slots=args.fastq_slots,
+        compression_threads=args.compression_threads,
+        validation_slots=args.validation_slots,
+        max_in_flight=args.max_in_flight,
+    )
+    return 0
 
 
 if __name__ == "__main__":

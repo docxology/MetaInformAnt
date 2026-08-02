@@ -259,41 +259,21 @@ class TestSingleCellDimensionality:
 
     def test_run_tsne_basic(self):
         """Test t-SNE dimensionality reduction."""
-        try:
-            tsne_result = run_tsne(expression_matrix=self.expression_matrix, n_components=2, perplexity=30)
+        data = SingleCellData(X=self.expression_matrix)
+        tsne_result = run_tsne(data, n_components=2, perplexity=30, random_state=123)
 
-            # Check result structure
-            assert "embedding" in tsne_result
-
-            # Check dimensions
-            embedding = tsne_result["embedding"]
-            assert embedding.shape == (self.n_cells, 2)
-
-        except ImportError:
-            # Skip if sklearn not available
-            pytest.skip("sklearn not available for t-SNE")
-        except Exception:
-            # Skip if other issues (e.g., insufficient data)
-            pytest.skip("t-SNE failed, possibly due to data constraints")
+        assert "X_tsne" in tsne_result.obsm
+        embedding = tsne_result.obsm["X_tsne"]
+        assert embedding.shape == (self.n_cells, 2)
 
     def test_run_umap_basic(self):
         """Test UMAP dimensionality reduction."""
-        try:
-            umap_result = run_umap(expression_matrix=self.expression_matrix, n_components=2, n_neighbors=15)
+        data = SingleCellData(X=self.expression_matrix)
+        umap_result = run_umap(data, n_components=2, n_neighbors=15, random_state=123)
 
-            # Check result structure
-            assert "embedding" in umap_result
-
-            # Check dimensions
-            embedding = umap_result["embedding"]
-            assert embedding.shape == (self.n_cells, 2)
-
-        except ImportError:
-            # Skip if umap-learn not available
-            pytest.skip("umap-learn not available for UMAP")
-        except Exception:
-            # Skip if other issues
-            pytest.skip("UMAP failed, possibly due to missing dependencies")
+        assert "X_umap" in umap_result.obsm
+        embedding = umap_result.obsm["X_umap"]
+        assert embedding.shape == (self.n_cells, 2)
 
 
 @pytest.mark.skipif(not CLUSTERING_AVAILABLE, reason="singlecell.clustering not available")

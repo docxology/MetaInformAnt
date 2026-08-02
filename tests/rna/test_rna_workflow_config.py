@@ -23,6 +23,7 @@ def test_load_workflow_config_yaml(tmp_path: Path):
     cfg = load_workflow_config(cfg_file)
     assert cfg.work_dir == (tmp_path / "work").resolve()
     assert cfg.log_dir == (tmp_path / "logs").resolve()
+    assert cfg.source_path == cfg_file.resolve()
     assert cfg.threads == 2
     assert cfg.species_list == ["X"]
     steps = dict(plan_workflow(cfg))

@@ -15,22 +15,10 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from metainformant.core.utils import logging
 from metainformant.rna.core.sample_utils import extract_sample_id
-from metainformant.rna.engine.workflow_cleanup import (
-    check_disk_space,
-    check_disk_space_or_fail,
-    cleanup_incorrectly_placed_sra_files,
-    cleanup_temp_files,
-)
+from metainformant.rna.engine.workflow_cleanup import check_disk_space
 from metainformant.rna.engine.workflow_core import AmalgkitWorkflowConfig
 
 logger = logging.get_logger(__name__)
-
-# Private aliases for backward compatibility with internal callers
-_cleanup_incorrectly_placed_sra_files = cleanup_incorrectly_placed_sra_files
-_cleanup_temp_files = cleanup_temp_files
-_check_disk_space = check_disk_space
-_check_disk_space_or_fail = check_disk_space_or_fail
-
 
 def apply_step_defaults(config: AmalgkitWorkflowConfig) -> AmalgkitWorkflowConfig:
     """Apply default values to workflow step configurations.
@@ -50,8 +38,8 @@ def apply_step_defaults(config: AmalgkitWorkflowConfig) -> AmalgkitWorkflowConfi
         - integrate: fastq_dir, out_dir
         - quant: out_dir, index settings, bootstrap count
         - merge: out_dir, batch size
-        - cstmm: out_dir, normalization method
-        - curate: out_dir, metadata path
+        - wsfilter: merged-input directory and within-species normalization
+        - finalize: filtered-input directory and final normalization/export
     """
     # Define step-specific defaults
     step_defaults: Dict[str, Dict[str, Any]] = {
@@ -73,22 +61,21 @@ def apply_step_defaults(config: AmalgkitWorkflowConfig) -> AmalgkitWorkflowConfi
             "fragment_sd": 20,  # Standard deviation for single-end
         },
         "merge": {
-            "out_dir": str(config.work_dir / "merged"),
+            "out_dir": str(config.work_dir),
             "batch_size": 100,  # Samples per batch for large datasets
             "output_format": "tsv",
         },
-        "cstmm": {
+        "wsfilter": {
             "out_dir": str(config.work_dir),
-            "normalization": "tpm",  # TPM normalization by default
-            "min_expression": 1.0,  # Minimum expression threshold
+            "input_dir": str(config.work_dir / "merge"),
+            "norm": "log2p1-fpkm",
+            "mapping_rate": 0.2,
         },
-        "curate": {
-            "out_dir": str(config.work_dir / "curate"),
-            # metadata path computed from merge output in plan_workflow
-        },
-        "csca": {
+        "finalize": {
             "out_dir": str(config.work_dir),
-            "correlation_method": "pearson",
+            "input_dir": str(config.work_dir / "wsfilter"),
+            "norm": "log2p1-fpkm",
+            "batch_effect_alg": "no",
         },
     }
 
@@ -107,12 +94,12 @@ def apply_step_defaults(config: AmalgkitWorkflowConfig) -> AmalgkitWorkflowConfi
 
     # Handle environment variable overrides for step settings
     env_prefix_map = {
-        "getfastq": "AK_GETFASTQ_",
-        "integrate": "AK_INTEGRATE_",
-        "quant": "AK_QUANT_",
-        "merge": "AK_MERGE_",
-        "cstmm": "AK_CSTMM_",
-        "curate": "AK_CURATE_",
+        "getfastq": "AMALGKIT_GETFASTQ_",
+        "integrate": "AMALGKIT_INTEGRATE_",
+        "quant": "AMALGKIT_QUANT_",
+        "merge": "AMALGKIT_MERGE_",
+        "wsfilter": "AMALGKIT_WSFILTER_",
+        "finalize": "AMALGKIT_FINALIZE_",
     }
 
     for step_name, prefix in env_prefix_map.items():
@@ -157,18 +144,18 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
     """
     steps = []
 
-    # Define the standard amalgkit workflow steps
+    # Define the current per-species Amalgkit workflow steps. Cross-species
+    # normalization/filtering is inserted only when its required inputs are
+    # explicitly configured below.
     workflow_steps = [
         "metadata",
-        "config",
         "select",
         "getfastq",
         "integrate",  # After getfastq to integrate downloaded FASTQ files
         "quant",
         "merge",
-        "cstmm",
-        "curate",
-        "csca",
+        "wsfilter",
+        "finalize",
         "sanity",
     ]
 
@@ -180,27 +167,20 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
     # per_step_list is a list of step names to run
     per_step_list = per_step if isinstance(per_step, list) else []
 
-    # Check if cstmm/csca required parameters are provided
-    has_ortholog_params = (
-        (
-            bool(per_step_dict.get("cstmm", {}).get("orthogroup_table"))
-            or bool(per_step_dict.get("cstmm", {}).get("dir_busco"))
-        )
-        or (
-            bool(per_step_dict.get("csca", {}).get("orthogroup_table"))
-            or bool(per_step_dict.get("csca", {}).get("dir_busco"))
-        )
-        or bool(config.extra_config.get("orthogroup_table"))
-        or bool(config.extra_config.get("dir_busco"))
-    )
+    # cstmm/csfilter are current optional cross-species commands. They require
+    # either an OrthoFinder table or BUSCO-derived ortholog inputs and are not
+    # silently treated as a per-species default.
+    has_ortholog_params = any(
+        bool(per_step_dict.get(step, {}).get(key))
+        for step in ("cstmm", "csfilter")
+        for key in ("orthogroup_table", "dir_busco")
+    ) or bool(config.extra_config.get("orthogroup_table")) or bool(config.extra_config.get("dir_busco"))
 
-    # Filter out cstmm and csca if required parameters not provided
-    if not has_ortholog_params:
-        workflow_steps = [step for step in workflow_steps if step not in ("cstmm", "csca")]
-        if "cstmm" in per_step_dict or "csca" in per_step_dict or "cstmm" in per_step_list or "csca" in per_step_list:
-            logger.warning(
-                "Skipping cstmm and csca steps: required parameters (orthogroup_table or dir_busco) not provided"
-            )
+    if has_ortholog_params:
+        merge_index = workflow_steps.index("wsfilter") + 1
+        workflow_steps[merge_index:merge_index] = ["cstmm", "csfilter"]
+    elif any(step in per_step_dict or step in per_step_list for step in ("cstmm", "csfilter")):
+        logger.warning("Skipping optional cross-species normalization/filtering: ortholog inputs are not configured")
 
     # If steps were explicitly specified as a list, only run those steps
     if per_step_list:
@@ -211,25 +191,36 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
         step_params = {
             "out_dir": str(config.work_dir),
         }
+        # Amalgkit 0.16.32's native NCBI taxonomy database is shared read-only
+        # workflow infrastructure.  A campaign may provide one validated
+        # directory through the environment so metadata/integrate/getfastq do
+        # not rebuild the multi-million-row SQLite database once per species.
+        # The setting is opt-in and remains absent for ordinary repository-local
+        # runs and tests.
+        shared_download_dir = os.environ.get("AMALGKIT_SHARED_DOWNLOAD_DIR", "").strip()
+        if shared_download_dir and step in {"metadata", "integrate", "getfastq"}:
+            step_params["download_dir"] = str(Path(shared_download_dir).expanduser().resolve())
         # Propagate global redo flag if set
         if config.extra_config.get("redo"):
             step_params["redo"] = "yes"
-        # Only add threads for steps that support it (merge, curate, metadata don't)
-        if step not in ("merge", "curate", "metadata", "sanity", "select", "cstmm", "csca", "config"):
+        # All current commands accept a thread budget except cstmm, which is
+        # deliberately single-process in Amalgkit 0.16.x.
+        if step != "cstmm":
             step_params["threads"] = config.threads
-        # Only add species for steps that support it (merge, curate, integrate, getfastq, quant don't)
+        # Species is not a valid argument for commands operating on a single
+        # configured workspace or a cross-species matrix.
         if config.species_list and step not in (
             "integrate",
             "merge",
-            "curate",
             "metadata",
             "getfastq",
             "quant",
             "sanity",
             "select",
             "cstmm",
-            "csca",
-            "config",
+            "wsfilter",
+            "csfilter",
+            "finalize",
         ):
             step_params["species"] = config.species_list
 
@@ -259,11 +250,6 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
             step_params["work_dir"] = str(config.work_dir)
         if "out_dir" not in step_params:
             step_params["out_dir"] = str(config.work_dir)
-
-        # Hardcode canonical config directory for parsing validation on bootstrap steps
-        if step in ("select", "cstmm", "csca", "index", "config"):
-            if "config_dir" not in step_params:
-                step_params["config_dir"] = "config/config_base"
 
         # INTELLIGENT REDO LOGIC:
         if step == "getfastq":
@@ -337,19 +323,21 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
             if "index_dir" not in step_params:
                 step_params["index_dir"] = str(config.work_dir / "index")
 
-        elif step == "curate" and "metadata" not in step_params:
-            # Curate uses metadata from merge directory
-            # We need to find where merge step puts its output
-            merge_params = per_step.get("merge", {})
-            merge_dir = Path(merge_params.get("out_dir", config.work_dir / "merged"))
-            # amalgkit merge typically creates a 'merge' subdirectory, but sometimes outputs directly
-            # Check for standard subdirectory first
-            metadata_in_subdir = merge_dir / "merge" / "metadata.tsv"
-            if metadata_in_subdir.exists():
-                step_params["metadata"] = str(metadata_in_subdir)
-            else:
-                # Fallback to parent directory (seen in pbarbatus)
-                step_params["metadata"] = str(merge_dir / "metadata.tsv")
+        elif step in ("wsfilter", "csfilter", "finalize"):
+            # Downstream commands consume the metadata emitted by their input
+            # directory. Keep the path explicit so a run cannot accidentally
+            # select an unrelated workspace.
+            upstream_step = {
+                "wsfilter": "merge",
+                "csfilter": "wsfilter",
+                "finalize": "csfilter" if "csfilter" in workflow_steps else "wsfilter",
+            }[step]
+            upstream_params = per_step_dict.get(upstream_step, {})
+            upstream_out = Path(upstream_params.get("out_dir", config.work_dir))
+            upstream_dir = upstream_out if upstream_out.name == upstream_step else upstream_out / upstream_step
+            step_params.setdefault("input_dir", str(upstream_dir))
+            if "metadata" not in step_params:
+                step_params["metadata"] = str(upstream_dir / "metadata.tsv")
 
         # PATH RESOLUTION: Auto-adjust integrate fastq_dir to include getfastq subdirectory
         if step == "integrate":
@@ -459,7 +447,7 @@ def _log_heartbeat(step_name: str, start_time: float, message: str = "") -> None
     elapsed_str = f"{int(elapsed // 3600)}h{int((elapsed % 3600) // 60)}m{int(elapsed % 60)}s"
 
     # Check disk space
-    ok, free_gb = _check_disk_space(Path.cwd(), min_free_gb=5.0)
+    ok, free_gb = check_disk_space(Path.cwd(), min_free_gb=5.0)
     disk_status = f"{free_gb:.1f}GB free" if free_gb >= 0 else "unknown"
 
     msg = f"[HEARTBEAT] {step_name}: {elapsed_str} elapsed, disk: {disk_status}"
@@ -627,28 +615,55 @@ def prepare_reference_genome(config: AmalgkitWorkflowConfig) -> bool:
         return True
 
     try:
+        import shutil
+
         species_name = config.species_list[0] if config.species_list else "species"
 
         # 1. Define paths
         index_dir = config.work_dir / "index"
-        index_file = index_dir / f"{species_name}_transcripts.idx"
+        # Amalgkit 0.16.32 resolves kallisto indexes using the exact
+        # ``<species>.idx`` stem.  Older MetaInformAnt artifacts used a
+        # ``_transcripts`` suffix, so the compatibility lookup below keeps
+        # those artifacts usable while all newly produced indexes follow the
+        # current upstream contract.
+        index_file = index_dir / f"{species_name}.idx"
+        pre_contract_index_file = index_dir / f"{species_name}_transcripts.idx"
 
         # Also check if it exists in the genome dest_dir/index
         dest_dir = Path(config.genome.get("dest_dir", config.work_dir.parent / "genome"))
         shared_index_dir = dest_dir / "index"
-        shared_index_file = shared_index_dir / f"{species_name}_transcripts.idx"
+        shared_index_file = shared_index_dir / f"{species_name}.idx"
+        pre_contract_shared_index_file = shared_index_dir / f"{species_name}_transcripts.idx"
 
-        if index_file.exists():
+        if index_file.is_file() and index_file.stat().st_size > 0:
             logger.info(f"Reference genome index found at: {index_file}")
             return True
 
-        if shared_index_file.exists():
+        if pre_contract_index_file.is_file() and pre_contract_index_file.stat().st_size > 0:
+            logger.info(
+                "Found a pre-contract reference genome index; copying it to the current "
+                f"Amalgkit path: {pre_contract_index_file} -> {index_file}"
+            )
+            index_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(pre_contract_index_file, index_file)
+            return True
+
+        if shared_index_file.is_file() and shared_index_file.stat().st_size > 0:
             logger.info(f"Found shared reference genome index at: {shared_index_file}")
             index_dir.mkdir(parents=True, exist_ok=True)
-            import shutil
-
             logger.info(f"Copying shared index to: {index_file}")
             shutil.copy2(shared_index_file, index_file)
+            return True
+
+        if pre_contract_shared_index_file.is_file() and pre_contract_shared_index_file.stat().st_size > 0:
+            logger.info(
+                "Found a pre-contract shared reference genome index; copying it to the "
+                f"current Amalgkit path: {pre_contract_shared_index_file} -> {index_file}"
+            )
+            index_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(pre_contract_shared_index_file, index_file)
+            shared_index_dir.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(pre_contract_shared_index_file, shared_index_file)
             return True
 
         logger.info(f"Reference index missing at {index_file}. Preparing reference genome...")
@@ -668,16 +683,47 @@ def prepare_reference_genome(config: AmalgkitWorkflowConfig) -> bool:
         dest_dir.mkdir(parents=True, exist_ok=True)
         dest_file = dest_dir / transcriptome_file
 
-        # 4. Download file
+        # 4. Download file atomically.  ``curl -L`` alone can save a 404 HTML
+        # response with exit code 0; that failure mode is especially costly
+        # when a later kallisto build is allowed to run for hours.
+        import subprocess
+
+        def valid_reference_file(path: Path) -> bool:
+            if not path.is_file() or path.stat().st_size == 0:
+                return False
+            if path.name.endswith(".gz"):
+                check = subprocess.run(["gzip", "-t", str(path)], capture_output=True, text=True)
+                return check.returncode == 0
+            return True
+
+        if dest_file.exists() and not valid_reference_file(dest_file):
+            logger.warning(f"Existing reference file failed integrity validation; replacing {dest_file}")
+            dest_file.unlink(missing_ok=True)
+
         if not dest_file.exists():
             logger.info(f"Downloading transcriptome from {download_url}...")
-            import subprocess
-
-            cmd = ["curl", "-L", "-o", str(dest_file), download_url]
-            result = subprocess.run(cmd, check=True)
-            if result.returncode != 0:
-                logger.error("Download failed")
+            partial_file = dest_file.with_name(dest_file.name + ".part")
+            partial_file.unlink(missing_ok=True)
+            cmd = [
+                "curl",
+                "--fail",
+                "--location",
+                "--retry",
+                "3",
+                "--retry-delay",
+                "5",
+                "--connect-timeout",
+                "30",
+                "--output",
+                str(partial_file),
+                download_url,
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            if result.returncode != 0 or not valid_reference_file(partial_file):
+                logger.error("Reference download failed or failed gzip validation: %s", result.stderr.strip())
+                partial_file.unlink(missing_ok=True)
                 return False
+            partial_file.replace(dest_file)
             logger.info("Download complete")
         else:
             logger.info(f"Transcriptome file already exists at {dest_file}")
@@ -692,7 +738,7 @@ def prepare_reference_genome(config: AmalgkitWorkflowConfig) -> bool:
 
         result = subprocess.run(kallisto_cmd, capture_output=True, text=True)
 
-        if result.returncode == 0:
+        if result.returncode == 0 and index_file.is_file() and index_file.stat().st_size > 0:
             logger.info("Genome index built successfully")
             try:
                 import shutil
@@ -776,19 +822,13 @@ def sanitize_params_for_cli(subcommand: str, params: Dict[str, Any]) -> Dict[str
     # Remove or transform parameters that shouldn't go to CLI
     sanitized = params.copy()
 
-    # Remove internal Python objects
-    to_remove = []
-    for key, value in sanitized.items():
-        if isinstance(value, (Path, type)):
-            to_remove.append(key)
-
-    for key in to_remove:
-        del sanitized[key]
-
-    # Convert Path objects to absolute path strings
+    # Convert filesystem paths to absolute strings and omit type objects that
+    # cannot be represented as CLI values.
     for key, value in sanitized.items():
         if isinstance(value, Path):
             sanitized[key] = str(value.resolve())
+        elif isinstance(value, type):
+            sanitized.pop(key, None)
 
     # ALWAYS remove work_dir - amalgkit CLI does not accept --work-dir (only --out_dir)
     sanitized.pop("work_dir", None)
@@ -797,12 +837,12 @@ def sanitize_params_for_cli(subcommand: str, params: Dict[str, Any]) -> Dict[str
     # NOTE: apply_step_defaults() injects MetaInformAnt-only defaults (e.g. bootstrap,
     # fragment_length) that amalgkit CLI does NOT accept. These MUST be stripped here.
     INVALID_PARAMS = {
-        "quant": {"keep_fastq", "bootstrap", "fragment_length", "fragment_sd"},
+        "quant": {"bootstrap", "fragment_length", "fragment_sd"},
         "getfastq": {"num_download_workers", "num_retries", "retry_delay", "validate_md5"},
         "merge": {"batch_size", "output_format"},
+        # Keep orchestration-only options out of the installed Amalgkit CLI.
+        "select": set(),
         "cstmm": {"normalization", "min_expression"},
-        "csca": {"correlation_method"},
-        "config": {"config_dir"},
     }
 
     if subcommand in INVALID_PARAMS:
@@ -830,14 +870,6 @@ def _is_step_completed(step_name: str, step_params: dict, config: AmalgkitWorkfl
         metadata_file = work_dir / "metadata" / "metadata.tsv"
         if metadata_file.exists():
             return True, str(metadata_file)
-        return False, None
-
-    elif step_name == "config":
-        config_dir = work_dir / "config_base"
-        if config_dir.exists():
-            config_files = list(config_dir.glob("*.config"))
-            if config_files:
-                return True, f"{len(config_files)} config files in {config_dir}"
         return False, None
 
     elif step_name == "select":
@@ -868,22 +900,38 @@ def _is_step_completed(step_name: str, step_params: dict, config: AmalgkitWorkfl
         merge_out = step_params.get("out")
         if merge_out:
             merge_path = Path(merge_out)
-            if merge_path.exists():
+            if merge_path.is_file():
                 return True, str(merge_path)
 
-        merge_dir = Path(step_params.get("out_dir", work_dir / "merged"))
-        merged_file = merge_dir / "merged_abundance.tsv"
-        if merged_file.exists():
-            return True, str(merged_file)
+        merge_root = Path(step_params.get("out_dir", work_dir))
+        merge_dirs = [merge_root]
+        if merge_root.name != "merge":
+            merge_dirs.append(merge_root / "merge")
+        for merge_dir in merge_dirs:
+            merged_file = merge_dir / "merged_abundance.tsv"
+            if merged_file.is_file():
+                return True, str(merged_file)
+            merged_tables = list(merge_dir.glob("**/*_tpm.tsv")) + list(merge_dir.glob("**/*_tpm.tsv.gz"))
+            if merged_tables:
+                return True, str(merged_tables[0])
         return False, None
 
-    elif step_name == "curate":
-        curate_dir = Path(step_params.get("out_dir", work_dir / "curate"))
-        if curate_dir.exists():
-            expected_files = ["curated_abundance.tsv", "curated_metadata.tsv"]
-            found_files = [f for f in expected_files if (curate_dir / f).exists()]
-            if found_files:
-                return True, f"Curate outputs found: {', '.join(found_files)} in {curate_dir}"
+    elif step_name in ("wsfilter", "csfilter", "finalize"):
+        output_dir = Path(step_params.get("out_dir", work_dir))
+        if output_dir.name != step_name:
+            output_dir = output_dir / step_name
+        metadata_file = output_dir / "metadata.tsv"
+        expression_files = list(output_dir.glob("**/*_expression.tsv"))
+        if metadata_file.exists():
+            return True, str(metadata_file)
+        if expression_files:
+            return True, str(expression_files[0])
+        return False, None
+
+    elif step_name == "cstmm":
+        cstmm_file = Path(step_params.get("out_dir", work_dir)) / "cstmm.tsv"
+        if cstmm_file.exists():
+            return True, str(cstmm_file)
         return False, None
 
     elif step_name == "sanity":

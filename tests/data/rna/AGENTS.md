@@ -4,7 +4,7 @@
 RNA-seq and amalgkit workflow test fixtures.
 
 ## Directory Structure
-- `curate/` - Curation step test data organized by species
+- `finalize/` - Finalization step test data organized by species
 
 ## Contents
 Test data for:

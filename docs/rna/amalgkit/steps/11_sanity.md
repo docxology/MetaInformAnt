@@ -90,7 +90,7 @@ steps:
 
 **With `--index`**:
 - Checks for kallisto index files matching species names in metadata
-- Index files expected: `{Scientific_Name}_transcripts.idx`
+- Index files expected: `{Scientific_Name}.idx`
 
 **With `--quant`**:
 - Checks for `abundance.tsv` files in `quant/SRR*/` directories
@@ -141,7 +141,7 @@ Pogonomyrmex_barbatus
 
 ```mermaid
 flowchart LR
-    A[curate] --> B[sanity]
+    A[finalize] --> B[sanity]
     C[merge] --> B
     B --> D[END]
 ```
@@ -247,7 +247,7 @@ wc -l output/work/sanity/SRA_IDs_without_quant.txt
 **Causes**:
 1. Quant step failed for some samples
 2. Quant step not run yet
-3. Samples excluded after curate step
+3. Samples excluded during filtering or finalization
 
 **Solutions**:
 1. Check quant logs:
@@ -294,21 +294,23 @@ cat output/work/sanity/SRA_IDs_without_index.txt
 
 2. Download pre-built indices and place in correct location:
    ```bash
-   cp Species_transcripts.idx output/work/index/
+   cp Species.idx output/work/index/
    ```
 
 ### Issue: FASTQs missing (expected behavior)
 
-**Important**: Missing FASTQs after quant is **NORMAL** if `--clean_fastq yes` was used.
+**Important**: The current project runs quant with `--clean_fastq no`. Missing
+FASTQs are expected only after the provenance-gated reclamation utility has
+recorded a successful current quantification.
 
 **Explanation**:
 ```bash
-# During quant step:
---clean_fastq yes  # Deletes FASTQs after successful quantification
+# During the current project quant step:
+--clean_fastq no  # Retains FASTQs until provenance is written
 
 # Result:
-amalgkit sanity --getfastq
-# Will report missing FASTQs, but this is expected!
+scripts/rna/reclaim_quantified_raw.py --execute
+# Removes raw inputs only after current evidence is present
 ```
 
 **Verification**:
@@ -445,7 +447,7 @@ done
 from metainformant.rna.engine.workflow import execute_workflow, load_workflow_config
 
 cfg = load_workflow_config("config/amalgkit_apis_mellifera.yaml")
-execute_workflow(cfg)  # sanity runs automatically after curate
+execute_workflow(cfg)  # sanity runs automatically after finalize
 ```
 
 ### Workflow Configuration
@@ -503,14 +505,12 @@ esac
 
 ## See Also
 
-- **Previous Step**: [`09_curate.md`](09_curate.md) - Quality control
+- **Previous Step**: [`10_finalize.md`](10_finalize.md) - Final analysis tables
 - **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
 - **Testing**: `tests/rna/test_rna_amalgkit_steps.py::test_sanity_basic_execution`
 
 ---
 
 **Last Updated**: October 29, 2025  
-**AMALGKIT Version**: 0.12.19  
+**AMALGKIT Version**: 0.16.32 (`v0.16.32`)
 **Status**: Production-ready, comprehensively tested
-
-

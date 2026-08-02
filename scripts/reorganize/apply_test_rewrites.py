@@ -368,7 +368,6 @@ IMPORT_MAP: dict[str, dict[str, str]] = {
     "rna": {
         "RNAPipelineConfig": "metainformant.rna.core.configs",
         "AmalgkitRunLayout": "metainformant.rna.core.configs",
-        "ProgressTracker": "metainformant.rna.engine.progress_tracker",
         "AmalgkitWorkflowConfig": "metainformant.rna.engine.workflow",
     },
 }

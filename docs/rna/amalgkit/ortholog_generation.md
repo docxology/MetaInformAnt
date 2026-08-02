@@ -1,6 +1,9 @@
 # Ortholog Generation
 
-Across-species analyses in amalgkit (`cstmm`, `csca`) require an `orthogroups.tsv` (or `Orthogroups.tsv`) table that maps gene IDs across different species. MetaInformAnt provides an automated workflow to generate this table using OrthoDB v12 data.
+Across-species analyses using Amalgkit (`cstmm` and `csfilter`) require an
+`orthogroups.tsv` (or `Orthogroups.tsv`) table that maps gene IDs across
+species. MetaInformAnt provides an automated workflow to generate this table
+using OrthoDB v12 data.
 
 ## Workflow Overview
 

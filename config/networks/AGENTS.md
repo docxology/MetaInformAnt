@@ -25,4 +25,4 @@ min_edge_weight: 0.5
 - Validate with schema before committing new configs
 - Follow REAL IMPLEMENTATION policy — tests use real config files
 - Use `uv` for dependency management
-- Environment overrides use `AK_` prefix
+- Environment overrides use the networks namespace documented by the module

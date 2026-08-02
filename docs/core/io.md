@@ -434,17 +434,37 @@ See [Path Handling](./paths.md) for full documentation.
 
 ## Atomic Operations (`atomic.py`)
 
-While `dump_json(atomic=True)` covers most use cases, `atomic.py` provides lower-level primitives:
+While `dump_json(atomic=True)` covers most serialization use cases, `atomic.py`
+provides lower-level primitives. `atomic_write()` is a context manager, so the
+rename occurs only after the write block exits successfully.
 
-#### `atomic_write(path: str | Path, content: bytes | str) -> None`
+#### `atomic_write(path: Path | str, mode: str = "w", encoding: str = "utf-8") -> Generator`
 
-Write content to file atomically.
+```python
+from metainformant.core.io.atomic import atomic_write
 
-**Implementation**: Writes to `path + ".tmp"`, `fsync()`, then `os.replace()`.
+with atomic_write("output/results.txt") as handle:
+    handle.write("complete output\n")
+```
 
-#### `atomic_write_json(path: str | Path, data: Any, indent: int | None = None) -> None`
+The temporary file is created beside the destination and removed if the block
+raises. Use binary mode (`mode="wb"`) for bytes.
 
-Convenience wrapper: serialize to JSON then atomic write.
+#### `atomic_replace(src: Path | str, dst: Path | str) -> None`
+
+Atomically replace `dst` with an existing source file on the same filesystem.
+
+#### `safe_write_text(path: Path | str, content: str, encoding: str = "utf-8") -> None`
+
+Write text atomically without managing a context manager.
+
+#### `safe_write_bytes(path: Path | str, content: bytes) -> None`
+
+Write binary content atomically without managing a context manager.
+
+#### `temp_directory(prefix: str = "metainformant_", cleanup: bool = True) -> Generator[Path, None, None]`
+
+Yield a temporary directory and remove it on exit when `cleanup=True`.
 
 ## Caching Integration (`cache.py`)
 

@@ -7,85 +7,123 @@ How to monitor the status of active amalgkit pipeline runs.
 The main log for the all-species run is:
 
 ```bash
-# Follow in real-time
-tail -f output/amalgkit/run_all_species_incremental.log
+# Follow the current campaign log in real time
+tail -f "$AMALGKIT_DATA_ROOT"/results/full_campaign_*.log
 
 # Filter for key status lines
-grep -E "Done|SzSkip|Error|species" output/amalgkit/run_all_species_incremental.log | tail -50
+grep -E "Downloaded|Quantified|Reclaimed|Done|Failed|ERROR|Phase" \
+  "$AMALGKIT_DATA_ROOT"/results/full_campaign_*.log | tail -50
 ```
 
 Key log tokens:
-- ` Done` — sample quantified successfully
-- ` SzSkip` — sample skipped (exceeds `max_bp` size limit)
-- ` Error` — quantification failed
-- `[<species>]` — pipeline position marker
+- `Downloaded` — a valid local FASTQ was acquired
+- `Quantified` or `Done` — sample quantification completed
+- `Reclaimed` — validated raw inputs were removed after quantification
+- `Failed` or `ERROR` — acquisition, quantification, or validation failure
+- `Phase 1 Complete` — all configured sample tasks have entered the executor
+
+The scheduling line also records the requested and effective worker counts,
+total and per-worker `quant_threads`, `fasterq_threads`, `fasterq_slots`,
+`compression_threads`, `max_in_flight`, and host CPU count. Treat those values
+as the authoritative resource profile; do not infer concurrency from the
+number of configured species.
 
 ## Active Process Monitor
 
 ```bash
-# Count active wget download workers
-ps aux | grep wget | grep -v grep | wc -l
+# List active acquisition, quantification, and orchestration processes
+pgrep -af 'curl .*fastq|fasterq-dump|kallisto quant|run_all_species.py' || true
 
 # List active kallisto processes
-ps aux | grep 'kallisto quant' | grep -v grep
+pgrep -af 'kallisto quant' || true
 
-# See all amalgkit-related processes
-ps aux | grep -E 'wget|kallisto|amalgkit' | grep -v grep
+# See the launcher and Python workers
+pgrep -af 'run_full_campaign.sh|run_all_species.py|streaming_orchestrator' || true
 ```
 
-## Report Completed Samples (Disk-Based)
+If the campaign was interrupted, do not start a second copy while one is
+running. Check the process list above, then resume in a persistent `tmux`
+session from the current external data root:
 
 ```bash
-# Count quantified samples per species from disk
-python3 scripts/rna/report_completed.py
-
-# Or the shell version
-bash scripts/rna/report_completed.sh
+tmux new-session -d -s hymenoptera-campaign \
+  'env AMALGKIT_DATA_ROOT="$AMALGKIT_DATA_ROOT" \
+    AMALGKIT_PIPELINE_WORKERS=4 AMALGKIT_PIPELINE_THREADS=8 \
+    AMALGKIT_PIPELINE_FASTQ_SLOTS=4 \
+    AMALGKIT_RECLAIM_RAW_AFTER_QUANT=yes \
+    bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh'
+tmux capture-pane -pt hymenoptera-campaign:0 -S -40
+# Reattach interactively when desired: tmux attach -t hymenoptera-campaign
 ```
 
-These check for `abundance.tsv` files under `output/amalgkit/*/work/quant/`.
+The worker loop pauses new downloads when the external root has less than
+the configured external free-space floor (8 GiB by default) or the configured
+host-system reserve is reached. Existing
+quantification workers and provenance-gated reclamation can continue while
+the acquisition workers wait.
+After metadata discovery, samples with existing final raw inputs are scheduled
+before shared SRA-cache databases, resumable partials, and new acquisitions,
+so a resumed campaign uses mounted data immediately and does not redownload
+validated inputs.
 
-## Single-Species Status
-
-For species managed via `run_workflow.py`:
+The current evidence-aware status command checks the progress database and
+downstream outputs under the selected external data root. A readable
+`abundance.tsv` without the current provenance sidecar is not counted as
+current-contract quantification.
 
 ```bash
-# High-level status
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
-
-# With detail per step
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
+uv run python scripts/rna/check_pipeline_status.py \
+  --data-root "$AMALGKIT_DATA_ROOT" --verbose
 ```
+
+## Downstream checkpoint status
+
+The current finalization helper is the only writer for merge, wsfilter,
+finalize, and sanity outputs. It is safe to rerun after the producer stops:
+
+```bash
+bash projects/hymenoptera_amalgkit/scripts/run_all_finalization.sh \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
+```
+
+Its execution mode skips a stage only when the current provenance sidecar and
+all recorded input/output digests still match.
 
 ## Quick Health Checks
 
 ```bash
-# How many samples quantified for amellifera?
-find output/amalgkit/amellifera/work/quant -name "abundance.tsv" | wc -l
+# How many current quantification outputs exist for one species?
+find "$AMALGKIT_DATA_ROOT/apis_mellifera_all/work/quant" \
+  -mindepth 2 -maxdepth 2 -name abundance.tsv -size +100c | wc -l
 
 # Any samples stuck downloading (large .fastq.gz partial files)?
-find output/amalgkit -name "*.fastq.gz" -size +1G 2>/dev/null | head
+find "$AMALGKIT_DATA_ROOT" -path '*/work/getfastq/*' \
+  \( -name '*.fastq.gz' -o -name '*.sra' -o -name '*.part' \) -size +1G 2>/dev/null | head
 
 # Check disk space
-df -h output/
+df -h "$AMALGKIT_DATA_ROOT"
 
 # Most recently modified quant directories
-ls -lt output/amalgkit/amellifera/work/quant/ | head -20
+ls -lt "$AMALGKIT_DATA_ROOT/apis_mellifera_all/work/quant/" | head -20
 ```
 
 ## Log Quick-Counts (Without Scanning Disk)
 
 ```bash
-LOG=output/amalgkit/run_all_species_incremental.log
-grep " Done" "$LOG" | wc -l # completed
-grep " SzSkip" "$LOG" | wc -l # size-skipped
-grep " Error" "$LOG" | wc -l # failed
+LOG=$(ls -t "$AMALGKIT_DATA_ROOT"/results/full_campaign_*.log | head -1)
+grep -E "Quantified|Done" "$LOG" | wc -l # completed
+grep -E "Reclaimed" "$LOG" | wc -l # raw-input reclamations
+grep -E "Failed|ERROR" "$LOG" | wc -l # failed
 ```
 
-## What Was Changed in v0.2.7
+## Current cleanup contract
 
-In v0.2.7 (2026-03-01):
-- **Heartbeat JSON files** (`*.heartbeat.json`) were deleted and added to `.gitignore`. These were transient download-progress trackers that were never read back; the `abundance.tsv` file is the authoritative proof a sample completed.
-- **`.safely_removed` markers** were deleted and added to `.gitignore`. The non-empty `abundance.tsv` makes them redundant.
+After a non-empty abundance table and exact current quantification sidecar are
+written, the streaming orchestrator removes only that sample's validated raw
+FASTQ/SRA inputs. Set `AMALGKIT_RECLAIM_RAW_AFTER_QUANT=no` to retain them.
+Use `scripts/rna/reclaim_quantified_raw.py` for a separate dry-run or audited
+reclamation pass. Stale logs, heartbeats, and removed-stage directories are
+archived by `scripts/rna/clean_external_artifacts.py`; they are not evidence
+of a current run.
 
 See the project commit history for details.

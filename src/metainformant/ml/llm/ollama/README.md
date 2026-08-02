@@ -51,6 +51,7 @@ config = OllamaConfig(
     temperature=0.3,      # Lower = more deterministic
     top_p=0.9,
     timeout=120.0,
+    num_predict=128,      # Optional hard cap on generated tokens
 )
 client = OllamaClient(config)
 ```

@@ -2,7 +2,7 @@
 """
 Batch Genome Download and Indexing Script (Manual Download)
 ===========================================================
-Iterates through all verified `amalgkit_*.yaml` configs in `config/amalgkit/`,
+Iterates through all verified `amalgkit_*.yaml` configs in the project config directory,
 excludes templates/tests, and performs:
 1. Downloads genome assets (FASTA/GTF/GFF) using `curl` from the FTP URL in config.
 2. Runs `kallisto index` to build the transcriptome index.
@@ -18,7 +18,7 @@ from concurrent.futures import ThreadPoolExecutor
 
 import yaml
 
-CONFIG_DIR = "config/amalgkit"
+CONFIG_DIR = "projects/hymenoptera_amalgkit/config/amalgkit"
 EXCLUDE = [
     "amalgkit_template.yaml",
     "amalgkit_test.yaml",

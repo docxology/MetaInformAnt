@@ -47,6 +47,9 @@ Avoid obsolete imports such as the old `core.config` and `core.paths` module pat
   uv run python scripts/package/generate_cursor_skills.py --check
   ```
 
+  The check is the required parity gate: it verifies generated wrapper content,
+  canonical link targets, front matter, and orphan absence.
+
 ## AI Assistance Disclosure
 
 AI tools may be used for code, documentation, review, and test generation. Human maintainers remain responsible for validating correctness, scientific claims, dependency behavior, and reproducibility before results are used in research workflows.

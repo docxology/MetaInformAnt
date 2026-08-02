@@ -69,7 +69,9 @@ uv run python -m metainformant.rna.amalgkit --help
 **Script orchestrators** (recommended for config-driven runs):
 
 ```bash
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+uv run python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 ```
 
 TUI variants: [TUI Monitoring Tools](#tui-monitoring-tools) below.
@@ -103,21 +105,14 @@ sequenceDiagram
 
 See: [RNA Workflow](./rna/workflow.md), [DNA](./dna/index.md), [GWAS Workflow](./gwas/workflow.md), [Testing](./testing.md).
 
-## TUI monitoring tools
+## RNA status
 
-Interactive terminal tools (separate from `metainformant`):
+The current status command reads SQLite progress and downstream evidence:
 
-- **`scripts/rna/monitor_tui.py`** — Dashboard for pipeline progress and system metrics (default refresh ~5s).
-
-  ```bash
-  python scripts/rna/monitor_tui.py
-  ```
-
-- **`scripts/rna/run_workflow_tui.py`** — Workflow runner with TUI.
-
-  ```bash
-  python scripts/rna/run_workflow_tui.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --threads 5
-  ```
+```bash
+uv run python scripts/rna/check_pipeline_status.py \
+  --data-root "$AMALGKIT_DATA_ROOT" --verbose
+```
 
 ## Directory conventions (RNA output)
 

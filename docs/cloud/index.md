@@ -2,6 +2,11 @@
 
 Production-grade GCP deployment for running METAINFORMANT pipelines at warehouse scale.
 
+> **Historical infrastructure notice.** The Hymenoptera GCP environment was
+> decommissioned on 2026-04-15. The commands and cost guidance below are
+> retained as historical operational documentation; current verification uses
+> the selected local `AMALGKIT_DATA_ROOT` and does not imply cloud availability.
+
 ## Overview
 
 The cloud module provides **orchestration and automation** for large-scale bioinformatics workflows:
@@ -13,7 +18,9 @@ The cloud module provides **orchestration and automation** for large-scale bioin
 * **Cost optimization** — preemptible VMs, spot pricing, budget alerts
 * **State monitoring** — real-time logs, progress tracking, failure recovery
 
-**Current focus:** Amalgkit RNA-seq pipeline for Hymenoptera (28 species) — proven at 8,300+ samples.
+**Historical focus:** Amalgkit RNA-seq production for 27 configured Hymenoptera
+species with a 10,312-sample target. Current completion must be read from a
+generated data-root report.
 
 **Planned:** GWAS cloud runner, multi-omics orchestration, cross-cloud (AWS/Azure) support.
 
@@ -118,7 +125,7 @@ python scripts/cloud/deploy_gcp.py destroy --project YOUR_PROJECT_ID
 | Workers | 80 simultaneous samples |
 | Max sample size | 20 GB uncompressed FASTQ |
 
-**Estimated cost:** $7–27 per full 28-species run (4–8 hours runtime).
+**Estimated cost:** $7–27 per full 27-species configured run (4–8 hours runtime).
 
 ## Source Code
 
@@ -140,7 +147,7 @@ python scripts/cloud/deploy_gcp.py destroy --project YOUR_PROJECT_ID
 ## External Links
 
 - [GCP Pricing Calculator](https://cloud.google.com/products/calculator)
-- [Amalgkit publication](https://doi.org/10.1186/s12859-021-04549-4) — Methodology background
+- [Amalgkit cross-species publication](https://pubmed.ncbi.nlm.nih.gov/32900997/) — Methodology background
 
 ## Detailed Documentation
 

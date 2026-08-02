@@ -173,7 +173,7 @@ Type `/help` inside Hermes to explore tool invocations.
 
 ## Next steps
 
-- **[API_REFERENCE.md](API_REFERENCE.md)** — Full class and function catalogue
+- **[CAPABILITIES.md](CAPABILITIES.md)** — Full class and function catalogue
 - **[EXAMPLES.md](EXAMPLES.md)** — 20 detailed usage patterns
 - **[PERFORMANCE.md](PERFORMANCE.md)** — Benchmarks and scaling tips
 - **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** — Known failure modes and fixes

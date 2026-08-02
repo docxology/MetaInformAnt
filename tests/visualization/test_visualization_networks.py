@@ -13,6 +13,7 @@ from metainformant.visualization.genomics.networks import (
     plot_network_force_directed,
     plot_network_hierarchical,
 )
+from metainformant.visualization.genomics import networks as networks_module
 
 # Check for optional dependencies
 try:
@@ -28,9 +29,6 @@ class TestPlotNetworkBasic:
 
     def test_basic_network_plot(self):
         """Test basic network plot creation."""
-        if not HAS_NETWORKX:
-            pytest.skip("NetworkX required for network plotting")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -45,9 +43,6 @@ class TestPlotNetworkBasic:
 
     def test_basic_network_plot_with_output_path(self, tmp_path: Path):
         """Test basic network plot with output path."""
-        if not HAS_NETWORKX:
-            pytest.skip("NetworkX required for network plotting")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -61,11 +56,9 @@ class TestPlotNetworkBasic:
         assert output_path.exists()
         plt.close("all")
 
-    def test_basic_network_plot_no_networkx(self):
-        """Test basic network plot when NetworkX is not available."""
-        if HAS_NETWORKX:
-            pytest.skip("NetworkX is available")
-
+    def test_basic_network_plot_dependency_guard(self, monkeypatch: pytest.MonkeyPatch):
+        """Test the basic-network dependency guard in an isolated runtime state."""
+        monkeypatch.setattr(networks_module, "HAS_NETWORKX", False)
         # Invalid graph object (won't work, but tests import error)
         invalid_graph = "not a networkx graph"
 
@@ -78,9 +71,6 @@ class TestPlotNetworkCircular:
 
     def test_circular_network_plot(self):
         """Test circular network plot creation."""
-        if not HAS_NETWORKX:
-            pytest.skip("NetworkX required for network plotting")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -94,9 +84,6 @@ class TestPlotNetworkCircular:
 
     def test_circular_network_plot_with_output_path(self, tmp_path: Path):
         """Test circular network plot with output path."""
-        if not HAS_NETWORKX:
-            pytest.skip("NetworkX required for network plotting")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -116,9 +103,6 @@ class TestPlotNetworkHierarchical:
 
     def test_hierarchical_network_plot(self):
         """Test hierarchical network plot creation."""
-        if not HAS_NETWORKX:
-            pytest.skip("NetworkX required for network plotting")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -134,9 +118,6 @@ class TestPlotNetworkHierarchical:
 
     def test_hierarchical_network_plot_undirected(self):
         """Test hierarchical network plot with undirected graph."""
-        if not HAS_NETWORKX:
-            pytest.skip("NetworkX required for network plotting")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -150,9 +131,6 @@ class TestPlotNetworkHierarchical:
 
     def test_hierarchical_network_plot_with_output_path(self, tmp_path: Path):
         """Test hierarchical network plot with output path."""
-        if not HAS_NETWORKX:
-            pytest.skip("NetworkX required for network plotting")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -172,9 +150,6 @@ class TestPlotNetworkForceDirected:
 
     def test_force_directed_network_plot(self):
         """Test force-directed network plot creation."""
-        if not HAS_NETWORKX:
-            pytest.skip("NetworkX required for network plotting")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -188,9 +163,6 @@ class TestPlotNetworkForceDirected:
 
     def test_force_directed_network_plot_with_output_path(self, tmp_path: Path):
         """Test force-directed network plot with output path."""
-        if not HAS_NETWORKX:
-            pytest.skip("NetworkX required for network plotting")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -210,9 +182,6 @@ class TestPlotCommunityNetwork:
 
     def test_community_network_plot(self):
         """Test community network plot creation."""
-        if not HAS_NETWORKX:
-            pytest.skip("NetworkX required for network plotting")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -233,9 +202,6 @@ class TestPlotCommunityNetwork:
 
     def test_community_network_plot_with_output_path(self, tmp_path: Path):
         """Test community network plot with output path."""
-        if not HAS_NETWORKX:
-            pytest.skip("NetworkX required for network plotting")
-
         import matplotlib
 
         matplotlib.use("Agg")
@@ -252,20 +218,15 @@ class TestPlotCommunityNetwork:
 
     def test_community_network_plot_empty_communities(self):
         """Test community network plot with empty communities."""
-        if not HAS_NETWORKX:
-            pytest.skip("NetworkX required for network plotting")
-
         G = nx.path_graph(3)
         communities = {}
 
         with pytest.raises(ValueError, match="cannot be empty"):
             plot_community_network(G, communities)
 
-    def test_community_network_plot_no_networkx(self):
-        """Test community network plot when NetworkX is not available."""
-        if HAS_NETWORKX:
-            pytest.skip("NetworkX is available")
-
+    def test_community_network_plot_dependency_guard(self, monkeypatch: pytest.MonkeyPatch):
+        """Test the community-network dependency guard in isolation."""
+        monkeypatch.setattr(networks_module, "HAS_NETWORKX", False)
         invalid_graph = "not a networkx graph"
         communities = {0: 0, 1: 1}
 

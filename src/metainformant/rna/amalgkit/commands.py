@@ -1,0 +1,142 @@
+"""Canonical command names for the supported Amalgkit release."""
+
+from __future__ import annotations
+
+CURRENT_AMALGKIT_STEPS = (
+    "metadata",
+    "select",
+    "getfastq",
+    "quant",
+    "merge",
+    "busco",
+    "wsfilter",
+    "cstmm",
+    "csfilter",
+    "finalize",
+    "sanity",
+    "rerun",
+    "integrate",
+    "dataset",
+)
+
+# The supported Amalgkit release uses a shared output/metadata interface but
+# each command accepts a different subset of options. Keeping the allow-list
+# here prevents MetaInformAnt-only settings from leaking into the subprocess
+# command line and turning a valid workflow plan into an argparse failure.
+SUPPORTED_CLI_OPTIONS: dict[str, frozenset[str]] = {
+    "metadata": frozenset(
+        {
+            "out_dir", "redo", "download_dir", "download_lock_dir", "threads",
+            "internal_jobs", "internal_cpu_budget", "search_string", "species_tsv",
+            "mode", "title_terms", "organ_terms_tsv", "species_limit", "merge",
+            "entrez_email", "resolve_names", "ncbi_metadata_max_concurrency",
+        }
+    ),
+    "select": frozenset(
+        {
+            "out_dir", "metadata", "threads", "internal_jobs", "internal_cpu_budget",
+            "species_tsv", "metadata_specieswise_dir", "summary_tsv", "queue_tsv",
+            "manifest_tsv", "batch_label", "select_rules_tsv",
+        }
+    ),
+    "getfastq": frozenset(
+        {
+            "out_dir", "metadata", "threads", "internal_jobs", "internal_cpu_budget",
+            "redo", "batch", "download_dir", "download_lock_dir", "entrez_email", "id",
+            "id_list", "layout", "max_bp", "min_read_length", "fasterq_dump_exe",
+            "seqkit_exe", "fasterq_size_check", "fasterq_disk_limit", "fasterq_disk_limit_tmp",
+            "fastp", "fastp_exe", "fastp_option", "rrna_filter", "rrna_filter_sensitivity",
+            "rrna_filter_max_seqs", "rrna_filter_chunk_spots", "rrna_filter_memory_limit",
+            "rrna_filter_jobs", "filter_order", "contam_filter", "contam_filter_rank",
+            "contam_filter_db_name", "contam_filter_db", "contam_filter_sensitivity",
+            "contam_filter_max_seqs", "mmseqs_exe", "remove_sra", "remove_tmp", "dump_print",
+            "fastp_print", "sci_name", "ncbi", "aws", "gcp", "ena", "ddbj", "gcp_project",
+            "ncbi_download_max_concurrency", "aws_download_max_concurrency",
+            "gcp_download_max_concurrency", "ena_download_max_concurrency",
+            "ddbj_download_max_concurrency", "ncbi_metadata_max_concurrency",
+            "sra_download_method", "read_name", "entrez_additional_search_term", "tol",
+        }
+    ),
+    "quant": frozenset(
+        {
+            "out_dir", "metadata", "threads", "internal_jobs", "internal_cpu_budget", "redo",
+            "batch", "quant_backend", "oarfish_seq_tech", "kallisto_options", "oarfish_options",
+            "index_dir", "clean_fastq", "fasta_dir", "build_index", "index_lock_poll",
+            "index_lock_timeout",
+        }
+    ),
+    "merge": frozenset(
+        {"out_dir", "metadata", "threads", "internal_jobs", "internal_cpu_budget"}
+    ),
+    "busco": frozenset(
+        {
+            "out_dir", "metadata", "species", "threads", "internal_jobs", "internal_cpu_budget",
+            "redo", "fasta", "fasta_dir", "lineage", "tool", "busco_exe", "compleasm_exe",
+            "tool_args", "download_dir", "download_lock_dir",
+        }
+    ),
+    "wsfilter": frozenset(
+        {
+            "out_dir", "metadata", "batch", "threads", "internal_jobs", "internal_cpu_budget",
+            "sample_group", "sample_group_color", "redo", "input_dir", "dist_method",
+            "mapping_rate", "correlation_threshold", "plot_intermediate", "one_outlier_per_iter",
+            "norm", "margin_threshold", "robust_z_threshold",
+        }
+    ),
+    "cstmm": frozenset(
+        {"out_dir", "metadata", "redo", "orthogroup_table", "dir_busco", "dir_count", "tmm_backend"}
+    ),
+    "csfilter": frozenset(
+        {
+            "out_dir", "metadata", "batch", "threads", "internal_jobs", "internal_cpu_budget",
+            "sample_group", "sample_group_color", "redo", "input_dir", "norm", "orthogroup_table",
+            "dir_busco", "missing_strategy", "margin_threshold", "robust_z_threshold",
+        }
+    ),
+    "finalize": frozenset(
+        {
+            "out_dir", "metadata", "batch", "threads", "internal_jobs", "internal_cpu_budget",
+            "sample_group", "sample_group_color", "redo", "input_dir", "norm", "batch_effect_alg",
+            "clip_negative", "maintain_zero", "ruvseq_control_genes", "ruvseq_k", "ruvseq_k_max",
+            "ruvseq_control_top_n", "ruvseq_min_controls", "seed", "sva_nsv", "sva_B",
+            "sva_B_auto_max", "sva_backend", "combatseq_backend", "ruvseq_backend",
+            "latent_family", "latent_k", "latent_k_max", "latent_max_iter", "latent_tol",
+        }
+    ),
+    "sanity": frozenset(
+        {
+            "out_dir", "metadata", "threads", "index", "quant", "getfastq", "merge", "busco",
+            "finalize", "all", "check", "run", "species", "index_dir", "quant_dir", "getfastq_dir",
+            "merge_dir", "busco_dir", "finalize_dir", "quiet", "verbose_runs", "strict", "strict_level",
+        }
+    ),
+    "integrate": frozenset(
+        {
+            "out_dir", "metadata", "threads", "download_dir", "download_lock_dir", "fastq_dir",
+            "seqkit_exe", "getfastq_dir", "output_metadata", "remove_tmp", "accurate_size",
+        }
+    ),
+    "rerun": frozenset(
+        {
+            "out_dir", "metadata", "species", "threads", "internal_jobs", "internal_cpu_budget",
+            "redo", "report", "manifest", "run", "check", "include_warnings", "dry_run",
+            "download_dir", "download_lock_dir",
+        }
+    ),
+    "dataset": frozenset({"out_dir", "name", "rule_set", "list", "overwrite"}),
+}
+
+PER_SPECIES_STEPS = (
+    "metadata",
+    "select",
+    "getfastq",
+    "quant",
+    "merge",
+    "wsfilter",
+    "finalize",
+    "sanity",
+    "integrate",
+)
+
+CROSS_SPECIES_STEPS = ("cstmm", "csfilter")
+NO_THREAD_STEPS = frozenset({"cstmm"})

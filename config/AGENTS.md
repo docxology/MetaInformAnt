@@ -7,7 +7,7 @@ Configuration file repository for all METAINFORMANT workflows.
 ## Directory Structure
 
 - `amalgkit/` - RNA-seq workflow configurations (active species)
-- `archive/` - Archived/legacy amalgkit configurations
+- `archive/` - Archived amalgkit configurations retained for provenance
 - `config_base/` - Base configuration templates for amalgkit
 - `eqtl/` - eQTL analysis configurations
 - `gwas/` - GWAS pipeline configurations
@@ -25,7 +25,7 @@ Configuration file repository for all METAINFORMANT workflows.
 
 All configs support environment variable overrides with module-specific prefixes:
 
-- RNA/Amalgkit: `AK_` prefix
+- RNA/Amalgkit: `AMALGKIT_` prefix
 - GWAS: `GWAS_` prefix
 - Core: `CORE_` prefix
 
@@ -35,7 +35,7 @@ All configs support environment variable overrides with module-specific prefixes
 from metainformant.core.utils.config import load_mapping_from_file, apply_env_overrides
 
 config = load_mapping_from_file("config/amalgkit/species.yaml")
-config = apply_env_overrides(config, prefix="AK")
+config = apply_env_overrides(config, prefix="AMALGKIT")
 ```
 
 ### File Format

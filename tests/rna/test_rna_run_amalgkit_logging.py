@@ -7,7 +7,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 
+@pytest.mark.external_tool
+@pytest.mark.network
 def test_run_amalgkit_writes_logs(tmp_path: Path):
     """Test that run_amalgkit writes log files for stdout and stderr."""
     from metainformant.rna.amalgkit.amalgkit import check_cli_available, run_amalgkit

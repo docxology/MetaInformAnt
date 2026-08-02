@@ -1,9 +1,9 @@
 # Template Bioinformatics Project
 
-> **The canonical standalone bioinformatics project template for the [MetaInformAnt](https://github.com/your-org/metainformant) ecosystem.**
+> **The canonical standalone bioinformatics project template for the [MetaInformAnt](https://github.com/docxology/MetaInformAnt/tree/main/projects/template_bioinformatics_project) ecosystem.**
 > Fork this to start any new analysis project.
 
-[![CI](https://github.com/your-org/template_bioinformatics_project/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/template_bioinformatics_project/actions/workflows/ci.yml)
+[![MetaInformAnt CI](https://github.com/docxology/MetaInformAnt/actions/workflows/test.yml/badge.svg)](https://github.com/docxology/MetaInformAnt/actions/workflows/test.yml)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/)
 [![uv](https://img.shields.io/badge/env-uv-green)](https://astral.sh/uv)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)

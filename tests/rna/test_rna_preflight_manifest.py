@@ -7,7 +7,9 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
 
+@pytest.mark.external_tool
 def test_preflight_manifest_when_amalgkit_missing(tmp_path: Path):
     """Test that workflow creates preflight manifest when amalgkit CLI is not available."""
     from metainformant.rna.amalgkit.amalgkit import check_cli_available

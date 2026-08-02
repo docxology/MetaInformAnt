@@ -26,4 +26,4 @@ n_pcs: 50
 - Validate with schema before committing new configs
 - Follow REAL IMPLEMENTATION policy — tests use real config files
 - Use `uv` for dependency management
-- Environment overrides use `AK_` prefix
+- Environment overrides use the single-cell namespace documented by the module

@@ -5,14 +5,14 @@ High‑level map of the module's documentation.
 ## Getting started
 
 - **[GETTING_STARTED.md](GETTING_STARTED.md)** — install, load data, one‑liner demo
-- **[io.md](../io.md)** — platform‑specific loaders (refer to general spatial docs)
+- **[CAPABILITIES.md](CAPABILITIES.md)** — platform-specific loaders and APIs
 
 ## Core documentation
 
 | File | Purpose |
 |------|---------|
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Layer diagram, data flow, design decisions |
-| [API_REFERENCE.md](API_REFERENCE.md) | Complete function and class catalogue |
+| [CAPABILITIES.md](CAPABILITIES.md) | Complete function and class catalogue |
 | [SPEC.md](SPEC.md) | Technical specification: data model, algorithms, schemas |
 | [CONFIGURATION.md](CONFIGURATION.md) | All `spatial.*` keys, env vars, YAML examples |
 | [PERFORMANCE.md](PERFORMANCE.md) | Benchmarks, scaling, tuning parameters |
@@ -40,7 +40,7 @@ High‑level map of the module's documentation.
 
 ## Related integration
 
-- **[../INTEGRATION.md](../../INTEGRATION.md)** — DNA→GWAS→Viz multi‑module pipelines
+- **[INTEGRATION.md](../INTEGRATION.md)** — DNA→GWAS→Viz multi‑module pipelines
   (PHGx can plug in as downstream phenotype layer).
 
 ## Module API summary

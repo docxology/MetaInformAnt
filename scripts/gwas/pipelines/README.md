@@ -4,7 +4,8 @@
 Functionality for pipelines.
 
 ## 📦 Contents
-- BeeWAS compatibility wrappers now forward to `projects/apis_gwas/scripts/beewas/`.
+- BeeWAS compatibility wrappers now forward to the canonical
+  `projects/apis_gwas/beewas/` package.
 - `[run_analysis.py](run_analysis.py)`
 - `[run_genome_scale_gwas.py](run_genome_scale_gwas.py)`
 - `[run_pbarbatus_analysis.py](run_pbarbatus_analysis.py)`

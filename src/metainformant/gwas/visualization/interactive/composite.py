@@ -507,7 +507,7 @@ def top_hit_detail_panel(
 
             bp = ax_boxplot.boxplot(
                 box_data,
-                labels=geno_labels,
+                tick_labels=geno_labels,
                 patch_artist=True,
             )
             colors = ["#a6cee3", "#b2df8a", "#fb9a99"]

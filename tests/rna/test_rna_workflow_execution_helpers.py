@@ -6,11 +6,14 @@ thin-orchestration behavior used by the public execute_workflow entry point.
 
 from __future__ import annotations
 
+import subprocess
 from pathlib import Path
 
 import pytest
 
 from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
+from metainformant.rna.engine.provenance import write_quant_provenance
+from metainformant.rna.engine.provenance import is_current_quantification
 from metainformant.rna.engine.workflow_execution import (
     _is_streaming_step_already_done,
     _process_streaming_sample,
@@ -57,13 +60,23 @@ def test_streaming_single_sample_params_rejects_non_positive_chunk_size(tmp_path
 
 
 def test_streaming_step_already_done_detects_quant_output(tmp_path: Path) -> None:
-    """Existing quant outputs bypass expensive per-sample subprocess startup."""
+    """Only provenance-bound quant outputs bypass subprocess startup."""
     config = _workflow_config(tmp_path)
     sample_id = "SRR000001"
     quant_dir = config.work_dir / "quant" / sample_id
     quant_dir.mkdir(parents=True)
-    (quant_dir / f"{sample_id}_abundance.tsv").write_text("target_id\ttpm\nGENE1\t1.0\n")
+    abundance_file = quant_dir / f"{sample_id}_abundance.tsv"
+    abundance_file.write_text("target_id\ttpm\n" + ("GENE1\t1.0\n" * 30))
 
+    assert not _is_streaming_step_already_done(config, sample_id, "quant", {"redo": "no"})
+    write_quant_provenance(
+        quant_dir,
+        species="Apis_mellifera",
+        run_accession=sample_id,
+        config_path=config.work_dir / "workflow.yaml",
+        command=["amalgkit", "quant"],
+        quantification_file=abundance_file,
+    )
     assert _is_streaming_step_already_done(config, sample_id, "quant", {"redo": "no"})
     assert not _is_streaming_step_already_done(config, sample_id, "quant", {"redo": "yes"})
 
@@ -74,11 +87,28 @@ def test_streaming_step_already_done_detects_standard_and_salmon_quant_outputs(t
 
     abundance_dir = config.work_dir / "quant" / "SRR_ABUNDANCE"
     abundance_dir.mkdir(parents=True)
-    (abundance_dir / "abundance.tsv").write_text("target_id\ttpm\nGENE1\t1.0\n")
+    abundance_file = abundance_dir / "abundance.tsv"
+    abundance_file.write_text("target_id\ttpm\n" + ("GENE1\t1.0\n" * 30))
 
     salmon_dir = config.work_dir / "quant" / "SRR_SALMON"
     salmon_dir.mkdir(parents=True)
-    (salmon_dir / "quant.sf").write_text("Name\tTPM\nGENE1\t1.0\n")
+    salmon_file = salmon_dir / "quant.sf"
+    salmon_file.write_text("Name\tTPM\n" + ("GENE1\t1.0\n" * 30))
+
+    assert not _is_streaming_step_already_done(config, "SRR_ABUNDANCE", "quant", {"redo": "no"})
+    assert not _is_streaming_step_already_done(config, "SRR_SALMON", "quant", {"redo": "no"})
+    for sample_dir, accession, quant_file in [
+        (abundance_dir, "SRR_ABUNDANCE", abundance_file),
+        (salmon_dir, "SRR_SALMON", salmon_file),
+    ]:
+        write_quant_provenance(
+            sample_dir,
+            species="Apis_mellifera",
+            run_accession=accession,
+            config_path=config.work_dir / "workflow.yaml",
+            command=["amalgkit", "quant"],
+            quantification_file=quant_file,
+        )
 
     assert _is_streaming_step_already_done(config, "SRR_ABUNDANCE", "quant", {"redo": "no"})
     assert _is_streaming_step_already_done(config, "SRR_SALMON", "quant", {"redo": "no"})
@@ -129,3 +159,60 @@ def test_process_streaming_sample_accepts_sra_run_metadata_column(tmp_path: Path
     metadata_file = config.work_dir / "metadata" / "metadata_chunk_0_sample_SRR000002.tsv"
     assert metadata_file.exists()
     assert "SRR000002" in metadata_file.read_text()
+
+
+def test_process_streaming_sample_records_quant_provenance_before_cleanup(tmp_path: Path) -> None:
+    """A successful quant subprocess must leave a current, digest-bound sidecar."""
+    config = _workflow_config(tmp_path)
+    sample_id = "SRR000003"
+    sample_row = {"run": sample_id, "organism": "Apis mellifera"}
+
+    def fake_quant(params: dict[str, object]) -> subprocess.CompletedProcess[str]:
+        quant_dir = config.work_dir / "quant" / sample_id
+        quant_dir.mkdir(parents=True, exist_ok=True)
+        (quant_dir / "abundance.tsv").write_text("target_id\ttpm\n" + ("GENE1\t1.0\n" * 30))
+        return subprocess.CompletedProcess(
+            args=["amalgkit", "quant"], returncode=0, stdout="", stderr=""
+        )
+
+    results = _process_streaming_sample(
+        config=config,
+        sample_row=sample_row,
+        fieldnames=["run", "organism"],
+        current_chunk_idx=0,
+        sample_idx_in_chunk=0,
+        chunk_steps=[("quant", {"threads": 1})],
+        chunk_size=1,
+        step_functions={"quant": fake_quant},
+        walk=False,
+    )
+
+    assert len(results) == 1
+    assert results[0].success
+    assert is_current_quantification(config.work_dir / "quant" / sample_id, sample_id)
+
+
+def test_process_streaming_sample_rejects_success_without_quant_output(tmp_path: Path) -> None:
+    """A zero-return quant subprocess without output is not a completed step."""
+    config = _workflow_config(tmp_path)
+
+    def fake_quant(params: dict[str, object]) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(
+            args=["amalgkit", "quant"], returncode=0, stdout="", stderr=""
+        )
+
+    results = _process_streaming_sample(
+        config=config,
+        sample_row={"run": "SRR000004", "organism": "Apis mellifera"},
+        fieldnames=["run", "organism"],
+        current_chunk_idx=0,
+        sample_idx_in_chunk=0,
+        chunk_steps=[("quant", {"threads": 1})],
+        chunk_size=1,
+        step_functions={"quant": fake_quant},
+        walk=False,
+    )
+
+    assert len(results) == 1
+    assert not results[0].success
+    assert "without a non-empty abundance output" in (results[0].error_message or "")

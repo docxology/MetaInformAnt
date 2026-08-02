@@ -28,7 +28,7 @@ METAINFORMANT provides broad bioinformatics analysis modules across genomics, tr
 | Domain | Features |
 |--------|----------|
 | **DNA** | Sequences, alignment, phylogenetics, population genetics, variant analysis |
-| **RNA** | Amalgkit integration, ENA/SRA downloads, Kallisto quantification, industrial-scale pipelines (8,300+ samples across 28 species) |
+| **RNA** | Amalgkit integration, ENA/SRA downloads, Kallisto quantification, and a configured 27-species Hymenoptera cohort; the sample inventory is data-root dependent |
 | **GWAS** | Association testing, fine-mapping, visualization, complete GWAS pipelines |
 | **eQTL** | Integration of GWAS variants and Amalgkit RNA-seq expression data |
 | **Multi-omics** | Cross-omic integration, joint PCA, correlation analysis |
@@ -323,8 +323,10 @@ PY
 
 **Run RNA-seq pipeline (amalgkit):**
 ```bash
-# List available species configs before running an amalgkit workflow
-uv run python scripts/rna/run_workflow.py --list-configs
+# Inspect the configured Hymenoptera cohort before running Amalgkit
+uv run python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 ```
 
 **Perform GWAS analysis:**
@@ -444,7 +446,7 @@ All modules live in [`src/metainformant/`](src/metainformant/) with documentatio
 | [`spatial/`](src/metainformant/spatial/) | 20 | Spatial transcriptomics, tissue mapping, spatial statistics | [`analysis/`](src/metainformant/spatial/analysis/) | [README](src/metainformant/spatial/README.md) |
 | [`structural_variants/`](src/metainformant/structural_variants/) | 15 | SV detection, CNV analysis, breakpoint resolution | [`detection/`](src/metainformant/structural_variants/detection/) | [README](src/metainformant/structural_variants/README.md) |
 | [`metabolomics/`](src/metainformant/metabolomics/) | 9 | Metabolomic analysis, MS data processing, pathway mapping | [`analysis/`](src/metainformant/metabolomics/analysis/) | [README](src/metainformant/metabolomics/README.md) |
-| [`cloud/`](src/metainformant/cloud/) | 3 | Cloud deployment helpers, Docker/GCP workflow utilities | [`deployment/`](src/metainformant/cloud/deployment/) | [README](src/metainformant/cloud/README.md) |
+| [`cloud/`](src/metainformant/cloud/) | 3 | Cloud deployment helpers, Docker/GCP workflow utilities | [`cloud/`](src/metainformant/cloud/) | [README](src/metainformant/cloud/README.md) |
 | [`mcp/`](src/metainformant/mcp/) | 3 | Standalone helper tools for future MCP integration | [`tools/`](src/metainformant/mcp/tools/) | [README](src/metainformant/mcp/README.md) |
 | [`menu/`](src/metainformant/menu/) | 7 | Interactive CLI menu system, workflow navigation | [`ui/`](src/metainformant/menu/ui/) | [README](src/metainformant/menu/README.md) |
 
@@ -486,7 +488,7 @@ See [`scripts/README.md`](scripts/README.md) for documentation.
 
 ### CLI Interface
 
-The `metainformant` command exposes a focused CLI ([`docs/cli.md`](docs/cli.md)): `--version`, `--modules`, protein utilities, quality checks, `rna info`, and `gwas run`. RNA workflows use **Python imports**, **`scripts/rna/run_workflow.py`**, or **`python -m metainformant.rna.amalgkit`**.
+The `metainformant` command exposes a focused CLI ([`docs/cli.md`](docs/cli.md)): `--version`, `--modules`, protein utilities, quality checks, `rna info`, and `gwas run`. RNA production uses the current **Python APIs**, **`scripts/rna/run_all_species.py`**, **`scripts/rna/process_species.py`**, or **`python -m metainformant.rna.amalgkit`**.
 
 ```bash
 uv run metainformant --help
@@ -498,7 +500,9 @@ uv run metainformant quality batch-detect --data samples.csv --batches batches.t
 uv run metainformant gwas run --config config/gwas/gwas_pbarbatus.yaml --check
 
 # RNA-seq workflow config discovery
-uv run python scripts/rna/run_workflow.py --list-configs
+uv run python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 ```
 
 See [`docs/cli.md`](docs/cli.md) for CLI documentation.
@@ -523,15 +527,22 @@ print(f"Nucleotide diversity: {nucleotide_diversity(seqs):.4f}")
 ```python
 from metainformant.rna.engine.workflow import load_workflow_config, plan_workflow
 
-config = load_workflow_config("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
+config = load_workflow_config(
+    "projects/hymenoptera_amalgkit/config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml"
+)
 for step_name, _params in plan_workflow(config):
     print(step_name)
 ```
 
 ```bash
-# Inspect available species configs, then run a workflow after amalgkit is installed
-uv run python scripts/rna/run_workflow.py --list-configs
-uv run python scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+# Inspect available species configs, then run the shared producer
+uv run python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
+uv run python scripts/rna/process_species.py \
+  --species pogonomyrmex_barbatus \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT"
 ```
 
 ### GWAS Analysis
@@ -555,8 +566,10 @@ uv run python scripts/gwas/run_amellifera_gwas.py --config config/gwas/gwas_amel
 ```python
 from metainformant.core.utils.config import apply_env_overrides, load_mapping_from_file
 
-config = load_mapping_from_file("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
-config = apply_env_overrides(config, prefix="AK")
+config = load_mapping_from_file(
+    "projects/hymenoptera_amalgkit/config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml"
+)
+config = apply_env_overrides(config, prefix="AMALGKIT")
 ```
 
 ### Visualization
@@ -721,7 +734,7 @@ If you use METAINFORMANT in your research, please cite this repository:
   title = {MetaInformAnt: Comprehensive Bioinformatics Toolkit},
   year = {2025},
   url = {https://github.com/docxology/MetaInformAnt},
-  version = {0.2.6}
+  version = {0.3.0}
 }
 ```
 
@@ -743,4 +756,4 @@ This project is licensed under the Apache License, Version 2.0 - see [LICENSE](L
 
 ---
 
-**Status**: Active Development | **Version**: 0.2.6 | **Python**: 3.11+ | **License**: Apache 2.0
+**Status**: Active Development | **Version**: 0.3.0 | **Python**: 3.11+ | **License**: Apache 2.0

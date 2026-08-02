@@ -1,0 +1,10 @@
+# MetaInformAnt Hymenoptera selection contract for Amalgkit 0.16.32.
+# The current select command consumes this TSV rather than unsupported ad-hoc CLI
+# selection flags. It intentionally imposes no tissue-group restriction and
+# retains every eligible public RNA-seq sample up to the large safety bound.
+rule_id	enabled	stage	priority	columns	pattern	action	target_column	outcome	scope_column	scope_mode	stop_on_match	parameter_name	parameter_value	note
+param_min_nspots_1	yes	parameter	0								yes	min_nspots	0	retain samples without a minimum spot threshold
+param_max_sample_2	yes	parameter	0								yes	max_sample	999999	process all available samples up to the safety bound
+param_mark_missing_rank_3	yes	parameter	0								yes	mark_missing_rank	none	do not exclude samples solely for a missing taxonomy rank
+param_mark_redundant_biosamples_4	yes	parameter	0								yes	mark_redundant_biosamples	no	retain redundant biosample records for auditability
+validate_noop_1	yes	validate	999	sample_title	(?!)	hint_review		review			yes			neutral validation rule for an unrestricted cohort

@@ -11,8 +11,8 @@ Cloud deployment and infrastructure automation for METAINFORMANT bioinformatics 
 
 - [Architecture](#architecture)
 - [Key Components](#key-components)
-  - [CloudConfig (`cloud_config.py`)](#cloudconfig-cloudconfigpy)
-  - [GCPDeployer (`gcp_deployer.py`)](#gcpdeployer-gcpdeployerpy)
+  - [CloudConfig (`cloud_config.py`)](#cloudconfig-cloud_configpy)
+  - [GCPDeployer (`gcp_deployer.py`)](#gcpdeployer-gcp_deployerpy)
 - [Genome Preparation](#genome-preparation)
   - [Reference Genome Indexing](#reference-genome-indexing)
   - [Caching Strategy](#caching-strategy)
@@ -189,7 +189,7 @@ deployer.upload_file("config/amalgkit.yaml", "/config/pipeline.yaml", instance_n
 
 # 4. Execute pipeline
 result = deployer.execute_command(
-    "cd /work && uv run python scripts/rna/run_workflow.py --config /config/pipeline.yaml",
+    "cd /work && uv run python scripts/rna/run_all_species.py --config-dir projects/hymenoptera_amalgkit/config/amalgkit --data-root /data/amalgkit --dry-run",
     instance_name=instance.name
 )
 print(f"Pipeline exit code: {result.returncode}")

@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import functools
+import http.server
 import tempfile
+import threading
 from pathlib import Path
 
 import pytest
@@ -11,115 +14,83 @@ from metainformant.core import io
 from metainformant.core.io import paths
 
 
-def _check_online(url: str, timeout: int = 5) -> bool:
-    """Check if we can reach a URL within timeout.
+@pytest.fixture
+def local_http_server(tmp_path: Path):
+    """Serve deterministic HTTP fixtures through the real requests code path."""
+    root = tmp_path / "http"
+    root.mkdir()
+    (root / "json").write_text('{"slideshow": {"title": "METAINFORMANT"}}')
+    (root / "html").write_text("<html><body>local test html</body></html>")
+    (root / "csv").write_text("species,value\nApis,1\n")
 
-    Args:
-        url: URL to check
-        timeout: Timeout in seconds
+    class QuietHandler(http.server.SimpleHTTPRequestHandler):
+        def log_message(self, format: str, *args: object) -> None:
+            return
 
-    Returns:
-        True if URL is reachable, False otherwise
-    """
+    handler = functools.partial(QuietHandler, directory=str(root))
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), handler)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
     try:
-        import requests
-
-        resp = requests.get(url, timeout=timeout)
-        resp.raise_for_status()
-        return True
-    except Exception:
-        return False
+        yield f"http://127.0.0.1:{server.server_port}"
+    finally:
+        server.shutdown()
+        server.server_close()
+        thread.join(timeout=5)
 
 
 class TestIO:
     """Test enhanced I/O functionality."""
 
     @pytest.mark.network
-    def test_download_file(self):
-        """Test file download functionality.
-
-        Uses real HTTP requests with graceful skip if network unavailable.
-        """
-        if not _check_online("https://httpbin.org"):
-            pytest.skip("Network unavailable - real implementation requires connectivity")
-
+    def test_download_file(self, local_http_server):
+        """Test file download functionality over a local HTTP server."""
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)
-
-            # Test downloading a real file (using httpbin for testing)
-            url = "https://httpbin.org/json"
+            url = f"{local_http_server}/json"
             dest_file = tmp_path / "test.json"
 
             success = io.download_file(url, dest_file)
-            if success:
-                assert dest_file.exists()
-                content = dest_file.read_text()
-                assert "slideshow" in content  # httpbin.org/json returns a slideshow JSON
+            assert success
+            assert dest_file.exists()
+            content = dest_file.read_text()
+            assert "slideshow" in content
 
     @pytest.mark.network
-    def test_download_json(self):
-        """Test JSON download functionality.
-
-        Uses real HTTP requests with graceful skip if network unavailable.
-        """
-        if not _check_online("https://httpbin.org"):
-            pytest.skip("Network unavailable - real implementation requires connectivity")
-
-        url = "https://httpbin.org/json"
+    def test_download_json(self, local_http_server):
+        """Test JSON download functionality over a local HTTP server."""
+        url = f"{local_http_server}/json"
         data = io.download_json(url)
-        if data:
-            assert isinstance(data, dict)
-            assert "slideshow" in str(data)  # httpbin.org/json returns a slideshow JSON
+        assert isinstance(data, dict)
+        assert "slideshow" in data
 
     @pytest.mark.network
-    def test_download_text(self):
-        """Test text download functionality.
-
-        Uses real HTTP requests with graceful skip if network unavailable.
-        """
-        if not _check_online("https://httpbin.org"):
-            pytest.skip("Network unavailable - real implementation requires connectivity")
-
-        url = "https://httpbin.org/html"
+    def test_download_text(self, local_http_server):
+        """Test text download functionality over a local HTTP server."""
+        url = f"{local_http_server}/html"
         text = io.download_text(url)
-        if text:
-            assert isinstance(text, str)
-            assert "html" in text.lower()
+        assert isinstance(text, str)
+        assert "html" in text.lower()
 
     @pytest.mark.network
-    def test_batch_download(self):
-        """Test batch download functionality.
-
-        Uses minimal URLs to reduce test execution time while still
-        verifying batch download behavior. Uses real HTTP requests with
-        graceful skip if network unavailable.
-        """
-        if not _check_online("https://httpbin.org"):
-            pytest.skip("Network unavailable - real implementation requires connectivity")
-
+    def test_batch_download(self, local_http_server):
+        """Test batch download functionality over a local HTTP server."""
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)
-
-            # Use single URL to reduce network calls and execution time
-            urls = ["https://httpbin.org/json"]
+            urls = [f"{local_http_server}/json"]
 
             results = io.batch_download(urls, tmp_path)
             assert isinstance(results, dict)
             assert len(results) == 1
+            assert all(results.values())
 
     @pytest.mark.network
-    def test_csv_download(self):
-        """Test CSV download functionality.
-
-        Uses real HTTP requests with graceful skip if network unavailable.
-        """
-        if not _check_online("https://httpbin.org"):
-            pytest.skip("Network unavailable - real implementation requires connectivity")
-
-        url = "https://httpbin.org/csv"
+    def test_csv_download(self, local_http_server):
+        """Test CSV download functionality over a local HTTP server."""
+        url = f"{local_http_server}/csv"
         df = io.download_csv(url)
-        if df is not None:
-            assert hasattr(df, "shape")  # pandas DataFrame
+        assert hasattr(df, "shape")
+        assert list(df.columns) == ["species", "value"]
 
     def test_gzipped_json_io(self, tmp_path):
         """Test gzipped JSON I/O operations."""
@@ -204,15 +175,15 @@ class TestIO:
     def test_io_error_handling(self):
         """Test error handling in I/O operations."""
         # Test with invalid URLs
-        invalid_url = "https://invalid-domain-that-does-not-exist.com/file.txt"
+        invalid_url = "http://127.0.0.1:9/file.txt"
 
-        result = io.download_file(invalid_url, "/tmp/test.txt")
+        result = io.download_file(invalid_url, "/tmp/metainformant-test.txt", timeout=1)
         assert result is False
 
-        json_result = io.download_json(invalid_url)
+        json_result = io.download_json(invalid_url, timeout=1)
         assert json_result is None
 
-        text_result = io.download_text(invalid_url)
+        text_result = io.download_text(invalid_url, timeout=1)
         assert text_result is None
 
     def test_file_size_operations(self, tmp_path):

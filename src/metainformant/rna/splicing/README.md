@@ -7,7 +7,7 @@ Alternative splicing detection, quantification, and isoform analysis for RNA-seq
 | File | Purpose |
 |------|---------|
 | `__init__.py` | Re-exports `detection`, `isoforms`, `splice_analysis`, `splice_sites` |
-| `detection.py` | Backward-compatible shim re-exporting splice_sites and splice_analysis |
+| `detection.py` | Public detection namespace re-exporting splice_sites and splice_analysis |
 | `splice_sites.py` | Junction detection from aligned reads and splice site strength scoring |
 | `splice_analysis.py` | Event classification, PSI computation, differential splicing |
 | `isoforms.py` | EM-based isoform quantification, splice graphs, diversity analysis |

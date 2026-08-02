@@ -82,7 +82,7 @@ All cursorrules enforce these project-wide standards:
 - Use absolute imports from metainformant
 - Never use mocks in tests
 - Use uv for package management
-- Use real implementations only (NO MOCKING policy)
+- Use real implementations only; tests must exercise production code paths
 ```
 
 ### Creating New Agent Identify Rules
@@ -95,4 +95,4 @@ All cursorrules enforce these project-wide standards:
 
 ## Testing Policy
 
-- **Zero Mock**: All tests must use real implementations. Mocks are strictly prohibited.
+- **Production paths**: All tests must use real implementations and real or synthetic inputs.

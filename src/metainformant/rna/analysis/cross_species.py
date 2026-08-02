@@ -5,8 +5,8 @@ using ortholog mappings. Supports multi-species comparative studies
 including expression conservation scoring, divergence analysis,
 phylogenetic expression profiling, and cross-species PCA.
 
-All implementations use numpy, scipy, and pandas. Real implementationing, no
-placeholder data.
+All implementations use numpy, scipy, and pandas with real input data; no
+placeholder outputs are synthesized.
 
 Main Functions:
     Ortholog Mapping:
@@ -20,6 +20,9 @@ Main Functions:
 
     Divergence & Phylogeny:
         - compute_expression_divergence_matrix: Pairwise species divergence
+        - compute_fingerprint_divergence_matrix: Common-binned distribution divergence
+        - compute_feature_count_summary: Per-species feature-table summary statistics
+        - compute_gene_count_overlap: Gene-level compatibility summary statistics
         - phylogenetic_expression_profile: Expression along phylogenetic tree
 
     Dimensionality Reduction:
@@ -58,6 +61,7 @@ logger = logging.get_logger(__name__)
 
 AggregationMethod = Literal["mean", "max", "sum"]
 CorrelationMethod = Literal["spearman", "pearson", "euclidean"]
+MIN_FINGERPRINT_FEATURES = 100
 
 
 # =============================================================================
@@ -246,6 +250,8 @@ def compute_expression_conservation(
     expr_a: pd.DataFrame,
     expr_b: pd.DataFrame,
     method: CorrelationMethod = "spearman",
+    *,
+    allow_positional_alignment: bool = False,
 ) -> pd.DataFrame:
     """Compute gene-level expression conservation between two species.
 
@@ -299,18 +305,28 @@ def compute_expression_conservation(
 
     expr_b_columns = set(expr_b.columns)
     shared_columns = [col for col in expr_a.columns if col in expr_b_columns]
+    expr_a_columns = shared_columns
     if not shared_columns:
-        raise ValueError(
-            "No shared sample/condition columns between expr_a and expr_b. "
-            "Column labels must represent comparable samples or conditions."
-        )
+        if not allow_positional_alignment:
+            raise ValueError(
+                "No shared sample/condition columns between expr_a and expr_b. "
+                "Column labels must represent comparable samples or conditions."
+            )
+        n_aligned = min(expr_a.shape[1], expr_b.shape[1])
+        if n_aligned < 2:
+            raise ValueError("At least two samples are required for positional cross-species alignment")
+        # Species-specific run accessions cannot be matched by name.  The
+        # across-species orchestrator uses this deterministic fallback for
+        # already normalized matrices with comparable sample ordering.
+        expr_a_columns = list(expr_a.columns[:n_aligned])
+        shared_columns = list(expr_b.columns[:n_aligned])
 
     logger.info(f"Computing expression conservation for {len(shared_genes)} shared genes " f"using {method} method")
 
     results = []
 
     for gene in shared_genes:
-        vals_a = expr_a.loc[gene, shared_columns].values.astype(float)
+        vals_a = expr_a.loc[gene, expr_a_columns].values.astype(float)
         vals_b = expr_b.loc[gene, shared_columns].values.astype(float)
         min_len = len(shared_columns)
 
@@ -517,6 +533,7 @@ def compare_expression_across_species(
             mapped_a.loc[shared_genes],
             expr_b.loc[shared_genes],
             method="spearman",
+            allow_positional_alignment=True,
         )
 
         for _, row in conservation.iterrows():
@@ -670,20 +687,25 @@ def compute_expression_divergence_matrix(
 
 
 def compute_fingerprint_divergence_matrix(
-    species_expressions: Dict[str, pd.DataFrame],
+    species_expressions: Dict[str, pd.Series | pd.DataFrame],
     n_bins: int = 100,
+    min_valid_features: int = MIN_FINGERPRINT_FEATURES,
 ) -> pd.DataFrame:
-    """Compute pairwise expression divergence using rank-based distribution fingerprints.
+    """Compute pairwise expression divergence using common-binned fingerprints.
 
     Unlike `compute_expression_divergence_matrix`, this method does not require
-    genes to be mapped to a shared ortholog space. It computes a species "fingerprint"
-    based on the shape of its overall expression distribution (binned percentiles of
-    log-transformed expression). Divergence is 1 - Spearman correlation between fingerprints.
+    feature rows to be mapped to a shared ortholog space. It computes a species
+    ``fingerprint`` from the shape of its overall expression distribution after
+    log transformation. Every species is binned against the same pooled range;
+    per-species histogram ranges would make the bins incomparable. Divergence is
+    ``1 - Spearman correlation`` between the resulting fingerprints.
 
     Args:
         species_expressions: Dictionary mapping species name (str) to
-            expression Series or DataFrame (mean expression per gene).
-        n_bins: Number of bins for the rank distribution histogram.
+            expression Series or DataFrame (mean expression per feature).
+        n_bins: Number of common expression-distribution bins.
+        min_valid_features: Minimum number of finite, positive feature values
+            required for every species to contribute a fingerprint.
 
     Returns:
         Symmetric DataFrame with species as both rows and columns,
@@ -697,25 +719,66 @@ def compute_fingerprint_divergence_matrix(
     if n < 2:
         raise ValueError(f"Need at least 2 species for comparison, got {n}")
 
-    logger.info(f"Computing fingerprint divergence matrix for {n} species using {n_bins} bins")
+    if not isinstance(n_bins, (int, np.integer)) or n_bins < 4:
+        raise ValueError("n_bins must be an integer of at least 4")
+    if not isinstance(min_valid_features, (int, np.integer)) or min_valid_features < 1:
+        raise ValueError("min_valid_features must be a positive integer")
 
-    fingerprints = {}
+    logger.info(f"Computing fingerprint divergence matrix for {n} species using {n_bins} common bins")
+
+    logged_profiles: dict[str, np.ndarray] = {}
     for sp in species_names:
         profile = species_expressions[sp]
         if isinstance(profile, pd.DataFrame):
-            profile = profile.mean(axis=1)
+            profile = profile.apply(pd.to_numeric, errors="coerce").mean(axis=1)
+        else:
+            profile = pd.to_numeric(profile, errors="coerce")
 
-        # Remove zeros and NaN
-        valid = profile[profile > 0].dropna()
-        if len(valid) < 100:
-            logger.warning(f"Species {sp} has too few valid genes ({len(valid)}) for reliable fingerprinting")
-            fingerprints[sp] = np.zeros(n_bins)
+        # Reject negative values before removing non-finite and non-expressed
+        # features. Finalized abundance values are non-negative; silently
+        # discarding negatives would make malformed input look valid. The
+        # matrix-level loader performs the same contract check before this
+        # public function is called from the Hymenoptera workflow.
+        numeric = pd.to_numeric(profile, errors="coerce")
+        finite = numeric[np.isfinite(numeric)]
+        if (finite < 0).any():
+            raise ValueError(f"Species {sp} contains negative feature values")
+        valid = finite[finite > 0]
+        if len(valid) < min_valid_features:
+            raise ValueError(
+                f"Species {sp} has only {len(valid)} finite positive feature values; "
+                f"at least {min_valid_features} are required for fingerprinting"
+            )
+        logged_profiles[sp] = np.log1p(valid.to_numpy(dtype=float))
+
+    usable = [values for values in logged_profiles.values() if values.size]
+    if not usable:
+        raise ValueError("No species had enough finite expressed features for fingerprinting")
+
+    # Use a common robust range so a single extreme transcript cannot collapse
+    # all other observations into one histogram bin. Values outside the range
+    # are clipped to the edge bins, preserving a normalized distribution for
+    # every species.
+    pooled = np.concatenate(usable)
+    lower, upper = np.quantile(pooled, [0.01, 0.99])
+    if not np.isfinite(lower) or not np.isfinite(upper) or upper <= lower:
+        lower = float(np.min(pooled))
+        upper = float(np.max(pooled))
+    if not np.isfinite(lower) or not np.isfinite(upper) or upper <= lower:
+        logger.warning("Pooled expression range is degenerate; returning zero divergence")
+        return pd.DataFrame(np.zeros((n, n)), index=species_names, columns=species_names)
+
+    bin_edges = np.linspace(lower, upper, int(n_bins) + 1)
+    fingerprints: dict[str, np.ndarray] = {}
+    for sp in species_names:
+        values = logged_profiles[sp]
+        if not values.size:
+            fingerprints[sp] = np.zeros(int(n_bins), dtype=float)
             continue
-
-        # Log-transform and bin into percentile histogram
-        log_expr = np.log1p(valid.values)
-        hist, _ = np.histogram(log_expr, bins=n_bins, density=True)
-        fingerprints[sp] = hist
+        clipped = np.clip(values, lower, upper)
+        counts, _ = np.histogram(clipped, bins=bin_edges)
+        total = counts.sum()
+        fingerprints[sp] = counts.astype(float) / total if total else np.zeros(int(n_bins), dtype=float)
 
     # Compute pairwise Spearman correlation of fingerprints
     div_matrix = np.zeros((n, n))
@@ -729,43 +792,77 @@ def compute_fingerprint_divergence_matrix(
                 div_matrix[j, i] = 1.0
                 continue
 
-            corr, _ = stats.spearmanr(fp_a, fp_b)
-            if np.isnan(corr):
-                corr = 0.0
-            div_matrix[i, j] = 1.0 - corr
-            div_matrix[j, i] = 1.0 - corr
+            if np.array_equal(fp_a, fp_b):
+                # Spearman is undefined for two identical constant vectors,
+                # but identical fingerprints should have zero divergence.
+                div_score = 0.0
+            elif np.std(fp_a) == 0.0 or np.std(fp_b) == 0.0:
+                # A constant fingerprint has no rank information. Use the
+                # neutral correlation (rho=0) rather than silently treating
+                # an undefined statistic as perfect similarity.
+                div_score = 1.0
+            else:
+                corr, _ = stats.spearmanr(fp_a, fp_b)
+                div_score = 1.0 - (0.0 if np.isnan(corr) else corr)
+            div_matrix[i, j] = div_score
+            div_matrix[j, i] = div_score
 
     return pd.DataFrame(div_matrix, index=species_names, columns=species_names)
 
 
-def compute_gene_count_overlap(species_profiles: Dict[str, Any]) -> pd.DataFrame:
-    """Compute gene count and mean/median expression statistics per species.
+def compute_feature_count_summary(species_profiles: Dict[str, Any]) -> pd.DataFrame:
+    """Compute feature-table counts and expression summaries per species.
 
-    Args:
-        species_profiles: Dictionary mapping species name to an expression profile Series.
+    This is the canonical summary for native finalized tables.  It does not
+    assert that row identifiers are orthologous across species; it reports only
+    the number and aggregate expression of rows supplied for each species.
 
     Returns:
-        DataFrame with columns: species, total_genes, expressed_genes,
+        DataFrame with columns: species, total_features, expressed_features,
         mean_expression, median_expression.
     """
+
     records = []
     for sp, profile in sorted(species_profiles.items()):
         if isinstance(profile, pd.DataFrame):
-            profile = profile.mean(axis=1)
-        n_genes = len(profile)
-        n_expressed = int((profile > 0).sum())
-        mean_expr = float(profile[profile > 0].mean()) if n_expressed > 0 else 0.0
-        median_expr = float(profile[profile > 0].median()) if n_expressed > 0 else 0.0
+            profile = profile.apply(pd.to_numeric, errors="coerce").mean(axis=1)
+        else:
+            profile = pd.to_numeric(profile, errors="coerce")
+        n_features = len(profile)
+        finite_positive = profile[np.isfinite(profile) & (profile > 0)]
+        n_expressed = len(finite_positive)
+        mean_expr = float(finite_positive.mean()) if n_expressed > 0 else 0.0
+        median_expr = float(finite_positive.median()) if n_expressed > 0 else 0.0
         records.append(
             {
                 "species": sp,
-                "total_genes": n_genes,
-                "expressed_genes": n_expressed,
+                "total_features": n_features,
+                "expressed_features": n_expressed,
                 "mean_expression": round(mean_expr, 2),
                 "median_expression": round(median_expr, 2),
             }
         )
     return pd.DataFrame(records)
+
+
+def compute_gene_count_overlap(species_profiles: Dict[str, Any]) -> pd.DataFrame:
+    """Compute gene counts and summaries for gene-level compatibility callers.
+
+    Args:
+        species_profiles: Dictionary mapping species name to an expression
+            profile Series or DataFrame.
+
+    Returns:
+        DataFrame with columns: species, total_genes, expressed_genes,
+        mean_expression, median_expression.
+    """
+    feature_summary = compute_feature_count_summary(species_profiles)
+    return feature_summary.rename(
+        columns={
+            "total_features": "total_genes",
+            "expressed_features": "expressed_genes",
+        }
+    )
 
 
 # =============================================================================

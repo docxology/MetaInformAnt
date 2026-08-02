@@ -89,11 +89,12 @@ After downloading results, run downstream analysis locally:
 
 ```bash
 # Merge per-sample quant files into species-level count matrices
-python scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_SPECIES.yaml --steps merge curate sanity
+bash projects/hymenoptera_amalgkit/scripts/run_all_finalization.sh \
+  --data-root "$AMALGKIT_DATA_ROOT"
 
 # Or run all post-quant steps for all species:
 python scripts/rna/run_all_species.py --max-gb 0 --workers 4 --threads 8
-# (max-gb=0 skips downloads; only runs merge/curate/sanity on existing quant)
+# (max-gb=0 skips downloads; only runs merge/filter/finalize/sanity on existing quant)
 ```
 
 ### 7. Cleanup
@@ -130,7 +131,7 @@ scripts/cloud/
 
 scripts/rna/
  run_all_species.py # Thin orchestrator: species order + args → StreamingPipelineOrchestrator
- run_workflow.py # Single-species workflow runner
+ process_species.py # Single-species producer wrapper
 
 tests/
  test_cloud.py # Real-implementation tests for cloud config, deployer, scripts
@@ -145,7 +146,7 @@ Dockerfile                # Full pipeline container image
 1. Deploy    →  deploy_gcp.py deploy --project ...
 2. Monitor   →  deploy_gcp.py status / logs
 3. Download  →  bash download_results.sh output/amalgkit
-4. Post-quant →  run_workflow.py --steps merge curate sanity
+4. Post-quant →  run_all_finalization.sh --data-root "$AMALGKIT_DATA_ROOT"
 5. Cleanup   →  deploy_gcp.py destroy
 ```
 
@@ -168,4 +169,3 @@ python3 scripts/cloud/prep_genomes.py --threads 8
 # Start pipeline
 nohup python3 scripts/rna/run_all_species.py --max-gb 350.0 --workers 12 --threads 16 > output/amalgkit/pipeline.log 2>&1 &
 ```
-

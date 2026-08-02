@@ -57,7 +57,7 @@ def test_load_workflow_config_and_plan_uses_yaml_values():
 
 
 def test_env_overrides_for_config_threads(tmp_path: Path):
-    """Test that environment variables can override config values."""
+    """Test that the current Amalgkit thread namespace overrides config values."""
     from metainformant.rna.engine.workflow import load_workflow_config
 
     repo_root = Path(__file__).resolve().parents[2]
@@ -71,14 +71,14 @@ def test_env_overrides_for_config_threads(tmp_path: Path):
 
     import os
 
-    old = os.environ.get("AK_THREADS")
+    old = os.environ.get("AMALGKIT_PIPELINE_THREADS")
     try:
-        os.environ["AK_THREADS"] = "3"
+        os.environ["AMALGKIT_PIPELINE_THREADS"] = "3"
         cfg = load_workflow_config(cfg_path)
         assert cfg.threads == 3, f"Expected threads=3, got {cfg.threads}"
     finally:
         # Restore original value or remove if not set
         if old is None:
-            os.environ.pop("AK_THREADS", None)
+            os.environ.pop("AMALGKIT_PIPELINE_THREADS", None)
         else:
-            os.environ["AK_THREADS"] = old
+            os.environ["AMALGKIT_PIPELINE_THREADS"] = old

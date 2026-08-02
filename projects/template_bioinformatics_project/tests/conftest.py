@@ -4,7 +4,6 @@ conftest.py — Shared pytest fixtures for the template bioinformatics project.
 All fixtures use real file I/O on temporary directories (Real-Implementation policy).
 """
 
-import shutil
 import textwrap
 from pathlib import Path
 
@@ -26,8 +25,6 @@ def tmp_project(tmp_path: Path) -> Path:
     Copies the config/ directory and creates required subdirectories so
     scripts can be invoked without touching the real data/ or results/ trees.
     """
-    project_root = Path(__file__).parent.parent
-
     # Config
     (tmp_path / "config").mkdir()
     config = {

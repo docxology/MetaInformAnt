@@ -7,6 +7,7 @@ taxonomy IDs, and proteome-level analysis.
 from __future__ import annotations
 
 import re
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
@@ -15,6 +16,9 @@ from metainformant.core.utils import logging
 from metainformant.protein._network import get_protein_api_timeout
 
 logger = logging.get_logger(__name__)
+
+PROTEOMES_API_URL = os.environ.get("METAINFORMANT_PROTEOMES_API_URL", "https://www.ebi.ac.uk/proteins/api/proteomes")
+PROTEOME_STREAM_URL = os.environ.get("METAINFORMANT_PROTEOME_STREAM_URL", "https://rest.uniprot.org/uniprotkb/stream")
 
 
 class TaxonID(int):
@@ -112,14 +116,11 @@ def get_proteome_metadata(taxon_id: str) -> Dict[str, Any]:
     """
     import requests
 
-    # UniProt Proteomes API endpoint
-    base_url = "https://www.ebi.ac.uk/proteins/api/proteomes"
-
     # Search for proteome by taxonomy ID
     params = {"taxid": taxon_id, "size": 1}  # Get first result only
 
     try:
-        response = requests.get(base_url, params=params, timeout=get_protein_api_timeout())
+        response = requests.get(PROTEOMES_API_URL, params=params, timeout=get_protein_api_timeout())
         response.raise_for_status()
 
         data = response.json()
@@ -210,10 +211,9 @@ def download_proteome_fasta(taxon_id: str, output_path: Union[str, Path], includ
             return False
 
         # UniProt proteome download URL
-        base_url = "https://rest.uniprot.org/uniprotkb/stream"
         params = _proteome_stream_params(proteome_id, include_isoforms=include_isoforms)
 
-        response = requests.get(base_url, params=params, timeout=get_protein_api_timeout(default=60.0))
+        response = requests.get(PROTEOME_STREAM_URL, params=params, timeout=get_protein_api_timeout(default=60.0))
         response.raise_for_status()
 
         # Write FASTA content to file

@@ -17,8 +17,8 @@ cd MetaInformAnt
 # 2. Install dependencies
 uv sync
 
-# 3. Install amalgkit
-uv pip install git+https://github.com/kfuku52/amalgkit
+# 3. Install the pinned Amalgkit release
+uv sync --extra rna
 
 # 4. Check pipeline status (instant, uses SQLite DB)
 uv run python scripts/rna/check_pipeline_status.py -v
@@ -62,14 +62,14 @@ pending → downloading → downloaded → quantifying → quantified
 
 - `src/metainformant/rna/engine/progress_db.py` — `ProgressDB` class (SQLite, thread-safe)
 - `src/metainformant/rna/engine/progress_dashboard.py` — Dashboard visualization (PDF/PNG)
-- `src/metainformant/rna/engine/progress_tracker.py` — **Deprecated** (JSON-based, kept for backward compat)
+- `src/metainformant/rna/engine/progress_db.py` — SQLite progress state for the current workflow
 
 ## Resume Commands
 
 ### Run the full streaming pipeline
 
 ```bash
-# Run all 28 species (processes smallest first, streams download → quant → delete)
+# Historical full run for the 27-species configuration (processes smallest first, streams download → quant → delete)
 uv run python scripts/rna/run_all_species.py --max-gb 6.0 --workers 12 --threads 12
 ```
 
@@ -106,7 +106,8 @@ output/amalgkit/
       metadata/metadata.tsv        # Sample metadata (from SRA)
       index/                       # Kallisto index for this species
       quant/<SRR_ID>/              # Kallisto quantification results
-      curate/                      # Curated expression tables
+      wsfilter/                    # Within-species filtered tables
+      finalize/                    # Final expression tables
       sanity/                      # Sanity check outputs
 ```
 

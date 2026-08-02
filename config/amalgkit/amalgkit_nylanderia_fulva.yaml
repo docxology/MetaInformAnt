@@ -11,8 +11,8 @@
 # Generated: 2026-02-09
 
 # Paths are resolved relative to repository root
-work_dir: projects/hymenoptera_amalgkit/data/nylanderia_fulva/work
-log_dir: projects/hymenoptera_amalgkit/data/nylanderia_fulva/logs
+work_dir: output/amalgkit/nylanderia_fulva/work
+log_dir: output/amalgkit/nylanderia_fulva/logs
 threads: 16
 
 auto_install_amalgkit: true
@@ -32,7 +32,7 @@ genome:
   accession: GCF_005281655.2
   assembly_name: TAMU_Nfulva_1.1
   annotation_release: 100
-  dest_dir: projects/hymenoptera_amalgkit/data/shared/genome/Nylanderia_fulva
+  dest_dir: output/amalgkit/shared/genome/Nylanderia_fulva
   include:
     - genome
     - gff3
@@ -50,45 +50,40 @@ genome:
 # Per-step parameters
 steps:
   metadata:
-    out_dir: projects/hymenoptera_amalgkit/data/nylanderia_fulva/work
+    out_dir: output/amalgkit/nylanderia_fulva/work
     search_string: '"Nylanderia fulva"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
     redo: no
   integrate:
-    fastq_dir: projects/hymenoptera_amalgkit/data/nylanderia_fulva/fastq/getfastq
+    fastq_dir: output/amalgkit/nylanderia_fulva/fastq/getfastq
   select:
-    max_sample: 999999
-    mark_missing_rank: none
-    priority: "completeness"
-    redo: no
+    select_rules_tsv: config/amalgkit/select_rules.tsv
   getfastq:
-    out_dir: projects/hymenoptera_amalgkit/data/nylanderia_fulva/fastq
+    out_dir: output/amalgkit/nylanderia_fulva/fastq
     threads: 16
-    jobs: 16
     redo: no
     aws: yes
     gcp: no
     ncbi: no
-    pfd: yes
     fastp: no
     max_bp: 50000000
   quant:
-    jobs: 1
-    out_dir: projects/hymenoptera_amalgkit/data/nylanderia_fulva/work
+    out_dir: output/amalgkit/nylanderia_fulva/work
     threads: 16
     redo: no
     build_index: no
-    keep_fastq: no
-    index_dir: projects/hymenoptera_amalgkit/data/shared/genome/Nylanderia_fulva/index
-    fasta_dir: projects/hymenoptera_amalgkit/data/shared/genome/Nylanderia_fulva
+    clean_fastq: no
+    index_dir: output/amalgkit/shared/genome/Nylanderia_fulva/index
+    fasta_dir: output/amalgkit/shared/genome/Nylanderia_fulva
   merge:
-    out: projects/hymenoptera_amalgkit/data/nylanderia_fulva/merged/merged_abundance.tsv
-    out_dir: projects/hymenoptera_amalgkit/data/nylanderia_fulva/merged
-  cstmm:
-    out_dir: projects/hymenoptera_amalgkit/data/nylanderia_fulva/work
-    orthogroup_table: ""
-  curate:
-    out_dir: projects/hymenoptera_amalgkit/data/nylanderia_fulva/work
-  csca:
-    out_dir: projects/hymenoptera_amalgkit/data/nylanderia_fulva/work
-    orthogroup_table: ""
+    out_dir: output/amalgkit/nylanderia_fulva/work
+  wsfilter:
+    out_dir: output/amalgkit/nylanderia_fulva/work
+    input_dir: output/amalgkit/nylanderia_fulva/work/merge
+    norm: log2p1-fpkm
+    mapping_rate: 0.2
+  finalize:
+    out_dir: output/amalgkit/nylanderia_fulva/work
+    input_dir: output/amalgkit/nylanderia_fulva/work/wsfilter
+    norm: log2p1-fpkm
+    batch_effect_alg: no
   sanity: {}

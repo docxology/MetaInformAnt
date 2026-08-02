@@ -70,12 +70,12 @@ result = eqtl_coloc(
 
 | Module | Purpose |
 |--------|---------|
-| [`analysis/`](analysis/) | Association testing |
-| [`data/`](data/) | VCF, PLINK I/O |
-| [`finemapping/`](finemapping/) | Fine-mapping, colocalization |
-| [`heritability/`](heritability/) | Heritability estimation |
-| [`visualization/`](visualization/) | Manhattan, QQ, LocusZoom |
-| [`workflow/`](workflow/) | Pipeline orchestration |
+| [`analysis/`](../../src/metainformant/gwas/analysis/) | Association testing |
+| [`data/`](../../src/metainformant/gwas/data/) | VCF, PLINK I/O |
+| [`finemapping/`](../../src/metainformant/gwas/finemapping/) | Fine-mapping, colocalization |
+| [`heritability/`](../../src/metainformant/gwas/heritability/) | Heritability estimation |
+| [`visualization/`](../../src/metainformant/gwas/visualization/) | Manhattan, QQ, LocusZoom |
+| [`workflow/`](../../src/metainformant/gwas/workflow/) | Pipeline orchestration |
 
 ## 🧬 Integration with Expression Data
 
@@ -100,7 +100,7 @@ integrated = integration.integrate_omics_data(
 
 - [metainformant.multiomics](../multiomics/) - Multi-omic integration
 - [metainformant.rna](../rna/) - RNA-seq analysis
-- [config/gwas/](../../../config/gwas/) - Configuration files
+- [config/gwas/](../../config/gwas/) - Configuration files
 
 ## Apis mellifera Real Data
 

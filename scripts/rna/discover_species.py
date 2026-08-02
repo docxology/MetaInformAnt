@@ -6,10 +6,13 @@ to discover species with RNA-seq data and generate amalgkit configurations.
 
 Usage:
     # Discover ant species with RNA-seq data
-    python3 scripts/rna/discover_species.py --output config/amalgkit/
+    python3 scripts/rna/discover_species.py \
+        --output projects/hymenoptera_amalgkit/config/amalgkit/
 
     # Generate config for specific species
-    python3 scripts/rna/discover_species.py --species "Camponotus floridanus" --output config/amalgkit/
+    python3 scripts/rna/discover_species.py \
+        --species "Camponotus floridanus" \
+        --output projects/hymenoptera_amalgkit/config/amalgkit/
 """
 
 # ruff: noqa: E402 - setup utilities intentionally run before importing metainformant.

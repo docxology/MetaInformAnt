@@ -2,7 +2,7 @@
 # MetaInformAnt — Amalgkit RNA-seq Pipeline Container
 #
 # Installs all bioinformatics tools and Python deps needed to run the
-# streaming RNA-seq pipeline (download → quantify → merge → curate).
+# streaming RNA-seq pipeline (download → quantify → merge → finalize).
 #
 # Build:  docker build -t metainformant-pipeline .
 # Run:    docker run -v $(pwd)/output:/app/output metainformant-pipeline

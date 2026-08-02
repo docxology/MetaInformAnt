@@ -4,7 +4,7 @@
 
 ## Capabilities
 
-End-to-end RNA-seq pipelines: ENA/SRA metadata retrieval, FASTQ streaming, Kallisto quantification, cross-species TMM normalization, and industrial-scale orchestration (8,300+ samples across 28 Hymenoptera species).
+End-to-end RNA-seq pipelines: ENA/SRA metadata retrieval, FASTQ streaming, Kallisto quantification, cross-species TMM normalization, and industrial-scale orchestration. The Hymenoptera project has an archival production report with a historical sample total; current inventory and completion are data-root dependent and must be established from current provenance-bearing outputs.
 
 ## Subpackages
 

@@ -31,7 +31,7 @@ The module provides two APIs:
 |----------|----------------------|----------|
 | **Key-based OO** | `JsonCache` class | Multiple related cache operations, fine-grained control |
 | **Key-based functional** | `cache_json()`, `load_cached_json()` | Simple one-off caching |
-| **File-based** | `get_json_cache()`, `set_json_cache()` | When cachefile name matters (e.g., pre-defined location) |
+| **Functional JSON** | `cache_json()`, `load_cached_json()` | Simple key-based cache operations |
 | **Bulk operations** | `clear_cache_dir()`, `get_cache_info()` | Maintenance and monitoring |
 
 ### Cache Entry Format
@@ -136,27 +136,6 @@ Load cached data if present and not expired.
 - Checks both stored expiry and optional TTL override
 - Removes corrupted files automatically
 
-#### `get_json_cache(cache_file, default=None, max_age_seconds=None) -> Any`
-
-File-based variant: operates on a specific cache file path rather than a key-to-file mapping.
-
-**Parameters**:
-- `cache_file`: Direct path to `.json` cache file
-- `default`: Return value on miss/expiry/error
-- `max_age_seconds`: If set, entry older than this is considered expired
-
-**Returns**: Cached value or `default`
-
-#### `set_json_cache(cache_file, data) -> None`
-
-Write data to a specific cache file (no TTL metadata stored; you manage expiry externally via filename or separate metadata).
-
-**Parameters**:
-- `cache_file`: Path to cache file
-- `data`: JSON-serializable data
-
-**Note**: Simpler than `cache_json()`; doesn't embed TTL. Suitable for simple file-based caches.
-
 #### `clear_cache_dir(cache_dir) -> int`
 
 Delete all `.json` and `.json.gz` files in `cache_dir`. Doesn't recurse into subdirectories.
@@ -189,7 +168,7 @@ The cache module respects general core environment variables:
 | Variable | Effect |
 |----------|--------|
 | `CORE_LOG_LEVEL` | Controls verbosity of cache-related logs |
-| `AK_WORK_DIR` | If using `cache.get_cache_dir()` (affects default locations) |
+| `AMALGKIT_WORK_DIR` | If using `cache.get_cache_dir()` (affects default locations) |
 
 No cache-specific environment variables exist.
 

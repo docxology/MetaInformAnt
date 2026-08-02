@@ -1,10 +1,17 @@
 # MetaInformAnt TODO
 
-> **Last Updated**: 2026-06-29
+> **Last Updated**: 2026-07-25
 >
 > This TODO contains only active unfinished work. Prior BeeWAS GWAS,
 > manuscript, dashboard, validation, and release-bundle work is recorded in
 > status notes and generated release artifacts, not in this active list.
+
+The Hymenoptera Amalgkit project has a separate, data-root-scoped backlog at
+[`projects/hymenoptera_amalgkit/TODO.md`](projects/hymenoptera_amalgkit/TODO.md).
+Keep that work there rather than mixing a live external-volume transcriptome
+campaign with the BeeWAS release backlog below. Completed MetaInformAnt RNA
+and Hymenoptera implementation work is intentionally absent from both active
+lists; its evidence is maintained in the project status and readiness records.
 
 ---
 
@@ -62,6 +69,9 @@ uv run python -m beewas.gwas.review_release build
   `uv run python -m beewas.gwas.guarded ...`.
 - Keep runtime outputs under `output/`, `results/`, or documented data/output
   directories.
+- For the live Hymenoptera cloud campaign, reattach an interrupted controller
+  with `--skip-bundle-upload` and the original state/source/input IDs; never
+  rebuild or overwrite an immutable source object under an existing run ID.
 - Do not convert curation evidence into biological, causal, gene-function,
   replication, breeding, or final heritability claims without a reviewed
   decision artifact.

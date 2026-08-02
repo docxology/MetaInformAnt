@@ -1049,7 +1049,6 @@ CANONICAL_MAP: dict[str, dict[str, str]] = {
     "rna": {
         "AmalgkitRunLayout": "metainformant.rna.core.configs",
         "AmalgkitWorkflowConfig": "metainformant.rna.engine.workflow_core",
-        "ProgressTracker": "metainformant.rna.engine.progress_tracker",
         "RNAPipelineConfig": "metainformant.rna.core.configs",
         "batch_deconvolve": "metainformant.rna.deconvolution.bulk_deconvolution",
         "build_isoform_graph": "metainformant.rna.splicing.isoforms",
@@ -1060,7 +1059,7 @@ CANONICAL_MAP: dict[str, dict[str, str]] = {
         "compute_psi": "metainformant.rna.splicing.splice_analysis",
         "compute_sample_metrics": "metainformant.rna.analysis.qc_metrics",
         "compute_splice_site_strength": "metainformant.rna.splicing.splice_sites",
-        "configs": "metainformant.rna.engine.orchestration",
+        "configs": "metainformant.rna.core.configs",
         "deconvolve_nnls": "metainformant.rna.deconvolution.bulk_deconvolution",
         "deconvolve_svr": "metainformant.rna.deconvolution.bulk_deconvolution",
         "deps": "metainformant.rna.core.environment",

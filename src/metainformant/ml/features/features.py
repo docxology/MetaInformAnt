@@ -98,15 +98,29 @@ def select_features_univariate(
     selector_kwargs = dict(kwargs)
     selector_kwargs.pop("p_threshold", None)
 
+    def _safe_score_func(features: np.ndarray, target: np.ndarray) -> Any:
+        """Keep degenerate biological cohorts finite for sklearn selectors."""
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", RuntimeWarning)
+            scores = score_func(features, target)
+        if isinstance(scores, tuple):
+            statistic, p_values = scores
+            statistic = np.nan_to_num(
+                np.asarray(statistic, dtype=float), nan=0.0, posinf=np.finfo(float).max, neginf=0.0
+            )
+            p_values = np.nan_to_num(np.asarray(p_values, dtype=float), nan=1.0, posinf=1.0, neginf=0.0)
+            return statistic, p_values
+        return np.nan_to_num(np.asarray(scores, dtype=float), nan=0.0, posinf=np.finfo(float).max, neginf=0.0)
+
     # Create selector
     if k == "all":
-        selector = SelectKBest(score_func=score_func, k="all", **selector_kwargs)
+        selector = SelectKBest(score_func=_safe_score_func, k="all", **selector_kwargs)
     elif isinstance(k, int):
-        selector = SelectKBest(score_func=score_func, k=min(k, X.shape[1]), **selector_kwargs)
+        selector = SelectKBest(score_func=_safe_score_func, k=min(k, X.shape[1]), **selector_kwargs)
     elif isinstance(k, str) and k.endswith("%"):
         # Percentage-based selection
         percentile = int(k[:-1])
-        selector = SelectPercentile(score_func=score_func, percentile=percentile, **selector_kwargs)
+        selector = SelectPercentile(score_func=_safe_score_func, percentile=percentile, **selector_kwargs)
     else:
         raise ValueError(f"Invalid k parameter: {k}")
 

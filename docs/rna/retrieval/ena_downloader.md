@@ -1,91 +1,58 @@
 # ENA Downloader
 
-The `download_ena.py` script is the **primary download mechanism** for FASTQ files in METAINFORMANT. It downloads pre-compressed `.fastq.gz` files directly from the European Nucleotide Archive (ENA) using `wget`.
-
-## Why ENA Instead of SRA Toolkit
-
-| Factor | ENA Direct (wget) | SRA Toolkit (fasterq-dump) |
-|--------|-------------------|---------------------------|
-| File format | Pre-compressed `.fastq.gz` | SRA binary → extract → compress |
-| Disk per sample | ~5 GB | ~25 GB (SRA cache + extracted) |
-| Reliability | 100% (no LITE file issue) | ~60–80% (LITE SRA files produce 0 reads) |
-| Resume support | `wget --continue` | Partial support |
-| Concurrent workers | 16+ safe | Limited by SRA cache space |
-
-## Usage
-
-```bash
-# Download a single SRR
-python3 scripts/rna/download_ena.py --srr SRR14740514 --out-dir output/amalgkit/pbarbatus/fastq
-
-# Batch download from a list
-python3 scripts/rna/download_ena.py --srr-list srr_ids.txt --out-dir output/amalgkit/pbarbatus/fastq --workers 16
-```
+MetaInformAnt provides the implemented ENA downloader as the
+`ENADownloader` Python class in
+`src/metainformant/rna/retrieval/ena_downloader.py`. There is no standalone
+`scripts/rna/download_ena.py` entry point in this checkout.
 
 ## Python API
 
 ```python
-from metainformant.rna.retrieval import ena_downloader
 from pathlib import Path
 
-# Download a single file
-success = ena_downloader.download_file(
-    url="ftp://ftp.sra.ebi.ac.uk/vol1/fastq/SRR123/SRR123456/SRR123456_1.fastq.gz",
-    dest_path=Path("output/SRR123456_1.fastq.gz"),
-    expected_md5="d41d8cd98f00b204e9800998ecf8427e"
+from metainformant.rna.retrieval.ena_downloader import ENADownloader
+
+downloader = ENADownloader(timeout=1800, retries=3)
+success, message, files = downloader.download_run(
+    "SRR1234567",
+    Path("output/amalgkit/pbarbatus/work/getfastq/SRR1234567"),
 )
-
-# Batch download with fallback
-success_count, fail_count = ena_downloader.download_sra_samples(
-    sra_ids=["SRR123456", "SRR123457"],
-    base_out_dir=Path("output/amalgkit"),
-    sort_by_size=True,
-    use_fallback=True   # falls back to SRA Toolkit if ENA lacks the accession
-)
+if not success:
+    raise RuntimeError(message)
 ```
 
-## Integrity Verification
+For a batch of accessions, use the implemented `download_sra_samples()`
+helper. It writes the Amalgkit `getfastq/{run_id}/` layout and returns
+`(success_count, failure_count)`. The higher-level
+`StreamingPipelineOrchestrator` additionally provides the configured
+`fasterq-dump` fallback when direct ENA retrieval fails.
 
-Every downloaded file is verified before being passed to kallisto:
+## What is verified
 
-1. **MD5 checksum** — compared against ENA-provided hash
-2. **Gzip integrity** — `gzip -t` to catch truncated transfers
+The downloader queries the ENA Portal API, retrieves pre-compressed FASTQ
+URLs, retries `curl` transfers, skips existing non-empty valid gzip files,
+retains resumable `.part` files, and preserves rejected payloads with an
+`.invalid` suffix. `verify_gzip_integrity()` is the transfer integrity gate
+used by the downloader. `calculate_md5()` is available as a
+utility, but an MD5 comparison is not automatically performed by
+`download_run()` unless a caller supplies that policy separately.
 
-If either check fails:
-1. Invalid file is deleted immediately
-2. Download is retried (with exponential backoff)
-3. If all retries fail, sample is marked failed and pipeline continues with the next sample
+## Output layout
 
-## Resumable Downloads
-
-`wget --continue` is used by default. If a download is interrupted:
-- Restarts from where it left off (no re-downloading from zero)
-- Safe to re-run the script against partially downloaded files
-
-## Fallback to SRA Toolkit
-
-When an SRR accession has no ENA entry, the downloader falls back to `fasterq-dump`:
-
-```bash
-# Fallback is automatic when use_fallback=True (default)
-# Requires SRA Toolkit on PATH:
-fasterq-dump --version
+```text
+<work_dir>/getfastq/
+└── <run_id>/
+    ├── <run_id>_1.fastq.gz  # paired-end forward reads
+    ├── <run_id>_2.fastq.gz  # paired-end reverse reads, when present
+    └── <run_id>.fastq.gz     # single-end reads, when present
 ```
 
-The fallback is rare (< 5% of accessions in practice). ENA covers virtually all public SRA data.
+FASTQ files are temporary inputs. Successful quantification produces the
+canonical `abundance.tsv` evidence and may remove FASTQ files according to the
+active configuration.
 
-## Output Structure
+## See also
 
-```
-out_dir/
- getfastq/
- <SRR>/
- <SRR>_1.fastq.gz # forward reads (paired-end)
- <SRR>_2.fastq.gz # reverse reads (paired-end)
- <SRR>.fastq.gz # single-end (if applicable)
-```
-
-## See Also
-
-- [04_getfastq.md](../amalgkit/steps/04_getfastq.md) — getfastq step documentation
-- [amalgkit.md](../amalgkit/amalgkit.md) — Download architecture overview
+- [04_getfastq.md](../amalgkit/steps/04_getfastq.md) — workflow integration
+- [amalgkit.md](../amalgkit/amalgkit.md) — wrapper and monitoring overview
+- [Streaming Orchestration](../ORCHESTRATION.md) — execution and fallback logic

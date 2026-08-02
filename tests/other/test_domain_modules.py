@@ -3,13 +3,13 @@ from pathlib import Path
 from metainformant.ontology.core.go import count_go_scripts
 from metainformant.phenotype.data.antwiki import load_antwiki_json
 from metainformant.protein.sequence.proteomes import read_taxon_ids
-from metainformant.rna.engine.pipeline import summarize_curate_tables
+from metainformant.rna.engine.pipeline import summarize_finalize_tables
 
 
-def test_rna_curate_summary_apis_mellifera():
+def test_rna_finalize_summary_apis_mellifera():
     repo_root = Path(__file__).resolve().parents[2]
-    curate_dir = repo_root / "tests/data/rna/curate/Apis_mellifera"
-    counts = summarize_curate_tables(curate_dir)
+    finalize_dir = repo_root / "tests/data/rna/finalize/Apis_mellifera"
+    counts = summarize_finalize_tables(finalize_dir)
     assert any(name.endswith("metadata.tsv") for name in counts)
     assert any(name.endswith("tc.tsv") for name in counts)
 

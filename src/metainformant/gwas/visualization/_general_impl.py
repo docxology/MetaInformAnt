@@ -18,7 +18,6 @@ logger = logging.get_logger(__name__)
 try:
     import matplotlib.patches as mpatches
     import matplotlib.pyplot as plt
-    from matplotlib.offsetbox import AnchoredText
 
     HAS_MATPLOTLIB = True
 except ImportError:
@@ -181,8 +180,29 @@ def manhattan_plot(
     # High-contrast aesthetic colors for Manhattan chromosomes
     chrom_colors = kwargs.get("colors", ["#0D47A1", "#64B5F6"])
 
-    current_pos = 0
+    # Derive chromosome offsets from the observed extent of each contig. A
+    # fixed 100 Mb offset makes small synthetic contigs look artificially far
+    # apart and can dominate downstream axis limits. The small proportional
+    # gap preserves visual separation without assuming a reference genome.
+    chrom_extent = {}
+    for result in result_records:
+        chrom = str(result.get("chrom", result.get("chromosome", "1")))
+        try:
+            pos = float(result.get("pos", result.get("position", 0)))
+        except (TypeError, ValueError):
+            pos = 0.0
+        chrom_extent[chrom] = max(chrom_extent.get(chrom, 0.0), pos)
+
+    chrom_order = sorted(chrom_extent, key=lambda value: int(value) if value.isdigit() else 999)
+    max_extent = max(chrom_extent.values(), default=0.0)
+    chrom_gap = max(1.0, max_extent * 0.01)
     chrom_offsets = {}
+    current_pos = 0.0
+    chrom_index = {}
+    for index, chrom in enumerate(chrom_order):
+        chrom_offsets[chrom] = current_pos
+        chrom_index[chrom] = index
+        current_pos += chrom_extent[chrom] + chrom_gap
 
     for result in result_records:
         chrom = str(result.get("chrom", result.get("chromosome", "1")))
@@ -195,8 +215,12 @@ def manhattan_plot(
             chrom_offsets[chrom] = current_pos
             current_pos += 100000000  # Space chromosomes apart
 
+        try:
+            pos = float(pos)
+        except (TypeError, ValueError):
+            pos = 0.0
         global_pos = chrom_offsets[chrom] + pos
-        color_idx = (len(chrom_offsets) - 1) % len(chrom_colors)
+        color_idx = chrom_index[chrom] % len(chrom_colors)
 
         chromosomes.append(chrom)
         positions.append(global_pos)
@@ -317,8 +341,8 @@ def manhattan_plot(
 
     # Add chromosome labels
     chrom_centers = {}
-    for chrom in sorted(chrom_offsets.keys(), key=lambda x: int(x) if x.isdigit() else 999):
-        center = chrom_offsets[chrom] + 50000000  # Approximate center
+    for chrom in chrom_order:
+        center = chrom_offsets[chrom] + chrom_extent[chrom] / 2.0
         chrom_centers[center] = chrom
     ax.set_xticks(list(chrom_centers.keys()))
     ax.set_xticklabels(list(chrom_centers.values()))
@@ -455,7 +479,7 @@ def qq_plot(
             upper_ci,
             alpha=0.12,
             color="#90CAF9",
-            label="95% CI (null)",
+            label="95% null envelope",
             zorder=1,
         )
 
@@ -526,7 +550,7 @@ def qq_plot(
 
     # Build annotation text
     gc_lines = [
-        f"λ_GC = {lambda_gc:.4f}  {inflation_status}",
+        f"lambda GC (λ_GC) = {lambda_gc:.4f}  {inflation_status}",
         f"n = {n:,} variants tested",
     ]
     if n_samples is not None:
@@ -539,18 +563,27 @@ def qq_plot(
         gc_lines.append(context_note)
 
     gc_text = "\n".join(gc_lines)
-    at = AnchoredText(
+    # Use a regular Axes text artist so the annotation is discoverable by
+    # callers inspecting ``ax.texts`` as well as visible in saved figures.
+    ax.text(
+        0.02,
+        0.98,
         gc_text,
-        loc="upper left",
-        prop=dict(size=10, fontweight="bold", fontfamily="monospace"),
-        frameon=True,
+        transform=ax.transAxes,
+        va="top",
+        ha="left",
+        fontsize=10,
+        fontweight="bold",
+        family="monospace",
+        bbox={
+            "boxstyle": "round,pad=0.4",
+            "facecolor": status_color,
+            "alpha": 0.95,
+            "edgecolor": border_color,
+            "linewidth": 2,
+        },
+        zorder=5,
     )
-    at.patch.set_boxstyle("round,pad=0.4")
-    at.patch.set_facecolor(status_color)
-    at.patch.set_alpha(0.95)
-    at.patch.set_edgecolor(border_color)
-    at.patch.set_linewidth(2)
-    ax.add_artist(at)
 
     # ── Axes formatting ──
     ax.set_xlabel("Expected −log₁₀(p)", fontsize=14, fontweight="medium")
@@ -854,8 +887,13 @@ def pca_plot(
             fontsize=13,
             fontweight="medium",
         )
+        variance_title = (
+            f"; PC1={pc1_var:.1f}% / PC2={pc2_var:.1f}% variance explained"
+            if explained_var
+            else ""
+        )
         ax.set_title(
-            f"Population Structure — PCA  ({n_samples} samples)",
+            f"Population Structure — PCA  ({n_samples} samples{variance_title})",
             fontsize=15,
             fontweight="bold",
         )

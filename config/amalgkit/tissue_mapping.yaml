@@ -31,6 +31,7 @@ brain:
   - central brain
   - Whole individual brain
   - hypothalamus
+  - Other brain region
 
 optic_lobe:
   - optic_lobe
@@ -425,6 +426,7 @@ gonad:
   - gonad
   - Gonadal
   - gonadal
+  - Gonads
 
 germline:
   - germline

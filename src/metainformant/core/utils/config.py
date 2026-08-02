@@ -251,7 +251,7 @@ def coerce_config_types(config: dict[str, Any], type_map: dict[str, type]) -> di
     return result
 
 
-def apply_env_overrides(config: Mapping[str, Any], *, prefix: str = "AK") -> dict[str, Any]:
+def apply_env_overrides(config: Mapping[str, Any], *, prefix: str = "AMALGKIT") -> dict[str, Any]:
     """Apply simple environment overrides to a shallow config mapping.
 
     Supported keys via env:

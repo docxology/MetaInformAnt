@@ -1,38 +1,50 @@
-# Personal AI Infrastructure (PAI) - amalgkit
+# Configuration maintenance record — Amalgkit
 
-## Context & Intent
+## Scope
 
-- **Path**: `config/amalgkit/`
-- **Purpose**: YAML configurations for amalgkit RNA-seq transcript quantification workflows
-- **Domain**: config → bioinformatics → RNA-seq
+`config/amalgkit/` contains the checked-in 27-species Hymenoptera YAML
+inventory, templates, and shared tissue maps. The inventory defines planned
+scope; it does not assert that external data or downstream matrices exist.
 
-## Virtual Hierarchy
+## Current contract
 
-- **Type**: Configuration Directory
-- **Parent**: `config`
-- **Consumers**: `scripts/rna/`, `src/metainformant/rna/`
+Every species configuration uses the current chain:
 
-## Production Status
+```text
+metadata → select → getfastq → integrate → quant → merge
+         → wsfilter → finalize → sanity
+```
 
-| Config | Samples | Status |
-|--------|---------|--------|
-| `amalgkit_acromyrmex_echinatior.yaml` | 48 | In Progress |
-| `amalgkit_apis_mellifera_all.yaml` | ~7,342 | ⏳ Queued |
-| All 23 species | Varies | ⏳ Queued (sequential via `run_all_species.sh`) |
+Provider flags are explicit Amalgkit data-source controls. Large inputs and
+outputs resolve from `AMALGKIT_DATA_ROOT` when the project runners are used.
+Do not replace a current report with a status copied from another data root.
 
-## Maintenance Notes
+## Validation
 
-- **Dependencies**: `amalgkit>=0.12.20`, `kallisto`, `fasterq-dump`
-- **Disk Strategy**: Per-sample stream-and-clean (concurrent within chunks of 16)
-- **Critical Settings**: `redo: no` for production runs (idempotent), `aws: yes`, `ncbi: no`
-- **Shared Resources**: Genome/index in `output/amalgkit/shared/`
-- **Threads**: 16 total, dynamically divided across concurrent samples
-- **Metadata Filtering**: Always use `AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]`
+From the repository root:
 
-## AI Workflows
+```bash
+uv run python scripts/rna/validate_configs.py
+uv run python scripts/rna/validate_all_species_workflow.py
+```
 
-- **New Species**: Copy `amalgkit_template.yaml`, adjust paths/taxon
-- **Recovery**: Re-run `bash scripts/rna/run_all_species.sh` — it auto-resumes via `redo: no`
-- **Monitoring**: `.venv/bin/python scripts/package/generate_custom_summary.py`
-- **Tissue Patches**: Add new bioproject annotations to `tissue_patches.yaml`
-- **Documentation**: Update this file and `README.md` when adding configs
+For the full project evidence boundary:
+
+```bash
+bash projects/hymenoptera_amalgkit/scripts/verify_setup.sh \
+  --data-root "$AMALGKIT_DATA_ROOT" --require-data --report
+```
+
+Configuration validation confirms syntax and required fields only. The report
+and evidence manifest confirm materialized outputs, sample identity, matrix
+availability, and cross-species cohort integrity.
+
+## Maintenance rules
+
+- Update the configuration walkthrough, tests, and 27-species inventory
+  together when adding or removing a species.
+- Keep tissue recoding in `tissue_mapping.yaml` and
+  `tissue_patches.yaml`; preserve source metadata.
+- Use `redo: no` unless a deliberate rerun has been recorded.
+- Regenerate the report, manuscript status, manifest, and evidence ledger after
+  any configuration or data-root change.

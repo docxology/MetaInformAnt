@@ -543,10 +543,10 @@ def leverage_plot(
     if len(X) != len(y):
         raise ValueError("X and y must have same number of samples")
 
-    try:
-        from sklearn.linear_model import LinearRegression
-    except ImportError:
+    if not HAS_SKLEARN:
         raise ImportError("scikit-learn required for leverage plot")
+
+    from sklearn.linear_model import LinearRegression
 
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))

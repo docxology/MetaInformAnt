@@ -1,166 +1,80 @@
-# RNA Module
+# RNA-seq and Amalgkit workflow
 
-Core RNA-seq analysis and workflow orchestration for METAINFORMANT.
+MetaInformAnt provides a typed Python workflow layer over the installed
+Amalgkit command line interface. The active contract is discovered from the
+installed Amalgkit version; the local verified environment uses Amalgkit
+0.16.32 and the commands:
 
-## Overview
+`metadata → select → getfastq → integrate → quant → merge → wsfilter → finalize → sanity`
 
-Core RNA-seq analysis and workflow orchestration for METAINFORMANT.
+For public-read archive discovery and download, the workflow uses the ENA
+metadata/download path exposed by the installed Amalgkit release. A metadata
+record or download attempt is not analysis evidence: sample selection, read
+validation, quantification, merge, filtering, finalization, and sanity checks
+must all produce their expected outputs.
 
+`cstmm` and `csfilter` are optional cross-species branches. They are not
+silently substituted for the per-species finalization chain.
 
-## Table of Contents
+## Start here
 
-- [Architecture](#architecture)
-- [Submodules](#submodules)
-- [Key Classes](#key-classes)
-  - [Workflow Engine](#workflow-engine)
-  - [Amalgkit Wrapper](#amalgkit-wrapper)
-- [Usage](#usage)
-- [Workflow Steps](#workflow-steps)
-- [Download Strategy: ENA-First with NCBI Fallback](#download-strategy-ena-first-with-ncbi-fallback)
-  - [SRA Cache Management (The Docker Overlay Danger)](#sra-cache-management-the-docker-overlay-danger)
-- [Index Complexity Management](#index-complexity-management)
-- [GWAS Integration](#gwas-integration)
-- [Related](#related)
+- [Getting started](GETTING_STARTED.md)
+- [Configuration](CONFIGURATION.md)
+- [Workflow execution](workflow.md)
+- [Command reference](amalgkit/commands.md)
+- [Step reference](amalgkit/steps/README.md)
+- [Validation protocol](VALIDATION.md)
+- [End-to-end validation](END_TO_END_VALIDATION.md)
+- [Mounted-data setup](EXTERNAL_DRIVE_SETUP.md)
+- [Hymenoptera project documentation](../../projects/hymenoptera_amalgkit/README.md)
 
-## Architecture
+## Execution contract
 
-```mermaid
-graph TD
-    subgraph "RNA Module"
-        E[engine/] --> |workflow.py| W[Workflow Execution]
-        E --> |monitoring.py| M[Progress Monitoring]
-        E --> |discovery.py| D[Species Discovery]
-        E --> |streaming_orchestrator.py| SO[Multi-Species Pipeline]
-        
-        A[amalgkit/] --> |amalgkit.py| AK[Amalgkit Wrapper]
-        A --> |genome_prep.py| G[Genome Preparation]
-        A --> |metadata_filter.py| MD[Metadata Handling]
-        
-        C[core/] --> |configs.py| CF[Configuration]
-        C --> |cleanup.py| CL[Cleanup Utilities]
-        
-        R[retrieval/] --> |ena_downloader.py| ENA[ENA Download]
-        
-        AN[analysis/] --> |expression_core.py| EX[Expression Analysis]
-    end
+```text
+configuration
+    ↓
+metadata → select → getfastq → integrate → quant → merge
+                                                    ↓
+                                  wsfilter → finalize → sanity
+                                                    ↓
+                            evidence manifest + report + analysis
 ```
 
-## Submodules
+The wrappers perform three separate jobs:
 
-| Module                               | Purpose                                       |
-|--------------------------------------|-----------------------------------------------|
-| [`engine/`](workflow.md)                 | Workflow execution, monitoring, orchestration |
-| [`amalgkit/`](amalgkit/)             | Amalgkit tool wrapper and API                 |
-| [`core/`](CONFIGURATION.md)                     | Configuration, cleanup, dependencies          |
-| [`retrieval/`](retrieval/)           | ENA FASTQ data retrieval                      |
-| [`analysis/`](comprehensive_guide.md)             | Expression matrix analysis, QC, validation    |
-| `deconvolution/`   | Cell-type deconvolution from bulk RNA-seq     |
-| `splicing/`             | Alternative splicing analysis                 |
+1. validate configuration and installed-command options;
+2. execute a named Amalgkit command with logs and a JSONL manifest;
+3. inspect outputs without treating a directory or zero exit code alone as
+   proof of a valid result.
 
-## Key Classes
+## Real-data boundary
 
-### Workflow Engine
+Large outputs must live outside Git. Set the active root explicitly before
+running a real cohort:
 
-- `AmalgkitWorkflowConfig` — Workflow configuration loaded from YAML
-- `StreamingPipelineOrchestrator` — Multi-species ENA-first orchestrator
-- `StreamingPipeline` — Per-sample download→quant→cleanup pipeline
-- `ProgressTracker` — Real-time progress state management
-
-### Amalgkit Wrapper
-
-- `AmalgkitParams` — Typed parameter container for amalgkit CLI calls
-- `build_amalgkit_command()` — CLI command builder
-- `run_amalgkit()` — Execute any amalgkit step
-- `GenomePreparator` — Reference genome download and Kallisto indexing
-- `TissueNormalizer` — Tissue label normalization via mappings
-
-## Usage
-
-```python
-from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, execute_workflow
-
-# Load configuration
-config = AmalgkitWorkflowConfig.load("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
-
-# Execute workflow
-result = execute_workflow(config, steps=["getfastq", "quant", "merge"])
+```bash
+export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
 ```
 
-## Workflow Steps
+The root is an input/output boundary, not a claim that every configured
+species has data. Always record configured species, materialized species,
+selected metadata rows, valid abundance files, completed steps, warnings, and
+the exact tool versions in the evidence manifest.
 
-| Step       | Description                         |
-|------------|-------------------------------------|
-| `metadata` | Fetch sample metadata from NCBI     |
-| `select`   | Filter to valid RNA-seq samples     |
-| `getfastq` | Download SRA → extract FASTQ        |
-| `quant`    | Quantify with kallisto              |
-| `merge`    | Combine abundance files             |
-| `curate`   | Quality control and filtering       |
+## Analysis boundary
 
-## Download Strategy: ENA-First with NCBI Fallback
+Quantification, merge, filtering, and finalization are computational pipeline
+outputs. They do not by themselves establish biological significance. A
+publication-ready analysis additionally requires explicit sample inclusion
+rules, metadata provenance, orthology strategy, normalization rationale,
+effect sizes and uncertainty, multiple-testing control, sensitivity analyses,
+and result-derived figures and captions. The Hymenoptera project records
+those requirements in its manuscript and evidence documents.
 
-All species use a two-tier download strategy managed by the `StreamingPipelineOrchestrator`:
+## Public API
 
-1. **ENA primary** — Direct FTP/HTTP downloads of `.fastq.gz` from European Nucleotide Archive. Bypasses slow `prefetch` + `fasterq-dump` extraction.
-2. **NCBI fallback** — If ENA download fails, falls back to `fasterq-dump` from NCBI SRA.
-
-- **Entry point**: `scripts/rna/run_workflow.py` → `StreamingPipelineOrchestrator`
-- **Concurrency**: Up to 16 parallel workers with SQLite-backed progress tracking
-- **Scheduling**: Size-ordered (smallest samples first) for maximum throughput
-- **Monitoring**: Real-time TUI via `scripts/rna/monitor_tui.py`
-
-### SRA Cache Management (The Docker Overlay Danger)
-When the NCBI Fallback is triggered across hundreds of parallel workers, `fasterq-dump` utilizes internal scratch directories. In a containerized Docker context (`ghcr.io/docxology/metainformant/pipeline`), this dumps hundreds of Gigabytes into the unmapped overlay filesystem (`/app/fasterq.tmp.*` and `/tmp/sra-cache/`) directly onto the VM's OS disk (`/dev/root`), rather than the mapped data volumes. If the root partition hits 100%, the entire pipeline will deadlock and OS calls will silently fail. This is recovered via VM reboots and manual internal purges (`rm -rf`).
-
-## Index Complexity Management
-
-For genomes with high repetitive content (e.g., *Harpegnathos saltator*), standard `kallisto index` may stall.
-
-**Symptoms**:
-
-- `kallisto quant` processes hang indefinitely with 100% CPU.
-- `Max EC size` > 3000 in index stats.
-
-**Solution** — `IndexComplexityManager` in `amalgkit/index_prep.py`:
-
-1. Automatically filters `XR_` and `NR_` (non-coding RNA) transcripts.
-2. Removes transcripts < 200bp and duplicates.
-3. Rebuilds index with reduced complexity.
-
-*This strategy solved the Harpegnathos stall (Max EC: ~3015) by reducing index size and complexity. It is now applied automatically for any species.*
-
-## GWAS Integration
-
-RNA expression data can be integrated with GWAS variants for eQTL analysis:
-
-```python
-from metainformant.multiomics.analysis import integration
-from metainformant.gwas.finemapping.colocalization import eqtl_coloc
-
-# Prepare expression data for integration
-rna_data = integration.from_rna_expression(
-    expression_df,
-    normalize=True
-)
-
-# Run colocalization with GWAS summary statistics
-result = eqtl_coloc(
-    gwas_z=gwas_zscores,
-    eqtl_z=expression_zscores,
-    gene_id="LOC123456"
-)
-```
-
-- [Orchestration & Performance Guide](ORCHESTRATION.md) — ENA-first amalgkit streaming pipeline
-- [Troubleshooting & Hacks](amalgkit/TROUBLESHOOTING.md) — IO contention & SRA setup fixes
-
-See [metainformant.multiomics](../multiomics/) for comprehensive integration methods.
-
-## Related
-- [API Reference](SPEC.md) — Type signatures, error codes, data structures
-
-- [Agent Coordination Hub](../agents/README.md) — Multi-agent orchestration patterns, workflows, safety
-- [scripts/rna/](../../scripts/rna/) - Workflow scripts
-- [config/amalgkit/](../../config/amalgkit/) - Configuration files
-- [config/amalgkit/amalgkit_faq.md](../../config/amalgkit/amalgkit_faq.md) - FAQ
-- [metainformant.multiomics](../multiomics/) - GWAS-expression integration
+The stable workflow surface is in
+`metainformant.rna.amalgkit.amalgkit`, `metainformant.rna.engine.workflow`,
+and `metainformant.rna.steps`. The command registry is the source of truth
+for current subcommands; use `amalgkit --help` and the project verification
+scripts to confirm the installed environment before a real run.

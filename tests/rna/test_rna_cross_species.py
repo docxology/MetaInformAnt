@@ -1,12 +1,15 @@
 """Comprehensive tests for the cross-species gene expression comparison module.
 
-Tests all 7 public functions in metainformant.rna.analysis.cross_species:
+Tests the public functions in metainformant.rna.analysis.cross_species:
     - build_ortholog_map
     - map_expression_to_orthologs
     - compute_expression_conservation
     - identify_divergent_genes
     - compare_expression_across_species
     - compute_expression_divergence_matrix
+    - compute_fingerprint_divergence_matrix
+    - compute_feature_count_summary
+    - compute_gene_count_overlap
     - phylogenetic_expression_profile
     - cross_species_pca
 
@@ -26,6 +29,9 @@ from metainformant.rna.analysis.cross_species import (
     compare_expression_across_species,
     compute_expression_conservation,
     compute_expression_divergence_matrix,
+    compute_feature_count_summary,
+    compute_fingerprint_divergence_matrix,
+    compute_gene_count_overlap,
     cross_species_pca,
     identify_divergent_genes,
     map_expression_to_orthologs,
@@ -1526,3 +1532,116 @@ class TestEdgeCases:
         assert not result.empty
         leaf_row = result[result["node"] == "sp_a"]
         assert leaf_row.iloc[0]["mean_expression"] == pytest.approx(42.0)
+
+
+def test_fingerprint_divergence_uses_common_bins_and_is_symmetric() -> None:
+    """Distribution fingerprints must be comparable across species."""
+
+    rng = np.random.default_rng(7)
+    profiles = {
+        "sp_a": pd.Series(rng.lognormal(mean=1.0, sigma=0.5, size=250)),
+        "sp_b": pd.Series(rng.lognormal(mean=1.2, sigma=0.5, size=250)),
+        "sp_c": pd.Series(rng.lognormal(mean=2.0, sigma=1.0, size=250)),
+    }
+
+    result = compute_fingerprint_divergence_matrix(profiles, n_bins=32)
+
+    assert list(result.index) == ["sp_a", "sp_b", "sp_c"]
+    assert result.equals(result.T)
+    assert np.allclose(np.diag(result), 0.0)
+    assert np.isfinite(result.to_numpy()).all()
+    assert ((result.to_numpy() >= 0.0) & (result.to_numpy() <= 2.0)).all()
+
+
+def test_fingerprint_divergence_rejects_too_few_bins() -> None:
+    """The histogram resolution must be valid before any data are loaded."""
+
+    with pytest.raises(ValueError, match="n_bins"):
+        compute_fingerprint_divergence_matrix(
+            {"sp_a": pd.Series(np.ones(120)), "sp_b": pd.Series(np.ones(120))},
+            n_bins=3,
+        )
+
+
+def test_fingerprint_divergence_rejects_underpowered_species() -> None:
+    """A species with too few valid features must fail instead of becoming zeros."""
+
+    profiles = {
+        "sp_a": pd.Series(np.ones(120)),
+        "sp_b": pd.Series(np.ones(120)),
+    }
+    with pytest.raises(ValueError, match="finite positive feature values"):
+        compute_fingerprint_divergence_matrix(profiles, min_valid_features=121)
+
+
+def test_fingerprint_divergence_rejects_negative_feature_values() -> None:
+    """Negative abundance values must not be silently discarded."""
+
+    profiles = {
+        "sp_a": pd.Series(np.concatenate([np.ones(120), [-1.0]])),
+        "sp_b": pd.Series(np.ones(121)),
+    }
+    with pytest.raises(ValueError, match="negative feature values"):
+        compute_fingerprint_divergence_matrix(profiles)
+
+
+def test_fingerprint_divergence_handles_degenerate_rank_profiles() -> None:
+    """Undefined Spearman ranks must not turn identical profiles into distance 1."""
+
+    profile_a = pd.Series(np.concatenate([np.ones(120), np.full(120, 4.0)]))
+    profile_b = profile_a.copy()
+    profile_c = pd.Series(np.concatenate([np.ones(120), np.full(120, 8.0)]))
+
+    result = compute_fingerprint_divergence_matrix(
+        {"sp_a": profile_a, "sp_b": profile_b, "sp_c": profile_c},
+        n_bins=16,
+    )
+
+    assert result.loc["sp_a", "sp_b"] == pytest.approx(0.0)
+    assert result.loc["sp_a", "sp_c"] >= 0.0
+    assert result.loc["sp_a", "sp_c"] <= 2.0
+
+
+def test_gene_count_overlap_coerces_tabular_profiles() -> None:
+    """Summary statistics should accept expression tables loaded as strings."""
+
+    result = compute_gene_count_overlap(
+        {
+            "sp_a": pd.DataFrame(
+                {"sample_1": ["1", "0", "bad"], "sample_2": ["3", "0", "2"]},
+                index=["gene_1", "gene_2", "gene_3"],
+            )
+        }
+    )
+
+    assert result.loc[0, "total_genes"] == 3
+    assert result.loc[0, "expressed_genes"] == 2
+    assert result.loc[0, "mean_expression"] == pytest.approx(2.0)
+
+
+def test_feature_count_summary_uses_feature_level_schema() -> None:
+    """Native table summaries must not imply cross-species gene identity."""
+
+    result = compute_feature_count_summary(
+        {"sp_a": pd.Series([1.0, 0.0, 3.0], index=["tx_1", "tx_2", "tx_3"])}
+    )
+
+    assert set(
+        ["species", "total_features", "expressed_features", "mean_expression"]
+    ).issubset(result.columns)
+    assert result.loc[0, "total_features"] == 3
+    assert result.loc[0, "expressed_features"] == 2
+    assert "total_genes" not in result.columns
+
+
+def test_gene_count_overlap_excludes_nonfinite_expression() -> None:
+    """Summary statistics must never emit infinite means or medians."""
+
+    result = compute_gene_count_overlap(
+        {"sp_a": pd.Series([1.0, np.inf, -np.inf, np.nan, 0.0])}
+    )
+
+    assert result.loc[0, "total_genes"] == 5
+    assert result.loc[0, "expressed_genes"] == 1
+    assert result.loc[0, "mean_expression"] == pytest.approx(1.0)
+    assert result.loc[0, "median_expression"] == pytest.approx(1.0)

@@ -24,6 +24,8 @@ class OllamaConfig:
         max_retries: Number of retry attempts on failure.
         stream: Whether to stream responses by default.
         context_length: Maximum context window size.
+        num_predict: Optional maximum generated-token count. ``None`` leaves
+            the Ollama model default unchanged.
 
     Example:
         >>> config = OllamaConfig(
@@ -42,6 +44,7 @@ class OllamaConfig:
     max_retries: int = 3
     stream: bool = False
     context_length: int = 4096
+    num_predict: Optional[int] = None
 
     # Optional system prompt for all requests
     system_prompt: Optional[str] = None
@@ -65,6 +68,8 @@ class OllamaConfig:
 
         if self.timeout <= 0:
             raise ValueError(f"timeout must be > 0, got {self.timeout}")
+        if self.num_predict is not None and self.num_predict <= 0:
+            raise ValueError(f"num_predict must be > 0 when set, got {self.num_predict}")
 
     @property
     def api_url(self) -> str:
@@ -88,12 +93,15 @@ class OllamaConfig:
 
     def to_options_dict(self) -> dict:
         """Convert sampling parameters to Ollama options format."""
-        return {
+        options = {
             "temperature": self.temperature,
             "top_p": self.top_p,
             "top_k": self.top_k,
             "num_ctx": self.context_length,
         }
+        if self.num_predict is not None:
+            options["num_predict"] = self.num_predict
+        return options
 
     def with_model(self, model: str) -> "OllamaConfig":
         """Return a new config with a different model."""
@@ -107,6 +115,7 @@ class OllamaConfig:
             max_retries=self.max_retries,
             stream=self.stream,
             context_length=self.context_length,
+            num_predict=self.num_predict,
             system_prompt=self.system_prompt,
             stop_sequences=self.stop_sequences.copy(),
         )

@@ -44,7 +44,7 @@ graph TD
 from metainformant.menu.core.discovery import extract_script_metadata, categorize_script
 from pathlib import Path
 
-info = extract_script_metadata(Path("scripts/rna/run_workflow.py"))
+info = extract_script_metadata(Path("scripts/rna/run_all_species.py"))
 print(info.name, info.category, info.description)
 
 category = categorize_script(Path("scripts/gwas/run_analysis.py"))  # "gwas"
@@ -79,7 +79,7 @@ history.push("main", "METAINFORMANT")
 ```python
 from metainformant.menu.core.executor import validate_script_executable, prompt_for_args
 
-is_valid = validate_script_executable(Path("scripts/rna/run_workflow.py"))
+is_valid = validate_script_executable(Path("scripts/rna/run_all_species.py"))
 args = prompt_for_args(script_info)  # Interactive argument prompting
 ```
 

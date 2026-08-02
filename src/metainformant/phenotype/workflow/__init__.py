@@ -1,7 +1,7 @@
-"""Phenotype workflow orchestration module."""
+"""Phenotype workflow adapters for cross-domain statistical routines."""
 
 from __future__ import annotations
 
-from . import pipeline
+from .ecology_stats import permanova, pcoa
 
-__all__ = ["pipeline"]
+__all__ = ["permanova", "pcoa"]

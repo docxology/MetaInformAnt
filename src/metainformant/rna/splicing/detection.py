@@ -32,10 +32,8 @@ Example:
     >>> junctions = detection.detect_splice_junctions(alignments, min_reads=1)
     >>> psi = detection.compute_psi(inclusion_reads=30, exclusion_reads=10)
 
-.. deprecated::
-    This module is a backward-compatibility shim.  The implementation has
-    been split into :mod:`splice_sites` and :mod:`splice_analysis`.
-    Import directly from those modules for new code.
+The module re-exports the focused implementations in :mod:`splice_sites` and
+:mod:`splice_analysis` through the public RNA splicing namespace.
 """
 
 from __future__ import annotations
@@ -53,9 +51,8 @@ from .splice_sites import (
     detect_splice_junctions,
 )
 
-# Re-export everything from the split modules so that existing imports
-# like ``from metainformant.rna.splicing.detection import detect_splice_junctions``
-# continue to work.
+# Re-export the focused implementations through the public RNA splicing
+# namespace.
 
 
 __all__ = [

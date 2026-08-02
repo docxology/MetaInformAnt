@@ -4,16 +4,16 @@ Comprehensive overview of the structural variant analysis module, including comp
 
 ## Table of Contents
 
-1. [Module Overview](#module-overview)
-2. [Directory Structure](#directory-structure)
-3. [Component Responsibilities](#component-responsibilities)
-4. [Data Flow](#data-flow)
-5. [Key Data Structures](#key-data-structures)
-6. [Integration Points](#integration-points)
-7. [Design Patterns & Rationale](#design-patterns--rationale)
-8. [Algorithm Details](#algorithm-details)
-9. [Configuration Architecture](#configuration-architecture)
-10. [Extensibility](#extensibility)
+1. [Module Overview](#1-module-overview)
+2. [Directory Structure](#2-directory-structure)
+3. [Component Responsibilities](#3-component-responsibilities)
+4. [Data Flow](#4-data-flow)
+5. [Key Data Structures](#5-key-data-structures)
+6. [Integration Points](#6-integration-points)
+7. [Design Patterns & Rationale](#7-design-patterns-rationale)
+8. [Algorithm Details](#8-algorithm-details)
+9. [Configuration Architecture](#9-configuration-architecture)
+10. [Extensibility](#10-extensibility)
 
 ---
 

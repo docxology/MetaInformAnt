@@ -140,7 +140,7 @@ The I/O subsystem provides a unified interface for all file and network operatio
 ```
 
 **Environment Variable Conventions**:
-- `AK_*`: Generic METAINFORMANT overrides (threads, work_dir, log_dir)
+- `AMALGKIT_*`: Current RNA/Amalgkit overrides (threads, work_dir, log_dir)
 - `PG_*`: PostgreSQL database configuration (PG_HOST, PG_PORT, PG_DATABASE, PG_USER, PG_PASSWORD)
 - `DB_*`: Alternate database variable names (DB_NAME, DB_USER, DB_PASSWORD)
 
@@ -222,7 +222,7 @@ with get_connection(...) as conn:
 
 Two-tier caching strategy:
 1. **Key-based** (`JsonCache` class): Thread-safe, per-key TTL
-2. **File-based** (`get_json_cache`, `set_json_cache`): Simple file-based cache
+2. **Functional JSON** (`cache_json`, `load_cached_json`): Simple key-based cache
 
 Cache entries stored as JSON with metadata:
 ```json

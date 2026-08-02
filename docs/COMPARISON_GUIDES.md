@@ -507,7 +507,7 @@ graph TD
 
 | From Method… | To Guide |
 |--------------|----------|
-| Alignment algorithms | [Methods Matrix → dna row](comparisons/methods_matrix.md#dna) |
+| Alignment algorithms | [Methods Matrix → dna row](comparisons/methods_matrix.md#module-2-dna) |
 | GWAS association tests | [GWAS vs Phenotype → Study Design](comparisons/gwas_vs_phenotype_vs_multiomics.md) |
 | ML classification | [Visualization → ROC, decision boundaries](comparisons/visualization_approaches.md) |
 | Multi-omics PCA/CCA | [DNA vs RNA → Multi-omics section](comparisons/dna_vs_rna_vs_transcriptome.md) |

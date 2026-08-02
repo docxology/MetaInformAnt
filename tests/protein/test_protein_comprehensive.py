@@ -268,7 +268,9 @@ class TestBLOSUM62Alignment:
         from metainformant.protein.sequence.alignment import matrix_align
 
         result = matrix_align("", "ACDE", mode="global")
-        assert result["score"] == 0
+        # A global alignment represents the non-empty sequence as one
+        # contiguous affine-gap run: -11 for opening plus three extensions.
+        assert result["score"] == -14
 
     def test_matrix_align_score_higher_with_blosum(self):
         """Similar amino acids should score better with BLOSUM62."""

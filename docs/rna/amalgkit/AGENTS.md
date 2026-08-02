@@ -4,25 +4,27 @@
 Documentation for amalgkit RNA-seq workflow integration.
 
 ## Directory Structure
-- `steps/` - Step-by-step workflow documentation (01-11)
+- `steps/` - Step-by-step documentation for the nine-stage per-species chain
 
 ## Key Files
 - `amalgkit.md` - Complete amalgkit integration guide
 - `FUNCTIONS.md` - API function reference
 - `commands.md` - CLI command reference
 - `genome_preparation.md` - Genome setup for quantification
-- `monitoring.md` - Workflow monitoring
-- `R_INSTALLATION.md` - R dependency setup
+- `monitoring.md` - SQLite, log, and checkpoint status inspection
+- `R_INSTALLATION.md` - optional downstream R environment setup
 
-## Workflow Steps (in steps/)
-1. metadata - Fetch sample metadata from SRA
-2. config - Generate workflow configuration
-3. select - Select samples for processing
-4. getfastq - Download FASTQ files
-5. integrate - Prepare genome indices
-6. quant - Quantify expression with Kallisto
-7. merge - Merge sample quantifications
-8. cstmm - Cross-species TMM normalization
-9. curate - Curate and filter results
-10. csca - Cross-species comparative analysis
-11. sanity - Validation checks
+## Workflow steps (in `steps/`)
+
+1. `metadata` - Fetch sample metadata
+2. `select` - Apply the reviewed selection rules
+3. `getfastq` - Acquire and validate reads
+4. `integrate` - Attach validated local read paths
+5. `quant` - Quantify with Kallisto
+6. `merge` - Merge current sample quantifications
+7. `wsfilter` - Within-species filtering
+8. `finalize` - Produce analysis-ready tables
+9. `sanity` - Validate output and provenance
+
+`cstmm` and `csfilter` are opt-in cross-species commands and are documented
+separately from the per-species chain.

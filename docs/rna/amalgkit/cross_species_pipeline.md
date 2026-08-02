@@ -1,115 +1,62 @@
-# Cross-Species RNA-seq Pipeline
+# Cross-species RNA analysis
 
-This document describes the workflow for comparative analysis of RNA-seq data across multiple species using `amalgkit`'s cross-species steps (`cstmm` and `csca`).
+Cross-species analysis is a separate evidence lane from per-species
+quantification. It must start only after each included species has a complete
+and reconciled merge/filter/finalization record.
 
-## Prerequisites
+## Optional Amalgkit branch
 
-- **Amalgkit** (v0.12.20+)
-- **R** with required packages (see [R_INSTALLATION.md](R_INSTALLATION.md))
-- **Quantified data** for each target species (completed `amalgkit quant` and `amalgkit merge` steps)
-- **Ortholog mapping** (OrthoDB or similar)
+The installed Amalgkit environment exposes:
 
-## Directory Structure
+- `cstmm` for ortholog-aware cross-species normalization;
+- `csfilter` for cross-species filtering when its input contract is met.
 
-```
-output/amalgkit/cross_species/
- cstmm/ # Normalization output
- csca/ # Correlation analysis output
- orthologs/
- orthogroups.tsv # Ortholog table (Orthogroup, Sp1, Sp2...)
- work/
- merge_inputs/ # Input abundance matrices
- Species_One/
- Species_One_est_counts.tsv
- Species_Two/
- Species_Two_est_counts.tsv
-```
-
-## Configuration
-
-Create a configuration file (e.g., `amalgkit_cross_species.yaml`):
+Example configuration:
 
 ```yaml
-work_dir: output/amalgkit/cross_species/work
-species_list:
-  - Species_One
-  - Species_Two
-
 steps:
   cstmm:
-    out_dir: output/amalgkit/cross_species/cstmm
-    orthogroup_table: output/amalgkit/cross_species/orthologs/orthogroups.tsv
-    dir_count: output/amalgkit/cross_species/work/merge_inputs
-    
-  csca:
-    out_dir: output/amalgkit/cross_species/csca
-    orthogroup_table: output/amalgkit/cross_species/orthologs/orthogroups.tsv
-    sample_group: tissue
+    out_dir: /Volumes/blue/data/amalgkit/cross_species
+    orthogroup_table: /Volumes/blue/data/amalgkit/cross_species/orthogroups.tsv
+    dir_busco: /Volumes/blue/data/amalgkit/cross_species/busco
+  csfilter:
+    out_dir: /Volumes/blue/data/amalgkit/cross_species
+    input_dir: /Volumes/blue/data/amalgkit/cross_species/cstmm
 ```
 
-## Generating the Ortholog Table
+Run `amalgkit cstmm --help` and `amalgkit csfilter --help` in the exact
+environment used for the analysis. Save the command output, ortholog table
+hash, input species list, feature intersection, and resulting row/column
+counts.
 
-Use the automated `scripts/rna/generate_orthologs.py` orchestrator to seamlessly generate the table from OrthoDB v12 datasets. This script handles everything: dynamically parsing all your `config/amalgkit/amalgkit_*.yaml` species config files to collect the `taxon_id`s, securely caching the 5GB OrthoDB records locally (with download resume support), and calculating the specific map.
+## Native project analysis
+
+The Hymenoptera project includes a native Python cross-species analysis for
+descriptive expression fingerprints. It writes a manifest, pairwise summary,
+matrix, and figures. These outputs are not a substitute for inferential
+meta-analysis: they contain no p-values, confidence intervals, phylogenetic
+model, or multiple-testing correction unless those are explicitly added and
+validated.
 
 ```bash
-# Simply run the orchestrator (no manual IDs required)
-python3 scripts/rna/generate_orthologs.py
-```
-*(By default, this writes `orthogroups.tsv` to `output/amalgkit/cross_species/orthologs/orthogroups.tsv`)*
-
-## Execution
-
-Run after single-species pipelines (steps 1–7) are complete for all target species:
-
-```bash
-# Step 1: Cross-species TMM Normalization
-amalgkit cstmm --config config/amalgkit/amalgkit_cross_species.yaml
-
-# Step 2: Cross-species Correlation Analysis
-amalgkit csca --config config/amalgkit/amalgkit_cross_species.yaml
+cd projects/hymenoptera_amalgkit
+uv run python scripts/prepare_cross_species_inputs.py \
+  --data-root /Volumes/blue/data/amalgkit
+uv run python scripts/run_cross_species_analysis.py \
+  --data-root /Volumes/blue/data/amalgkit \
+  --output-dir output/cross_species
 ```
 
-Or via the workflow runner:
+Read [the project cross-species documentation](../../../projects/hymenoptera_amalgkit/doc/05_cross_species/README.md)
+for inclusion rules and evidence interpretation.
 
-```bash
-python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_cross_species.yaml \
-    --steps cstmm csca
-```
+## Minimum release gate
 
-## Outputs
+Do not release a cross-species figure until:
 
-- `cstmm/` — Normalized expression values (TMM-FPKM)
-- `csca/` — Correlation heatmaps and PCA plots
-
-## Download Architecture
-
-The single-species pipelines feeding into cross-species steps use **ENA direct wget downloads**:
-
-- `download_ena.py` queries the ENA API and downloads pre-compressed `.fastq.gz` files
-- ~5 GB disk per sample vs ~25 GB for SRA Toolkit cache
-- Supports 16+ concurrent workers safely
-
-This enables the pipeline to run 16 parallel download workers (`num_download_workers: 16` in config) while keeping disk usage well below 100 GB total — compared to the ~400 GB that 16 concurrent SRA cache downloads would require.
-
-## Multi-Species Orchestration
-
-To process all 23 species before running cross-species steps:
-
-```bash
-# Sequential (robust): species one at a time
-nohup python3 scripts/rna/run_all_species.py \
-  > output/amalgkit/run_all_species_incremental.log 2>&1 &
-
-# Or per-species in parallel via orchestrate_species.py
-python3 scripts/rna/orchestrate_species.py
-
-# Then run cross-species steps once all species complete
-amalgkit cstmm --config config/amalgkit/amalgkit_cross_species.yaml
-amalgkit csca  --config config/amalgkit/amalgkit_cross_species.yaml
-```
-
-## See Also
-
-- [steps/08_cstmm.md](steps/08_cstmm.md) — cstmm step details
-- [steps/10_csca.md](steps/10_csca.md) — csca step details
-- [ORCHESTRATION.md](../../ORCHESTRATION.md) — Orchestrator selection
+1. species and sample inclusion are explicit;
+2. each matrix is tied to the finalization manifest;
+3. ortholog mapping and feature intersection are recorded;
+4. missingness and filtering are reported;
+5. captions state whether results are descriptive or inferential;
+6. all figures regenerate from the recorded inputs.

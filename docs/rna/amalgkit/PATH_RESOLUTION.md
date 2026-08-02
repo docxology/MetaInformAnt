@@ -21,7 +21,7 @@ output/amalgkit/{species}/
  fasta/ ← Prepared transcriptome
  {Species_Name}_rna.fasta
  index/ ← Kallisto index
- {Species_Name}_transcripts.idx
+ {Species_Name}.idx
  metadata/ ← Sample metadata
  metadata.tsv
  metadata_selected.tsv
@@ -106,7 +106,7 @@ steps:
 - **CRITICAL**: `out_dir` should be set to `work_dir` (not a separate quant_dir)
 - **FASTQ Location**: `amalgkit quant` looks for FASTQ files in `{out_dir}/getfastq/{sample_id}/`
 - **Output Location**: Quantification results are written to `{out_dir}/quant/{sample_id}/abundance.tsv`
-- **Index Location**: Kallisto index should be in `{out_dir}/index/{Scientific_Name}_transcripts.idx`
+- **Index Location**: Kallisto index should be in `{out_dir}/index/{Scientific_Name}.idx`
 - **FASTA Location**: Transcriptome FASTA should be in `{out_dir}/fasta/{Scientific_Name}_rna.fasta`
 
 **Why work_dir is Required**:
@@ -284,5 +284,4 @@ The workflow automatically handles some path adjustments:
 
 **Last Updated**: January 2026  
 **Status**: Production-ready, comprehensively documented
-
 

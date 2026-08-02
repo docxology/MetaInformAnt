@@ -20,8 +20,8 @@ logger = logging.get_logger(__name__)
 def load_workflow_config(config_path: str | Path) -> Dict[str, Any]:
     """Load RNA-seq workflow configuration from file.
 
-    Supports YAML, TOML, and JSON configuration files. Can also apply
-    environment variable overrides using AK_ prefix (e.g., AK_THREADS=16).
+    Supports YAML, TOML, and JSON configuration files. Runtime overrides use
+    the current ``AMALGKIT_`` environment namespace.
 
     Args:
         config_path: Path to configuration file (YAML, TOML, or JSON)
@@ -41,8 +41,9 @@ def load_workflow_config(config_path: str | Path) -> Dict[str, Any]:
     # Support multiple file formats using core config utilities
     config = core_config.load_mapping_from_file(config_path)
 
-    # Apply environment variable overrides
-    config = core_config.apply_env_overrides(config, prefix="AK")
+    # Apply only the current Amalgkit environment namespace. The historical
+    # short prefix is intentionally not accepted by the RNA configuration API.
+    config = core_config.apply_env_overrides(config, prefix="AMALGKIT")
 
     # Validate configuration
     validate_config(config)
@@ -92,18 +93,17 @@ def create_default_config(species_list: list[str], work_dir: str | Path) -> Dict
         "threads": 4,
         "memory_gb": 16,
         "quantification_method": "kallisto",
-        "normalization_method": "cstmm",
+        "normalization_method": "log2p1-fpkm",
         "reference_genome_dir": str(Path(work_dir) / "reference_genomes"),
         "output_dirs": {
             "metadata": "metadata/",
-            "config": "config/",
-            "selection": "selection/",
+            "select": "select/",
             "fastq": "fastq/",
             "quant": "quant/",
             "merged": "merged/",
-            "cstmm": "cstmm/",
-            "curated": "curated/",
-            "csca": "csca/",
+            "wsfilter": "wsfilter/",
+            "csfilter": "csfilter/",
+            "finalize": "finalize/",
             "logs": "logs/",
             "reports": "reports/",
         },
@@ -111,14 +111,14 @@ def create_default_config(species_list: list[str], work_dir: str | Path) -> Dict
         "amalgkit_params": {
             "metadata": {},
             "integrate": {},
-            "config": {},
             "select": {},
             "getfastq": {"ENA": True},
             "quant": {"kallisto": True},
             "merge": {},
             "cstmm": {},
-            "curate": {},
-            "csca": {},
+            "wsfilter": {},
+            "csfilter": {},
+            "finalize": {},
             "sanity": {},
         },
     }
@@ -139,31 +139,6 @@ def save_config(config: Dict[str, Any], output_path: str | Path) -> None:
     logger.info(f"Saved configuration to {output_path}")
 
 
-def update_config_from_env(config: Dict[str, Any]) -> Dict[str, Any]:
-    """Update configuration with environment variables.
-
-    Args:
-        config: Base configuration dictionary
-
-    Returns:
-        Updated configuration
-    """
-    import os
-
-    # Update threads from environment
-    if "AK_THREADS" in os.environ:
-        try:
-            config["threads"] = int(os.environ["AK_THREADS"])
-        except ValueError:
-            logger.warning("Invalid AK_THREADS value, using default")
-
-    # Update work directory from environment
-    if "AK_WORK_DIR" in os.environ:
-        config["work_dir"] = os.environ["AK_WORK_DIR"]
-
-    return config
-
-
 def get_config_template() -> Dict[str, Any]:
     """Get a configuration template with documentation.
 
@@ -176,7 +151,7 @@ def get_config_template() -> Dict[str, Any]:
         "work_dir": "/path/to/work/directory",  # Working directory
         "threads": 8,  # Number of threads to use
         "quantification_method": "kallisto",  # Quantification method
-        "normalization_method": "cstmm",  # Normalization method
+        "normalization_method": "log2p1-fpkm",  # Current within-species normalization
         "reference_genome_dir": "/path/to/genomes",  # Reference genome directory
         "quality_thresholds": {
             "min_reads": 1000000,  # Minimum reads per sample
@@ -200,7 +175,7 @@ class RNAPipelineConfig:
         threads: int = 8,
         species_list: Optional[list[str]] = None,
         quantification_method: str = "kallisto",
-        normalization_method: str = "cstmm",
+        normalization_method: str = "log2p1-fpkm",
         reference_genome_dir: Optional[str | Path] = None,
     ):
         """Initialize RNA pipeline configuration.
@@ -210,7 +185,8 @@ class RNAPipelineConfig:
             threads: Number of threads to use
             species_list: List of species to analyze
             quantification_method: Method for quantification ('kallisto', 'salmon', etc.)
-            normalization_method: Method for normalization ('cstmm', 'tmm', etc.)
+            normalization_method: Current normalization method (for example,
+                'log2p1-fpkm'); cross-species TMM is an optional separate lane.
             reference_genome_dir: Directory containing reference genomes
         """
         self.work_dir = Path(work_dir)
@@ -257,8 +233,9 @@ class AmalgkitRunLayout:
     quant_dir: Optional[Path] = None
     merge_dir: Optional[Path] = None
     cstmm_dir: Optional[Path] = None
-    curate_dir: Optional[Path] = None
-    csca_dir: Optional[Path] = None
+    wsfilter_dir: Optional[Path] = None
+    csfilter_dir: Optional[Path] = None
+    finalize_dir: Optional[Path] = None
     sanity_dir: Optional[Path] = None
     log_dir: Optional[Path] = None
     base_dir: Optional[Path] = None
@@ -277,10 +254,12 @@ class AmalgkitRunLayout:
                 self.merge_dir = self.base_dir / "merge"
             if not self.cstmm_dir:
                 self.cstmm_dir = self.base_dir / "cstmm"
-            if not self.curate_dir:
-                self.curate_dir = self.base_dir / "curate"
-            if not self.csca_dir:
-                self.csca_dir = self.base_dir / "csca"
+            if not self.wsfilter_dir:
+                self.wsfilter_dir = self.base_dir / "wsfilter"
+            if not self.csfilter_dir:
+                self.csfilter_dir = self.base_dir / "csfilter"
+            if not self.finalize_dir:
+                self.finalize_dir = self.base_dir / "finalize"
             if not self.sanity_dir:
                 self.sanity_dir = self.base_dir / "sanity"
             if not self.log_dir:
@@ -312,8 +291,9 @@ class AmalgkitRunLayout:
             self.quant_dir,
             self.merge_dir,
             self.cstmm_dir,
-            self.curate_dir,
-            self.csca_dir,
+            self.wsfilter_dir,
+            self.csfilter_dir,
+            self.finalize_dir,
             self.sanity_dir,
             self.log_dir,
         ]:
@@ -334,8 +314,9 @@ class AmalgkitRunLayout:
             "quant": self.quant_dir,
             "merge": self.merge_dir,
             "cstmm": self.cstmm_dir,
-            "curate": self.curate_dir,
-            "csca": self.csca_dir,
+            "wsfilter": self.wsfilter_dir,
+            "csfilter": self.csfilter_dir,
+            "finalize": self.finalize_dir,
             "sanity": self.sanity_dir,
         }
 
@@ -382,7 +363,6 @@ def build_step_params(species: SpeciesProfile, layout: AmalgkitRunLayout) -> Dic
             "tissue": species.tissues,
         },
         "integrate": base_params,
-        "config": base_params,
         "select": {
             **base_params,
             "taxon-id": species.taxon_id,
@@ -401,19 +381,26 @@ def build_step_params(species: SpeciesProfile, layout: AmalgkitRunLayout) -> Dic
         },
         "merge": {
             **base_params,
-            "out": layout.merge_table,
+            "out-dir": layout.work_dir,
         },
         "cstmm": {
             **base_params,
             "out-dir": layout.cstmm_dir,
         },
-        "curate": {
+        "wsfilter": {
             **base_params,
-            "out-dir": layout.curate_dir,
+            "out-dir": layout.work_dir,
+            "input-dir": layout.merge_dir,
         },
-        "csca": {
+        "csfilter": {
             **base_params,
-            "out-dir": layout.csca_dir,
+            "out-dir": layout.work_dir,
+            "input-dir": layout.wsfilter_dir,
+        },
+        "finalize": {
+            **base_params,
+            "out-dir": layout.work_dir,
+            "input-dir": layout.wsfilter_dir,
         },
         "sanity": base_params,
     }

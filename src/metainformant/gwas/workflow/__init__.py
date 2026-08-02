@@ -1,7 +1,7 @@
-"""GWAS workflow orchestration."""
+"""GWAS workflow adapters for shared RNA-seq inputs."""
 
 from __future__ import annotations
 
-from . import workflow, workflow_config, workflow_execution
+from .rna_quantification import find_quantification_file
 
-__all__ = ["workflow", "workflow_config", "workflow_execution"]
+__all__ = ["find_quantification_file"]

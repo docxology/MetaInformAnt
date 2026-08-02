@@ -30,10 +30,10 @@ def test_plan_applies_defaults_and_sanitizes_internal_only_flags(tmp_path: Path)
     planned = plan_workflow(cfg)
     steps = dict(planned)
 
-    # Defaults should exist (these are required for truthful `--plan`)
-    assert "config" in steps
-    cfg_params = sanitize_params_for_cli("config", steps["config"])
-    assert "out_dir" in cfg_params
+    # Current planning starts with metadata discovery and exposes its output.
+    assert "metadata" in steps
+    metadata_params = sanitize_params_for_cli("metadata", steps["metadata"])
+    assert "out_dir" in metadata_params
 
     # Internal-only keys should never appear in rendered CLI params
     gf_params = sanitize_params_for_cli("getfastq", steps["getfastq"])

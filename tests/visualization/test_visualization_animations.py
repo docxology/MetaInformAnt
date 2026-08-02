@@ -14,6 +14,7 @@ from metainformant.visualization.plots.animations import (
     animate_time_series,
     animate_trajectory,
 )
+from metainformant.visualization.plots import animations as animation_module
 
 # Check for optional dependencies
 try:
@@ -74,13 +75,14 @@ class TestAnimateTimeSeries:
 
     def test_time_series_animation_no_numpy(self):
         """Test time series animation when numpy is not available."""
-        if hasattr(np, "array"):  # numpy is available
-            pytest.skip("numpy is available")
-
         data = [[1, 2, 3], [4, 5, 6]]
-
-        with pytest.raises(ImportError, match="numpy required"):
-            animate_time_series(data)
+        original = animation_module.HAS_NUMPY
+        animation_module.HAS_NUMPY = False
+        try:
+            with pytest.raises(ImportError, match="numpy required"):
+                animate_time_series(data)
+        finally:
+            animation_module.HAS_NUMPY = original
 
 
 class TestAnimateEvolution:
@@ -194,9 +196,6 @@ class TestAnimateNetwork:
 
     def test_network_animation_empty_graphs(self):
         """Test network animation with empty graphs list."""
-        if not HAS_NETWORKX:
-            pytest.skip("NetworkX required for network animations")
-
         graphs = []
 
         with pytest.raises(ValueError, match="cannot be empty"):
@@ -204,13 +203,14 @@ class TestAnimateNetwork:
 
     def test_network_animation_no_networkx(self):
         """Test network animation when NetworkX is not available."""
-        if HAS_NETWORKX:
-            pytest.skip("NetworkX is available")
-
         graphs = ["invalid graph"]
-
-        with pytest.raises(ImportError, match="NetworkX required"):
-            animate_network(graphs)
+        original = animation_module.HAS_NETWORKX
+        animation_module.HAS_NETWORKX = False
+        try:
+            with pytest.raises(ImportError, match="NetworkX required"):
+                animate_network(graphs)
+        finally:
+            animation_module.HAS_NETWORKX = original
 
 
 class TestAnimateTrajectory:
@@ -266,10 +266,11 @@ class TestAnimateTrajectory:
 
     def test_trajectory_animation_no_numpy(self):
         """Test trajectory animation when numpy is not available."""
-        if hasattr(np, "array"):  # numpy is available
-            pytest.skip("numpy is available")
-
         trajectories = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
-
-        with pytest.raises(ImportError, match="numpy required"):
-            animate_trajectory(trajectories)
+        original = animation_module.HAS_NUMPY
+        animation_module.HAS_NUMPY = False
+        try:
+            with pytest.raises(ImportError, match="numpy required"):
+                animate_trajectory(trajectories)
+        finally:
+            animation_module.HAS_NUMPY = original

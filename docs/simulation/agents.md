@@ -20,7 +20,7 @@ Documentation agent for METAINFORMANT's simulation module.
 
 ## Standards
 
-- **Real implementations only** — NO_MOCKING_POLICY applies
+- **Real implementations only** — tests exercise production code paths
 - **Package management**: `uv` for all Python operations
 - **I/O**: Use `metainformant.core.io` for all file operations
 - **Paths**: Use `metainformant.core.paths` for path handling

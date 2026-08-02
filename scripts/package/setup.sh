@@ -15,9 +15,10 @@ source "$SCRIPT_DIR/_common.sh"
 
 usage() {
   cat <<EOF
-Usage: bash scripts/setup.sh [--skip-amalgkit] [--with-deps] [--with-all] [--with-scraping] [--ncbi-email EMAIL] [--skip-tests] [--dev]
+Usage: bash scripts/setup.sh [--python VERSION] [--skip-amalgkit] [--with-deps] [--with-all] [--with-scraping] [--ncbi-email EMAIL] [--skip-tests] [--dev]
 
 Options:
+  --python VERSION      Prefer a specific Python interpreter (default: available 3.12, then 3.11)
   --skip-amalgkit       Skip AMALGKIT installation (installed by default for RNA workflows)
   --with-deps           Install external CLI deps through the system package manager where available
   --with-all            Install all optional dependencies (database, networks, scraping, etc.) - scientific deps installed by default
@@ -41,9 +42,15 @@ WITH_SCIENTIFIC=0
 WITH_ALL=0
 WITH_SCRAPING=0
 WITH_DEV=0  # Development environment setup
+REQUESTED_PYTHON="${METAINFORMANT_PYTHON:-}"
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --python)
+      REQUESTED_PYTHON="${2:-}"
+      [[ -n "$REQUESTED_PYTHON" ]] || { echo "--python requires a version" >&2; exit 2; }
+      shift 2
+      ;;
     --skip-amalgkit)
       WITH_AMALGKIT=0
       shift
@@ -195,20 +202,50 @@ if [[ -n "${UV_CACHE_DIR:-}" ]]; then
 fi
 
 echo "[2/5] Creating/using virtual environment ($VENV_DIR)"
+if [[ -z "$REQUESTED_PYTHON" ]]; then
+  # Scientific dependencies are currently best covered by Python 3.11/3.12.
+  # Prefer an interpreter already installed through uv, without forcing a
+  # network download; fall back to uv's default only when neither is present.
+  for candidate_python in 3.12 3.11; do
+    if uv python find "$candidate_python" >/dev/null 2>&1; then
+      REQUESTED_PYTHON="$candidate_python"
+      break
+    fi
+  done
+fi
+
+if [[ -n "$REQUESTED_PYTHON" ]]; then
+  echo "  → Requested Python interpreter: $REQUESTED_PYTHON"
+else
+  echo "  ⚠️ Python 3.11/3.12 was not found; uv will select its default interpreter." >&2
+fi
+
 if [[ "$VENV_DIR" == "/tmp/metainformant_venv" ]]; then
   export UV_PROJECT_ENVIRONMENT="$VENV_DIR"
   # For FAT filesystem, try to create venv in /tmp
   if [[ -d "$VENV_DIR" ]]; then
     echo "  → Using existing venv at $VENV_DIR"
   else
-    UV_VENV_CLEAR=1 uv venv "$VENV_DIR" || {
+    if [[ -n "$REQUESTED_PYTHON" ]]; then
+      UV_VENV_CLEAR=1 uv venv --python "$REQUESTED_PYTHON" "$VENV_DIR"
+    else
+      UV_VENV_CLEAR=1 uv venv "$VENV_DIR"
+    fi || {
       echo "Warning: Failed to create venv at $VENV_DIR, trying .venv..." >&2
-      UV_VENV_CLEAR=1 uv venv .venv
+      if [[ -n "$REQUESTED_PYTHON" ]]; then
+        UV_VENV_CLEAR=1 uv venv --python "$REQUESTED_PYTHON" .venv
+      else
+        UV_VENV_CLEAR=1 uv venv .venv
+      fi
       VENV_DIR=".venv"
     }
   fi
 else
-  UV_VENV_CLEAR=1 uv venv "$VENV_DIR"
+  if [[ -n "$REQUESTED_PYTHON" ]]; then
+    UV_VENV_CLEAR=1 uv venv --python "$REQUESTED_PYTHON" "$VENV_DIR"
+  else
+    UV_VENV_CLEAR=1 uv venv "$VENV_DIR"
+  fi
 fi
 
 echo "[3/5] Installing project and dependencies"
@@ -223,12 +260,12 @@ fi
 if [[ "$WITH_AMALGKIT" -eq 1 ]]; then
   echo "[4/5] Verifying AMALGKIT from GitHub source"
   uv run python - <<'PY'
-from metainformant.rna.amalgkit import AMALGKIT_INSTALL_SPEC, MIN_AMALGKIT_VERSION, validate_amalgkit_version
+from metainformant.rna.amalgkit import AMALGKIT_INSTALL_SPEC, REQUIRED_AMALGKIT_VERSION, validate_amalgkit_version
 
-ok, message = validate_amalgkit_version(MIN_AMALGKIT_VERSION)
+ok, message = validate_amalgkit_version(REQUIRED_AMALGKIT_VERSION, exact=True)
 if not ok:
     raise SystemExit(f"AMALGKIT validation failed: {message}. Install source: {AMALGKIT_INSTALL_SPEC}")
-print(f"  -> AMALGKIT OK: {message}")
+print(f"  -> AMALGKIT {REQUIRED_AMALGKIT_VERSION} OK: {message}")
 PY
 
   echo "  → Patching amalgkit to prevent SRA toolkit concurrency locks..."

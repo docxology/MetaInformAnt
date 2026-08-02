@@ -1,8 +1,7 @@
-"""Compatibility facade for amalgkit CLI integration.
+"""Public facade for Amalgkit CLI integration.
 
 The implementation lives in :mod:`metainformant.rna.amalgkit._amalgkit_impl`
-so existing imports from ``metainformant.rna.amalgkit.amalgkit`` remain valid
-while RNA workflow internals continue to be decomposed.
+while this module exposes the stable public CLI-wrapper namespace.
 """
 
 from __future__ import annotations

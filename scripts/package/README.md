@@ -33,4 +33,11 @@ Command-line helpers for Package workflows. Scripts should remain thin wrappers 
 ## Usage
 ```bash
 uv run python scripts/package/generate_cursor_skills.py --help
+uv run python scripts/package/generate_cursor_skills.py
+uv run python scripts/package/generate_cursor_skills.py --check
 ```
+
+The generator creates one thin `.cursor/skills/<name>/SKILL.md` wrapper for
+each repository `AGENTS.md`. The required check verifies wrapper content
+parity, front matter, canonical `AGENTS.md`/README/global-policy targets, and
+absence of orphan skill directories.

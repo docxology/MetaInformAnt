@@ -18,8 +18,10 @@ import concurrent.futures
 import csv
 import math
 import os
+import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -32,27 +34,37 @@ from metainformant.core.io.download import (
 )
 from metainformant.core.utils import logging
 from metainformant.rna.core.sample_utils import read_sample_ids_from_metadata
+from metainformant.rna.amalgkit.commands import NO_THREAD_STEPS, SUPPORTED_CLI_OPTIONS
 
 logger = logging.get_logger(__name__)
 
-AMALGKIT_INSTALL_SPEC = "git+https://github.com/kfuku52/amalgkit"
-MIN_AMALGKIT_VERSION = "0.12.20"
+# The Hymenoptera analysis and the MetaInformAnt wrapper are validated against
+# this exact release. Keep the source tag pinned so a fresh setup cannot drift
+# to a moving branch or a future CLI with a changed output contract.
+REQUIRED_AMALGKIT_VERSION = "0.16.32"
+AMALGKIT_RELEASE_TAG = f"v{REQUIRED_AMALGKIT_VERSION}"
+AMALGKIT_SOURCE_REVISION = "305f9b6c6c815b6bd3b31311493baccbc03905e6"
+AMALGKIT_INSTALL_SPEC = f"git+https://github.com/kfuku52/amalgkit@{AMALGKIT_RELEASE_TAG}"
 YES_NO_CLI_FLAGS = {
     "redo",
-    "pfd",
     "resolve_names",
     "mark_redundant_biosamples",
     "aws",
     "ncbi",
     "gcp",
+    "ena",
+    "ddbj",
     "fastp",
+    "fasterq_size_check",
+    "rrna_filter",
+    "contam_filter",
     "remove_sra",
     "remove_tmp",
-    "pfd_print",
+    "dump_print",
     "fastp_print",
     "build_index",
+    "clean_fastq",
     "overwrite",
-    "skip_curation",
     "clip_negative",
     "maintain_zero",
 }
@@ -71,7 +83,7 @@ class AmalgkitParams:
             threads: Number of CPU threads to use for parallel operations. Defaults to 8.
             species_list: List of scientific names (e.g. ['Pogonomyrmex barbatus']) to process.
             **kwargs: Additional parameters passed directly to the amalgkit CLI.
-                     Common keys: 'redo', 'pfd', 'aws', 'jobs', etc.
+                     Common keys: 'redo', 'fastp', 'aws', 'internal_jobs', etc.
         """
         self.work_dir = Path(work_dir)
         self.threads = threads
@@ -127,7 +139,7 @@ def build_cli_args(
         elif "work_dir" in params:
             args.extend(["--out_dir", str(params["work_dir"])])
 
-        if "threads" in params and subcommand not in ("merge", "sanity", "select", "curate", "cstmm", "csca"):
+        if "threads" in params and subcommand not in NO_THREAD_STEPS:
             args.extend(["--threads", str(params["threads"])])
 
         # skip_keys should check both underscores and hyphens
@@ -148,21 +160,30 @@ def build_cli_args(
             if key in skip_keys or value is None:
                 continue
 
-            # Skip arguments not supported by specific subcommands
-            if subcommand in ("merge", "sanity", "select", "curate", "cstmm", "csca") and key in (
-                "out",
-                "threads",
-                "priority",
-                "redo",
-                "jobs",
-            ):
-                continue
-            if subcommand in ("getfastq", "metadata", "config", "quant") and key == "jobs":
+            # Skip arguments not supported by the installed current command.
+            # The planner carries a few metadata-only values for orchestration;
+            # they must never be emitted as raw CLI flags.
+            normalized_key = key.replace("-", "_")
+            supported = SUPPORTED_CLI_OPTIONS.get(subcommand or "")
+            if supported is not None and normalized_key not in supported:
                 continue
 
-            # Amalgkit 0.12.20+ generally uses underscores for its CLI flags.
+            # Skip arguments with command-specific incompatibilities that are
+            # not represented by a simple allow-list (kept for clarity when a
+            # shared parameter map is passed by a caller).
+            unsupported_by_step = {
+                "cstmm": {"out", "threads", "jobs"},
+                "merge": {"out", "redo", "jobs"},
+                "sanity": {"out", "redo", "jobs"},
+            }
+            if key in unsupported_by_step.get(subcommand or "", set()):
+                continue
+            if subcommand in ("getfastq", "metadata", "quant") and key == "jobs":
+                continue
+
+            # Amalgkit 0.16.32 uses underscores for its CLI flags.
             # We'll normalize to underscores to ensure compatibility.
-            cli_key = key.replace("-", "_")
+            cli_key = normalized_key
 
             if isinstance(value, bool):
                 if cli_key in YES_NO_CLI_FLAGS:
@@ -170,16 +191,7 @@ def build_cli_args(
                 elif value:
                     args.append(f"--{cli_key}")
             elif isinstance(value, (int, float)):
-                if key == "threads" and subcommand in (
-                    "merge",
-                    "metadata",
-                    "config",
-                    "sanity",
-                    "select",
-                    "curate",
-                    "cstmm",
-                    "csca",
-                ):
+                if key == "threads" and subcommand in NO_THREAD_STEPS:
                     continue
                 args.extend([f"--{cli_key}", str(value)])
             elif isinstance(value, list):
@@ -187,7 +199,6 @@ def build_cli_args(
                 if key == "species-list" or key == "species_list" or key == "species":
                     if subcommand not in (
                         "integrate",
-                        "config",
                         "help",
                         "merge",
                         "metadata",
@@ -202,7 +213,7 @@ def build_cli_args(
                     for val in value:
                         args.extend([f"--{cli_key}", str(val)])
             elif key == "species-list" or key == "species_list" or key == "species":
-                if subcommand not in ("integrate", "config", "help", "merge", "metadata", "getfastq", "quant"):
+                if subcommand not in ("integrate", "help", "merge", "metadata", "getfastq", "quant"):
                     args.extend(["--species", str(value)])
             else:
                 args.extend([f"--{cli_key}", str(value)])
@@ -210,16 +221,19 @@ def build_cli_args(
 
     # Handle AmalgkitParams object
     args.extend(["--out_dir", str(params.work_dir)])
-    if subcommand not in ("merge", "metadata", "config", "sanity", "select", "curate", "cstmm", "csca"):
+    if subcommand not in NO_THREAD_STEPS:
         args.extend(["--threads", str(params.threads)])
 
-    if params.species_list and subcommand not in ("integrate", "config", "merge", "metadata", "getfastq", "quant"):
+    supported = SUPPORTED_CLI_OPTIONS.get(subcommand or "")
+    if params.species_list and (supported is None or "species" in supported):
         for species in params.species_list:
             args.extend(["--species", species])
 
     # Add extra parameters
     for key, value in params.extra_params.items():
         cli_key = key.replace("-", "_")
+        if supported is not None and cli_key not in supported:
+            continue
         if isinstance(value, bool):
             if cli_key in YES_NO_CLI_FLAGS:
                 args.extend([f"--{cli_key}", "yes" if value else "no"])
@@ -274,12 +288,19 @@ def check_cli_available() -> Tuple[bool, str]:
         return False, f"Error checking amalgkit CLI: {e}"
 
 
-def parse_and_check_version(version_output: str, min_version: str = MIN_AMALGKIT_VERSION) -> Tuple[bool, str]:
-    """Parse version string and check against minimum requirement.
+def parse_and_check_version(
+    version_output: str,
+    min_version: str = REQUIRED_AMALGKIT_VERSION,
+    *,
+    exact: bool = False,
+) -> Tuple[bool, str]:
+    """Parse version string and check a minimum or exact requirement.
 
     Args:
         version_output: Output from 'amalgkit --version' (e.g. "amalgkit 0.4.1")
-        min_version: Minimum required version
+        min_version: Minimum required version, or the expected version when
+            ``exact`` is true.
+        exact: Require the parsed version to equal ``min_version``.
 
     Returns:
         Tuple of (valid, message)
@@ -288,12 +309,11 @@ def parse_and_check_version(version_output: str, min_version: str = MIN_AMALGKIT
     if not output:
         return False, "Empty version output"
 
-    # Parse version
-    parts = output.split()
-    if len(parts) < 2:
+    # Current Amalgkit emits ``amalgkit version 0.16.32``.
+    version_match = re.search(r"(?<!\d)(\d+(?:\.\d+){1,2})(?!\d)", output)
+    if version_match is None:
         return False, f"Unexpected version format: {output}"
-
-    current_version = parts[1]
+    current_version = version_match.group(1)
 
     # Simple semantic version comparison
     # We assume X.Y.Z format
@@ -307,22 +327,35 @@ def parse_and_check_version(version_output: str, min_version: str = MIN_AMALGKIT
         while len(min_parts) < 3:
             min_parts.append(0)
 
-        if tuple(current_parts) >= tuple(min_parts):
+        current_tuple = tuple(current_parts)
+        required_tuple = tuple(min_parts)
+        if exact and current_tuple == required_tuple:
+            return True, f"Version {current_version} matches required {min_version}"
+        if not exact and current_tuple >= required_tuple:
             return True, f"Version {current_version} meets requirement >={min_version}"
+        if exact:
+            return False, f"Version {current_version} does not match required {min_version}"
         else:
             return False, f"Version {current_version} is older than required {min_version}"
 
     except ValueError:
-        # Fallback for non-standard version strings
+        # Exact-version validation must fail closed when the CLI emits an
+        # unrecognized value; accepting it would defeat the pinned contract.
         logger.warning(f"Could not parse version string: {current_version}")
-        return True, f"Could not parse version {current_version}, assuming compatible"
+        return False, f"Could not parse version {current_version}"
 
 
-def validate_amalgkit_version(min_version: str = MIN_AMALGKIT_VERSION) -> Tuple[bool, str]:
-    """Validate that the installed amalgkit version meets requirements.
+def validate_amalgkit_version(
+    min_version: str = REQUIRED_AMALGKIT_VERSION,
+    *,
+    exact: bool = True,
+) -> Tuple[bool, str]:
+    """Validate the installed Amalgkit CLI against the project contract.
 
     Args:
-        min_version: Minimum required version string (e.g. "0.4.0")
+        min_version: Required version string.
+        exact: Require the pinned version by default; set false only for a
+            deliberate compatibility check against a lower bound.
 
     Returns:
         Tuple of (valid, message)
@@ -332,20 +365,21 @@ def validate_amalgkit_version(min_version: str = MIN_AMALGKIT_VERSION) -> Tuple[
         if result.returncode != 0:
             return False, f"Version check failed: {result.stderr}"
 
-        return parse_and_check_version(result.stdout, min_version)
+        return parse_and_check_version(result.stdout, min_version, exact=exact)
 
     except (subprocess.SubprocessError, OSError, TimeoutError) as e:
         return False, f"Version check error: {e}"
 
 
 def ensure_cli_available(
-    *, auto_install: bool = True, min_version: str = MIN_AMALGKIT_VERSION
+    *, auto_install: bool = True, min_version: str = REQUIRED_AMALGKIT_VERSION, exact: bool = True
 ) -> Tuple[bool, str, Dict | None]:
     """Ensure amalgkit CLI is available and meets version requirements.
 
     Args:
         auto_install: Whether to attempt automatic installation
-        min_version: Minimum required version
+        min_version: Required version
+        exact: Require the pinned version by default.
 
     Returns:
         Tuple of (success, message, version_info)
@@ -354,7 +388,7 @@ def ensure_cli_available(
 
     if available:
         # Check version
-        valid_version, version_msg = validate_amalgkit_version(min_version)
+        valid_version, version_msg = validate_amalgkit_version(min_version, exact=exact)
         if not valid_version:
             logger.warning(f"Amalgkit version issue: {version_msg}")
             # If auto_install is True, we might want to upgrade?
@@ -392,7 +426,7 @@ def ensure_cli_available(
         # Use UV package manager (per METAINFORMANT policy)
         # Note: subprocess is imported at module level
         install_result = subprocess.run(
-            ["uv", "pip", "install", "--upgrade", AMALGKIT_INSTALL_SPEC],
+            ["uv", "pip", "install", "--upgrade", "--python", sys.executable, AMALGKIT_INSTALL_SPEC],
             capture_output=True,
             text=True,
             timeout=300,
@@ -401,7 +435,7 @@ def ensure_cli_available(
         if install_result.returncode == 0:
             logger.info("Successfully installed/upgraded amalgkit from kfuku52/amalgkit via UV")
             # Verify installation after install
-            return ensure_cli_available(auto_install=False, min_version=min_version)
+            return ensure_cli_available(auto_install=False, min_version=min_version, exact=exact)
         else:
             error_msg = install_result.stderr if install_result.stderr else "Installation failed with no error message"
             logger.error(f"UV installation of amalgkit from {AMALGKIT_INSTALL_SPEC} failed: {error_msg}")
@@ -437,6 +471,11 @@ def run_amalgkit(
 
     Returns:
         CompletedProcess instance
+
+    The standard ``timeout`` subprocess keyword also bounds monitored steps.
+    A monitored timeout terminates the child, writes a timeout heartbeat, and
+    returns exit code 124. Use ``monitor_timeout`` when the subprocess timeout
+    and the monitoring wall-clock limit need to differ.
     """
     command = build_amalgkit_command(subcommand, params)
 
@@ -446,6 +485,9 @@ def run_amalgkit(
     cwd = kwargs.pop("cwd", None) or kwargs.pop("work_dir", None)
     log_dir = kwargs.pop("log_dir", None)
     params_monitor = kwargs.pop("monitor", None)  # Rename to avoid conflict if any
+    monitor_timeout = kwargs.pop("monitor_timeout", None)
+    if monitor_timeout is None:
+        monitor_timeout = kwargs.get("timeout")
     heartbeat_interval = int(kwargs.pop("heartbeat_interval", 5))
     show_progress = bool(kwargs.pop("show_progress", True))
 
@@ -453,7 +495,17 @@ def run_amalgkit(
     monitor = False
     if params_monitor is None:
         # Default monitoring for long-running steps
-        monitor = subcommand in {"metadata", "integrate", "getfastq", "quant", "merge", "cstmm", "curate", "csca"}
+        monitor = subcommand in {
+            "metadata",
+            "integrate",
+            "getfastq",
+            "quant",
+            "merge",
+            "wsfilter",
+            "cstmm",
+            "csfilter",
+            "finalize",
+        }
     else:
         monitor = bool(params_monitor)
 
@@ -487,7 +539,16 @@ def run_amalgkit(
 
                 # Determine watch directory
                 watch_dir = out_dir
-                if subcommand in {"getfastq", "quant", "metadata", "merge", "cstmm", "curate", "csca"}:
+                if subcommand in {
+                    "getfastq",
+                    "quant",
+                    "metadata",
+                    "merge",
+                    "wsfilter",
+                    "cstmm",
+                    "csfilter",
+                    "finalize",
+                }:
                     watch_dir = out_dir / subcommand
 
                 # Metadata estimation
@@ -539,8 +600,9 @@ def run_amalgkit(
                 proc = subprocess.Popen(command, **proc_kwargs)
 
                 # Call appropriate monitoring function
+                monitor_returncode: int | None = None
                 if subcommand == "quant":
-                    monitor_subprocess_sample_progress(
+                    monitor_returncode = monitor_subprocess_sample_progress(
                         process=proc,
                         watch_dir=watch_dir,
                         heartbeat_path=hb_path,
@@ -549,10 +611,11 @@ def run_amalgkit(
                         heartbeat_interval=heartbeat_interval,
                         show_progress=show_progress,
                         desc=f"amalgkit {subcommand}",
+                        timeout_seconds=monitor_timeout,
                     )
                 elif subcommand == "metadata":
                     expected = ["metadata.tsv", "metadata_original.tsv", "pivot_selected.tsv", "pivot_qualified.tsv"]
-                    monitor_subprocess_file_count(
+                    monitor_returncode = monitor_subprocess_file_count(
                         process=proc,
                         watch_dir=watch_dir,
                         heartbeat_path=hb_path,
@@ -560,18 +623,17 @@ def run_amalgkit(
                         heartbeat_interval=heartbeat_interval,
                         show_progress=show_progress,
                         desc=f"amalgkit {subcommand}",
+                        timeout_seconds=monitor_timeout,
                     )
-                elif subcommand in {"merge", "cstmm", "curate", "csca"}:
-                    expected = (
-                        ["merged_abundance.tsv"]
-                        if subcommand == "merge"
-                        else (
-                            ["cstmm.tsv"]
-                            if subcommand == "cstmm"
-                            else ["tables"] if subcommand == "curate" else ["csca.tsv"]
-                        )
-                    )
-                    monitor_subprocess_file_count(
+                elif subcommand in {"merge", "wsfilter", "cstmm", "csfilter", "finalize"}:
+                    expected = {
+                        "merge": ["merged_abundance.tsv"],
+                        "wsfilter": ["metadata.tsv"],
+                        "cstmm": ["cstmm.tsv"],
+                        "csfilter": ["metadata.tsv"],
+                        "finalize": ["metadata.tsv"],
+                    }[subcommand]
+                    monitor_returncode = monitor_subprocess_file_count(
                         process=proc,
                         watch_dir=watch_dir,
                         heartbeat_path=hb_path,
@@ -579,10 +641,11 @@ def run_amalgkit(
                         heartbeat_interval=heartbeat_interval,
                         show_progress=show_progress,
                         desc=f"amalgkit {subcommand}",
+                        timeout_seconds=monitor_timeout,
                     )
                 else:
                     # Default: Directory growth (getfastq, integrate, etc)
-                    monitor_subprocess_directory_growth(
+                    monitor_returncode, _ = monitor_subprocess_directory_growth(
                         process=proc,
                         watch_dir=watch_dir,
                         heartbeat_path=hb_path,
@@ -590,6 +653,7 @@ def run_amalgkit(
                         heartbeat_interval=heartbeat_interval,
                         show_progress=show_progress,
                         desc=f"amalgkit {subcommand}",
+                        timeout_seconds=monitor_timeout,
                     )
 
                 # Wait for process to complete if monitor function didn't (most do)
@@ -600,7 +664,9 @@ def run_amalgkit(
                 # We can't get stdout/stderr if they were streamed/logged, but that's expected
                 return subprocess.CompletedProcess(
                     args=command,
-                    returncode=proc.returncode,
+                    returncode=(
+                        124 if monitor_returncode == 124 else proc.returncode
+                    ),
                     stdout="" if log_dir else "Output monitored/streamed",
                     stderr="" if log_dir else "Output monitored/streamed",
                 )
@@ -737,19 +803,6 @@ def integrate(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: A
         CompletedProcess instance
     """
     return run_amalgkit("integrate", params, **kwargs)
-
-
-def config(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
-    """Run amalgkit config command.
-
-    Args:
-        params: Amalgkit parameters
-        **kwargs: Additional arguments
-
-    Returns:
-        CompletedProcess instance
-    """
-    return run_amalgkit("config", params, **kwargs)
 
 
 def select(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
@@ -1146,6 +1199,11 @@ def merge(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) 
     return run_amalgkit("merge", params, **kwargs)
 
 
+def busco(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+    """Run the current Amalgkit BUSCO/compleasm support command."""
+    return run_amalgkit("busco", params, **kwargs)
+
+
 def cstmm(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
     """Run amalgkit cstmm command.
 
@@ -1159,8 +1217,13 @@ def cstmm(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) 
     return run_amalgkit("cstmm", params, **kwargs)
 
 
-def curate(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
-    """Run amalgkit curate command.
+def finalize(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+    """Run the current amalgkit finalize command directly."""
+    return run_amalgkit("finalize", params, **kwargs)
+
+
+def wsfilter(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+    """Run the current Amalgkit within-species filter command.
 
     Args:
         params: Amalgkit parameters
@@ -1169,11 +1232,11 @@ def curate(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any)
     Returns:
         CompletedProcess instance
     """
-    return run_amalgkit("curate", params, **kwargs)
+    return run_amalgkit("wsfilter", params, **kwargs)
 
 
-def csca(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
-    """Run amalgkit csca command.
+def csfilter(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+    """Run the current Amalgkit cross-species filter command.
 
     Args:
         params: Amalgkit parameters
@@ -1182,7 +1245,7 @@ def csca(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -
     Returns:
         CompletedProcess instance
     """
-    return run_amalgkit("csca", params, **kwargs)
+    return run_amalgkit("csfilter", params, **kwargs)
 
 
 def sanity(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
@@ -1196,3 +1259,13 @@ def sanity(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any)
         CompletedProcess instance
     """
     return run_amalgkit("sanity", params, **kwargs)
+
+
+def rerun(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+    """Run the current Amalgkit failed-target recovery command."""
+    return run_amalgkit("rerun", params, **kwargs)
+
+
+def dataset(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+    """Run the current Amalgkit workspace/rule-set export command."""
+    return run_amalgkit("dataset", params, **kwargs)

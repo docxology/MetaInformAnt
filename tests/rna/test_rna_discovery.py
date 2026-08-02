@@ -13,7 +13,6 @@ import pytest
 from metainformant.rna.engine import discovery
 from metainformant.rna.engine.discovery import (
     BIOPYTHON_AVAILABLE,
-    NCBI_DATASETS_AVAILABLE,
     _construct_ftp_path,
     _parse_sra_xml,
 )
@@ -164,16 +163,12 @@ class TestDiscoveryDocumentation:
     @pytest.mark.network
     def test_get_genome_info_requires_ncbi_datasets(self):
         """Test that get_genome_info requires ncbi-datasets-pylib."""
-        if not NCBI_DATASETS_AVAILABLE and not BIOPYTHON_AVAILABLE:
-            pytest.skip("Neither ncbi-datasets-pylib nor Biopython available")
-
-        # If available, test basic functionality (may use fallback with BioPython)
         try:
             result = discovery.get_genome_info("9606", "Homo sapiens")
             # May return None if no assemblies found, or dict if found
             assert result is None or isinstance(result, dict)
-        except ImportError:
-            pytest.skip("Required dependencies not available for genome info")
+        except ImportError as exc:
+            assert "required" in str(exc).lower() or "available" in str(exc).lower()
 
 
 class TestConstructFtpPath:

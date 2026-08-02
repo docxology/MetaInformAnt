@@ -8,8 +8,8 @@ Choose `run_rna_pipeline` for bulk RNA-seq analyses across multiple species with
 
 ## Table of Contents
 
-- [Single-Species Quick Run](#single-species-quick-run)
-- [Multi-Species Parallel](#multi-species-parallel)
+- [When to Use](#when-to-use)
+- [Multi-Species Parallel](#multi-species-parallel-27-configured-hymenoptera-species)
 - [Key Output Files](#key-output-files)
 - [Common Flags](#common-flags)
 - [Monitoring](#monitoring)
@@ -20,7 +20,7 @@ Choose `run_rna_pipeline` for bulk RNA-seq analyses across multiple species with
 
 ```bash
 # 1. Install amalgkit (if not via metainformant)
-uv pip install git+https://github.com/kfuku52/amalgkit
+uv sync --extra rna  # installs the exact Amalgkit 0.16.32 project contract
 
 # 2. Prepare reference genome
 python3 scripts/cloud/prep_genomes.py \
@@ -48,7 +48,7 @@ python3 scripts/rna/run_amalgkit_single.py --config config/amellifera.yaml
 tail -f output/amellifera/logs/pipeline.log
 ```
 
-## Multi-Species Parallel (28 Hymenoptera)
+## Multi-Species Parallel (27 configured Hymenoptera species)
 
 ```bash
 # Edit species list file
@@ -144,7 +144,7 @@ results.to_csv("deseq2_batch_corrected.tsv", sep='\t')
 ```python-snippet
 from metainformant.rna import orthologs
 
-# Map orthologs across 28 Hymenoptera species
+# Map orthologs across the configured Hymenoptera species
 ortho_map = orthologs.map_across_species(
     species_list="config/hymenoptera_species.txt",
     gene_family=" honeybee_genes",
@@ -154,7 +154,7 @@ print(f"Mapped {len(ortho_map)} gene families across {ortho_map.n_species} speci
 ```
 Expected output:
 ```
-Mapped 15634 gene families across 28 species
+Mapped 15634 gene families across the configured species (historical example)
 ```
 
 ## Expected Output
@@ -207,7 +207,7 @@ Amel_007890       890.1       892.4     745.2    ...
 | `OutOfMemoryError: Killed` during alignment | STAR/hisat2 needs >30GB RAM for large genomes | Reduce `--threads`, switch to hisat2 (lower memory), or use `--cloud` with high-memory VM |
 | "Kallisto index not found" | Reference index not built or wrong path | Run `kallisto index -i index.kallisto -g transcripts.fa`; check `reference` path in config |
 | DESeq2 fails: "size factors are zero" | All genes zero in some samples (failed alignment) | Check alignment logs; exclude samples with < 20% mapping rate |
-| Slow (>24h) on 28 species | Running locally on laptop; not using cloud | Add `--cloud` flag; use preemptible VMs; parallelize across species (each species runs independently) |
+| Slow (>24h) on the configured species set | Running locally on laptop; not using cloud | Use the current local orchestration path or the historical cloud instructions; parallelize across species (each species runs independently) |
 | "Missing fastq files" error | FASTQ filenames don't match pattern `*_R1.fastq.gz` | Rename files or set `fastq_pattern` in config; see `scripts/rna/README.md` |
 
 ---

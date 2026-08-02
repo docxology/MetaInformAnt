@@ -15,7 +15,7 @@ YAML configuration files for all METAINFORMANT workflows and modules. Contains a
 ```
 config/
  amalgkit/ # RNA-seq workflow configs (active species)
- archive/ # Archived/legacy amalgkit configs
+ archive/ # Archived amalgkit configs retained for provenance
  config_base/ # Base configuration templates
  eqtl/ # eQTL analysis configurations
  gwas/ # GWAS pipeline configurations
@@ -40,7 +40,7 @@ config/
 
 | Module | Prefix | Example |
 |--------|--------|---------|
-| RNA/Amalgkit | `AK_` | `AK_THREADS=16` |
+| RNA/Amalgkit | `AMALGKIT_` | `AMALGKIT_THREADS=16` |
 | GWAS | `GWAS_` | `GWAS_WORK_DIR=output/gwas` |
 | Core | `CORE_` | `CORE_THREADS=8` |
 | DNA | `DNA_` | `DNA_WORK_DIR=output/dna` |
@@ -67,7 +67,7 @@ from metainformant.core.utils.config import load_mapping_from_file, apply_env_ov
 
 # Load with environment variable overrides
 config = load_mapping_from_file("config/amalgkit/species.yaml")
-config = apply_env_overrides(config, prefix="AK")
+config = apply_env_overrides(config, prefix="AMALGKIT")
 ```
 
 ### Configuration Conventions

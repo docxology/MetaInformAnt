@@ -61,32 +61,6 @@ GRID_COLOR = "#e2e8f0"
 BORDER_COLOR = "#cbd5e1"
 MUTED = "#64748b"
 
-SPECIES_ORDER = [
-    "anoplolepis_gracilipes",
-    "acromyrmex_echinatior",
-    "dinoponera_quadriceps",
-    "vollenhovia_emeryi",
-    "odontomachus_brunneus",
-    "formica_exsecta",
-    "temnothorax_americanus",
-    "wasmannia_auropunctata",
-    "nylanderia_fulva",
-    "temnothorax_curvispinosus",
-    "pogonomyrmex_barbatus",
-    "cardiocondyla_obscurior",
-    "temnothorax_nylanderi",
-    "linepithema_humile",
-    "atta_cephalotes",
-    "ooceraea_biroi",
-    "camponotus_floridanus",
-    "solenopsis_invicta",
-    "monomorium_pharaonis",
-    "temnothorax_longispinosus",
-    "harpegnathos_saltator",
-    "apis_mellifera",
-]
-
-
 # Nicer display names (italic genus abbreviation + species)
 def _display_name(sp: str) -> str:
     parts = sp.replace("_", " ").split()
@@ -147,7 +121,7 @@ def _style_ax(ax: plt.Axes, title: str = "") -> None:
 
 def plot_species_bars(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> None:
     """Horizontal stacked bar chart — all species, all states."""
-    species = [sp for sp in SPECIES_ORDER if sp in counts]
+    species = sorted(counts)
     if not species:
         ax.text(0.5, 0.5, "No data", transform=ax.transAxes, ha="center", va="center", color=MUTED, fontsize=14)
         return
@@ -202,7 +176,7 @@ def plot_species_bars(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> None:
 
 def plot_completion_pct(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> None:
     """Horizontal completion percentage bars with color coding."""
-    species = [sp for sp in SPECIES_ORDER if sp in counts]
+    species = sorted(counts)
     if not species:
         return
 
@@ -344,7 +318,7 @@ def plot_state_summary_table(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) ->
 
 def plot_species_heatmap(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> None:
     """Heatmap grid: species × state, cell intensity by count."""
-    species = [sp for sp in SPECIES_ORDER if sp in counts]
+    species = sorted(counts)
     if not species:
         return
 
@@ -476,7 +450,7 @@ def plot_failed_summary(ax: plt.Axes, counts: Dict[str, Dict[str, int]], failed_
 
 def plot_sample_counts_table(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> None:
     """Detailed table with exact counts per species."""
-    species = [sp for sp in SPECIES_ORDER if sp in counts]
+    species = sorted(counts)
     if not species:
         return
 

@@ -13,10 +13,10 @@
 # Absolute paths are also supported and will be used as-is.
 
 # Working directory for all intermediate files
-work_dir: projects/hymenoptera_amalgkit/data/my_species/work
+work_dir: output/amalgkit/my_species/work
 
 # Logging directory (defaults to work_dir/logs if not specified)
-log_dir: projects/hymenoptera_amalgkit/data/my_species/logs
+log_dir: output/amalgkit/my_species/logs
 
 # Number of threads to use for parallel processing
 threads: 6
@@ -47,7 +47,7 @@ genome:
   accession: GCF_000001405.40  # Human GRCh38.p14
 
   # Local destination directory for genome files
-  dest_dir: projects/hymenoptera_amalgkit/data/my_species/genome
+  dest_dir: output/amalgkit/my_species/genome
 
   # Files to download from NCBI (see: https://www.ncbi.nlm.nih.gov/datasets/docs/v2/)
   include:
@@ -113,7 +113,7 @@ steps:
   # -------------------------------------------------------------------------
   metadata:
     # Output directory for metadata files
-    out_dir: projects/hymenoptera_amalgkit/data/my_species/work
+    out_dir: output/amalgkit/my_species/work
 
     # NCBI search string (auto-generated if not specified)
     # Format: '"Species name"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
@@ -123,7 +123,7 @@ steps:
     # Uses NCBI_EMAIL environment variable if not specified
     # entrez_email: your.email@example.com
 
-    # Resolve scientific names from taxids (amalgkit v0.12.20+)
+    # Resolve scientific names from taxids (Amalgkit 0.16.32)
     # Translates taxids to scientific names, preserves originals in scientific_name_original column
     resolve_names: yes
 
@@ -136,45 +136,28 @@ steps:
   integrate:
     # Directory containing local FASTQ files (optional)
     # IMPORTANT: Must point to the getfastq subdirectory created by getfastq step
-    # If getfastq used out_dir: projects/hymenoptera_amalgkit/data/my_species/fastq,
-    # then fastq_dir should be: projects/hymenoptera_amalgkit/data/my_species/fastq/getfastq
-    fastq_dir: projects/hymenoptera_amalgkit/data/my_species/fastq/getfastq
+    # If getfastq used out_dir: output/amalgkit/my_species/fastq,
+    # then fastq_dir should be: output/amalgkit/my_species/fastq/getfastq
+    fastq_dir: output/amalgkit/my_species/fastq/getfastq
 
     # Specific sample IDs to integrate (optional)
     # id: SRR123456
     # id_list: path/to/id_list.txt
 
   # -------------------------------------------------------------------------
-  # CONFIG: Generate configuration files for metadata selection
-  # -------------------------------------------------------------------------
-  config:
-    # Configuration template to use
-    # Options: base, test, plantae, vertebrate
-    config: base
-
-    # Allow overwriting existing config files
-    overwrite: yes
-
-  # -------------------------------------------------------------------------
   # SELECT: Select samples based on metadata and filters
   # -------------------------------------------------------------------------
   select:
-    # Sample grouping variable from metadata
-    # sample_group: tissue
-
-    # Custom config directory (uses work_dir/config if not specified)
-    # config_dir: path/to/custom/config
-
-    # Mark samples lacking taxid information at specified rank (amalgkit v0.12.20+)
-    # Marks samples as 'missing_rank' in the exclusion column
-    mark_missing_rank: species
+    # Amalgkit 0.16.32 reads selection parameters and rules from this TSV.
+    # Do not place retired selection flags directly in this YAML map.
+    select_rules_tsv: config/amalgkit/select_rules.tsv
 
   # -------------------------------------------------------------------------
   # GETFASTQ: Download FASTQ files from SRA
   # -------------------------------------------------------------------------
   getfastq:
     # Output directory for FASTQ files
-    out_dir: projects/hymenoptera_amalgkit/data/my_species/fastq
+    out_dir: output/amalgkit/my_species/fastq
 
     # Re-download behavior:
     #   - redo: no (default) - Skip already-downloaded SRA files, only download missing ones
@@ -188,12 +171,12 @@ steps:
     #         to FASTQ format if FASTQ files don't exist.
     redo: no
 
-    # Parallel fastq-dump options
-    pfd: yes                    # Use parallel fastq-dump
-    # pfd_exe: parallel-fastq-dump  # Custom executable path
-
-    # Prefetch options
-    # prefetch_exe: prefetch    # Custom prefetch executable
+    # Current SRA extraction options (sra-tools >=3; fasterq-dump is required)
+    fasterq_dump_exe: fasterq-dump
+    fasterq_size_check: yes
+    # Optional limits forwarded to fasterq-dump, e.g. "200G".
+    # fasterq_disk_limit: 200G
+    # fasterq_disk_limit_tmp: 200G
 
     # Quality filtering with fastp
     fastp: no                   # Enable fastp filtering
@@ -211,8 +194,18 @@ steps:
     gcp: no                     # Try Google Cloud (if available)
 
     # Diagnostic output
-    pfd_print: no               # Print parallel fastq-dump commands
     fastp_print: no             # Print fastp commands
+
+    # Amalgkit 0.16.32 resumable rRNA filtering. Disabled by default because
+    # it requires MMseqs2 and a SILVA database download; enable only when the
+    # run manifest records these inputs and the filtered FASTQs are validated.
+    rrna_filter: no
+    # rrna_filter_sensitivity: 1.0
+    # rrna_filter_max_seqs: 20
+    # rrna_filter_chunk_spots: 5000000
+    # rrna_filter_memory_limit: 32G
+    # rrna_filter_jobs: 1
+    # filter_order: fastp,rrna,contam
 
     # Progress tracking (METAINFORMANT-specific)
     show_progress: true         # Enable live progress tracking with file size monitoring
@@ -226,78 +219,66 @@ steps:
     # CRITICAL: out_dir should be work_dir (not separate quant_dir)
     # This allows quant to find getfastq output in {out_dir}/getfastq/
     # Quantification results will be in {out_dir}/quant/{sample_id}/abundance.tsv
-    out_dir: projects/hymenoptera_amalgkit/data/my_species/work
+    out_dir: output/amalgkit/my_species/work
 
     # Pre-built transcriptome index (if not using genome above)
-    # Index location: {out_dir}/index/{Scientific_Name}_transcripts.idx
+    # Index location: {out_dir}/index/{Scientific_Name}.idx
     # index_dir: /path/to/salmon/index
 
     # Force re-quantification even if results exist
     redo: no
 
-    # Quantification method (salmon, kallisto, etc.)
-    # method: salmon
+    # Current Amalgkit auto-selects kallisto or oarfish; set quant_backend
+    # explicitly only when the selected backend is installed and recorded.
+    # quant_backend: kallisto
 
     # Build kallisto index from FASTA if index doesn't exist
     # build_index: yes
 
-    # Delete FASTQ files after successful quantification (saves disk space)
-    # keep_fastq: no
+    # Retain FASTQs during quantification; reclaim only after current provenance.
+    # clean_fastq: no
 
   # -------------------------------------------------------------------------
   # MERGE: Combine quantification results into expression matrix
   # -------------------------------------------------------------------------
   merge:
-    # Output file for merged expression matrix
-    out: projects/hymenoptera_amalgkit/data/my_species/merged/expression_matrix.tsv
-
-    # Alternative: specify output directory
-    # out_dir: projects/hymenoptera_amalgkit/data/my_species/merged
+    # Current Amalgkit writes merge/metadata.tsv and expression tables below
+    # this workspace directory.
+    out_dir: output/amalgkit/my_species/work
 
   # -------------------------------------------------------------------------
-  # CSTMM: Cross-species TMM normalization
+  # WSFILTER: Within-species outlier filtering
   # -------------------------------------------------------------------------
-  cstmm:
-    # Output directory for normalization results
-    out_dir: projects/hymenoptera_amalgkit/data/my_species/cstmm
-
-    # Ortholog group table for cross-species comparison
-    # orthogroup_table: path/to/orthogroups.tsv
-
-  # -------------------------------------------------------------------------
-  # CURATE: Remove outliers and unwanted biases
-  # -------------------------------------------------------------------------
-  curate:
-    # Output directory for curation results
-    out_dir: projects/hymenoptera_amalgkit/data/my_species/curate
-
-    # Input directory with expression data
-    # input_dir: projects/hymenoptera_amalgkit/data/my_species/merged
-
-    # Sample grouping for curation
-    # sample_group: tissue
-
-    # Color scheme for sample groups
-    # sample_group_color: viridis
-
-    # Force re-curation
+  wsfilter:
+    out_dir: output/amalgkit/my_species/work
+    input_dir: output/amalgkit/my_species/work/merge
+    norm: log2p1-fpkm
+    mapping_rate: 0.2
     redo: no
 
   # -------------------------------------------------------------------------
-  # CSCA: Cross-species correlation analysis
+  # FINALIZE: Export finalized expression tables
   # -------------------------------------------------------------------------
-  csca:
-    # Output directory for correlation analysis
-    out_dir: projects/hymenoptera_amalgkit/data/my_species/csca
+  finalize:
+    out_dir: output/amalgkit/my_species/work
+    input_dir: output/amalgkit/my_species/work/wsfilter
+    norm: log2p1-fpkm
+    batch_effect_alg: no
+    redo: no
 
-    # Sample grouping variable
-    # sample_group: tissue
-
-    # Color scheme for visualization
-    # sample_group_color: Set1
-
-    # Ortholog group table
-    # orthogroup_table: path/to/orthogroups.tsv
+  # -------------------------------------------------------------------------
+  # OPTIONAL CROSS-SPECIES NORMALIZATION/FILTERING
+  # -------------------------------------------------------------------------
+  # cstmm and csfilter are enabled only when ortholog inputs are supplied.
+  # Keep them in a dedicated cross-species configuration for production runs.
+  cstmm:
+    out_dir: cross_species/work
+    orthogroup_table: /path/to/orthogroups.tsv
+    dir_count: cross_species/merge_inputs
+  csfilter:
+    out_dir: cross_species/work
+    input_dir: cross_species/work/cstmm
+    orthogroup_table: /path/to/orthogroups.tsv
 
   # -------------------------------------------------------------------------
   # SANITY: Verify pipeline integrity and outputs
@@ -314,7 +295,6 @@ steps:
 environment:
   # NCBI_EMAIL: your.email@example.com
   # TMPDIR: /tmp/amalgkit
-  # R_LIBS_USER: ~/R/library
 
 # Resource limits and performance tuning
 performance:
@@ -356,7 +336,8 @@ execution:
 
   # Steps to skip
   # steps_to_skip:
-  #   - csca
+  #   - wsfilter
+  #   - finalize
   #   - sanity
 
 # Notification settings (optional)

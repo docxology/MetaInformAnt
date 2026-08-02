@@ -39,7 +39,7 @@ Examples:
     $0 --help             # Show this help message
     $0 --list             # List all available scripts
     $0 rna                # Show RNA scripts menu
-    $0 rna run_workflow.py --config config.yaml  # Execute script directly
+    $0 rna run_all_species.py --data-root "$AMALGKIT_DATA_ROOT" --dry-run  # Inspect the current cohort
 
 Categories:
     core, rna, gwas, dna, protein, networks, multiomics, math, ml,
@@ -210,4 +210,3 @@ main() {
 
 # Run main function
 main "$@"
-

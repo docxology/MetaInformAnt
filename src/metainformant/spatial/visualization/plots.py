@@ -108,7 +108,7 @@ def plot_spatial_scatter(
     if is_categorical:
         unique_vals = sorted(set(vals.tolist()))
         color_map = {}
-        cmap_obj = plt.cm.get_cmap("tab20", len(unique_vals))
+        cmap_obj = plt.get_cmap("tab20").resampled(len(unique_vals))
         for i, v in enumerate(unique_vals):
             color_map[v] = cmap_obj(i)
 
@@ -206,7 +206,7 @@ def plot_tissue_overlay(
 
     if is_categorical:
         unique_vals = sorted(set(vals.tolist()))
-        cmap_obj = plt.cm.get_cmap("tab20", len(unique_vals))
+        cmap_obj = plt.get_cmap("tab20").resampled(len(unique_vals))
         color_map = {v: cmap_obj(i) for i, v in enumerate(unique_vals)}
         for v in unique_vals:
             mask = vals == v
@@ -396,7 +396,7 @@ def plot_neighborhood_graph(
         is_cat = nc.dtype.kind in ("U", "S", "O")
         if is_cat:
             unique_vals = sorted(set(nc.tolist()))
-            cmap_obj = plt.cm.get_cmap("tab20", len(unique_vals))
+            cmap_obj = plt.get_cmap("tab20").resampled(len(unique_vals))
             color_map = {v: cmap_obj(i) for i, v in enumerate(unique_vals)}
             for v in unique_vals:
                 mask = nc == v
@@ -567,7 +567,7 @@ def plot_deconvolution_pie(
             pie_radius = 10.0
 
     # Color palette
-    cmap_obj = plt.cm.get_cmap("tab20", n_types)
+    cmap_obj = plt.get_cmap("tab20").resampled(n_types)
     colors = [cmap_obj(i) for i in range(n_types)]
 
     fig, ax = plt.subplots(1, 1, figsize=figsize)

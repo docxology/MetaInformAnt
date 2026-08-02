@@ -265,7 +265,7 @@ def compare_populations(
             pop_names.append(pop_name)
 
     if effect_sizes:
-        ax1.boxplot(effect_sizes, labels=pop_names)
+        ax1.boxplot(effect_sizes, tick_labels=pop_names)
         ax1.set_title("Effect Size Distribution by Population")
         ax1.set_ylabel("Effect Size (Beta)")
         ax1.grid(True, alpha=0.3)

@@ -8,7 +8,7 @@ Use `data_conversion` for format translation during pipeline interoperability (e
 
 ## Table of Contents
 
-- [Fast interconversion](#fast-interconversion)
+- [Format support](#format-support)
 - [Format support](#format-support)
 - [Advanced Examples](#advanced-examples)
 - [Expected Output](#expected-output)

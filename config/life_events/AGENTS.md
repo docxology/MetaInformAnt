@@ -24,4 +24,4 @@ prediction_target: mortality
 - Validate with schema before committing new configs
 - Follow REAL IMPLEMENTATION policy — tests use real config files
 - Use `uv` for dependency management
-- Environment overrides use `AK_` prefix
+- Environment overrides use the life-events namespace documented by the module

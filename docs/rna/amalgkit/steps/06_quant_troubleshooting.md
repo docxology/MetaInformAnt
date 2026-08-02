@@ -46,7 +46,7 @@ cut -f2 output/amalgkit/work/metadata/pivot_qualified.tsv | sort -u
 
 2. Download pre-built index and place in correct location:
    ```bash
-   cp Apis_mellifera_transcripts.idx output/work/index/
+   cp Apis_mellifera.idx output/work/index/
    ```
 
 3. Specify index directory explicitly:
@@ -115,11 +115,11 @@ Error: Could not find FASTQ files for SRR12345678
    ls output/work/getfastq/SRR12345678/
    ```
 
-2. Check if already cleaned (from previous quant run):
+2. Check whether current quantification evidence exists:
    ```bash
    # Check if abundance files exist
    ls output/work/quant/SRR12345678/abundance.tsv
-   # FASTQs deleted after successful quant with --clean_fastq yes
+   # Then run the guarded reclaimer, which also removes redundant markers
    ```
 
 3. Re-run getfastq:

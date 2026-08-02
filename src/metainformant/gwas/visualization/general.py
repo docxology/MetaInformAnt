@@ -620,7 +620,7 @@ def pca_plot(
         fig, ax = plt.subplots(figsize=(10, 8))
 
         # Plot points
-        scatter = ax.scatter(components[0], components[1], s=2, alpha=0.6, color="blue")
+        ax.scatter(components[0], components[1], s=2, alpha=0.6, color="blue")
 
         # Labels and title
         pc1_var = explained_var[0] * 100 if explained_var and len(explained_var) > 0 else 0
@@ -1035,8 +1035,7 @@ def functional_enrichment_plot(
     return fig
 
 
-from metainformant.gwas.visualization._general_impl import (  # noqa: E402
-    convergence_plot,
-    power_curve_plot,
-    saturation_plot,
-)
+# This module historically contained a second copy of the plotting functions.
+# Keep the import path stable while ensuring every public function is the same
+# object as the canonical split implementation.
+from metainformant.gwas.visualization._general_impl import *  # noqa: E402,F403

@@ -165,14 +165,24 @@ def build_description(rel_folder: str) -> str:
     return text
 
 
-def write_skill(agents_file: Path, repo: Path, slug: str, dry_run: bool) -> Path:
+def render_skill_content(agents_file: Path, repo: Path, slug: str) -> str:
+    """Render the deterministic wrapper for one ``AGENTS.md`` file."""
+
     skill_dir = SKILLS_ROOT / slug
     skill_md = skill_dir / "SKILL.md"
     rel_folder = display_folder_label(agents_file.parent, repo)
     description = build_description(rel_folder)
     body = build_skill_body(agents_file, repo, skill_md)
     name = slug
-    content = f"---\nname: {name}\ndescription: {description}\n---\n\n{body}"
+    return f"---\nname: {name}\ndescription: {description}\n---\n\n{body}"
+
+
+def write_skill(agents_file: Path, repo: Path, slug: str, dry_run: bool) -> Path:
+    """Write one generated wrapper and return its path."""
+
+    skill_dir = SKILLS_ROOT / slug
+    skill_md = skill_dir / "SKILL.md"
+    content = render_skill_content(agents_file, repo, slug)
     if not dry_run:
         skill_dir.mkdir(parents=True, exist_ok=True)
         skill_md.write_text(content, encoding="utf-8")
@@ -214,6 +224,19 @@ def run_check(repo: Path) -> int:
             errors.append(f"description too long in {skill_md} ({len(desc)} chars)")
         if not re.match(r"^[a-z0-9-]+$", name):
             errors.append(f"invalid name field in {skill_md}: {name!r}")
+
+        expected = render_skill_content(agents, repo, slug)
+        actual = skill_md.read_text(encoding="utf-8")
+        if actual != expected:
+            errors.append(f"content drift in {skill_md}; regenerate with generate_cursor_skills.py")
+
+        required_targets = [repo / "CLAUDE.md", repo / "docs" / "REAL_IMPLEMENTATION_POLICY.md"]
+        readme = agents.parent / "README.md"
+        if readme.is_file():
+            required_targets.append(readme)
+        for target in [agents, *required_targets]:
+            if not target.is_file():
+                errors.append(f"broken canonical link target for {skill_md}: {target}")
 
     # Orphan skill directories (has SKILL.md but no AGENTS mapping)
     expected_slugs = set(assignments.values())

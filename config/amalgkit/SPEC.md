@@ -1,7 +1,7 @@
-# Specification: amalgkit Config
+# Specification: Amalgkit configuration
 
 ## Scope
-Configuration templates and schemas for amalgkit.
+Configuration templates and selection-rule schemas for Amalgkit 0.16.32.
 
 ## Architecture
 - **Component**: Configuration
@@ -10,3 +10,5 @@ Configuration templates and schemas for amalgkit.
 ## Data Structures
 - **Format**: YAML
 - **Schema**: `metainformant.amalgkit.config`
+- **Selection policy**: `select_rules.tsv`, consumed by `amalgkit select`
+- **Version contract**: exact release `0.16.32`

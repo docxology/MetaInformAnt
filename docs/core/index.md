@@ -6,6 +6,8 @@ Shared infrastructure and utilities used by all METAINFORMANT domain modules. Th
 
 - **[Getting Started](./GETTING_STARTED.md)** — 5-minute tutorial with complete pipeline example
 - **[Architecture](./ARCHITECTURE.md)** — System design, component interactions, and principles
+- **[API Reference](./API_REFERENCE.md)** — Source-derived public symbols and signatures
+- **[Cross-Check Report](./CROSS_CHECK_REPORT.md)** — Latest source/documentation integrity check
 
 ## Core Components
 
@@ -22,6 +24,18 @@ Shared infrastructure and utilities used by all METAINFORMANT domain modules. Th
 | [Hashing](./hash.md) | SHA256 file and content hashing | `core.utils.hash` |
 | [Text Processing](./text.md) | Text cleaning, slugify, gene name standardization | `core.utils.text` |
 | [Workflow](./workflow.md) | DAG orchestration, config-driven pipelines | `core.execution.workflow` |
+
+The API reference is generated from the canonical source tree:
+
+```bash
+uv run python scripts/package/generate_core_api_reference.py
+uv run python scripts/core_docs_cross_check.py --strict
+```
+
+The generated inventory covers implementation modules that do not yet have a
+dedicated topic guide as well as the modules listed above. Compatibility
+facades remain supported, but are documented through their canonical package
+paths to avoid duplicate and divergent signatures.
 
 ## Module Structure
 
@@ -113,9 +127,9 @@ logger.info("Pipeline complete")
 | Variable | Purpose | Default |
 |----------|---------|---------|
 | `CORE_LOG_LEVEL` | Logging level (DEBUG, INFO, WARNING, ERROR) | INFO |
-| `AK_THREADS` | Override default thread count | CPU-dependent |
-| `AK_WORK_DIR` | Working directory for outputs | `output/` |
-| `AK_LOG_DIR` | Directory for log files | `logs/` |
+| `AMALGKIT_THREADS` | Override default thread count | CPU-dependent |
+| `AMALGKIT_WORK_DIR` | Working directory for outputs | `output/` |
+| `AMALGKIT_LOG_DIR` | Directory for log files | `logs/` |
 | `PG_HOST` | PostgreSQL host | localhost |
 | `PG_PORT` | PostgreSQL port | 5432 |
 | `PG_DATABASE` | Database name | metainformant |

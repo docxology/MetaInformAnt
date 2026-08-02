@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import subprocess
+import sys
+import textwrap
 from pathlib import Path
-
-import pytest
 
 from metainformant.menu.core.executor import (
     execute_bash_script,
@@ -12,6 +13,36 @@ from metainformant.menu.core.executor import (
     execute_script,
     validate_script_executable,
 )
+
+
+def _run_prompt_child(*, required: list[str], optional: list[str], input_text: str) -> subprocess.CompletedProcess[str]:
+    """Exercise ``prompt_for_args`` with real child-process stdin."""
+
+    source = textwrap.dedent(
+        f"""
+        from pathlib import Path
+        from metainformant.menu.core.discovery import ScriptInfo
+        from metainformant.menu.core.executor import prompt_for_args
+
+        info = ScriptInfo(
+            path=Path("script.py"),
+            name="script",
+            description="test",
+            category="test",
+            script_type="python",
+            required_args={required!r},
+            optional_args={optional!r},
+        )
+        print(repr(prompt_for_args(info)))
+        """
+    )
+    return subprocess.run(
+        [sys.executable, "-c", source],
+        input=input_text,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
 
 
 class TestValidateScriptExecutable:
@@ -127,34 +158,29 @@ class TestExecuteScript:
 
 
 class TestPromptForArgs:
-    """Tests for argument prompting.
+    """Tests for argument prompting through a real child-process stdin."""
 
-    Note: Interactive input tests are skipped as they require
-    input stdin/stdout replacement, which violates the real-implementation policy.
-    The prompt_for_args function is tested through integration tests
-    with real user input in actual menu scenarios.
-    """
-
-    @pytest.mark.skip("real-implementation policy: Interactive input tests require stdin replacement")
     def test_prompt_for_args_no_args(self) -> None:
         """Test prompting when script has no arguments."""
-        # This test would require stdin replacement builtin input
-        pass
+        result = _run_prompt_child(required=[], optional=[], input_text="")
+        assert result.returncode == 0
+        assert result.stdout.strip() == "[]"
 
-    @pytest.mark.skip("real-implementation policy: Interactive input tests require stdin replacement")
     def test_prompt_for_args_required(self) -> None:
         """Test prompting for required arguments."""
-        # This test would require stdin replacement builtin input
-        pass
+        result = _run_prompt_child(required=["input"], optional=[], input_text="\nvalue\n")
+        assert result.returncode == 0
+        assert "input is required" in result.stdout
+        assert "['--input', 'value']" in result.stdout
 
-    @pytest.mark.skip("real-implementation policy: Interactive input tests require stdin replacement")
     def test_prompt_for_args_optional(self) -> None:
         """Test prompting for optional arguments."""
-        # This test would require stdin replacement builtin input
-        pass
+        result = _run_prompt_child(required=[], optional=["output"], input_text="result.tsv\n")
+        assert result.returncode == 0
+        assert "['--output', 'result.tsv']" in result.stdout
 
-    @pytest.mark.skip("real-implementation policy: Interactive input tests require stdin replacement")
     def test_prompt_for_args_mixed(self) -> None:
         """Test prompting for both required and optional arguments."""
-        # This test would require stdin replacement builtin input
-        pass
+        result = _run_prompt_child(required=["input"], optional=["output"], input_text="input.tsv\n\n")
+        assert result.returncode == 0
+        assert "['--input', 'input.tsv']" in result.stdout

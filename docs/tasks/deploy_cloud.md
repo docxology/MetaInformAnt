@@ -1,14 +1,20 @@
-# Cloud Deployment Quick Reference
+# Cloud Deployment Quick Reference (Historical)
 
-Deploy METAINFORMANT pipelines to Google Cloud Platform (GCP) with automated VM lifecycle, Docker orchestration, and cost-optimized preemptible instances.
+Deploy METAINFORMANT pipelines to Google Cloud Platform (GCP) with automated
+VM lifecycle, Docker orchestration, and cost-optimized preemptible instances.
+The original Hymenoptera GCP environment was decommissioned on 2026-04-15, so
+these instructions are retained for historical reproducibility only.
 
 ## When to Use
 
-Use `deploy_cloud` for large-scale compute-intensive workflows (28+ species RNA-seq, 10k+ sample GWAS, genome assemblies) where local resources are insufficient—not for small test runs (<1 hour) which are faster locally.
+Use `deploy_cloud` for large-scale compute-intensive workflows (27 configured
+Hymenoptera species, 10k+ sample GWAS, genome assemblies) where local
+resources are insufficient—not for small test runs (<1 hour) which are faster
+locally.
 
 ## Table of Contents
 
-- [Prerequisites Checklist](#prerequisites-checklist)
+- [When to Use](#when-to-use)
 - [Cost Estimates](#cost-estimates)
 - [Deploy Command Reference](#deploy-command-reference)
 - [Flags](#flags)
@@ -33,7 +39,7 @@ Use `deploy_cloud` for large-scale compute-intensive workflows (28+ species RNA-
 
 | Pipeline | Instance | Est. Cost | Est. Time |
 |----------|----------|-----------|-----------|
-| RNA-seq (28 species) | n2-highcpu-96 (spot) | $7–27 | 4–8 hours |
+| RNA-seq (27 configured species) | n2-highcpu-96 (spot) | $7–27 | 4–8 hours |
 | Genome assembly | n2-highmem-32 (on-demand) | $47 | 12 hours |
 | GWAS (10k samples) | n2-highcpu-64 (spot) | $3–10 | 1–2 hours |
 

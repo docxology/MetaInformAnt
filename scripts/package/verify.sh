@@ -282,7 +282,7 @@ check_external_tools() {
             print_status "WARN" "$tool not available on PATH"
             case "$tool" in
                 "amalgkit")
-                    echo "       Install from: uv sync --extra rna or uv pip install --upgrade git+https://github.com/kfuku52/amalgkit"
+                    echo "       Install from: uv sync --extra rna (exact Amalgkit 0.16.32)"
                     ;;
                 "muscle")
                     echo "       Install from: https://github.com/rcedgar/muscle"

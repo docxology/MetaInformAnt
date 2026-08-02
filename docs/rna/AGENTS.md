@@ -6,7 +6,10 @@ Documentation for the RNA transcriptomics module.
 
 ## Module Scope
 
-ENA-first amalgkit streaming pipeline, Kallisto quantification, cross-species TMM normalization, and industrial-scale orchestration (8,300+ samples).
+ENA-first amalgkit streaming pipeline, Kallisto quantification, cross-species
+TMM normalization, and preemption-aware orchestration. Sample totals are
+data-root dependent; historical production counts must not be presented as
+current inventory without a generated evidence report.
 
 ## Key Source Files
 

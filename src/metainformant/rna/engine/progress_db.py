@@ -1,6 +1,6 @@
-"""SQLite-backed progress tracking for RNA-seq pipeline.
+"""SQLite-backed progress tracking for the current RNA-seq pipeline.
 
-Replaces the JSON-based ProgressTracker with an SQLite database for:
+The current progress database provides:
 - O(1) status queries (no filesystem scanning)
 - Thread-safe concurrent writes from parallel workers
 - Instant dashboard: ``SELECT state, COUNT(*) GROUP BY species, state``
@@ -103,6 +103,36 @@ class ProgressDB:
             inserted = cur.rowcount
             logger.info(f"init_species({species}): {inserted} new / {len(srr_ids)} total")
             return inserted
+
+    def prune_species(self, species: str, srr_ids: List[str]) -> int:
+        """Remove progress rows outside the current metadata cohort.
+
+        A refreshed Amalgkit metadata query can legitimately change the set of
+        public runs.  Keeping rows from an older universe would make a fully
+        quantified current cohort appear permanently pending and could block
+        downstream finalization.  This only removes internal SQLite state; raw
+        reads and quantification outputs are never touched.
+        """
+
+        keep = {str(srr_id) for srr_id in srr_ids}
+        with self._lock:
+            existing = [
+                row[0]
+                for row in self._conn.execute(
+                    "SELECT srr_id FROM samples WHERE species = ?",
+                    (species,),
+                ).fetchall()
+            ]
+            obsolete = [srr_id for srr_id in existing if srr_id not in keep]
+            if obsolete:
+                self._conn.executemany(
+                    "DELETE FROM samples WHERE species = ? AND srr_id = ?",
+                    [(species, srr_id) for srr_id in obsolete],
+                )
+                self._conn.commit()
+        if obsolete:
+            logger.info("prune_species(%s): removed %d stale progress rows", species, len(obsolete))
+        return len(obsolete)
 
     def set_state(self, species: str, srr_id: str, state: str, error: Optional[str] = None) -> None:
         """Atomically transition a sample to a new state."""

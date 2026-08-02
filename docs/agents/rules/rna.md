@@ -1,433 +1,83 @@
-# RNA Module Rules (`metainformant.rna`)
+# Current RNA module rules
 
 ## Purpose
-RNA transcriptomic analysis via amalgkit integration and workflow orchestration.
 
-## Dependencies
-- **Required**: `core`, `dna` (for genomic coordinates)
-- **External**: `amalgkit` CLI tool (must be on PATH)
-- Install amalgkit: `uv pip install git+https://github.com/kfuku52/amalgkit`
+RNA transcriptomic acquisition, quantification, evidence validation, and
+analysis through the pinned Amalgkit 0.16.32 contract.
 
-## Source Structure
-```
+## Source structure
+
+```text
 src/metainformant/rna/
- progress_tracker.py, steps.py
- amalgkit/
- amalgkit.py, genome_prep.py, metadata_filter.py
- metadata_utils.py, tissue_normalizer.py
- analysis/
- cross_species.py, expression.py, protein_integration.py, qc.py, validation.py
- core/
- cleanup.py, configs.py, deps.py, environment.py
- engine/
- discovery.py, monitoring.py, orchestration.py, pipeline.py
- progress_tracker.py, sra_extraction.py, workflow.py
- workflow_cleanup.py, workflow_steps.py
- retrieval/
- ena_downloader.py
+  amalgkit/       command registry and wrappers
+  analysis/       expression, QC, cross-species, validation
+  core/           configuration, cleanup, dependencies, environment
+  engine/         streaming producer, workflow, progress, provenance
+  retrieval/      ENA/SRA retrieval helpers
+  splicing/       alternative-splicing analysis
 ```
 
-## Package Management
-- **ALWAYS use `uv`** for all Python package management and environment operations
-- Install amalgkit: `uv pip install git+https://github.com/kfuku52/amalgkit`
-- Use `uv run` to execute commands: `uv run pytest`, `uv run python scripts/rna/run_workflow.py`
-- **NEVER use `pip` directly**
+## Current execution contract
 
-## Key Submodules
+```text
+metadata → select → getfastq → integrate → quant
+         → merge → wsfilter → finalize → sanity
+```
 
-### Workflow (`workflow`)
-- Workflow orchestration for amalgkit pipeline
-- Configuration loading and validation
-- Step planning and execution
-- **Actual path**: `metainformant.rna.engine.workflow`
+The producer is `StreamingPipelineOrchestrator`; progress is stored in
+`ProgressDB`; downstream checkpoints are owned by the Hymenoptera project
+scripts after the producer lock is released.
 
-**Patterns**:
+## Current commands
+
+```bash
+export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+uv run python scripts/rna/validate_configs.py
+uv run python scripts/rna/validate_all_species_workflow.py
+uv run python scripts/rna/run_all_species.py \
+  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
+bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
+```
+
+For one species, use `scripts/rna/process_species.py` with the same config
+directory and data root. Never start it while the full campaign lock is held.
+
+## Public Python interfaces
+
 ```python
-# Import from actual path
+from pathlib import Path
+
+from metainformant.rna.engine.progress_db import ProgressDB
+from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
 from metainformant.rna.engine.workflow import load_workflow_config, plan_workflow
 
-config = load_workflow_config("config/amalgkit/species.yaml")
-steps = plan_workflow(config)
-# Execute workflow steps
-```
-
-### Configs (`configs`)
-- Configuration building for amalgkit steps
-- Parameter merging (common + step-specific)
-- Layout management
-
-### Amalgkit (`amalgkit`)
-- Wrapper for amalgkit CLI calls
-- Command building and execution
-- Error handling and logging
-
-**Patterns**:
-```python-snippet
-from metainformant.rna.amalgkit import run_amalgkit_step
-
-result = run_amalgkit_step(
-    step="metadata",
-    config=step_config,
-    work_dir=config.work_dir
+data_root = Path("/Volumes/blue/data/amalgkit")
+config = load_workflow_config(
+    "projects/hymenoptera_amalgkit/config/amalgkit/amalgkit_apis_mellifera.yaml"
 )
+assert [name for name, _ in plan_workflow(config)][0] == "metadata"
+db = ProgressDB(data_root / "pipeline_progress.db")
 ```
 
-### Genome Prep (`genome_prep`)
-- Genome preparation utilities
-- Transcriptome FASTA handling
-- Decompression and validation
+## Configuration
 
-### Progress Tracker (`progress_tracker`)
-- Progress tracking across workflow steps
-- State persistence (JSON via `metainformant.core.io`)
-- Dashboard generation
+Use the canonical project YAMLs and shared selection rule file. Runtime
+budgets use the current `AMALGKIT_PIPELINE_*` namespace and the CLI options
+shown by `--help`. Keep large artifacts under `$AMALGKIT_DATA_ROOT`.
 
-**Patterns**:
-```python-snippet
-from metainformant.rna.progress_tracker import ProgressTracker
+## Idempotence and evidence
 
-tracker = ProgressTracker(state_file="output/amalgkit/progress_state.json")
-tracker.update_step("metadata", status="completed")
-```
-
-**Note**: Progress tracker uses `metainformant.core.io` for JSON operations internally.
-
-### Steps (`steps/`)
-- Step-specific implementations for all 11 amalgkit steps
-- Individual step runners: `run_metadata`, `run_integrate`, `run_config`, `run_select`, `run_getfastq`, `run_quant`, `run_merge`, `run_cstmm`, `run_curate`, `run_csca`, `run_sanity`
-- Processing functions: `run_download_quant_workflow`, `quantify_sample`, `convert_sra_to_fastq`, `delete_sample_fastqs`
-- `process_samples.py`: Unified download-quantify-delete workflow (supports sequential and parallel modes, automatic disk space management)
-- `download_progress.py`: Real-time progress tracking for downloads
-
-**Patterns**:
-```python-snippet
-from metainformant.rna.steps import (
-    run_metadata,
-    run_quant,
-    run_download_quant_workflow,
-    quantify_sample
-)
-
-# Individual step execution
-result = run_metadata({"species": "Homo sapiens", "threads": 4})
-
-# Unified processing workflow (download, quantify, delete FASTQs)
-run_download_quant_workflow(
-    species="Homo sapiens",
-    num_workers=4,  # Parallel mode (num_workers=1 for sequential)
-    work_dir="output/amalgkit/species/work"
-)
-
-# Quantify single sample
-quantify_sample(
-    sample_id="SRR123456",
-    work_dir="output/amalgkit/species/work",
-    genome_dir="data/genomes/species"
-)
-```
-
-### Environment (`environment`)
-- Environment validation and dependency checking
-- Check amalgkit, kallisto, SRA toolkit, R script availability
-- Virtual environment validation
-- Comprehensive environment validation
-- **Actual path**: `metainformant.rna.core.environment`
-
-**Patterns**:
-```python
-# Import from actual path
-from metainformant.rna.core.environment import (
-    check_amalgkit,
-    check_dependencies,
-    validate_environment
-)
-
-# Check individual dependencies
-if not check_amalgkit():
-    raise RuntimeError("amalgkit not available")
-
-# Validate complete environment
-is_valid, issues = validate_environment()
-```
-
-### Monitoring (`monitoring`)
-- Workflow progress tracking
-- Species status analysis
-- Sample status checking
-- Active download monitoring
-- Quantification progress assessment
-- **Actual path**: `metainformant.rna.engine.monitoring`
-
-**Patterns**:
-```python
-# Import from actual path
-from metainformant.rna.engine.monitoring import (
-    check_workflow_progress,
-    analyze_species_status,
-    get_sample_status,
-    count_quantified_samples
-)
-
-# Check workflow progress
-progress = check_workflow_progress(config)
-status = analyze_species_status(species_name, work_dir)
-```
-
-### Orchestration (`orchestration`)
-- Multi-species workflow orchestration
-- Species config discovery
-- Workflow monitoring
-- Cleanup of unquantified samples
-- Run workflows for specific species
-- **Actual path**: `metainformant.rna.engine.orchestration`
-
-**Patterns**:
-```python
-# Import from actual path
-from metainformant.rna.engine.orchestration import (
-    discover_species_configs,
-    run_workflow_for_species,
-    monitor_workflows
-)
-
-# Discover available species configs
-configs = discover_species_configs("config/amalgkit/")
-
-# Run workflow for specific species
-run_workflow_for_species(species_name, config_path)
-```
-
-### Cleanup (`cleanup`)
-- Partial download cleanup
-- Abundance file naming fixes
-- Workflow cleanup utilities
-- **Actual path**: `metainformant.rna.core.cleanup`
-
-**Patterns**:
-```python
-# Import from actual path
-from metainformant.rna.core.cleanup import (
-    cleanup_partial_downloads,
-    fix_abundance_naming_for_species
-)
-
-# Cleanup partial downloads
-cleanup_partial_downloads(work_dir)
-
-# Fix abundance file naming
-fix_abundance_naming_for_species(species_name, work_dir)
-```
-
-### Discovery (`discovery`)
-- Species discovery with RNA-seq data
-- Config YAML generation
-- Genome information retrieval
-- **Actual path**: `metainformant.rna.engine.discovery`
-
-**Patterns**:
-```python
-# Import from actual path
-from metainformant.rna.engine.discovery import (
-    search_species_with_rnaseq,
-    generate_config_yaml,
-    get_genome_info
-)
-
-# Search for species with RNA-seq data
-species_list = search_species_with_rnaseq(query="Homo sapiens")
-
-# Generate config YAML
-generate_config_yaml(species_name, output_path)
-```
-
-### Protein Integration (`protein_integration`)
-- Integration with protein module
-- Cross-domain analysis utilities
-
-### Pipeline (`pipeline`)
-- High-level pipeline orchestration
-- End-to-end pipeline execution
-
-## Patterns
-
-### I/O Operations
-- **CRITICAL**: Always use `metainformant.core.io` for JSON/CSV/TSV operations
-- Never use direct `import json` or `import csv`
-- Use `io.load_json()`, `io.dump_json()`, `io.read_jsonl()`, `io.write_jsonl()` for all JSON operations
-
-**Pattern**:
-```python
-from metainformant.core import io
-
-# Load config or state
-state = io.load_json("output/amalgkit/progress_state.json")
-io.dump_json(results, "output/amalgkit/results.json")
-```
-
-### Path Handling
-- Always use `metainformant.core.io.paths` utilities for path operations
-- Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
-
-**Pattern**:
-```python
-from metainformant.core.io import paths
-
-# Expand and resolve paths
-work_dir = paths.expand_and_resolve(config.work_dir)
-
-# Security check
-if paths.is_within(user_path, base_dir):
-    # Safe to use
-    pass
-```
-
-### Type Hints
-- Comprehensive type hints throughout
-- Use `from __future__ import annotations` for forward references
-- Union types: `str | Path | None`
-
-### Amalgkit Availability
-- Always check for `amalgkit` availability before use
-- Skip tests gracefully if not available
-- Provide clear error messages
-
-**Pattern**:
-```python
-import shutil
-
-if not shutil.which("amalgkit"):
-    raise RuntimeError("amalgkit not found on PATH")
-```
-
-### Configuration
-- Use `AmalgkitWorkflowConfig` for configuration
-- Config files in `config/amalgkit/<species>.yaml`
-- Environment prefix: `AK_` (e.g., `AK_THREADS`, `AK_WORK_DIR`, `AK_LOG_DIR`)
-
-**Config Structure**:
-```yaml
-work_dir: output/amalgkit/species/work
-log_dir: output/amalgkit/species/logs
-threads: 8
-species_list: ["Homo sapiens"]
-steps:
-  metadata: {}
-  config: {}
-  # Other steps: select, getfastq, quant, merge, cstmm, curate, csca, sanity
-genome:
-  # Optional genome configuration
-filters:
-  # Optional filter configuration
-auto_install_amalgkit: true  # Install required amalgkit from kfuku52/amalgkit when missing
-```
-
-**Actual Config Loading**:
-```python
-from metainformant.rna.engine.workflow import load_workflow_config
-
-config = load_workflow_config("config/amalgkit/species.yaml")
-# Returns AmalgkitWorkflowConfig instance
-# Environment variables with AK_ prefix override config values
-```
-
-### Output Paths
-- Base: `output/amalgkit/<species>/`
-- Work: `output/amalgkit/<species>/work/`
-- Logs: `output/amalgkit/<species>/logs/`
-- Step-specific: `output/amalgkit/<species>/<step>/`
-
-### Workflow Execution
-- Use `plan_workflow()` to get step list
-- Execute steps in order via `execute_workflow()` (recommended for end-to-end)
-- For command-line execution, use `scripts/rna/run_workflow.py` (recommended)
-- Track progress with `progress_tracker` or `monitoring` functions
-- Handle step failures gracefully
-- Support both sequential and parallel processing modes
-
-**Workflow Execution Patterns**:
-```python-snippet
-from metainformant.rna.engine.workflow import load_workflow_config, plan_workflow, execute_workflow
-
-# Load and plan workflow
-config = load_workflow_config("config/amalgkit/species.yaml")
-steps = plan_workflow(config)
-
-# Execute complete workflow
-results = execute_workflow(config)
-
-# Or use orchestration for multi-species
-from metainformant.rna.orchestration import run_workflow_for_species
-run_workflow_for_species("Homo sapiens", "config/amalgkit/homo_sapiens.yaml")
-```
-
-**Command-line execution** (recommended):
-```bash
-# Full end-to-end workflow
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
-
-# Check status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
-```
-
-### Long-Running Workflows
-- Use `progress_tracker` for state persistence
-- Support workflow restart/resume
-- Log progress to files
-
-## Environment Variables
-
-- `AK_THREADS`: Number of threads (per species for sequential workflows, or total threads for distributed workflows)
-- `AK_WORK_DIR`: Working directory override
-- `AK_LOG_DIR`: Log directory override
-- Other step-specific overrides via `AK_<STEP>_<PARAM>`
-
-## Thread Allocation
-
-- **Sequential workflows** (`run_multi_species.py`): Uses `AK_THREADS` per species (default: 24)
-- **Distributed workflows** (`batch_download_species.py`): Uses `--total-threads` to distribute threads across all species (default: 24 total, minimum 1 per species)
-- **Immediate processing**: Each sample is downloaded, quantified, and FASTQs deleted immediately (not batched)
-- **Processing modes**: `run_download_quant_workflow` supports both sequential (`num_workers=1`) and parallel (`num_workers>1`) modes
-- **Disk space management**: Automatic disk space management in unified processing workflows
-
-## Integration
-
-- **Uses**: `dna` (genomic coordinates), `protein` (protein integration utilities)
-- **Used by**: `multiomics` (transcriptomics integration), `singlecell` (expression data)
-- **External**: `amalgkit` CLI tool, `kallisto` (quantification), `SRA toolkit` (data retrieval), `R` (statistical analysis)
+- Discovery and dry-run commands are read-only and deterministic.
+- SQLite sample state is the source for resume and status.
+- Reuse requires current, hash-bound quantification provenance.
+- Downstream stages validate exact inputs and write atomic outputs.
+- Reports preserve failed, missing, and incomplete species.
+- Cross-species analysis admits only finalized species that pass matrix and
+  provenance gates.
 
 ## Testing
 
-- **STRICTLY REAL IMPLEMENTATION**: Test real implementations only (see Global Project Rules (root `.cursorrules`) real-implementation policy)
-- Skip tests if `amalgkit` not available using `@pytest.mark.external_tool`
-- Use real config files from `config/amalgkit/`
-- Write test outputs to `output/amalgkit/test/` using `tmp_path` fixture
-- Test workflow planning (not full execution in unit tests)
-- Real implementations only - use real CLI calls and file operations
-
-**Test Pattern**:
-```python
-@pytest.mark.external_tool
-def test_amalgkit_integration(tmp_path: Path):
-    import shutil
-    if not shutil.which("amalgkit"):
-        pytest.skip("amalgkit not available")
-    # Test real integration with tmp_path for outputs
-    output_file = tmp_path / "result.json"
-    # ... real implementation test
-```
-
-## Documentation
-
-- Document amalgkit requirements
-- Provide examples with real config files
-- Document workflow restart/resume procedures
-
-## Reference
-
-See Global Project Rules (root `.cursorrules`) for:
-- Common directory structure and path handling
-- Configuration patterns with env overrides
-- Testing policy (real-implementation policy)
-- Import patterns and code style
-- Documentation guidelines
-
+Use `uv run pytest` with real implementations. Mark network and external-tool
+tests explicitly, keep test artifacts under `tmp_path`, run the project docs
+validator, and run the RNA current-surface retirement guard before release.

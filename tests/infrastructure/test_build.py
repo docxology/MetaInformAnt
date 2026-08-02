@@ -234,12 +234,25 @@ class TestEntryPoints:
 class TestBuiltPackage:
     """Tests that require built package artifacts."""
 
+    @staticmethod
+    def _local_temp_root(repo_root: Path) -> Path:
+        """Return an ignored APFS staging directory for build subprocesses.
+
+        The project test runner may place pytest's ``tmp_path`` on an external
+        research volume.  Building a wheel and creating a venv exercise many
+        small files and can block indefinitely on the mounted HFS volume, so
+        these packaging-only operations stay on the local filesystem.
+        """
+        local_root = repo_root / ".tmp"
+        local_root.mkdir(parents=True, exist_ok=True)
+        return local_root
+
     @pytest.fixture(scope="session")
     def built_package(self):
         """Fixture to provide path to built package."""
         repo_root = Path(__file__).parent.parent.parent
 
-        with tempfile.TemporaryDirectory() as temp_dir:
+        with tempfile.TemporaryDirectory(dir=self._local_temp_root(repo_root)) as temp_dir:
             dist_dir = Path(temp_dir) / "dist"
             dist_dir.mkdir(parents=True, exist_ok=True)
 
@@ -267,8 +280,9 @@ class TestBuiltPackage:
 
     def test_wheel_can_be_installed(self, built_package):
         """Test that built wheel can be installed."""
+        repo_root = Path(__file__).parent.parent.parent
         # Create temporary directory for testing
-        with tempfile.TemporaryDirectory() as temp_dir:
+        with tempfile.TemporaryDirectory(dir=self._local_temp_root(repo_root)) as temp_dir:
             venv_dir = Path(temp_dir) / "test_venv"
 
             # Create virtual environment

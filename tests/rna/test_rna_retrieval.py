@@ -9,6 +9,7 @@ from __future__ import annotations
 import gzip
 import hashlib
 import subprocess
+import urllib.error
 from pathlib import Path
 
 # Import the module under test
@@ -162,11 +163,16 @@ class TestENADownloaderIntegrity:
 
         def fake_run(cmd, **kwargs):
             calls.append(cmd)
-            with gzip.open(corrupt, "wb") as fh:
+            destination = Path(cmd[cmd.index("-o") + 1])
+            with gzip.open(destination, "wb") as fh:
                 fh.write(b"@r1\nACGT\n+\n!!!!\n")
             return subprocess.CompletedProcess(cmd, 0, "", "")
 
-        monkeypatch.setattr(ena_downloader.subprocess, "run", fake_run)
+        monkeypatch.setitem(
+            ena_downloader.ENADownloader.download_run.__globals__,
+            "_run_command_in_process_group",
+            fake_run,
+        )
 
         ok, message, files = FakeDownloader().download_run("SRR_FAKE", tmp_path)
 
@@ -186,10 +192,15 @@ class TestENADownloaderIntegrity:
         output_file = tmp_path / "bad.fastq.gz"
 
         def fake_run(cmd, **kwargs):
-            output_file.write_bytes(b"not gzip")
+            destination = Path(cmd[cmd.index("-o") + 1])
+            destination.write_bytes(b"not gzip")
             return subprocess.CompletedProcess(cmd, 0, "", "")
 
-        monkeypatch.setattr(ena_downloader.subprocess, "run", fake_run)
+        monkeypatch.setitem(
+            ena_downloader.ENADownloader.download_run.__globals__,
+            "_run_command_in_process_group",
+            fake_run,
+        )
 
         ok, message, files = FakeDownloader().download_run("SRR_FAKE", tmp_path)
 
@@ -197,3 +208,166 @@ class TestENADownloaderIntegrity:
         assert "gzip integrity" in message
         assert files == []
         assert not output_file.exists()
+        assert list(tmp_path.glob("bad.fastq.gz*.invalid*")), "invalid payload should be preserved for diagnosis"
+
+    def test_ena_api_transient_failure_is_retried(self, monkeypatch) -> None:
+        """A transient portal failure is retried before falling back to NCBI."""
+
+        attempts = 0
+
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return b"run_accession\tfastq_ftp\nSRR_FAKE\tftp.sra.ebi.ac.uk/vol1/fastq/SRR_FAKE.fastq.gz\n"
+
+        def fake_urlopen(*_args, **_kwargs):
+            nonlocal attempts
+            attempts += 1
+            if attempts == 1:
+                raise urllib.error.URLError("transient portal failure")
+            return Response()
+
+        monkeypatch.setattr(ena_downloader.urllib.request, "urlopen", fake_urlopen)
+        monkeypatch.setattr(ena_downloader.time, "sleep", lambda _seconds: None)
+
+        downloader = ena_downloader.ENADownloader(
+            api_retries=1,
+            api_retry_delay_seconds=1,
+        )
+        assert downloader.get_fastq_urls("SRR_FAKE") == [
+            "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR_FAKE.fastq.gz"
+        ]
+        assert attempts == 2
+
+    def test_interrupted_transfer_retries_from_retained_partial(self, tmp_path: Path, monkeypatch) -> None:
+        """Premature closes use separate curl invocations so partial bytes accumulate."""
+
+        class FakeDownloader(ena_downloader.ENADownloader):
+            def get_fastq_urls(self, sample_id: str) -> list[str]:
+                return ["https://example.org/resumable.fastq.gz"]
+
+        payload_path = tmp_path / "payload.fastq.gz"
+        with gzip.open(payload_path, "wb") as handle:
+            handle.write(b"@r1\nACGT\n+\n!!!!\n" * 64)
+        payload = payload_path.read_bytes()
+        payload_path.unlink()
+        calls: list[list[str]] = []
+        offsets = iter((len(payload) // 3, 2 * len(payload) // 3, len(payload)))
+        prior_end = 0
+
+        def fake_run(command: list[str], timeout: int) -> subprocess.CompletedProcess[str]:
+            nonlocal prior_end
+            assert timeout > 0
+            calls.append(command)
+            destination = Path(command[command.index("-o") + 1])
+            end = next(offsets)
+            with destination.open("ab") as handle:
+                handle.write(payload[prior_end:end])
+            prior_end = end
+            if len(calls) < 3:
+                return subprocess.CompletedProcess(
+                    command,
+                    18,
+                    "206",
+                    "curl: (18) transfer closed with bytes remaining",
+                )
+            return subprocess.CompletedProcess(command, 0, "206", "")
+
+        monkeypatch.setattr(ena_downloader, "_run_command_in_process_group", fake_run)
+        monkeypatch.setattr(ena_downloader.time, "sleep", lambda _seconds: None)
+
+        ok, message, files = FakeDownloader(retries=2).download_run("SRR_FAKE", tmp_path)
+
+        assert ok is True
+        assert message == "Downloaded 1 files"
+        assert len(calls) == 3
+        assert all(command[command.index("--continue-at") + 1] == "-" for command in calls)
+        assert files[0].read_bytes() == payload
+
+    def test_transient_ena_403_is_bounded_and_static_404_is_not_retried(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """Service throttling is retried, while a static missing object fails immediately."""
+
+        class FakeDownloader(ena_downloader.ENADownloader):
+            def get_fastq_urls(self, sample_id: str) -> list[str]:
+                return [f"https://example.org/{sample_id}.fastq.gz"]
+
+        statuses = iter((403, 403, 403, 404))
+        calls: list[list[str]] = []
+
+        def fake_run(command: list[str], timeout: int) -> subprocess.CompletedProcess[str]:
+            assert timeout > 0
+            calls.append(command)
+            status = next(statuses)
+            return subprocess.CompletedProcess(
+                command,
+                22,
+                str(status),
+                f"curl: (22) The requested URL returned error: {status}",
+            )
+
+        monkeypatch.setattr(ena_downloader, "_run_command_in_process_group", fake_run)
+        monkeypatch.setattr(ena_downloader.time, "sleep", lambda _seconds: None)
+        downloader = FakeDownloader(retries=2)
+
+        ok_403, _, _ = downloader.download_run("SRR_THROTTLED", tmp_path / "throttled")
+        assert ok_403 is False
+        assert len(calls) == 3
+
+        ok_404, _, _ = downloader.download_run("SRR_MISSING", tmp_path / "missing")
+        assert ok_404 is False
+        assert len(calls) == 4
+
+    def test_productive_interruptions_reset_no_progress_retry_budget(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """A large file may need many productive range resumes within its deadline."""
+
+        class FakeDownloader(ena_downloader.ENADownloader):
+            def get_fastq_urls(self, sample_id: str) -> list[str]:
+                return ["https://example.org/large.fastq.gz"]
+
+        payload_path = tmp_path / "payload.fastq.gz"
+        with gzip.open(payload_path, "wb") as handle:
+            handle.write(b"@r1\nACGT\n+\n!!!!\n" * 512)
+        payload = payload_path.read_bytes()
+        payload_path.unlink()
+        boundaries = [
+            len(payload) // 5,
+            2 * len(payload) // 5,
+            3 * len(payload) // 5,
+            4 * len(payload) // 5,
+            len(payload),
+        ]
+        calls = 0
+        prior_end = 0
+
+        def fake_run(command: list[str], timeout: int) -> subprocess.CompletedProcess[str]:
+            nonlocal calls, prior_end
+            destination = Path(command[command.index("-o") + 1])
+            end = boundaries[calls]
+            with destination.open("ab") as handle:
+                handle.write(payload[prior_end:end])
+            prior_end = end
+            calls += 1
+            return subprocess.CompletedProcess(
+                command,
+                0 if calls == len(boundaries) else 18,
+                "206",
+                "",
+            )
+
+        monkeypatch.setattr(ena_downloader, "_run_command_in_process_group", fake_run)
+        monkeypatch.setattr(ena_downloader.time, "sleep", lambda _seconds: None)
+
+        ok, _, files = FakeDownloader(retries=1).download_run("SRR_LARGE", tmp_path)
+
+        assert ok is True
+        assert calls == 5
+        assert files[0].read_bytes() == payload

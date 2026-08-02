@@ -110,13 +110,13 @@ class TestUtilsModule:
         result = check_network_connectivity()
         assert isinstance(result, bool)
 
-    def test_require_network_connectivity_skip(self):
-        """Test require_network_connectivity in offline environment."""
-        from tests.utils import require_network_connectivity
+    def test_require_network_connectivity_skip(self, monkeypatch):
+        """Test the network guard raises its documented pytest skip exception."""
+        from tests import utils as test_utils
 
-        # This might not skip if network is available
-        # Just test it doesn't crash
-        require_network_connectivity("Test network requirement")
+        monkeypatch.setattr(test_utils, "check_network_connectivity", lambda: False)
+        with pytest.raises(pytest.skip.Exception):
+            test_utils.require_network_connectivity("Test network requirement")
 
     def test_generate_sample_dna_sequence(self):
         """Test DNA sequence generation."""

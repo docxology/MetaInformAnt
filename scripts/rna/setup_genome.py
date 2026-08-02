@@ -6,13 +6,18 @@ to orchestrate complete genome setup pipelines.
 
 Usage:
     # Full genome setup for a species
-    python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+    python3 scripts/rna/setup_genome.py \
+        --config projects/hymenoptera_amalgkit/config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
     # Verify status only
-    python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --verify-only
+    python3 scripts/rna/setup_genome.py \
+        --config projects/hymenoptera_amalgkit/config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml \
+        --verify-only
 
     # Skip specific steps
-    python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --skip-download --skip-prepare
+    python3 scripts/rna/setup_genome.py \
+        --config projects/hymenoptera_amalgkit/config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml \
+        --skip-download --skip-prepare
 """
 
 # ruff: noqa: E402 - setup utilities intentionally run before importing metainformant.

@@ -132,6 +132,26 @@ def _compute_progress_percent(bytes_downloaded: int, total_bytes: int | None) ->
     return min(100.0, (bytes_downloaded / total_bytes) * 100.0)
 
 
+def _terminate_monitored_process(process: "Any") -> None:
+    """Stop a monitored process after a wall-clock timeout."""
+
+    try:
+        process.terminate()
+    except (AttributeError, OSError):
+        return
+    try:
+        process.wait(timeout=5)
+    except (AttributeError, OSError, TimeoutError, TypeError):
+        try:
+            process.kill()
+        except (AttributeError, OSError):
+            return
+        try:
+            process.wait(timeout=5)
+        except (AttributeError, OSError, TimeoutError, TypeError):
+            pass
+
+
 def _infer_dest_path(url: str, dest_path: str | Path) -> Path:
     dest = Path(dest_path)
     if dest.is_dir():
@@ -506,6 +526,7 @@ def monitor_subprocess_directory_growth(
     show_progress: bool = True,
     desc: str | None = None,
     errors: list[str] | None = None,
+    timeout_seconds: float | None = None,
 ) -> tuple[int, int]:
     """Monitor a subprocess by watching bytes written under a directory.
 
@@ -523,7 +544,7 @@ def monitor_subprocess_directory_growth(
     hb = Path(heartbeat_path)
     hb.parent.mkdir(parents=True, exist_ok=True)
     started = _utc_iso()
-    errs = errors or []
+    errs = errors if errors is not None else []
 
     bar = None
     if show_progress:
@@ -578,6 +599,19 @@ def monitor_subprocess_directory_growth(
             _write("running" if rc is None else ("completed" if rc == 0 else "failed"), bytes_done)
             last = now
 
+        if (
+            rc is None
+            and timeout_seconds is not None
+            and timeout_seconds >= 0
+            and now - start_time >= timeout_seconds
+        ):
+            errs.append(f"monitor timeout after {timeout_seconds:g} seconds")
+            _terminate_monitored_process(process)
+            _write("timeout", bytes_done)
+            last_bytes = bytes_done
+            rc = 124
+            break
+
         if rc is not None:
             # Final write
             _write("completed" if rc == 0 else "failed", bytes_done)
@@ -605,13 +639,14 @@ def monitor_subprocess_file_count(
     show_progress: bool = True,
     desc: str | None = None,
     errors: list[str] | None = None,
+    timeout_seconds: float | None = None,
 ) -> int:
     """Monitor a subprocess by counting expected files under a directory."""
     watch = Path(watch_dir)
     hb = Path(heartbeat_path)
     hb.parent.mkdir(parents=True, exist_ok=True)
     started = _utc_iso()
-    errs = errors or []
+    errs = errors if errors is not None else []
     expected = list(expected_files)
     total = len(expected)
 
@@ -670,6 +705,17 @@ def monitor_subprocess_file_count(
         if heartbeat_interval > 0 and (now - last) >= heartbeat_interval:
             _write("running" if rc is None else ("completed" if rc == 0 else "failed"), done)
             last = now
+        if (
+            rc is None
+            and timeout_seconds is not None
+            and timeout_seconds >= 0
+            and now - start_time >= timeout_seconds
+        ):
+            errs.append(f"monitor timeout after {timeout_seconds:g} seconds")
+            _terminate_monitored_process(process)
+            _write("timeout", done)
+            rc = 124
+            break
         if rc is not None:
             _write("completed" if rc == 0 else "failed", done)
             break
@@ -694,13 +740,14 @@ def monitor_subprocess_sample_progress(
     show_progress: bool = True,
     desc: str | None = None,
     errors: list[str] | None = None,
+    timeout_seconds: float | None = None,
 ) -> int:
     """Monitor a subprocess by counting completed samples (files matching a glob)."""
     watch = Path(watch_dir)
     hb = Path(heartbeat_path)
     hb.parent.mkdir(parents=True, exist_ok=True)
     started = _utc_iso()
-    errs = errors or []
+    errs = errors if errors is not None else []
 
     bar = None
     if show_progress:
@@ -755,6 +802,17 @@ def monitor_subprocess_sample_progress(
         if heartbeat_interval > 0 and (now - last) >= heartbeat_interval:
             _write("running" if rc is None else ("completed" if rc == 0 else "failed"), done)
             last = now
+        if (
+            rc is None
+            and timeout_seconds is not None
+            and timeout_seconds >= 0
+            and now - start_time >= timeout_seconds
+        ):
+            errs.append(f"monitor timeout after {timeout_seconds:g} seconds")
+            _terminate_monitored_process(process)
+            _write("timeout", done)
+            rc = 124
+            break
         if rc is not None:
             _write("completed" if rc == 0 else "failed", done)
             break

@@ -4,8 +4,8 @@
 # Assembly: GCF_000220695.1
 # Note: Added for Hymenoptera cross-species tissue comparisons (brain, fast body, ovary)
 
-work_dir: projects/hymenoptera_amalgkit/data/polistes_fuscatus/work
-log_dir: projects/hymenoptera_amalgkit/data/polistes_fuscatus/logs
+work_dir: output/amalgkit/polistes_fuscatus/work
+log_dir: output/amalgkit/polistes_fuscatus/logs
 threads: 16
 
 auto_install_amalgkit: true
@@ -19,8 +19,8 @@ species_list:
 taxon_id: 30207
 
 genome:
-  accession: GCF_010416935.1
-  dest_dir: projects/hymenoptera_amalgkit/data/polistes_fuscatus/genome
+  accession: GCF_000220695.1
+  dest_dir: output/amalgkit/polistes_fuscatus/genome
 
   include:
     - genome           
@@ -29,43 +29,43 @@ genome:
     - cds             
     - protein         
 
-  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/010/416/935/GCF_010416935.1_CU_Pfus_HIC/
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/220/695/GCF_000220695.1/
   files:
-    genomic_fasta: GCF_010416935.1_CU_Pfus_HIC_genomic.fna.gz
-    transcriptome_fasta: GCF_010416935.1_CU_Pfus_HIC_rna_from_genomic.fna.gz
-    cds_fasta: GCF_010416935.1_CU_Pfus_HIC_cds_from_genomic.fna.gz
-    protein_fasta: GCF_010416935.1_CU_Pfus_HIC_protein.faa.gz
-    annotation_gff: GCF_010416935.1_CU_Pfus_HIC_genomic.gff.gz
+    genomic_fasta: GCF_000220695.1_genomic.fna.gz
+    transcriptome_fasta: GCF_000220695.1_rna_from_genomic.fna.gz
+    cds_fasta: GCF_000220695.1_cds_from_genomic.fna.gz
+    protein_fasta: GCF_000220695.1_protein.faa.gz
+    annotation_gff: GCF_000220695.1_genomic.gff.gz
 
 steps:
   metadata:
-    out_dir: projects/hymenoptera_amalgkit/data/polistes_fuscatus/work
+    out_dir: output/amalgkit/polistes_fuscatus/work
     search_string: '"Polistes fuscatus"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
     redo: no
   integrate:
-    fastq_dir: projects/hymenoptera_amalgkit/data/polistes_fuscatus/fastq/getfastq
-  config: {}
-  select: {}
+    fastq_dir: output/amalgkit/polistes_fuscatus/fastq/getfastq
+  select:
+    select_rules_tsv: config/amalgkit/select_rules.tsv
   getfastq:
-    max_bp: 10000000000
-    out_dir: projects/hymenoptera_amalgkit/data/polistes_fuscatus/fastq
+    out_dir: output/amalgkit/polistes_fuscatus/fastq
     remove_sra: yes
     threads: 16
-    pfd: yes
     redo: no
   quant:
-    jobs: 1
-    out_dir: projects/hymenoptera_amalgkit/data/polistes_fuscatus/quant
+    out_dir: output/amalgkit/polistes_fuscatus/quant
     threads: 16
     redo: no
-    keep_fastq: no
+    clean_fastq: no
   merge:
-    out: projects/hymenoptera_amalgkit/data/polistes_fuscatus/merged/merged_abundance.tsv
-    out_dir: projects/hymenoptera_amalgkit/data/polistes_fuscatus/merged
-  cstmm:
-    out_dir: projects/hymenoptera_amalgkit/data/polistes_fuscatus/cstmm
-  curate:
-    out_dir: projects/hymenoptera_amalgkit/data/polistes_fuscatus/curate
-  csca:
-    out_dir: projects/hymenoptera_amalgkit/data/polistes_fuscatus/csca
+    out_dir: output/amalgkit/polistes_fuscatus/work
+  wsfilter:
+    out_dir: output/amalgkit/polistes_fuscatus/work
+    input_dir: output/amalgkit/polistes_fuscatus/work/merge
+    norm: log2p1-fpkm
+    mapping_rate: 0.2
+  finalize:
+    out_dir: output/amalgkit/polistes_fuscatus/work
+    input_dir: output/amalgkit/polistes_fuscatus/work/wsfilter
+    norm: log2p1-fpkm
+    batch_effect_alg: no
   sanity: {}

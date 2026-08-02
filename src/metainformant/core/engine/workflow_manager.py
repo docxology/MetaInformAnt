@@ -3,20 +3,16 @@
 This module provides:
 - ``BasePipelineManager``: A generic, domain-agnostic pipeline manager that
   coordinates sequential phases of work items with real-time TUI visualization.
-- ``WorkflowManager``: A backward-compatible RNA-shaped manager that owns sample
-  state but receives domain execution hooks by dependency injection.
+- ``WorkflowManager``: A sample-oriented manager that receives domain execution
+  hooks by dependency injection.
 
 The generic pipeline is built around three primitives:
 - ``Stage``: Minimal lifecycle enum (PENDING, RUNNING, DONE, FAILED).
 - ``PipelineItem``: A tracked work item flowing through the pipeline.
 - ``PipelinePhase``: A named phase with a handler callable and item filter.
 
-Backward compatibility
-----------------------
-``SampleStage``, ``SampleState``, and ``WorkflowManager`` retain their original
-construction/add-sample API.  Domain entry points should use
-``metainformant.rna.engine.tui_workflow.WorkflowManager`` so core stays free of
-RNA imports.
+The core manager remains free of RNA imports. Domain entry points provide the
+Amalgkit runner through dependency injection.
 """
 
 from __future__ import annotations
@@ -546,14 +542,11 @@ class WorkflowManager(BasePipelineManager):
         """Run an injected amalgkit step.
 
         Core does not import RNA modules.  RNA-owned callers should instantiate
-        :class:`metainformant.rna.engine.tui_workflow.WorkflowManager`, which
-        injects the real amalgkit runner.
+        the domain-owned manager that injects the real Amalgkit runner.
         """
         if self._run_amalgkit is None:
             raise RuntimeError(
-                "No amalgkit runner configured. Use "
-                "metainformant.rna.engine.tui_workflow.WorkflowManager for RNA workflows "
-                "or pass run_amalgkit=... explicitly."
+                "No Amalgkit runner configured; pass run_amalgkit=... explicitly."
             )
         return self._run_amalgkit(step, params)
 

@@ -21,7 +21,9 @@ import yaml
 def parse_args():
     parser = argparse.ArgumentParser(description="Automate generation of OrthoDB orthogroup tables.")
     parser.add_argument(
-        "--config-dir", default="config/amalgkit", help="Directory containing amalgkit YAML configurations."
+        "--config-dir",
+        default="projects/hymenoptera_amalgkit/config/amalgkit",
+        help="Directory containing current Amalgkit YAML configurations.",
     )
     parser.add_argument("--cache-dir", default=".cache/orthodb", help="Directory to cache OrthoDB gzip downloads.")
     parser.add_argument(

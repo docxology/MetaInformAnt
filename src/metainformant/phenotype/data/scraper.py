@@ -497,8 +497,8 @@ class AntWikiScraper:
             "Pheidole_pallidula",
         ]
 
-        for species in common_species:
-            if limit and len(self.scraped_urls) >= limit:
+        for index, species in enumerate(common_species):
+            if limit is not None and index >= limit:
                 break
 
             if self.config.base_url.endswith("/"):

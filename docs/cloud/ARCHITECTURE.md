@@ -2,6 +2,10 @@
 
 ## Overview
 
+This page describes the historical GCP execution path. The Hymenoptera cloud
+environment was decommissioned on 2026-04-15; local data-root verification is
+the current evidence path.
+
 The cloud deployment system uses a **thin orchestrator pattern**: a local CLI (`deploy_gcp.py`) shells out to `gcloud` CLI for all GCP operations. No Python SDK required.
 
 ## Module Design
@@ -40,8 +44,8 @@ Manages VM lifecycle via `subprocess` → `gcloud`:
 The VM runs the same pipeline as locally:
 
 1. **`prep_genomes.py`** — Downloads reference transcriptomes from NCBI FTP and builds kallisto indices
-2. **`run_all_species.py`** — Launches `StreamingPipelineOrchestrator` for all 28 species concurrently.
-3. **`streaming_orchestrator.py`** — Phase 1 (Task Discovery/Metadata) -> Phase 2 (Global Threadpool Execution: download → quant) -> Phase 3 (Global Merge → Curate)
+2. **`run_all_species.py`** — Launches `StreamingPipelineOrchestrator` for the configured 27-species cohort; the exact sample inventory is data-root dependent.
+3. **`streaming_orchestrator.py`** — Phase 1 (task discovery/metadata) -> Phase 2 (bounded download → quant) -> Phase 3 (merge → filter → finalize)
 
 ### Container Configuration Requirements
 The core pipeline executes within a Docker container (`metainformant:patched`). To ensure data persistence and prevent crash loops, the 4TB persistent data disk **must** be explicitly bind-mounted:
@@ -59,7 +63,7 @@ NCBI FTP transcriptome FASTA kallisto index
 
  merge merged_abundance.tsv
 
- curate expression tables
+ wsfilter → finalize expression tables
 ```
 
 ## Result Download

@@ -12,7 +12,8 @@ The `quant` step:
 - Generates abundance estimates (TPM, counts)
 - Optionally builds kallisto indices from FASTA files
 - Supports batch processing for HPC environments
-- Automatically cleans up FASTQs after successful quantification (configurable)
+- Retains FASTQs during quantification; the project reclaims them only after
+  current-method provenance is written
 
 ## Function Signature
 
@@ -51,7 +52,7 @@ amalgkit quant \
   --metadata output/amalgkit/work/metadata/pivot_qualified.tsv \
   --index_dir output/amalgkit/work/index \
   --threads 8 \
-  --clean_fastq yes
+  --clean_fastq no
 ```
 
 ### Python API
@@ -64,7 +65,7 @@ result = amalgkit.quant(
     metadata="output/amalgkit/work/metadata/pivot_qualified.tsv",
     index_dir="output/amalgkit/work/index",
     threads=8,
-    clean_fastq=True
+    clean_fastq=False
 )
 ```
 
@@ -75,13 +76,13 @@ steps:
   quant:
     # CRITICAL: out_dir must be work_dir (not separate quant_dir)
     # This allows quant to find getfastq output in {out_dir}/getfastq/
-    out_dir: output/amalgkit/amellifera/work
-    metadata: output/amalgkit/amellifera/work/metadata/pivot_qualified.tsv
-    index_dir: output/amalgkit/amellifera/work/index
+    out_dir: output/amalgkit/apis_mellifera_all/work
+    metadata: output/amalgkit/apis_mellifera_all/work/metadata/metadata_selected.tsv
+    index_dir: output/amalgkit/apis_mellifera_all/work/index
     threads: 16
-    clean_fastq: yes
+    clean_fastq: no  # Required for provenance-gated project cleanup
     build_index: yes
-    fasta_dir: output/amalgkit/amellifera/work/fasta
+    fasta_dir: output/amalgkit/apis_mellifera_all/work/fasta
 ```
 
 ## Parameters
@@ -122,7 +123,7 @@ steps:
 | `--redo` | yes/no | `no` | Re-quantify even if output exists. |
 | `--batch` | INT | `None` | Process only one SRA record (1-based index). For HPC array jobs. |
 | `--index_dir` | PATH | `None` | Path to directory containing kallisto index files. Required if not `out_dir/index/` |
-| `--clean_fastq` | yes/no | `yes` | **Remove FASTQ files** after successful quantification. Saves massive disk space! |
+| `--clean_fastq` | yes/no | `no` | Retain FASTQs until the current provenance-gated reclamation pass. |
 | `--fasta_dir` | PATH | `inferred` | Path to reference transcriptome FASTA files. Default: `out_dir/fasta` |
 | `--build_index` | yes/no | `no` | Build kallisto index from FASTA if index doesn't exist. |
 
@@ -135,7 +136,7 @@ steps:
   - **Critical**: If `getfastq` used `out_dir: output/amalgkit/{species}/fastq`, then quant's `out_dir` must be set to `work_dir` (e.g., `output/amalgkit/{species}/work`) so it can find the getfastq output
   - The workflow may create symlinks from `{work_dir}/getfastq/` to `{fastq_dir}/getfastq/` to ensure quant can find the files
 - **Kallisto Index**: Pre-built index for the species OR FASTA file with `--build_index yes`
-  - Index location: `{out_dir}/index/{Scientific_Name}_transcripts.idx`
+  - Index location: `{out_dir}/index/{Scientific_Name}.idx`
   - FASTA location: `{out_dir}/fasta/{Scientific_Name}_rna.fasta`
 - **kallisto**: Installed and available on PATH
 
@@ -144,8 +145,8 @@ steps:
 **Option 1: Pre-built Index**
 ```bash
 # Index files must be named:
-# {Scientific_Name}_transcripts.idx
-# Example: Apis_mellifera_transcripts.idx
+# {Scientific_Name}.idx
+# Example: Apis_mellifera.idx
 
 mkdir -p output/amalgkit/work/index
 # Place index file in this directory
@@ -166,17 +167,15 @@ mkdir -p output/amalgkit/work/fasta
 
 **Option 3: Automated Genome Setup (Recommended)**
 
-METAINFORMANT provides automated scripts to download genomes, prepare transcriptomes, and build kallisto indexes:
+METAINFORMANT provides one current wrapper to download genomes, prepare
+transcriptomes, and build kallisto indexes:
 
 ```bash
-# Complete setup for all species
-python3 scripts/rna/orchestrate_genome_setup.py
-
-# Or step-by-step:
-python3 scripts/rna/verify_genomes_and_indexes.py        # Check status
-python3 scripts/rna/download_missing_genomes.py          # Download genomes
-python3 scripts/rna/prepare_transcriptomes.py            # Prepare FASTA
-python3 scripts/rna/build_kallisto_indexes.py           # Build indexes
+# Verify and execute setup for one species configuration
+uv run python scripts/rna/setup_genome.py \
+  --config config/amalgkit/amalgkit_<species>.yaml --verify-only
+uv run python scripts/rna/setup_genome.py \
+  --config config/amalgkit/amalgkit_<species>.yaml
 ```
 
 These scripts automatically:
@@ -188,7 +187,7 @@ These scripts automatically:
 **See Also:**
 - **[genome_preparation.md](../genome_preparation.md)**: Technical documentation for automatic index building
 - **[genome_setup_guide.md](../genome_setup_guide.md)**: Complete step-by-step guide for genome setup
-- **[commands.md](../commands.md)**: Command reference for all genome setup scripts
+- **[commands.md](../commands.md)**: Current command reference
 
 The workflow execution in `metainformant.rna.engine.workflow` automatically integrates genome preparation when `build_index: yes` is set in the quant configuration. See [genome_preparation.md](../genome_preparation.md) for details on automatic workflow integration.
 
@@ -280,7 +279,7 @@ flowchart LR
 | Step | Dependency | Description |
 |------|------------|-------------|
 | `merge` | `abundance.tsv` files | Combines all samples into expression matrix |
-| `curate` | Merged matrix | QC and batch correction |
+| `wsfilter` | Merged matrix | Within-species filtering |
 
 ## Performance Considerations
 
@@ -341,10 +340,11 @@ amalgkit quant \
   --metadata output/amalgkit/work/metadata/pivot_qualified.tsv \
   --index_dir output/amalgkit/work/index \
   --threads 8 \
-  --clean_fastq yes
+  --clean_fastq no
 ```
 
-**Result**: Quantifies all samples, removes FASTQs to save space
+**Result**: Quantifies all samples; the project reclaimer removes raw inputs
+only after the abundance table and current provenance sidecar are verified.
 
 ### 2. Build Index and Quantify
 
@@ -385,7 +385,7 @@ amalgkit quant \
   --out_dir output/amalgkit/work \
   --batch ${SLURM_ARRAY_TASK_ID} \
   --threads 8 \
-  --clean_fastq yes
+  --clean_fastq no
 ```
 
 **Result**: 100 samples quantified in parallel, ~1 hour total
@@ -409,7 +409,7 @@ amalgkit quant \
 ```bash
 # amalgkit will build index if:
 # 1. --build_index yes
-# 2. Index doesn't exist at index_dir/{Species_Name}_transcripts.idx
+# 2. Index doesn't exist at index_dir/{Species_Name}.idx
 # 3. FASTA exists at fasta_dir/{Species_Name}*.fasta
 
 amalgkit quant \
@@ -423,7 +423,7 @@ amalgkit quant \
 ```bash
 # Build index manually for more control
 kallisto index \
-  -i output/work/index/Apis_mellifera_transcripts.idx \
+  -i output/work/index/Apis_mellifera.idx \
   -k 31 \
   output/work/fasta/Apis_mellifera_rna.fasta
 
@@ -443,11 +443,11 @@ amalgkit quant \
 
 | Species in metadata | Expected index filename |
 |---------------------|-------------------------|
-| `Apis mellifera` | `Apis_mellifera_transcripts.idx` |
-| `Pogonomyrmex barbatus` | `Pogonomyrmex_barbatus_transcripts.idx` |
-| `Drosophila melanogaster` | `Drosophila_melanogaster_transcripts.idx` |
+| `Apis mellifera` | `Apis_mellifera.idx` |
+| `Pogonomyrmex barbatus` | `Pogonomyrmex_barbatus.idx` |
+| `Drosophila melanogaster` | `Drosophila_melanogaster.idx` |
 
-**Pattern**: Replace spaces with underscores, append `_transcripts.idx`
+**Pattern**: Replace spaces with underscores and append `.idx`
 
 ## Troubleshooting
 
@@ -480,9 +480,7 @@ See **[06_quant_advanced.md](06_quant_advanced.md)** for:
 
 ---
 
-**Last Updated**: March 8, 2026
-**AMALGKIT Version**: 0.16.0
-**kallisto Version**: ≥0.50.0
+**Last Updated**: July 23, 2026
+**AMALGKIT Version**: 0.16.32 (`v0.16.32`)
+**kallisto Version**: record the executable and index-build version in the run manifest
 **Status**: Production-ready
-
-

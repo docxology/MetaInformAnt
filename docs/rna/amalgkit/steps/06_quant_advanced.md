@@ -8,41 +8,37 @@ Advanced workflows, cleanup strategies, and real-world examples for the `amalgki
 
 ## Automatic FASTQ Cleanup After Quantification
 
-FASTQ files are deleted immediately after successful quantification. The `abundance.tsv` file is the canonical proof that a sample completed — no separate marker files are used.
+The project retains FASTQ files during quantification. After a non-empty
+abundance table and exact current-method provenance sidecar are written,
+`scripts/rna/reclaim_quantified_raw.py` removes the sample's raw inputs and
+writes an audit manifest.
 
-> **Note (v0.2.7):** `.safely_removed` marker files were deleted in v0.2.7 and added to `.gitignore`. They are no longer created.
+Amalgkit may leave `.safely_removed` markers from older runs; they are
+redundant and are removed by the same guarded utility after current evidence
+is present.
 
 ### Automatic Cleanup in Workflow
 
-When using the METAINFORMANT workflow (`execute_workflow()` or `run_workflow.py`), FASTQ files are automatically deleted after quantification:
+When using the current streaming workflow, FASTQ files are reclaimed only
+after current quantification evidence is written:
 
 1. **Download**: Sample FASTQ files are downloaded via `getfastq`
 2. **Quantify**: Sample is quantified using `quantify_sample()` from `metainformant.rna.engine.workflow_steps`
-3. **Delete**: FASTQ files are automatically deleted using `delete_sample_fastqs()` from `metainformant.rna.engine.sra_extraction`
+3. **Reclaim**: `reclaim_quantified_raw.py` removes only validated raw inputs
+   for samples with current provenance
 
-This per-sample workflow ensures maximum disk efficiency — only one sample's FASTQ files exist at any time.
+The per-sample workflow bounds concurrent FASTQ trees by the selected sample
+worker profile. When workers exceed one, disk planning must use the selected
+worker count and sample-size bound because multiple raw-read trees may coexist.
 
 ### Manual Cleanup
 
-For manual processing or recovery of individual samples:
+For manual processing or recovery of individual samples, run the same
+provenance-aware lane and then use its audited reclamation command:
 
-```python-snippet
-from metainformant.rna.engine.workflow_steps import quantify_sample
-from metainformant.rna.engine.sra_extraction import delete_sample_fastqs
-from pathlib import Path
-
-# Quantify sample
-success, message, abundance_path = quantify_sample(
-    sample_id="SRR14740514",
-    metadata_rows=sample_rows,
-    quant_params=quant_params,
-    log_dir=log_dir,
-)
-
-# Delete FASTQ files after successful quantification
-if success and abundance_path and abundance_path.exists():
-    fastq_dir = Path("output/amalgkit/pogonomyrmex_barbatus/fastq")
-    delete_sample_fastqs("SRR14740514", fastq_dir)
+```bash
+uv run python scripts/rna/reclaim_quantified_raw.py \
+  --data-root "$AMALGKIT_DATA_ROOT" --species apis_mellifera --execute
 ```
 
 ### Batch Cleanup
@@ -50,7 +46,7 @@ if success and abundance_path and abundance_path.exists():
 The `cleanup_unquantified_samples()` function processes all downloaded but unquantified samples:
 
 ```python-snippet
-from metainformant.rna.orchestration import cleanup_unquantified_samples
+from metainformant.rna.engine.workflow_cleanup import cleanup_unquantified_samples
 from pathlib import Path
 
 config_path = Path("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
@@ -61,17 +57,19 @@ quantified, failed = cleanup_unquantified_samples(config_path)
 
 ## Best Practices
 
-### 1. Always Clean FASTQs After Quantification
+### 1. Use the guarded reclamation contract
 
 ```bash
-# Good: Save massive disk space
---clean_fastq yes
-
-# Bad: Wastes 100s of GBs
+# Keep inputs until the current sidecar exists
 --clean_fastq no
+
+# Then run an audited reclamation pass
+uv run python scripts/rna/reclaim_quantified_raw.py \
+  --data-root "$AMALGKIT_DATA_ROOT" --execute
 ```
 
-**Reasoning**: FASTQ files are 10-50GB per sample. After quantification, you only need the ~1MB abundance.tsv files.
+**Reasoning**: FASTQ files are large, but deleting them before current
+provenance is written can make a failed quantification contract ambiguous.
 
 ### 2. Verify Reference Transcriptome
 
@@ -123,7 +121,7 @@ amalgkit quant \
   --metadata output/amalgkit/apis_mellifera/work/metadata/pivot_qualified.tsv \
   --index_dir output/amalgkit/apis_mellifera/work/index \
   --threads 16 \
-  --clean_fastq yes
+  --clean_fastq no
 ```
 
 **Result**: 83 samples quantified in ~8 hours (serial), 64.5% average alignment rate, ~350GB disk saved.
@@ -138,7 +136,7 @@ amalgkit quant \
   --out_dir output/amalgkit/pogonomyrmex_barbatus/work \
   --batch ${SLURM_ARRAY_TASK_ID} \
   --threads 8 \
-  --clean_fastq yes
+  --clean_fastq no
 ```
 
 **Result**: All 120 samples completed in 30 minutes on HPC cluster.
