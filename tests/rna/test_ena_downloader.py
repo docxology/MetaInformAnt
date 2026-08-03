@@ -14,7 +14,6 @@ import pytest
 
 from metainformant.rna.retrieval.ena_downloader import ENADownloader
 
-
 pytestmark = pytest.mark.network
 
 
@@ -54,6 +53,7 @@ class TestENADownloader(unittest.TestCase):
         """Verify handling of invalid IDs."""
         urls = self.downloader.get_fastq_urls("INVALID_ID_12345")
         self.assertEqual(urls, [], "Should return empty list for invalid ID")
+
 
 if __name__ == "__main__":
     unittest.main()

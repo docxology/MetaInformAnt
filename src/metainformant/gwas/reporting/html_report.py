@@ -116,6 +116,16 @@ def generate_html_report(
 
     lambda_gc = cal.get("lambda_gc", float("nan"))
     lambda_warn = "⚠️ Inflated λ_GC — check for stratification or strong signal" if lambda_gc > 2 else ""
+    calibration_quantiles = cal.get("calibration_quantiles", {})
+    calibration_q50 = calibration_quantiles.get("q50", {})
+    calibration_ratio = calibration_q50.get("ratio_obs_exp", "—")
+    calibration_pass = "✅" if abs(calibration_q50.get("ratio_obs_exp", 1) - 1) < 0.5 else "⚠️"
+    gene_section = (
+        "<h2>Gene Proximity Annotation (Top 5 Hits)</h2>"
+        "<table><tr><th>SNP</th><th>Location</th><th>Nearby Genes</th></tr>" + gene_rows + "</table>"
+        if gene_rows
+        else ""
+    )
 
     html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -195,11 +205,11 @@ def generate_html_report(
   {cs_row}
   {cond_row}
   <tr><td>Calibration (q50 obs/exp ratio)</td>
-      <td>{cal.get("calibration_quantiles", dict()).get("q50", dict()).get("ratio_obs_exp", "—")}</td>
-      <td>{"✅" if abs(cal.get("calibration_quantiles", dict()).get("q50", dict()).get("ratio_obs_exp", 1) - 1) < 0.5 else "⚠️"}</td></tr>
+      <td>{calibration_ratio}</td>
+      <td>{calibration_pass}</td></tr>
 </table>
 
-{"<h2>Gene Proximity Annotation (Top 5 Hits)</h2><table><tr><th>SNP</th><th>Location</th><th>Nearby Genes</th></tr>" + gene_rows + "</table>" if gene_rows else ""}
+{gene_section}
 
 <h2>Visualization Gallery</h2>
 <div class="plot-grid">
@@ -211,7 +221,8 @@ def generate_html_report(
   <div><p><strong>Missingness</strong></p><img src="missingness.png" alt="Missingness"></div>
   <div><p><strong>PCA (Population Structure)</strong></p><img src="../../pca_plot.png" alt="PCA"></div>
   <div><p><strong>Kinship Matrix</strong></p><img src="../../kinship_plot.png" alt="Kinship"></div>
-  <div><p><strong>Heritability (per chromosome)</strong></p><img src="../../heritability_bar_chart.png" alt="Heritability"></div>
+  <div><p><strong>Heritability (per chromosome)</strong></p>
+       <img src="../../heritability_bar_chart.png" alt="Heritability"></div>
   <div><p><strong>Effect Size Distribution</strong></p><img src="../../effect_size_plot.png" alt="Effect sizes"></div>
   <div><p><strong>MAF Spectrum</strong></p><img src="../../maf_spectrum_plot.png" alt="MAF spectrum"></div>
   <div><p><strong>Power Curves</strong></p><img src="../power_analysis/power_curves.png" alt="Power curves"></div>

@@ -58,7 +58,10 @@ def attention_weights(
                         "attention_weights": weights,
                         "supported": True,
                         "model_type": "transformer",
-                        "note": "Layer attention detected - use model.forward() with output_attentions=True for full weights",
+                        "note": (
+                            "Layer attention detected - use model.forward() with "
+                            "output_attentions=True for full weights"
+                        ),
                     }
     except ImportError:
         pass

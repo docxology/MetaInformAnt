@@ -2,4 +2,4 @@
 
 from __future__ import annotations
 
-from metainformant.core.data.db import *  # noqa: F403
+from metainformant.core.data.db import *  # noqa: F401,F403

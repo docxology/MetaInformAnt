@@ -71,9 +71,10 @@ class TestExamples:
         )
 
         # Check that it ran successfully
-        assert (
-            result.returncode == 0
-        ), f"Example {example_path} failed with exit code {result.returncode}\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}"
+        assert result.returncode == 0, (
+            f"Example {example_path} failed with exit code {result.returncode}\n"
+            f"STDOUT: {result.stdout}\nSTDERR: {result.stderr}"
+        )
 
         # Check for expected output files
         output_dir = Path("output/examples") / example_path.parent.name

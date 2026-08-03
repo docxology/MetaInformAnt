@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from metainformant.visualization.analysis import statistical as statistical_module
 from metainformant.visualization.analysis.statistical import (
     box_plot,
     correlation_heatmap,
@@ -22,7 +23,6 @@ from metainformant.visualization.analysis.statistical import (
     roc_curve,
     violin_plot,
 )
-from metainformant.visualization.analysis import statistical as statistical_module
 
 # Check for optional dependencies
 try:

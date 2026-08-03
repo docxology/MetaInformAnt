@@ -20,6 +20,8 @@ from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+_FDA_TABLE_URL = "https://www.fda.gov/drugs/science-and-research/" "table-pharmacogenomic-biomarkers-drug-labeling"
+
 
 # ── Built-in FDA drug label data ──────────────────────────────────────────────
 # Key drugs with pharmacogenomic labeling information.
@@ -37,7 +39,7 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "HLA-B*5701 allele. Screen for HLA-B*5701 allele before starting abacavir.",
         "recommendation": "Do not use abacavir in patients positive for HLA-B*5701.",
         "therapeutic_area": "HIV",
-        "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
+        "fda_table_url": _FDA_TABLE_URL,
     },
     {
         "drug": "carbamazepine",
@@ -53,7 +55,7 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "recommendation": "Screen patients with ancestry in populations with high prevalence of HLA-B*15:02. "
         "Do not use carbamazepine in patients positive for HLA-B*15:02 unless benefit clearly outweighs risk.",
         "therapeutic_area": "Epilepsy",
-        "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
+        "fda_table_url": _FDA_TABLE_URL,
     },
     {
         "drug": "clopidogrel",
@@ -65,9 +67,11 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "section": "Boxed Warning",
         "label_text": "Diminished effectiveness in CYP2C19 poor metabolizers. Tests are available to identify "
         "CYP2C19 genotype. Consider use of another platelet P2Y12 inhibitor in poor metabolizers.",
-        "recommendation": "Consider alternative antiplatelet therapy (prasugrel or ticagrelor) in CYP2C19 poor metabolizers.",
+        "recommendation": (
+            "Consider alternative antiplatelet therapy (prasugrel or ticagrelor) " "in CYP2C19 poor metabolizers."
+        ),
         "therapeutic_area": "Cardiology",
-        "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
+        "fda_table_url": _FDA_TABLE_URL,
     },
     {
         "drug": "codeine",
@@ -81,7 +85,7 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "tonsillectomy/adenoidectomy and had evidence of being CYP2D6 ultrarapid metabolizers.",
         "recommendation": "Avoid use of codeine in CYP2D6 ultrarapid metabolizers. Use alternative analgesics.",
         "therapeutic_area": "Pain Management",
-        "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
+        "fda_table_url": _FDA_TABLE_URL,
     },
     {
         "drug": "warfarin",
@@ -96,7 +100,7 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "known to have CYP2C9 *2 and *3 alleles or VKORC1 A allele.",
         "recommendation": "Consider pharmacogenomic-guided dosing for patients with CYP2C9 and/or VKORC1 variants.",
         "therapeutic_area": "Cardiology",
-        "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
+        "fda_table_url": _FDA_TABLE_URL,
     },
     {
         "drug": "simvastatin",
@@ -109,7 +113,7 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "label_text": "Risk of myopathy/rhabdomyolysis is dose-related and increased by SLCO1B1 *5 allele.",
         "recommendation": "Consider SLCO1B1 genotyping before initiating simvastatin 40mg or 80mg doses.",
         "therapeutic_area": "Cardiology",
-        "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
+        "fda_table_url": _FDA_TABLE_URL,
     },
     {
         "drug": "fluorouracil",
@@ -125,7 +129,7 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "recommendation": "Test for DPYD deficiency before starting fluoropyrimidine therapy. "
         "Avoid in patients with complete DPD deficiency. Reduce dose in partial deficiency.",
         "therapeutic_area": "Oncology",
-        "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
+        "fda_table_url": _FDA_TABLE_URL,
     },
     {
         "drug": "azathioprine",
@@ -140,7 +144,7 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "recommendation": "Consider TPMT and NUDT15 testing before starting thiopurine therapy. "
         "Reduce dose or use alternative in poor metabolizers.",
         "therapeutic_area": "Immunology",
-        "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
+        "fda_table_url": _FDA_TABLE_URL,
     },
     {
         "drug": "tamoxifen",
@@ -155,7 +159,7 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "recommendation": "CYP2D6 poor metabolizers may have reduced benefit from tamoxifen. "
         "Consider aromatase inhibitors as alternative in postmenopausal patients.",
         "therapeutic_area": "Oncology",
-        "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
+        "fda_table_url": _FDA_TABLE_URL,
     },
     {
         "drug": "ivacaftor",
@@ -169,7 +173,7 @@ _FDA_DRUG_LABELS: list[dict[str, Any]] = [
         "that are responsive to ivacaftor. CFTR genotyping is required to determine eligibility.",
         "recommendation": "Confirm presence of a responsive CFTR mutation using FDA-cleared CFTR genotyping test.",
         "therapeutic_area": "Pulmonology",
-        "fda_table_url": "https://www.fda.gov/drugs/science-and-research/table-pharmacogenomic-biomarkers-drug-labeling",
+        "fda_table_url": _FDA_TABLE_URL,
     },
 ]
 

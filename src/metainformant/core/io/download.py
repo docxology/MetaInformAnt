@@ -273,7 +273,7 @@ def _download_ftp(
     start = time.time()
     bytes_written = 0
 
-    with urllib.request.urlopen(url, timeout=timeout) as resp, open(dest, "wb") as fh:
+    with urllib.request.urlopen(url, timeout=timeout) as resp, open(dest, "wb") as fh:  # nosec B310
         while True:
             chunk = resp.read(chunk_size)
             if not chunk:
@@ -599,12 +599,7 @@ def monitor_subprocess_directory_growth(
             _write("running" if rc is None else ("completed" if rc == 0 else "failed"), bytes_done)
             last = now
 
-        if (
-            rc is None
-            and timeout_seconds is not None
-            and timeout_seconds >= 0
-            and now - start_time >= timeout_seconds
-        ):
+        if rc is None and timeout_seconds is not None and timeout_seconds >= 0 and now - start_time >= timeout_seconds:
             errs.append(f"monitor timeout after {timeout_seconds:g} seconds")
             _terminate_monitored_process(process)
             _write("timeout", bytes_done)
@@ -705,12 +700,7 @@ def monitor_subprocess_file_count(
         if heartbeat_interval > 0 and (now - last) >= heartbeat_interval:
             _write("running" if rc is None else ("completed" if rc == 0 else "failed"), done)
             last = now
-        if (
-            rc is None
-            and timeout_seconds is not None
-            and timeout_seconds >= 0
-            and now - start_time >= timeout_seconds
-        ):
+        if rc is None and timeout_seconds is not None and timeout_seconds >= 0 and now - start_time >= timeout_seconds:
             errs.append(f"monitor timeout after {timeout_seconds:g} seconds")
             _terminate_monitored_process(process)
             _write("timeout", done)
@@ -802,12 +792,7 @@ def monitor_subprocess_sample_progress(
         if heartbeat_interval > 0 and (now - last) >= heartbeat_interval:
             _write("running" if rc is None else ("completed" if rc == 0 else "failed"), done)
             last = now
-        if (
-            rc is None
-            and timeout_seconds is not None
-            and timeout_seconds >= 0
-            and now - start_time >= timeout_seconds
-        ):
+        if rc is None and timeout_seconds is not None and timeout_seconds >= 0 and now - start_time >= timeout_seconds:
             errs.append(f"monitor timeout after {timeout_seconds:g} seconds")
             _terminate_monitored_process(process)
             _write("timeout", done)

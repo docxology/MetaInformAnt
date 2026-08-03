@@ -422,7 +422,8 @@ def get_project_root() -> Path:
     Returns:
         Path to project root (inferred from package location)
     """
-    # src/metainformant/core/io/paths.py -> src/metainformant/core/io/ -> src/metainformant/core/ -> src/metainformant/ -> src/ -> root
+    # src/metainformant/core/io/paths.py -> src/metainformant/core/io/ ->
+    # src/metainformant/core/ -> src/metainformant/ -> src/ -> root
     return Path(__file__).resolve().parent.parent.parent.parent.parent
 
 

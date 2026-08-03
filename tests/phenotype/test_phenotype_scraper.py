@@ -18,7 +18,6 @@ import pytest
 from metainformant.core.utils.errors import NetworkError
 from metainformant.phenotype.data.scraper import AntWikiScraper, AntWikiScraperConfig, load_scraper_config
 
-
 _SPECIES = [
     "Camponotus_pennsylvanicus",
     "Formica_rufa",

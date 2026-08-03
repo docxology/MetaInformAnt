@@ -18,12 +18,12 @@ import pytest
 # Ensure src is on path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from metainformant.rna.engine.provenance import write_quant_provenance
 from metainformant.rna.engine.workflow_cleanup import (
     cleanup_fastqs,
     get_quantified_samples,
 )
 from metainformant.rna.engine.workflow_core import AmalgkitWorkflowConfig
-from metainformant.rna.engine.provenance import write_quant_provenance
 
 REPO_ROOT = Path(__file__).parent.parent
 

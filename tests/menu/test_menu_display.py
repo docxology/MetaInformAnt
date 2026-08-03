@@ -116,8 +116,7 @@ class TestGetChoice:
     def test_get_choice_no_validation(self) -> None:
         """Test getting choice without validation."""
         result = _run_child(
-            "from metainformant.menu.ui.display import get_choice; "
-            "print('RESULT=' + get_choice('Choose:'))",
+            "from metainformant.menu.ui.display import get_choice; " "print('RESULT=' + get_choice('Choose:'))",
             input_text="free-form\n",
         )
         assert result.returncode == 0
@@ -135,8 +134,7 @@ class TestGetChoice:
 
     def test_get_choice_keyboard_interrupt(self) -> None:
         """Test handling KeyboardInterrupt."""
-        source = textwrap.dedent(
-            """
+        source = textwrap.dedent("""
             import os
             import signal
             import threading
@@ -149,8 +147,7 @@ class TestGetChoice:
                 get_choice("Choose:")
             except KeyboardInterrupt:
                 print("INTERRUPTED")
-            """
-        )
+            """)
         process = subprocess.Popen(
             [sys.executable, "-c", source],
             stdin=subprocess.PIPE,

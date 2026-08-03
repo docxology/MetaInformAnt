@@ -12,9 +12,7 @@ from metainformant.core.utils.logging import get_logger
 logger = get_logger(__name__)
 
 # Regex to parse BeeWAS sample names
-SAMPLE_RE = re.compile(
-    r"^(?P<colony>[A-Z]\d+)(?P<biological_group_code>G|ITQ|ITW|IV|WORK)_(?P<read>R[12])\.fastq"
-)
+SAMPLE_RE = re.compile(r"^(?P<colony>[A-Z]\d+)(?P<biological_group_code>G|ITQ|ITW|IV|WORK)_(?P<read>R[12])\.fastq")
 STANDALONE_RE = re.compile(
     r"^(?P<colony>[A-Z]\d+)(?P<biological_group_code>G|ITQ|ITW|IV|WORK)_(?P<read>R[12])\.fastq-\d+\.gz$"
 )

@@ -545,9 +545,7 @@ class WorkflowManager(BasePipelineManager):
         the domain-owned manager that injects the real Amalgkit runner.
         """
         if self._run_amalgkit is None:
-            raise RuntimeError(
-                "No Amalgkit runner configured; pass run_amalgkit=... explicitly."
-            )
+            raise RuntimeError("No Amalgkit runner configured; pass run_amalgkit=... explicitly.")
         return self._run_amalgkit(step, params)
 
     # -- Config loading -----------------------------------------------------

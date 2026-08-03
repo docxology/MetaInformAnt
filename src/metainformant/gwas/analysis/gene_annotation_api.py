@@ -36,7 +36,7 @@ def _ncbi_get(url: str) -> dict | list | None:
     """HTTP GET with JSON response; returns None on failure."""
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "metainformant/1.0"})
-        with urllib.request.urlopen(req, timeout=NCBI_TIMEOUT) as resp:
+        with urllib.request.urlopen(req, timeout=NCBI_TIMEOUT) as resp:  # nosec B310
             return json.load(resp)
     except urllib.error.HTTPError as exc:
         logger.debug("NCBI HTTP %d for %s", exc.code, url)

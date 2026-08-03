@@ -111,9 +111,7 @@ class TestConfigBasedProcessing:
             "end_time",
         }
         assert results["downloads"]["test_data"]["status"] == "success"
-        assert (output_dir / "test.json").read_text(encoding="utf-8") == (
-            source.read_text(encoding="utf-8")
-        )
+        assert (output_dir / "test.json").read_text(encoding="utf-8") == (source.read_text(encoding="utf-8"))
         assert (output_dir / "processing_results.json").exists()
 
     def test_run_config_based_workflow(

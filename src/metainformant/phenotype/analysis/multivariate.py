@@ -13,7 +13,7 @@ from typing import Any, Iterable, Sequence
 import numpy as np
 import pandas as pd
 
-from metainformant.phenotype.workflow.ecology_stats import permanova, pcoa
+from metainformant.phenotype.workflow.ecology_stats import pcoa, permanova
 
 try:
     from statsmodels.multivariate.manova import MANOVA

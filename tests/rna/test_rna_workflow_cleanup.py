@@ -14,6 +14,8 @@ from pathlib import Path
 
 import pytest
 
+from metainformant.rna.engine.provenance import write_quant_provenance
+from metainformant.rna.engine.raw_cleanup import reclaim_sample_raw_inputs
 from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
 from metainformant.rna.engine.workflow_cleanup import (
     check_disk_space,
@@ -25,8 +27,6 @@ from metainformant.rna.engine.workflow_cleanup import (
     filter_metadata_for_unquantified,
     get_quantified_samples,
 )
-from metainformant.rna.engine.raw_cleanup import reclaim_sample_raw_inputs
-from metainformant.rna.engine.provenance import write_quant_provenance
 
 # ---------------------------------------------------------------------------
 # Fixtures

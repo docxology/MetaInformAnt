@@ -7,6 +7,7 @@ and transaction management for bioinformatics data storage and retrieval.
 from __future__ import annotations
 
 import contextlib
+import re
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from metainformant.core.utils.logging import get_logger
@@ -220,10 +221,15 @@ class PostgresConnection:
             return 0
 
         try:
+            identifier = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
+            if not identifier.fullmatch(table) or not all(identifier.fullmatch(column) for column in columns):
+                raise ValueError("table and column names must be simple SQL identifiers")
             with conn.cursor() as cursor:
                 # Create placeholders for bulk insert
                 placeholders = ", ".join(["%s"] * len(columns))
-                query = f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders})"
+                # Table and column names are checked against the identifier
+                # pattern immediately above before interpolation.
+                query = f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({placeholders})"  # nosec B608
 
                 # Insert in batches
                 total_inserted = 0

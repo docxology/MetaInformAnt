@@ -3,7 +3,7 @@
 
 This is intentionally separate from broad cleanup commands. It never uses a
 stale progress-table state or a readable table without current provenance as evidence;
-the per-sample 0.16.32 provenance sidecar and a non-empty abundance output are
+the per-sample 0.16.33 provenance sidecar and a non-empty abundance output are
 required.  The default is a dry run.  Pass ``--execute`` to remove the listed
 FASTQ/SRA inputs and write a JSON audit manifest.
 """

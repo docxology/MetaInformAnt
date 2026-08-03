@@ -24,13 +24,8 @@ try:
 except ImportError:
     HAS_MATPLOTLIB = False
 
-# Test numpy dependency
-try:
-    import numpy as np
-
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
+# NumPy is imported above and is a package requirement for these tests.
+HAS_NUMPY = True
 
 
 class TestManhattanPlot:

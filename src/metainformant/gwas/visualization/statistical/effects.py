@@ -1056,7 +1056,10 @@ def allelic_series_plot(
         negative_effects = sum(1 for b in betas if b < 0)
         significant = sum(1 for p in p_values if p < 5e-8)
 
-        stats_text = f"Variants: {len(variants)} | Positive: {positive_effects} | Negative: {negative_effects} | Significant: {significant}"
+        stats_text = (
+            f"Variants: {len(variants)} | Positive: {positive_effects} | "
+            f"Negative: {negative_effects} | Significant: {significant}"
+        )
         fig.text(
             0.5,
             0.02,

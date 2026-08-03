@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from metainformant.visualization.analysis import dimred as dimred_module
 from metainformant.visualization.analysis.dimred import (
     biplot,
     plot_pca,
@@ -16,7 +17,6 @@ from metainformant.visualization.analysis.dimred import (
     plot_tsne,
     plot_umap,
 )
-from metainformant.visualization.analysis import dimred as dimred_module
 
 # Check for optional dependencies
 try:

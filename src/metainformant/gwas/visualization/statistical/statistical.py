@@ -721,7 +721,12 @@ def volcano_plot(
             if abs(effect) > effect_size_threshold and p < significance_threshold
         )
 
-        stats_text = f"Total variants: {len(effect_sizes)}\nSignificant: {n_significant}\nLarge effect: {n_large_effect}\nBoth: {n_both}"
+        stats_text = (
+            f"Total variants: {len(effect_sizes)}\n"
+            f"Significant: {n_significant}\n"
+            f"Large effect: {n_large_effect}\n"
+            f"Both: {n_both}"
+        )
         ax.text(
             0.02,
             0.98,

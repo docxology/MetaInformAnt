@@ -114,7 +114,8 @@ def calculate_md5(file_path: Path, chunk_size: int = 4096) -> str:
     Returns:
         Hex digest of the MD5 checksum.
     """
-    md5_hash = hashlib.md5()
+    # MD5 is used only for transfer-integrity comparison, never authentication.
+    md5_hash = hashlib.md5(usedforsecurity=False)
     with open(file_path, "rb") as f:
         for chunk in iter(lambda: f.read(chunk_size), b""):
             md5_hash.update(chunk)
@@ -268,7 +269,7 @@ class ENADownloader:
 
         for attempt in range(self.api_retries + 1):
             try:
-                with urllib.request.urlopen(api_url, timeout=30) as response:
+                with urllib.request.urlopen(api_url, timeout=30) as response:  # nosec B310
                     content = response.read().decode("utf-8")
                     lines = content.strip().split("\n")
 
@@ -468,8 +469,7 @@ class ENADownloader:
 
                 retry_events += 1
                 delay_seconds = min(
-                    self.retry_delay_seconds
-                    * (2 ** min(max(consecutive_no_progress - 1, 0), 4)),
+                    self.retry_delay_seconds * (2 ** min(max(consecutive_no_progress - 1, 0), 4)),
                     60,
                 )
                 remaining_seconds = deadline - time.monotonic()

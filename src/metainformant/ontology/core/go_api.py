@@ -68,7 +68,7 @@ def fetch_go_term(go_id: str, *, rate_limit_s: float = _DEFAULT_RATE_LIMIT_S) ->
         url = f"{_QUICKGO_BASE}/ontology/go/terms/{go_id}"
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         time.sleep(rate_limit_s)
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
             data = json.loads(resp.read().decode())
 
         results = data.get("results", [])
@@ -175,7 +175,7 @@ def fetch_gene_go_annotations(
         url = f"{_QUICKGO_BASE}/annotation/search?{query}"
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         time.sleep(rate_limit_s)
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=15) as resp:  # nosec B310
             data = json.loads(resp.read().decode())
 
         annotations: list[dict[str, Any]] = []
@@ -350,7 +350,7 @@ def build_taxon_go_gene_sets(
         try:
             req = urllib.request.Request(url, headers={"Accept": "application/json"})
             time.sleep(rate_limit_s)
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with urllib.request.urlopen(req, timeout=15) as resp:  # nosec B310
                 data = json.loads(resp.read().decode())
         except Exception as exc:
             logger.warning("build_taxon_go_gene_sets page %d failed: %s", page, exc)
@@ -431,7 +431,7 @@ def map_symbols_to_uniprot(
         try:
             req = urllib.request.Request(url)
             time.sleep(rate_limit_s)
-            with urllib.request.urlopen(req, timeout=15) as resp:
+            with urllib.request.urlopen(req, timeout=15) as resp:  # nosec B310
                 data = json.loads(resp.read().decode())
 
             accessions = [res.get("primaryAccession") for res in data.get("results", []) if res.get("primaryAccession")]

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the current Amalgkit 0.16.32 workflow for one configured species.
+"""Run the current Amalgkit 0.16.33 workflow for one configured species.
 
 This is a convenience wrapper around the same orchestrator used by
 ``run_all_species.py``.  It intentionally accepts only current workflow

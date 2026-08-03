@@ -59,8 +59,6 @@ def compare_gwas_studies(
         results = study_data.get("results")
         if isinstance(results, dict):
             # Convert dict to DataFrame if needed
-            import pandas as pd
-
             results = pd.DataFrame(results)
 
         if hasattr(results, "columns") and "CHR" in results.columns and "P" in results.columns:
@@ -75,8 +73,6 @@ def compare_gwas_studies(
     for i, (study_name, study_data) in enumerate(study_results.items()):
         results = study_data.get("results")
         if isinstance(results, dict):
-            import pandas as pd
-
             results = pd.DataFrame(results)
 
         if hasattr(results, "columns") and "P" in results.columns:

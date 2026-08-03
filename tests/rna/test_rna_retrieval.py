@@ -239,9 +239,7 @@ class TestENADownloaderIntegrity:
             api_retries=1,
             api_retry_delay_seconds=1,
         )
-        assert downloader.get_fastq_urls("SRR_FAKE") == [
-            "https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR_FAKE.fastq.gz"
-        ]
+        assert downloader.get_fastq_urls("SRR_FAKE") == ["https://ftp.sra.ebi.ac.uk/vol1/fastq/SRR_FAKE.fastq.gz"]
         assert attempts == 2
 
     def test_interrupted_transfer_retries_from_retained_partial(self, tmp_path: Path, monkeypatch) -> None:
@@ -289,9 +287,7 @@ class TestENADownloaderIntegrity:
         assert all(command[command.index("--continue-at") + 1] == "-" for command in calls)
         assert files[0].read_bytes() == payload
 
-    def test_transient_ena_403_is_bounded_and_static_404_is_not_retried(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_transient_ena_403_is_bounded_and_static_404_is_not_retried(self, tmp_path: Path, monkeypatch) -> None:
         """Service throttling is retried, while a static missing object fails immediately."""
 
         class FakeDownloader(ena_downloader.ENADownloader):
@@ -324,9 +320,7 @@ class TestENADownloaderIntegrity:
         assert ok_404 is False
         assert len(calls) == 4
 
-    def test_productive_interruptions_reset_no_progress_retry_budget(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_productive_interruptions_reset_no_progress_retry_budget(self, tmp_path: Path, monkeypatch) -> None:
         """A large file may need many productive range resumes within its deadline."""
 
         class FakeDownloader(ena_downloader.ENADownloader):

@@ -754,9 +754,7 @@ class TestDetectLengthBias:
         with pytest.raises(ValueError, match="cannot be empty"):
             detect_length_bias(pd.DataFrame(), lengths)
 
-    def test_nonpositive_gene_lengths_raise(
-        self, count_matrix: pd.DataFrame, gene_lengths_series: pd.Series
-    ) -> None:
+    def test_nonpositive_gene_lengths_raise(self, count_matrix: pd.DataFrame, gene_lengths_series: pd.Series) -> None:
         """Matched gene lengths must be positive."""
         lengths = gene_lengths_series.copy()
         lengths.loc["gene_0"] = 0

@@ -61,6 +61,7 @@ GRID_COLOR = "#e2e8f0"
 BORDER_COLOR = "#cbd5e1"
 MUTED = "#64748b"
 
+
 # Nicer display names (italic genus abbreviation + species)
 def _display_name(sp: str) -> str:
     parts = sp.replace("_", " ").split()

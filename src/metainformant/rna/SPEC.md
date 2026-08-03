@@ -3,7 +3,7 @@
 ## Scope
 
 Version-pinned RNA-seq acquisition, quantification, evidence validation, and
-downstream analysis for the current Amalgkit 0.16.32 contract.
+downstream analysis for the current Amalgkit 0.16.33 contract.
 
 ## Current packages
 

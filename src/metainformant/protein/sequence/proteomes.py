@@ -6,8 +6,8 @@ taxonomy IDs, and proteome-level analysis.
 
 from __future__ import annotations
 
-import re
 import os
+import re
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
@@ -120,7 +120,12 @@ def get_proteome_metadata(taxon_id: str) -> Dict[str, Any]:
     params = {"taxid": taxon_id, "size": 1}  # Get first result only
 
     try:
-        response = requests.get(PROTEOMES_API_URL, params=params, timeout=get_protein_api_timeout())
+        # The shared helper validates a positive, bounded campaign timeout.
+        response = requests.get(  # nosec B113
+            PROTEOMES_API_URL,
+            params=params,
+            timeout=get_protein_api_timeout(),
+        )
         response.raise_for_status()
 
         data = response.json()
@@ -213,7 +218,12 @@ def download_proteome_fasta(taxon_id: str, output_path: Union[str, Path], includ
         # UniProt proteome download URL
         params = _proteome_stream_params(proteome_id, include_isoforms=include_isoforms)
 
-        response = requests.get(PROTEOME_STREAM_URL, params=params, timeout=get_protein_api_timeout(default=60.0))
+        # The shared helper validates a positive, bounded campaign timeout.
+        response = requests.get(  # nosec B113
+            PROTEOME_STREAM_URL,
+            params=params,
+            timeout=get_protein_api_timeout(default=60.0),
+        )
         response.raise_for_status()
 
         # Write FASTA content to file

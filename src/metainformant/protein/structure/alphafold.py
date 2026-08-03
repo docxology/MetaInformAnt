@@ -77,7 +77,11 @@ def fetch_alphafold_model(uniprot_acc: str, out_dir: Path, *, version: int = 4, 
     logger.info(f"Downloading AlphaFold model for {uniprot_acc}")
 
     try:
-        response = requests.get(url, timeout=get_protein_api_timeout())
+        # The shared helper validates a positive, bounded campaign timeout.
+        response = requests.get(  # nosec B113
+            url,
+            timeout=get_protein_api_timeout(),
+        )
         response.raise_for_status()
 
         with open(output_path, "wb") as f:

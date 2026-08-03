@@ -119,7 +119,7 @@ def _download_from_ftp(accession: str, output_dir: Path) -> Path:
     Raises:
         RuntimeError: If the accession directory is not found on the FTP server
     """
-    import ftplib
+    import ftplib  # nosec B402 - retained as a documented NCBI legacy fallback; primary path is HTTPS.
 
     # Extract the 9-digit numeric portion after the prefix (e.g. "003254395")
     prefix = accession[:3]  # "GCF" or "GCA"
@@ -129,7 +129,7 @@ def _download_from_ftp(accession: str, output_dir: Path) -> Path:
     genome_dir = output_dir / accession
     genome_dir.mkdir(exist_ok=True)
 
-    ftp = ftplib.FTP("ftp.ncbi.nlm.nih.gov")
+    ftp = ftplib.FTP("ftp.ncbi.nlm.nih.gov")  # nosec B321 - NCBI fallback endpoint.
     ftp.login()
 
     try:
@@ -216,7 +216,7 @@ def _download_dbsnp(output_dir: Path, chromosome: str | None = None) -> Path:
         Downloads from NCBI FTP. Full database is very large (~40GB compressed).
         Consider downloading specific chromosomes instead.
     """
-    import ftplib
+    import ftplib  # nosec B402 - retained as a documented NCBI legacy fallback; primary path is HTTPS.
 
     ftp_host = "ftp.ncbi.nih.gov"
     ftp_path = "/snp/latest_release/VCF"
@@ -227,7 +227,7 @@ def _download_dbsnp(output_dir: Path, chromosome: str | None = None) -> Path:
     logger.info(f"Connecting to {ftp_host} for dbSNP download...")
 
     try:
-        ftp = ftplib.FTP(ftp_host)
+        ftp = ftplib.FTP(ftp_host)  # nosec B321 - NCBI fallback endpoint.
         ftp.login()
         ftp.cwd(ftp_path)
 
@@ -280,7 +280,7 @@ def _download_1000genomes(output_dir: Path, chromosome: str | None = None, popul
     Note:
         Data from Phase 3 release (2013). For newer data, consider gnomAD.
     """
-    import ftplib
+    import ftplib  # nosec B402 - retained as a documented NCBI legacy fallback; primary path is HTTPS.
 
     ftp_host = "ftp.1000genomes.ebi.ac.uk"
     ftp_path = "/vol1/ftp/release/20130502"
@@ -291,7 +291,7 @@ def _download_1000genomes(output_dir: Path, chromosome: str | None = None, popul
     logger.info(f"Connecting to {ftp_host} for 1000 Genomes download...")
 
     try:
-        ftp = ftplib.FTP(ftp_host)
+        ftp = ftplib.FTP(ftp_host)  # nosec B321 - legacy 1000 Genomes endpoint.
         ftp.login()
         ftp.cwd(ftp_path)
 
@@ -386,7 +386,10 @@ def _download_sra_from_ena(accession: str, output_dir: Path, threads: int) -> Pa
 
     from metainformant.core.io.download import download_with_progress
 
-    api_url = f"https://www.ebi.ac.uk/ena/portal/api/filereport?accession={accession}&result=read_run&fields=fastq_ftp&format=json"
+    api_url = (
+        "https://www.ebi.ac.uk/ena/portal/api/filereport?"
+        f"accession={accession}&result=read_run&fields=fastq_ftp&format=json"
+    )
 
     try:
         resp = requests.get(api_url, timeout=15)
@@ -712,7 +715,7 @@ def download_annotation(accession: str, output_dir: str | Path) -> Path:
 
         # FTP fallback: download GFF3 annotation directly
         try:
-            import ftplib
+            import ftplib  # nosec B402 - retained as a documented NCBI legacy fallback; primary path is HTTPS.
 
             prefix = accession[:3]
             digits = accession.split("_")[1].split(".")[0]
@@ -721,7 +724,7 @@ def download_annotation(accession: str, output_dir: str | Path) -> Path:
             annotation_dir = output_dir / f"{accession}_annotation"
             annotation_dir.mkdir(exist_ok=True)
 
-            ftp = ftplib.FTP("ftp.ncbi.nlm.nih.gov")
+            ftp = ftplib.FTP("ftp.ncbi.nlm.nih.gov")  # nosec B321 - NCBI fallback endpoint.
             ftp.login()
             try:
                 ftp.cwd(ftp_dir)

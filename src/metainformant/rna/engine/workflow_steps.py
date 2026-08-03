@@ -355,9 +355,7 @@ def _validate_current_downstream_prerequisites(
     config: AmalgkitWorkflowConfig,
 ) -> Optional[str]:
     """Validate inputs for current Amalgkit filtering/normalization commands."""
-    if step_name == "cstmm" and not (
-        step_params.get("orthogroup_table") or step_params.get("dir_busco")
-    ):
+    if step_name == "cstmm" and not (step_params.get("orthogroup_table") or step_params.get("dir_busco")):
         return "PREREQUISITE CHECK FAILED: cstmm requires orthogroup_table or dir_busco."
 
     if step_name != "cstmm":
@@ -642,8 +640,7 @@ def log_workflow_summary(
             "    2. Check the configured input_dir for merged expression tables"
         ),
         "cstmm": (
-            "    1. Provide orthogroup_table or dir_busco\n"
-            "    2. Confirm per-species count tables are available"
+            "    1. Provide orthogroup_table or dir_busco\n" "    2. Confirm per-species count tables are available"
         ),
         "csfilter": (
             "    1. Ensure current cross-species inputs are prepared\n"

@@ -9,7 +9,6 @@ import pytest
 from metainformant.ml.llm.ollama.client import ChatMessage, OllamaClient
 from metainformant.ml.llm.ollama.config import OllamaConfig
 
-
 # The local Ollama server is a single shared integration resource. Group all
 # real model calls onto one xdist worker so they cannot queue behind each
 # other. Unrelated real integration tests still share host resources, so the

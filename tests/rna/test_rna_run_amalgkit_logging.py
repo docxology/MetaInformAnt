@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+
 @pytest.mark.external_tool
 @pytest.mark.network
 def test_run_amalgkit_writes_logs(tmp_path: Path):

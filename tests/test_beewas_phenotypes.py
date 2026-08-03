@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-
 PIPELINE_DIR = Path(__file__).resolve().parents[1] / "scripts" / "gwas" / "pipelines"
 if str(PIPELINE_DIR) not in sys.path:
     sys.path.insert(0, str(PIPELINE_DIR))
@@ -17,19 +16,18 @@ if str(PIPELINE_DIR) not in sys.path:
 from beewas_phenotypes import (  # noqa: E402
     bh_fdr,
     bootstrap_mean_ci,
-    build_phenotype_knn,
     build_model_results,
+    build_phenotype_knn,
     build_phenotype_statistics,
     build_trait_readiness,
     curate_beewas_phenotypes,
-    q_value_label,
     nested_variance_partition,
     normalize_colony,
     permutation_anova_p,
+    q_value_label,
     sample_parts,
     standardized_mean_difference,
 )
-
 
 pytest.importorskip("openpyxl")
 
@@ -49,9 +47,32 @@ def write_fixture_workbook(path: Path) -> None:
 
         modified = pd.DataFrame(
             [
-                ["This is per-nestmate phenotypic measurements (Queen score, etc) and their DNA extraction plate ID.", None, None, None, None, None, None, None, None, None],
+                [
+                    "This is per-nestmate phenotypic measurements (Queen score, etc) "
+                    "and their DNA extraction plate ID.",
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                ],
                 [None] * 10,
-                ["Strain", "colony-by-strain", "Sample ID (plate)", "SampleID_LessIV", "Phenotype", "DaysToEmerge", "QueenScore", "BEE#", "Sample ID (row)", "Sample ID (column)"],
+                [
+                    "Strain",
+                    "colony-by-strain",
+                    "Sample ID (plate)",
+                    "SampleID_LessIV",
+                    "Phenotype",
+                    "DaysToEmerge",
+                    "QueenScore",
+                    "BEE#",
+                    "Sample ID (row)",
+                    "Sample ID (column)",
+                ],
                 ["C", "C1", "IV1", 1, "Q", 14, 3, 1, "H", 12],
                 ["C", "C1", "IV2", 2, "W", 16, 0, 1, "H", 5],
                 ["M", "m10", "IV3", 3, "Q", 12, 2, 1, "A", 1],
@@ -111,7 +132,10 @@ def test_curate_beewas_phenotypes_parses_and_writes_outputs(tmp_path: Path) -> N
     manifest = tmp_path / "manifest.tsv"
     manifest.write_text(
         "sample_id\tlocal_r1\tlocal_r2\n"
-        + "\n".join(f"{sid}\t/tmp/{sid}_R1.fastq.gz\t/tmp/{sid}_R2.fastq.gz" for sid in ["C1G", "C1ITQ", "C1WORK", "M10ITW", "M10IV"])
+        + "\n".join(
+            f"{sid}\t/tmp/{sid}_R1.fastq.gz\t/tmp/{sid}_R2.fastq.gz"
+            for sid in ["C1G", "C1ITQ", "C1WORK", "M10ITW", "M10IV"]
+        )
         + "\n",
         encoding="utf-8",
     )
@@ -129,7 +153,12 @@ def test_curate_beewas_phenotypes_parses_and_writes_outputs(tmp_path: Path) -> N
     assert result.qc_summary["metadata_dna_exact_match"] is True
     assert result.qc_summary["manifest_sample_exact_match"] is True
     assert result.sample_phenotypes["association_ready"].all()
-    assert "C1G" in result.join_report.loc[result.join_report["check"].eq("metadata_colony_column_mismatches"), "left_only"].item()
+    assert (
+        "C1G"
+        in result.join_report.loc[
+            result.join_report["check"].eq("metadata_colony_column_mismatches"), "left_only"
+        ].item()
+    )
     assert result.bee_level["colony"].tolist() == ["C1", "C1", "M10"]
     assert result.paths["sample_phenotypes"].exists()
     assert result.paths["trait_dictionary"].exists()
@@ -209,7 +238,9 @@ def test_bh_fdr_and_bootstrap_are_deterministic() -> None:
 
 
 def test_nested_variance_partition_small_and_estimable_cases() -> None:
-    small = pd.DataFrame({"population": ["C", "C"], "colony": ["C1", "C1"], "phenotype": ["Q", "Q"], "days_to_emerge": [14, 15]})
+    small = pd.DataFrame(
+        {"population": ["C", "C"], "colony": ["C1", "C1"], "phenotype": ["Q", "Q"], "days_to_emerge": [14, 15]}
+    )
     small_row = nested_variance_partition(small, "days_to_emerge")
 
     assert small_row["n"] == 2
@@ -265,7 +296,14 @@ def test_phenotype_statistics_outputs_expected_schemas(tmp_path: Path) -> None:
         "mean",
         "cv",
     }.issubset(result.variability_summary.columns)
-    assert {"component_type", "trait", "phenotype_class", "test_status", "dominant_variance_component", "welch_anova_p_q_label"}.issubset(result.variance_components.columns)
+    assert {
+        "component_type",
+        "trait",
+        "phenotype_class",
+        "test_status",
+        "dominant_variance_component",
+        "welch_anova_p_q_label",
+    }.issubset(result.variance_components.columns)
     assert {
         "trait",
         "trait_label",
@@ -280,7 +318,9 @@ def test_phenotype_statistics_outputs_expected_schemas(tmp_path: Path) -> None:
         "test_status",
         "effective_unit_warning",
     }.issubset(result.pairwise_contrasts.columns)
-    assert {"trait", "trait_type", "role", "trait_tier", "trait_grain", "eligible_after_review"}.issubset(result.gwas_candidate_traits.columns)
+    assert {"trait", "trait_type", "role", "trait_tier", "trait_grain", "eligible_after_review"}.issubset(
+        result.gwas_candidate_traits.columns
+    )
     assert {"sample_id", "gwas_trait_mode", "phenotype_reviewed"}.issubset(result.sample_gwas_trait_matrix.columns)
     assert {
         "trait",
@@ -300,20 +340,53 @@ def test_phenotype_statistics_outputs_expected_schemas(tmp_path: Path) -> None:
         "recommended_gwas_model",
     }.issubset(result.trait_readiness.columns)
     assert {"trait", "model_formula", "recommended_gwas_model", "review_status"}.issubset(result.model_formulae.columns)
-    assert {"test_family", "trait", "model_status", "q_value", "q_value_label", "ci95_low", "ci95_crosses_zero"}.issubset(result.model_results.columns)
-    assert {"trait", "permutation_p_value", "n_permutations", "permutation_p_q_label"}.issubset(result.permutation_tests.columns)
-    assert {"fertility_status", "is_queen_like", "is_worker", "strain_fertility_status"}.issubset(result.sample_phenotypes.columns)
-    assert set(result.sample_phenotypes["fertility_status"]) >= {"queen_like", "worker_like", "non_queen_like_treatment"}
+    assert {
+        "test_family",
+        "trait",
+        "model_status",
+        "q_value",
+        "q_value_label",
+        "ci95_low",
+        "ci95_crosses_zero",
+    }.issubset(result.model_results.columns)
+    assert {"trait", "permutation_p_value", "n_permutations", "permutation_p_q_label"}.issubset(
+        result.permutation_tests.columns
+    )
+    assert {"fertility_status", "is_queen_like", "is_worker", "strain_fertility_status"}.issubset(
+        result.sample_phenotypes.columns
+    )
+    assert set(result.sample_phenotypes["fertility_status"]) >= {
+        "queen_like",
+        "worker_like",
+        "non_queen_like_treatment",
+    }
     assert set(result.bee_level["fertility_status"]) == {"queen_like", "worker_like"}
     assert {"analysis_grain", "entity_id", "fertility_status"}.issubset(result.multivariate_trait_matrix.columns)
-    assert {"analysis_grain", "trait", "included", "exclusion_reason", "effective_unit_warning"}.issubset(result.multivariate_trait_metadata.columns)
-    assert {"analysis_grain", "test_family", "term", "test_status", "q_value_label"}.issubset(result.multivariate_tests.columns)
+    assert {"analysis_grain", "trait", "included", "exclusion_reason", "effective_unit_warning"}.issubset(
+        result.multivariate_trait_metadata.columns
+    )
+    assert {"analysis_grain", "test_family", "term", "test_status", "q_value_label"}.issubset(
+        result.multivariate_tests.columns
+    )
     assert {"analysis_grain", "entity_id", "PCoA1"}.issubset(result.multivariate_ordination.columns)
     assert {"analysis_grain", "trait", "axis", "loading", "abs_loading"}.issubset(result.multivariate_loadings.columns)
-    assert {"analysis_grain", "term", "group", "mean_distance_to_centroid"}.issubset(result.multivariate_dispersion.columns)
-    assert {"colony", "distance_to_strain_centroid", "distance_to_global_centroid"}.issubset(result.colony_multivariate_effects.columns)
-    assert {"sample_id", "neighbor_sample_id", "distance", "k_effective", "traits_used", "same_population"}.issubset(result.phenotype_knn_neighbors.columns)
-    assert {"dimension", "observed_same_fraction", "expected_same_fraction", "enrichment", "q_value_label", "signal_status"}.issubset(result.phenotype_knn_signal_summary.columns)
+    assert {"analysis_grain", "term", "group", "mean_distance_to_centroid"}.issubset(
+        result.multivariate_dispersion.columns
+    )
+    assert {"colony", "distance_to_strain_centroid", "distance_to_global_centroid"}.issubset(
+        result.colony_multivariate_effects.columns
+    )
+    assert {"sample_id", "neighbor_sample_id", "distance", "k_effective", "traits_used", "same_population"}.issubset(
+        result.phenotype_knn_neighbors.columns
+    )
+    assert {
+        "dimension",
+        "observed_same_fraction",
+        "expected_same_fraction",
+        "enrichment",
+        "q_value_label",
+        "signal_status",
+    }.issubset(result.phenotype_knn_signal_summary.columns)
     assert {
         "rank",
         "within_top_n",
@@ -328,18 +401,44 @@ def test_phenotype_statistics_outputs_expected_schemas(tmp_path: Path) -> None:
         "interpretation_guardrail",
     }.issubset(result.phenotype_signal_dimensions.columns)
     assert {"dna_ng_per_ul", "total_dna_ng", "elution_volume_ul"}.issubset(result.sample_gwas_trait_matrix.columns)
-    assert result.trait_readiness.loc[result.trait_readiness["trait"].eq("dna_ng_per_ul"), "trait_tier"].item() == "qc_covariate"
-    assert bool(result.trait_readiness.loc[result.trait_readiness["trait"].eq("dna_ng_per_ul"), "qc_or_covariate_only"].item()) is True
-    assert bool(result.trait_readiness.loc[result.trait_readiness["trait"].eq("is_worker"), "blocked_before_review"].item()) is True
-    assert result.trait_readiness.loc[result.trait_readiness["trait"].eq("days_to_emerge_mean_q"), "phenotype_data_level"].item() == "colony_grain"
+    assert (
+        result.trait_readiness.loc[result.trait_readiness["trait"].eq("dna_ng_per_ul"), "trait_tier"].item()
+        == "qc_covariate"
+    )
+    assert (
+        bool(
+            result.trait_readiness.loc[
+                result.trait_readiness["trait"].eq("dna_ng_per_ul"), "qc_or_covariate_only"
+            ].item()
+        )
+        is True
+    )
+    assert (
+        bool(
+            result.trait_readiness.loc[result.trait_readiness["trait"].eq("is_worker"), "blocked_before_review"].item()
+        )
+        is True
+    )
+    assert (
+        result.trait_readiness.loc[
+            result.trait_readiness["trait"].eq("days_to_emerge_mean_q"), "phenotype_data_level"
+        ].item()
+        == "colony_grain"
+    )
     assert result.phenotype_statistics_summary["stats_profile"] == "compact"
     assert result.phenotype_statistics_summary["bootstrap_replicates"] == 50
     assert result.phenotype_statistics_summary["review_gated_endpoint_count"] > 0
     assert result.phenotype_statistics_summary["multivariate_permutations"] == 99
-    assert result.phenotype_statistics_summary["multivariate_trait_matrix_rows"] == len(result.multivariate_trait_matrix)
+    assert result.phenotype_statistics_summary["multivariate_trait_matrix_rows"] == len(
+        result.multivariate_trait_matrix
+    )
     assert result.phenotype_statistics_summary["phenotype_knn_signal_rows"] == len(result.phenotype_knn_signal_summary)
-    assert result.phenotype_statistics_summary["phenotype_signal_dimension_rows"] == len(result.phenotype_signal_dimensions)
-    assert "Phenotype Statistical Handoff" in result.paths["phenotype_plaintext_statistics_md"].read_text(encoding="utf-8")
+    assert result.phenotype_statistics_summary["phenotype_signal_dimension_rows"] == len(
+        result.phenotype_signal_dimensions
+    )
+    assert "Phenotype Statistical Handoff" in result.paths["phenotype_plaintext_statistics_md"].read_text(
+        encoding="utf-8"
+    )
 
     direct = build_phenotype_statistics(
         result.bee_level,
@@ -380,7 +479,9 @@ def test_trait_readiness_and_model_helpers_are_deterministic(tmp_path: Path) -> 
     assert bool(readiness.loc[readiness["trait"].eq("is_worker"), "statistically_estimable"].item()) is False
     assert "weak_binary_balance" in readiness.loc[readiness["trait"].eq("is_worker"), "blocked_reason"].item()
     assert readiness.loc[readiness["trait"].eq("is_worker"), "review_gate_reason"].item() == "human_review_required"
-    assert readiness.loc[readiness["trait"].eq("is_worker"), "recommended_gwas_model"].item().startswith("binary/logistic")
+    assert (
+        readiness.loc[readiness["trait"].eq("is_worker"), "recommended_gwas_model"].item().startswith("binary/logistic")
+    )
     assert readiness.loc[readiness["trait"].eq("days_to_emerge_mean_q"), "duplicated_by_colony"].item()
     assert readiness.loc[readiness["trait"].eq("days_to_emerge_mean_q"), "effective_colony_count"].item() == 2
     assert readiness.loc[readiness["trait"].eq("is_worker"), "effective_analysis_unit_count"].item() == 5
@@ -428,8 +529,12 @@ def test_phenotype_knn_outputs_are_deterministic(tmp_path: Path) -> None:
         phenotype_min_group_size=1,
     )
 
-    first_neighbors, first_summary = build_phenotype_knn(result.sample_phenotypes, k=2, min_group_size=1, n_permutations=25)
-    second_neighbors, second_summary = build_phenotype_knn(result.sample_phenotypes, k=2, min_group_size=1, n_permutations=25)
+    first_neighbors, first_summary = build_phenotype_knn(
+        result.sample_phenotypes, k=2, min_group_size=1, n_permutations=25
+    )
+    second_neighbors, second_summary = build_phenotype_knn(
+        result.sample_phenotypes, k=2, min_group_size=1, n_permutations=25
+    )
 
     pd.testing.assert_frame_equal(first_neighbors, second_neighbors)
     pd.testing.assert_frame_equal(first_summary, second_summary)

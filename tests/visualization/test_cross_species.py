@@ -21,9 +21,7 @@ def _divergence_matrix() -> pd.DataFrame:
     )
 
 
-def test_divergence_heatmap_uses_full_correlation_divergence_scale(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_divergence_heatmap_uses_full_correlation_divergence_scale(tmp_path: Path, monkeypatch) -> None:
     """Heatmaps must not clip valid divergences above 0.75."""
     captured: dict[str, object] = {}
     original_heatmap = cross_species.sns.heatmap
@@ -57,10 +55,7 @@ def test_cividis_annotations_select_readable_contrast() -> None:
         position = value / 2.0
         background = cross_species.matplotlib.colormaps["cividis"](position)[:3]
         foreground_hex = cross_species._cividis_annotation_color(float(value))
-        foreground = tuple(
-            int(foreground_hex[index : index + 2], 16) / 255
-            for index in (1, 3, 5)
-        )
+        foreground = tuple(int(foreground_hex[index : index + 2], 16) / 255 for index in (1, 3, 5))
         background_luminance = cross_species._relative_luminance(background)
         foreground_luminance = cross_species._relative_luminance(foreground)
         contrast = (max(background_luminance, foreground_luminance) + 0.05) / (
@@ -69,9 +64,7 @@ def test_cividis_annotations_select_readable_contrast() -> None:
         assert contrast >= 4.5
 
 
-def test_combined_summary_uses_full_correlation_divergence_scale(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_combined_summary_uses_full_correlation_divergence_scale(tmp_path: Path, monkeypatch) -> None:
     """The combined manuscript figure must use the same fixed scale."""
     captured: dict[str, object] = {}
     original_heatmap = cross_species.sns.heatmap
@@ -91,9 +84,7 @@ def test_combined_summary_uses_full_correlation_divergence_scale(
     plt.close("all")
 
 
-def test_cross_species_clustering_uses_average_linkage(
-    tmp_path: Path, monkeypatch
-) -> None:
+def test_cross_species_clustering_uses_average_linkage(tmp_path: Path, monkeypatch) -> None:
     """Correlation-derived dissimilarities must not be passed to Ward linkage."""
 
     methods: list[str] = []
@@ -104,12 +95,8 @@ def test_cross_species_clustering_uses_average_linkage(
         return original_linkage(values, method=method, *args, **kwargs)
 
     monkeypatch.setattr(cross_species, "linkage", spy_linkage)
-    cross_species.plot_divergence_heatmap(
-        _divergence_matrix(), tmp_path / "heatmap.png"
-    )
-    cross_species.plot_dendrogram(
-        _divergence_matrix(), tmp_path / "dendrogram.png"
-    )
+    cross_species.plot_divergence_heatmap(_divergence_matrix(), tmp_path / "heatmap.png")
+    cross_species.plot_dendrogram(_divergence_matrix(), tmp_path / "dendrogram.png")
 
     assert methods == ["average", "average"]
     plt.close("all")

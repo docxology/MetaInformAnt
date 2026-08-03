@@ -98,7 +98,9 @@ _CRITERIA_DESCRIPTIONS: dict[str, str] = {
     "single or multi-exon deletion) in gene where LOF is a known mechanism of disease",
     "PS1": "Same amino acid change as a previously established pathogenic variant regardless of nucleotide change",
     "PS2": "De novo (both maternity and paternity confirmed) in patient with disease and no family history",
-    "PS3": "Well-established in vitro or in vivo functional studies supportive of a damaging effect on the gene product",
+    "PS3": (
+        "Well-established in vitro or in vivo functional studies supportive of a " "damaging effect on the gene product"
+    ),
     "PS4": "Prevalence of variant in affected individuals significantly increased compared to controls",
     "PM1": "Located in a mutational hot spot and/or critical/well-established functional domain",
     "PM2": "Absent from controls (or at extremely low frequency in gnomAD)",

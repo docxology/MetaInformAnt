@@ -6,10 +6,10 @@ functional site annotations from the EMBL-EBI InterPro database.
 
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
 from typing import Any, Dict, List, Optional
 
 import requests
+from defusedxml import ElementTree as ET
 
 from metainformant.core.utils import logging
 from metainformant.protein._network import get_protein_api_timeout
@@ -44,9 +44,7 @@ def _interpro_entry_from_element(element: ET.Element) -> Optional[Dict[str, Any]
             return {
                 "interpro_id": accession,
                 "name": (
-                    candidate.attrib.get("name")
-                    or candidate.attrib.get("desc")
-                    or candidate.attrib.get("description")
+                    candidate.attrib.get("name") or candidate.attrib.get("desc") or candidate.attrib.get("description")
                 ),
                 "type": candidate.attrib.get("type"),
                 "database": candidate.attrib.get("dbname") or candidate.attrib.get("database"),
@@ -97,7 +95,11 @@ def fetch_interpro_domains(uniprot_id: str) -> List[Dict[str, Any]]:
     url = f"https://www.ebi.ac.uk/interpro/api/entry/interpro/protein/UniProt/{uniprot_id}"
 
     try:
-        response = requests.get(url, timeout=get_protein_api_timeout())
+        # The shared helper validates a positive, bounded campaign timeout.
+        response = requests.get(  # nosec B113
+            url,
+            timeout=get_protein_api_timeout(),
+        )
         response.raise_for_status()
 
         data = response.json()
@@ -144,7 +146,11 @@ def fetch_interpro_by_accession(interpro_id: str) -> Optional[Dict[str, Any]]:
     url = f"https://www.ebi.ac.uk/interpro/api/entry/InterPro/{interpro_id}"
 
     try:
-        response = requests.get(url, timeout=get_protein_api_timeout())
+        # The shared helper validates a positive, bounded campaign timeout.
+        response = requests.get(  # nosec B113
+            url,
+            timeout=get_protein_api_timeout(),
+        )
         response.raise_for_status()
 
         data = response.json()
@@ -191,7 +197,12 @@ def search_interpro_entries(query: str, max_results: int = 100) -> List[Dict[str
     params = {"search": query, "page_size": min(max_results, 200)}  # API limit
 
     try:
-        response = requests.get(url, params=params, timeout=get_protein_api_timeout())
+        # The shared helper validates a positive, bounded campaign timeout.
+        response = requests.get(  # nosec B113
+            url,
+            params=params,
+            timeout=get_protein_api_timeout(),
+        )
         response.raise_for_status()
 
         data = response.json()

@@ -70,9 +70,7 @@ def _erfcinv_approx(y: float) -> float:
         return float("-inf")
     z = y if y < 1 else 2 - y
     t = math.sqrt(-2.0 * math.log(z / 2.0))
-    x = -0.70711 * (
-        (2.30753 + t * 0.27061) / (1.0 + t * (0.99229 + t * 0.04481)) - t
-    )
+    x = -0.70711 * ((2.30753 + t * 0.27061) / (1.0 + t * (0.99229 + t * 0.04481)) - t)
     for _ in range(2):
         err = math.erfc(x) - z
         x += err / (1.1283791670955126 * math.exp(-(x * x)) - x * err)

@@ -34,8 +34,6 @@ def test_policy_file_discovery_prunes_submodules_and_symlinked_directories(
     (external / "excluded.py").write_text("Mock()\n", encoding="utf-8")
     (root / "external-link").symlink_to(external, target_is_directory=True)
 
-    discovered = {
-        path.relative_to(root) for path in iter_policy_files(root)
-    }
+    discovered = {path.relative_to(root) for path in iter_policy_files(root)}
 
     assert discovered == {Path("included.py")}

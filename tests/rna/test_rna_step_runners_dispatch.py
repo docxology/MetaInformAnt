@@ -9,6 +9,7 @@ from pathlib import Path
 
 import pytest
 
+
 @pytest.mark.external_tool
 @pytest.mark.network
 def test_each_step_runner_invokes_real_subcommand(tmp_path: Path):

@@ -10,9 +10,9 @@ from pathlib import Path
 import matplotlib
 import numpy as np
 import pandas as pd
+from scipy import stats
 from scipy.cluster.hierarchy import dendrogram, leaves_list, linkage
 from scipy.spatial.distance import squareform
-from scipy import stats
 
 matplotlib.use("Agg")
 from typing import Any, Dict, Optional, cast
@@ -51,8 +51,7 @@ def _cividis_annotation_color(value: float) -> str:
     """Choose the higher-contrast annotation color for a cividis value."""
 
     position = np.clip(
-        (value - _DIVERGENCE_VMIN)
-        / (_DIVERGENCE_VMAX - _DIVERGENCE_VMIN),
+        (value - _DIVERGENCE_VMIN) / (_DIVERGENCE_VMAX - _DIVERGENCE_VMIN),
         0.0,
         1.0,
     )
@@ -75,8 +74,7 @@ def _validated_condensed(div_matrix: pd.DataFrame) -> np.ndarray:
         raise ValueError("Divergence matrix row and column labels must match")
     if not np.isfinite(values).all():
         raise ValueError(
-            "Divergence matrix contains non-finite values; complete the cohort "
-            "before clustering or plotting"
+            "Divergence matrix contains non-finite values; complete the cohort " "before clustering or plotting"
         )
     if not np.allclose(values, values.T, rtol=0.0, atol=1e-12):
         raise ValueError("Divergence matrix must be symmetric")
@@ -85,8 +83,6 @@ def _validated_condensed(div_matrix: pd.DataFrame) -> np.ndarray:
     if values.min() < -1e-9 or values.max() > 2.0 + 1e-9:
         raise ValueError("Divergence values must lie in the theoretical 0--2 range")
     return cast(np.ndarray[Any, np.dtype[Any]], squareform(values, checks=True))
-
-
 
 
 def _fmt(name: str) -> str:
@@ -361,7 +357,11 @@ def plot_family_violin(
                 records.append({"Category": f"Within {fam_a}", "Divergence": d, "Type": "Within-family"})
             else:
                 records.append(
-                    {"Category": f"{min(fam_a,fam_b)}–{max(fam_a,fam_b)}", "Divergence": d, "Type": "Between-family"}
+                    {
+                        "Category": f"{min(fam_a, fam_b)}–{max(fam_a, fam_b)}",
+                        "Divergence": d,
+                        "Type": "Between-family",
+                    }
                 )
 
     df = pd.DataFrame(records)
@@ -471,9 +471,7 @@ def plot_method_comparison(
     ax.text(
         0.05,
         0.95,
-        f"Descriptive Spearman rho = {rho:.3f}\n"
-        f"Dependent pair records; no p-value\n"
-        f"n = {len(df)} pairs",
+        f"Descriptive Spearman rho = {rho:.3f}\n" f"Dependent pair records; no p-value\n" f"n = {len(df)} pairs",
         transform=ax.transAxes,
         fontsize=10,
         va="top",
@@ -546,14 +544,10 @@ def plot_species_summary(feature_stats: pd.DataFrame, output_path: Path) -> None
     if {"total_features", "expressed_features"}.issubset(feature_stats.columns):
         total_column, expressed_column = "total_features", "expressed_features"
     else:
-        raise ValueError(
-            "Feature summary requires total_features/expressed_features columns"
-        )
+        raise ValueError("Feature summary requires total_features/expressed_features columns")
 
     feature_stats_sorted = feature_stats.sort_values(expressed_column, ascending=True)
-    fig, (ax1, ax2) = plt.subplots(
-        1, 2, figsize=(18, max(8, len(feature_stats_sorted) * 0.4))
-    )
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, max(8, len(feature_stats_sorted) * 0.4)))
 
     y_pos = range(len(feature_stats_sorted))
     ax1.barh(

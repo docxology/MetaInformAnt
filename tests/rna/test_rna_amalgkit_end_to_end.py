@@ -9,9 +9,7 @@ from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, plan_workf
 
 
 def test_current_default_plan_is_ordered_and_current(tmp_path: Path) -> None:
-    config = AmalgkitWorkflowConfig(
-        work_dir=tmp_path / "work", threads=2, species_list=["Apis_mellifera"]
-    )
+    config = AmalgkitWorkflowConfig(work_dir=tmp_path / "work", threads=2, species_list=["Apis_mellifera"])
     planned = plan_workflow(config)
     names = [name for name, _ in planned]
     assert names == [

@@ -8,12 +8,15 @@ extraction fails or skips files.
 from __future__ import annotations
 
 import concurrent.futures
+import os
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from metainformant.core.utils import logging
+from metainformant.rna.amalgkit.sra_environment import build_sra_environment
 
 if TYPE_CHECKING:
     from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
@@ -96,10 +99,11 @@ def extract_sra_directly(config: AmalgkitWorkflowConfig, sra_dir: Path, output_d
 
     logger.info(f"Attempting fallback extraction for {len(sra_files)} files using {fasterq_dump}...")
 
-    # Configure path for fasterq-dump temp files
-    repo_root = Path(__file__).resolve().parent.parent.parent.parent.parent.parent
-    tmp_dir = repo_root / ".tmp" / "fasterq-dump"
-    tmp_dir.mkdir(parents=True, exist_ok=True)
+    # Keep SRA settings, VDB state, and extraction scratch inside the selected
+    # campaign root. The environment is inherited by fasterq-dump and does
+    # not modify user-global NCBI configuration.
+    process_environment = build_sra_environment(base_environment=os.environ)
+    tmp_dir = Path(tempfile.mkdtemp(prefix="fallback-", dir=process_environment["TMPDIR"]))
 
     def process_sra(sra_file: Path) -> bool:
         sample_id = sra_file.stem
@@ -128,7 +132,13 @@ def extract_sra_directly(config: AmalgkitWorkflowConfig, sra_dir: Path, output_d
             heartbeat_file = config.work_dir / "heartbeat" / f"fallback_{sample_id}.json"
             heartbeat_file.parent.mkdir(exist_ok=True, parents=True)
 
-            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            process = subprocess.Popen(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                env=process_environment,
+            )
 
             rc, _ = monitor_subprocess_directory_growth(
                 process=process,

@@ -217,7 +217,8 @@ class GCPDeployer:
         """Check remote pipeline progress via SSH."""
         try:
             result = self._ssh_run(
-                "cd /opt/MetaInformAnt && python3 scripts/rna/check_pipeline_status.py 2>/dev/null || echo 'Pipeline not ready'",
+                "cd /opt/MetaInformAnt && python3 scripts/rna/check_pipeline_status.py "
+                "2>/dev/null || echo 'Pipeline not ready'",
                 timeout=30,
             )
             return result.stdout.strip() if result.stdout else "No output"

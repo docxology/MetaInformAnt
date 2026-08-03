@@ -38,9 +38,7 @@ def _empty_translation_efficiency() -> pd.DataFrame:
 
 def _empty_ribosome_integration() -> pd.DataFrame:
     """Return the stable empty ribosome-integration schema."""
-    return pd.DataFrame(
-        columns=["gene_id", "rna_level", "ribo_level", "translation_rate", "translationally_regulated"]
-    )
+    return pd.DataFrame(columns=["gene_id", "rna_level", "ribo_level", "translation_rate", "translationally_regulated"])
 
 
 def _coerce_abundance_frame(df: pd.DataFrame, name: str, *, allow_nan: bool = True) -> pd.DataFrame:

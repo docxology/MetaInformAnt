@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from metainformant.visualization.genomics import networks as networks_module
 from metainformant.visualization.genomics.networks import (
     plot_community_network,
     plot_network_basic,
@@ -13,7 +14,6 @@ from metainformant.visualization.genomics.networks import (
     plot_network_force_directed,
     plot_network_hierarchical,
 )
-from metainformant.visualization.genomics import networks as networks_module
 
 # Check for optional dependencies
 try:

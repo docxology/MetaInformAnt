@@ -122,12 +122,16 @@ _CPIC_GUIDELINES: list[dict[str, Any]] = [
         "guideline_url": "https://cpicpgx.org/guidelines/guideline-for-clopidogrel-and-cyp2c19/",
         "recommendations": {
             "Poor Metabolizer": {
-                "recommendation": "Use alternative antiplatelet therapy (prasugrel or ticagrelor) if no contraindication.",
+                "recommendation": (
+                    "Use alternative antiplatelet therapy (prasugrel or ticagrelor) " "if no contraindication."
+                ),
                 "classification": "Strong",
                 "implications": "Significantly reduced platelet inhibition. Increased risk of cardiovascular events.",
             },
             "Intermediate Metabolizer": {
-                "recommendation": "Use alternative antiplatelet therapy (prasugrel or ticagrelor) if no contraindication.",
+                "recommendation": (
+                    "Use alternative antiplatelet therapy (prasugrel or ticagrelor) " "if no contraindication."
+                ),
                 "classification": "Moderate",
                 "implications": "Reduced platelet inhibition.",
             },

@@ -7,18 +7,25 @@ import math
 import os
 import sys
 import time
-from types import SimpleNamespace
 from pathlib import Path
+from types import SimpleNamespace
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-
 
 PIPELINE_DIR = Path(__file__).resolve().parents[1] / "scripts" / "gwas" / "pipelines"
 if str(PIPELINE_DIR) not in sys.path:
     sys.path.insert(0, str(PIPELINE_DIR))
 
+from analyze_beewas_2026_real import (  # noqa: E402
+    build_manifest_status,
+    build_phenotype_genotype_handoff_tables,
+    build_sample_processing_progress,
+    build_variant_summary,
+    final_genotype_estimators_ready,
+    plot_sample_processing_progress,
+)
 from beewas_reporting import (  # noqa: E402
     PlotRecord,
     SamplingConfig,
@@ -54,14 +61,6 @@ from beewas_reporting import (  # noqa: E402
     write_phenotype_statistics_mosaic,
     write_plot_manifest,
     write_validation_outputs,
-)
-from analyze_beewas_2026_real import (  # noqa: E402
-    build_manifest_status,
-    build_sample_processing_progress,
-    build_variant_summary,
-    build_phenotype_genotype_handoff_tables,
-    final_genotype_estimators_ready,
-    plot_sample_processing_progress,
 )
 
 
@@ -243,12 +242,13 @@ def test_population_genetics_helpers_are_deterministic_and_status_aware() -> Non
     strain_rows = group_summary[group_summary["analysis_dimension"].eq("population")]
     fst_row = pairwise_fst.iloc[0]
     population_partition = distance_partition[
-        distance_partition["analysis_dimension"].eq("population")
-        & distance_partition["group_value"].eq("all")
+        distance_partition["analysis_dimension"].eq("population") & distance_partition["group_value"].eq("all")
     ]
 
     assert set(strain_rows["group_value"]) == {"C", "M"}
-    assert {"observed_heterozygosity", "nucleotide_diversity_pi", "private_alt_site_count", "warning"}.issubset(group_summary.columns)
+    assert {"observed_heterozygosity", "nucleotide_diversity_pi", "private_alt_site_count", "warning"}.issubset(
+        group_summary.columns
+    )
     assert fst_row["test_status"] == "tested"
     assert fst_row["fst"] > 0
     assert fst_row["sites_used"] == 3
@@ -547,14 +547,27 @@ def test_plot_registry_assigns_phenotype_variability_section_and_source(tmp_path
     assert by_key["phenotype_multivariate_pcoa"].section == "phenotype_variability"
     assert by_key["phenotype_multivariate_test_effects"].source_table == "tables/phenotype_multivariate_tests.tsv"
     assert by_key["phenotype_multivariate_trait_loadings"].source_table == "tables/phenotype_multivariate_loadings.tsv"
-    assert by_key["phenotype_colony_multivariate_profile"].source_table == "tables/phenotype_colony_multivariate_effects.tsv"
+    assert (
+        by_key["phenotype_colony_multivariate_profile"].source_table
+        == "tables/phenotype_colony_multivariate_effects.tsv"
+    )
     assert by_key["phenotype_multivariate_dispersion"].source_table == "tables/phenotype_multivariate_dispersion.tsv"
     assert by_key["population_genetics_heterozygosity_by_group"].section == "population_structure"
-    assert by_key["population_genetics_pairwise_fst_heatmap"].source_table == "tables/population_genetics_pairwise_fst.tsv"
-    assert by_key["population_genetics_distance_partition"].source_table == "tables/population_genetics_distance_partition.tsv"
+    assert (
+        by_key["population_genetics_pairwise_fst_heatmap"].source_table == "tables/population_genetics_pairwise_fst.tsv"
+    )
+    assert (
+        by_key["population_genetics_distance_partition"].source_table
+        == "tables/population_genetics_distance_partition.tsv"
+    )
     assert by_key["population_genetics_signal_overview"].section == "population_structure"
-    assert by_key["population_genetics_signal_overview"].source_table == "tables/population_genetics_signal_dimensions.tsv"
-    assert all(record.warning == "Real association remains blocked until reviewed phenotype handoff." for record in by_key.values())
+    assert (
+        by_key["population_genetics_signal_overview"].source_table == "tables/population_genetics_signal_dimensions.tsv"
+    )
+    assert all(
+        record.warning == "Real association remains blocked until reviewed phenotype handoff."
+        for record in by_key.values()
+    )
 
 
 def test_sample_processing_progress_outputs_status_tables_and_plot(tmp_path: Path) -> None:
@@ -762,14 +775,13 @@ def test_manifest_status_uses_fastq_integrity_status_file(tmp_path: Path) -> Non
     r2.write_bytes(b"\x1f\x8bok")
     manifest = manifests / "manifest.tsv"
     manifest.write_text(
-        "sample_id\tlocal_r1\tlocal_r2\n"
-        f"M6ITQ\t{r1}\t{r2}\n"
-        f"R9WORK\t{r9_r1}\t{r9_r2}\n",
+        "sample_id\tlocal_r1\tlocal_r2\n" f"M6ITQ\t{r1}\t{r2}\n" f"R9WORK\t{r9_r1}\t{r9_r2}\n",
         encoding="utf-8",
     )
     (manifests / "fastq_integrity_status.tsv").write_text(
         "timestamp_utc\tsample_id\tmate\tpath\tintegrity_status\trepair_action\tmessage\n"
-        f"2026-06-19T05:00:00+00:00\tM6ITQ\tR1\t{r1}\tcorrupt_gzip\tredownload_or_replace_fastq\tunexpected end of file\n"
+        f"2026-06-19T05:00:00+00:00\tM6ITQ\tR1\t{r1}\t"
+        "corrupt_gzip\tredownload_or_replace_fastq\tunexpected end of file\n"
         f"2026-06-19T05:00:00+00:00\tM6ITQ\tR2\t{r2}\tok\tnone\t\n"
         f"2026-06-21T20:50:00+00:00\tR9WORK\tR1\t{r9_r1}\tmissing\tredownload_or_replace_fastq\tdirect repair failed\n"
         f"2026-06-21T20:50:00+00:00\tR9WORK\tR2\t{r9_r2}\tmissing\tredownload_or_replace_fastq\tdirect repair failed\n",
@@ -777,9 +789,16 @@ def test_manifest_status_uses_fastq_integrity_status_file(tmp_path: Path) -> Non
     )
     (manifests / "google_drive_download_status.tsv").write_text(
         "timestamp_utc\tsample_id\tmate\tpath\tstatus\tsize_bytes\tmessage\n"
-        f"2026-06-19T05:10:00+00:00\tM6ITQ\tR1\t{r1}\tfailed_integrity_corrupt_gzip\t0\tunexpected end of file after direct download\n"
-        f"2026-06-21T20:51:00+00:00\tR9WORK\tR1\t{r9_r1}\tfailed_rc_1\t0\tcurl --fail -r 50331648-51380223 https://drive.usercontent.google.com/download?id=abc logs/downloads/direct_tmp/R9WORK_R1.fastq.gz\n"
-        f"2026-06-21T20:52:00+00:00\tR9WORK\tR2\t{r9_r2}\tfailed_rc_1\t0\tcurl --fail -r 0-0 https://drive.usercontent.google.com/download?id=def logs/downloads/direct_tmp/R9WORK_R2.fastq.gz\n",
+        f"2026-06-19T05:10:00+00:00\tM6ITQ\tR1\t{r1}\t"
+        "failed_integrity_corrupt_gzip\t0\tunexpected end of file after direct download\n"
+        f"2026-06-21T20:51:00+00:00\tR9WORK\tR1\t{r9_r1}\t"
+        "failed_rc_1\t0\tcurl --fail -r 50331648-51380223 "
+        "https://drive.usercontent.google.com/download?id=abc "
+        "logs/downloads/direct_tmp/R9WORK_R1.fastq.gz\n"
+        f"2026-06-21T20:52:00+00:00\tR9WORK\tR2\t{r9_r2}\t"
+        "failed_rc_1\t0\tcurl --fail -r 0-0 "
+        "https://drive.usercontent.google.com/download?id=def "
+        "logs/downloads/direct_tmp/R9WORK_R2.fastq.gz\n",
         encoding="utf-8",
     )
     paths = SimpleNamespace(base=base, manifest=manifest, tables=tables)
@@ -887,7 +906,10 @@ def test_phenotype_statistics_mosaic_is_manifest_backed(tmp_path: Path) -> None:
     by_key = {record.key: record for record in records_with_mosaic}
 
     assert by_key["phenotype_multidimensional_statistics_mosaic"].section == "phenotype_variability"
-    assert by_key["phenotype_multidimensional_statistics_mosaic"].source_table == "tables/phenotype_graphical_statistics_overview.tsv"
+    assert (
+        by_key["phenotype_multidimensional_statistics_mosaic"].source_table
+        == "tables/phenotype_graphical_statistics_overview.tsv"
+    )
     assert by_key["phenotype_multidimensional_statistics_mosaic"].warning == warning
 
 
@@ -908,7 +930,12 @@ def test_phenotype_genotype_handoff_tables_are_status_aware(tmp_path: Path) -> N
                 "population": ["C", "C", "M", "M"],
                 "colony": ["C1", "C1", "M10", "M10"],
                 "biological_group_code": ["G", "ITQ", "ITW", "IV"],
-                "fertility_status": ["queen_like", "queen_like", "non_queen_like_treatment", "non_queen_like_treatment"],
+                "fertility_status": [
+                    "queen_like",
+                    "queen_like",
+                    "non_queen_like_treatment",
+                    "non_queen_like_treatment",
+                ],
                 "phenotype_reviewed": [True, True, True, True],
                 "phenotype_review_scope": ["sample_review_override"] * 4,
                 "association_ready": [True, True, True, True],
@@ -950,7 +977,14 @@ def test_phenotype_genotype_handoff_tables_are_status_aware(tmp_path: Path) -> N
         columns=samples,
     )
     pca = pd.DataFrame({"sample_id": samples, "PC1": [1.0, 0.8, -0.7, -1.1], "PC2": [0.2, -0.2, 0.3, -0.3]})
-    sample_qc = pd.DataFrame({"sample": samples, "het_rate": [0.1, 0.11, 0.2, 0.22], "nonref_rate": [0.3, 0.31, 0.5, 0.52], "singletons": [1, 2, 4, 5]})
+    sample_qc = pd.DataFrame(
+        {
+            "sample": samples,
+            "het_rate": [0.1, 0.11, 0.2, 0.22],
+            "nonref_rate": [0.3, 0.31, 0.5, 0.52],
+            "singletons": [1, 2, 4, 5],
+        }
+    )
 
     summary = build_phenotype_genotype_handoff_tables(paths, phenotype_result, genotype_distance, pca, sample_qc)
 

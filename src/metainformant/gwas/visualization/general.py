@@ -1038,4 +1038,4 @@ def functional_enrichment_plot(
 # This module historically contained a second copy of the plotting functions.
 # Keep the import path stable while ensuring every public function is the same
 # object as the canonical split implementation.
-from metainformant.gwas.visualization._general_impl import *  # noqa: E402,F403
+from metainformant.gwas.visualization._general_impl import *  # noqa: E402,F401,F403

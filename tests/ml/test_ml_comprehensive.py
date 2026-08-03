@@ -19,16 +19,16 @@ from metainformant.ml.models.classification import BiologicalClassifier, cross_v
 from metainformant.ml.models.regression import BiologicalRegressor, evaluate_regressor
 
 try:
-    from sklearn.model_selection import (
-        train_test_split,
-    )
+    from sklearn.model_selection import train_test_split as _sklearn_train_test_split
 
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
 
 # Mock for type checking if sklearn missing
-if not HAS_SKLEARN:
+if HAS_SKLEARN:
+    train_test_split = _sklearn_train_test_split
+else:
 
     def train_test_split(*args, **kwargs):
         pass

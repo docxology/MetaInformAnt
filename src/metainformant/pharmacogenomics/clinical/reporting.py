@@ -501,7 +501,8 @@ def _format_html_report(report: dict[str, Any]) -> str:
     html_parts.append("<h2>Genotype Results</h2>")
     html_parts.append("<table>")
     html_parts.append(
-        "<tr><th>Gene</th><th>Diplotype</th><th>Phenotype</th><th>Activity Score</th><th>Clinical Significance</th></tr>"
+        "<tr><th>Gene</th><th>Diplotype</th><th>Phenotype</th>"
+        "<th>Activity Score</th><th>Clinical Significance</th></tr>"
     )
     for result in report.get("genotype_results", []):
         phenotype = result.get("phenotype", "")
@@ -553,7 +554,8 @@ def _format_html_report(report: dict[str, Any]) -> str:
 
     # Disclaimer
     html_parts.append(
-        f'<div class="disclaimer"><h3>Disclaimer</h3><p>{_html_escape(report.get("disclaimer", _CLINICAL_DISCLAIMER))}</p></div>'
+        f'<div class="disclaimer"><h3>Disclaimer</h3><p>'
+        f'{_html_escape(report.get("disclaimer", _CLINICAL_DISCLAIMER))}</p></div>'
     )
 
     html_parts.append("</body></html>")

@@ -40,7 +40,11 @@ def fetch_uniprot_record(uniprot_id: str) -> Dict[str, Any]:
     url = f"{base_url}/{uniprot_id}.json"
 
     try:
-        response = requests.get(url, timeout=get_protein_api_timeout())
+        # The shared helper validates a positive, bounded campaign timeout.
+        response = requests.get(  # nosec B113
+            url,
+            timeout=get_protein_api_timeout(),
+        )
         response.raise_for_status()
 
         data = response.json()
@@ -194,7 +198,11 @@ def fetch_uniprot_fasta(uniprot_id: str) -> Optional[str]:
     url = f"https://www.uniprot.org/uniprotkb/{uniprot_id}.fasta"
 
     try:
-        response = requests.get(url, timeout=get_protein_api_timeout())
+        # The shared helper validates a positive, bounded campaign timeout.
+        response = requests.get(  # nosec B113
+            url,
+            timeout=get_protein_api_timeout(),
+        )
         response.raise_for_status()
 
         return response.text
@@ -329,7 +337,12 @@ def search_uniprot_proteins(query: str, max_results: int = 100) -> List[Dict[str
     params = {"query": query, "format": "json", "size": min(max_results, 500)}  # API limit
 
     try:
-        response = requests.get(base_url, params=params, timeout=get_protein_api_timeout())
+        # The shared helper validates a positive, bounded campaign timeout.
+        response = requests.get(  # nosec B113
+            base_url,
+            params=params,
+            timeout=get_protein_api_timeout(),
+        )
         response.raise_for_status()
 
         data = response.json()
@@ -377,7 +390,11 @@ def get_uniprot_taxonomy_info(taxon_id: int) -> Optional[Dict[str, Any]]:
     url = f"https://www.uniprot.org/taxonomy/{taxon_id}.json"
 
     try:
-        response = requests.get(url, timeout=get_protein_api_timeout())
+        # The shared helper validates a positive, bounded campaign timeout.
+        response = requests.get(  # nosec B113
+            url,
+            timeout=get_protein_api_timeout(),
+        )
         response.raise_for_status()
 
         data = response.json()
@@ -516,7 +533,8 @@ def map_ids_uniprot(
 
     try:
         # Make the API request
-        response = requests.post(
+        # The shared helper validates a positive, bounded campaign timeout.
+        response = requests.post(  # nosec B113
             UNIPROT_ID_MAPPING_URL,
             data={"from": from_db, "to": to_db, "format": "tab", "query": ids_string},
             timeout=get_protein_api_timeout(default=60.0),

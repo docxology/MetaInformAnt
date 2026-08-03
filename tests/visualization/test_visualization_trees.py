@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from metainformant.visualization.genomics import trees as tree_module
 from metainformant.visualization.genomics.trees import (
     circular_tree_plot,
     plot_phylo_tree,
@@ -13,7 +14,6 @@ from metainformant.visualization.genomics.trees import (
     tree_comparison_plot,
     unrooted_tree_plot,
 )
-from metainformant.visualization.genomics import trees as tree_module
 
 # Check for optional dependencies
 try:

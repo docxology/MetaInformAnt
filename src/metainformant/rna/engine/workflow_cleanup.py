@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Set, Tuple
 
@@ -108,7 +109,7 @@ def cleanup_incorrectly_placed_sra_files(getfastq_dir: Path) -> None:
     """
     default_locations = [
         Path.home() / "ncbi" / "public" / "sra",
-        Path("/tmp") / "ncbi" / "public" / "sra",
+        Path(tempfile.gettempdir()) / "ncbi" / "public" / "sra",
     ]
 
     moved_count = 0

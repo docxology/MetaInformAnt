@@ -17,6 +17,7 @@ from .amalgkit import (
     check_cli_available,
     csfilter,
     cstmm,
+    dataset,
     ensure_cli_available,
     finalize,
     getfastq,
@@ -29,7 +30,6 @@ from .amalgkit import (
     run_amalgkit,
     sanity,
     select,
-    dataset,
     validate_amalgkit_version,
     wsfilter,
 )

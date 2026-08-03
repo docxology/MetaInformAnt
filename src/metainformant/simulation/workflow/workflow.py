@@ -251,30 +251,31 @@ def validate_simulation_output(simulation_data: Any, validation_criteria: Dict[s
 
         # Required fields validation
         required_fields = validation_criteria.get("required_fields", [])
-        for field in required_fields:
-            if field not in simulation_data:
-                issues.append(f"Missing required field: {field}")
+        for field_name in required_fields:
+            if field_name not in simulation_data:
+                issues.append(f"Missing required field: {field_name}")
                 is_valid = False
 
         # Data type validation
         type_checks = validation_criteria.get("type_checks", {})
-        for field, expected_type in type_checks.items():
-            if field in simulation_data:
-                actual_value = simulation_data[field]
+        for field_name, expected_type in type_checks.items():
+            if field_name in simulation_data:
+                actual_value = simulation_data[field_name]
                 if not isinstance(actual_value, expected_type):
                     issues.append(
-                        f"Field {field} has wrong type: expected {expected_type.__name__}, got {type(actual_value).__name__}"
+                        f"Field {field_name} has wrong type: expected "
+                        f"{expected_type.__name__}, got {type(actual_value).__name__}"
                     )
                     is_valid = False
 
         # Range validation
         range_checks = validation_criteria.get("range_checks", {})
-        for field, (min_val, max_val) in range_checks.items():
-            if field in simulation_data:
-                value = simulation_data[field]
+        for field_name, (min_val, max_val) in range_checks.items():
+            if field_name in simulation_data:
+                value = simulation_data[field_name]
                 if isinstance(value, (int, float)):
                     if not (min_val <= value <= max_val):
-                        issues.append(f"Field {field} out of range: {value} not in [{min_val}, {max_val}]")
+                        issues.append(f"Field {field_name} out of range: {value} not in [{min_val}, {max_val}]")
                         is_valid = False
 
         # Custom validation functions
@@ -300,11 +301,11 @@ def validate_simulation_output(simulation_data: Any, validation_criteria: Dict[s
 
             elif check == "valid_probabilities":
                 prob_fields = ["gc_content", "mutation_rate"]
-                for field in prob_fields:
-                    if field in simulation_data:
-                        val = simulation_data[field]
+                for field_name in prob_fields:
+                    if field_name in simulation_data:
+                        val = simulation_data[field_name]
                         if not (0.0 <= val <= 1.0):
-                            issues.append(f"Probability field {field} must be in [0, 1]: got {val}")
+                            issues.append(f"Probability field {field_name} must be in [0, 1]: got {val}")
                             is_valid = False
 
     except Exception as e:

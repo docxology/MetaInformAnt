@@ -95,7 +95,10 @@ def _download_url(url: str, output_path: Path, timeout: int = 600, verify_ssl: b
             ctx.verify_mode = ssl.CERT_NONE
 
         logger.info(f"Downloading {url} to {output_path}")
-        with urllib.request.urlopen(url, context=ctx, timeout=timeout) as response, open(output_path, "wb") as out_file:
+        with (
+            urllib.request.urlopen(url, context=ctx, timeout=timeout) as response,  # nosec B310
+            open(output_path, "wb") as out_file,
+        ):
             shutil.copyfileobj(response, out_file)
         return True
     except ssl.SSLCertVerificationError as e:

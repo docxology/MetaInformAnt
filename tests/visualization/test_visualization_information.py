@@ -8,6 +8,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from metainformant.visualization.analysis import information as information_module
 from metainformant.visualization.analysis.information import (
     plot_entropy_profile,
     plot_information_landscape,
@@ -15,7 +16,6 @@ from metainformant.visualization.analysis.information import (
     plot_mutual_information_matrix,
     plot_renyi_spectra,
 )
-from metainformant.visualization.analysis import information as information_module
 
 # Check for optional dependencies
 try:

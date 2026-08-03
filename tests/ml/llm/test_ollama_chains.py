@@ -16,7 +16,6 @@ from metainformant.ml.llm.ollama.client import OllamaClient
 from metainformant.ml.llm.ollama.config import OllamaConfig
 from metainformant.ml.llm.ollama.prompts import PromptTemplate
 
-
 # These real model calls share one local Ollama server with the client tests.
 # Keep the resource serialized during xdist runs; the longer integration
 # timeout also accommodates model loading while unrelated workers exercise

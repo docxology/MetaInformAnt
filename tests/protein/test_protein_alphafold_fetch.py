@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import http.server
-from pathlib import Path
 import threading
+from pathlib import Path
 
 import pytest
 
-from metainformant.protein.structure.alphafold import build_alphafold_url, fetch_alphafold_model
 from metainformant.protein.structure import alphafold as alphafold_module
+from metainformant.protein.structure.alphafold import build_alphafold_url, fetch_alphafold_model
 
 
 @pytest.fixture
@@ -21,7 +21,11 @@ def local_alphafold_api(monkeypatch):
                 self.end_headers()
                 return
             if self.path.endswith(".pdb"):
-                body = b"HEADER    METAINFORMANT TEST MODEL\nATOM      1  CA  ALA A   1       1.000   2.000   3.000  1.00 90.00           C\n"
+                body = (
+                    b"HEADER    METAINFORMANT TEST MODEL\n"
+                    b"ATOM      1  CA  ALA A   1       1.000   2.000   3.000  "
+                    b"1.00 90.00           C\n"
+                )
                 content_type = "chemical/x-pdb"
             else:
                 body = b"data_METAINFORMANT\n_atom_site.id 1\n"

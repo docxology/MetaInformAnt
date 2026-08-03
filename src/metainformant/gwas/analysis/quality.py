@@ -576,7 +576,8 @@ def write_filtered_vcf(filtered_data: Dict[str, Any], output_path: Union[str, Pa
                 f"{variant['chrom']}\t{variant['pos']}\t{variant['id']}\t{variant['ref']}\t{','.join(variant['alt'])}\t"
             )
             f.write(
-                f"{variant.get('qual', '.')}\t{variant.get('filter', 'PASS')}\t{variant.get('info', '.')}\t{variant.get('format', 'GT')}"
+                f"{variant.get('qual', '.')}\t{variant.get('filter', 'PASS')}\t"
+                f"{variant.get('info', '.')}\t{variant.get('format', 'GT')}"
             )
             # Write genotypes (convert numeric to VCF GT format)
             variant_count = len(filtered_data.get("variants", []))

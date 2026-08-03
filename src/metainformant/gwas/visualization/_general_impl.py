@@ -887,11 +887,7 @@ def pca_plot(
             fontsize=13,
             fontweight="medium",
         )
-        variance_title = (
-            f"; PC1={pc1_var:.1f}% / PC2={pc2_var:.1f}% variance explained"
-            if explained_var
-            else ""
-        )
+        variance_title = f"; PC1={pc1_var:.1f}% / PC2={pc2_var:.1f}% variance explained" if explained_var else ""
         ax.set_title(
             f"Population Structure — PCA  ({n_samples} samples{variance_title})",
             fontsize=15,

@@ -1622,13 +1622,9 @@ def test_gene_count_overlap_coerces_tabular_profiles() -> None:
 def test_feature_count_summary_uses_feature_level_schema() -> None:
     """Native table summaries must not imply cross-species gene identity."""
 
-    result = compute_feature_count_summary(
-        {"sp_a": pd.Series([1.0, 0.0, 3.0], index=["tx_1", "tx_2", "tx_3"])}
-    )
+    result = compute_feature_count_summary({"sp_a": pd.Series([1.0, 0.0, 3.0], index=["tx_1", "tx_2", "tx_3"])})
 
-    assert set(
-        ["species", "total_features", "expressed_features", "mean_expression"]
-    ).issubset(result.columns)
+    assert set(["species", "total_features", "expressed_features", "mean_expression"]).issubset(result.columns)
     assert result.loc[0, "total_features"] == 3
     assert result.loc[0, "expressed_features"] == 2
     assert "total_genes" not in result.columns
@@ -1637,9 +1633,7 @@ def test_feature_count_summary_uses_feature_level_schema() -> None:
 def test_gene_count_overlap_excludes_nonfinite_expression() -> None:
     """Summary statistics must never emit infinite means or medians."""
 
-    result = compute_gene_count_overlap(
-        {"sp_a": pd.Series([1.0, np.inf, -np.inf, np.nan, 0.0])}
-    )
+    result = compute_gene_count_overlap({"sp_a": pd.Series([1.0, np.inf, -np.inf, np.nan, 0.0])})
 
     assert result.loc[0, "total_genes"] == 5
     assert result.loc[0, "expressed_genes"] == 1

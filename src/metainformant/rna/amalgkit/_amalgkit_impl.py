@@ -33,17 +33,18 @@ from metainformant.core.io.download import (
     monitor_subprocess_sample_progress,
 )
 from metainformant.core.utils import logging
-from metainformant.rna.core.sample_utils import read_sample_ids_from_metadata
 from metainformant.rna.amalgkit.commands import NO_THREAD_STEPS, SUPPORTED_CLI_OPTIONS
+from metainformant.rna.amalgkit.sra_environment import build_sra_environment
+from metainformant.rna.core.sample_utils import read_sample_ids_from_metadata
 
 logger = logging.get_logger(__name__)
 
 # The Hymenoptera analysis and the MetaInformAnt wrapper are validated against
 # this exact release. Keep the source tag pinned so a fresh setup cannot drift
 # to a moving branch or a future CLI with a changed output contract.
-REQUIRED_AMALGKIT_VERSION = "0.16.32"
+REQUIRED_AMALGKIT_VERSION = "0.16.33"
 AMALGKIT_RELEASE_TAG = f"v{REQUIRED_AMALGKIT_VERSION}"
-AMALGKIT_SOURCE_REVISION = "305f9b6c6c815b6bd3b31311493baccbc03905e6"
+AMALGKIT_SOURCE_REVISION = "8dfb4e005209ca24867431a8bfd116f441ebc54e"
 AMALGKIT_INSTALL_SPEC = f"git+https://github.com/kfuku52/amalgkit@{AMALGKIT_RELEASE_TAG}"
 YES_NO_CLI_FLAGS = {
     "redo",
@@ -181,7 +182,7 @@ def build_cli_args(
             if subcommand in ("getfastq", "metadata", "quant") and key == "jobs":
                 continue
 
-            # Amalgkit 0.16.32 uses underscores for its CLI flags.
+            # Amalgkit 0.16.33 uses underscores for its CLI flags.
             # We'll normalize to underscores to ensure compatibility.
             cli_key = normalized_key
 
@@ -309,7 +310,7 @@ def parse_and_check_version(
     if not output:
         return False, "Empty version output"
 
-    # Current Amalgkit emits ``amalgkit version 0.16.32``.
+    # Current Amalgkit emits ``amalgkit version 0.16.33``.
     version_match = re.search(r"(?<!\d)(\d+(?:\.\d+){1,2})(?!\d)", output)
     if version_match is None:
         return False, f"Unexpected version format: {output}"
@@ -526,6 +527,12 @@ def run_amalgkit(
     try:
         # Environmental setup
         env = os.environ.copy()
+        if subcommand == "getfastq":
+            # The installed Amalgkit process inherits this environment when it
+            # invokes fasterq-dump. Keep its cache and temporary files inside
+            # the selected campaign root without mutating site-packages or
+            # user-global NCBI configuration.
+            env = build_sra_environment(base_environment=env)
 
         # Monitor Branch
         if monitor and isinstance(params, dict):
@@ -575,14 +582,6 @@ def run_amalgkit(
                             env["AMALGKIT_PROGRESS"] = "false"
                     except (ImportError, ValueError, AttributeError):
                         pass
-
-                    repo_root = Path(__file__).resolve().parent.parent.parent.parent
-                    tmp_dir = repo_root / ".tmp" / "fasterq-dump"
-                    tmp_dir.mkdir(parents=True, exist_ok=True)
-                    env["TMPDIR"] = str(tmp_dir)
-                    vdb_cache = repo_root / ".tmp" / "vdb"
-                    vdb_cache.mkdir(parents=True, exist_ok=True)
-                    env["VDB_CONFIG"] = str(vdb_cache)
 
                 proc_kwargs = {"env": env}
                 if cwd:
@@ -664,9 +663,7 @@ def run_amalgkit(
                 # We can't get stdout/stderr if they were streamed/logged, but that's expected
                 return subprocess.CompletedProcess(
                     args=command,
-                    returncode=(
-                        124 if monitor_returncode == 124 else proc.returncode
-                    ),
+                    returncode=(124 if monitor_returncode == 124 else proc.returncode),
                     stdout="" if log_dir else "Output monitored/streamed",
                     stderr="" if log_dir else "Output monitored/streamed",
                 )

@@ -12,7 +12,8 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from metainformant.menu.ui.navigation import Menu, MenuItem
+    from metainformant.menu.ui.navigation import Menu
+    from metainformant.menu.ui.navigation import MenuItem as NavigationMenuItem
 
 
 @dataclass
@@ -225,16 +226,17 @@ def generate_menu_from_scripts(scripts: dict[str, list[ScriptInfo]]) -> dict[str
     Returns:
         Dictionary mapping menu ID to Menu object
     """
-    from metainformant.menu.ui.navigation import Menu, MenuItem
+    from metainformant.menu.ui.navigation import Menu
+    from metainformant.menu.ui.navigation import MenuItem as RuntimeMenuItem
 
     menus: dict[str, Menu] = {}
 
     # Create root menu with categories
-    root_items: list[MenuItem] = []
+    root_items: list[NavigationMenuItem] = []
     for category in sorted(scripts.keys()):
         category_label = category.replace("_", " ").title()
         root_items.append(
-            MenuItem(
+            RuntimeMenuItem(
                 id=f"category_{category}",
                 label=category_label,
                 description=f"Scripts in {category_label} category",
@@ -247,11 +249,11 @@ def generate_menu_from_scripts(scripts: dict[str, list[ScriptInfo]]) -> dict[str
     # Create category menus
     for category, script_list in scripts.items():
         category_label = category.replace("_", " ").title()
-        menu_items: list[MenuItem] = []
+        menu_items: list[NavigationMenuItem] = []
 
         for script_info in script_list:
             menu_items.append(
-                MenuItem(
+                RuntimeMenuItem(
                     id=f"script_{script_info.path.stem}",
                     label=script_info.name,
                     description=script_info.description,

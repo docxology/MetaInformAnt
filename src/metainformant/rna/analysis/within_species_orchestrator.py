@@ -83,7 +83,8 @@ class WithinSpeciesOrchestrator:
 
         if len(unique_vals) != 2:
             logger.warning(
-                f"[{self.species_name}] DE requires exactly 2 conditions for '{condition_col}'. Found {len(unique_vals)}: {unique_vals}. Skipping."
+                f"[{self.species_name}] DE requires exactly 2 conditions for "
+                f"'{condition_col}'. Found {len(unique_vals)}: {unique_vals}. Skipping."
             )
             return None
 

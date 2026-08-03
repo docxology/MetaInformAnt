@@ -554,11 +554,11 @@ def _generate_markdown_report(results: Dict[str, Any]) -> str:
         lines.append("| Sequence | Length | Shannon Entropy | Type |")
         lines.append("|----------|--------|----------------|------|")
 
-        for analysis in results["sequence_analyses"][:10]:  # Limit for readability
-            seq_idx = analysis.get("sequence_index", "N/A")
-            length = analysis.get("sequence_length", "N/A")
-            entropy = analysis.get("methods", {}).get("entropy", {}).get("shannon_entropy", "N/A")
-            seq_type = analysis.get("sequence_type", "N/A")
+        for sequence_analysis in results["sequence_analyses"][:10]:  # Limit for readability
+            seq_idx = sequence_analysis.get("sequence_index", "N/A")
+            length = sequence_analysis.get("sequence_length", "N/A")
+            entropy = sequence_analysis.get("methods", {}).get("entropy", {}).get("shannon_entropy", "N/A")
+            seq_type = sequence_analysis.get("sequence_type", "N/A")
 
             if isinstance(entropy, (int, float)):
                 entropy = f"{entropy:.3f}"

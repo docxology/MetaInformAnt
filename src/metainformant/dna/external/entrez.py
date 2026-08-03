@@ -7,8 +7,8 @@ sequence downloads, and metadata queries.
 
 from __future__ import annotations
 
-from io import StringIO
 import time
+from io import StringIO
 from typing import Any, Dict, List, Optional
 
 import requests

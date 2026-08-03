@@ -63,7 +63,7 @@ def warn_optional_dependency(module_name: str, functionality: str, fallback: str
 
 def reset_warning_state() -> None:
     """Reset warning state (useful for testing)."""
-    global _optional_warnings_issued, _suppress_warnings
+    global _suppress_warnings
     _optional_warnings_issued.clear()
     _suppress_warnings = False
 

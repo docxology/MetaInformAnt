@@ -8,6 +8,7 @@ variant calling.
 from __future__ import annotations
 
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import List, Optional
 
@@ -178,7 +179,7 @@ def align_and_sort_bwa(
         "-m",
         sort_mem_per_thread,
         "-T",
-        f"/tmp/gwas_sort_{output_bam.stem}",
+        str(Path(tempfile.gettempdir()) / f"gwas_sort_{output_bam.stem}"),
         "-o",
         str(output_bam),
     ]

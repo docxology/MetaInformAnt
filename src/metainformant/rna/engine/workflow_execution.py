@@ -16,18 +16,19 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from metainformant.core.utils import logging
 from metainformant.rna.core.sample_utils import extract_sample_id
+from metainformant.rna.engine.provenance import write_quant_provenance
 from metainformant.rna.engine.sra_extraction import manual_integration_fallback
 from metainformant.rna.engine.workflow_cleanup import (
     check_disk_space,
     check_disk_space_or_fail,
     cleanup_fastqs,
-    find_quantification_output,
     filter_metadata_for_unquantified,
+    find_quantification_output,
 )
-from metainformant.rna.engine.provenance import write_quant_provenance
 from metainformant.rna.engine.workflow_core import AmalgkitWorkflowConfig, WorkflowExecutionResult, WorkflowStepResult
 
 logger = logging.get_logger(__name__)
+
 
 def _workflow_result_from_steps(step_results: List[WorkflowStepResult]) -> WorkflowExecutionResult:
     """Build a WorkflowExecutionResult from accumulated step results."""
@@ -700,7 +701,8 @@ def execute_workflow(
                     estimated_need = remaining_count * 3.0
 
                     logger.debug(
-                        f"Streaming detection - Remaining: {remaining_count}, Free: {free_gb:.2f}GB, Need: {estimated_need:.2f}GB"
+                        f"Streaming detection - Remaining: {remaining_count}, "
+                        f"Free: {free_gb:.2f}GB, Need: {estimated_need:.2f}GB"
                     )
 
                     if (remaining_count > 5 and estimated_need > (free_gb * 0.8)) or kwargs.get("stream", False):
@@ -778,7 +780,8 @@ def execute_workflow(
                 is_completed, completion_indicator = _is_step_completed(step_name, step_params, config)
                 if is_completed:
                     logger.warning(
-                        f"Step {step_name} reported error (return code {result.returncode}) but outputs exist: {completion_indicator}"
+                        f"Step {step_name} reported error (return code {result.returncode}) "
+                        f"but outputs exist: {completion_indicator}"
                     )
                     logger.warning("Continuing workflow - step appears to have completed successfully despite error")
                     result.returncode = 0

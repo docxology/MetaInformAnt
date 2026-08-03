@@ -219,7 +219,7 @@ class OllamaClient:
 
         for attempt in range(self.config.max_retries):
             try:
-                response = urllib.request.urlopen(request, timeout=self.config.timeout)
+                response = urllib.request.urlopen(request, timeout=self.config.timeout)  # nosec B310
 
                 if stream:
                     return self._stream_response(response)
@@ -276,7 +276,7 @@ class OllamaClient:
         request = urllib.request.Request(self.config.tags_url, method="GET")
 
         try:
-            response = urllib.request.urlopen(request, timeout=self.config.timeout)
+            response = urllib.request.urlopen(request, timeout=self.config.timeout)  # nosec B310
             data = json.loads(response.read().decode("utf-8"))
             return [ModelInfo.from_dict(m) for m in data.get("models", [])]
         except Exception as e:

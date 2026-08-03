@@ -209,7 +209,8 @@ def build_transcript_orthogroup_table(
             rows.append(new_row)
 
     logger.info(
-        f"Mapping stats: Mapped={st['mapped']}, No Protein={st['no_protein']}, No RNA Map={st['no_rna_map']}, No Transcript={st['no_transcript']}"
+        f"Mapping stats: Mapped={st['mapped']}, No Protein={st['no_protein']}, "
+        f"No RNA Map={st['no_rna_map']}, No Transcript={st['no_transcript']}"
     )
     logger.info(f"Orthogroups with >=1 mapping: {len(rows)}")
 

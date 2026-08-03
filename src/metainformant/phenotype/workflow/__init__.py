@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from .ecology_stats import permanova, pcoa
+from .ecology_stats import pcoa, permanova
 
 __all__ = ["permanova", "pcoa"]

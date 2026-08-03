@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from metainformant.dna.expression.translation import *  # noqa: F403
+from metainformant.dna.expression.translation import *  # noqa: F401,F403
 from metainformant.dna.expression.translation import translate_dna as _translate_dna
 
 

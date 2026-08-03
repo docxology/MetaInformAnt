@@ -55,7 +55,11 @@ def fetch_pdb_structure(pdb_id: str, out_dir: Path, *, fmt: str = "pdb") -> Path
     logger.info(f"Downloading PDB structure {pdb_id}")
 
     try:
-        response = requests.get(url, timeout=get_protein_api_timeout())
+        # The shared helper validates a positive, bounded campaign timeout.
+        response = requests.get(  # nosec B113
+            url,
+            timeout=get_protein_api_timeout(),
+        )
         response.raise_for_status()
 
         with open(output_path, "wb") as f:

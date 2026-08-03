@@ -2,4 +2,4 @@
 
 from __future__ import annotations
 
-from metainformant.dna.sequence.core import *  # noqa: F403
+from metainformant.dna.sequence.core import *  # noqa: F401,F403

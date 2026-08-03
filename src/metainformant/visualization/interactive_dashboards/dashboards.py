@@ -491,8 +491,14 @@ def export_to_html(
                 }});
 
                 // Axes
-                svg += '<line x1="'+m.l+'" y1="'+(m.t+ph)+'" x2="'+(m.l+pw)+'" y2="'+(m.t+ph)+'" stroke="#333" stroke-width="1"/>';
-                svg += '<line x1="'+m.l+'" y1="'+m.t+'" x2="'+m.l+'" y2="'+(m.t+ph)+'" stroke="#333" stroke-width="1"/>';
+                svg += (
+                    '<line x1="'+m.l+'" y1="'+(m.t+ph)+'" x2="'+(m.l+pw)+'" '
+                    'y2="'+(m.t+ph)+'" stroke="#333" stroke-width="1"/>'
+                );
+                svg += (
+                    '<line x1="'+m.l+'" y1="'+m.t+'" x2="'+m.l+'" '
+                    'y2="'+(m.t+ph)+'" stroke="#333" stroke-width="1"/>'
+                );
                 svg += '</svg>';
 
                 container.innerHTML = svg;
@@ -584,12 +590,13 @@ def create_dashboard(
     # Generate simple HTML dashboard
     html_panels = []
     for pp in positioned_panels:
+        plot_data = json.dumps(pp["plot_data"], indent=1, default=str)[:2000]
         panel_html = f"""<div style="display:inline-block;width:{pp['size']['width_pct']:.1f}%;
             vertical-align:top;padding:10px;box-sizing:border-box;">
             <h3 style="margin:0 0 5px 0;font-size:14px;color:#333;">{pp['title']}</h3>
             <div style="background:#f5f5f5;border:1px solid #ddd;border-radius:4px;
                 padding:10px;min-height:{pp['size']['height_px']}px;">
-                <pre style="font-size:11px;overflow:auto;max-height:400px;">{json.dumps(pp['plot_data'], indent=1, default=str)[:2000]}</pre>
+                <pre style="font-size:11px;overflow:auto;max-height:400px;">{plot_data}</pre>
             </div>
         </div>"""
         html_panels.append(panel_html)

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import tempfile
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -106,9 +107,9 @@ def get_recommended_temp_dir(repo_root: Path) -> Path:
         Tries in order:
         1. /tmp if it has >1GB free space
         2. repo_root/.tmp if repo has >5GB free space
-        3. Falls back to /tmp regardless of space
+        3. Falls back to the system temporary directory regardless of space
     """
-    tmp_dir = Path("/tmp")
+    tmp_dir = Path(tempfile.gettempdir())
     repo_tmp = repo_root / ".tmp"
 
     try:

@@ -11,8 +11,8 @@ from typing import Any, Dict, Optional
 
 from metainformant.core import io
 from metainformant.core.utils import logging
-from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
 from metainformant.rna.core.sample_utils import extract_sample_id, find_quantification_file
+from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
 
 logger = logging.get_logger(__name__)
 

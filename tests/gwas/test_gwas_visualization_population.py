@@ -80,7 +80,7 @@ def test_kinship_heatmap_with_title(tmp_path: Path) -> None:
         f.write("\t".join(sample_ids) + "\n")
 
         for i in range(n_samples):
-            row = [f"{1.0 if i==j else np.random.uniform(0, 0.3)}" for j in range(n_samples)]
+            row = [f"{1.0 if i == j else np.random.uniform(0, 0.3)}" for j in range(n_samples)]
             f.write("\t".join(row) + "\n")
 
     output_path = tmp_path / "kinship_titled.png"

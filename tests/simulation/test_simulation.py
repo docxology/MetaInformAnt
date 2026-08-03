@@ -788,7 +788,6 @@ class TestGridAgent:
         rng = random.Random(42)
         world = GridWorld(width=10, height=10, num_agents=1, rng=rng)
         agent = world.agents[0]
-        _initial_x, _initial_y = agent.x, agent.y
         step_rng = random.Random(99)
         agent.step(world, step_rng)
         # Agent should still be in bounds

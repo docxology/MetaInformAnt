@@ -335,7 +335,12 @@ def plot_temporal_density(
     median_time = np.median(timestamps_numeric)
     std_time = np.std(timestamps_numeric)
 
-    stats_text = f"Events: {len(all_timestamps)}\nMean: {mean_time:.1f} days\nMedian: {median_time:.1f} days\nStd: {std_time:.1f} days"
+    stats_text = (
+        f"Events: {len(all_timestamps)}\n"
+        f"Mean: {mean_time:.1f} days\n"
+        f"Median: {median_time:.1f} days\n"
+        f"Std: {std_time:.1f} days"
+    )
     axes[0].text(
         0.02,
         0.98,

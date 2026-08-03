@@ -61,7 +61,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.data_root:
         os.environ["AMALGKIT_DATA_ROOT"] = str(args.data_root.expanduser().resolve())
 
-    from metainformant.rna.engine.species import species_name_from_config, configured_data_root
+    from metainformant.rna.engine.species import configured_data_root, species_name_from_config
     from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
 
     config_dir = config_path.parent

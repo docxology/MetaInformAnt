@@ -4,26 +4,32 @@ Follows real-implementation policy: all tests use real filesystem operations,
 real configuration files, and real class methods.
 """
 
-from pathlib import Path
 import gzip
 import json
 import subprocess
 import sys
 import threading
 import time
+from pathlib import Path
 
 import pandas as pd
 import pytest
 import yaml
 
 from metainformant.rna.engine import streaming_orchestrator as orchestrator_module
+from metainformant.rna.engine.provenance import (
+    is_current_metadata,
+    is_current_quantification,
+    write_metadata_provenance,
+    write_quant_provenance,
+)
 from metainformant.rna.engine.streaming_orchestrator import (
     StreamingPipelineOrchestrator,
-    _ensure_reference_alias_indexes,
     _build_quant_command,
     _build_sample_tasks,
     _campaign_cached_sra_path,
     _ensure_ncbi_settings_for_data_root,
+    _ensure_reference_alias_indexes,
     _filter_kallisto_ineligible_reads,
     _filter_metadata_by_size,
     _filter_valid_run_rows,
@@ -33,19 +39,13 @@ from metainformant.rna.engine.streaming_orchestrator import (
     _prioritize_tasks_by_raw_state,
     _resolve_metadata_path,
     _resolve_quant_metadata_path,
+    _run_command_in_process_group,
     _runtime_config_path,
     _sample_run_column,
     _species_name_from_config,
-    _run_command_in_process_group,
-    _write_fastq_input_stats,
     _validated_local_fastq_inputs,
+    _write_fastq_input_stats,
     build_pipeline_resource_profile,
-)
-from metainformant.rna.engine.provenance import (
-    is_current_metadata,
-    is_current_quantification,
-    write_metadata_provenance,
-    write_quant_provenance,
 )
 from metainformant.rna.retrieval import ena_downloader as ena_downloader_module
 
@@ -66,9 +66,7 @@ class TestStreamingOrchestrator:
         return d
 
     @pytest.fixture
-    def orchestrator(
-        self, config_dir: Path, log_dir: Path, tmp_path: Path
-    ) -> StreamingPipelineOrchestrator:
+    def orchestrator(self, config_dir: Path, log_dir: Path, tmp_path: Path) -> StreamingPipelineOrchestrator:
         return StreamingPipelineOrchestrator(config_dir, log_dir, db_path=tmp_path / "progress.db")
 
     def test_init(self, orchestrator: StreamingPipelineOrchestrator, config_dir: Path, log_dir: Path) -> None:
@@ -127,12 +125,8 @@ class TestStreamingOrchestrator:
     ) -> None:
         """Repeated discovery cannot replace the source tissue label."""
         metadata_path = tmp_path / "metadata.tsv"
-        pd.DataFrame({"run": ["SRR001"], "tissue": ["Brain"]}).to_csv(
-            metadata_path, sep="\t", index=False
-        )
-        (orchestrator.config_dir / "tissue_mapping.yaml").write_text(
-            "brain:\n  - brain\n  - Brain\n", encoding="utf-8"
-        )
+        pd.DataFrame({"run": ["SRR001"], "tissue": ["Brain"]}).to_csv(metadata_path, sep="\t", index=False)
+        (orchestrator.config_dir / "tissue_mapping.yaml").write_text("brain:\n  - brain\n  - Brain\n", encoding="utf-8")
 
         assert orchestrator.run_tissue_normalization(metadata_path) is True
         first = pd.read_csv(metadata_path, sep="\t")
@@ -276,9 +270,7 @@ def test_task_scheduler_uses_size_within_raw_state_tiers(tmp_path: Path) -> None
     assert [task["_raw_input_bytes"] for task in prioritized] == [1, 1000, 1000, 1]
 
 
-def test_task_scheduler_prioritizes_campaign_cached_sra(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_task_scheduler_prioritizes_campaign_cached_sra(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Complete shared SRA cache entries precede fresh network acquisition."""
 
     data_root = tmp_path / "campaign-data"
@@ -392,17 +384,12 @@ def test_interrupted_paired_singleton_is_fully_classified_before_local_reuse(
     sample_dir.mkdir(parents=True)
     singleton = sample_dir / "SRR_ORPHAN.fastq.gz"
     with gzip.open(singleton, "wt", encoding="utf-8") as handle:
-        handle.write(
-            "@SRR_ORPHAN.1 1/1\nACGT\n+\n!!!!\n"
-            "@SRR_ORPHAN.2 2/1\nTGCA\n+\n!!!!\n"
-        )
+        handle.write("@SRR_ORPHAN.1 1/1\nACGT\n+\n!!!!\n" "@SRR_ORPHAN.2 2/1\nTGCA\n+\n!!!!\n")
 
     monkeypatch.setattr(
         orchestrator_module.ENADownloader,
         "get_fastq_urls",
-        lambda *_args, **_kwargs: pytest.fail(
-            "classified local FASTQ must bypass ENA URL discovery"
-        ),
+        lambda *_args, **_kwargs: pytest.fail("classified local FASTQ must bypass ENA URL discovery"),
     )
     orchestrator = StreamingPipelineOrchestrator(
         tmp_path / "config", tmp_path / "logs", db_path=tmp_path / "progress.db"
@@ -448,16 +435,12 @@ def test_local_fastq_validation_marker_avoids_repeated_full_scan(
     assert (tmp_path / "raw_validation" / "SRR_CACHED.json").is_file()
 
 
-def test_direct_ena_success_writes_raw_validation_witness(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_direct_ena_success_writes_raw_validation_witness(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A direct ENA transfer must leave the same witness as local reuse."""
 
     fastq_root = tmp_path / "fastq"
 
-    def fake_download(
-        _self: object, accession: str, sample_dir: Path
-    ) -> tuple[bool, str, list[Path]]:
+    def fake_download(_self: object, accession: str, sample_dir: Path) -> tuple[bool, str, list[Path]]:
         fastq = sample_dir / f"{accession}.fastq.gz"
         with gzip.open(fastq, "wb") as handle:
             handle.write(b"@read\nACGT\n+\n!!!!\n")
@@ -473,21 +456,17 @@ def test_direct_ena_success_writes_raw_validation_witness(
     assert orchestrator.download_fastq("SRR_DIRECT", fastq_root, expected_paired=False) is True
     marker = tmp_path / "raw_validation" / "SRR_DIRECT.json"
     assert marker.is_file()
-    assert _validated_local_fastq_inputs(
-        fastq_root / "SRR_DIRECT", "SRR_DIRECT", False
-    ) == [fastq_root / "SRR_DIRECT" / "SRR_DIRECT.fastq.gz"]
+    assert _validated_local_fastq_inputs(fastq_root / "SRR_DIRECT", "SRR_DIRECT", False) == [
+        fastq_root / "SRR_DIRECT" / "SRR_DIRECT.fastq.gz"
+    ]
 
 
-def test_interleaved_ena_paired_fastq_is_split_idempotently(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_interleaved_ena_paired_fastq_is_split_idempotently(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A one-file ENA paired run becomes two validated Kallisto mates."""
 
     fastq_root = tmp_path / "fastq"
 
-    def fake_download(
-        _self: object, accession: str, sample_dir: Path
-    ) -> tuple[bool, str, list[Path]]:
+    def fake_download(_self: object, accession: str, sample_dir: Path) -> tuple[bool, str, list[Path]]:
         source = sample_dir / f"{accession}.fastq.gz"
         with gzip.open(source, "wt", encoding="utf-8") as handle:
             handle.write(
@@ -520,13 +499,11 @@ def test_interleaved_ena_paired_fastq_is_split_idempotently(
     "records, expected_error",
     [
         (
-            "@read1/1\nACGT\n+\n!!!\n"
-            "@read1/2\nTGCA\n+\n!!!!\n",
+            "@read1/1\nACGT\n+\n!!!\n" "@read1/2\nTGCA\n+\n!!!!\n",
             "sequence/quality length mismatch",
         ),
         (
-            "@read1/2\nACGT\n+\n!!!!\n"
-            "@read1/1\nTGCA\n+\n!!!!\n",
+            "@read1/2\nACGT\n+\n!!!!\n" "@read1/1\nTGCA\n+\n!!!!\n",
             "explicit FASTQ mate order is reversed",
         ),
     ],
@@ -567,8 +544,7 @@ def test_missing_sra_statistics_are_derived_from_validated_fastq(
 
     assert _write_fastq_input_stats(sample_dir, "SRR_STATS") is True
     assert (sample_dir / "getfastq_stats.tsv").read_text(encoding="utf-8") == (
-        "run\tnum_written\tbp_written\tbp_fastp_in\n"
-        "SRR_STATS\t2\t10\t10\n"
+        "run\tnum_written\tbp_written\tbp_fastp_in\n" "SRR_STATS\t2\t10\t10\n"
     )
     assert _write_fastq_input_stats(sample_dir, "SRR_STATS") is True
 
@@ -576,28 +552,24 @@ def test_missing_sra_statistics_are_derived_from_validated_fastq(
 def test_positive_sra_counts_avoid_recount_when_spot_length_is_missing(
     tmp_path: Path,
 ) -> None:
-    """Amalgkit 0.16.32 can infer spot length from positive SRA counts."""
+    """Amalgkit 0.16.33 can infer spot length from positive SRA counts."""
 
     metadata_path = tmp_path / "metadata.tsv"
     metadata_path.write_text(
-        "run\ttotal_spots\ttotal_bases\tspot_length\n"
-        "SRR_RATIO\t100\t5000\t\n",
+        "run\ttotal_spots\ttotal_bases\tspot_length\n" "SRR_RATIO\t100\t5000\t\n",
         encoding="utf-8",
     )
 
     assert _metadata_requires_fastq_input_stats(metadata_path, "SRR_RATIO") is False
 
     metadata_path.write_text(
-        "run\ttotal_spots\ttotal_bases\tspot_length\n"
-        "SRR_MISSING\t100\t\t\n",
+        "run\ttotal_spots\ttotal_bases\tspot_length\n" "SRR_MISSING\t100\t\t\n",
         encoding="utf-8",
     )
     assert _metadata_requires_fastq_input_stats(metadata_path, "SRR_MISSING") is True
 
 
-def test_local_sra_is_extracted_before_network_acquisition(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_local_sra_is_extracted_before_network_acquisition(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """An existing local SRA archive is processed in staging and retained for cleanup gating."""
 
     fastq_root = tmp_path / "fastq"
@@ -641,9 +613,7 @@ def test_local_sra_is_extracted_before_network_acquisition(
     assert (sample_dir / "SRR_LOCAL_SRA.fastq.gz").is_file()
 
 
-def test_local_sra_can_use_reserved_host_fasterq_scratch(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_local_sra_can_use_reserved_host_fasterq_scratch(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """SSD scratch stages a cross-volume source while retaining the authoritative input."""
 
     fastq_root = tmp_path / "external" / "fastq"
@@ -729,9 +699,7 @@ def test_local_sra_source_staging_failure_uses_authoritative_archive(
             assert command[1] == str(sra)
             output_dir = Path(command[command.index("--outdir") + 1])
             output_dir.mkdir(parents=True, exist_ok=True)
-            (output_dir / "SRR_SOURCE_FALLBACK.fastq").write_text(
-                "@read\nACGT\n+\n!!!!\n"
-            )
+            (output_dir / "SRR_SOURCE_FALLBACK.fastq").write_text("@read\nACGT\n+\n!!!!\n")
         elif command[0] == "pigz":
             source = Path(command[-1])
             with gzip.open(source.with_suffix(".fastq.gz"), "wb") as handle:
@@ -758,9 +726,7 @@ def test_local_sra_source_staging_failure_uses_authoritative_archive(
     assert not (local_scratch / "SRR_SOURCE_FALLBACK").exists()
 
 
-def test_sra_validation_and_extraction_share_fallback_slot(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_sra_validation_and_extraction_share_fallback_slot(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The fallback semaphore bounds validation and extraction as one I/O unit."""
 
     orchestrator = StreamingPipelineOrchestrator(
@@ -923,9 +889,7 @@ def test_remote_fasterq_fallback_can_use_fixed_reserved_host_scratch(
     assert not (local_scratch / "SRR_REMOTE_TMP").exists()
 
 
-def test_fasterq_promotion_reuses_existing_valid_mate(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_fasterq_promotion_reuses_existing_valid_mate(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Fallback extraction supplies a missing mate without replacing completed transfer work."""
 
     data_root = tmp_path / "campaign-data"
@@ -981,8 +945,7 @@ def test_fasterq_interleaved_paired_output_is_split_and_promoted(
             output_dir = Path(command[command.index("--outdir") + 1])
             output_dir.mkdir(parents=True, exist_ok=True)
             (output_dir / "SRR_INTERLEAVED_SRA.fastq").write_text(
-                "@spot.1 1 length=4\nACGT\n+\n!!!!\n"
-                "@spot.1 2 length=4\nTGCA\n+\n!!!!\n"
+                "@spot.1 1 length=4\nACGT\n+\n!!!!\n" "@spot.1 2 length=4\nTGCA\n+\n!!!!\n"
             )
         elif command[0] == "pigz":
             source = Path(command[-1])
@@ -1011,7 +974,7 @@ def test_fasterq_interleaved_paired_output_is_split_and_promoted(
 def test_fasterq_paired_metadata_single_read_output_is_reconciled(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A read-1-only archive follows Amalgkit 0.16.32's single-file rule."""
+    """A read-1-only archive follows Amalgkit 0.16.33's single-file rule."""
 
     fastq_root = tmp_path / "fastq"
     sample_dir = fastq_root / "SRR_LAYOUT_MISMATCH"
@@ -1022,8 +985,7 @@ def test_fasterq_paired_metadata_single_read_output_is_reconciled(
             output_dir = Path(command[command.index("--outdir") + 1])
             output_dir.mkdir(parents=True, exist_ok=True)
             (output_dir / "SRR_LAYOUT_MISMATCH.fastq").write_text(
-                "@SRR_LAYOUT_MISMATCH.1 1/1\nACGT\n+\n!!!!\n"
-                "@SRR_LAYOUT_MISMATCH.2 2/1\nTGCA\n+\n!!!!\n"
+                "@SRR_LAYOUT_MISMATCH.1 1/1\nACGT\n+\n!!!!\n" "@SRR_LAYOUT_MISMATCH.2 2/1\nTGCA\n+\n!!!!\n"
             )
         elif command[0] == "pigz":
             source = Path(command[-1])
@@ -1047,15 +1009,10 @@ def test_fasterq_paired_metadata_single_read_output_is_reconciled(
     singleton = sample_dir / "SRR_LAYOUT_MISMATCH.fastq.gz"
     assert singleton.is_file()
     assert not (sample_dir / "SRR_LAYOUT_MISMATCH_1.fastq.gz").exists()
-    marker = json.loads(
-        (tmp_path / "raw_validation" / "SRR_LAYOUT_MISMATCH.json").read_text()
-    )
+    marker = json.loads((tmp_path / "raw_validation" / "SRR_LAYOUT_MISMATCH.json").read_text())
     assert marker["declared_library_layout"] == "paired"
     assert marker["effective_library_layout"] == "single"
-    assert (
-        marker["layout_reconciliation"]
-        == "amalgkit_0.16.32_paired_metadata_single_fastq"
-    )
+    assert marker["layout_reconciliation"] == "amalgkit_0.16.33_paired_metadata_single_fastq"
 
 
 def test_fasterq_nonadjacent_mate_two_is_not_downgraded_to_single(
@@ -1072,8 +1029,7 @@ def test_fasterq_nonadjacent_mate_two_is_not_downgraded_to_single(
             output_dir = Path(command[command.index("--outdir") + 1])
             output_dir.mkdir(parents=True, exist_ok=True)
             (output_dir / "SRR_MIXED.fastq").write_text(
-                "@unrelated-a/1\nACGT\n+\n!!!!\n"
-                "@unrelated-b/2\nTGCA\n+\n!!!!\n"
+                "@unrelated-a/1\nACGT\n+\n!!!!\n" "@unrelated-b/2\nTGCA\n+\n!!!!\n"
             )
         elif command[0] == "pigz":
             source = Path(command[-1])
@@ -1097,9 +1053,7 @@ def test_fasterq_nonadjacent_mate_two_is_not_downgraded_to_single(
     assert not list(sample_dir.glob("*.fastq.gz"))
 
 
-def test_campaign_cached_sra_is_extracted_before_ena(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_campaign_cached_sra_is_extracted_before_ena(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A shared NCBI cache database bypasses ENA without moving the cache."""
 
     data_root = tmp_path / "campaign-data"
@@ -1152,9 +1106,7 @@ def test_invalid_sra_validation_witness_is_reused_until_source_changes(
     source.write_bytes(b"corrupt cache payload")
     calls: list[list[str]] = []
 
-    def failed_validation(
-        command: list[str], **_kwargs: object
-    ) -> subprocess.CompletedProcess[str]:
+    def failed_validation(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
         calls.append(command)
         return subprocess.CompletedProcess(
             command,
@@ -1177,9 +1129,7 @@ def test_invalid_sra_validation_witness_is_reused_until_source_changes(
     assert len(calls) == 2
 
 
-def test_invalid_cached_sra_skips_extraction_and_uses_ena(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_invalid_cached_sra_skips_extraction_and_uses_ena(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Invalid cached evidence is retained while a valid ENA payload replaces its role."""
 
     data_root = tmp_path / "campaign-data"
@@ -1272,11 +1222,14 @@ def test_failed_cached_sra_is_not_extracted_twice_in_one_invocation(
 
     monkeypatch.setattr(orchestrator, "_extract_sra_to_fastq_bounded", failed_extraction)
 
-    assert orchestrator.download_fastq(
-        "SRR_CACHED_FAIL",
-        tmp_path / "fastq",
-        expected_paired=False,
-    ) is False
+    assert (
+        orchestrator.download_fastq(
+            "SRR_CACHED_FAIL",
+            tmp_path / "fastq",
+            expected_paired=False,
+        )
+        is False
+    )
     assert extraction_sources == [cached]
     assert cached.is_file()
 
@@ -1299,9 +1252,7 @@ def test_failed_ena_can_defer_ncbi_without_occupying_primary_worker(
     monkeypatch.setattr(
         orchestrator,
         "_extract_sra_to_fastq_bounded",
-        lambda *_args, **_kwargs: pytest.fail(
-            "deferred NCBI fallback must not run in the primary acquisition worker"
-        ),
+        lambda *_args, **_kwargs: pytest.fail("deferred NCBI fallback must not run in the primary acquisition worker"),
     )
 
     outcome = orchestrator.download_fastq(
@@ -1379,9 +1330,7 @@ def test_resource_profile_can_bound_quant_slots_independently(
     assert explicit.quant_threads_per_worker == 4
 
 
-def test_fasterq_fallback_uses_profiled_child_process_threads(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_fasterq_fallback_uses_profiled_child_process_threads(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The NCBI fallback must use the configured fasterq and pigz budgets."""
 
     # This synthetic test uses a temporary directory on the system volume.
@@ -1444,9 +1393,7 @@ def test_campaign_ncbi_settings_preserve_global_configuration(tmp_path: Path) ->
     assert str(data_root / ".sra-cache") in settings_path.read_text()
 
 
-def test_run_all_keeps_submitted_sample_tasks_bounded(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_run_all_keeps_submitted_sample_tasks_bounded(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A large task list never exceeds the configured in-flight window."""
 
     from concurrent.futures import ThreadPoolExecutor as RealThreadPoolExecutor
@@ -1651,9 +1598,7 @@ def test_deferred_ncbi_fallback_does_not_starve_primary_executor(
     }
 
 
-def test_failed_download_preserves_invalid_transfer_artifacts(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_failed_download_preserves_invalid_transfer_artifacts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Fallback cleanup must retain invalid payloads and resumable partials."""
 
     fastq_dir = tmp_path / "fastq"
@@ -1766,9 +1711,7 @@ def test_build_quant_command_uses_metadata_cleanup_and_index(tmp_path: Path) -> 
     assert cmd[cmd.index("--redo") + 1] == "yes"
 
 
-def test_build_quant_command_uses_atomic_local_index_cache(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_build_quant_command_uses_atomic_local_index_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """An opt-in local cache accelerates index reads without moving outputs."""
 
     source_dir = tmp_path / "external" / "index"
@@ -1805,9 +1748,7 @@ def test_build_quant_command_uses_atomic_local_index_cache(
     assert (cached_dir / "genome.idx").read_bytes() == source.read_bytes()
 
 
-def test_stage_timeouts_are_explicit_and_configurable(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_stage_timeouts_are_explicit_and_configurable(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Recovery profiles can extend each long-running stage independently."""
 
     values = {
@@ -1945,9 +1886,7 @@ def test_local_quant_scratch_promotes_validated_output_and_archives_replaced_res
     local_sample.mkdir(parents=True)
     (local_sample / "SRR_LOCAL_abundance.tsv").write_text("target_id\ttpm\n" + "TX\t1\n" * 30)
     assert orchestrator._promote_local_quant_output(work_dir, "SRR_LOCAL", scratch_root)
-    assert (work_dir / "quant" / "SRR_LOCAL" / "SRR_LOCAL_abundance.tsv").read_text().startswith(
-        "target_id"
-    )
+    assert (work_dir / "quant" / "SRR_LOCAL" / "SRR_LOCAL_abundance.tsv").read_text().startswith("target_id")
     archives = list((work_dir / "archive" / "quant_replaced" / "SRR_LOCAL").iterdir())
     assert len(archives) == 1
     orchestrator._cleanup_local_quant_workspace(scratch_root)
@@ -2004,9 +1943,7 @@ def test_local_quant_scratch_stages_validated_fastq_when_enabled(
         "SRR_STAGE_1.fastq.gz",
         "SRR_STAGE_2.fastq.gz",
     ]
-    assert (staged_sample / "SRR_STAGE_1.fastq.gz").read_bytes() == (
-        raw_dir / "SRR_STAGE_1.fastq.gz"
-    ).read_bytes()
+    assert (staged_sample / "SRR_STAGE_1.fastq.gz").read_bytes() == (raw_dir / "SRR_STAGE_1.fastq.gz").read_bytes()
     assert (raw_dir / "SRR_STAGE_1.fastq.gz").exists()
     marker = json.loads((work_dir / "raw_validation" / "SRR_STAGE.json").read_text())
     assert marker["declared_library_layout"] == "paired"
@@ -2172,12 +2109,14 @@ def test_current_quantification_skips_download_and_reclaims_leftover_raw(
     orchestrator = StreamingPipelineOrchestrator(
         tmp_path / "config", tmp_path / "logs", db_path=tmp_path / "progress.db"
     )
-    orchestrator.download_fastq = lambda *_args, **_kwargs: pytest.fail("current quant must skip download")  # type: ignore[method-assign]
-    orchestrator.quant_sample = lambda *_args, **_kwargs: pytest.fail("current quant must skip quantification")  # type: ignore[method-assign]
-
-    result = orchestrator.process_single_sample(
-        "SRR123", 1, raw_dir, config_path, "test_species", threads=1
+    orchestrator.download_fastq = (  # type: ignore[method-assign]
+        lambda *_args, **_kwargs: pytest.fail("current quant must skip download")
     )
+    orchestrator.quant_sample = (  # type: ignore[method-assign]
+        lambda *_args, **_kwargs: pytest.fail("current quant must skip quantification")
+    )
+
+    result = orchestrator.process_single_sample("SRR123", 1, raw_dir, config_path, "test_species", threads=1)
 
     assert result["skipped"] is True
     assert result["quantified"] is True
@@ -2216,9 +2155,7 @@ def test_runtime_config_remaps_existing_external_alias(tmp_path: Path, monkeypat
     assert config["steps"]["select"]["select_rules_tsv"] == "config/amalgkit/select_rules.tsv"
 
 
-def test_missing_species_preparation_uses_only_current_steps(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_missing_species_preparation_uses_only_current_steps(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Automatic preparation must not invoke removed Amalgkit CLI stages."""
     data_root = tmp_path / "data"
     monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(data_root))
@@ -2263,9 +2200,7 @@ def test_missing_species_preparation_uses_only_current_steps(
 
     assert len(tasks) == 1
     prep_calls = [
-        call
-        for call in calls
-        if len(call) >= 2 and call[0] == "amalgkit" and call[1] in {"metadata", "select"}
+        call for call in calls if len(call) >= 2 and call[0] == "amalgkit" and call[1] in {"metadata", "select"}
     ]
     assert [call[1] for call in prep_calls] == ["metadata", "select"]
     assert prep_calls[0][prep_calls[0].index("--redo") + 1] == "yes"

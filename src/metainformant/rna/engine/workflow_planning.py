@@ -20,6 +20,7 @@ from metainformant.rna.engine.workflow_core import AmalgkitWorkflowConfig
 
 logger = logging.get_logger(__name__)
 
+
 def apply_step_defaults(config: AmalgkitWorkflowConfig) -> AmalgkitWorkflowConfig:
     """Apply default values to workflow step configurations.
 
@@ -170,11 +171,15 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
     # cstmm/csfilter are current optional cross-species commands. They require
     # either an OrthoFinder table or BUSCO-derived ortholog inputs and are not
     # silently treated as a per-species default.
-    has_ortholog_params = any(
-        bool(per_step_dict.get(step, {}).get(key))
-        for step in ("cstmm", "csfilter")
-        for key in ("orthogroup_table", "dir_busco")
-    ) or bool(config.extra_config.get("orthogroup_table")) or bool(config.extra_config.get("dir_busco"))
+    has_ortholog_params = (
+        any(
+            bool(per_step_dict.get(step, {}).get(key))
+            for step in ("cstmm", "csfilter")
+            for key in ("orthogroup_table", "dir_busco")
+        )
+        or bool(config.extra_config.get("orthogroup_table"))
+        or bool(config.extra_config.get("dir_busco"))
+    )
 
     if has_ortholog_params:
         merge_index = workflow_steps.index("wsfilter") + 1
@@ -191,7 +196,7 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
         step_params = {
             "out_dir": str(config.work_dir),
         }
-        # Amalgkit 0.16.32's native NCBI taxonomy database is shared read-only
+        # Amalgkit 0.16.33's native NCBI taxonomy database is shared read-only
         # workflow infrastructure.  A campaign may provide one validated
         # directory through the environment so metadata/integrate/getfastq do
         # not rebuild the multi-million-row SQLite database once per species.
@@ -295,7 +300,8 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
             elif "metadata" not in step_params:
                 step_params["metadata"] = str(config.work_dir / "metadata" / "metadata.tsv")
         elif step == "quant":
-            # Quant uses metadata from integrate step (amalgkit creates metadata_updated_for_private_fastq.tsv after integrate)
+            # Quant uses metadata from integrate step (Amalgkit creates
+            # metadata_updated_for_private_fastq.tsv after integrate).
             # Prefer integrated metadata if it exists, otherwise use selected metadata
             integrated_metadata = config.work_dir / "metadata" / "metadata_updated_for_private_fastq.tsv"
             old_integrated_metadata = config.work_dir / "metadata" / "metadata.tsv"
@@ -621,7 +627,7 @@ def prepare_reference_genome(config: AmalgkitWorkflowConfig) -> bool:
 
         # 1. Define paths
         index_dir = config.work_dir / "index"
-        # Amalgkit 0.16.32 resolves kallisto indexes using the exact
+        # Amalgkit 0.16.33 resolves kallisto indexes using the exact
         # ``<species>.idx`` stem.  Older MetaInformAnt artifacts used a
         # ``_transcripts`` suffix, so the compatibility lookup below keeps
         # those artifacts usable while all newly produced indexes follow the

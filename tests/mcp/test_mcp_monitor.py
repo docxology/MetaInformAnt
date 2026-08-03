@@ -50,5 +50,7 @@ def test_process_detection_ignores_monitor_and_matches_workflows() -> None:
         ["uv", "run", "python", "-m", "metainformant.mcp.tools.amalgkit_monitor"]
     )
     assert amalgkit_monitor.is_pipeline_cmdline(["python", "scripts/rna/run_all_species.py", "--dry-run"])
-    assert amalgkit_monitor.is_pipeline_cmdline(["python", "scripts/rna/process_species.py", "--species", "apis_mellifera"])
+    assert amalgkit_monitor.is_pipeline_cmdline(
+        ["python", "scripts/rna/process_species.py", "--species", "apis_mellifera"]
+    )
     assert amalgkit_monitor.is_pipeline_cmdline(["amalgkit", "quant", "--threads", "4"])

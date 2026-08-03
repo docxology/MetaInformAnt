@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from metainformant.visualization.plots import animations as animation_module
 from metainformant.visualization.plots.animations import (
     animate_clustering,
     animate_evolution,
@@ -14,7 +15,6 @@ from metainformant.visualization.plots.animations import (
     animate_time_series,
     animate_trajectory,
 )
-from metainformant.visualization.plots import animations as animation_module
 
 # Check for optional dependencies
 try:

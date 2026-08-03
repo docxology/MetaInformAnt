@@ -736,7 +736,10 @@ def _analyze_methylation_chip_associations(
         associations["findings"].append(
             {
                 "type": "overlap",
-                "description": f"{overlapping} methylation sites ({associations['statistics']['overlap_rate']:.1%}) overlap with ChIP-seq peaks",
+                "description": (
+                    f"{overlapping} methylation sites "
+                    f"({associations['statistics']['overlap_rate']:.1%}) overlap with ChIP-seq peaks"
+                ),
                 "count": overlapping,
             }
         )
@@ -868,7 +871,10 @@ def _analyze_methylation_atac_associations(
         associations["findings"].append(
             {
                 "type": "accessible_overlap",
-                "description": f"{in_accessible} methylation sites ({in_accessible/total_sites:.1%}) located within accessible chromatin",
+                "description": (
+                    f"{in_accessible} methylation sites "
+                    f"({in_accessible / total_sites:.1%}) located within accessible chromatin"
+                ),
                 "count": in_accessible,
             }
         )
@@ -880,7 +886,10 @@ def _analyze_methylation_atac_associations(
             associations["findings"].append(
                 {
                     "type": "methylation_pattern",
-                    "description": f"Lower methylation in accessible regions (mean: {mean_acc:.3f}) vs closed chromatin (mean: {mean_clo:.3f})",
+                    "description": (
+                        f"Lower methylation in accessible regions (mean: {mean_acc:.3f}) "
+                        f"vs closed chromatin (mean: {mean_clo:.3f})"
+                    ),
                     "accessible_mean": mean_acc,
                     "closed_mean": mean_clo,
                 }

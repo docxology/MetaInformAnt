@@ -287,7 +287,7 @@ def _parse_sra_xml(xml_data: bytes, query: str) -> list:
     Returns:
         List of dictionaries with study metadata
     """
-    import xml.etree.ElementTree as ET
+    from defusedxml import ElementTree as ET
 
     results = []
 

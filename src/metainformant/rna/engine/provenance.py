@@ -329,9 +329,7 @@ def is_current_metadata(work_dir: str | Path) -> bool:
         return False
     expected_hashes = {
         "metadata_sha256": digest_file(work_path / "metadata" / "metadata.tsv"),
-        "selected_metadata_sha256": digest_file(
-            work_path / "metadata" / "metadata_selected.tsv"
-        ),
+        "selected_metadata_sha256": digest_file(work_path / "metadata" / "metadata_selected.tsv"),
     }
     return recorded_hashes == expected_hashes
 
@@ -363,9 +361,7 @@ def write_metadata_provenance(
         # This catches partial writes or out-of-band edits without forcing old
         # version-bound sidecars to invalidate an otherwise resumable campaign.
         "metadata_sha256": digest_file(metadata_dir / "metadata.tsv"),
-        "selected_metadata_sha256": digest_file(
-            metadata_dir / "metadata_selected.tsv"
-        ),
+        "selected_metadata_sha256": digest_file(metadata_dir / "metadata_selected.tsv"),
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
     destination = metadata_provenance_path(work_path)
@@ -428,9 +424,7 @@ def _downstream_payload_is_current_base(
     normalised = _normalise_steps(declared)
     if normalised is None or not normalised:
         return False
-    required = {
-        str(step).strip().lower() for step in (required_steps or set()) if str(step).strip()
-    }
+    required = {str(step).strip().lower() for step in (required_steps or set()) if str(step).strip()}
     if not required <= set(normalised):
         return False
 
@@ -555,9 +549,7 @@ def write_downstream_provenance(
     if quant_inputs is None:
         raise OSError(f"Unable to record current quantification inputs under {work_path}")
     if strict and len(metadata_inputs) != 2:
-        raise OSError(
-            f"Downstream checkpoint requires metadata.tsv and metadata_selected.tsv under {work_path}"
-        )
+        raise OSError(f"Downstream checkpoint requires metadata.tsv and metadata_selected.tsv under {work_path}")
     if strict and not quant_inputs:
         raise OSError(f"Downstream checkpoint requires current quantification inputs under {work_path}")
     if strict and quantified_samples != len(quant_inputs):
@@ -565,17 +557,10 @@ def write_downstream_provenance(
             "quantified_samples does not match the current quantification inputs: "
             f"{quantified_samples} != {len(quant_inputs)}"
         )
-    output_manifest = (
-        downstream_output_manifest(work_path, normalised_steps, include_hash=True)
-        if strict
-        else {}
-    )
+    output_manifest = downstream_output_manifest(work_path, normalised_steps, include_hash=True) if strict else {}
     if strict and any(not output_manifest.get(step) for step in normalised_steps):
         missing = [step for step in normalised_steps if not output_manifest.get(step)]
-        raise OSError(
-            "Downstream checkpoint has no readable output for stage(s): "
-            + ", ".join(missing)
-        )
+        raise OSError("Downstream checkpoint has no readable output for stage(s): " + ", ".join(missing))
     config_file = Path(config_path).expanduser().resolve()
     if strict and digest_file(config_file) is None:
         raise OSError(f"Downstream checkpoint config is missing or unreadable: {config_file}")

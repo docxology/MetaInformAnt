@@ -1005,7 +1005,8 @@ def _predict_by_similarity(
             # Return empty predictions with explanation
             predictions[target] = []
             logger.info(
-                f"Target protein {target} not found in network - cannot predict interactions without additional features"
+                f"Target protein {target} not found in network - "
+                "cannot predict interactions without additional features"
             )
 
     return predictions

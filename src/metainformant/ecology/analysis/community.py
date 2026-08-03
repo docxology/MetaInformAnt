@@ -83,7 +83,8 @@ def calculate_single_diversity(abundances: List[float], method: str) -> float:
         return -sum(p * math.log(p) for p in proportions if p > 0)
 
     elif method == "simpson":
-        # Simpson diversity index: 1 - D, where D = Σ(pi^2) is the probability of picking two individuals of the same species
+        # Simpson diversity index: 1 - D, where D = Σ(pi^2) is the
+        # probability of picking two individuals of the same species.
         simpson_concentration = sum(p**2 for p in proportions)
         return 1.0 - simpson_concentration
 

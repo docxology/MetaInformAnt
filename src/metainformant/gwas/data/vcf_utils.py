@@ -10,6 +10,7 @@ which must be available on ``$PATH``.
 
 from __future__ import annotations
 
+import random
 import subprocess
 from pathlib import Path
 from typing import List, Optional
@@ -79,11 +80,9 @@ def bgzip_and_index(vcf_path: str | Path) -> Optional[Path]:
         if vcf_path.suffix == ".vcf":
             if not gz.exists() or gz.stat().st_size < 1000:
                 tmp = gz.with_suffix(".tmp")
-                subprocess.run(
-                    f"bgzip -c {vcf_path} > {tmp} && mv {tmp} {gz}",
-                    shell=True,
-                    check=True,
-                )
+                with tmp.open("wb") as handle:
+                    subprocess.run(["bgzip", "-c", str(vcf_path)], stdout=handle, check=True)
+                tmp.replace(gz)
         tbi = Path(str(gz) + ".tbi")
         if not tbi.exists():
             subprocess.run(["tabix", "-p", "vcf", str(gz)], check=True)
@@ -110,11 +109,20 @@ def merge_vcfs(
         Path to the merged VCF.
     """
     output_path = Path(output_path)
-    vcf_list = " ".join(str(v) for v in vcf_gz_paths)
     logger.info("Merging %d VCFs → %s", len(vcf_gz_paths), output_path)
     subprocess.run(
-        f"bcftools merge -0 --threads {threads} -O z -o {output_path} {vcf_list}",
-        shell=True,
+        [
+            "bcftools",
+            "merge",
+            "-0",
+            "--threads",
+            str(threads),
+            "-O",
+            "z",
+            "-o",
+            str(output_path),
+            *(str(path) for path in vcf_gz_paths),
+        ],
         check=True,
     )
     subprocess.run(["tabix", "-p", "vcf", str(output_path)], check=True)
@@ -172,15 +180,35 @@ def subsample_vcf(
         effective_fraction * 100,
         seed,
     )
-    cmd = (
-        f"bcftools view -h {input_vcf} > {tmp} && "
-        f"bcftools view -H {input_vcf} | "
-        f"awk 'BEGIN{{srand({seed})}} rand() < {effective_fraction}' >> {tmp} && "
-        f"bgzip -c {tmp} > {output_vcf} && "
-        f"tabix -p vcf {output_vcf} && "
-        f"rm {tmp}"
-    )
-    subprocess.run(cmd, shell=True, check=True)
+    rng = random.Random(seed)
+    try:
+        with tmp.open("w", encoding="utf-8") as handle:
+            subprocess.run(
+                ["bcftools", "view", "-h", str(input_vcf)],
+                stdout=handle,
+                check=True,
+            )
+
+        process = subprocess.Popen(
+            ["bcftools", "view", "-H", str(input_vcf)],
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+        assert process.stdout is not None
+        with tmp.open("a", encoding="utf-8") as handle:
+            for line in process.stdout:
+                if rng.random() < effective_fraction:
+                    handle.write(line)
+        return_code = process.wait()
+        if return_code:
+            raise subprocess.CalledProcessError(return_code, process.args)
+
+        with output_vcf.open("wb") as handle:
+            subprocess.run(["bgzip", "-c", str(tmp)], stdout=handle, check=True)
+        subprocess.run(["tabix", "-p", "vcf", str(output_vcf)], check=True)
+    finally:
+        tmp.unlink(missing_ok=True)
+
     n = count_variants(str(output_vcf))
     logger.info("Subsampled VCF contains %d variants", n)
     return n

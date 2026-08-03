@@ -11,9 +11,8 @@ from pathlib import Path
 
 import pytest
 
+from metainformant.rna.engine.provenance import is_current_quantification, write_quant_provenance
 from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
-from metainformant.rna.engine.provenance import write_quant_provenance
-from metainformant.rna.engine.provenance import is_current_quantification
 from metainformant.rna.engine.workflow_execution import (
     _is_streaming_step_already_done,
     _process_streaming_sample,
@@ -171,9 +170,7 @@ def test_process_streaming_sample_records_quant_provenance_before_cleanup(tmp_pa
         quant_dir = config.work_dir / "quant" / sample_id
         quant_dir.mkdir(parents=True, exist_ok=True)
         (quant_dir / "abundance.tsv").write_text("target_id\ttpm\n" + ("GENE1\t1.0\n" * 30))
-        return subprocess.CompletedProcess(
-            args=["amalgkit", "quant"], returncode=0, stdout="", stderr=""
-        )
+        return subprocess.CompletedProcess(args=["amalgkit", "quant"], returncode=0, stdout="", stderr="")
 
     results = _process_streaming_sample(
         config=config,
@@ -197,9 +194,7 @@ def test_process_streaming_sample_rejects_success_without_quant_output(tmp_path:
     config = _workflow_config(tmp_path)
 
     def fake_quant(params: dict[str, object]) -> subprocess.CompletedProcess[str]:
-        return subprocess.CompletedProcess(
-            args=["amalgkit", "quant"], returncode=0, stdout="", stderr=""
-        )
+        return subprocess.CompletedProcess(args=["amalgkit", "quant"], returncode=0, stdout="", stderr="")
 
     results = _process_streaming_sample(
         config=config,

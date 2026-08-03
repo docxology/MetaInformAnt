@@ -253,13 +253,15 @@ class EventSequencePredictor:
             if isinstance(clf_data, dict):
                 model.classifier = {k: np.array(v) if isinstance(v, list) else v for k, v in clf_data.items()}
             else:
-                model.classifier = pickle.loads(bytes.fromhex(clf_data))
+                # Model payloads are produced by this class and must come from
+                # a trusted local artifact; pickle is not a general input format.
+                model.classifier = pickle.loads(bytes.fromhex(clf_data))  # nosec B301
         if "regressor" in model_data:
             reg_data = model_data["regressor"]
             if isinstance(reg_data, dict):
                 model.regressor = {k: np.array(v) if isinstance(v, list) else v for k, v in reg_data.items()}
             else:
-                model.regressor = pickle.loads(bytes.fromhex(reg_data))
+                model.regressor = pickle.loads(bytes.fromhex(reg_data))  # nosec B301
 
         logger.info(f"Loaded model from {path}")
         return model

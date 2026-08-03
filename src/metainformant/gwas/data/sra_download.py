@@ -542,7 +542,7 @@ def _get_project_experiments(project_id: str, email: str | None = None) -> List[
         xml_data = handle.read()
         handle.close()
 
-        import xml.etree.ElementTree as ET
+        from defusedxml import ElementTree as ET
 
         root = ET.fromstring(xml_data)
         experiments = []
@@ -670,7 +670,7 @@ def search_sra_for_organism(organism: str, max_results: int = 100, email: str | 
 
             # Parse XML response to extract experiment info
             # Note: Full XML parsing requires xml.etree.ElementTree
-            import xml.etree.ElementTree as ET
+            from defusedxml import ElementTree as ET
 
             root = ET.fromstring(xml_data)
             for experiment_pkg in root.findall(".//EXPERIMENT_PACKAGE"):

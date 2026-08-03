@@ -551,7 +551,9 @@ def export_methylation_bedgraph(methylation_data: Dict[str, List[MethylationSite
     with open(output_path, "w") as f:
         # Write track header
         f.write(
-            'track type=bedGraph name="Methylation" description="DNA Methylation Levels" visibility=full color=200,100,0\n'
+            'track type=bedGraph name="Methylation" '
+            'description="DNA Methylation Levels" visibility=full '
+            "color=200,100,0\n"
         )
 
         for chromosome in sorted(methylation_data.keys()):

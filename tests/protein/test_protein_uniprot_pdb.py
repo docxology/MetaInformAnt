@@ -1,21 +1,21 @@
 from __future__ import annotations
 
 import http.server
-from pathlib import Path
 import threading
+from pathlib import Path
 
 import pytest
 
 from metainformant.protein._network import get_protein_api_timeout
+from metainformant.protein.database import uniprot as uniprot_module
 from metainformant.protein.database.uniprot import (
     _extract_go_terms,
     _extract_keywords,
     map_ids_uniprot,
     validate_uniprot_accession,
 )
-from metainformant.protein.database import uniprot as uniprot_module
-from metainformant.protein.structure.pdb import fetch_pdb_structure
 from metainformant.protein.structure import pdb as pdb_module
+from metainformant.protein.structure.pdb import fetch_pdb_structure
 
 
 @pytest.fixture
@@ -45,7 +45,11 @@ def local_protein_api(monkeypatch):
                 return
             self._write(
                 200,
-                b"HEADER    METAINFORMANT TEST STRUCTURE\nATOM      1  CA  ALA A   1       1.000   2.000   3.000  1.00 20.00           C\n",
+                (
+                    b"HEADER    METAINFORMANT TEST STRUCTURE\n"
+                    b"ATOM      1  CA  ALA A   1       1.000   2.000   3.000  "
+                    b"1.00 20.00           C\n"
+                ),
                 "chemical/x-pdb",
             )
 

@@ -22,7 +22,7 @@ try:
         mean_squared_error,
         r2_score,
     )
-    from sklearn.model_selection import KFold, StratifiedKFold, cross_val_score, cross_validate, train_test_split
+    from sklearn.model_selection import KFold, StratifiedKFold, cross_val_score, train_test_split
 
     HAS_SKLEARN = True
 except ImportError:

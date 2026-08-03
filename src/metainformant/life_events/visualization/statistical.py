@@ -1012,7 +1012,13 @@ def plot_sequence_length_distribution(
     min_len = np.min(lengths)
     max_len = np.max(lengths)
 
-    stats_text = f"n = {len(lengths)}\nMean: {mean_len:.1f}\nMedian: {median_len:.1f}\nStd: {std_len:.1f}\nRange: {min_len}-{max_len}"
+    stats_text = (
+        f"n = {len(lengths)}\n"
+        f"Mean: {mean_len:.1f}\n"
+        f"Median: {median_len:.1f}\n"
+        f"Std: {std_len:.1f}\n"
+        f"Range: {min_len}-{max_len}"
+    )
     axes[0].text(
         0.95,
         0.95,

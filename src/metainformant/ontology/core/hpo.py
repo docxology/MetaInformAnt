@@ -65,7 +65,7 @@ def fetch_hpo_term(hp_id: str, *, rate_limit_s: float = _DEFAULT_RATE_LIMIT_S) -
         url = f"{_OLS_BASE}/ontologies/hp/terms?short_form={short_form}"
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         time.sleep(rate_limit_s)
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
             data = json.loads(resp.read().decode())
 
         embedded = data.get("_embedded", {})
@@ -136,7 +136,7 @@ def search_hpo_terms(
         url = f"{_OLS_BASE}/search?{urllib.parse.urlencode(params)}"
         req = urllib.request.Request(url, headers={"Accept": "application/json"})
         time.sleep(rate_limit_s)
-        with urllib.request.urlopen(req, timeout=10) as resp:
+        with urllib.request.urlopen(req, timeout=10) as resp:  # nosec B310
             data = json.loads(resp.read().decode())
 
         results = []

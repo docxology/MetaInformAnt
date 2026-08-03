@@ -400,12 +400,16 @@ def effect_direction_plot(
     ax2.grid(True, alpha=0.3)
 
     # Add statistics text
+    positive_count = sum(1 for x in effect_sizes if x > 0)
+    negative_count = sum(1 for x in effect_sizes if x < 0)
+    positive_percent = positive_count / len(effect_sizes) * 100
+    negative_percent = negative_count / len(effect_sizes) * 100
     stats_text = f"""Statistics:
 Mean: {np.mean(effect_sizes):.3f}
 Median: {np.median(effect_sizes):.3f}
 SD: {np.std(effect_sizes):.3f}
-Positive effects: {sum(1 for x in effect_sizes if x > 0)} ({sum(1 for x in effect_sizes if x > 0) / len(effect_sizes) * 100:.1f}%)
-Negative effects: {sum(1 for x in effect_sizes if x < 0)} ({sum(1 for x in effect_sizes if x < 0) / len(effect_sizes) * 100:.1f}%)"""
+Positive effects: {positive_count} ({positive_percent:.1f}%)
+Negative effects: {negative_count} ({negative_percent:.1f}%)"""
 
     fig.text(
         0.02,

@@ -1,6 +1,6 @@
 """Current Amalgkit command-contract tests.
 
-These tests exercise the supported Amalgkit 0.16.32 command surface without network
+These tests exercise the supported Amalgkit 0.16.33 command surface without network
 access. They deliberately keep optional cross-species commands separate from
 the per-species default workflow.
 """
@@ -24,7 +24,6 @@ from metainformant.rna.engine.provenance import (
     write_downstream_provenance,
 )
 from metainformant.rna.steps import STEP_RUNNERS
-
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RETIRED_PATHS = (
@@ -65,7 +64,8 @@ def _active_text_files() -> list[Path]:
             files.extend(
                 path
                 for path in root.rglob("*")
-                if path.is_file() and path.suffix.lower() in {".py", ".md", ".rst", ".yaml", ".yml", ".toml"}
+                if path.is_file()
+                and path.suffix.lower() in {".py", ".md", ".rst", ".yaml", ".yml", ".toml"}
                 and "__pycache__" not in path.parts
             )
     return sorted(set(files))
@@ -138,33 +138,39 @@ def test_legacy_quant_cleanup_is_idempotent_and_lock_guarded(tmp_path: Path) -> 
 
     (results / ".full_campaign.lock").rmdir()
     manifest = tmp_path / "archived.json"
-    assert cleanup_main(
-        [
-            "--data-root",
-            str(tmp_path),
-            "--archive-legacy-quant",
-            "--legacy-quant-only",
-            "--execute",
-            "--manifest",
-            str(manifest),
-        ]
-    ) == 0
+    assert (
+        cleanup_main(
+            [
+                "--data-root",
+                str(tmp_path),
+                "--archive-legacy-quant",
+                "--legacy-quant-only",
+                "--execute",
+                "--manifest",
+                str(manifest),
+            ]
+        )
+        == 0
+    )
     payload = json.loads(manifest.read_text())
     assert payload["candidate_count"] == 1
     assert not legacy.exists()
 
     second_manifest = tmp_path / "second.json"
-    assert cleanup_main(
-        [
-            "--data-root",
-            str(tmp_path),
-            "--archive-legacy-quant",
-            "--legacy-quant-only",
-            "--execute",
-            "--manifest",
-            str(second_manifest),
-        ]
-    ) == 0
+    assert (
+        cleanup_main(
+            [
+                "--data-root",
+                str(tmp_path),
+                "--archive-legacy-quant",
+                "--legacy-quant-only",
+                "--execute",
+                "--manifest",
+                str(second_manifest),
+            ]
+        )
+        == 0
+    )
     assert json.loads(second_manifest.read_text())["candidate_count"] == 0
 
 
@@ -234,23 +240,24 @@ def test_current_commands_have_allow_lists() -> None:
     assert SUPPORTED_CLI_OPTIONS["busco"] >= {"out_dir", "metadata", "species"}
     assert SUPPORTED_CLI_OPTIONS["rerun"] >= {"out_dir", "metadata"}
     assert SUPPORTED_CLI_OPTIONS["dataset"] >= {"out_dir", "name", "rule_set"}
+    assert SUPPORTED_CLI_OPTIONS["select"] >= {"select_rules_tsv", "random_seed"}
+    assert SUPPORTED_CLI_OPTIONS["getfastq"] >= {
+        "sra_download_wait_timeout_seconds",
+        "sra_download_transfer_timeout_seconds",
+    }
 
 
 def test_version_parser_accepts_installed_output() -> None:
-    valid, message = amalgkit.parse_and_check_version("amalgkit version 0.16.32", "0.16.32")
+    valid, message = amalgkit.parse_and_check_version("amalgkit version 0.16.33", "0.16.33")
     assert valid, message
-    valid, message = amalgkit.parse_and_check_version(
-        "amalgkit version 0.16.32", "0.16.32", exact=True
-    )
+    valid, message = amalgkit.parse_and_check_version("amalgkit version 0.16.33", "0.16.33", exact=True)
     assert valid, message
-    invalid, _ = amalgkit.parse_and_check_version(
-        "amalgkit version 0.16.99", "0.16.32", exact=True
-    )
+    invalid, _ = amalgkit.parse_and_check_version("amalgkit version 0.16.99", "0.16.33", exact=True)
     assert not invalid
-    invalid, _ = amalgkit.parse_and_check_version("amalgkit development build", "0.16.32", exact=True)
+    invalid, _ = amalgkit.parse_and_check_version("amalgkit development build", "0.16.33", exact=True)
     assert not invalid
-    assert amalgkit.REQUIRED_AMALGKIT_VERSION == "0.16.32"
-    assert amalgkit.AMALGKIT_RELEASE_TAG == "v0.16.32"
+    assert amalgkit.REQUIRED_AMALGKIT_VERSION == "0.16.33"
+    assert amalgkit.AMALGKIT_RELEASE_TAG == "v0.16.33"
     assert len(amalgkit.AMALGKIT_SOURCE_REVISION) == 40
 
 

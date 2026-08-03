@@ -150,7 +150,8 @@ def simulate_differential_expression(
     Args:
         n_samples: Total number of samples
         n_features: Number of genes/features
-        fold_changes: Fold changes for differential genes (0 = no change, positive/negative = upregulation/downregulation)
+        fold_changes: Fold changes for differential genes (0 = no change;
+            positive/negative = upregulation/downregulation)
         rng: Random number generator for reproducibility
 
     Returns:
