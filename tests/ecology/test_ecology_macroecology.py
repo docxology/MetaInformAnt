@@ -57,6 +57,14 @@ from metainformant.ecology.visualization.visualization import (
     plot_species_abundance_distribution,
 )
 
+try:
+    import plotly.express  # noqa: F401
+    import plotly.graph_objects  # noqa: F401
+
+    HAS_PLOTLY = True
+except ImportError:
+    HAS_PLOTLY = False
+
 # ---------------------------------------------------------------------------
 # Shared test data fixtures
 # ---------------------------------------------------------------------------
@@ -723,13 +731,9 @@ class TestVisualization:
         ax = plot_ecological_network(interaction, species_names=["Wolf", "Deer"])
         assert ax is not None
 
+    @pytest.mark.skipif(not HAS_PLOTLY, reason="plotly interactive visualization modules not installed")
     def test_create_interactive_dashboard(self) -> None:
         """Interactive dashboard creation (requires plotly)."""
-        try:
-            import plotly  # noqa: F401
-        except ImportError:
-            pytest.skip("plotly not installed")
-
         data = {
             "diversity_indices": {
                 "Shannon": [1.5, 2.0, 1.8],

@@ -30,11 +30,13 @@ except ImportError:
 
 
 try:
+    from metainformant.singlecell.analysis import nonlinear_methods as nonlinear_methods_module
     from metainformant.singlecell.analysis.dimensionality import run_pca, run_tsne, run_umap
 
     DIMENSIONALITY_AVAILABLE = True
 except ImportError:
     DIMENSIONALITY_AVAILABLE = False
+    nonlinear_methods_module = None
 
 try:
     from metainformant.singlecell.analysis.clustering import find_markers, leiden_clustering
@@ -266,6 +268,10 @@ class TestSingleCellDimensionality:
         embedding = tsne_result.obsm["X_tsne"]
         assert embedding.shape == (self.n_cells, 2)
 
+    @pytest.mark.skipif(
+        nonlinear_methods_module is None or not nonlinear_methods_module.HAS_UMAP,
+        reason="umap-learn not installed",
+    )
     def test_run_umap_basic(self):
         """Test UMAP dimensionality reduction."""
         data = SingleCellData(X=self.expression_matrix)

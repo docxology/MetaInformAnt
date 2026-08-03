@@ -24,6 +24,14 @@ try:
 except ImportError:
     HAS_NETWORKX = False
 
+try:
+    import plotly.express  # noqa: F401
+    import plotly.graph_objects  # noqa: F401
+
+    HAS_PLOTLY = True
+except ImportError:
+    HAS_PLOTLY = False
+
 import numpy as np
 
 from metainformant.ontology.visualization.visualization import (
@@ -253,11 +261,8 @@ class TestPlotSemanticSimilarityClustermap:
 
 @pytest.mark.skipif(not HAS_NETWORKX, reason="networkx required")
 class TestCreateInteractiveGONetwork:
+    @pytest.mark.skipif(not HAS_PLOTLY, reason="plotly interactive visualization modules not installed")
     def test_basic_interactive(self):
-        try:
-            import plotly  # noqa: F401
-        except ImportError:
-            pytest.skip("plotly required for interactive GO network")
         G = _make_go_graph()
         result = create_interactive_go_network(G)
         assert result is not None

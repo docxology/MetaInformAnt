@@ -113,6 +113,7 @@ class TestPlotPCA:
 class TestPlotUMAP:
     """Test plot_umap function."""
 
+    @pytest.mark.skipif(not HAS_UMAP, reason="umap-learn not installed")
     def test_basic_umap_plot(self):
         """Test basic UMAP plot creation."""
         import matplotlib
@@ -128,6 +129,7 @@ class TestPlotUMAP:
         assert len(ax.collections) > 0  # scatter creates collections
         plt.close("all")
 
+    @pytest.mark.skipif(not HAS_UMAP, reason="umap-learn not installed")
     def test_umap_plot_3d(self):
         """Test 3D UMAP plot."""
         import matplotlib
