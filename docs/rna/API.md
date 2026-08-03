@@ -58,6 +58,24 @@ assert [name for name, _ in steps] == [
 ]
 ```
 
+## Quant
+
+The quantification wrapper runs the pinned Amalgkit quantification command and
+returns a `subprocess.CompletedProcess`. A successful process is reusable only
+when the accompanying hash-bound quantification provenance receipt is current.
+
+```python
+from metainformant.rna.amalgkit import quant
+
+result = quant(
+    out_dir="output/amalgkit/work",
+    metadata="output/amalgkit/work/metadata/pivot_qualified.tsv",
+    index_dir="output/amalgkit/work/index",
+    threads=8,
+    clean_fastq=False,
+)
+```
+
 ## Provenance
 
 The `metainformant.rna.engine.provenance` module writes and validates current

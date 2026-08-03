@@ -74,7 +74,8 @@ uv run python scripts/rna/run_all_species.py \
   --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 ```
 
-TUI variants: [TUI Monitoring Tools](#tui-monitoring-tools) below.
+For running campaigns, use the maintained [RNA status](#rna-status) command
+below; it reads the SQLite progress database and downstream evidence.
 
 ## Tests
 

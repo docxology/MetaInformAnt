@@ -603,5 +603,5 @@ print(f"Loaded expression matrix: {tpm.shape[1]} samples, {tpm.shape[0]} transcr
 ---
 
 **Last Updated**: October 29, 2025  
-**AMALGKIT Version**: 0.16.32 (`v0.16.32`)
+**AMALGKIT Version**: 0.16.33 (`v0.16.33`)
 **Status**: Production-ready, comprehensively tested

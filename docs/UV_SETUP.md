@@ -177,6 +177,12 @@ bash scripts/package/test.sh --mode fast
 # Basic setup (syncs all uv-managed extras/groups, including amalgkit)
 bash scripts/package/setup.sh
 
+# Select the interpreter explicitly in a matrix or disposable environment
+bash scripts/package/setup.sh --python 3.12 --skip-tests
+
+# Recreate an existing environment only after confirming no process depends on it
+bash scripts/package/setup.sh --python 3.12 --recreate-venv
+
 # Skip amalgkit installation
 bash scripts/package/setup.sh --skip-amalgkit
 
@@ -191,6 +197,7 @@ bash scripts/package/setup.sh --skip-tests
 - Automatic filesystem detection
 - Cache directory configuration
 - Virtual environment creation
+- Existing compatible virtual environments are reused by default
 - Dependency installation
 - FAT filesystem support
 

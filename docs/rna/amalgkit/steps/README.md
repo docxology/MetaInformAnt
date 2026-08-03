@@ -28,7 +28,7 @@ step.
 
 `cstmm` is also optional and belongs after independently validated
 cross-species inputs; it is not part of the default per-species chain. The
-`busco` and `rerun` commands are auxiliary current 0.16.32 commands and are
+`busco` and `rerun` commands are auxiliary current 0.16.33 commands and are
 covered in the [command reference](../commands.md).
 
 ## Real-data rules

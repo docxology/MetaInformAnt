@@ -10,7 +10,7 @@ downstream commands; it is not a per-species completion stage.
 amalgkit dataset --list
 ```
 
-The installed 0.16.32 CLI is authoritative for the available dataset names
+The installed 0.16.33 CLI is authoritative for the available dataset names
 and bundled rule sets.
 
 ## Initialize a workspace
@@ -38,7 +38,7 @@ amalgkit dataset \
 Bundled rule sets are useful starting points, but they are not automatically
 appropriate for this cohort. The checked-in Hymenoptera contract uses
 `config/amalgkit/select_rules.tsv`, which deliberately imposes no
-plant-oriented tissue restriction and is validated against Amalgkit 0.16.32.
+plant-oriented tissue restriction and is validated against Amalgkit 0.16.33.
 
 ## Provenance
 

@@ -174,7 +174,7 @@ uv run pytest --cov=src/metainformant --cov-report=html
 uv run pytest tests/core/test_core_text.py -v
 ```
 
-**Note**: Test scripts automatically detect FAT filesystems and configure UV cache and virtual environment locations accordingly. On FAT filesystems, tests use `/tmp/metainformant_venv` if available. The setup script (`scripts/package/setup.sh`) shows real-time test progress with verbose output, making it easy to see which tests are running. See [UV Setup Guide](UV_SETUP.md) for details.
+**Note**: Test scripts automatically detect FAT filesystems and configure UV cache and virtual environment locations accordingly. On FAT filesystems, tests use `/tmp/metainformant_venv` if available. CI prepares environments with `--skip-tests` and runs the selected test mode in a dedicated step; local users can omit that flag when they explicitly want setup-time test execution. See [UV Setup Guide](UV_SETUP.md) for details.
 
 ### Professional Test Runner
 

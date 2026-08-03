@@ -512,5 +512,5 @@ esac
 ---
 
 **Last Updated**: October 29, 2025  
-**AMALGKIT Version**: 0.16.32 (`v0.16.32`)
+**AMALGKIT Version**: 0.16.33 (`v0.16.33`)
 **Status**: Production-ready, comprehensively tested
