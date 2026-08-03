@@ -182,7 +182,10 @@ jobs:
         # Medium-and-higher severity findings block CI. Low-severity findings
         # are retained for a separate baseline review rather than hidden.
         bandit -r src/ --severity-level medium -f json -o output/security_report.json
-        safety check --output json > output/safety_report.json
+        # NLTK's import guard rejects the repository working directory under
+        # Python's safe-path mode; keep Safety's dependency scan blocking while
+        # explicitly disabling cwd injection for this subprocess.
+        PYTHONSAFEPATH=1 safety check --output json > output/safety_report.json
 
   test-examples:
     runs-on: ubuntu-latest
