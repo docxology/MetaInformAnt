@@ -11,7 +11,7 @@ Command-line helpers for Package workflows. Scripts should remain thin wrappers 
 - [generate_cursor_skills.py](generate_cursor_skills.py)
 - [generate_custom_summary.py](generate_custom_summary.py)
 - [install_linux_deps.sh](install_linux_deps.sh)
-- [patch_amalgkit.py](patch_amalgkit.py)
+- [verify_amalgkit_runtime.py](verify_amalgkit_runtime.py)
 - [release.sh](release.sh)
 - [run_tests.sh](run_tests.sh)
 - [setup.sh](setup.sh)

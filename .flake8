@@ -1,0 +1,36 @@
+[flake8]
+max-line-length = 120
+extend-ignore = E203, W503
+exclude =
+    .git,
+    __pycache__,
+    build,
+    dist,
+    *.egg-info,
+    .venv,
+    venv,
+    env,
+    ENV,
+    .tox,
+    .mypy_cache,
+    .pytest_cache
+per-file-ignores =
+    __init__.py:E402
+    # These modules intentionally configure import paths, optional dependencies,
+    # or a non-interactive plotting backend before importing dependent modules.
+    src/metainformant/rna/engine/progress_dashboard.py:E402
+    src/metainformant/visualization/plots/cross_species.py:E402
+    tests/cloud/test_cloud.py:E402
+    tests/dna/test_dna_population_viz.py:E402
+    tests/ecology/test_ecology_macroecology.py:E402
+    tests/epigenome/test_epigenome_visualization.py:E402
+    tests/infrastructure/test_build.py:E402
+    tests/metagenomics/test_metagenomics_visualization.py:E402
+    tests/other/test_ortholog_generation.py:E402
+    tests/pharmacogenomics/test_pharmacogenomics_visualization.py:E402
+    tests/rna/test_rna_parallel_pipeline.py:E402
+    tests/singlecell/test_singlecell_dimensionality.py:E402
+    tests/singlecell/test_singlecell_preprocessing.py:E402
+    tests/singlecell/test_singlecell_visualization.py:E402
+    tests/spatial/test_spatial_visualization.py:E402
+    tests/visualization/test_visualization_comprehensive.py:E402

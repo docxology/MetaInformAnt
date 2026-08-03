@@ -5,7 +5,8 @@ set -euo pipefail
 # - Creates/uses .venv (or /tmp/metainformant_venv on FAT filesystems)
 # - Installs project with dev and scientific dependencies via uv
 # - Installs amalgkit via uv (default, use --skip-amalgkit to disable)
-# - Optionally sets NCBI_EMAIL for this shell session and writes a helper file
+# - Optionally sets NCBI_EMAIL for this shell session (and records it only when
+#   explicitly supplied with --ncbi-email)
 # - Automatically detects FAT filesystems and configures UV cache accordingly
 # - Supports --dev flag for development environment setup
 
@@ -15,15 +16,16 @@ source "$SCRIPT_DIR/_common.sh"
 
 usage() {
   cat <<EOF
-Usage: bash scripts/setup.sh [--python VERSION] [--skip-amalgkit] [--with-deps] [--with-all] [--with-scraping] [--ncbi-email EMAIL] [--skip-tests] [--dev]
+Usage: bash scripts/package/setup.sh [--python VERSION] [--recreate-venv] [--skip-amalgkit] [--with-deps] [--with-all] [--with-scraping] [--ncbi-email EMAIL] [--skip-tests] [--dev]
 
 Options:
-  --python VERSION      Prefer a specific Python interpreter (default: available 3.12, then 3.11)
+  --python VERSION      Use a specific Python interpreter (default: available 3.12, then 3.11)
+  --recreate-venv       Recreate the selected virtual environment; otherwise reuse it when compatible
   --skip-amalgkit       Skip AMALGKIT installation (installed by default for RNA workflows)
   --with-deps           Install external CLI deps through the system package manager where available
   --with-all            Install all optional dependencies (database, networks, scraping, etc.) - scientific deps installed by default
   --with-scraping       Install scraping dependencies (cloudscraper) for web scraping functionality
-  --ncbi-email EMAIL    Export NCBI_EMAIL for this session and write to output/setup/ncbi_email.txt
+  --ncbi-email EMAIL    Export NCBI_EMAIL and explicitly record it in output/setup/ncbi_email.txt
   --skip-tests          Do not run repository tests during setup
   --dev                 Setup development environment (pre-commit, docs, output dirs, wrapper scripts)
 
@@ -34,8 +36,9 @@ EOF
 }
 
 WITH_AMALGKIT=1  # Install amalgkit by default
-NCBI_EMAIL=""
-DEFAULT_EMAIL="DanielAriFriedman@gmail.com"
+NCBI_EMAIL="${NCBI_EMAIL:-}"
+RECORD_NCBI_EMAIL=0
+RECREATE_VENV=0
 SKIP_TESTS=0
 WITH_DEPS=0
 WITH_SCIENTIFIC=0
@@ -43,13 +46,25 @@ WITH_ALL=0
 WITH_SCRAPING=0
 WITH_DEV=0  # Development environment setup
 REQUESTED_PYTHON="${METAINFORMANT_PYTHON:-}"
+PYTHON_WAS_EXPLICIT=0
+if [[ -n "$REQUESTED_PYTHON" ]]; then
+  PYTHON_WAS_EXPLICIT=1
+fi
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --python)
       REQUESTED_PYTHON="${2:-}"
-      [[ -n "$REQUESTED_PYTHON" ]] || { echo "--python requires a version" >&2; exit 2; }
+      [[ -n "$REQUESTED_PYTHON" && "$REQUESTED_PYTHON" != --* ]] || {
+        echo "--python requires a version" >&2
+        exit 2
+      }
+      PYTHON_WAS_EXPLICIT=1
       shift 2
+      ;;
+    --recreate-venv)
+      RECREATE_VENV=1
+      shift
       ;;
     --skip-amalgkit)
       WITH_AMALGKIT=0
@@ -79,7 +94,12 @@ while [[ $# -gt 0 ]]; do
       ;;
     --ncbi-email)
       NCBI_EMAIL="${2:-}"
-      shift 2 || true
+      [[ -n "$NCBI_EMAIL" && "$NCBI_EMAIL" != --* ]] || {
+        echo "--ncbi-email requires an email address" >&2
+        exit 2
+      }
+      RECORD_NCBI_EMAIL=1
+      shift 2
       ;;
     --skip-tests)
       SKIP_TESTS=1
@@ -214,38 +234,56 @@ if [[ -z "$REQUESTED_PYTHON" ]]; then
   done
 fi
 
-if [[ -n "$REQUESTED_PYTHON" ]]; then
+if [[ "$PYTHON_WAS_EXPLICIT" -eq 1 ]]; then
   echo "  → Requested Python interpreter: $REQUESTED_PYTHON"
+elif [[ -n "$REQUESTED_PYTHON" ]]; then
+  echo "  → Preferred available Python interpreter: $REQUESTED_PYTHON"
 else
   echo "  ⚠️ Python 3.11/3.12 was not found; uv will select its default interpreter." >&2
 fi
 
-if [[ "$VENV_DIR" == "/tmp/metainformant_venv" ]]; then
+create_venv() {
+  local target="$1"
+  if [[ -n "$REQUESTED_PYTHON" ]]; then
+    UV_VENV_CLEAR=1 uv venv --python "$REQUESTED_PYTHON" "$target"
+  else
+    UV_VENV_CLEAR=1 uv venv "$target"
+  fi
+}
+
+venv_python="$VENV_DIR/bin/python"
+reuse_venv=0
+if [[ "$RECREATE_VENV" -eq 0 && -x "$venv_python" ]]; then
+  actual_python="$($venv_python -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || true)"
+  requested_major_minor=""
+  if [[ "$REQUESTED_PYTHON" =~ ^([0-9]+)\.([0-9]+)(\..*)?$ ]]; then
+    requested_major_minor="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+  fi
+  if [[ "$PYTHON_WAS_EXPLICIT" -eq 0 || "$actual_python" == "$requested_major_minor" ]]; then
+    reuse_venv=1
+    echo "  → Reusing existing compatible environment ($actual_python)"
+  else
+    echo "Existing $VENV_DIR uses Python $actual_python but Python $REQUESTED_PYTHON was requested." >&2
+    echo "Use --recreate-venv only after confirming no process depends on this environment." >&2
+    exit 4
+  fi
+fi
+
+if [[ "$reuse_venv" -eq 0 && "$VENV_DIR" == "/tmp/metainformant_venv" ]]; then
   export UV_PROJECT_ENVIRONMENT="$VENV_DIR"
   # For FAT filesystem, try to create venv in /tmp
-  if [[ -d "$VENV_DIR" ]]; then
-    echo "  → Using existing venv at $VENV_DIR"
-  else
-    if [[ -n "$REQUESTED_PYTHON" ]]; then
-      UV_VENV_CLEAR=1 uv venv --python "$REQUESTED_PYTHON" "$VENV_DIR"
-    else
-      UV_VENV_CLEAR=1 uv venv "$VENV_DIR"
-    fi || {
+  if [[ "$RECREATE_VENV" -eq 1 || ! -x "$venv_python" ]]; then
+    create_venv "$VENV_DIR" || {
       echo "Warning: Failed to create venv at $VENV_DIR, trying .venv..." >&2
-      if [[ -n "$REQUESTED_PYTHON" ]]; then
-        UV_VENV_CLEAR=1 uv venv --python "$REQUESTED_PYTHON" .venv
-      else
-        UV_VENV_CLEAR=1 uv venv .venv
-      fi
       VENV_DIR=".venv"
+      export UV_PROJECT_ENVIRONMENT="$VENV_DIR"
+      create_venv "$VENV_DIR"
     }
-  fi
-else
-  if [[ -n "$REQUESTED_PYTHON" ]]; then
-    UV_VENV_CLEAR=1 uv venv --python "$REQUESTED_PYTHON" "$VENV_DIR"
   else
-    UV_VENV_CLEAR=1 uv venv "$VENV_DIR"
+    echo "  → Using existing venv at $VENV_DIR"
   fi
+elif [[ "$reuse_venv" -eq 0 ]]; then
+  create_venv "$VENV_DIR"
 fi
 
 echo "[3/5] Installing project and dependencies"
@@ -268,28 +306,19 @@ if not ok:
 print(f"  -> AMALGKIT {REQUIRED_AMALGKIT_VERSION} OK: {message}")
 PY
 
-  echo "  → Patching amalgkit to prevent SRA toolkit concurrency locks..."
-  uv run python scripts/package/patch_amalgkit.py
+  echo "  → Verifying the installed Amalgkit runtime contract..."
+  uv run python scripts/package/verify_amalgkit_runtime.py
 else
   echo "[4/5] Skipping AMALGKIT validation because --skip-amalgkit was provided"
 fi
 
-mkdir -p output/setup
-
-# Decide which email to use
-if [[ -z "$NCBI_EMAIL" ]]; then
-  if [[ -f output/setup/ncbi_email.txt ]]; then
-    NCBI_EMAIL="$(cat output/setup/ncbi_email.txt)"
-  else
-    NCBI_EMAIL="$DEFAULT_EMAIL"
-    echo "[5/5] Using default NCBI_EMAIL: $NCBI_EMAIL"
-  fi
-fi
-
 if [[ -n "$NCBI_EMAIL" ]]; then
-  echo "[5/5] Exporting NCBI_EMAIL for this session and recording to output/setup/ncbi_email.txt"
+  echo "[5/5] Exporting explicitly supplied NCBI_EMAIL for this session"
   export NCBI_EMAIL="$NCBI_EMAIL"
-  printf "%s\n" "$NCBI_EMAIL" > output/setup/ncbi_email.txt
+  if [[ "$RECORD_NCBI_EMAIL" -eq 1 ]]; then
+    mkdir -p output/setup
+    printf "%s\n" "$NCBI_EMAIL" > output/setup/ncbi_email.txt
+  fi
 else
   echo "[5/5] NCBI_EMAIL not provided; you can pass --ncbi-email to set it"
 fi
@@ -377,23 +406,16 @@ if [[ "$SKIP_TESTS" -eq 0 ]]; then
   fi
   echo ""
   
-  # Run tests with real-time output showing test progress
-  # Use -v for verbose (shows test names), --tb=short for cleaner errors
-  # Show output in real-time while filtering import errors
+  # Run tests with real-time output showing test progress. Setup-time tests
+  # are opt-in; when requested, their exit status remains authoritative.
+  # CI passes --skip-tests and runs its dedicated test steps separately.
   if command -v stdbuf >/dev/null 2>&1; then
-    # Use stdbuf for unbuffered output if available
-    $PYTEST_CMD -v --tb=short --durations=0 2>&1 | \
-      stdbuf -oL -eL grep -v --line-buffered \
-        -e "ModuleNotFoundError: No module named 'scipy'" \
-        -e "ModuleNotFoundError: No module named 'psycopg2'" \
-        -e "^ERROR collecting tests/core/test_core_db.py" \
-        -e "^ERROR collecting tests/gwas" | \
-      tee /tmp/pytest_$$.log || true
+    stdbuf -oL -eL $PYTEST_CMD -v --tb=short --durations=0 2>&1 | tee /tmp/pytest_$$.log
   else
     # Fallback: use unbuffered Python if stdbuf not available
     $PYTEST_CMD -v --tb=short --durations=0 2>&1 | \
       python3 -u -c "import sys; [sys.stdout.write(l) for l in sys.stdin if not any(x in l for x in ['ModuleNotFoundError: No module named \\'scipy\\'', 'ModuleNotFoundError: No module named \\'psycopg2\\'', 'ERROR collecting tests/core/test_core_db.py', 'ERROR collecting tests/gwas'])]" | \
-      tee /tmp/pytest_$$.log || true
+      tee /tmp/pytest_$$.log
   fi
   
   TEST_OUTPUT=$(cat /tmp/pytest_$$.log 2>/dev/null || echo "")

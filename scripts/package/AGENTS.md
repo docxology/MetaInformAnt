@@ -10,6 +10,7 @@ Package management, build, and testing infrastructure scripts.
 - `uv_dev_setup.sh` - UV-based development setup
 - `setup_uv.sh` - **Deprecated** (redirects to `setup.sh`)
 - `verify_uv_setup.sh` - Verify UV installation
+- `verify_amalgkit_runtime.py` - Read-only check of the pinned Amalgkit runtime contract
 
 ### Testing
 - `test.sh` - Main test runner (supports modes: ultra-fast, coverage, parallel)
@@ -40,6 +41,9 @@ Package management, build, and testing infrastructure scripts.
 ```bash
 # Setup
 bash scripts/package/setup.sh
+
+# Recreate an existing environment only after confirming no process depends on it
+bash scripts/package/setup.sh --recreate-venv --python 3.12
 
 # Testing
 bash scripts/package/test.sh --mode ultra-fast
