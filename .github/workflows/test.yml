@@ -254,7 +254,9 @@ jobs:
     - name: Test on simulated FAT filesystem
       run: |
         cd /mnt/fat_test
-        bash scripts/package/setup.sh --python 3.12 --skip-tests
+        # Keep the constrained filesystem test focused on package setup; the
+        # normal matrix jobs validate the Amalgkit source/runtime contract.
+        bash scripts/package/setup.sh --python 3.12 --skip-amalgkit --skip-tests
         bash scripts/package/test.sh --mode fast
 
   summary:
