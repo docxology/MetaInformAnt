@@ -72,17 +72,17 @@ def main() -> None:
     if not has_sra:
         print("""
   ⚠️  SRA Toolkit not found!
-  
+
   To download raw sequencing data from NCBI SRA, install SRA Toolkit:
-  
+
   Ubuntu/Debian:
     sudo apt-get install sra-toolkit
-  
+
   macOS (Homebrew):
     brew install sra-tools
-  
+
   Or download from: https://github.com/ncbi/sra-tools/wiki/01.-Downloading-SRA-Toolkit
-  
+
   After installation, configure with: vdb-config --interactive
         """)
 
@@ -159,19 +159,19 @@ def main() -> None:
 
     print("""
   For pre-called variant data, check these resources:
-  
+
   1. European Variation Archive (EVA)
      https://www.ebi.ac.uk/eva/
      Search for "Apis mellifera" to find submitted variant studies
-  
+
   2. NCBI dbSNP
      https://www.ncbi.nlm.nih.gov/snp/
      Limited data for non-model organisms, but worth checking
-  
+
   3. Zenodo / FigShare
      Search for "Apis mellifera VCF" or "honeybee variants"
      Researchers often deposit supplementary data here
-  
+
   4. Research Group Repositories
      - Honey Bee Genome Consortium
      - Individual lab websites (check recent papers)
@@ -182,16 +182,16 @@ def main() -> None:
 
     print("""
   If you have a direct URL to a VCF file, you can download it:
-  
+
   Example (hypothetical URL):
     from metainformant.gwas.download import download_variant_data
-    
+
     result = download_variant_data(
         source="custom",
         url="https://example.org/amellifera_variants.vcf.gz",
         dest_dir="data/variants/amellifera/real",
     )
-    
+
   This will download the file using wget or curl.
     """)
 
@@ -200,24 +200,24 @@ def main() -> None:
 
     print("""
   Complete workflow to go from SRA data to variants:
-  
+
   1. DOWNLOAD SRA DATA
      fasterq-dump SRR2096937 -O data/raw/sra/ -e 8 --split-files
-  
+
   2. CHECK QUALITY
      fastqc data/raw/sra/SRR2096937_*.fastq -o data/qc/
-  
+
   3. ALIGN TO REFERENCE
      bwa mem -t 8 genome.fna \\
        data/raw/sra/SRR2096937_1.fastq \\
        data/raw/sra/SRR2096937_2.fastq | \\
      samtools sort -@ 8 -o data/aligned/SRR2096937.bam
      samtools index data/aligned/SRR2096937.bam
-  
+
   4. CALL VARIANTS
      bcftools mpileup -f genome.fna data/aligned/SRR2096937.bam | \\
      bcftools call -mv -Oz -o data/variants/SRR2096937.vcf.gz
-  
+
   5. RUN GWAS
      Use the METAINFORMANT GWAS module with the generated VCF
     """)
@@ -229,27 +229,27 @@ def main() -> None:
   ✅ CHECKED: Available tools and data sources
   📚 PROVIDED: Links to key Apis mellifera datasets
   📝 DOCUMENTED: Complete workflow from SRA to variants
-  
+
   NEXT STEPS:
-  
+
   1. Install SRA Toolkit if not already installed
      https://github.com/ncbi/sra-tools
-  
+
   2. Visit NCBI SRA Run Selector for PRJNA292680:
      https://www.ncbi.nlm.nih.gov/Traces/study/?acc=PRJNA292680
-  
+
   3. Select runs and download metadata (CSV with accession list)
-  
+
   4. Download SRA runs:
      while read acc; do fasterq-dump $acc -O data/raw/; done < accessions.txt
-  
+
   5. Align reads and call variants (see workflow above)
-  
+
   6. Run GWAS pipeline:
      python3 -c "from metainformant.gwas import execute_gwas_workflow, load_gwas_config; \\
                  config = load_gwas_config('config/gwas/gwas_amellifera.yaml'); \\
                  execute_gwas_workflow(config)"
-  
+
   ALTERNATIVE: Look for pre-called VCF files in:
     - European Variation Archive (EVA)
     - Supplementary data from published papers

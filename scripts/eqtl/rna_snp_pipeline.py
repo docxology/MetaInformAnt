@@ -39,9 +39,7 @@ logger = logging.getLogger(__name__)
 # Configuration
 # ---------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
-AMALGKIT_OUTPUT = Path(
-    os.environ.get("AMALGKIT_DATA_ROOT", str(PROJECT_ROOT / "output" / "amalgkit"))
-).expanduser()
+AMALGKIT_OUTPUT = Path(os.environ.get("AMALGKIT_DATA_ROOT", str(PROJECT_ROOT / "output" / "amalgkit"))).expanduser()
 EQTL_OUTPUT = PROJECT_ROOT / "output" / "eqtl"
 
 # NCBI genome accession map per species

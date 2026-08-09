@@ -68,7 +68,7 @@ def simulate_sequences(
     io.dump_json(sequences, json_file, indent=2)
 
     # Also save as FASTA
-    from metainformant.dna.sequences import write_fasta
+    from metainformant.dna.sequence.core import write_fasta
 
     fasta_dict = {s["sequence_id"]: s["sequence"] for s in sequences}
     fasta_file = output_dir / "information_sequences.fasta"

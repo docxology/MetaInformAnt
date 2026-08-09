@@ -23,7 +23,6 @@ import pandas as pd
 # Add project to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from metainformant.rna.core.sample_utils import find_quantification_file
 from metainformant.gwas.finemapping.eqtl import (
     cis_eqtl_scan,
     eqtl_effect_sizes,
@@ -34,6 +33,7 @@ from metainformant.gwas.visualization.eqtl_visualization import (
     plot_eqtl_summary,
     plot_eqtl_volcano,
 )
+from metainformant.rna.core.sample_utils import find_quantification_file
 
 # Paths
 QUANT_DIR = Path("output/amalgkit/apis_mellifera_all/work/quant")

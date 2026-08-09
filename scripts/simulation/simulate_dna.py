@@ -21,7 +21,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
 from metainformant.core import io, logging, paths, validation
-from metainformant.dna.sequences import write_fasta
+from metainformant.dna.sequence.core import write_fasta
 from metainformant.simulation import (
     generate_population_sequences,
     generate_random_dna,

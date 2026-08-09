@@ -23,7 +23,7 @@ from metainformant.dna.population_analysis import (
     compare_populations,
     neutrality_test_suite,
 )
-from metainformant.dna.sequences import read_fasta
+from metainformant.dna.sequence.core import read_fasta
 from metainformant.gwas.quality import test_hwe
 from metainformant.gwas.structure import compute_kinship_matrix, compute_pca
 from metainformant.math.demography import (

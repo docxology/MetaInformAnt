@@ -63,7 +63,7 @@ qc_result = apply_qc_filters(
 if qc_result.get("status") == "success":
     n_passing = qc_result.get("num_variants_after", 0)
     n_total = qc_result.get("num_variants_before", 50000)
-    print(f"✓ QC complete: {n_passing}/{n_total} variants passed ({n_passing/max(n_total,1)*100:.1f}%)")
+    print(f"✓ QC complete: {n_passing}/{n_total} variants passed ({n_passing/max(n_total, 1)*100:.1f}%)")
 
     # Use original data (QC already filtered it internally)
     genotypes = vcf_data["genotypes"]

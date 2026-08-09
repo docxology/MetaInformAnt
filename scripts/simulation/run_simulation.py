@@ -95,7 +95,7 @@ Examples:
 def run_sequence_simulation(args, output_dir: Path) -> dict[str, Any]:
     """Run sequence generation simulation."""
     logger.info(f"Generating {args.n} sequences of length {args.length}...")
-    from metainformant.dna.sequences import write_fasta
+    from metainformant.dna.sequence.core import write_fasta
     from metainformant.simulation import generate_random_dna, mutate_sequence
 
     rng = random.Random(args.seed)

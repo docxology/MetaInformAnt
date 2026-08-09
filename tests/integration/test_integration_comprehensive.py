@@ -18,7 +18,7 @@ import pytest
 try:
     from metainformant.dna.phylogeny import basic_tree_stats, neighbor_joining_tree
     from metainformant.dna.population import hudson_fst, nucleotide_diversity
-    from metainformant.dna.sequences import gc_content, read_fasta, reverse_complement
+    from metainformant.dna.sequence.core import gc_content, read_fasta, reverse_complement
 
     _DNA_IMPORT_PROBES = (hudson_fst,)
     DNA_AVAILABLE = True

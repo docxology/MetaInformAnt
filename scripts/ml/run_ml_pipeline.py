@@ -15,6 +15,8 @@ import logging
 import sys
 from pathlib import Path
 
+import pandas as pd
+
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
@@ -141,8 +143,6 @@ def run_workflow(args):
     # Load features
     logger.info(f"Loading features from {args.features}")
     try:
-        import pandas as pd
-
         X_df = read_csv(args.features)
         X = X_df.values
         logger.info(f"Loaded features: {X.shape[0]} samples, {X.shape[1]} features")
@@ -254,8 +254,6 @@ def run_workflow(args):
                 X_reduced = reduce_dimensions_tsne(X, n_components=args.n_components)
 
             # Save reduced features
-            import pandas as pd
-
             X_reduced_df = pd.DataFrame(X_reduced)
             output_file = output_dir / f"{args.method}_reduced_features.csv"
             X_reduced_df.to_csv(output_file, index=False)

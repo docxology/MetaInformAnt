@@ -79,6 +79,6 @@ def test_function_expected_behavior(tmp_path: Path) -> None:
 - See individual module README files for module-specific testing details
 - See `REAL_IMPLEMENTATION_POLICY.md` for testing philosophy and guidelines
 - See main project documentation for development workflow
-- See `scripts/run_tests.sh` for test execution tooling
+- See `scripts/package/test.sh` for test execution tooling
 
 This test suite ensures the reliability, correctness, and performance of all METAINFORMANT functionality.

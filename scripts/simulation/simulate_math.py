@@ -51,7 +51,7 @@ def simulate_coalescent(
     sfs = generate_site_frequency_spectrum(sequences, rng=rng)
 
     # Save sequences
-    from metainformant.dna.sequences import write_fasta
+    from metainformant.dna.sequence.core import write_fasta
 
     sequences_dict = {f"sample_{i:04d}": seq for i, seq in enumerate(sequences)}
     fasta_file = output_dir / "coalescent_sequences.fasta"
@@ -142,7 +142,7 @@ def simulate_popgen(
             n_pop1, n_pop2, sequence_length, fst=fst, within_pop_diversity=diversity, rng=rng
         )
 
-        from metainformant.dna.sequences import write_fasta
+        from metainformant.dna.sequence.core import write_fasta
 
         sequences_dict = {}
         for i, seq in enumerate(pop1):
@@ -156,7 +156,7 @@ def simulate_popgen(
         # Single population
         sequences = generate_population_sequences(n_sequences, sequence_length, nucleotide_diversity=diversity, rng=rng)
 
-        from metainformant.dna.sequences import write_fasta
+        from metainformant.dna.sequence.core import write_fasta
 
         sequences_dict = {f"seq_{i:04d}": seq for i, seq in enumerate(sequences)}
         fasta_file = output_dir / "popgen_sequences.fasta"

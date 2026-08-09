@@ -250,33 +250,9 @@ class TestUtilsModule:
 class TestTestScripts:
     """Test basic functionality of test scripts."""
 
-    def test_uv_test_setup_script_exists(self):
-        """Test that uv_test_setup.sh script exists and is executable."""
-        script_path = Path("scripts/package/uv_test_setup.sh")
-        assert script_path.exists()
-        assert script_path.stat().st_mode & 0o111  # Check if executable
-
     def test_verify_deps_script_exists(self):
         """Test that verify_test_deps.sh script exists and is executable."""
         script_path = Path("scripts/package/verify_test_deps.sh")
-        assert script_path.exists()
-        assert script_path.stat().st_mode & 0o111  # Check if executable
-
-    def test_uv_test_script_exists(self):
-        """Test that uv_test.sh script exists and is executable."""
-        script_path = Path("scripts/package/uv_test.sh")
-        assert script_path.exists()
-        assert script_path.stat().st_mode & 0o111  # Check if executable
-
-    def test_uv_test_optimized_script_exists(self):
-        """Test that uv_test_optimized.sh script exists and is executable."""
-        script_path = Path("scripts/package/uv_test_optimized.sh")
-        assert script_path.exists()
-        assert script_path.stat().st_mode & 0o111  # Check if executable
-
-    def test_run_tests_script_exists(self):
-        """Test that run_tests.sh script exists and is executable."""
-        script_path = Path("scripts/package/run_tests.sh")
         assert script_path.exists()
         assert script_path.stat().st_mode & 0o111  # Check if executable
 
