@@ -13,8 +13,15 @@ from types import SimpleNamespace
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import pytest
 
 PIPELINE_DIR = Path(__file__).resolve().parents[1] / "scripts" / "gwas" / "pipelines"
+PROJECT_ROOT = Path(__file__).resolve().parents[1] / "projects" / "apis_gwas"
+if not (PROJECT_ROOT / "beewas").is_dir():
+    pytest.skip(
+        "BeeWAS submodule is unavailable in this parent-only checkout",
+        allow_module_level=True,
+    )
 if str(PIPELINE_DIR) not in sys.path:
     sys.path.insert(0, str(PIPELINE_DIR))
 

@@ -230,6 +230,10 @@ filterwarnings = [
     "ignore::PendingDeprecationWarning",
     "ignore::UserWarning",
     "ignore::ImportWarning:umap.*",  # Ignore umap tensorflow import warning
+    # leidenalg 0.10.2 contains legacy docstring escapes that become errors
+    # under this suite's warning-as-error policy; keep the exception scoped to
+    # that external package until its upstream release corrects the strings.
+    "ignore::SyntaxWarning:leidenalg.*",
     # Warn about any mock usage as it violates our policy
     "error::pytest.PytestUnraisableExceptionWarning:.*mock.*",
 ]
