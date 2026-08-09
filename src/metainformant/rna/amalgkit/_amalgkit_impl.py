@@ -293,7 +293,9 @@ def _resolve_amalgkit_command() -> list[str] | None:
     candidates.append(str(repository_root / ".venv" / "bin" / "amalgkit"))
 
     for candidate in candidates:
-        path = Path(candidate)
+        path = Path(candidate).expanduser()
+        if not path.is_absolute():
+            path = (Path.cwd() / path).resolve()
         if path.is_file() and os.access(path, os.X_OK):
             return [str(path)]
 
@@ -305,7 +307,7 @@ def _resolve_amalgkit_command() -> list[str] | None:
     except ModuleNotFoundError:
         module_runner_available = False
     if module_runner_available:
-        return [sys.executable, "-m", "amalgkit"]
+        return [str(Path(sys.executable).resolve()), "-m", "amalgkit"]
     return None
 
 
