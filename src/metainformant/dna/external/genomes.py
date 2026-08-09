@@ -13,6 +13,7 @@ from urllib.parse import urlparse
 
 import requests
 
+from metainformant.core.ncbi import resolve_ncbi_contact
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
@@ -362,12 +363,18 @@ def _download_from_ftp(ftp_url: str, output_dir: Path) -> Path:
     return output_dir
 
 
-def get_chromosome_lengths(accession: str, email: str | None = None) -> Dict[str, int]:
+def get_chromosome_lengths(
+    accession: str,
+    email: str | None = None,
+    *,
+    allow_anonymous: bool = False,
+) -> Dict[str, int]:
     """Get chromosome/contig lengths for a genome assembly using NCBI Entrez.
 
     Args:
         accession: Genome accession (e.g., 'GCF_000001405.39' for human)
-        email: Email for NCBI Entrez API
+        email: Explicit email for NCBI Entrez API; otherwise ``NCBI_EMAIL``.
+        allow_anonymous: Explicitly permit an anonymous request.
 
     Returns:
         Dictionary mapping chromosome/contig names to lengths in base pairs
@@ -384,11 +391,9 @@ def get_chromosome_lengths(accession: str, email: str | None = None) -> Dict[str
         logger.warning("biopython required for chromosome length lookup - returning empty dict")
         return {}
 
-    import os
-
-    if not email:
-        email = os.environ.get("NCBI_EMAIL", "metainformant@example.com")
-    Entrez.email = email
+    contact = resolve_ncbi_contact(email, allow_anonymous=allow_anonymous)
+    setattr(Entrez, "email", contact.email)
+    logger.info("NCBI contact mode: %s", contact.mode)
 
     logger.info(f"Fetching chromosome lengths for: {accession}")
 

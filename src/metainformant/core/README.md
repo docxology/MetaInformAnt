@@ -79,8 +79,8 @@ cfg = config.load_mapping_from_file("config/workflow.yaml")
 cfg = config.apply_env_overrides(cfg, prefix="RNA")
 ```
 
-Compatibility shims `metainformant.core.config` and
-`metainformant.core.paths` re-export these canonical APIs for older callers.
+Compatibility shims `metainformant.core.utils.config` and
+`metainformant.core.io.paths` re-export these canonical APIs for older callers.
 Use the canonical imports in new code.
 
 ### Pipeline Orchestration

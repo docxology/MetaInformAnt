@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 
 import requests
 
+from metainformant.core.ncbi import resolve_ncbi_contact
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
@@ -467,7 +468,14 @@ def check_sra_tools_available() -> bool:
         return False
 
 
-def download_sra_project(project_id: str, output_dir: str | Path, threads: int = 1) -> List[Path]:
+def download_sra_project(
+    project_id: str,
+    output_dir: str | Path,
+    threads: int = 1,
+    email: str | None = None,
+    *,
+    allow_anonymous: bool = False,
+) -> List[Path]:
     """Download all experiments/runs from an SRA project.
 
     Args:
@@ -482,7 +490,11 @@ def download_sra_project(project_id: str, output_dir: str | Path, threads: int =
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Get experiments for this project
-    experiment_accessions = _get_project_experiments(project_id)
+    experiment_accessions = _get_project_experiments(
+        project_id,
+        email=email,
+        allow_anonymous=allow_anonymous,
+    )
 
     if not experiment_accessions:
         logger.warning(f"No experiments found for project {project_id}")
@@ -504,7 +516,12 @@ def download_sra_project(project_id: str, output_dir: str | Path, threads: int =
     return downloaded_runs
 
 
-def _get_project_experiments(project_id: str, email: str | None = None) -> List[str]:
+def _get_project_experiments(
+    project_id: str,
+    email: str | None = None,
+    *,
+    allow_anonymous: bool = False,
+) -> List[str]:
     """Get experiment accessions for an SRA project using NCBI Entrez API.
 
     Args:
@@ -520,9 +537,9 @@ def _get_project_experiments(project_id: str, email: str | None = None) -> List[
         logger.warning("biopython required for project lookup - returning empty list")
         return []
 
-    if not email:
-        email = os.environ.get("NCBI_EMAIL", "metainformant@example.com")  # noqa: F821
-    Entrez.email = email
+    contact = resolve_ncbi_contact(email, allow_anonymous=allow_anonymous)
+    setattr(Entrez, "email", contact.email)
+    logger.info("NCBI contact mode: %s", contact.mode)
 
     logger.info(f"Looking up experiments for project: {project_id}")
 
@@ -620,13 +637,20 @@ def download_sra_run(sra_accession: str, output_dir: str | Path, threads: int = 
         return run_dir
 
 
-def search_sra_for_organism(organism: str, max_results: int = 100, email: str | None = None) -> List[Dict[str, Any]]:
+def search_sra_for_organism(
+    organism: str,
+    max_results: int = 100,
+    email: str | None = None,
+    *,
+    allow_anonymous: bool = False,
+) -> List[Dict[str, Any]]:
     """Search SRA for experiments from a specific organism using NCBI Entrez API.
 
     Args:
         organism: Organism name to search for
         max_results: Maximum number of results to return
-        email: Email for NCBI Entrez (required by NCBI)
+        email: Explicit email for NCBI Entrez; otherwise ``NCBI_EMAIL``.
+        allow_anonymous: Explicitly permit an anonymous request.
 
     Returns:
         List of dictionaries with experiment information
@@ -640,9 +664,9 @@ def search_sra_for_organism(organism: str, max_results: int = 100, email: str | 
     except ImportError:
         raise ImportError("biopython is required for SRA search. Install with: uv pip install biopython")
 
-    if not email:
-        email = os.environ.get("NCBI_EMAIL", "metainformant@example.com")  # noqa: F821
-    Entrez.email = email
+    contact = resolve_ncbi_contact(email, allow_anonymous=allow_anonymous)
+    setattr(Entrez, "email", contact.email)
+    logger.info("NCBI contact mode: %s", contact.mode)
 
     logger.info(f"Searching SRA for organism: {organism} (max {max_results} results)")
 
@@ -707,6 +731,7 @@ def search_sra_for_organism(organism: str, max_results: int = 100, email: str | 
                         "runs": runs,
                         "platform": platform,
                         "library_strategy": library_strategy,
+                        "contact_mode": contact.mode,
                     }
                 )
 

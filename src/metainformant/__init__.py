@@ -48,7 +48,7 @@ from __future__ import annotations
 import importlib
 from types import ModuleType
 
-__version__ = "0.3.0"  # Bumped for engine refactor
+__version__ = "0.4.0"  # Breaking API and reproducibility contract release
 __author__ = "MetaInformAnt Development Team"
 __license__ = "Apache License 2.0"
 

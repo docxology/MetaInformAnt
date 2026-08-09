@@ -37,7 +37,7 @@ class EntrezClient:
         self.session = requests.Session()
 
         # Set headers
-        headers = {"User-Agent": "metainformant/0.2.0"}
+        headers = {"User-Agent": "metainformant/0.4.0"}
         if email:
             headers["From"] = email
         self.session.headers.update(headers)
