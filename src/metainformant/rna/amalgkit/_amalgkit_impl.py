@@ -300,7 +300,11 @@ def _resolve_amalgkit_command() -> list[str] | None:
     # Some Amalgkit source revisions install the Python package and its
     # ``__main__`` module but omit a console-script entry point.  Treat the
     # module runner as the equivalent project-owned CLI capability.
-    if importlib.util.find_spec("amalgkit.__main__") is not None:
+    try:
+        module_runner_available = importlib.util.find_spec("amalgkit.__main__") is not None
+    except ModuleNotFoundError:
+        module_runner_available = False
+    if module_runner_available:
         return [sys.executable, "-m", "amalgkit"]
     return None
 

@@ -166,10 +166,13 @@ sync_dependencies() {
             uv sync --group test-fast
             ;;
         "network")
-            uv sync --group test-network
+            # Network RNA tests exercise the real Amalgkit dispatch contract.
+            uv sync --extra rna --group test-network
             ;;
         "external")
-            uv sync --group test-external
+            # Keep the pinned Amalgkit extra present after the test-mode sync;
+            # syncing only the group would remove this project dependency.
+            uv sync --extra rna --group test-external
             ;;
         "all")
             uv sync --all-extras --all-groups
