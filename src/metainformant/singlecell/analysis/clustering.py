@@ -50,11 +50,14 @@ except ImportError:
     ig = None
     HAS_IGRAPH = False
 
+# leidenalg 0.10.2 contains invalid escape sequences in docstrings. Under the
+# repository's warning-as-error policy Python can surface those as SyntaxError
+# during import; keep Leiden an explicit optional capability in that case.
 try:
     import leidenalg
 
     HAS_LEIDEN = True
-except ImportError:
+except (ImportError, SyntaxError):
     leidenalg = None
     HAS_LEIDEN = False
 

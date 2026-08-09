@@ -205,6 +205,12 @@ setup_environment() {
     # Configure UV cache
     configure_uv_cache
 
+    # Make tools installed into the project-owned environment authoritative for
+    # package test and verification scripts, including Amalgkit.
+    local venv_dir
+    venv_dir=$(get_venv_dir)
+    export PATH="${venv_dir}/bin:${PATH:-}"
+
     # Set PYTHONPATH
     export PYTHONPATH="${repo_root}/src:${PYTHONPATH:-}"
 }

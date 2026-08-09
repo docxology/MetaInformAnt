@@ -6,6 +6,7 @@ and SRA sequencing data for GWAS analysis.
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -772,6 +773,9 @@ def download_variant_data(study_accession: str, output_dir: str | Path, data_typ
         ValueError: If study accession is invalid
         requests.RequestException: If download fails
     """
+    if not re.fullmatch(r"GCST\d+", study_accession):
+        raise ValueError(f"Invalid GWAS Catalog study accession: {study_accession!r}")
+
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
