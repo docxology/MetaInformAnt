@@ -956,9 +956,17 @@ def getfastq(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: An
     elif isinstance(params, AmalgkitParams):
         jobs = int(params.extra_params.get("jobs", 1))
 
-    # Retry configuration
-    max_retries = 3
-    retry_delay = 5  # seconds, will be multiplied by attempt number
+    # Retry configuration.  An empty parameter map is a capability/dispatch
+    # probe, not a real acquisition request; retrying a deliberately invalid
+    # command only wastes the external-test timeout.  Real configured runs
+    # retain the resilient three-attempt default, with explicit overrides for
+    # callers that need a different recovery policy.
+    default_retries = 1 if not p_dict else 3
+    default_delay = 0 if not p_dict else 5
+    max_retries = int(kwargs.get("max_retries", default_retries))
+    retry_delay = float(kwargs.get("retry_delay", default_delay))
+    if max_retries < 1:
+        raise ValueError("max_retries must be at least 1")
 
     last_result = None
     for attempt in range(1, max_retries + 1):
