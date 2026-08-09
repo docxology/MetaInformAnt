@@ -11,10 +11,17 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = REPO_ROOT / "projects" / "hymenoptera_amalgkit" / "config" / "amalgkit"
 RUN_ALL = REPO_ROOT / "scripts" / "rna" / "run_all_species.py"
 PROCESS_ONE = REPO_ROOT / "scripts" / "rna" / "process_species.py"
+
+pytestmark = pytest.mark.skipif(
+    not CONFIG_DIR.is_dir(),
+    reason="Hymenoptera Amalgkit submodule is unavailable in this parent-only checkout",
+)
 
 
 def _run(script: Path, *args: str) -> subprocess.CompletedProcess[str]:

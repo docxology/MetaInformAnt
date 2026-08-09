@@ -11,6 +11,11 @@ CONFIG_DIR = Path("config/amalgkit")
 TISSUE_PATCHES = CONFIG_DIR / "tissue_patches.yaml"
 TISSUE_MAPPING = CONFIG_DIR / "tissue_mapping.yaml"
 
+pytestmark = pytest.mark.skipif(
+    not CONFIG_DIR.is_dir(),
+    reason="Hymenoptera Amalgkit submodule is unavailable in this parent-only checkout",
+)
+
 
 class TestTissueConfiguration:
     def test_tissue_patches_integrity(self):
