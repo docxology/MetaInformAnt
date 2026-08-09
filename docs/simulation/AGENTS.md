@@ -23,6 +23,6 @@ Documentation agent for METAINFORMANT's simulation module.
 - **Real implementations only** — tests exercise production code paths
 - **Package management**: `uv` for all Python operations
 - **I/O**: Use `metainformant.core.io` for all file operations
-- **Paths**: Use `metainformant.core.paths` for path handling
+- **Paths**: Use `metainformant.core.io.paths` for path handling
 - **Environment variables**: Prefix with `SIM_`
 - **Output**: Write to `output/simulation/`
