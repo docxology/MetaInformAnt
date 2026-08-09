@@ -557,22 +557,6 @@ def execute_workflow(
                 error_message=deps_msg,
             )
             step_results.append(res)
-            # Record in manifest
-            with open(manifest_path, "a") as f:
-                f.write(
-                    json.dumps(
-                        {
-                            "step": step_name,
-                            "status": "failed",
-                            "return_code": 126,
-                            "success": False,
-                            "duration_seconds": 0,
-                            "timestamp": time_mod.time(),
-                            "note": f"Dependency failure: {deps_msg}",
-                        }
-                    )
-                    + "\n"
-                )
             if check:
                 break
             continue
@@ -597,21 +581,6 @@ def execute_workflow(
         if is_completed and not force_redo:
             logger.info(f"Step {i}/{len(steps_planned)}: {step_name} - Already completed, skipping")
             logger.info(f"  Completion indicator: {completion_indicator}")
-
-            # Record skipped step in manifest
-            with open(manifest_path, "a") as f:
-                f.write(
-                    json.dumps(
-                        {
-                            "step": step_name,
-                            "status": "skipped",
-                            "return_code": 0,
-                            "duration_seconds": 0,
-                            "timestamp": time_mod.time(),
-                        }
-                    )
-                    + "\n"
-                )
 
             step_results.append(
                 WorkflowStepResult(

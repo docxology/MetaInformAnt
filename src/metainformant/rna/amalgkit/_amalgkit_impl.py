@@ -269,20 +269,53 @@ def build_amalgkit_command(subcommand: str, params: AmalgkitParams | Dict[str, A
     return command
 
 
+def _resolve_amalgkit_executable() -> str | None:
+    """Resolve the project-owned Amalgkit executable without mutating PATH.
+
+    Hosted runners can invoke pytest through ``uv`` while the package's CLI is
+    installed in the project environment.  Relying only on the inherited PATH
+    makes capability checks disagree with the subprocess that the workflow
+    actually owns.  Resolution remains read-only and bounded to PATH, the
+    active interpreter environment, and this checkout's ``.venv``.
+    """
+    candidates: list[str] = []
+    discovered = shutil.which("amalgkit")
+    if discovered:
+        candidates.append(discovered)
+
+    candidates.append(str(Path(sys.executable).with_name("amalgkit")))
+    virtual_env = os.environ.get("VIRTUAL_ENV")
+    if virtual_env:
+        candidates.append(str(Path(virtual_env) / "bin" / "amalgkit"))
+
+    repository_root = Path(__file__).resolve().parents[4]
+    candidates.append(str(repository_root / ".venv" / "bin" / "amalgkit"))
+
+    for candidate in candidates:
+        path = Path(candidate)
+        if path.is_file() and os.access(path, os.X_OK):
+            return str(path)
+    return None
+
+
 def check_cli_available() -> Tuple[bool, str]:
     """Check if amalgkit CLI is available.
 
     Returns:
         Tuple of (available, message)
     """
+    executable = _resolve_amalgkit_executable()
+    if executable is None:
+        return False, "amalgkit CLI not found in PATH or the project environment"
+
     try:
-        result = subprocess.run(["amalgkit", "--help"], capture_output=True, text=True, timeout=10)
+        result = subprocess.run([executable, "--help"], capture_output=True, text=True, timeout=10)
         if result.returncode == 0:
-            return True, "amalgkit CLI is available"
+            return True, f"amalgkit CLI is available: {executable}"
         else:
             return False, f"amalgkit CLI returned error: {result.stderr}"
     except FileNotFoundError:
-        return False, "amalgkit CLI not found in PATH"
+        return False, f"amalgkit CLI disappeared after resolution: {executable}"
     except subprocess.TimeoutExpired:
         return False, "amalgkit CLI check timed out"
     except (OSError, PermissionError) as e:
@@ -361,8 +394,12 @@ def validate_amalgkit_version(
     Returns:
         Tuple of (valid, message)
     """
+    executable = _resolve_amalgkit_executable()
+    if executable is None:
+        return False, "amalgkit CLI not found in PATH or the project environment"
+
     try:
-        result = subprocess.run(["amalgkit", "--version"], capture_output=True, text=True, timeout=5)
+        result = subprocess.run([executable, "--version"], capture_output=True, text=True, timeout=5)
         if result.returncode != 0:
             return False, f"Version check failed: {result.stderr}"
 
@@ -409,7 +446,10 @@ def ensure_cli_available(
 
         # Get version info again for return
         try:
-            result = subprocess.run(["amalgkit", "--version"], capture_output=True, text=True, timeout=5)
+            executable = _resolve_amalgkit_executable()
+            if executable is None:
+                raise FileNotFoundError("amalgkit executable is unavailable after installation")
+            result = subprocess.run([executable, "--version"], capture_output=True, text=True, timeout=5)
             current_version = result.stdout.strip().split()[-1] if result.stdout.strip() else "unknown"
             version_info = {"version": current_version, "valid": valid_version}
         except Exception:
@@ -479,6 +519,9 @@ def run_amalgkit(
     and the monitoring wall-clock limit need to differ.
     """
     command = build_amalgkit_command(subcommand, params)
+    executable = _resolve_amalgkit_executable()
+    if executable is not None:
+        command[0] = executable
 
     logger.info(f"Running amalgkit command: {' '.join(command)}")
 

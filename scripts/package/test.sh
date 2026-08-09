@@ -149,6 +149,12 @@ build_pytest_args() {
         "coverage-fast")
             args+=("--timeout=15" "--cov-fail-under=0")
             ;;
+        "coverage")
+            # Bound individual tests in the required full-suite job.  Long
+            # external commands have their own workflow timeouts; this keeps a
+            # stalled test from holding the matrix indefinitely.
+            args+=("--timeout=60")
+            ;;
         "integration")
             args+=("--timeout=30" "--disable-warnings")
             ;;
