@@ -47,7 +47,7 @@ bash scripts/package/verify.sh --mode setup
 Directories policy
 
 
-- `config/`: repository-level configuration and options; read via `metainformant.core.config` with environment overrides.
+- `config/`: repository-level configuration and options; read via `metainformant.core.utils.config` with environment overrides.
 - `data/`: datasets and local databases (inputs), organized by domain/version.
 - `output/`: all outputs from tests and real runs. Ephemeral and reproducible; safe to delete.
 

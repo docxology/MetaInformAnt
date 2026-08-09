@@ -9,12 +9,12 @@ Advanced workflows, cleanup strategies, and real-world examples for the `amalgki
 ## Automatic FASTQ Cleanup After Quantification
 
 The project retains FASTQ files during quantification. After a non-empty
-abundance table and exact current-method provenance sidecar are written,
+abundance table and verified quantification-contract sidecar are written,
 `scripts/rna/reclaim_quantified_raw.py` removes the sample's raw inputs and
 writes an audit manifest.
 
 Amalgkit may leave `.safely_removed` markers from older runs; they are
-redundant and are removed by the same guarded utility after current evidence
+redundant and are removed by the same guarded utility after verified evidence
 is present.
 
 ### Automatic Cleanup in Workflow
@@ -25,7 +25,7 @@ after current quantification evidence is written:
 1. **Download**: Sample FASTQ files are downloaded via `getfastq`
 2. **Quantify**: Sample is quantified using `quantify_sample()` from `metainformant.rna.engine.workflow_steps`
 3. **Reclaim**: `reclaim_quantified_raw.py` removes only validated raw inputs
-   for samples with current provenance
+   for samples with verified quantification-contract provenance
 
 The per-sample workflow bounds concurrent FASTQ trees by the selected sample
 worker profile. When workers exceed one, disk planning must use the selected

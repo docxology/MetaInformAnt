@@ -30,10 +30,10 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
     - name: Install uv
-      uses: astral-sh/setup-uv@v3
+      uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       with:
         version: "latest"
         enable-cache: true
@@ -88,38 +88,34 @@ jobs:
     - name: Test package installation
       run: |
         # Create a temporary virtual environment for testing
-        python -m venv test_install
-        source test_install/bin/activate
+        uv venv --python "${{ matrix.python-version }}" test_install
 
         # Install the built package
         if ls dist/*.whl >/dev/null 2>&1; then
-          pip install dist/*.whl
+          uv pip install --python test_install/bin/python dist/*.whl
         elif ls dist/*.tar.gz >/dev/null 2>&1; then
-          pip install dist/*.tar.gz
+          uv pip install --python test_install/bin/python dist/*.tar.gz
         else
           echo "ERROR: No package files to install"
           exit 1
         fi
 
         # Test basic import
-        python -c "import metainformant; print(f'Successfully imported metainformant {metainformant.__version__}')"
+        test_install/bin/python -c "import metainformant; print(f'Successfully imported metainformant {metainformant.__version__}')"
 
         # Test CLI
-        metainformant --help > /dev/null
+        test_install/bin/metainformant --help > /dev/null
 
         # Clean up
-        deactivate
         rm -rf test_install
 
     - name: Run build validation tests
       run: |
         # Run our custom build validation tests
-        if [ -f "tests/test_build.py" ]; then
-          uv run pytest tests/test_build.py -v
-        fi
+        uv run --with pytest --with pytest-timeout pytest tests/infrastructure/test_build.py -v
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: metainformant-${{ matrix.python-version }}-${{ github.sha }}
         path: |
@@ -132,16 +128,16 @@ jobs:
     needs: build
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
     - name: Download build artifacts
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
       with:
         name: metainformant-3.12-${{ github.sha }}
         path: dist/
 
     - name: Install uv
-      uses: astral-sh/setup-uv@v3
+      uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       with:
         version: "latest"
 
@@ -151,19 +147,18 @@ jobs:
     - name: Install package and test
       run: |
         # Test installation in clean environment
-        python -m venv validation_env
-        source validation_env/bin/activate
+        uv venv --python 3.12 validation_env
 
         # Install from wheel
         if ls dist/*.whl >/dev/null 2>&1; then
-          pip install dist/*.whl
+          uv pip install --python validation_env/bin/python dist/*.whl
         else
           echo "ERROR: No wheel found for validation"
           exit 1
         fi
 
         # Run comprehensive validation
-        python -c "
+        validation_env/bin/python -c "
         import metainformant as mi
         print(f'✓ Import successful: {mi.__version__}')
 
@@ -182,7 +177,6 @@ jobs:
         "
 
         # Clean up
-        deactivate
         rm -rf validation_env
 
   summary:

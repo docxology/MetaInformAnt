@@ -8,6 +8,9 @@ with auto-documentation from Google-style docstrings.
 import os
 import sys
 
+from sphinx.highlighting import lexers
+from pygments.lexers import get_lexer_by_name
+
 # Add the src directory to the Python path for imports
 sys.path.insert(0, os.path.abspath('../src'))
 
@@ -25,7 +28,7 @@ def get_version():
             data = tomllib.load(f)
             return data['project']['version']
     except Exception:
-        return '0.2.7'
+        return '0.4.0'
 
 version = get_version()
 release = version
@@ -56,9 +59,17 @@ extensions = [
 
 # Source file parsing
 source_suffix = {
-    '.rst': None,
-    '.md': None,
+    '.rst': 'restructuredtext',
+    '.md': 'markdown',
 }
+
+# The repository retains historical examples using these project-local lexer
+# names. Map them to stable built-in lexers so strict documentation builds do
+# not fail merely because a legacy code-fence label is unknown.
+lexers['python-snippet'] = get_lexer_by_name('python')
+lexers['mermaid'] = get_lexer_by_name('text')
+for _lexer_name in ('cron', 'csv', 'snakemake', 'tsv'):
+    lexers[_lexer_name] = get_lexer_by_name('text')
 
 # Master document
 master_doc = 'index'

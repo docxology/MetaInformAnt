@@ -112,12 +112,38 @@ fi
 # List built packages
 if [[ -d "$OUTPUT_DIR" ]]; then
     print_status "INFO" "Build artifacts created:"
-    ls -la "$OUTPUT_DIR"/*.whl "$OUTPUT_DIR"/*.tar.gz 2>/dev/null || true
+    found_artifact=false
+    if compgen -G "$OUTPUT_DIR"/*.whl >/dev/null 2>&1; then
+        ls -la "$OUTPUT_DIR"/*.whl
+        found_artifact=true
+    fi
+    if compgen -G "$OUTPUT_DIR"/*.tar.gz >/dev/null 2>&1; then
+        ls -la "$OUTPUT_DIR"/*.tar.gz
+        found_artifact=true
+    fi
+    if [[ "$found_artifact" != "true" ]]; then
+        print_status "ERROR" "No distribution artifacts were created in $OUTPUT_DIR"
+        exit 4
+    fi
 fi
 
 # Validate packages if requested
 if [[ "$CHECK_PACKAGE" == "true" ]]; then
     print_status "INFO" "Validating built packages"
+
+    required_patterns=()
+    if [[ "$SDIST_ONLY" != "true" ]]; then
+        required_patterns+=("$OUTPUT_DIR/*.whl")
+    fi
+    if [[ "$WHEEL_ONLY" != "true" ]]; then
+        required_patterns+=("$OUTPUT_DIR/*.tar.gz")
+    fi
+    for pattern in "${required_patterns[@]}"; do
+        if ! compgen -G "$pattern" >/dev/null 2>&1; then
+            print_status "ERROR" "Required package artifact missing: $pattern"
+            exit 4
+        fi
+    done
 
     # Check if twine is available
     if command -v twine &> /dev/null; then
@@ -125,8 +151,9 @@ if [[ "$CHECK_PACKAGE" == "true" ]]; then
         twine check "$OUTPUT_DIR"/*.whl "$OUTPUT_DIR"/*.tar.gz
         print_status "OK" "Package validation completed"
     else
-        print_status "WARNING" "twine not available, skipping package validation"
-        print_status "INFO" "Install twine: uv add --dev twine"
+        print_status "ERROR" "twine is required for --check package validation"
+        print_status "INFO" "Install twine with: uv tool install twine"
+        exit 3
     fi
 fi
 

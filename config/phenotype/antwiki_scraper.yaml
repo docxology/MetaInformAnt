@@ -9,7 +9,7 @@ base_url: "https://www.antwiki.org/wiki/"
 delay_seconds: 2.0
 
 # User agent string for HTTP requests (browser-like to avoid blocking)
-user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 METAINFORMANT/0.2.0"
+user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 METAINFORMANT/0.4.0"
 
 # Request timeout in seconds
 timeout_seconds: 30
@@ -22,4 +22,3 @@ check_robots: true
 
 # Default output directory (relative to repo root)
 output_dir: "output/phenotype/antwiki/"
-

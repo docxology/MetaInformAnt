@@ -3,7 +3,7 @@
 ## Purpose
 
 > [!NOTE]
-> `cstmm` is exposed by the latest verified Amalgkit 0.16.33 CLI, but it has not
+> `cstmm` is exposed by the latest verified Amalgkit 0.16.38 CLI, but it has not
 > been executed for the current Hymenoptera evidence bundle. Validate the
 > ortholog table, merged matrices, output files, and software version before
 > making a cross-species normalization claim.
@@ -526,5 +526,5 @@ steps:
 ---
 
 **Last Updated**: October 29, 2025  
-**AMALGKIT Version**: 0.16.33 (`v0.16.33`)
+**AMALGKIT Version**: 0.16.38 (`v0.16.38`)
 **Status**: Production-ready, requires orthogroup tables from OrthoFinder

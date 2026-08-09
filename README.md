@@ -457,6 +457,7 @@ All modules live in [`src/metainformant/`](src/metainformant/) with documentatio
 ### Quick Links
 
 - **[Documentation Guide](docs/DOCUMENTATION_GUIDE.md)** - Complete navigation guide
+- **[Capability Matrix](docs/CAPABILITY_MATRIX.md)** - Source-linked readiness and release boundaries
 - **[Quick Start](QUICKSTART.md)** - Fast setup commands
 - **[Architecture](docs/architecture.md)** - System design
 - **[Technical Specification](SPEC.md)** - Design standards
@@ -734,7 +735,7 @@ If you use METAINFORMANT in your research, please cite this repository:
   title = {MetaInformAnt: Comprehensive Bioinformatics Toolkit},
   year = {2025},
   url = {https://github.com/docxology/MetaInformAnt},
-  version = {0.3.0}
+  version = {0.4.0}
 }
 ```
 
@@ -756,4 +757,4 @@ This project is licensed under the Apache License, Version 2.0 - see [LICENSE](L
 
 ---
 
-**Status**: Active Development | **Version**: 0.3.0 | **Python**: 3.11+ | **License**: Apache 2.0
+**Status**: Active Development | **Version**: 0.4.0 | **Python**: 3.11+ | **License**: Apache 2.0

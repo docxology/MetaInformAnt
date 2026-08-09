@@ -47,10 +47,10 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
     - name: Install uv
-      uses: astral-sh/setup-uv@v3
+      uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       with:
         version: "latest"
         enable-cache: true
@@ -99,7 +99,6 @@ jobs:
         bash scripts/package/verify.sh --mode setup
 
     - name: Run tests
-      continue-on-error: ${{ matrix.test-type != 'fast' }}
       run: |
         case "${{ matrix.test-type }}" in
           "fast")
@@ -121,7 +120,7 @@ jobs:
 
     - name: Upload coverage reports
       if: matrix.test-type == 'all' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
-      uses: codecov/codecov-action@v4
+      uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v6.0.2
       with:
         file: ./output/coverage.xml
         flags: unittests
@@ -130,7 +129,7 @@ jobs:
 
     - name: Upload test artifacts
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: test-results-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-type }}
         path: |
@@ -142,10 +141,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
     - name: Install uv
-      uses: astral-sh/setup-uv@v3
+      uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       with:
         version: "latest"
 
@@ -162,10 +161,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
     - name: Install uv
-      uses: astral-sh/setup-uv@v3
+      uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       with:
         version: "latest"
 
@@ -182,9 +181,13 @@ jobs:
     - name: Run code quality checks
       run: |
         source .venv/bin/activate
-        black --check --diff src/ tests/
-        isort --check-only --diff src/ tests/
+        black --check --diff src/ tests/ scripts/
+        isort --check-only --diff src/ tests/ scripts/
         flake8 src/ tests/ --max-line-length=120 --extend-ignore=E203,W503
+        # Script entrypoints intentionally bootstrap src before package imports;
+        # Black/isort cover their formatting while F/E9 remains blocking.
+        flake8 scripts/ --select=F,E9 --max-line-length=120 --extend-ignore=E203,W503
+        python scripts/quality/check_mypy_budget.py src/metainformant/rna
 
     - name: Run security checks
       run: |
@@ -202,10 +205,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
     - name: Install uv
-      uses: astral-sh/setup-uv@v3
+      uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       with:
         version: "latest"
         enable-cache: true
@@ -218,19 +221,18 @@ jobs:
       run: bash scripts/package/setup.sh --python 3.12 --skip-tests
 
     - name: Run example tests
-      continue-on-error: true
       run: |
-        uv run python scripts/test_examples/test_examples.py --continue-on-error --junit-xml
+        uv run python scripts/test_examples/test_examples.py --junit-xml
 
     - name: Publish Test Results
-      uses: EnricoMi/publish-unit-test-result-action@v2
+      uses: EnricoMi/publish-unit-test-result-action@283dea176069279a9076e77b548668a8e4f0c31b # v2.9.0
       if: always()
       with:
         files: output/examples/junit_report.xml
 
     - name: Upload example test artifacts
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: example-test-results-${{ github.run_id }}
         path: |
@@ -243,10 +245,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
 
     - name: Install uv
-      uses: astral-sh/setup-uv@v3
+      uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       with:
         version: "latest"
 
@@ -280,24 +282,22 @@ jobs:
         echo "- Test jobs (fast + extended): ${{ needs.test.result }}"
         echo "- Infrastructure tests: ${{ needs.test-infrastructure.result }}"
         echo "- Quality checks: ${{ needs.quality-checks.result }}"
-        echo "- Example tests (informational): ${{ needs.test-examples.result }}"
+        echo "- Example tests (required): ${{ needs.test-examples.result }}"
         echo "- FAT filesystem test: ${{ needs.fat-filesystem-test.result }}"
 
-        # Core checks: test matrix (fast tests are required, network/external/all are continue-on-error),
-        # infrastructure tests, and quality checks
+        # All matrix test types, infrastructure tests, and quality checks are required.
         if [[ "${{ needs.test.result }}" != "success" ]] || \
            [[ "${{ needs.test-infrastructure.result }}" != "success" ]] || \
-           [[ "${{ needs.quality-checks.result }}" != "success" ]]; then
+           [[ "${{ needs.quality-checks.result }}" != "success" ]] || \
+           [[ "${{ needs.test-examples.result }}" != "success" ]]; then
           echo "Core checks failed"
           exit 1
         fi
 
-        # Informational: report on example tests and FAT test without failing
-        if [[ "${{ needs.test-examples.result }}" != "success" ]]; then
-          echo "Warning: Example tests had failures (non-blocking)"
-        fi
+        # The FAT-like filesystem job is an informational environment probe;
+        # the normal matrix remains the required portability contract.
         if [[ "${{ needs.fat-filesystem-test.result }}" != "success" ]]; then
-          echo "Warning: FAT filesystem test had failures (non-blocking)"
+          echo "Notice: FAT filesystem test is informational: ${{ needs.fat-filesystem-test.result }}"
         fi
 
         echo "All required checks passed"

@@ -53,8 +53,8 @@ from metainformant.core.io import paths
 from metainformant.core.utils import config
 ```
 
-Deprecated compatibility shims `metainformant.core.config` and
-`metainformant.core.paths` are tested for older imports, but new code should use
+Deprecated compatibility shims `metainformant.core.utils.config` and
+`metainformant.core.io.paths` are tested for older imports, but new code should use
 the canonical paths above.
 
 Regenerate and verify the public API inventory after changing a core module:

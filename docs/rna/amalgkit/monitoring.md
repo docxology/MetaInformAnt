@@ -68,8 +68,9 @@ validated inputs.
 
 The current evidence-aware status command checks the progress database and
 downstream outputs under the selected external data root. A readable
-`abundance.tsv` without the current provenance sidecar is not counted as
-current-contract quantification.
+`abundance.tsv` without a verified quantification-contract sidecar is not
+counted as eligible quantification. Compatible runtime drift remains eligible
+and is reported separately in the audit counts.
 
 ```bash
 uv run python scripts/rna/check_pipeline_status.py \
@@ -86,7 +87,7 @@ bash projects/hymenoptera_amalgkit/scripts/run_all_finalization.sh \
   --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 ```
 
-Its execution mode skips a stage only when the current provenance sidecar and
+Its execution mode skips a stage only when the contract provenance sidecar and
 all recorded input/output digests still match.
 
 ## Quick Health Checks
@@ -115,6 +116,25 @@ grep -E "Quantified|Done" "$LOG" | wc -l # completed
 grep -E "Reclaimed" "$LOG" | wc -l # raw-input reclamations
 grep -E "Failed|ERROR" "$LOG" | wc -l # failed
 ```
+
+## Compatibility-first quantification
+
+AMALGKIT runtime version drift is recorded in the quantification audit but does
+not invalidate a complete, checksum-verified quantification contract. The
+status report separates current, version-drift-compatible, legacy-unverified,
+and invalid outputs. Legacy-unverified outputs are quarantined rather than
+automatically downloaded again.
+
+Run the compatibility reconciliation as a dry run first:
+
+    uv run python scripts/rna/reconcile_quantification_compatibility.py --data-root "$AMALGKIT_DATA_ROOT"
+
+Apply the audit only after reviewing its manifest:
+
+    uv run python scripts/rna/reconcile_quantification_compatibility.py --data-root "$AMALGKIT_DATA_ROOT" --apply
+
+The producer defaults to preserving compatible outputs. Explicit rebuilds use
+the preserve, version-drift, or all requantification policy.
 
 ## Current cleanup contract
 

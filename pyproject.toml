@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "metainformant"
-version = "0.3.0"
+version = "0.4.0"
 description = "Comprehensive bioinformatics toolkit for multi-domain analysis"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -57,7 +57,7 @@ scientific = [
 # release tag because the project wraps its CLI and must reproduce the exact
 # command and output contract used by the analysis.
 rna = [
-    "amalgkit @ git+https://github.com/kfuku52/amalgkit@v0.16.33",
+    "amalgkit @ git+https://github.com/kfuku52/amalgkit@v0.16.38",
 ]
 
 # Machine learning and advanced analytics
@@ -166,7 +166,7 @@ performance = [
 
 # All optional dependencies combined
 all = [
-    "amalgkit @ git+https://github.com/kfuku52/amalgkit@v0.16.33",
+    "amalgkit @ git+https://github.com/kfuku52/amalgkit@v0.16.38",
     "scipy>=1.11.0",
     "scikit-learn>=1.3.0",
     "seaborn>=0.13.0",
@@ -216,6 +216,7 @@ markers = [
     "network: marks tests requiring network access - REAL API CALLS ONLY",
     "external_tool: marks tests requiring external tools (muscle, amalgkit, etc.)",
     "integration: marks tests as integration tests with real implementations",
+    "xdist_group: groups tests that must share an xdist worker",
 ]
 filterwarnings = [
     "error",

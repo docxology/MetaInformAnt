@@ -40,8 +40,10 @@ print(db.get_counts())
 ```
 
 The sample states are `pending`, `downloading`, `downloaded`, `quantifying`,
-`quantified`, and `failed`. The database is the source for progress reporting;
-directory scans are not completion evidence.
+`quantified`, `quarantined`, and `failed`. The database is the source for
+progress reporting; directory scans are not completion evidence. Quantification
+audit records distinguish current, compatible version drift, legacy-unverified,
+and invalid outputs.
 
 ## Workflow planning
 
@@ -58,7 +60,8 @@ assert [name for name, _ in steps] == [
 ]
 ```
 
-## Quant
+(quant)=
+## Quantification API
 
 The quantification wrapper runs the pinned Amalgkit quantification command and
 returns a `subprocess.CompletedProcess`. A successful process is reusable only

@@ -43,7 +43,7 @@ is interrupted. Never start a second producer against the same data root.
 ## Storage safety
 
 - Keep the campaign lock and progress database on the selected root.
-- Reclaim raw reads only after current provenance validates the exact abundance
+- Reclaim raw reads only after contract provenance validates the exact abundance
   file and the project receipt records the decision.
 - Preserve metadata, selection tables, indexes, logs, receipts, and failed
   samples for reproducibility.

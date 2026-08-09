@@ -1,6 +1,6 @@
 # Amalgkit integration
 
-The RNA package integrates the pinned Amalgkit 0.16.33 command line through a
+The RNA package integrates the pinned Amalgkit 0.16.38 command line through a
 small command registry and the shared streaming producer.
 
 ## Current command chain

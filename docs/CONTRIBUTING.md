@@ -114,7 +114,7 @@ METAINFORMANT has a **strict real-implementation policy** and emphasizes real-da
 #### Test Framework: pytest
 - Tests reside in `tests/` mirroring the `src/metainformant/` structure
 - Test files named `test_<module>.py`
-- Run tests via `scripts/run_tests.sh` (CI-parity wrapper) or directly: `uv run pytest`
+- Run tests via `scripts/package/test.sh` (CI-parity wrapper) or directly: `uv run pytest`
 - Add options: `-v` (verbose), `-x` (stop on first failure), `-m "not slow"` (exclude slow tests), `--timeout=300` (per-test timeout)
 
 #### Real Implementation Policy
@@ -146,7 +146,7 @@ Follow these steps for a smooth PR experience:
    - Use descriptive names: `feat/dna-msa-improvements`, `fix/gwas-plot-bug`, `docs/update-tutorials`
 2. **Make changes** following [Coding Standards](#code-style-and-formatting)
 3. **Run locally**:
-   - `scripts/run_tests.sh` – ensures all tests pass
+   - `scripts/package/test.sh` – ensures all tests pass
    - `pre-commit run --all-files` – ensures lint/formatting is clean
 4. **Commit** with a clear message following [Conventional Commits](https://www.conventionalcommits.org/):
    ```
@@ -171,7 +171,7 @@ Follow these steps for a smooth PR experience:
 #### PR Checklist
 Before marking your PR ready, verify:
 - [ ] Tests added (or existing tests updated)
-- [ ] `scripts/run_tests.sh` passes locally
+- [ ] `scripts/package/test.sh` passes locally
 - [ ] No new `TODO` comments (or `TODO(#issue)` referencing an issue)
 - [ ] Documentation updated (README in module, `docs/<domain>/`, `docs/TUTORIALS.md` if applicable)
 - [ ] Docstrings complete (Google style)

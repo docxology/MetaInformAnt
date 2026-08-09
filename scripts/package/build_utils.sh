@@ -69,7 +69,8 @@ validate_package() {
             return 1
         fi
     else
-        print_status "WARNING" "twine not available, skipping validation"
+        print_status "ERROR" "twine is required for package validation"
+        return 1
     fi
 
     return 0

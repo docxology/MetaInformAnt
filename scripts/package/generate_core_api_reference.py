@@ -14,7 +14,6 @@ import ast
 from dataclasses import dataclass
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SRC_ROOT = REPO_ROOT / "src" / "metainformant" / "core"
 DEFAULT_OUTPUT = REPO_ROOT / "docs" / "core" / "API_REFERENCE.md"
@@ -76,10 +75,7 @@ def _signature(node: ast.FunctionDef | ast.AsyncFunctionDef, *, method: bool = F
     if method and all_positional and all_positional[0].arg in {"self", "cls"}:
         defaults = defaults[1:]
 
-    parts = [
-        _argument_text(argument, default)
-        for argument, default in zip(positional, defaults, strict=True)
-    ]
+    parts = [_argument_text(argument, default) for argument, default in zip(positional, defaults, strict=True)]
     if args.vararg is not None:
         parts.append(f"*{_argument_text(args.vararg)}")
     elif args.kwonlyargs:
@@ -104,10 +100,7 @@ def _signature(node: ast.FunctionDef | ast.AsyncFunctionDef, *, method: bool = F
 
 
 def _is_staticmethod(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
-    return any(
-        isinstance(decorator, ast.Name) and decorator.id == "staticmethod"
-        for decorator in node.decorator_list
-    )
+    return any(isinstance(decorator, ast.Name) and decorator.id == "staticmethod" for decorator in node.decorator_list)
 
 
 def _summary(node: ast.AST) -> str:
@@ -130,14 +123,11 @@ def _public_symbols(module_path: Path, module_name: str) -> list[Symbol]:
             (
                 child
                 for child in node.body
-                if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef))
-                and child.name == "__init__"
+                if isinstance(child, (ast.FunctionDef, ast.AsyncFunctionDef)) and child.name == "__init__"
             ),
             None,
         )
-        class_signature = (
-            _signature(initializer, method=True) if initializer is not None else "()"
-        )
+        class_signature = _signature(initializer, method=True) if initializer is not None else "()"
         symbols.append(
             Symbol(
                 module=module_name,
@@ -156,9 +146,7 @@ def _public_symbols(module_path: Path, module_name: str) -> list[Symbol]:
                         module=module_name,
                         qualified_name=f"{node.name}.{child.name}",
                         kind="method",
-                        signature=_signature(
-                            child, method=not _is_staticmethod(child)
-                        ),
+                        signature=_signature(child, method=not _is_staticmethod(child)),
                         summary=_summary(child),
                     )
                 )

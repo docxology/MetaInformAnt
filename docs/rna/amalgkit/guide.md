@@ -112,7 +112,7 @@ results = workflow.execute_workflow(config)
 
 Install amalgkit:
 ```bash
-uv sync --extra rna  # installs the exact Amalgkit 0.16.33 project contract
+uv sync --extra rna  # installs the exact Amalgkit 0.16.38 project contract
 ```
 
 ### "No genome index"
@@ -145,13 +145,14 @@ confirm that the configured input directory contains non-empty TSV tables.
 
 1. **ENA HTTPS retrieval is the default**: valid local files are reused and
    incomplete files remain resumable `.part` files
-2. **Raw reads are reclaimed after current quantification**: disable with
+2. **Raw reads are reclaimed after verified quantification**: disable with
    `AMALGKIT_RECLAIM_RAW_AFTER_QUANT=no`
 3. **Monitor with `check_pipeline_status.py`**: current-contract counts from
    the selected data root
 4. **Monitor the current log**: `tail -f "$AMALGKIT_DATA_ROOT"/results/full_campaign_*.log`
-5. **Resume safely**: exact-current provenance skips already quantified
-   samples; outputs without the pinned provenance contract are reprocessed
+5. **Resume safely**: contract-verified quantification skips already completed
+   samples, including compatible runtime drift; incomplete or unverifiable
+   outputs are quarantined rather than silently re-downloaded
 
 ---
 

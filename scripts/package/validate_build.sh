@@ -137,7 +137,8 @@ if [[ "$INSTALL_CHECK" == "true" ]]; then
             VALIDATION_PASSED=false
         fi
     else
-        print_status "WARNING" "⚠️  No wheel file found, skipping installation test"
+        print_status "ERROR" "❌ No wheel file found; installation validation cannot be skipped"
+        VALIDATION_PASSED=false
     fi
 fi
 
@@ -200,13 +201,13 @@ print('✅ All import tests passed')
             if "$TEMP_VENV/bin/metainformant" --version >/dev/null 2>&1 2>&1 && "$TEMP_VENV/bin/metainformant" --help >/dev/null 2>&1 2>&1; then
                 print_status "SUCCESS" "✅ CLI tests passed"
             else
-                print_status "WARNING" "⚠️  CLI test failed (may be expected in some environments)"
-                # Don't fail validation for CLI issues in test environments
-                # VALIDATION_PASSED=false
+                print_status "ERROR" "❌ CLI test failed"
+                VALIDATION_PASSED=false
             fi
         fi
     else
-        print_status "WARNING" "⚠️  No wheel file found, skipping functionality tests"
+        print_status "ERROR" "❌ No wheel file found; functionality validation cannot be skipped"
+        VALIDATION_PASSED=false
     fi
 
     # Clean up
@@ -259,13 +260,15 @@ print(json.dumps(metadata))
                 VALIDATION_PASSED=false
             fi
         else
-            print_status "WARNING" "⚠️  Could not extract metadata"
+            print_status "ERROR" "❌ Could not extract metadata"
+            VALIDATION_PASSED=false
         fi
 
         # Clean up
         deactivate 2>/dev/null || true
     else
-        print_status "WARNING" "⚠️  No wheel file found, skipping metadata validation"
+        print_status "ERROR" "❌ No wheel file found; metadata validation cannot be skipped"
+        VALIDATION_PASSED=false
     fi
 fi
 

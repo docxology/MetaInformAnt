@@ -1,6 +1,6 @@
 # `amalgkit select`
 
-Amalgkit `0.16.33` reads the selection policy from a validated
+Amalgkit `0.16.38` reads the selection policy from a validated
 `select_rules.tsv` file. Selection parameters are not emitted as unsupported
 ad-hoc command-line flags by the MetaInformAnt workflow.
 

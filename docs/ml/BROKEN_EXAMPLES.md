@@ -23,7 +23,7 @@ predictions = classification.predict(model, new_features)
 ```
 
 ### Issues:
-- `metainformant.dna.sequences` module — check if exists; likely in `dna.sequence` submodule
+- `metainformant.dna.sequence.core` is the supported sequence module.
 - `read_fasta()` — location uncertain; probably `dna.io.fasta`
 - `extract_kmer_features()` — **NOT FOUND** in source anywhere
 - `get_functional_labels()` — **NOT FOUND**

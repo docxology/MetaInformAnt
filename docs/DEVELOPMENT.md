@@ -62,7 +62,7 @@ uv run metainformant --help         # CLI entry point
 | Task | Command |
 |------|---------|
 | Run a script | `uv run python path/to/script.py` |
-| Run tests | `uv run pytest` or `uv run scripts/run_tests.sh` |
+| Run tests | `uv run pytest` or `uv run scripts/package/test.sh` |
 | Format code | `uv run black .` |
 | Sort imports | `uv run isort .` |
 | Type check | `uv run mypy src/metainformant` |
@@ -138,7 +138,7 @@ uv run pytest tests/dna/test_composition.py -v
 
 **Run the CI wrapper script** (mirrors CI environment):
 ```bash
-bash scripts/run_tests.sh
+bash scripts/package/test.sh
 ```
 
 ### Test Organization
@@ -324,7 +324,7 @@ Before pushing:
 git fetch origin
 git rebase origin/main          # rebase onto latest main
 uv run pre-commit run --all-files
-uv run scripts/run_tests.sh
+uv run scripts/package/test.sh
 ```
 
 ---

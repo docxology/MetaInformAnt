@@ -3,7 +3,7 @@
 ## Module: `metainformant.cloud`
 
 **Status:** Production-ready
-**Version:** 0.3.0
+**Version:** 0.4.0
 **Python:** 3.11+
 **Dependencies:** google-cloud-compute, google-cloud-storage (optional; falls back to `gcloud` CLI)
 

@@ -38,7 +38,7 @@ Used automatically when an accession is absent from ENA (< 5% of cases):
 conda install -c bioconda sra-tools
 ```
 
-## Amalgkit 0.16.33 parameters
+## Amalgkit 0.16.38 parameters
 
 `amalgkit getfastq` is still invoked as part of the pipeline for integration with metadata and file management. Key parameters:
 
@@ -64,7 +64,7 @@ conda install -c bioconda sra-tools
 
 ### Resumable rRNA filtering
 
-Amalgkit 0.16.33 adds resumable rRNA filtering controls. They are optional
+Amalgkit 0.16.38 adds resumable rRNA filtering controls. They are optional
 and are disabled in the Hymenoptera configurations unless a run record
 documents the reference database, filter order, resource limits, and output
 validation:

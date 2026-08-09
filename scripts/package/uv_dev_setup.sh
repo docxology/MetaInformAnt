@@ -99,47 +99,7 @@ mkdir -p output/{simulation,ontology,quality,multiomics,epigenome}
 echo "📚 Setting up documentation environment..."
 mkdir -p docs/_build docs/_static docs/_templates
 
-# Create UV task runner wrapper scripts
-echo "⚙️  Creating UV task runner scripts..."
-
-# Test runner script
-cat > scripts/uv_test.sh << 'EOF'
-#!/bin/bash
-# UV-based test runner with comprehensive coverage
-set -euo pipefail
-cd "$(dirname "$0")/.."
-
-echo "🧪 Running tests with UV..."
-case "${1:-all}" in
-    "fast")
-        uv run pytest -x -q --tb=short
-        ;;
-    "coverage")
-        uv run pytest --cov=src/metainformant --cov-report=term-missing --cov-report=html:output/coverage_html
-        ;;
-    "parallel")
-        uv run pytest -n auto --tb=short
-        ;;
-    "benchmark")
-        uv run pytest tests/ -m benchmark --benchmark-json=output/benchmarks/results.json
-        ;;
-    "network")
-        uv run pytest tests/ -m network --tb=short
-        ;;
-    "external")
-        uv run pytest tests/ -m external_tool --tb=short
-        ;;
-    "integration")
-        uv run pytest tests/ -m integration --tb=short
-        ;;
-    "all"|*)
-        uv run pytest --cov=src/metainformant --cov-report=term-missing --cov-report=html:output/coverage_html --cov-report=xml:output/coverage.xml
-        ;;
-esac
-EOF
-chmod +x scripts/uv_test.sh
-
-# Code quality script
+# Create the documented quality and documentation helpers.
 cat > scripts/uv_quality.sh << 'EOF'
 #!/bin/bash
 # UV-based code quality checks
@@ -235,7 +195,7 @@ case "${1:-help}" in
     *)
         echo "Usage: $0 [cpu|memory|benchmark] [command...]"
         echo "Examples:"
-        echo "  $0 cpu python -m metainformant.dna.sequences --help"
+        echo "  $0 cpu python -m metainformant.dna.sequence.core --help"
         echo "  $0 memory tests/dna/test_dna_phylogeny.py"
         echo "  $0 benchmark"
         ;;
@@ -246,14 +206,14 @@ chmod +x scripts/uv_profile.sh
 echo "✅ Development environment setup complete!"
 echo ""
 echo "🎯 Available UV workflows:"
-echo "  ./scripts/uv_test.sh [fast|coverage|parallel|benchmark|network|external|integration|all]"
+echo "  bash scripts/package/test.sh --mode [fast|coverage|parallel|network|external|integration|all]"
 echo "  ./scripts/uv_quality.sh [format|lint|typecheck|all]"
 echo "  ./scripts/uv_docs.sh [build|serve|clean]"
 echo "  ./scripts/uv_profile.sh [cpu|memory|benchmark] [command...]"
 echo ""
 echo "📋 Quick start commands:"
 echo "  uv run python -m metainformant --help"
-echo "  ./scripts/uv_test.sh fast"
+echo "  bash scripts/package/test.sh --mode fast"
 echo "  ./scripts/uv_quality.sh all"
 echo "  ./scripts/uv_docs.sh build"
 echo ""

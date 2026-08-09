@@ -8,16 +8,11 @@ Package management, build, and testing infrastructure scripts.
 ### Environment Setup
 - `setup.sh` - Complete environment setup
 - `uv_dev_setup.sh` - UV-based development setup
-- `setup_uv.sh` - **Deprecated** (redirects to `setup.sh`)
 - `verify_uv_setup.sh` - Verify UV installation
 - `verify_amalgkit_runtime.py` - Read-only check of the pinned Amalgkit runtime contract
 
 ### Testing
 - `test.sh` - Main test runner (supports modes: ultra-fast, coverage, parallel)
-- `run_tests.sh` - Simple test execution
-- `uv_test.sh` - Run tests via UV
-- `uv_test_optimized.sh` - Optimized test execution
-- `uv_test_setup.sh` - Test environment setup
 - `verify_test_deps.sh` - Verify test dependencies
 
 ### Building

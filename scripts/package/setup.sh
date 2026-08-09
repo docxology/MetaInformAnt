@@ -244,10 +244,14 @@ fi
 
 create_venv() {
   local target="$1"
+  local clear_args=()
+  if [[ "$RECREATE_VENV" -eq 1 ]]; then
+    clear_args+=(--clear)
+  fi
   if [[ -n "$REQUESTED_PYTHON" ]]; then
-    UV_VENV_CLEAR=1 uv venv --python "$REQUESTED_PYTHON" "$target"
+    uv venv "${clear_args[@]}" --python "$REQUESTED_PYTHON" "$target"
   else
-    UV_VENV_CLEAR=1 uv venv "$target"
+    uv venv "${clear_args[@]}" "$target"
   fi
 }
 
@@ -449,7 +453,7 @@ if [[ "$SKIP_TESTS" -eq 0 ]]; then
     if echo "$TEST_OUTPUT" | grep -q "ModuleNotFoundError: No module named 'psycopg2'"; then
       echo ""
       echo "  ℹ️  Some tests require database dependencies (psycopg2, etc.)"
-      echo "     Install with: bash scripts/package/setup_uv.sh --with-all"
+      echo "     Install with: bash scripts/package/setup.sh --with-all"
     fi
   fi
   

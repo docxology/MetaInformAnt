@@ -9,7 +9,7 @@ Thank you for your interest in improving METAINFORMANT! This guide covers contri
 3. **Create branch**: `git checkout -b my-feature`
 4. **Install dev dependencies**: `uv pip install -e ".[dev,test,docs]"`
 5. **Make changes** following [Project Standards](#coding-standards)
-6. **Run tests**: `scripts/run_tests.sh` (must pass)
+6. **Run tests**: `scripts/package/test.sh` (must pass)
 7. **Run lint**: `pre-commit run --all-files`
 8. **Commit** (clear message → [conventional commits](https://www.conventionalcommits.org/))
 9. **Push** → open PR on GitHub
@@ -39,10 +39,11 @@ Thank you for your interest in improving METAINFORMANT! This guide covers contri
 # Good
 from typing import List
 import numpy as np
-from metainformant.dna import sequences
+from metainformant.dna.sequence import core as sequence_core
 
 # Bad
-import numpy as np, from metainformant.dna import sequences
+import numpy as np
+from metainformant.dna.sequence import core as sequence_core
 ```
 
 ### Tests
@@ -50,7 +51,7 @@ import numpy as np, from metainformant.dna import sequences
 - **Location**: `tests/<module>/test_<feature>.py`
 - **One assertion per test** (one concern per test)
 - **Fixtures** in `tests/conftest.py` (reusable)
-- **Run**: `scripts/run_tests.sh` (CI-parity wrapper)
+- **Run**: `scripts/package/test.sh` (CI-parity wrapper)
 - **Real implementations** for internal functions — use real code ([REAL_IMPLEMENTATION_POLICY.md](docs/REAL_IMPLEMENTATION_POLICY.md))
 
 ### Commit Messages
@@ -107,7 +108,7 @@ Every feature contribution MUST include documentation update:
 ### PR Checklist
 
 - [ ] Tests added (or existing tests updated)
-- [ ] `scripts/run_tests.sh` passes locally
+- [ ] `scripts/package/test.sh` passes locally
 - [ ] No new `TODO` comments (or `TODO(#issue)` with issue number)
 - [ ] Documentation updated (README + docs/)
 - [ ] Docstrings complete (Google style)

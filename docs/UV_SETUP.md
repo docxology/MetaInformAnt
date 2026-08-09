@@ -227,7 +227,7 @@ All test scripts handle FAT filesystems automatically:
 bash scripts/package/test.sh --mode fast
 
 # Optimized test runner
-bash scripts/package/uv_test_optimized.sh fast
+bash scripts/package/test.sh fast
 
 # Test modes
 bash scripts/package/test.sh --mode fast coverage
@@ -345,7 +345,7 @@ UV_PROJECT_ENVIRONMENT=/tmp/metainformant_venv uv sync --all-extras --all-groups
 ```bash
 # Test scripts handle everything automatically
 bash scripts/package/test.sh --mode fast
-bash scripts/package/uv_test_optimized.sh fast
+bash scripts/package/test.sh fast
 ```
 
 ## Troubleshooting

@@ -3,7 +3,7 @@
 ## Purpose
 
 RNA transcriptomic acquisition, quantification, evidence validation, and
-analysis through the pinned Amalgkit 0.16.33 contract.
+analysis through the pinned Amalgkit 0.16.38 contract.
 
 ## Source structure
 

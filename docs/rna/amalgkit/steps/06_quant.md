@@ -40,7 +40,7 @@ def run_quant(
 ) -> subprocess.CompletedProcess[str]
 ```
 
-**See Also**: [API Reference](../../API.md#quant) | [Function Index](../FUNCTIONS.md)
+**See Also**: [API Reference](../../API.md#quantification-api) | [Function Index](../FUNCTIONS.md)
 
 ## Usage
 
@@ -123,7 +123,7 @@ steps:
 | `--redo` | yes/no | `no` | Re-quantify even if output exists. |
 | `--batch` | INT | `None` | Process only one SRA record (1-based index). For HPC array jobs. |
 | `--index_dir` | PATH | `None` | Path to directory containing kallisto index files. Required if not `out_dir/index/` |
-| `--clean_fastq` | yes/no | `no` | Retain FASTQs until the current provenance-gated reclamation pass. |
+| `--clean_fastq` | yes/no | `no` | Retain FASTQs until the verified contract-gated reclamation pass. |
 | `--fasta_dir` | PATH | `inferred` | Path to reference transcriptome FASTA files. Default: `out_dir/fasta` |
 | `--build_index` | yes/no | `no` | Build kallisto index from FASTA if index doesn't exist. |
 
@@ -344,7 +344,7 @@ amalgkit quant \
 ```
 
 **Result**: Quantifies all samples; the project reclaimer removes raw inputs
-only after the abundance table and current provenance sidecar are verified.
+only after the abundance table and contract provenance sidecar are verified.
 
 ### 2. Build Index and Quantify
 
@@ -473,7 +473,7 @@ See **[06_quant_advanced.md](06_quant_advanced.md)** for:
 - **[07_merge.md](07_merge.md)** - Next: Merge quantification results
 
 ### Documentation
-- **[API Reference](../../API.md#quant)** - Complete function documentation
+- **[API Reference](../../API.md#quantification-api)** - Complete function documentation
 - **[Function Index](../FUNCTIONS.md)** - Quick function lookup
 - **[Pipeline Overview](../amalgkit.md)** - Complete pipeline documentation
 - **[Steps Index](README.md)** - All step documentation
@@ -481,6 +481,6 @@ See **[06_quant_advanced.md](06_quant_advanced.md)** for:
 ---
 
 **Last Updated**: July 23, 2026
-**AMALGKIT Version**: 0.16.33 (`v0.16.33`)
+**AMALGKIT Version**: 0.16.38 (`v0.16.38`)
 **kallisto Version**: record the executable and index-build version in the run manifest
 **Status**: Production-ready

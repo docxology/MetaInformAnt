@@ -115,7 +115,7 @@ Parameters are managed via YAML config files. Key parameters:
 | `--max-in-flight` | `2 × workers` | Submitted task window |
 | `redo` | `no` | Skip already-quantified samples (enables resume) |
 | `max_bp` | `4000000000` | Max bases per sample; larger samples are auto-skipped |
-| `clean_fastq` | `no` in the project lane | Retain reads until MetaInformAnt writes current provenance; then the guarded reclamation utility deletes them |
+| `clean_fastq` | `no` in the project lane | Retain reads until MetaInformAnt writes verified contract provenance; then the guarded reclamation utility deletes them |
 
 ## Download Architecture
 

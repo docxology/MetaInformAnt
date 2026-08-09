@@ -54,7 +54,7 @@ This matrix provides a side-by-side comparison of all 28 core modules in METAINF
 
 ### FASTA / Sequence Data
 **Primary module**: `dna` (direct)
-- Use `dna.sequences` for parsing, translation, ORF finding
+- Use `dna.sequence.core` for parsing, translation, and ORF finding
 - Phylogeny: `dna.phylogeny` for trees
 - Distance: `dna.distances` for evolutionary distances
 

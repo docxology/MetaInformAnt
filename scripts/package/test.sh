@@ -1,6 +1,6 @@
 #!/bin/bash
 # METAINFORMANT Unified Test Runner
-# Consolidates functionality from run_tests.sh, uv_test.sh, and uv_test_optimized.sh
+# Canonical package test runner for all supported test modes.
 # Supports all test modes and execution options
 
 set -euo pipefail

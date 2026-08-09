@@ -56,12 +56,8 @@ class Issue:
 
 
 MODULE_HEADING = re.compile(r"^##\s+(metainformant\.core\.[^\s{]+)(?:\s+\{#[^}]+\})?\s*$")
-API_ROW = re.compile(
-    r"^\|\s*`([^`]+)`\s*\|\s*([^|]+?)\s*\|\s*`((?:\\\||[^`])*)`\s*\|\s*(.*?)\s*\|\s*$"
-)
-TOPIC_HEADING = re.compile(
-    r"^#{2,6}\s+`?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\([^`]*\)`?\s*$"
-)
+API_ROW = re.compile(r"^\|\s*`([^`]+)`\s*\|\s*([^|]+?)\s*\|\s*`((?:\\\||[^`])*)`\s*\|\s*(.*?)\s*\|\s*$")
+TOPIC_HEADING = re.compile(r"^#{2,6}\s+`?([A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*)\([^`]*\)`?\s*$")
 
 
 def _unescape_cell(value: str) -> str:
@@ -260,10 +256,7 @@ def run_check(api_path: Path) -> tuple[list[Symbol], list[ApiEntry], list[Issue]
             )
 
     known_names = {qualified_name for _, qualified_name in source_by_key}
-    known_names.update(
-        qualified_name.rsplit(".", 1)[-1]
-        for _, qualified_name in source_by_key
-    )
+    known_names.update(qualified_name.rsplit(".", 1)[-1] for _, qualified_name in source_by_key)
     topic_count = 0
     excluded = {api_path.name, DEFAULT_REPORT.name, "README.md", "index.md", "SPEC.md"}
     for topic_path in sorted(DOCS_DIR.glob("*.md")):

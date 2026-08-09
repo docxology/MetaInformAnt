@@ -22,19 +22,19 @@ sequences = {
 #### Basic Sequence Analysis
 
 ```python
-from metainformant import dna
+from metainformant.dna.sequence import composition, core as sequence_core
 
 # Analyze sequence composition
 for name, seq in sequences.items():
-    gc_content = dna.composition.gc_content(seq)
-    length = dna.sequences.sequence_length(seq)
+    gc_content = composition.gc_content(seq)
+    length = sequence_core.sequence_length(seq)
     print(f"{name}: GC={gc_content:.2f}, Length={length}")
 
 # Find motifs
 motifs = ["ATCG", "GCTA"]
 for name, seq in sequences.items():
     for motif in motifs:
-        positions = dna.sequences.find_motifs(seq, [motif])
+        positions = sequence_core.find_motifs(seq, [motif])
         print(f"{name} - {motif}: {positions}")
 ```
 
@@ -519,7 +519,7 @@ workflow_config = {
         },
         {
             "name": "sequence_analysis",
-            "function": "metainformant.dna.sequences.read_fasta",
+            "function": "metainformant.dna.sequence.core.read_fasta",
             "params": {"path": "data/sequences.fasta"},
             "output_key": "sequences"
         },

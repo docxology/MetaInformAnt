@@ -8,8 +8,8 @@ topic guides contain behavioral guidance, examples, and caveats.
 Compatibility facades are excluded from the inventory and remain
 supported through the import paths described in [index.md](index.md).
 
-**Public symbols:** 232
-**Canonical modules:** 24
+**Public symbols:** 235
+**Canonical modules:** 25
 
 ## Module index
 
@@ -29,6 +29,7 @@ supported through the import paths described in [index.md](index.md).
 | [metainformant.core.io.download_robust](#metainformant-core-io-download_robust) | 3 |
 | [metainformant.core.io.errors](#metainformant-core-io-errors) | 4 |
 | [metainformant.core.io.io](#metainformant-core-io-io) | 24 |
+| [metainformant.core.ncbi](#metainformant-core-ncbi) | 3 |
 | [metainformant.core.ui.tui](#metainformant-core-ui-tui) | 9 |
 | [metainformant.core.utils.errors](#metainformant-core-utils-errors) | 16 |
 | [metainformant.core.utils.hash](#metainformant-core-utils-hash) | 7 |
@@ -265,6 +266,14 @@ supported through the import paths described in [index.md](index.md).
 | `write_jsonl` | function | `(rows: Iterable[Mapping[str, Any]], path: str \| Path, *, atomic: bool = True) -> None` | Write rows as JSON Lines format (one JSON object per line). |
 | `write_parquet` | function | `(df: Any, path: str \| Path, **kwargs) -> None` | Write DataFrame to Parquet file. |
 | `write_tsv` | function | `(data, path: str \| Path) -> None` | Write TSV file. |
+
+## metainformant.core.ncbi {#metainformant-core-ncbi}
+
+| Symbol | Kind | Signature | Summary |
+| --- | --- | --- | --- |
+| `NCBIContact` | class | `()` | Resolved NCBI contact without storing a fabricated identity. |
+| `NCBIContactError` | class | `()` | Raised when an NCBI operation lacks an explicit contact policy. |
+| `resolve_ncbi_contact` | function | `(email: str \| None = None, *, allow_anonymous: bool = False) -> NCBIContact` | Resolve explicit or opt-in anonymous NCBI contact settings. |
 
 ## metainformant.core.ui.tui {#metainformant-core-ui-tui}
 
