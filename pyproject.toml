@@ -122,6 +122,12 @@ dev = [
     "isort>=5.13.0",
     "flake8>=7.0.0",
     "mypy>=1.8.0",
+    "types-defusedxml>=0.7.0.20240218",
+    "types-psutil>=7.0.0",
+    "types-psycopg2>=2.9.21.20250318",
+    "types-PyYAML>=6.0.12.20250516",
+    "types-tqdm>=4.67.0.20250516",
+    "scipy-stubs>=1.16.0",
     "bandit>=1.7.0",  # Security linting
     "safety>=3.0.0",  # Dependency vulnerability scanning
     "pre-commit>=3.6.0",
@@ -317,7 +323,7 @@ ensure_newline_before_comments = true
 
 # MyPy type checking
 [tool.mypy]
-python_version = "3.11"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
 disallow_untyped_defs = true
@@ -340,6 +346,7 @@ module = [
     "numpy.*",
     "sklearn.*",
     "requests.*",
+    "ncbi.datasets.*",
 ]
 ignore_missing_imports = true
 

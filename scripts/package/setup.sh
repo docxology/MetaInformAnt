@@ -244,14 +244,16 @@ fi
 
 create_venv() {
   local target="$1"
-  local clear_args=()
   if [[ "$RECREATE_VENV" -eq 1 ]]; then
-    clear_args+=(--clear)
-  fi
-  if [[ -n "$REQUESTED_PYTHON" ]]; then
-    uv venv "${clear_args[@]}" --python "$REQUESTED_PYTHON" "$target"
+    if [[ -n "$REQUESTED_PYTHON" ]]; then
+      uv venv --clear --python "$REQUESTED_PYTHON" "$target"
+    else
+      uv venv --clear "$target"
+    fi
+  elif [[ -n "$REQUESTED_PYTHON" ]]; then
+    uv venv --python "$REQUESTED_PYTHON" "$target"
   else
-    uv venv "${clear_args[@]}" "$target"
+    uv venv "$target"
   fi
 }
 

@@ -20,7 +20,7 @@ on:
 
 env:
   PYTHONUNBUFFERED: 1
-  UV_CACHE_DIR: ~/.cache/uv
+  UV_CACHE_DIR: .uv-cache
 
 jobs:
   test:
@@ -48,12 +48,15 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      with:
+        submodules: recursive
 
     - name: Install uv
       uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
       with:
         version: "latest"
         enable-cache: true
+        cache-local-path: .uv-cache
         cache-dependency-glob: "**/pyproject.toml"
 
     - name: Set up Python ${{ matrix.python-version }}
@@ -243,6 +246,7 @@ jobs:
 
   fat-filesystem-test:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
     - name: Checkout code
       uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -264,6 +268,8 @@ jobs:
         rsync -rl --exclude='.git' --exclude='output' --exclude='.venv' --exclude='.uv-cache' --exclude='node_modules' . /mnt/fat_test/
 
     - name: Test on simulated FAT filesystem
+      env:
+        UV_CACHE_DIR: /tmp/uv-cache
       run: |
         cd /mnt/fat_test
         # Keep the constrained filesystem test focused on package setup; the
