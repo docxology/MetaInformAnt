@@ -168,7 +168,7 @@ jobs:
 
         # Test CLI
         import subprocess
-        result = subprocess.run(['metainformant', '--version'], capture_output=True, text=True)
+        result = subprocess.run(['validation_env/bin/metainformant', '--version'], capture_output=True, text=True)
         if result.returncode == 0:
             print('✓ CLI works')
         else:
