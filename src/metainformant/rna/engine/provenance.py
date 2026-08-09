@@ -22,6 +22,11 @@ from metainformant.rna.core.sample_utils import find_quantification_file
 
 QUANT_PROVENANCE_FILENAME = ".metainformant_quant_provenance.json"
 QUANT_PROVENANCE_SCHEMA = "metainformant.rna.quantification.v1"
+QUANT_CONTRACT_SCHEMA = "metainformant.rna.quantification.contract.v1"
+QUANT_STATUS_CURRENT = "current"
+QUANT_STATUS_VERSION_DRIFT = "version_drift_compatible"
+QUANT_STATUS_LEGACY = "legacy_unverified"
+QUANT_STATUS_INVALID = "invalid"
 METADATA_PROVENANCE_FILENAME = ".metainformant_metadata_provenance.json"
 METADATA_PROVENANCE_SCHEMA = "metainformant.rna.metadata.v1"
 DOWNSTREAM_PROVENANCE_FILENAME = ".metainformant_downstream_provenance.json"
@@ -154,11 +159,15 @@ def _quantification_snapshot(work_dir: Path, *, verify_hashes: bool) -> list[dic
         return None
     for sample_dir in sample_dirs:
         payload = read_quant_provenance(sample_dir)
-        if payload is None or not is_current_quantification(
+        classification = classify_quantification(
             sample_dir,
             sample_dir.name,
             verify_content=verify_hashes,
-        ):
+        )
+        if payload is None or classification["status"] not in {
+            QUANT_STATUS_CURRENT,
+            QUANT_STATUS_VERSION_DRIFT,
+        }:
             continue
         quantification_file = payload.get("quantification_file")
         recorded_hash = payload.get("quantification_file_sha256")
@@ -178,6 +187,11 @@ def _quantification_snapshot(work_dir: Path, *, verify_hashes: bool) -> list[dic
                 "size": stat.st_size,
                 "mtime_ns": stat.st_mtime_ns,
                 "sha256": recorded_hash,
+                "quantification_status": classification["status"],
+                "amalgkit_version": classification["observed_amalgkit_version"],
+                "amalgkit_release_tag": classification["observed_release_tag"],
+                "amalgkit_source_revision": classification["observed_source_revision"],
+                "quant_contract_id": classification["contract_id"],
             }
         )
     return snapshot
@@ -257,39 +271,171 @@ def read_quant_provenance(sample_dir: str | Path) -> dict[str, Any] | None:
     return payload if isinstance(payload, dict) else None
 
 
+def quantification_contract_payload(payload: Mapping[str, Any]) -> dict[str, Any] | None:
+    """Return runtime-independent quantification contract fields."""
+
+    required = (
+        "schema",
+        "species",
+        "run_accession",
+        "config_sha256",
+        "quantification_file",
+        "quantification_file_sha256",
+        "command",
+    )
+    if any(key not in payload for key in required):
+        return None
+    if payload.get("schema") != QUANT_PROVENANCE_SCHEMA:
+        return None
+    if not isinstance(payload.get("command"), list) or not payload["command"]:
+        return None
+    return {
+        "schema": QUANT_CONTRACT_SCHEMA,
+        "species": payload["species"],
+        "run_accession": payload["run_accession"],
+        "config_sha256": payload["config_sha256"],
+        "reference_manifest_sha256": payload.get("reference_manifest_sha256"),
+        "quantification_file": payload["quantification_file"],
+        "quantification_file_sha256": payload["quantification_file_sha256"],
+        "command": [str(item) for item in payload["command"]],
+        "declared_library_layout": payload.get("declared_library_layout"),
+        "effective_library_layout": payload.get("effective_library_layout"),
+        "layout_reconciliation": payload.get("layout_reconciliation"),
+    }
+
+
+def quantification_contract_id(payload: Mapping[str, Any]) -> str | None:
+    """Return a stable identifier for the non-runtime quantification contract."""
+
+    contract = quantification_contract_payload(payload)
+    return _canonical_digest(contract) if contract is not None else None
+
+
+def classify_quantification(
+    sample_dir: str | Path,
+    run_accession: str | None = None,
+    *,
+    verify_content: bool = True,
+    expected_config_path: str | Path | None = None,
+    expected_reference_manifest_path: str | Path | None = None,
+    expected_command: Sequence[str] | None = None,
+) -> dict[str, Any]:
+    """Classify quantification without treating runtime version drift as failure."""
+
+    payload = read_quant_provenance(sample_dir)
+    result: dict[str, Any] = {
+        "status": QUANT_STATUS_LEGACY,
+        "reason": "missing or unreadable provenance sidecar",
+        "observed_amalgkit_version": None,
+        "observed_release_tag": None,
+        "observed_source_revision": None,
+        "contract_id": None,
+    }
+    if payload is None:
+        return result
+    result.update(
+        observed_amalgkit_version=payload.get("amalgkit_version"),
+        observed_release_tag=payload.get("amalgkit_release_tag"),
+        observed_source_revision=payload.get("amalgkit_source_revision"),
+    )
+    contract = quantification_contract_payload(payload)
+    result["contract_id"] = quantification_contract_id(payload)
+    if contract is None:
+        result["reason"] = "provenance sidecar lacks complete quantification contract"
+        return result
+    if run_accession is not None and payload.get("run_accession") != run_accession:
+        result.update(status=QUANT_STATUS_INVALID, reason="provenance accession mismatch")
+        return result
+
+    sample_path = Path(sample_dir)
+    quant_name = str(contract["quantification_file"])
+    quant_path = sample_path / quant_name
+    if Path(quant_name).is_absolute() or Path(quant_name).parent != Path("."):
+        result.update(status=QUANT_STATUS_INVALID, reason="quantification file escapes sample directory")
+        return result
+    if not quant_path.is_file():
+        result.update(status=QUANT_STATUS_INVALID, reason="quantification file is missing")
+        return result
+    if verify_content and digest_file(quant_path) != contract["quantification_file_sha256"]:
+        result.update(status=QUANT_STATUS_INVALID, reason="quantification checksum mismatch")
+        return result
+
+    config_path = payload.get("config_path")
+    config_hash = payload.get("config_sha256")
+    if not isinstance(config_path, str) or not isinstance(config_hash, str):
+        result["reason"] = "configuration provenance is incomplete"
+        return result
+    if digest_file(Path(config_path).expanduser().resolve()) != config_hash:
+        result.update(status=QUANT_STATUS_INVALID, reason="configuration checksum mismatch")
+        return result
+    reference_path = payload.get("reference_manifest_path")
+    reference_hash = payload.get("reference_manifest_sha256")
+    if reference_path and (not isinstance(reference_path, str) or not isinstance(reference_hash, str)):
+        result["reason"] = "reference provenance is incomplete"
+        return result
+    if reference_path and digest_file(Path(reference_path).expanduser().resolve()) != reference_hash:
+        result.update(status=QUANT_STATUS_INVALID, reason="reference manifest checksum mismatch")
+        return result
+    if expected_config_path is not None and digest_file(Path(expected_config_path)) != config_hash:
+        result.update(status=QUANT_STATUS_INVALID, reason="current configuration differs")
+        return result
+    if expected_reference_manifest_path is not None:
+        if not reference_hash or digest_file(Path(expected_reference_manifest_path)) != reference_hash:
+            result.update(status=QUANT_STATUS_INVALID, reason="current reference manifest differs")
+            return result
+    if expected_command is not None and contract["command"] != [str(item) for item in expected_command]:
+        result.update(status=QUANT_STATUS_INVALID, reason="quantification command differs")
+        return result
+
+    exact_runtime = all(
+        payload.get(key) == value
+        for key, value in {
+            "amalgkit_version": REQUIRED_AMALGKIT_VERSION,
+            "amalgkit_release_tag": AMALGKIT_RELEASE_TAG,
+            "amalgkit_source_revision": AMALGKIT_SOURCE_REVISION,
+        }.items()
+    )
+    result.update(
+        status=QUANT_STATUS_CURRENT if exact_runtime else QUANT_STATUS_VERSION_DRIFT,
+        reason="exact current runtime" if exact_runtime else "contract verified; runtime version drift recorded",
+    )
+    return result
+
+
+def is_reusable_quantification(
+    sample_dir: str | Path,
+    run_accession: str | None = None,
+    *,
+    verify_content: bool = True,
+    expected_config_path: str | Path | None = None,
+    expected_reference_manifest_path: str | Path | None = None,
+    expected_command: Sequence[str] | None = None,
+) -> bool:
+    """Return whether quantification is safe to reuse without re-quantifying."""
+
+    status = classify_quantification(
+        sample_dir,
+        run_accession,
+        verify_content=verify_content,
+        expected_config_path=expected_config_path,
+        expected_reference_manifest_path=expected_reference_manifest_path,
+        expected_command=expected_command,
+    )["status"]
+    return status in {QUANT_STATUS_CURRENT, QUANT_STATUS_VERSION_DRIFT}
+
+
 def is_current_quantification(
     sample_dir: str | Path,
     run_accession: str | None = None,
     *,
     verify_content: bool = True,
 ) -> bool:
-    """Return whether a sample sidecar records the exact current contract."""
+    """Return whether a sample sidecar records the exact current runtime."""
 
-    payload = read_quant_provenance(sample_dir)
-    if payload is None:
-        return False
-    required = {
-        "schema": QUANT_PROVENANCE_SCHEMA,
-        "amalgkit_version": REQUIRED_AMALGKIT_VERSION,
-        "amalgkit_release_tag": AMALGKIT_RELEASE_TAG,
-        "amalgkit_source_revision": AMALGKIT_SOURCE_REVISION,
-    }
-    if any(payload.get(key) != value for key, value in required.items()):
-        return False
-    if run_accession is not None and payload.get("run_accession") != run_accession:
-        return False
-
-    recorded_hash = payload.get("quantification_file_sha256")
-    recorded_name = payload.get("quantification_file")
-    if not isinstance(recorded_hash, str) or not isinstance(recorded_name, str):
-        return False
-    relative_path = Path(recorded_name)
-    if relative_path.is_absolute() or relative_path.parent != Path("."):
-        return False
-    quantification_file = Path(sample_dir) / relative_path
-    if not quantification_file.is_file():
-        return False
-    return not verify_content or digest_file(quantification_file) == recorded_hash
+    return (
+        classify_quantification(sample_dir, run_accession, verify_content=verify_content)["status"]
+        == QUANT_STATUS_CURRENT
+    )
 
 
 def metadata_provenance_path(work_dir: str | Path) -> Path:
@@ -359,7 +505,7 @@ def write_metadata_provenance(
         "selection_rules_sha256": digest_file(Path(selection_rules_path)),
         # Bind the metadata contract to the bytes that were actually consumed.
         # This catches partial writes or out-of-band edits without forcing old
-        # version-bound sidecars to invalidate an otherwise resumable campaign.
+        # version annotations to invalidate an otherwise resumable campaign.
         "metadata_sha256": digest_file(metadata_dir / "metadata.tsv"),
         "selected_metadata_sha256": digest_file(metadata_dir / "metadata_selected.tsv"),
         "generated_at": datetime.now(timezone.utc).isoformat(),
@@ -615,7 +761,8 @@ def write_quant_provenance(
 
     sample_path = Path(sample_dir)
     sample_path.mkdir(parents=True, exist_ok=True)
-    config_file = Path(config_path)
+    config_file = Path(config_path).expanduser().resolve()
+    reference_file = Path(reference_manifest_path).expanduser().resolve() if reference_manifest_path else None
     try:
         config_sha256 = hashlib.sha256(config_file.read_bytes()).hexdigest()
     except OSError:
@@ -651,13 +798,15 @@ def write_quant_provenance(
         "amalgkit_source_revision": AMALGKIT_SOURCE_REVISION,
         "config_path": str(config_file),
         "config_sha256": config_sha256,
-        "reference_manifest_path": str(reference_manifest_path) if reference_manifest_path else None,
-        "reference_manifest_sha256": digest_file(Path(reference_manifest_path)) if reference_manifest_path else None,
+        "reference_manifest_path": str(reference_file) if reference_file else None,
+        "reference_manifest_sha256": digest_file(reference_file) if reference_file else None,
         "quantification_file": quant_file_name,
         "quantification_file_sha256": quant_file_sha256,
+        "quant_contract_schema": QUANT_CONTRACT_SCHEMA,
         "command": command,
         "generated_at": datetime.now(timezone.utc).isoformat(),
     }
+    payload["quant_contract_id"] = quantification_contract_id(payload)
     destination = quant_provenance_path(sample_path)
     fd, temporary_name = tempfile.mkstemp(prefix=f".{destination.name}.", dir=str(sample_path))
     try:

@@ -3,7 +3,7 @@
 ## Scope
 
 Version-pinned RNA-seq acquisition, quantification, evidence validation, and
-downstream analysis for the current Amalgkit 0.16.33 contract.
+downstream analysis for the current Amalgkit 0.16.38 contract.
 
 ## Current packages
 
@@ -42,7 +42,7 @@ are project checkpoints and require the producer lock to be released.
 - The data root is explicit and external to Git.
 - Repeated discovery and dry-run operations are read-only and deterministic.
 - Every resumable sample state is stored in SQLite.
-- Quantification reuse requires the current provenance sidecar and exact file
+- Quantification reuse requires the contract provenance sidecar and exact file
   digest.
 - Downstream matrices are admitted only after current metadata, selection,
   quantification, and stage receipts validate.

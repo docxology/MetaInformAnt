@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Reclaim raw inputs only for exact current-contract quantifications.
+"""Reclaim raw inputs only for verified quantification-contract outputs.
 
 This is intentionally separate from broad cleanup commands. It never uses a
-stale progress-table state or a readable table without current provenance as evidence;
-the per-sample 0.16.33 provenance sidecar and a non-empty abundance output are
+stale progress-table state or a readable table without contract-verified provenance as evidence;
+a complete provenance sidecar and a non-empty abundance output are
 required.  The default is a dry run.  Pass ``--execute`` to remove the listed
 FASTQ/SRA inputs and write a JSON audit manifest.
 """
@@ -20,7 +20,10 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO_ROOT / "src"))
 
 from metainformant.rna.core.sample_utils import find_quantification_file  # noqa: E402
-from metainformant.rna.engine.provenance import is_current_quantification  # noqa: E402
+from metainformant.rna.engine.provenance import (  # noqa: E402
+    QUANT_STATUS_CURRENT,
+    classify_quantification,
+)
 from metainformant.rna.engine.raw_cleanup import reclaim_sample_raw_inputs  # noqa: E402
 from metainformant.rna.engine.species import (  # noqa: E402
     configured_data_root,
@@ -43,7 +46,9 @@ def _parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--species", action="append", help="Restrict to one or more species identifiers")
     parser.add_argument("--execute", action="store_true", help="Actually remove raw inputs; default is dry-run")
-    parser.add_argument("--manifest", type=Path, help="JSON audit path (default: <data-root>/results/raw_reclamation_*.json)")
+    parser.add_argument(
+        "--manifest", type=Path, help="JSON audit path (default: <data-root>/results/raw_reclamation_*.json)"
+    )
     return parser
 
 
@@ -78,10 +83,16 @@ def main(argv: list[str] | None = None) -> int:
             quant_file = find_quantification_file(sample_dir, run_accession)
             if quant_file is None or not quant_file.is_file() or quant_file.stat().st_size <= 100:
                 continue
-            if not is_current_quantification(sample_dir, run_accession):
+            config_path = config_dir / config_name
+            classification = classify_quantification(
+                sample_dir,
+                run_accession,
+                expected_config_path=config_path,
+            )
+            if classification.get("status") != QUANT_STATUS_CURRENT:
                 continue
             result = reclaim_sample_raw_inputs(work_dir, run_accession, dry_run=not args.execute)
-            record = {"species": species, **result}
+            record = {"species": species, "quantification_status": classification.get("status"), **result}
             records.append(record)
             totals["current_quantified"] += 1
             totals["files"] += int(result["files_deleted"])

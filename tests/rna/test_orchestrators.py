@@ -86,6 +86,18 @@ def ortholog_table(tmp_path, three_species_data):
     return path, orth_df
 
 
+@pytest.fixture
+def sample_alignments(three_species_data):
+    """Return explicit sample mappings for the species-specific labels."""
+    species = list(three_species_data)
+    return {
+        (source, target): {f"{source}_s{i}": f"{target}_s{i}" for i in range(5)}
+        for source in species
+        for target in species
+        if source != target
+    }
+
+
 # =============================================================================
 # WithinSpeciesOrchestrator Tests
 # =============================================================================
@@ -287,7 +299,7 @@ class TestAcrossSpeciesOrchestrator:
             assert isinstance(orth_map, dict)
             assert len(orth_map) > 0
 
-    def test_run_comparative_analysis(self, tmp_path, ortholog_table, three_species_data):
+    def test_run_comparative_analysis(self, tmp_path, ortholog_table, three_species_data, sample_alignments):
         """Test full comparative analysis produces output files."""
         orth_path, _ = ortholog_table
         output_dir = tmp_path / "output"
@@ -297,7 +309,7 @@ class TestAcrossSpeciesOrchestrator:
         for sp_name, (sp_path, _) in three_species_data.items():
             orch.load_species_expression(sp_name, sp_path)
 
-        orch.run_comparative_analysis()
+        orch.run_comparative_analysis(sample_alignments=sample_alignments)
 
         # Check output files were created
         assert (output_dir / "conservation_scores.tsv").exists()
@@ -324,7 +336,7 @@ class TestAcrossSpeciesOrchestrator:
         with pytest.raises(ValueError, match="No species expression"):
             orch.run_comparative_analysis()
 
-    def test_conservation_scores_range(self, tmp_path, ortholog_table, three_species_data):
+    def test_conservation_scores_range(self, tmp_path, ortholog_table, three_species_data, sample_alignments):
         """Test that conservation scores are within expected ranges."""
         orth_path, _ = ortholog_table
         output_dir = tmp_path / "output"
@@ -334,14 +346,14 @@ class TestAcrossSpeciesOrchestrator:
         for sp_name, (sp_path, _) in three_species_data.items():
             orch.load_species_expression(sp_name, sp_path)
 
-        orch.run_comparative_analysis()
+        orch.run_comparative_analysis(sample_alignments=sample_alignments)
 
         cons = pd.read_csv(output_dir / "conservation_scores.tsv", sep="\t")
         # mean_conservation should be between -1 and 1
         assert cons["mean_conservation"].min() >= -1.0
         assert cons["mean_conservation"].max() <= 1.0
 
-    def test_divergence_matrix_symmetry(self, tmp_path, ortholog_table, three_species_data):
+    def test_divergence_matrix_symmetry(self, tmp_path, ortholog_table, three_species_data, sample_alignments):
         """Test that the divergence matrix is symmetric."""
         orth_path, _ = ortholog_table
         output_dir = tmp_path / "output"
@@ -351,7 +363,7 @@ class TestAcrossSpeciesOrchestrator:
         for sp_name, (sp_path, _) in three_species_data.items():
             orch.load_species_expression(sp_name, sp_path)
 
-        orch.run_comparative_analysis()
+        orch.run_comparative_analysis(sample_alignments=sample_alignments)
 
         div = pd.read_csv(output_dir / "expression_divergence_matrix.tsv", sep="\t", index_col=0)
         # Check symmetry

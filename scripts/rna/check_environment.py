@@ -65,7 +65,7 @@ def main() -> int:
         logger.info(
             "  uv run python scripts/rna/run_all_species.py "
             "--config-dir projects/hymenoptera_amalgkit/config/amalgkit "
-            "--data-root \"$AMALGKIT_DATA_ROOT\" --dry-run"
+            '--data-root "$AMALGKIT_DATA_ROOT" --dry-run'
         )
         return 0
     else:

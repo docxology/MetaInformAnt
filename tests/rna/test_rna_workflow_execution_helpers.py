@@ -24,6 +24,8 @@ from metainformant.rna.engine.workflow_execution import (
 def _workflow_config(tmp_path: Path) -> AmalgkitWorkflowConfig:
     work_dir = tmp_path / "work"
     work_dir.mkdir(parents=True)
+    (work_dir / "workflow.yaml").write_text("quant:\n  threads: 1\n")
+    (work_dir / "workflow_config.yaml").write_text("quant:\n  threads: 1\n")
     return AmalgkitWorkflowConfig(work_dir=work_dir, species_list=["Apis_mellifera"])
 
 

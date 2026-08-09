@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate species YAMLs and selection rules against Amalgkit 0.16.33."""
+"""Validate species YAMLs and selection rules against Amalgkit 0.16.38."""
 
 from __future__ import annotations
 
@@ -12,7 +12,6 @@ import yaml
 
 from metainformant.rna.amalgkit import REQUIRED_AMALGKIT_VERSION, validate_amalgkit_version
 from metainformant.rna.amalgkit.commands import CURRENT_AMALGKIT_STEPS, SUPPORTED_CLI_OPTIONS
-
 
 EXCLUSIONS = {"amalgkit_template.yaml", "amalgkit_cross_species.yaml", "amalgkit_test.yaml"}
 REQUIRED_TOP_LEVEL_KEYS = {"work_dir", "species_list", "genome", "steps"}
@@ -70,7 +69,7 @@ def _validate_select_rules(config_path: Path, select: dict[str, Any]) -> list[st
     errors: list[str] = []
     raw_path = select.get("select_rules_tsv")
     if not isinstance(raw_path, str) or not raw_path.strip():
-        return ["select.select_rules_tsv is required by Amalgkit 0.16.33"]
+        return ["select.select_rules_tsv is required by Amalgkit 0.16.38"]
     rule_path = _resolve_rule_path(config_path, raw_path)
     if not rule_path.is_file():
         return [f"select rule file does not exist: {raw_path}"]
@@ -122,15 +121,17 @@ def validate_config(config_path: Path) -> list[str]:
             normalized = str(key).replace("-", "_")
             if normalized in RETIRED_DIRECT_STEP_KEYS:
                 errors.append(
-                    f"steps.{step}.{key} is not a direct 0.16.33 option; encode selection policy in select_rules.tsv"
+                    f"steps.{step}.{key} is not a direct 0.16.38 option; encode selection policy in select_rules.tsv"
                 )
             elif normalized not in supported and normalized not in ORCHESTRATION_ONLY_STEP_KEYS:
-                errors.append(f"steps.{step}.{key} is not accepted by the 0.16.33 command registry")
+                errors.append(f"steps.{step}.{key} is not accepted by the 0.16.38 command registry")
 
     getfastq = steps.get("getfastq")
     if isinstance(getfastq, dict):
         source_flags = ("ncbi", "aws", "gcp", "ena", "ddbj")
-        if source_flags and all(str(getfastq.get(flag, "yes")).lower() in {"no", "false", "0"} for flag in source_flags):
+        if source_flags and all(
+            str(getfastq.get(flag, "yes")).lower() in {"no", "false", "0"} for flag in source_flags
+        ):
             errors.append("all current getfastq download sources are disabled")
 
     return errors

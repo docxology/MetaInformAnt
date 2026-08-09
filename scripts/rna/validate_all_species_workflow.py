@@ -43,11 +43,7 @@ CURRENT_SCRIPTS = (
 def discover_species_configs(config_dir: Path) -> list[Path]:
     """Return sorted runnable species configurations from ``config_dir``."""
 
-    return sorted(
-        path
-        for path in config_dir.glob("amalgkit_*.yaml")
-        if path.name not in EXCLUSIONS and path.is_file()
-    )
+    return sorted(path for path in config_dir.glob("amalgkit_*.yaml") if path.name not in EXCLUSIONS and path.is_file())
 
 
 def load_config(path: Path) -> dict[str, Any]:
@@ -152,7 +148,7 @@ def main() -> int:
     print("Read-only inspection:")
     print(
         "  uv run python scripts/rna/run_all_species.py "
-        f"--config-dir {config_dir} --data-root \"$AMALGKIT_DATA_ROOT\" --dry-run"
+        f'--config-dir {config_dir} --data-root "$AMALGKIT_DATA_ROOT" --dry-run'
     )
     print("Execution:")
     print("  bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh")

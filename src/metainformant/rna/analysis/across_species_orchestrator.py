@@ -5,7 +5,7 @@ divergence analysis, and ortholog expression mapping.
 """
 
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Mapping, Optional, Tuple
 
 import pandas as pd
 
@@ -78,8 +78,18 @@ class AcrossSpeciesOrchestrator:
 
         return maps
 
-    def run_comparative_analysis(self) -> None:
-        """Execute full comparative suite across species."""
+    def run_comparative_analysis(
+        self,
+        *,
+        sample_alignments: Mapping[Tuple[str, str], Mapping[str, str]] | None = None,
+    ) -> None:
+        """Execute full comparative suite across species.
+
+        ``sample_alignments`` is required for species whose expression columns
+        use different labels.  The mapping is directional from the source
+        species columns to the target species columns; positional matching is
+        never inferred.
+        """
         if not self.species_expressions:
             raise ValueError("No species expression data loaded.")
 
@@ -90,7 +100,11 @@ class AcrossSpeciesOrchestrator:
         orth_maps = self.generate_pairwise_maps()
 
         logger.info("Computing global expression conservation...")
-        conservation_df = compare_expression_across_species(self.species_expressions, orth_maps)
+        conservation_df = compare_expression_across_species(
+            self.species_expressions,
+            orth_maps,
+            sample_alignments=sample_alignments,
+        )
 
         out_cons = self.output_dir / "conservation_scores.tsv"
         conservation_df.to_csv(out_cons, sep="\t", index=False)
@@ -111,7 +125,10 @@ class AcrossSpeciesOrchestrator:
                 mapped = map_expression_to_orthologs(self.species_expressions[sp], pair_map)
                 shared_expr[sp] = mapped
 
-        div_matrix = compute_expression_divergence_matrix(shared_expr)
+        div_matrix = compute_expression_divergence_matrix(
+            shared_expr,
+            sample_alignments=sample_alignments,
+        )
         out_div = self.output_dir / "expression_divergence_matrix.tsv"
         div_matrix.to_csv(out_div, sep="\t")
         logger.info(f"Saved expression divergence matrix to {out_div}")

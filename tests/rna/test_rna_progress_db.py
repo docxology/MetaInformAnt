@@ -180,8 +180,8 @@ class TestProgressDB:
 class TestProgressDBReconciliation:
     """Test filesystem reconciliation."""
 
-    def test_reconcile_detects_abundance_files(self, tmp_path: Path):
-        """reconcile marks samples as quantified when abundance files exist."""
+    def test_reconcile_does_not_promote_legacy_abundance_files(self, tmp_path: Path):
+        """Readable outputs without current provenance remain unverified."""
         db = ProgressDB(tmp_path / "test.db")
         db.init_species("ant", ["SRR1", "SRR2", "SRR3"])
 
@@ -193,10 +193,10 @@ class TestProgressDBReconciliation:
         (quant_dir / "SRR2" / "quant.sf").write_text("header\ndata\n")
 
         reconciled = db.reconcile("ant", quant_dir)
-        assert reconciled == 2
+        assert reconciled == 0
 
-        assert db.get_state("ant", "SRR1") == "quantified"
-        assert db.get_state("ant", "SRR2") == "quantified"
+        assert db.get_state("ant", "SRR1") == "pending"
+        assert db.get_state("ant", "SRR2") == "pending"
         assert db.get_state("ant", "SRR3") == "pending"
         db.close()
 

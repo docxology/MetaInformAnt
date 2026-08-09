@@ -42,9 +42,9 @@ logger = logging.get_logger(__name__)
 # The Hymenoptera analysis and the MetaInformAnt wrapper are validated against
 # this exact release. Keep the source tag pinned so a fresh setup cannot drift
 # to a moving branch or a future CLI with a changed output contract.
-REQUIRED_AMALGKIT_VERSION = "0.16.33"
+REQUIRED_AMALGKIT_VERSION = "0.16.38"
 AMALGKIT_RELEASE_TAG = f"v{REQUIRED_AMALGKIT_VERSION}"
-AMALGKIT_SOURCE_REVISION = "8dfb4e005209ca24867431a8bfd116f441ebc54e"
+AMALGKIT_SOURCE_REVISION = "b671a820457e8c2b45d08e62df2d882520b8a27d"
 AMALGKIT_INSTALL_SPEC = f"git+https://github.com/kfuku52/amalgkit@{AMALGKIT_RELEASE_TAG}"
 YES_NO_CLI_FLAGS = {
     "redo",
@@ -182,7 +182,7 @@ def build_cli_args(
             if subcommand in ("getfastq", "metadata", "quant") and key == "jobs":
                 continue
 
-            # Amalgkit 0.16.33 uses underscores for its CLI flags.
+            # Amalgkit 0.16.38 uses underscores for its CLI flags.
             # We'll normalize to underscores to ensure compatibility.
             cli_key = normalized_key
 
@@ -310,7 +310,7 @@ def parse_and_check_version(
     if not output:
         return False, "Empty version output"
 
-    # Current Amalgkit emits ``amalgkit version 0.16.33``.
+    # Current Amalgkit emits ``amalgkit version 0.16.38``.
     version_match = re.search(r"(?<!\d)(\d+(?:\.\d+){1,2})(?!\d)", output)
     if version_match is None:
         return False, f"Unexpected version format: {output}"

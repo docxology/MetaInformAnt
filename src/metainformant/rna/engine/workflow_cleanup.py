@@ -9,13 +9,12 @@ from __future__ import annotations
 
 import os
 import shutil
-import tempfile
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Set, Tuple
 
 from metainformant.core.utils import logging
 from metainformant.rna.core.sample_utils import extract_sample_id, find_quantification_file
-from metainformant.rna.engine.provenance import is_current_quantification
+from metainformant.rna.engine.provenance import is_reusable_quantification
 
 if TYPE_CHECKING:
     from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
@@ -98,39 +97,41 @@ def cleanup_temp_files(tmp_dir: Path, max_size_gb: float = 50.0) -> None:
         logger.warning(f"Could not clean up temporary directory {tmp_dir}: {e}")
 
 
-def cleanup_incorrectly_placed_sra_files(getfastq_dir: Path) -> None:
-    """Find and move SRA files from wrong locations to correct location.
+def cleanup_incorrectly_placed_sra_files(
+    getfastq_dir: Path,
+    *,
+    source_dirs: tuple[Path, ...] = (),
+    dry_run: bool = False,
+) -> None:
+    """Move SRA files only from explicitly authorized campaign directories.
 
-    SRA Toolkit's prefetch command sometimes downloads SRA files to default
-    locations instead of the specified output directory.
+    No implicit home-directory or system-temporary locations are inspected.
 
     Args:
         getfastq_dir: Directory where amalgkit expects SRA files
+        source_dirs: Explicit campaign directories eligible for reconciliation
+        dry_run: Report moves without changing files
     """
-    default_locations = [
-        Path.home() / "ncbi" / "public" / "sra",
-        Path(tempfile.gettempdir()) / "ncbi" / "public" / "sra",
-    ]
-
     moved_count = 0
-    for default_loc in default_locations:
-        if not default_loc.exists():
+    for source_dir in source_dirs:
+        if not source_dir.exists():
             continue
 
-        for sra_file in default_loc.rglob("*.sra"):
+        for sra_file in source_dir.rglob("*.sra"):
             try:
                 sample_id = sra_file.stem
                 target_dir = getfastq_dir / sample_id
                 target_dir.mkdir(parents=True, exist_ok=True)
                 target_file = target_dir / sra_file.name
 
-                if not target_file.exists():
+                if not target_file.exists() and not dry_run:
                     logger.info(f"Moving SRA file from wrong location: {sra_file} -> {target_file}")
                     shutil.move(str(sra_file), str(target_file))
                     moved_count += 1
+                elif not target_file.exists():
+                    logger.info("Would move SRA file from %s to %s", sra_file, target_file)
                 else:
-                    logger.debug(f"Target SRA file already exists, removing duplicate: {sra_file}")
-                    sra_file.unlink()
+                    logger.debug("Target SRA file already exists; leaving source untouched: %s", sra_file)
             except Exception as e:
                 logger.warning(f"Could not move SRA file {sra_file}: {e}")
 
@@ -198,9 +199,9 @@ def find_quantification_output(
 ) -> Tuple[Path, Path] | None:
     """Find a non-trivial abundance file and its sample directory.
 
-    When ``require_current`` is true, the exact pinned Amalgkit provenance
-    sidecar and its optional content digest must also validate.  This is the
-    shared completion contract used by resume checks and cleanup.
+    When ``require_current`` is true, the quantification contract provenance
+    sidecar and its content digest must also validate. Runtime version drift
+    is retained as an audit annotation and does not block safe reuse.
     """
 
     for root in quantification_output_roots(config, step_params):
@@ -213,14 +214,14 @@ def find_quantification_output(
                 continue
         except OSError:
             continue
-        if require_current and not is_current_quantification(sample_dir, sample_id):
+        if require_current and not is_reusable_quantification(sample_dir, sample_id):
             continue
         return sample_dir, quant_file
     return None
 
 
 def cleanup_fastqs(config: AmalgkitWorkflowConfig, sample_ids: List[str]) -> None:
-    """Delete FASTQ files only for samples with current quant provenance.
+    """Delete FASTQ files only for samples with verified quant provenance.
 
     Args:
         config: Workflow configuration containing work_dir and step settings
@@ -240,8 +241,8 @@ def cleanup_fastqs(config: AmalgkitWorkflowConfig, sample_ids: List[str]) -> Non
             continue
         if find_quantification_output(config, sample_id, require_current=True) is None:
             logger.warning(
-                "Preserving raw inputs for %s: no non-empty quantification with current "
-                "Amalgkit provenance was found",
+                "Preserving raw inputs for %s: no non-empty quantification with verified "
+                "Amalgkit contract provenance was found",
                 sample_id,
             )
             continue
@@ -288,9 +289,9 @@ def get_quantified_samples(config: AmalgkitWorkflowConfig) -> Set[str]:
         config: Workflow configuration
 
     Returns:
-        Set of sample IDs with non-empty abundance output and exact pinned
-        Amalgkit provenance. Readable tables without current provenance are not
-        treated as complete.
+        Set of sample IDs with non-empty abundance output and verified
+        quantification-contract provenance. Readable tables without provenance
+        are not treated as complete.
     """
     quantified: Set[str] = set()
 

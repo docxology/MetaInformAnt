@@ -44,7 +44,7 @@ Example:
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Dict, List, Literal, Mapping, Optional, Tuple
 
 import numpy as np
 import pandas as pd
@@ -62,6 +62,33 @@ logger = logging.get_logger(__name__)
 AggregationMethod = Literal["mean", "max", "sum"]
 CorrelationMethod = Literal["spearman", "pearson", "euclidean"]
 MIN_FINGERPRINT_FEATURES = 100
+
+
+def _validate_expression_labels(expr: pd.DataFrame, name: str) -> None:
+    """Reject ambiguous labels before cross-species alignment."""
+
+    if not isinstance(expr, pd.DataFrame):
+        raise TypeError(f"{name} must be a pandas DataFrame")
+    if expr.index.has_duplicates:
+        raise ValueError(f"{name} contains duplicate gene labels")
+    if expr.columns.has_duplicates:
+        raise ValueError(f"{name} contains duplicate sample/condition labels")
+
+
+def _validate_finite_expression(
+    expr: pd.DataFrame,
+    genes: list[Any],
+    columns: list[Any],
+    name: str,
+) -> None:
+    """Require finite numeric values for the explicitly compared cells."""
+
+    try:
+        values = expr.loc[genes, columns].to_numpy(dtype=float)
+    except (TypeError, ValueError) as exc:
+        raise ValueError(f"{name} contains non-numeric expression values") from exc
+    if not np.isfinite(values).all():
+        raise ValueError(f"{name} contains missing or non-finite values in compared cells")
 
 
 # =============================================================================
@@ -251,7 +278,7 @@ def compute_expression_conservation(
     expr_b: pd.DataFrame,
     method: CorrelationMethod = "spearman",
     *,
-    allow_positional_alignment: bool = False,
+    alignment: Mapping[str, str] | None = None,
 ) -> pd.DataFrame:
     """Compute gene-level expression conservation between two species.
 
@@ -271,6 +298,8 @@ def compute_expression_conservation(
             - "spearman": Spearman rank correlation across samples
             - "pearson": Pearson correlation across samples
             - "euclidean": Negative normalized Euclidean distance (higher = more conserved)
+        alignment: Optional mapping from columns in ``expr_a`` to comparable
+            columns in ``expr_b``. Required when labels do not overlap.
 
     Returns:
         DataFrame with columns:
@@ -278,9 +307,10 @@ def compute_expression_conservation(
             - correlation: Conservation score (higher = more conserved).
               For correlation methods, range is [-1, 1]. For euclidean,
               range is [0, 1] where 1 means identical.
-            - p_value: Statistical significance (for correlation methods).
+            - p_value: Per-gene descriptive statistic (for correlation methods).
+            - p_value_adjusted: Benjamini-Hochberg adjusted value across genes.
               For euclidean, this is derived from a permutation-based z-score.
-            - conserved: Boolean flag (True if correlation > 0.5 and p < 0.05)
+            - conserved: Boolean flag based on correlation and adjusted p-value.
 
     Raises:
         ValueError: If no shared genes exist between expr_a and expr_b,
@@ -296,6 +326,9 @@ def compute_expression_conservation(
     if method not in ("spearman", "pearson", "euclidean"):
         raise ValueError(f"Unknown method: {method}. Valid: spearman, pearson, euclidean")
 
+    _validate_expression_labels(expr_a, "expr_a")
+    _validate_expression_labels(expr_b, "expr_b")
+
     # Find shared genes
     shared_genes = sorted(set(expr_a.index) & set(expr_b.index))
     if not shared_genes:
@@ -303,23 +336,27 @@ def compute_expression_conservation(
             "No shared genes between expr_a and expr_b. " "Ensure both are mapped to the same ortholog space."
         )
 
-    expr_b_columns = set(expr_b.columns)
-    shared_columns = [col for col in expr_a.columns if col in expr_b_columns]
-    expr_a_columns = shared_columns
-    if not shared_columns:
-        if not allow_positional_alignment:
-            raise ValueError(
-                "No shared sample/condition columns between expr_a and expr_b. "
-                "Column labels must represent comparable samples or conditions."
-            )
-        n_aligned = min(expr_a.shape[1], expr_b.shape[1])
-        if n_aligned < 2:
-            raise ValueError("At least two samples are required for positional cross-species alignment")
-        # Species-specific run accessions cannot be matched by name.  The
-        # across-species orchestrator uses this deterministic fallback for
-        # already normalized matrices with comparable sample ordering.
-        expr_a_columns = list(expr_a.columns[:n_aligned])
-        shared_columns = list(expr_b.columns[:n_aligned])
+    expr_b_column_set = set(expr_b.columns)
+    if alignment is None:
+        shared_columns = [col for col in expr_a.columns if col in expr_b_column_set]
+        expr_a_columns = shared_columns
+    else:
+        if len(set(alignment.values())) != len(alignment):
+            raise ValueError("alignment maps multiple source columns to one target column")
+        missing_a = set(alignment) - set(expr_a.columns)
+        missing_b = set(alignment.values()) - expr_b_column_set
+        if missing_a or missing_b:
+            raise ValueError(f"alignment references missing columns: source={missing_a}, target={missing_b}")
+        expr_a_columns = [column for column in expr_a.columns if column in alignment]
+        shared_columns = [alignment[column] for column in expr_a_columns]
+    if len(shared_columns) < 2:
+        raise ValueError(
+            "At least two explicitly comparable sample/condition columns are required; "
+            "positional cross-species alignment is not supported"
+        )
+
+    _validate_finite_expression(expr_a, shared_genes, expr_a_columns, "expr_a")
+    _validate_finite_expression(expr_b, shared_genes, shared_columns, "expr_b")
 
     logger.info(f"Computing expression conservation for {len(shared_genes)} shared genes " f"using {method} method")
 
@@ -337,6 +374,7 @@ def compute_expression_conservation(
                     "gene_id": gene,
                     "correlation": np.nan,
                     "p_value": np.nan,
+                    "p_value_adjusted": np.nan,
                     "conserved": False,
                 }
             )
@@ -380,18 +418,28 @@ def compute_expression_conservation(
         if np.isnan(pval):
             pval = 1.0
 
-        conserved = bool(corr > 0.5 and pval < 0.05)
-
         results.append(
             {
                 "gene_id": gene,
                 "correlation": float(corr),
                 "p_value": float(pval),
-                "conserved": conserved,
+                "p_value_adjusted": np.nan,
+                "conserved": False,
             }
         )
 
     result_df = pd.DataFrame(results)
+
+    valid_p = result_df["p_value"].notna()
+    ordered = result_df.loc[valid_p, "p_value"].sort_values()
+    adjusted = np.full(len(result_df), np.nan, dtype=float)
+    if not ordered.empty:
+        values = ordered.to_numpy(dtype=float)
+        ranks = np.arange(1, len(values) + 1, dtype=float)
+        corrected = np.minimum.accumulate((values * len(values) / ranks)[::-1])[::-1]
+        adjusted[ordered.index.to_numpy()] = np.clip(corrected, 0.0, 1.0)
+    result_df["p_value_adjusted"] = adjusted
+    result_df["conserved"] = (result_df["correlation"] > 0.5) & (result_df["p_value_adjusted"] < 0.05)
 
     n_conserved = result_df["conserved"].sum()
     logger.info(f"Expression conservation: {n_conserved}/{len(result_df)} genes conserved " f"(corr > 0.5, p < 0.05)")
@@ -461,6 +509,8 @@ def identify_divergent_genes(
 def compare_expression_across_species(
     species_expressions: Dict[str, pd.DataFrame],
     ortholog_maps: Dict[Tuple[str, str], Dict[str, List[str]]],
+    *,
+    sample_alignments: Mapping[Tuple[str, str], Mapping[str, str]] | None = None,
 ) -> pd.DataFrame:
     """Compare expression patterns across multiple species using shared orthologs.
 
@@ -474,6 +524,9 @@ def compare_expression_across_species(
         ortholog_maps: Dictionary mapping species pairs (source, target) to
             ortholog dictionaries (from build_ortholog_map). Keys are tuples
             of (species_a, species_b) where species_a genes map to species_b.
+        sample_alignments: Optional explicit column mappings for pairs whose
+            species-specific labels do not overlap. Positional matching is not
+            inferred.
 
     Returns:
         DataFrame with columns:
@@ -533,7 +586,7 @@ def compare_expression_across_species(
             mapped_a.loc[shared_genes],
             expr_b.loc[shared_genes],
             method="spearman",
-            allow_positional_alignment=True,
+            alignment=(sample_alignments or {}).get((sp_a, sp_b)),
         )
 
         for _, row in conservation.iterrows():
@@ -590,6 +643,8 @@ def compare_expression_across_species(
 
 def compute_expression_divergence_matrix(
     species_expressions: Dict[str, pd.DataFrame],
+    *,
+    sample_alignments: Mapping[Tuple[str, str], Mapping[str, str]] | None = None,
 ) -> pd.DataFrame:
     """Compute pairwise expression divergence between all species.
 
@@ -602,6 +657,9 @@ def compute_expression_divergence_matrix(
         species_expressions: Dictionary mapping species name (str) to
             expression DataFrame (genes x samples). All DataFrames must
             share a common gene index (i.e., already in ortholog space).
+        sample_alignments: Optional explicit column mappings for species pairs.
+            If omitted, shared column labels are used; positional matching is
+            never inferred.
 
     Returns:
         Symmetric DataFrame with species as both rows and columns,
@@ -623,6 +681,9 @@ def compute_expression_divergence_matrix(
 
     if n_species < 2:
         raise ValueError(f"Need at least 2 species, got {n_species}")
+
+    for species, expression in species_expressions.items():
+        _validate_expression_labels(expression, f"expression for {species}")
 
     logger.info(f"Computing expression divergence matrix for {n_species} species")
 
@@ -648,23 +709,35 @@ def compute_expression_divergence_matrix(
 
             # Compute per-gene Spearman correlations across shared samples
             correlations = []
-            min_samples = min(expr_a.shape[1], expr_b.shape[1])
+            alignment = (sample_alignments or {}).get((sp_a, sp_b))
+            if alignment is None:
+                shared_columns = [column for column in expr_a.columns if column in set(expr_b.columns)]
+                expr_a_columns = shared_columns
+                expr_b_columns = shared_columns
+            else:
+                if len(set(alignment.values())) != len(alignment):
+                    raise ValueError(f"Duplicate target columns in alignment for ({sp_a}, {sp_b})")
+                if set(alignment) - set(expr_a.columns) or set(alignment.values()) - set(expr_b.columns):
+                    raise ValueError(f"Alignment for ({sp_a}, {sp_b}) references missing columns")
+                expr_a_columns = [column for column in expr_a.columns if column in alignment]
+                expr_b_columns = [alignment[column] for column in expr_a_columns]
+            min_samples = len(expr_a_columns)
 
             if min_samples >= 2:
+                _validate_finite_expression(expr_a, shared_genes, expr_a_columns, f"expression for {sp_a}")
+                _validate_finite_expression(expr_b, shared_genes, expr_b_columns, f"expression for {sp_b}")
                 # Sample-level correlation per gene
                 for gene in shared_genes:
-                    vals_a = expr_a.loc[gene].values[:min_samples].astype(float)
-                    vals_b = expr_b.loc[gene].values[:min_samples].astype(float)
+                    vals_a = expr_a.loc[gene, expr_a_columns].values.astype(float)
+                    vals_b = expr_b.loc[gene, expr_b_columns].values.astype(float)
                     corr, _ = stats.spearmanr(vals_a, vals_b)
                     if not np.isnan(corr):
                         correlations.append(corr)
             else:
-                # Single sample per species: use gene-level correlation
-                vals_a = expr_a.loc[shared_genes].iloc[:, 0].values.astype(float)
-                vals_b = expr_b.loc[shared_genes].iloc[:, 0].values.astype(float)
-                corr, _ = stats.spearmanr(vals_a, vals_b)
-                if not np.isnan(corr):
-                    correlations.append(corr)
+                raise ValueError(
+                    f"At least two explicitly comparable samples are required for ({sp_a}, {sp_b}); "
+                    "single-column positional fallback is not supported"
+                )
 
             if correlations:
                 median_corr = float(np.median(correlations))
@@ -808,6 +881,105 @@ def compute_fingerprint_divergence_matrix(
             div_matrix[j, i] = div_score
 
     return pd.DataFrame(div_matrix, index=species_names, columns=species_names)
+
+
+def compute_fingerprint_stability(
+    species_expressions: Dict[str, pd.Series | pd.DataFrame],
+    point_divergence: pd.DataFrame,
+    n_bins: int = 100,
+    min_valid_features: int = MIN_FINGERPRINT_FEATURES,
+    n_bootstrap: int = 200,
+    random_seed: int = 20260808,
+) -> pd.DataFrame:
+    """Quantify feature-resampling sensitivity of fingerprint divergences.
+
+    Each replicate resamples the finite positive feature values within each
+    species with replacement, recomputes the common-binned fingerprint, and
+    records the resulting pairwise divergence. The returned intervals are
+    sensitivity intervals for feature resampling, not confidence intervals and
+    not inferential uncertainty about species or genes.
+
+    Args:
+        species_expressions: Species profiles or finalized expression frames.
+        point_divergence: Point-estimate divergence matrix for the same species.
+        n_bins: Common histogram bin count.
+        min_valid_features: Minimum finite positive values per species.
+        n_bootstrap: Number of deterministic feature-resampling replicates.
+        random_seed: Seed recorded for exact reruns.
+
+    Returns:
+        One row per unordered species pair with the point estimate, sensitivity
+        median, 2.5th/97.5th sensitivity quantiles, IQR, and replicate count.
+    """
+
+    if not isinstance(n_bootstrap, (int, np.integer)) or n_bootstrap < 20:
+        raise ValueError("n_bootstrap must be an integer of at least 20")
+    if not isinstance(random_seed, (int, np.integer)) or random_seed < 0:
+        raise ValueError("random_seed must be a non-negative integer")
+
+    species_names = sorted(species_expressions)
+    if list(point_divergence.index) != species_names or list(point_divergence.columns) != species_names:
+        raise ValueError("point_divergence labels must match sorted species profile names")
+
+    positive_profiles: dict[str, np.ndarray] = {}
+    for species in species_names:
+        profile = species_expressions[species]
+        if isinstance(profile, pd.DataFrame):
+            profile = profile.apply(pd.to_numeric, errors="coerce").mean(axis=1)
+        numeric = pd.to_numeric(profile, errors="coerce")
+        finite = numeric[np.isfinite(numeric)]
+        if (finite < 0).any():
+            raise ValueError(f"Species {species} contains negative feature values")
+        positive = finite[finite > 0].to_numpy(dtype=float)
+        if positive.size < min_valid_features:
+            raise ValueError(
+                f"Species {species} has only {positive.size} finite positive feature values; "
+                f"at least {min_valid_features} are required for stability analysis"
+            )
+        positive_profiles[species] = positive
+
+    rng = np.random.default_rng(int(random_seed))
+    bootstrap_values: dict[tuple[str, str], list[float]] = {
+        (species_names[i], species_names[j]): []
+        for i in range(len(species_names))
+        for j in range(i + 1, len(species_names))
+    }
+    for _ in range(int(n_bootstrap)):
+        resampled = {
+            species: pd.Series(
+                rng.choice(values, size=values.size, replace=True),
+                dtype=float,
+            )
+            for species, values in positive_profiles.items()
+        }
+        replicate = compute_fingerprint_divergence_matrix(
+            resampled,
+            n_bins=n_bins,
+            min_valid_features=min_valid_features,
+        )
+        for pair in bootstrap_values:
+            bootstrap_values[pair].append(float(replicate.loc[pair[0], pair[1]]))
+
+    records: list[dict[str, float | int | str]] = []
+    for (species_a, species_b), values in bootstrap_values.items():
+        sampled = np.asarray(values, dtype=float)
+        point = float(point_divergence.loc[species_a, species_b])
+        q025, q975 = np.quantile(sampled, [0.025, 0.975])
+        q25, q75 = np.quantile(sampled, [0.25, 0.75])
+        records.append(
+            {
+                "species_a": species_a,
+                "species_b": species_b,
+                "point_estimate": point,
+                "sensitivity_median": float(np.median(sampled)),
+                "sensitivity_lower": float(q025),
+                "sensitivity_upper": float(q975),
+                "sensitivity_iqr": float(q75 - q25),
+                "median_absolute_shift": float(np.median(np.abs(sampled - point))),
+                "replicate_count": int(sampled.size),
+            }
+        )
+    return pd.DataFrame(records)
 
 
 def compute_feature_count_summary(species_profiles: Dict[str, Any]) -> pd.DataFrame:

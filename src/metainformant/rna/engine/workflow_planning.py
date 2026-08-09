@@ -196,7 +196,7 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
         step_params = {
             "out_dir": str(config.work_dir),
         }
-        # Amalgkit 0.16.33's native NCBI taxonomy database is shared read-only
+        # Amalgkit 0.16.38's native NCBI taxonomy database is shared read-only
         # workflow infrastructure.  A campaign may provide one validated
         # directory through the environment so metadata/integrate/getfastq do
         # not rebuild the multi-million-row SQLite database once per species.
@@ -627,7 +627,7 @@ def prepare_reference_genome(config: AmalgkitWorkflowConfig) -> bool:
 
         # 1. Define paths
         index_dir = config.work_dir / "index"
-        # Amalgkit 0.16.33 resolves kallisto indexes using the exact
+        # Amalgkit 0.16.38 resolves kallisto indexes using the exact
         # ``<species>.idx`` stem.  Older MetaInformAnt artifacts used a
         # ``_transcripts`` suffix, so the compatibility lookup below keeps
         # those artifacts usable while all newly produced indexes follow the

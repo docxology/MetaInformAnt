@@ -31,6 +31,7 @@ from metainformant.rna.analysis.cross_species import (
     compute_expression_divergence_matrix,
     compute_feature_count_summary,
     compute_fingerprint_divergence_matrix,
+    compute_fingerprint_stability,
     compute_gene_count_overlap,
     cross_species_pca,
     identify_divergent_genes,
@@ -370,7 +371,7 @@ class TestComputeExpressionConservation:
         result = compute_expression_conservation(expr_a, expr_b, method="spearman")
 
         assert isinstance(result, pd.DataFrame)
-        assert set(result.columns) == {"gene_id", "correlation", "p_value", "conserved"}
+        assert set(result.columns) == {"gene_id", "correlation", "p_value", "p_value_adjusted", "conserved"}
         assert len(result) == 2
 
         for _, row in result.iterrows():
@@ -443,17 +444,36 @@ class TestComputeExpressionConservation:
         with pytest.raises(ValueError, match="Unknown method"):
             compute_expression_conservation(expr_a, expr_b, method="kendall")  # type: ignore[arg-type]
 
-    def test_single_sample_per_gene(self) -> None:
-        """Single sample (< 2 data points) produces NaN correlation."""
+    def test_single_sample_per_gene_is_rejected(self) -> None:
+        """A single comparable sample cannot support conservation inference."""
         expr_a = pd.DataFrame({"c1": [1.0, 2.0]}, index=["gene1", "gene2"])
         expr_b = pd.DataFrame({"c1": [3.0, 4.0]}, index=["gene1", "gene2"])
 
-        result = compute_expression_conservation(expr_a, expr_b, method="spearman")
+        with pytest.raises(ValueError, match="At least two explicitly comparable"):
+            compute_expression_conservation(expr_a, expr_b, method="spearman")
 
-        assert len(result) == 2
-        for _, row in result.iterrows():
-            assert np.isnan(row["correlation"])
-            assert bool(row["conserved"]) is False
+    def test_mismatched_labels_require_explicit_alignment(self) -> None:
+        """Species-specific labels require an explicit alignment map."""
+        expr_a = pd.DataFrame({"a1": [1.0], "a2": [2.0]}, index=["gene1"])
+        expr_b = pd.DataFrame({"b1": [3.0], "b2": [4.0]}, index=["gene1"])
+        with pytest.raises(ValueError, match="positional"):
+            compute_expression_conservation(expr_a, expr_b)
+        result = compute_expression_conservation(expr_a, expr_b, alignment={"a1": "b1", "a2": "b2"})
+        assert result.iloc[0]["correlation"] == pytest.approx(1.0)
+
+    def test_duplicate_sample_labels_are_rejected(self) -> None:
+        """Ambiguous replicate labels cannot enter a comparison."""
+        expr_a = pd.DataFrame([[1.0, 2.0]], index=["gene1"], columns=["a1", "a1"])
+        expr_b = pd.DataFrame([[3.0, 4.0]], index=["gene1"], columns=["b1", "b2"])
+        with pytest.raises(ValueError, match="duplicate sample"):
+            compute_expression_conservation(expr_a, expr_b, alignment={"a1": "b1"})
+
+    def test_missing_compared_values_are_rejected(self) -> None:
+        """Missing values are not silently converted into biological scores."""
+        expr_a = pd.DataFrame({"a1": [1.0], "a2": [np.nan]}, index=["gene1"])
+        expr_b = pd.DataFrame({"b1": [3.0], "b2": [4.0]}, index=["gene1"])
+        with pytest.raises(ValueError, match="missing or non-finite"):
+            compute_expression_conservation(expr_a, expr_b, alignment={"a1": "b1", "a2": "b2"})
 
     def test_mismatched_sample_counts_use_shared_columns(self) -> None:
         """Different sample counts are handled by aligning shared columns."""
@@ -537,6 +557,7 @@ class TestComputeExpressionConservation:
         assert pd.api.types.is_string_dtype(result["gene_id"])
         assert pd.api.types.is_float_dtype(result["correlation"])
         assert pd.api.types.is_float_dtype(result["p_value"])
+        assert pd.api.types.is_float_dtype(result["p_value_adjusted"])
         assert pd.api.types.is_bool_dtype(result["conserved"])
 
 
@@ -758,18 +779,15 @@ class TestComputeExpressionDivergenceMatrix:
         # 1 - median(1.0) = 0.0
         assert result.loc["sp_a", "sp_b"] == pytest.approx(0.0, abs=0.05)
 
-    def test_single_sample_uses_gene_level_corr(self) -> None:
-        """Single sample per species falls back to gene-level correlation."""
+    def test_single_sample_is_rejected(self) -> None:
+        """Single-sample positional fallback is not a valid divergence contract."""
         species_data = {
             "sp_a": pd.DataFrame({"s1": [1.0, 2.0, 3.0, 4.0]}, index=["g1", "g2", "g3", "g4"]),
             "sp_b": pd.DataFrame({"s1": [10.0, 20.0, 30.0, 40.0]}, index=["g1", "g2", "g3", "g4"]),
         }
 
-        result = compute_expression_divergence_matrix(species_data)
-
-        # Gene-level spearman of [1,2,3,4] vs [10,20,30,40] = 1.0
-        # divergence = 1 - 1.0 = 0.0
-        assert result.loc["sp_a", "sp_b"] == pytest.approx(0.0, abs=0.05)
+        with pytest.raises(ValueError, match="At least two explicitly comparable"):
+            compute_expression_divergence_matrix(species_data)
 
     def test_no_shared_genes_max_divergence(self) -> None:
         """No shared genes yields maximum divergence of 2.0."""
@@ -1353,8 +1371,13 @@ class TestIntegrationWorkflows:
             "sp_c": pd.DataFrame(rng.random((15, 4)), index=genes, columns=["c1", "c2", "c3", "c4"]),
         }
 
-        # Divergence matrix
-        div_matrix = compute_expression_divergence_matrix(species_data)
+        # Divergence matrix requires an explicit mapping for species-specific labels.
+        alignments = {
+            ("sp_a", "sp_b"): {f"a{i}": f"b{i}" for i in range(1, 5)},
+            ("sp_a", "sp_c"): {f"a{i}": f"c{i}" for i in range(1, 5)},
+            ("sp_b", "sp_c"): {f"b{i}": f"c{i}" for i in range(1, 5)},
+        }
+        div_matrix = compute_expression_divergence_matrix(species_data, sample_alignments=alignments)
         assert div_matrix.shape == (3, 3)
 
         # PCA
@@ -1600,6 +1623,26 @@ def test_fingerprint_divergence_handles_degenerate_rank_profiles() -> None:
     assert result.loc["sp_a", "sp_b"] == pytest.approx(0.0)
     assert result.loc["sp_a", "sp_c"] >= 0.0
     assert result.loc["sp_a", "sp_c"] <= 2.0
+
+
+def test_fingerprint_stability_is_deterministic_and_non_inferential() -> None:
+    """Feature-resampling diagnostics are reproducible and bounded."""
+
+    rng = np.random.default_rng(11)
+    profiles = {
+        "sp_a": pd.Series(rng.lognormal(1.0, 0.5, 150)),
+        "sp_b": pd.Series(rng.lognormal(1.3, 0.7, 150)),
+        "sp_c": pd.Series(rng.lognormal(1.8, 0.6, 150)),
+    }
+    point = compute_fingerprint_divergence_matrix(profiles, n_bins=16)
+    first = compute_fingerprint_stability(profiles, point, n_bins=16, n_bootstrap=20, random_seed=99)
+    second = compute_fingerprint_stability(profiles, point, n_bins=16, n_bootstrap=20, random_seed=99)
+
+    pd.testing.assert_frame_equal(first, second)
+    assert len(first) == 3
+    assert (first["replicate_count"] == 20).all()
+    assert (first[["sensitivity_lower", "sensitivity_upper"]] >= 0).all().all()
+    assert (first[["sensitivity_lower", "sensitivity_upper"]] <= 2).all().all()
 
 
 def test_gene_count_overlap_coerces_tabular_profiles() -> None:

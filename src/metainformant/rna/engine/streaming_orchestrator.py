@@ -38,8 +38,11 @@ from metainformant.rna.amalgkit.tissue_normalizer import apply_tissue_normalizat
 from metainformant.rna.core.sample_utils import find_quantification_file
 from metainformant.rna.engine.progress_db import ProgressDB
 from metainformant.rna.engine.provenance import (
+    QUANT_STATUS_CURRENT,
+    QUANT_STATUS_VERSION_DRIFT,
+    classify_quantification,
     is_current_metadata,
-    is_current_quantification,
+    is_reusable_quantification,
     write_metadata_provenance,
     write_quant_provenance,
 )
@@ -64,6 +67,9 @@ LOG_DIR = Path(os.environ.get("AMALGKIT_LOG_DIR", str(PROJECT_ROOT / "output/ama
 
 
 logger = log_utils.get_logger(__name__)
+
+REQUANTIFICATION_POLICIES = frozenset({"preserve", "version-drift", "all"})
+DEFAULT_DISCOVERY_WORKERS = 4
 
 _INDEX_CACHE_LOCK = threading.Lock()
 _SRA_VALIDATION_SCHEMA = 1
@@ -499,7 +505,7 @@ def _raw_validation_marker_matches(
     if recorded_effective_layout is not None and recorded_effective_layout != effective_layout:
         return False
     expected_reconciliation = (
-        "amalgkit_0.16.33_paired_metadata_single_fastq"
+        "amalgkit_0.16.38_paired_metadata_single_fastq"
         if declared_layout == "paired" and effective_layout == "single"
         else "none"
     )
@@ -511,7 +517,7 @@ def _raw_validation_marker_matches(
     # than malformed or non-adjacent paired data. Force one bounded full
     # record scan before such a witness can be reused.
     if (
-        expected_reconciliation == "amalgkit_0.16.33_paired_metadata_single_fastq"
+        expected_reconciliation == "amalgkit_0.16.38_paired_metadata_single_fastq"
         and payload.get("layout_validation") != "full_fastq_record_scan_read1_only"
     ):
         return False
@@ -555,7 +561,7 @@ def _write_raw_validation_marker(
         "declared_library_layout": declared_layout,
         "effective_library_layout": effective_layout,
         "layout_reconciliation": (
-            "amalgkit_0.16.33_paired_metadata_single_fastq"
+            "amalgkit_0.16.38_paired_metadata_single_fastq"
             if declared_layout == "paired" and effective_layout == "single"
             else "none"
         ),
@@ -712,7 +718,7 @@ def _validated_local_fastq_inputs(
 
     Existing files are only adopted when the metadata layout is compatible:
     paired libraries use both numbered mates when present, while one
-    unnumbered FASTQ is retained for Amalgkit 0.16.33's explicit
+    unnumbered FASTQ is retained for Amalgkit 0.16.38's explicit
     paired-metadata/single-file reconciliation. A lone numbered mate remains
     incomplete. Single libraries require the unnumbered FASTQ, and unknown
     layouts are accepted only when the on-disk naming is unambiguous. Gzip
@@ -760,7 +766,7 @@ def _validated_local_fastq_inputs(
         # A completed one-file checkpoint may have been left by an interrupted
         # older run before the raw witness was written. Classify it here,
         # before adoption: true interleaved reads are split atomically, while
-        # Amalgkit 0.16.33's read-1-only case is accepted only after a complete
+        # Amalgkit 0.16.38's read-1-only case is accepted only after a complete
         # FASTQ record scan. This path also centralizes classification for new
         # ENA and fasterq outputs, avoiding a second multi-gigabyte scan.
         try:
@@ -988,7 +994,7 @@ def _normalize_interleaved_paired_fastq_layout(
         logger.warning(
             "Run %s is declared paired but contains one validated read-1-only "
             "FASTQ (%d records); retaining the unnumbered file for Amalgkit "
-            "0.16.33 layout reconciliation.",
+            "0.16.38 layout reconciliation.",
             accession,
             record_count,
         )
@@ -998,7 +1004,7 @@ def _normalize_interleaved_paired_fastq_layout(
 def _metadata_requires_fastq_input_stats(metadata_path: Path, accession: str) -> bool:
     """Return whether Amalgkit needs read-derived statistics for one accession.
 
-    Amalgkit 0.16.33 infers ``spot_length`` from ``total_bases / total_spots``
+    Amalgkit 0.16.38 infers ``spot_length`` from ``total_bases / total_spots``
     when the public SRA metadata omits the explicit field.  Re-counting a
     validated multi-gigabyte FASTQ merely because ``spot_length`` is missing
     therefore adds substantial I/O/CPU without changing the quantification
@@ -1712,8 +1718,8 @@ def _build_quant_command(
         "--batch",
         str(batch_index),
         # A task is scheduled only when no current-method provenance sidecar
-        # exists. Replace any readable non-current output before writing the new
-        # 0.16.33 sidecar.
+        # exists. Replace only explicitly selected re-quantification candidates
+        # before writing the new sidecar.
         "--redo",
         "yes",
     ]
@@ -1841,6 +1847,12 @@ class StreamingPipelineOrchestrator:
         self.reclaim_raw_after_quant = os.environ.get(
             "AMALGKIT_RECLAIM_RAW_AFTER_QUANT", "yes"
         ).strip().lower() not in {"0", "false", "no", "off"}
+        self.requantification_policy = os.environ.get("AMALGKIT_REQUANTIFICATION_POLICY", "preserve").strip().lower()
+        if self.requantification_policy not in REQUANTIFICATION_POLICIES:
+            raise ValueError(
+                f"Invalid AMALGKIT_REQUANTIFICATION_POLICY={self.requantification_policy!r}; "
+                f"expected one of {sorted(REQUANTIFICATION_POLICIES)}"
+            )
 
         # The launcher checks the host volume before starting, but a long
         # campaign can still consume host-side cache/temp space after launch.
@@ -2686,7 +2698,7 @@ class StreamingPipelineOrchestrator:
         # Direct ENA acquisition bypasses Amalgkit's getfastq stage.  For
         # public metadata rows with missing/zero spot statistics, derive the
         # quant-only fallback from the validated FASTQ before invoking
-        # Amalgkit 0.16.33; otherwise it rejects usable reads before Kallisto.
+        # Amalgkit 0.16.38; otherwise it rejects usable reads before Kallisto.
         metadata_file = Path(meta_path)
         sample_fastq_dir = work_dir / "getfastq" / srr_id
         if _metadata_requires_fastq_input_stats(metadata_file, srr_id):
@@ -3057,12 +3069,12 @@ class StreamingPipelineOrchestrator:
             logger.warning("Unable to clean local quant scratch %s: %s", scratch_root, exc)
 
     def is_quantified(self, species_name: str, srr_id: str) -> bool:
-        """Check for a current-method quantification, not just a readable TSV."""
+        """Check for a reusable quantification, including compatible version drift."""
         quant_dir = _species_work_dir(species_name) / "quant" / srr_id
         quant_file = find_quantification_file(quant_dir, srr_id)
         if not quant_dir.exists() or quant_file is None or not quant_file.is_file() or quant_file.stat().st_size <= 100:
             return False
-        return is_current_quantification(quant_dir, srr_id)
+        return is_reusable_quantification(quant_dir, srr_id)
 
     def _reclaim_after_current_quantification(self, species_name: str, srr_id: str) -> None:
         """Reclaim one sample's raw inputs only after current evidence exists."""
@@ -3087,13 +3099,7 @@ class StreamingPipelineOrchestrator:
             )
 
     def _reset_non_current_quantified_states(self, species_name: str) -> int:
-        """Return readable non-current outputs to pending before a current run.
-
-        Current sidecars bind the abundance-table digest, so a large resumed
-        species can require many independent mounted-volume reads. Reuse the
-        already bounded validation-slot budget for those read-only checks,
-        then serialize progress-database writes in the caller thread.
-        """
+        """Audit quantified outputs without invalidating runtime-version drift."""
 
         sample_ids = self.db.get_samples(species_name, "quantified")
         if not sample_ids:
@@ -3107,36 +3113,74 @@ class StreamingPipelineOrchestrator:
                 getattr(profile, "validation_slots", 1),
             ),
         )
+
+        def classify(srr_id: str) -> tuple[str, dict[str, Any]]:
+            quant_dir = _species_work_dir(species_name) / "quant" / srr_id
+            return srr_id, classify_quantification(quant_dir, srr_id)
+
         if validation_slots == 1:
-            current_flags = [self.is_quantified(species_name, srr_id) for srr_id in sample_ids]
+            classifications = [classify(srr_id) for srr_id in sample_ids]
         else:
             with concurrent.futures.ThreadPoolExecutor(max_workers=validation_slots) as validation_executor:
-                current_flags = list(
-                    validation_executor.map(
-                        lambda srr_id: self.is_quantified(species_name, srr_id),
-                        sample_ids,
-                    )
-                )
+                classifications = list(validation_executor.map(classify, sample_ids))
 
         reset = 0
-        for srr_id, is_current in zip(sample_ids, current_flags):
-            if not is_current:
-                self.db.set_state(
+        requantification_candidates = 0
+        quarantined = 0
+        for srr_id, audit in classifications:
+            status = audit["status"]
+            if status in {QUANT_STATUS_CURRENT, QUANT_STATUS_VERSION_DRIFT}:
+                should_requantify = self.requantification_policy == "all" or (
+                    self.requantification_policy == "version-drift" and status == QUANT_STATUS_VERSION_DRIFT
+                )
+                self.db.record_quantification_audit(
                     species_name,
                     srr_id,
-                    "pending",
-                    error="quantification lacks current 0.16.33 provenance",
+                    status=status,
+                    reason=audit["reason"],
+                    contract_id=audit.get("contract_id"),
+                    observed_amalgkit_version=audit.get("observed_amalgkit_version"),
+                    observed_release_tag=audit.get("observed_release_tag"),
+                    observed_source_revision=audit.get("observed_source_revision"),
+                    state="pending" if should_requantify else "quantified",
+                )
+                if should_requantify:
+                    reset += 1
+                    requantification_candidates += 1
+            else:
+                self.db.record_quantification_audit(
+                    species_name,
+                    srr_id,
+                    status=status,
+                    reason=audit["reason"],
+                    contract_id=audit.get("contract_id"),
+                    observed_amalgkit_version=audit.get("observed_amalgkit_version"),
+                    observed_release_tag=audit.get("observed_release_tag"),
+                    observed_source_revision=audit.get("observed_source_revision"),
+                    state="quarantined",
                 )
                 reset += 1
+                quarantined += 1
         if len(sample_ids) > 1:
             logger.info(
-                "Validated %d recorded quantification states for %s with %d provenance-read slot(s)",
+                "Validated %d recorded quantification states for %s with %d provenance-read slot(s); " "policy=%s",
                 len(sample_ids),
                 species_name,
                 validation_slots,
+                self.requantification_policy,
             )
-        if reset:
-            logger.info("Reset %d non-current quantification states for %s", reset, species_name)
+        if requantification_candidates:
+            logger.info(
+                "Queued %d explicit re-quantification candidates for %s",
+                requantification_candidates,
+                species_name,
+            )
+        if quarantined:
+            logger.info(
+                "Quarantined %d incomplete or unverifiable quantification outputs for %s",
+                quarantined,
+                species_name,
+            )
         return reset
 
     def process_single_sample(
@@ -3361,7 +3405,7 @@ class StreamingPipelineOrchestrator:
                 species_name,
             )
 
-            # Amalgkit 0.16.33 builds the quantification index through the
+            # Amalgkit 0.16.38 builds the quantification index through the
             # reference-preparation helper; it no longer exposes the removed
             # `config` or `index` CLI stages.
             if needs_index:
@@ -3377,7 +3421,7 @@ class StreamingPipelineOrchestrator:
                     logger.error("Reference preparation exception for %s: %s", species_name, exc)
                     return []
 
-            # Taxonomy acquisition is owned by Amalgkit 0.16.33.  When the
+            # Taxonomy acquisition is owned by Amalgkit 0.16.38.  When the
             # campaign launcher provides AMALGKIT_SHARED_DOWNLOAD_DIR, its
             # native taxdump/database cache is reused across species.  The
             # older per-species seed path is intentionally not recreated.
@@ -3441,7 +3485,7 @@ class StreamingPipelineOrchestrator:
             logger.error("Metadata normalization did not complete for %s", species_name)
             return []
 
-        # Some valid Amalgkit 0.16.33 runs emit only ``metadata.tsv`` when
+        # Some valid Amalgkit 0.16.38 runs emit only ``metadata.tsv`` when
         # selection does not create a separate table.  Materialize the
         # canonical selected-table boundary once so the current metadata
         # witness can remain strict and every later resume can distinguish
@@ -3611,16 +3655,29 @@ class StreamingPipelineOrchestrator:
         compression_threads: Optional[int] = None,
         max_in_flight: Optional[int] = None,
         validation_slots: Optional[int] = None,
+        requantification_policy: Optional[str] = None,
+        discovery_workers: Optional[int] = None,
     ) -> None:
         """Run the current pipeline with bounded, explicit stage resources.
 
-        Discovery remains serial because it owns metadata and reference
-        preparation.  Sample execution uses a bounded submission window so a
-        large cohort does not create one queued ``Future`` per sample.  The
-        active sample workers and total quantification budget are separate from
-        the fallback ``fasterq-dump`` and ``pigz`` budgets.
+        Species discovery/reference preparation is parallelized in an isolated
+        phase. Sample execution starts only after every species discovery
+        future has completed, preserving a single global task-prioritization
+        boundary and preventing partial discovery from being mistaken for a
+        complete cohort. The sample executor still uses a bounded submission
+        window, and its active workers and total quantification budget remain
+        separate from the fallback ``fasterq-dump`` and ``pigz`` budgets.
         """
         from collections import defaultdict, deque
+
+        if requantification_policy is not None:
+            requantification_policy = requantification_policy.strip().lower()
+            if requantification_policy not in REQUANTIFICATION_POLICIES:
+                raise ValueError(
+                    f"Invalid requantification policy {requantification_policy!r}; "
+                    f"expected one of {sorted(REQUANTIFICATION_POLICIES)}"
+                )
+            self.requantification_policy = requantification_policy
 
         profile = build_pipeline_resource_profile(
             workers,
@@ -3636,40 +3693,106 @@ class StreamingPipelineOrchestrator:
         self._quant_semaphore = threading.BoundedSemaphore(profile.quant_slots)
         self._fasterq_semaphore = threading.BoundedSemaphore(profile.fasterq_slots)
         self._raw_validation_semaphore = threading.BoundedSemaphore(profile.validation_slots)
+        configured_discovery_workers: Any = discovery_workers
+        if configured_discovery_workers is None:
+            configured_discovery_workers = os.environ.get("AMALGKIT_PIPELINE_DISCOVERY_WORKERS")
+        discovery_worker_count = _resource_int(
+            configured_discovery_workers,
+            DEFAULT_DISCOVERY_WORKERS,
+            "AMALGKIT_PIPELINE_DISCOVERY_WORKERS",
+        )
+        discovery_worker_count = min(max(1, discovery_worker_count), max(1, len(species_list)))
         logger.info(
-            "=== Phase 1 & 2: Incremental Task Discovery & Execution " "(requested workers=%d, active workers=%d) ===",
+            "=== Phase 1 & 2: Parallel Species Discovery & Bounded Sample Execution "
+            "(requested workers=%d, active workers=%d, discovery workers=%d) ===",
             profile.requested_workers,
             profile.workers,
+            discovery_worker_count,
         )
         quantified_by_species: Dict[str, int] = defaultdict(int)
 
+        stale_seconds = int(os.environ.get("AMALGKIT_PIPELINE_STALE_DOWNLOADING_SECONDS", "0"))
+        if stale_seconds > 0:
+            reset_count = self.db.reset_stale_downloading(stale_seconds)
+            if reset_count:
+                logger.info(
+                    "Reset %d stale downloading rows older than %d seconds to pending before resume.",
+                    reset_count,
+                    stale_seconds,
+                )
+
         all_tasks: List[Dict[str, Any]] = []
         total_discovered = 0
+
+        discovery_started = time.monotonic()
+        discovery_failures: Dict[str, str] = {}
+        discovered_by_species: Dict[str, List[Dict[str, Any]]] = {}
+        logger.info(
+            "=== Phase 1 start: discovering %d species with %d bounded workers; "
+            "metadata/reference writes remain species-isolated ===",
+            len(species_list),
+            discovery_worker_count,
+        )
+        with concurrent.futures.ThreadPoolExecutor(max_workers=discovery_worker_count) as discovery_executor:
+            futures: Dict[concurrent.futures.Future[Any], str] = {}
+            discovery_start_times: Dict[str, float] = {}
+            for config_name in species_list:
+                discovery_start_times[config_name] = time.monotonic()
+                futures[discovery_executor.submit(self.discover_species_tasks, config_name, max_gb, threads)] = (
+                    config_name
+                )
+            for future in concurrent.futures.as_completed(futures):
+                config_name = futures[future]
+                try:
+                    discovered_by_species[config_name] = future.result()
+                except Exception as exc:
+                    discovery_failures[config_name] = str(exc)
+                    logger.exception("Fatal error discovering tasks for %s", config_name)
+                    continue
+                tasks = discovered_by_species[config_name]
+                total_discovered += len(tasks)
+                logger.info(
+                    "Discovery complete for %s: %d tasks in %.1fs (total discovered: %d)",
+                    config_name,
+                    len(tasks),
+                    time.monotonic() - discovery_start_times[config_name],
+                    total_discovered,
+                )
+
+        discovery_elapsed = max(time.monotonic() - discovery_started, 1e-9)
+        logger.info(
+            "=== Phase 1 complete: %d species, %d tasks, %.1fs wall time, %.2f species/hour; "
+            "discovery workers=%d ===",
+            len(species_list) - len(discovery_failures),
+            total_discovered,
+            discovery_elapsed,
+            len(species_list) / discovery_elapsed * 3600,
+            discovery_worker_count,
+        )
+        if discovery_failures:
+            details = "; ".join(f"{name}: {message}" for name, message in sorted(discovery_failures.items()))
+            raise RuntimeError(
+                "Species discovery failed for "
+                f"{len(discovery_failures)} of {len(species_list)} configurations; "
+                f"no sample tasks were submitted. {details}"
+            )
+
+        # Completion order is nondeterministic under parallel discovery. Keep
+        # configured species order for stable task batches and reproducible
+        # raw-input prioritization.
+        for config_name in species_list:
+            all_tasks.extend(discovered_by_species.get(config_name, []))
 
         with (
             concurrent.futures.ThreadPoolExecutor(max_workers=profile.workers) as executor,
             concurrent.futures.ThreadPoolExecutor(max_workers=profile.fasterq_slots) as fallback_executor,
         ):
-            for idx, config_name in enumerate(species_list, 1):
-                try:
-                    tasks = self.discover_species_tasks(config_name, max_gb, threads)
-                    if tasks:
-                        total_discovered += len(tasks)
-                        logger.info(
-                            f"Collected {len(tasks)} tasks for {config_name}. (Total discovered: {total_discovered})"
-                        )
-                        all_tasks.extend(tasks)
-                except Exception as e:
-                    logger.error(f"Fatal error discovering tasks for {config_name}: {e}")
 
-            logger.info(
-                "=== Phase 1 Complete: All metadata parsed. Phase 2 (Execution) continuing until queue exhaustion. ==="
-            )
+            logger.info("=== Phase 2 start: all metadata parsed; execution continuing until queue exhaustion ===")
 
-            # Discovery is intentionally serial because it owns metadata and
-            # index preparation.  Once discovery is complete, schedule the
-            # global executor by raw-input state so the mounted data already
-            # acquired by earlier campaigns is quantitated and reclaimed first.
+            # Schedule the global executor by raw-input state so mounted data
+            # already acquired by earlier campaigns is quantitated and
+            # reclaimed first.
             # The sort is stable, retaining metadata size order inside each
             # tier and preserving the original quant batch index.
             prioritized_tasks = _prioritize_tasks_by_raw_state(

@@ -9,8 +9,10 @@ checkpoint runner after this producer stops.
 
 Usage:
     python3 scripts/rna/run_all_species.py [--max-gb 50.0] [--workers 4] [--threads 8]
+        [--discovery-workers N]
         [--quant-slots N] [--fastq-threads N] [--fastq-slots N]
         [--compression-threads N] [--validation-slots N] [--max-in-flight N]
+        [--requantification-policy preserve|version-drift|all]
     python3 scripts/rna/run_all_species.py --species solenopsis_invicta --dry-run
 """
 
@@ -22,8 +24,8 @@ from pathlib import Path
 # Add src to python path to allow importing metainformant modules
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent.parent / "src"))
 
-from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
 from metainformant.rna.engine.species import configured_data_root, discover_species_config_names
+from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = REPO_ROOT / "projects" / "hymenoptera_amalgkit" / "config" / "amalgkit"
@@ -69,6 +71,12 @@ def main() -> int:
         "--threads", type=int, default=DEFAULTS["threads"], help=f"Total threads (default: {DEFAULTS['threads']})"
     )
     parser.add_argument(
+        "--discovery-workers",
+        type=int,
+        default=None,
+        help="Concurrent species metadata/reference discovery workers (default: 4; set 1 for serial diagnostics)",
+    )
+    parser.add_argument(
         "--quant-slots",
         type=int,
         default=None,
@@ -103,6 +111,12 @@ def main() -> int:
         type=int,
         default=None,
         help="Maximum submitted sample tasks (default: two times active workers)",
+    )
+    parser.add_argument(
+        "--requantification-policy",
+        choices=("preserve", "version-drift", "all"),
+        default=os.environ.get("AMALGKIT_REQUANTIFICATION_POLICY", "preserve"),
+        help="Handle contract-compatible version drift (default: preserve)",
     )
     args = parser.parse_args()
 
@@ -150,6 +164,8 @@ def main() -> int:
         compression_threads=args.compression_threads,
         validation_slots=args.validation_slots,
         max_in_flight=args.max_in_flight,
+        requantification_policy=args.requantification_policy,
+        discovery_workers=args.discovery_workers,
     )
     return 0
 

@@ -26,7 +26,8 @@ SQLite progress store, typed workflow planner, and hash-bound evidence layer.
 - `StreamingPipelineOrchestrator.run_all()` starts the bounded producer for a
   declared config set.
 - `ProgressDB` stores the states `pending`, `downloading`, `downloaded`,
-  `quantifying`, `quantified`, and `failed`.
+  `quantifying`, `quantified`, `quarantined`, and `failed`, plus quantification
+  compatibility audit records.
 - `plan_workflow()` resolves the fixed per-species chain:
   `metadata → select → getfastq → integrate → quant → merge → wsfilter → finalize → sanity`.
 - `provenance.py` rejects missing, stale, or hash-mismatched receipts.

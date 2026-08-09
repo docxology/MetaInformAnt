@@ -54,7 +54,9 @@ def _species_work_dir(data_root: Path, species: str) -> Path:
 
     for candidate in candidates:
         work_dir = data_root / candidate / "work"
-        if work_dir.is_dir() and any((work_dir / marker).exists() for marker in ("metadata", "index", "quant", "merge")):
+        if work_dir.is_dir() and any(
+            (work_dir / marker).exists() for marker in ("metadata", "index", "quant", "merge")
+        ):
             return work_dir
     for candidate in candidates:
         if (data_root / candidate).is_dir():

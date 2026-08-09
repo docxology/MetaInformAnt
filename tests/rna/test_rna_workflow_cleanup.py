@@ -73,11 +73,13 @@ def _create_abundance(quant_dir: Path, sample_id: str, size: int = 200) -> Path:
     row = "gene_0001\t1000\t800.5\t42.0\t3.14\n"
     content = header + (row * max(1, (size - len(header)) // len(row)))
     abundance_file.write_text(content)
+    config_file = sample_dir / "test_config.yaml"
+    config_file.write_text("quant:\n  threads: 1\n")
     write_quant_provenance(
         sample_dir,
         species="test_species",
         run_accession=sample_id,
-        config_path=sample_dir / "test_config.yaml",
+        config_path=config_file,
         command=["amalgkit", "quant"],
     )
     return abundance_file
@@ -435,11 +437,13 @@ class TestGetQuantifiedSamples:
         sample_dir.mkdir(parents=True)
         ab = sample_dir / "SRR777001_abundance.tsv"
         ab.write_text("target_id\tlength\teff_length\test_counts\ttpm\n" + "g\t100\t90\t10\t1.0\n" * 10)
+        config_file = sample_dir / "test_config.yaml"
+        config_file.write_text("quant:\n  threads: 1\n")
         write_quant_provenance(
             sample_dir,
             species="test_species",
             run_accession="SRR777001",
-            config_path=sample_dir / "test_config.yaml",
+            config_path=config_file,
             command=["amalgkit", "quant"],
         )
 

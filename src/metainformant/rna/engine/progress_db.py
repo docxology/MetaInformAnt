@@ -22,6 +22,7 @@ from typing import Dict, List, Optional
 
 from metainformant.core.utils.logging import get_logger
 from metainformant.rna.core.sample_utils import find_quantification_file
+from metainformant.rna.engine.provenance import QUANT_STATUS_CURRENT, classify_quantification
 
 logger = get_logger(__name__)
 
@@ -35,6 +36,7 @@ VALID_STATES = frozenset(
         "quantifying",
         "quantified",
         "failed",
+        "quarantined",
     }
 )
 
@@ -52,6 +54,22 @@ CREATE TABLE IF NOT EXISTS samples (
 
 CREATE INDEX IF NOT EXISTS idx_species_state
     ON samples(species, state);
+
+CREATE TABLE IF NOT EXISTS quantification_audit (
+    species                    TEXT NOT NULL,
+    srr_id                     TEXT NOT NULL,
+    status                     TEXT NOT NULL,
+    reason                     TEXT NOT NULL,
+    contract_id                TEXT,
+    observed_amalgkit_version  TEXT,
+    observed_release_tag       TEXT,
+    observed_source_revision   TEXT,
+    checked_at                 TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (species, srr_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_quantification_audit_status
+    ON quantification_audit(status);
 """
 
 
@@ -154,6 +172,78 @@ class ProgressDB:
                 else:
                     raise
 
+    def record_quantification_audit(
+        self,
+        species: str,
+        srr_id: str,
+        *,
+        status: str,
+        reason: str,
+        contract_id: Optional[str] = None,
+        observed_amalgkit_version: Optional[str] = None,
+        observed_release_tag: Optional[str] = None,
+        observed_source_revision: Optional[str] = None,
+        state: Optional[str] = None,
+    ) -> None:
+        """Record provenance compatibility and optionally transition sample state atomically."""
+
+        if state is not None and state not in VALID_STATES:
+            raise ValueError(f"Invalid state '{state}'. Must be one of {VALID_STATES}")
+        with self._lock:
+            self._conn.execute(
+                """
+                INSERT INTO quantification_audit (
+                    species, srr_id, status, reason, contract_id,
+                    observed_amalgkit_version, observed_release_tag,
+                    observed_source_revision, checked_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+                ON CONFLICT(species, srr_id) DO UPDATE SET
+                    status = excluded.status,
+                    reason = excluded.reason,
+                    contract_id = excluded.contract_id,
+                    observed_amalgkit_version = excluded.observed_amalgkit_version,
+                    observed_release_tag = excluded.observed_release_tag,
+                    observed_source_revision = excluded.observed_source_revision,
+                    checked_at = excluded.checked_at
+                """,
+                (
+                    species,
+                    srr_id,
+                    status,
+                    reason,
+                    contract_id,
+                    observed_amalgkit_version,
+                    observed_release_tag,
+                    observed_source_revision,
+                ),
+            )
+            if state is not None:
+                self._conn.execute(
+                    "UPDATE samples SET state = ?, error = ?, updated_at = datetime('now') "
+                    "WHERE species = ? AND srr_id = ?",
+                    (state, reason if state == "quarantined" else None, species, srr_id),
+                )
+            self._conn.commit()
+
+    def get_quantification_audit_counts(self, species: Optional[str] = None) -> Dict[str, Dict[str, int]]:
+        """Return provenance compatibility counts grouped by species and status."""
+
+        with self._lock:
+            if species:
+                rows = self._conn.execute(
+                    "SELECT species, status, COUNT(*) FROM quantification_audit "
+                    "WHERE species = ? GROUP BY species, status",
+                    (species,),
+                ).fetchall()
+            else:
+                rows = self._conn.execute(
+                    "SELECT species, status, COUNT(*) FROM quantification_audit GROUP BY species, status"
+                ).fetchall()
+        result: Dict[str, Dict[str, int]] = {}
+        for sp, status, count in rows:
+            result.setdefault(sp, {})[status] = count
+        return result
+
     def bulk_set_state(self, species: str, srr_ids: List[str], state: str, error: Optional[str] = None) -> None:
         """Set state for multiple samples at once."""
         if state not in VALID_STATES:
@@ -240,13 +330,43 @@ class ProgressDB:
                 ).fetchall()
         return [{"species": r[0], "srr_id": r[1], "error": r[2], "updated_at": r[3]} for r in rows]
 
+    def reset_stale_downloading(self, stale_seconds: int, error: str | None = None) -> int:
+        """Reset stale downloading states to pending for resume resilience."""
+
+        if stale_seconds <= 0:
+            return 0
+        if error is None:
+            error = f"reset stale downloading heartbeat > {stale_seconds}s"
+        with self._lock:
+            rows = self._conn.execute(
+                "SELECT species, srr_id FROM samples WHERE state = 'downloading' "
+                "AND (strftime('%s', 'now') - strftime('%s', updated_at)) > ?",
+                (stale_seconds,),
+            ).fetchall()
+            if not rows:
+                return 0
+            self._conn.executemany(
+                "UPDATE samples SET state = 'pending', error = ?, updated_at = datetime('now') "
+                "WHERE species = ? AND srr_id = ?",
+                [(error, species, srr_id) for species, srr_id in rows],
+            )
+            self._conn.commit()
+        return len(rows)
+
     # ---- Reconciliation ----
 
-    def reconcile(self, species: str, quant_dir: Path) -> int:
-        """Detect already-quantified samples from filesystem and update DB.
+    def reconcile(
+        self,
+        species: str,
+        quant_dir: Path,
+        *,
+        config_path: Path | None = None,
+        reference_manifest_path: Path | None = None,
+    ) -> int:
+        """Reconcile only provenance-qualified current quantification outputs.
 
-        Scans ``quant_dir`` for subdirectories containing abundance output
-        and marks those samples as 'quantified' in the database.
+        Readable abundance files without a current provenance sidecar remain
+        visible on disk but are not promoted to ``quantified`` in the DB.
 
         Args:
             species: Species name.
@@ -260,12 +380,23 @@ class ProgressDB:
             return 0
 
         reconciled = []
+        rejected = []
         try:
             for subdir in quant_dir.iterdir():
                 if not subdir.is_dir():
                     continue
-                if find_quantification_file(subdir, subdir.name) is not None:
+                if find_quantification_file(subdir, subdir.name) is None:
+                    continue
+                classification = classify_quantification(
+                    subdir,
+                    subdir.name,
+                    expected_config_path=config_path,
+                    expected_reference_manifest_path=reference_manifest_path,
+                )
+                if classification.get("status") == QUANT_STATUS_CURRENT:
                     reconciled.append(subdir.name)
+                else:
+                    rejected.append((subdir.name, classification.get("status", "unknown")))
         except Exception as e:
             logger.warning(f"Reconciliation scan failed for {species}: {e}")
             return 0
@@ -273,6 +404,13 @@ class ProgressDB:
         if reconciled:
             self.bulk_set_state(species, reconciled, "quantified")
             logger.info(f"Reconciled {len(reconciled)} quantified samples for {species}")
+        if rejected:
+            logger.info(
+                "Left %d readable but non-current quantifications visible for %s: %s",
+                len(rejected),
+                species,
+                ", ".join(f"{sample}={status}" for sample, status in rejected[:10]),
+            )
 
         return len(reconciled)
 

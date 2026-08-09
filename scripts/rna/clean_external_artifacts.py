@@ -45,7 +45,9 @@ def _parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Select only legacy quant directories; requires --archive-legacy-quant",
     )
-    parser.add_argument("--clear-stale-results", action="store_true", help="Also archive stale report/cross-species outputs")
+    parser.add_argument(
+        "--clear-stale-results", action="store_true", help="Also archive stale report/cross-species outputs"
+    )
     parser.add_argument(
         "--archive-superseded-alias",
         action="append",
@@ -108,7 +110,7 @@ def _legacy_quant_candidates(data_root: Path, keep_paths: set[Path]) -> list[Pat
 
     A plain ``abundance.tsv`` is not sufficient evidence for the current
     workflow. Only direct children of ``*/work/quant`` with that legacy
-    filename and without the current provenance sidecar are selected. Empty,
+    filename and without contract-verified provenance are selected. Empty,
     partial, accession-qualified, and current-provenance directories remain
     available for resume and downstream validation.
     """
@@ -184,10 +186,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.archive_legacy_quant and args.execute:
         active_lock = _active_writer_lock(data_root)
         if active_lock is not None:
-            raise SystemExit(
-                "refusing legacy quant archival while an active writer lock exists: "
-                f"{active_lock}"
-            )
+            raise SystemExit("refusing legacy quant archival while an active writer lock exists: " f"{active_lock}")
 
     candidates = [] if args.legacy_quant_only else _candidates(data_root, args.clear_stale_results, keep_paths)
     if args.archive_legacy_quant:
@@ -197,10 +196,7 @@ def main(argv: list[str] | None = None) -> int:
     for alias in args.archive_superseded_alias:
         alias_root = (data_root / alias).resolve()
         if alias_root.parent != data_root or not alias_root.is_dir():
-            raise SystemExit(
-                "superseded alias must be an existing direct child of data root: "
-                f"{alias_root}"
-            )
+            raise SystemExit("superseded alias must be an existing direct child of data root: " f"{alias_root}")
         for path in alias_root.rglob("*"):
             if path.name in {".metainformant_quant_provenance.json", ".metainformant_downstream_provenance.json"}:
                 raise SystemExit(f"refusing to archive alias containing current evidence: {path}")
@@ -213,9 +209,7 @@ def main(argv: list[str] | None = None) -> int:
     if alias_roots:
         candidates = [path for path in candidates if not any(alias in path.parents for alias in alias_roots)]
         candidates.extend(
-            alias
-            for alias in alias_roots
-            if not any(alias == kept or alias in kept.parents for kept in keep_paths)
+            alias for alias in alias_roots if not any(alias == kept or alias in kept.parents for kept in keep_paths)
         )
         candidates = sorted(set(candidates))
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -256,7 +250,11 @@ def main(argv: list[str] | None = None) -> int:
         "records": records,
     }
     manifest.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
-    print(json.dumps({"manifest": str(manifest), "mode": payload["mode"], "candidate_count": len(candidates)}, sort_keys=True))
+    print(
+        json.dumps(
+            {"manifest": str(manifest), "mode": payload["mode"], "candidate_count": len(candidates)}, sort_keys=True
+        )
+    )
     return 0
 
 

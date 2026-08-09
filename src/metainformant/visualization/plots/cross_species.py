@@ -622,6 +622,102 @@ def plot_species_summary(feature_stats: pd.DataFrame, output_path: Path) -> None
     logger.info(f"Saved species feature summary to {output_path}")
 
 
+def plot_profile_quality(profile_quality: pd.DataFrame, output_path: Path) -> None:
+    """Plot finite/positive/zero feature coverage with redundant encodings."""
+
+    required = {"species", "positive_features", "zero_features", "nonfinite_features"}
+    if not required.issubset(profile_quality.columns):
+        raise ValueError(f"Profile-quality table requires columns: {sorted(required)}")
+    frame = profile_quality.sort_values("positive_features", ascending=True).reset_index(drop=True)
+    fig, ax = plt.subplots(figsize=(12, max(7, len(frame) * 0.38)))
+    y = np.arange(len(frame))
+    left = np.zeros(len(frame), dtype=float)
+    segments = (
+        ("positive_features", "Positive finite", "#0072B2", "\\"),
+        ("zero_features", "Finite zero", "#E69F00", "."),
+        ("nonfinite_features", "Non-finite", "#D55E00", "x"),
+    )
+    for column, label, color, hatch in segments:
+        values = frame[column].to_numpy(dtype=float)
+        ax.barh(y, values, left=left, color=color, edgecolor="#222222", hatch=hatch, label=label)
+        left += values
+    ax.set_yticks(y)
+    ax.set_yticklabels([_fmt(value) for value in frame["species"]])
+    ax.set_xlabel("Feature rows in finalized input profile")
+    ax.set_title("Expression-Profile Quality and Coverage")
+    ax.legend(loc="lower right", frameon=True)
+    ax.grid(axis="x", color="#D9D9D9", linewidth=0.6)
+    ax.set_axisbelow(True)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close()
+    logger.info(f"Saved profile-quality figure to {output_path}")
+
+
+def plot_divergence_stability(
+    stability: pd.DataFrame,
+    output_path: Path,
+    *,
+    max_pairs: int = 24,
+) -> None:
+    """Plot widest feature-resampling sensitivity intervals, not CIs."""
+
+    required = {
+        "species_a",
+        "species_b",
+        "point_estimate",
+        "sensitivity_lower",
+        "sensitivity_upper",
+        "sensitivity_iqr",
+    }
+    if not required.issubset(stability.columns):
+        raise ValueError(f"Stability table requires columns: {sorted(required)}")
+    if max_pairs < 1:
+        raise ValueError("max_pairs must be positive")
+    frame = (
+        stability.sort_values(["sensitivity_iqr", "species_a", "species_b"], ascending=[False, True, True])
+        .head(max_pairs)
+        .sort_values("sensitivity_iqr", ascending=True)
+    )
+    y = np.arange(len(frame))
+    point = frame["point_estimate"].to_numpy(dtype=float)
+    lower = np.maximum(0.0, point - frame["sensitivity_lower"].to_numpy(dtype=float))
+    upper = np.maximum(0.0, frame["sensitivity_upper"].to_numpy(dtype=float) - point)
+    fig, ax = plt.subplots(figsize=(13, max(7, len(frame) * 0.34)))
+    ax.errorbar(
+        point,
+        y,
+        xerr=np.vstack([lower, upper]),
+        fmt="o",
+        color="#0072B2",
+        ecolor="#333333",
+        elinewidth=1.2,
+        capsize=3,
+        label="Point estimate with feature-resampling sensitivity interval",
+    )
+    ax.set_yticks(y)
+    ax.set_yticklabels([f"{a} vs {b}" for a, b in zip(frame["species_a"], frame["species_b"])])
+    ax.set_xlim(_DIVERGENCE_VMIN, _DIVERGENCE_VMAX)
+    ax.set_xlabel("Divergence (1 − Spearman rho)")
+    ax.set_title("Feature-Resampling Stability of Pairwise Divergence")
+    ax.text(
+        0.99,
+        1.01,
+        "Intervals are sensitivity diagnostics, not confidence intervals",
+        transform=ax.transAxes,
+        ha="right",
+        va="bottom",
+        fontsize=8,
+    )
+    ax.grid(axis="x", color="#D9D9D9", linewidth=0.6)
+    ax.set_axisbelow(True)
+    ax.legend(loc="lower right", frameon=True)
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches="tight")
+    plt.close()
+    logger.info(f"Saved divergence-stability figure to {output_path}")
+
+
 def plot_combined_summary(
     div_matrix: pd.DataFrame,
     output_path: Path,

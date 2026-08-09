@@ -552,7 +552,7 @@ def test_missing_sra_statistics_are_derived_from_validated_fastq(
 def test_positive_sra_counts_avoid_recount_when_spot_length_is_missing(
     tmp_path: Path,
 ) -> None:
-    """Amalgkit 0.16.33 can infer spot length from positive SRA counts."""
+    """Amalgkit 0.16.38 can infer spot length from positive SRA counts."""
 
     metadata_path = tmp_path / "metadata.tsv"
     metadata_path.write_text(
@@ -974,7 +974,7 @@ def test_fasterq_interleaved_paired_output_is_split_and_promoted(
 def test_fasterq_paired_metadata_single_read_output_is_reconciled(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A read-1-only archive follows Amalgkit 0.16.33's single-file rule."""
+    """A read-1-only archive follows Amalgkit 0.16.38's single-file rule."""
 
     fastq_root = tmp_path / "fastq"
     sample_dir = fastq_root / "SRR_LAYOUT_MISMATCH"
@@ -1012,7 +1012,7 @@ def test_fasterq_paired_metadata_single_read_output_is_reconciled(
     marker = json.loads((tmp_path / "raw_validation" / "SRR_LAYOUT_MISMATCH.json").read_text())
     assert marker["declared_library_layout"] == "paired"
     assert marker["effective_library_layout"] == "single"
-    assert marker["layout_reconciliation"] == "amalgkit_0.16.33_paired_metadata_single_fastq"
+    assert marker["layout_reconciliation"] == "amalgkit_0.16.38_paired_metadata_single_fastq"
 
 
 def test_fasterq_nonadjacent_mate_two_is_not_downgraded_to_single(
@@ -1413,6 +1413,7 @@ def test_run_all_keeps_submitted_sample_tasks_bounded(tmp_path: Path, monkeypatc
     class RecordingExecutor:
         def __init__(self, max_workers: int) -> None:
             self.executor = RealThreadPoolExecutor(max_workers=max_workers)
+            self.max_workers = max_workers
             self.pending = 0
             self.max_pending = 0
             self.lock = threading.Lock()
@@ -1456,11 +1457,95 @@ def test_run_all_keeps_submitted_sample_tasks_bounded(tmp_path: Path, monkeypatc
         workers=2,
         threads=2,
         max_in_flight=2,
+        discovery_workers=1,
     )
 
-    executor = executors[0]
+    executor = max(executors, key=lambda item: item.max_workers)
     assert isinstance(executor, RecordingExecutor)
     assert executor.max_pending <= 2
+
+
+def test_run_all_parallelizes_discovery_and_preserves_species_order(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Discovery overlaps, but the execution task list follows config order."""
+
+    orchestrator = StreamingPipelineOrchestrator(
+        tmp_path / "config",
+        tmp_path / "logs",
+        db_path=tmp_path / "progress.db",
+    )
+    started: list[str] = []
+    barrier = threading.Barrier(3)
+
+    def fake_discover(config_name: str, *_args: object) -> list[dict[str, object]]:
+        started.append(config_name)
+        barrier.wait(timeout=2)
+        species = config_name.removeprefix("amalgkit_").removesuffix(".yaml")
+        return [
+            {
+                "srr": species,
+                "batch_idx": 1,
+                "fastq_dir": tmp_path / "fastq" / species,
+                "config_path": tmp_path / f"{species}.yaml",
+                "species_name": species,
+            }
+        ]
+
+    observed: list[str] = []
+
+    def fake_process(*args: object, **_kwargs: object) -> dict[str, object]:
+        observed.append(str(args[4]))
+        return {"quantified": True, "skipped": False, "error": None}
+
+    monkeypatch.setattr(orchestrator, "discover_species_tasks", fake_discover)
+    monkeypatch.setattr(orchestrator, "process_single_sample", fake_process)
+    orchestrator.run_all(
+        ["amalgkit_first.yaml", "amalgkit_second.yaml", "amalgkit_third.yaml"],
+        max_gb=1.0,
+        workers=1,
+        threads=1,
+        max_in_flight=1,
+        discovery_workers=3,
+    )
+
+    assert set(started) == {"amalgkit_first.yaml", "amalgkit_second.yaml", "amalgkit_third.yaml"}
+    assert observed == ["first", "second", "third"]
+
+
+def test_run_all_aborts_before_execution_on_discovery_exception(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A failed species discovery cannot silently produce a partial campaign."""
+
+    orchestrator = StreamingPipelineOrchestrator(
+        tmp_path / "config",
+        tmp_path / "logs",
+        db_path=tmp_path / "progress.db",
+    )
+    executed = False
+
+    def fake_discover(config_name: str, *_args: object) -> list[dict[str, object]]:
+        if config_name == "amalgkit_bad.yaml":
+            raise RuntimeError("reference preparation failed")
+        return []
+
+    def fake_process(*_args: object, **_kwargs: object) -> dict[str, object]:
+        nonlocal executed
+        executed = True
+        return {"quantified": True, "skipped": False, "error": None}
+
+    monkeypatch.setattr(orchestrator, "discover_species_tasks", fake_discover)
+    monkeypatch.setattr(orchestrator, "process_single_sample", fake_process)
+    with pytest.raises(RuntimeError, match="Species discovery failed"):
+        orchestrator.run_all(
+            ["amalgkit_good.yaml", "amalgkit_bad.yaml"],
+            max_gb=1.0,
+            workers=1,
+            threads=1,
+            discovery_workers=2,
+        )
+    assert executed is False
 
 
 def test_run_all_routes_deferred_ncbi_acquisition_back_to_primary_lane(
@@ -2049,14 +2134,21 @@ def test_non_current_state_reconciliation_uses_validation_slot_budget(
         RecordingExecutor,
     )
     monkeypatch.setattr(
-        orchestrator,
-        "is_quantified",
-        lambda _species, sample_id: sample_id != "SRR3",
+        orchestrator_module,
+        "classify_quantification",
+        lambda _sample_dir, sample_id: {
+            "status": "invalid" if sample_id == "SRR3" else "current",
+            "reason": "test invalid" if sample_id == "SRR3" else "test current",
+            "contract_id": None,
+            "observed_amalgkit_version": None,
+            "observed_release_tag": None,
+            "observed_source_revision": None,
+        },
     )
 
     assert orchestrator._reset_non_current_quantified_states("test_species") == 1
     assert observed_workers == [3]
-    assert orchestrator.db.get_state("test_species", "SRR3") == "pending"
+    assert orchestrator.db.get_state("test_species", "SRR3") == "quarantined"
     assert orchestrator.db.get_state("test_species", "SRR1") == "quantified"
 
 

@@ -151,10 +151,12 @@ class TestDiscoveryDocumentation:
             pytest.skip("Biopython not available")
 
         # If available, test basic functionality
-        result = discovery.search_species_with_rnaseq(
-            "Homo sapiens",
-            max_records=3,
-        )
+        with pytest.warns(RuntimeWarning, match="anonymous NCBI request"):
+            result = discovery.search_species_with_rnaseq(
+                "Homo sapiens",
+                max_records=3,
+                allow_anonymous=True,
+            )
         assert isinstance(result, dict)
         assert "query" in result
         assert "results" in result

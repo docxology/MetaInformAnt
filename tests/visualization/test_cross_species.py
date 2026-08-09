@@ -113,3 +113,39 @@ def test_cross_species_plot_rejects_incomplete_divergence_matrix(
 
     with pytest.raises(ValueError, match="non-finite"):
         cross_species.plot_dendrogram(matrix, tmp_path / "dendrogram.png")
+
+
+def test_profile_quality_plot_uses_source_table_columns(tmp_path: Path) -> None:
+    """Profile quality figures render from explicit validity counts."""
+
+    quality = pd.DataFrame(
+        {
+            "species": ["sp_a", "sp_b"],
+            "positive_features": [90, 80],
+            "zero_features": [10, 20],
+            "nonfinite_features": [0, 1],
+        }
+    )
+    output = tmp_path / "profile_quality.png"
+    cross_species.plot_profile_quality(quality, output)
+    assert output.is_file()
+    plt.close("all")
+
+
+def test_divergence_stability_plot_has_fixed_descriptive_scale(tmp_path: Path) -> None:
+    """Sensitivity intervals use the same bounded descriptive distance scale."""
+
+    stability = pd.DataFrame(
+        {
+            "species_a": ["sp_a", "sp_a"],
+            "species_b": ["sp_b", "sp_c"],
+            "point_estimate": [0.4, 1.1],
+            "sensitivity_lower": [0.2, 0.8],
+            "sensitivity_upper": [0.7, 1.4],
+            "sensitivity_iqr": [0.5, 0.6],
+        }
+    )
+    output = tmp_path / "divergence_stability.png"
+    cross_species.plot_divergence_stability(stability, output)
+    assert output.is_file()
+    plt.close("all")

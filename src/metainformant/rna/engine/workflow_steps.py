@@ -1,17 +1,17 @@
 """Workflow step helpers - prerequisite validation, post-step actions, and setup.
 
 Extracted from workflow.py to reduce its complexity. These functions handle
-the vdb-config setup, step prerequisite validation, post-step processing,
-and workflow summary reporting.
+campaign-local SRA environment setup, step prerequisite validation, post-step
+processing, and workflow summary reporting.
 """
 
 from __future__ import annotations
 
-import subprocess
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple
 
 from metainformant.core.utils import logging
+from metainformant.rna.amalgkit.sra_environment import build_sra_environment
 from metainformant.rna.engine.sra_extraction import extract_sra_directly
 from metainformant.rna.engine.workflow_cleanup import (
     check_disk_space_or_fail,
@@ -31,11 +31,10 @@ def setup_vdb_config(
     config: AmalgkitWorkflowConfig,
     steps_planned: List[Tuple[str, Dict[str, Any]]],
 ) -> List[Tuple[str, Dict[str, Any]]]:
-    """Configure vdb-config repository path and prepare getfastq step.
+    """Prepare a campaign-local SRA environment and the getfastq step.
 
-    Sets up SRA Toolkit's vdb-config to download to the correct location,
-    cleans up misplaced SRA files, filters metadata for unquantified samples,
-    and prepares extraction metadata.
+    SRA Toolkit configuration is passed through subprocess environment
+    variables; this function never mutates user-global vdb configuration.
 
     Args:
         config: Workflow configuration
@@ -60,26 +59,22 @@ def setup_vdb_config(
         if free_gb < 20.0:
             logger.warning(f"Low disk space ({free_gb:.1f}GB) - workflow may fail during downloads")
 
-        # Clean up misplaced SRA files
-        cleanup_incorrectly_placed_sra_files(getfastq_dir)
+        # The campaign-local environment prevents misplaced downloads. Do not
+        # scan or mutate home-directory or system temporary SRA locations.
+        cleanup_incorrectly_placed_sra_files(getfastq_dir, source_dirs=())
 
         # Clean up temp files
         repo_root = Path(__file__).resolve().parent.parent.parent.parent
         tmp_dir = repo_root / ".tmp" / "fasterq-dump"
         cleanup_temp_files(tmp_dir, max_size_gb=50.0)
 
-        # Configure vdb-config repository path
-        result = subprocess.run(
-            ["vdb-config", "-s", f"/repository/user/main/public/root={getfastq_dir}"],
-            capture_output=True,
-            text=True,
-            timeout=5,
+        sra_environment = build_sra_environment(config.work_dir)
+        logger.info(
+            "Using campaign-local SRA environment: NCBI_SETTINGS=%s TMPDIR=%s VDB_CONFIG=%s",
+            sra_environment["NCBI_SETTINGS"],
+            sra_environment["TMPDIR"],
+            sra_environment["VDB_CONFIG"],
         )
-        if result.returncode == 0:
-            logger.info(f"Configured vdb-config repository path for prefetch: {getfastq_dir}")
-        else:
-            logger.warning(f"Could not set vdb-config repository path (may require interactive): {result.stderr[:100]}")
-            logger.info("Will rely on TMPDIR and VDB_CONFIG environment variables")
 
         # Prepare extraction directories
         from metainformant.rna.engine.workflow import prepare_extraction_directories
@@ -114,8 +109,7 @@ def setup_vdb_config(
                         logger.info(f"Using extraction metadata ({num_samples} samples) for getfastq step")
 
     except Exception as e:
-        logger.warning(f"Could not configure vdb-config: {e}")
-        logger.info("Will rely on TMPDIR and VDB_CONFIG environment variables")
+        logger.warning(f"Could not prepare campaign-local SRA environment: {e}")
 
     return steps_planned
 

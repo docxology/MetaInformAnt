@@ -31,6 +31,7 @@ import importlib.util
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from metainformant.core.ncbi import resolve_ncbi_contact
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
@@ -205,7 +206,13 @@ def _select_best_assembly(assemblies: list[Dict[str, Any]]) -> Optional[Dict[str
     return best
 
 
-def search_species_with_rnaseq(query: str, max_records: int = 10, email: Optional[str] = None) -> Dict[str, Any]:
+def search_species_with_rnaseq(
+    query: str,
+    max_records: int = 10,
+    email: Optional[str] = None,
+    *,
+    allow_anonymous: bool = False,
+) -> Dict[str, Any]:
     """Search for species with RNA-seq data available.
 
     Searches NCBI Entrez SRA database for RNA-seq studies related to the given query.
@@ -214,7 +221,8 @@ def search_species_with_rnaseq(query: str, max_records: int = 10, email: Optiona
     Args:
         query: Search query (species name, taxonomy ID, etc.)
         max_records: Maximum number of results to return
-        email: Email for NCBI Entrez (required by NCBI, uses env var NCBI_EMAIL if not provided)
+        email: Explicit email for NCBI Entrez; otherwise ``NCBI_EMAIL`` is used.
+        allow_anonymous: Explicitly permit an anonymous request.
 
     Returns:
         Dictionary with:
@@ -235,11 +243,9 @@ def search_species_with_rnaseq(query: str, max_records: int = 10, email: Optiona
     if not BIOPYTHON_AVAILABLE:
         raise ImportError("BioPython required for species search. Install with: uv pip install biopython")
 
-    import os
-
-    # Set email for NCBI (required by NCBI policy)
-    entrez_email = email or os.environ.get("NCBI_EMAIL", "metainformant@example.com")
-    Entrez.email = entrez_email
+    contact = resolve_ncbi_contact(email, allow_anonymous=allow_anonymous)
+    setattr(Entrez, "email", contact.email)
+    logger.info("NCBI contact mode: %s", contact.mode)
 
     logger.info(f"Searching NCBI SRA for RNA-seq data: {query}")
 
@@ -258,7 +264,7 @@ def search_species_with_rnaseq(query: str, max_records: int = 10, email: Optiona
 
         if not id_list:
             logger.info(f"No RNA-seq data found for query: {query}")
-            return {"query": query, "results": [], "total": 0, "returned": 0}
+            return {"query": query, "results": [], "total": 0, "returned": 0, "contact_mode": contact.mode}
 
         # Fetch detailed records for the found IDs
         logger.info(f"Found {total_count} records, fetching details for {len(id_list)}")
@@ -270,7 +276,13 @@ def search_species_with_rnaseq(query: str, max_records: int = 10, email: Optiona
         # Parse the XML response
         results = _parse_sra_xml(fetch_data, query)
 
-        return {"query": query, "results": results, "total": total_count, "returned": len(results)}
+        return {
+            "query": query,
+            "results": results,
+            "total": total_count,
+            "returned": len(results),
+            "contact_mode": contact.mode,
+        }
 
     except Exception as e:
         logger.error(f"NCBI Entrez query failed: {e}")
@@ -516,10 +528,10 @@ def _get_genome_info_fallback(taxonomy_id: str, species_name: str) -> Optional[D
     if not BIOPYTHON_AVAILABLE:
         return None
 
-    import os
-
     try:
-        Entrez.email = os.environ.get("NCBI_EMAIL", "metainformant@example.com")
+        contact = resolve_ncbi_contact(allow_anonymous=False)
+        setattr(Entrez, "email", contact.email)
+        logger.info("NCBI contact mode: %s", contact.mode)
 
         # Search NCBI Assembly database
         search_query = f'({species_name}[Organism]) AND "latest refseq"[filter]'
