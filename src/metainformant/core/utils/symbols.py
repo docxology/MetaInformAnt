@@ -68,6 +68,7 @@ _SKIPPED_INDEX_DIRECTORIES = {
     ".mypy_cache",
     ".pytest_cache",
     ".ruff_cache",
+    ".uv-cache",
     ".venv",
     "__pycache__",
     "build",

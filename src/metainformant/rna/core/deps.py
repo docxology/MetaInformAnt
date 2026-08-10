@@ -271,6 +271,6 @@ def check_step_dependencies(step_name: str, params: Dict[str, Any], config: Any)
         tool = params.get("tool", "kallisto")
         tools = check_quantification_tools()
         if tool in tools and not tools[tool][0]:
-            return False, f"Quantification tool '{tool}' not available: {tools[tool][1]}"
+            return False, f"PREREQUISITE CHECK FAILED: Quantification tool '{tool}' not available: {tools[tool][1]}"
 
     return True, ""
