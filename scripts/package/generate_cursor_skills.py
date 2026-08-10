@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import os
 import re
 import sys
 from pathlib import Path
@@ -29,6 +30,7 @@ SKIP_DIR_NAMES = frozenset(
         "dist",
         "build",
         ".tmp",
+        "tmp",
         ".uv-cache",
         ".mypy_cache",
         ".pytest_cache",
@@ -54,9 +56,14 @@ def should_skip_agents_path(path: Path, repo: Path) -> bool:
 
 def iter_agents_files(repo: Path) -> list[Path]:
     found: list[Path] = []
-    for p in repo.rglob("AGENTS.md"):
-        if p.is_file() and not should_skip_agents_path(p, repo):
-            found.append(p)
+    # Prune excluded trees while walking.  A post-filtered rglob still visits
+    # every file under preserved runtime artifacts such as ``tmp/``.
+    for directory, dirnames, filenames in os.walk(repo, followlinks=False):
+        dirnames[:] = sorted(name for name in dirnames if name not in SKIP_DIR_NAMES)
+        if "AGENTS.md" in filenames:
+            path = Path(directory) / "AGENTS.md"
+            if not should_skip_agents_path(path, repo):
+                found.append(path)
     return sorted(found, key=lambda x: str(x))
 
 
@@ -143,7 +150,8 @@ def build_skill_body(agents_file: Path, repo: Path, skill_md: Path) -> str:
         lines.append(f"- Optional overview: [`README.md`]({rl}).")
     lines.extend(
         [
-            f"- Global rules: [`CLAUDE.md`]({up}CLAUDE.md) at repo root (uv, `output/`, `.tmp/`, real implementations).",
+            f"- Global rules: [`CLAUDE.md`]({up}CLAUDE.md) at repo root "
+            "(uv, `output/`, `.tmp/`, real implementations).",
             f"- Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`]({up}docs/REAL_IMPLEMENTATION_POLICY.md).",
             "- Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.",
             "",
