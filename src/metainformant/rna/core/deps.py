@@ -60,7 +60,9 @@ def check_quantification_tools() -> Dict[str, Tuple[bool, str]]:
             tools["kallisto"] = (True, version)
         else:
             tools["kallisto"] = (False, f"Return code {result.returncode}")
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as e:
+    except FileNotFoundError:
+        tools["kallisto"] = (False, "kallisto not found in PATH")
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         tools["kallisto"] = (False, str(e))
 
     # Check salmon
@@ -71,7 +73,9 @@ def check_quantification_tools() -> Dict[str, Tuple[bool, str]]:
             tools["salmon"] = (True, version)
         else:
             tools["salmon"] = (False, f"Return code {result.returncode}")
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as e:
+    except FileNotFoundError:
+        tools["salmon"] = (False, "salmon not found in PATH")
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         tools["salmon"] = (False, str(e))
 
     return tools

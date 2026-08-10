@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import ast
 import difflib
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -60,6 +61,32 @@ def _get_cache_file(repo_root: Path, index_type: str) -> Path:
     """Get cache file path for symbol index."""
     cache_dir = _get_cache_dir(repo_root)
     return cache_dir / f"symbol_index_{index_type}.json"
+
+
+_SKIPPED_INDEX_DIRECTORIES = {
+    ".git",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "node_modules",
+    "output",
+    "projects",
+    "tmp",
+    "venv",
+}
+
+
+def _iter_python_files(repo_root: Path):
+    """Yield maintained Python files without traversing generated or nested repos."""
+    for directory, dirnames, filenames in os.walk(repo_root):
+        dirnames[:] = sorted(name for name in dirnames if name not in _SKIPPED_INDEX_DIRECTORIES)
+        for filename in sorted(filenames):
+            if filename.endswith(".py"):
+                yield Path(directory) / filename
 
 
 def _parse_function_signature(node: ast.FunctionDef) -> str:
@@ -160,9 +187,7 @@ def index_functions(repo_root: str | Path, use_cache: bool = True) -> dict[str, 
     index: dict[str, list[SymbolDefinition]] = {}
 
     # Scan Python files
-    for py_file in repo_root.rglob("*.py"):
-        if "__pycache__" in str(py_file) or ".pyc" in str(py_file):
-            continue
+    for py_file in _iter_python_files(repo_root):
 
         try:
             with open(py_file, "rt", encoding="utf-8") as f:
@@ -251,9 +276,7 @@ def index_classes(repo_root: str | Path, use_cache: bool = True) -> dict[str, li
     index: dict[str, list[SymbolDefinition]] = {}
 
     # Scan Python files
-    for py_file in repo_root.rglob("*.py"):
-        if "__pycache__" in str(py_file) or ".pyc" in str(py_file):
-            continue
+    for py_file in _iter_python_files(repo_root):
 
         try:
             with open(py_file, "rt", encoding="utf-8") as f:

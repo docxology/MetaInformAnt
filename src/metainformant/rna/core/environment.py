@@ -177,7 +177,9 @@ def check_rscript() -> Tuple[bool, str]:
         else:
             return False, f"Command failed with return code {result.returncode}"
 
-    except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError) as e:
+    except FileNotFoundError:
+        return False, "Rscript not found in PATH"
+    except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
         return False, str(e)
 
 

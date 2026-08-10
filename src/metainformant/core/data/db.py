@@ -377,7 +377,14 @@ def get_db_client(
         warn_optional_dependency("psycopg2", "PostgreSQL database operations")
         raise ImportError("psycopg2 required for database operations")
 
-    return PostgresConnection(host=host, port=port, database=database, user=user, password=password, **kwargs)
+    try:
+        return PostgresConnection(host=host, port=port, database=database, user=user, password=password, **kwargs)
+    except Exception as exc:
+        # Pool construction performs an external connection attempt.  Keep
+        # optional database failures inside this package's actionable error
+        # contract instead of leaking driver-specific exceptions.
+        logger.error("Failed to initialize PostgreSQL connection pool: %s", exc)
+        raise RuntimeError(f"Database connection pool unavailable: {exc}") from exc
 
 
 def sanitize_connection_params(params: Dict[str, Any]) -> Dict[str, Any]:

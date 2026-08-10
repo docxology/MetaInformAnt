@@ -238,8 +238,11 @@ def leiden_clustering(
         logger.info(f"Leiden clustering: {len(set(labels))} clusters, modularity={modularity:.4f}")
         return labels, modularity
 
-    except ImportError:
-        logger.info("leidenalg not available; using greedy modularity fallback")
+    except (ImportError, SyntaxError) as exc:
+        # Some optional leidenalg releases fail during import because of an
+        # invalid escape in an upstream docstring.  Treat that as unavailable
+        # and use the deterministic in-package fallback.
+        logger.info("leidenalg unavailable (%s); using greedy modularity fallback", exc)
 
     # Fallback: greedy modularity optimization (simplified Louvain-like)
     return _greedy_modularity_clustering(adj, resolution=resolution, seed=seed)

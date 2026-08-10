@@ -6,6 +6,7 @@ import os
 
 import pytest
 
+import metainformant.core.data.db as db_module
 from metainformant.core.data.db import (
     build_postgres_url,
     get_db_client,
@@ -82,7 +83,7 @@ class TestDatabaseConnection:
             finally:
                 client.release_connection(connection)
 
-    def test_get_db_client_without_config(self):
+    def test_get_db_client_without_config(self, monkeypatch):
         """Test database client creation fails gracefully without configuration."""
         # Save original environment
         original_env = {}
@@ -92,7 +93,9 @@ class TestDatabaseConnection:
                 del os.environ[key]
 
         try:
-            # Should raise ImportError first since psycopg2 is not available
+            # Exercise the optional-dependency branch deterministically even
+            # when the hosted test environment includes psycopg2.
+            monkeypatch.setattr(db_module, "HAS_PSYCOPG2", False)
             with pytest.raises(ImportError, match="psycopg2 required for database operations"):
                 get_db_client()
         finally:
