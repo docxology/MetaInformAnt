@@ -334,7 +334,7 @@ Large biobank-scale VCFs (N > 500k variants) demand parallelism:
 
 ```python-snippet
 # For chromosomes 1–22 in parallel (independent):
-from metainformant.core.parallel import map_over_chromosomes
+from metainformant.core.execution.parallel import thread_map
 from metainformant.cloud import submit_batch
 
 def gwas_chromosome(chrom: int):
@@ -346,8 +346,9 @@ def gwas_chromosome(chrom: int):
         kinship=chr_grm,
     )
 
-# Use native parallel map (multi-core):
-results = map_over_chromosomes(gwas_chromosome, range(1, 23), workers=8)
+# Use the maintained native thread map for independent I/O-heavy chromosome
+# tasks. Use process_map with a top-level picklable function for CPU-bound work.
+results = thread_map(gwas_chromosome, range(1, 23), max_workers=8)
 
 # Or offload to AWS Batch via cloud module:
 job_ids = [

@@ -174,7 +174,7 @@ def test_api_integration() -> None:
 
 Optional tools for workflows:
 
-- **amalgkit**: `uv sync --extra rna` (exact `0.16.32`)
+- **amalgkit**: `uv sync --extra rna` (exact `0.16.59`)
 - **SRA Toolkit**: `apt-get install sra-toolkit`
 - **samtools/bcftools/bwa**: `apt-get install samtools bcftools bwa`
 - **muscle/clustalo**: `apt-get install muscle clustalo`

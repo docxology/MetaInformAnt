@@ -20,7 +20,7 @@ scoring, phenotype classification, drug‑specific recommendation lookup.
 | Scale | Inputs | Strategy |
 |-------|--------|----------|
 | 1 patient | 10–40 rsIDs | direct call (<10 ms) |
-| 1–10 k cohort | 10–40 rsIDs each | `parallel.map` workers 4–8 |
+| 1–10 k cohort | 10–40 rsIDs each | `parallel.thread_map` workers 4–8 |
 | 100 k–1 M | same | Dask distributed + Parquet output |
 
 Memory: static tables ~4 MB shared; per‑sample transient ~2 KB.
@@ -45,6 +45,5 @@ Memory: static tables ~4 MB shared; per‑sample transient ~2 KB.
 | `classify_phenotype()` | 0.08 ms |
 | `predict_metabolizer()` | 7.1 ms |
 | CPIC lookup | 0.2 ms |
-
 
 

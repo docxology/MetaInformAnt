@@ -20,6 +20,7 @@ Example:
     Download downloaded 2 files
 """
 
+import csv
 import gzip
 import hashlib
 import os
@@ -147,6 +148,64 @@ def preserve_invalid_file(file_path: Path) -> Path:
     return candidate
 
 
+def record_invalid_transfer(
+    file_path: Path,
+    *,
+    reason: str,
+    max_witness_bytes: int = 16 * 1024 * 1024,
+) -> Path | None:
+    """Record a corrupt payload and retain at most one full witness per file.
+
+    Repeated ENA retries can otherwise consume more space than the valid
+    dataset. The first invalid payload is retained; later payloads are hashed,
+    recorded, and removed. The manifest is append-only and local to the sample
+    directory so it remains available after the raw FASTQ is reclaimed.
+    """
+
+    file_path = Path(file_path)
+    if not file_path.is_file():
+        return None
+    try:
+        size_bytes = file_path.stat().st_size
+        digest = calculate_md5(file_path)
+    except OSError as exc:
+        logger.warning("Unable to fingerprint invalid transfer %s: %s", file_path, exc)
+        size_bytes = 0
+        digest = ""
+
+    prior_witnesses = list(file_path.parent.glob(f"{file_path.name}.invalid*"))
+    retained_path: Path | None = None
+    if not prior_witnesses and size_bytes <= max_witness_bytes:
+        retained_path = preserve_invalid_file(file_path)
+    else:
+        file_path.unlink(missing_ok=True)
+        logger.warning("Discarded duplicate invalid transfer after fingerprinting: %s", file_path)
+
+    manifest = file_path.parent / ".transfer_integrity_failures.tsv"
+    needs_header = not manifest.exists()
+    with manifest.open("a", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(
+            handle,
+            fieldnames=["source_name", "size_bytes", "md5", "reason", "retained_witness", "recorded_at_utc"],
+            delimiter="\t",
+        )
+        if needs_header:
+            writer.writeheader()
+        writer.writerow(
+            {
+                "source_name": file_path.name,
+                "size_bytes": size_bytes,
+                "md5": digest,
+                "reason": reason,
+                "retained_witness": retained_path.name if retained_path else "",
+                "recorded_at_utc": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            }
+        )
+        handle.flush()
+        os.fsync(handle.fileno())
+    return retained_path
+
+
 def verify_gzip_integrity(file_path: Path) -> bool:
     """Verify the integrity of a gzip file.
 
@@ -182,6 +241,8 @@ class ENADownloader:
         self,
         timeout: int = 1800,
         retries: int = 5,
+        integrity_retries: int = 1,
+        invalid_witness_max_bytes: int = 16 * 1024 * 1024,
         retry_delay_seconds: int = 5,
         speed_limit_bytes: int = 1024,
         speed_time_seconds: int = 600,
@@ -194,10 +255,18 @@ class ENADownloader:
         Args:
             timeout: Maximum download time in seconds (default: 1800/30mins).
             retries: Maximum consecutive resumable attempts that make no byte
-                progress (default: 5). Productive premature closes reset this
-                budget and continue within ``timeout``. Each retry starts a
-                new curl invocation so ``--continue-at -`` advances from the
-                retained ``.part`` file.
+                progress (default: 5).
+            integrity_retries: Maximum fresh-transfer retries after a completed
+                payload fails gzip integrity (default: 1). This is separate
+                from resumable transport retries so corrupt endpoints fall
+                through to NCBI promptly.
+            invalid_witness_max_bytes: Maximum size of one retained invalid
+                payload witness per FASTQ; larger payloads are fingerprinted
+                and removed (default: 16 MiB).
+                Productive premature closes reset the no-progress budget and
+                continue within ``timeout``. Each retry starts a new curl
+                invocation so ``--continue-at -`` advances from the retained
+                ``.part`` file.
             retry_delay_seconds: Initial retry delay in seconds (default: 5).
                 The delay doubles between attempts up to 60 seconds.
             speed_limit_bytes: Minimum sustained transfer rate before curl
@@ -214,6 +283,10 @@ class ENADownloader:
             raise ValueError("timeout must be positive")
         if retries < 0:
             raise ValueError("retries must be non-negative")
+        if integrity_retries < 0:
+            raise ValueError("integrity_retries must be non-negative")
+        if invalid_witness_max_bytes < 0:
+            raise ValueError("invalid_witness_max_bytes must be non-negative")
         if retry_delay_seconds <= 0:
             raise ValueError("retry_delay_seconds must be positive")
         if speed_limit_bytes <= 0:
@@ -226,6 +299,8 @@ class ENADownloader:
             raise ValueError("api_retry_delay_seconds must be positive")
         self.timeout = timeout
         self.retries = retries
+        self.integrity_retries = integrity_retries
+        self.invalid_witness_max_bytes = invalid_witness_max_bytes
         self.retry_delay_seconds = retry_delay_seconds
         self.speed_limit_bytes = speed_limit_bytes
         self.speed_time_seconds = speed_time_seconds
@@ -385,7 +460,11 @@ class ENADownloader:
                     "Existing FASTQ failed gzip integrity check; preserving it and starting a fresh transfer: %s",
                     output_file,
                 )
-                preserve_invalid_file(output_file)
+                record_invalid_transfer(
+                    output_file,
+                    reason="existing_invalid_gzip",
+                    max_witness_bytes=self.invalid_witness_max_bytes,
+                )
 
             # A previous interrupted curl is retained as ``.part``.  ENA
             # advertises byte ranges, so curl can continue without repeating
@@ -417,6 +496,7 @@ class ENADownloader:
             deadline = time.monotonic() + self.timeout
             consecutive_no_progress = 0
             retry_events = 0
+            gzip_integrity_retries = 0
             while True:
                 remaining_seconds = deadline - time.monotonic()
                 if remaining_seconds <= 0:
@@ -445,9 +525,28 @@ class ENADownloader:
 
                 if result.returncode == 0:
                     if partial_file.exists():
-                        preserve_invalid_file(partial_file)
+                        record_invalid_transfer(
+                            partial_file,
+                            reason="completed_transfer_invalid_gzip",
+                            max_witness_bytes=self.invalid_witness_max_bytes,
+                        )
                     if output_file.exists():
-                        preserve_invalid_file(output_file)
+                        record_invalid_transfer(
+                            output_file,
+                            reason="completed_output_invalid_gzip",
+                            max_witness_bytes=self.invalid_witness_max_bytes,
+                        )
+                    gzip_integrity_retries += 1
+                    if gzip_integrity_retries <= self.integrity_retries:
+                        logger.warning(
+                            "ENA transfer for %s failed gzip integrity; starting fresh retry "
+                            "%d/%d while preserving the invalid payload",
+                            filename,
+                            gzip_integrity_retries,
+                            self.integrity_retries,
+                        )
+                        consecutive_no_progress = 0
+                        continue
                     return False, f"Download failed gzip integrity check for {filename}", []
 
                 if not _is_retryable_transfer_failure(result):

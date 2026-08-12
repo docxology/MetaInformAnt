@@ -364,7 +364,7 @@ Larger chunks reduce `read()` system calls but increase memory per call. Typical
 
 ### Parallel Hashing
 
-Hash many files in parallel using `core.parallel`:
+Hash many files in parallel using `core.execution.parallel`:
 
 ```python
 from metainformant.core.execution import parallel

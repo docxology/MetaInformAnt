@@ -515,7 +515,7 @@ logger.setLevel(logging.DEBUG)
 | `core.io` | I/O errors logged via this module |
 | `core.io.cache` | Cache hits/misses logged |
 | `core.download` | Download progress logged |
-| `core.parallel` | Worker task completion logged |
+| `core.execution.parallel` | Worker task completion logged |
 | `core.workflow` | Step status changes logged |
 
 ## Dependencies

@@ -445,8 +445,8 @@ graph TD
     B -->|Medium 1000-10000| DuseEfficientApproximations[Use efficient approximations]
     B -->|Large > 10000| EuseSampling/scalingMethods[Use sampling/scaling methods]
 
-    C --> Fmetainformant.core.parallelDisabled[metainformant.core.parallel disabled]
-    D --> Gmetainformant.core.parallelEnabled[metainformant.core.parallel enabled]
+    C --> Fmetainformant.core.execution.parallelDisabled[core execution parallel disabled]
+    D --> Gmetainformant.core.execution.parallelEnabled[core execution parallel enabled]
     E --> HuseDistributedProcessing[Use distributed processing]
 
     F --> IstandardImplementations[Standard implementations]

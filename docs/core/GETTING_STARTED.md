@@ -127,7 +127,7 @@ def download_species_data(species: str, info: dict[str, Any]) -> dict[str, Any]:
         return {"species": species, "error": str(e)}
 
 # ----------------------------------------------------------------------
-# Step 4: Parallel execution (using core.parallel)
+# Step 4: Parallel execution (using core.execution.parallel)
 # ----------------------------------------------------------------------
 def run_parallel_downloads() -> list[dict[str, Any]]:
     """Download all species data in parallel (I/O-bound)."""
@@ -336,7 +336,7 @@ if __name__ == "__main__":
 | `core.io.cache` | `cache_json()`, `load_cached_json()` | TTL-based caching |
 | `core.io.paths` | `ensure_directory()` | Directory creation |
 | `core.utils.logging` | `get_logger()`, `configure_logging_from_env()` | Structured logging |
-| `core.parallel` | `thread_map()` | Parallel I/O execution |
+| `core.execution.parallel` | `thread_map()` | Parallel I/O execution |
 | `core.data.db` | `get_connection()`, `execute_query()` | Database operations |
 | `core.utils.config` | (Not shown) `load_mapping_from_file()` | Config file loading |
 

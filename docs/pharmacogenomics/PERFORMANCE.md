@@ -31,12 +31,13 @@ Choosing `chunk_size` is a trade-off between memory (larger chunks mean bigger i
 ## Parallel backend
 
 ```python-snippet
-from metainformant import parallel
-parallel.configure(backend='loky', n_jobs=8)
-results = parallel.map(func, items)
+from metainformant.core.execution import parallel
+workers = parallel.resource_aware_workers(task_type="cpu", max_cap=8)
+results = parallel.process_map(func, items, max_workers=workers)
 ```
 
-`loky` is a robust cross-platform process pool; `threading` can be used but offers no benefit for pure-Python functions (GIL-bound).
+The maintained process pool is cross-platform; the mapped function must be a
+top-level picklable function.
 
 ## Bottleneck breakdown
 

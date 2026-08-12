@@ -21,9 +21,22 @@ uv run python -m metainformant.mcp.tools.amalgkit_monitor
 
 Responsibilities:
 
-- inspect local Amalgkit/RNA pipeline processes;
-- parse available log progress;
-- return a small status payload suitable for terminal use and future adapters.
+- inspect local Amalgkit/RNA pipeline processes when explicitly requested;
+- parse an explicitly supplied log for operational diagnostics;
+- read the campaign `pipeline_progress.db` and provenance receipts;
+- return separate executable, cohort, descriptive-analysis, and biological-
+  inference readiness fields suitable for terminal use and future adapters.
+
+The default data root is `AMALGKIT_DATA_ROOT` or `output/amalgkit`. Use
+`--no-process-scan` for a receipt/lock/database-only snapshot:
+
+```bash
+uv run python -m metainformant.mcp.tools.amalgkit_monitor \
+  --data-root /path/to/campaign --no-process-scan
+```
+
+The helper never reports biological inference as ready. A current descriptive
+receipt is not a completed scientific result.
 
 ## Package Exports
 

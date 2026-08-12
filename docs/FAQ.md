@@ -78,8 +78,8 @@ for record in read_jsonl("large_file.jsonl"):
     process_record(record)
 
 # 2. Chunked processing
-from metainformant.core.parallel import run_parallel
-results = run_parallel(process_function, data_chunks, max_workers=4)
+from metainformant.core.execution.parallel import thread_map
+results = thread_map(process_function, data_chunks, max_workers=4)
 
 # 3. Use memory-efficient formats
 import pandas as pd

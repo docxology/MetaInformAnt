@@ -38,7 +38,7 @@ Performance characteristics, optimization strategies, and scaling guidelines for
 | 1000 | ~55 days | ~8 days (batch-8) | — |
 
 **Notes:**
-- Per-sample steps are **embarrassingly parallel**. Use `parallel.map()` across samples.
+- Per-sample steps are **embarrassingly parallel**. Use `parallel.process_map()` across samples.
 - Memory is dominated by BAM loading (~100 GB for 700M reads in Python dicts). Consider streaming reads in chunks or downsampling for quick checks.
 - Disk space: 100 GB BAM → SV JSON ~50–200 MB per sample (uncompressed); gzip saves ~60%.
 
@@ -60,16 +60,16 @@ config.set("structural_variants.max_workers", 8)  # ≤ physical core count
 **Per-sample parallelism:**
 
 ```python-snippet
-from metainformant import parallel
+from metainformant.core.execution import parallel
 
 def process_sample(bam_path):
     # Full pipeline for one sample
     return results
 
-results = parallel.map(
+results = parallel.process_map(
     process_sample,
     list_of_bams,
-    workers=12,          # Max CPU cores
+    max_workers=12,      # Max CPU cores
     chunk_size=10,       # Batch N tasks per worker
 )
 ```
@@ -234,7 +234,7 @@ Use `metainformant.cloud` or custom Dask:
 
 ```python-snippet
 from dask.distributed import Client
-from metainformant import parallel
+from metainformant.core.execution import parallel
 
 client = Client(n_workers=20)  # SLURM cluster
 

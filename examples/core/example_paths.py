@@ -20,7 +20,7 @@ from metainformant.core.io import io, paths
 def main():
     """Demonstrate path management functionality."""
     # Setup output directory
-    output_dir = Path("output/examples/core")
+    output_dir = Path("output/examples/core").resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
 
     print("=== METAINFORMANT Path Management Example ===")

@@ -51,4 +51,4 @@
 - **Wrong gene case** — use uppercase: `'CYP2D6'` not `'cyp2d6'`
 - **rsID format** — must include `rs` prefix; numeric-only strings are ignored
 - **Parallel pickle errors** — mapped function must be top-level (not lambda inside another function)
-- **Memory spikes** — don't accumulate results in a list inside the mapped function; let `parallel.map` collect
+- **Memory spikes** — don't accumulate results in a list inside the mapped function; let `parallel.thread_map` collect

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -179,7 +181,7 @@ def sanitize_filename(filename: str) -> str:
 
 
 def create_temp_file(suffix: str = "", prefix: str = "tmp", directory: str | Path | None = None) -> Path:
-    """Create a temporary file path that doesn't exist yet.
+    """Create a unique temporary file path that does not contain user data.
 
     Args:
         suffix: File extension
@@ -189,19 +191,21 @@ def create_temp_file(suffix: str = "", prefix: str = "tmp", directory: str | Pat
     Returns:
         Path to non-existent temporary file
     """
-    import tempfile
-
     if directory is None:
         directory = tempfile.gettempdir()
 
     dir_path = Path(directory)
     ensure_directory(dir_path)
 
-    while True:
-        temp_name = f"{prefix}_{hash(str(Path.home()))}_{suffix}"
-        temp_path = dir_path / temp_name
-        if not temp_path.exists():
-            return temp_path
+    # Reserve a unique name with the OS rather than deriving one from the
+    # caller's home directory. The old deterministic name could loop forever
+    # when a previous caller had already created the same path and leaked
+    # information about the local home-directory hash into filenames.
+    fd, temp_name = tempfile.mkstemp(prefix=f"{prefix}_", suffix=suffix, dir=dir_path)
+    os.close(fd)
+    temp_path = Path(temp_name)
+    temp_path.unlink()
+    return temp_path
 
 
 #

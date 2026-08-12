@@ -236,7 +236,12 @@ class BiologicalClassifier:
 
 
 def train_ensemble_classifier(
-    X_train: np.ndarray, y_train: np.ndarray, n_estimators: int = 10, random_state: int | None = None, **kwargs: Any
+    X_train: np.ndarray,
+    y_train: np.ndarray,
+    n_estimators: int = 10,
+    random_state: int | None = None,
+    n_jobs: int | None = -1,
+    **kwargs: Any,
 ) -> BiologicalClassifier:
     """Train an ensemble classifier for biological data.
 
@@ -245,6 +250,8 @@ def train_ensemble_classifier(
         y_train: Training target labels
         n_estimators: Number of estimators in ensemble
         random_state: Random state for reproducibility
+        n_jobs: Number of parallel jobs used by the voting ensemble. Use 1
+            for deterministic single-process examples and restricted runners.
         **kwargs: Additional arguments for ensemble
 
     Returns:
@@ -275,7 +282,7 @@ def train_ensemble_classifier(
     ensemble = VotingClassifier(
         estimators=estimators,
         voting="soft",  # Use probability voting
-        n_jobs=-1,  # Use all available cores
+        n_jobs=n_jobs,
     )
 
     # Wrap in BiologicalClassifier
@@ -328,6 +335,7 @@ def cross_validate_biological(
     cv_folds: int = 5,
     random_state: int | None = None,
     algorithm: str | None = None,
+    parallel_jobs: int | None = -1,
     **kwargs: Any,
 ) -> Dict[str, Any]:
     """Perform cross-validation for biological data classification.
@@ -342,6 +350,8 @@ def cross_validate_biological(
         method: Classification method ('rf', 'gb', 'lr', 'ensemble')
         cv_folds: Number of cross-validation folds
         random_state: Random state for reproducibility
+        parallel_jobs: Number of parallel jobs used for cross-validation.
+            Use 1 in restricted or resource-sensitive environments.
         **kwargs: Additional parameters for classifier
 
     Returns:
@@ -386,7 +396,7 @@ def cross_validate_biological(
     cv_results = {}
     for metric in scoring:
         try:
-            scores = cross_val_score(classifier, X, y, cv=cv, scoring=metric, n_jobs=-1)
+            scores = cross_val_score(classifier, X, y, cv=cv, scoring=metric, n_jobs=parallel_jobs)
             cv_results[metric] = {
                 "mean": float(scores.mean()),
                 "std": float(scores.std()),
@@ -399,7 +409,7 @@ def cross_validate_biological(
     # Try ROC-AUC if binary classification
     if len(np.unique(y)) == 2:
         try:
-            auc_scores = cross_val_score(classifier, X, y, cv=cv, scoring="roc_auc", n_jobs=-1)
+            auc_scores = cross_val_score(classifier, X, y, cv=cv, scoring="roc_auc", n_jobs=parallel_jobs)
             cv_results["roc_auc"] = {
                 "mean": float(auc_scores.mean()),
                 "std": float(auc_scores.std()),

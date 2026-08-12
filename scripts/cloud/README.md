@@ -7,7 +7,7 @@ Thin orchestrator scripts for GCP cloud deployment and data exfiltration.
 | Script | Purpose |
 |--------|---------|
 | `deploy_gcp.py` | Provision GCP VM and launch pipeline |
-| `prep_genomes.py` | Prepare Amalgkit 0.16.38 reference transcriptomes and indexes |
+| `prep_genomes.py` | Prepare Amalgkit 0.16.59 reference transcriptomes and indexes |
 | `cloud_startup.sh` | VM bootstrap (Docker, deps) |
 | `vm_setup.sh` | Environment configuration |
 | `download_results.sh` | Exfiltrate results to local repo |

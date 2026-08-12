@@ -63,12 +63,12 @@ trainer = Trainer(batch_size=16)  # Reduce from 32
 
 1. **Check worker count**:
 ```python-snippet
-from metainformant.core.parallel import ParallelProcessor
+from metainformant.core.execution.parallel import resource_aware_workers
 
 # Don't exceed CPU count
 import os
 max_workers = min(8, os.cpu_count() or 4)
-processor = ParallelProcessor(max_workers=max_workers)
+max_workers = resource_aware_workers(task_type="io", max_cap=max_workers)
 ```
 
 2. **Handle exceptions in workers**:

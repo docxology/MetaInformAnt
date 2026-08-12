@@ -235,8 +235,12 @@ sync_test_deps() {
 
 # Run the tests
 run_test_suite() {
-    local pytest_cmd
-    pytest_cmd=$(get_pytest_cmd)
+    local -a pytest_cmd
+    if [[ -x "$(get_venv_dir)/bin/pytest" ]]; then
+        pytest_cmd=("$(get_venv_dir)/bin/pytest")
+    else
+        pytest_cmd=(uv run pytest)
+    fi
 
     local pytest_args
     pytest_args=$(build_pytest_args)
@@ -257,7 +261,8 @@ run_test_suite() {
     # Run the tests
     if [[ "$TEST_MODE" == "benchmark" ]]; then
         # Special handling for benchmarks
-        if $pytest_cmd $test_files --benchmark-json="$OUTPUT_DIR/benchmarks/results.json"; then
+        read -r -a test_file_args <<< "$test_files"
+        if "${pytest_cmd[@]}" "${test_file_args[@]}" --benchmark-json="$OUTPUT_DIR/benchmarks/results.json"; then
             print_status "OK" "Benchmark tests completed successfully"
             return 0
         else
@@ -266,7 +271,9 @@ run_test_suite() {
         fi
     else
         # Regular test execution
-        if $pytest_cmd $pytest_args $test_files; then
+        read -r -a pytest_arg_list <<< "$pytest_args"
+        read -r -a test_file_args <<< "$test_files"
+        if "${pytest_cmd[@]}" "${pytest_arg_list[@]}" "${test_file_args[@]}"; then
             print_status "OK" "Tests completed successfully"
             return 0
         else
@@ -283,11 +290,11 @@ generate_coverage_report() {
             print_status "INFO" "Generating coverage reports..."
 
             # Generate HTML report
-            coverage html --directory="$OUTPUT_DIR/coverage_html" --data-file="$OUTPUT_DIR/.coverage" 2>/dev/null || true
+            coverage html --directory="$OUTPUT_DIR/coverage_html" --data-file="$OUTPUT_DIR/.coverage"
 
             # Generate console summary
             echo -e "${BLUE}Coverage Summary:${NC}"
-            coverage report --data-file="$OUTPUT_DIR/.coverage" --show-missing 2>/dev/null || true
+            coverage report --data-file="$OUTPUT_DIR/.coverage" --show-missing
 
             print_status "OK" "Coverage reports generated in $OUTPUT_DIR/coverage_html"
         fi

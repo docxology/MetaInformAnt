@@ -552,7 +552,7 @@ def test_missing_sra_statistics_are_derived_from_validated_fastq(
 def test_positive_sra_counts_avoid_recount_when_spot_length_is_missing(
     tmp_path: Path,
 ) -> None:
-    """Amalgkit 0.16.38 can infer spot length from positive SRA counts."""
+    """Amalgkit 0.16.59 can infer spot length from positive SRA counts."""
 
     metadata_path = tmp_path / "metadata.tsv"
     metadata_path.write_text(
@@ -974,7 +974,7 @@ def test_fasterq_interleaved_paired_output_is_split_and_promoted(
 def test_fasterq_paired_metadata_single_read_output_is_reconciled(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A read-1-only archive follows Amalgkit 0.16.38's single-file rule."""
+    """A read-1-only archive follows Amalgkit 0.16.59's single-file rule."""
 
     fastq_root = tmp_path / "fastq"
     sample_dir = fastq_root / "SRR_LAYOUT_MISMATCH"
@@ -1012,6 +1012,8 @@ def test_fasterq_paired_metadata_single_read_output_is_reconciled(
     marker = json.loads((tmp_path / "raw_validation" / "SRR_LAYOUT_MISMATCH.json").read_text())
     assert marker["declared_library_layout"] == "paired"
     assert marker["effective_library_layout"] == "single"
+    # The witness name is historical evidence and remains reusable across
+    # runtime version drift.
     assert marker["layout_reconciliation"] == "amalgkit_0.16.38_paired_metadata_single_fastq"
 
 
@@ -1379,6 +1381,45 @@ def test_fasterq_fallback_uses_profiled_child_process_threads(tmp_path: Path, mo
     settings_path = Path(environments[0]["NCBI_SETTINGS"])
     assert settings_path == data_root / ".ncbi" / "metainformant-user-settings.mkfg"
     assert f'/repository/user/main/public/root = "{data_root / ".sra-cache"}"' in settings_path.read_text()
+
+
+def test_ncbi_fallback_prefetches_and_verifies_before_fasterq(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Production NCBI fallback downloads an accession once before extraction."""
+
+    monkeypatch.setenv("AMALGKIT_MIN_EXTERNAL_FREE_GB", "0")
+    monkeypatch.setenv("AMALGKIT_MIN_SYSTEM_FREE_GB", "0")
+    monkeypatch.setenv("AMALGKIT_NCBI_PREFETCH_FIRST", "yes")
+    data_root = tmp_path / "campaign-data"
+    monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(data_root))
+    commands: list[list[str]] = []
+
+    def fake_run(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess[str]:
+        commands.append(command)
+        if command[0].endswith("prefetch"):
+            destination = Path(command[command.index("--output-directory") + 1])
+            destination.mkdir(parents=True, exist_ok=True)
+            (destination / "SRR_PREFETCH.sra").write_bytes(b"verified-sra")
+        elif command[0] == "fasterq-dump":
+            output = Path(command[command.index("--outdir") + 1])
+            output.mkdir(parents=True, exist_ok=True)
+            (output / "SRR_PREFETCH.fastq").write_text("@read\nACGT\n+\n!!!!\n")
+        elif command[0] == "pigz":
+            source = Path(command[-1])
+            with gzip.open(source.with_suffix(".fastq.gz"), "wb") as handle:
+                handle.write(b"@read\nACGT\n+\n!!!!\n")
+            source.unlink()
+        return subprocess.CompletedProcess(command, 0, "", "")
+
+    monkeypatch.setattr(orchestrator_module, "_run_command_in_process_group", fake_run)
+    orchestrator = StreamingPipelineOrchestrator(
+        tmp_path / "config", tmp_path / "logs", db_path=tmp_path / "progress.db"
+    )
+    monkeypatch.setattr(orchestrator, "_validate_local_sra_archive", lambda *_args: True)
+
+    assert orchestrator._download_fastq_ncbi_only("SRR_PREFETCH", tmp_path / "fastq", expected_paired=False)
+    assert commands[0][0].endswith("prefetch")
+    assert commands[1][0] == "fasterq-dump"
+    assert commands[1][1].endswith("SRR_PREFETCH.sra")
 
 
 def test_campaign_ncbi_settings_preserve_global_configuration(tmp_path: Path) -> None:
@@ -1844,6 +1885,7 @@ def test_stage_timeouts_are_explicit_and_configurable(tmp_path: Path, monkeypatc
         "AMALGKIT_PIPELINE_DOWNLOAD_SPEED_LIMIT_BYTES": "2048",
         "AMALGKIT_PIPELINE_DOWNLOAD_SPEED_TIME_SECONDS": "505",
         "AMALGKIT_PIPELINE_ENA_RETRIES": "7",
+        "AMALGKIT_PIPELINE_ENA_INTEGRITY_RETRIES": "1",
         "AMALGKIT_PIPELINE_ENA_RETRY_DELAY_SECONDS": "6",
         "AMALGKIT_PIPELINE_ENA_API_RETRIES": "3",
         "AMALGKIT_PIPELINE_ENA_API_RETRY_DELAY_SECONDS": "4",
@@ -1865,6 +1907,7 @@ def test_stage_timeouts_are_explicit_and_configurable(tmp_path: Path, monkeypatc
     assert orchestrator.download_speed_limit_bytes == 2048
     assert orchestrator.download_speed_time_seconds == 505
     assert orchestrator.download_retries == 7
+    assert orchestrator.download_integrity_retries == 1
     assert orchestrator.download_retry_delay_seconds == 6
     assert orchestrator.ena_api_retries == 3
     assert orchestrator.ena_api_retry_delay_seconds == 4

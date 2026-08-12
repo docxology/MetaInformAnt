@@ -1,6 +1,6 @@
 # MetaInformAnt TODO
 
-> **Last Updated**: 2026-08-09
+> **Last Updated**: 2026-08-11
 >
 > This TODO contains only active unfinished work. Prior BeeWAS GWAS,
 > manuscript, dashboard, validation, and release-bundle work is recorded in
@@ -12,6 +12,15 @@ Keep that work there rather than mixing a live external-volume transcriptome
 campaign with the BeeWAS release backlog below. Completed MetaInformAnt RNA
 and Hymenoptera implementation work is intentionally absent from both active
 lists; its evidence is maintained in the project status and readiness records.
+
+## Release engineering status
+
+Completed checkboxes below are closed by repository evidence, not by the
+absence of a code diff. Remaining work is gated in order: engineering checks;
+nested publication and reachable gitlinks; operational manifests, receipts,
+locks, and campaign snapshots; then owner-reviewed scientific promotion. A
+green engineering gate never establishes cohort completion or biological
+inference. The live RNA campaign remains a moving operational snapshot.
 
 ---
 
@@ -101,6 +110,14 @@ controls, failure evidence, and provenance artifacts remain part of the record.
   p-values, and record random seeds/parameters in provenance. Add tree and
   orthology invariants for phylogenetic profiles.
 
+  Upcoming slices: define biological-replicate units and estimands; record
+  seeds, permutation counts, null models, and correction procedures; expose
+  descriptive scores separately from inferential p-values; validate orthology
+  graph/tree uniqueness, rootedness, and coverage; and add negative fixtures
+  for duplicate labels, missing mappings, low replication, and incomplete
+  orthology. Exit evidence is a source-linked contract plus deterministic
+  rerun and fail-closed tests.
+
 ### P1 — Package quality and release gates
 
 - [x] **Repair and then enforce formatting/lint quality across maintained
@@ -188,6 +205,13 @@ controls, failure evidence, and provenance artifacts remain part of the record.
   handling, external-tool logs, and contact-data persistence. Record justified
   compatibility exceptions rather than masking findings.
 
+  Upcoming slices: make medium/high Bandit and dependency-audit checks
+  required; retain a dated low-severity baseline with owners; test argument
+  lists, path containment, temporary-file permissions, and contact redaction;
+  and record lockfile source/revision and audit commands in the evidence
+  manifest. Exit evidence is a blocking local/hosted report with no unowned
+  exceptions.
+
 ### P3 — Operations and downstream analysis
 
 - [ ] **Characterize campaign-scale performance without touching the live
@@ -196,17 +220,66 @@ controls, failure evidence, and provenance artifacts remain part of the record.
   disposable fixtures. Define budgets and telemetry for long-running
   campaigns; never start a competing producer during validation.
 
+  Upcoming slices: create disposable SQLite/filesystem fixtures; measure
+  throughput, queue depth, retries, storage growth, and peak memory under
+  bounded profiles; then publish budgets and telemetry definitions without
+  reusing live campaign counts as benchmarks. Exit evidence is a reproducible
+  benchmark command, fixture inputs, and a dated report.
+
 - [ ] **Make evidence bundles first-class release artifacts.** Include immutable
   input/config hashes, software/tool versions, lock/heartbeat history, terminal
   and unresolved task counts, receipts, manifests, matrices, error taxonomy,
   and command transcripts. State acquisition, recovery, quantification,
   descriptive analysis, and biological inference separately.
 
+  Upcoming slices: define a schema for hashes, versions, lock/heartbeat
+  history, counts, receipts, manifests, matrices, errors, and transcripts;
+  make generation atomic and reject mixed-root evidence; and add a validator
+  separating operational, descriptive, and inferential artifacts. Exit evidence
+  is a fixture bundle plus negative stale/mixed-root controls.
+
 - [ ] **Specify downstream analytical contracts before promotion.** Document
   merge/sample/ortholog identifiers, normalization, differential-expression or
   equivalent methods, batch handling, replicate requirements, missing-data
   policy, statistical corrections, and the evidence required to move from
   descriptive analysis to biological inference.
+
+  Upcoming slices: define canonical sample/condition/replicate/species/
+  orthology/matrix identifiers; document normalization, batch, missing-data,
+  filtering, and multiplicity defaults; and add a promotion checklist requiring
+  complete metadata, finalized matrices, current provenance, and review. Exit
+  evidence is a source-linked contract and tests preventing descriptive
+  matrices from acquiring biological-inference labels.
+
+### P2 — Core, MCP, skills, and test-suite expansion
+
+- [ ] **Expand core method depth around stable contracts.** Add behavior-level
+  tests and API documentation for atomic I/O, checksums, path containment,
+  optional dependency reporting, resource-aware parallel execution, and
+  workflow state transitions. Exit evidence: public-surface imports,
+  deterministic edge fixtures, and a generated API cross-check with no
+  undocumented stable exports.
+
+- [ ] **Keep MCP availability truthful and adapter-ready.** The checkout
+  provides a standalone Amalgkit monitor, not a transport or server. Extend
+  only with explicit roots, database/receipt-backed readiness, and evidence
+  paths. Do not advertise stdio/SSE tools until protocol implementation,
+  dependency policy, security review, and client fixtures exist. Exit evidence:
+  monitor contract tests and a negative test proving biological inference is
+  withheld.
+
+- [ ] **Keep generated skills reproducible.** Regenerate `.cursor/skills/` from
+  every in-scope `AGENTS.md`, prune orphans, and run the check in required docs
+  CI. Add a source-linked availability report without treating wrappers as
+  executable package APIs. Exit evidence: deterministic generation with zero
+  missing, orphaned, or broken canonical links.
+
+- [ ] **Maintain modular, process-isolated test lanes.** Keep the canonical
+  full suite and independent core, DNA, RNA, MCP, domain, and packaging groups
+  for fast diagnosis. Groups must use real implementations, explicit optional
+  markers, and complete failure output; group green is not release or
+  scientific readiness. Exit evidence: documented matrix command, isolated
+  fixtures, and a required full-suite job.
 
 ### Boundary and execution rules
 

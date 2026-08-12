@@ -173,14 +173,14 @@ Below are per-module summaries with capabilities, inputs/outputs, and example us
 | **Category** | Infrastructure |
 | **Data Types** | Any (I/O, config, logging) |
 | **Scale** | Universal (used by all other modules) |
-| **Key Functions** | `load_json()`, `dump_json()`, `get_logger()`, `parallel.map()`, `cache()` |
+| **Key Functions** | `load_json()`, `dump_json()`, `get_logger()`, `parallel.thread_map()`, `cache()` |
 | **Input Files** | Config YAML/JSON, any data files |
 | **Output Files** | Logs, manifests, cached artifacts |
 | **Submodules** | `io`, `config`, `parallel`, `validation`, `paths`, `utils` |
 | **Dependencies** | None (base module) |
 | **Used By** | ALL 27 domain modules |
 
-**When to use**: Never called directly by end-users except as underlying infrastructure. All domain modules use `core.io` for file operations and `core.parallel` for multithreading.
+**When to use**: Never called directly by end-users except as underlying infrastructure. All domain modules use `core.io` for file operations and `core.execution.parallel` for multithreading.
 
 ---
 
@@ -815,7 +815,7 @@ uv run python -m metainformant menu
 
 **Rules**:
 - Domain modules (`dna`, `rna`, `gwas`, etc.) **do not import each other directly**; cross-domain coordination happens via `multiomics`, `eqtl`, or shared configs.
-- All modules use `core` infrastructure (`core.io`, `core.parallel`, `core.utils.config`).
+- All modules use `core` infrastructure (`core.io`, `core.execution.parallel`, `core.utils.config`).
 
 ---
 

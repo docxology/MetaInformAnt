@@ -44,7 +44,8 @@ pharmacogenomics:
 
 ## Chunk size & parallel streaming
 
-When processing large DataFrames, use `parallel.map` or `parallel.batch_map`.
+When processing large DataFrames, use `parallel.thread_map` or
+`parallel.parallel_batch`.
 
 | cohort N | recommended `chunk_size` | live memory impact |
 |----------|----------------------|-------------------|
@@ -56,12 +57,12 @@ When processing large DataFrames, use `parallel.map` or `parallel.batch_map`.
 Example workflow:
 
 ```python-snippet
-from metainformant import parallel, pharmacogenomics
+from metainformant.core.execution import parallel
+from metainformant import pharmacogenomics
 def allele_predict(row):
     return pharmacogenomics.predict_metabolizer(set(row['rsids'].split(';')), gene='CYP2D6')
 
-results = parallel.map(allele_predict, df.to_dict('records'),
-                        workers=8, chunk_size=20000)
+results = parallel.thread_map(allele_predict, df.to_dict('records'), max_workers=8)
 ```
 
 Workers inherit config; ensure `PG_PARALLEL=true` for best throughput.

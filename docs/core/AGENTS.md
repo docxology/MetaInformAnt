@@ -15,4 +15,4 @@ I/O operations, configuration management, logging, parallel processing, caching,
 | `src/metainformant/core/io/` | File I/O and serialization |
 | `src/metainformant/core/config.py` | Configuration loading and merging |
 | `src/metainformant/core/validation.py` | Type and schema validation |
-| `src/metainformant/core/parallel.py` | Parallel processing |
+| `src/metainformant/core/execution/parallel.py` | Parallel processing |

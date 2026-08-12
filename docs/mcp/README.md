@@ -11,7 +11,8 @@ The implemented command is the standalone Amalgkit monitor:
 uv run python -m metainformant.mcp.tools.amalgkit_monitor
 ```
 
-It inspects local RNA/Amalgkit workflow state and reports process/log progress.
+It inspects explicitly selected local RNA/Amalgkit workflow state and reports
+process/log diagnostics alongside database- and receipt-backed readiness.
 The helper can be imported from `metainformant.mcp.tools.amalgkit_monitor`.
 
 ## Not Yet Implemented
@@ -24,6 +25,11 @@ The checkout does not provide:
 
 Keep examples and integrations on this page limited to the standalone monitor
 until a real server module and tests are added.
+
+The monitor is not a completion oracle: it separates executable readiness,
+cohort readiness, descriptive analysis, and biological inference, and always
+withholds the last field. Use `--no-process-scan` when a lock/receipt/database
+snapshot is preferred over process inspection.
 
 ## See Also
 

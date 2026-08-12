@@ -8,7 +8,7 @@ uv run python scripts/rna/validate_configs.py
 uv run python scripts/rna/validate_all_species_workflow.py
 ```
 
-The pinned project release is Amalgkit 0.16.38. Confirm `amalgkit --help`,
+The pinned project release is Amalgkit 0.16.59. Confirm `amalgkit --help`,
 `amalgkit merge --help`, `amalgkit wsfilter --help`, and
 `amalgkit finalize --help` before a real run.
 

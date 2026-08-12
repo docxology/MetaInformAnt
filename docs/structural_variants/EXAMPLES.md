@@ -750,7 +750,8 @@ io.dump_json([{
 **Strategy:** Chromosome-wise parallelization + per-sample parallelization.
 
 ```python-snippet
-from metainformant import parallel, config
+from metainformant.core.execution import parallel
+from metainformant.core.utils import config
 from metainformant.structural_variants import detection, annotation, filtering
 from pathlib import Path
 import pandas as pd
@@ -792,10 +793,10 @@ def process_sample(bam_path):
     return sample_id, len(filtered)
 
 # ── Parallel map (per-sample) ─────────────────────────────────────────────────
-results = parallel.map(
+results = parallel.process_map(
     process_sample,
     bam_files,
-    workers=12,
+    max_workers=12,
     chunk_size=50,  # Batches of 50 samples per worker
 )
 

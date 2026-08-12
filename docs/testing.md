@@ -1,5 +1,24 @@
 # Testing
 
+## Modular parallel contract suite
+
+For rapid, process-isolated feedback across independent package areas:
+
+```bash
+env -u VIRTUAL_ENV uv run python scripts/test_matrix.py --list
+env -u VIRTUAL_ENV uv run python scripts/test_matrix.py --workers 6
+env -u VIRTUAL_ENV uv run python scripts/test_matrix.py --group core --group mcp --group rna
+# Add explicitly marked network/external lanes only when authorized:
+env -u VIRTUAL_ENV uv run python scripts/test_matrix.py --include-network
+```
+
+Each group runs in a separate Python process, so CWD changes and optional
+imports cannot leak between groups. The matrix is intentionally a developer
+and CI accelerator; the release gate remains `env -u VIRTUAL_ENV uv run
+pytest -q`, followed by the documentation, formatting, typing, security, and
+wheel checks. A failed group prints its complete captured pytest output and
+returns a non-zero status.
+
 ## Quality Assurance Framework
 
 METAINFORMANT implements a comprehensive quality assurance framework combining automated testing, code quality checks, and validation processes.

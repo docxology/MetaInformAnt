@@ -218,7 +218,7 @@ Some workflows require external tools:
 
   ```bash
   # Install via UV (automatic with setup.sh --with-amalgkit)
-  uv sync --extra rna  # exact Amalgkit 0.16.32
+  uv sync --extra rna  # exact Amalgkit 0.16.59
   ```
 
 ### GWAS Analysis

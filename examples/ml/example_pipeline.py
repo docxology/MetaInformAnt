@@ -38,10 +38,10 @@ def main():
 
     # Train classifier
     print("\nTraining classifier...")
-    train_ensemble_classifier(X, y, algorithms=["random_forest"])
+    train_ensemble_classifier(X, y, n_jobs=1)
 
     # Cross-validation
-    cv_results = cross_validate_biological(X, y, algorithm="random_forest", cv_folds=5)
+    cv_results = cross_validate_biological(X, y, algorithm="random_forest", cv_folds=5, parallel_jobs=1)
     accuracy = cv_results.get("accuracy", cv_results.get("mean_accuracy", 0.0))
     print(f"Cross-validation accuracy: {accuracy:.3f}")
 

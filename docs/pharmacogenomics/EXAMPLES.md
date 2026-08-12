@@ -22,7 +22,8 @@ print(rec['recommendation'])
 
 ```python-snippet
 import pandas as pd
-from metainformant import parallel, pharmacogenomics
+from metainformant.core.execution import parallel
+from metainformant import pharmacogenomics
 
 df = pd.read_csv('cohort.csv')  # column 'rsids' = ';'-separated rsIDs per patient
 
@@ -31,10 +32,9 @@ def predict_metabolizer(row):
     return pharmacogenomics.predict_metabolizer(observed, gene='CYP2D6',
                                                 algorithm='balanced')
 
-results = parallel.map(predict_metabolizer,
+results = parallel.thread_map(predict_metabolizer,
                         df.to_dict('records'),
-                        workers=8,
-                        chunk_size=10000,
+                        max_workers=8,
                         desc='CYP2D6 metabolizer')
 df['cyp2d6_phenotype'] = [r['phenotype'] for r in results]
 df.to_csv('cohort_with_phenotypes.tsv', sep='\t', index=False)

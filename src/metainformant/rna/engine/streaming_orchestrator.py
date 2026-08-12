@@ -505,6 +505,8 @@ def _raw_validation_marker_matches(
     if recorded_effective_layout is not None and recorded_effective_layout != effective_layout:
         return False
     expected_reconciliation = (
+        # Historical witness name retained for compatibility. This records
+        # the observed layout, not an invalidating runtime version.
         "amalgkit_0.16.38_paired_metadata_single_fastq"
         if declared_layout == "paired" and effective_layout == "single"
         else "none"
@@ -718,7 +720,7 @@ def _validated_local_fastq_inputs(
 
     Existing files are only adopted when the metadata layout is compatible:
     paired libraries use both numbered mates when present, while one
-    unnumbered FASTQ is retained for Amalgkit 0.16.38's explicit
+    unnumbered FASTQ is retained for Amalgkit's explicit
     paired-metadata/single-file reconciliation. A lone numbered mate remains
     incomplete. Single libraries require the unnumbered FASTQ, and unknown
     layouts are accepted only when the on-disk naming is unambiguous. Gzip
@@ -766,7 +768,7 @@ def _validated_local_fastq_inputs(
         # A completed one-file checkpoint may have been left by an interrupted
         # older run before the raw witness was written. Classify it here,
         # before adoption: true interleaved reads are split atomically, while
-        # Amalgkit 0.16.38's read-1-only case is accepted only after a complete
+        # Amalgkit's read-1-only case is accepted only after a complete
         # FASTQ record scan. This path also centralizes classification for new
         # ENA and fasterq outputs, avoiding a second multi-gigabyte scan.
         try:
@@ -994,7 +996,7 @@ def _normalize_interleaved_paired_fastq_layout(
         logger.warning(
             "Run %s is declared paired but contains one validated read-1-only "
             "FASTQ (%d records); retaining the unnumbered file for Amalgkit "
-            "0.16.38 layout reconciliation.",
+            "0.16.59 layout reconciliation.",
             accession,
             record_count,
         )
@@ -1004,7 +1006,7 @@ def _normalize_interleaved_paired_fastq_layout(
 def _metadata_requires_fastq_input_stats(metadata_path: Path, accession: str) -> bool:
     """Return whether Amalgkit needs read-derived statistics for one accession.
 
-    Amalgkit 0.16.38 infers ``spot_length`` from ``total_bases / total_spots``
+    Amalgkit 0.16.59 infers ``spot_length`` from ``total_bases / total_spots``
     when the public SRA metadata omits the explicit field.  Re-counting a
     validated multi-gigabyte FASTQ merely because ``spot_length`` is missing
     therefore adds substantial I/O/CPU without changing the quantification
@@ -1936,9 +1938,22 @@ class StreamingPipelineOrchestrator:
         self.download_speed_limit_bytes = _positive_int_setting("AMALGKIT_PIPELINE_DOWNLOAD_SPEED_LIMIT_BYTES", 1024)
         self.download_speed_time_seconds = _duration_setting("AMALGKIT_PIPELINE_DOWNLOAD_SPEED_TIME_SECONDS", 600)
         self.download_retries = _nonnegative_int_setting("AMALGKIT_PIPELINE_ENA_RETRIES", 5)
+        self.download_integrity_retries = _nonnegative_int_setting("AMALGKIT_PIPELINE_ENA_INTEGRITY_RETRIES", 1)
+        self.invalid_witness_max_bytes = (
+            _nonnegative_int_setting("AMALGKIT_PIPELINE_INVALID_WITNESS_MAX_MB", 16) * 1024 * 1024
+        )
         self.download_retry_delay_seconds = _duration_setting("AMALGKIT_PIPELINE_ENA_RETRY_DELAY_SECONDS", 5)
         self.ena_api_retries = _nonnegative_int_setting("AMALGKIT_PIPELINE_ENA_API_RETRIES", 2)
         self.ena_api_retry_delay_seconds = _duration_setting("AMALGKIT_PIPELINE_ENA_API_RETRY_DELAY_SECONDS", 2)
+        self.ncbi_prefetch_first = os.environ.get("AMALGKIT_NCBI_PREFETCH_FIRST", "no").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        self.ncbi_prefetch_timeout_seconds = _duration_setting(
+            "AMALGKIT_PIPELINE_NCBI_PREFETCH_TIMEOUT_SECONDS", self.download_timeout_seconds
+        )
         self.fasterq_timeout_seconds = _duration_setting("AMALGKIT_PIPELINE_FASTQ_TIMEOUT_SECONDS", 7200)
         self.sra_validation_timeout_seconds = _duration_setting("AMALGKIT_PIPELINE_SRA_VALIDATE_TIMEOUT_SECONDS", 600)
         self.compression_timeout_seconds = _duration_setting("AMALGKIT_PIPELINE_COMPRESSION_TIMEOUT_SECONDS", 1800)
@@ -2523,6 +2538,8 @@ class StreamingPipelineOrchestrator:
         downloader = ENADownloader(
             timeout=self.download_timeout_seconds,
             retries=self.download_retries,
+            integrity_retries=self.download_integrity_retries,
+            invalid_witness_max_bytes=self.invalid_witness_max_bytes,
             retry_delay_seconds=self.download_retry_delay_seconds,
             speed_limit_bytes=self.download_speed_limit_bytes,
             speed_time_seconds=self.download_speed_time_seconds,
@@ -2633,6 +2650,59 @@ class StreamingPipelineOrchestrator:
 
         return success
 
+    def _prefetch_sra_accession(self, srr_id: str) -> Path | None:
+        """Resume and verify one NCBI accession before FASTQ extraction."""
+
+        cached = _campaign_cached_sra_path(srr_id)
+        if cached is not None:
+            return cached
+        prefetch = shutil.which("prefetch")
+        if prefetch is None:
+            logger.error("NCBI prefetch is unavailable for %s", srr_id)
+            return None
+
+        root = _data_root() / ".sra-cache" / "prefetch" / srr_id
+        root.mkdir(parents=True, exist_ok=True)
+        command = [
+            prefetch,
+            "--transport",
+            "http",
+            "--resume",
+            "yes",
+            "--verify",
+            "yes",
+            "--output-directory",
+            str(root),
+            srr_id,
+        ]
+        logger.info("Prefetching NCBI accession %s with resumable verified transport", srr_id)
+        try:
+            result = _run_command_in_process_group(
+                command,
+                timeout=self.ncbi_prefetch_timeout_seconds,
+                env=build_sra_environment(_data_root()),
+            )
+        except subprocess.TimeoutExpired:
+            logger.error("NCBI prefetch timed out for %s", srr_id)
+            return None
+        if result.returncode != 0:
+            detail = (result.stderr or result.stdout or "").strip()
+            logger.error("NCBI prefetch failed for %s (exit %d): %s", srr_id, result.returncode, detail[:300])
+            return None
+
+        candidates = [root / f"{srr_id}.sra", root / f"{srr_id}.sra.cache", root / srr_id]
+        candidates.extend(sorted(root.glob("*.sra")))
+        candidates.extend(sorted(root.glob("*.sra.cache")))
+        for candidate in candidates:
+            if candidate.is_file() and candidate.stat().st_size > 0:
+                logger.info("Prefetch completed for %s: %s", srr_id, candidate)
+                return candidate
+        cached = _campaign_cached_sra_path(srr_id)
+        if cached is not None:
+            return cached
+        logger.error("NCBI prefetch reported success but produced no SRA archive for %s", srr_id)
+        return None
+
     def _download_fastq_ncbi_only(
         self,
         srr_id: str,
@@ -2658,7 +2728,11 @@ class StreamingPipelineOrchestrator:
             return True
 
         local_sra = _local_sra_path(sample_dir, out_dir, srr_id)
+        if local_sra is None and self.ncbi_prefetch_first:
+            local_sra = self._prefetch_sra_accession(srr_id)
         source: Path | str = local_sra if local_sra is not None else srr_id
+        if self.ncbi_prefetch_first and local_sra is None:
+            return False
         logger.info("Running dedicated NCBI fallback for %s from %s", srr_id, source)
         success = self._extract_sra_to_fastq_bounded(
             source,
@@ -2698,7 +2772,7 @@ class StreamingPipelineOrchestrator:
         # Direct ENA acquisition bypasses Amalgkit's getfastq stage.  For
         # public metadata rows with missing/zero spot statistics, derive the
         # quant-only fallback from the validated FASTQ before invoking
-        # Amalgkit 0.16.38; otherwise it rejects usable reads before Kallisto.
+        # Amalgkit 0.16.59; otherwise it rejects usable reads before Kallisto.
         metadata_file = Path(meta_path)
         sample_fastq_dir = work_dir / "getfastq" / srr_id
         if _metadata_requires_fastq_input_stats(metadata_file, srr_id):
@@ -3405,7 +3479,7 @@ class StreamingPipelineOrchestrator:
                 species_name,
             )
 
-            # Amalgkit 0.16.38 builds the quantification index through the
+            # Amalgkit 0.16.59 builds the quantification index through the
             # reference-preparation helper; it no longer exposes the removed
             # `config` or `index` CLI stages.
             if needs_index:
@@ -3421,7 +3495,7 @@ class StreamingPipelineOrchestrator:
                     logger.error("Reference preparation exception for %s: %s", species_name, exc)
                     return []
 
-            # Taxonomy acquisition is owned by Amalgkit 0.16.38.  When the
+            # Taxonomy acquisition is owned by Amalgkit 0.16.59.  When the
             # campaign launcher provides AMALGKIT_SHARED_DOWNLOAD_DIR, its
             # native taxdump/database cache is reused across species.  The
             # older per-species seed path is intentionally not recreated.
@@ -3485,7 +3559,7 @@ class StreamingPipelineOrchestrator:
             logger.error("Metadata normalization did not complete for %s", species_name)
             return []
 
-        # Some valid Amalgkit 0.16.38 runs emit only ``metadata.tsv`` when
+        # Some valid Amalgkit 0.16.59 runs emit only ``metadata.tsv`` when
         # selection does not create a separate table.  Materialize the
         # canonical selected-table boundary once so the current metadata
         # witness can remain strict and every later resume can distinguish

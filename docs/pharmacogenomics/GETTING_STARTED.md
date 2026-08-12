@@ -62,7 +62,8 @@ Rapid (RM), or Ultrarapid (UM) metabolizer. Thresholds are gene-specific.
 
 ```python-snippet
 import pandas as pd
-from metainformant import parallel, pharmacogenomics
+from metainformant.core.execution import parallel
+from metainformant import pharmacogenomics
 
 df = pd.read_csv('cohort.csv')  # requires 'rsids' column (semicolon-separated)
 def predict(row):
@@ -70,7 +71,7 @@ def predict(row):
         set(str(row['rsids']).split(';')), gene='CYP2D6'
     )
 
-results = parallel.map(predict, df.to_dict('records'), workers=8, chunk_size=10000)
+results = parallel.thread_map(predict, df.to_dict('records'), max_workers=8)
 df['CYP2D6_phenotype'] = [r['phenotype'] for r in results]
 ```
 
@@ -119,7 +120,7 @@ Key settings are under `pharmacogenomics.*` and environment variables starting w
 | Key | Env var | Default | Purpose |
 |-----|---------|---------|---------|
 | `algorithm` | `PG_ALGORITHM` | `auto` | Matching: `fast` \| `balanced` \| `accurate` |
-| `chunk_size` | `PG_CHUNK_SIZE` | `5000` | Batch size for `parallel.map` |
+| `chunk_size` | `PG_CHUNK_SIZE` | `5000` | Caller-side batch size for `parallel.parallel_batch` |
 | `parallel` | `PG_PARALLEL` | `false` | Enable process-based parallelism |
 | `allele_definitions_dir` | `PG_ALLELE_DEFINITIONS_DIR` | built-in | Directory with custom JSON allele tables |
 | `cpic_guidelines_url` | `PG_CPIC_GUIDELINES_URL` | built-in | Override CPIC JSON source URL |

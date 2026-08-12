@@ -96,6 +96,12 @@ class TestTrainEnsembleClassifier:
         assert "accuracy" in results
         assert results["accuracy"] > 0.5
 
+    def test_parallelism_can_be_bounded(self, clf_data):
+        """The ensemble exposes a single-process mode for restricted runners."""
+        X, y = clf_data
+        clf = train_ensemble_classifier(X, y, n_estimators=5, random_state=42, n_jobs=1)
+        assert clf.is_fitted
+
 
 # ---------------------------------------------------------------------------
 # compare_classifiers

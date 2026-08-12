@@ -54,3 +54,22 @@ def test_process_detection_ignores_monitor_and_matches_workflows() -> None:
         ["python", "scripts/rna/process_species.py", "--species", "apis_mellifera"]
     )
     assert amalgkit_monitor.is_pipeline_cmdline(["amalgkit", "quant", "--threads", "4"])
+
+
+def test_build_status_is_database_backed_and_withholds_inference(tmp_path: Path) -> None:
+    """MCP snapshots expose readiness levels without scientific overclaiming."""
+    from metainformant.rna.engine.progress_db import ProgressDB
+
+    data_root = tmp_path / "campaign"
+    db = ProgressDB(data_root / "pipeline_progress.db")
+    db.init_species("Apis_mellifera", ["SRR1", "SRR2"])
+    db.set_state("Apis_mellifera", "SRR1", "quantified")
+    db.close()
+
+    snapshot = amalgkit_monitor.build_status(data_root=data_root, inspect_processes=False)
+
+    assert snapshot["status"] == "stopped"
+    readiness = snapshot["readiness"]
+    assert readiness["cohort"] == "partial_or_unresolved"
+    assert readiness["biological_inference"] == "withheld"
+    assert snapshot["evidence"]["data_root"] == str(data_root.resolve())

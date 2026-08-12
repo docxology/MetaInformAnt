@@ -112,7 +112,7 @@ results = workflow.execute_workflow(config)
 
 Install amalgkit:
 ```bash
-uv sync --extra rna  # installs the exact Amalgkit 0.16.38 project contract
+uv sync --extra rna  # installs the exact Amalgkit 0.16.59 project contract
 ```
 
 ### "No genome index"

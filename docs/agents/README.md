@@ -91,6 +91,20 @@ This hub organizes documentation into the following sections:
 
 ## Quick Start
 
+### Skill availability and regeneration
+
+Generated Cursor skills are deterministic wrappers around every in-scope
+`AGENTS.md`; they are guidance surfaces, not executable package APIs. Inspect
+or validate availability with:
+
+```bash
+env -u VIRTUAL_ENV uv run python scripts/package/generate_cursor_skills.py --check
+```
+
+Regenerate only after changing an `AGENTS.md` or the generator, then review
+the generated diff. The check rejects missing, orphaned, or broken canonical
+skill links.
+
 ### Understanding Agent Coordination
 
 Read [Architecture](ARCHITECTURE.md) to understand the layered design and coordination patterns.

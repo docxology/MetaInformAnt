@@ -465,6 +465,10 @@ class TestCoreMethods:
         assert temp_file.exists()
         assert temp_file.parent == tmp_path
 
+        second_temp_file = paths.create_temp_file(suffix=".txt", directory=tmp_path)
+        assert second_temp_file != temp_file
+        assert not second_temp_file.exists()
+
     def test_enhanced_text_utilities(self):
         """Test enhanced text utilities."""
         # Test number extraction

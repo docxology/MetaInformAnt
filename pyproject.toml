@@ -54,10 +54,11 @@ scientific = [
 ]
 
 # Current RNA workflow toolchain. Amalgkit is sourced from its immutable
-# release tag because the project wraps its CLI and must reproduce the exact
-# command and output contract used by the analysis.
+# release tag. The runtime pin is separate from output reuse: compatible
+# quantifications remain eligible across version drift when their non-version
+# contract is unchanged.
 rna = [
-    "amalgkit @ git+https://github.com/kfuku52/amalgkit@v0.16.38",
+    "amalgkit @ git+https://github.com/kfuku52/amalgkit@v0.16.59",
 ]
 
 # Machine learning and advanced analytics
@@ -172,7 +173,7 @@ performance = [
 
 # All optional dependencies combined
 all = [
-    "amalgkit @ git+https://github.com/kfuku52/amalgkit@v0.16.38",
+    "amalgkit @ git+https://github.com/kfuku52/amalgkit@v0.16.59",
     "scipy>=1.11.0",
     "scikit-learn>=1.3.0",
     "seaborn>=0.13.0",

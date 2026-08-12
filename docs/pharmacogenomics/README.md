@@ -17,7 +17,7 @@ for biobanks, and integration with electronic health records.
   evidence queries without runtime network.
 - **Clinical reporting** — text / JSON / HTML reports with UUID audit trail and DDI
   analysis.
-- **Batch parallelism** — process 100k+ samples with `parallel.map`; throughput
+- **Batch parallelism** — process 100k+ samples with `parallel.thread_map`; throughput
   ~10 k samples/s on 8 cores.
 
 ## Installation

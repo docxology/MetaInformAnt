@@ -19,7 +19,7 @@ flowchart LR
 ## Key design decisions
 
 - **Synchronous by default** — single-sample calls return immediately (~7 ms); batch
-  parallelism via `parallel.map` or manual `ThreadPoolExecutor`.
+  parallelism via `parallel.thread_map` or manual `ThreadPoolExecutor`.
 - **Deterministic matching** — given identical variant sets the same top-1 allele always wins
   (subsets scored by size, then by allele activity, then lexical).
 - **Immutable allele tables** — once loaded per process they're read-only; custom tables
