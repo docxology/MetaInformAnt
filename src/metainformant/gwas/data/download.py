@@ -12,6 +12,7 @@ from typing import Any, Dict, List
 
 import requests
 
+from metainformant.core.ncbi import resolve_ncbi_contact
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
@@ -30,6 +31,7 @@ def download_reference_genome(accession: str, output_dir: str | Path) -> Path:
     Raises:
         ValueError: If accession is invalid
         requests.RequestException: If download fails
+        RuntimeError: If both the Datasets API and FTP fallback fail
 
     Example:
         >>> # Download human reference genome
@@ -46,24 +48,24 @@ def download_reference_genome(accession: str, output_dir: str | Path) -> Path:
 
     logger.info(f"Downloading reference genome {accession}")
 
+    failures: list[str] = []
+
     # Try NCBI Datasets API first
     try:
         return _download_from_ncbi_datasets(accession, output_dir)
     except Exception as e:
+        failures.append(f"NCBI Datasets API: {e}")
         logger.warning(f"NCBI Datasets download failed: {e}")
 
     # Fallback to FTP download
     try:
         return _download_from_ftp(accession, output_dir)
     except Exception as e:
+        failures.append(f"NCBI FTP: {e}")
         logger.warning(f"FTP download failed: {e}")
 
-    # Create empty directory as final fallback
-    genome_dir = output_dir / accession
-    genome_dir.mkdir(exist_ok=True)
-
-    logger.warning(f"All download methods failed for {accession}")
-    return genome_dir
+    detail = "; ".join(failures) or "no download strategy was attempted"
+    raise RuntimeError(f"All genome download methods failed for {accession}: {detail}") from None
 
 
 def _download_from_ncbi_datasets(accession: str, output_dir: Path) -> Path:
@@ -147,10 +149,13 @@ def _download_from_ftp(accession: str, output_dir: Path) -> Path:
         files = ftp.nlst()
 
         # Download genomic FASTA and GFF3 annotation
+        found_genome = False
         for suffix in ("_genomic.fna.gz", "_genomic.gff.gz"):
             matching = [f for f in files if f.endswith(suffix) and "_from_genomic" not in f and "_rna_from" not in f]
             if matching:
                 filename = matching[0]
+                if suffix == "_genomic.fna.gz":
+                    found_genome = True
                 local_path = genome_dir / filename
                 if local_path.exists():
                     logger.info(f"File already exists: {local_path}")
@@ -161,6 +166,9 @@ def _download_from_ftp(accession: str, output_dir: Path) -> Path:
                 logger.info(f"Downloaded {filename}")
     finally:
         ftp.quit()
+
+    if not found_genome and not any(genome_dir.glob("*_genomic.fna*")):
+        raise RuntimeError(f"NCBI FTP returned no genomic FASTA for {accession}")
 
     return genome_dir
 
@@ -476,13 +484,22 @@ def _download_sra_with_toolkit(accession: str, output_dir: Path, threads: int) -
     return output_dir
 
 
-def download_sra_project(project_id: str, output_dir: str | Path, threads: int = 1) -> List[Path]:
+def download_sra_project(
+    project_id: str,
+    output_dir: str | Path,
+    threads: int = 1,
+    email: str | None = None,
+    *,
+    allow_anonymous: bool = False,
+) -> List[Path]:
     """Download all runs from an SRA project.
 
     Args:
         project_id: SRA project ID (e.g., "PRJNA123456")
         output_dir: Output directory
         threads: Number of threads
+        email: Explicit NCBI contact; otherwise ``NCBI_EMAIL``.
+        allow_anonymous: Explicitly permit anonymous NCBI metadata lookup.
 
     Returns:
         List of paths to downloaded run directories
@@ -494,7 +511,7 @@ def download_sra_project(project_id: str, output_dir: str | Path, threads: int =
         True
     """
     # First, get list of runs in the project
-    run_accessions = _get_project_runs(project_id)
+    run_accessions = _get_project_runs(project_id, email=email, allow_anonymous=allow_anonymous)
 
     if not run_accessions:
         logger.warning(f"No runs found for project {project_id}")
@@ -518,8 +535,14 @@ def download_sra_project(project_id: str, output_dir: str | Path, threads: int =
     return downloaded_runs
 
 
-def _get_project_runs(project_id: str) -> List[str]:
+def _get_project_runs(
+    project_id: str,
+    email: str | None = None,
+    *,
+    allow_anonymous: bool = False,
+) -> List[str]:
     """Get list of SRA runs for a project."""
+    contact = resolve_ncbi_contact(email, allow_anonymous=allow_anonymous)
     # Query NCBI for project runs
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 
@@ -530,6 +553,8 @@ def _get_project_runs(project_id: str) -> List[str]:
         "retmax": 1000,
         "retmode": "json",
     }
+    if contact.email:
+        search_params["email"] = contact.email
 
     try:
         response = requests.get(f"{base_url}/esearch.fcgi", params=search_params, timeout=30)
@@ -549,6 +574,8 @@ def _get_project_runs(project_id: str) -> List[str]:
                 "id": ",".join(id_list[:100]),
                 "retmode": "json",
             }  # Limit for performance
+            if contact.email:
+                summary_params["email"] = contact.email
 
             summary_response = requests.get(f"{base_url}/esummary.fcgi", params=summary_params, timeout=30)
             summary_response.raise_for_status()
@@ -594,12 +621,20 @@ def _get_project_runs(project_id: str) -> List[str]:
     return []
 
 
-def search_sra_for_organism(organism: str, max_results: int = 100) -> List[Dict[str, Any]]:
+def search_sra_for_organism(
+    organism: str,
+    max_results: int = 100,
+    email: str | None = None,
+    *,
+    allow_anonymous: bool = False,
+) -> List[Dict[str, Any]]:
     """Search SRA for sequencing data from a specific organism.
 
     Args:
         organism: Organism name
         max_results: Maximum number of results
+        email: Explicit NCBI contact; otherwise ``NCBI_EMAIL``.
+        allow_anonymous: Explicitly permit anonymous NCBI metadata lookup.
 
     Returns:
         List of SRA records
@@ -610,6 +645,7 @@ def search_sra_for_organism(organism: str, max_results: int = 100) -> List[Dict[
         >>> len(results) <= 10
         True
     """
+    contact = resolve_ncbi_contact(email, allow_anonymous=allow_anonymous)
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 
     query = f'"{organism}"[Organism] AND "RNA-seq"[Strategy]'
@@ -620,6 +656,8 @@ def search_sra_for_organism(organism: str, max_results: int = 100) -> List[Dict[
         "retmax": min(max_results, 1000),
         "retmode": "json",
     }
+    if contact.email:
+        search_params["email"] = contact.email
 
     try:
         response = requests.get(f"{base_url}/esearch.fcgi", params=search_params, timeout=30)
@@ -641,6 +679,8 @@ def search_sra_for_organism(organism: str, max_results: int = 100) -> List[Dict[
             "id": ",".join(id_list[:max_results]),
             "retmode": "json",
         }
+        if contact.email:
+            summary_params["email"] = contact.email
 
         summary_response = requests.get(f"{base_url}/esummary.fcgi", params=summary_params, timeout=30)
         summary_response.raise_for_status()

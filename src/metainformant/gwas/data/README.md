@@ -27,6 +27,12 @@ GWAS data retrieval, download utilities, genome mapping, and sample metadata man
 | `load_sample_metadata()` | `metadata` | Load sample metadata from TSV/CSV |
 | `get_population_labels()` | `metadata` | Extract population labels from metadata |
 
+NCBI-backed SRA helpers require an explicit ``email=`` argument or
+``NCBI_EMAIL``. Pass ``allow_anonymous=True`` only for an intentionally
+anonymous request; no helper fabricates or persists a contact address. Genome
+download functions raise when both acquisition strategies fail rather than
+returning an empty directory.
+
 ## Usage
 
 ```python

@@ -88,10 +88,10 @@ def check_doc_links(doc_file: Path, repo_root: Path, warnings: list[str] | None 
             file_part = link_path
             fragment = None
 
-        if file_part.startswith("/"):
+        if not file_part:
+            target_file = doc_file
+        elif file_part.startswith("/"):
             target_file = repo_root / file_part.lstrip("/")
-        elif file_part.startswith("../"):
-            target_file = doc_dir.parent / file_part[3:]
         else:
             target_file = doc_dir / file_part
 
@@ -105,9 +105,21 @@ def check_doc_links(doc_file: Path, repo_root: Path, warnings: list[str] | None 
             continue
 
         if fragment:
-            if not check_fragment_exists(target_file, fragment):
+            fragment_target = target_file
+            if target_file.is_dir():
+                for candidate in (target_file / "README.md", target_file / "index.md"):
+                    if candidate.exists():
+                        fragment_target = candidate
+                        break
+                else:
+                    issues_found.append(
+                        f"{doc_file}: Broken link to {link_path} ({link_text}) - "
+                        f"directory has no README.md or index.md: {target_file}"
+                    )
+                    continue
+            if not check_fragment_exists(fragment_target, fragment):
                 if any(word in fragment.lower() for word in ["section", "heading", "anchor"]):
-                    warnings.append(f"{doc_file}: Fragment '{fragment}' may not exist in {target_file.name}")
+                    warnings.append(f"{doc_file}: Fragment '{fragment}' may not exist in {fragment_target.name}")
 
     return issues_found
 

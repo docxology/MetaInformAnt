@@ -213,31 +213,6 @@ def setup_test_environment():
             pass
 
 
-@pytest.fixture(scope="session", autouse=True)
-def load_ncbi_config():
-    """Load NCBI configuration from config file if NCBI_EMAIL not in environment.
-
-    This fixture runs automatically for all tests and ensures NCBI_EMAIL
-    is set from config/ncbi/ncbi.yaml if not already set in environment.
-    """
-    if "NCBI_EMAIL" not in os.environ:
-        try:
-            from pathlib import Path
-
-            from metainformant.core.utils.config import load_mapping_from_file
-
-            config_path = Path(__file__).parent.parent / "config" / "ncbi" / "ncbi.yaml"
-            if config_path.exists():
-                config = load_mapping_from_file(config_path)
-                email = config.get("email", "").strip()
-                if email:
-                    os.environ["NCBI_EMAIL"] = email
-        except Exception:
-            # If config loading fails, continue without setting NCBI_EMAIL
-            # Tests will skip if they require it
-            pass
-
-
 @pytest.fixture(scope="session")
 def ensure_amalgkit_available():
     """Ensure `amalgkit` CLI is available for tests that require it.

@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
+from metainformant.core.ncbi import resolve_ncbi_contact
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
@@ -21,25 +22,38 @@ logger = logging.get_logger(__name__)
 class EntrezClient:
     """Client for NCBI Entrez utilities."""
 
-    def __init__(self, api_key: Optional[str] = None, email: Optional[str] = None):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        email: Optional[str] = None,
+        *,
+        allow_anonymous: bool = False,
+        timeout: float = 30.0,
+    ):
         """Initialize Entrez client.
 
         Args:
             api_key: NCBI API key for higher rate limits
-            email: Email address (required by NCBI)
+            email: Explicit contact email. If omitted, ``NCBI_EMAIL`` is used.
+            allow_anonymous: Explicitly permit a request without an email.
+            timeout: Per-request timeout in seconds.
         """
-        if not email:
-            logger.warning("No email provided. NCBI requires email for Entrez usage.")
+        if timeout <= 0:
+            raise ValueError("timeout must be greater than zero")
+
+        contact = resolve_ncbi_contact(email, allow_anonymous=allow_anonymous)
 
         self.api_key = api_key
-        self.email = email
+        self.email = contact.email
+        self.contact_mode = contact.mode
+        self.timeout = timeout
         self.base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
         self.session = requests.Session()
 
         # Set headers
         headers = {"User-Agent": "metainformant/0.4.0"}
-        if email:
-            headers["From"] = email
+        if contact.email:
+            headers["From"] = contact.email
         self.session.headers.update(headers)
 
     def search(self, db: str, query: str, max_results: int = 100) -> Dict[str, Any]:
@@ -67,7 +81,7 @@ class EntrezClient:
             params["email"] = self.email
 
         try:
-            response = self.session.get(f"{self.base_url}/esearch.fcgi", params=params)
+            response = self.session.get(f"{self.base_url}/esearch.fcgi", params=params, timeout=self.timeout)
             response.raise_for_status()
 
             return response.json()
@@ -100,7 +114,7 @@ class EntrezClient:
             time.sleep(0.4)
 
         try:
-            response = self.session.get(f"{self.base_url}/efetch.fcgi", params=params)
+            response = self.session.get(f"{self.base_url}/efetch.fcgi", params=params, timeout=self.timeout)
             response.raise_for_status()
 
             return response.text
@@ -127,7 +141,7 @@ class EntrezClient:
             params["email"] = self.email
 
         try:
-            response = self.session.get(f"{self.base_url}/esummary.fcgi", params=params)
+            response = self.session.get(f"{self.base_url}/esummary.fcgi", params=params, timeout=self.timeout)
             response.raise_for_status()
 
             return response.json()
@@ -155,7 +169,7 @@ class EntrezClient:
             params["email"] = self.email
 
         try:
-            response = self.session.get(f"{self.base_url}/elink.fcgi", params=params)
+            response = self.session.get(f"{self.base_url}/elink.fcgi", params=params, timeout=self.timeout)
             response.raise_for_status()
 
             return response.json()

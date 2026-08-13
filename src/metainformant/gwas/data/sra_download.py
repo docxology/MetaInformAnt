@@ -18,13 +18,22 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 
-def download_sra_experiment(experiment_acc: str, output_dir: str | Path, threads: int = 1) -> List[Path]:
+def download_sra_experiment(
+    experiment_acc: str,
+    output_dir: str | Path,
+    threads: int = 1,
+    email: str | None = None,
+    *,
+    allow_anonymous: bool = False,
+) -> List[Path]:
     """Download all runs from an SRA experiment.
 
     Args:
         experiment_acc: Experiment accession (SRX...)
         output_dir: Output directory
         threads: Number of threads for download
+        email: Explicit NCBI contact; otherwise ``NCBI_EMAIL``.
+        allow_anonymous: Explicitly permit anonymous NCBI metadata lookup.
 
     Returns:
         List of paths to downloaded run directories
@@ -33,7 +42,7 @@ def download_sra_experiment(experiment_acc: str, output_dir: str | Path, threads
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Get runs for this experiment
-    run_accessions = _get_experiment_runs(experiment_acc)
+    run_accessions = _get_experiment_runs(experiment_acc, email=email, allow_anonymous=allow_anonymous)
 
     if not run_accessions:
         logger.warning(f"No runs found for experiment {experiment_acc}")
@@ -55,8 +64,14 @@ def download_sra_experiment(experiment_acc: str, output_dir: str | Path, threads
     return downloaded_runs
 
 
-def _get_experiment_runs(experiment_acc: str) -> List[str]:
+def _get_experiment_runs(
+    experiment_acc: str,
+    email: str | None = None,
+    *,
+    allow_anonymous: bool = False,
+) -> List[str]:
     """Get SRA run accessions for an experiment."""
+    contact = resolve_ncbi_contact(email, allow_anonymous=allow_anonymous)
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 
     # Search for runs in this experiment
@@ -66,6 +81,8 @@ def _get_experiment_runs(experiment_acc: str) -> List[str]:
         "retmax": 100,
         "retmode": "json",
     }
+    if contact.email:
+        search_params["email"] = contact.email
 
     try:
         response = requests.get(f"{base_url}/esearch.fcgi", params=search_params, timeout=30)
@@ -83,6 +100,8 @@ def _get_experiment_runs(experiment_acc: str) -> List[str]:
 
         # Get run accessions
         summary_params = {"db": "sra", "id": ",".join(id_list), "retmode": "json"}
+        if contact.email:
+            summary_params["email"] = contact.email
 
         summary_response = requests.get(f"{base_url}/esummary.fcgi", params=summary_params, timeout=30)
         summary_response.raise_for_status()
@@ -112,13 +131,22 @@ def _get_experiment_runs(experiment_acc: str) -> List[str]:
         return []
 
 
-def download_sra_biosample(biosample_acc: str, output_dir: str | Path, threads: int = 1) -> List[Path]:
+def download_sra_biosample(
+    biosample_acc: str,
+    output_dir: str | Path,
+    threads: int = 1,
+    email: str | None = None,
+    *,
+    allow_anonymous: bool = False,
+) -> List[Path]:
     """Download all SRA data for a BioSample.
 
     Args:
         biosample_acc: BioSample accession (SAMN...)
         output_dir: Output directory
         threads: Number of threads
+        email: Explicit NCBI contact; otherwise ``NCBI_EMAIL``.
+        allow_anonymous: Explicitly permit anonymous NCBI metadata lookup.
 
     Returns:
         List of downloaded run paths
@@ -127,7 +155,7 @@ def download_sra_biosample(biosample_acc: str, output_dir: str | Path, threads: 
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Get runs for this BioSample
-    run_accessions = _get_biosample_runs(biosample_acc)
+    run_accessions = _get_biosample_runs(biosample_acc, email=email, allow_anonymous=allow_anonymous)
 
     downloaded_runs = []
 
@@ -144,8 +172,14 @@ def download_sra_biosample(biosample_acc: str, output_dir: str | Path, threads: 
     return downloaded_runs
 
 
-def _get_biosample_runs(biosample_acc: str) -> List[str]:
+def _get_biosample_runs(
+    biosample_acc: str,
+    email: str | None = None,
+    *,
+    allow_anonymous: bool = False,
+) -> List[str]:
     """Get SRA runs for a BioSample."""
+    contact = resolve_ncbi_contact(email, allow_anonymous=allow_anonymous)
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 
     search_params = {
@@ -154,6 +188,8 @@ def _get_biosample_runs(biosample_acc: str) -> List[str]:
         "retmax": 100,
         "retmode": "json",
     }
+    if contact.email:
+        search_params["email"] = contact.email
 
     try:
         response = requests.get(f"{base_url}/esearch.fcgi", params=search_params, timeout=30)
@@ -173,6 +209,8 @@ def _get_biosample_runs(biosample_acc: str) -> List[str]:
                 "id": ",".join(id_list[:50]),
                 "retmode": "json",
             }  # Limit
+            if contact.email:
+                summary_params["email"] = contact.email
 
             summary_response = requests.get(f"{base_url}/esummary.fcgi", params=summary_params, timeout=30)
             summary_response.raise_for_status()
@@ -213,6 +251,8 @@ def batch_download_sra(
 
     Args:
         accessions: List of SRA accessions
+        email: Explicit NCBI contact; otherwise ``NCBI_EMAIL``.
+        allow_anonymous: Explicitly permit anonymous NCBI metadata lookup.
         output_dir: Output directory
         threads: Threads per download
         max_concurrent: Maximum concurrent downloads
@@ -249,7 +289,14 @@ def batch_download_sra(
     return results
 
 
-def find_sra_data_by_phenotype(phenotype: str, organism: str, max_results: int = 50) -> List[Dict[str, Any]]:
+def find_sra_data_by_phenotype(
+    phenotype: str,
+    organism: str,
+    max_results: int = 50,
+    email: str | None = None,
+    *,
+    allow_anonymous: bool = False,
+) -> List[Dict[str, Any]]:
     """Find SRA data by phenotype/trait.
 
     Args:
@@ -263,7 +310,12 @@ def find_sra_data_by_phenotype(phenotype: str, organism: str, max_results: int =
     from .download import search_sra_for_organism
 
     # First get all data for organism
-    all_data = search_sra_for_organism(organism, max_results * 2)
+    all_data = search_sra_for_organism(
+        organism,
+        max_results * 2,
+        email=email,
+        allow_anonymous=allow_anonymous,
+    )
 
     # Filter by phenotype
     phenotype_lower = phenotype.lower()
@@ -362,7 +414,12 @@ def validate_sra_download(accession: str, download_dir: Path) -> Dict[str, Any]:
     return validation
 
 
-def prefetch_sra_metadata(accessions: List[str]) -> Dict[str, Dict[str, Any]]:
+def prefetch_sra_metadata(
+    accessions: List[str],
+    email: str | None = None,
+    *,
+    allow_anonymous: bool = False,
+) -> Dict[str, Dict[str, Any]]:
     """Prefetch metadata for multiple SRA accessions.
 
     Args:
@@ -371,6 +428,7 @@ def prefetch_sra_metadata(accessions: List[str]) -> Dict[str, Dict[str, Any]]:
     Returns:
         Dictionary mapping accessions to metadata
     """
+    contact = resolve_ncbi_contact(email, allow_anonymous=allow_anonymous)
     metadata = {}
 
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
@@ -388,6 +446,8 @@ def prefetch_sra_metadata(accessions: List[str]) -> Dict[str, Dict[str, Any]]:
             "retmax": len(batch),
             "retmode": "json",
         }
+        if contact.email:
+            search_params["email"] = contact.email
 
         try:
             response = requests.get(f"{base_url}/esearch.fcgi", params=search_params, timeout=30)
@@ -405,6 +465,8 @@ def prefetch_sra_metadata(accessions: List[str]) -> Dict[str, Dict[str, Any]]:
                         "id": ",".join(id_list),
                         "retmode": "json",
                     }
+                    if contact.email:
+                        summary_params["email"] = contact.email
 
                     summary_response = requests.get(f"{base_url}/esummary.fcgi", params=summary_params, timeout=30)
                     summary_response.raise_for_status()
@@ -482,6 +544,8 @@ def download_sra_project(
         project_id: SRA project ID (PRJNA...)
         output_dir: Output directory
         threads: Number of threads for download
+        email: Explicit NCBI contact; otherwise ``NCBI_EMAIL``.
+        allow_anonymous: Explicitly permit anonymous NCBI metadata lookup.
 
     Returns:
         List of paths to downloaded run directories
@@ -505,7 +569,13 @@ def download_sra_project(
     for exp_acc in experiment_accessions:
         try:
             # Download all runs from this experiment
-            run_paths = download_sra_experiment(exp_acc, output_dir, threads)
+            run_paths = download_sra_experiment(
+                exp_acc,
+                output_dir,
+                threads,
+                email=email,
+                allow_anonymous=allow_anonymous,
+            )
             downloaded_runs.extend(run_paths)
             logger.info(f"Downloaded {len(run_paths)} runs from experiment {exp_acc}")
         except Exception as e:
@@ -591,12 +661,12 @@ def download_sra_run(sra_accession: str, output_dir: str | Path, threads: int = 
     output_dir.mkdir(parents=True, exist_ok=True)
 
     run_dir = output_dir / sra_accession
-    run_dir.mkdir(exist_ok=True)
 
     # Check if SRA tools are available
     if not check_sra_tools_available():
-        logger.warning("SRA tools not available, download may fail")
-        return run_dir
+        raise RuntimeError("SRA Toolkit is unavailable; install fasterq-dump or fastq-dump before downloading")
+
+    run_dir.mkdir(exist_ok=True)
 
     try:
         # Use fasterq-dump if available, otherwise fastq-dump
@@ -616,8 +686,11 @@ def download_sra_run(sra_accession: str, output_dir: str | Path, threads: int = 
         try:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600)
             if result.returncode == 0:
-                logger.info(f"Downloaded SRA run {sra_accession} using fasterq-dump")
-                return run_dir
+                validation = validate_sra_download(sra_accession, run_dir)
+                if validation["valid"]:
+                    logger.info(f"Downloaded SRA run {sra_accession} using fasterq-dump")
+                    return run_dir
+                logger.warning(f"fasterq-dump produced invalid output for {sra_accession}: {validation['issues']}")
         except (subprocess.TimeoutExpired, FileNotFoundError):
             pass
 
@@ -626,15 +699,18 @@ def download_sra_run(sra_accession: str, output_dir: str | Path, threads: int = 
         result = subprocess.run(cmd, cwd=run_dir, capture_output=True, text=True, timeout=3600)
 
         if result.returncode == 0:
-            logger.info(f"Downloaded SRA run {sra_accession} using fastq-dump")
-            return run_dir
+            validation = validate_sra_download(sra_accession, run_dir)
+            if validation["valid"]:
+                logger.info(f"Downloaded SRA run {sra_accession} using fastq-dump")
+                return run_dir
+            logger.error(f"fastq-dump produced invalid output for {sra_accession}: {validation['issues']}")
         else:
             logger.error(f"Failed to download {sra_accession}: {result.stderr}")
-            return run_dir
 
     except Exception as e:
-        logger.error(f"Error downloading SRA run {sra_accession}: {e}")
-        return run_dir
+        raise RuntimeError(f"Error downloading SRA run {sra_accession}: {e}") from e
+
+    raise RuntimeError(f"SRA conversion produced no valid FASTQ output for {sra_accession}")
 
 
 def search_sra_for_organism(

@@ -3,6 +3,8 @@
 These tests use real Ollama API calls - real implementations.
 """
 
+import os
+
 import pytest
 
 from metainformant.ml.llm.ollama.chains import (
@@ -38,6 +40,8 @@ def client() -> OllamaClient:
 @pytest.fixture
 def check_ollama(client: OllamaClient):
     """Skip tests if Ollama is not available or model is not installed."""
+    if os.environ.get("METAINFORMANT_RUN_OLLAMA_INTEGRATION") != "1":
+        pytest.skip("Set METAINFORMANT_RUN_OLLAMA_INTEGRATION=1 for real Ollama inference tests")
     if not client.is_available():
         pytest.skip("Ollama server not available")
     # Also check that the specific model is installed

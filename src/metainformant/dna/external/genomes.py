@@ -110,10 +110,13 @@ def download_genome_package_best_effort(
     """
     output_dir = Path(output_dir)
 
+    failures: list[str] = []
+
     try:
         # Try primary method first
         return download_genome_package(accession, output_dir, include)
     except Exception as e:
+        failures.append(f"NCBI Datasets API: {e}")
         logger.warning(f"Primary download failed: {e}")
 
         # Try FTP fallback if provided
@@ -121,14 +124,11 @@ def download_genome_package_best_effort(
             try:
                 return _download_from_ftp(ftp_url, output_dir / accession)
             except Exception as e2:
+                failures.append(f"FTP fallback: {e2}")
                 logger.warning(f"FTP download failed: {e2}")
 
-        # Create empty directory as fallback
-        fallback_dir = output_dir / accession
-        fallback_dir.mkdir(parents=True, exist_ok=True)
-
-        logger.warning(f"All download methods failed for {accession}, created empty directory")
-        return fallback_dir
+        detail = "; ".join(failures) or "no download strategy was attempted"
+        raise RuntimeError(f"All genome download methods failed for {accession}: {detail}") from e
 
 
 def is_valid_assembly_accession(accession: str) -> bool:

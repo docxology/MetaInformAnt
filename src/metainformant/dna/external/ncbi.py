@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
+from metainformant.core.ncbi import resolve_ncbi_contact
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
@@ -18,22 +19,37 @@ logger = logging.get_logger(__name__)
 class NCBIClient:
     """Client for NCBI API interactions."""
 
-    def __init__(self, api_key: Optional[str] = None, email: Optional[str] = None):
+    def __init__(
+        self,
+        api_key: Optional[str] = None,
+        email: Optional[str] = None,
+        *,
+        allow_anonymous: bool = False,
+        timeout: float = 30.0,
+    ):
         """Initialize NCBI client.
 
         Args:
             api_key: NCBI API key for higher rate limits
-            email: Email address for NCBI requests
+            email: Explicit contact email. If omitted, ``NCBI_EMAIL`` is used.
+            allow_anonymous: Explicitly permit a request without an email.
+            timeout: Per-request timeout in seconds.
         """
+        if timeout <= 0:
+            raise ValueError("timeout must be greater than zero")
+
+        contact = resolve_ncbi_contact(email, allow_anonymous=allow_anonymous)
         self.api_key = api_key
-        self.email = email
+        self.email = contact.email
+        self.contact_mode = contact.mode
+        self.timeout = timeout
         self.base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
         self.session = requests.Session()
 
         # Set headers
         headers = {"User-Agent": "metainformant/0.4.0"}
-        if email:
-            headers["From"] = email
+        if contact.email:
+            headers["From"] = contact.email
         self.session.headers.update(headers)
 
     def search_nucleotide(self, query: str, max_results: int = 100) -> List[Dict[str, Any]]:
@@ -57,9 +73,11 @@ class NCBIClient:
 
         if self.api_key:
             search_params["api_key"] = self.api_key
+        if self.email:
+            search_params["email"] = self.email
 
         try:
-            response = self.session.get(f"{self.base_url}/esearch.fcgi", params=search_params)
+            response = self.session.get(f"{self.base_url}/esearch.fcgi", params=search_params, timeout=self.timeout)
             response.raise_for_status()
 
             search_data = response.json()
@@ -82,8 +100,12 @@ class NCBIClient:
 
             if self.api_key:
                 summary_params["api_key"] = self.api_key
+            if self.email:
+                summary_params["email"] = self.email
 
-            summary_response = self.session.get(f"{self.base_url}/esummary.fcgi", params=summary_params)
+            summary_response = self.session.get(
+                f"{self.base_url}/esummary.fcgi", params=summary_params, timeout=self.timeout
+            )
             summary_response.raise_for_status()
 
             summary_data = summary_response.json()
@@ -127,8 +149,10 @@ class NCBIClient:
 
             if self.api_key:
                 fetch_params["api_key"] = self.api_key
+            if self.email:
+                fetch_params["email"] = self.email
 
-            response = self.session.get(f"{self.base_url}/efetch.fcgi", params=fetch_params)
+            response = self.session.get(f"{self.base_url}/efetch.fcgi", params=fetch_params, timeout=self.timeout)
             response.raise_for_status()
 
             content = response.text
@@ -168,9 +192,11 @@ class NCBIClient:
 
         if self.api_key:
             search_params["api_key"] = self.api_key
+        if self.email:
+            search_params["email"] = self.email
 
         try:
-            response = self.session.get(f"{self.base_url}/esearch.fcgi", params=search_params)
+            response = self.session.get(f"{self.base_url}/esearch.fcgi", params=search_params, timeout=self.timeout)
             response.raise_for_status()
 
             search_data = response.json()
@@ -188,8 +214,12 @@ class NCBIClient:
 
             if self.api_key:
                 summary_params["api_key"] = self.api_key
+            if self.email:
+                summary_params["email"] = self.email
 
-            summary_response = self.session.get(f"{self.base_url}/esummary.fcgi", params=summary_params)
+            summary_response = self.session.get(
+                f"{self.base_url}/esummary.fcgi", params=summary_params, timeout=self.timeout
+            )
             summary_response.raise_for_status()
 
             summary_data = summary_response.json()
@@ -231,8 +261,10 @@ class NCBIClient:
 
             if self.api_key:
                 summary_params["api_key"] = self.api_key
+            if self.email:
+                summary_params["email"] = self.email
 
-            response = self.session.get(f"{self.base_url}/esummary.fcgi", params=summary_params)
+            response = self.session.get(f"{self.base_url}/esummary.fcgi", params=summary_params, timeout=self.timeout)
             response.raise_for_status()
 
             data = response.json()
@@ -255,59 +287,101 @@ class NCBIClient:
             return None
 
 
-def search_nucleotide(query: str, max_results: int = 100, api_key: Optional[str] = None) -> List[Dict[str, Any]]:
+def search_nucleotide(
+    query: str,
+    max_results: int = 100,
+    api_key: Optional[str] = None,
+    email: Optional[str] = None,
+    *,
+    allow_anonymous: bool = False,
+    timeout: float = 30.0,
+) -> List[Dict[str, Any]]:
     """Convenience function for nucleotide database search.
 
     Args:
         query: Search query
         max_results: Maximum results to return
         api_key: NCBI API key
+        email: Explicit contact email; otherwise ``NCBI_EMAIL``.
+        allow_anonymous: Explicitly permit an anonymous request.
+        timeout: Per-request timeout in seconds.
 
     Returns:
         List of search results
     """
-    client = NCBIClient(api_key=api_key)
+    client = NCBIClient(api_key=api_key, email=email, allow_anonymous=allow_anonymous, timeout=timeout)
     return client.search_nucleotide(query, max_results)
 
 
-def fetch_sequence(accession: str, api_key: Optional[str] = None) -> Optional[str]:
+def fetch_sequence(
+    accession: str,
+    api_key: Optional[str] = None,
+    email: Optional[str] = None,
+    *,
+    allow_anonymous: bool = False,
+    timeout: float = 30.0,
+) -> Optional[str]:
     """Convenience function for sequence fetching.
 
     Args:
         accession: Sequence accession
         api_key: NCBI API key
+        email: Explicit contact email; otherwise ``NCBI_EMAIL``.
+        allow_anonymous: Explicitly permit an anonymous request.
+        timeout: Per-request timeout in seconds.
 
     Returns:
         DNA sequence string
     """
-    client = NCBIClient(api_key=api_key)
+    client = NCBIClient(api_key=api_key, email=email, allow_anonymous=allow_anonymous, timeout=timeout)
     return client.fetch_sequence(accession)
 
 
-def search_protein(query: str, max_results: int = 100, api_key: Optional[str] = None) -> List[Dict[str, Any]]:
+def search_protein(
+    query: str,
+    max_results: int = 100,
+    api_key: Optional[str] = None,
+    email: Optional[str] = None,
+    *,
+    allow_anonymous: bool = False,
+    timeout: float = 30.0,
+) -> List[Dict[str, Any]]:
     """Convenience function for protein database search.
 
     Args:
         query: Search query
         max_results: Maximum results to return
         api_key: NCBI API key
+        email: Explicit contact email; otherwise ``NCBI_EMAIL``.
+        allow_anonymous: Explicitly permit an anonymous request.
+        timeout: Per-request timeout in seconds.
 
     Returns:
         List of protein search results
     """
-    client = NCBIClient(api_key=api_key)
+    client = NCBIClient(api_key=api_key, email=email, allow_anonymous=allow_anonymous, timeout=timeout)
     return client.search_protein(query, max_results)
 
 
-def get_taxonomy_info(tax_id: int, api_key: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def get_taxonomy_info(
+    tax_id: int,
+    api_key: Optional[str] = None,
+    email: Optional[str] = None,
+    *,
+    allow_anonymous: bool = False,
+    timeout: float = 30.0,
+) -> Optional[Dict[str, Any]]:
     """Convenience function for taxonomy information.
 
     Args:
         tax_id: NCBI taxonomy ID
         api_key: NCBI API key
+        email: Explicit contact email; otherwise ``NCBI_EMAIL``.
+        allow_anonymous: Explicitly permit an anonymous request.
+        timeout: Per-request timeout in seconds.
 
     Returns:
         Taxonomy information
     """
-    client = NCBIClient(api_key=api_key)
+    client = NCBIClient(api_key=api_key, email=email, allow_anonymous=allow_anonymous, timeout=timeout)
     return client.get_taxonomy_info(tax_id)

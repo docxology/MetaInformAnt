@@ -71,6 +71,11 @@ result = pipeline.run({"text": document})
 - Ollama server running locally (`brew services start ollama`)
 - At least one model pulled (`ollama pull smollm2:135m-instruct-q4_K_S`)
 
+The real Ollama integration tests are opt-in because model loading and local
+inference are external, resource-intensive operations. Run them with
+`METAINFORMANT_RUN_OLLAMA_INTEGRATION=1`; ordinary package tests validate the
+client and chain contracts without requiring a live model server.
+
 ## See Also
 
 - [Ollama Documentation](https://ollama.ai/docs)

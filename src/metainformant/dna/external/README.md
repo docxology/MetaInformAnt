@@ -1,6 +1,9 @@
 # External
 
 Clients for NCBI Entrez and Datasets APIs to search databases, download genome assemblies, and retrieve sequence records.
+NCBI requests require an explicit ``email=`` argument, ``NCBI_EMAIL``, or the
+deliberate ``allow_anonymous=True`` opt-in. Requests are bounded by a per-call
+timeout and never use a fabricated contact address.
 
 ## Contents
 
@@ -34,7 +37,7 @@ from metainformant.dna.external.entrez import EntrezClient, fetch_fasta_sequence
 from metainformant.dna.external.genomes import download_genome_package, list_genome_assemblies
 from metainformant.dna.external.ncbi import NCBIClient
 
-client = EntrezClient(email="user@example.com")
+client = EntrezClient(email="user@example.com", timeout=30)
 results = client.search("nucleotide", "Apis mellifera[ORGN]")
 assemblies = list_genome_assemblies("Apis mellifera", max_results=5)
 ```
