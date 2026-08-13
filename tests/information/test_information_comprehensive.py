@@ -1074,6 +1074,7 @@ class TestNetworkInformation:
 
         h = network_entropy(small_graph, method="von_neumann")
         assert isinstance(h, (float, complex))
+        assert np.isfinite(h)
 
     def test_network_entropy_from_adjacency(self) -> None:
         from metainformant.information.integration.networks import network_entropy

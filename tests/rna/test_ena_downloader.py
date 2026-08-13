@@ -23,7 +23,10 @@ pytestmark = pytest.mark.network
 
 class TestENADownloader(unittest.TestCase):
     def setUp(self):
-        self.downloader = ENADownloader()
+        # The real ENA probe remains live, but is bounded below this suite's
+        # 20-second per-test watchdog so a transient endpoint cannot strand
+        # the complete network lane.
+        self.downloader = ENADownloader(api_retries=0, api_timeout_seconds=10)
         self.test_dir = tempfile.mkdtemp()
 
     def tearDown(self):

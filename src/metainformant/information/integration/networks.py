@@ -124,6 +124,13 @@ def _von_neumann_entropy(G: Any) -> float:
     # For computational efficiency, use eigenvalues
     try:
         eigenvals = np.linalg.eigvals(P)
+        # The transition matrix of an undirected graph is similar to a
+        # symmetric matrix, so its eigenvalues are real. ``eigvals`` can
+        # nevertheless return tiny imaginary components on one platform or
+        # NumPy release. Normalize those numerical artifacts before filtering
+        # positive eigenvalues; comparing a complex array directly emits a
+        # version-dependent ComplexWarning.
+        eigenvals = np.real_if_close(eigenvals, tol=1000).real
         eigenvals = eigenvals[eigenvals > 0]  # Only positive eigenvalues
 
         entropy = 0.0

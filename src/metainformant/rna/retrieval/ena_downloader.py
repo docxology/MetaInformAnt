@@ -248,6 +248,7 @@ class ENADownloader:
         speed_time_seconds: int = 600,
         api_retries: int = 2,
         api_retry_delay_seconds: int = 2,
+        api_timeout_seconds: int = 30,
     ):
         """
         Initialize the downloader.
@@ -278,6 +279,9 @@ class ENADownloader:
                 (default: 2).
             api_retry_delay_seconds: Seconds between ENA API retries
                 (default: 2).
+            api_timeout_seconds: Timeout for each ENA metadata request
+                (default: 30). Keep this shorter than an enclosing test or
+                workflow watchdog when operating in bounded environments.
         """
         if timeout <= 0:
             raise ValueError("timeout must be positive")
@@ -297,6 +301,8 @@ class ENADownloader:
             raise ValueError("api_retries must be non-negative")
         if api_retry_delay_seconds <= 0:
             raise ValueError("api_retry_delay_seconds must be positive")
+        if api_timeout_seconds <= 0:
+            raise ValueError("api_timeout_seconds must be positive")
         self.timeout = timeout
         self.retries = retries
         self.integrity_retries = integrity_retries
@@ -306,6 +312,7 @@ class ENADownloader:
         self.speed_time_seconds = speed_time_seconds
         self.api_retries = api_retries
         self.api_retry_delay_seconds = api_retry_delay_seconds
+        self.api_timeout_seconds = api_timeout_seconds
 
     def get_fastq_urls(self, sample_id: str) -> List[str]:
         """
@@ -344,7 +351,7 @@ class ENADownloader:
 
         for attempt in range(self.api_retries + 1):
             try:
-                with urllib.request.urlopen(api_url, timeout=30) as response:  # nosec B310
+                with urllib.request.urlopen(api_url, timeout=self.api_timeout_seconds) as response:  # nosec B310
                     content = response.read().decode("utf-8")
                     lines = content.strip().split("\n")
 
