@@ -28,7 +28,8 @@ repos:
         args: [--max-line-length=120, "--extend-ignore=E203,W503"]
         types: [python]
 
-  # Type checking with mypy (disabled for now due to many issues)
+  # Type checking is enforced by the ratcheted package verification command;
+  # keep it out of the per-file hook so the repository-wide budget is applied.
   # - repo: https://github.com/pre-commit/mirrors-mypy
   #   rev: v1.8.0
   #   hooks:
@@ -98,7 +99,8 @@ repos:
         types: [python]
         exclude: '^tests/.*'
 
-  # Documentation checks (disabled for development - too many warnings)
+  # Documentation style remains an informational follow-up until the package
+  # has a complete docstring baseline; link and API-contract checks are blocking.
   # - repo: https://github.com/pycqa/pydocstyle
   #   rev: 6.3.0
   #   hooks:

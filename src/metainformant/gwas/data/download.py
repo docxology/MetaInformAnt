@@ -7,8 +7,10 @@ and SRA sequencing data for GWAS analysis.
 from __future__ import annotations
 
 import re
+import stat
+import zipfile
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, BinaryIO, Dict, List
 
 import requests
 
@@ -84,13 +86,11 @@ def _download_from_ncbi_datasets(accession: str, output_dir: Path) -> Path:
 
     # Extract zip
     import glob
-    import zipfile
 
     extract_dir = output_dir / accession
     extract_dir.mkdir(exist_ok=True)
 
-    with zipfile.ZipFile(zip_path, "r") as zip_ref:
-        zip_ref.extractall(extract_dir)
+    _extract_zip_safely(zip_path, extract_dir)
 
     # Clean up zip
     zip_path.unlink()
@@ -103,6 +103,47 @@ def _download_from_ncbi_datasets(accession: str, output_dir: Path) -> Path:
         raise RuntimeError(f"NCBI Datasets API returned a zip without any .fna files for {accession}")
 
     return extract_dir
+
+
+def _extract_zip_safely(zip_path: Path, extract_dir: Path) -> None:
+    """Extract a downloaded ZIP without permitting path or symlink escapes.
+
+    NCBI responses are external input.  ``ZipFile.extractall`` trusts member
+    names and can write outside the requested output directory when a remote
+    archive contains traversal entries.  Extraction is intentionally explicit
+    so every member is checked before it is written.
+    """
+    destination = extract_dir.resolve()
+    destination.mkdir(parents=True, exist_ok=True)
+
+    with zipfile.ZipFile(zip_path, "r") as archive:
+        for member in archive.infolist():
+            member_name = member.filename.replace("\\", "/")
+            member_path = Path(member_name)
+            if member_path.is_absolute() or ".." in member_path.parts:
+                raise ValueError(f"Unsafe ZIP member path: {member.filename!r}")
+
+            target = (destination / member_path).resolve()
+            if not target.is_relative_to(destination):
+                raise ValueError(f"ZIP member escapes extraction directory: {member.filename!r}")
+
+            mode = (member.external_attr >> 16) & 0o177777
+            if stat.S_ISLNK(mode):
+                raise ValueError(f"Symlink ZIP members are not allowed: {member.filename!r}")
+
+            if member.is_dir() or member_name.endswith("/"):
+                target.mkdir(parents=True, exist_ok=True)
+                continue
+
+            target.parent.mkdir(parents=True, exist_ok=True)
+            with archive.open(member, "r") as source, target.open("wb") as sink:
+                _copy_zip_member(source, sink)
+
+
+def _copy_zip_member(source: BinaryIO, sink: BinaryIO, chunk_size: int = 1024 * 1024) -> None:
+    """Copy one validated ZIP member to its confined destination."""
+    while chunk := source.read(chunk_size):
+        sink.write(chunk)
 
 
 def _download_from_ftp(accession: str, output_dir: Path) -> Path:
@@ -740,13 +781,10 @@ def download_annotation(accession: str, output_dir: str | Path) -> Path:
             f.write(response.content)
 
         # Extract
-        import zipfile
-
         extract_dir = output_dir / f"{accession}_annotation"
         extract_dir.mkdir(exist_ok=True)
 
-        with zipfile.ZipFile(zip_path, "r") as zip_ref:
-            zip_ref.extractall(extract_dir)
+        _extract_zip_safely(zip_path, extract_dir)
 
         zip_path.unlink()
         return extract_dir
@@ -875,7 +913,8 @@ def download_variant_data(study_accession: str, output_dir: str | Path, data_typ
             # Create a README explaining how to obtain VCF files
             readme_file = vcf_dir / "README.md"
             with open(readme_file, "w") as f:
-                f.write(f"""# VCF Data for {study_accession}
+                f.write(
+                    f"""# VCF Data for {study_accession}
 
 This study contains GWAS variants that may be available in dbSNP or other repositories.
 
@@ -889,7 +928,8 @@ Study information:
 - Accession: {study_accession}
 - Trait: {trait}
 - Publication: https://pubmed.ncbi.nlm.nih.gov/{pubmed_id}/
-""")
+"""
+                )
 
             downloaded_files.append(vcf_dir)
             logger.info(f"Created VCF directory structure at {vcf_dir}")
