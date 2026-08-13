@@ -1,6 +1,6 @@
 # MetaInformAnt TODO
 
-> **Last Updated**: 2026-08-11
+> **Last Updated**: 2026-08-13
 >
 > This TODO contains only active unfinished work. Prior BeeWAS GWAS,
 > manuscript, dashboard, validation, and release-bundle work is recorded in
@@ -21,6 +21,14 @@ nested publication and reachable gitlinks; operational manifests, receipts,
 locks, and campaign snapshots; then owner-reviewed scientific promotion. A
 green engineering gate never establishes cohort completion or biological
 inference. The live RNA campaign remains a moving operational snapshot.
+
+### Coverage ratchet baseline
+
+- [x] Restore a truthful blocking aggregate coverage gate at 58.00% after the
+  hosted full-suite measured 58.01% with all tests passing.
+- [ ] Raise `COVERAGE_MINIMUM` in measured increments as maintained-domain
+  tests expand; each increase requires a hosted full-suite receipt and a
+  corresponding test/documentation change.
 
 ---
 

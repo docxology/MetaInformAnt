@@ -188,6 +188,21 @@ class TestBiologicalClassifier:
         if accuracy_key in results:
             assert 0.0 <= results[accuracy_key] <= 1.0
 
+    def test_cross_validate_accepts_estimator_overrides_and_string_labels(self):
+        """Estimator defaults do not collide with caller options or labels."""
+        labels = np.where(self.y == 0, "control", "treated")
+        results = cross_validate_biological(
+            X=self.X,
+            y=labels,
+            algorithm="random_forest",
+            cv_folds=3,
+            n_estimators=7,
+            random_state=42,
+            parallel_jobs=1,
+        )
+        assert results["class_distribution"] == [int(np.sum(labels == "control")), int(np.sum(labels == "treated"))]
+        assert results["accuracy"] >= 0.0
+
 
 class TestBiologicalRegressor:
     """Test BiologicalRegressor functionality."""

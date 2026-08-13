@@ -19,6 +19,22 @@ pytest -q`, followed by the documentation, formatting, typing, security, and
 wheel checks. A failed group prints its complete captured pytest output and
 returns a non-zero status.
 
+### Coverage ratchet
+
+The full `coverage` mode measures the complete maintained package, including
+optional domain facades that are not all exercised by a single CI environment.
+Its blocking baseline is currently `58.00%`, matching the latest hosted full
+suite observation (`58.01%`). This is a real gate, not an ignored check. Raise
+it through `COVERAGE_MINIMUM` only after adding tests and recording the new
+measured baseline:
+
+```bash
+COVERAGE_MINIMUM=60.00 bash scripts/package/test.sh --mode coverage
+```
+
+The smaller `coverage-fast` mode intentionally uses `--cov-fail-under=0` for
+focused development feedback; it must not be used as release evidence.
+
 ## Quality Assurance Framework
 
 METAINFORMANT implements a comprehensive quality assurance framework combining automated testing, code quality checks, and validation processes.
@@ -62,7 +78,7 @@ graph TD
     end
 
     subgraph "Quality Metrics"
-        Vcoverage>90%[Coverage >90%] -.-> J
+        Vcoverage>58%[Coverage >=58% ratcheted] -.-> J
         WzeroCriticalIssues[Zero Critical Issues] -.-> J
         XperformanceBenchmarks[Performance Benchmarks] -.-> J
         YdocumentationComplete[Documentation Complete] -.-> J

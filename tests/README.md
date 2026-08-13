@@ -172,7 +172,8 @@ bash scripts/package/test.sh --mode coverage
 open output/coverage_html/index.html
 ```
 
-Coverage threshold: 85% minimum for CI.
+Coverage threshold: 58.00% minimum for the current full-package CI baseline;
+raise it through `COVERAGE_MINIMUM` only with a measured ratchet receipt.
 
 ## Related
 

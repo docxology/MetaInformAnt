@@ -369,20 +369,32 @@ def cross_validate_biological(
         _algo_to_method = {"random_forest": "rf", "gradient_boosting": "gb", "logistic_regression": "lr"}
         method = _algo_to_method.get(algorithm, algorithm)
 
-    # Select classifier
+    # Select classifier. Build each estimator's options once so callers can
+    # override defaults without passing duplicate keyword arguments to
+    # scikit-learn (which otherwise raises at runtime).
+    classifier_kwargs = dict(kwargs)
+    if random_state is not None:
+        classifier_kwargs["random_state"] = random_state
+
     if method == "rf":
-        classifier = RandomForestClassifier(
-            random_state=random_state, n_estimators=kwargs.get("n_estimators", 100), **kwargs
-        )
+        classifier_kwargs.setdefault("n_estimators", 100)
+        classifier = RandomForestClassifier(**classifier_kwargs)
     elif method == "gb":
-        classifier = GradientBoostingClassifier(
-            random_state=random_state, n_estimators=kwargs.get("n_estimators", 100), **kwargs
-        )
+        classifier_kwargs.setdefault("n_estimators", 100)
+        classifier = GradientBoostingClassifier(**classifier_kwargs)
     elif method == "lr":
-        classifier = LogisticRegression(random_state=random_state, max_iter=1000, **kwargs)
+        classifier_kwargs.setdefault("max_iter", 1000)
+        classifier = LogisticRegression(**classifier_kwargs)
     elif method == "ensemble":
         # Use ensemble classifier
-        ensemble_classifier = train_ensemble_classifier(X, y, random_state=random_state, **kwargs)
+        ensemble_jobs = classifier_kwargs.pop("n_jobs", -1)
+        ensemble_classifier = train_ensemble_classifier(
+            X,
+            y,
+            random_state=random_state,
+            n_jobs=ensemble_jobs,
+            **classifier_kwargs,
+        )
         classifier = ensemble_classifier.model
     else:
         raise ValueError(f"Unknown classification method: {method}")
@@ -424,7 +436,7 @@ def cross_validate_biological(
         "n_samples": len(X),
         "n_features": X.shape[1],
         "n_classes": len(np.unique(y)),
-        "class_distribution": np.bincount(y).tolist(),
+        "class_distribution": np.unique(y, return_counts=True)[1].tolist(),
         "cross_validation": cv_results,
     }
 
