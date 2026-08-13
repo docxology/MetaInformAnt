@@ -77,6 +77,13 @@ def robust_download_url(
     Returns:
         True if successful, False otherwise
     """
+    if max_retries < 1:
+        raise ValueError("max_retries must be at least 1")
+    if retry_delay < 0:
+        raise ValueError("retry_delay must be non-negative")
+    if timeout <= 0:
+        raise ValueError("timeout must be greater than zero")
+
     dest_path = Path(dest_path)
     dest_path.parent.mkdir(parents=True, exist_ok=True)
     temp_path = dest_path.with_suffix(dest_path.suffix + ".part")
@@ -115,7 +122,7 @@ def robust_download_url(
                 # wget: -c (continue), -t (tries), -T (timeout)
                 cmd = ["wget", "-c", "-t", str(3), "-T", str(timeout), "-O", str(temp_path), url]
 
-            result = subprocess.run(cmd, capture_output=True, text=True)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
 
             if result.returncode == 0:
                 # Success
@@ -156,7 +163,7 @@ def download_sra_files_from_metadata(
 
     from metainformant.core.io.download_manager import DownloadManager
 
-    results = {}
+    results: dict[str, bool] = {}
     if not metadata_path.exists():
         logger.error(f"Metadata file not found: {metadata_path}")
         return results

@@ -160,10 +160,10 @@ class TestCheckDiskSpace:
         _, free_gb = check_disk_space(tmp_path)
         assert free_gb > 0
 
-    def test_nonexistent_path_returns_default(self) -> None:
-        """Non-existent path triggers the except branch, returns (True, 100.0)."""
+    def test_nonexistent_path_fails_closed(self) -> None:
+        """An unavailable capacity probe is not treated as sufficient space."""
         result = check_disk_space(Path("/this/path/does/not/exist/at/all"))
-        assert result == (True, 100.0)
+        assert result == (False, 0.0)
 
 
 # ===========================================================================
@@ -185,14 +185,14 @@ class TestCheckDiskSpaceOrFail:
         # Should not raise
         check_disk_space_or_fail(tmp_path, min_free_gb=0.0, step_name="quant")
 
-    def test_nonexistent_path_assumed_ok(self) -> None:
-        """Non-existent path falls back to (True, 100.0) so no exception."""
-        free_gb = check_disk_space_or_fail(
-            Path("/nonexistent/path/xyz"),
-            min_free_gb=50.0,
-            step_name="getfastq",
-        )
-        assert free_gb == 100.0
+    def test_nonexistent_path_raises(self) -> None:
+        """An unavailable capacity probe blocks continuation."""
+        with pytest.raises(RuntimeError, match="Disk space too low"):
+            check_disk_space_or_fail(
+                Path("/nonexistent/path/xyz"),
+                min_free_gb=50.0,
+                step_name="getfastq",
+            )
 
 
 # ===========================================================================

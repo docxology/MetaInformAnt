@@ -20,13 +20,13 @@ repos:
         args: [--profile=black, --line-length=120]
         types: [python]
 
-  # Python linting with flake8 (disabled due to configuration issues)
-  # - repo: https://github.com/pycqa/flake8
-  #   rev: 7.0.0
-  #   hooks:
-  #     - id: flake8
-  #       args: [--max-line-length=120, --extend-ignore=E203,W503,F401,F841,E402,E722,E741,F811,F541]
-  #       types: [python]
+  # Python linting. Keep this aligned with the blocking CI quality gate.
+  - repo: https://github.com/pycqa/flake8
+    rev: 7.0.0
+    hooks:
+      - id: flake8
+        args: [--max-line-length=120, "--extend-ignore=E203,W503"]
+        types: [python]
 
   # Type checking with mypy (disabled for now due to many issues)
   # - repo: https://github.com/pre-commit/mirrors-mypy
@@ -88,14 +88,15 @@ repos:
         pass_filenames: false
         description: Fast validation of example files for syntax and import errors
 
-  # Python security checks with bandit (disabled due to dependency issues)
-  # - repo: https://github.com/pycqa/bandit
-  #   rev: 1.7.5
-  #   hooks:
-  #     - id: bandit
-  #       args: [-r, src/, -f, json, -o, output/bandit-report.json]
-  #       types: [python]
-  #       exclude: 'tests/.*'
+  # Medium-and-higher security findings block CI and local commits. Low-level
+  # subprocess findings remain visible in the full Bandit report for review.
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.8.3
+    hooks:
+      - id: bandit
+        args: [-ll]
+        types: [python]
+        exclude: '^tests/.*'
 
   # Documentation checks (disabled for development - too many warnings)
   # - repo: https://github.com/pycqa/pydocstyle

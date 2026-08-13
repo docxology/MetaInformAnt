@@ -44,7 +44,11 @@ def check_disk_space(path: Path, min_free_gb: float = 10.0) -> Tuple[bool, float
             return True, free_gb
     except Exception as e:
         logger.warning(f"Could not check disk space: {e}")
-        return True, 100.0  # Assume OK if we can't check
+        # A failed capacity probe is not evidence that a long-running or
+        # destructive workflow can safely continue. Fail closed so callers
+        # using ``check_disk_space_or_fail`` preserve resumability instead of
+        # risking a producer that fills an unknown filesystem.
+        return False, 0.0
 
 
 def check_disk_space_or_fail(path: Path, min_free_gb: float = 20.0, step_name: str = "") -> float:
@@ -59,7 +63,7 @@ def check_disk_space_or_fail(path: Path, min_free_gb: float = 20.0, step_name: s
         Free GB available
 
     Raises:
-        RuntimeError: If disk space is below minimum
+        RuntimeError: If disk space is below minimum or cannot be inspected
     """
     ok, free_gb = check_disk_space(path, min_free_gb)
     if not ok and free_gb >= 0:
