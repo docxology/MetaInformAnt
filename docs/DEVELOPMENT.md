@@ -45,7 +45,7 @@ uv pip install -e ".[all]"
 bash scripts/package/setup.sh
 ```
 
-The `dev` group includes: pytest,black,isort,mypy,pre-commit,sphinx.
+The `dev` group includes pytest, black, isort, mypy, pre-commit, and Sphinx.
 
 #### Verify Installation
 
@@ -95,7 +95,9 @@ Force-run on all files (e.g., after changing config):
 uv run pre-commit run --all-files
 ```
 
-Some hooks are disabled by default (mypy, flake8, bandit, pydocstyle). You can enable them locally in `.pre-commit-config.yaml` if desired.
+The blocking local hooks include Black, isort, flake8, and Bandit. Mypy is
+enforced through the documented RNA error-budget ratchet, while pydocstyle
+remains informational and is not a commit gate.
 
 ---
 

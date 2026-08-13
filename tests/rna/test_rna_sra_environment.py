@@ -31,4 +31,16 @@ def test_explicit_ncbi_settings_override_is_respected(tmp_path: Path, monkeypatc
 
     environment = build_sra_environment(tmp_path / "campaign", base_environment={})
 
-    assert environment["NCBI_SETTINGS"] == str(override)
+    assert Path(environment["NCBI_SETTINGS"]) == override.resolve()
+
+
+def test_relative_data_root_is_canonicalized(tmp_path: Path, monkeypatch) -> None:
+    """Subprocess paths remain independent of the caller's working directory."""
+
+    monkeypatch.chdir(tmp_path)
+    environment = build_sra_environment(Path("campaign"), base_environment={})
+
+    campaign_root = (tmp_path / "campaign").resolve()
+    assert Path(environment["TMPDIR"]).is_relative_to(campaign_root)
+    assert Path(environment["VDB_CONFIG"]).is_relative_to(campaign_root)
+    assert Path(environment["NCBI_SETTINGS"]).is_relative_to(campaign_root)

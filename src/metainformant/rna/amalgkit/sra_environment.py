@@ -23,9 +23,9 @@ def ensure_ncbi_settings(data_root: str | Path | None = None) -> Path:
 
     override = os.environ.get("AMALGKIT_NCBI_SETTINGS", "").strip()
     if override:
-        return Path(override).expanduser()
+        return Path(override).expanduser().resolve()
 
-    root = resolve_data_root(data_root)
+    root = resolve_data_root(data_root).resolve()
     settings_dir = root / ".ncbi"
     settings_path = settings_dir / "metainformant-user-settings.mkfg"
     sra_root = root / ".sra-cache"
@@ -52,7 +52,9 @@ def build_sra_environment(
 ) -> dict[str, str]:
     """Return an inherited environment scoped to one campaign data root."""
 
-    root = resolve_data_root(data_root)
+    # Keep the public workflow path resolver compatible with relative command
+    # paths, but make every subprocess-owned directory absolute and CWD-safe.
+    root = resolve_data_root(data_root).resolve()
     environment = dict(os.environ if base_environment is None else base_environment)
     runtime_root = root / ".metainformant" / "sra"
     tmp_dir = runtime_root / "fasterq-dump"

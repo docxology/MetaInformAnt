@@ -32,7 +32,10 @@ Use the current package layout in examples and new code:
 - Logging helpers: `metainformant.core.utils.logging`
 - Validation helpers: `metainformant.core.data.validation`
 
-Avoid obsolete imports such as the old `core.config` and `core.paths` module paths or the old top-level DNA `sequences` alias in new code. Compatibility shims for those paths are deliberately tested so existing imports keep working.
+The 0.4.0 package surface removed obsolete imports such as `core.config`,
+`core.paths`, and the old top-level DNA `sequences` alias. Use the canonical
+modules below; callers of removed paths should follow
+[the migration guide](docs/MIGRATION_0.4.md).
 
 ## Documentation Rules
 

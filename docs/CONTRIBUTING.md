@@ -49,10 +49,10 @@ METAINFORMANT enforces strict code quality standards to maintain a clean, mainta
 - Some third-party libraries (Bio, matplotlib, pandas, numpy, sklearn) have missing imports ignored per-module
 - Run manually: `mypy src/metainformant` or `uv run mypy src/metainformant`
 
-#### Linting: flake8 (optional but encouraged)
+#### Linting: flake8
 - flake8 is configured with `max-line-length = 120`
 - Some errors are ignored (E203, W503)
-- Pre-commit includes flake8 hook but it may be disabled in the current configuration
+- Pre-commit runs flake8 with the same blocking configuration used by CI
 
 #### Docstrings
 - **Google style** docstrings for all public functions, classes, and modules
@@ -79,8 +79,9 @@ METAINFORMANT uses [pre-commit](https://pre-commit.com) to automate code quality
 
 - **black** – code formatting (Python 3.12, line-length 120)
 - **isort** – import sorting (Black profile)
-- **flake8** – linting (currently disabled due to config issues)
-- **mypy** – type checking (currently disabled due to many issues, but encouraged locally)
+- **flake8** – blocking linting with the CI configuration
+- **mypy** – type checking through the documented ratcheted scope; the full
+  package remains an explicit improvement target
 - **General file checks** (via `pre-commit-hooks`):
   - `check-added-large-files` (max 1000 KB)
   - `check-merge-conflict`
@@ -93,7 +94,8 @@ METAINFORMANT uses [pre-commit](https://pre-commit.com) to automate code quality
   - `detect-aws-credentials`
   - `mixed-line-ending` – enforce LF
 - **pygrep-hooks**: Python-specific checks (blanket noqa, type annotations, no log warnings, RST syntax)
-- **Disabled**: bandit (security), pydocstyle (documentation style) – can be enabled locally if desired
+- **Bandit** – blocking medium/high-severity security checks
+- **pydocstyle** – informational documentation-style checks; not a release gate
 
 #### Using Pre-commit
 

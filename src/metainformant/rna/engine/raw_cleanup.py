@@ -95,6 +95,10 @@ def reclaim_sample_raw_inputs(
 
     seen: set[Path] = set()
     for path in files:
+        if path.is_symlink():
+            result["protected_paths"].append(str(path))
+            result["errors"].append(f"refused to remove symlinked raw file: {path}")
+            continue
         resolved = path.resolve(strict=False)
         if resolved in seen:
             continue

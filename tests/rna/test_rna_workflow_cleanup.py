@@ -133,6 +133,25 @@ def test_reclaim_sample_raw_inputs_rejects_non_accession(tmp_path: Path) -> None
         reclaim_sample_raw_inputs(tmp_path / "work", "not-a-run")
 
 
+def test_reclaim_sample_raw_inputs_preserves_symlinked_raw_file(tmp_path: Path) -> None:
+    """Cleanup must not remove a link that refers outside the campaign tree."""
+
+    work_dir = tmp_path / "work"
+    sample_dir = work_dir / "getfastq" / "SRR123456"
+    sample_dir.mkdir(parents=True)
+    external = tmp_path / "external.fastq.gz"
+    external.write_bytes(b"external raw input")
+    linked = sample_dir / "SRR123456_1.fastq.gz"
+    linked.symlink_to(external)
+
+    result = reclaim_sample_raw_inputs(work_dir, "SRR123456")
+
+    assert result["files_deleted"] == 0
+    assert str(linked) in result["protected_paths"]
+    assert linked.is_symlink()
+    assert external.exists()
+
+
 # ===========================================================================
 # check_disk_space
 # ===========================================================================
