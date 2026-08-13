@@ -18,3 +18,12 @@ def test_sra_run_does_not_return_empty_directory_when_tools_are_missing(
     with pytest.raises(RuntimeError, match="SRA Toolkit is unavailable"):
         sra_download.download_sra_run("SRR123", tmp_path)
     assert not (tmp_path / "SRR123").exists()
+
+
+def test_sra_run_rejects_path_traversal_and_invalid_threads(tmp_path: Path) -> None:
+    """Run accessions are identifiers, never filesystem path fragments."""
+
+    with pytest.raises(ValueError, match="Invalid SRA run accession"):
+        sra_download.download_sra_run("../../outside", tmp_path)
+    with pytest.raises(ValueError, match="threads must be at least 1"):
+        sra_download.download_sra_run("SRR123", tmp_path, threads=0)

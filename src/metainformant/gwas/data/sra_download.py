@@ -6,16 +6,19 @@ from the Sequence Read Archive (SRA) for GWAS analysis.
 
 from __future__ import annotations
 
+import re
 import time
 from pathlib import Path
 from typing import Any, Dict, List
 
 import requests
 
+from metainformant.core.io.sra_environment import _build_sra_environment
 from metainformant.core.ncbi import resolve_ncbi_contact
 from metainformant.core.utils import logging
 
 logger = logging.get_logger(__name__)
+_SRA_RUN_ACCESSION = re.compile(r"(?:SRR|ERR|DRR)\d+$")
 
 
 def download_sra_experiment(
@@ -657,6 +660,11 @@ def download_sra_run(sra_accession: str, output_dir: str | Path, threads: int = 
     Returns:
         Path to downloaded run directory
     """
+    if not _SRA_RUN_ACCESSION.fullmatch(sra_accession):
+        raise ValueError(f"Invalid SRA run accession: {sra_accession!r}")
+    if threads < 1:
+        raise ValueError("threads must be at least 1")
+
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -672,6 +680,8 @@ def download_sra_run(sra_accession: str, output_dir: str | Path, threads: int = 
         # Use fasterq-dump if available, otherwise fastq-dump
         import subprocess
 
+        process_environment = _build_sra_environment(output_dir)
+
         cmd = [
             "fasterq-dump",
             "--split-files",
@@ -684,7 +694,13 @@ def download_sra_run(sra_accession: str, output_dir: str | Path, threads: int = 
 
         # Try fasterq-dump first
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600)
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                timeout=3600,
+                env=process_environment,
+            )
             if result.returncode == 0:
                 validation = validate_sra_download(sra_accession, run_dir)
                 if validation["valid"]:
@@ -696,7 +712,14 @@ def download_sra_run(sra_accession: str, output_dir: str | Path, threads: int = 
 
         # Fall back to fastq-dump
         cmd = ["fastq-dump", "--split-files", "--gzip", sra_accession]
-        result = subprocess.run(cmd, cwd=run_dir, capture_output=True, text=True, timeout=3600)
+        result = subprocess.run(
+            cmd,
+            cwd=run_dir,
+            capture_output=True,
+            text=True,
+            timeout=3600,
+            env=process_environment,
+        )
 
         if result.returncode == 0:
             validation = validate_sra_download(sra_accession, run_dir)
