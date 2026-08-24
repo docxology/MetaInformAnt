@@ -996,7 +996,7 @@ def _normalize_interleaved_paired_fastq_layout(
         logger.warning(
             "Run %s is declared paired but contains one validated read-1-only "
             "FASTQ (%d records); retaining the unnumbered file for Amalgkit "
-            "0.16.59 layout reconciliation.",
+            "0.16.60 layout reconciliation.",
             accession,
             record_count,
         )
@@ -1006,7 +1006,7 @@ def _normalize_interleaved_paired_fastq_layout(
 def _metadata_requires_fastq_input_stats(metadata_path: Path, accession: str) -> bool:
     """Return whether Amalgkit needs read-derived statistics for one accession.
 
-    Amalgkit 0.16.59 infers ``spot_length`` from ``total_bases / total_spots``
+    Amalgkit 0.16.60 infers ``spot_length`` from ``total_bases / total_spots``
     when the public SRA metadata omits the explicit field.  Re-counting a
     validated multi-gigabyte FASTQ merely because ``spot_length`` is missing
     therefore adds substantial I/O/CPU without changing the quantification
@@ -2772,7 +2772,7 @@ class StreamingPipelineOrchestrator:
         # Direct ENA acquisition bypasses Amalgkit's getfastq stage.  For
         # public metadata rows with missing/zero spot statistics, derive the
         # quant-only fallback from the validated FASTQ before invoking
-        # Amalgkit 0.16.59; otherwise it rejects usable reads before Kallisto.
+        # Amalgkit 0.16.60; otherwise it rejects usable reads before Kallisto.
         metadata_file = Path(meta_path)
         sample_fastq_dir = work_dir / "getfastq" / srr_id
         if _metadata_requires_fastq_input_stats(metadata_file, srr_id):
@@ -3479,7 +3479,7 @@ class StreamingPipelineOrchestrator:
                 species_name,
             )
 
-            # Amalgkit 0.16.59 builds the quantification index through the
+            # Amalgkit 0.16.60 builds the quantification index through the
             # reference-preparation helper; it no longer exposes the removed
             # `config` or `index` CLI stages.
             if needs_index:
@@ -3495,7 +3495,7 @@ class StreamingPipelineOrchestrator:
                     logger.error("Reference preparation exception for %s: %s", species_name, exc)
                     return []
 
-            # Taxonomy acquisition is owned by Amalgkit 0.16.59.  When the
+            # Taxonomy acquisition is owned by Amalgkit 0.16.60.  When the
             # campaign launcher provides AMALGKIT_SHARED_DOWNLOAD_DIR, its
             # native taxdump/database cache is reused across species.  The
             # older per-species seed path is intentionally not recreated.
@@ -3559,7 +3559,7 @@ class StreamingPipelineOrchestrator:
             logger.error("Metadata normalization did not complete for %s", species_name)
             return []
 
-        # Some valid Amalgkit 0.16.59 runs emit only ``metadata.tsv`` when
+        # Some valid Amalgkit 0.16.60 runs emit only ``metadata.tsv`` when
         # selection does not create a separate table.  Materialize the
         # canonical selected-table boundary once so the current metadata
         # witness can remain strict and every later resume can distinguish

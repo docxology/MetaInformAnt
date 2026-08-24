@@ -1,7 +1,7 @@
 # Amalgkit test-contract note
 
-The active RNA wrapper contract targets Amalgkit `0.16.59`, pinned to the
-release tag `v0.16.59` in `pyproject.toml`. Historical-version fixtures are
+The active RNA wrapper contract targets Amalgkit `0.16.60`, pinned to the
+release tag `v0.16.60` in `pyproject.toml`. Historical-version fixtures are
 retained to verify compatibility classification. The test suite must exercise the
 current command surface and must not describe retired command-line options or
 an older release as active functionality.

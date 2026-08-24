@@ -29,18 +29,26 @@ bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 
 ## How are resources selected?
 
-Use bounded project variables or explicit script options:
+Use the bounded project profile or explicit script options:
 
 ```bash
-AMALGKIT_PIPELINE_WORKERS=8 \
-AMALGKIT_PIPELINE_THREADS=8 \
-AMALGKIT_PIPELINE_QUANT_SLOTS=4 \
+AMALGKIT_PIPELINE_PROFILE=local-throughput \
+AMALGKIT_PIPELINE_THREADS=10 \
+AMALGKIT_PIPELINE_QUANT_SLOTS=10 \
+AMALGKIT_PIPELINE_FASTQ_SLOTS=1 \
 bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 ```
 
-Check both external and system free-space floors before increasing concurrency.
-Acquisition and mounted-volume contention can dominate wall time even when CPU
-is idle.
+The local-throughput profile uses `2 x host CPUs` of sample workers bounded to
+`16..24`, ten total quant threads, six validation slots, and twice the actual
+worker count in flight. Check both external and system free-space floors before
+raising `AMALGKIT_PIPELINE_FASTQ_SLOTS`; acquisition and mounted-volume
+contention can dominate wall time even when CPU is idle. Preview the resolved
+budget without starting a producer with:
+
+```bash
+bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh --print-config
+```
 
 ## How do I verify a run?
 

@@ -1,6 +1,6 @@
 """Current Amalgkit command-contract tests.
 
-These tests exercise the supported Amalgkit 0.16.59 command surface without network
+These tests exercise the supported Amalgkit 0.16.60 command surface without network
 access. They deliberately keep optional cross-species commands separate from
 the per-species default workflow.
 """
@@ -248,17 +248,17 @@ def test_current_commands_have_allow_lists() -> None:
 
 
 def test_version_parser_accepts_installed_output() -> None:
-    valid, message = amalgkit.parse_and_check_version("amalgkit version 0.16.59", "0.16.59")
+    valid, message = amalgkit.parse_and_check_version("amalgkit version 0.16.60", "0.16.60")
     assert valid, message
-    valid, message = amalgkit.parse_and_check_version("amalgkit version 0.16.59", "0.16.59", exact=True)
+    valid, message = amalgkit.parse_and_check_version("amalgkit version 0.16.60", "0.16.60", exact=True)
     assert valid, message
-    invalid, _ = amalgkit.parse_and_check_version("amalgkit version 0.16.99", "0.16.59", exact=True)
+    invalid, _ = amalgkit.parse_and_check_version("amalgkit version 0.16.99", "0.16.60", exact=True)
     assert not invalid
-    invalid, _ = amalgkit.parse_and_check_version("amalgkit development build", "0.16.59", exact=True)
+    invalid, _ = amalgkit.parse_and_check_version("amalgkit development build", "0.16.60", exact=True)
     assert not invalid
-    assert amalgkit.REQUIRED_AMALGKIT_VERSION == "0.16.59"
-    assert amalgkit.AMALGKIT_RELEASE_TAG == "v0.16.59"
-    assert len(amalgkit.AMALGKIT_SOURCE_REVISION) == 40
+    assert amalgkit.REQUIRED_AMALGKIT_VERSION == "0.16.60"
+    assert amalgkit.AMALGKIT_RELEASE_TAG == "v0.16.60"
+    assert amalgkit.AMALGKIT_SOURCE_REVISION == "c656a52aacdcee6fd3bf7e8031769ca957204ebc"
 
 
 def test_project_selection_rules_use_current_parser() -> None:

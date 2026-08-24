@@ -2,7 +2,7 @@
 
 ## Scope
 
-- Domain: RNA and Amalgkit 0.16.59
+- Domain: RNA and Amalgkit 0.16.60
 - Source: `src/metainformant/rna/`
 - Tests: `tests/rna/test_rna_*.py`
 - Documentation: `docs/rna/` and `projects/hymenoptera_amalgkit/doc/`

@@ -1,6 +1,6 @@
 # RNA module
 
-This package provides the current Amalgkit 0.16.59 execution and analysis
+This package provides the current Amalgkit 0.16.60 execution and analysis
 interfaces used by the Hymenoptera project. Large inputs and outputs live
 under the explicitly selected `AMALGKIT_DATA_ROOT`, never in the repository.
 

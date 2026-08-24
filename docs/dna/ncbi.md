@@ -181,7 +181,9 @@ package_dir = download_genome_package("GCF_000001405.39", "output/genomes/")
 
 ### `download_genome_package_best_effort`
 
-Tries the Datasets API first, then falls back to FTP download if provided.
+Tries the Datasets API first, then falls back to FTP download if provided. It
+raises ``RuntimeError`` when every strategy fails; an empty directory is never
+returned as evidence of a genome download.
 
 ### `get_genome_metadata`
 
@@ -250,8 +252,13 @@ results = validate_genome_files("output/genomes/GCF_000001405.39/")
 
 ## Configuration and Rate Limits
 
-NCBI requires an email address for all Entrez requests. An API key is optional but
-recommended for production use (raises rate limit from 3 to 10 requests/second).
+NCBI-facing clients share one explicit contact policy. An explicit ``email=``
+argument takes precedence over ``NCBI_EMAIL``. If neither is available, callers
+must pass ``allow_anonymous=True``; anonymous mode warns, leaves the request
+identity unset, and is recorded as ``contact_mode="anonymous"`` on the client.
+No configuration file or test fixture invents or persists an email. An API key
+is optional but recommended for production use (raises rate limit from 3 to 10
+requests/second).
 
 Set credentials via constructor parameters or environment variables:
 
@@ -262,7 +269,8 @@ os.environ["NCBI_API_KEY"] = "your_key_here"
 ```
 
 Without an API key, the client automatically sleeps 0.4 seconds between requests
-to respect the 3 requests/second limit.
+to respect the 3 requests/second limit. All clients accept ``timeout=`` in
+seconds (default ``30``); non-positive values are rejected.
 
 ---
 

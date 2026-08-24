@@ -58,7 +58,7 @@ scientific = [
 # quantifications remain eligible across version drift when their non-version
 # contract is unchanged.
 rna = [
-    "amalgkit @ git+https://github.com/kfuku52/amalgkit@v0.16.59",
+    "amalgkit @ git+https://github.com/kfuku52/amalgkit@v0.16.60",
 ]
 
 # Machine learning and advanced analytics
@@ -173,7 +173,7 @@ performance = [
 
 # All optional dependencies combined
 all = [
-    "amalgkit @ git+https://github.com/kfuku52/amalgkit@v0.16.59",
+    "amalgkit @ git+https://github.com/kfuku52/amalgkit@v0.16.60",
     "scipy>=1.11.0",
     "scikit-learn>=1.3.0",
     "seaborn>=0.13.0",

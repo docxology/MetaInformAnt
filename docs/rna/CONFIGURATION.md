@@ -52,19 +52,31 @@ under the same data root for a run.
 ## Runtime settings
 
 Use CLI options for direct producers and the project shell variables for the
-full campaign:
+full campaign. The launcher defaults to the measured `local-throughput`
+profile; use `compat` for a deliberately conservative diagnostic run:
 
 ```bash
 export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
-export AMALGKIT_PIPELINE_WORKERS=8
-export AMALGKIT_PIPELINE_THREADS=8
-export AMALGKIT_PIPELINE_QUANT_SLOTS=4
+export AMALGKIT_PIPELINE_PROFILE=local-throughput
+export AMALGKIT_PIPELINE_THREADS=10
+export AMALGKIT_PIPELINE_QUANT_SLOTS=10
 export AMALGKIT_PIPELINE_FASTQ_THREADS=1
 export AMALGKIT_PIPELINE_FASTQ_SLOTS=1
 export AMALGKIT_PIPELINE_COMPRESSION_THREADS=1
-export AMALGKIT_PIPELINE_VALIDATION_SLOTS=4
-export AMALGKIT_PIPELINE_MAX_IN_FLIGHT=16
+export AMALGKIT_PIPELINE_VALIDATION_SLOTS=6
 ```
+
+The profile computes sample workers as `2 x host CPUs`, bounded to `16..24`,
+and derives the default queue bound as twice the actual worker override. Use
+the no-side-effect preview before a real run:
+
+```bash
+bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh --print-config
+```
+
+Keep `AMALGKIT_PIPELINE_FASTQ_SLOTS=1` while system free space is below
+`32 GiB`; raise it only after a measured extraction bottleneck and a fresh
+free-space/I/O check.
 
 The launcher checks both external and system free-space floors before creating
 new work. Do not increase workers or quant slots based only on an idle CPU

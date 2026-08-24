@@ -1,4 +1,4 @@
-# MetaInformAnt Hymenoptera selection contract for Amalgkit 0.16.59.
+# MetaInformAnt Hymenoptera selection contract for Amalgkit 0.16.60.
 # The current select command consumes this TSV rather than unsupported ad-hoc CLI
 # selection flags. It intentionally imposes no tissue-group restriction and
 # retains every eligible public RNA-seq sample up to the large safety bound.

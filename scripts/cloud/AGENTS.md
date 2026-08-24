@@ -5,7 +5,7 @@ Thin orchestrator scripts for GCP cloud deployment and data exfiltration.
 
 ## Contents
 - `deploy_gcp.py` — VM provisioning and pipeline launch
-- `prep_genomes.py` — current Amalgkit 0.16.59 reference preparation
+- `prep_genomes.py` — current Amalgkit 0.16.60 reference preparation
 - `cloud_startup.sh` — VM bootstrap script
 - `vm_setup.sh` — Environment setup on the VM
 - `download_results.sh` — Exfiltrate quantification results from cloud

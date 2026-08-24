@@ -1,6 +1,6 @@
 # Current Amalgkit command reference
 
-The project pins Amalgkit 0.16.59. The command registry in
+The project pins Amalgkit 0.16.60. The command registry in
 `metainformant.rna.amalgkit.commands` is the source of truth for accepted
 options; confirm the installed binary with `amalgkit --help`.
 

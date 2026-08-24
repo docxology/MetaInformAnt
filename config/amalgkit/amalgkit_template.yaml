@@ -123,7 +123,7 @@ steps:
     # Uses NCBI_EMAIL environment variable if not specified
     # entrez_email: your.email@example.com
 
-    # Resolve scientific names from taxids (Amalgkit 0.16.59)
+    # Resolve scientific names from taxids (Amalgkit 0.16.60)
     # Translates taxids to scientific names, preserves originals in scientific_name_original column
     resolve_names: yes
 
@@ -148,7 +148,7 @@ steps:
   # SELECT: Select samples based on metadata and filters
   # -------------------------------------------------------------------------
   select:
-    # Amalgkit 0.16.59 reads selection parameters and rules from this TSV.
+    # Amalgkit 0.16.60 reads selection parameters and rules from this TSV.
     # Do not place retired selection flags directly in this YAML map.
     select_rules_tsv: config/amalgkit/select_rules.tsv
 
@@ -196,7 +196,7 @@ steps:
     # Diagnostic output
     fastp_print: no             # Print fastp commands
 
-    # Amalgkit 0.16.59 resumable rRNA filtering. Disabled by default because
+    # Amalgkit 0.16.60 resumable rRNA filtering. Disabled by default because
     # it requires MMseqs2 and a SILVA database download; enable only when the
     # run manifest records these inputs and the filtered FASTQs are validated.
     rrna_filter: no

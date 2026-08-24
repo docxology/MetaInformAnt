@@ -552,7 +552,7 @@ def test_missing_sra_statistics_are_derived_from_validated_fastq(
 def test_positive_sra_counts_avoid_recount_when_spot_length_is_missing(
     tmp_path: Path,
 ) -> None:
-    """Amalgkit 0.16.59 can infer spot length from positive SRA counts."""
+    """Amalgkit 0.16.60 can infer spot length from positive SRA counts."""
 
     metadata_path = tmp_path / "metadata.tsv"
     metadata_path.write_text(
@@ -974,7 +974,7 @@ def test_fasterq_interleaved_paired_output_is_split_and_promoted(
 def test_fasterq_paired_metadata_single_read_output_is_reconciled(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A read-1-only archive follows Amalgkit 0.16.59's single-file rule."""
+    """A read-1-only archive follows Amalgkit 0.16.60's single-file rule."""
 
     fastq_root = tmp_path / "fastq"
     sample_dir = fastq_root / "SRR_LAYOUT_MISMATCH"

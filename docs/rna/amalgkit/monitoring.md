@@ -48,13 +48,26 @@ session from the current external data root:
 ```bash
 tmux new-session -d -s hymenoptera-campaign \
   'env AMALGKIT_DATA_ROOT="$AMALGKIT_DATA_ROOT" \
-    AMALGKIT_PIPELINE_WORKERS=4 AMALGKIT_PIPELINE_THREADS=8 \
-    AMALGKIT_PIPELINE_FASTQ_SLOTS=4 \
+    AMALGKIT_PIPELINE_PROFILE=local-throughput \
+    AMALGKIT_PIPELINE_THREADS=10 \
+    AMALGKIT_PIPELINE_FASTQ_SLOTS=1 \
     AMALGKIT_RECLAIM_RAW_AFTER_QUANT=yes \
     bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh'
 tmux capture-pane -pt hymenoptera-campaign:0 -S -40
 # Reattach interactively when desired: tmux attach -t hymenoptera-campaign
 ```
+
+Before changing the extraction lane, inspect the resolved settings without
+creating a lock or touching the data root:
+
+```bash
+bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh --print-config
+```
+
+Keep `AMALGKIT_PIPELINE_FASTQ_SLOTS=1` while host system free space is below
+`32 GiB`. A value of `2` is appropriate only after a measured extraction
+bottleneck and a fresh storage/I/O check; Blue free space alone is not enough
+because `fasterq-dump` temporary files use the host scratch volume.
 
 The worker loop pauses new downloads when the external root has less than
 the configured external free-space floor (8 GiB by default) or the configured

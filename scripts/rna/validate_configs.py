@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate species YAMLs and selection rules against Amalgkit 0.16.59."""
+"""Validate species YAMLs and selection rules against Amalgkit 0.16.60."""
 
 from __future__ import annotations
 
@@ -69,7 +69,7 @@ def _validate_select_rules(config_path: Path, select: dict[str, Any]) -> list[st
     errors: list[str] = []
     raw_path = select.get("select_rules_tsv")
     if not isinstance(raw_path, str) or not raw_path.strip():
-        return ["select.select_rules_tsv is required by Amalgkit 0.16.59"]
+        return ["select.select_rules_tsv is required by Amalgkit 0.16.60"]
     rule_path = _resolve_rule_path(config_path, raw_path)
     if not rule_path.is_file():
         return [f"select rule file does not exist: {raw_path}"]
@@ -121,10 +121,10 @@ def validate_config(config_path: Path) -> list[str]:
             normalized = str(key).replace("-", "_")
             if normalized in RETIRED_DIRECT_STEP_KEYS:
                 errors.append(
-                    f"steps.{step}.{key} is not a direct 0.16.59 option; encode selection policy in select_rules.tsv"
+                    f"steps.{step}.{key} is not a direct 0.16.60 option; encode selection policy in select_rules.tsv"
                 )
             elif normalized not in supported and normalized not in ORCHESTRATION_ONLY_STEP_KEYS:
-                errors.append(f"steps.{step}.{key} is not accepted by the 0.16.59 command registry")
+                errors.append(f"steps.{step}.{key} is not accepted by the 0.16.60 command registry")
 
     getfastq = steps.get("getfastq")
     if isinstance(getfastq, dict):
