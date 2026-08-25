@@ -2002,6 +2002,11 @@ class StreamingPipelineOrchestrator:
         # that volume during a burst of large libraries.
         self._local_scratch_reservation_lock = threading.Lock()
         self._local_scratch_reserved_bytes = 0
+        # FASTQ staging occupies the local volume for the entire quantification
+        # workspace lifetime, not just while the copy is in progress. Keep one
+        # reservation per sample workspace so concurrent quant slots cannot
+        # collectively cross the configured host-volume reserve.
+        self._local_fastq_stage_reservations: Dict[Path, int] = {}
         # A campaign may use more sample-task workers than quantification
         # slots so local validation and acquisition can feed Kallisto.  This
         # semaphore is installed by ``run_all`` and remains absent for small
@@ -2939,6 +2944,20 @@ class StreamingPipelineOrchestrator:
             purpose="Local FASTQ stage",
         )
 
+    def _retain_local_fastq_stage_reservation(self, scratch_root: Path, payload_bytes: int) -> None:
+        """Keep a successful FASTQ-stage reservation until workspace cleanup."""
+
+        with self._local_scratch_reservation_lock:
+            self._local_fastq_stage_reservations[scratch_root.absolute()] = payload_bytes
+
+    def _release_local_fastq_stage_for_workspace(self, scratch_root: Path) -> None:
+        """Release the FASTQ bytes retained by one completed/aborted workspace."""
+
+        with self._local_scratch_reservation_lock:
+            payload_bytes = self._local_fastq_stage_reservations.pop(scratch_root.absolute(), 0)
+        if payload_bytes:
+            self._release_local_fastq_stage(payload_bytes)
+
     def _stage_local_fastq_inputs(
         self,
         work_dir: Path,
@@ -2975,6 +2994,7 @@ class StreamingPipelineOrchestrator:
 
         staged_root = scratch_root / "getfastq"
         staged_sample_dir = staged_root / srr_id
+        staged_successfully = False
         try:
             staged_sample_dir.mkdir(parents=True, exist_ok=True)
             reused = 0
@@ -3004,6 +3024,8 @@ class StreamingPipelineOrchestrator:
                 payload_bytes / (1024**3),
                 reused,
             )
+            self._retain_local_fastq_stage_reservation(scratch_root, payload_bytes)
+            staged_successfully = True
             return True
         except OSError as exc:
             logger.warning(
@@ -3014,7 +3036,8 @@ class StreamingPipelineOrchestrator:
             shutil.rmtree(staged_root, ignore_errors=True)
             return False
         finally:
-            self._release_local_fastq_stage(payload_bytes)
+            if not staged_successfully:
+                self._release_local_fastq_stage(payload_bytes)
 
     def _prepare_local_quant_workspace(
         self,
@@ -3077,9 +3100,17 @@ class StreamingPipelineOrchestrator:
                 srr_id,
                 expected_paired,
             ):
-                if staged_getfastq.is_dir() and not staged_getfastq.is_symlink():
-                    shutil.rmtree(staged_getfastq)
-                (scratch_root / "getfastq").symlink_to(work_dir / "getfastq", target_is_directory=True)
+                # Amalgkit v0.16.60 rejects a symlinked input/output root. If
+                # the local FASTQ copy cannot fit under the host reserve, use
+                # the canonical external workspace instead of constructing a
+                # local workspace that is guaranteed to fail validation.
+                self._cleanup_local_quant_workspace(scratch_root)
+                logger.info(
+                    "Local quant scratch unavailable for %s/%s; using canonical mounted workspace",
+                    species_name,
+                    srr_id,
+                )
+                return None
             (scratch_root / "quant").mkdir()
             local_command = list(command)
             local_command[local_command.index("--out_dir") + 1] = str(scratch_root)
@@ -3097,6 +3128,7 @@ class StreamingPipelineOrchestrator:
             )
             if scratch_root.is_dir() and not scratch_root.is_symlink():
                 shutil.rmtree(scratch_root, ignore_errors=True)
+            self._release_local_fastq_stage_for_workspace(scratch_root)
             return None
 
     def _promote_local_quant_output(self, work_dir: Path, srr_id: str, scratch_root: Path) -> bool:
@@ -3134,13 +3166,17 @@ class StreamingPipelineOrchestrator:
     def _cleanup_local_quant_workspace(self, scratch_root: Path) -> None:
         """Remove only the exact per-sample local scratch directory."""
 
+        cleanup_succeeded = False
         try:
             if scratch_root.is_symlink():
                 scratch_root.unlink()
             elif scratch_root.exists():
                 shutil.rmtree(scratch_root)
+            cleanup_succeeded = True
         except OSError as exc:
             logger.warning("Unable to clean local quant scratch %s: %s", scratch_root, exc)
+        if cleanup_succeeded:
+            self._release_local_fastq_stage_for_workspace(scratch_root)
 
     def is_quantified(self, species_name: str, srr_id: str) -> bool:
         """Check for a reusable quantification, including compatible version drift."""

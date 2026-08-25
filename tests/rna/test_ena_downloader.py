@@ -61,6 +61,16 @@ class TestENADownloader(unittest.TestCase):
         urls = self.downloader.get_fastq_urls("INVALID_ID_12345")
         self.assertEqual(urls, [], "Should return empty list for invalid ID")
 
+    def test_invalid_deflate_stream_is_rejected_without_raising(self):
+        """Malformed deflate blocks must be reported as an integrity failure."""
+
+        payload = bytearray(gzip.compress(b"A" * 100_000))
+        payload[10] ^= 0xFF
+        corrupt = Path(self.test_dir) / "corrupt.fastq.gz"
+        corrupt.write_bytes(payload)
+
+        self.assertFalse(ena_downloader_module.verify_gzip_integrity(corrupt))
+
     def test_invalid_gzip_gets_bounded_fresh_retry(self):
         """Corrupt completed transfers are preserved and retried from byte zero."""
 

@@ -726,6 +726,81 @@ def test_local_sra_source_staging_failure_uses_authoritative_archive(
     assert not (local_scratch / "SRR_SOURCE_FALLBACK").exists()
 
 
+def test_local_fastq_stage_reservation_survives_until_quant_workspace_cleanup(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Staged FASTQ bytes remain reserved while Kallisto owns the local workspace."""
+
+    external_root = tmp_path / "external"
+    sample_dir = external_root / "getfastq" / "SRR_STAGE"
+    sample_dir.mkdir(parents=True)
+    fastq = sample_dir / "SRR_STAGE.fastq.gz"
+    with gzip.open(fastq, "wb") as handle:
+        handle.write(b"@read\nACGT\n+\n!!!!\n")
+
+    local_scratch = tmp_path / "local-quant"
+    monkeypatch.setenv("AMALGKIT_LOCAL_QUANT_SCRATCH_DIR", str(local_scratch))
+    monkeypatch.setenv("AMALGKIT_LOCAL_FASTQ_STAGE", "yes")
+    monkeypatch.setenv("AMALGKIT_LOCAL_QUANT_SCRATCH_RESERVE_GB", "0")
+
+    orchestrator = StreamingPipelineOrchestrator(
+        tmp_path / "config", tmp_path / "logs", db_path=tmp_path / "progress.db"
+    )
+    scratch_root = local_scratch / "test_species" / "SRR_STAGE"
+
+    assert orchestrator._stage_local_fastq_inputs(
+        external_root, scratch_root, "SRR_STAGE", expected_paired=False
+    ) is True
+    assert orchestrator._local_scratch_reserved_bytes == fastq.stat().st_size
+    assert (scratch_root / "getfastq" / "SRR_STAGE" / fastq.name).is_file()
+
+    orchestrator._cleanup_local_quant_workspace(scratch_root)
+
+    assert orchestrator._local_scratch_reserved_bytes == 0
+    assert not scratch_root.exists()
+
+
+def test_local_quant_scratch_uses_external_workspace_when_fastq_stage_cannot_fit(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A staging miss must not create the symlinked root rejected by Amalgkit."""
+
+    external_root = tmp_path / "external"
+    (external_root / "metadata").mkdir(parents=True)
+    (external_root / "getfastq" / "SRR_NO_STAGE").mkdir(parents=True)
+    metadata = external_root / "metadata" / "metadata_selected.tsv"
+    metadata.write_text("run\nSRR_NO_STAGE\n", encoding="utf-8")
+    local_scratch = tmp_path / "local-quant"
+    monkeypatch.setenv("AMALGKIT_LOCAL_QUANT_SCRATCH_DIR", str(local_scratch))
+    monkeypatch.setenv("AMALGKIT_LOCAL_FASTQ_STAGE", "yes")
+    monkeypatch.setenv("AMALGKIT_LOCAL_QUANT_SCRATCH_RESERVE_GB", "0")
+
+    orchestrator = StreamingPipelineOrchestrator(
+        tmp_path / "config", tmp_path / "logs", db_path=tmp_path / "progress.db"
+    )
+    command = [
+        "amalgkit",
+        "quant",
+        "--out_dir",
+        str(external_root),
+        "--metadata",
+        str(metadata),
+    ]
+
+    assert (
+        orchestrator._prepare_local_quant_workspace(
+            external_root,
+            "test_species",
+            "SRR_NO_STAGE",
+            str(metadata),
+            command,
+            expected_paired=False,
+        )
+        is None
+    )
+    assert not (local_scratch / "test_species" / "SRR_NO_STAGE").exists()
+
+
 def test_sra_validation_and_extraction_share_fallback_slot(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """The fallback semaphore bounds validation and extraction as one I/O unit."""
 
@@ -1972,13 +2047,17 @@ def test_local_quant_scratch_promotes_validated_output_and_archives_replaced_res
 
     work_dir = tmp_path / "work"
     (work_dir / "metadata").mkdir(parents=True)
-    (work_dir / "getfastq").mkdir()
+    fastq_dir = work_dir / "getfastq" / "SRR_LOCAL"
+    fastq_dir.mkdir(parents=True)
+    with gzip.open(fastq_dir / "SRR_LOCAL.fastq.gz", "wb") as handle:
+        handle.write(b"@read\nACGT\n+\n!!!!\n")
     metadata = work_dir / "metadata" / "metadata_selected.tsv"
     metadata.write_text("run\tlib_layout\nSRR_LOCAL\tsingle\n")
     external_sample = work_dir / "quant" / "SRR_LOCAL"
     external_sample.mkdir(parents=True)
     (external_sample / "SRR_LOCAL_abundance.tsv").write_text("prior\n" * 30)
     monkeypatch.setenv("AMALGKIT_LOCAL_QUANT_SCRATCH_DIR", str(tmp_path / "quant-scratch"))
+    monkeypatch.setenv("AMALGKIT_LOCAL_FASTQ_STAGE", "yes")
     monkeypatch.setenv("AMALGKIT_LOCAL_QUANT_SCRATCH_RESERVE_GB", "0")
 
     orchestrator = StreamingPipelineOrchestrator(
@@ -2007,7 +2086,9 @@ def test_local_quant_scratch_promotes_validated_output_and_archives_replaced_res
     assert prepared is not None
     local_command, scratch_root = prepared
     assert local_command[local_command.index("--out_dir") + 1] == str(scratch_root)
-    assert (scratch_root / "getfastq").is_symlink()
+    assert (scratch_root / "getfastq").is_dir()
+    assert not (scratch_root / "getfastq").is_symlink()
+    assert (scratch_root / "getfastq" / "SRR_LOCAL" / "SRR_LOCAL.fastq.gz").is_file()
     assert (scratch_root / "metadata").is_symlink()
 
     local_sample = scratch_root / "quant" / "SRR_LOCAL"

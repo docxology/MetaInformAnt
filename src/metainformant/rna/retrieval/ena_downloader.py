@@ -29,6 +29,7 @@ import subprocess
 import time
 import urllib.error
 import urllib.request
+import zlib
 from pathlib import Path
 from typing import List, Mapping, Tuple
 
@@ -226,7 +227,12 @@ def verify_gzip_integrity(file_path: Path) -> bool:
                 if not chunk:
                     break
         return True
-    except (gzip.BadGzipFile, OSError, EOFError):
+    # ``gzip.GzipFile`` can surface malformed deflate blocks as the lower-
+    # level ``zlib.error`` rather than ``BadGzipFile``.  Treat both forms as
+    # an integrity failure so a stale/corrupt FASTQ is quarantined and the
+    # caller can retry or use the NCBI fallback instead of losing the worker
+    # to an uncaught exception.
+    except (gzip.BadGzipFile, OSError, EOFError, zlib.error):
         return False
 
 
