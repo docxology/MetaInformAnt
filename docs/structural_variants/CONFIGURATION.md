@@ -20,7 +20,7 @@ export SV_CNV_SIGNIFICANCE=0.001 # More stringent CBS
 
 ```python
 # Python code (highest priority)
-from metainformant import config
+from metainformant.core.utils import config
 config.set("structural_variants.min_support", 10)
 ```
 
@@ -181,7 +181,7 @@ Alternatively, place at `~/.hermes/config.yaml` for user-wide defaults.
 ### Accessing Configuration
 
 ```python
-from metainformant import config
+from metainformant.core.utils import config
 
 # Get entire module config as dict
 sv_config = config.get("structural_variants")
@@ -217,7 +217,7 @@ current_min_support = config.get("structural_variants.min_support")
 ### Validation
 
 ```python
-from metainformant import config
+from metainformant.core.utils import config
 
 # Validate schema (raises if invalid)
 errors = config.validate_schema("structural_variants")
@@ -403,7 +403,7 @@ config.get("structural_variants")["detection"]["min_support"]  # works but fragi
 
 import os
 from pathlib import Path
-from metainformant import config, logging as ml_logging
+from metainformant.core.utils import config, logging as ml_logging
 from metainformant.structural_variants import pipeline
 
 # ── Configure via environment (highest priority after code defaults) ────────
@@ -436,7 +436,7 @@ print(f"Completed: {len(results['filtered_svs'])} variants")
 Resolved effective configuration can be printed:
 
 ```python-snippet
-from metainformant import config
+from metainformant.core.utils import config
 from metainformant.structural_variants import get_default_config
 
 defaults = get_default_config()  # Module-provided helper
@@ -461,7 +461,7 @@ for name, param in sig.parameters.items():
 Check configuration validity at startup:
 
 ```python
-from metainformant import config
+from metainformant.core.utils import config
 
 cfg = config.get("structural_variants")
 print(f"Detection min_support: {cfg['detection']['min_support']}")

@@ -49,7 +49,7 @@ Performance characteristics, optimization strategies, and scaling guidelines for
 ### 1. Parallel Processing (Biggest Win)
 
 ```python
-from metainformant import config
+from metainformant.core.utils import config
 
 config.set("structural_variants.parallel", True)
 config.set("structural_variants.max_workers", 8)  # ≤ physical core count

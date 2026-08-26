@@ -78,7 +78,7 @@
 | docs/GETTING_STARTED.md | 231 | AttributeError | 'metainformant' has no attribute 'visualization' (module not found) | `metainformant.visualization.plots` |
 | docs/INTEGRATION.md | 53 | SyntaxError | Invalid Python syntax: unexpected indent at line 13 | `""" Minimal DNA → GWAS → Visualization pipeline. Assumes VCF` |
 | docs/INTEGRATION.md | 122 | ImportError | Cannot import 'cache' from module 'metainformant.core' | `from metainformant.core import cache` |
-| docs/INTEGRATION.md | 122 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core import config` |
+| docs/INTEGRATION.md | 122 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core.utils import config` |
 | docs/INTEGRATION.md | 122 | ImportError | Cannot import 'logging' from module 'metainformant.core' | `from metainformant.core import logging` |
 | docs/INTEGRATION.md | 122 | ImportError | Cannot import 'variants' from module 'metainformant.dna' | `from metainformant.dna import variants` |
 | docs/INTEGRATION.md | 122 | ImportError | Cannot import 'preprocessing' from module 'metainformant.dna' | `from metainformant.dna import preprocessing` |
@@ -208,7 +208,7 @@
 | docs/agents/DOCUMENTATION_REVIEW_REPORT.md | 317 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.io` |
 | docs/agents/DOCUMENTATION_REVIEW_REPORT.md | 317 | SyntaxError | Invalid Python syntax: invalid syntax at line 1 | `from metainformant.core.io import ...` |
 | docs/agents/DOCUMENTATION_REVIEW_REPORT.md | 318 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/DOCUMENTATION_REVIEW_REPORT.md | 321 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/DOCUMENTATION_REVIEW_REPORT.md | 321 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/DOCUMENTATION_REVIEW_REPORT.md | 321 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/DOCUMENTATION_REVIEW_REPORT.md | 325 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.utils.logging` |
 | docs/agents/DOCUMENTATION_REVIEW_REPORT.md | 392 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
@@ -241,11 +241,11 @@
 | docs/agents/rules/core.md | 73 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/core.md | 93 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.io` |
 | docs/agents/rules/core.md | 93 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.io` |
-| docs/agents/rules/core.md | 109 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/core.md | 109 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/core.md | 109 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/core.md | 129 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.utils.logging` |
-| docs/agents/rules/core.md | 192 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
-| docs/agents/rules/core.md | 192 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core import config` |
+| docs/agents/rules/core.md | 192 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
+| docs/agents/rules/core.md | 192 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core.utils import config` |
 | docs/agents/rules/core.md | 192 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/core.md | 192 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.utils` |
 | docs/agents/rules/core.md | 213 | ModuleNotFoundError | Module 'optional_library' not found in project or standard library | `import optional_library` |
@@ -255,20 +255,20 @@
 | docs/agents/rules/dna.md | 120 | AttributeError | 'metainformant' has no attribute 'dna' (module not found) | `metainformant.dna.external` |
 | docs/agents/rules/dna.md | 204 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/dna.md | 217 | ImportError | Cannot import 'SeqIO' from module 'Bio' | `from Bio import SeqIO` |
-| docs/agents/rules/dna.md | 233 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/dna.md | 233 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/dna.md | 233 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/ecology.md | 63 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/ecology.md | 76 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/ecology.md | 76 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/ecology.md | 76 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/epigenome.md | 35 | AttributeError | 'metainformant' has no attribute 'epigenome' (module not found) | `metainformant.epigenome.assays` |
 | docs/agents/rules/epigenome.md | 73 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/epigenome.md | 86 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/epigenome.md | 86 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/epigenome.md | 86 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/gwas.md | 46 | AttributeError | 'metainformant' has no attribute 'gwas' (module not found) | `metainformant.gwas.analysis` |
 | docs/agents/rules/gwas.md | 64 | AttributeError | 'metainformant' has no attribute 'gwas' (module not found) | `metainformant.gwas.analysis` |
 | docs/agents/rules/gwas.md | 103 | AttributeError | 'metainformant' has no attribute 'gwas' (module not found) | `metainformant.gwas.visualization` |
 | docs/agents/rules/gwas.md | 146 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/gwas.md | 159 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/gwas.md | 159 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/gwas.md | 159 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/index.md | 74 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.utils.logging` |
 | docs/agents/rules/index.md | 77 | ImportError | Cannot import 'align' from module 'metainformant.dna' | `from metainformant.dna import align` |
@@ -277,11 +277,11 @@
 | docs/agents/rules/information.md | 35 | ImportError | Cannot import 'syntactic' from module 'metainformant.information.metrics' | `from metainformant.information.metrics import syntactic` |
 | docs/agents/rules/information.md | 35 | AttributeError | 'metainformant' has no attribute 'information' (module not found) | `metainformant.information.metrics` |
 | docs/agents/rules/information.md | 114 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/information.md | 127 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/information.md | 127 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/information.md | 127 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/life_events.md | 44 | AttributeError | 'metainformant' has no attribute 'life_events' (module not found) | `metainformant.life_events.models` |
 | docs/agents/rules/life_events.md | 93 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/life_events.md | 107 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/life_events.md | 107 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/life_events.md | 107 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/longread.md | 40 | AttributeError | 'metainformant' has no attribute 'longread' (module not found) | `metainformant.longread.io` |
 | docs/agents/rules/longread.md | 40 | AttributeError | 'metainformant' has no attribute 'longread' (module not found) | `metainformant.longread.quality` |
@@ -298,7 +298,7 @@
 | docs/agents/rules/math.md | 170 | ImportError | Cannot import 'simulate_generations' from module 'metainformant.math.selection_experiments' | `from metainformant.math.selection_experiments import simulat` |
 | docs/agents/rules/math.md | 170 | AttributeError | 'metainformant' has no attribute 'math' (module not found) | `metainformant.math.selection_experiments` |
 | docs/agents/rules/math.md | 187 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/math.md | 200 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/math.md | 200 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/math.md | 200 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/menu.md | 21 | AttributeError | 'metainformant' has no attribute 'menu' (module not found) | `metainformant.menu.core` |
 | docs/agents/rules/menu.md | 21 | AttributeError | 'metainformant' has no attribute 'menu' (module not found) | `metainformant.menu.ui` |
@@ -314,22 +314,22 @@
 | docs/agents/rules/ml.md | 62 | AttributeError | 'metainformant' has no attribute 'ml' (module not found) | `metainformant.ml.features` |
 | docs/agents/rules/ml.md | 83 | AttributeError | 'metainformant' has no attribute 'ml' (module not found) | `metainformant.ml.evaluation` |
 | docs/agents/rules/ml.md | 101 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/ml.md | 115 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/ml.md | 115 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/ml.md | 115 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/multiomics.md | 31 | AttributeError | 'metainformant' has no attribute 'multiomics' (module not found) | `metainformant.multiomics.analysis` |
 | docs/agents/rules/multiomics.md | 50 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/multiomics.md | 63 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/multiomics.md | 63 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/multiomics.md | 63 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/networks.md | 35 | AttributeError | 'metainformant' has no attribute 'networks' (module not found) | `metainformant.networks.analysis` |
 | docs/agents/rules/networks.md | 65 | AttributeError | 'metainformant' has no attribute 'networks' (module not found) | `metainformant.networks.analysis` |
 | docs/agents/rules/networks.md | 82 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/networks.md | 95 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/networks.md | 95 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/networks.md | 95 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/ontology.md | 55 | ImportError | Cannot import 'Term' from module 'metainformant.ontology.types' | `from metainformant.ontology.types import Term` |
 | docs/agents/rules/ontology.md | 55 | ImportError | Cannot import 'Ontology' from module 'metainformant.ontology.types' | `from metainformant.ontology.types import Ontology` |
 | docs/agents/rules/ontology.md | 55 | AttributeError | 'metainformant' has no attribute 'ontology' (module not found) | `metainformant.ontology.types` |
 | docs/agents/rules/ontology.md | 88 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/ontology.md | 101 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/ontology.md | 101 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/ontology.md | 101 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/ontology.md | 130 | ImportError | Cannot import 'set_cache_enabled' from module 'metainformant.ontology' | `from metainformant.ontology import set_cache_enabled` |
 | docs/agents/rules/ontology.md | 130 | ImportError | Cannot import 'set_cache_ttl' from module 'metainformant.ontology' | `from metainformant.ontology import set_cache_ttl` |
@@ -341,16 +341,16 @@
 | docs/agents/rules/pharmacogenomics.md | 30 | AttributeError | 'metainformant' has no attribute 'pharmacogenomics' (module not found) | `metainformant.pharmacogenomics.annotations` |
 | docs/agents/rules/pharmacogenomics.md | 30 | AttributeError | 'metainformant' has no attribute 'pharmacogenomics' (module not found) | `metainformant.pharmacogenomics.clinical` |
 | docs/agents/rules/phenotype.md | 94 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/phenotype.md | 107 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/phenotype.md | 107 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/phenotype.md | 107 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/protein.md | 52 | AttributeError | 'metainformant' has no attribute 'protein' (module not found) | `metainformant.protein.structure` |
 | docs/agents/rules/protein.md | 106 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/protein.md | 119 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/protein.md | 119 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/protein.md | 119 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/protein.md | 136 | ImportError | Cannot import 'PDB' from module 'Bio' | `from Bio import PDB` |
 | docs/agents/rules/quality.md | 31 | AttributeError | 'metainformant' has no attribute 'quality' (module not found) | `metainformant.quality.io` |
 | docs/agents/rules/quality.md | 58 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/quality.md | 71 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/quality.md | 71 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/quality.md | 71 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/rna.md | 45 | AttributeError | 'metainformant' has no attribute 'rna' (module not found) | `metainformant.rna.engine.workflow` |
 | docs/agents/rules/rna.md | 65 | ImportError | Cannot import 'run_amalgkit_step' from module 'metainformant.rna.amalgkit' | `from metainformant.rna.amalgkit import run_amalgkit_step` |
@@ -368,7 +368,7 @@
 | docs/agents/rules/rna.md | 207 | AttributeError | 'metainformant' has no attribute 'rna' (module not found) | `metainformant.rna.core.cleanup` |
 | docs/agents/rules/rna.md | 228 | AttributeError | 'metainformant' has no attribute 'rna' (module not found) | `metainformant.rna.engine.discovery` |
 | docs/agents/rules/rna.md | 259 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/rna.md | 272 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/rna.md | 272 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/rna.md | 272 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/rna.md | 325 | AttributeError | 'metainformant' has no attribute 'rna' (module not found) | `metainformant.rna.engine.workflow` |
 | docs/agents/rules/rna.md | 348 | ImportError | Cannot import 'run_workflow_for_species' from module 'metainformant.rna.orchestration' | `from metainformant.rna.orchestration import run_workflow_for` |
@@ -380,7 +380,7 @@
 | docs/agents/rules/simulation.md | 89 | AttributeError | 'metainformant' has no attribute 'simulation' (module not found) | `metainformant.simulation.models.popgen` |
 | docs/agents/rules/simulation.md | 111 | AttributeError | 'metainformant' has no attribute 'simulation' (module not found) | `metainformant.simulation.workflow.workflow` |
 | docs/agents/rules/simulation.md | 181 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/simulation.md | 194 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/simulation.md | 194 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/simulation.md | 194 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/singlecell.md | 40 | AttributeError | 'metainformant' has no attribute 'singlecell' (module not found) | `metainformant.singlecell.analysis` |
 | docs/agents/rules/singlecell.md | 40 | AttributeError | 'metainformant' has no attribute 'ml' (module not found) | `metainformant.ml.features` |
@@ -392,7 +392,7 @@
 | docs/agents/rules/singlecell.md | 95 | ImportError | Cannot import 'plot_clusters' from module 'metainformant.singlecell' | `from metainformant.singlecell import plot_clusters` |
 | docs/agents/rules/singlecell.md | 95 | AttributeError | 'metainformant' has no attribute 'singlecell' (module not found) | `metainformant.singlecell` |
 | docs/agents/rules/singlecell.md | 117 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/singlecell.md | 130 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/singlecell.md | 130 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/singlecell.md | 130 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/spatial.md | 29 | AttributeError | 'metainformant' has no attribute 'spatial' (module not found) | `metainformant.spatial.io` |
 | docs/agents/rules/spatial.md | 29 | AttributeError | 'metainformant' has no attribute 'spatial' (module not found) | `metainformant.spatial.analysis` |
@@ -402,7 +402,7 @@
 | docs/agents/rules/structural_variants.md | 28 | AttributeError | 'metainformant' has no attribute 'structural_variants' (module not found) | `metainformant.structural_variants.filtering` |
 | docs/agents/rules/visualization.md | 47 | AttributeError | 'metainformant' has no attribute 'visualization' (module not found) | `metainformant.visualization.genomics` |
 | docs/agents/rules/visualization.md | 136 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/agents/rules/visualization.md | 148 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/agents/rules/visualization.md | 148 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/agents/rules/visualization.md | 148 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/agents/rules/visualization.md | 166 | AttributeError | 'metainformant' has no attribute 'visualization' (module not found) | `metainformant.visualization.genomics` |
 | docs/cli.md | 3 | SyntaxError | Invalid Python syntax: invalid syntax at line 1 | `import metainformant...` |
@@ -525,13 +525,13 @@
 | docs/comparisons/visualization_approaches.md | 707 | ImportError | Cannot import 'BasePlotter' from module 'metainformant.visualization.plots.base' | `from metainformant.visualization.plots.base import BasePlott` |
 | docs/comparisons/visualization_approaches.md | 707 | AttributeError | 'metainformant' has no attribute 'visualization' (module not found) | `metainformant.visualization.plots.base` |
 | docs/core/GETTING_STARTED.md | 27 | ImportError | Cannot import 'cache' from module 'metainformant.core' | `from metainformant.core import cache` |
-| docs/core/GETTING_STARTED.md | 27 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core import config` |
-| docs/core/GETTING_STARTED.md | 27 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/core/GETTING_STARTED.md | 27 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core.utils import config` |
+| docs/core/GETTING_STARTED.md | 27 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/core/GETTING_STARTED.md | 27 | ImportError | Cannot import 'logging' from module 'metainformant.core' | `from metainformant.core import logging` |
 | docs/core/GETTING_STARTED.md | 27 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/GETTING_STARTED.md | 27 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.execution` |
 | docs/core/GETTING_STARTED.md | 27 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.data` |
-| docs/core/GETTING_STARTED.md | 361 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core import config` |
+| docs/core/GETTING_STARTED.md | 361 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core.utils import config` |
 | docs/core/GETTING_STARTED.md | 361 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/README.md | 50 | SyntaxError | Invalid Python syntax: invalid syntax at line 1 | `from metainformant.core import ...` |
 | docs/core/cache.md | 69 | SyntaxError | Invalid Python syntax: invalid syntax at line 1 | `CacheEntry(value: Any, ttl_seconds: int | None = None)` |
@@ -543,18 +543,18 @@
 | docs/core/cache.md | 286 | ImportError | Cannot import 'cache' from module 'metainformant.core' | `from metainformant.core import cache` |
 | docs/core/cache.md | 286 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/cache.md | 310 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/core/config.md | 140 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core import config` |
+| docs/core/config.md | 140 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core.utils import config` |
 | docs/core/config.md | 140 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/config.md | 277 | SyntaxError | Invalid Python syntax: invalid character '→' (U+2192) at line 1 | `_bool_map = {"1", "true", "yes", "y", "on"} → True _bool_map` |
 | docs/core/config.md | 325 | SyntaxError | Invalid Python syntax: ':' expected after dictionary key at line 7 | `{     "top_level_keys": ["pipeline", "input", "reference"], ` |
-| docs/core/config.md | 393 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core import config` |
-| docs/core/config.md | 393 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/core/config.md | 393 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core.utils import config` |
+| docs/core/config.md | 393 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/core/config.md | 393 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/config.md | 610 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.data.validation` |
 | docs/core/config.md | 623 | ImportError | Cannot import 'BaseModel' from module 'pydantic' | `from pydantic import BaseModel` |
 | docs/core/config.md | 623 | ImportError | Cannot import 'Field' from module 'pydantic' | `from pydantic import Field` |
-| docs/core/config.md | 635 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core import config` |
-| docs/core/config.md | 635 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/core/config.md | 635 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core.utils import config` |
+| docs/core/config.md | 635 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/core/config.md | 635 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/config.md | 635 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.utils.logging` |
 | docs/core/db.md | 96 | SyntaxError | Invalid Python syntax: invalid syntax at line 2 | `PostgresConnection(     host: str = "localhost",     port: i` |
@@ -569,14 +569,14 @@
 | docs/core/db.md | 578 | ImportError | Cannot import 'db' from module 'metainformant.core' | `from metainformant.core import db` |
 | docs/core/db.md | 578 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/db.md | 598 | ImportError | Cannot import 'db' from module 'metainformant.core' | `from metainformant.core import db` |
-| docs/core/db.md | 598 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core import config` |
+| docs/core/db.md | 598 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core.utils import config` |
 | docs/core/db.md | 598 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/db.md | 622 | ImportError | Cannot import 'db' from module 'metainformant.core' | `from metainformant.core import db` |
 | docs/core/db.md | 622 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/db.md | 645 | ImportError | Cannot import 'db' from module 'metainformant.core' | `from metainformant.core import db` |
 | docs/core/db.md | 645 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/db.md | 669 | ImportError | Cannot import 'db' from module 'metainformant.core' | `from metainformant.core import db` |
-| docs/core/db.md | 669 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core import config` |
+| docs/core/db.md | 669 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core.utils import config` |
 | docs/core/db.md | 669 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/db.md | 701 | ImportError | Cannot import 'db' from module 'metainformant.core' | `from metainformant.core import db` |
 | docs/core/db.md | 701 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
@@ -611,16 +611,16 @@
 | docs/core/download.md | 625 | ImportError | Cannot import 'ClientError' from module 'botocore.exceptions' | `from botocore.exceptions import ClientError` |
 | docs/core/download.md | 625 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.io.download` |
 | docs/core/download.md | 782 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.io.download` |
-| docs/core/download.md | 988 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/core/download.md | 988 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/core/download.md | 988 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/download.md | 1031 | ImportError | Cannot import 'parallel' from module 'metainformant.core' | `from metainformant.core import parallel` |
 | docs/core/download.md | 1031 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/download.md | 1031 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.io.download` |
 | docs/core/download.md | 1064 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.io` |
-| docs/core/download.md | 1088 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/core/download.md | 1088 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/core/download.md | 1088 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.io` |
 | docs/core/download.md | 1088 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/core/download.md | 1109 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core import config` |
+| docs/core/download.md | 1109 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core.utils import config` |
 | docs/core/download.md | 1109 | ImportError | Cannot import 'download' from module 'metainformant.core' | `from metainformant.core import download` |
 | docs/core/download.md | 1109 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/download.md | 1127 | SyntaxError | Invalid Python syntax: invalid syntax at line 2 | `# In a Snakemake workflow, use heartbeat for resume across r` |
@@ -633,7 +633,7 @@
 | docs/core/hash.md | 368 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.execution` |
 | docs/core/hash.md | 368 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.utils` |
 | docs/core/index.md | 83 | ImportError | Cannot import 'cache' from module 'metainformant.core' | `from metainformant.core import cache` |
-| docs/core/index.md | 83 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/core/index.md | 83 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/core/index.md | 83 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/index.md | 83 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.utils` |
 | docs/core/io.md | 453 | ImportError | Cannot import 'cache' from module 'metainformant.core' | `from metainformant.core import cache` |
@@ -673,14 +673,14 @@
 | docs/core/parallel.md | 1084 | ImportError | Cannot import 'parallel' from module 'metainformant.core' | `from metainformant.core import parallel` |
 | docs/core/parallel.md | 1084 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/parallel.md | 1108 | ImportError | Cannot import 'parallel' from module 'metainformant.core' | `from metainformant.core import parallel` |
-| docs/core/parallel.md | 1108 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core import config` |
+| docs/core/parallel.md | 1108 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core.utils import config` |
 | docs/core/parallel.md | 1108 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/core/paths.md | 144 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/core/paths.md | 144 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/core/paths.md | 144 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/core/paths.md | 172 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/core/paths.md | 172 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/core/paths.md | 172 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/paths.md | 501 | SyntaxError | Invalid Python syntax: invalid syntax. Perhaps you forgot a comma? at line 9 | `{     "total_dirs": 150,     "total_files": 12000,     "tota` |
-| docs/core/paths.md | 558 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/core/paths.md | 558 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/core/paths.md | 558 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/paths.md | 748 | SyntaxError | Invalid Python syntax: unterminated string literal (detected at line 23) at line 23 | `import tempfile  def process_with_temp_dir() -> Path:     ""` |
 | docs/core/text.md | 556 | SyntaxError | Invalid Python syntax: unterminated string literal (detected at line 15) at line 15 | `def make_fasta_filenames(accessions: list[str], extension: s` |
@@ -695,9 +695,9 @@
 | docs/core/workflow.md | 174 | ImportError | Cannot import 'apply_env_overrides' from module 'metainformant.core.config' | `from metainformant.core.config import apply_env_overrides` |
 | docs/core/workflow.md | 174 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.config` |
 | docs/core/workflow.md | 250 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core.utils.logging` |
-| docs/core/workflow.md | 402 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/core/workflow.md | 402 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/core/workflow.md | 402 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
-| docs/core/workflow.md | 419 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core import config` |
+| docs/core/workflow.md | 419 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core.utils import config` |
 | docs/core/workflow.md | 419 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/core/workflow.md | 433 | ImportError | Cannot import 'progress' from module 'metainformant.core' | `from metainformant.core import progress` |
 | docs/core/workflow.md | 433 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
@@ -1227,7 +1227,7 @@
 | docs/metabolomics/ARCHITECTURE.md | 160 | AttributeError | 'metainformant' has no attribute 'multiomics' (module not found) | `metainformant.multiomics` |
 | docs/metabolomics/ARCHITECTURE.md | 160 | AttributeError | 'metainformant' has no attribute 'visualization' (module not found) | `metainformant.visualization` |
 | docs/metabolomics/ARCHITECTURE.md | 160 | AttributeError | 'metainformant' has no attribute 'multiomics' (module not found) | `metainformant.multiomics` |
-| docs/metabolomics/CONFIGURATION.md | 29 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core import config` |
+| docs/metabolomics/CONFIGURATION.md | 29 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core.utils import config` |
 | docs/metabolomics/CONFIGURATION.md | 29 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/metabolomics/CONFIGURATION.md | 144 | ImportError | Cannot import 'load_database' from module 'metainformant.metabolomics.io' | `from metainformant.metabolomics.io import load_database` |
 | docs/metabolomics/CONFIGURATION.md | 144 | AttributeError | 'metainformant' has no attribute 'metabolomics' (module not found) | `metainformant.metabolomics.io` |
@@ -1777,14 +1777,14 @@
 | docs/pharmacogenomics/CAPABILITIES.md | 1380 | SyntaxError | Invalid Python syntax: unexpected indent at line 1 | ` and sums the function values of each allele from the provid` |
 | docs/pharmacogenomics/CAPABILITIES.md | 1396 | SyntaxError | Invalid Python syntax: invalid syntax at line 3 | `  Classify metabolizer phenotype from an activity score.  Us` |
 | docs/pharmacogenomics/CAPABILITIES.md | 1413 | SyntaxError | Invalid Python syntax: invalid syntax at line 3 | `  Predict metabolizer phenotype from genotype information.  ` |
-| docs/pharmacogenomics/CONFIGURATION.md | 17 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant import config` |
+| docs/pharmacogenomics/CONFIGURATION.md | 17 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant.core.utils import config` |
 | docs/pharmacogenomics/CONFIGURATION.md | 58 | ImportError | Cannot import 'parallel' from module 'metainformant' | `from metainformant import parallel` |
 | docs/pharmacogenomics/CONFIGURATION.md | 97 | ImportError | Cannot import 'load_all_allele_definitions' from module 'metainformant.pharmacogenomics.alleles.star_allele' | `from metainformant.pharmacogenomics.alleles.star_allele impo` |
 | docs/pharmacogenomics/CONFIGURATION.md | 97 | AttributeError | 'metainformant' has no attribute 'pharmacogenomics' (module not found) | `metainformant.pharmacogenomics.alleles.star_allele` |
 | docs/pharmacogenomics/CONFIGURATION.md | 108 | AttributeError | 'metainformant' has no attribute 'pharmacogenomics' (module not found) | `metainformant.pharmacogenomics.annotations.cpic` |
 | docs/pharmacogenomics/CONFIGURATION.md | 129 | ImportError | Cannot import 'refresh_pharmgkb_cache' from module 'metainformant.pharmacogenomics.annotations.pharmgkb' | `from metainformant.pharmacogenomics.annotations.pharmgkb imp` |
 | docs/pharmacogenomics/CONFIGURATION.md | 129 | AttributeError | 'metainformant' has no attribute 'pharmacogenomics' (module not found) | `metainformant.pharmacogenomics.annotations.pharmgkb` |
-| docs/pharmacogenomics/CONFIGURATION.md | 138 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant import config` |
+| docs/pharmacogenomics/CONFIGURATION.md | 138 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant.core.utils import config` |
 | docs/pharmacogenomics/EXAMPLES.md | 5 | AttributeError | 'metainformant' has no attribute 'pharmacogenomics' (module not found) | `metainformant.pharmacogenomics.alleles.star_allele` |
 | docs/pharmacogenomics/EXAMPLES.md | 5 | AttributeError | 'metainformant' has no attribute 'pharmacogenomics' (module not found) | `metainformant.pharmacogenomics.alleles.diplotype` |
 | docs/pharmacogenomics/EXAMPLES.md | 5 | AttributeError | 'metainformant' has no attribute 'pharmacogenomics' (module not found) | `metainformant.pharmacogenomics.alleles.phenotype` |
@@ -1820,7 +1820,7 @@
 | docs/pharmacogenomics/GETTING_STARTED.md | 63 | ImportError | Cannot import 'parallel' from module 'metainformant' | `from metainformant import parallel` |
 | docs/pharmacogenomics/GETTING_STARTED.md | 80 | ImportError | Cannot import 'Client' from module 'dask.distributed' | `from dask.distributed import Client` |
 | docs/pharmacogenomics/GETTING_STARTED.md | 94 | AttributeError | 'metainformant' has no attribute 'pharmacogenomics' (module not found) | `metainformant.pharmacogenomics.clinical.reporting` |
-| docs/pharmacogenomics/GETTING_STARTED.md | 131 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant import config` |
+| docs/pharmacogenomics/GETTING_STARTED.md | 131 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant.core.utils import config` |
 | docs/pharmacogenomics/GETTING_STARTED.md | 159 | AttributeError | 'metainformant' has no attribute 'pharmacogenomics' (module not found) | `metainformant.pharmacogenomics.alleles.star_allele` |
 | docs/pharmacogenomics/INTEGRATION.md | 8 | AttributeError | 'metainformant' has no attribute 'pharmacogenomics' (module not found) | `metainformant.pharmacogenomics.clinical.reporting` |
 | docs/pharmacogenomics/INTEGRATION.md | 34 | ImportError | Cannot import 'FastAPI' from module 'fastapi' | `from fastapi import FastAPI` |
@@ -2519,7 +2519,7 @@
 | docs/spatial/INTEGRATION.md | 17 | ImportError | Cannot import 'load_visium' from module 'metainformant.spatial' | `from metainformant.spatial import load_visium` |
 | docs/spatial/INTEGRATION.md | 17 | ImportError | Cannot import 'load_merfish' from module 'metainformant.spatial' | `from metainformant.spatial import load_merfish` |
 | docs/spatial/INTEGRATION.md | 17 | ImportError | Cannot import 'load_xenium' from module 'metainformant.spatial' | `from metainformant.spatial import load_xenium` |
-| docs/spatial/INTEGRATION.md | 17 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core import config` |
+| docs/spatial/INTEGRATION.md | 17 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core.utils import config` |
 | docs/spatial/INTEGRATION.md | 17 | ImportError | Cannot import 'cache' from module 'metainformant.core' | `from metainformant.core import cache` |
 | docs/spatial/INTEGRATION.md | 17 | ImportError | Cannot import 'logging' from module 'metainformant.core' | `from metainformant.core import logging` |
 | docs/spatial/INTEGRATION.md | 17 | ImportError | Cannot import 'quickplot' from module 'metainformant.visualization' | `from metainformant.visualization import quickplot` |
@@ -2620,29 +2620,29 @@
 | docs/spatial/visualization.md | 60 | ImportError | Cannot import 'spatial_scatter_plotly' from module 'metainformant.spatial.visualization.interactive' | `from metainformant.spatial.visualization.interactive import ` |
 | docs/spatial/visualization.md | 60 | AttributeError | 'metainformant' has no attribute 'spatial' (module not found) | `metainformant.spatial.visualization.interactive` |
 | docs/structural_variants/ARCHITECTURE.md | 373 | SyntaxError | Invalid Python syntax: unexpected indent at line 1 | ` where type_weight(DEL)=1.0, TRA=0.95, INV=0.9, DUP=0.7, INS` |
-| docs/structural_variants/ARCHITECTURE.md | 568 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant import config` |
+| docs/structural_variants/ARCHITECTURE.md | 568 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant.core.utils import config` |
 | docs/structural_variants/CAPABILITIES.md | 1650 | SyntaxError | Invalid Python syntax: invalid syntax at line 3 | `  Merge SV calls across samples using reciprocal overlap and` |
 | docs/structural_variants/CAPABILITIES.md | 1761 | SyntaxError | Invalid Python syntax: invalid syntax at line 3 | `  Build a consensus SV call from a cluster of merged calls. ` |
 | docs/structural_variants/CAPABILITIES.md | 1779 | SyntaxError | Invalid Python syntax: invalid syntax at line 3 | `  Raise an import error if matplotlib is not available.  ###` |
 | docs/structural_variants/CAPABILITIES.md | 1811 | SyntaxError | Invalid Python syntax: invalid syntax at line 3 | `  Plot read depth coverage with structural variant overlay. ` |
-| docs/structural_variants/CONFIGURATION.md | 21 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant import config` |
-| docs/structural_variants/CONFIGURATION.md | 183 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant import config` |
-| docs/structural_variants/CONFIGURATION.md | 219 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant import config` |
+| docs/structural_variants/CONFIGURATION.md | 21 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant.core.utils import config` |
+| docs/structural_variants/CONFIGURATION.md | 183 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant.core.utils import config` |
+| docs/structural_variants/CONFIGURATION.md | 219 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant.core.utils import config` |
 | docs/structural_variants/CONFIGURATION.md | 236 | ImportError | Cannot import 'configure' from module 'metainformant.structural_variants' | `from metainformant.structural_variants import configure` |
 | docs/structural_variants/CONFIGURATION.md | 236 | AttributeError | 'metainformant' has no attribute 'structural_variants' (module not found) | `metainformant.structural_variants` |
-| docs/structural_variants/CONFIGURATION.md | 321 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core import paths` |
+| docs/structural_variants/CONFIGURATION.md | 321 | ImportError | Cannot import 'paths' from module 'metainformant.core' | `from metainformant.core.io import paths` |
 | docs/structural_variants/CONFIGURATION.md | 321 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/structural_variants/CONFIGURATION.md | 331 | SyntaxError | Invalid Python syntax: invalid syntax at line 3 | `config.set("core.data_dir", "/my/data") # or export METAINFO` |
 | docs/structural_variants/CONFIGURATION.md | 376 | AttributeError | 'metainformant' has no attribute 'structural_variants' (module not found) | `metainformant.structural_variants.detection.cnv` |
-| docs/structural_variants/CONFIGURATION.md | 400 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant import config` |
+| docs/structural_variants/CONFIGURATION.md | 400 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant.core.utils import config` |
 | docs/structural_variants/CONFIGURATION.md | 400 | ImportError | Cannot import 'logging' from module 'metainformant' | `from metainformant import logging` |
 | docs/structural_variants/CONFIGURATION.md | 400 | ImportError | Cannot import 'pipeline' from module 'metainformant.structural_variants' | `from metainformant.structural_variants import pipeline` |
 | docs/structural_variants/CONFIGURATION.md | 400 | AttributeError | 'metainformant' has no attribute 'structural_variants' (module not found) | `metainformant.structural_variants` |
-| docs/structural_variants/CONFIGURATION.md | 438 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant import config` |
+| docs/structural_variants/CONFIGURATION.md | 438 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant.core.utils import config` |
 | docs/structural_variants/CONFIGURATION.md | 438 | ImportError | Cannot import 'get_default_config' from module 'metainformant.structural_variants' | `from metainformant.structural_variants import get_default_co` |
 | docs/structural_variants/CONFIGURATION.md | 438 | AttributeError | 'metainformant' has no attribute 'structural_variants' (module not found) | `metainformant.structural_variants` |
 | docs/structural_variants/CONFIGURATION.md | 448 | AttributeError | 'metainformant' has no attribute 'structural_variants' (module not found) | `metainformant.structural_variants.detection.cnv` |
-| docs/structural_variants/CONFIGURATION.md | 463 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant import config` |
+| docs/structural_variants/CONFIGURATION.md | 463 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant.core.utils import config` |
 | docs/structural_variants/CONFIGURATION.md | 473 | AttributeError | 'metainformant' has no attribute 'structural_variants' (module not found) | `metainformant.structural_variants.detection.cnv` |
 | docs/structural_variants/EXAMPLES.md | 38 | ImportError | Cannot import 'logging' from module 'metainformant.core' | `from metainformant.core import logging` |
 | docs/structural_variants/EXAMPLES.md | 38 | AttributeError | 'metainformant' has no attribute 'structural_variants' (module not found) | `metainformant.structural_variants.detection.cnv` |
@@ -2673,7 +2673,7 @@
 | docs/structural_variants/EXAMPLES.md | 706 | AttributeError | 'metainformant' has no attribute 'structural_variants' (module not found) | `metainformant.structural_variants.detection.breakpoints` |
 | docs/structural_variants/EXAMPLES.md | 706 | AttributeError | 'metainformant' has no attribute 'longread' (module not found) | `metainformant.longread` |
 | docs/structural_variants/EXAMPLES.md | 751 | ImportError | Cannot import 'parallel' from module 'metainformant' | `from metainformant import parallel` |
-| docs/structural_variants/EXAMPLES.md | 751 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant import config` |
+| docs/structural_variants/EXAMPLES.md | 751 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant.core.utils import config` |
 | docs/structural_variants/EXAMPLES.md | 751 | AttributeError | 'metainformant' has no attribute 'structural_variants' (module not found) | `metainformant.structural_variants` |
 | docs/structural_variants/EXAMPLES.md | 751 | AttributeError | 'metainformant' has no attribute 'structural_variants' (module not found) | `metainformant.structural_variants.detection.cnv` |
 | docs/structural_variants/EXAMPLES.md | 751 | AttributeError | 'metainformant' has no attribute 'structural_variants' (module not found) | `metainformant.structural_variants.detection.sv_calling` |
@@ -2704,11 +2704,11 @@
 | docs/structural_variants/GETTING_STARTED.md | 400 | SyntaxError | Invalid Python syntax: ':' expected after dictionary key at line 7 | `from metainformant.structural_variants.visualization.plots i` |
 | docs/structural_variants/GETTING_STARTED.md | 438 | ImportError | Cannot import 'run_full_pipeline' from module 'metainformant.structural_variants.pipeline' | `from metainformant.structural_variants.pipeline import run_f` |
 | docs/structural_variants/GETTING_STARTED.md | 438 | AttributeError | 'metainformant' has no attribute 'structural_variants' (module not found) | `metainformant.structural_variants.pipeline` |
-| docs/structural_variants/GETTING_STARTED.md | 506 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant import config` |
+| docs/structural_variants/GETTING_STARTED.md | 506 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant.core.utils import config` |
 | docs/structural_variants/INTEGRATION.md | 18 | ImportError | Cannot import 'detect_cnvs' from module 'metainformant.structural_variants' | `from metainformant.structural_variants import detect_cnvs` |
 | docs/structural_variants/INTEGRATION.md | 18 | ImportError | Cannot import 'call_svs' from module 'metainformant.structural_variants' | `from metainformant.structural_variants import call_svs` |
 | docs/structural_variants/INTEGRATION.md | 18 | ImportError | Cannot import 'annotate_svs' from module 'metainformant.structural_variants' | `from metainformant.structural_variants import annotate_svs` |
-| docs/structural_variants/INTEGRATION.md | 18 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core import config` |
+| docs/structural_variants/INTEGRATION.md | 18 | ImportError | Cannot import 'config' from module 'metainformant.core' | `from metainformant.core.utils import config` |
 | docs/structural_variants/INTEGRATION.md | 18 | ImportError | Cannot import 'cache' from module 'metainformant.core' | `from metainformant.core import cache` |
 | docs/structural_variants/INTEGRATION.md | 18 | ImportError | Cannot import 'logging' from module 'metainformant.core' | `from metainformant.core import logging` |
 | docs/structural_variants/INTEGRATION.md | 18 | ImportError | Cannot import 'quickplot' from module 'metainformant.visualization' | `from metainformant.visualization import quickplot` |
@@ -2724,7 +2724,7 @@
 | docs/structural_variants/INTEGRATION.md | 66 | AttributeError | 'metainformant' has no attribute 'structural_variants' (module not found) | `metainformant.structural_variants` |
 | docs/structural_variants/INTEGRATION.md | 66 | AttributeError | 'metainformant' has no attribute 'visualization' (module not found) | `metainformant.visualization` |
 | docs/structural_variants/INTEGRATION.md | 85 | SyntaxError | Invalid Python syntax: invalid syntax at line 5 | `class Result:     values: dict            # Primary output d` |
-| docs/structural_variants/PERFORMANCE.md | 51 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant import config` |
+| docs/structural_variants/PERFORMANCE.md | 51 | ImportError | Cannot import 'config' from module 'metainformant' | `from metainformant.core.utils import config` |
 | docs/structural_variants/PERFORMANCE.md | 62 | ImportError | Cannot import 'parallel' from module 'metainformant' | `from metainformant import parallel` |
 | docs/structural_variants/PERFORMANCE.md | 101 | AttributeError | 'metainformant' has no attribute 'core' (module not found) | `metainformant.core` |
 | docs/structural_variants/PERFORMANCE.md | 114 | ImportError | Cannot import 'cache' from module 'metainformant.core' | `from metainformant.core import cache` |

@@ -566,7 +566,7 @@ All module-specific parameters read from `metainformant.config`, with `SV_` envi
 
 **Access:**
 ```python
-from metainformant import config
+from metainformant.core.utils import config
 val = config.get("structural_variants.min_support")
 config.set("structural_variants.min_support", 5)
 ```

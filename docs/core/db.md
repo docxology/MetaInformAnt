@@ -442,7 +442,7 @@ Context manager that yields a `PostgresConnection` and ensures cleanup.
 
 **Example**:
 ```python
-from metainformant.core import db
+from metainformant.core import db  # canonical: metainformant.core.db
 
 with db.get_connection(database="analysis") as conn_wrapper:
     with conn_wrapper.connect() as conn:
@@ -479,7 +479,7 @@ def progress_cb(*, bytes_written: int, total_bytes: int | None) -> None: ...
 ### Basic Database Connection and Query
 
 ```python
-from metainformant.core import db
+from metainformant.core import db  # canonical: metainformant.core.db
 
 def count_samples_by_species() -> dict[str, int]:
     """Count samples grouped by species."""
@@ -504,7 +504,7 @@ for species, count in counts.items():
 ### Transaction with Multiple Statements
 
 ```python
-from metainformant.core import db
+from metainformant.core import db  # canonical: metainformant.core.db
 
 def record_analysis_run(samples: list[str], parameters: dict) -> int:
     """Record a complete analysis run with samples and parameters."""
@@ -534,7 +534,7 @@ def record_analysis_run(samples: list[str], parameters: dict) -> int:
 ### Bulk Insert with Error Handling
 
 ```python
-from metainformant.core import db
+from metainformant.core import db  # canonical: metainformant.core.db
 import json
 
 def store_variant_calls(vcf_path: str, run_id: int) -> int:
@@ -576,7 +576,7 @@ def store_variant_calls(vcf_path: str, run_id: int) -> int:
 ### Connection Pool Tuning
 
 ```python
-from metainformant.core import db
+from metainformant.core import db  # canonical: metainformant.core.db
 
 # High-throughput pipeline: larger pool
 pool = db.PostgresConnection(
@@ -597,7 +597,8 @@ pool.close()
 
 ```python
 import os
-from metainformant.core import db, config
+from metainformant.core import db
+from metainformant.core.utils import config
 
 # Load database config from environment
 pg_config = config.load_postgres_config_from_env(prefix="PG")
@@ -621,7 +622,7 @@ else:
 
 ```python
 from contextlib import contextmanager
-from metainformant.core import db
+from metainformant.core import db  # canonical: metainformant.core.db
 
 @contextmanager
 def get_db_cursor():
@@ -643,7 +644,7 @@ with get_db_cursor() as cur:
 ### With I/O Module
 
 ```python
-from metainformant.core import db, io
+from metainformant.core import db  # canonical: metainformant.core.db, io
 import json
 
 def export_query_to_json(query: str, output_path: str | Path) -> int:
@@ -667,7 +668,8 @@ print(f"Exported {count} records")
 ### With Configuration Module
 
 ```python
-from metainformant.core import db, config
+from metainformant.core import db
+from metainformant.core.utils import config
 
 def setup_database_from_config(config_path: str) -> None:
     """Create tables based on YAML configuration."""
@@ -699,7 +701,7 @@ def setup_database_from_config(config_path: str) -> None:
 ### With Logging Module
 
 ```python
-from metainformant.core import db
+from metainformant.core import db  # canonical: metainformant.core.db
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -834,7 +836,7 @@ def bulk_import_pipeline(
 **Recovery pattern**:
 ```python
 import time
-from metainformant.core import db
+from metainformant.core import db  # canonical: metainformant.core.db
 
 def robust_query(query: str, params: tuple, max_retries: int = 3):
     for attempt in range(max_retries):
@@ -1062,7 +1064,7 @@ PG_PASSWORD=dev_pass
 from dotenv import load_dotenv
 load_dotenv()  # Loads .env into os.environ
 
-from metainformant.core import db
+from metainformant.core import db  # canonical: metainformant.core.db
 # Now get_db_client() picks up loaded env vars
 ```
 
@@ -1176,7 +1178,7 @@ export TEST_DATABASE_AVAILABLE=1
 ```python
 # tests/conftest.py
 import pytest
-from metainformant.core import db
+from metainformant.core import db  # canonical: metainformant.core.db
 
 @pytest.fixture(scope="session")
 def db_pool():

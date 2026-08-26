@@ -2,66 +2,47 @@
 
 Batch-correct and spatially align multiple tissue sections.
 
-## Concatenation + BBKNN
+## Current API surface
+
+`metainformant.spatial.integration` currently provides single-cell-to-spatial
+mapping utilities in `scrna_mapping`:
 
 ```python
-import scanpy as sc
-from metainformant.spatial.integration import spatial_batch_correct
-
-adatas = [load_visium(p) for p in dirs]
-adata_joint = spatial_batch_correct(
-    adatas,
-    batch_key='sample_id',
-    method='bbknn',        # also 'harmony' or 'scanorama'
-    n_pcs=30,
-    neighbors=15,
+from metainformant.spatial.integration.scrna_mapping import (
+    correlation_mapping,
+    anchor_based_transfer,
+    map_scrna_to_spatial,
+    impute_spatial_genes,
 )
 ```
 
-After integration, re-run spatial clustering on the corrected embedding:
+## Label transfer from a reference
+
+Project cell-type labels from a scRNA-seq reference onto a spatial section:
 
 ```python
-sc.pp.neighbors(adata_joint, use_rep='X_pca')
-adata_joint.obs['integrated_domain'] = spatial_cluster(adata_joint, resolution=0.8)
-```
-
-## Transfer of labels
-
-Project labels from a reference section to a new query:
-
-```python
-from metainformant.spatial.integration import transfer_labels
-query = load_visium('new_sample/')
-pred_labels = transfer_labels(
-    reference=adata_joint,
-    query=query,
-    label_col='integrated_domain',
-    method='knn',
+transfer = anchor_based_transfer(
+    ref_adata=scrna_ref,
+    query_adata=spatial_section,
+    label_key="cell_type",
 )
-query.obs['predicted_domain'] = pred_labels
+spatial_section.obs["predicted_cell_type"] = transfer["labels"]
 ```
 
-## Spatial alignment (registration)
-
-Rigid / non-rigid alignment of tissue shapes:
+## Gene imputation into spatial coordinates
 
 ```python
-from metainformant.spatial.integration import register_coordinates
-aligned = register_coordinates(
-    adatas,
-    reference_idx=0,
-    method=' affine',    # 'affine' or 'dense'
-    landmark_key='landmarks',   # optional user-supplied points
+imputed = impute_spatial_genes(
+    scrna_ref=scrna_ref,
+    spatial=spatial_section,
+    genes=["Apoe", "Gfap"],
 )
 ```
 
-Used when comparing histological landmarks across patients.
+## Not yet implemented
 
-## Harmonization across platforms
-
-If you mix Visium and Xenium data, down-sample Xenium to Visium-like spot spacing:
-
-```python
-from metainformant.spatial.integration import downsample_to_visium
-visium_like = downsample_to_visium(xenium_adata, target_diameter=55.0)
-```
+General multi-sample batch correction (`spatial_batch_correct` with
+BBKNN/Harmony/Scanorama), inter-section coordinate registration, and Visium
+downsampling are specified but not implemented in this module. Do not use
+them in workflows until the corresponding functions land; batch correction
+for single-cell data lives in `metainformant.singlecell`.

@@ -130,7 +130,7 @@ Key settings are under `pharmacogenomics.*` and environment variables starting w
 Set via Python:
 
 ```python
-from metainformant import config
+from metainformant.core.utils import config
 config.set('pharmacogenomics.algorithm', 'balanced')
 config.set('pharmacogenomics.chunk_size', 20000)
 ```

@@ -15,7 +15,7 @@
 ## Python API
 
 ```python
-from metainformant import config
+from metainformant.core.utils import config
 config.set('pharmacogenomics.algorithm', 'fast')
 config.set('pharmacogenomics.chunk_size', 20000)
 config.set('pharmacogenomics.parallel', True)
@@ -137,7 +137,7 @@ For air-gapped systems, pre-populate the cache directory or set `PG_PHARMGKB_TSV
 ## Validation & sanity
 
 ```python
-from metainformant import config
+from metainformant.core.utils import config
 errors = config.validate_schema(module='pharmacogenomics')
 if errors:
     for e in errors:

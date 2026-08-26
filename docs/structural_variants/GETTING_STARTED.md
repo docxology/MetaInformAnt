@@ -504,7 +504,7 @@ export SV_CNV_SIGNIFICANCE=0.01  # CBS p-value threshold
 Or via Python config:
 
 ```python
-from metainformant import config
+from metainformant.core.utils import config
 config.set("structural_variants.min_support", 5)
 config.set("structural_variants.min_quality", 30.0)
 ```
