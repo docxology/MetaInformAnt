@@ -628,30 +628,17 @@ def prepare_reference_genome(config: AmalgkitWorkflowConfig) -> bool:
         # 1. Define paths
         index_dir = config.work_dir / "index"
         # Amalgkit 0.16.60 resolves kallisto indexes using the exact
-        # ``<species>.idx`` stem.  Older MetaInformAnt artifacts used a
-        # ``_transcripts`` suffix, so the compatibility lookup below keeps
-        # those artifacts usable while all newly produced indexes follow the
-        # current upstream contract.
+        # ``<species>.idx`` stem (see ``_find_species_prefixed_files`` in
+        # ``amalgkit.quant``), resolved against non-symlink real paths.
         index_file = index_dir / f"{species_name}.idx"
-        pre_contract_index_file = index_dir / f"{species_name}_transcripts.idx"
 
         # Also check if it exists in the genome dest_dir/index
         dest_dir = Path(config.genome.get("dest_dir", config.work_dir.parent / "genome"))
         shared_index_dir = dest_dir / "index"
         shared_index_file = shared_index_dir / f"{species_name}.idx"
-        pre_contract_shared_index_file = shared_index_dir / f"{species_name}_transcripts.idx"
 
         if index_file.is_file() and index_file.stat().st_size > 0:
             logger.info(f"Reference genome index found at: {index_file}")
-            return True
-
-        if pre_contract_index_file.is_file() and pre_contract_index_file.stat().st_size > 0:
-            logger.info(
-                "Found a pre-contract reference genome index; copying it to the current "
-                f"Amalgkit path: {pre_contract_index_file} -> {index_file}"
-            )
-            index_dir.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(pre_contract_index_file, index_file)
             return True
 
         if shared_index_file.is_file() and shared_index_file.stat().st_size > 0:
@@ -659,17 +646,6 @@ def prepare_reference_genome(config: AmalgkitWorkflowConfig) -> bool:
             index_dir.mkdir(parents=True, exist_ok=True)
             logger.info(f"Copying shared index to: {index_file}")
             shutil.copy2(shared_index_file, index_file)
-            return True
-
-        if pre_contract_shared_index_file.is_file() and pre_contract_shared_index_file.stat().st_size > 0:
-            logger.info(
-                "Found a pre-contract shared reference genome index; copying it to the "
-                f"current Amalgkit path: {pre_contract_shared_index_file} -> {index_file}"
-            )
-            index_dir.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(pre_contract_shared_index_file, index_file)
-            shared_index_dir.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(pre_contract_shared_index_file, shared_index_file)
             return True
 
         logger.info(f"Reference index missing at {index_file}. Preparing reference genome...")
