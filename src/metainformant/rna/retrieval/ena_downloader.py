@@ -106,6 +106,27 @@ def _is_retryable_transfer_failure(result: subprocess.CompletedProcess[str]) -> 
     return False
 
 
+def _remote_content_length(url: str) -> int | None:
+    """Return the advertised Content-Length for ``url`` (HEAD request), or None.
+
+    Used to distinguish a *truncated* transfer (payload shorter than the
+    advertised size, safe to resume) from a genuinely corrupt payload of full
+    size (fresh transfer required). Network or metadata failures return None
+    so the caller falls back to the existing fresh-retry behavior.
+    """
+
+    try:
+        request = urllib.request.Request(url, method="HEAD")
+        with urllib.request.urlopen(request, timeout=30) as response:
+            header = response.headers.get("Content-Length")
+        if header is None:
+            return None
+        length = int(header)
+        return length if length >= 0 else None
+    except (OSError, ValueError, urllib.error.URLError):
+        return None
+
+
 def calculate_md5(file_path: Path, chunk_size: int = 4096) -> str:
     """Calculate MD5 checksum of a file.
 
@@ -537,6 +558,32 @@ class ENADownloader:
                     break
 
                 if result.returncode == 0:
+                    # Before discarding the payload, check whether it is merely
+                    # truncated: if the transfer is shorter than the advertised
+                    # Content-Length, retain the bytes and resume rather than
+                    # repeating the whole download from byte zero.
+                    local_size = partial_file.stat().st_size if partial_file.exists() else 0
+                    remote_size = _remote_content_length(url)
+                    if (
+                        remote_size is not None
+                        and 0 < local_size < remote_size
+                        and gzip_integrity_retries <= self.integrity_retries
+                    ):
+                        # Do NOT move the payload aside here: the retained
+                        # .part bytes are the resume base for the next attempt.
+                        gzip_integrity_retries += 1
+                        logger.warning(
+                            "ENA transfer for %s is truncated (%d of %d advertised bytes) and "
+                            "failed gzip integrity; resuming from the retained partial "
+                            "(resume attempt %d/%d)",
+                            filename,
+                            local_size,
+                            remote_size,
+                            gzip_integrity_retries,
+                            self.integrity_retries,
+                        )
+                        consecutive_no_progress = 0
+                        continue
                     if partial_file.exists():
                         record_invalid_transfer(
                             partial_file,

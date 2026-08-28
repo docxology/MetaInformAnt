@@ -105,6 +105,49 @@ class TestENADownloader(unittest.TestCase):
         self.assertTrue((output_dir / "SRR1.fastq.gz").is_file())
         self.assertTrue((output_dir / "SRR1.fastq.gz.part.invalid").is_file())
 
+    def test_truncated_transfer_resumes_instead_of_discarding(self):
+        """A truncated payload whose size is below the advertised Content-Length
+        is resumed from the retained partial instead of restarting at byte zero."""
+
+        downloader = ENADownloader(timeout=30, retries=1, integrity_retries=1, retry_delay_seconds=1)
+        output_dir = Path(self.test_dir)
+        calls = []
+        partial_sizes = []
+
+        def fake_head(_url):
+            return 10_000_000
+
+        def fake_curl(command, **_kwargs):
+            calls.append(command)
+            partial = Path(command[command.index("-o") + 1])
+            partial.parent.mkdir(parents=True, exist_ok=True)
+            partial_sizes.append(partial.stat().st_size if partial.exists() else 0)
+            if len(calls) == 1:
+                partial.write_bytes(b"truncated not gzip")  # 18 bytes << 10 MB advertised
+            else:
+                with gzip.open(partial, "wb") as handle:
+                    handle.write(b"@SRR3.1 1/1\nACGT\n+\n!!!!\n")
+            return subprocess.CompletedProcess(command, 0, "200", "")
+
+        original_get_fastq_urls = downloader.get_fastq_urls
+        original_run_command = ena_downloader_module._run_command_in_process_group
+        original_head = ena_downloader_module._remote_content_length
+        downloader.get_fastq_urls = lambda _sample_id: ["https://example.test/SRR3.fastq.gz"]
+        ena_downloader_module._run_command_in_process_group = fake_curl
+        ena_downloader_module._remote_content_length = fake_head
+        try:
+            success, message, files = downloader.download_run("SRR3", output_dir)
+        finally:
+            downloader.get_fastq_urls = original_get_fastq_urls
+            ena_downloader_module._run_command_in_process_group = original_run_command
+            ena_downloader_module._remote_content_length = original_head
+
+        self.assertTrue(success, message)
+        self.assertEqual([path.name for path in files], ["SRR3.fastq.gz"])
+        # Resume: second call continues from the retained partial (no discard/restart).
+        self.assertEqual(len(calls), 2)
+        self.assertGreater(partial_sizes[1], 0)
+
     def test_repeated_invalid_gzip_payloads_are_fingerprinted_not_accumulated(self):
         """Only the first invalid payload remains as a full diagnostic witness."""
 
