@@ -104,9 +104,10 @@ integrated = integration.integrate_omics_data(
 
 ## Apis mellifera Real Data
 
-- [Real genome and read organization](../../projects/apis_gwas/doc/current/amellifera_real_genome_reads.md)
-- [Raw reads to genomic estimators runbook](../../projects/apis_gwas/doc/current/beewas_raw_reads_to_genomic_estimators.md)
-- [BeeWAS synthetic-phenotype validation](../../projects/apis_gwas/doc/current/beewas_synthetic_validation.md)
+- Real genome/read organization, reads-to-estimators runbook, and BeeWAS
+  synthetic-validation notes: `projects/apis_gwas/doc/current/`
+  (gitlinked submodule — checkout that submodule to read them;
+  `doc/current/` files were not present in this checkout at audit time)
 - Real-cohort QC reporter: `scripts/gwas/pipelines/analyze_beewas_2026_real.py`
 - Genomic-estimator validator: `scripts/gwas/pipelines/validate_beewas_genomic_estimators.py`
 - Shared BeeWAS reporting helpers: `scripts/gwas/pipelines/beewas_reporting.py`
