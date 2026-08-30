@@ -11,7 +11,8 @@ from pathlib import Path
 
 from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
 
-data_root = Path("/Volumes/blue/data/amalgkit")
+# Set the data root explicitly; the orchestrator default no longer exists.
+data_root = Path("/Volumes/external_drive/Data/amalgkit")
 producer = StreamingPipelineOrchestrator(
     config_dir=Path("projects/hymenoptera_amalgkit/config/amalgkit"),
     log_dir=data_root / "logs",
@@ -44,6 +45,13 @@ The sample states are `pending`, `downloading`, `downloaded`, `quantifying`,
 progress reporting; directory scans are not completion evidence. Quantification
 audit records distinguish current, compatible version drift, legacy-unverified,
 and invalid outputs.
+
+`quarantined` is the fail-closed provenance-audit state, not an error bucket:
+it marks quantifications that cannot be certified current against the recorded
+reference manifest (or corrupt/stale transferred FASTQs), and those samples
+re-enter as re-quantification candidates when the campaign revisits them. Only
+`failed` is the genuine error state; check the dominant `error` string for
+quarantined rows before interpreting the count.
 
 ## Workflow planning
 

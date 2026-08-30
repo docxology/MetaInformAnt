@@ -21,6 +21,7 @@ silently substituted for the per-species finalization chain.
 - [Getting started](GETTING_STARTED.md)
 - [Configuration](CONFIGURATION.md)
 - [Workflow execution](workflow.md)
+- [Campaign CLI reference](CAMPAIGN_CLI.md)
 - [Command reference](amalgkit/commands.md)
 - [Step reference](amalgkit/steps/README.md)
 - [Validation protocol](VALIDATION.md)

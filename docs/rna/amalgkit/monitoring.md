@@ -136,7 +136,11 @@ AMALGKIT runtime version drift is recorded in the quantification audit but does
 not invalidate a complete, checksum-verified quantification contract. The
 status report separates current, version-drift-compatible, legacy-unverified,
 and invalid outputs. Legacy-unverified outputs are quarantined rather than
-automatically downloaded again.
+automatically downloaded again. Quarantined is the fail-closed
+provenance-audit state — outputs that cannot be certified current against the
+recorded reference manifest — not an error bucket. Quarantined samples
+re-enter as re-quantification candidates under the preserve requantification
+policy; only `failed` rows are genuine errors.
 
 Run the compatibility reconciliation as a dry run first:
 
