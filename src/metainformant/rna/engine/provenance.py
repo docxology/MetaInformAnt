@@ -13,7 +13,6 @@ import hashlib
 import json
 import os
 import tempfile
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -493,6 +492,8 @@ def write_metadata_provenance(
     metadata_dir = work_path / "metadata"
     metadata_dir.mkdir(parents=True, exist_ok=True)
 
+    # Content-deterministic payload: no wall-clock fields.  Recency lives in
+    # the orchestrator log and the progress DB, not in hashed/compared sidecars.
     payload: Mapping[str, Any] = {
         "schema": METADATA_PROVENANCE_SCHEMA,
         "species": species,
@@ -508,7 +509,6 @@ def write_metadata_provenance(
         # version annotations to invalidate an otherwise resumable campaign.
         "metadata_sha256": digest_file(metadata_dir / "metadata.tsv"),
         "selected_metadata_sha256": digest_file(metadata_dir / "metadata_selected.tsv"),
-        "generated_at": datetime.now(timezone.utc).isoformat(),
     }
     destination = metadata_provenance_path(work_path)
     fd, temporary_name = tempfile.mkstemp(prefix=f".{destination.name}.", dir=str(metadata_dir))
@@ -711,6 +711,9 @@ def write_downstream_provenance(
     if strict and digest_file(config_file) is None:
         raise OSError(f"Downstream checkpoint config is missing or unreadable: {config_file}")
     destination = downstream_provenance_path(work_path)
+    # Content-deterministic payload: no wall-clock fields.  Any restart-varying
+    # byte would make the sidecar look rewritten on every resume.  Recency
+    # lives in the orchestrator log and the progress DB, not here.
     payload: Mapping[str, Any] = {
         "schema": DOWNSTREAM_PROVENANCE_SCHEMA,
         "species": species,
@@ -725,7 +728,6 @@ def write_downstream_provenance(
         "metadata_inputs": metadata_inputs,
         "quantification_inputs": quant_inputs,
         "output_manifest": output_manifest,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
     }
     fd, temporary_name = tempfile.mkstemp(prefix=f".{destination.name}.", dir=str(work_path))
     try:
@@ -789,6 +791,10 @@ def write_quant_provenance(
         quant_file_sha256 = digest_file(quant_file)
         if quant_file_sha256 is None:
             raise OSError(f"Unable to hash quantification file: {quant_file}")
+    # Content-deterministic payload: no wall-clock fields.  This sidecar is
+    # re-verified fail-closed on every resume; any restart-varying byte would
+    # invalidate reusable quantification work.  Recency lives in the
+    # orchestrator log and the progress DB, not here.
     payload: Mapping[str, Any] = {
         "schema": QUANT_PROVENANCE_SCHEMA,
         "species": species,
@@ -804,7 +810,6 @@ def write_quant_provenance(
         "quantification_file_sha256": quant_file_sha256,
         "quant_contract_schema": QUANT_CONTRACT_SCHEMA,
         "command": command,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
     }
     payload["quant_contract_id"] = quantification_contract_id(payload)
     destination = quant_provenance_path(sample_path)

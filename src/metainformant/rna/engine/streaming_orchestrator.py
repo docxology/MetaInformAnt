@@ -569,8 +569,11 @@ def _write_raw_validation_marker(
         ),
         "layout_validation": layout_validation,
         "files": files,
-        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
+    # Content-deterministic payload: no wall-clock fields.  Any restart-varying
+    # byte in this marker would make a still-valid cached validation look
+    # rewritten and force one bounded full record rescan per sample on every
+    # resume.  Recency lives in the orchestrator log and the progress DB.
     marker.parent.mkdir(parents=True, exist_ok=True)
     temporary = marker.with_name(f".{marker.name}.tmp")
     try:
@@ -652,8 +655,11 @@ def _write_sra_validation_result(
         "validator": "vdb-validate",
         "returncode": returncode,
         "detail": detail[:2000],
-        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
+    # Content-deterministic payload: no wall-clock fields.  Any restart-varying
+    # byte would make a still-valid vdb-validate witness look rewritten and
+    # force an expensive re-validation of the cached SRA archive on every
+    # resume.  Recency lives in the orchestrator log and the progress DB.
     marker.parent.mkdir(parents=True, exist_ok=True)
     temporary = marker.with_name(f".{marker.name}.{os.getpid()}.{threading.get_ident()}.tmp")
     try:

@@ -25,6 +25,7 @@ from metainformant.rna.engine.provenance import (
 )
 from metainformant.rna.engine.streaming_orchestrator import (
     StreamingPipelineOrchestrator,
+    _write_raw_validation_marker,
     _build_quant_command,
     _build_sample_tasks,
     _campaign_cached_sra_path,
@@ -1887,6 +1888,64 @@ def test_reference_alias_manifest_is_byte_idempotent(tmp_path: Path, monkeypatch
         [],
     )
     assert second.read_bytes() == first_bytes
+
+
+def _raw_validation_marker_is_byte_idempotent(tmp_path: Path) -> None:
+    """Two writes over unchanged FASTQ inputs produce a byte-identical marker.
+
+    The raw-validation marker is compared field-by-field on resume to decide
+    whether a cached full record scan can be reused; any restart-varying byte
+    would force one bounded full rescan per sample on every orchestrator
+    restart.  (Companion regression to
+    ``test_reference_alias_manifest_is_byte_idempotent``.)
+    """
+    sample_dir = tmp_path / "data" / "test_species" / "work" / "getfastq" / "SRRX"
+    sample_dir.mkdir(parents=True)
+    fastq = sample_dir / "SRRX_1.fastq.gz"
+    fastq.write_bytes(b"\x1f\x8b" + b"payload")
+    marker = tmp_path / "data" / "test_species" / "work" / "raw_validation" / "SRRX.json"
+
+    _write_raw_validation_marker(marker, [fastq], True)
+    first_bytes = marker.read_bytes()
+    time.sleep(1.1)
+    _write_raw_validation_marker(marker, [fastq], True)
+    assert marker.read_bytes() == first_bytes
+
+
+def test_sra_validation_witness_is_byte_idempotent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Two witness writes over unchanged validation facts are byte-identical.
+
+    The SRA validation witness is replayed from disk on resume to skip a
+    redundant ``vdb-validate`` pass; any restart-varying byte would force
+    re-validation of every cached archive on each orchestrator restart.
+    (Companion regression to
+    ``test_reference_alias_manifest_is_byte_idempotent``.)
+    """
+    data_root = tmp_path / "data"
+    monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(data_root))
+    source = data_root / ".sra-cache" / "sra" / "SRRX.sra"
+    source.parent.mkdir(parents=True)
+    source.write_bytes(b"sra-bytes")
+    fingerprint = orchestrator_module._sra_source_fingerprint(source)
+
+    orchestrator_module._write_sra_validation_result(
+        source,
+        fingerprint=fingerprint,
+        valid=True,
+        returncode=0,
+        detail="ok",
+    )
+    first_bytes = orchestrator_module._sra_validation_marker_path(source).read_bytes()
+    time.sleep(1.1)
+    orchestrator_module._write_sra_validation_result(
+        source,
+        fingerprint=fingerprint,
+        valid=True,
+        returncode=0,
+        detail="ok",
+    )
+    assert orchestrator_module._sra_validation_marker_path(source).read_bytes() == first_bytes
+    assert orchestrator_module._cached_sra_validation_result(source) is True
 
 
 def test_reference_aliases_are_explicit_and_audited(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:

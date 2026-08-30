@@ -22,6 +22,8 @@ from metainformant.rna.amalgkit.commands import (
 from metainformant.rna.engine.provenance import (
     is_current_downstream,
     write_downstream_provenance,
+    write_metadata_provenance,
+    write_quant_provenance,
 )
 from metainformant.rna.steps import STEP_RUNNERS
 
@@ -303,3 +305,109 @@ def test_downstream_provenance_requires_explicit_steps(tmp_path: Path) -> None:
     payload.pop("steps")
     sidecar.write_text(json.dumps(payload), encoding="utf-8")
     assert not is_current_downstream(work_dir)
+
+
+def _quant_provenance_sidecar_is_byte_idempotent(tmp_path: Path) -> None:
+    """Two writes over unchanged facts produce a byte-identical sidecar.
+
+    Quantification sidecars are re-verified fail-closed on every orchestrator
+    resume.  (Companion regression to
+    ``test_reference_alias_manifest_is_byte_idempotent``.)
+    """
+    import time
+
+    config = tmp_path / "config.yaml"
+    config.write_bytes(b"species: test")
+    sample_dir = tmp_path / "quant" / "SRRX"
+    sample_dir.mkdir(parents=True)
+    abundance = sample_dir / "abundance.tsv"
+    abundance.write_bytes(b"target_id\teff_counts\nENST1\t10\n")
+    command = ["amalgkit", "quant", "--sample", "SRRX"]
+
+    write_quant_provenance(
+        sample_dir,
+        species="test_species",
+        run_accession="SRRX",
+        config_path=config,
+        command=command,
+        quantification_file=abundance.name,
+    )
+    first_bytes = (sample_dir / ".metainformant_quant_provenance.json").read_bytes()
+    time.sleep(1.1)
+    write_quant_provenance(
+        sample_dir,
+        species="test_species",
+        run_accession="SRRX",
+        config_path=config,
+        command=command,
+        quantification_file=abundance.name,
+    )
+    assert (sample_dir / ".metainformant_quant_provenance.json").read_bytes() == first_bytes
+
+
+def test_downstream_provenance_sidecar_is_byte_idempotent(tmp_path: Path) -> None:
+    """Two writes over unchanged facts produce a byte-identical sidecar.
+
+    Downstream checkpoints are replayed from disk on resume to skip completed
+    stages; any restart-varying byte would make an unchanged checkpoint look
+    rewritten.  (Companion regression to
+    ``test_reference_alias_manifest_is_byte_idempotent``.)
+    """
+    import time
+
+    work_dir = tmp_path / "work"
+    config = tmp_path / "config.yaml"
+    config.write_bytes(b"species: test")
+
+    write_downstream_provenance(
+        work_dir,
+        species="test_species",
+        config_path=config,
+        quantified_samples=2,
+        steps=["merge", "finalize"],
+    )
+    first_bytes = (work_dir / ".metainformant_downstream_provenance.json").read_bytes()
+    time.sleep(1.1)
+    write_downstream_provenance(
+        work_dir,
+        species="test_species",
+        config_path=config,
+        quantified_samples=2,
+        steps=["merge", "finalize"],
+    )
+    assert (work_dir / ".metainformant_downstream_provenance.json").read_bytes() == first_bytes
+
+
+def test_metadata_provenance_sidecar_is_byte_idempotent(tmp_path: Path) -> None:
+    """Two writes over unchanged metadata produce a byte-identical sidecar.
+
+    (Companion regression to
+    ``test_reference_alias_manifest_is_byte_idempotent``.)
+    """
+    import time
+
+    work_dir = tmp_path / "work"
+    metadata_dir = work_dir / "metadata"
+    metadata_dir.mkdir(parents=True)
+    (metadata_dir / "metadata.tsv").write_bytes(b"srr\tspecies\nSRR1\ttest\n")
+    (metadata_dir / "metadata_selected.tsv").write_bytes(b"srr\tspecies\nSRR1\ttest\n")
+    config = tmp_path / "config.yaml"
+    config.write_bytes(b"species: test")
+    rules = tmp_path / "rules.txt"
+    rules.write_bytes(b"keep all")
+
+    write_metadata_provenance(
+        work_dir,
+        species="test_species",
+        config_path=config,
+        selection_rules_path=rules,
+    )
+    first_bytes = (metadata_dir / ".metainformant_metadata_provenance.json").read_bytes()
+    time.sleep(1.1)
+    write_metadata_provenance(
+        work_dir,
+        species="test_species",
+        config_path=config,
+        selection_rules_path=rules,
+    )
+    assert (metadata_dir / ".metainformant_metadata_provenance.json").read_bytes() == first_bytes
