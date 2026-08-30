@@ -15,7 +15,7 @@ The pinned project release is Amalgkit 0.16.60. Confirm `amalgkit --help`,
 ## 2. Select and inspect the data root
 
 ```bash
-export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+export AMALGKIT_DATA_ROOT=/Volumes/external_drive/Data/amalgkit
 mkdir -p "$AMALGKIT_DATA_ROOT"
 df -h "$AMALGKIT_DATA_ROOT"
 uv run python scripts/rna/run_all_species.py \

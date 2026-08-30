@@ -14,7 +14,7 @@ uv run python projects/hymenoptera_amalgkit/scripts/validate_project_docs.py
 ## Runtime status checks
 
 ```bash
-export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+export AMALGKIT_DATA_ROOT=/Volumes/external_drive/Data/amalgkit
 uv run python projects/hymenoptera_amalgkit/scripts/report_campaign_status.py \
   --data-root "$AMALGKIT_DATA_ROOT"
 uv run python projects/hymenoptera_amalgkit/scripts/generate_pipeline_report.py \

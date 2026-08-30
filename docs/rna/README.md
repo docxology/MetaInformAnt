@@ -54,7 +54,7 @@ Large outputs must live outside Git. Set the active root explicitly before
 running a real cohort:
 
 ```bash
-export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+export AMALGKIT_DATA_ROOT=/Volumes/external_drive/Data/amalgkit
 ```
 
 The root is an input/output boundary, not a claim that every configured

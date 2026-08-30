@@ -5,8 +5,11 @@
 
 > Historical summary: this page predates the BeeWAS 2026 real-read separation.
 > Current real-data work uses
-> `projects/apis_gwas/config/beewas_2026_full_guarded.yaml` and
-> `/Volumes/blue/data/beewas_2026`; generated/demo outputs remain under
+> `projects/apis_gwas/config/beewas_2026_full_guarded.yaml` and its
+> dataset root (historically `/Volumes/blue/data/beewas_2026`; the current
+> external-volume convention is `/Volumes/external_drive/Data/<dataset>`, and
+> the BeeWAS directory has not been re-established on it — unverified);
+> generated/demo outputs remain under
 > `output/gwas/amellifera`. See
 > `projects/apis_gwas/doc/current/amellifera_real_genome_reads.md`.
 

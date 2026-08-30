@@ -31,7 +31,7 @@ scripts after the producer lock is released.
 ## Current commands
 
 ```bash
-export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+export AMALGKIT_DATA_ROOT=/Volumes/external_drive/Data/amalgkit
 uv run python scripts/rna/validate_configs.py
 uv run python scripts/rna/validate_all_species_workflow.py
 uv run python scripts/rna/run_all_species.py \
@@ -52,7 +52,7 @@ from metainformant.rna.engine.progress_db import ProgressDB
 from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
 from metainformant.rna.engine.workflow import load_workflow_config, plan_workflow
 
-data_root = Path("/Volumes/blue/data/amalgkit")
+data_root = Path("/Volumes/external_drive/Data/amalgkit")
 config = load_workflow_config(
     "projects/hymenoptera_amalgkit/config/amalgkit/amalgkit_apis_mellifera.yaml"
 )

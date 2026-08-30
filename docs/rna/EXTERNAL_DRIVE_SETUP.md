@@ -7,7 +7,7 @@ it for work directories, logs, progress state, and evidence.
 ## Prepare and verify the mount
 
 ```bash
-export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+export AMALGKIT_DATA_ROOT=/Volumes/external_drive/Data/amalgkit
 test -d "$AMALGKIT_DATA_ROOT"
 test -w "$AMALGKIT_DATA_ROOT"
 df -h "$AMALGKIT_DATA_ROOT"

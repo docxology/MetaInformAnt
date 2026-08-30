@@ -3,7 +3,10 @@
 **Status**: Genome Successfully Downloaded ✅  
 **Date**: December 2024
 
-> Current real-data work is organized under `/Volumes/blue/data/beewas_2026`
+> Current real-data work is organized under the external data volume
+> (`/Volumes/external_drive/Data/<dataset>` convention; the historical
+> BeeWAS 2026 cohort lived under `/Volumes/blue/data/beewas_2026`, a volume
+> that no longer exists)
 > with the open Google Drive folder `BeeWAS-2026_reads` inventoried as 81
 > paired FASTQ samples. Use
 > `projects/apis_gwas/config/beewas_2026_full_guarded.yaml` and

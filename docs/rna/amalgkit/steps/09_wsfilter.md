@@ -8,9 +8,9 @@ parameters used for the run.
 
 ```bash
 amalgkit wsfilter \
-  --out_dir /Volumes/blue/data/amalgkit/pogonomyrmex_barbatus/work \
-  --input_dir /Volumes/blue/data/amalgkit/pogonomyrmex_barbatus/work/merge \
-  --metadata /Volumes/blue/data/amalgkit/pogonomyrmex_barbatus/work/metadata/metadata_selected.tsv \
+  --out_dir /Volumes/external_drive/Data/amalgkit/pogonomyrmex_barbatus/work \
+  --input_dir /Volumes/external_drive/Data/amalgkit/pogonomyrmex_barbatus/work/merge \
+  --metadata /Volumes/external_drive/Data/amalgkit/pogonomyrmex_barbatus/work/metadata/metadata_selected.tsv \
   --batch no \
   --threads 8
 ```

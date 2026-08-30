@@ -35,7 +35,7 @@ shared NCBI taxonomy cache, or multiple species contend for the same cache.
 **Solution**: Use the native Amalgkit taxonomy cache under the selected data
 root and let the current launcher share it across species.
 ```bash
-export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+export AMALGKIT_DATA_ROOT=/Volumes/external_drive/Data/amalgkit
 export AMALGKIT_SHARED_DOWNLOAD_DIR="$AMALGKIT_DATA_ROOT/shared/ncbi_taxonomy"
 bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 ```

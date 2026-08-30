@@ -23,7 +23,7 @@ uv run python scripts/rna/run_all_species.py \
 ## Production execution
 
 ```bash
-export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+export AMALGKIT_DATA_ROOT=/Volumes/external_drive/Data/amalgkit
 bash projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh
 ```
 

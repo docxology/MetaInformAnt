@@ -8,9 +8,9 @@ per-species workflow.
 
 ```bash
 amalgkit finalize \
-  --out_dir /Volumes/blue/data/amalgkit/pogonomyrmex_barbatus/work \
-  --input_dir /Volumes/blue/data/amalgkit/pogonomyrmex_barbatus/work/wsfilter \
-  --metadata /Volumes/blue/data/amalgkit/pogonomyrmex_barbatus/work/metadata/metadata_selected.tsv \
+  --out_dir /Volumes/external_drive/Data/amalgkit/pogonomyrmex_barbatus/work \
+  --input_dir /Volumes/external_drive/Data/amalgkit/pogonomyrmex_barbatus/work/wsfilter \
+  --metadata /Volumes/external_drive/Data/amalgkit/pogonomyrmex_barbatus/work/metadata/metadata_selected.tsv \
   --batch no \
   --threads 8
 ```

@@ -6,7 +6,7 @@ explicit external data root.
 ## Inspect and validate
 
 ```bash
-export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+export AMALGKIT_DATA_ROOT=/Volumes/external_drive/Data/amalgkit
 uv run python scripts/rna/validate_configs.py
 uv run python scripts/rna/validate_all_species_workflow.py
 uv run python scripts/rna/run_all_species.py \

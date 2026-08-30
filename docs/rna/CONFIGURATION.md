@@ -56,7 +56,7 @@ full campaign. The launcher defaults to the measured `local-throughput`
 profile; use `compat` for a deliberately conservative diagnostic run:
 
 ```bash
-export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+export AMALGKIT_DATA_ROOT=/Volumes/external_drive/Data/amalgkit
 export AMALGKIT_PIPELINE_PROFILE=local-throughput
 export AMALGKIT_PIPELINE_THREADS=10
 export AMALGKIT_PIPELINE_QUANT_SLOTS=10

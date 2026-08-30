@@ -16,12 +16,12 @@ Example configuration:
 ```yaml
 steps:
   cstmm:
-    out_dir: /Volumes/blue/data/amalgkit/cross_species
-    orthogroup_table: /Volumes/blue/data/amalgkit/cross_species/orthogroups.tsv
-    dir_busco: /Volumes/blue/data/amalgkit/cross_species/busco
+    out_dir: /Volumes/external_drive/Data/amalgkit/cross_species
+    orthogroup_table: /Volumes/external_drive/Data/amalgkit/cross_species/orthogroups.tsv
+    dir_busco: /Volumes/external_drive/Data/amalgkit/cross_species/busco
   csfilter:
-    out_dir: /Volumes/blue/data/amalgkit/cross_species
-    input_dir: /Volumes/blue/data/amalgkit/cross_species/cstmm
+    out_dir: /Volumes/external_drive/Data/amalgkit/cross_species
+    input_dir: /Volumes/external_drive/Data/amalgkit/cross_species/cstmm
 ```
 
 Run `amalgkit cstmm --help` and `amalgkit csfilter --help` in the exact
@@ -41,9 +41,9 @@ validated.
 ```bash
 cd projects/hymenoptera_amalgkit
 uv run python scripts/prepare_cross_species_inputs.py \
-  --data-root /Volumes/blue/data/amalgkit
+  --data-root /Volumes/external_drive/Data/amalgkit
 uv run python scripts/run_cross_species_analysis.py \
-  --data-root /Volumes/blue/data/amalgkit \
+  --data-root /Volumes/external_drive/Data/amalgkit \
   --output-dir output/cross_species
 ```
 
