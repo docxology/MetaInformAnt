@@ -3224,9 +3224,22 @@ class StreamingPipelineOrchestrator:
             ),
         )
 
+        # Re-digesting every quantified payload on every resume made the
+        # Phase-1 audit O(campaign bytes): a large species (apis_mellifera,
+        # ~6.7 GB across 3190 sample dirs) stalled discovery for 15+ minutes
+        # on cold external-volume reads, so no task was ever submitted.
+        # The contract audit (sidecar, accession, config, reference manifest)
+        # remains fail-closed; full content re-verification is opt-in.
+        verify_resume_hashes = os.environ.get(
+            "AMALGKIT_RESUME_VERIFY_HASHES", ""
+        ).strip().lower() in {"1", "true", "yes", "on"}
+
         def classify(srr_id: str) -> tuple[str, dict[str, Any]]:
             quant_dir = _species_work_dir(species_name) / "quant" / srr_id
-            return srr_id, classify_quantification(quant_dir, srr_id)
+            return (
+                srr_id,
+                classify_quantification(quant_dir, srr_id, verify_content=verify_resume_hashes),
+            )
 
         if validation_slots == 1:
             classifications = [classify(srr_id) for srr_id in sample_ids]
@@ -3744,10 +3757,18 @@ class StreamingPipelineOrchestrator:
         # calls here can delay execution before the first reusable sample is
         # even submitted.
         quantified_accessions = set(self.db.get_samples(species_name, "quantified"))
+        permanently_excluded = self.db.get_excluded_srr_ids(species_name, reason_code="permanent_drop")
+        if permanently_excluded:
+            logger.info(
+                "Skipping %d permanently excluded accessions for %s per sample_exclusions",
+                len(permanently_excluded),
+                species_name,
+            )
         tasks = [
             task
             for task in _build_sample_tasks(filtered, srr_col, fastq_dir, config_path, species_name)
             if str(task["srr"]).strip() not in quantified_accessions
+            and str(task["srr"]).strip() not in permanently_excluded
         ]
 
         return tasks

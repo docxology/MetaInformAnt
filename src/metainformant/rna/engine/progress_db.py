@@ -40,6 +40,8 @@ VALID_STATES = frozenset(
     }
 )
 
+EXCLUSION_REASON_CODES = frozenset({"permanent_drop", "re_download"})
+
 DEFAULT_DB_PATH = Path("output/amalgkit/pipeline_progress.db")
 
 _SCHEMA = """
@@ -70,6 +72,19 @@ CREATE TABLE IF NOT EXISTS quantification_audit (
 
 CREATE INDEX IF NOT EXISTS idx_quantification_audit_status
     ON quantification_audit(status);
+
+CREATE TABLE IF NOT EXISTS sample_exclusions (
+    species        TEXT    NOT NULL,
+    srr_id         TEXT    NOT NULL,
+    reason_code    TEXT    NOT NULL,
+    reason_detail  TEXT,
+    recorded_by    TEXT,
+    recorded_at    TEXT    NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (species, srr_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_sample_exclusions_reason
+    ON sample_exclusions(species, reason_code);
 """
 
 
@@ -256,6 +271,107 @@ class ProgressDB:
             )
             self._conn.commit()
 
+    def record_exclusions(
+        self,
+        species: str,
+        entries: List[Dict[str, str]],
+    ) -> int:
+        """Record or update sample exclusions (upsert by species + accession).
+
+        Each entry is a mapping with keys ``srr_id`` (required) plus optional
+        ``reason_code`` (default ``permanent_drop``), ``reason_detail``, and
+        ``recorded_by``. Reason codes: ``permanent_drop`` removes the sample
+        from acquisition/quantification eligibility; ``re_download`` marks it
+        for a fresh ENA transfer without blocking eligibility.
+        """
+        rows = []
+        for entry in entries:
+            reason_code = entry.get("reason_code", "permanent_drop")
+            if reason_code not in EXCLUSION_REASON_CODES:
+                raise ValueError(f"Invalid exclusion reason code '{reason_code}'. Must be one of {sorted(EXCLUSION_REASON_CODES)}")
+            rows.append(
+                (
+                    species,
+                    entry["srr_id"],
+                    reason_code,
+                    entry.get("reason_detail"),
+                    entry.get("recorded_by"),
+                )
+            )
+        with self._lock:
+            self._conn.executemany(
+                """
+                INSERT INTO sample_exclusions (
+                    species, srr_id, reason_code, reason_detail, recorded_by, recorded_at
+                ) VALUES (?, ?, ?, ?, ?, datetime('now'))
+                ON CONFLICT(species, srr_id) DO UPDATE SET
+                    reason_code = excluded.reason_code,
+                    reason_detail = excluded.reason_detail,
+                    recorded_by = excluded.recorded_by,
+                    recorded_at = excluded.recorded_at
+                """,
+                rows,
+            )
+            self._conn.commit()
+        logger.info("record_exclusions(%s): %d entries", species, len(rows))
+        return len(rows)
+
+    def get_exclusions(self, species: Optional[str] = None) -> List[Dict[str, str]]:
+        """Return recorded exclusions, optionally restricted to one species."""
+        with self._lock:
+            if species:
+                rows = self._conn.execute(
+                    "SELECT species, srr_id, reason_code, reason_detail, recorded_by, recorded_at "
+                    "FROM sample_exclusions WHERE species = ? ORDER BY srr_id",
+                    (species,),
+                ).fetchall()
+            else:
+                rows = self._conn.execute(
+                    "SELECT species, srr_id, reason_code, reason_detail, recorded_by, recorded_at "
+                    "FROM sample_exclusions ORDER BY species, srr_id"
+                ).fetchall()
+        return [
+            {
+                "species": r[0],
+                "srr_id": r[1],
+                "reason_code": r[2],
+                "reason_detail": r[3],
+                "recorded_by": r[4],
+                "recorded_at": r[5],
+            }
+            for r in rows
+        ]
+
+    def get_excluded_srr_ids(self, species: str, reason_code: Optional[str] = None) -> set:
+        """Return the set of excluded SRR IDs for a species.
+
+        With ``reason_code`` given, only exclusions carrying that code are
+        returned; the orchestrator passes ``permanent_drop`` so re-download
+        markers never block eligibility.
+        """
+        with self._lock:
+            if reason_code is not None:
+                rows = self._conn.execute(
+                    "SELECT srr_id FROM sample_exclusions WHERE species = ? AND reason_code = ?",
+                    (species, reason_code),
+                ).fetchall()
+            else:
+                rows = self._conn.execute(
+                    "SELECT srr_id FROM sample_exclusions WHERE species = ?",
+                    (species,),
+                ).fetchall()
+        return {r[0] for r in rows}
+
+    def remove_exclusion(self, species: str, srr_id: str) -> bool:
+        """Delete a recorded exclusion. Returns True when a row was removed."""
+        with self._lock:
+            cur = self._conn.execute(
+                "DELETE FROM sample_exclusions WHERE species = ? AND srr_id = ?",
+                (species, srr_id),
+            )
+            self._conn.commit()
+        return cur.rowcount > 0
+
     # ---- Read operations ----
 
     def get_state(self, species: str, srr_id: str) -> Optional[str]:
@@ -360,6 +476,7 @@ class ProgressDB:
         species: str,
         quant_dir: Path,
         *,
+        verify_hashes: bool = False,
         config_path: Path | None = None,
         reference_manifest_path: Path | None = None,
     ) -> int:
@@ -375,6 +492,14 @@ class ProgressDB:
 
         Returns:
             Number of samples reconciled.
+
+        ``verify_hashes`` defaults to False: the resume-time filesystem scan
+        classifies by provenance contract (sidecar completeness, accession
+        binding, output presence) without re-digesting every quantification
+        payload. Re-hashing the full quantified corpus (multi-GB for a large
+        species) inside Phase-1 discovery stalled task submission for longer
+        than the campaign stall watchdogs on every restart. Pass True only for
+        an explicit deep audit.
         """
         if not quant_dir.exists():
             return 0
@@ -390,6 +515,7 @@ class ProgressDB:
                 classification = classify_quantification(
                     subdir,
                     subdir.name,
+                    verify_content=verify_hashes,
                     expected_config_path=config_path,
                     expected_reference_manifest_path=reference_manifest_path,
                 )

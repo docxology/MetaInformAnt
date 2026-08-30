@@ -200,6 +200,51 @@ class TestProgressDBReconciliation:
         assert db.get_state("ant", "SRR3") == "pending"
         db.close()
 
+    def test_reconcile_defaults_to_contract_only_not_full_digest(self, tmp_path: Path):
+        """Resume reconciliation must not re-hash every quantification payload.
+
+        Regression: the default resume scan re-digested the full quantified
+        corpus inside Phase-1 discovery, stalling a large campaign's task
+        submission for 15+ minutes per restart (post-discovery deadlock).
+        The default scan is contract-only; ``verify_hashes=True`` still
+        performs the full content audit and rejects tampered payloads.
+        """
+        import json
+
+        from metainformant.rna.engine.provenance import write_quant_provenance
+
+        db = ProgressDB(tmp_path / "test.db")
+        db.init_species("ant", ["SRR1"])
+
+        quant_dir = tmp_path / "quant"
+        sample_dir = quant_dir / "SRR1"
+        sample_dir.mkdir(parents=True)
+        abundance = sample_dir / "SRR1_abundance.tsv"
+        abundance.write_text("target_id\ttpm\nTX1\t1\n", encoding="utf-8")
+        config = tmp_path / "config.yaml"
+        config.write_text("species_list: [Test_species]\n", encoding="utf-8")
+        write_quant_provenance(
+            sample_dir,
+            species="test_species",
+            run_accession="SRR1",
+            config_path=config,
+            command=["amalgkit", "quant", "--threads", "1"],
+            quantification_file=abundance,
+        )
+        # Tamper with the payload after the sidecar recorded its digest.
+        abundance.write_text("target_id\ttpm\nTX1\t999\n", encoding="utf-8")
+
+        # Default resume scan: contract-verified, content not re-digested.
+        reconciled = db.reconcile("ant", quant_dir)
+        assert reconciled == 1
+        assert db.get_state("ant", "SRR1") == "quantified"
+
+        # Opt-in deep audit: content digest mismatch rejects the sample.
+        db.set_state("ant", "SRR1", "pending")
+        assert db.reconcile("ant", quant_dir, verify_hashes=True) == 0
+        assert db.get_state("ant", "SRR1") == "pending"
+        db.close()
+
     def test_reconcile_nonexistent_dir(self, tmp_path: Path):
         """reconcile returns 0 for nonexistent directory."""
         db = ProgressDB(tmp_path / "test.db")
@@ -290,3 +335,76 @@ class TestProgressDBRepr:
         # Reopening should still work
         with ProgressDB(db_path) as db2:
             assert db2.get_state("ant", "SRR1") == "pending"
+
+
+class TestSampleExclusions:
+    """Permanent-drop and re-download exclusion recording (real SQLite)."""
+
+    def test_record_and_read_exclusions(self, tmp_path: Path):
+        """Exclusions round-trip with reason codes and details."""
+        db = ProgressDB(tmp_path / "test.db")
+        recorded = db.record_exclusions(
+            "apis_mellifera",
+            [
+                {"srr_id": "SRR1036397", "reason_code": "permanent_drop", "reason_detail": "16S amplicon"},
+                {"srr_id": "SRR7412516", "reason_detail": "27F primer at read start"},
+            ],
+        )
+        assert recorded == 2
+        rows = db.get_exclusions("apis_mellifera")
+        assert {r["srr_id"] for r in rows} == {"SRR1036397", "SRR7412516"}
+        by_id = {r["srr_id"]: r for r in rows}
+        assert by_id["SRR1036397"]["reason_code"] == "permanent_drop"
+        assert by_id["SRR7412516"]["reason_code"] == "permanent_drop"  # default
+        assert db.get_exclusions()  # unfiltered query returns the rows too
+        db.close()
+
+    def test_excluded_srr_ids_filters_by_reason_code(self, tmp_path: Path):
+        """permanent_drop blocks eligibility; re_download stays eligible."""
+        db = ProgressDB(tmp_path / "test.db")
+        db.record_exclusions(
+            "apis_mellifera",
+            [
+                {"srr_id": "SRR1", "reason_code": "permanent_drop"},
+                {"srr_id": "SRR2", "reason_code": "re_download"},
+            ],
+        )
+        assert db.get_excluded_srr_ids("apis_mellifera", reason_code="permanent_drop") == {"SRR1"}
+        assert db.get_excluded_srr_ids("apis_mellifera") == {"SRR1", "SRR2"}
+        db.close()
+
+    def test_record_exclusions_upserts(self, tmp_path: Path):
+        """Re-recording the same accession updates reason fields, not duplicates."""
+        db = ProgressDB(tmp_path / "test.db")
+        db.record_exclusions("ant", [{"srr_id": "SRR9", "reason_code": "re_download"}])
+        db.record_exclusions("ant", [{"srr_id": "SRR9", "reason_code": "permanent_drop", "reason_detail": "amplicon"}])
+        rows = db.get_exclusions("ant")
+        assert len(rows) == 1
+        assert rows[0]["reason_code"] == "permanent_drop"
+        db.close()
+
+    def test_invalid_reason_code_rejected(self, tmp_path: Path):
+        """Unknown reason codes fail loudly instead of recording garbage."""
+        db = ProgressDB(tmp_path / "test.db")
+        with pytest.raises(ValueError):
+            db.record_exclusions("ant", [{"srr_id": "SRR1", "reason_code": "bogus"}])
+        assert db.get_exclusions("ant") == []
+        db.close()
+
+    def test_remove_exclusion(self, tmp_path: Path):
+        """Removed exclusions disappear; removing an absent row reports False."""
+        db = ProgressDB(tmp_path / "test.db")
+        db.record_exclusions("ant", [{"srr_id": "SRR1"}])
+        assert db.remove_exclusion("ant", "SRR1") is True
+        assert db.remove_exclusion("ant", "SRR1") is False
+        assert db.get_exclusions("ant") == []
+        db.close()
+
+    def test_exclusions_independent_from_sample_states(self, tmp_path: Path):
+        """Recording an exclusion never mutates the sample state machine."""
+        db = ProgressDB(tmp_path / "test.db")
+        db.init_species("ant", ["SRR1"])
+        db.set_state("ant", "SRR1", "failed", error="kallisto quant failed")
+        db.record_exclusions("ant", [{"srr_id": "SRR1", "reason_code": "permanent_drop"}])
+        assert db.get_state("ant", "SRR1") == "failed"
+        db.close()
