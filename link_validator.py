@@ -35,7 +35,12 @@ ANCHOR_ONLY_PATTERN = re.compile(r'\[([^\]]*)\]\(#([^)]+)\)')
 # source documentation. Scanning them creates noisy findings and can traverse
 # very large dependency checkouts.
 EXCLUDED_PATH_PARTS = frozenset(
-    {".git", ".venv", ".uv-cache", "__pycache__", "output", "build", "_build", "archive"}
+    {".git", ".venv", ".uv-cache", "__pycache__", "output", "build", "_build", "archive",
+     # Campaign pipeline output subtrees (live data-root content, regenerated
+     # per sample; not documentation surfaces). See storage contract:
+     # AMALGKIT_DATA_ROOT/<species>/<stage>/.
+     "quant", "getfastq", "raw_validation", "index", "metadata_original",
+     "merged", "orthologs", "merge_inputs", "curate_inputs", "finalize_inputs"}
 )
 
 
