@@ -1,167 +1,35 @@
-# Configuration Directory
+# config
 
-Configuration files for METAINFORMANT workflows including RNA-seq, GWAS, and multi-omic analysis.
-
-## Directory Structure
-
-```
-config/
- amalgkit/ # Parent-repository configuration mirror
- eqtl/ # eQTL analysis configurations
- gwas/ # GWAS workflow configurations
- gwas_pbarbatus.yaml # P. barbatus GWAS config
- gwas_template.yaml # Template for new GWAS
- life_events/ # Life events module configurations
- life_events_template.yaml
- longread/ # Long-read sequencing configurations
- multiomics/ # Multi-omics integration configurations
- multiomics_template.yaml
- ncbi/ # NCBI API configurations
- ncbi.yaml
- networks/ # Network analysis configurations
- networks_template.yaml
- phenotype/ # Phenotype analysis configurations
- singlecell/ # Single-cell analysis configurations
- singlecell_template.yaml
- archive/ # Inactive configurations retained for provenance
- config_base/ # Base configuration templates
-```
-
-## Quick Start
-
-### Run RNA-seq Workflow
-
-```bash
-# Inspect the canonical project inventory
-export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
-uv run python scripts/rna/run_all_species.py \
-  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
-  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
-
-# Run one configured species
-uv run python scripts/rna/process_species.py \
-  --species pogonomyrmex_barbatus \
-  --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
-  --data-root "$AMALGKIT_DATA_ROOT"
-```
-
-Or from Python: `metainformant.rna.engine.workflow.load_workflow_config` and `execute_workflow` (see [docs/rna/workflow.md](../docs/rna/workflow.md)).
-
-### Run GWAS Workflow
-
-Use the main CLI for config-driven GWAS validation or execution:
-
-```bash
-uv run metainformant gwas run --config config/gwas/gwas_pbarbatus.yaml --check
-```
-
-Python APIs and scripts under `scripts/gwas/` remain available for specialized workflows; see [docs/cli.md](../docs/cli.md).
-
-## Configuration Format
-
-### Amalgkit RNA-seq Configuration
-
-```yaml
-work_dir: output/amalgkit/species/work
-log_dir: output/amalgkit/species/logs
-threads: 8
-species_list: ["Species_name"]
-
-genome:
-  accession: "GCF_XXXXXXXXX.X"
-  assembly_name: "Assembly_Name"
-  dest_dir: "output/amalgkit/species/genome"
-  include: ["genome", "gff3", "rna", "cds", "protein"]
-
-# Current Amalgkit steps
-steps:
-  metadata: {}
-  select:
-    select_rules_tsv: config/amalgkit/select_rules.tsv
-  getfastq:
-    redo: no
-  integrate: {}
-  quant:
-    redo: no
-  merge: {}
-  wsfilter: {}
-  finalize: {}
-  sanity: {}
-```
-
-### GWAS Configuration
-
-```yaml
-work_dir: output/gwas/species
-threads: 8
-
-genome:
-  accession: "GCF_XXXXXXXXX.X"
-  dest_dir: "output/gwas/species/genome"
-
-variants:
-  vcf_path: "data/variants/cohort.vcf.gz"
-
-samples:
-  phenotype_file: "data/phenotypes/traits.tsv"
-  trait_column: "phenotype"
-
-qc:
-  min_maf: 0.01
-  max_missing: 0.1
-  min_hwe_p: 1e-6
-
-association:
-  model: "linear"
-  covariates: ["pc1", "pc2", "pc3"]
-```
+Configuration files for METAINFORMANT domain modules and the amalgkit
+campaign. See each subfolder's README.
 
 ## Environment Variable Overrides
 
-All configuration parameters can be overridden via environment variables:
-
-| Prefix | Module | Example |
-|--------|--------|---------|
-| `AMALGKIT_` | RNA/Amalgkit runtime namespace | `AMALGKIT_PIPELINE_THREADS=16` |
-| `GWAS_` | GWAS | `GWAS_WORK_DIR=/scratch/gwas` |
-| `DNA_` | DNA | `DNA_WORK_DIR=output/dna` |
-| `NCBI_` | NCBI API | `NCBI_EMAIL=user@example.com` |
-
-## Loading Configurations
+Configuration supports environment-variable overrides via
+`metainformant.core.utils.config.apply_env_overrides` (module-specific
+prefixes, e.g. `AMALGKIT_` for RNA/amalgkit settings; the NCBI client reads
+`NCBI_EMAIL`). Example:
 
 ```python
 from metainformant.core.utils.config import load_mapping_from_file, apply_env_overrides
 
-# Load with environment overrides
-config = load_mapping_from_file(
-    "projects/hymenoptera_amalgkit/config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml"
-)
-config = apply_env_overrides(config, prefix="AMALGKIT")
+config = load_mapping_from_file("config/ncbi/ncbi.yaml")
+config = apply_env_overrides(config, prefix="NCBI")
 ```
 
-## Active Species
+## Quick Start
 
-| Species | Config | NCBI Assembly |
-|---------|--------|---------------|
-| *Pogonomyrmex barbatus* | `amalgkit_pogonomyrmex_barbatus.yaml` | GCF_000187915.1 |
-
-See `projects/hymenoptera_amalgkit/config/amalgkit/` for the 27 species
-configurations plus template, test, and cross-species configs.
-
-## NCBI Configuration
-
-The `config/ncbi/ncbi.yaml` file contains API settings:
-
-```yaml
-email: "your.email@example.com"  # Required for NCBI API
-rate_limit_delay: 0.34           # Seconds between requests
-max_retries: 3
+```bash
+# Inspect the canonical project inventory (never omit --data-root)
+export AMALGKIT_DATA_ROOT=/Volumes/external_drive/Data/amalgkit
+uv run python scripts/rna/run_all_species.py   --config-dir projects/hymenoptera_amalgkit/config/amalgkit   --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 ```
-
-Override with `NCBI_EMAIL` environment variable.
 
 ## Related Documentation
 
 - [RNA Workflow Guide](../docs/rna/workflow.md)
 - [GWAS Workflow Guide](../docs/gwas/workflow.md)
 - [Core Config Module](../src/metainformant/core/utils/config.py)
+- Amalgkit campaign configs live under
+  `projects/hymenoptera_amalgkit/config/amalgkit/` (parent-repo mirror;
+  28 species YAMLs plus template, test, and cross-species configs).

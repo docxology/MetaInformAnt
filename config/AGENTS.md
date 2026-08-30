@@ -1,46 +1,11 @@
-# Agent Directives: config
+# AGENTS.md — `MetaInformAnt/config/`
 
-## Role
+YAML/TOML/JSON configuration for all METAINFORMANT domain modules plus the
+amalgkit campaign configs (verified 2026-08-29 entries: AGENTS.md, PAI.md, README.md, SPEC.md, amalgkit, config_base, eqtl, gwas, life_events, longread, multiomics, ncbi, networks, phenotype, quality, singlecell).
+Each subfolder already carries its own `AGENTS.md`/`README.md` except
+`quality/` (documented during the 2026-08-29 doc pass).
 
-Configuration file repository for all METAINFORMANT workflows.
-
-## Directory Structure
-
-- `amalgkit/` - RNA-seq workflow configurations (active species)
-- `archive/` - Archived amalgkit configurations retained for provenance
-- `config_base/` - Base configuration templates for amalgkit
-- `eqtl/` - eQTL analysis configurations
-- `gwas/` - GWAS pipeline configurations
-- `life_events/` - Life events module configurations
-- `longread/` - Long-read sequencing configurations
-- `multiomics/` - Multi-omics integration configurations
-- `ncbi/` - NCBI API configurations
-- `networks/` - Network analysis configurations
-- `phenotype/` - Phenotype analysis configurations
-- `singlecell/` - Single-cell analysis configurations
-
-## Rules and Constraints
-
-### Configuration Patterns
-
-All configs support environment variable overrides with module-specific prefixes:
-
-- RNA/Amalgkit: `AMALGKIT_` prefix
-- GWAS: `GWAS_` prefix
-- Core: `CORE_` prefix
-
-### Usage
-
-```python
-from metainformant.core.utils.config import load_mapping_from_file, apply_env_overrides
-
-config = load_mapping_from_file("config/amalgkit/species.yaml")
-config = apply_env_overrides(config, prefix="AMALGKIT")
-```
-
-### File Format
-
-- Use YAML for all configuration files
-- Include comments explaining non-obvious options
-- Provide sensible defaults
-- Document required vs optional fields
+## Gotchas
+- Amalgkit configs under `amalgkit/` (28 species YAMLs plus template/test/cross-species) drive the campaign; keep them
+  aligned with `projects/hymenoptera_amalgkit/` evidence rules.
+Repo-wide policy: see the repository-root `AGENTS.md`.
