@@ -73,7 +73,14 @@ The orchestrator is resume-safe: SQLite progress DB (`PRAGMA quick_check` must
 pass), `.part` transfer files, and cached SRA inputs are all reused on restart.
 `scripts/checkpoint_full_campaign.sh` stops the launcher-managed producer tree
 at a resume-safe checkpoint (it reads the lock-dir PID; a bare
-`run_all_species.py` process has no lock and must be stopped manually). Expect
-a transient `quarantined` spike after a restart: the resume sweep re-audits
-every recorded quantification under the `preserve` policy and re-queues what it
-cannot certify current. That is the audit working, not data loss.
+`run_all_species.py` process has no lock and must be stopped manually). The
+resume sweep re-audits every recorded quantification under the `preserve`
+policy and re-queues what it cannot certify current; that is the audit working,
+not data loss. All hashed provenance artifacts are content-deterministic: the
+reference alias manifest (`work/<species>/reference/reference_aliases.json`)
+contains no wall-clock fields, so an unchanged reference produces a
+byte-identical manifest across restarts and prior quantification survives. A
+`quarantined` spike after a restart therefore indicates a real contract change
+(reference rebuilt, configuration edited, schema bump) — or a pre-2026-08-30
+manifest sidecar from before the determinism fix, which re-quantifies once and
+never recurs.

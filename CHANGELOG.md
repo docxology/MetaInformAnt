@@ -5,6 +5,18 @@ All notable changes to METAINFORMANT are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- RNA reference alias manifest is content-deterministic: removed the
+  `generated_at` wall-clock field from the hashed payload so an unchanged
+  reference produces a byte-identical manifest across orchestrator restarts.
+  Previously every restart changed the manifest digest and quarantined the
+  species' entire prior quantification for redundant re-download and
+  re-quantification (observed 2026-08-30: 1,620 apis_mellifera samples
+  re-queued by a single restart). Added a byte-idempotency regression test.
+
 ## [0.4.0] - 2026-08-09
 
 ### Breaking

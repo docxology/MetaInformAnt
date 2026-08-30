@@ -49,7 +49,10 @@ and invalid outputs.
 `quarantined` is the fail-closed provenance-audit state, not an error bucket:
 it marks quantifications that cannot be certified current against the recorded
 reference manifest (or corrupt/stale transferred FASTQs), and those samples
-re-enter as re-quantification candidates when the campaign revisits them. Only
+re-enter as re-quantification candidates when the campaign revisits them. The
+recorded reference-manifest digest is stable across restarts: the manifest
+writer emits a content-deterministic payload (no timestamps), so an unchanged
+reference never invalidates prior work. Only
 `failed` is the genuine error state; check the dominant `error` string for
 quarantined rows before interpreting the count.
 
