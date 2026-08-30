@@ -41,6 +41,23 @@ SKIP_DIR_NAMES = frozenset(
 )
 
 
+# Directories skipped inside NESTED git repositories only (not the top-level repo).
+# Top-level repo trees keep their canonical skills; nested-repo data/output/results/
+# trees (e.g. projects/hymenoptera_amalgkit/data/** per-sample quant dirs from the
+# live campaign) carry runtime artifacts, not documentation, and must not be walked.
+NESTED_REPO_SKIP_DIR_NAMES = frozenset({"data", "output", "results", "logs", ".downloads"})
+
+
+def is_nested_git_repo(directory: Path, repo: Path) -> bool:
+    """True if ``directory`` is a git repository distinct from the top-level ``repo``."""
+    if not (directory / ".git").exists():
+        return False
+    try:
+        return directory.resolve() != repo.resolve()
+    except (OSError, ValueError):
+        return False
+
+
 def should_skip_agents_path(path: Path, repo: Path) -> bool:
     try:
         rel = path.relative_to(repo)
@@ -59,7 +76,11 @@ def iter_agents_files(repo: Path) -> list[Path]:
     # Prune excluded trees while walking.  A post-filtered rglob still visits
     # every file under preserved runtime artifacts such as ``tmp/``.
     for directory, dirnames, filenames in os.walk(repo, followlinks=False):
-        dirnames[:] = sorted(name for name in dirnames if name not in SKIP_DIR_NAMES)
+        skip = set(SKIP_DIR_NAMES)
+        if is_nested_git_repo(Path(directory), repo):
+            # Nested repo: also skip its data/output/results/logs trees.
+            skip |= NESTED_REPO_SKIP_DIR_NAMES
+        dirnames[:] = sorted(name for name in dirnames if name not in skip)
         if "AGENTS.md" in filenames:
             path = Path(directory) / "AGENTS.md"
             if not should_skip_agents_path(path, repo):
