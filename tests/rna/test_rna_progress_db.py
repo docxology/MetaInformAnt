@@ -209,7 +209,6 @@ class TestProgressDBReconciliation:
         The default scan is contract-only; ``verify_hashes=True`` still
         performs the full content audit and rejects tampered payloads.
         """
-        import json
 
         from metainformant.rna.engine.provenance import write_quant_provenance
 
