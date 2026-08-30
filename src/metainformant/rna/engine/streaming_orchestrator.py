@@ -1554,6 +1554,13 @@ def _write_reference_alias_manifest(
 
     destination = work_dir / "reference" / "reference_aliases.json"
     destination.parent.mkdir(parents=True, exist_ok=True)
+    # Content-deterministic payload: no wall-clock fields.  This manifest's
+    # SHA-256 is recorded in per-sample quantification provenance sidecars and
+    # re-verified on every resume, so any restart-varying byte (a timestamp)
+    # would invalidate every previously quantified sample of the species and
+    # quarantine it for redundant re-quantification (observed 2026-08-30:
+    # 1,620 apis_mellifera samples re-queued by one restart).  Recency lives
+    # in the orchestrator log and the progress DB, not here.
     payload = {
         "schema": "metainformant.rna.reference_aliases.v1",
         "species": species_name,
@@ -1564,7 +1571,6 @@ def _write_reference_alias_manifest(
         "status": "complete" if not missing else "incomplete",
         "kallisto_index": str(kallisto_index) if kallisto_index else None,
         "kallisto_kmer_size": kallisto_kmer_size,
-        "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
     temporary = destination.with_name(f".{destination.name}.tmp")
     try:

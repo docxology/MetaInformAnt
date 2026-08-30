@@ -30,6 +30,7 @@ from metainformant.rna.engine.streaming_orchestrator import (
     _campaign_cached_sra_path,
     _ensure_ncbi_settings_for_data_root,
     _ensure_reference_alias_indexes,
+    _write_reference_alias_manifest,
     _filter_kallisto_ineligible_reads,
     _filter_metadata_by_size,
     _filter_valid_run_rows,
@@ -1836,6 +1837,58 @@ def test_failed_download_preserves_invalid_transfer_artifacts(tmp_path: Path, mo
     assert not stale.exists()
 
 
+def test_reference_alias_manifest_is_byte_idempotent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Two writes of an unchanged reference produce a byte-identical manifest.
+
+    The manifest SHA-256 is recorded in every quantification provenance
+    sidecar and re-verified on resume; any restart-varying byte would
+    quarantine the species' entire prior quantification work.
+    """
+
+    data_root = tmp_path / "data"
+    index_dir = data_root / "test_species" / "work" / "index"
+    index_dir.mkdir(parents=True)
+    (index_dir / "Test_species.idx").write_bytes(b"kallisto-index")
+    monkeypatch.setenv("AMALGKIT_DATA_ROOT", str(data_root))
+
+    work_dir = data_root / "test_species" / "work"
+    first = _write_reference_alias_manifest(
+        "test_species",
+        work_dir,
+        index_dir,
+        ["Test species"],
+        [
+            {
+                "metadata_target": "Test species",
+                "target_stem": "Test_species",
+                "reference_stem": "Test_species",
+                "index": str(index_dir / "Test_species.idx"),
+                "mode": "native_index",
+            }
+        ],
+        [],
+    )
+    first_bytes = first.read_bytes()
+    time.sleep(1.1)
+    second = _write_reference_alias_manifest(
+        "test_species",
+        work_dir,
+        index_dir,
+        ["Test species"],
+        [
+            {
+                "metadata_target": "Test species",
+                "target_stem": "Test_species",
+                "reference_stem": "Test_species",
+                "index": str(index_dir / "Test_species.idx"),
+                "mode": "native_index",
+            }
+        ],
+        [],
+    )
+    assert second.read_bytes() == first_bytes
+
+
 def test_reference_aliases_are_explicit_and_audited(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Metadata subspecies aliases create symlinks and a manifest, not copies."""
     data_root = tmp_path / "data"
@@ -2260,7 +2313,7 @@ def test_non_current_state_reconciliation_uses_validation_slot_budget(
     monkeypatch.setattr(
         orchestrator_module,
         "classify_quantification",
-        lambda _sample_dir, sample_id: {
+        lambda _sample_dir, sample_id, **_kwargs: {
             "status": "invalid" if sample_id == "SRR3" else "current",
             "reason": "test invalid" if sample_id == "SRR3" else "test current",
             "contract_id": None,
