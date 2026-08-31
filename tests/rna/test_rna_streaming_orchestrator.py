@@ -25,13 +25,11 @@ from metainformant.rna.engine.provenance import (
 )
 from metainformant.rna.engine.streaming_orchestrator import (
     StreamingPipelineOrchestrator,
-    _write_raw_validation_marker,
     _build_quant_command,
     _build_sample_tasks,
     _campaign_cached_sra_path,
     _ensure_ncbi_settings_for_data_root,
     _ensure_reference_alias_indexes,
-    _write_reference_alias_manifest,
     _filter_kallisto_ineligible_reads,
     _filter_metadata_by_size,
     _filter_valid_run_rows,
@@ -47,6 +45,8 @@ from metainformant.rna.engine.streaming_orchestrator import (
     _species_name_from_config,
     _validated_local_fastq_inputs,
     _write_fastq_input_stats,
+    _write_raw_validation_marker,
+    _write_reference_alias_manifest,
     build_pipeline_resource_profile,
 )
 from metainformant.rna.retrieval import ena_downloader as ena_downloader_module
