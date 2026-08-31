@@ -18,24 +18,24 @@ import pytest
 # ============================================================
 # Channel capacity imports
 # ============================================================
-from metainformant.information.metrics.advanced.channel import channel_capacity as channel_capacity_ch
-from metainformant.information.metrics.advanced.channel import channel_mutual_information as channel_mi_ch
-from metainformant.information.metrics.advanced.channel import information_bottleneck as ib_ch
-from metainformant.information.metrics.advanced.channel import noisy_channel_capacity as noisy_cap_ch
-from metainformant.information.metrics.advanced.channel import rate_distortion as rate_distortion_ch
+from metainformant.information.metrics.advanced.channel import (
+    channel_capacity as channel_capacity_ch,
+    channel_mutual_information as channel_mi_ch,
+    information_bottleneck as ib_ch,
+    noisy_channel_capacity as noisy_cap_ch,
+    rate_distortion as rate_distortion_ch,
+)
 
 # ============================================================
 # Information geometry imports
 # ============================================================
-from metainformant.information.metrics.advanced.geometry import channel_capacity as channel_capacity_geo
 from metainformant.information.metrics.advanced.geometry import (
+    channel_capacity as channel_capacity_geo,
     entropy_power_inequality,
     exponential_family_entropy,
     fisher_rao_distance,
     hellinger_distance,
-)
-from metainformant.information.metrics.advanced.geometry import information_bottleneck as ib_geo
-from metainformant.information.metrics.advanced.geometry import (
+    information_bottleneck as ib_geo,
     information_dimension,
     information_projection,
     natural_gradient,

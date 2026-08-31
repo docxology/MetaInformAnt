@@ -397,8 +397,7 @@ def kinship_dendrogram(
         HAS_MATPLOTLIB = False
 
     try:
-        from scipy.cluster.hierarchy import dendrogram as scipy_dendrogram
-        from scipy.cluster.hierarchy import linkage
+        from scipy.cluster.hierarchy import dendrogram as scipy_dendrogram, linkage
         from scipy.spatial.distance import squareform
 
         HAS_SCIPY = True
@@ -571,8 +570,7 @@ def kinship_clustermap(
         HAS_MATPLOTLIB = False
 
     try:
-        from scipy.cluster.hierarchy import dendrogram as scipy_dendrogram
-        from scipy.cluster.hierarchy import linkage
+        from scipy.cluster.hierarchy import dendrogram as scipy_dendrogram, linkage
         from scipy.spatial.distance import squareform
 
         HAS_SCIPY = True

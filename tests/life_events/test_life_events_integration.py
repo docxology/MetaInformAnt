@@ -189,7 +189,9 @@ model:
   model_type: embedding
   task_type: classification
   random_state: 42
-""".format(work_dir=str(tmp_path / "work"))
+""".format(
+        work_dir=str(tmp_path / "work")
+    )
     config_file.write_text(config_content)
 
     # Create sequences

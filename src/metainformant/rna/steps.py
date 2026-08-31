@@ -2,17 +2,19 @@
 
 from __future__ import annotations
 
-from metainformant.rna.amalgkit.amalgkit import csfilter as run_csfilter
-from metainformant.rna.amalgkit.amalgkit import cstmm as run_cstmm
-from metainformant.rna.amalgkit.amalgkit import finalize as run_finalize
-from metainformant.rna.amalgkit.amalgkit import getfastq as run_getfastq
-from metainformant.rna.amalgkit.amalgkit import integrate as run_integrate
-from metainformant.rna.amalgkit.amalgkit import merge as run_merge
-from metainformant.rna.amalgkit.amalgkit import metadata as run_metadata
-from metainformant.rna.amalgkit.amalgkit import quant as run_quant
-from metainformant.rna.amalgkit.amalgkit import sanity as run_sanity
-from metainformant.rna.amalgkit.amalgkit import select as run_select
-from metainformant.rna.amalgkit.amalgkit import wsfilter as run_wsfilter
+from metainformant.rna.amalgkit.amalgkit import (
+    csfilter as run_csfilter,
+    cstmm as run_cstmm,
+    finalize as run_finalize,
+    getfastq as run_getfastq,
+    integrate as run_integrate,
+    merge as run_merge,
+    metadata as run_metadata,
+    quant as run_quant,
+    sanity as run_sanity,
+    select as run_select,
+    wsfilter as run_wsfilter,
+)
 
 STEP_RUNNERS = {
     "metadata": run_metadata,

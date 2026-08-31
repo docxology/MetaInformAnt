@@ -19,8 +19,7 @@ from pathlib import Path
 # Add project to path
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
 
-from metainformant.core.errors import IOError as CoreIOError
-from metainformant.core.errors import ValidationError
+from metainformant.core.errors import IOError as CoreIOError, ValidationError
 from metainformant.core.io import write_json
 from metainformant.core.io.paths import expand_and_resolve
 from metainformant.phenotype.antwiki import load_antwiki_json

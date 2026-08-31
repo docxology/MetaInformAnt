@@ -12,8 +12,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from metainformant.menu.ui.navigation import Menu
-    from metainformant.menu.ui.navigation import MenuItem as NavigationMenuItem
+    from metainformant.menu.ui.navigation import Menu, MenuItem as NavigationMenuItem
 
 
 @dataclass
@@ -226,8 +225,7 @@ def generate_menu_from_scripts(scripts: dict[str, list[ScriptInfo]]) -> dict[str
     Returns:
         Dictionary mapping menu ID to Menu object
     """
-    from metainformant.menu.ui.navigation import Menu
-    from metainformant.menu.ui.navigation import MenuItem as RuntimeMenuItem
+    from metainformant.menu.ui.navigation import Menu, MenuItem as RuntimeMenuItem
 
     menus: dict[str, Menu] = {}
 

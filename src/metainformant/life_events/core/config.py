@@ -9,8 +9,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from metainformant.core.utils import config as core_config
-from metainformant.core.utils import logging
+from metainformant.core.utils import config as core_config, logging
 
 
 @dataclass
