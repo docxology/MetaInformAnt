@@ -81,9 +81,7 @@ def _parser() -> argparse.ArgumentParser:
     )
     record.add_argument("--species", required=True)
     record.add_argument("--tsv", type=Path, help="TSV file with an srr_id column")
-    record.add_argument(
-        "--srr", action="append", default=[], help="Accession; repeatable"
-    )
+    record.add_argument("--srr", action="append", default=[], help="Accession; repeatable")
     record.add_argument(
         "--reason-code",
         choices=sorted(EXCLUSION_REASON_CODES),
@@ -92,14 +90,10 @@ def _parser() -> argparse.ArgumentParser:
     record.add_argument("--reason-detail", default=None)
     record.add_argument("--recorded-by", default=None)
 
-    listing = subparsers.add_parser(
-        "list", parents=[common], help="List recorded exclusions"
-    )
+    listing = subparsers.add_parser("list", parents=[common], help="List recorded exclusions")
     listing.add_argument("--species", default=None)
 
-    remove = subparsers.add_parser(
-        "remove", parents=[common], help="Delete one recorded exclusion"
-    )
+    remove = subparsers.add_parser("remove", parents=[common], help="Delete one recorded exclusion")
     remove.add_argument("--species", required=True)
     remove.add_argument("--srr", required=True)
 
@@ -115,19 +109,13 @@ def main(argv: list[str] | None = None) -> int:
             if bool(args.tsv) == bool(args.srr):
                 logger.error("Provide exactly one of --tsv or --srr")
                 return 2
-            entries = (
-                _load_tsv_entries(args.tsv)
-                if args.tsv
-                else [{"srr_id": srr} for srr in args.srr]
-            )
+            entries = _load_tsv_entries(args.tsv) if args.tsv else [{"srr_id": srr} for srr in args.srr]
             for entry in entries:
                 entry["reason_code"] = args.reason_code
                 entry["reason_detail"] = args.reason_detail
                 entry["recorded_by"] = args.recorded_by
             recorded = db.record_exclusions(args.species, entries)
-            print(
-                f"recorded {recorded} exclusions for {args.species} ({args.reason_code})"
-            )
+            print(f"recorded {recorded} exclusions for {args.species} ({args.reason_code})")
         elif args.command == "list":
             rows = db.get_exclusions(args.species)
             for row in rows:

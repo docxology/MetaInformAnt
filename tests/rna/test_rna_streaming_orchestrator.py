@@ -750,9 +750,9 @@ def test_local_fastq_stage_reservation_survives_until_quant_workspace_cleanup(
     )
     scratch_root = local_scratch / "test_species" / "SRR_STAGE"
 
-    assert orchestrator._stage_local_fastq_inputs(
-        external_root, scratch_root, "SRR_STAGE", expected_paired=False
-    ) is True
+    assert (
+        orchestrator._stage_local_fastq_inputs(external_root, scratch_root, "SRR_STAGE", expected_paired=False) is True
+    )
     assert orchestrator._local_scratch_reserved_bytes == fastq.stat().st_size
     assert (scratch_root / "getfastq" / "SRR_STAGE" / fastq.name).is_file()
 

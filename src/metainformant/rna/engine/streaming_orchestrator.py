@@ -3242,9 +3242,12 @@ class StreamingPipelineOrchestrator:
         # on cold external-volume reads, so no task was ever submitted.
         # The contract audit (sidecar, accession, config, reference manifest)
         # remains fail-closed; full content re-verification is opt-in.
-        verify_resume_hashes = os.environ.get(
-            "AMALGKIT_RESUME_VERIFY_HASHES", ""
-        ).strip().lower() in {"1", "true", "yes", "on"}
+        verify_resume_hashes = os.environ.get("AMALGKIT_RESUME_VERIFY_HASHES", "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
 
         def classify(srr_id: str) -> tuple[str, dict[str, Any]]:
             quant_dir = _species_work_dir(species_name) / "quant" / srr_id

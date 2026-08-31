@@ -54,19 +54,10 @@ def test_remove_via_cli(tmp_path: Path):
     """remove deletes a recorded exclusion and reports missing rows."""
     db = tmp_path / "progress.db"
     tsv = _tsv(tmp_path)
-    assert (
-        _run_cli(
-            "record", "--db", str(db), "--species", "ant", "--tsv", str(tsv)
-        ).returncode
-        == 0
-    )
-    removed = _run_cli(
-        "remove", "--db", str(db), "--species", "ant", "--srr", "SRR1036397"
-    )
+    assert _run_cli("record", "--db", str(db), "--species", "ant", "--tsv", str(tsv)).returncode == 0
+    removed = _run_cli("remove", "--db", str(db), "--species", "ant", "--srr", "SRR1036397")
     assert removed.returncode == 0
-    missing = _run_cli(
-        "remove", "--db", str(db), "--species", "ant", "--srr", "SRR1036397"
-    )
+    missing = _run_cli("remove", "--db", str(db), "--species", "ant", "--srr", "SRR1036397")
     assert missing.returncode == 1
 
 

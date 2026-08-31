@@ -203,7 +203,9 @@ embedding:
 model:
   model_type: embedding
   random_state: 42
-""".format(work_dir=str(tmp_path / "work"))
+""".format(
+        work_dir=str(tmp_path / "work")
+    )
     config_file.write_text(config_content)
 
     results = analyze_life_course(sequences, outcomes=outcomes, config_path=config_file, output_dir=tmp_path / "output")

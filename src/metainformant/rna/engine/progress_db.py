@@ -288,7 +288,9 @@ class ProgressDB:
         for entry in entries:
             reason_code = entry.get("reason_code", "permanent_drop")
             if reason_code not in EXCLUSION_REASON_CODES:
-                raise ValueError(f"Invalid exclusion reason code '{reason_code}'. Must be one of {sorted(EXCLUSION_REASON_CODES)}")
+                raise ValueError(
+                    f"Invalid exclusion reason code '{reason_code}'. Must be one of {sorted(EXCLUSION_REASON_CODES)}"
+                )
             rows.append(
                 (
                     species,

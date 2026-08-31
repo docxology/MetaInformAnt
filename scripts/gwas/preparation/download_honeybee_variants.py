@@ -70,7 +70,8 @@ def main() -> None:
     print(f"  SRA Toolkit: {'✅ Available' if has_sra else '❌ Not installed'}")
 
     if not has_sra:
-        print("""
+        print(
+            """
   ⚠️  SRA Toolkit not found!
 
   To download raw sequencing data from NCBI SRA, install SRA Toolkit:
@@ -84,7 +85,8 @@ def main() -> None:
   Or download from: https://github.com/ncbi/sra-tools/wiki/01.-Downloading-SRA-Toolkit
 
   After installation, configure with: vdb-config --interactive
-        """)
+        """
+        )
 
     # Search for Apis mellifera data
     print_section("SEARCHING FOR APIS MELLIFERA GENOMIC DATA")
@@ -157,7 +159,8 @@ def main() -> None:
     # Public VCF repositories
     print_section("PUBLIC VCF REPOSITORIES")
 
-    print("""
+    print(
+        """
   For pre-called variant data, check these resources:
 
   1. European Variation Archive (EVA)
@@ -175,12 +178,14 @@ def main() -> None:
   4. Research Group Repositories
      - Honey Bee Genome Consortium
      - Individual lab websites (check recent papers)
-    """)
+    """
+    )
 
     # Try downloading from a known public URL (example)
     print_section("EXAMPLE: DOWNLOAD FROM DIRECT URL")
 
-    print("""
+    print(
+        """
   If you have a direct URL to a VCF file, you can download it:
 
   Example (hypothetical URL):
@@ -193,12 +198,14 @@ def main() -> None:
     )
 
   This will download the file using wget or curl.
-    """)
+    """
+    )
 
     # Real workflow example
     print_section("REAL WORKFLOW: SRA TO VARIANTS")
 
-    print("""
+    print(
+        """
   Complete workflow to go from SRA data to variants:
 
   1. DOWNLOAD SRA DATA
@@ -220,12 +227,14 @@ def main() -> None:
 
   5. RUN GWAS
      Use the METAINFORMANT GWAS module with the generated VCF
-    """)
+    """
+    )
 
     # Summary and next steps
     print_section("SUMMARY AND NEXT STEPS")
 
-    print("""
+    print(
+        """
   ✅ CHECKED: Available tools and data sources
   📚 PROVIDED: Links to key Apis mellifera datasets
   📝 DOCUMENTED: Complete workflow from SRA to variants
@@ -254,7 +263,8 @@ def main() -> None:
     - European Variation Archive (EVA)
     - Supplementary data from published papers
     - Zenodo/FigShare repositories
-    """)
+    """
+    )
 
     print("\n" + "=" * 80)
     print("  For questions or issues, see docs/gwas/data_acquisition.md")
