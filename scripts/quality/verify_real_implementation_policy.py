@@ -149,7 +149,12 @@ def scan_repo(repo_root: Path = REPO_ROOT) -> list[PolicyViolation]:
     repo_root = repo_root.resolve()
     for path in iter_policy_files(repo_root):
         violations.extend(_scan_patterns(path, OLD_POLICY_PATTERNS, "old-policy-reference", repo_root))
-        violations.extend(_scan_patterns(path, TEST_DOUBLE_PATTERNS, "test-double-api", repo_root))
+        # AGENTS.md/README.md files legitimately quote the banned test-double
+        # API names when documenting the policy itself (e.g. "no
+        # `MagicMock`/`unittest.mock`"); only code and test files can violate
+        # the API rule. The old-policy-reference rule still applies to them.
+        if path.name not in {"AGENTS.md", "README.md"}:
+            violations.extend(_scan_patterns(path, TEST_DOUBLE_PATTERNS, "test-double-api", repo_root))
     return violations
 
 
