@@ -119,9 +119,9 @@ dev = [
     "pytest-repeat>=0.9.3",  # For flaky test detection
     "pytest-rerunfailures>=13.0",  # For retrying failed tests
     "pytest-clarity>=1.0.1",  # Better assertion output
-    "black>=24.1.0",
-    "isort>=5.13.0",
-    "flake8>=7.0.0",
+    "black==26.5.1",
+    "isort==8.0.1",
+    "flake8==7.3.0",
     "mypy>=1.8.0",
     "types-defusedxml>=0.7.0.20240218",
     "types-psutil>=7.0.0",
