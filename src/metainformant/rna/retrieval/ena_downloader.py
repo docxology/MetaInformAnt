@@ -115,9 +115,13 @@ def _remote_content_length(url: str) -> int | None:
     so the caller falls back to the existing fresh-retry behavior.
     """
 
+    if not url.lower().startswith("https://"):
+        # B310: only the pinned ENA/EBI HTTPS endpoints are ever probed here.
+        return None
     try:
         request = urllib.request.Request(url, method="HEAD")
-        with urllib.request.urlopen(request, timeout=30) as response:
+        # nosec B310: scheme restricted to https:// above; only pinned ENA/EBI endpoints reach this call.
+        with urllib.request.urlopen(request, timeout=30) as response:  # nosec B310
             header = response.headers.get("Content-Length")
         if header is None:
             return None
