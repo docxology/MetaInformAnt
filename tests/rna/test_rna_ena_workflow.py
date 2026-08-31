@@ -38,7 +38,10 @@ def _run(script: Path, *args: str) -> subprocess.CompletedProcess[str]:
         env=environment,
         capture_output=True,
         text=True,
-        timeout=30,
+        # The script imports the streaming orchestrator eagerly; on a cold or
+        # I/O-saturated volume (e.g. while the live campaign is running off
+        # the same external drive) interpreter startup alone can exceed 30s.
+        timeout=180,
         check=False,
     )
 
