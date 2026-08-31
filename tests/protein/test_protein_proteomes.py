@@ -22,8 +22,7 @@ def test_read_taxon_ids_basic(tmp_path: Path) -> None:
 def test_read_taxon_ids_with_comments(tmp_path: Path) -> None:
     """Test reading taxon IDs with comments and empty lines."""
     taxon_file = tmp_path / "taxon_ids_comments.txt"
-    taxon_file.write_text(
-        """# Human
+    taxon_file.write_text("""# Human
 9606
 
 # Mouse
@@ -31,8 +30,7 @@ def test_read_taxon_ids_with_comments(tmp_path: Path) -> None:
 
 # Rat
 10116
-"""
-    )
+""")
 
     result = read_taxon_ids(taxon_file)
     expected = ["9606", "10090", "10116"]
@@ -52,14 +50,12 @@ def test_read_taxon_ids_empty_file(tmp_path: Path) -> None:
 def test_read_taxon_ids_invalid_lines(tmp_path: Path) -> None:
     """Test reading file with invalid lines."""
     taxon_file = tmp_path / "invalid.txt"
-    taxon_file.write_text(
-        """9606
+    taxon_file.write_text("""9606
 invalid_text
 10090
 also_invalid
 10116
-"""
-    )
+""")
 
     result = read_taxon_ids(taxon_file)
     expected = ["9606", "10090", "10116"]  # Invalid lines should be skipped

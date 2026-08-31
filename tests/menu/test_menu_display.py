@@ -134,8 +134,7 @@ class TestGetChoice:
 
     def test_get_choice_keyboard_interrupt(self) -> None:
         """Test handling KeyboardInterrupt."""
-        source = textwrap.dedent(
-            """
+        source = textwrap.dedent("""
             import os
             import signal
             import threading
@@ -148,8 +147,7 @@ class TestGetChoice:
                 get_choice("Choose:")
             except KeyboardInterrupt:
                 print("INTERRUPTED")
-            """
-        )
+            """)
         process = subprocess.Popen(
             [sys.executable, "-c", source],
             stdin=subprocess.PIPE,

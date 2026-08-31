@@ -18,8 +18,7 @@ from metainformant.menu.core.executor import (
 def _run_prompt_child(*, required: list[str], optional: list[str], input_text: str) -> subprocess.CompletedProcess[str]:
     """Exercise ``prompt_for_args`` with real child-process stdin."""
 
-    source = textwrap.dedent(
-        f"""
+    source = textwrap.dedent(f"""
         from pathlib import Path
         from metainformant.menu.core.discovery import ScriptInfo
         from metainformant.menu.core.executor import prompt_for_args
@@ -34,8 +33,7 @@ def _run_prompt_child(*, required: list[str], optional: list[str], input_text: s
             optional_args={optional!r},
         )
         print(repr(prompt_for_args(info)))
-        """
-    )
+        """)
     return subprocess.run(
         [sys.executable, "-c", source],
         input=input_text,
