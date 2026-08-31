@@ -49,4 +49,4 @@ declare its data root, configuration, outputs, and completion evidence.
 An orchestration process is not an analysis result. The RNA campaign is complete
 only when current stage receipts, sample-ID reconciliation, valid matrices,
 and the regenerated evidence manifest agree. See the [RNA validation protocol](rna/VALIDATION.md)
-and [Hymenoptera reproducibility checklist](../projects/hymenoptera_amalgkit/doc/manuscript/reproducibility_checklist.md).
+and [Hymenoptera reproducibility checklist](../projects/hymenoptera_amalgkit/docs/manuscript/reproducibility_checklist.md).

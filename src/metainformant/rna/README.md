@@ -83,4 +83,4 @@ records the same decision.
 - [RNA workflow documentation](../../../docs/rna/README.md)
 - [Configuration FAQ](../../../projects/hymenoptera_amalgkit/config/amalgkit/amalgkit_faq.md)
 - [Storage contract](../../../projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md)
-- [Reproducibility checklist](../../../projects/hymenoptera_amalgkit/doc/manuscript/reproducibility_checklist.md)
+- [Reproducibility checklist](../../../projects/hymenoptera_amalgkit/docs/manuscript/reproducibility_checklist.md)

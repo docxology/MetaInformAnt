@@ -85,4 +85,4 @@ uv run python projects/hymenoptera_amalgkit/scripts/generate_pipeline_report.py 
 Status is observational. Completion requires valid metadata, selected sample
 IDs, readable abundance files, contract provenance, downstream stage receipts,
 and a regenerated evidence manifest. See the [storage contract](../../projects/hymenoptera_amalgkit/doc/01_infrastructure/02_storage_contract.md)
-and [analysis readiness](../../projects/hymenoptera_amalgkit/doc/manuscript/analysis_readiness.md).
+and [analysis readiness](../../projects/hymenoptera_amalgkit/docs/manuscript/analysis_readiness.md).

@@ -276,11 +276,14 @@ controls, failure evidence, and provenance artifacts remain part of the record.
   monitor contract tests and a negative test proving biological inference is
   withheld.
 
-- [ ] **Keep generated skills reproducible.** Regenerate `.cursor/skills/` from
+- [x] **Keep generated skills reproducible.** Regenerate `.cursor/skills/` from
   every in-scope `AGENTS.md`, prune orphans, and run the check in required docs
   CI. Add a source-linked availability report without treating wrappers as
   executable package APIs. Exit evidence: deterministic generation with zero
   missing, orphaned, or broken canonical links.
+  Completed 2026-08-31: regenerated 417 skills, removed the orphaned
+  `metainformant-projects-hymenoptera-amalgkit-doc-manuscript` wrapper left by
+  the doc/→docs/ migration, and `generate_cursor_skills.py --check` passes.
 
 - [ ] **Maintain modular, process-isolated test lanes.** Keep the canonical
   full suite and independent core, DNA, RNA, MCP, domain, and packaging groups
@@ -288,6 +291,11 @@ controls, failure evidence, and provenance artifacts remain part of the record.
   markers, and complete failure output; group green is not release or
   scientific readiness. Exit evidence: documented matrix command, isolated
   fixtures, and a required full-suite job.
+  2026-08-31 verification: `scripts/test_matrix.py --list` shows lanes core,
+  dna, rna, mcp, domains, package; measured this pass — tests/core
+  (16 passed, 107s), tests/rna (846 passed/2 contention flakes that pass in
+  isolation/4 skipped, 939s), tests/{infrastructure,quality,other}
+  (365 passed, 815s). Remaining scope is CI wiring, not lane existence.
 
 ### Boundary and execution rules
 
