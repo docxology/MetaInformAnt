@@ -14,14 +14,18 @@ from metainformant.gwas import visualization
 
 # Test specialized visualization modules
 try:
-    from metainformant.gwas.visualization.genomic import genome as visualization_genome
-    from metainformant.gwas.visualization.genomic import regional as visualization_regional
-    from metainformant.gwas.visualization.genomic import variants as visualization_variants
+    from metainformant.gwas.visualization.genomic import (
+        genome as visualization_genome,
+        regional as visualization_regional,
+        variants as visualization_variants,
+    )
     from metainformant.gwas.visualization.interactive import suite as visualization_suite
     from metainformant.gwas.visualization.population import population as visualization_population
-    from metainformant.gwas.visualization.statistical import comparison as visualization_comparison
-    from metainformant.gwas.visualization.statistical import effects as visualization_effects
-    from metainformant.gwas.visualization.statistical import statistical as visualization_statistical
+    from metainformant.gwas.visualization.statistical import (
+        comparison as visualization_comparison,
+        effects as visualization_effects,
+        statistical as visualization_statistical,
+    )
 
     # visualization_enhanced does not have a new canonical path; keep trying old import
     try:
