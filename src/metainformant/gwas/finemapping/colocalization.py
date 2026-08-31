@@ -14,8 +14,7 @@ References:
 from __future__ import annotations
 
 from metainformant.core.utils.logging import get_logger
-from metainformant.gwas.finemapping.credible_sets import colocalization as _pairwise_coloc
-from metainformant.gwas.finemapping.credible_sets import compute_bayes_factors
+from metainformant.gwas.finemapping.credible_sets import colocalization as _pairwise_coloc, compute_bayes_factors
 
 logger = get_logger(__name__)
 
