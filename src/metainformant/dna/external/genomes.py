@@ -343,7 +343,7 @@ def _download_from_ftp(ftp_url: str, output_dir: Path) -> Path:
     output_file = output_dir / filename
 
     logger.info(f"Downloading from FTP: {ftp_url}")
-    from metainformant.core.io.io.io.download import download_with_progress
+    from metainformant.core.io.download import download_with_progress
 
     # Use the centralized downloader so we get heartbeat + retry.
     result = download_with_progress(
