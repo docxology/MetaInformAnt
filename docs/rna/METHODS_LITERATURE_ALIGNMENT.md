@@ -298,6 +298,9 @@ manifest freezes.
 | Orthogroup bridge (already present) | R3-P2, R3-P4 | `build_ortholog_bridge.py`, `ortholog_mapping.py` | existing | covered |
 | Ortholog expression conservation (already present) | R3-P4 | `cross_species.py` | existing | covered |
 | Within-species DE machinery (already present, gated) | R3-P1 | `expression_analysis.py` | existing, gated | covered |
+| Profile conservation over matched tissues (Spearman) | R3-P2, R3-P4 | `conservation_profiles.py::compute_profile_conservation` | R4-RNA | implemented (2026-09-01) |
+| TPM distribution summary artifacts | R3-P1, R3-P3 | `conservation_profiles.py::compute_tpm_distribution_summary` | R4-RNA | implemented (2026-09-01) |
+| Per-tissue completeness + pairwise tissue-overlap tables | R3-P2 (claim boundary 2) | `conservation_profiles.py::compute_per_tissue_completeness`, `::compute_tissue_overlap_summary` | R4-RNA | implemented (2026-09-01) |
 
 ## Explicitly rejected elements (consolidated)
 

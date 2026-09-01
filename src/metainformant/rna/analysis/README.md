@@ -11,6 +11,7 @@ RNA-seq expression analysis including normalization, differential expression, qu
 | `qc_metrics.py` | Sample/gene QC metrics, outlier detection, library complexity, saturation curves |
 | `qc_filtering.py` | Batch effect detection, GC bias, length bias, and QC report generation |
 | `cross_species.py` | Ortholog mapping, expression conservation, divergence matrices, cross-species PCA |
+| `conservation_profiles.py` | Cross-species expression-profile conservation (Spearman over matched tissues), TPM distribution summaries, per-tissue completeness and tissue-overlap tables (descriptive only) |
 | `atlas_plots.py` | Atlas-style figures: species x tissue tau heatmap, per-orthogroup cross-species profile small multiples, tau-by-orthology-class strip plots (descriptive statistics only) |
 | `protein_integration.py` | Translation efficiency, protein abundance prediction, ribosome profiling |
 | `validation.py` | Pipeline validation: per-sample status checks and end-to-end reports |
@@ -28,6 +29,11 @@ RNA-seq expression analysis including normalization, differential expression, qu
 | `detect_batch_effects()` | Identify confounding batch structure in expression data |
 | `build_ortholog_map()` | Load one-to-one ortholog mappings between species |
 | `compute_expression_conservation()` | Spearman correlation of orthologs across species |
+| `compute_profile_conservation()` | Per-gene Spearman profile correlation across species over explicitly matched tissue labels |
+| `summarize_profile_conservation()` | Per-gene descriptive aggregate of pairwise profile correlations |
+| `compute_tpm_distribution_summary()` | Per-species/per-tissue TPM quantile summary artifacts |
+| `compute_per_tissue_completeness()` | Per-tissue measured-species/gene counts (sampling-dependence record for cross-species tau) |
+| `compute_tissue_overlap_summary()` | Matched-tissue counts per species pair |
 | `calculate_translation_efficiency()` | Estimate translation efficiency from RNA and protein data using `ratio` or `correlation` |
 | `predict_protein_abundance_from_rna()` | Predict protein abundance from RNA with the implemented `linear` method |
 | `validate_all_samples()` | Check pipeline completion status for every sample |
