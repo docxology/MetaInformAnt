@@ -62,9 +62,9 @@ enter the cross-species lane:
 
 ```bash
 uv run python projects/hymenoptera_amalgkit/scripts/prepare_cross_species_inputs.py \
-  --data-root "$AMALGKIT_DATA_ROOT" --check
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 uv run python projects/hymenoptera_amalgkit/scripts/run_cross_species_analysis.py \
-  --data-root "$AMALGKIT_DATA_ROOT" --check
+  --data-root "$AMALGKIT_DATA_ROOT" --dry-run
 ```
 
 Use the project manuscript checklist before making biological claims.

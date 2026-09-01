@@ -11,7 +11,8 @@ from pathlib import Path
 
 from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
 
-# Set the data root explicitly; the orchestrator default no longer exists.
+# The orchestrator has repo-local defaults (config dir and output/amalgkit
+# log dir); set every path explicitly for campaign work.
 data_root = Path("/Volumes/external_drive/Data/amalgkit")
 producer = StreamingPipelineOrchestrator(
     config_dir=Path("projects/hymenoptera_amalgkit/config/amalgkit"),

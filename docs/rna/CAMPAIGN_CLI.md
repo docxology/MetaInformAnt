@@ -38,9 +38,10 @@ orchestrator rejects unknown values at startup.
 
 ## Launcher: `projects/hymenoptera_amalgkit/scripts/run_full_campaign.sh`
 
-`AMALGKIT_DATA_ROOT` must be exported before invoking the launcher; its own
-default points at a missing path and it exits 2 without it. It accepts any
-producer flag above (e.g. `--species apis_mellifera`) and adds:
+`AMALGKIT_DATA_ROOT` defaults to `/Volumes/external_drive/Data/amalgkit` and
+the launcher exits 2 when that directory does not exist; export it explicitly
+for any other location. It accepts any producer flag above (e.g.
+`--species apis_mellifera`) and adds:
 
 | Setting | Default | Meaning |
 | --- | --- | --- |
