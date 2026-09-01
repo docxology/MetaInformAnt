@@ -112,10 +112,12 @@ def load_methylation_bedgraph(path: str | Path, min_coverage: int = 1) -> Dict[s
                     methylation_level = float(parts[3])
 
                     # BEDgraph format typically uses the start position
-                    # Convert methylation level (0-1) to read counts (assuming coverage of 1 for simplicity)
-                    # In practice, you might need additional coverage information
-                    total_reads = max(1, int(1 / max(0.01, methylation_level)))  # Estimate coverage
-                    methylated_reads = int(total_reads * methylation_level)
+                    # BEDgraph carries a level (0-1), not read counts. Estimate
+                    # counts at a fixed 100-read precision so the level survives
+                    # the count round trip (int truncation at total_reads=1
+                    # previously collapsed any level > 0.5 to 0.0).
+                    total_reads = max(min_coverage, 100)
+                    methylated_reads = int(round(methylation_level * total_reads))
 
                     if total_reads >= min_coverage:
                         site = MethylationSite(
