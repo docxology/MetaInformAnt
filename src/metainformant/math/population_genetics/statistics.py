@@ -6,6 +6,7 @@ coalescent theory, and evolutionary computations.
 
 from __future__ import annotations
 
+import hashlib
 import math
 from typing import Any, Dict, List
 
@@ -600,3 +601,107 @@ def kurtosis(values: List[float]) -> float:
     from scipy.stats import kurtosis as scipy_kurtosis
 
     return float(scipy_kurtosis(values))
+
+
+def normal_approximate_power(
+    effect_size: float, sample_size_per_group: int, alpha: float = 0.05, two_sided: bool = True
+) -> float:
+    """Approximate two-sample power for detecting ``effect_size`` (in SD units).
+
+    Uses the standard normal-approximation power formula for a two-sample
+    z-test with equal group sizes. Intended as a descriptive planning aid for
+    campaign design documents (e.g. RNA-seq group-size justification), not as
+    a substitute for exact t-based power when df matter.
+
+    Args:
+        effect_size: Cohen's-d-style standardized effect (mean difference / SD).
+        sample_size_per_group: Number of samples in each of the two groups.
+        alpha: Significance level.
+        two_sided: Two-sided alternative when True (default).
+
+    Returns:
+        Approximate statistical power in [0, 1].
+    """
+    from scipy.stats import norm
+
+    if effect_size < 0:
+        raise ValueError("effect_size must be non-negative; use |effect| with two_sided")
+    if sample_size_per_group < 2:
+        raise ValueError("sample_size_per_group must be >= 2")
+    if not (0.0 < alpha < 1.0):
+        raise ValueError("alpha must be in (0, 1)")
+
+    if two_sided:
+        z_alpha = float(norm.ppf(1.0 - alpha / 2.0))
+    else:
+        z_alpha = float(norm.ppf(1.0 - alpha))
+    ncp = abs(effect_size) * math.sqrt(sample_size_per_group / 2.0)
+    return float(norm.cdf(ncp - z_alpha))
+
+
+def sample_size_for_power(
+    effect_size: float, target_power: float = 0.8, alpha: float = 0.05, two_sided: bool = True
+) -> int:
+    """Smallest equal-per-group sample size reaching ``target_power`` (normal approx).
+
+    Inverse of :func:`normal_approximate_power`: returns the minimal integer
+    per-group sample size n such that the two-sample normal-approximate power
+    is at least ``target_power``. Descriptive planning aid only.
+
+    Args:
+        effect_size: Cohen's-d-style standardized effect.
+        target_power: Desired power in (alpha, 1).
+        alpha: Significance level.
+        two_sided: Two-sided alternative when True (default).
+
+    Returns:
+        Minimal per-group sample size (>= 2) achieving the target power.
+
+    Raises:
+        ValueError: If ``effect_size`` is 0 (power is capped at alpha for any
+            finite n under the two-sided null) or arguments are out of range.
+    """
+    from scipy.stats import norm
+
+    if effect_size <= 0:
+        raise ValueError("effect_size must be > 0 to solve for sample size")
+    if not (0.0 < alpha < 1.0):
+        raise ValueError("alpha must be in (0, 1)")
+    if not (alpha < target_power < 1.0):
+        raise ValueError("target_power must be in (alpha, 1)")
+
+    if two_sided:
+        z_alpha = float(norm.ppf(1.0 - alpha / 2.0))
+    else:
+        z_alpha = float(norm.ppf(1.0 - alpha))
+    z_power = float(norm.ppf(target_power))
+    n_continuous = 2.0 * ((z_alpha + z_power) / effect_size) ** 2
+    return max(2, int(math.ceil(n_continuous)))
+
+
+def deterministic_replicate_seeds(base_seed: int, n_replicates: int) -> List[int]:
+    """Stable, order-independent replicate seeds derived from one base seed.
+
+    Campaign simulation sweeps need each replicate to have a reproducible but
+    distinct seed, and the mapping must not change when replicates are run in
+    a different order or distribution. Seeds are derived with SHA-256 over
+    ``f"{base_seed}:{replicate_index}"`` so the assignment is deterministic
+    across Python processes and platforms (unlike ``random.Random`` streams).
+
+    Args:
+        base_seed: Root seed for the sweep.
+        n_replicates: Number of replicate seeds to derive (>= 1).
+
+    Returns:
+        List of ``n_replicates`` non-negative 63-bit integer seeds.
+
+    Raises:
+        ValueError: If ``n_replicates`` < 1.
+    """
+    if n_replicates < 1:
+        raise ValueError("n_replicates must be >= 1")
+    seeds: List[int] = []
+    for index in range(n_replicates):
+        digest = hashlib.sha256(f"{base_seed}:{index}".encode("utf-8")).digest()
+        seeds.append(int.from_bytes(digest[:8], "big") & 0x7FFFFFFFFFFFFFFF)
+    return seeds

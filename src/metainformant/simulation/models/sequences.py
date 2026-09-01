@@ -462,6 +462,48 @@ def analyze_sequence_divergence(sequences: List[str]) -> Dict[str, Any]:
     }
 
 
+def deterministic_evolution_replicates(
+    sequence: str,
+    n_replicates: int,
+    base_seed: int,
+    *,
+    generations: int = 100,
+    mutation_rate: float = 0.001,
+) -> List[str]:
+    """Evolve independent, fully reproducible replicates of one sequence.
+
+    Each replicate gets its own seed derived via
+    :func:`metainformant.math.population_genetics.statistics.deterministic_replicate_seeds`,
+    so the full replicate set is byte-identical across runs, processes, and
+    platforms regardless of execution order or parallel distribution. This is
+    the deterministic-sweep entry point for campaign simulation design docs;
+    use it instead of re-seeding a shared RNG, which makes results depend on
+    iteration order.
+
+    Args:
+        sequence: Ancestor sequence for all replicates.
+        n_replicates: Number of independent evolved replicates (>= 1).
+        base_seed: Root seed for the replicate-seed derivation.
+        generations: Generations of evolution per replicate.
+        mutation_rate: Mutation probability per base per generation.
+
+    Returns:
+        List of ``n_replicates`` evolved sequences, in replicate order.
+
+    Raises:
+        ValueError: If ``n_replicates`` < 1.
+    """
+    from metainformant.math.population_genetics.statistics import deterministic_replicate_seeds
+
+    if n_replicates < 1:
+        raise ValueError("n_replicates must be >= 1")
+
+    seeds = deterministic_replicate_seeds(base_seed, n_replicates)
+    return [
+        evolve_sequence(sequence, generations, mutation_rate=mutation_rate, rng=random.Random(seed)) for seed in seeds
+    ]
+
+
 def simulate_gene_duplication(
     original_gene: str,
     n_copies: int,
