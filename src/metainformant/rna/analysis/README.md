@@ -11,6 +11,7 @@ RNA-seq expression analysis including normalization, differential expression, qu
 | `qc_metrics.py` | Sample/gene QC metrics, outlier detection, library complexity, saturation curves |
 | `qc_filtering.py` | Batch effect detection, GC bias, length bias, and QC report generation |
 | `cross_species.py` | Ortholog mapping, expression conservation, divergence matrices, cross-species PCA |
+| `atlas_plots.py` | Atlas-style figures: species x tissue tau heatmap, per-orthogroup cross-species profile small multiples, tau-by-orthology-class strip plots (descriptive statistics only) |
 | `protein_integration.py` | Translation efficiency, protein abundance prediction, ribosome profiling |
 | `validation.py` | Pipeline validation: per-sample status checks and end-to-end reports |
 
@@ -36,6 +37,10 @@ RNA-seq expression analysis including normalization, differential expression, qu
 ```python
 from metainformant.rna.analysis.expression_core import normalize_counts, filter_low_expression
 from metainformant.rna.analysis.expression_analysis import differential_expression, pca_analysis
+from metainformant.rna.analysis.atlas_plots import plot_tau_heatmap, plot_orthogroup_small_multiples, plot_tau_orthology_strips
+
+# Demo figures (synthetic data): docs/rna/figures/atlas_demo/
+# Regenerate with: MPLBACKEND=Agg uv run python scripts/rna/demo_atlas_plots.py
 from metainformant.rna.analysis.qc_metrics import compute_sample_metrics
 from metainformant.rna.analysis.protein_integration import calculate_translation_efficiency
 
