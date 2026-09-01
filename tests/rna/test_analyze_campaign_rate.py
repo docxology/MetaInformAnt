@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import os
 import sys
 from pathlib import Path
 
 import pytest
 
-SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "rna" / "analyze_campaign_rate.py"
+# Repo root: three levels up from tests/rna/, or the committed checkout when
+# this file is executed outside the tree (workspace staging copies).
+_REPO_ROOT = Path(os.environ.get("MAI_REPO_ROOT", Path(__file__).resolve().parents[2]))
+SCRIPT = _REPO_ROOT / "scripts" / "rna" / "analyze_campaign_rate.py"
 spec = importlib.util.spec_from_file_location("analyze_campaign_rate", SCRIPT)
 analyze_campaign_rate = importlib.util.module_from_spec(spec)
 sys.modules["analyze_campaign_rate"] = analyze_campaign_rate
