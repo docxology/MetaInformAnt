@@ -24,6 +24,7 @@ per-file-ignores =
     tests/dna/test_dna_population_viz.py:E402
     tests/ecology/test_ecology_macroecology.py:E402
     tests/epigenome/test_epigenome_visualization.py:E402
+    tests/visualization/test_conventions.py:E402
     tests/infrastructure/test_build.py:E402
     tests/metagenomics/test_metagenomics_visualization.py:E402
     tests/other/test_ortholog_generation.py:E402
