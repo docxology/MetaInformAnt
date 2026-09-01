@@ -2,7 +2,7 @@
 
 ## Context & Intent
 
-- **Path**: `/Volumes/blue/MetaInformAnt/src/metainformant/metabolomics`
+- **Path**: `./src/metainformant/metabolomics`
 - **Purpose**: Metabolomics analysis: mass spectrometry data processing, metabolite identification, pathway mapping, and metabolite-gene integration.
 - **Domain**: metainformant
 

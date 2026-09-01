@@ -45,7 +45,7 @@ validation.
 Inspect the configured cohort without modifying data:
 
 ```bash
-export AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit
+export AMALGKIT_DATA_ROOT=/Volumes/external_drive/Data/amalgkit
 uv run python scripts/rna/run_all_species.py \
   --config-dir projects/hymenoptera_amalgkit/config/amalgkit \
   --data-root "$AMALGKIT_DATA_ROOT" --dry-run

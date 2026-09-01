@@ -2,7 +2,7 @@
 
 ## Context & Intent
 
-- **Path**: `/Volumes/blue/MetaInformAnt/src/metainformant/metagenomics`
+- **Path**: `./src/metainformant/metagenomics`
 - **Purpose**: Microbiome and metagenomic analysis: amplicon profiling (16S/ITS), shotgun metagenomics, community diversity, functional annotation, and differential abundance testing.
 - **Domain**: metainformant
 

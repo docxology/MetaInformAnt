@@ -5,7 +5,7 @@ Count samples in Amalgkit stages for each species.
 
 from pathlib import Path
 
-DATA_DIR = Path("/Volumes/blue/data/amalgkit")
+DATA_DIR = Path("/Volumes/external_drive/Data/amalgkit")
 
 
 def count_files(directory, pattern="*"):

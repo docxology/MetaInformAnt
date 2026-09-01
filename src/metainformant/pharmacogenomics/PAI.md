@@ -2,7 +2,7 @@
 
 ## Context & Intent
 
-- **Path**: `/Volumes/blue/MetaInformAnt/src/metainformant/pharmacogenomics`
+- **Path**: `./src/metainformant/pharmacogenomics`
 - **Purpose**: Clinical pharmacogenomic analysis: star allele calling, metabolizer phenotyping, CPIC guideline lookups, drug interaction prediction, and report generation.
 - **Domain**: metainformant
 

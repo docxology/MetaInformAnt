@@ -29,6 +29,6 @@ uv run python scripts/rna/validate_all_species_workflow.py
 ```
 
 Configuration presence is not data presence. Use
-`AMALGKIT_DATA_ROOT=/Volumes/blue/data/amalgkit` and the project evidence
+`AMALGKIT_DATA_ROOT=/Volumes/external_drive/Data/amalgkit` and the project evidence
 generator to report materialized species, sample counts, and completed output
 contracts.

@@ -302,7 +302,7 @@ controls, failure evidence, and provenance artifacts remain part of the record.
 - Do not edit nested repository contents from the parent. Reconcile nested
   gitlinks only after their own branches/PRs contain validated, remotely
   reachable commits.
-- Do not touch `/Volumes/blue/data/amalgkit` except for explicitly read-only
+- Do not touch `/Volumes/external_drive/Data/amalgkit` (AMALGKIT_DATA_ROOT) except for explicitly read-only
   monitoring.
 - Do not reset, discard, recreate the active environment, or claim
   campaign/scientific completion from a moving operational snapshot.
@@ -315,7 +315,8 @@ controls, failure evidence, and provenance artifacts remain part of the record.
 ## Minor Updates
 
 - [ ] **Finalize BeeWAS manuscript metadata** - Complete
-  `projects/apis_gwas/doc/manuscript/renderable/final_metadata_intake.tsv`
+  `projects/apis_gwas/docs/manuscript/renderable/final_metadata_intake.tsv`
+  (to be created; the apis_gwas tree is currently a README/AGENTS stub)
   with final title, authors, affiliations, corresponding author, funding,
   contributions, conflicts, data availability, code availability, reviewer
   name, review date, and final status values. Current status is tracked in

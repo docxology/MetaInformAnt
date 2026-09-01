@@ -2,7 +2,7 @@
 
 ## Context & Intent
 
-- **Path**: `/Volumes/blue/MetaInformAnt/src/metainformant/spatial`
+- **Path**: `./src/metainformant/spatial`
 - **Purpose**: Spatial transcriptomics analysis: platform I/O (Visium, MERFISH, Xenium), spatial statistics, cell-cell communication, deconvolution, and scRNA-seq integration.
 - **Domain**: metainformant
 

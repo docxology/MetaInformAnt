@@ -2,7 +2,7 @@
 
 ## Context & Intent
 
-- **Path**: `/Volumes/blue/MetaInformAnt/src/metainformant/structural_variants`
+- **Path**: `./src/metainformant/structural_variants`
 - **Purpose**: Structural variant analysis: CNV detection via circular binary segmentation, SV calling from split/discordant reads, annotation, filtering, population genotyping, and visualization.
 - **Domain**: metainformant
 

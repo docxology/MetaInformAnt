@@ -44,7 +44,7 @@ from pathlib import Path
 from metainformant.rna.engine.progress_db import ProgressDB
 from metainformant.rna.engine.streaming_orchestrator import StreamingPipelineOrchestrator
 
-data_root = Path("/Volumes/blue/data/amalgkit")
+data_root = Path("/Volumes/external_drive/Data/amalgkit")
 db = ProgressDB(data_root / "pipeline_progress.db")
 orchestrator = StreamingPipelineOrchestrator(
     config_dir=Path("projects/hymenoptera_amalgkit/config/amalgkit"),
