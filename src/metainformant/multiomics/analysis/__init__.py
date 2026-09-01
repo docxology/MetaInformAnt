@@ -2,6 +2,6 @@
 
 from __future__ import annotations
 
-from . import integration
+from . import descriptive_summary, integration
 
-__all__ = ["integration"]
+__all__ = ["descriptive_summary", "integration"]

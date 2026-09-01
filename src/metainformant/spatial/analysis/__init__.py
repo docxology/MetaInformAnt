@@ -5,6 +5,6 @@ analysis algorithms for spatial transcriptomics data."""
 
 from __future__ import annotations
 
-from . import autocorrelation, clustering, deconvolution, neighborhood
+from . import autocorrelation, clustering, deconvolution, neighborhood, spatially_variable_genes
 
-__all__ = ["autocorrelation", "clustering", "deconvolution", "neighborhood"]
+__all__ = ["autocorrelation", "clustering", "deconvolution", "neighborhood", "spatially_variable_genes"]
