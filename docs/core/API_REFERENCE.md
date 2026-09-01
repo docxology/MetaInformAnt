@@ -8,8 +8,8 @@ topic guides contain behavioral guidance, examples, and caveats.
 Compatibility facades are excluded from the inventory and remain
 supported through the import paths described in [index.md](index.md).
 
-**Public symbols:** 235
-**Canonical modules:** 25
+**Public symbols:** 239
+**Canonical modules:** 28
 
 ## Module index
 
@@ -23,6 +23,7 @@ supported through the import paths described in [index.md](index.md).
 | [metainformant.core.io.atomic](#metainformant-core-io-atomic) | 5 |
 | [metainformant.core.io.cache](#metainformant-core-io-cache) | 17 |
 | [metainformant.core.io.checksums](#metainformant-core-io-checksums) | 6 |
+| [metainformant.core.io.data_root](#metainformant-core-io-data_root) | 2 |
 | [metainformant.core.io.disk](#metainformant-core-io-disk) | 14 |
 | [metainformant.core.io.download](#metainformant-core-io-download) | 21 |
 | [metainformant.core.io.download_manager](#metainformant-core-io-download_manager) | 3 |
@@ -34,8 +35,10 @@ supported through the import paths described in [index.md](index.md).
 | [metainformant.core.utils.errors](#metainformant-core-utils-errors) | 16 |
 | [metainformant.core.utils.hash](#metainformant-core-utils-hash) | 7 |
 | [metainformant.core.utils.logging](#metainformant-core-utils-logging) | 5 |
+| [metainformant.core.utils.newick](#metainformant-core-utils-newick) | 1 |
 | [metainformant.core.utils.optional_deps](#metainformant-core-utils-optional_deps) | 5 |
 | [metainformant.core.utils.progress](#metainformant-core-utils-progress) | 3 |
+| [metainformant.core.utils.seeds](#metainformant-core-utils-seeds) | 1 |
 | [metainformant.core.utils.symbols](#metainformant-core-utils-symbols) | 9 |
 | [metainformant.core.utils.text](#metainformant-core-utils-text) | 12 |
 | [metainformant.core.utils.timing](#metainformant-core-utils-timing) | 6 |
@@ -167,6 +170,13 @@ supported through the import paths described in [index.md](index.md).
 | `verify_checksum` | function | `(path: Path, expected: str, algorithm: str = 'sha256') -> bool` | Verify a file's checksum against an expected value. |
 | `verify_checksum_file` | function | `(path: Path) -> bool` | Verify a file against its sidecar checksum file. |
 | `write_checksum_file` | function | `(path: Path, algorithm: str = 'sha256') -> Path` | Write a checksum sidecar file next to the target file. |
+
+## metainformant.core.io.data_root {#metainformant-core-io-data_root}
+
+| Symbol | Kind | Signature | Summary |
+| --- | --- | --- | --- |
+| `remap_amalgkit_prefix` | function | `(path: str, data_root: str \| Path \| None = None, *, environ: dict[str, str] \| None = None) -> str` | Remap the repository-relative ''output/amalgkit'' prefix to the data root. |
+| `resolve_data_root` | function | `(data_root: str \| Path \| None = None, *, default: str \| Path = AMALGKIT_PREFIX, environ: dict[str, str] \| None = None) -> Path` | Resolve the campaign data root to an absolute path. |
 
 ## metainformant.core.io.disk {#metainformant-core-io-disk}
 
@@ -332,6 +342,12 @@ supported through the import paths described in [index.md](index.md).
 | `log_with_metadata` | function | `(logger: logging.Logger, message: str, metadata: dict, *, level: str = 'INFO', structured: bool = False) -> None` | Log message with structured metadata. |
 | `setup_logger` | function | `(name: str, log_file: str \| None = None, level: str = 'INFO') -> logging.Logger` | Set up a logger with file and/or console output. |
 
+## metainformant.core.utils.newick {#metainformant-core-utils-newick}
+
+| Symbol | Kind | Signature | Summary |
+| --- | --- | --- | --- |
+| `from_newick` | function | `(newick_str: str) -> Tree` | Parse a Newick format string into the Tree dictionary structure. |
+
 ## metainformant.core.utils.optional_deps {#metainformant-core-utils-optional_deps}
 
 | Symbol | Kind | Signature | Summary |
@@ -349,6 +365,12 @@ supported through the import paths described in [index.md](index.md).
 | `log_progress` | function | `(current: int, total: int \| None, message: str = '') -> None` | Log progress for an operation. |
 | `progress_bar` | function | `(iterable: Iterator[Any] \| None = None, total: int \| None = None, desc: str \| None = None, **kwargs: Any) -> tqdm` | Create a progress bar for iterating over items. |
 | `task_context` | function | `(task_name: str, total_steps: int \| None = None) -> Iterator[Any]` | Context manager for tracking multi-step tasks. |
+
+## metainformant.core.utils.seeds {#metainformant-core-utils-seeds}
+
+| Symbol | Kind | Signature | Summary |
+| --- | --- | --- | --- |
+| `deterministic_replicate_seeds` | function | `(base_seed: int, n_replicates: int) -> List[int]` | Stable, order-independent replicate seeds derived from one base seed. |
 
 ## metainformant.core.utils.symbols {#metainformant-core-utils-symbols}
 

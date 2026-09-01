@@ -13,7 +13,7 @@ End-to-end RNA-seq pipelines: ENA/SRA metadata retrieval, FASTQ streaming, Kalli
 | `amalgkit/` | Amalgkit CLI integration — command construction, workflow config, step execution |
 | `engine/` | Workflow orchestration — `AmalgkitWorkflowConfig`, `execute_workflow()`, `plan_workflow()` |
 | `retrieval/` | ENA/SRA data retrieval and metadata download |
-| `analysis/` | Expression matrix analysis and quality assessment |
+| `analysis/` | Expression matrix analysis and quality assessment; ortholog mapping, tissue-specificity (tau), cross-species conservation/atlas plotting, and within/across-species orchestrators (descriptive-only) |
 | `core/` | Shared RNA utilities and data structures |
 | `splicing/` | Alternative splicing analysis |
 | `deconvolution/` | Cell-type deconvolution from bulk RNA-seq |
