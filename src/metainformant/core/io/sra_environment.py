@@ -16,11 +16,13 @@ _SETTINGS_LOCK = threading.Lock()
 
 
 def _resolve_data_root(data_root: str | Path | None = None) -> Path:
-    """Resolve a campaign root without consulting user-global SRA state."""
+    """Resolve a campaign root without consulting user-global SRA state.
 
-    if data_root is not None:
-        return Path(data_root).expanduser()
-    return Path(os.environ.get("AMALGKIT_DATA_ROOT", "output/amalgkit")).expanduser()
+    Delegates to the canonical :func:`metainformant.core.io.data_root.resolve_data_root`.
+    """
+    from metainformant.core.io.data_root import resolve_data_root
+
+    return resolve_data_root(data_root)
 
 
 def _ensure_ncbi_settings(data_root: str | Path | None = None) -> Path:

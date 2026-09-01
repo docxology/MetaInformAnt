@@ -47,6 +47,10 @@ def discover_species_names(config_dir: str | Path) -> list[str]:
 
 
 def configured_data_root(default: str | Path = "output/amalgkit") -> Path:
-    """Return the configured data root, honoring ``AMALGKIT_DATA_ROOT``."""
+    """Return the configured data root, honoring ``AMALGKIT_DATA_ROOT``.
 
-    return Path(os.environ.get("AMALGKIT_DATA_ROOT", str(default))).expanduser()
+    Delegates to the canonical :func:`metainformant.core.io.data_root.resolve_data_root`.
+    """
+    from metainformant.core.io.data_root import resolve_data_root
+
+    return resolve_data_root(None, default=default)

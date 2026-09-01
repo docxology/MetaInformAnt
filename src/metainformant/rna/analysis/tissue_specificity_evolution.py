@@ -46,7 +46,7 @@ import numpy as np
 import pandas as pd
 
 from metainformant.core.utils import logging
-from metainformant.dna.phylogeny.tree_analysis import from_newick
+from metainformant.core.utils.newick import from_newick
 
 logger = logging.get_logger(__name__)
 

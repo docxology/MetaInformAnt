@@ -35,17 +35,9 @@ def _expand_workflow_config_values(value: Any) -> Any:
     if not isinstance(value, str):
         return value
 
-    expanded = os.path.expanduser(os.path.expandvars(value))
-    data_root = os.environ.get("AMALGKIT_DATA_ROOT")
-    if data_root:
-        data_root = os.path.expanduser(os.path.expandvars(data_root))
-        relative = expanded[2:] if expanded.startswith("./") else expanded
-        prefix = "output/amalgkit/"
-        if relative == "output/amalgkit":
-            return data_root
-        if relative.startswith(prefix):
-            return str(Path(data_root) / relative[len(prefix) :])
-    return expanded
+    from metainformant.core.io.data_root import remap_amalgkit_prefix
+
+    return remap_amalgkit_prefix(value)
 
 
 @dataclass

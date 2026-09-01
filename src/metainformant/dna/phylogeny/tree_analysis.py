@@ -368,6 +368,13 @@ def from_newick(newick_str: str) -> Tree:
     Raises:
         ValueError: If the Newick string is empty or malformed.
     """
+    from metainformant.core.utils.newick import from_newick as _from_newick
+
+    return _from_newick(newick_str)
+
+
+def _from_newick_original(newick_str: str) -> Tree:
+    """Original parser body, retained as the internal implementation."""
     if not newick_str or not newick_str.strip():
         raise ValueError("Newick string is empty")
 

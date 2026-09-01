@@ -493,7 +493,7 @@ def deterministic_evolution_replicates(
     Raises:
         ValueError: If ``n_replicates`` < 1.
     """
-    from metainformant.math.population_genetics.statistics import deterministic_replicate_seeds
+    from metainformant.core.utils.seeds import deterministic_replicate_seeds
 
     if n_replicates < 1:
         raise ValueError("n_replicates must be >= 1")
