@@ -526,7 +526,10 @@ def back_translate(protein_seq: str, codon_preferences: Optional[Dict[str, str]]
 
     for aa in protein_seq.upper():
         if aa in codon_preferences:
-            dna_sequence.append(codon_preferences[aa])
+            codon = codon_preferences[aa]
+            # Preferences may be written with RNA (U) or DNA (T) bases;
+            # normalize output to DNA nucleotides.
+            dna_sequence.append(codon.replace("U", "T"))
         else:
             # Unknown amino acid
             dna_sequence.append("NNN")

@@ -108,8 +108,8 @@ def translate(rna_seq: str, genetic_code: int = 1) -> str:
         invalid = set(rna_upper) - valid_chars
         raise ValueError(f"Invalid RNA characters: {invalid}")
 
-    # Use standard genetic code
-    code = GENETIC_CODE
+    # Use the requested genetic code table (RNA codon keys)
+    code = get_genetic_code(genetic_code)
 
     amino_acids = []
     for i in range(0, len(rna_upper) - 2, 3):
@@ -288,7 +288,7 @@ def optimize_codons(sequence: str, target_usage: Dict[str, float]) -> str:
 
     Args:
         sequence: DNA sequence string (must be divisible by 3)
-        target_usage: Target codon usage frequencies (codon -> relative frequency)
+        target_usage: Target codon usage frequencies (DNA codon -> relative frequency)
 
     Returns:
         Optimized DNA sequence with improved codon usage
@@ -299,8 +299,9 @@ def optimize_codons(sequence: str, target_usage: Dict[str, float]) -> str:
     if len(sequence) % 3 != 0:
         raise ValueError("Sequence length must be divisible by 3 for codon optimization")
 
-    # Get genetic code for codon -> amino acid mapping
-    genetic_code = get_genetic_code()
+    # Genetic code for codon -> amino acid mapping, expressed in DNA codon keys
+    # (this module's GENETIC_CODE uses RNA keys; translate U -> T once, up front)
+    genetic_code = {codon.replace("U", "T"): aa for codon, aa in GENETIC_CODE.items()}
 
     # Build codon preference map: amino_acid -> [(codon, frequency), ...]
     codon_preferences = {}
@@ -308,7 +309,7 @@ def optimize_codons(sequence: str, target_usage: Dict[str, float]) -> str:
         if aa not in codon_preferences:
             codon_preferences[aa] = []
         # Use target usage if available, otherwise default to equal preference
-        freq = target_usage.get(codon, 1.0)
+        freq = target_usage.get(codon, 0.0)
         codon_preferences[aa].append((codon, freq))
 
     # Sort codons by preference (highest frequency first)
@@ -326,8 +327,10 @@ def optimize_codons(sequence: str, target_usage: Dict[str, float]) -> str:
         aa = genetic_code[codon]
         preferred_codons = codon_preferences.get(aa, [(codon, 1.0)])
 
-        # Use the most preferred codon
-        optimized_codon = preferred_codons[0][0]
+        # Use the most preferred codon; when no synonym has any stated
+        # target usage (all zero), keep the existing codon unchanged.
+        best_freq = preferred_codons[0][1]
+        optimized_codon = preferred_codons[0][0] if best_freq > 0 else codon
         optimized.append(optimized_codon)
 
     result = "".join(optimized)
