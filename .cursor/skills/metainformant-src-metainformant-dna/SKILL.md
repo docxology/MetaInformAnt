@@ -13,4 +13,10 @@ Before editing files in this subtree:
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.
 
+## Module surface (generated, validated)
+- Purpose: DNA sequence analysis and genomics module for METAINFORMANT.
+- Public submodules: `alignment`, `annotation`, `expression`, `external`, `integration`, `io`, `phylogeny`, `population`, `sequence`, `transcription`, `translation`, `variation`.
+- Canonical import: `import metainformant.dna` (submodules: `from metainformant import dna` then `dna.<submodule>`).
+- Test entry point: `uv run pytest tests/dna -q` (one pytest directory per invocation).
+
 Keep changes scoped; match existing patterns in this directory.

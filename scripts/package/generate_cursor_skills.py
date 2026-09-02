@@ -9,6 +9,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import ast
 import hashlib
 import os
 import re
@@ -104,6 +105,142 @@ def display_folder_label(folder: Path, repo: Path) -> str:
     if rel == Path(".") or not rel.parts:
         return "repository root"
     return rel.as_posix()
+
+
+MODULES_SRC = Path("src") / "metainformant"
+
+
+def module_name_for_rel(rel: Path) -> str | None:
+    """Return the metainformant module name if ``rel`` is src/metainformant/<module>."""
+    parts = rel.parts
+    if len(parts) == 3 and parts[0] == "src" and parts[1] == "metainformant":
+        return parts[2]
+    return None
+
+
+def _parse_package_init(init_py: Path) -> tuple[str | None, list[str]]:
+    """AST-parse a package __init__.py: (docstring, exported submodule names).
+
+    Static analysis keeps the check gate import-free and deterministic: heavy
+    scientific dependencies are never executed just to validate documentation.
+    """
+    if not init_py.is_file():
+        return None, []
+    try:
+        tree = ast.parse(init_py.read_text(encoding="utf-8"))
+    except SyntaxError:
+        return None, []
+    doc = ast.get_docstring(tree)
+    names: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "__all__":
+                    if isinstance(node.value, (ast.List, ast.Tuple)):
+                        for elt in node.value.elts:
+                            if isinstance(elt, ast.Constant) and isinstance(elt.value, str):
+                                names.append(elt.value)
+        elif isinstance(node, ast.ImportFrom) and node.level == 1 and node.module is None:
+            for alias in node.names:
+                if alias.name != "*":
+                    names.append(alias.name)
+    seen: set[str] = set()
+    ordered = [n for n in names if not (n in seen or seen.add(n))]
+    return doc, ordered
+
+
+def _submodule_exists(module_dir: Path, name: str) -> bool:
+    return (module_dir / name / "__init__.py").is_file() or (module_dir / f"{name}.py").is_file()
+
+
+def build_module_sections(module_dir: Path) -> list[str]:
+    """Enriched per-module skill sections validated against the real package."""
+    doc, names = _parse_package_init(module_dir / "__init__.py")
+    module = module_dir.name
+    lines: list[str] = []
+    if doc:
+        lines.append(f"Purpose: {doc.strip()}")
+    submods = [n for n in names if _submodule_exists(module_dir, n)]
+    if submods:
+        lines.append("Public submodules: " + ", ".join(f"`{n}`" for n in submods) + ".")
+    lines.append(
+        f"Canonical import: `import metainformant.{module}` "
+        f"(submodules: `from metainformant import {module}` then `{module}.<submodule>`)."
+    )
+    tests_dir = REPO_ROOT / "tests" / module
+    if tests_dir.is_dir():
+        lines.append(f"Test entry point: `uv run pytest tests/{module} -q` " "(one pytest directory per invocation).")
+    return lines
+
+
+def _validate_package_init(module_dir: Path) -> list[str]:
+    """Statically verify a package __init__.py's relative imports resolve.
+
+    ``from . import x`` requires ``x`` to exist on disk (module file or
+    package directory); ``from .x import y`` requires ``x`` to exist.
+    Re-exported symbols (``y``) are attributes, not files, and are not
+    checked here — importing the package is the runtime's job, not the
+    documentation gate's.
+    """
+    errors: list[str] = []
+    init_py = module_dir / "__init__.py"
+    if not init_py.is_file():
+        return errors
+    try:
+        tree = ast.parse(init_py.read_text(encoding="utf-8"))
+    except SyntaxError as exc:
+        return [f"{init_py}: syntax error in __init__.py: {exc}"]
+    for node in ast.walk(tree):
+        if not (isinstance(node, ast.ImportFrom) and node.level == 1):
+            continue
+        if node.module is None:
+            for alias in node.names:
+                name = alias.name
+                if name != "*" and not _submodule_exists(module_dir, name):
+                    errors.append(
+                        f"module skill drift: {module_dir.name} __init__ does "
+                        f"`from . import {name}` but '{name}' does not exist on disk"
+                    )
+        else:
+            # Dotted path (e.g. from .analysis.association import x): every
+            # prefix must resolve on disk, walking packages segment by segment.
+            current = module_dir
+            resolved = True
+            for seg in node.module.split("."):
+                pkg_init = current / seg / "__init__.py"
+                mod_file = current / f"{seg}.py"
+                if pkg_init.is_file():
+                    current = current / seg
+                elif not mod_file.is_file():
+                    resolved = False
+                    break
+            if not resolved:
+                errors.append(
+                    f"module skill drift: {module_dir.name} __init__ does "
+                    f"`from .{node.module} import ...` but '{node.module}' does not exist on disk"
+                )
+    return errors
+
+
+def validate_module_skill(module_dir: Path, skill_body: str) -> list[str]:
+    """Fail loudly when a module skill or its package __init__ has drift.
+
+    Two layers:
+    1. The generated skill lists only submodules verified to exist on disk,
+       so any backtick-quoted submodule name in the body that is missing on
+       disk is stale prose.
+    2. The package __init__'s own relative imports must resolve statically.
+    """
+    errors: list[str] = []
+    doc, names = _parse_package_init(module_dir / "__init__.py")
+    for name in names:
+        if f"`{name}`" in skill_body and not _submodule_exists(module_dir, name):
+            errors.append(
+                f"module skill drift: {module_dir.name} skill advertises submodule "
+                f"'{name}' which no longer exists on disk"
+            )
+    errors.extend(_validate_package_init(module_dir))
+    return errors
 
 
 def _readable_fallback_slug(rel: Path) -> str | None:
@@ -206,6 +343,18 @@ def build_skill_body(agents_file: Path, repo: Path, skill_md: Path) -> str:
             "(uv, `output/`, `.tmp/`, real implementations).",
             f"- Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`]({up}docs/REAL_IMPLEMENTATION_POLICY.md).",
             "- Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.",
+        ]
+    )
+    module_name = module_name_for_rel(folder_relative_to_repo(agents_file, repo))
+    if module_name is not None:
+        module_sections = build_module_sections(folder)
+        if module_sections:
+            lines.append("")
+            lines.append("## Module surface (generated, validated)")
+            for section in module_sections:
+                lines.append(f"- {section}")
+    lines.extend(
+        [
             "",
             "Keep changes scoped; match existing patterns in this directory.",
         ]
@@ -289,6 +438,10 @@ def run_check(repo: Path) -> int:
         actual = skill_md.read_text(encoding="utf-8")
         if actual != expected:
             errors.append(f"content drift in {skill_md}; regenerate with generate_cursor_skills.py")
+
+        module_name = module_name_for_rel(folder_relative_to_repo(agents, repo))
+        if module_name is not None:
+            errors.extend(f"{skill_md}: {e}" for e in validate_module_skill(agents.parent, actual))
 
         required_targets = [repo / "CLAUDE.md", repo / "docs" / "REAL_IMPLEMENTATION_POLICY.md"]
         readme = agents.parent / "README.md"

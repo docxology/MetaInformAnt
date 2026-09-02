@@ -13,4 +13,10 @@ Before editing files in this subtree:
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.
 
+## Module surface (generated, validated)
+- Purpose: Life events and trajectory analysis module for METAINFORMANT.
+- Public submodules: `analysis`, `core`, `models`, `survival`, `visualization`, `workflow`.
+- Canonical import: `import metainformant.life_events` (submodules: `from metainformant import life_events` then `life_events.<submodule>`).
+- Test entry point: `uv run pytest tests/life_events -q` (one pytest directory per invocation).
+
 Keep changes scoped; match existing patterns in this directory.

@@ -13,4 +13,15 @@ Before editing files in this subtree:
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.
 
+## Module surface (generated, validated)
+- Purpose: Single-cell analysis module for METAINFORMANT.
+
+This module provides tools for single-cell data analysis, including
+dimensionality reduction, clustering, trajectory inference, multi-sample
+integration, cell type annotation, differential expression, and RNA
+velocity estimation.
+- Public submodules: `analysis`, `celltyping`, `data`, `differential`, `doublet`, `io`, `velocity`, `visualization`.
+- Canonical import: `import metainformant.singlecell` (submodules: `from metainformant import singlecell` then `singlecell.<submodule>`).
+- Test entry point: `uv run pytest tests/singlecell -q` (one pytest directory per invocation).
+
 Keep changes scoped; match existing patterns in this directory.

@@ -13,4 +13,14 @@ Before editing files in this subtree:
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.
 
+## Module surface (generated, validated)
+- Purpose: Multi-omics integration module for METAINFORMANT.
+
+This module provides comprehensive tools for integrating multiple omics data layers,
+enabling cross-platform analysis of genomics, transcriptomics, epigenomics, and
+proteomics data.
+- Public submodules: `analysis`, `methods`, `pathways`, `survival`, `visualization`.
+- Canonical import: `import metainformant.multiomics` (submodules: `from metainformant import multiomics` then `multiomics.<submodule>`).
+- Test entry point: `uv run pytest tests/multiomics -q` (one pytest directory per invocation).
+
 Keep changes scoped; match existing patterns in this directory.

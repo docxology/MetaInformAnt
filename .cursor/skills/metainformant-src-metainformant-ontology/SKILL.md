@@ -13,4 +13,10 @@ Before editing files in this subtree:
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.
 
+## Module surface (generated, validated)
+- Purpose: Gene ontology and functional annotation module for METAINFORMANT.
+- Public submodules: `annotation`, `core`, `pathway_enrichment`, `query`, `visualization`.
+- Canonical import: `import metainformant.ontology` (submodules: `from metainformant import ontology` then `ontology.<submodule>`).
+- Test entry point: `uv run pytest tests/ontology -q` (one pytest directory per invocation).
+
 Keep changes scoped; match existing patterns in this directory.

@@ -13,4 +13,14 @@ Before editing files in this subtree:
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.
 
+## Module surface (generated, validated)
+- Purpose: Ecology and community analysis module for METAINFORMANT.
+
+This module provides tools for ecological analysis, including community
+structure, diversity metrics, ordination, indicator species, functional
+ecology, macroecology, and ecological visualization.
+- Public submodules: `analysis`, `phylogenetic`, `traits`, `visualization`.
+- Canonical import: `import metainformant.ecology` (submodules: `from metainformant import ecology` then `ecology.<submodule>`).
+- Test entry point: `uv run pytest tests/ecology -q` (one pytest directory per invocation).
+
 Keep changes scoped; match existing patterns in this directory.

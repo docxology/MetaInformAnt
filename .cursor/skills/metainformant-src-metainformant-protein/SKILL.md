@@ -13,4 +13,10 @@ Before editing files in this subtree:
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.
 
+## Module surface (generated, validated)
+- Purpose: Protein sequence and structure analysis module for METAINFORMANT.
+- Public submodules: `database`, `domains`, `function`, `sequence`, `structure`, `visualization`, `workflow`.
+- Canonical import: `import metainformant.protein` (submodules: `from metainformant import protein` then `protein.<submodule>`).
+- Test entry point: `uv run pytest tests/protein -q` (one pytest directory per invocation).
+
 Keep changes scoped; match existing patterns in this directory.

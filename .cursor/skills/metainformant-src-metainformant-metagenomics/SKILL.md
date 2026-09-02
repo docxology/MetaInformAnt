@@ -13,4 +13,16 @@ Before editing files in this subtree:
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.
 
+## Module surface (generated, validated)
+- Purpose: Metagenomics analysis module for METAINFORMANT.
+
+This module provides comprehensive tools for metagenomic analysis, including
+amplicon-based community profiling (16S/ITS), shotgun metagenomics (assembly,
+binning, profiling), functional annotation (gene prediction, pathway reconstruction),
+specialized visualization for microbial ecology data, community diversity metrics,
+and comparative/differential abundance analysis.
+- Public submodules: `amplicon`, `comparative`, `diversity`, `functional`, `shotgun`, `visualization`.
+- Canonical import: `import metainformant.metagenomics` (submodules: `from metainformant import metagenomics` then `metagenomics.<submodule>`).
+- Test entry point: `uv run pytest tests/metagenomics -q` (one pytest directory per invocation).
+
 Keep changes scoped; match existing patterns in this directory.

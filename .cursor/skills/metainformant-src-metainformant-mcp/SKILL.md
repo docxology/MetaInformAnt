@@ -13,4 +13,16 @@ Before editing files in this subtree:
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.
 
+## Module surface (generated, validated)
+- Purpose: MCP (Model Context Protocol) package for METAINFORMANT.
+
+Provides a stdio JSON-RPC 2.0 MCP server (:mod:`metainformant.mcp.server`) and
+a declarative tool registry (:mod:`metainformant.mcp.registry`).  Tools are
+bundled tool adapters under ``metainformant.mcp.tools`` plus this package's
+``tool_adapters`` module; every tool is registered through
+``metainformant.mcp.registry.ToolRegistry``.
+- Public submodules: `registry`, `server`, `tool_adapters`, `tools`.
+- Canonical import: `import metainformant.mcp` (submodules: `from metainformant import mcp` then `mcp.<submodule>`).
+- Test entry point: `uv run pytest tests/mcp -q` (one pytest directory per invocation).
+
 Keep changes scoped; match existing patterns in this directory.

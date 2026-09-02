@@ -13,4 +13,9 @@ Before editing files in this subtree:
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.
 
+## Module surface (generated, validated)
+- Purpose: Cloud deployment infrastructure for MetaInformAnt pipelines.
+- Canonical import: `import metainformant.cloud` (submodules: `from metainformant import cloud` then `cloud.<submodule>`).
+- Test entry point: `uv run pytest tests/cloud -q` (one pytest directory per invocation).
+
 Keep changes scoped; match existing patterns in this directory.

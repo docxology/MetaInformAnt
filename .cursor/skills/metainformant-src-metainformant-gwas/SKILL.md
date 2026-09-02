@@ -13,4 +13,14 @@ Before editing files in this subtree:
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.
 
+## Module surface (generated, validated)
+- Purpose: Genome-Wide Association Studies (GWAS) module for METAINFORMANT.
+
+The package exposes the historical convenience API lazily. Importing
+``metainformant.gwas`` keeps subpackages and common functions discoverable
+without eagerly importing the full workflow and visualization stack.
+- Public submodules: `analysis`, `data`, `finemapping`, `heritability`, `reporting`, `simulation`, `validation`, `visualization`, `workflow`.
+- Canonical import: `import metainformant.gwas` (submodules: `from metainformant import gwas` then `gwas.<submodule>`).
+- Test entry point: `uv run pytest tests/gwas -q` (one pytest directory per invocation).
+
 Keep changes scoped; match existing patterns in this directory.

@@ -13,4 +13,16 @@ Before editing files in this subtree:
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.
 
+## Module surface (generated, validated)
+- Purpose: Structural Variant (SV) analysis module for METAINFORMANT.
+
+This module provides comprehensive tools for detecting, annotating, filtering,
+and visualizing structural variants including copy number variations (CNVs),
+deletions, duplications, inversions, translocations, and insertions.
+
+Config prefix: SV_
+- Public submodules: `annotation`, `detection`, `filtering`, `population`, `visualization`.
+- Canonical import: `import metainformant.structural_variants` (submodules: `from metainformant import structural_variants` then `structural_variants.<submodule>`).
+- Test entry point: `uv run pytest tests/structural_variants -q` (one pytest directory per invocation).
+
 Keep changes scoped; match existing patterns in this directory.

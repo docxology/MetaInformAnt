@@ -13,4 +13,10 @@ Before editing files in this subtree:
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.
 
+## Module surface (generated, validated)
+- Purpose: RNA transcriptomic analysis and workflow orchestration module for METAINFORMANT.
+- Public submodules: `amalgkit`, `analysis`, `core`, `deconvolution`, `engine`, `retrieval`, `splicing`, `steps`.
+- Canonical import: `import metainformant.rna` (submodules: `from metainformant import rna` then `rna.<submodule>`).
+- Test entry point: `uv run pytest tests/rna -q` (one pytest directory per invocation).
+
 Keep changes scoped; match existing patterns in this directory.

@@ -13,4 +13,10 @@ Before editing files in this subtree:
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.
 
+## Module surface (generated, validated)
+- Purpose: Mathematical biology and theoretical modeling module for METAINFORMANT.
+- Public submodules: `bayesian`, `core`, `decision_theory`, `epidemiology`, `evolutionary_dynamics`, `popgen`, `population_genetics`, `quantitative_genetics`.
+- Canonical import: `import metainformant.math` (submodules: `from metainformant import math` then `math.<submodule>`).
+- Test entry point: `uv run pytest tests/math -q` (one pytest directory per invocation).
+
 Keep changes scoped; match existing patterns in this directory.

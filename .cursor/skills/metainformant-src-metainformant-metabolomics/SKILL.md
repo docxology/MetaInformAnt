@@ -13,4 +13,13 @@ Before editing files in this subtree:
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.
 
+## Module surface (generated, validated)
+- Purpose: Metabolomics analysis module for METAINFORMANT.
+
+This module provides tools for metabolite identification, mass spectrometry
+data processing, pathway mapping, and metabolite-gene integration analysis.
+- Public submodules: `analysis`, `io`, `pathways`, `visualization`.
+- Canonical import: `import metainformant.metabolomics` (submodules: `from metainformant import metabolomics` then `metabolomics.<submodule>`).
+- Test entry point: `uv run pytest tests/metabolomics -q` (one pytest directory per invocation).
+
 Keep changes scoped; match existing patterns in this directory.

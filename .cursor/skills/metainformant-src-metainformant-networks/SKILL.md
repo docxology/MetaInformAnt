@@ -13,4 +13,10 @@ Before editing files in this subtree:
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.
 
+## Module surface (generated, validated)
+- Purpose: Network analysis module for METAINFORMANT.
+- Public submodules: `analysis`, `config`, `interaction`, `regulatory`, `workflow`.
+- Canonical import: `import metainformant.networks` (submodules: `from metainformant import networks` then `networks.<submodule>`).
+- Test entry point: `uv run pytest tests/networks -q` (one pytest directory per invocation).
+
 Keep changes scoped; match existing patterns in this directory.
