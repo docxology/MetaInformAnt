@@ -156,10 +156,16 @@ def _cached_parse(path: Path) -> ast.Module:
 
 
 def _get_cache_dir(repo_root: Path) -> Path:
-    """Get cache directory for discovery results."""
-    cache_dir = Path(repo_root) / "output" / ".discovery_cache"
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    return cache_dir
+    """Get cache directory for discovery results.
+
+    Delegates to the canonical
+    :func:`metainformant.core.utils.symbols._get_cache_dir` implementation
+    (core-internal import, permitted by module-boundary rules) so both
+    consumers share one cache-location contract.
+    """
+    from metainformant.core.utils.symbols import _get_cache_dir as _canonical_get_cache_dir
+
+    return _canonical_get_cache_dir(repo_root)
 
 
 def _parse_function_signature(node: ast.FunctionDef) -> str:
