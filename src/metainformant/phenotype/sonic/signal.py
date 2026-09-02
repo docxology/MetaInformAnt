@@ -38,7 +38,7 @@ class AcousticSignal:
     def from_file(cls, path: str) -> AcousticSignal:
         """Load from audio file. Requires 'soundfile' package."""
         try:
-            import soundfile as sf
+            import soundfile as sf  # type: ignore[import-not-found]
         except ImportError:
             raise ImportError("File loading requires the 'soundfile' package: uv pip install soundfile")
 
@@ -179,7 +179,7 @@ class AcousticSignal:
         threshold = np.mean(envelope) * threshold_factor
         min_gap_samples = int(self.sample_rate * min_gap_ms / 1000)
 
-        syllables = []
+        syllables: list[dict[str, float]] = []
         in_syllable = False
         onset_idx = 0
 

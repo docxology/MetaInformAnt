@@ -22,7 +22,7 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 try:
-    import seaborn as sns
+    import seaborn as sns  # type: ignore[import-untyped]
 
     HAS_SEABORN = True
 except ImportError:
@@ -30,8 +30,8 @@ except ImportError:
     sns = None
 
 try:
-    import plotly.express as px
-    import plotly.graph_objects as go
+    import plotly.express as px  # type: ignore[import-untyped]
+    import plotly.graph_objects as go  # type: ignore[import-untyped]
 
     HAS_PLOTLY = True
 except ImportError:
@@ -47,7 +47,7 @@ def plot_trait_distribution(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot distribution of phenotypic trait values.
 
@@ -73,7 +73,7 @@ def plot_trait_distribution(
     else:
         ax.hist(trait_values, bins=30, alpha=0.7, density=True, **kwargs)
         # Add simple density estimate
-        from scipy.stats import gaussian_kde
+        from scipy.stats import gaussian_kde  # type: ignore[import-untyped]
 
         try:
             kde = gaussian_kde(trait_values)
@@ -88,7 +88,7 @@ def plot_trait_distribution(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Trait distribution plot saved to {output_path}")
 
@@ -101,7 +101,7 @@ def plot_trait_correlation_matrix(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot correlation matrix between phenotypic traits.
 
@@ -138,7 +138,7 @@ def plot_trait_correlation_matrix(
     ax.set_title("Phenotypic Trait Correlations")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Trait correlation matrix saved to {output_path}")
 
@@ -152,7 +152,7 @@ def plot_life_course_trajectory(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot life course trajectory from event sequence.
 
@@ -173,9 +173,9 @@ def plot_life_course_trajectory(
         fig, ax = plt.subplots(figsize=figsize)
 
     # Extract ages and event types
-    ages = []
-    event_types = []
-    descriptions = []
+    ages: list[float] = []
+    event_types: list[str] = []
+    descriptions: list[str] = []
 
     for event in life_events:
         if "age" in event and "event_type" in event:
@@ -188,13 +188,16 @@ def plot_life_course_trajectory(
 
     # Sort by age
     sorted_idx = np.argsort(ages)
-    ages = np.array(ages)[sorted_idx]
-    event_types = np.array(event_types)[sorted_idx]
-    descriptions = np.array(descriptions)[sorted_idx]
+    ages_arr = np.array(ages)[sorted_idx]
+    event_types_arr = np.array(event_types)[sorted_idx]
+    descriptions_arr = np.array(descriptions)[sorted_idx]
+    ages = ages_arr.tolist()
+    event_types = event_types_arr.tolist()
+    descriptions = descriptions_arr.tolist()
 
     # Create timeline plot
     unique_events = np.unique(event_types)
-    colors = plt.cm.tab10(np.linspace(0, 1, len(unique_events)))
+    colors = plt.get_cmap("tab10")(np.linspace(0, 1, len(unique_events)))
     event_color_map = dict(zip(unique_events, colors))
 
     # Plot events as points on timeline
@@ -217,12 +220,12 @@ def plot_life_course_trajectory(
         )
 
     # Add timeline
-    ax.plot([ages.min(), ages.max()], [0, 0], "k-", linewidth=2, alpha=0.7)
+    ax.plot([min(ages), max(ages)], [0, 0], "k-", linewidth=2, alpha=0.7)
 
     ax.set_xlabel("Age")
     ax.set_title(f'Life Course Trajectory{" - " + individual_id if individual_id else ""}')
     ax.set_yticks([])
-    ax.set_xlim(ages.min() - 1, ages.max() + 1)
+    ax.set_xlim(min(ages) - 1, max(ages) + 1)
     ax.grid(True, alpha=0.3, axis="x")
 
     # Add legend
@@ -232,7 +235,7 @@ def plot_life_course_trajectory(
     ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc="upper left")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Life course trajectory saved to {output_path}")
 
@@ -245,7 +248,7 @@ def plot_morphological_measurements(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot multiple morphological measurements as box plots.
 
@@ -277,7 +280,7 @@ def plot_morphological_measurements(
     else:
         bp = ax.boxplot(data, tick_labels=measurement_names, patch_artist=True, **kwargs)
         # Color boxes
-        colors = plt.cm.Set3(np.linspace(0, 1, len(measurement_names)))
+        colors = plt.get_cmap("Set3")(np.linspace(0, 1, len(measurement_names)))
         for patch, color in zip(bp["boxes"], colors):
             patch.set_facecolor(color)
 
@@ -287,7 +290,7 @@ def plot_morphological_measurements(
     ax.grid(True, alpha=0.3, axis="y")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Morphological measurements plot saved to {output_path}")
 
@@ -302,7 +305,7 @@ def plot_behavioral_patterns(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot behavioral patterns over time.
 
@@ -325,7 +328,7 @@ def plot_behavioral_patterns(
 
     # Group by behavior and plot over time
     behaviors = behavioral_data[behavior_column].unique()
-    colors = plt.cm.tab10(np.linspace(0, 1, len(behaviors)))
+    colors = plt.get_cmap("tab10")(np.linspace(0, 1, len(behaviors)))
 
     for i, behavior in enumerate(behaviors):
         behavior_data = behavioral_data[behavioral_data[behavior_column] == behavior]
@@ -341,7 +344,7 @@ def plot_behavioral_patterns(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Behavioral patterns plot saved to {output_path}")
 
@@ -355,7 +358,7 @@ def plot_phenotype_pca(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot PCA of phenotypic trait data.
 
@@ -396,7 +399,7 @@ def plot_phenotype_pca(
     cbar.set_label("Sample Index")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Phenotype PCA plot saved to {output_path}")
 
@@ -410,7 +413,7 @@ def plot_trait_heritability(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot trait heritability estimates.
 
@@ -471,7 +474,7 @@ def plot_trait_heritability(
         )
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Trait heritability plot saved to {output_path}")
 
@@ -484,7 +487,7 @@ def plot_life_history_comparison(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Compare life history patterns across species.
 
@@ -504,7 +507,7 @@ def plot_life_history_comparison(
         fig, ax = plt.subplots(figsize=figsize)
 
     species_names = list(species_data.keys())
-    colors = plt.cm.Set1(np.linspace(0, 1, len(species_names)))
+    colors = plt.get_cmap("Set1")(np.linspace(0, 1, len(species_names)))
 
     # Plot life history curves for each species
     for i, (species, events) in enumerate(species_data.items()):
@@ -522,7 +525,7 @@ def plot_life_history_comparison(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Life history comparison plot saved to {output_path}")
 
@@ -536,7 +539,7 @@ def plot_phenotype_network(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot phenotype correlation network.
 
@@ -552,7 +555,7 @@ def plot_phenotype_network(
         matplotlib Axes object
     """
     try:
-        import networkx as nx
+        import networkx as nx  # type: ignore[import-untyped]
     except ImportError:
         raise ImportError("networkx required for phenotype network visualization")
 
@@ -590,7 +593,7 @@ def plot_phenotype_network(
     ax.axis("off")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Phenotype network plot saved to {output_path}")
 
@@ -598,7 +601,7 @@ def plot_phenotype_network(
 
 
 def create_interactive_phenotype_browser(
-    phenotype_data: pd.DataFrame, *, output_path: str | Path | None = None, **kwargs
+    phenotype_data: pd.DataFrame, *, output_path: str | Path | None = None, **kwargs: Any
 ) -> Any:
     """Create an interactive phenotype data browser using Plotly.
 
@@ -619,7 +622,7 @@ def create_interactive_phenotype_browser(
     fig = px.parallel_coordinates(phenotype_data, title="Interactive Phenotype Browser", **kwargs)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         html_path = Path(output_path).with_suffix(".html")
         fig.write_html(str(html_path))
         logger.info(f"Interactive phenotype browser saved to {html_path}")

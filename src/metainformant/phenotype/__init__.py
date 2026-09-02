@@ -14,9 +14,10 @@ Comprehensive phenotypic trait analysis including:
 from __future__ import annotations
 
 import importlib
+from typing import Any
 
 
-def _optional_import(name: str):
+def _optional_import(name: str) -> Any:
     try:
         return importlib.import_module(f"{__name__}.{name}")
     except ModuleNotFoundError as exc:  # pragma: no cover - depends on optional scientific plotting stack

@@ -42,7 +42,7 @@ class PipelineConfig:
     def from_yaml(cls, path: Union[str, Path]) -> PipelineConfig:
         """Load configuration from YAML file."""
         try:
-            import yaml
+            import yaml  # type: ignore[import-untyped]
         except ImportError:
             raise ImportError("YAML loading requires pyyaml: uv pip install pyyaml")
 
@@ -341,9 +341,9 @@ class PhenotypePipeline:
 
     def _step_summarize(self) -> Dict[str, Any]:
         """Generate summary statistics."""
-        results = self._state.get("results", {})
+        results: Dict[str, Any] = self._state.get("results", {})
 
-        summary = {
+        summary: Dict[str, Any] = {
             "n_domains": len(results),
             "domains": list(results.keys()),
             "per_domain": {},

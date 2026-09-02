@@ -43,8 +43,8 @@ class AntWikiRecord:
 
         # Extract phenotype data
         self.phenotypes = self._extract_phenotypes(data)
-        self.morphology = data.get("morphology", {})
-        self.behavior = data.get("behavior", {})
+        self.morphology: Dict[str, Any] = data.get("morphology", {})
+        self.behavior: Dict[str, Any] = data.get("behavior", {})
         self.ecology = data.get("ecology", {})
         self.distribution = data.get("distribution", {})
 
@@ -315,8 +315,8 @@ def get_phenotype_distribution(records: List[AntWikiRecord], phenotype_name: str
     Returns:
         Dictionary with distribution statistics
     """
-    values = []
-    value_counts = defaultdict(int)
+    values: list[float] = []
+    value_counts: defaultdict[str, int] = defaultdict(int)
 
     for record in records:
         value = record.get_phenotype_value(phenotype_name)
@@ -422,7 +422,7 @@ def create_phenotype_matrix(
 
     # Get all phenotype names if not specified
     if phenotype_names is None:
-        all_phenotypes = set()
+        all_phenotypes: set[str] = set()
         for record in records:
             all_phenotypes.update(record.phenotypes.keys())
         phenotype_names = sorted(all_phenotypes)
@@ -463,7 +463,7 @@ def generate_antwiki_report(records: List[AntWikiRecord], output_path: Optional[
     report_lines.append("")
 
     # Genus distribution
-    genus_counts = defaultdict(int)
+    genus_counts: defaultdict[str, int] = defaultdict(int)
     for record in records:
         genus_counts[record.genus] += 1
 
@@ -473,7 +473,7 @@ def generate_antwiki_report(records: List[AntWikiRecord], output_path: Optional[
     report_lines.append("")
 
     # Phenotype coverage
-    all_phenotypes = set()
+    all_phenotypes: set[str] = set()
     for record in records:
         all_phenotypes.update(record.phenotypes.keys())
 

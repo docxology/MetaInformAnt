@@ -195,7 +195,7 @@ def identify_marker_compounds(
     for p in group_a + group_b:
         all_compounds.update(p.compounds.keys())
 
-    markers = []
+    markers: list[dict[str, Any]] = []
     for compound in all_compounds:
         vals_a = [p.compounds.get(compound, 0.0) for p in group_a]
         vals_b = [p.compounds.get(compound, 0.0) for p in group_b]

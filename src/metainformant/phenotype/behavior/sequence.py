@@ -181,7 +181,7 @@ class BehaviorSequence:
         c2 = _counts(second_half)
 
         all_states = set(c1.keys()) | set(c2.keys())
-        all_targets = set()
+        all_targets: set[str] = set()
         for d in list(c1.values()) + list(c2.values()):
             all_targets.update(d.keys())
 

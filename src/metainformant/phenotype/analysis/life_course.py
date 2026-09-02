@@ -29,7 +29,7 @@ class Event:
     metadata: Dict[str, Any] = field(default_factory=dict)
     confidence: float = 1.0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         validation.validate_type(self.timestamp, (int, float), "timestamp")
         validation.validate_not_empty(self.event_type, "event_type")
         validation.validate_range(self.confidence, min_val=0.0, max_val=1.0, name="confidence")
@@ -43,7 +43,7 @@ class EventSequence:
     events: List[Event] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         validation.validate_not_empty(self.person_id, "person_id")
         validation.validate_type(self.events, list, "events")
 
@@ -76,7 +76,7 @@ class EventSequence:
 
 
 def extract_phenotypes_from_events(
-    event_sequence,
+    event_sequence: Any,
     phenotype_categories: Optional[Dict[str, List[str]]] = None,
     trait_mapping: Optional[Dict[str, List[str]]] = None,
 ) -> Dict[str, Any]:
@@ -147,8 +147,8 @@ def extract_phenotypes_from_events(
 
     # Temporal information
     if events:
-        timestamps = [getattr(e, "timestamp", None) for e in events]
-        timestamps = [t for t in timestamps if t is not None]
+        raw_ts = [getattr(e, "timestamp", None) for e in events]
+        timestamps: list[Any] = [t for t in raw_ts if t is not None]
         if timestamps:
             phenotypes["first_event_time"] = min(timestamps)
             phenotypes["last_event_time"] = max(timestamps)
@@ -181,7 +181,7 @@ def extract_phenotypes_from_events(
 
 
 def aggregate_temporal_phenotypes(
-    sequences,
+    sequences: List[Any],
     time_window_years: float = 5.0,
     time_windows: Optional[List[Tuple[float, float]]] = None,
     trait_categories: Optional[List[str]] = None,
@@ -209,7 +209,7 @@ def aggregate_temporal_phenotypes(
         raise errors.ValidationError("time_window_years must be positive")
 
     # Collect all events across sequences
-    all_events = []
+    all_events: list[Any] = []
     people_with_events = set()
     for seq in sequences:
         events = getattr(seq, "events", [])
@@ -231,8 +231,10 @@ def aggregate_temporal_phenotypes(
         }
 
     # Get timestamps
-    timestamps = [getattr(e, "timestamp", None) for e in all_events]
-    timestamps = [t for t in timestamps if t is not None]
+    raw_timestamps = [getattr(e, "timestamp", None) for e in all_events]
+    timestamps = [t for t in raw_timestamps if t is not None]
+    if not timestamps:
+        timestamps = [0.0]
 
     first = min(timestamps)
     last = max(timestamps)
@@ -280,12 +282,12 @@ def aggregate_temporal_phenotypes(
             except TypeError:
                 current = current + time_window_years
 
-        result_windows = generated_windows
+        result_windows_list: list[Any] = list(generated_windows)
     else:
-        result_windows = time_windows
+        result_windows_list = list(time_windows) if time_windows is not None else []
 
     return {
-        "time_windows": result_windows,
+        "time_windows": result_windows_list,
         "aggregates": {
             "total_events": total_events,
             "total_people": total_people,
@@ -295,7 +297,7 @@ def aggregate_temporal_phenotypes(
 
 
 def map_events_to_traits(
-    event_sequence,
+    event_sequence: Any,
     trait_mapping: Optional[Dict[str, List[str]]] = None,
     trait_definitions: Optional[Dict[str, List[str]]] = None,
 ) -> Dict[str, Any]:
@@ -362,7 +364,7 @@ def analyze_life_course_trajectories(
     if outcome_measures is None:
         outcome_measures = ["career_success", "health_outcomes", "social_stability"]
 
-    results = {
+    results: Dict[str, Any] = {
         "total_sequences": len(sequences),
         "trajectory_patterns": {},
         "outcome_analysis": {},
@@ -370,7 +372,7 @@ def analyze_life_course_trajectories(
     }
 
     # Analyze trajectory patterns
-    trajectory_patterns = defaultdict(int)
+    trajectory_patterns: defaultdict[str, int] = defaultdict(int)
 
     for sequence in sequences:
         # Classify trajectory based on event patterns
@@ -443,8 +445,8 @@ def analyze_life_course_trajectories(
     # Individuals with high health events
     high_health_risk = []
     for sequence in sequences:
-        health_events = len(sequence.get_events_by_type("health_event"))
-        if health_events > 5:
+        n_health_events = len(sequence.get_events_by_type("health_event"))
+        if n_health_events > 5:
             high_health_risk.append(sequence.person_id)
 
     if high_health_risk:
@@ -478,7 +480,7 @@ def identify_critical_periods(sequences: List[EventSequence], age_ranges: List[T
     validation.validate_not_empty(sequences, "sequences")
     validation.validate_not_empty(age_ranges, "age_ranges")
 
-    results = {
+    results: Dict[str, Any] = {
         "age_ranges": age_ranges,
         "period_importance": {},
         "event_clusters": {},
@@ -488,7 +490,7 @@ def identify_critical_periods(sequences: List[EventSequence], age_ranges: List[T
     for start_age, end_age in age_ranges:
         period_key = f"{start_age}_{end_age}"
         total_events = 0
-        event_types = defaultdict(int)
+        event_types: defaultdict[str, int] = defaultdict(int)
 
         for sequence in sequences:
             period_events = sequence.get_events_in_range(start_age, end_age)
@@ -543,14 +545,14 @@ def predict_life_course_outcomes(sequences: List[EventSequence], prediction_hori
     validation.validate_not_empty(sequences, "sequences")
     validation.validate_range(prediction_horizon, min_val=0.1, name="prediction_horizon")
 
-    results = {
+    results: Dict[str, Any] = {
         "prediction_horizon": prediction_horizon,
         "outcome_predictions": {},
         "confidence_intervals": {},
     }
 
     # Simple prediction model based on current trajectory patterns
-    predictions = {}
+    predictions: Dict[str, Any] = {}
 
     for sequence in sequences:
         person_id = sequence.person_id
@@ -645,7 +647,7 @@ def create_life_course_report(sequences: List[EventSequence], output_path: Optio
     report_lines.append("")
 
     # Event type distribution
-    event_types = defaultdict(int)
+    event_types: defaultdict[str, int] = defaultdict(int)
     for sequence in sequences:
         for event in sequence.events:
             event_types[event.event_type] += 1
@@ -766,7 +768,7 @@ def analyze_life_course(sequences: List[EventSequence], outcomes: List[str] | No
     if not sequences:
         return {"error": "No sequences provided"}
 
-    results = {
+    results: Dict[str, Any] = {
         "n_sequences": len(sequences),
         "analysis_timestamp": statistics.mean([seq.duration for seq in sequences if seq.events]) if sequences else 0,
         "components": {},
@@ -784,12 +786,12 @@ def analyze_life_course(sequences: List[EventSequence], outcomes: List[str] | No
         }
 
     # Event frequency analysis
-    all_events = []
+    all_events: list[Any] = []
     for seq in sequences:
         all_events.extend([event.event_type for event in seq.events])
 
     if all_events:
-        event_counts = defaultdict(int)
+        event_counts: defaultdict[str, int] = defaultdict(int)
         for event in all_events:
             event_counts[event] += 1
 

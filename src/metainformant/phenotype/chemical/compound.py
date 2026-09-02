@@ -13,12 +13,12 @@ class Compound:
     retention_time: Optional[float] = None
     identifiers: Dict[str, str] = field(default_factory=dict)
 
-    def __eq__(self, other):
+    def __eq__(self, other: object) -> bool:
         if not isinstance(other, Compound):
             return False
         # If names match, they are the same (simple heuristic)
         # In rigorous chem, might use InChIKey or similar
         return self.name == other.name and self.retention_time == other.retention_time
 
-    def __hash__(self):
+    def __hash__(self) -> int:
         return hash((self.name, self.retention_time))

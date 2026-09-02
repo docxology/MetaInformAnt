@@ -40,7 +40,12 @@ def phenotype_genotype_association(
     n_samples = len(sample_ids)
     pheno_values = [phenotypes[s] for s in sample_ids]
 
-    results = {"n_samples": n_samples, "n_variants": len(genotypes), "method": method, "associations": {}}
+    results: Dict[str, Any] = {
+        "n_samples": n_samples,
+        "n_variants": len(genotypes),
+        "method": method,
+        "associations": {},
+    }
 
     for variant_id, geno_calls in genotypes.items():
         if len(geno_calls) != n_samples:
@@ -98,7 +103,7 @@ def trait_expression_correlation(
     sample_ids = list(trait_values.keys())
     genes_to_test = gene_list if gene_list else list(expression_matrix.keys())
 
-    results = {
+    results: Dict[str, Any] = {
         "n_samples": len(sample_ids),
         "n_genes_tested": len(genes_to_test),
         "method": method,
@@ -163,7 +168,7 @@ def multi_phenotype_integration(
     if len(common_samples) < 3:
         return {"error": "Insufficient common samples", "n_common": len(common_samples)}
 
-    common_samples = sorted(common_samples)
+    common_samples_list = sorted(common_samples)
 
     # Build correlation matrix
     correlation_matrix: List[List[float]] = [[0.0] * n_phenotypes for _ in range(n_phenotypes)]
@@ -173,8 +178,8 @@ def multi_phenotype_integration(
             if i == j:
                 correlation_matrix[i][j] = 1.0
             else:
-                vals_i = [phenotype_matrices[phenotype_names[i]][s] for s in common_samples]
-                vals_j = [phenotype_matrices[phenotype_names[j]][s] for s in common_samples]
+                vals_i = [phenotype_matrices[phenotype_names[i]][s] for s in common_samples_list]
+                vals_j = [phenotype_matrices[phenotype_names[j]][s] for s in common_samples_list]
                 r, _ = _pearson_correlation(vals_i, vals_j)
                 correlation_matrix[i][j] = r
                 correlation_matrix[j][i] = r
@@ -227,7 +232,7 @@ def phenotype_environment_interaction(
     if n_samples < 5:
         return {"error": "Insufficient samples with both phenotype and environment"}
 
-    results = {
+    results: Dict[str, Any] = {
         "n_samples": n_samples,
         "n_variants": len(genotypes),
         "model": interaction_model,
@@ -366,10 +371,10 @@ def _t_cdf(t: float, df: int) -> float:
     """Approximate t-distribution CDF."""
     # Simple approximation using normal for large df
     if df > 30:
-        return _normal_cdf(t)
+        return float(_normal_cdf(t))
     # Very rough approximation for small df
     x = df / (df + t**2)
-    return 0.5 + 0.5 * (1 - x ** (df / 2)) * (1 if t >= 0 else -1)
+    return float(0.5 + 0.5 * (1 - x ** (df / 2)) * (1 if t >= 0 else -1))
 
 
 def _f_cdf(f: float, df1: int, df2: int) -> float:
@@ -378,7 +383,7 @@ def _f_cdf(f: float, df1: int, df2: int) -> float:
         return 0.0
     # Simple approximation
     x = df2 / (df2 + df1 * f)
-    return 1 - x ** (df2 / 2)
+    return float(1 - x ** (df2 / 2))
 
 
 def _normal_cdf(z: float) -> float:

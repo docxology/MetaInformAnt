@@ -256,12 +256,12 @@ class AntWikiScraper:
             # Extract description
             desc_elem = soup.find("div", {"class": "mw-parser-output"})
             if desc_elem:
-                paragraphs = desc_elem.find_all("p", limit=3)
+                paragraphs = desc_elem.find_all("p", limit=3)  # type: ignore[attr-defined]
                 data["description"] = " ".join(p.get_text().strip() for p in paragraphs)
 
             # Extract images
             img_elems = soup.find_all("img", src=re.compile(r"\.(jpg|jpeg|png|gif)", re.IGNORECASE))
-            data["images"] = [img.get("src", "") for img in img_elems[:10]]
+            data["images"] = [img.get("src", "") for img in img_elems[:10]]  # type: ignore[union-attr]
 
             # Extract traits from behavioral and ecological data
             if behavior:
@@ -301,7 +301,7 @@ class AntWikiScraper:
 
     def _extract_morphology(self, soup: BeautifulSoup) -> Dict[str, Any]:
         """Extract morphological information."""
-        morphology = {}
+        morphology: Dict[str, Any] = {}
 
         # Look for morphology sections
         morph_sections = soup.find_all(
@@ -412,7 +412,7 @@ class AntWikiScraper:
 
         return distribution
 
-    def _extract_section_content(self, header_element) -> str:
+    def _extract_section_content(self, header_element: Any) -> str:
         """Extract content following a header element."""
         content_parts = []
 
@@ -430,7 +430,7 @@ class AntWikiScraper:
         score_components = []
 
         # Taxonomic information (30%)
-        tax_score = 0
+        tax_score = 0.0
         if data.get("genus"):
             tax_score += 0.5
         if data.get("subfamily"):
@@ -440,7 +440,7 @@ class AntWikiScraper:
         score_components.append(tax_score * 0.3)
 
         # Morphological data (30%)
-        morph_score = 0
+        morph_score = 0.0
         morphology = data.get("morphology", {})
         if morphology.get("body_length_mm"):
             morph_score += 0.4
@@ -451,7 +451,7 @@ class AntWikiScraper:
         score_components.append(morph_score * 0.3)
 
         # Behavioral data (20%)
-        behavior_score = 0
+        behavior_score = 0.0
         behavior = data.get("behavior", {})
         if behavior.get("foraging_strategy"):
             behavior_score += 0.5
@@ -462,7 +462,7 @@ class AntWikiScraper:
         score_components.append(behavior_score * 0.2)
 
         # Ecological data (20%)
-        ecology_score = 0
+        ecology_score = 0.0
         ecology = data.get("ecology", {})
         if ecology.get("habitat"):
             ecology_score += 0.6
@@ -564,7 +564,7 @@ class AntWikiScraper:
                 response = self.session.get(url, timeout=self.config.timeout)
                 response.raise_for_status()
                 self._respectful_delay()
-                return response.text
+                return str(response.text)
             except requests.HTTPError as e:
                 raise errors.NetworkError(f"HTTP error fetching {url}: {e}") from e
             except requests.RequestException as e:

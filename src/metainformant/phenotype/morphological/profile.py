@@ -173,13 +173,14 @@ def allometric_regression(
     else:
         allometry_type = "negative"
 
-    return {
+    result: Dict[str, Any] = {
         "slope": slope,
         "intercept": intercept,
         "r_squared": r_squared,
         "n": n,
         "allometry_type": allometry_type,
     }
+    return result
 
 
 def compare_profiles(

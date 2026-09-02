@@ -11,9 +11,9 @@ from __future__ import annotations
 from typing import Any, Dict
 
 import pandas as pd
-import statsmodels.api as sm
-from scipy import stats
-from statsmodels.formula.api import ols
+import statsmodels.api as sm  # type: ignore[import-untyped]
+from scipy import stats  # type: ignore[import-untyped]
+from statsmodels.formula.api import ols  # type: ignore[import-untyped]
 
 
 def perform_linear_regression(df: pd.DataFrame, x_col: str, y_col: str) -> Dict[str, Any]:

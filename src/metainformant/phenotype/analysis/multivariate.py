@@ -16,7 +16,7 @@ import pandas as pd
 from metainformant.phenotype.workflow.ecology_stats import pcoa, permanova
 
 try:
-    from statsmodels.multivariate.manova import MANOVA
+    from statsmodels.multivariate.manova import MANOVA  # type: ignore[import-untyped]
 
     HAS_STATSMODELS_MANOVA = True
 except Exception:  # pragma: no cover - depends on optional statsmodels import path
