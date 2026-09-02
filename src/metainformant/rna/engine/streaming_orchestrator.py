@@ -1222,15 +1222,6 @@ def _raw_input_priority_index(fastq_dir: Path, accessions: set[str]) -> dict[str
     return {accession: state[0] for accession, state in _raw_input_state_index(fastq_dir, accessions).items()}
 
 
-def _sample_raw_input_priority(fastq_dir: Path, srr_id: Any) -> int:
-    """Return the acquisition priority for one sample."""
-
-    accession = str(srr_id).strip()
-    if not accession:
-        return 2
-    return _raw_input_priority_index(Path(fastq_dir), {accession}).get(accession, 2)
-
-
 def _task_has_local_sra(task: Dict[str, Any]) -> bool:
     """Return whether a task has an SRA source that uses the fallback lane."""
 
