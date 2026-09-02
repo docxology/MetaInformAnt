@@ -191,4 +191,109 @@ CONSERVATION_SPEC: dict[str, Any] = {
     "writes": "output-dir-only",
 }
 
-ALL_SPECS: list[dict[str, Any]] = [TOOL_SPEC, TAU_SPEC, ATLAS_SPEC, CONSERVATION_SPEC]
+
+def _handle_normalize_counts(
+    counts_table: str, output_dir: str, method: str = "tpm", gene_lengths: str | None = None
+) -> dict:
+    """Normalize a raw count matrix (genes x samples) to CPM/TPM/RPKM/quantile.
+
+    gene_lengths: optional CSV/TSV with index=gene, single length column
+    (required for tpm/rpkm).
+    """
+    from metainformant.rna.analysis.expression_core import normalize_counts
+
+    frame = read_table(counts_table)
+    lengths = None
+    if gene_lengths is not None:
+        lengths = read_table(gene_lengths, index_col=None)
+        if lengths.shape[1] == 1:
+            lengths = lengths.set_index(lengths.columns[0]).iloc[:, 0]
+        else:
+            lengths = lengths.set_index(lengths.columns[0])
+        lengths = lengths.iloc[:, 0] if lengths.ndim > 1 else lengths
+    result = normalize_counts(frame, method=method, gene_lengths=lengths)
+    out_dir = validate_output_dir(output_dir)
+    out_path = out_dir / f"normalized_{method}.csv"
+    result.to_csv(out_path)
+    return {
+        "output": str(out_path),
+        "method": method,
+        "n_genes": int(result.shape[0]),
+        "n_samples": int(result.shape[1]),
+    }
+
+
+def _handle_duplication_specificity(expression_table: str, bridge_table: str, species: str, output_dir: str) -> dict:
+    """Descriptive tau-by-orthology-class summary (Xu & Colgan 2025 methods).
+
+    Joins the species expression table with the ortholog bridge, computes tau
+    per transcript, and summarizes by 1:1 vs multicopy orthology class.
+    """
+    from metainformant.rna.analysis.tissue_specificity import (
+        compute_tau,
+        duplication_specificity_summary,
+        join_expression_with_orthology,
+    )
+
+    expression = read_table(expression_table)
+    bridge = read_table(bridge_table)
+    try:
+        joined = join_expression_with_orthology(expression, bridge, species)
+        tissue_cols = [c for c in joined.columns if c not in ("orthogroup", "orthology_class")]
+        tau = compute_tau(joined[tissue_cols]).reindex(joined.index)
+        summary = duplication_specificity_summary(tau, joined["orthology_class"])
+    except (ValueError, KeyError) as exc:
+        return {"error": f"{type(exc).__name__}: {exc}"}
+    out_dir = validate_output_dir(output_dir)
+    out_path = out_dir / "duplication_specificity_summary.csv"
+    summary.to_csv(out_path)
+    return {
+        "output": str(out_path),
+        "n_transcripts": int(len(joined)),
+        "classes": sorted(str(c) for c in summary.index),
+        "note": "descriptive only; inferential comparison gated post-freeze",
+    }
+
+
+NORMALIZE_SPEC: dict[str, Any] = {
+    "name": "rna_normalize_counts",
+    "description": "Normalize a raw gene x sample count matrix (cpm|tpm|rpkm|quantile).",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "counts_table": {"type": "string"},
+            "output_dir": {"type": "string"},
+            "method": {"type": "string", "enum": ["cpm", "tpm", "rpkm", "quantile"]},
+            "gene_lengths": {"type": "string"},
+        },
+        "required": ["counts_table", "output_dir"],
+    },
+    "handler": _handle_normalize_counts,
+    "writes": "output-dir-only",
+}
+
+DUP_SPEC: dict[str, Any] = {
+    "name": "rna_duplication_specificity",
+    "description": "Descriptive tau summary across 1:1 vs multicopy orthology classes for one species.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "expression_table": {"type": "string"},
+            "bridge_table": {"type": "string"},
+            "species": {"type": "string"},
+            "output_dir": {"type": "string"},
+        },
+        "required": ["expression_table", "bridge_table", "species", "output_dir"],
+    },
+    "handler": _handle_duplication_specificity,
+    "writes": "output-dir-only",
+}
+
+ALL_SPECS: list[dict[str, Any]] = [
+    TOOL_SPEC,
+    TAU_SPEC,
+    ATLAS_SPEC,
+    CONSERVATION_SPEC,
+    NORMALIZE_SPEC,
+    DUP_SPEC,
+]

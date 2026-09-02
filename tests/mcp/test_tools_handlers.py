@@ -187,3 +187,55 @@ def test_viz_divergence_heatmap_real_matrix(tmp_path: Path) -> None:
     result = visualization_tools._handle_divergence_heatmap(str(p), str(out))
     assert Path(result["output"]).exists()
     assert result["n_species"] == 5
+
+
+def test_rna_normalize_counts_tpm_real_tables(tmp_path: Path) -> None:
+    rng = np.random.default_rng(5)
+    counts = pd.DataFrame(
+        rng.poisson(50, size=(20, 4)), columns=[f"s{i}" for i in range(4)], index=[f"g{i}" for i in range(20)]
+    )
+    ct = tmp_path / "counts.csv"
+    counts.to_csv(ct)
+    gl = tmp_path / "lengths.csv"
+    pd.DataFrame({"gene": [f"g{i}" for i in range(20)], "length": rng.integers(500, 3000, 20)}).to_csv(gl, index=False)
+    out = tmp_path / "norm"
+    result = rna_tools._handle_normalize_counts(str(ct), str(out), method="tpm", gene_lengths=str(gl))
+    assert result["n_genes"] == 20
+    norm = pd.read_csv(out / "normalized_tpm.csv", index_col=0)
+    # TPM columns each sum to 1e6 (within float tolerance)
+    totals = norm.sum(axis=0)
+    assert (totals - 1e6).abs().max() < 1.0
+
+
+def test_rna_duplication_specificity_real_bridge(tmp_path: Path) -> None:
+    rng = np.random.default_rng(5)
+    expr = pd.DataFrame(
+        rng.lognormal(3, 1, size=(30, 3)),
+        columns=["brain", "muscle", "gut"],
+        index=[f"APIS_G{i:04d}" for i in range(30)],
+    )
+    et = tmp_path / "expr.tsv"
+    expr.to_csv(et, sep="\t")
+    rows = {}
+    for i, og in enumerate([f"OG{i:04d}" for i in range(30)]):
+        rows[og] = {
+            "apis": f"APIS_G{i:04d}",
+            "bombus": f"BOMB_G{i:04d},BOMB_G{i:04d}B" if i % 3 == 0 else f"BOMB_G{i:04d}",
+        }
+    bt = tmp_path / "bridge.tsv"
+    pd.DataFrame.from_dict(rows, orient="index").to_csv(bt, sep="\t")
+    out = tmp_path / "out"
+    result = rna_tools._handle_duplication_specificity(str(et), str(bt), "apis", str(out))
+    assert result["n_transcripts"] == 30
+    assert "multicopy" in result["classes"] and "single_copy" in result["classes"]
+    summary = pd.read_csv(out / "duplication_specificity_summary.csv", index_col="orthology_class")
+    assert summary["count"].sum() == 30
+
+
+def test_rna_duplication_specificity_unknown_species(tmp_path: Path) -> None:
+    et = tmp_path / "expr.csv"
+    pd.DataFrame({"a": [1.0]}, index=["g1"]).to_csv(et)
+    bt = tmp_path / "bridge.csv"
+    pd.DataFrame({"apis": ["g1"]}, index=["og1"]).to_csv(bt)
+    result = rna_tools._handle_duplication_specificity(str(et), str(bt), "nope", str(tmp_path))
+    assert "error" in result
