@@ -42,10 +42,11 @@ def dump_json(obj: Any, path: Path) -> Path:
     return path
 
 
-def read_table(path: str | Path, sep: str | None = None):
+def read_table(path: str | Path, sep: str | None = None, index_col=0):
     """Read a delimited expression/summary table into a DataFrame.
 
-    Auto-detects comma vs tab when ``sep`` is None. Raises FileNotFoundError
+    Auto-detects comma vs tab when ``sep`` is None. Pass index_col=None for
+    tables whose first column is plain data. Raises FileNotFoundError
     (not a silent empty frame) so callers see real input errors.
     """
     import pandas as pd
@@ -55,7 +56,7 @@ def read_table(path: str | Path, sep: str | None = None):
         raise FileNotFoundError(f"input table not found: {p}")
     if sep is None:
         sep = "\t" if p.suffix in {".tsv", ".tab"} else ","
-    return pd.read_csv(p, sep=sep, index_col=0)
+    return pd.read_csv(p, sep=sep, index_col=index_col)
 
 
 __all__ = ["Handler", "validate_output_dir", "dump_json", "read_table"]

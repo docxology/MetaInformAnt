@@ -31,4 +31,30 @@ TOOL_SPEC: dict[str, Any] = {
     "writes": "read-only",
 }
 
-ALL_SPECS: list[dict[str, Any]] = [TOOL_SPEC]
+
+def _handle_composition(sequence: str) -> dict:
+    from metainformant.protein.sequence.sequences import (
+        amino_acid_composition,
+        molecular_weight,
+    )
+
+    return {
+        "amino_acid_composition": amino_acid_composition(sequence),
+        "molecular_weight": molecular_weight(sequence),
+        "length": len(sequence),
+    }
+
+
+COMP_SPEC: dict[str, Any] = {
+    "name": "protein_composition",
+    "description": "Amino-acid composition and molecular weight for a protein sequence.",
+    "input_schema": {
+        "type": "object",
+        "properties": {"sequence": {"type": "string"}},
+        "required": ["sequence"],
+    },
+    "handler": _handle_composition,
+    "writes": "read-only",
+}
+
+ALL_SPECS: list[dict[str, Any]] = [TOOL_SPEC, COMP_SPEC]

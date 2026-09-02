@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from metainformant.mcp.tools import (
@@ -13,6 +14,7 @@ from metainformant.mcp.tools import (
     gwas_tools,
     math_tools,
     protein_tools,
+    rna_tools,
     visualization_tools,
 )
 
@@ -97,3 +99,91 @@ def test_viz_chart_line_writes_real_png(tmp_path: Path) -> None:
 def test_viz_chart_rejects_unknown_kind(tmp_path: Path) -> None:
     result = visualization_tools._handle_chart("pie", [1.0], None, str(tmp_path))
     assert "error" in result
+
+
+def test_core_newick_parse_leaves_and_root() -> None:
+    result = core_tools._handle_newick_parse("((A:0.1,B:0.2):0.3,(C:0.4,D:0.5):0.6);")
+    assert result["leaves"] == ["A", "B", "C", "D"]
+    assert result["n_leaves"] == 4
+    assert result["n_internal"] == 3
+    assert result["root"] == "Internal_0"
+
+
+def test_dna_transcribe_and_reverse_complement() -> None:
+    fwd = dna_tools._handle_transcribe("ATGGCC")
+    rev = dna_tools._handle_transcribe("ATGGCC", reverse_complement=True)
+    assert fwd["rna"] == "AUGGCC"
+    assert rev["rna"] == "GGCCAU"
+
+
+def test_protein_composition_uniform() -> None:
+    result = protein_tools._handle_composition("MKTAY")
+    comp = result["amino_acid_composition"]
+    assert abs(comp["M"] - 20.0) < 1e-9
+    assert result["length"] == 5
+    assert result["molecular_weight"] > 0
+
+
+def test_rna_conservation_profiles_real_tables(tmp_path: Path) -> None:
+    rng = np.random.default_rng(3)
+    pdir = tmp_path / "profiles"
+    pdir.mkdir()
+    for sp in ("apis", "bombus"):
+        pd.DataFrame(
+            rng.lognormal(3, 1, size=(20, 3)),
+            columns=["brain", "muscle", "gut"],
+            index=[f"g{i}" for i in range(20)],
+        ).to_csv(pdir / f"{sp}.csv")
+    out = tmp_path / "out"
+    result = rna_tools._handle_conservation_profiles(str(pdir), str(out))
+    assert "error" not in result
+    assert result["n_rows"] == 20
+    assert (out / "profile_conservation_summary.csv").exists()
+
+
+def test_rna_conservation_profiles_missing_dir(tmp_path: Path) -> None:
+    result = rna_tools._handle_conservation_profiles(str(tmp_path / "nope"), str(tmp_path))
+    assert "error" in result
+
+
+def test_gwas_association_summary_real_table(tmp_path: Path) -> None:
+    rng = np.random.default_rng(11)
+    n = 100
+    res = pd.DataFrame(
+        {
+            "snp": [f"rs{i}" for i in range(n)],
+            "chrom": ["chr1"] * n,
+            "pos": np.arange(n),
+            "p_value": rng.uniform(0, 1, n),
+            "beta": rng.normal(0, 0.3, n),
+            "se": rng.uniform(0.05, 0.2, n),
+            "MAF": rng.uniform(0.05, 0.5, n),
+        }
+    )
+    p = tmp_path / "results.csv"
+    res.to_csv(p, index=False)
+    out = tmp_path / "out"
+    result = gwas_tools._handle_association_summary(str(p), output_dir=str(out))
+    assert "error" not in result
+    assert result["n_variants"] == n
+    assert (out / "association_summary.json").exists()
+
+
+def test_gwas_association_summary_missing_columns(tmp_path: Path) -> None:
+    p = tmp_path / "bad.csv"
+    pd.DataFrame({"p_value": [0.1]}).to_csv(p, index=False)
+    result = gwas_tools._handle_association_summary(str(p))
+    assert "missing required columns" in result["error"]
+
+
+def test_viz_divergence_heatmap_real_matrix(tmp_path: Path) -> None:
+    vals = np.abs(np.random.default_rng(2).normal(0, 0.3, (5, 5)))
+    sym = (vals + vals.T) / 2
+    for i in range(5):
+        sym[i, i] = 0.0
+    p = tmp_path / "div.csv"
+    pd.DataFrame(sym, index=list("abcde"), columns=list("abcde")).to_csv(p)
+    out = tmp_path / "viz"
+    result = visualization_tools._handle_divergence_heatmap(str(p), str(out))
+    assert Path(result["output"]).exists()
+    assert result["n_species"] == 5

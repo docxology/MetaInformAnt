@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from metainformant.mcp.tools._spec import validate_output_dir
+from metainformant.mcp.tools._spec import read_table, validate_output_dir
 
 
 def _handle_chart(
@@ -60,4 +60,32 @@ TOOL_SPEC: dict[str, Any] = {
     "writes": "output-dir-only",
 }
 
-ALL_SPECS: list[dict[str, Any]] = [TOOL_SPEC]
+
+def _handle_divergence_heatmap(div_matrix: str, output_dir: str, title: str = "Expression Divergence Matrix") -> dict:
+    """Render a clustered expression-divergence heatmap from a square matrix table."""
+    from metainformant.visualization.plots.cross_species import plot_divergence_heatmap
+
+    frame = read_table(div_matrix)
+    out_dir = validate_output_dir(output_dir)
+    out_path = out_dir / "divergence_heatmap.png"
+    plot_divergence_heatmap(frame, out_path, title=title)
+    return {"output": str(out_path), "n_species": int(frame.shape[0])}
+
+
+DIVERGENCE_SPEC: dict[str, Any] = {
+    "name": "viz_divergence_heatmap",
+    "description": "Clustered heatmap of a symmetric expression-divergence (1 - Spearman rho) matrix.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "div_matrix": {"type": "string"},
+            "output_dir": {"type": "string"},
+            "title": {"type": "string"},
+        },
+        "required": ["div_matrix", "output_dir"],
+    },
+    "handler": _handle_divergence_heatmap,
+    "writes": "output-dir-only",
+}
+
+ALL_SPECS: list[dict[str, Any]] = [TOOL_SPEC, DIVERGENCE_SPEC]

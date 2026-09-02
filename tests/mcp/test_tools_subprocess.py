@@ -55,3 +55,13 @@ def test_subprocess_round_trip_rna_tau_real_table(tmp_path: Path) -> None:
     assert (tmp_path / "out" / "tau_per_gene.csv").exists()
     csv = pd.read_csv(tmp_path / "out" / "tau_per_gene.csv", index_col="gene")
     assert csv["tau"].between(0, 1).dropna().all()
+
+
+def test_subprocess_round_trip_core_newick() -> None:
+    result = _run_handler("core_tools", '_handle_newick_parse("((A:0.1,B:0.2):0.3,(C:0.4,D:0.5):0.6);")')
+    assert result["leaves"] == ["A", "B", "C", "D"]
+
+
+def test_subprocess_round_trip_dna_transcribe() -> None:
+    result = _run_handler("dna_tools", '_handle_transcribe("ATGGCC")')
+    assert result["rna"] == "AUGGCC"

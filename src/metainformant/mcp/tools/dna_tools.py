@@ -59,4 +59,30 @@ COMP_SPEC: dict[str, Any] = {
     "writes": "read-only",
 }
 
-ALL_SPECS: list[dict[str, Any]] = [TOOL_SPEC, COMP_SPEC]
+
+def _handle_transcribe(sequence: str, reverse_complement: bool = False) -> dict:
+    from metainformant.dna.expression.transcription import (
+        transcribe,
+        transcribe_reverse_complement,
+    )
+
+    rna = transcribe_reverse_complement(sequence) if reverse_complement else transcribe(sequence)
+    return {"rna": rna, "length": len(rna)}
+
+
+TRANSCRIBE_SPEC: dict[str, Any] = {
+    "name": "dna_transcribe",
+    "description": "Transcribe DNA to RNA (optionally via reverse complement).",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "sequence": {"type": "string"},
+            "reverse_complement": {"type": "boolean"},
+        },
+        "required": ["sequence"],
+    },
+    "handler": _handle_transcribe,
+    "writes": "read-only",
+}
+
+ALL_SPECS: list[dict[str, Any]] = [TOOL_SPEC, COMP_SPEC, TRANSCRIBE_SPEC]

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from metainformant.mcp.tools._spec import read_table, validate_output_dir
+from metainformant.mcp.tools._spec import dump_json, read_table, validate_output_dir
 
 
 def _handle_phenotype_summary(phenotype_table: str, output_dir: str | None = None) -> dict:
@@ -69,4 +69,50 @@ HWE_SPEC: dict[str, Any] = {
     "writes": "read-only",
 }
 
-ALL_SPECS: list[dict[str, Any]] = [TOOL_SPEC, HWE_SPEC]
+
+def _handle_association_summary(
+    results_table: str, output_dir: str | None = None, significance_threshold: float = 5e-8
+) -> dict:
+    """Comprehensive GWAS summary from an association-results table.
+
+    Table requires columns: p_value, beta, se, MAF, chrom, pos, snp.
+    """
+    import json
+
+    frame = read_table(results_table, index_col=None)
+    required = {"p_value", "beta", "se", "MAF", "chrom", "pos", "snp"}
+    missing = required - set(frame.columns)
+    if missing:
+        return {"error": f"missing required columns: {sorted(missing)}"}
+    from metainformant.gwas.analysis.summary_stats import compute_comprehensive_summary
+
+    records = frame.to_dict(orient="records")
+    summary = compute_comprehensive_summary(records, significance_threshold=significance_threshold)
+    summary = json.loads(json.dumps(summary, default=float))
+    if output_dir is not None:
+        out_dir = validate_output_dir(output_dir)
+        out_path = out_dir / "association_summary.json"
+        dump_json(summary, out_path)
+        summary["output"] = str(out_path)
+    return summary
+
+
+SUMMARY_SPEC: dict[str, Any] = {
+    "name": "gwas_association_summary",
+    "description": (
+        "Comprehensive GWAS summary statistics (lambda_GC, calibration, top hits) " "from an association-results table."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "results_table": {"type": "string"},
+            "output_dir": {"type": "string"},
+            "significance_threshold": {"type": "number"},
+        },
+        "required": ["results_table"],
+    },
+    "handler": _handle_association_summary,
+    "writes": "output-dir-only",
+}
+
+ALL_SPECS: list[dict[str, Any]] = [TOOL_SPEC, HWE_SPEC, SUMMARY_SPEC]

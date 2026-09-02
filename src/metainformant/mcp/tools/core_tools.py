@@ -65,4 +65,44 @@ CONFIG_SPEC: dict[str, Any] = {
     "writes": "read-only",
 }
 
-ALL_SPECS: list[dict[str, Any]] = [TOOL_SPEC, CONFIG_SPEC]
+
+def _handle_newick_parse(newick: str) -> dict:
+    """Parse a Newick string and return a deterministic structural summary."""
+    from metainformant.core.utils.newick import from_newick
+
+    tree = from_newick(newick)
+    # Tree dict maps node label -> children {label: branch_length} (internal)
+    # or None (leaf). Leaves are exactly the None-valued entries.
+    leaves = sorted(label for label, children in tree.items() if children is None)
+    internals = sorted(label for label, children in tree.items() if isinstance(children, dict))
+    root_candidates = [label for label in internals if label not in _referenced_labels(tree)]
+    return {
+        "leaves": leaves,
+        "n_leaves": len(leaves),
+        "n_internal": len(internals),
+        "root": root_candidates[0] if len(root_candidates) == 1 else root_candidates,
+    }
+
+
+def _referenced_labels(tree: dict) -> set[str]:
+    """Labels that appear as children of some internal node."""
+    referenced: set[str] = set()
+    for children in tree.values():
+        if isinstance(children, dict):
+            referenced.update(children)
+    return referenced
+
+
+NEWICK_SPEC: dict[str, Any] = {
+    "name": "core_newick_parse",
+    "description": "Parse a Newick phylogeny string into a structural summary (labels, topology).",
+    "input_schema": {
+        "type": "object",
+        "properties": {"newick": {"type": "string"}},
+        "required": ["newick"],
+    },
+    "handler": _handle_newick_parse,
+    "writes": "read-only",
+}
+
+ALL_SPECS: list[dict[str, Any]] = [TOOL_SPEC, CONFIG_SPEC, NEWICK_SPEC]

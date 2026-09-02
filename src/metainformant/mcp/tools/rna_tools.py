@@ -1,4 +1,4 @@
-"""RNA MCP tools: campaign status, tau tissue-specificity, atlas plots.
+"""RNA MCP tools: campaign status, tau, atlas plots, conservation profiles.
 
 Read-only campaign reporting and explicit-output-dir descriptive figure
 generation. All statistics are DESCRIPTIVE ONLY per the round-3 boundary.
@@ -63,7 +63,8 @@ def _handle_atlas_plot(
 ) -> dict:
     """Render an atlas-style tau plot (heatmap|strips) into the output dir.
 
-    tau_table: rows = species, columns = tissues, values = mean tau in [0,1].
+    heatmap: tau_table rows = species, columns = tissues, values = mean tau.
+    strips: tau_table needs per-gene columns 'tau' and 'orthology_class'.
     """
     from metainformant.rna.analysis import atlas_plots
 
@@ -79,6 +80,52 @@ def _handle_atlas_plot(
     else:
         return {"error": f"unknown plot_type: {plot_type} (use heatmap|strips)"}
     return {"output": str(path), "plot_type": plot_type}
+
+
+def _load_species_profiles(profile_dir: Path) -> dict:
+    """Load per-species TPM tables (<species>.csv|tsv, genes x conditions) from a dir."""
+    import pandas as pd
+
+    profiles: dict[str, pd.DataFrame] = {}
+    for path in sorted(profile_dir.iterdir()):
+        if path.suffix.lower() not in {".csv", ".tsv", ".tab"}:
+            continue
+        sep = "\t" if path.suffix.lower() in {".tsv", ".tab"} else ","
+        profiles[path.stem] = pd.read_csv(path, sep=sep, index_col=0)
+    if not profiles:
+        return {"error": f"no per-species CSV/TSV tables found in {profile_dir}"}
+    return profiles
+
+
+def _handle_conservation_profiles(profile_dir: str, output_dir: str) -> dict:
+    """Descriptive cross-species TPM profile-conservation summary to output dir.
+
+    profile_dir must contain per-species TPM distribution CSVs as consumed by
+    metainformant.rna.analysis.conservation_profiles. Descriptive only.
+    """
+    from pathlib import Path as _Path
+
+    from metainformant.rna.analysis import conservation_profiles as cp
+
+    profiles_path = _Path(profile_dir).expanduser()
+    if not profiles_path.is_dir():
+        return {"error": f"profile_dir not found: {profiles_path}"}
+    species_profiles = _load_species_profiles(profiles_path)
+    if isinstance(species_profiles, dict) and "error" in species_profiles:
+        return species_profiles
+    out_dir = validate_output_dir(output_dir)
+    try:
+        summary = cp.summarize_profile_conservation(cp.compute_profile_conservation(species_profiles))
+    except Exception as exc:  # real input errors surface to the caller
+        return {"error": f"{type(exc).__name__}: {exc}"}
+    out_path = out_dir / "profile_conservation_summary.csv"
+    summary.to_csv(out_path)
+    return {
+        "output": str(out_path),
+        "n_rows": int(summary.shape[0]),
+        "columns": list(summary.columns)[:20],
+        "note": "descriptive only; no inferential tests",
+    }
 
 
 TOOL_SPEC: dict[str, Any] = {
@@ -129,4 +176,19 @@ ATLAS_SPEC: dict[str, Any] = {
     "writes": "output-dir-only",
 }
 
-ALL_SPECS: list[dict[str, Any]] = [TOOL_SPEC, TAU_SPEC, ATLAS_SPEC]
+CONSERVATION_SPEC: dict[str, Any] = {
+    "name": "rna_conservation_profiles",
+    "description": "Descriptive cross-species TPM profile-conservation summary from per-species profile CSVs.",
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "profile_dir": {"type": "string"},
+            "output_dir": {"type": "string"},
+        },
+        "required": ["profile_dir", "output_dir"],
+    },
+    "handler": _handle_conservation_profiles,
+    "writes": "output-dir-only",
+}
+
+ALL_SPECS: list[dict[str, Any]] = [TOOL_SPEC, TAU_SPEC, ATLAS_SPEC, CONSERVATION_SPEC]
