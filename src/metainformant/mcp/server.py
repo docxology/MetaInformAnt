@@ -154,6 +154,9 @@ class MCPServer:
                     "serverInfo": _SERVER_INFO,
                 },
             }
+        if method == "ping":
+            # MCP liveness probe.
+            return {"jsonrpc": "2.0", "id": request_id, "result": {}}
         if method == "tools/list":
             return {"jsonrpc": "2.0", "id": request_id, "result": {"tools": self.registry.list_tools()}}
         if method == "tools/call":

@@ -10,7 +10,7 @@ bundled tool adapters under ``metainformant.mcp.tools`` plus this package's
 from __future__ import annotations
 
 #: Declarative list of tool modules registered into the default MCP registry.
-TOOLS_MODULES = ("metainformant.mcp.tool_adapters",)
+TOOLS_MODULES = ("metainformant.mcp.tool_adapters", "metainformant.mcp.tools.catalog")
 
 __all__ = ["TOOLS_MODULES", "registry", "server", "tool_adapters", "tools"]
 
