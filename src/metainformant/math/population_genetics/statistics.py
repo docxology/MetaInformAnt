@@ -380,8 +380,9 @@ def compare_population_statistic(
     stat1 = pop1_stats[statistic_name]
     stat2 = pop2_stats[statistic_name]
 
-    # Simple t-test approximation (for demonstration)
-    # In practice, you'd want proper statistical tests
+    # INFERENTIAL (post-evidence-freeze use): approximate t-test with normal-approx
+    # p-value. Not for cross-species release outputs while the evidence manifest is
+    # unfrozen (descriptive-only boundary, SHARED_CONTEXT Round 3+).
     diff = stat1 - stat2
     pooled_var = (pop1_stats.get("variance", 1.0) + pop2_stats.get("variance", 1.0)) / 2
     se = math.sqrt(pooled_var * 2 / 10)  # Approximate SE
@@ -414,6 +415,10 @@ def compare_statistics(stats1: Any, stats2: Any, test_type: str = "ttest") -> Di
 
     Returns:
         Dictionary with comparison results for each statistic
+
+    INFERENTIAL (post-evidence-freeze use): t-test/Mann-Whitney p-values are not
+    for cross-species release outputs while the evidence manifest is unfrozen
+    (descriptive-only boundary, SHARED_CONTEXT Round 3+).
     """
     if not isinstance(stats1, dict) or not isinstance(stats2, dict):
         a = np.asarray(stats1, dtype=float)
@@ -499,6 +504,10 @@ def permutation_test(
 
     Returns:
         Dictionary with permutation test results
+
+    INFERENTIAL (post-evidence-freeze use): permutation p-values are not for
+    cross-species release outputs while the evidence manifest is unfrozen
+    (descriptive-only boundary, SHARED_CONTEXT Round 3+).
     """
     if not values1 or not values2:
         return {"p_value": 1.0, "test_statistic": 0.0, "statistic": 0.0, "n_permutations": 0}
