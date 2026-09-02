@@ -34,7 +34,7 @@ def set_cache_enabled(enabled: bool) -> None:
     logger.info(f"Ontology query cache {'enabled' if enabled else 'disabled'}.")
 
 
-def _get_cache_key(onto: Ontology, func_name: str, *args, **kwargs) -> str:
+def _get_cache_key(onto: Ontology, func_name: str, *args: Any, **kwargs: Any) -> str:
     """Generate a cache key for a function call, including ontology identity."""
     key_parts = [str(id(onto)), func_name]
     key_parts.extend(str(arg) for arg in args)
@@ -232,7 +232,7 @@ def shortest_path(onto: Ontology, term1: str, term2: str, relation_type: str = "
         ['GO:0003674', 'GO:0008150']
     """
     # Build adjacency list
-    adj_list = {}
+    adj_list: Dict[str, List[str]] = {}
     for rel in onto.relationships:
         if rel.relation_type == relation_type:
             if rel.source not in adj_list:
@@ -407,21 +407,21 @@ def get_subontology_stats(onto: Ontology) -> Dict[str, Any]:
     """
     validation.validate_type(onto, Ontology, "onto")
 
-    stats = {
+    stats: Dict[str, Any] = {
         "num_terms": len(onto.terms),
         "num_relationships": len(onto.relationships),
         "num_obsolete_terms": sum(1 for t in onto.terms.values() if t.is_obsolete),
     }
 
     # Namespace distribution
-    namespace_counts = {}
+    namespace_counts: Dict[str, Any] = {}
     for term in onto.terms.values():
         ns = term.namespace or "unknown"
         namespace_counts[ns] = namespace_counts.get(ns, 0) + 1
     stats["namespace_distribution"] = namespace_counts
 
     # Relationship type distribution
-    rel_type_counts = {}
+    rel_type_counts: Dict[str, Any] = {}
     for rel in onto.relationships:
         rel_type_counts[rel.relation_type] = rel_type_counts.get(rel.relation_type, 0) + 1
     stats["relationship_type_distribution"] = rel_type_counts

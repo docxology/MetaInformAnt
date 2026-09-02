@@ -96,12 +96,12 @@ def ontology_to_graph(onto: Ontology) -> Any:
         ImportError: If networkx is not available.
 
     Examples:
-        >>> import networkx as nx
+        >>> import networkx as nx  # type: ignore[import-untyped]
         >>> graph = ontology_to_graph(ontology)
         >>> nx.draw(graph)  # Visualize the ontology
     """
     try:
-        import networkx as nx
+        import networkx as nx  # type: ignore[import-untyped]
     except ImportError:
         raise ImportError("networkx is required for ontology_to_graph. Install with: pip install networkx")
 
@@ -251,7 +251,7 @@ def _save_obo_format(onto: Ontology, path: Path) -> None:
 def _save_json_format(onto: Ontology, path: Path) -> None:
     """Save ontology in JSON format."""
     # Convert ontology to serializable dictionary
-    onto_dict = {"metadata": onto.metadata, "terms": {}, "relationships": []}
+    onto_dict: Dict[str, Any] = {"metadata": onto.metadata, "terms": {}, "relationships": []}
 
     # Convert terms
     for term_id, term in onto.terms.items():
@@ -351,7 +351,7 @@ def export_ontology_stats(onto: Ontology, path: str | Path) -> None:
 
     # Add additional statistics
     stats["exported_by"] = "metainformant"
-    stats["export_timestamp"] = str(Path(path).stat().st_mtime) if path.exists() else None
+    stats["export_timestamp"] = str(Path(path).stat().st_mtime) if Path(path).exists() else None
 
     # Calculate more detailed stats
     term_name_lengths = [len(term.name) for term in onto.terms.values() if term.name]
@@ -363,7 +363,7 @@ def export_ontology_stats(onto: Ontology, path: str | Path) -> None:
         }
 
     # Relationship type distribution
-    rel_type_counts = {}
+    rel_type_counts: Dict[str, Any] = {}
     for rel in onto.relationships:
         rel_type_counts[rel.relation_type] = rel_type_counts.get(rel.relation_type, 0) + 1
     stats["relationship_type_distribution"] = rel_type_counts

@@ -19,7 +19,7 @@ from metainformant.core.io import paths
 from metainformant.core.utils import logging
 
 from .obo import parse_obo
-from .types import Ontology
+from .types import Ontology, Term
 
 logger = logging.get_logger(__name__)
 
@@ -106,7 +106,7 @@ def write_go_summary(onto: Ontology, dest: str | Path | None = None) -> Path:
         dest.parent.mkdir(parents=True, exist_ok=True)
 
     # Count terms by namespace
-    namespace_counts = defaultdict(int)
+    namespace_counts: defaultdict[str, int] = defaultdict(int)
     obsolete_count = 0
 
     for term in onto.terms.values():
@@ -116,7 +116,7 @@ def write_go_summary(onto: Ontology, dest: str | Path | None = None) -> Path:
             obsolete_count += 1
 
     # Count relationships by type
-    relationship_counts = defaultdict(int)
+    relationship_counts: defaultdict[str, int] = defaultdict(int)
     for rel in onto.relationships:
         relationship_counts[rel.relation_type] += 1
 
@@ -148,9 +148,9 @@ Terms by Namespace:
 
     content += "\nRoot Terms:\n"
     for root in sorted(list(roots)[:10]):  # Show first 10 roots
-        term = onto.get_term(root)
-        if term:
-            content += f"- {root}: {term.name}\n"
+        term_root: Term | None = onto.get_term(root)
+        if term_root:
+            content += f"- {root}: {term_root.name}\n"
     if len(roots) > 10:
         content += f"... and {len(roots) - 10} more\n"
 
@@ -284,10 +284,10 @@ def enrich_genes(
 
     # Prepare background
     if background is None:
-        background = set()
+        background_set_default: set[str] = set()
         for gene_set in annotations.values():
-            background.update(gene_set)
-        background = list(background)
+            background_set_default.update(gene_set)
+        background = list(background_set_default)
 
     background_set = set(background)
     gene_set = set(genes)
@@ -444,10 +444,10 @@ def _fisher_exact_test(a: int, b: int, c: int, d: int) -> float:
     """Calculate Fisher's exact test p-value."""
     # Simplified implementation - in practice, would use scipy.stats.fisher_exact
     try:
-        from scipy.stats import fisher_exact
+        from scipy.stats import fisher_exact  # type: ignore[import-untyped]
 
         _, p_value = fisher_exact([[a, b], [c, d]], alternative="greater")
-        return p_value
+        return float(p_value)
     except ImportError:
         # Fallback calculation using hypergeometric distribution
         return _hypergeometric_test(a, a + c, a + b, a + b + c + d)
@@ -460,7 +460,7 @@ def _hypergeometric_test(k: int, K: int, n: int, N: int) -> float:
 
         # P(X >= k) where X ~ Hypergeometric(N, K, n)
         p_value = hypergeom.sf(k - 1, N, K, n)
-        return p_value
+        return float(p_value)
     except ImportError:
         # Very simplified approximation
         from math import exp, lgamma

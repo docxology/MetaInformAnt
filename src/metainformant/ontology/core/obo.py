@@ -42,7 +42,7 @@ def parse_obo(path: str | Path) -> Ontology:
 
     terms = {}
     relationships = []
-    header_metadata = {}
+    header_metadata: Dict[str, Any] = {}
 
     # Read file content
     content = Path(path).read_text(encoding="utf-8")
@@ -52,7 +52,7 @@ def parse_obo(path: str | Path) -> Ontology:
     header_metadata = _parse_header(lines)
 
     # Parse stanzas
-    stanza_lines = []
+    stanza_lines: List[str] = []
     i = 0
 
     while i < len(lines):
@@ -128,7 +128,7 @@ def _get_stanza_type(stanza_lines: List[str]) -> Optional[str]:
 
 def _parse_term_stanza(stanza_lines: List[str]) -> Optional[Term]:
     """Parse a [Term] stanza into a Term object."""
-    term_data = {}
+    term_data: Dict[str, Any] = {}
 
     for line in stanza_lines[1:]:  # Skip [Term] line
         line = line.strip()

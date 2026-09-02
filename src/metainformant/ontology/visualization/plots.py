@@ -171,7 +171,7 @@ def enrichment_dotplot(
     sm = plt.cm.ScalarMappable(cmap="viridis", norm=plt.Normalize(0, max_nlp))
     sm.set_array([])
     try:
-        cbar = fig.colorbar(sm, ax=ax, pad=0.01)
+        cbar = ax.figure.colorbar(sm, ax=ax, pad=0.01)
         cbar.set_label("-log10(adj p-value)", fontsize=9)
     except Exception:
         pass

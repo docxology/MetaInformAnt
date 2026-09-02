@@ -20,7 +20,7 @@ from metainformant.core.utils import logging
 
 # Optional scientific dependencies
 try:
-    import networkx as nx
+    import networkx as nx  # type: ignore[import-untyped]
 
     HAS_NETWORKX = True
 except ImportError:
@@ -30,7 +30,7 @@ except ImportError:
 logger = logging.get_logger(__name__)
 
 try:
-    import seaborn as sns
+    import seaborn as sns  # type: ignore[import-untyped]
 
     HAS_SEABORN = True
 except ImportError:
@@ -38,8 +38,8 @@ except ImportError:
     sns = None
 
 try:
-    import plotly.express as px
-    import plotly.graph_objects as go
+    import plotly.express as px  # type: ignore[import-untyped]
+    import plotly.graph_objects as go  # type: ignore[import-untyped]
 
     HAS_PLOTLY = True
 except ImportError:
@@ -55,7 +55,7 @@ def plot_go_dag(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot Gene Ontology directed acyclic graph (DAG).
 
@@ -65,7 +65,7 @@ def plot_go_dag(
         ax: Optional matplotlib axes to plot on
         output_path: Optional path to save the figure
         figsize: Figure size as (width, height)
-        **kwargs: Additional arguments for customization
+        **kwargs: Any: Additional arguments for customization
 
     Returns:
         matplotlib Axes object
@@ -104,7 +104,7 @@ def plot_go_dag(
     ax.axis("off")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"GO DAG plot saved to {output_path}")
 
@@ -118,7 +118,7 @@ def plot_semantic_similarity_matrix(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot semantic similarity matrix heatmap.
 
@@ -128,7 +128,7 @@ def plot_semantic_similarity_matrix(
         ax: Optional matplotlib axes to plot on
         output_path: Optional path to save the figure
         figsize: Figure size as (width, height)
-        **kwargs: Additional arguments for customization
+        **kwargs: Any: Additional arguments for customization
 
     Returns:
         matplotlib Axes object
@@ -168,7 +168,7 @@ def plot_semantic_similarity_matrix(
     ax.set_title("Semantic Similarity Matrix")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Semantic similarity matrix saved to {output_path}")
 
@@ -181,7 +181,7 @@ def plot_go_enrichment_barplot(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot GO enrichment results as a bar plot.
 
@@ -190,7 +190,7 @@ def plot_go_enrichment_barplot(
         ax: Optional matplotlib axes to plot on
         output_path: Optional path to save the figure
         figsize: Figure size as (width, height)
-        **kwargs: Additional arguments for customization
+        **kwargs: Any: Additional arguments for customization
 
     Returns:
         matplotlib Axes object
@@ -224,7 +224,7 @@ def plot_go_enrichment_barplot(
         ax.text(bar.get_width() + 0.1, bar.get_y() + bar.get_height() / 2, ".2f", ha="left", va="center", fontsize=8)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"GO enrichment barplot saved to {output_path}")
 
@@ -237,7 +237,7 @@ def plot_go_enrichment_dotplot(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot GO enrichment results as a dot plot (bubble plot).
 
@@ -246,7 +246,7 @@ def plot_go_enrichment_dotplot(
         ax: Optional matplotlib axes to plot on
         output_path: Optional path to save the figure
         figsize: Figure size as (width, height)
-        **kwargs: Additional arguments for customization
+        **kwargs: Any: Additional arguments for customization
 
     Returns:
         matplotlib Axes object
@@ -286,7 +286,7 @@ def plot_go_enrichment_dotplot(
     ax.legend(handles=legend_elements, title="Gene Count", bbox_to_anchor=(1.05, 1), loc="upper left")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"GO enrichment dotplot saved to {output_path}")
 
@@ -300,7 +300,7 @@ def plot_ontology_network(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot ontology relationship network.
 
@@ -310,7 +310,7 @@ def plot_ontology_network(
         ax: Optional matplotlib axes to plot on
         output_path: Optional path to save the figure
         figsize: Figure size as (width, height)
-        **kwargs: Additional arguments for customization
+        **kwargs: Any: Additional arguments for customization
 
     Returns:
         matplotlib Axes object
@@ -332,10 +332,9 @@ def plot_ontology_network(
     pos = nx.spring_layout(ontology_graph, k=1, iterations=50)
 
     # Node colors
+    colors: list[str] | str = "lightblue"
     if node_colors:
         colors = [node_colors.get(node, "lightblue") for node in ontology_graph.nodes()]
-    else:
-        colors = "lightblue"
 
     # Draw network
     nx.draw_networkx_nodes(ontology_graph, pos, node_color=colors, node_size=300, alpha=0.8, ax=ax)
@@ -346,7 +345,7 @@ def plot_ontology_network(
     ax.axis("off")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Ontology network plot saved to {output_path}")
 
@@ -360,7 +359,7 @@ def plot_information_content_profile(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot information content profile for ontology terms.
 
@@ -370,7 +369,7 @@ def plot_information_content_profile(
         ax: Optional matplotlib axes to plot on
         output_path: Optional path to save the figure
         figsize: Figure size as (width, height)
-        **kwargs: Additional arguments for customization
+        **kwargs: Any: Additional arguments for customization
 
     Returns:
         matplotlib Axes object
@@ -404,7 +403,7 @@ def plot_information_content_profile(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Information content profile saved to {output_path}")
 
@@ -419,7 +418,7 @@ def plot_go_term_hierarchy(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot GO term hierarchy from a root term.
 
@@ -430,7 +429,7 @@ def plot_go_term_hierarchy(
         ax: Optional matplotlib axes to plot on
         output_path: Optional path to save the figure
         figsize: Figure size as (width, height)
-        **kwargs: Additional arguments for customization
+        **kwargs: Any: Additional arguments for customization
 
     Returns:
         matplotlib Axes object
@@ -462,7 +461,9 @@ def plot_go_term_hierarchy(
     subgraph = go_graph.subgraph(nodes_to_include)
 
     # Hierarchical layout
-    def hierarchy_pos(G, root, width=1.0, vert_gap=0.2, vert_loc=0, xcenter=0.5):
+    def hierarchy_pos(
+        G: Any, root: str, width: float = 1.0, vert_gap: float = 0.2, vert_loc: float = 0.0, xcenter: float = 0.5
+    ) -> Dict[str, Tuple[float, float]]:
         pos = {root: (xcenter, vert_loc)}
         if len(G) == 1:
             return pos
@@ -489,7 +490,7 @@ def plot_go_term_hierarchy(
     ax.axis("off")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"GO term hierarchy plot saved to {output_path}")
 
@@ -504,7 +505,7 @@ def plot_functional_annotation_heatmap(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot functional annotation matrix as heatmap.
 
@@ -515,7 +516,7 @@ def plot_functional_annotation_heatmap(
         ax: Optional matplotlib axes to plot on
         output_path: Optional path to save the figure
         figsize: Figure size as (width, height)
-        **kwargs: Additional arguments for customization
+        **kwargs: Any: Additional arguments for customization
 
     Returns:
         matplotlib Axes object
@@ -550,7 +551,7 @@ def plot_functional_annotation_heatmap(
     cbar.set_label("Annotated (1) / Not Annotated (0)")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Functional annotation heatmap saved to {output_path}")
 
@@ -563,7 +564,7 @@ def plot_semantic_similarity_clustermap(
     *,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Any:
     """Plot semantic similarity clustermap.
 
@@ -572,7 +573,7 @@ def plot_semantic_similarity_clustermap(
         term_labels: Optional labels for matrix axes
         output_path: Optional path to save the figure
         figsize: Figure size as (width, height)
-        **kwargs: Additional arguments for customization
+        **kwargs: Any: Additional arguments for customization
 
     Returns:
         seaborn ClusterGrid object (or matplotlib figure)
@@ -601,7 +602,7 @@ def plot_semantic_similarity_clustermap(
     plt.suptitle("Semantic Similarity Clustermap", y=1.02)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Semantic similarity clustermap saved to {output_path}")
 
@@ -613,7 +614,7 @@ def create_interactive_go_network(
     term_annotations: Dict[str, Any] | None = None,
     *,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Any:
     """Create an interactive GO network visualization using Plotly.
 
@@ -621,7 +622,7 @@ def create_interactive_go_network(
         go_graph: NetworkX DiGraph representing GO hierarchy
         term_annotations: Optional annotations for terms
         output_path: Optional path to save the HTML file
-        **kwargs: Additional arguments for Plotly customization
+        **kwargs: Any: Additional arguments for Plotly customization
 
     Returns:
         Plotly Figure object
@@ -706,7 +707,7 @@ def create_interactive_go_network(
     )
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         html_path = Path(output_path).with_suffix(".html")
         fig.write_html(str(html_path))
         logger.info(f"Interactive GO network saved to {html_path}")

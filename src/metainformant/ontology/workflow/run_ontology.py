@@ -61,7 +61,7 @@ except ImportError:
     import logging
 
     logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s")
-    get_logger = logging.getLogger  # type: ignore
+    get_logger = logging.getLogger
 
 logger = get_logger(__name__)
 
@@ -73,7 +73,7 @@ logger = get_logger(__name__)
 
 def _load_yaml(path: Path) -> dict:
     try:
-        import yaml
+        import yaml  # type: ignore[import-untyped]
 
         with open(path) as f:
             return yaml.safe_load(f) or {}

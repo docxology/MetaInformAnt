@@ -476,9 +476,9 @@ def pathway_network(
         set_a = set(gene_sets.get(term_ids[i], []))
         for j in range(i + 1, len(term_ids)):
             set_b = set(gene_sets.get(term_ids[j], []))
-            intersection = len(set_a.intersection(set_b))
-            union = len(set_a.union(set_b))
-            jaccard = intersection / union if union > 0 else 0.0
+            intersection_size = len(set_a.intersection(set_b))
+            union_size = len(set_a.union(set_b))
+            jaccard = intersection_size / union_size if union_size > 0 else 0.0
 
             if jaccard >= similarity_threshold:
                 edges.append(
@@ -486,7 +486,7 @@ def pathway_network(
                         "source": term_ids[i],
                         "target": term_ids[j],
                         "jaccard": jaccard,
-                        "n_shared": intersection,
+                        "n_shared": intersection_size,
                     }
                 )
 
