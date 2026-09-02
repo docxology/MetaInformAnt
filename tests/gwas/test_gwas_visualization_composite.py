@@ -7,6 +7,8 @@ from typing import Any, Dict, List
 
 import numpy as np
 
+from tests._support.synth import make_assoc_results
+
 from metainformant.gwas.visualization.interactive.composite import (
     gwas_summary_panel,
     population_structure_panel,
@@ -20,25 +22,7 @@ from metainformant.gwas.visualization.interactive.composite import (
 
 def _make_assoc_results(n: int = 100) -> List[Dict[str, Any]]:
     """Generate synthetic association results across several chromosomes."""
-    rng = np.random.default_rng(42)
-    results: List[Dict[str, Any]] = []
-    for i in range(n):
-        chrom = str((i % 22) + 1)
-        pos = int(rng.integers(1_000_000, 250_000_000))
-        pval = float(rng.uniform(1e-10, 1.0))
-        beta = float(rng.normal(0, 0.5))
-        se = float(abs(rng.normal(0.1, 0.05)))
-        results.append(
-            {
-                "variant_id": f"rs{100000 + i}",
-                "chrom": chrom,
-                "pos": pos,
-                "p_value": pval,
-                "beta": beta,
-                "se": se,
-            }
-        )
-    return results
+    return make_assoc_results(n=n)
 
 
 def _make_pca_data(n_samples: int = 30, n_pcs: int = 5) -> Dict[str, Any]:

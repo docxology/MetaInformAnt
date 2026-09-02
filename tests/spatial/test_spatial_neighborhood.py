@@ -7,6 +7,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from tests._support.synth import make_spatial_cells
+
 from metainformant.spatial.analysis.neighborhood import (
     InteractionResult,
     NeighborhoodEnrichmentResult,
@@ -25,10 +27,7 @@ from metainformant.spatial.analysis.neighborhood import (
 
 
 def _make_spatial_cells(n=50, n_types=3, seed=42):
-    rng = np.random.RandomState(seed)
-    coords = rng.rand(n, 2) * 100
-    types = rng.choice(["typeA", "typeB", "typeC"][:n_types], size=n)
-    return types, coords
+    return make_spatial_cells(n=n, n_types=n_types, seed=seed)
 
 
 def _make_adjacency(coords, k=5, seed=42):

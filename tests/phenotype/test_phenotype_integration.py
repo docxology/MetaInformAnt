@@ -5,6 +5,11 @@ REAL IMPLEMENTATION POLICY: All tests use real implementations.
 
 from __future__ import annotations
 
+from tests._support.synth import (
+    make_expression_dict,
+    make_genotype_map,
+    make_phenotype_map,
+)
 from metainformant.phenotype.integration.cross_omic import (
     multi_phenotype_integration,
     phenotype_environment_interaction,
@@ -18,29 +23,15 @@ from metainformant.phenotype.integration.cross_omic import (
 
 
 def _make_phenotypes(n=20):
-    return {f"sample_{i}": float(i * 2 + 5) for i in range(n)}
+    return make_phenotype_map(n=n, slope=2.0, intercept=5.0)
 
 
 def _make_genotypes(n=20, n_variants=3):
-    import random
-
-    random.seed(42)
-    genos = {}
-    for v in range(n_variants):
-        genos[f"rs{v + 1000}"] = [random.choice([0, 1, 2]) for _ in range(n)]
-    return genos
+    return make_genotype_map(n=n, n_variants=n_variants)
 
 
 def _make_expression(n=20, n_genes=5):
-    import random
-
-    random.seed(42)
-    expr = {}
-    sample_ids = [f"sample_{i}" for i in range(n)]
-    for g in range(n_genes):
-        gene_id = f"gene_{g}"
-        expr[gene_id] = {s: random.gauss(10, 3) for s in sample_ids}
-    return expr
+    return make_expression_dict(samples=n, genes=n_genes)
 
 
 # ---------------------------------------------------------------------------

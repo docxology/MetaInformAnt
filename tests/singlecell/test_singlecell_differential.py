@@ -10,6 +10,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from tests._support.synth import make_de_matrix
 from metainformant.singlecell.differential.expression import (
     compute_log_fold_change,
     differential_expression,
@@ -29,21 +30,8 @@ def _make_de_data(
     n_de_genes: int = 10,
     seed: int = 42,
 ) -> tuple[list[list[float]], list[int], list[str]]:
-    """Create expression matrix with known differentially expressed genes.
-
-    Group 0 (first half) has baseline expression; group 1 (second half)
-    has elevated expression in the first n_de_genes genes.
-    """
-    rng = np.random.RandomState(seed)
-    half = n_cells // 2
-    gene_names = [f"gene_{i}" for i in range(n_genes)]
-
-    matrix = rng.exponential(1.0, size=(n_cells, n_genes))
-    # Upregulate first n_de_genes in group 1
-    matrix[half:, :n_de_genes] += rng.exponential(5.0, size=(half, n_de_genes))
-
-    groups = [0] * half + [1] * half
-    return matrix.tolist(), groups, gene_names
+    """Expression matrix with known DE genes (shared factory)."""
+    return make_de_matrix(n_cells=n_cells, n_genes=n_genes, n_de_genes=n_de_genes, seed=seed)
 
 
 # ---------------------------------------------------------------------------

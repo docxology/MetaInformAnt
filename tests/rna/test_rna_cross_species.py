@@ -24,6 +24,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from tests._support.synth import make_ortholog_frame, make_species_tree
 from metainformant.rna.analysis.cross_species import (
     build_ortholog_map,
     compare_expression_across_species,
@@ -50,7 +51,7 @@ def _make_ortholog_df(
     target_col: str = "mouse",
 ) -> pd.DataFrame:
     """Build a small ortholog DataFrame from a list of (source, target) pairs."""
-    return pd.DataFrame({source_col: [p[0] for p in pairs], target_col: [p[1] for p in pairs]})
+    return make_ortholog_frame(pairs, source_col=source_col, target_col=target_col)
 
 
 def _make_expression_df(
@@ -63,33 +64,12 @@ def _make_expression_df(
 
 def _make_species_tree_simple() -> Dict[str, Any]:
     """A simple 2-leaf phylogenetic tree."""
-    return {
-        "name": "root",
-        "distance": 0.0,
-        "children": [
-            {"name": "human", "distance": 0.1},
-            {"name": "mouse", "distance": 0.15},
-        ],
-    }
+    return make_species_tree(["human", "mouse"])
 
 
 def _make_species_tree_three() -> Dict[str, Any]:
     """A 3-leaf tree with one internal node."""
-    return {
-        "name": "root",
-        "distance": 0.0,
-        "children": [
-            {
-                "name": "mammals",
-                "distance": 0.3,
-                "children": [
-                    {"name": "human", "distance": 0.1},
-                    {"name": "mouse", "distance": 0.15},
-                ],
-            },
-            {"name": "zebrafish", "distance": 0.5},
-        ],
-    }
+    return make_species_tree(["human", "mouse", "zebrafish"], clade_name="mammals")
 
 
 # =============================================================================
