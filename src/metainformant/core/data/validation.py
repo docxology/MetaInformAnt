@@ -15,7 +15,7 @@ from metainformant.core.io.paths import expand_and_resolve, is_within
 from metainformant.core.utils.errors import ValidationError
 
 
-def validate_type(value: Any, expected_type: type | tuple[type, ...], name: str = "value") -> None:
+def validate_type(value: Any, expected_type: type | tuple[type, ...], name: str = "value") -> None:  # noqa: ANN001
     """Validate that a value is of expected type.
 
     This is a foundational validation function used throughout METAINFORMANT
@@ -42,12 +42,9 @@ def validate_type(value: Any, expected_type: type | tuple[type, ...], name: str 
         >>> validate_type(3.14, (int, float), "threshold")  # Passes
         >>> # validate_type(True, (int, float), "threshold")  # Would raise ValidationError
     """
-    if not isinstance(value, expected_type):
-        if isinstance(expected_type, tuple):
-            type_names = ", ".join(t.__name__ for t in expected_type)
-        else:
-            type_names = expected_type.__name__
-        raise ValidationError(f"{name} must be of type {type_names}, got {type(value).__name__}")
+    from metainformant.core.utils.errors import validate_type as _canonical
+
+    _canonical(value, expected_type, name=name)
 
 
 def validate_range(
@@ -170,18 +167,20 @@ def validate_path_within(parent: str | Path, path: str | Path, name: str = "path
 def validate_not_none(value: Any, name: str = "value") -> None:
     """Validate that a value is not None.
 
+    Delegates to the canonical implementation in
+    :mod:`metainformant.core.utils.errors`; this module keeps the name so
+    the module's public import surface is unchanged.
+
     Args:
         value: Value to validate
         name: Name of value for error message
 
     Raises:
         ValidationError: If value is None
-
-    Example:
-        validate_not_none(config, "config")
     """
-    if value is None:
-        raise ValidationError(f"{name} cannot be None")
+    from metainformant.core.utils.errors import validate_not_none as _canonical
+
+    _canonical(value, name=name)
 
 
 def validate_not_empty(value: str | list | dict, name: str = "value") -> None:
