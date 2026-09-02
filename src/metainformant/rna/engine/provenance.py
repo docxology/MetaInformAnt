@@ -16,6 +16,7 @@ import tempfile
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
+from metainformant.core.utils.hash import sha256_bytes
 from metainformant.rna.amalgkit import AMALGKIT_RELEASE_TAG, AMALGKIT_SOURCE_REVISION, REQUIRED_AMALGKIT_VERSION
 from metainformant.rna.core.sample_utils import find_quantification_file
 
@@ -768,7 +769,7 @@ def write_quant_provenance(
     config_file = Path(config_path).expanduser().resolve()
     reference_file = Path(reference_manifest_path).expanduser().resolve() if reference_manifest_path else None
     try:
-        config_sha256 = hashlib.sha256(config_file.read_bytes()).hexdigest()
+        config_sha256 = sha256_bytes(config_file.read_bytes())
     except OSError:
         config_sha256 = None
     quant_file = (
