@@ -40,6 +40,17 @@ except ImportError:
     px = None
 
 
+
+def _save_plot(output_path: str | Path, label: str) -> str:
+    """Ensure the output directory exists and save the current pyplot figure deterministically.
+
+    Consolidates the repeated ensure_directory / save_figure_deterministic / logger
+    triple used by every plot function in this module (behavior identical).
+    """
+    output_path = paths.ensure_directory(Path(output_path).parent)
+    save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+    logger.info(f"{label} saved to {output_path}")
+    return str(output_path)
 def plot_allele_frequency_spectrum(
     allele_frequencies: np.ndarray,
     *,
@@ -78,9 +89,7 @@ def plot_allele_frequency_spectrum(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Allele frequency spectrum saved to {output_path}")
+        output_path = _save_plot(output_path, "Allele frequency spectrum")
 
     return ax
 
@@ -137,9 +146,7 @@ def plot_population_genetics_summary(
     ax.grid(True, alpha=0.3, axis="y")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Population genetics summary saved to {output_path}")
+        output_path = _save_plot(output_path, "Population genetics summary")
 
     return ax
 
@@ -191,9 +198,7 @@ def plot_evolutionary_trajectory(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Evolutionary trajectory saved to {output_path}")
+        output_path = _save_plot(output_path, "Evolutionary trajectory")
 
     return ax
 
@@ -236,9 +241,7 @@ def plot_selection_coefficient_distribution(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Selection coefficient distribution saved to {output_path}")
+        output_path = _save_plot(output_path, "Selection coefficient distribution")
 
     return ax
 
@@ -285,9 +288,7 @@ def plot_fst_distribution(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Fst distribution saved to {output_path}")
+        output_path = _save_plot(output_path, "Fst distribution")
 
     return ax
 
@@ -340,9 +341,7 @@ def plot_coalescent_tree(
     ax.axis("off")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Coalescent tree saved to {output_path}")
+        output_path = _save_plot(output_path, "Coalescent tree")
 
     return ax
 
@@ -392,9 +391,7 @@ def plot_genetic_drift_simulation(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Genetic drift simulation saved to {output_path}")
+        output_path = _save_plot(output_path, "Genetic drift simulation")
 
     return ax
 
@@ -441,9 +438,7 @@ def plot_moran_model_evolution(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Moran model evolution saved to {output_path}")
+        output_path = _save_plot(output_path, "Moran model evolution")
 
     return ax
 
@@ -486,9 +481,7 @@ def plot_price_equation_components(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Price equation components saved to {output_path}")
+        output_path = _save_plot(output_path, "Price equation components")
 
     return ax
 
@@ -532,9 +525,7 @@ def plot_epidemic_model_simulation(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Epidemic model simulation saved to {output_path}")
+        output_path = _save_plot(output_path, "Epidemic model simulation")
 
     return ax
 
@@ -591,9 +582,7 @@ def plot_population_structure_pca(
         cbar.set_label("Sample Index")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Population structure PCA saved to {output_path}")
+        output_path = _save_plot(output_path, "Population structure PCA")
 
     return ax
 
@@ -652,9 +641,7 @@ def plot_linkage_disequilibrium_decay(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"LD decay plot saved to {output_path}")
+        output_path = _save_plot(output_path, "LD decay plot")
 
     return ax
 

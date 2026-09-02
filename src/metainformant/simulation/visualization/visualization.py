@@ -41,6 +41,17 @@ except ImportError:
     px = None
 
 
+
+def _save_plot(output_path: str | Path, label: str) -> str:
+    """Ensure the output directory exists and save the current pyplot figure deterministically.
+
+    Consolidates the repeated ensure_directory / save_figure_deterministic / logger
+    triple used by every plot function in this module (behavior identical).
+    """
+    output_path = paths.ensure_directory(Path(output_path).parent)
+    save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
+    logger.info(f"{label} saved to {output_path}")
+    return str(output_path)
 def plot_sequence_evolution(
     sequence_history: List[str],
     *,
@@ -88,9 +99,7 @@ def plot_sequence_evolution(
     cbar.set_label("Mutation (1) / No Change (0)")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Sequence evolution plot saved to {output_path}")
+        output_path = _save_plot(output_path, "Sequence evolution plot")
 
     return ax
 
@@ -272,9 +281,7 @@ def plot_rnaseq_simulation_results(
     plt.tight_layout()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"RNA-seq simulation results plot saved to {output_path}")
+        output_path = _save_plot(output_path, "RNA-seq simulation results plot")
 
     return axes[0]
 
@@ -320,9 +327,7 @@ def plot_population_dynamics_simulation(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Population dynamics simulation plot saved to {output_path}")
+        output_path = _save_plot(output_path, "Population dynamics simulation plot")
 
     return ax
 
@@ -452,9 +457,7 @@ def plot_agent_based_model_results(
     plt.tight_layout()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Agent-based model results plot saved to {output_path}")
+        output_path = _save_plot(output_path, "Agent-based model results plot")
 
     return axes[0]
 
@@ -596,9 +599,7 @@ def plot_evolutionary_simulation_summary(
     plt.tight_layout()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Evolutionary simulation summary plot saved to {output_path}")
+        output_path = _save_plot(output_path, "Evolutionary simulation summary plot")
 
     return axes[0]
 
@@ -652,9 +653,7 @@ def plot_simulation_parameter_sensitivity(
         )
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Simulation parameter sensitivity plot saved to {output_path}")
+        output_path = _save_plot(output_path, "Simulation parameter sensitivity plot")
 
     return ax
 
@@ -769,9 +768,7 @@ def plot_simulation_validation_comparison(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
-        logger.info(f"Simulation validation comparison plot saved to {output_path}")
+        output_path = _save_plot(output_path, "Simulation validation comparison plot")
 
     return ax
 
