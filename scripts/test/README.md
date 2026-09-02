@@ -44,3 +44,23 @@ contain `test_*.py` and are not shared infrastructure: `_support`, `data`,
 - `tests/README.md` — test suite map (generated; do not hand-edit the table)
 - `tests/AGENTS.md` — test standards and zero-mocks policy
 - `scripts/quality/` — mypy budget and other quality gates
+
+### generate_tests_readme.py — tests/README.md module map
+
+Regenerates the "Module map" table in `tests/README.md` from the live test
+tree (module, test-file count, test-function count), so the documentation
+cannot drift:
+
+```bash
+# Regenerate in place
+uv run python scripts/test/generate_tests_readme.py
+
+# Verify the file matches generated content (CI-checkable; exit 1 on drift)
+uv run python scripts/test/generate_tests_readme.py --check
+
+# Also emit the map as JSON
+uv run python scripts/test/generate_tests_readme.py --json tests_map.json
+```
+
+Only the text between the `BEGIN:TESTS_MODULE_MAP` / `END:TESTS_MODULE_MAP`
+markers is rewritten; the rest of `tests/README.md` is preserved verbatim.
