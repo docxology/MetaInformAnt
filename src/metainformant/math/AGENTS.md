@@ -17,6 +17,14 @@ This module provides functionality organized into the following structure:
 - `population_genetics/` — exports: `coalescent`, `core`, `demography`, `effective_size`, `fst`
 - `quantitative_genetics/` — exports: `core`, `price`
 
+## Statistical-claim boundary
+
+- Functions producing p-values or significance calls (e.g. `population_genetics/statistics.py`
+  `compare_*`, `permutation_test`) are INFERENTIAL: they are gated for
+  post-evidence-freeze use only and must not feed cross-species release outputs
+  while the evidence manifest is unfrozen (descriptive-only boundary).
+  The boundary is labeled in each function's docstring.
+
 ## Rules
 
 - Use `metainformant.core.utils.logging` for all logging

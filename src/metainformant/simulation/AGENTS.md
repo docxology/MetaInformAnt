@@ -14,6 +14,13 @@ This module provides functionality organized into the following structure:
 - `visualization/` — exports: `visualization`
 - `workflow/` — exports: `workflow`
 
+## Shared helpers
+
+- `rng.py` — `coerce_rng` / `seed_numpy_from_rng` / `coerce_and_seed`: the single
+  implementation of the simulator seeding contract (fresh `random.Random` when
+  `rng=None`; numpy global seeded via `rng.randint(0, 2**32)`). All `models/`
+  simulators import from here; contract pinned by `tests/simulation/test_simulation_rng.py`.
+
 ## Rules
 
 - Use `metainformant.core.utils.logging` for all logging

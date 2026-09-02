@@ -15,6 +15,14 @@ This module provides functionality organized into the following structure:
 - `interactive_dashboards/` — exports: `dashboards`
 - `plots/` — exports: `animations`, `basic`, `general`, `multidim`, `specialized`
 
+## Shared chart conventions
+
+- `config/conventions.py` is the canonical home for the Okabe-Ito palette,
+  category hatches, log-axis zero marks, and deterministic figure export
+  (`save_figure_deterministic`). All module plotting code routes figure saves
+  through it; other palette names (`WONG`, theme cyclers) are derived from it.
+  The single-source invariant is pinned by `tests/visualization/test_palette_single_source.py`.
+
 ## Rules
 
 - Use `metainformant.core.utils.logging` for all logging
