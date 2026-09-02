@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
 from metainformant.core.utils import logging
+from metainformant.rna.core.sample_utils import find_quantification_file
 
 logger = logging.get_logger(__name__)
 
@@ -47,13 +48,11 @@ def find_partial_downloads(fastq_dir: Path, quant_dir: Path) -> List[Tuple[str, 
             if not fastq_files:
                 continue
 
-            # Check if sample is quantified
+            # Check if sample is quantified via the canonical candidate list
+            # from rna.core.sample_utils (single source of truth for the
+            # recognized quantification output names).
             quant_sample_dir = quant_dir / sample_id
-            abundance_file = quant_sample_dir / "abundance.tsv"
-            prefixed_abundance = quant_sample_dir / f"{sample_id}_abundance.tsv"
-            quant_sf = quant_sample_dir / "quant.sf"
-
-            if abundance_file.exists() or prefixed_abundance.exists() or quant_sf.exists():
+            if find_quantification_file(quant_sample_dir, sample_id, require_nonempty=False) is not None:
                 continue  # Already quantified, skip
 
             # Calculate size
