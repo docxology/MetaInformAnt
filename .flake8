@@ -19,6 +19,15 @@ per-file-ignores =
     # These modules intentionally configure import paths, optional dependencies,
     # or a non-interactive plotting backend before importing dependent modules.
     src/metainformant/rna/engine/progress_dashboard.py:E402
+    scripts/eqtl/rna_snp_pipeline.py:E402
+    scripts/popgen/analysis.py:E402
+    scripts/popgen/analyze.py:E402
+    scripts/popgen/generate_dataset.py:E402
+    scripts/popgen/report.py:E402
+    scripts/popgen/visualize.py:E402
+    scripts/popgen/report.py:E501
+    scripts/eqtl/run_eqtl_demo.py:E402
+    scripts/eqtl/run_eqtl_real.py:E402
     src/metainformant/visualization/plots/cross_species.py:E402
     tests/cloud/test_cloud.py:E402
     tests/dna/test_dna_population_viz.py:E402

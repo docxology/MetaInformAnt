@@ -80,7 +80,9 @@ def generate_summary_report(
                 f.write(f"- Components: {scenario_data['pca']['n_components']}\n")
                 if scenario_data["pca"].get("explained_variance_ratio"):
                     f.write(
-                        f"- Top 5 explained variance: {[f'{x:.4f}' for x in scenario_data['pca']['explained_variance_ratio']]}\n"
+                        "- Top 5 explained variance: "
+                        + str([f"{x:.4f}" for x in scenario_data["pca"]["explained_variance_ratio"]])
+                        + "\n"
                     )
 
                 if "hardy_weinberg_test" in scenario_data:
@@ -163,14 +165,17 @@ def generate_summary_report(
         f.write("This comprehensive analysis demonstrates:\n\n")
         f.write("1. **Diversity Control**: Successfully generated populations with target diversity levels\n")
         f.write(
-            "2. **Demographic Signatures**: Bottleneck and expansion scenarios show expected patterns (negative Tajima's D)\n"
+            "2. **Demographic Signatures**: Bottleneck and expansion scenarios show expected patterns\n"
+            " (negative Tajima's D)\n"
         )
         f.write("3. **Population Structure**: Fst values match target specifications\n")
         f.write(
-            "4. **Large-Scale Analysis**: Successfully analyzed large genotype matrices (1000 individuals × 10000 sites)\n"
+            "4. **Large-Scale Analysis**: Successfully analyzed large genotype matrices\n"
+            " (1000 individuals × 10000 sites)\n"
         )
         f.write(
-            "5. **Comprehensive Neutrality Testing**: All neutrality tests (Tajima's D, Fu & Li's, Fay & Wu's H) calculated across scenarios\n"
+            "5. **Comprehensive Neutrality Testing**: All neutrality tests (Tajima's D, Fu & Li's,\n"
+            " Fay & Wu's H) calculated across scenarios\n"
         )
         f.write("6. **Statistical Validation**: Results validated for completeness and correctness\n")
         f.write("7. **Integration**: All modules work together seamlessly for comprehensive analysis\n")

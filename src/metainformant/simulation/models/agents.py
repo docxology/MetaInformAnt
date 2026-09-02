@@ -15,7 +15,7 @@ import numpy as np
 
 from metainformant.core.data import validation
 from metainformant.core.utils import errors, logging
-from metainformant.simulation.rng import coerce_and_seed, coerce_rng, seed_numpy_from_rng
+from metainformant.simulation.rng import coerce_and_seed, coerce_rng
 
 logger = logging.get_logger(__name__)
 
