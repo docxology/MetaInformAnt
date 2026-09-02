@@ -644,6 +644,29 @@ def plot_vcf_quality_metrics(
     return axes[0]
 
 
+def _hist_with_optional_seaborn(ax, values, color, xlabel, ylabel, title) -> None:
+    """Plot a histogram on *ax*, using seaborn KDE styling when available.
+
+    Consolidates the repeated HAS_SEABORN / matplotlib-fallback branch used for
+    each single-cell QC metric panel (behavior identical to the inline version).
+    ``color`` may be None for the default palette.
+    """
+    if HAS_SEABORN:
+        if color is None:
+            sns.histplot(values, ax=ax, kde=True, alpha=0.7)
+        else:
+            sns.histplot(values, ax=ax, kde=True, alpha=0.7, color=color)
+    else:
+        if color is None:
+            ax.hist(values, bins=50, alpha=0.7)
+        else:
+            ax.hist(values, bins=50, alpha=0.7, color=color)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    ax.set_title(title)
+    ax.grid(True, alpha=0.3)
+
+
 def plot_singlecell_qc_metrics(
     qc_metrics: Dict[str, np.ndarray],
     *,
@@ -677,63 +700,48 @@ def plot_singlecell_qc_metrics(
 
     # Plot library size distribution
     if "n_counts" in qc_metrics:
-        if HAS_SEABORN:
-            sns.histplot(qc_metrics["n_counts"], ax=axes[plot_idx], kde=True, alpha=0.7)
-        else:
-            axes[plot_idx].hist(qc_metrics["n_counts"], bins=50, alpha=0.7)
-        axes[plot_idx].set_xlabel("Library Size")
-        axes[plot_idx].set_ylabel("Number of Cells")
-        axes[plot_idx].set_title("Library Size Distribution")
-        axes[plot_idx].grid(True, alpha=0.3)
+        _hist_with_optional_seaborn(
+            axes[plot_idx], qc_metrics["n_counts"], None, "Library Size", "Number of Cells", "Library Size Distribution"
+        )
         plot_idx += 1
 
     # Plot number of genes detected
     if "n_genes" in qc_metrics:
-        if HAS_SEABORN:
-            sns.histplot(qc_metrics["n_genes"], ax=axes[plot_idx], kde=True, alpha=0.7, color="green")
-        else:
-            axes[plot_idx].hist(qc_metrics["n_genes"], bins=50, alpha=0.7, color="green")
-        axes[plot_idx].set_xlabel("Number of Genes")
-        axes[plot_idx].set_ylabel("Number of Cells")
-        axes[plot_idx].set_title("Genes Detected per Cell")
-        axes[plot_idx].grid(True, alpha=0.3)
+        _hist_with_optional_seaborn(
+            axes[plot_idx],
+            qc_metrics["n_genes"],
+            "green",
+            "Number of Genes",
+            "Number of Cells",
+            "Genes Detected per Cell",
+        )
         plot_idx += 1
 
     # Plot mitochondrial content
     if "percent_mito" in qc_metrics:
-        if HAS_SEABORN:
-            sns.histplot(qc_metrics["percent_mito"], ax=axes[plot_idx], kde=True, alpha=0.7, color="red")
-        else:
-            axes[plot_idx].hist(qc_metrics["percent_mito"], bins=50, alpha=0.7, color="red")
-        axes[plot_idx].set_xlabel("Mitochondrial Content (%)")
-        axes[plot_idx].set_ylabel("Number of Cells")
-        axes[plot_idx].set_title("Mitochondrial Content")
-        axes[plot_idx].grid(True, alpha=0.3)
+        _hist_with_optional_seaborn(
+            axes[plot_idx],
+            qc_metrics["percent_mito"],
+            "red",
+            "Mitochondrial Content (%)",
+            "Number of Cells",
+            "Mitochondrial Content",
+        )
         plot_idx += 1
 
     # Plot complexity (genes per UMI)
     if "n_counts" in qc_metrics and "n_genes" in qc_metrics:
         complexity = qc_metrics["n_genes"] / qc_metrics["n_counts"]
-        if HAS_SEABORN:
-            sns.histplot(complexity, ax=axes[plot_idx], kde=True, alpha=0.7, color="purple")
-        else:
-            axes[plot_idx].hist(complexity, bins=50, alpha=0.7, color="purple")
-        axes[plot_idx].set_xlabel("Genes per UMI")
-        axes[plot_idx].set_ylabel("Number of Cells")
-        axes[plot_idx].set_title("Library Complexity")
-        axes[plot_idx].grid(True, alpha=0.3)
+        _hist_with_optional_seaborn(
+            axes[plot_idx], complexity, "purple", "Genes per UMI", "Number of Cells", "Library Complexity"
+        )
         plot_idx += 1
 
     # Plot doublet scores (if available)
     if "doublet_score" in qc_metrics:
-        if HAS_SEABORN:
-            sns.histplot(qc_metrics["doublet_score"], ax=axes[plot_idx], kde=True, alpha=0.7, color="orange")
-        else:
-            axes[plot_idx].hist(qc_metrics["doublet_score"], bins=50, alpha=0.7, color="orange")
-        axes[plot_idx].set_xlabel("Doublet Score")
-        axes[plot_idx].set_ylabel("Number of Cells")
-        axes[plot_idx].set_title("Doublet Scores")
-        axes[plot_idx].grid(True, alpha=0.3)
+        _hist_with_optional_seaborn(
+            axes[plot_idx], qc_metrics["doublet_score"], "orange", "Doublet Score", "Number of Cells", "Doublet Scores"
+        )
         plot_idx += 1
 
     # Plot QC metric correlations
