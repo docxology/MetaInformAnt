@@ -11,9 +11,24 @@ Example:
 
 from __future__ import annotations
 
-from . import config, errors, hash, logging, newick, optional_deps, progress, seeds, symbols, text, timing, watchdog
+from . import (
+    batches,
+    config,
+    errors,
+    hash,
+    logging,
+    newick,
+    optional_deps,
+    progress,
+    seeds,
+    symbols,
+    text,
+    timing,
+    watchdog,
+)
 
 __all__ = [
+    "batches",
     "config",
     "errors",
     "hash",
