@@ -64,9 +64,7 @@ def run_eqtl_analysis():
 
     # Step 1: Create/load data
     logger.info("\n[Step 1] Preparing data...")
-    expr, geno, gene_pos, var_pos = create_synthetic_data(
-        n_genes=100, n_variants=500, n_samples=50
-    )
+    expr, geno, gene_pos, var_pos = create_synthetic_data(n_genes=100, n_variants=500, n_samples=50)
 
     # Save input data
     expr.to_csv(RESULTS_DIR / "expression_matrix.tsv", sep="\t")

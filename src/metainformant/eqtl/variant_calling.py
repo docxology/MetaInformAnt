@@ -127,9 +127,7 @@ def decompress_if_needed(gz_path: Path) -> Path:
     if decompressed.exists() and decompressed.stat().st_size > 0:
         return decompressed
     logger.info(f"Decompressing {gz_path.name}...")
-    result = subprocess.run(
-        ["gunzip", "-k", str(gz_path)], capture_output=True, text=True
-    )
+    result = subprocess.run(["gunzip", "-k", str(gz_path)], capture_output=True, text=True)
     if result.returncode != 0:
         raise RuntimeError(f"gunzip failed for {gz_path}: {result.stderr[:300]}")
     return decompressed
@@ -204,9 +202,7 @@ def download_fastq(
         amalgkit_fastq_dir = amalgkit_output / species / "fastq"
         local_fqs = sorted(amalgkit_fastq_dir.glob(f"{srr_id}*.fastq.gz"))
         if local_fqs:
-            logger.info(
-                f"Reusing {len(local_fqs)} local amalgkit FASTQ(s) for {srr_id}"
-            )
+            logger.info(f"Reusing {len(local_fqs)} local amalgkit FASTQ(s) for {srr_id}")
             linked = []
             for fq in local_fqs:
                 dest = output_dir / fq.name
@@ -258,13 +254,9 @@ def align_reads(
 
     # Pipe through samtools sort
     logger.info(f"Aligning {len(fastqs)} FASTQ file(s)...")
-    hisat2_proc = subprocess.Popen(
-        hisat2_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
+    hisat2_proc = subprocess.Popen(hisat2_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     sort_cmd = ["samtools", "sort", "-@", str(threads), "-o", str(output_bam)]
-    sort_proc = subprocess.Popen(
-        sort_cmd, stdin=hisat2_proc.stdout, stderr=subprocess.PIPE
-    )
+    sort_proc = subprocess.Popen(sort_cmd, stdin=hisat2_proc.stdout, stderr=subprocess.PIPE)
 
     hisat2_proc.stdout.close()
     sort_stderr = sort_proc.communicate()[1].decode()
@@ -342,12 +334,8 @@ def call_variants(bam_path: Path, ref_fasta: Path, output_vcf: Path) -> bool:
         str(output_vcf),
     ]
 
-    mpileup_proc = subprocess.Popen(
-        mpileup_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE
-    )
-    call_proc = subprocess.Popen(
-        call_cmd, stdin=mpileup_proc.stdout, stderr=subprocess.PIPE
-    )
+    mpileup_proc = subprocess.Popen(mpileup_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    call_proc = subprocess.Popen(call_cmd, stdin=mpileup_proc.stdout, stderr=subprocess.PIPE)
 
     mpileup_proc.stdout.close()
     call_stderr = call_proc.communicate()[1].decode()

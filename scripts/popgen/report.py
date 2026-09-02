@@ -32,9 +32,7 @@ def generate_summary_report(
 
         f.write("## Dataset Overview\n\n")
         f.write(f"- **Scenarios**: {len(dataset_info['scenarios'])}\n")
-        f.write(
-            f"- **Sequences per scenario**: {dataset_info['n_sequences_per_scenario']}\n"
-        )
+        f.write(f"- **Sequences per scenario**: {dataset_info['n_sequences_per_scenario']}\n")
         f.write(f"- **Sequence length**: {dataset_info['sequence_length']}\n")
         f.write(f"- **Random seed**: {dataset_info['seed']}\n\n")
 
@@ -48,9 +46,7 @@ def generate_summary_report(
             if "summary_statistics" in scenario_data:
                 stats = scenario_data["summary_statistics"]
                 f.write("**Summary Statistics:**\n")
-                f.write(
-                    f"- Nucleotide diversity (π): {stats['nucleotide_diversity']:.6f}\n"
-                )
+                f.write(f"- Nucleotide diversity (π): {stats['nucleotide_diversity']:.6f}\n")
                 f.write(f"- Segregating sites (S): {stats['segregating_sites']}\n")
                 f.write(f"- Watterson's theta (θ_W): {stats['watterson_theta']:.6f}\n")
                 f.write(f"- Sample size: {stats['sample_size']}\n")
@@ -63,13 +59,9 @@ def generate_summary_report(
 
                 # Add additional neutrality tests if available
                 if "fu_and_li_d_star" in scenario_data:
-                    f.write(
-                        f"- Fu & Li's D*: {scenario_data['fu_and_li_d_star']:.4f}\n"
-                    )
+                    f.write(f"- Fu & Li's D*: {scenario_data['fu_and_li_d_star']:.4f}\n")
                 if "fu_and_li_f_star" in scenario_data:
-                    f.write(
-                        f"- Fu & Li's F*: {scenario_data['fu_and_li_f_star']:.4f}\n"
-                    )
+                    f.write(f"- Fu & Li's F*: {scenario_data['fu_and_li_f_star']:.4f}\n")
                 if "fay_wu_h" in scenario_data:
                     f.write(f"- Fay & Wu's H: {scenario_data['fay_wu_h']:.4f}\n")
 
@@ -79,12 +71,8 @@ def generate_summary_report(
                 differentiation = scenario_data.get("differentiation", "N/A")
                 f.write(f"- Differentiation: {differentiation}\n")
                 if "pop1_stats" in scenario_data:
-                    f.write(
-                        f"- Pop1 diversity (π): {scenario_data['pop1_stats']['nucleotide_diversity']:.6f}\n"
-                    )
-                    f.write(
-                        f"- Pop2 diversity (π): {scenario_data['pop2_stats']['nucleotide_diversity']:.6f}\n"
-                    )
+                    f.write(f"- Pop1 diversity (π): {scenario_data['pop1_stats']['nucleotide_diversity']:.6f}\n")
+                    f.write(f"- Pop2 diversity (π): {scenario_data['pop2_stats']['nucleotide_diversity']:.6f}\n")
 
             elif "pca" in scenario_data:
                 f.write("**PCA Analysis:**\n")
@@ -123,64 +111,38 @@ def generate_summary_report(
         f.write("|----------|------------|----------------|\n")
         for name, value in comp["tajimas_d_comparison"].items():
             scenario_data = scenarios.get(name, {})
-            interpretation = scenario_data.get("neutrality_tests", {}).get(
-                "neutrality_summary", "N/A"
-            )
-            f.write(
-                f"| {name.replace('_', ' ').title()} | {value:.4f} | {interpretation} |\n"
-            )
+            interpretation = scenario_data.get("neutrality_tests", {}).get("neutrality_summary", "N/A")
+            f.write(f"| {name.replace('_', ' ').title()} | {value:.4f} | {interpretation} |\n")
 
         f.write("\n### Fst Comparison\n\n")
         f.write("| Comparison | Fst | Differentiation |\n")
         f.write("|------------|-----|----------------|\n")
         for name, value in comp["fst_comparison"].items():
-            scenario_data = scenarios.get(
-                f"two_populations_{name.replace('_', '_')}", {}
-            )
+            scenario_data = scenarios.get(f"two_populations_{name.replace('_', '_')}", {})
             differentiation = scenario_data.get("differentiation", "N/A")
-            f.write(
-                f"| {name.replace('_', ' ').title()} | {value:.4f} | {differentiation} |\n"
-            )
+            f.write(f"| {name.replace('_', ' ').title()} | {value:.4f} | {differentiation} |\n")
 
         f.write("\n## Demographic Model Comparisons\n\n")
         demo = analysis_results["demographic_model_comparisons"]
 
         f.write("### Bottleneck Model\n\n")
         f.write(f"- Estimated Ne: {demo['bottleneck']['estimated_ne']:.2f}\n")
-        f.write(
-            f"- Observed diversity: {demo['bottleneck']['observed_diversity']:.6f}\n"
-        )
+        f.write(f"- Observed diversity: {demo['bottleneck']['observed_diversity']:.6f}\n")
 
         f.write("\n### Expansion Model\n\n")
         f.write(f"- Estimated Ne: {demo['expansion']['estimated_ne']:.2f}\n")
-        f.write(
-            f"- Observed diversity: {demo['expansion']['observed_diversity']:.6f}\n"
-        )
+        f.write(f"- Observed diversity: {demo['expansion']['observed_diversity']:.6f}\n")
 
         f.write("\n## Visualizations\n\n")
-        f.write(
-            "All visualizations have been generated and saved to `plots/` directory:\n\n"
-        )
-        f.write(
-            "- **diversity_comparison.png**: Nucleotide diversity (π) across scenarios\n"
-        )
-        f.write(
-            "- **tajimas_d_comparison.png**: Tajima's D comparison with interpretation\n"
-        )
-        f.write(
-            "- **fst_comparison.png**: Fst values with differentiation thresholds\n"
-        )
-        f.write(
-            "- **neutrality_test_summary.png**: Comprehensive neutrality test results\n"
-        )
-        f.write(
-            "- **pca_analysis.png**: Principal component analysis (PC1 vs PC2, variance)\n"
-        )
+        f.write("All visualizations have been generated and saved to `plots/` directory:\n\n")
+        f.write("- **diversity_comparison.png**: Nucleotide diversity (π) across scenarios\n")
+        f.write("- **tajimas_d_comparison.png**: Tajima's D comparison with interpretation\n")
+        f.write("- **fst_comparison.png**: Fst values with differentiation thresholds\n")
+        f.write("- **neutrality_test_summary.png**: Comprehensive neutrality test results\n")
+        f.write("- **pca_analysis.png**: Principal component analysis (PC1 vs PC2, variance)\n")
         f.write("- **kinship_matrix.png**: Kinship matrix heatmap\n")
         f.write("- **site_frequency_spectrum_example.png**: Site frequency spectrum\n")
-        f.write(
-            "- **demographic_model_comparison.png**: Demographic model comparisons\n"
-        )
+        f.write("- **demographic_model_comparison.png**: Demographic model comparisons\n")
         f.write("- **summary_statistics_grid.png**: Grid of all summary statistics\n")
         f.write("- **linkage_disequilibrium_decay.png**: LD decay with distance\n\n")
 
@@ -189,9 +151,7 @@ def generate_summary_report(
             validation = analysis_results["validation"]
             f.write("\n## Validation Summary\n\n")
             f.write(f"- **Status**: {validation['status']}\n")
-            f.write(
-                f"- **Total scenarios analyzed**: {validation['total_scenarios']}\n"
-            )
+            f.write(f"- **Total scenarios analyzed**: {validation['total_scenarios']}\n")
             if validation.get("errors"):
                 f.write(f"- **Issues found**: {len(validation['errors'])}\n")
                 for error in validation["errors"]:
@@ -201,9 +161,7 @@ def generate_summary_report(
 
         f.write("\n## Conclusions\n\n")
         f.write("This comprehensive analysis demonstrates:\n\n")
-        f.write(
-            "1. **Diversity Control**: Successfully generated populations with target diversity levels\n"
-        )
+        f.write("1. **Diversity Control**: Successfully generated populations with target diversity levels\n")
         f.write(
             "2. **Demographic Signatures**: Bottleneck and expansion scenarios show expected patterns (negative Tajima's D)\n"
         )
@@ -214,14 +172,8 @@ def generate_summary_report(
         f.write(
             "5. **Comprehensive Neutrality Testing**: All neutrality tests (Tajima's D, Fu & Li's, Fay & Wu's H) calculated across scenarios\n"
         )
-        f.write(
-            "6. **Statistical Validation**: Results validated for completeness and correctness\n"
-        )
-        f.write(
-            "7. **Integration**: All modules work together seamlessly for comprehensive analysis\n"
-        )
-        f.write(
-            "8. **Visualizations**: Comprehensive publication-quality plots generated for all analyses\n"
-        )
+        f.write("6. **Statistical Validation**: Results validated for completeness and correctness\n")
+        f.write("7. **Integration**: All modules work together seamlessly for comprehensive analysis\n")
+        f.write("8. **Visualizations**: Comprehensive publication-quality plots generated for all analyses\n")
 
     print(f"Summary report saved to {report_file}")

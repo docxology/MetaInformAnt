@@ -54,7 +54,7 @@ uv run python scripts/popgen/analysis.py --output-dir output/popgen
 ## Tests
 
 Zero-mocks tests: `tests/popgen/` (real synthetic sequences via seeded
-generators, real temp files; no mock frameworks).
+generators, real temp files; no test-double APIs).
 
 ## Related
 

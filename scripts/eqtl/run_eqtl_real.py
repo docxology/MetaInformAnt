@@ -70,9 +70,7 @@ def run_real_eqtl_analysis():
 
     # Step 1: Load real expression data
     logger.info("\n[Step 1] Loading REAL expression data...")
-    expr_matrix, sample_ids = load_real_expression_data(
-        QUANT_DIR, max_samples=200, min_tpm=1.0
-    )
+    expr_matrix, sample_ids = load_real_expression_data(QUANT_DIR, max_samples=200, min_tpm=1.0)
 
     # Step 2: Parse gene positions
     logger.info("\n[Step 2] Parsing gene annotations...")
@@ -92,17 +90,13 @@ def run_real_eqtl_analysis():
 
     # Step 3: Create synthetic genotypes (real WGS not available)
     logger.info("\n[Step 3] Creating synthetic genotypes...")
-    geno_matrix, var_positions = create_synthetic_genotypes(
-        sample_ids, gene_positions, variants_per_gene=3
-    )
+    geno_matrix, var_positions = create_synthetic_genotypes(sample_ids, gene_positions, variants_per_gene=3)
     logger.info(f"Created {len(var_positions)} variants")
 
     # Save inputs
     expr_matrix.to_csv(RESULTS_DIR / "real_expression_matrix.tsv", sep="\t")
     geno_matrix.to_csv(RESULTS_DIR / "synthetic_genotype_matrix.tsv", sep="\t")
-    gene_positions.to_csv(
-        RESULTS_DIR / "gene_positions_real.tsv", sep="\t", index=False
-    )
+    gene_positions.to_csv(RESULTS_DIR / "gene_positions_real.tsv", sep="\t", index=False)
     var_positions.to_csv(RESULTS_DIR / "variant_positions.tsv", sep="\t", index=False)
 
     # Step 4: Run cis-eQTL scan
@@ -123,12 +117,8 @@ def run_real_eqtl_analysis():
     logger.info("\n[Step 5] Annotating results...")
     if len(cis_results) > 0:
         # Add gene expression stats
-        cis_results_annotated = cis_results.merge(
-            gene_stats[["gene_id", "mean_tpm"]], on="gene_id", how="left"
-        )
-        cis_results_annotated.to_csv(
-            RESULTS_DIR / "cis_eqtl_annotated.tsv", sep="\t", index=False
-        )
+        cis_results_annotated = cis_results.merge(gene_stats[["gene_id", "mean_tpm"]], on="gene_id", how="left")
+        cis_results_annotated.to_csv(RESULTS_DIR / "cis_eqtl_annotated.tsv", sep="\t", index=False)
 
         # Top hits
         top_hits = cis_results.nsmallest(100, "pvalue")

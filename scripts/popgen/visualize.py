@@ -86,9 +86,7 @@ def generate_visualizations(
         if scenario_name in scenarios:
             scenario_data = scenarios[scenario_name]
             if "neutrality_tests" in scenario_data:
-                neutrality_data[scenario_name.replace("_", " ").title()] = (
-                    scenario_data["neutrality_tests"]
-                )
+                neutrality_data[scenario_name.replace("_", " ").title()] = scenario_data["neutrality_tests"]
 
     if neutrality_data:
         plot_neutrality_test_summary(
@@ -97,10 +95,7 @@ def generate_visualizations(
         )
 
     # 5. PCA plots (if available)
-    if (
-        "large_genotypes" in scenarios
-        and scenarios["large_genotypes"].get("pca", {}).get("status") == "success"
-    ):
+    if "large_genotypes" in scenarios and scenarios["large_genotypes"].get("pca", {}).get("status") == "success":
         logger.info("Generating PCA plots")
         pca_data = scenarios["large_genotypes"]["pca"]
         if "full_result" in pca_data:
@@ -111,10 +106,7 @@ def generate_visualizations(
             )
 
     # 6. Kinship matrix (if available)
-    if (
-        "large_genotypes" in scenarios
-        and scenarios["large_genotypes"].get("kinship", {}).get("status") == "success"
-    ):
+    if "large_genotypes" in scenarios and scenarios["large_genotypes"].get("kinship", {}).get("status") == "success":
         logger.info("Generating kinship matrix plot")
         kinship_data = scenarios["large_genotypes"]["kinship"]
         if "full_result" in kinship_data:
@@ -159,9 +151,7 @@ def generate_visualizations(
         if scenario_name in scenarios:
             scenario_data = scenarios[scenario_name]
             if "summary_statistics" in scenario_data:
-                summary_stats_data[scenario_name.replace("_", " ").title()] = (
-                    scenario_data["summary_statistics"]
-                )
+                summary_stats_data[scenario_name.replace("_", " ").title()] = scenario_data["summary_statistics"]
 
     if summary_stats_data:
         plot_summary_statistics_grid(

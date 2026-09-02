@@ -51,17 +51,12 @@ def create_synthetic_data(
     """
     min_variants = 5 * n_genes
     if n_variants < min_variants:
-        raise ValueError(
-            f"n_variants ({n_variants}) must be >= 5 * n_genes ({min_variants})"
-        )
+        raise ValueError(f"n_variants ({n_variants}) must be >= 5 * n_genes ({min_variants})")
     if n_samples < 2:
         raise ValueError(f"n_samples ({n_samples}) must be >= 2")
 
     rng = np.random.default_rng(seed)
-    logger.info(
-        f"Generating synthetic data: {n_genes} genes, {n_variants} variants, "
-        f"{n_samples} samples"
-    )
+    logger.info(f"Generating synthetic data: {n_genes} genes, {n_variants} variants, " f"{n_samples} samples")
 
     # Sample IDs
     sample_ids = [f"SRR{10000000 + i}" for i in range(n_samples)]
@@ -100,9 +95,7 @@ def create_synthetic_data(
     )
 
     # Genotypes: dosages 0, 1, 2 with MAF ~ 0.3
-    genotypes = rng.choice(
-        [0, 1, 2], size=(len(variant_ids), n_samples), p=[0.5, 0.35, 0.15]
-    )
+    genotypes = rng.choice([0, 1, 2], size=(len(variant_ids), n_samples), p=[0.5, 0.35, 0.15])
     genotype_matrix = pd.DataFrame(genotypes, index=variant_ids, columns=sample_ids)
 
     # Expression: baseline + eQTL effect for ~30% of genes
@@ -213,9 +206,7 @@ def create_synthetic_genotypes(
     # Generate dosages with MAF ~ 0.25
     n_variants = len(variant_ids)
     n_samples = len(sample_ids)
-    genotypes = rng.choice(
-        [0, 1, 2], size=(n_variants, n_samples), p=[0.56, 0.32, 0.12]
-    )
+    genotypes = rng.choice([0, 1, 2], size=(n_variants, n_samples), p=[0.56, 0.32, 0.12])
 
     genotype_matrix = pd.DataFrame(genotypes, index=variant_ids, columns=sample_ids)
 
@@ -265,9 +256,7 @@ def load_real_expression_data(
         target_col = "target_id" if "target_id" in df.columns else "Name"
         tpm_col = "tpm" if "tpm" in df.columns else "TPM"
         if target_col not in df.columns or tpm_col not in df.columns:
-            logger.warning(
-                f"Skipping {sample_id}: missing transcript or TPM column in {abundance_file}"
-            )
+            logger.warning(f"Skipping {sample_id}: missing transcript or TPM column in {abundance_file}")
             continue
 
         expression_data[sample_id] = df.set_index(target_col)[tpm_col]

@@ -71,13 +71,9 @@ def _run_bcftools_stats(vcf_path: Path) -> str:
             text=True,
         )
     except FileNotFoundError as exc:
-        raise RuntimeError(
-            "bcftools not found on PATH; install bcftools to compute variant stats"
-        ) from exc
+        raise RuntimeError("bcftools not found on PATH; install bcftools to compute variant stats") from exc
     if result.returncode != 0:
-        raise RuntimeError(
-            f"bcftools stats failed for {vcf_path}: {result.stderr[:300]}"
-        )
+        raise RuntimeError(f"bcftools stats failed for {vcf_path}: {result.stderr[:300]}")
     return result.stdout
 
 

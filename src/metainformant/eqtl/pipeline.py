@@ -42,9 +42,7 @@ from metainformant.eqtl.variant_stats import (
 logger = logging.getLogger(__name__)
 
 DEFAULT_AMALGKIT_OUTPUT = (
-    Path(os.environ.get("AMALGKIT_DATA_ROOT", "")).expanduser()
-    if os.environ.get("AMALGKIT_DATA_ROOT")
-    else None
+    Path(os.environ.get("AMALGKIT_DATA_ROOT", "")).expanduser() if os.environ.get("AMALGKIT_DATA_ROOT") else None
 )
 
 
@@ -155,9 +153,7 @@ def run_pipeline(
         if amalgkit_output is None:
             logger.error("No AMALGKIT_DATA_ROOT set and no explicit samples given")
             sys.exit(1)
-        samples = find_completed_samples(
-            amalgkit_output, species, max_samples=n_samples
-        )
+        samples = find_completed_samples(amalgkit_output, species, max_samples=n_samples)
 
     if not samples:
         logger.error(f"No completed samples found for {species}")
@@ -220,9 +216,7 @@ def run_pipeline(
 
         # Step 2: Download FASTQs (checks local amalgkit copies first)
         logger.info(f"\n[Step 2/6] Downloading FASTQs for {srr_id}...")
-        fastqs = download_fastq(
-            srr_id, fastq_dir, species=species, amalgkit_output=amalgkit_output
-        )
+        fastqs = download_fastq(srr_id, fastq_dir, species=species, amalgkit_output=amalgkit_output)
         if not fastqs:
             logger.warning(f"Skipping {srr_id}: no FASTQs downloaded")
             continue
@@ -273,9 +267,7 @@ def run_pipeline(
         compute_allele_frequencies(merged_vcf, pop_dir / "allele_freqs.tsv")
 
         # Population summary
-        pop_summary = compute_popgen_summary(
-            merged_vcf, all_sample_stats, pop_dir / "popgen_summary.json"
-        )
+        pop_summary = compute_popgen_summary(merged_vcf, all_sample_stats, pop_dir / "popgen_summary.json")
     else:
         pop_summary = {"n_samples": 0, "error": "No samples completed successfully"}
 
@@ -299,9 +291,7 @@ def run_pipeline(
     logger.info("\n" + "=" * 70)
     logger.info("Pipeline Complete!")
     logger.info(f"  Species: {species}")
-    logger.info(
-        f"  Samples: {run_summary['n_samples_completed']}/{run_summary['n_samples_requested']}"
-    )
+    logger.info(f"  Samples: {run_summary['n_samples_completed']}/{run_summary['n_samples_requested']}")
     logger.info(f"  SNPs: {run_summary['total_snps']}")
     logger.info(f"  Ti/Tv: {run_summary['ts_tv_ratio']}")
     logger.info(f"  Time: {elapsed:.0f}s")

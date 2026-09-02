@@ -52,14 +52,10 @@ Examples:
     )
     parser.add_argument("--config", help="Path to YAML config file")
     parser.add_argument("--species", help="Species name (e.g. amellifera)")
-    parser.add_argument(
-        "--n-samples", type=int, default=3, help="Number of samples to process"
-    )
+    parser.add_argument("--n-samples", type=int, default=3, help="Number of samples to process")
     parser.add_argument("--samples", help="Comma-separated list of SRR IDs to process")
     parser.add_argument("--threads", type=int, default=4, help="Threads for alignment")
-    parser.add_argument(
-        "--no-cleanup", action="store_true", help="Keep FASTQ files after alignment"
-    )
+    parser.add_argument("--no-cleanup", action="store_true", help="Keep FASTQ files after alignment")
     args = parser.parse_args()
 
     config = load_config(args.config) if args.config else None

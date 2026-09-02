@@ -40,7 +40,6 @@ except ImportError:
     px = None
 
 
-
 def _save_plot(output_path: str | Path, label: str) -> str:
     """Ensure the output directory exists and save the current pyplot figure deterministically.
 
@@ -51,6 +50,8 @@ def _save_plot(output_path: str | Path, label: str) -> str:
     save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
     logger.info(f"{label} saved to {output_path}")
     return str(output_path)
+
+
 def plot_allele_frequency_spectrum(
     allele_frequencies: np.ndarray,
     *,
