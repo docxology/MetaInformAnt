@@ -116,7 +116,91 @@ In the parent checkout:
 uv run python scripts/verify_documentation_code.py
 ```
 
-## 7. Post-freeze runbook pointer
+## 7. Scaffold generator (single source of truth)
+
+`scripts/rna/new_clade_scaffold.py` in the parent checkout automates steps 2-3
+and part of step 1 from the actual template pattern. It is the authoritative
+description of the skeleton layout: this section records its observed
+behavior; the script owns the shape.
+
+```bash
+uv run python scripts/rna/new_clade_scaffold.py \
+    --clade lepidoptera --species-list species.txt --output-dir /tmp/clades
+```
+
+Species-list format (one per line, `#` comments):
+
+```
+Genus species [taxon_id [accession assembly_name]]
+```
+
+Example (lepidoptera pilot used to prove the generator, 2026-09-01):
+
+```
+Bombyx mori 7091 GCF_000151645.2 Bombyx_mori_p50T
+Danaus plexippus
+Heliconius melpomene 7122 GCA_000290705.1 Hmel2_5
+Plutella xylostella 515471 GCA_000330365.1 DbM_p505
+```
+
+Generated skeleton (16 files for the 4-species roster above):
+
+```
+<clade>_amalgkit/
+  README.md                     # roster table + import contract + gates
+  TODO.md                       # per-species scaffold gaps + campaign checklist
+  .gitignore                    # output/, logs/, caches
+  config/amalgkit/
+    amalgkit_<genus_species>.yaml   # one per species, apis_mellifera pattern
+    amalgkit_cross_species.yaml     # descriptive-only (inferential_statistics: none)
+    select_rules.tsv, tissue_mapping.yaml, tissue_patches.yaml  # copied from parent config/amalgkit/
+  scripts/
+    metainformant_import.py     # copied VERBATIM from the hymenoptera project
+    validate_configs.py         # copied from parent scripts/rna/
+  tests/test_import_contract.py # real-subprocess contract tests for the skeleton
+  doc/00_setup/01_environment.md
+  docs/manuscript/README.md
+```
+
+Guarantees:
+
+- **Deterministic**: identical inputs produce byte-identical trees (sorted
+  species, no timestamps, no machine paths).
+- **Fail-fast gaps**: a species without `taxon_id`/`accession` still emits a
+  config, plus TODO entries in `TODO.md`; the skeleton's own
+  `validate_configs.py` run then flags the empty accession instead of
+  silently downloading nothing.
+- **Import contract**: the shim is copied verbatim; the script refuses to run
+  if the canonical source is missing.
+- **Safety**: refuses to overwrite an existing target; `--dry-run` validates
+  input without writing; the clade token is validated (no path traversal).
+
+### Proof run (2026-09-01, lepidoptera)
+
+Recorded from an actual scaffold into a temp directory (never `projects/`):
+
+| Gate | Result |
+| --- | --- |
+| Skeleton self-verification (structure contract) | PASS |
+| `scripts/validate_configs.py` vs Amalgkit 0.16.60 | 3/4 species configs PASS; the intentionally TODO-gapped config (`Danaus_plexippus`, no accession) FAILS with `genome section must define accession or files` — the designed fail-fast |
+| Skeleton's own `tests/test_import_contract.py` | 3 passed |
+| `ensure_metainformant()` from the skeleton | resolves the parent package (editable-install / parent-layout discovery) |
+| Child `validate_project_docs.py` against the skeleton | NOT directly runnable (see gap below) |
+
+Known template gaps surfaced by the proof run (candidates for later rounds,
+not blockers):
+
+1. `validate_project_docs.py` hard-codes `PROJECT_ROOT` from its own file
+   location and encodes hymenoptera-specific counts (27 species configs) and
+   manuscript phrases; a new clade cannot reuse it until it accepts a
+   project-root argument and a per-clade contract file. The skeleton
+   therefore ships `validate_configs.py` + its own pytest suite as its
+   executable gates, and the docs gate must be re-derived per clade.
+2. `scripts/validate_configs.py` resolves `select.select_rules_tsv` relative
+   to `config_path.parents[2]` (repo root); the skeleton keeps the same
+   relative path so a copy works unchanged inside the new repo.
+
+## 8. Post-freeze runbook pointer
 
 Once the evidence manifest freezes for the new clade, follow the same
 release/inferential runbook used by the hymenoptera campaign (see
