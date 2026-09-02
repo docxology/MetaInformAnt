@@ -82,7 +82,7 @@ def validate_config_file(
         # Schema validation if provided
         if schema_path:
             try:
-                from metainformant.core.utils.errors import validate_json_schema
+                from metainformant.core.data.validation import validate_json_schema
 
                 validate_json_schema(raw_config, schema_path)
             except Exception as e:
