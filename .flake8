@@ -28,6 +28,7 @@ per-file-ignores =
     tests/infrastructure/test_build.py:E402
     tests/metagenomics/test_metagenomics_visualization.py:E402
     tests/other/test_ortholog_generation.py:E402
+    tests/perf/*:E402,E201,E202
     tests/pharmacogenomics/test_pharmacogenomics_visualization.py:E402
     tests/rna/test_rna_parallel_pipeline.py:E402
     tests/singlecell/test_singlecell_dimensionality.py:E402

@@ -308,8 +308,11 @@ exclude = [
     ".pytest_cache",
 ]
 # Allow imports not at top of file in __init__.py files
+# tests/perf benchmark scripts intentionally insert the repo root on sys.path
+# before importing metainformant modules (script-first layout).
 per-file-ignores = [
     "__init__.py:E402",
+    "tests/perf/*:E402,E201,E202",
 ]
 
 # isort import sorting
