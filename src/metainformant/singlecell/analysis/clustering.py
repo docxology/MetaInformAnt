@@ -23,13 +23,19 @@ from metainformant.singlecell.data.preprocessing import SingleCellData
 # Optional scientific dependencies
 try:
     from sklearn.cluster import KMeans
-    from sklearn.metrics import calinski_harabasz_score, davies_bouldin_score, silhouette_score
+    from sklearn.metrics import (
+        calinski_harabasz_score,
+        davies_bouldin_score,
+        silhouette_samples,
+        silhouette_score,
+    )
 
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
     KMeans = None
     silhouette_score = None
+    silhouette_samples = None
     calinski_harabasz_score = None
     davies_bouldin_score = None
 
@@ -676,7 +682,7 @@ def compute_cluster_silhouette(
     try:
         # Compute silhouette scores
         silhouette_avg = silhouette_score(X, clusters, metric=metric)
-        sample_silhouette_values = silhouette_score(X, clusters, metric=metric)
+        sample_silhouette_values = silhouette_samples(X, clusters, metric=metric)
 
         # Per-cluster silhouette scores
         per_cluster_scores = {}

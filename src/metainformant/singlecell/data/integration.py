@@ -544,9 +544,9 @@ def integrate_multiple_batches(
     logger.info(f"Integrating {len(data_list)} datasets using {integration_method}")
 
     if integration_method == "scanorama":
-        return scanorama_integration(data_list, **kwargs)
+        return scanorama_integration(data_list, kwargs.pop("batch_key", "batch"), **kwargs)
     elif integration_method == "mnn":
-        return mnn_integration(data_list, **kwargs)
+        return mnn_integration(data_list, kwargs.pop("batch_key", "batch"), **kwargs)
     elif integration_method == "harmony":
         # For harmony, we need to concatenate first
         if not data_list:
