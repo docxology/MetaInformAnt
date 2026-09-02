@@ -8,8 +8,8 @@ topic guides contain behavioral guidance, examples, and caveats.
 Compatibility facades are excluded from the inventory and remain
 supported through the import paths described in [index.md](index.md).
 
-**Public symbols:** 239
-**Canonical modules:** 28
+**Public symbols:** 244
+**Canonical modules:** 29
 
 ## Module index
 
@@ -32,8 +32,9 @@ supported through the import paths described in [index.md](index.md).
 | [metainformant.core.io.io](#metainformant-core-io-io) | 24 |
 | [metainformant.core.ncbi](#metainformant-core-ncbi) | 3 |
 | [metainformant.core.ui.tui](#metainformant-core-ui-tui) | 9 |
+| [metainformant.core.utils.batches](#metainformant-core-utils-batches) | 4 |
 | [metainformant.core.utils.errors](#metainformant-core-utils-errors) | 16 |
-| [metainformant.core.utils.hash](#metainformant-core-utils-hash) | 7 |
+| [metainformant.core.utils.hash](#metainformant-core-utils-hash) | 8 |
 | [metainformant.core.utils.logging](#metainformant-core-utils-logging) | 5 |
 | [metainformant.core.utils.newick](#metainformant-core-utils-newick) | 1 |
 | [metainformant.core.utils.optional_deps](#metainformant-core-utils-optional_deps) | 5 |
@@ -299,6 +300,15 @@ supported through the import paths described in [index.md](index.md).
 | `TerminalInterface.stop` | method | `() -> None` | Stop rendering and cleanup. |
 | `TerminalInterface.update` | method | `(task_id: str, current: float = None, total: float = None, status: str = None, speed: str = None, color: str = None, stage: str = None) -> None` | Update a specific bar's state. |
 
+## metainformant.core.utils.batches {#metainformant-core-utils-batches}
+
+| Symbol | Kind | Signature | Summary |
+| --- | --- | --- | --- |
+| `chunked` | function | `(iterable: Sequence[T] \| Iterator[T], size: int) -> Iterator[list[T]]` | Yield lists of at most ''size'' items from ''iterable''. |
+| `frame_memory_mb` | function | `(frame: pd.DataFrame) -> float` | Return the deep memory footprint of ''frame'' in MiB. |
+| `frame_memory_report` | function | `(frame: pd.DataFrame) -> dict[str, Any]` | Build a descriptive memory report for a frame. |
+| `iter_frame_chunks` | function | `(frame: pd.DataFrame, rows_per_chunk: int = DEFAULT_CHUNK_ROWS) -> Iterator[pd.DataFrame]` | Lazily yield row-block views of ''frame'' without copying it. |
+
 ## metainformant.core.utils.errors {#metainformant-core-utils-errors}
 
 | Symbol | Kind | Signature | Summary |
@@ -327,6 +337,7 @@ supported through the import paths described in [index.md](index.md).
 | `deterministic_seed` | function | `(data: str) -> int` | Generate deterministic integer seed from string data. |
 | `file_hash_comparison` | function | `(file1: str \| Path, file2: str \| Path) -> bool` | Compare two files by their SHA256 hashes. |
 | `hash_directory` | function | `(path: str \| Path, pattern: str = '**/*') -> dict[str, str]` | Compute hashes for all files in a directory matching a pattern. |
+| `md5_file` | function | `(path: str \| Path, *, chunk_size: int = 4096) -> str` | Return the MD5 hex digest of a file without loading it entirely. |
 | `sha256_bytes` | function | `(data: bytes) -> str` | Return the SHA-256 hex digest of bytes. |
 | `sha256_file` | function | `(path: str \| Path, *, chunk_size: int = 1024 * 1024) -> str` | Return the SHA-256 hex digest of a file without loading it entirely. |
 | `sha256_string` | function | `(s: str) -> str` | Compute SHA256 hash of string content. |

@@ -148,7 +148,7 @@ pipeline_name = cfg["pipeline"]["name"]
 
 #### `load_config_file(config_path: Path) -> dict[str, Any]`
 
-Lower-level loader; similar to `load_mapping_from_file()` but returns raw dict (older name; use `load_mapping_from_file()` for new code).
+Compatibility wrapper that delegates to `load_mapping_from_file()` (older name; use `load_mapping_from_file()` for new code).
 
 ### Environment Variable Overrides
 
