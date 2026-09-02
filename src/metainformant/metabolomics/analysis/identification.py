@@ -95,12 +95,14 @@ def normalize_intensities(
     if method == "total_ion_count":
         totals = data.sum(axis=0, keepdims=True)
         totals = np.where(totals > 0, totals, 1.0)
-        return data / totals * np.median(totals)
+        result_tic = data / totals * np.median(totals)
+        return np.asarray(result_tic, dtype=float)
 
     elif method == "median":
         medians = np.median(data, axis=0, keepdims=True)
         medians = np.where(medians > 0, medians, 1.0)
-        return data / medians * np.median(medians)
+        result_med = data / medians * np.median(medians)
+        return np.asarray(result_med, dtype=float)
 
     elif method == "log2":
         return np.log2(data + 1)
@@ -388,4 +390,4 @@ def missing_value_imputation(
     else:
         raise ValueError(f"Unknown imputation method: {method}")
 
-    return np.nan_to_num(data, nan=0.0)
+    return np.asarray(np.nan_to_num(data, nan=0.0), dtype=float)
