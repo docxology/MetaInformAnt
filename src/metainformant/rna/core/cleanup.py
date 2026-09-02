@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
 from metainformant.core.utils import logging
-from metainformant.rna.core.sample_utils import find_quantification_file
+from metainformant.rna.core.sample_utils import find_quantification_file, quantification_file_candidates
 
 logger = logging.get_logger(__name__)
 
@@ -207,12 +207,14 @@ def cleanup_unquantified_samples(work_dir: Path) -> List[str]:
     if not fastq_dir.exists() or not quant_dir.exists():
         return cleaned_samples
 
-    # Get quantified samples
+    # Get quantified samples via the canonical candidate list from
+    # rna.core.sample_utils (single source of truth for recognized outputs).
     quantified_samples = set()
-    for quant_file in list(quant_dir.glob("*/abundance.tsv")) + list(quant_dir.glob("*/*_abundance.tsv")):
-        quantified_samples.add(quant_file.parent.name)
-    for quant_file in quant_dir.glob("*/quant.sf"):
-        quantified_samples.add(quant_file.parent.name)
+    for sample_dir in quant_dir.iterdir():
+        if not sample_dir.is_dir():
+            continue
+        if any(c.exists() for c in quantification_file_candidates(sample_dir, sample_dir.name)):
+            quantified_samples.add(sample_dir.name)
 
     # Find and remove unquantified FASTQ files
     for fastq_file in fastq_dir.glob("*_1.fastq"):
