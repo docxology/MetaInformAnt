@@ -21,6 +21,21 @@ def sha256_file(path: str | Path, *, chunk_size: int = 1024 * 1024) -> str:
     return h.hexdigest()
 
 
+def md5_file(path: str | Path, *, chunk_size: int = 4096) -> str:
+    """Return the MD5 hex digest of a file without loading it entirely.
+
+    MD5 is used only for transfer-integrity comparison, never authentication.
+    """
+    h = hashlib.md5(usedforsecurity=False)
+    with open(path, "rb") as fh:
+        while True:
+            chunk = fh.read(chunk_size)
+            if not chunk:
+                break
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def deterministic_seed(data: str) -> int:
     """Generate deterministic integer seed from string data.
 

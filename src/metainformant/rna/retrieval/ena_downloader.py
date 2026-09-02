@@ -22,7 +22,6 @@ Example:
 
 import csv
 import gzip
-import hashlib
 import os
 import signal
 import subprocess
@@ -33,6 +32,7 @@ import zlib
 from pathlib import Path
 from typing import List, Mapping, Tuple
 
+from metainformant.core.utils.hash import md5_file
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
@@ -141,12 +141,7 @@ def calculate_md5(file_path: Path, chunk_size: int = 4096) -> str:
     Returns:
         Hex digest of the MD5 checksum.
     """
-    # MD5 is used only for transfer-integrity comparison, never authentication.
-    md5_hash = hashlib.md5(usedforsecurity=False)
-    with open(file_path, "rb") as f:
-        for chunk in iter(lambda: f.read(chunk_size), b""):
-            md5_hash.update(chunk)
-    return md5_hash.hexdigest()
+    return md5_file(file_path, chunk_size=chunk_size)
 
 
 def clean_stagnant_file(file_path: Path) -> None:

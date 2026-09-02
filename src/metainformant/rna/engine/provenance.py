@@ -41,14 +41,16 @@ def quant_provenance_path(sample_dir: str | Path) -> Path:
 
 
 def digest_file(path: Path) -> str | None:
-    """Return a SHA-256 digest for a readable file, or ``None``."""
+    """Return a SHA-256 digest for a readable file, or ``None``.
+
+    Delegates to the canonical :func:`metainformant.core.utils.hash.sha256_file`;
+    this wrapper preserves the historical ``None``-on-unreadable contract.
+    """
+
+    from metainformant.core.utils.hash import sha256_file
 
     try:
-        digest = hashlib.sha256()
-        with path.open("rb") as handle:
-            for block in iter(lambda: handle.read(1024 * 1024), b""):
-                digest.update(block)
-        return digest.hexdigest()
+        return sha256_file(path)
     except OSError:
         return None
 
