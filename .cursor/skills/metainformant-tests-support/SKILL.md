@@ -8,6 +8,7 @@ description: METAINFORMANT rules for directory tests/_support. Use when editing,
 Before editing files in this subtree:
 
 - Read [`AGENTS.md`](../../../tests/_support/AGENTS.md) for this folder (canonical technical context).
+- Optional overview: [`README.md`](../../../tests/_support/README.md).
 - Global rules: [`CLAUDE.md`](../../../CLAUDE.md) at repo root (uv, `output/`, `.tmp/`, real implementations).
 - Testing policy: [`docs/REAL_IMPLEMENTATION_POLICY.md`](../../../docs/REAL_IMPLEMENTATION_POLICY.md).
 - Use `metainformant.core.io` for file I/O and `metainformant.core.utils.logging` for logs.

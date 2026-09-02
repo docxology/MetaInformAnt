@@ -232,9 +232,17 @@ def validate_module_skill(module_dir: Path, skill_body: str) -> list[str]:
     2. The package __init__'s own relative imports must resolve statically.
     """
     errors: list[str] = []
+    # Only the generated "Public submodules:" line makes submodule claims; the
+    # Purpose line embeds the package docstring, whose prose may legitimately
+    # backtick-quote function names that are not submodules.
+    submodule_line = ""
+    for line in skill_body.splitlines():
+        if line.startswith("- Public submodules:"):
+            submodule_line = line
+            break
     doc, names = _parse_package_init(module_dir / "__init__.py")
     for name in names:
-        if f"`{name}`" in skill_body and not _submodule_exists(module_dir, name):
+        if f"`{name}`" in submodule_line and not _submodule_exists(module_dir, name):
             errors.append(
                 f"module skill drift: {module_dir.name} skill advertises submodule "
                 f"'{name}' which no longer exists on disk"

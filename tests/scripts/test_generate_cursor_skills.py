@@ -72,3 +72,16 @@ def test_no_hash_named_live_skill_dirs() -> None:
 
 def test_check_mode_passes_on_live_tree() -> None:
     assert gcs.run_check(gcs.REPO_ROOT) == 0
+
+
+def test_docstring_prose_backticks_do_not_fail_validation() -> None:
+    """Regression: docstring prose may backtick-quote function names."""
+    module_dir = gcs.REPO_ROOT / "src" / "metainformant" / "popgen"
+    if not module_dir.is_dir():
+        return
+    prose_body = (
+        "## Module surface (generated, validated)\n"
+        "Purpose: exposed via :func:`analyze_dataset`, with scripts as orchestrator.\n"
+        "- Public submodules: `analysis`."
+    )
+    assert gcs.validate_module_skill(module_dir, prose_body) == []
