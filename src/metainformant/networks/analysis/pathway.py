@@ -90,11 +90,11 @@ def pathway_enrichment_analysis(
             )
         elif method == "hypergeometric":
             # Hypergeometric test
-            M = len(background_set & pathway_set)  # White balls in urn
-            n = len(gene_set)  # Balls drawn
-            k = genes_in_pathway  # White balls drawn
+            M = len(background_set)  # Population (all background genes)
+            n = len(pathway_set)  # Successes in population (pathway genes)
+            k = genes_in_pathway  # White balls drawn (query genes in pathway)
 
-            p_value = stats.hypergeom.sf(k - 1, M, n, len(pathway_set))
+            p_value = stats.hypergeom.sf(k - 1, M, n, len(gene_set))
             odds_ratio = (genes_in_pathway / max(genes_not_in_pathway, 1)) / (
                 background_in_pathway / max(background_not_in_pathway, 1)
             )
@@ -209,9 +209,12 @@ def pathway_topology_analysis(pathway_graph: Any, **kwargs: Any) -> Dict[str, An
         }
 
     # Graph density
-    max_edges = analysis["n_nodes"] * (analysis["n_nodes"] - 1)
+    # For undirected graphs the maximum is n*(n-1)/2; for directed graphs it
+    # is n*(n-1) (each ordered pair can hold an edge).
     if pathway_graph.is_directed():
-        max_edges *= 2
+        max_edges = analysis["n_nodes"] * (analysis["n_nodes"] - 1)
+    else:
+        max_edges = analysis["n_nodes"] * (analysis["n_nodes"] - 1) / 2
     analysis["density"] = analysis["n_edges"] / max_edges if max_edges > 0 else 0
 
     return analysis
@@ -377,9 +380,12 @@ def create_pathway_network(pathways: Dict[str, Any], similarity_threshold: float
     # Create network
     pathway_network = nx.Graph()
 
-    # Add pathway nodes
+    # Add pathway nodes (only dict-format pathway data can become attributes)
     for pathway_name, pathway_data in pathways.items():
-        pathway_network.add_node(pathway_name, **pathway_data)
+        if isinstance(pathway_data, dict):
+            pathway_network.add_node(pathway_name, **pathway_data)
+        else:
+            pathway_network.add_node(pathway_name)
 
     # Add similarity edges
     for key, similarity in similarities["similarities"].items():
