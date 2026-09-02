@@ -1,5 +1,17 @@
 # Plan: Documentation Accuracy & Completeness Audit Fix
 
+> **ROUND-5 STATUS PASS (2026-09-01, lane R5-DOCACC)** — every item re-verified against current code:
+> 1. DONE (import path already `metainformant.math.population_genetics` in docs/math/selection.md).
+> 2. DONE-obsolete (docs/comprehensive_review_report.md, documentation_review_report.md, documentation_audit.md no longer exist at docs/ root — archived under docs/archive/historical_reports/).
+> 3. DONE (stale banner present in docs/math/REVIEW_AND_IMPROVEMENT_PLAN.md).
+> 4. DONE-obsolete (`setup_uv.sh` has zero matches in docs/, scripts/, CLAUDE.md, README.md).
+> 5. VERIFIED-CURRENT (src/metainformant/rna/engine/progress_tracker.py still exists and is referenced by tests/rna/test_rna_amalgkit_current.py — docs/LINUX_TRANSFER.md note stays accurate).
+> 6. DONE (`cloud/` present in CLAUDE.md module structure, line 97).
+> 7. DONE (src/metainformant/mcp/__init__.py exists; package is proper).
+> 8. CONFIRMED-NO-FIX (GWAS docs accurately describe real limitations).
+> 9. CONFIRMED-NO-FIX (np.random placeholders are example/demo data only).
+> Module-count check: `ls src/metainformant/` = 28 module dirs. Plan COMPLETE — remaining work tracked in lane report.
+
 ## Context
 
 Full audit of `docs/` revealed the documentation is overall excellent (415+ files, 30+ subdirectories, consistent structure). However, several issues need fixing: wrong import paths, stale review reports referencing nonexistent files, outdated improvement plans describing already-fixed code, legacy script references in AGENTS.md, a missing module in CLAUDE.md, and a backward-compat mention that should be cleaned up.
