@@ -110,7 +110,7 @@ def plot_krona_chart(
     # Generate sunburst rings
     fig, ax = plt.subplots(figsize=(12, 12), subplot_kw={"projection": "polar"})
 
-    cmap = plt.cm.Set3
+    cmap = plt.get_cmap("Set3")
     color_idx = 0
 
     def _draw_ring(
@@ -118,7 +118,7 @@ def plot_krona_chart(
         depth: int,
         start_angle: float,
         end_angle: float,
-        parent_color: str | None = None,
+        parent_color: str | tuple[float, float, float, float] | None = None,
     ) -> None:
         nonlocal color_idx
         if depth >= max_depth or not node:
@@ -227,7 +227,7 @@ def plot_stacked_bar(
     n_samples = len(sample_names)
     fig, ax = plt.subplots(figsize=(max(8, n_samples * 0.5), 6))
 
-    cmap = plt.cm.tab20 if len(top_taxa) > 10 else plt.cm.Set3
+    cmap = plt.get_cmap("tab20") if len(top_taxa) > 10 else plt.get_cmap("Set3")
     colors = [cmap(i / max(len(top_taxa), 1)) for i in range(len(top_taxa) + 1)]
 
     x = list(range(n_samples))
@@ -292,7 +292,7 @@ def plot_rarefaction_curves(
         return _save_or_show(fig, output_path)
 
     fig, ax = plt.subplots(figsize=(10, 6))
-    cmap = plt.cm.tab10
+    cmap = plt.get_cmap("tab10")
 
     for idx, (sample_id, otu_counts) in enumerate(otu_table.items()):
         # Expand OTU counts into read pool
@@ -388,7 +388,7 @@ def plot_ordination(
 
     if groups:
         unique_groups = sorted(set(groups.values()))
-        cmap = plt.cm.Set1
+        cmap = plt.get_cmap("Set1")
         group_colors = {g: cmap(i / max(len(unique_groups), 1)) for i, g in enumerate(unique_groups)}
 
         for i, sample in enumerate(samples):
@@ -557,7 +557,7 @@ def plot_alpha_diversity(
             data_to_plot = [group_values[g] for g in group_names]
 
             bp = ax.boxplot(data_to_plot, positions=positions, patch_artist=True)
-            cmap = plt.cm.Set2
+            cmap = plt.get_cmap("Set2")
             for i, patch in enumerate(bp["boxes"]):
                 patch.set_facecolor(cmap(i / max(len(group_names), 1)))
 

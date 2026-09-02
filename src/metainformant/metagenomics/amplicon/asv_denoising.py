@@ -167,7 +167,7 @@ def estimate_error_rates(
     else:
         # No sequences: use Phred-based uniform error model
         # Diagonal (correct) weighted by average quality
-        avg_q = 30  # Default assumption
+        avg_q = 30.0  # Default assumption
         if quality_scores:
             flat_scores = [q for scores in quality_scores for q in scores]
             if flat_scores:

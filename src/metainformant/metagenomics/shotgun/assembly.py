@@ -404,8 +404,8 @@ def scaffold_contigs(
     Examples:
         >>> c1 = Contig("c1", "ATCGATCGATCG" * 20)
         >>> c2 = Contig("c2", "TTTTGGGGCCCC" * 20)
-        >>> scaffolds = scaffold_contigs([c1, c2])
-        >>> len(scaffolds) >= 1
+        >>> example_scaffolds = scaffold_contigs([c1, c2])
+        >>> len(example_scaffolds) >= 1
         True
     """
     if not contigs:
@@ -415,7 +415,7 @@ def scaffold_contigs(
 
     if paired_reads is None or not paired_reads:
         # No paired-end data: each contig is its own scaffold
-        scaffolds = []
+        early_scaffolds: list[Scaffold] = []
         for idx, contig in enumerate(contigs):
             scaffold = Scaffold(
                 scaffold_id=f"scaffold_{idx:06d}",
@@ -424,8 +424,8 @@ def scaffold_contigs(
                 sequence=contig.sequence,
                 total_length=contig.length,
             )
-            scaffolds.append(scaffold)
-        return scaffolds
+            early_scaffolds.append(scaffold)
+        return early_scaffolds
 
     # Map reads to contigs using k-mer anchoring
     k = 31

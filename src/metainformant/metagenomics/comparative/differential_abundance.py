@@ -39,12 +39,12 @@ except ImportError:
     np = None  # type: ignore[assignment]
 
 try:
-    from scipy import stats as scipy_stats
+    from scipy import stats as scipy_stats  # type: ignore[import-untyped]
 
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None  # type: ignore[assignment]
+    scipy_stats = None
 
 try:
     from sklearn.ensemble import RandomForestClassifier
@@ -53,8 +53,8 @@ try:
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
-    RandomForestClassifier = None  # type: ignore[assignment, misc]
-    cross_val_score = None  # type: ignore[assignment]
+    RandomForestClassifier = None
+    cross_val_score = None
 
 
 def differential_abundance(

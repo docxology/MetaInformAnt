@@ -337,18 +337,18 @@ def _blast_classify(
     confidence_scores: dict[str, float] = {}
 
     for rank_idx, rank in enumerate(TAXONOMIC_RANKS):
-        taxon_votes: Counter[str] = Counter()
+        taxon_votes: dict[str, float] = {}
         total_weight = 0.0
         for ref_id, score in top_hits:
             if ref_id in reference_taxonomy:
                 lineage = reference_taxonomy[ref_id]
                 lineage_dict = {r: n for r, n in lineage}
                 taxon_name = lineage_dict.get(rank, "unclassified")
-                taxon_votes[taxon_name] += score  # Weight by similarity
+                taxon_votes[taxon_name] = taxon_votes.get(taxon_name, 0.0) + score
                 total_weight += score
 
         if taxon_votes and total_weight > 0:
-            best_taxon = taxon_votes.most_common(1)[0][0]
+            best_taxon = max(taxon_votes, key=lambda name: taxon_votes[name])
             confidence = taxon_votes[best_taxon] / total_weight
         else:
             best_taxon = "unclassified"
