@@ -23,7 +23,7 @@ try:
 except ImportError:
     logger.warning("Could not import shannon_entropy from syntactic module")
 
-    def shannon_entropy(probs: Sequence[float], base: float = 2.0) -> float:
+    def shannon_entropy(probs: "np.ndarray | Sequence[float]", base: float = 2.0) -> float:
         """Fallback Shannon entropy implementation."""
         p = np.array(probs, dtype=float)
         p = p[p > 0]

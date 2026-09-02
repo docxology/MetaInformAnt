@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 from metainformant.core.data import validation
 from metainformant.core.utils import logging
@@ -111,7 +111,7 @@ def semantic_entropy(term_annotations: Dict[str, Set[str]], base: float = 2.0) -
         return 0.0
 
     # Calculate term frequencies
-    term_freq = defaultdict(int)
+    term_freq: Dict[str, int] = defaultdict(int)
     for terms in term_annotations.values():
         for term in terms:
             term_freq[term] += 1
@@ -129,7 +129,7 @@ def semantic_entropy(term_annotations: Dict[str, Set[str]], base: float = 2.0) -
         if p > 0:
             entropy -= p * math.log(p) / math.log(base)
 
-    return entropy
+    return float(entropy)
 
 
 def semantic_similarity(
@@ -201,6 +201,10 @@ def semantic_similarity(
         # Convert distance to similarity (simple exponential decay)
         # Higher distance = lower similarity
         return math.exp(-distance) if distance >= 0 else 0.0
+
+    # Defensive fallback: method validation above guarantees one of the three
+    # known branches, but mypy requires an explicit terminal return.
+    raise ValueError(f"Unknown similarity method: {method}")
 
 
 def semantic_similarity_matrix(
@@ -384,14 +388,15 @@ def ontology_complexity(hierarchy: Dict[str, Set[str]], term_ic: Optional[Dict[s
                 "ic_range": max(ic_values) - min(ic_values),
             }
 
-    return {
+    stats_out: Dict[str, Any] = {
         "n_terms": n_terms,
         "n_relationships": n_relationships,
         "avg_depth": avg_depth,
         "max_depth": max_depth,
         "depths": depths,
-        **ic_stats,
     }
+    stats_out.update(ic_stats)
+    return stats_out
 
 
 def _calculate_term_depth(term: str, hierarchy: Dict[str, Set[str]]) -> int:

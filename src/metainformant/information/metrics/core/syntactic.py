@@ -19,7 +19,7 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 
-def shannon_entropy(probs: Sequence[float], base: float = 2.0) -> float:
+def shannon_entropy(probs: "np.ndarray | Sequence[float]", base: float = 2.0) -> float:
     """Calculate Shannon entropy from probability distribution.
 
     Args:
@@ -213,7 +213,7 @@ def conditional_mutual_information(x: Sequence[Any], y: Sequence[Any], z: Sequen
     return h_xz + h_yz - h_z - h_xyz
 
 
-def kl_divergence(p: Sequence[float], q: Sequence[float], base: float = 2.0) -> float:
+def kl_divergence(p: "np.ndarray | Sequence[float]", q: "np.ndarray | Sequence[float]", base: float = 2.0) -> float:
     """Calculate Kullback-Leibler divergence D_KL(p||q).
 
     Args:

@@ -19,7 +19,7 @@ logger = logging.get_logger(__name__)
 
 # Optional network analysis dependencies
 try:
-    import networkx as nx
+    import networkx as nx  # type: ignore[import-untyped]
 
     HAS_NETWORKX = True
 except ImportError:
@@ -137,12 +137,12 @@ def _von_neumann_entropy(G: Any) -> float:
         for val in eigenvals:
             entropy -= val * math.log2(val)
 
-        return entropy.real  # Return real part
+        return float(entropy.real)  # Return real part
 
     except np.linalg.LinAlgError:
         logger.warning("Eigenvalue calculation failed, using approximation")
         # Fallback: use trace approximation
-        return -np.trace(P @ np.log2(np.maximum(P, 1e-10)))
+        return float(-np.trace(P @ np.log2(np.maximum(P, 1e-10))))
 
 
 def information_flow(
@@ -228,7 +228,7 @@ def _random_walk_information_flow(
 
             for i, source_idx in enumerate(np.where(initial_dist > 0)[0]):
                 source_node = node_list[source_idx]
-                if source_node in source_nodes:
+                if source_nodes is not None and source_node in source_nodes:
                     for target in target_nodes:
                         if target in node_to_idx:
                             target_idx = node_to_idx[target]
@@ -236,7 +236,7 @@ def _random_walk_information_flow(
 
     # Convert back to node names
     node_list = list(G.nodes())
-    flow_dict = {}
+    flow_dict: Dict[str, Any] = {}
 
     for i, source in enumerate(node_list):
         if source_nodes is None or source in source_nodes:
@@ -376,7 +376,7 @@ def _infomap_community_detection(graph: Any, **kwargs: Any) -> Dict[str, Any]:
         ImportError: If infomap package is not installed
     """
     try:
-        import infomap
+        import infomap  # type: ignore[import-not-found]
     except ImportError:
         raise ImportError(
             "infomap package is required for InfoMap community detection. "
@@ -398,7 +398,7 @@ def _infomap_community_detection(graph: Any, **kwargs: Any) -> Dict[str, Any]:
     im.run()
 
     # Extract communities
-    communities = {}
+    communities: Dict[Any, Any] = {}
     for node in im.tree:
         if node.is_leaf:
             node_name = id_to_node[node.node_id]
@@ -439,7 +439,7 @@ def _map_equation_community_detection(graph: Any, **kwargs: Any) -> Dict[str, An
 def _louvain_community_detection(graph: Any, **kwargs: Any) -> Dict[str, Any]:
     """Louvain community detection with information-theoretic interpretation."""
     try:
-        import community as community_louvain
+        import community as community_louvain  # type: ignore[import-not-found]
 
         # Convert to undirected graph if needed
         if graph.is_directed():
@@ -451,7 +451,7 @@ def _louvain_community_detection(graph: Any, **kwargs: Any) -> Dict[str, Any]:
         partition = community_louvain.best_partition(G, **kwargs)
 
         # Organize communities
-        communities = {}
+        communities: Dict[Any, Any] = {}
         for node, community_id in partition.items():
             if community_id not in communities:
                 communities[community_id] = []
@@ -558,7 +558,7 @@ def _entropy_centrality(G: Any, normalized: bool = True) -> Dict[str, float]:
         if max_cent > 0:
             centrality = {node: cent / max_cent for node, cent in centrality.items()}
 
-    return centrality
+    return dict(centrality)
 
 
 def _information_flow_centrality(G: Any, normalized: bool = True) -> Dict[str, float]:
@@ -568,7 +568,7 @@ def _information_flow_centrality(G: Any, normalized: bool = True) -> Dict[str, f
 
     # Convert to information-theoretic interpretation
     # Higher betweenness = more information flow through node
-    return centrality
+    return dict(centrality)
 
 
 def network_motif_information(graph: Any, motif_size: int = 3, n_random: int = 100) -> Dict[str, Any]:

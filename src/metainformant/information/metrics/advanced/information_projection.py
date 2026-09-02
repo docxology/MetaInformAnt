@@ -12,7 +12,7 @@ import math
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
-from scipy.spatial.distance import pdist
+from scipy.spatial.distance import pdist  # type: ignore[import-untyped]
 
 from metainformant.core.data import validation
 from metainformant.core.utils import logging
@@ -84,7 +84,7 @@ def _normalize_distribution(p: np.ndarray, name: str) -> np.ndarray:
             name,
             total,
         )
-    return p / total
+    return np.asarray(p / total, dtype=np.float64)
 
 
 def _validate_transition_matrix(matrix: np.ndarray) -> np.ndarray:
@@ -115,7 +115,7 @@ def _validate_transition_matrix(matrix: np.ndarray) -> np.ndarray:
         bad = int(np.argmax(np.abs(row_sums - 1.0)))
         raise ValueError(f"Row {bad} of transition_matrix sums to {row_sums[bad]:.8f}, " "expected 1.0")
     # Renormalise rows to machine precision
-    return matrix / row_sums[:, np.newaxis]
+    return np.asarray(matrix / row_sums[:, np.newaxis], dtype=np.float64)
 
 
 # ---------------------------------------------------------------------------

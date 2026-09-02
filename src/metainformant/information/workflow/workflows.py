@@ -7,6 +7,7 @@ biological sequence and data analysis.
 
 from __future__ import annotations
 
+import json
 import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Union
@@ -47,7 +48,7 @@ def batch_entropy_analysis(
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-    results = {
+    results: Dict[str, Any] = {
         "batch_info": {
             "n_sequences": len(sequences),
             "sequence_lengths": [len(seq) for seq in sequences],
@@ -61,7 +62,7 @@ def batch_entropy_analysis(
     start_time = time.time()
 
     for i, sequence in enumerate(sequences):
-        seq_result = {
+        seq_result: Dict[str, Any] = {
             "sequence_index": i,
             "sequence_length": len(sequence),
             "methods": {},
@@ -156,7 +157,7 @@ def information_workflow(
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-    workflow_results = {
+    workflow_results: Dict[str, Any] = {
         "workflow_info": {
             "n_sequences": len(sequences),
             "k_values": k_values,
@@ -184,7 +185,7 @@ def information_workflow(
     if include_profiles and len(sequences) > 1:
         try:
             # Assume sequences are aligned for profile calculation
-            profile_results = {}
+            profile_results: Dict[str, Any] = {}
             for k in k_values:
                 if all(len(seq) >= k for seq in sequences):
                     profile = analysis.information_profile(sequences, k=k, **kwargs)
@@ -236,7 +237,7 @@ def _aggregate_sequence_analyses(analyses: List[Dict[str, Any]]) -> Dict[str, An
     if not analyses:
         return {}
 
-    aggregate = {
+    aggregate: Dict[str, Any] = {
         "sequence_types": {},
         "k_mer_statistics": {},
         "entropy_statistics": {},
@@ -250,7 +251,7 @@ def _aggregate_sequence_analyses(analyses: List[Dict[str, Any]]) -> Dict[str, An
     aggregate["sequence_types"] = dict(Counter(seq_types))
 
     # Aggregate k-mer statistics
-    all_k_stats = {}
+    all_k_stats: Dict[str, Any] = {}
     for item in analyses:
         for k_key, k_stats in item.get("k_mer_analysis", {}).items():
             if k_key not in all_k_stats:
@@ -316,7 +317,7 @@ def compare_datasets(
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
-    comparison_results = {
+    comparison_results: Dict[str, Any] = {
         "dataset_info": {
             "dataset1_size": len(dataset1),
             "dataset2_size": len(dataset2),
@@ -373,8 +374,8 @@ def compare_datasets(
 
 def _compare_entropy_distributions(analysis1: Dict, analysis2: Dict) -> Dict[str, Any]:
     """Compare entropy distributions between two datasets."""
-    entropies1 = []
-    entropies2 = []
+    entropies1: List[float] = []
+    entropies2: List[float] = []
 
     # Extract entropy values
     for seq_result in analysis1.get("sequence_results", []):
@@ -391,9 +392,9 @@ def _compare_entropy_distributions(analysis1: Dict, analysis2: Dict) -> Dict[str
         return {"error": "No entropy values found"}
 
     # Statistical comparison
-    from scipy import stats
+    from scipy import stats  # type: ignore[import-untyped]
 
-    comparison = {
+    comparison: Dict[str, Any] = {
         "dataset1": {
             "n_values": len(entropies1),
             "mean": float(np.mean(entropies1)),
@@ -490,6 +491,7 @@ def information_report(
         output_path: Path to save report
         format: Report format ('markdown', 'json', 'text')
     """
+    report: Any
     if format == "markdown":
         report = _generate_markdown_report(results)
     elif format == "json":
@@ -514,7 +516,7 @@ def information_report(
     else:
         # Print to console
         if format == "json":
-            print(io.dumps_json(report))
+            print(json.dumps(report, indent=2, default=str))
         else:
             print(report)
 

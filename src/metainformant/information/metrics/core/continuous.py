@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Optional
 
 import numpy as np
-from scipy import stats
+from scipy import stats  # type: ignore[import-untyped]
 
 from metainformant.core.data import validation
 from metainformant.core.utils import logging
@@ -74,7 +74,7 @@ def _differential_entropy_histogram(samples: np.ndarray, bins: Optional[int] = N
     if len(probs) == 0:
         return 0.0
 
-    return -np.sum(probs * np.log(probs))
+    return float(-np.sum(probs * np.log(probs)))
 
 
 def _differential_entropy_kde(samples: np.ndarray) -> float:
@@ -103,9 +103,9 @@ def _differential_entropy_kde(samples: np.ndarray) -> float:
 
     # Trapezoidal integration
     integrand = -density * log_density
-    entropy = np.trapz(integrand, dx=grid_spacing)
+    entropy = np.trapezoid(integrand, dx=grid_spacing)
 
-    return entropy
+    return float(entropy)
 
 
 def _differential_entropy_knn(samples: np.ndarray, k: int = 3) -> float:
@@ -149,7 +149,7 @@ def _differential_entropy_knn(samples: np.ndarray, k: int = 3) -> float:
     log_distances = np.log(distances)
     entropy = (d / n_samples) * np.sum(log_distances) + np.log(vol_d) + gamma_constant
 
-    return entropy
+    return float(entropy)
 
 
 def mutual_information_continuous(
@@ -241,7 +241,7 @@ def _kl_divergence_histogram(p_samples: np.ndarray, q_samples: np.ndarray, bins:
     # KL divergence: sum(p * log(p/q))
     kl_div = np.sum(hist_p * np.log(hist_p / hist_q))
 
-    return max(0.0, kl_div)  # Ensure non-negative
+    return max(0.0, float(kl_div))  # Ensure non-negative
 
 
 def _kl_divergence_kde(p_samples: np.ndarray, q_samples: np.ndarray) -> float:
@@ -281,9 +281,9 @@ def _kl_divergence_kde(p_samples: np.ndarray, q_samples: np.ndarray) -> float:
     integrand = density_p * np.log(np.maximum(ratio, np.finfo(float).eps))
 
     grid_spacing = (grid_max - grid_min) / (n_grid - 1)
-    kl_div = np.trapz(integrand, dx=grid_spacing)
+    kl_div = np.trapezoid(integrand, dx=grid_spacing)
 
-    return max(0.0, kl_div)
+    return max(0.0, float(kl_div))
 
 
 def entropy_estimation(samples: np.ndarray, method: str = "histogram", bins: Optional[int] = None) -> float:

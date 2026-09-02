@@ -19,7 +19,7 @@ logger = logging.get_logger(__name__)
 
 
 def entropy_estimator(
-    counts: Union[Dict[Any, int], List[int]], method: str = "plugin", bias_correction: bool = True
+    counts: "Union[Dict[Any, int], List[int], np.ndarray]", method: str = "plugin", bias_correction: bool = True
 ) -> float:
     """Estimate Shannon entropy with various methods and bias correction.
 
@@ -163,7 +163,7 @@ def _jackknife_entropy_estimator(counts: np.ndarray, total: int) -> float:
     h_avg_reduced = np.mean(h_jackknife_terms)
     h_jackknife = k * h_plugin - (k - 1) * h_avg_reduced
 
-    return max(0.0, h_jackknife)
+    return float(max(0.0, h_jackknife))
 
 
 def mutual_information_estimator(
@@ -339,12 +339,12 @@ def entropy_bootstrap_confidence(
         entropy_est = entropy_estimator(bootstrap_counts, method=method, bias_correction=True)
         bootstrap_entropies.append(entropy_est)
 
-    bootstrap_entropies = np.array(bootstrap_entropies)
+    bootstrap_entropies_arr = np.array(bootstrap_entropies)
 
     # Calculate confidence interval
     alpha = 1 - confidence_level
-    ci_lower = np.percentile(bootstrap_entropies, alpha / 2 * 100)
-    ci_upper = np.percentile(bootstrap_entropies, (1 - alpha / 2) * 100)
+    ci_lower = np.percentile(bootstrap_entropies_arr, alpha / 2 * 100)
+    ci_upper = np.percentile(bootstrap_entropies_arr, (1 - alpha / 2) * 100)
 
     # Main estimate (using original data)
     if isinstance(counts, dict):

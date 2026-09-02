@@ -65,7 +65,9 @@ def _joint_entropy_n(variables: List[Sequence[Any]], base: float = 2.0) -> float
     return shannon_entropy(probs, base=base)
 
 
-def _mutual_information_joint_target(sources: List[Sequence[Any]], target: Sequence[Any], base: float = 2.0) -> float:
+def _mutual_information_joint_target(
+    sources: List[Sequence[Any]] | List[List[Any]], target: Sequence[Any], base: float = 2.0
+) -> float:
     """Compute I(S1,S2,...,Sn ; T) -- mutual information between joint sources and target.
 
     Args:

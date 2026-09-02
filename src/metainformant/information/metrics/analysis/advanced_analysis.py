@@ -50,7 +50,7 @@ def fisher_information(
         variance = np.var(samples, ddof=1)
         if variance <= 0:
             return float("inf")
-        return 1.0 / variance
+        return float(1.0 / variance)
 
     elif method == "empirical":
         if log_likelihood_grad is not None:
@@ -59,7 +59,7 @@ def fisher_information(
             return float(np.mean(grads**2))
         else:
             # Empirical estimation using KDE score function
-            from scipy.stats import gaussian_kde
+            from scipy.stats import gaussian_kde  # type: ignore[import-untyped]
 
             kde = gaussian_kde(samples)
             # Score function: d/dx log f(x) = f'(x)/f(x)

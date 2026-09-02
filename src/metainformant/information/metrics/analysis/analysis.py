@@ -123,8 +123,8 @@ def _identify_low_complexity_regions(
     entropy_values = [pos["entropy"] for pos in profile]
     threshold = np.percentile(entropy_values, threshold_percentile)
 
-    regions = []
-    current_region = None
+    regions: list[dict[str, Any]] = []
+    current_region: dict[str, Any] | None = None
 
     for i, pos_data in enumerate(profile):
         entropy_val = pos_data["entropy"]
@@ -158,8 +158,8 @@ def _identify_high_complexity_regions(
     entropy_values = [pos["entropy"] for pos in profile]
     threshold = np.percentile(entropy_values, threshold_percentile)
 
-    regions = []
-    current_region = None
+    regions: list[dict[str, Any]] = []
+    current_region: dict[str, Any] | None = None
 
     for i, pos_data in enumerate(profile):
         entropy_val = pos_data["entropy"]
@@ -301,7 +301,7 @@ def analyze_sequence_information(
     if methods is None:
         methods = ["entropy", "complexity", "patterns"]
 
-    analysis_result = {
+    analysis_result: Dict[str, Any] = {
         "sequence_length": len(sequence),
         "sequence_type": _infer_sequence_type(sequence),
         "k_mer_analysis": {},
@@ -449,7 +449,7 @@ def _compression_complexity(sequence: str) -> float:
 
 def _find_repeats(sequence: str, min_length: int = 3) -> List[Dict[str, Any]]:
     """Find repeated subsequences."""
-    repeats = []
+    repeats: List[Dict[str, Any]] = []
     seq_len = len(sequence)
 
     for length in range(min_length, seq_len // 2 + 1):
