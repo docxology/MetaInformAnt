@@ -15,7 +15,7 @@ import numpy as np
 
 from metainformant.core.data import validation
 from metainformant.core.utils import errors, logging
-from metainformant.simulation.rng import coerce_and_seed
+from metainformant.simulation.rng import coerce_and_seed, coerce_rng, seed_numpy_from_rng
 
 logger = logging.get_logger(__name__)
 
@@ -246,8 +246,7 @@ def run_simulation(
     validation.validate_range(n_steps, min_val=1, name="n_steps")
     validation.validate_range(record_interval, min_val=1, name="record_interval")
 
-    if rng is None:
-        rng = random.Random()
+    rng = coerce_rng(rng)
 
     snapshots = []
     logger.info(f"Starting ecosystem simulation for {n_steps} steps")
@@ -548,8 +547,7 @@ def simulate_predator_prey(
     validation.validate_range(predator_efficiency, min_val=0.0, max_val=1.0, name="predator_efficiency")
     validation.validate_range(prey_reproduction, min_val=0.0, name="prey_reproduction")
 
-    if rng is None:
-        rng = random.Random()
+    rng = coerce_rng(rng)
 
     snapshots = []
     logger.info(f"Starting predator-prey simulation for {n_steps} steps")
@@ -623,8 +621,7 @@ def simulate_competition(
     """
     validation.validate_range(competition_strength, min_val=0.0, max_val=1.0, name="competition_strength")
 
-    if rng is None:
-        rng = random.Random()
+    rng = coerce_rng(rng)
 
     snapshots = []
     logger.info(f"Starting competition simulation for {n_steps} steps")

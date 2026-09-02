@@ -14,7 +14,7 @@ import numpy as np
 
 from metainformant.core.data import validation
 from metainformant.core.utils import errors, logging
-from metainformant.simulation.rng import coerce_and_seed, seed_numpy_from_rng
+from metainformant.simulation.rng import coerce_and_seed, coerce_rng, seed_numpy_from_rng
 
 logger = logging.get_logger(__name__)
 
@@ -336,8 +336,7 @@ def simulate_bottleneck_population(
     Raises:
         ValueError: If parameters are invalid
     """
-    if rng is None:
-        rng = random.Random()
+    rng = coerce_rng(rng)
 
     # Alternative interface: return sequences
     if n_sequences is not None:
@@ -467,8 +466,7 @@ def simulate_population_expansion(
     Raises:
         ValueError: If parameters are invalid
     """
-    if rng is None:
-        rng = random.Random()
+    rng = coerce_rng(rng)
 
     # Alternative interface: return sequences
     if n_sequences is not None:

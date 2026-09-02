@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Tuple
 
 from metainformant.core.data import validation
 from metainformant.core.utils import errors, logging
+from metainformant.simulation.rng import coerce_rng
 
 logger = logging.get_logger(__name__)
 
@@ -107,8 +108,7 @@ def generate_random_dna(length: int, *, gc_content: float = 0.5, rng: random.Ran
     validation.validate_range(length, min_val=1, name="length")
     validation.validate_range(gc_content, min_val=0.0, max_val=1.0, name="gc_content")
 
-    if rng is None:
-        rng = random.Random()
+    rng = coerce_rng(rng)
 
     # Calculate base frequencies
     gc_freq = gc_content
@@ -144,8 +144,7 @@ def mutate_sequence(seq: str, n_mut: int, *, rng: random.Random | None = None) -
     validation.validate_range(n_mut, min_val=0, name="n_mut")
     validation.validate_range(n_mut, min_val=0, max_val=len(seq), name="n_mut")
 
-    if rng is None:
-        rng = random.Random()
+    rng = coerce_rng(rng)
 
     if n_mut == 0:
         return seq
@@ -186,8 +185,7 @@ def generate_random_protein(length: int, *, rng: random.Random | None = None) ->
     """
     validation.validate_range(length, min_val=1, name="length")
 
-    if rng is None:
-        rng = random.Random()
+    rng = coerce_rng(rng)
 
     sequence = rng.choices(list(AMINO_ACIDS), k=length)
     return "".join(sequence)
@@ -215,8 +213,7 @@ def evolve_sequence(
     validation.validate_range(generations, min_val=0, name="generations")
     validation.validate_range(mutation_rate, min_val=0.0, max_val=1.0, name="mutation_rate")
 
-    if rng is None:
-        rng = random.Random()
+    rng = coerce_rng(rng)
 
     current_seq = sequence
 
@@ -292,8 +289,7 @@ def reverse_transcribe_protein_to_dna(protein_sequence: str, *, rng: random.Rand
     """
     validation.validate_type(protein_sequence, str, "protein_sequence")
 
-    if rng is None:
-        rng = random.Random()
+    rng = coerce_rng(rng)
 
     dna_sequence = []
 
@@ -394,8 +390,7 @@ def generate_sequence_family(
     validation.validate_range(n_descendants, min_val=1, name="n_descendants")
     validation.validate_range(generations, min_val=0, name="generations")
 
-    if rng is None:
-        rng = random.Random()
+    rng = coerce_rng(rng)
 
     descendants = [ancestor]  # Include ancestor
 
@@ -531,8 +526,7 @@ def simulate_gene_duplication(
     validation.validate_range(n_copies, min_val=1, name="n_copies")
     validation.validate_range(divergence_time, min_val=0, name="divergence_time")
 
-    if rng is None:
-        rng = random.Random()
+    rng = coerce_rng(rng)
 
     copies = []
     for _ in range(n_copies):
