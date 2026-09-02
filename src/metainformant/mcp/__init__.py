@@ -1,16 +1,23 @@
-"""MCP (Model Context Protocol) helpers for METAINFORMANT.
+"""MCP (Model Context Protocol) package for METAINFORMANT.
 
-The current public surface is a standalone amalgkit monitor module under
-``metainformant.mcp.tools``.  A full MCP server is not implemented yet.
+Provides a stdio JSON-RPC 2.0 MCP server (:mod:`metainformant.mcp.server`) and
+a declarative tool registry (:mod:`metainformant.mcp.registry`).  Tools are
+bundled tool adapters under ``metainformant.mcp.tools`` plus this package's
+``tool_adapters`` module; every tool is registered through
+``metainformant.mcp.registry.ToolRegistry``.
 """
 
 from __future__ import annotations
 
-__all__ = ["tools"]
+#: Declarative list of tool modules registered into the default MCP registry.
+TOOLS_MODULES = ("metainformant.mcp.tool_adapters",)
+
+__all__ = ["TOOLS_MODULES", "registry", "server", "tool_adapters", "tools"]
 
 
-def __getattr__(name):
-    """Lazily expose the ``tools`` subpackage to honor ``__all__``."""
+def __getattr__(name: str):
+    """Lazily expose submodules to honor ``__all__`` without import side effects."""
+
     if name in __all__:
         import importlib
 
