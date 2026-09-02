@@ -153,12 +153,21 @@ def apply_deterministic_rcparams() -> None:
     logger.debug("Applied deterministic figure rc-params")
 
 
-def save_figure_deterministic(fig: "mpl.figure.Figure", path, *, dpi: int = 300) -> None:
+def save_figure_deterministic(
+    fig: "mpl.figure.Figure",
+    path,
+    *,
+    dpi: int = 300,
+    bbox_inches: "str | None" = None,
+) -> None:
     """Save *fig* to *path* with reproducible bytes.
 
     Passes fixed (empty) metadata for Software/Creator/date fields so that
     identical figure state yields identical files across runs — required for
     regression tests on figure output and for reproducible publications.
+    ``bbox_inches="tight"`` is accepted so pyplot-level
+    ``savefig(..., bbox_inches="tight")`` call sites can route through this
+    helper without changing output geometry.
     """
     metadata = {
         "Software": "",
@@ -166,4 +175,4 @@ def save_figure_deterministic(fig: "mpl.figure.Figure", path, *, dpi: int = 300)
         "Creation Time": "",
         "Date": "",
     }
-    fig.savefig(path, dpi=dpi, metadata=metadata)
+    fig.savefig(path, dpi=dpi, metadata=metadata, bbox_inches=bbox_inches)

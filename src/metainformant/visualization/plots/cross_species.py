@@ -23,6 +23,7 @@ import seaborn as sns
 from matplotlib.patches import Patch
 
 from metainformant.core.utils import logging
+from metainformant.visualization.config.conventions import save_figure_deterministic
 
 logger = logging.get_logger(__name__)
 
@@ -167,8 +168,7 @@ def plot_divergence_heatmap(
     ax.set_title(title, fontsize=14, fontweight="bold", pad=20)
     plt.xticks(rotation=45, ha="right")
     plt.tight_layout()
-    plt.savefig(output_path, dpi=250, bbox_inches="tight")
-    plt.close()
+    save_figure_deterministic(plt.gcf(), output_path, dpi=250, bbox_inches="tight")
     logger.info(f"Saved divergence heatmap to {output_path}")
 
 
@@ -218,8 +218,7 @@ def plot_dendrogram(
     ax.set_title(title, fontsize=14, fontweight="bold", pad=15)
     ax.set_ylabel("Average-linkage distance (1 − Spearman ρ)", fontsize=11)
     plt.tight_layout()
-    plt.savefig(output_path, dpi=250, bbox_inches="tight")
-    plt.close()
+    save_figure_deterministic(plt.gcf(), output_path, dpi=250, bbox_inches="tight")
     logger.info(f"Saved dendrogram to {output_path}")
 
 
@@ -270,8 +269,7 @@ def plot_coverage(
         ax.legend(handles=legend, loc="lower right", fontsize=8, title="Family")
 
     plt.tight_layout()
-    plt.savefig(output_path, dpi=200, bbox_inches="tight")
-    plt.close()
+    save_figure_deterministic(plt.gcf(), output_path, dpi=200, bbox_inches="tight")
     logger.info(f"Saved coverage barplot to {output_path}")
 
 
@@ -326,8 +324,7 @@ def plot_top_pairs(div_matrix: pd.DataFrame, output_path: Path) -> None:
 
     fig.suptitle("Pairwise Expression Divergence Extremes", fontsize=14, fontweight="bold", y=1.01)
     plt.tight_layout()
-    plt.savefig(output_path, dpi=200, bbox_inches="tight")
-    plt.close()
+    save_figure_deterministic(plt.gcf(), output_path, dpi=200, bbox_inches="tight")
     logger.info(f"Saved top pairs plot to {output_path}")
 
 
@@ -396,8 +393,7 @@ def plot_family_violin(
     legend = [Patch(facecolor="#27ae60", label="Within-family"), Patch(facecolor="#e67e22", label="Between-family")]
     ax.legend(handles=legend, fontsize=9)
     plt.tight_layout()
-    plt.savefig(output_path, dpi=200, bbox_inches="tight")
-    plt.close()
+    save_figure_deterministic(plt.gcf(), output_path, dpi=200, bbox_inches="tight")
     logger.info(f"Saved family violin plot to {output_path}")
 
 
@@ -485,8 +481,7 @@ def plot_method_comparison(
     ax.grid(True, alpha=0.2)
     ax.set_aspect("equal")
     plt.tight_layout()
-    plt.savefig(output_path, dpi=200, bbox_inches="tight")
-    plt.close()
+    save_figure_deterministic(plt.gcf(), output_path, dpi=200, bbox_inches="tight")
     logger.info(f"Saved method comparison plot to {output_path}")
 
 
@@ -529,8 +524,7 @@ def plot_mean_divergence_rank(
 
     ax.set_xlim(0, means.max() * 1.15)
     plt.tight_layout()
-    plt.savefig(output_path, dpi=200, bbox_inches="tight")
-    plt.close()
+    save_figure_deterministic(plt.gcf(), output_path, dpi=200, bbox_inches="tight")
     logger.info(f"Saved mean divergence rank plot to {output_path}")
 
 
@@ -617,8 +611,7 @@ def plot_species_summary(feature_stats: pd.DataFrame, output_path: Path) -> None
     ax2.set_xlim(0, max(1.0, max_mean_expression * 1.2))
 
     plt.tight_layout()
-    plt.savefig(output_path, dpi=300, bbox_inches="tight")
-    plt.close()
+    save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
     logger.info(f"Saved species feature summary to {output_path}")
 
 
@@ -649,8 +642,7 @@ def plot_profile_quality(profile_quality: pd.DataFrame, output_path: Path) -> No
     ax.grid(axis="x", color="#D9D9D9", linewidth=0.6)
     ax.set_axisbelow(True)
     plt.tight_layout()
-    plt.savefig(output_path, dpi=300, bbox_inches="tight")
-    plt.close()
+    save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
     logger.info(f"Saved profile-quality figure to {output_path}")
 
 
@@ -713,8 +705,7 @@ def plot_divergence_stability(
     ax.set_axisbelow(True)
     ax.legend(loc="lower right", frameon=True)
     plt.tight_layout()
-    plt.savefig(output_path, dpi=300, bbox_inches="tight")
-    plt.close()
+    save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
     logger.info(f"Saved divergence-stability figure to {output_path}")
 
 
@@ -806,6 +797,5 @@ def plot_combined_summary(
     ax3.legend(fontsize=9)
 
     fig.suptitle(title, fontsize=15, fontweight="bold", y=0.99)
-    plt.savefig(output_path, dpi=200, bbox_inches="tight")
-    plt.close()
+    save_figure_deterministic(plt.gcf(), output_path, dpi=200, bbox_inches="tight")
     logger.info(f"Saved combined summary figure to {output_path}")
