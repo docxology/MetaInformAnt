@@ -13,6 +13,7 @@ import matplotlib.colors as mcolors
 import matplotlib.pyplot as plt
 
 from metainformant.core.utils import logging
+from metainformant.visualization.config.conventions import OKABE_ITO as _OKABE_ITO
 
 logger = logging.get_logger(__name__)
 
@@ -65,16 +66,10 @@ def chromosome_palette(chromosomes: Sequence[str] | None = None) -> List[str]:
 # Colorblind-safe categorical palettes (Wong 2011, Tol, IBM)
 # ---------------------------------------------------------------------------
 
-WONG: List[str] = [
-    "#000000",  # black
-    "#E69F00",  # orange
-    "#56B4E9",  # sky blue
-    "#009E73",  # bluish green
-    "#F0E442",  # yellow
-    "#0072B2",  # blue
-    "#D55E00",  # vermilion
-    "#CC79A7",  # reddish purple
-]
+# Wong 2011 palette: derived from the canonical Okabe-Ito definition in
+# conventions.py (same 8 hues, black first). Kept as a separate public name for
+# API compatibility; a test asserts the derivation.
+WONG: List[str] = sorted(_OKABE_ITO, key=lambda c: (c != "#000000",))
 
 TOL_BRIGHT: List[str] = [
     "#4477AA",  # blue

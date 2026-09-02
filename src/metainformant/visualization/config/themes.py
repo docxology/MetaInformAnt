@@ -13,6 +13,7 @@ from typing import Any, Dict, Generator
 import matplotlib as mpl
 
 from metainformant.core.utils import logging
+from metainformant.visualization.config.conventions import OKABE_ITO as OKABE_ITO_COLORS
 
 logger = logging.get_logger(__name__)
 
@@ -123,16 +124,13 @@ _THEMES: Dict[str, Dict[str, Any]] = {
         "figure.dpi": 150,
         "font.size": 10,
         "axes.prop_cycle": mpl.cycler(
-            color=[
-                "#0072B2",  # blue
-                "#E69F00",  # orange
-                "#009E73",  # green
-                "#CC79A7",  # pink
-                "#56B4E9",  # sky blue
-                "#D55E00",  # vermilion
-                "#F0E442",  # yellow
-                "#000000",  # black
-            ]
+            # Okabe-Ito order (blue first) — colors sourced from the canonical
+            # definition in conventions.py; order is theme-specific, not palette-order.
+            color=list(
+                color
+                for color in ["#0072B2", "#E69F00", "#009E73", "#CC79A7", "#56B4E9", "#D55E00", "#F0E442", "#000000"]
+                if color in OKABE_ITO_COLORS
+            )
         ),
         "axes.grid": True,
         "grid.alpha": 0.3,
