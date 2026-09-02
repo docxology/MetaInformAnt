@@ -17,12 +17,16 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 # Add project to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
+from metainformant.eqtl.synthetic import (
+    create_synthetic_genotypes,
+    load_real_expression_data,
+    parse_gene_positions,
+)
 from metainformant.gwas.finemapping.eqtl import (
     cis_eqtl_scan,
     eqtl_effect_sizes,
@@ -33,7 +37,6 @@ from metainformant.gwas.visualization.eqtl_visualization import (
     plot_eqtl_summary,
     plot_eqtl_volcano,
 )
-from metainformant.rna.core.sample_utils import find_quantification_file
 
 # Paths
 QUANT_DIR = Path("output/amalgkit/apis_mellifera_all/work/quant")
@@ -57,139 +60,6 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def load_real_expression_data(
-    quant_dir: Path, max_samples: int = 100, min_tpm: float = 1.0, max_genes: int = 1000
-) -> tuple[pd.DataFrame, list[str]]:
-    """Load real expression data from recognized per-sample quant files.
-
-    Args:
-        quant_dir: Directory containing sample subdirectories.
-        max_samples: Maximum samples to load (for speed).
-        min_tpm: Minimum mean TPM to include a gene.
-        max_genes: Maximum genes to include (top by mean expression).
-
-    Returns:
-        Expression matrix (genes x samples) and list of sample IDs.
-    """
-    logger.info(f"Loading real expression data from {quant_dir}")
-
-    sample_dirs = sorted([d for d in quant_dir.iterdir() if d.is_dir()])
-    logger.info(f"Found {len(sample_dirs)} sample directories")
-
-    # Limit samples for speed
-    sample_dirs = sample_dirs[:max_samples]
-    logger.info(f"Loading {len(sample_dirs)} samples")
-
-    expression_data = {}
-    for sample_dir in sample_dirs:
-        sample_id = sample_dir.name
-        abundance_file = find_quantification_file(sample_dir, sample_id)
-        if abundance_file is None:
-            continue
-
-        df = pd.read_csv(abundance_file, sep="\t")
-        target_col = "target_id" if "target_id" in df.columns else "Name"
-        tpm_col = "tpm" if "tpm" in df.columns else "TPM"
-        if target_col not in df.columns or tpm_col not in df.columns:
-            logger.warning(f"Skipping {sample_id}: missing transcript or TPM column in {abundance_file}")
-            continue
-
-        expression_data[sample_id] = df.set_index(target_col)[tpm_col]
-
-    if not expression_data:
-        raise ValueError("No expression data loaded")
-
-    # Build expression matrix
-    expr_matrix = pd.DataFrame(expression_data)
-    logger.info(f"Loaded expression matrix: {expr_matrix.shape}")
-
-    # Filter low-expression genes
-    mean_tpm = expr_matrix.mean(axis=1)
-    expressed_genes = mean_tpm[mean_tpm >= min_tpm].index
-    expr_matrix = expr_matrix.loc[expressed_genes]
-    logger.info(f"After filtering (TPM >= {min_tpm}): {len(expr_matrix)} genes")
-
-    # Keep only top genes by expression for speed
-    if len(expr_matrix) > max_genes:
-        top_genes = mean_tpm.loc[expr_matrix.index].nlargest(max_genes).index
-        expr_matrix = expr_matrix.loc[top_genes]
-        logger.info(f"Selected top {max_genes} genes by expression")
-
-    return expr_matrix, list(expression_data.keys())
-
-
-def parse_gene_positions(gene_ids: list[str]) -> pd.DataFrame:
-    """Parse gene positions from kallisto target IDs.
-
-    Target format: lcl|NC_037638.1_mrna_XM_623972.6_1
-    """
-    positions = []
-
-    for gid in gene_ids:
-        parts = gid.split("_")
-        if len(parts) >= 3:
-            # Extract chromosome from NC_XXXXXX.1
-            chrom_part = parts[0].replace("lcl|", "")
-            if chrom_part.startswith("NC_"):
-                chrom = chrom_part
-            else:
-                chrom = "unknown"
-
-            # Use index as position (real positions would come from GFF)
-            # Spread across genome (~250Mb / n_genes)
-            idx = gene_ids.index(gid)
-            position = 1_000_000 + (idx * 10_000)
-
-            positions.append(
-                {
-                    "gene_id": gid,
-                    "chrom": chrom,
-                    "tss_position": position,
-                }
-            )
-
-    return pd.DataFrame(positions)
-
-
-def create_synthetic_genotypes(
-    sample_ids: list[str], gene_positions: pd.DataFrame, variants_per_gene: int = 1
-) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Create synthetic genotype data for demonstration.
-
-    Note: In real analysis, this would come from matched WGS/genotyping data.
-    """
-    logger.info("Creating synthetic genotypes (real genotypes not available)")
-    np.random.seed(42)
-
-    variant_ids = []
-    var_chroms = []
-    var_positions = []
-
-    for _, row in gene_positions.iterrows():
-        for i in range(variants_per_gene):
-            var_id = f"var_{row['gene_id'][:20]}_{i}"
-            variant_ids.append(var_id)
-            var_chroms.append(row["chrom"])
-            var_positions.append(int(row["tss_position"]) + (i - 1) * 5000)
-
-    variant_positions = pd.DataFrame(
-        {
-            "variant_id": variant_ids,
-            "chrom": var_chroms,
-            "position": var_positions,
-        }
-    )
-
-    # Generate dosages with MAF ~ 0.25
-    n_variants = len(variant_ids)
-    n_samples = len(sample_ids)
-    genotypes = np.random.choice([0, 1, 2], size=(n_variants, n_samples), p=[0.56, 0.32, 0.12])
-
-    genotype_matrix = pd.DataFrame(genotypes, index=variant_ids, columns=sample_ids)
-
-    return genotype_matrix, variant_positions
-
-
 def run_real_eqtl_analysis():
     """Run eQTL analysis with real A. mellifera expression data."""
     start_time = datetime.now()
@@ -200,7 +70,9 @@ def run_real_eqtl_analysis():
 
     # Step 1: Load real expression data
     logger.info("\n[Step 1] Loading REAL expression data...")
-    expr_matrix, sample_ids = load_real_expression_data(QUANT_DIR, max_samples=200, min_tpm=1.0)
+    expr_matrix, sample_ids = load_real_expression_data(
+        QUANT_DIR, max_samples=200, min_tpm=1.0
+    )
 
     # Step 2: Parse gene positions
     logger.info("\n[Step 2] Parsing gene annotations...")
@@ -220,13 +92,17 @@ def run_real_eqtl_analysis():
 
     # Step 3: Create synthetic genotypes (real WGS not available)
     logger.info("\n[Step 3] Creating synthetic genotypes...")
-    geno_matrix, var_positions = create_synthetic_genotypes(sample_ids, gene_positions, variants_per_gene=3)
+    geno_matrix, var_positions = create_synthetic_genotypes(
+        sample_ids, gene_positions, variants_per_gene=3
+    )
     logger.info(f"Created {len(var_positions)} variants")
 
     # Save inputs
     expr_matrix.to_csv(RESULTS_DIR / "real_expression_matrix.tsv", sep="\t")
     geno_matrix.to_csv(RESULTS_DIR / "synthetic_genotype_matrix.tsv", sep="\t")
-    gene_positions.to_csv(RESULTS_DIR / "gene_positions_real.tsv", sep="\t", index=False)
+    gene_positions.to_csv(
+        RESULTS_DIR / "gene_positions_real.tsv", sep="\t", index=False
+    )
     var_positions.to_csv(RESULTS_DIR / "variant_positions.tsv", sep="\t", index=False)
 
     # Step 4: Run cis-eQTL scan
@@ -247,8 +123,12 @@ def run_real_eqtl_analysis():
     logger.info("\n[Step 5] Annotating results...")
     if len(cis_results) > 0:
         # Add gene expression stats
-        cis_results_annotated = cis_results.merge(gene_stats[["gene_id", "mean_tpm"]], on="gene_id", how="left")
-        cis_results_annotated.to_csv(RESULTS_DIR / "cis_eqtl_annotated.tsv", sep="\t", index=False)
+        cis_results_annotated = cis_results.merge(
+            gene_stats[["gene_id", "mean_tpm"]], on="gene_id", how="left"
+        )
+        cis_results_annotated.to_csv(
+            RESULTS_DIR / "cis_eqtl_annotated.tsv", sep="\t", index=False
+        )
 
         # Top hits
         top_hits = cis_results.nsmallest(100, "pvalue")
