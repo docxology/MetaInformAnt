@@ -23,7 +23,7 @@ import seaborn as sns
 from matplotlib.patches import Patch
 
 from metainformant.core.utils import logging
-from metainformant.visualization.config.conventions import save_figure_deterministic
+from metainformant.visualization.config.conventions import OKABE_ITO, save_figure_deterministic
 
 logger = logging.get_logger(__name__)
 
@@ -557,7 +557,7 @@ def plot_species_summary(feature_stats: pd.DataFrame, output_path: Path) -> None
     ax1.barh(
         y_pos,
         feature_stats_sorted[expressed_column],
-        color="#0072B2",
+        color=OKABE_ITO[4],
         edgecolor="#2F2F2F",
         linewidth=0.5,
         hatch="x",
@@ -587,7 +587,7 @@ def plot_species_summary(feature_stats: pd.DataFrame, output_path: Path) -> None
     ax2.barh(
         y_pos,
         feature_stats_sorted["mean_expression"],
-        color="#009E73",
+        color=OKABE_ITO[2],
         edgecolor="#2F2F2F",
         linewidth=0.5,
         hatch=".",
@@ -626,9 +626,9 @@ def plot_profile_quality(profile_quality: pd.DataFrame, output_path: Path) -> No
     y = np.arange(len(frame))
     left = np.zeros(len(frame), dtype=float)
     segments = (
-        ("positive_features", "Positive finite", "#0072B2", "\\"),
-        ("zero_features", "Finite zero", "#E69F00", "."),
-        ("nonfinite_features", "Non-finite", "#D55E00", "x"),
+        ("positive_features", "Positive finite", OKABE_ITO[4], "\\"),
+        ("zero_features", "Finite zero", OKABE_ITO[0], "."),
+        ("nonfinite_features", "Non-finite", OKABE_ITO[5], "x"),
     )
     for column, label, color, hatch in segments:
         values = frame[column].to_numpy(dtype=float)
@@ -681,7 +681,7 @@ def plot_divergence_stability(
         y,
         xerr=np.vstack([lower, upper]),
         fmt="o",
-        color="#0072B2",
+        color=OKABE_ITO[4],
         ecolor="#333333",
         elinewidth=1.2,
         capsize=3,
