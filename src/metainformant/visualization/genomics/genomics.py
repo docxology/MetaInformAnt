@@ -17,6 +17,7 @@ from matplotlib.axes import Axes
 from metainformant.core.data import validation
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
+from metainformant.visualization.config.conventions import save_figure_deterministic
 
 logger = logging.get_logger(__name__)
 
@@ -111,7 +112,7 @@ def manhattan_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Manhattan plot saved to {output_path}")
 
     return ax
@@ -188,7 +189,7 @@ def volcano_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Volcano plot saved to {output_path}")
 
     return ax
@@ -265,7 +266,7 @@ def regional_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Regional plot saved to {output_path}")
 
     return ax
@@ -330,7 +331,7 @@ def circular_manhattan_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Circular Manhattan plot saved to {output_path}")
 
     return ax
@@ -395,7 +396,7 @@ def chromosome_ideogram(*, ax: Axes | None = None, output_path: str | Path | Non
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Chromosome ideogram saved to {output_path}")
 
     return ax
@@ -443,7 +444,7 @@ def coverage_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Coverage plot saved to {output_path}")
 
     return ax
@@ -491,7 +492,7 @@ def variant_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Variant plot saved to {output_path}")
 
     return ax

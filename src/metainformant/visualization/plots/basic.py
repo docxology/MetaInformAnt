@@ -16,6 +16,7 @@ from matplotlib.axes import Axes
 from metainformant.core.data import validation
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
+from metainformant.visualization.config.conventions import save_figure_deterministic
 
 logger = logging.get_logger(__name__)
 
@@ -59,7 +60,7 @@ def lineplot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Line plot saved to {output_path}")
 
     return ax
@@ -96,7 +97,7 @@ def scatter_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Scatter plot saved to {output_path}")
 
     return ax
@@ -133,7 +134,7 @@ def heatmap(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Heatmap saved to {output_path}")
 
     return ax
@@ -177,7 +178,7 @@ def bar_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Bar plot saved to {output_path}")
 
     return ax
@@ -221,7 +222,7 @@ def pie_chart(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Pie chart saved to {output_path}")
 
     return ax
@@ -258,7 +259,7 @@ def area_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Area plot saved to {output_path}")
 
     return ax
@@ -295,7 +296,7 @@ def step_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Step plot saved to {output_path}")
 
     return ax

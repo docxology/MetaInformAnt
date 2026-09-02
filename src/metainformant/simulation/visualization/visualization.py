@@ -18,6 +18,7 @@ from matplotlib.axes import Axes
 from metainformant.core.data import validation
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
+from metainformant.visualization.config.conventions import save_figure_deterministic
 
 logger = logging.get_logger(__name__)
 
@@ -88,7 +89,7 @@ def plot_sequence_evolution(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Sequence evolution plot saved to {output_path}")
 
     return ax
@@ -272,7 +273,7 @@ def plot_rnaseq_simulation_results(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"RNA-seq simulation results plot saved to {output_path}")
 
     return axes[0]
@@ -320,7 +321,7 @@ def plot_population_dynamics_simulation(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Population dynamics simulation plot saved to {output_path}")
 
     return ax
@@ -452,7 +453,7 @@ def plot_agent_based_model_results(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Agent-based model results plot saved to {output_path}")
 
     return axes[0]
@@ -596,7 +597,7 @@ def plot_evolutionary_simulation_summary(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Evolutionary simulation summary plot saved to {output_path}")
 
     return axes[0]
@@ -652,7 +653,7 @@ def plot_simulation_parameter_sensitivity(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Simulation parameter sensitivity plot saved to {output_path}")
 
     return ax
@@ -769,7 +770,7 @@ def plot_simulation_validation_comparison(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Simulation validation comparison plot saved to {output_path}")
 
     return ax

@@ -16,6 +16,7 @@ from matplotlib.axes import Axes
 
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
+from metainformant.visualization.config.conventions import save_figure_deterministic
 
 logger = logging.get_logger(__name__)
 
@@ -81,7 +82,7 @@ def plot_phylo_tree(tree: Any, *, ax: Axes | None = None, output_path: str | Pat
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Phylogenetic tree plot saved to {output_path}")
 
     return ax
@@ -136,7 +137,7 @@ def circular_tree_plot(tree: Any, *, ax: Axes | None = None, output_path: str | 
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Circular phylogenetic tree plot saved to {output_path}")
 
     return ax
@@ -189,7 +190,7 @@ def unrooted_tree_plot(tree: Any, *, ax: Axes | None = None, output_path: str | 
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Unrooted phylogenetic tree plot saved to {output_path}")
 
     return ax
@@ -241,7 +242,7 @@ def tree_comparison_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Tree comparison plot saved to {output_path}")
 
     return axes[0]  # Return first axes for consistency
@@ -331,7 +332,7 @@ def tree_annotation_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Annotated phylogenetic tree plot saved to {output_path}")
 
     return ax

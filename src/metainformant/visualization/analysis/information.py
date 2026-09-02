@@ -17,6 +17,7 @@ from matplotlib.axes import Axes
 from metainformant.core.data import validation
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
+from metainformant.visualization.config.conventions import save_figure_deterministic
 
 logger = logging.get_logger(__name__)
 
@@ -71,7 +72,7 @@ def plot_entropy_profile(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Entropy profile plot saved to {output_path}")
 
     return ax
@@ -129,7 +130,7 @@ def plot_mutual_information_matrix(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Mutual information matrix plot saved to {output_path}")
 
     return ax
@@ -187,7 +188,7 @@ def plot_renyi_spectra(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Rényi spectra plot saved to {output_path}")
 
     return ax
@@ -246,7 +247,7 @@ def plot_information_landscape(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Information landscape plot saved to {output_path}")
 
     return ax
@@ -323,7 +324,7 @@ def plot_information_network(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Information network plot saved to {output_path}")
 
     return ax

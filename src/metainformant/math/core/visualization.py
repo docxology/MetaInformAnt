@@ -17,6 +17,7 @@ from matplotlib.axes import Axes
 from metainformant.core.data import validation
 from metainformant.core.io import paths
 from metainformant.core.utils import logging
+from metainformant.visualization.config.conventions import save_figure_deterministic
 
 logger = logging.get_logger(__name__)
 
@@ -78,7 +79,7 @@ def plot_allele_frequency_spectrum(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Allele frequency spectrum saved to {output_path}")
 
     return ax
@@ -137,7 +138,7 @@ def plot_population_genetics_summary(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Population genetics summary saved to {output_path}")
 
     return ax
@@ -191,7 +192,7 @@ def plot_evolutionary_trajectory(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Evolutionary trajectory saved to {output_path}")
 
     return ax
@@ -236,7 +237,7 @@ def plot_selection_coefficient_distribution(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Selection coefficient distribution saved to {output_path}")
 
     return ax
@@ -285,7 +286,7 @@ def plot_fst_distribution(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Fst distribution saved to {output_path}")
 
     return ax
@@ -340,7 +341,7 @@ def plot_coalescent_tree(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Coalescent tree saved to {output_path}")
 
     return ax
@@ -392,7 +393,7 @@ def plot_genetic_drift_simulation(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Genetic drift simulation saved to {output_path}")
 
     return ax
@@ -441,7 +442,7 @@ def plot_moran_model_evolution(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Moran model evolution saved to {output_path}")
 
     return ax
@@ -486,7 +487,7 @@ def plot_price_equation_components(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Price equation components saved to {output_path}")
 
     return ax
@@ -532,7 +533,7 @@ def plot_epidemic_model_simulation(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Epidemic model simulation saved to {output_path}")
 
     return ax
@@ -591,7 +592,7 @@ def plot_population_structure_pca(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Population structure PCA saved to {output_path}")
 
     return ax
@@ -652,7 +653,7 @@ def plot_linkage_disequilibrium_decay(
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches="tight")
+        save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"LD decay plot saved to {output_path}")
 
     return ax
