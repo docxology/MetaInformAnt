@@ -1,6 +1,6 @@
 """Depth tests for metainformant.networks.analysis.graph_algorithms (Round-4 T3).
 
-Zero-mock, value-pinned: real networkx graphs with known topology, exact
+Real-implementation, value-pinned: real networkx graphs with known topology, exact
 centrality/similarity values, export/import roundtrips, and invariant checks.
 """
 

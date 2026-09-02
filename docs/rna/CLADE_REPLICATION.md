@@ -49,7 +49,7 @@ hymenoptera_amalgkit layout, not its data):
 <new_clade>/
   config/amalgkit/          # one YAML per species + cross-species YAML
   scripts/                  # thin orchestrators incl. metainformant_import.py
-  tests/                    # zero-mock pytest suite
+  tests/                    # real-implementation pytest suite
   doc/  docs/               # project docs (docs gate validates these)
   output/                   # working outputs (local-only)
 ```
@@ -100,7 +100,7 @@ embed Hymenoptera-specific logic.
   labeled for post-freeze use only.
 - Never write into the data root from analysis code; the data root is an
   input volume only.
-- Zero-mock tests: real files, real subprocesses; no `MagicMock`/`patch`.
+- Real-implementation tests: real files, real subprocesses; no test doubles.
 
 ## 6. Gates before first campaign
 

@@ -1,6 +1,6 @@
 """Depth tests for metainformant.information metrics estimation (Round-4 T3).
 
-Zero-mock, value-pinned: exact entropies for known distributions, estimator
+Real-implementation, value-pinned: exact entropies for known distributions, estimator
 bias direction, MI/KL identities, and entropy-rate sanity on deterministic
 and i.i.d. sequences.
 

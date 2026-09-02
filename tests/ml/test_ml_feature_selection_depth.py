@@ -1,6 +1,6 @@
 """Depth tests for metainformant.ml interpretability feature selection (Round-4 T3).
 
-Value-pinned, zero-mock tests: real numeric optimization and information
+Value-pinned real-implementation tests: real numeric optimization and information
 computations on synthetic data with planted structure. Regression tests for
 the recursive_elimination model-contract fix (fail-fast on non-estimators).
 """
