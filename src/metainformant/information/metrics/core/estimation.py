@@ -101,41 +101,35 @@ def _miller_madow_entropy_estimator(counts: np.ndarray, total: int) -> float:
 
 
 def _chao_shen_entropy_estimator(counts: np.ndarray, total: int) -> float:
-    """Chao-Shen entropy estimator for sparse data."""
-    # Sort counts in descending order
-    sorted_counts = np.sort(counts)[::-1]
-    k = len(sorted_counts)
+    """Chao-Shen (2003) coverage-adjusted entropy estimator for sparse data.
 
-    if k == 0:
+    Adjusts empirical probabilities by the estimated sample coverage
+    C = 1 - f1 / n (f1 = singleton count) and applies the
+    Horvitz-Thompson form: singletons contribute with the (1 - p_i_adj)
+    weight via the log(p_adj / C) surrogate, non-singletons directly.
+    """
+    positive = counts[counts > 0]
+    if len(positive) == 0 or total <= 0:
         return 0.0
 
-    # Chao-Shen estimator components
-    C = 1 - (np.sum(sorted_counts == 1) / total) if total > 0 else 0
+    f1 = int(np.sum(positive == 1))
+    coverage = 1.0 - f1 / total
+    if coverage <= 0.0:
+        return 0.0
 
-    if C == 0:
-        # No singleton counts, use plugin estimator
-        probs = sorted_counts / total
-        return -np.sum(probs * np.log2(probs))
+    probs = positive / total
+    adjusted = coverage * probs
 
-    # Weighted sum for Chao-Shen
-    np.array([1 / (i * (i - 1)) for i in range(2, k + 2)])
+    singletons = positive == 1
+    h = 0.0
+    for p_adj, is_singleton in zip(adjusted, singletons):
+        if is_singleton:
+            # Horvitz-Thompson surrogate for unobserved-mass correction
+            h -= p_adj * math.log2(p_adj / coverage)
+        else:
+            h -= p_adj * math.log2(p_adj)
 
-    # Calculate lambda terms
-    lambda_terms = []
-    for i in range(k):
-        if sorted_counts[i] > 1:
-            term = (sorted_counts[i] / total) * np.log2(sorted_counts[i] / total)
-            lambda_terms.append(term)
-
-    if lambda_terms:
-        lambda_sum = np.sum(lambda_terms)
-    else:
-        lambda_sum = 0.0
-
-    # Chao-Shen formula
-    entropy = -lambda_sum + (np.sum(sorted_counts == 1) / total) * np.log2(total) * C
-
-    return max(0.0, entropy)
+    return max(0.0, h)
 
 
 def _jackknife_entropy_estimator(counts: np.ndarray, total: int) -> float:

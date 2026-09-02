@@ -347,6 +347,20 @@ def _binomial_test_pvalue(k: int, n: int, p: float) -> float:
     return max(0.0, min(1.0, p_val))
 
 
+def _validate_model_contract(model: Any) -> None:
+    """Raise TypeError if the model does not expose the fit/predict contract.
+
+    A model object without callable ``fit`` and ``predict`` methods would
+    previously degrade recursive_elimination into silent correlation-based
+    ranking; failing fast surfaces the caller error instead.
+    """
+    if not (callable(getattr(model, "fit", None)) and callable(getattr(model, "predict", None))):
+        raise TypeError(
+            "model must expose callable fit() and predict() methods; "
+            f"got {type(model).__name__}. Pass a scikit-learn-style estimator."
+        )
+
+
 def recursive_elimination(
     model: Any,
     X: Any,
@@ -380,7 +394,10 @@ def recursive_elimination(
 
     Raises:
         ValueError: If n_features is larger than total features.
+        TypeError: If the model lacks the fit/predict contract.
     """
+    _validate_model_contract(model)
+
     n_samples, total_features = _get_shape(X)
     X_list = _to_2d_list(X)
     y_list = _to_1d_list(y)

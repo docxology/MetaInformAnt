@@ -600,7 +600,9 @@ def shortest_paths(graph: Any, source: str | None = None, target: str | None = N
                     distances[src].update(lengths)
                 return distances
             return dict(nx.shortest_path_length(graph))
-    except nx.NetworkXError:
+    except (nx.NetworkXError, nx.NetworkXNoPath):
+        # NoPath is not a NetworkXError subclass: unreachable pairs must
+        # return the empty-dict contract, not raise.
         return {}
 
 
