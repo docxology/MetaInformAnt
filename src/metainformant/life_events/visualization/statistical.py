@@ -23,7 +23,7 @@ except ImportError:
     logger.warning("matplotlib not available, life events statistical visualization disabled")
 
 try:
-    import seaborn as sns
+    import seaborn as sns  # type: ignore[import-untyped]
 
     HAS_SEABORN = True
 except ImportError:
@@ -79,7 +79,7 @@ def plot_event_embeddings(
             reducer = TSNE(n_components=plot_components, random_state=42)
         elif method.lower() == "umap":
             try:
-                import umap
+                import umap  # type: ignore[import-not-found]
 
                 reducer = umap.UMAP(n_components=plot_components, random_state=42)
             except ImportError:
@@ -107,7 +107,7 @@ def plot_event_embeddings(
             cmap="viridis",
             alpha=0.7,
         )
-        ax.set_zlabel(f"{method.upper()} Component 3")
+        ax.set_zlabel(f"{method.upper()} Component 3")  # type: ignore[attr-defined]
     else:
         fig, ax = plt.subplots(figsize=figsize)
         scatter = ax.scatter(
@@ -475,12 +475,12 @@ def plot_event_frequency_heatmap(
     bin_edges = [min_time + i * time_range / time_bins for i in range(time_bins + 1)]
 
     # Collect event frequencies by type and time bin
-    event_types = set()
+    event_types_set: set[str] = set()
     for seq in sequences:
         for event in seq.events:
-            event_types.add(event.event_type)
+            event_types_set.add(event.event_type)
 
-    event_types = sorted(list(event_types))
+    event_types = sorted(event_types_set)
 
     # Initialize frequency matrix
     frequency_matrix = np.zeros((len(event_types), time_bins))
@@ -550,7 +550,7 @@ def plot_event_cooccurrence(
 
     # Calculate co-occurrence matrix
     event_counts = {}
-    cooccurrence = {}
+    cooccurrence: Dict[str, Dict[str, int]] = {}
 
     for seq in sequences:
         events_in_seq = set(event.event_type for event in seq.events)
@@ -639,14 +639,14 @@ def plot_embedding_clusters(
     # Plot 1: Embedding distributions by cluster
     ax1 = axes[0]
     if clusters:
-        cluster_data = {}
+        cluster_data: Dict[int, list[float]] = {}
         for event_type, embedding in embeddings.items():
             cluster_id = clusters.get(event_type, -1)
             if cluster_id not in cluster_data:
                 cluster_data[cluster_id] = []
             cluster_data[cluster_id].append(np.mean(embedding))  # Use mean for simplicity
 
-        colors = plt.cm.tab10(np.linspace(0, 1, len(cluster_data)))
+        colors = plt.get_cmap("tab10")(np.linspace(0, 1, len(cluster_data)))
         for i, (cluster_id, values) in enumerate(cluster_data.items()):
             ax1.hist(values, alpha=0.7, label=f"Cluster {cluster_id}", color=colors[i])
 
@@ -786,7 +786,7 @@ def plot_population_comparison(
     axes[1, 0].grid(True, alpha=0.3)
 
     # Plot 4: Sequence similarity within groups
-    def calculate_sequence_similarity(sequences):
+    def calculate_sequence_similarity(sequences: List[Any]) -> float:
         if len(sequences) < 2:
             return 0.5  # Default similarity
 
@@ -851,7 +851,7 @@ def plot_prediction_accuracy(
         from sklearn.metrics import confusion_matrix
 
         cm = confusion_matrix(y_true, y_pred)
-        axes[0, 0].imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)
+        axes[0, 0].imshow(cm, interpolation="nearest", cmap="Blues")
         axes[0, 0].set_title("Confusion Matrix")
         axes[0, 0].set_xlabel("Predicted")
         axes[0, 0].set_ylabel("True")
@@ -938,7 +938,7 @@ def plot_prediction_accuracy(
         axes[1, 0].set_title("Residuals Distribution")
 
         # Q-Q plot of residuals
-        from scipy import stats
+        from scipy import stats  # type: ignore[import-untyped]
 
         stats.probplot(residuals, dist="norm", plot=axes[1, 1])
         axes[1, 1].set_title("Q-Q Plot of Residuals")

@@ -62,9 +62,9 @@ class MultiTaskPredictor:
         self.hidden_dim = hidden_dim
         self.random_state = random_state
 
-        self.num_events = None
-        self.event_vocab = None
-        self.models = {}
+        self.num_events: int | None = None
+        self.event_vocab: Dict[str, int] | None = None
+        self.models: Dict[str, Any] = {}
 
         if random_state is not None:
             import random
@@ -98,77 +98,6 @@ class MultiTaskPredictor:
                 if task in self.task_types
             }
         }
-        return self
-
-        try:
-            import torch
-            import torch.nn as nn
-            from torch.utils.data import DataLoader
-        except ImportError:
-            logger.warning("PyTorch not available, MultiTaskPredictor disabled")
-            return self
-
-        # Create shared encoder
-        shared_encoder = nn.Sequential(
-            nn.Embedding(self.num_events, self.embedding_dim),
-            nn.LSTM(self.embedding_dim, self.hidden_dim, batch_first=True),
-        )
-
-        # Create task-specific heads
-        self.models = {}
-        for task_name, task_type in self.task_types.items():
-            if task_type == "classification":
-                # Binary classification
-                head = nn.Sequential(nn.Linear(self.hidden_dim, 32), nn.ReLU(), nn.Linear(32, 1), nn.Sigmoid())
-            elif task_type == "regression":
-                # Regression
-                head = nn.Sequential(nn.Linear(self.hidden_dim, 32), nn.ReLU(), nn.Linear(32, 1))
-            else:
-                raise ValueError(f"Unknown task type: {task_type}")
-
-            self.models[task_name] = {"encoder": shared_encoder, "head": head}
-
-        # Prepare training data
-        train_data = self._prepare_data(sequences, outcomes)
-
-        if train_data is None:
-            logger.warning("No training data available")
-            return self
-
-        train_loader = DataLoader(train_data, batch_size=32, shuffle=True)
-
-        # Training loop (simplified - trains all tasks jointly)
-        for task_name, model_components in self.models.items():
-            encoder = model_components["encoder"]
-            head = model_components["head"]
-
-            optimizer = torch.optim.Adam(list(encoder.parameters()) + list(head.parameters()), lr=0.001)
-            criterion = nn.BCELoss() if self.task_types[task_name] == "classification" else nn.MSELoss()
-
-            encoder.train()
-            head.train()
-
-            for epoch in range(10):  # Simplified training
-                for inputs, targets in train_loader:
-                    optimizer.zero_grad()
-
-                    # Forward pass
-                    embedded = encoder[0](inputs)
-                    outputs, _ = encoder[1](embedded)
-                    final_output = outputs[:, -1, :]  # Take last timestep
-                    predictions = head(final_output)
-
-                    # Get targets for this task
-                    task_targets = targets[task_name]
-
-                    if self.task_types[task_name] == "classification":
-                        loss = criterion(predictions.squeeze(), task_targets.float())
-                    else:
-                        loss = criterion(predictions.squeeze(), task_targets.float())
-
-                    loss.backward()
-                    optimizer.step()
-
         return self
 
     def predict(
@@ -206,7 +135,7 @@ class MultiTaskPredictor:
                 return all_preds.get(task_name, [0.0] * len(sequences))
             return all_preds
 
-        predictions = {task: [] for task in self.task_types.keys()}
+        predictions: Dict[str, list[Any]] = {task: [] for task in self.task_types.keys()}
 
         for seq in sequences:
             seq_tensor = self._sequence_to_tensor(seq)
@@ -251,7 +180,7 @@ class MultiTaskPredictor:
             return None
 
         sequences_data = []
-        targets_data = {task: [] for task in self.task_types.keys()}
+        targets_data: Dict[str, list[Any]] = {task: [] for task in self.task_types.keys()}
 
         for i, seq in enumerate(sequences):
             seq_tensor = self._sequence_to_tensor(seq)
@@ -269,7 +198,7 @@ class MultiTaskPredictor:
         max_len = max(len(seq) for seq in sequences_data)
         padded_sequences = []
         for seq in sequences_data:
-            padding = torch.full((max_len - len(seq),), self.num_events - 1)
+            padding = torch.full((max_len - len(seq),), (self.num_events or 0) - 1)
             padded_seq = torch.cat([seq, padding])
             padded_sequences.append(padded_seq)
 
@@ -278,7 +207,8 @@ class MultiTaskPredictor:
         for task, targets in targets_data.items():
             target_tensors[task] = torch.tensor(targets, dtype=torch.float)
 
-        return torch.utils.data.TensorDataset(torch.stack(padded_sequences), target_tensors)
+        target_tensor_list = list(target_tensors.values())
+        return torch.utils.data.TensorDataset(torch.stack(padded_sequences), torch.stack(target_tensor_list))
 
     def _sequence_to_tensor(self, sequence: EventSequence) -> Optional[Any]:
         """Convert EventSequence to tensor."""
@@ -287,10 +217,11 @@ class MultiTaskPredictor:
         except ImportError:
             return None
 
+        vocab = self.event_vocab or {}
         event_indices = []
         for event in _sequence_to_tokens(sequence):
-            if event in self.event_vocab:
-                event_indices.append(self.event_vocab[event])
+            if event in vocab:
+                event_indices.append(vocab[event])
 
         if not event_indices:
             return None
@@ -319,9 +250,9 @@ class SurvivalPredictor:
         self.random_state = random_state
 
         # Will be initialized during fit
-        self.event_vocab = None
-        self.num_events = None
-        self.model = None
+        self.event_vocab: Dict[str, int] | None = None
+        self.num_events: int | None = None
+        self.model: Any = None
 
         if random_state is not None:
             try:
@@ -478,9 +409,9 @@ class SurvivalPredictor:
 
         else:
             # Fallback: feature-based prediction
-            predicted_times = np.array([max(1.0, np.mean(f) * 100 + 50) for f in features])
+            predicted_times = np.asarray([max(1.0, float(np.mean(f)) * 100 + 50) for f in features])
 
-        return predicted_times
+        return np.asarray(predicted_times, dtype=float)
 
     def predict_survival_function(self, sequences: List[EventSequence], times: np.ndarray) -> np.ndarray:
         """Predict survival function at given times.
@@ -521,11 +452,12 @@ class SurvivalPredictor:
 
         for seq in sequences:
             # Simple feature extraction: event counts
-            event_counts = np.zeros(self.num_events)
+            event_counts = np.zeros(self.num_events if self.num_events is not None else 0)
             tokens = _sequence_to_tokens(seq)
+            vocab = self.event_vocab or {}
             for event in tokens:
-                if event in self.event_vocab:
-                    idx = self.event_vocab[event]
+                if event in vocab:
+                    idx = vocab[event]
                     event_counts[idx] += 1
 
             # Add sequence length

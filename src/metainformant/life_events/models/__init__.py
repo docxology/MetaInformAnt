@@ -43,6 +43,8 @@ def train_event_predictor(
 def predict_outcomes(sequences: list[Any], model: Any, **_: Any) -> list[Any]:
     """Predict outcomes with a trained model or training-result dictionary."""
     predictor_obj = model.get("model") if isinstance(model, dict) else model
+    if predictor_obj is None or not hasattr(predictor_obj, "predict"):
+        raise ValueError("Model does not provide a predict() method")
     predictions = predictor_obj.predict(sequences)
     return predictions.tolist() if hasattr(predictions, "tolist") else list(predictions)
 
@@ -50,6 +52,8 @@ def predict_outcomes(sequences: list[Any], model: Any, **_: Any) -> list[Any]:
 def save_model(model: Any, path: str | Path) -> None:
     """Save a trained model or training-result dictionary to disk."""
     predictor_obj = model.get("model") if isinstance(model, dict) else model
+    if predictor_obj is None or not hasattr(predictor_obj, "save_model"):
+        raise ValueError("Model does not provide a save_model() method")
     predictor_obj.save_model(path)
 
 

@@ -125,12 +125,12 @@ def biological_embedding(sequences: List[Any], embedding_type: str = "event_type
 
 def _create_event_type_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[str, Any]:
     """Create embeddings based on event types."""
-    event_types = set()
+    event_types_set: set[str] = set()
     for seq in sequences:
         for event in seq.events:
-            event_types.add(event.event_type)
+            event_types_set.add(event.event_type)
 
-    event_types = list(event_types)
+    event_types = list(event_types_set)
     embedding_dim = kwargs.get("embedding_dim", 50)
 
     # Create simple one-hot like embeddings
@@ -149,13 +149,13 @@ def _create_event_type_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[s
 
 def _create_domain_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[str, Any]:
     """Create embeddings based on event domains."""
-    domains = set()
+    domains_set: set[str] = set()
     for seq in sequences:
         for event in seq.events:
             if hasattr(event, "domain"):
-                domains.add(event.domain)
+                domains_set.add(event.domain)
 
-    domains = list(domains) if domains else ["default"]
+    domains = list(domains_set) if domains_set else ["default"]
     embedding_dim = kwargs.get("embedding_dim", 20)
 
     # Create domain-specific embeddings
@@ -170,9 +170,9 @@ def _create_domain_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[str, 
     }
 
     for domain in domains:
-        base = domain_centers.get(domain.lower(), domain_centers["default"])
+        base: Any = domain_centers.get(domain.lower(), domain_centers["default"])
         # Extend to full embedding dimension
-        embedding = np.array(base + [0.0] * (embedding_dim - len(base)))
+        embedding = np.array(list(base) + [0.0] * (embedding_dim - len(base)))
         # Add small random variation
         embedding += np.random.normal(0, 0.1, embedding_dim)
         embeddings[domain] = embedding
@@ -183,7 +183,7 @@ def _create_domain_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[str, 
 def _create_temporal_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[str, Any]:
     """Create embeddings based on temporal patterns."""
     # Analyze temporal patterns across sequences
-    temporal_patterns = {}
+    temporal_patterns: Dict[tuple[str, ...], list[Any]] = {}
 
     for seq in sequences:
         events = sorted(seq.events, key=lambda x: x.timestamp)

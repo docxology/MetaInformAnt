@@ -11,7 +11,7 @@ Both models use PyTorch and require torch as an optional dependency.
 from __future__ import annotations
 
 # Forward reference for type hints
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from metainformant.core.utils import logging
 
@@ -76,10 +76,10 @@ class GRUSequenceModel:
         self.random_state = random_state
 
         # Will be initialized during fit
-        self.event_vocab = None
-        self.num_events = None
-        self.model = None
-        self.embeddings = None
+        self.event_vocab: Dict[str, int] | None = None
+        self.num_events: int | None = None
+        self.model: Any = None
+        self.embeddings: Any = None
         self.is_fitted = False
 
         if random_state is not None:
@@ -124,8 +124,12 @@ class GRUSequenceModel:
         train_loader = DataLoader(train_data, batch_size=self.batch_size, shuffle=True)
 
         # Initialize model
+        if self.num_events is None:
+            logger.warning("Vocabulary not built; cannot initialize model")
+            return self
+        num_events = self.num_events
         self.model = nn.Sequential(
-            nn.Embedding(self.num_events, self.embedding_dim),
+            nn.Embedding(num_events, self.embedding_dim),
             nn.GRU(
                 self.embedding_dim,
                 self.hidden_dim,
@@ -187,7 +191,8 @@ class GRUSequenceModel:
                 # Convert sequence to tensor
                 seq_tensor = self._sequence_to_tensor(seq)
                 if seq_tensor is None:
-                    predictions.append([1.0 / self.num_events] * self.num_events)
+                    n_events = self.num_events or 0
+                    predictions.append([1.0 / n_events] * n_events)
                     continue
 
                 # Forward pass
@@ -236,7 +241,7 @@ class GRUSequenceModel:
         max_len = max(len(seq) for seq in sequences_data)
         padded_sequences = []
         for seq in sequences_data:
-            padding = torch.full((max_len - len(seq),), self.num_events - 1)  # Use last index as padding
+            padding = torch.full((max_len - len(seq),), (self.num_events or 0) - 1)  # Use last index as padding
             padded_seq = torch.cat([seq, padding])
             padded_sequences.append(padded_seq)
 
@@ -249,10 +254,11 @@ class GRUSequenceModel:
         except ImportError:
             return None
 
+        vocab = self.event_vocab or {}
         event_indices = []
         for event in _sequence_to_tokens(sequence):
-            if event in self.event_vocab:
-                event_indices.append(self.event_vocab[event])
+            if event in vocab:
+                event_indices.append(vocab[event])
 
         if not event_indices:
             return None
@@ -303,10 +309,10 @@ class LSTMSequenceModel:
         self.random_state = random_state
 
         # Will be initialized during fit
-        self.event_vocab = None
-        self.num_events = None
-        self.model = None
-        self.embeddings = None
+        self.event_vocab: Dict[str, int] | None = None
+        self.num_events: int | None = None
+        self.model: Any = None
+        self.embeddings: Any = None
         self.is_fitted = False
 
         if random_state is not None:
@@ -351,8 +357,12 @@ class LSTMSequenceModel:
         train_loader = DataLoader(train_data, batch_size=self.batch_size, shuffle=True)
 
         # Initialize model
+        if self.num_events is None:
+            logger.warning("Vocabulary not built; cannot initialize model")
+            return self
+        num_events = self.num_events
         self.model = nn.Sequential(
-            nn.Embedding(self.num_events, self.embedding_dim),
+            nn.Embedding(num_events, self.embedding_dim),
             nn.LSTM(
                 self.embedding_dim,
                 self.hidden_dim,
@@ -414,7 +424,8 @@ class LSTMSequenceModel:
                 # Convert sequence to tensor
                 seq_tensor = self._sequence_to_tensor(seq)
                 if seq_tensor is None:
-                    predictions.append([1.0 / self.num_events] * self.num_events)
+                    n_events = self.num_events or 0
+                    predictions.append([1.0 / n_events] * n_events)
                     continue
 
                 # Forward pass
@@ -463,7 +474,7 @@ class LSTMSequenceModel:
         max_len = max(len(seq) for seq in sequences_data)
         padded_sequences = []
         for seq in sequences_data:
-            padding = torch.full((max_len - len(seq),), self.num_events - 1)  # Use last index as padding
+            padding = torch.full((max_len - len(seq),), (self.num_events or 0) - 1)  # Use last index as padding
             padded_seq = torch.cat([seq, padding])
             padded_sequences.append(padded_seq)
 
@@ -476,10 +487,11 @@ class LSTMSequenceModel:
         except ImportError:
             return None
 
+        vocab = self.event_vocab or {}
         event_indices = []
         for event in _sequence_to_tokens(sequence):
-            if event in self.event_vocab:
-                event_indices.append(self.event_vocab[event])
+            if event in vocab:
+                event_indices.append(vocab[event])
 
         if not event_indices:
             return None

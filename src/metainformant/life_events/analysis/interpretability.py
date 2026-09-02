@@ -190,7 +190,7 @@ def feature_attribution(
         if use_shap:
             # Try to use SHAP if available
             try:
-                import shap
+                import shap  # type: ignore[import-not-found]
 
                 logger.info("Using SHAP for feature attribution")
 
@@ -198,12 +198,12 @@ def feature_attribution(
                 background_sequences = sequences[: min(background_samples, len(sequences))]
 
                 # Create a prediction function
-                def predict_func(seq_list):
+                def predict_func(seq_list: list[Any]) -> list[Any]:
                     predictions = []
                     for seq in seq_list:
                         pred = predictor.predict([seq])
                         predictions.append(pred[0] if hasattr(pred, "__len__") else pred)
-                    return np.array(predictions)
+                    return list(np.asarray(predictions))
 
                 # Create explainer
                 explainer = shap.Explainer(predict_func, background_sequences)
@@ -303,7 +303,7 @@ def temporal_patterns(sequences: List[Any], predictions: Optional[Any] = None, t
         return {"position_importance": position_importance, "max_sequence_length": max_len}
 
     patterns = []
-    event_counts_by_time = {}
+    event_counts_by_time: Dict[str, Any] = {}
 
     for seq in sequences:
         if not hasattr(seq, "events"):
@@ -387,7 +387,7 @@ def learn_event_embeddings(
     logger.info(f"Learning embeddings for {len(sequences)} sequences")
 
     # Count event frequencies
-    event_counts = Counter()
+    event_counts: Counter[str] = Counter()
     for seq in sequences:
         event_counts.update(seq)
 

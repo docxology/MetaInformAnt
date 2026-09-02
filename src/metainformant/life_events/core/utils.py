@@ -49,7 +49,7 @@ def add_temporal_noise(
     if not sequence.events:
         return sequence
 
-    timestamps = [event.timestamp for event in sequence.events]
+    timestamps: list[Any] = [event.timestamp for event in sequence.events]
     if isinstance(timestamps[0], datetime):
         duration_seconds = (max(timestamps) - min(timestamps)).total_seconds() if len(timestamps) > 1 else 24 * 60 * 60
         noise_scale = (max_days_shift * 24 * 60 * 60) if max_days_shift is not None else duration_seconds * noise_level
@@ -63,10 +63,11 @@ def add_temporal_noise(
             continue
 
         noise = rng.gauss(0, noise_scale)
-        if isinstance(event.timestamp, datetime):
-            new_timestamp = event.timestamp + timedelta(seconds=noise)
+        ts_any: Any = event.timestamp  # runtime may carry numeric timestamps
+        if isinstance(ts_any, datetime):
+            new_timestamp: Any = ts_any + timedelta(seconds=noise)
         else:
-            new_timestamp = event.timestamp + noise
+            new_timestamp = ts_any + noise
 
         new_event = Event(
             event_type=event.event_type,
@@ -132,7 +133,7 @@ def generate_realistic_life_events(
 
         domain = event_type.split("_", 1)[0] if "_" in event_type else "life"
         event = Event(
-            timestamp=age,
+            timestamp=datetime.fromtimestamp(float(age)),
             event_type=event_type,
             domain=domain,
             description=f"Generated {event_type} event",
@@ -160,7 +161,7 @@ def get_event_statistics(sequences: List[EventSequence]) -> Dict[str, Any]:
     if not sequences:
         return {"total_sequences": 0, "n_sequences": 0, "total_events": 0, "n_events": 0, "domains": {}, "temporal": {}}
 
-    stats = {
+    stats: Dict[str, Any] = {
         "total_sequences": len(sequences),
         "n_sequences": len(sequences),
         "total_events": sum(len(seq.events) for seq in sequences),
@@ -180,7 +181,7 @@ def get_event_statistics(sequences: List[EventSequence]) -> Dict[str, Any]:
 
         if seq.events:
             timestamps = [event.timestamp for event in seq.events]
-            duration = max(timestamps) - min(timestamps)
+            duration: Any = max(timestamps) - min(timestamps)
             if hasattr(duration, "total_seconds"):
                 stats["duration_stats"].append(duration.total_seconds())
             else:
@@ -486,7 +487,7 @@ def _sequence_to_tokens(sequence: Any) -> List[str]:
 
 def sequence_embeddings(
     sequences: List[Any],
-    embedding_dict: Optional[Dict[str, np.ndarray]] = None,
+    embedding_dict: Optional[Dict[str, np.ndarray] | str] = None,
     method: str = "mean",
     **kwargs: Any,
 ) -> np.ndarray:
@@ -502,27 +503,31 @@ def sequence_embeddings(
     Returns:
         Array with one sequence embedding per row
     """
+    embedding_map: Dict[str, np.ndarray] | None
     if isinstance(embedding_dict, str):
+        # Legacy call form: second positional arg is the method name.
         method = embedding_dict
-        embedding_dict = None
+        embedding_map = None
+    else:
+        embedding_map = embedding_dict
 
     method = "mean" if method == "average" else method
     token_sequences = [_sequence_to_tokens(seq) for seq in sequences]
 
-    if embedding_dict is None:
-        all_event_types = set()
+    if embedding_map is None:
+        all_event_types: set[str] = set()
         for tokens in token_sequences:
             all_event_types.update(tokens)
 
-        embedding_dim = kwargs.get("embedding_dim", 50)
-        embedding_dict = {}
+        embedding_dim = int(kwargs.get("embedding_dim", 50))
+        embedding_map = {}
         for i, event_type in enumerate(all_event_types):
             embedding = np.zeros(embedding_dim)
             embedding[i % embedding_dim] = 1.0
-            embedding_dict[event_type] = embedding
+            embedding_map[event_type] = embedding
 
-    if embedding_dict:
-        embedding_dim = len(next(iter(embedding_dict.values())))
+    if embedding_map:
+        embedding_dim = len(next(iter(embedding_map.values())))
     else:
         embedding_dim = int(kwargs.get("embedding_dim", 50))
 
@@ -535,8 +540,8 @@ def sequence_embeddings(
 
         event_embeddings = []
         for token in tokens:
-            if token in embedding_dict:
-                event_embeddings.append(embedding_dict[token])
+            if embedding_map is not None and token in embedding_map:
+                event_embeddings.append(embedding_map[token])
             else:
                 event_embeddings.append(np.zeros(embedding_dim))
 
@@ -717,8 +722,10 @@ def generate_event_chain(
                 current_event = random.choice(event_types)
             else:
                 # Sample from transition probabilities
-                events, probs = zip(*transitions.items())
-                current_event = random.choices(events, weights=probs, k=1)[0]
+                items = list(transitions.items())
+                events_tuple = tuple(k for k, _ in items)
+                probs_tuple = tuple(v for _, v in items)
+                current_event = random.choices(events_tuple, weights=probs_tuple, k=1)[0]
 
         sequence.append(current_event)
 
@@ -792,7 +799,7 @@ def generate_synthetic_life_events(
     health_chain = ["diagnosis", "recovered"]
 
     sequences = []
-    outcomes = [] if generate_outcomes else None
+    outcomes: list[int] | None = [] if generate_outcomes else None
 
     for seq_id in range(n_sequences):
         person_id = f"person_{seq_id:04d}"
@@ -800,8 +807,8 @@ def generate_synthetic_life_events(
         # Determine number of events
         n_events = random.randint(min_events_per_sequence, max_events_per_sequence)
 
-        events = []
-        used_events = set()
+        events: list[Any] = []
+        used_events: set[str] = set()
 
         # Generate base timeline
         start_year = random.randint(1950, 2000)
@@ -939,6 +946,7 @@ def generate_synthetic_life_events(
             else:
                 outcome = random.choice([0, 1])
 
-            outcomes.append(outcome)
+            if outcomes is not None:
+                outcomes.append(outcome)
 
     return sequences, outcomes

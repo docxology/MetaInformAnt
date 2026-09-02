@@ -6,7 +6,7 @@ including transition networks between event types.
 
 from __future__ import annotations
 
-from typing import Any, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from metainformant.core.utils import logging
 
@@ -44,14 +44,14 @@ def plot_transition_network(
         return None
 
     try:
-        import networkx as nx
+        import networkx as nx  # type: ignore[import-untyped]
 
     except ImportError:
         logger.warning("networkx not available, cannot create transition network plot")
         return None
 
     # Build transition matrix
-    transitions = {}
+    transitions: Dict[tuple[str, str], int] = {}
     event_types = set()
 
     for seq in sequences:

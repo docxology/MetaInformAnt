@@ -63,21 +63,27 @@ class LifeEventsWorkflowConfig:
     output: Dict[str, Any] = field(default_factory=dict)
     log_dir: Optional[Path] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Post-initialization validation and setup."""
         self.work_dir = self.work_dir.expanduser().resolve()
 
         # Older callers passed scalar aliases. Preserve them while normalizing
         # the public config sections to dictionaries.
-        if not isinstance(self.embedding, dict):
-            self.embedding_dim = int(self.embedding)
+        # Older callers passed scalar aliases (declared type is Dict, so go through
+        # Any to avoid unreachable-branch diagnostics while keeping runtime compat).
+        embedding_any: Any = self.embedding
+        model_any: Any = self.model
+        workflow_any: Any = self.workflow
+        output_any: Any = self.output
+        if not isinstance(embedding_any, dict):
+            self.embedding_dim = int(embedding_any)
             self.embedding = {"embedding_dim": self.embedding_dim}
-        if not isinstance(self.model, dict):
-            self.model_type = str(self.model)
+        if not isinstance(model_any, dict):
+            self.model_type = str(model_any)
             self.model = {"model_type": self.model_type}
-        if not isinstance(self.workflow, dict):
+        if not isinstance(workflow_any, dict):
             self.workflow = {}
-        if not isinstance(self.output, dict):
+        if not isinstance(output_any, dict):
             self.output = {}
 
         if self.embedding:
@@ -209,7 +215,7 @@ def save_config(config: LifeEventsWorkflowConfig, output_file: str | Path) -> No
 
     # Determine format from extension
     if str(output_file).endswith(".yaml") or str(output_file).endswith(".yml"):
-        import yaml
+        import yaml  # type: ignore[import-untyped]
 
         with open(output_file, "w") as f:
             yaml.dump(config_dict, f, default_flow_style=False)

@@ -63,12 +63,12 @@ class EventSequencePredictor:
 
         # Model components
         self.embeddings: Dict[str, np.ndarray] = {}
-        self.classifier: Optional[Dict[str, np.ndarray]] = None
-        self.regressor: Optional[Dict[str, np.ndarray]] = None
+        self.classifier: Optional[Dict[str, Any]] = None
+        self.regressor: Optional[Dict[str, Any]] = None
         self.event_vocab: Dict[str, int] = {}
         self.reverse_vocab: Dict[int, str] = {}
         self.classes_: Optional[np.ndarray] = None
-        self.sequence_length_model: Optional[Dict[int, float]] = None
+        self.sequence_length_model: Optional[Dict[int, Any]] = None
 
         np.random.seed(random_seed)
 
@@ -84,7 +84,7 @@ class EventSequencePredictor:
     def fit(
         self,
         sequences: List[Any],
-        outcomes: Union[List[int], List[float]],
+        outcomes: Union[List[int], List[float], List[str]],
         task: str | None = None,
         event_embeddings: Optional[Dict[str, np.ndarray]] = None,
     ) -> EventSequencePredictor:
@@ -137,7 +137,7 @@ class EventSequencePredictor:
         if self.task_type == "classification" and self.classes_ is not None and self.classifier is not None:
             probs = 1.0 / (1.0 + np.exp(-np.clip(raw, -500, 500)))
             predictions = np.where(probs >= 0.5, self.classes_[-1], self.classes_[0])
-            return predictions
+            return np.asarray(predictions)
 
         return raw
 
@@ -269,7 +269,7 @@ class EventSequencePredictor:
     def _fit_embedding_model(
         self,
         sequences: List[Any],
-        outcomes: Union[List[int], List[float]],
+        outcomes: Union[List[int], List[float], List[str]],
         task: str,
         event_embeddings: Optional[Dict[str, np.ndarray]] = None,
     ) -> None:
@@ -304,17 +304,17 @@ class EventSequencePredictor:
             else:
                 avg_embedding = np.zeros(self.embedding_dim)
             X.append(avg_embedding)
-        X = np.array(X)
-        y = np.array(outcomes)
+        X_arr = np.asarray(X, dtype=float)
+        y = np.asarray(outcomes)
 
         if task == "classification":
-            self.classifier = self._train_logistic_regression(X, y)
+            self.classifier = self._train_logistic_regression(X_arr, y)
         else:
-            self.regressor = self._train_linear_regression(X, y)
+            self.regressor = self._train_linear_regression(X_arr, y)
 
     def _train_logistic_regression(
         self, X: np.ndarray, y: np.ndarray, lr: float = 0.01, epochs: int = 100
-    ) -> Dict[str, np.ndarray]:
+    ) -> Dict[str, Any]:
         """Train logistic regression model using gradient descent."""
         n_samples, n_features = X.shape
         weights = np.zeros(n_features)
@@ -329,9 +329,9 @@ class EventSequencePredictor:
             weights -= lr * dw
             bias -= lr * db
 
-        return {"weights": weights, "bias": np.float64(bias)}
+        return {"weights": weights, "bias": float(bias)}
 
-    def _train_linear_regression(self, X: np.ndarray, y: np.ndarray) -> Dict[str, np.ndarray]:
+    def _train_linear_regression(self, X: np.ndarray, y: np.ndarray) -> Dict[str, Any]:
         """Train linear regression model using closed-form solution."""
         X_bias = np.column_stack([np.ones(X.shape[0]), X])
         try:
@@ -344,7 +344,9 @@ class EventSequencePredictor:
 
         return {"weights": weights_full[1:], "bias": weights_full[0]}
 
-    def _fit_simple_model(self, sequences: List[Any], outcomes: Union[List[int], List[float]], task: str) -> None:
+    def _fit_simple_model(
+        self, sequences: List[Any], outcomes: Union[List[int], List[float], List[str]], task: str
+    ) -> None:
         """Fit simple statistical model."""
         # Build vocab for simple model
         all_events = set()
@@ -380,16 +382,16 @@ class EventSequencePredictor:
             else:
                 avg_embedding = np.zeros(self.embedding_dim)
             X.append(avg_embedding)
-        X = np.array(X)
+        X_arr = np.asarray(X, dtype=float)
 
         if self.classifier is not None and isinstance(self.classifier, dict) and "weights" in self.classifier:
-            linear = np.dot(X, self.classifier["weights"]) + self.classifier["bias"]
-            return linear
+            linear = np.dot(X_arr, self.classifier["weights"]) + self.classifier["bias"]
+            return np.asarray(linear, dtype=float)
         elif self.regressor is not None and isinstance(self.regressor, dict):
-            predictions = np.dot(X, self.regressor["weights"]) + self.regressor["bias"]
-            return predictions
+            predictions = np.dot(X_arr, self.regressor["weights"]) + self.regressor["bias"]
+            return np.asarray(predictions, dtype=float)
         else:
-            return np.array([np.linalg.norm(x) for x in X])
+            return np.asarray([np.linalg.norm(x) for x in X_arr], dtype=float)
 
     def _predict_simple(self, sequences: List[Any]) -> np.ndarray:
         """Make predictions using simple model."""
@@ -431,12 +433,7 @@ class EnsemblePredictor:
         if not self.is_fitted:
             raise ValueError("All models must be fitted")
 
-        all_predictions = []
-        for model in self.models:
-            preds = model.predict(sequences)
-            all_predictions.append(preds)
+        all_predictions_arr = np.asarray([np.asarray(model.predict(sequences), dtype=float) for model in self.models])
+        weights = np.asarray(self.weights, dtype=float)
 
-        all_predictions = np.array(all_predictions)
-        weights = np.array(self.weights)
-
-        return np.average(all_predictions, axis=0, weights=weights)
+        return np.average(all_predictions_arr, axis=0, weights=weights)

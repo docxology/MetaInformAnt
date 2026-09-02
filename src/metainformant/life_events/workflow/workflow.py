@@ -100,7 +100,7 @@ def analyze_life_course(
 
     stats = get_event_statistics(sequences)
 
-    results = {
+    results: Dict[str, Any] = {
         "n_sequences": len(sequences),
         "n_events": stats.get("total_events", 0),
         "output_dir": str(output_dir),
@@ -153,7 +153,7 @@ def _compute_sequence_stats(sequences: List[Any]) -> Dict[str, Any]:
     if not sequences:
         return {}
 
-    stats = {
+    stats: Dict[str, Any] = {
         "total_sequences": len(sequences),
         "total_events": sum(len(seq.events) for seq in sequences),
         "avg_events_per_sequence": sum(len(seq.events) for seq in sequences) / len(sequences),
@@ -184,7 +184,7 @@ def _generate_analysis_visualizations(
     visualizations = []
 
     try:
-        from . import visualization
+        from metainformant.life_events import visualization
 
         # Sequence length distribution
         fig = visualization.plot_sequence_length_distribution(sequences)
@@ -248,7 +248,7 @@ def compare_populations(
     group1_stats = _compute_sequence_stats(sequences1)
     group2_stats = _compute_sequence_stats(sequences2)
 
-    results = {
+    results: Dict[str, Any] = {
         "group1_name": group_names[0],
         "group2_name": group_names[1],
         "group1_stats": group1_stats,
@@ -266,9 +266,11 @@ def compare_populations(
 
     # Generate comparison visualizations
     try:
-        from . import visualization
+        from metainformant.life_events import visualization
 
-        fig = visualization.plot_population_comparison(sequences1, sequences2, group_names=group_names)
+        fig = visualization.plot_population_comparison(
+            sequences1, sequences2, group1_label=group_names[0], group2_label=group_names[1]
+        )
         if fig:
             comp_plot = output_dir / "population_comparison.png"
             fig.savefig(comp_plot, dpi=300, bbox_inches="tight")
@@ -292,7 +294,7 @@ def _compare_sequence_groups(
     lengths1 = [len(seq.events) for seq in sequences1]
     lengths2 = [len(seq.events) for seq in sequences2]
 
-    comparison = {
+    comparison: Dict[str, Any] = {
         "length_comparison": {
             "group1_mean": sum(lengths1) / len(lengths1) if lengths1 else 0,
             "group2_mean": sum(lengths2) / len(lengths2) if lengths2 else 0,
@@ -366,10 +368,11 @@ def intervention_analysis(
         output_dir.mkdir(parents=True, exist_ok=True)
 
     # Convert timestamp to datetime if needed
-    if isinstance(intervention_time, (int, float)):
-        intervention_datetime = datetime.datetime.fromtimestamp(intervention_time)
+    ts_any: Any = intervention_time
+    if isinstance(ts_any, (int, float)):
+        intervention_datetime = datetime.datetime.fromtimestamp(ts_any)
     else:
-        intervention_datetime = intervention_time
+        intervention_datetime = ts_any
 
     # Split sequences into pre and post intervention
     pre_sequences = []
@@ -422,7 +425,7 @@ def intervention_analysis(
     # Generate intervention effect plots if output directory provided
     if output_dir:
         try:
-            from .visualization import plot_intervention_effects
+            from metainformant.life_events.visualization.statistical import plot_intervention_effects
 
             plot_path = output_dir / "intervention_effects.png"
             plot_intervention_effects(pre_sequences, post_sequences, output_path=plot_path)
@@ -462,9 +465,9 @@ def event_importance(
     if not sequences:
         return {}
 
-    event_counts = {}
-    event_positions = {}
-    event_transitions = {}
+    event_counts: Dict[str, int] = {}
+    event_positions: Dict[str, list[float]] = {}
+    event_transitions: Dict[str, int] = {}
 
     for seq in sequences:
         for i, event in enumerate(seq.events):
@@ -484,13 +487,10 @@ def event_importance(
                 transition_key = f"{prev_event}->{event_type}"
                 event_transitions[transition_key] = event_transitions.get(transition_key, 0) + 1
 
+    importance_scores: Dict[str, float] = {}
     if method == "frequency":
         # Simple frequency-based importance
-        importance_scores = event_counts.copy()
-
-    elif method == "temporal":
-        # Importance based on temporal positioning
-        importance_scores = {}
+        importance_scores = {k: float(v) for k, v in event_counts.items()}
         for event_type, positions in event_positions.items():
             # Events that appear early get higher importance
             avg_position = sum(positions) / len(positions)
@@ -498,12 +498,11 @@ def event_importance(
 
     elif method == "transition":
         # Importance based on being transition hubs
-        importance_scores = {}
         for event_type in event_counts.keys():
             # Count incoming and outgoing transitions
             incoming = sum(count for key, count in event_transitions.items() if key.endswith(f"->{event_type}"))
             outgoing = sum(count for key, count in event_transitions.items() if key.startswith(f"{event_type}->"))
-            importance_scores[event_type] = incoming + outgoing
+            importance_scores[event_type] = float(incoming + outgoing)
 
     if normalize and importance_scores:
         max_score = max(importance_scores.values())

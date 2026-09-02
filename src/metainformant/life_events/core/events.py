@@ -10,7 +10,7 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 import pandas as pd
 
@@ -38,18 +38,23 @@ class Event:
     description: str = ""
     confidence: float = 1.0
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate event data."""
         if not self.event_type:
             raise ValueError("event_type cannot be empty")
         if not self.domain:
             raise ValueError("domain cannot be empty")
 
-        # Auto-convert numeric timestamp to datetime
-        if isinstance(self.timestamp, (int, float)):
-            self.timestamp = datetime.fromtimestamp(self.timestamp)
-        elif isinstance(self.timestamp, str):
-            self.timestamp = datetime.fromisoformat(self.timestamp)
+        # Auto-convert numeric/string timestamp to datetime. The declared type is
+        # datetime; the runtime coercions below accept looser input for ergonomics.
+        ts_any: Any = self.timestamp  # runtime values may be looser than declared
+        if not isinstance(ts_any, datetime):
+            converted: datetime
+            if isinstance(ts_any, (int, float)):
+                converted = datetime.fromtimestamp(ts_any)
+            else:
+                converted = datetime.fromisoformat(str(ts_any))
+            self.timestamp = converted
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert event to dictionary for serialization."""
@@ -217,7 +222,7 @@ class EventDatabase:
         self.sequences.append(sequence)
         self.person_index[sequence.person_id] = sequence
 
-    def _build_index(self):
+    def _build_index(self) -> None:
         """Build internal indices for efficient querying."""
         self.person_index = {seq.person_id: seq for seq in self.sequences}
 
@@ -272,8 +277,8 @@ class EventDatabase:
         domains = set()
 
         # Count occurrences
-        domain_counts = {}
-        event_type_counts = {}
+        domain_counts: Dict[str, int] = {}
+        event_type_counts: Dict[str, int] = {}
 
         for seq in self.sequences:
             seq_types = seq.get_event_types()
@@ -351,7 +356,7 @@ class EventDatabase:
     def __getitem__(self, index: int) -> EventSequence:
         return self.sequences[index]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[EventSequence]:
         return iter(self.sequences)
 
     def __str__(self) -> str:

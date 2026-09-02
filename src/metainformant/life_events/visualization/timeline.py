@@ -66,7 +66,7 @@ def plot_event_timeline(
     domains = [event.domain for event in events] if hasattr(events[0], "domain") else ["default"] * len(events)
     unique_domains = list(set(domains))
 
-    colors = plt.cm.tab10(np.linspace(0, 1, len(unique_domains)))
+    colors = plt.get_cmap("tab10")(np.linspace(0, 1, len(unique_domains)))
     domain_colors = dict(zip(unique_domains, colors))
 
     for i, event in enumerate(events):
@@ -135,7 +135,7 @@ def plot_domain_distribution(
         return None
 
     # Count domains across all sequences
-    domain_counts = {}
+    domain_counts: Dict[str, int] = {}
     for sequence in sequences:
         for event in sequence.events:
             if hasattr(event, "domain"):
@@ -222,7 +222,7 @@ def plot_domain_timeline(
         y_pos = len(sequences[:max_sequences]) - i - 1  # Bottom to top
 
         # Group events by domain
-        domain_periods = {}
+        domain_periods: Dict[str, list[Any]] = {}
         for event in seq.events:
             domain = getattr(event, "domain", "other")
             if domain not in domain_periods:
@@ -310,7 +310,7 @@ def plot_temporal_density(
 
     # Plot density estimate
     try:
-        from scipy import stats
+        from scipy import stats  # type: ignore[import-untyped]
 
         kde = stats.gaussian_kde(timestamps_numeric)
         x_range = np.linspace(min(timestamps_numeric), max(timestamps_numeric), 200)
@@ -384,7 +384,7 @@ def plot_temporal_patterns(
 
     # Plot 1: Timeline view of all sequences
     ax1 = axes[0]
-    colors = plt.cm.viridis(np.linspace(0, 1, len(sequences)))
+    colors = plt.get_cmap("viridis")(np.linspace(0, 1, len(sequences)))
 
     # Find global time range
     all_timestamps = []
@@ -427,12 +427,12 @@ def plot_temporal_patterns(
     if all_timestamps:
         time_bins = np.linspace(0, (max_time - min_time).total_seconds() / (24 * 3600), 10)
 
-        event_types = set()
+        event_types_set: set[str] = set()
         for seq in sequences:
             for event in seq.events:
-                event_types.add(event.event_type)
+                event_types_set.add(event.event_type)
 
-        event_types = sorted(list(event_types))
+        event_types = sorted(event_types_set)
 
         freq_matrix = np.zeros((len(event_types), len(time_bins) - 1))
 
