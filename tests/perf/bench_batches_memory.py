@@ -2,7 +2,7 @@
 
 Times chunked vs whole-frame aggregation of a synthetic 500k-row
 per-sample expression-like table, and reports deep memory. Real execution,
-no mocks; asserts the chunked aggregation is numerically consistent.
+no test doubles; asserts the chunked aggregation is numerically consistent.
 
     uv run python tests/perf/bench_batches_memory.py [--rows N]
 

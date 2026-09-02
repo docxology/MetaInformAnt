@@ -7,7 +7,7 @@ Covers previously untested public APIs:
   spatial_cell_type_mapping, validate_deconvolution, niche_identification
 - niche.identification: identify_niches
 
-All tests use real computation on synthetic data (zero-mocks policy).
+All tests use real computation on synthetic data (real-implementation policy).
 """
 
 from __future__ import annotations

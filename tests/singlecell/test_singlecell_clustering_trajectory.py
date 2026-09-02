@@ -8,7 +8,7 @@ Covers previously untested public APIs:
   paga_trajectory, slingshot_trajectory, find_trajectory_branches,
   compute_trajectory_entropy
 
-All tests use real computation on synthetic data (zero-mocks policy).
+All tests use real computation on synthetic data (real-implementation policy).
 """
 
 from __future__ import annotations

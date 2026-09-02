@@ -2,7 +2,7 @@
 
 These builders replace the copy-pasted ``_make_*`` helpers that were
 duplicated across ``tests/*/`` test files. Every factory is deterministic
-(seed-controlled), produces small in-memory real data (no mocks), and is
+(seed-controlled), produces small in-memory real data (no test doubles), and is
 typed. Import them as::
 
     from tests._support.synth import (

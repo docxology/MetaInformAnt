@@ -1,4 +1,4 @@
-"""Deep tests for metainformant.dna.variation.mutations (real computation, no mocks)."""
+"""Deep tests for metainformant.dna.variation.mutations (real computation, no test doubles)."""
 
 import pytest
 

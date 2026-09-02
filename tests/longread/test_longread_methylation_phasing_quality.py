@@ -9,7 +9,7 @@ Covers previously untested public APIs:
   detect_adapters
 - workflow.pipelines: load_pipeline_config (JSON/YAML/missing)
 
-All tests use real computation on synthetic data (zero-mocks policy).
+All tests use real computation on synthetic data (real-implementation policy).
 """
 
 from __future__ import annotations

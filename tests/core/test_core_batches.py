@@ -1,4 +1,4 @@
-"""Zero-mock tests for metainformant.core.utils.batches."""
+"""Real-implementation tests for metainformant.core.utils.batches."""
 
 from __future__ import annotations
 

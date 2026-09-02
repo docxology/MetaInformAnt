@@ -1,7 +1,7 @@
 """Tests for the stdio JSON-RPC MCP server.
 
 Real implementations only: in-process dispatch plus a genuine subprocess
-round-trip against ``python -m metainformant.mcp.server`` (zero mocks).
+round-trip against ``python -m metainformant.mcp.server`` (real implementations).
 """
 
 from __future__ import annotations

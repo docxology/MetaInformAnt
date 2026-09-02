@@ -1,4 +1,4 @@
-"""Deep tests for metainformant.math.population_genetics.fst (real computation, no mocks)."""
+"""Deep tests for metainformant.math.population_genetics.fst (real computation, no test doubles)."""
 
 import math
 

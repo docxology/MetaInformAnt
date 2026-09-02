@@ -1,4 +1,4 @@
-"""Tests for the MCP tool registry (real code, real data; zero mocks)."""
+"""Tests for the MCP tool registry (real code, real data; real implementations)."""
 
 from __future__ import annotations
 

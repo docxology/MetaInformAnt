@@ -1,4 +1,4 @@
-"""Subprocess round-trip tests for MCP tools (real interpreter, no mocks)."""
+"""Subprocess round-trip tests for MCP tools (real interpreter, no test doubles)."""
 
 from __future__ import annotations
 

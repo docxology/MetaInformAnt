@@ -3,7 +3,7 @@
 The previous implementation was an ad-hoc 'lambda terms' formula that did not
 implement Chao-Shen (2003). These tests pin the real coverage-adjusted
 estimator against hand-computed values and structural invariants.
-Zero mocks: all values computed from real arithmetic.
+real implementations: all values computed from real arithmetic.
 """
 
 from __future__ import annotations

@@ -1,4 +1,4 @@
-"""Registry round-trip tests for the module-spec catalog (zero mocks)."""
+"""Registry round-trip tests for the module-spec catalog (real implementations)."""
 
 from __future__ import annotations
 

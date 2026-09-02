@@ -6,7 +6,7 @@ Covers previously untested public APIs:
   evaluate_integration_quality
 - doublet.detection: detect_doublets, DoubletResult
 
-All tests use real computation on synthetic data (zero-mocks policy).
+All tests use real computation on synthetic data (real-implementation policy).
 """
 
 from __future__ import annotations

@@ -91,7 +91,7 @@ single-pass reductions.
 ## Scope and boundary
 
 - Benchmarks are time-real only: real pandas/numpy on synthetic frames.
-  No mock frameworks (zero-mocks policy).
+  No test-double frameworks (real-implementation policy).
 - Synthetic distributions (log-normal expression, exponential counts)
   are shape-plausible for TPM/count tables but are not biological data.
 - The live campaign (`run_all_species.py`, data root) is never touched.

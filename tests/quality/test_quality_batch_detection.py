@@ -1,4 +1,4 @@
-"""Deep tests for metainformant.quality.batch.detection (real computation, no mocks)."""
+"""Deep tests for metainformant.quality.batch.detection (real computation, no test doubles)."""
 
 import numpy as np
 import pytest

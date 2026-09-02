@@ -1,4 +1,4 @@
-"""Spec-contract tests for the MCP tools package (real imports, no mocks)."""
+"""Spec-contract tests for the MCP tools package (real imports, no test doubles)."""
 
 from __future__ import annotations
 

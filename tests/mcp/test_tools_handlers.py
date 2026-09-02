@@ -1,4 +1,4 @@
-"""Handler behavior tests with real synthetic inputs (zero mocks)."""
+"""Handler behavior tests with real synthetic inputs (real implementations)."""
 
 from __future__ import annotations
 

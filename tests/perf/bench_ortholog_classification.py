@@ -3,7 +3,7 @@
 Builds a synthetic transcript_orthogroups.tsv-shaped bridge table (150,000
 orthogroups x 27 species — the campaign roster scale) and times the
 orthology-class stratification path, including a row-chunked variant using
-``metainformant.core.utils.batches.chunked``. Real pandas execution, no mocks.
+``metainformant.core.utils.batches.chunked``. Real pandas execution, no test doubles.
 
     uv run python tests/perf/bench_ortholog_classification.py [--orthogroups N] [--species N]
 
