@@ -70,6 +70,8 @@ def load_postgres_config_from_env(prefix: str = "PG") -> PostgresConfig | None:
 def load_config_file(config_path: Path) -> dict[str, Any]:
     """Load configuration from YAML, TOML, or JSON file.
 
+    Delegates to :func:`load_mapping_from_file`, the canonical loader.
+
     Args:
         config_path: Path to configuration file
 
@@ -79,26 +81,7 @@ def load_config_file(config_path: Path) -> dict[str, Any]:
     Raises:
         ValueError: If file format not supported or file cannot be parsed
     """
-    if not config_path.exists():
-        raise FileNotFoundError(f"Configuration file not found: {config_path}")
-
-    suffix = config_path.suffix.lower()
-    content = config_path.read_text()
-
-    if suffix in {".yaml", ".yml"}:
-        if yaml is None:
-            raise RuntimeError("PyYAML not available for YAML config files")
-        return yaml.safe_load(content)
-    elif suffix == ".toml":
-        if tomllib is None:
-            raise RuntimeError("tomllib not available for TOML config files")
-        return tomllib.loads(content)
-    elif suffix == ".json":
-        import json
-
-        return json.loads(content)
-    else:
-        raise ValueError(f"Unsupported config file format: {suffix}")
+    return load_mapping_from_file(config_path)
 
 
 def get_env_or_default(env_var: str, default: str) -> str:
