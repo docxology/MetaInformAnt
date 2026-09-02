@@ -1,5 +1,5 @@
 ---
-name: metainformant-e05561e9c970f468643c44b6bb9a8efc03fdf8e86fa6b86599
+name: metainformant-template-bioinformatics-project-github-workflows
 description: METAINFORMANT rules for directory projects/template_bioinformatics_project/.github/workflows. Use when editing, adding tests, or reviewing code under this path. Read the linked AGENTS.md first; use uv only, write outputs to output/, real implementations.
 ---
 

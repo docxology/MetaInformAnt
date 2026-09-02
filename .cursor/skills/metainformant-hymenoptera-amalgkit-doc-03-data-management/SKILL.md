@@ -1,5 +1,5 @@
 ---
-name: metainformant-665d2eb98a32b97a48ccec27227e561da77c72c13bb50f3b1a
+name: metainformant-hymenoptera-amalgkit-doc-03-data-management
 description: METAINFORMANT rules for directory projects/hymenoptera_amalgkit/doc/03_data_management. Use when editing, adding tests, or reviewing code under this path. Read the linked AGENTS.md first; use uv only, write outputs to output/, real implementations.
 ---
 

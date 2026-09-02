@@ -15,6 +15,7 @@ import numpy as np
 
 from metainformant.core.data import validation
 from metainformant.core.utils import errors, logging
+from metainformant.simulation.rng import coerce_and_seed
 
 logger = logging.get_logger(__name__)
 
@@ -186,10 +187,7 @@ def create_ecosystem(
     validation.validate_type(agent_types, list, "agent_types")
     validation.validate_range(len(agent_types), min_val=1, name="agent_types length")
 
-    if rng is None:
-        rng = random.Random()
-
-    np.random.seed(rng.randint(0, 2**32))
+    rng = coerce_and_seed(rng)
 
     ecosystem = Ecosystem(size=environment_size)
 

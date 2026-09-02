@@ -1,5 +1,5 @@
 ---
-name: metainformant-cc5a299b427b7bafa4e23da70e9173653f15b75f219ce76383
+name: metainformant-template-bioinformatics-project-data-processed
 description: METAINFORMANT rules for directory projects/template_bioinformatics_project/data/processed. Use when editing, adding tests, or reviewing code under this path. Read the linked AGENTS.md first; use uv only, write outputs to output/, real implementations.
 ---
 

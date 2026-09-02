@@ -1,5 +1,5 @@
 ---
-name: metainformant-37d8a79110af2615ce37dad07482df88b826c183846c14b56d
+name: metainformant-structural-variants-visualization
 description: METAINFORMANT rules for directory src/metainformant/structural_variants/visualization. Use when editing, adding tests, or reviewing code under this path. Read the linked AGENTS.md first; use uv only, write outputs to output/, real implementations.
 ---
 

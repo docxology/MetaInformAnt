@@ -1,5 +1,5 @@
 ---
-name: metainformant-7b49aba7f99bc9f091dce94d189ea7ec35042e6eb14f112776
+name: metainformant-hymenoptera-amalgkit-doc-04-troubleshooting
 description: METAINFORMANT rules for directory projects/hymenoptera_amalgkit/doc/04_troubleshooting. Use when editing, adding tests, or reviewing code under this path. Read the linked AGENTS.md first; use uv only, write outputs to output/, real implementations.
 ---
 

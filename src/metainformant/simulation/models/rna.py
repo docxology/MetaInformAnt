@@ -14,6 +14,7 @@ import numpy as np
 
 from metainformant.core.data import validation
 from metainformant.core.utils import errors, logging
+from metainformant.simulation.rng import coerce_and_seed
 
 logger = logging.get_logger(__name__)
 
@@ -53,11 +54,7 @@ def simulate_counts_negative_binomial(
     if np.any(dispersions <= 0):
         raise errors.ValidationError("All dispersion values must be positive")
 
-    if rng is None:
-        rng = random.Random()
-
-    # Set numpy random seed for reproducibility
-    np.random.seed(rng.randint(0, 2**32))
+    rng = coerce_and_seed(rng)
 
     # Negative binomial parameters
     # mean = n * p / (1-p), variance = n * p / (1-p)^2
@@ -122,11 +119,7 @@ def simulate_rnaseq_counts(
     validation.validate_range(mean_expression, min_val=0.0, name="mean_expression")
     validation.validate_range(dispersion, min_val=0.001, name="dispersion")
 
-    if rng is None:
-        rng = random.Random()
-
-    # Set numpy seed for reproducibility
-    np.random.seed(rng.randint(0, 2**32))
+    rng = coerce_and_seed(rng)
 
     # Generate realistic gene means (log-normal distribution)
     gene_means = np.random.lognormal(
@@ -168,11 +161,7 @@ def simulate_differential_expression(
     if n_diff >= n_features:
         raise errors.ValidationError(f"Cannot have {n_diff} differentially expressed genes out of {n_features} total")
 
-    if rng is None:
-        rng = random.Random()
-
-    # Set numpy random seed
-    np.random.seed(rng.randint(0, 2**32))
+    rng = coerce_and_seed(rng)
 
     # Split samples into two groups
     group_sizes = [n_samples // 2, n_samples - n_samples // 2]
@@ -236,10 +225,7 @@ def simulate_bulk_rnaseq(
     validation.validate_range(n_samples, min_val=1, name="n_samples")
     validation.validate_range(n_genes, min_val=1, name="n_genes")
 
-    if rng is None:
-        rng = random.Random()
-
-    np.random.seed(rng.randint(0, 2**32))
+    rng = coerce_and_seed(rng)
 
     # Generate library sizes if not provided
     if library_sizes is None:
@@ -303,10 +289,7 @@ def simulate_single_cell_rnaseq(
     validation.validate_range(n_cell_types, min_val=1, name="n_cell_types")
     validation.validate_range(dropout_rate, min_val=0.0, max_val=1.0, name="dropout_rate")
 
-    if rng is None:
-        rng = random.Random()
-
-    np.random.seed(rng.randint(0, 2**32))
+    rng = coerce_and_seed(rng)
 
     # Assign cells to cell types
     cells_per_type = n_cells // n_cell_types
@@ -370,10 +353,7 @@ def simulate_time_series_expression(
     validation.validate_range(n_timepoints, min_val=2, name="n_timepoints")
     validation.validate_range(n_genes, min_val=1, name="n_genes")
 
-    if rng is None:
-        rng = random.Random()
-
-    np.random.seed(rng.randint(0, 2**32))
+    rng = coerce_and_seed(rng)
 
     time_points = np.linspace(0, 4 * np.pi, n_timepoints)  # Two full cycles
 
@@ -427,10 +407,7 @@ def simulate_spatial_expression(
     if spatial_patterns not in ["random", "gradient", "clusters"]:
         raise errors.ValidationError(f"Invalid spatial_patterns: {spatial_patterns}")
 
-    if rng is None:
-        rng = random.Random()
-
-    np.random.seed(rng.randint(0, 2**32))
+    rng = coerce_and_seed(rng)
 
     # Generate spatial coordinates
     if spatial_patterns == "random":
@@ -518,10 +495,7 @@ def add_technical_noise(
     validation.validate_type(expression_matrix, np.ndarray, "expression_matrix")
     validation.validate_range(amplification_bias, min_val=0.0, max_val=1.0, name="amplification_bias")
 
-    if rng is None:
-        rng = random.Random()
-
-    np.random.seed(rng.randint(0, 2**32))
+    rng = coerce_and_seed(rng)
 
     noisy_matrix = expression_matrix.copy().astype(float)
 

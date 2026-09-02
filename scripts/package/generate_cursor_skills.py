@@ -106,6 +106,30 @@ def display_folder_label(folder: Path, repo: Path) -> str:
     return rel.as_posix()
 
 
+def _readable_fallback_slug(rel: Path) -> str | None:
+    """Readable compressed slug for over-long paths, or None if it cannot fit.
+
+    Strategy: progressively drop leading path segments (keeping the most
+    specific tail segments) until the slug fits the 64-character limit.
+    Returns None when even the last segment alone is too long, in which case
+    the caller falls back to a documented digest slug.
+    """
+    segs = [_sanitize_segment(p) for p in rel.parts]
+    for drop in range(len(segs)):
+        kept = segs[drop:]
+        # The implicit leading "metainformant" participates in dedupe so a
+        # kept "metainformant" segment does not double the package prefix and
+        # consecutive duplicate segments collapse (metainformant-x-x -> x).
+        collapsed: list[str] = []
+        for seg in ["metainformant", *kept]:
+            if not collapsed or collapsed[-1] != seg:
+                collapsed.append(seg)
+        base = "-".join(collapsed)
+        if len(base) <= 64 and re.match(r"^[a-z0-9-]+$", base):
+            return base
+    return None
+
+
 def skill_slug_for_rel(rel: Path) -> str:
     if rel == Path("."):
         return "metainformant-root"
@@ -113,6 +137,13 @@ def skill_slug_for_rel(rel: Path) -> str:
     base = "metainformant-" + "-".join(segs)
     if len(base) <= 64 and re.match(r"^[a-z0-9-]+$", base):
         return base
+    # Long paths: compress to a readable slug by dropping leading segments so
+    # skill names stay human-greppable (e.g. src/metainformant/<module>/...)
+    # instead of opaque digests. Digest fallback only when compression cannot
+    # fit; assign_slugs guarantees uniqueness for any collisions.
+    compressed = _readable_fallback_slug(rel)
+    if compressed is not None:
+        return compressed
     digest = hashlib.sha256(str(rel).encode()).hexdigest()[:50]
     return f"metainformant-{digest}"
 

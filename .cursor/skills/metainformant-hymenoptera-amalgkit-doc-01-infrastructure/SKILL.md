@@ -1,5 +1,5 @@
 ---
-name: metainformant-b2d62da4483a2d041a75130992f3ec14efcf4e56015b2ee286
+name: metainformant-hymenoptera-amalgkit-doc-01-infrastructure
 description: METAINFORMANT rules for directory projects/hymenoptera_amalgkit/doc/01_infrastructure. Use when editing, adding tests, or reviewing code under this path. Read the linked AGENTS.md first; use uv only, write outputs to output/, real implementations.
 ---
 

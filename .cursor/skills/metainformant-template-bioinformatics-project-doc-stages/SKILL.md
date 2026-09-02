@@ -1,5 +1,5 @@
 ---
-name: metainformant-5809b079def8f93f8f1b280267e9f0f64880c74a6c1c11d12e
+name: metainformant-template-bioinformatics-project-doc-stages
 description: METAINFORMANT rules for directory projects/template_bioinformatics_project/doc/stages. Use when editing, adding tests, or reviewing code under this path. Read the linked AGENTS.md first; use uv only, write outputs to output/, real implementations.
 ---
 

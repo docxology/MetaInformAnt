@@ -14,6 +14,7 @@ import numpy as np
 
 from metainformant.core.data import validation
 from metainformant.core.utils import errors, logging
+from metainformant.simulation.rng import coerce_and_seed, seed_numpy_from_rng
 
 logger = logging.get_logger(__name__)
 
@@ -80,10 +81,7 @@ def generate_population_sequences(
     validation.validate_range(theta, min_val=0.0, name="theta")
     validation.validate_range(n_sites, min_val=1, name="n_sites")
 
-    if rng is None:
-        rng = random.Random()
-
-    np.random.seed(rng.randint(0, 2**32))
+    rng = coerce_and_seed(rng)
 
     # Generate or use ancestral sequence
     if reference_sequence is not None:
@@ -175,10 +173,7 @@ def generate_two_populations(
     validation.validate_range(theta, min_val=0.0, name="theta")
     validation.validate_range(n_sites, min_val=1, name="n_sites")
 
-    if rng is None:
-        rng = random.Random()
-
-    np.random.seed(rng.randint(0, 2**32))
+    rng = coerce_and_seed(rng)
 
     # Generate ancestral population
     ancestral_pop = generate_population_sequences(max(n_pop1, n_pop2), length, theta=theta, n_sites=n_sites, rng=rng)
@@ -263,10 +258,7 @@ def generate_genotype_matrix(
     if not hwe:
         hwe_deviation = 0.3  # Some deviation from HWE
 
-    if rng is None:
-        rng = random.Random()
-
-    np.random.seed(rng.randint(0, 2**32))
+    rng = coerce_and_seed(rng)
 
     genotype_matrix = []
 
@@ -396,7 +388,7 @@ def simulate_bottleneck_population(
     validation.validate_range(generations, min_val=1, name="generations")
     validation.validate_range(mutation_rate, min_val=0.0, name="mutation_rate")
 
-    np.random.seed(rng.randint(0, 2**32))
+    seed_numpy_from_rng(rng)
 
     # Simulate population size changes
     bottleneck_start = generations // 3
@@ -523,7 +515,7 @@ def simulate_population_expansion(
     validation.validate_range(expansion_time, min_val=1, name="expansion_time")
     validation.validate_range(mutation_rate, min_val=0.0, name="mutation_rate")
 
-    np.random.seed(rng.randint(0, 2**32))
+    seed_numpy_from_rng(rng)
 
     # Exponential growth model
     growth_rate = (np.log(final_size) - np.log(initial_size)) / expansion_time
@@ -601,10 +593,7 @@ def generate_site_frequency_spectrum(
     if demographic_model not in ["constant", "expansion", "bottleneck"]:
         raise errors.ValidationError(f"Unknown demographic model: {demographic_model}")
 
-    if rng is None:
-        rng = random.Random()
-
-    np.random.seed(rng.randint(0, 2**32))
+    rng = coerce_and_seed(rng)
 
     if parameters is None:
         parameters = {}
@@ -694,10 +683,7 @@ def generate_linkage_disequilibrium_data(
     validation.validate_range(n_snps, min_val=2, name="n_snps")
     validation.validate_range(recombination_rate, min_val=0.0, name="recombination_rate")
 
-    if rng is None:
-        rng = random.Random()
-
-    np.random.seed(rng.randint(0, 2**32))
+    rng = coerce_and_seed(rng)
 
     # Determine linkage strength from r_squared_target if provided
     linkage_strength = 0.5  # default
@@ -779,10 +765,7 @@ def simulate_admixture(
     if admixture_proportions.shape != (n_populations, n_populations):
         raise errors.ValidationError(f"admixture_proportions must have shape {(n_populations, n_populations)}")
 
-    if rng is None:
-        rng = random.Random()
-
-    np.random.seed(rng.randint(0, 2**32))
+    rng = coerce_and_seed(rng)
 
     # Initialize ancestral populations
     ancestral_frequencies = []
@@ -855,10 +838,7 @@ def simulate_selection(
     if fitness_effects.shape != (n_snps, 3):
         raise errors.ValidationError(f"fitness_effects must have shape ({n_snps}, 3)")
 
-    if rng is None:
-        rng = random.Random()
-
-    np.random.seed(rng.randint(0, 2**32))
+    rng = coerce_and_seed(rng)
 
     # Track allele frequencies over time
     allele_frequencies = []
