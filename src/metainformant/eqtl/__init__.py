@@ -36,6 +36,10 @@ from .variant_calling import (
     find_reference_genome,
     merge_vcfs,
 )
+from .pipeline import (
+    resolve_run_parameters,
+    run_pipeline,
+)
 from .variant_stats import (
     compute_popgen_summary,
     compute_sample_stats,
@@ -60,6 +64,8 @@ __all__ = [
     "merge_vcfs",
     "parse_bcftools_stats",
     "parse_gene_positions",
+    "resolve_run_parameters",
+    "run_pipeline",
     "pipeline",
     "synthetic",
     "variant_calling",
