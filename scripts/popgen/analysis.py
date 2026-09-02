@@ -30,7 +30,9 @@ def main():
     """Main execution function."""
     import argparse
 
-    parser = argparse.ArgumentParser(description="Population genetics dataset generation and analysis")
+    parser = argparse.ArgumentParser(
+        description="Population genetics dataset generation and analysis"
+    )
     parser.add_argument(
         "--output-dir",
         type=str,
