@@ -19,15 +19,6 @@ from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
-try:
-    import numpy as np
-
-    HAS_NUMPY = True
-except ImportError:
-    HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
-
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
