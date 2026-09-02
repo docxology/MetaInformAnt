@@ -2005,8 +2005,20 @@ def test_invalid_run_rows_are_excluded_and_ledgered(tmp_path: Path) -> None:
     assert set(ledger_df["invalid_run_reason"]) == {"missing_or_invalid_run_accession"}
 
 
-def test_build_quant_command_uses_metadata_cleanup_and_index(tmp_path: Path) -> None:
-    """Quant command construction should include cleanup and real index paths."""
+def test_build_quant_command_uses_metadata_cleanup_and_index(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Quant command construction should include cleanup and real index paths.
+
+    The default data root (no ``AMALGKIT_DATA_ROOT``) is the resolved
+    repository-local ``output/amalgkit`` per the canonical
+    ``core.io.data_root`` contract, so the out_dir assertion below is
+    environment-independent: it pins the resolved default rather than
+    depending on an inherited ambient value.
+    """
+    monkeypatch.setenv("AMALGKIT_DATA_ROOT", "output/amalgkit")
+    expected_work_dir = str(Path("output/amalgkit/apis/work").expanduser().resolve())
+
     index_dir = tmp_path / "index"
     index_dir.mkdir()
     (index_dir / "genome.idx").write_bytes(b"idx")
@@ -2017,7 +2029,7 @@ def test_build_quant_command_uses_metadata_cleanup_and_index(tmp_path: Path) -> 
 
     cmd = _build_quant_command(cfg, "apis", batch_index=3, threads=2, metadata_path="metadata.tsv")
 
-    assert cmd[:4] == ["amalgkit", "quant", "--out_dir", "output/amalgkit/apis/work"]
+    assert cmd[:4] == ["amalgkit", "quant", "--out_dir", expected_work_dir]
     assert cmd[cmd.index("--metadata") + 1] == "metadata.tsv"
     assert cmd[cmd.index("--clean_fastq") + 1] == "no"
     assert cmd[cmd.index("--index_dir") + 1] == str(index_dir)
