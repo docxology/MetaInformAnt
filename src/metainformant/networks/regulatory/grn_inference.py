@@ -565,6 +565,7 @@ def infer_grn_regression(
 
     return {
         "edges": edges,
+        "n_edges": len(edges),
         "coefficients": coefficients,
         "r_squared_per_gene": r_squared_per_gene,
     }
