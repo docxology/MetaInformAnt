@@ -259,10 +259,16 @@ def pathway_enrichment_from_annotations(
 def _hypergeometric_sf(k: int, n: int, K: int, N: int) -> float:
     """P(X >= k) for hypergeometric(N, K, n) i.e. one-tailed enrichment p."""
     # P(X = x) = C(K,x)*C(N-K,n-x)/C(N,n)
-    p_val = 0.0
-    for x in range(k, min(n, K) + 1):
-        p_val += _log_hypergeom_pmf(x, n, K, N)
-    return min(1.0, math.exp(p_val))  # type: ignore
+    # Sum probabilities in log space (log-sum-exp), not log-probabilities:
+    # adding log-probabilities arithmetically corresponds to multiplying
+    # probabilities and yields badly wrong tail p-values.
+    log_pmfs = [_log_hypergeom_pmf(x, n, K, N) for x in range(k, min(n, K) + 1)]
+    finite = [v for v in log_pmfs if math.isfinite(v)]
+    if not finite:
+        return 0.0
+    max_log = max(finite)
+    total = sum(math.exp(v - max_log) for v in finite)
+    return min(1.0, math.exp(max_log) * total)
 
 
 def _log_hypergeom_pmf(k: int, n: int, K: int, N: int) -> float:

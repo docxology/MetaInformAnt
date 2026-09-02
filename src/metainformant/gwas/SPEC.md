@@ -74,7 +74,27 @@ Genome-Wide Association Studies (GWAS) module for METAINFORMANT. Provides end-to
 
 ## Testing
 
-- **41 GWAS test files** covering unit, integration, and end-to-end suites
+- **52+ GWAS test files** covering unit, integration, and end-to-end suites
 - **11/11 end-to-end tests pass** (`tests/gwas/test_gwas_end_to_end.py`)
-- Real-implementation policy: all tests use real functional methods
+- Real-implementation policy: all tests use real functional methods (zero
+  mocks; real CSV/ZIP files, real scipy-verified statistics, real bcftools
+  subprocesses where the tool is installed — skipped otherwise)
 - Compute-time benchmarking tests validate scaling model math
+
+### Module test coverage (Round-4 audit, 2026-09-01)
+
+Zero-mocks suites added for the previously untested modules:
+
+| Module | Test file | Notes |
+|--------|-----------|-------|
+| `analysis/enrichment` | `test_gwas_enrichment.py` | Fisher p cross-checked against scipy; BH FDR known-vector tests; pure-Python hypergeometric SF verified against `scipy.stats.hypergeom.sf` (regression: log-probability sum bug fixed 2026-09-01) |
+| `analysis/power` | `test_gwas_power.py` | NCP closed-form, jackknife SE structure, saturation fit (marginal-gain normalization bug fixed 2026-09-01) |
+| `analysis/prs` | `test_gwas_prs.py` | C+T clumping, PRS scoring, R² against constructed causal data |
+| `analysis/hwe` | `test_gwas_hwe.py` | chi-square closed-form + erfc p-value identity; sample-major flagging |
+| `analysis/ld_decay` | `test_gwas_ld_decay.py` | r² vs distance, window/chromosome constraints, seed determinism |
+| `analysis/ldsr` | `test_gwas_ldsr.py` | LD scores; h²/intercept recovery from synthetic χ² |
+| `analysis/strain_analysis` | `test_gwas_strain_analysis.py` | Fst estimators (Weir-Cockerham degenerate-sample crash fixed 2026-09-01), private variants incl. fixed differences (detection gap fixed 2026-09-01) |
+| `data/traits` + `data/extraction` | `test_gwas_traits_extraction.py` | real CSV files and real ZIP archives |
+| `data/vcf_utils` | `test_gwas_vcf_utils.py` | real bcftools subprocesses (skip when absent) |
+| `reporting/audit` + `validation/output_validator` | `test_gwas_audit_validator.py` | real hashes, real on-disk output trees |
+| `simulation/synthetic` | `test_gwas_synthetic.py` | analytical power closed-form; deterministic synthetic VCF/phenotype generation |

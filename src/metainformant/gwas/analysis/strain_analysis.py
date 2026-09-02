@@ -163,6 +163,14 @@ def _weir_cockerham_fst(p1: float, p2: float, n1: int, n2: int) -> float:
     n_total = n1 + n2
     if n_total < 2 or n1 < 1 or n2 < 1:
         return 0.0
+    # Degenerate finite-sample correction: with one sample per strain
+    # (n_bar == 1) the (1/(n_bar-1)) term divides by zero, and with equal
+    # sample sizes n_c == 0 divides n_bar/n_c. Fall back to Hudson, which is
+    # well-defined for these inputs.
+    n_bar_check = n_total / r
+    n_c_check = (n_total - (n1**2 + n2**2) / n_total) / (r - 1)
+    if n_bar_check < 2 or n_c_check <= 0:
+        return _hudson_fst(p1, p2, n1, n2)
 
     # Sample sizes (diploids: allele count = 2n)
     n_bar = n_total / r
@@ -211,26 +219,31 @@ def strain_specific_variants(
     n_variants = len(genotype_matrix)
     result: Dict[str, List[int]] = {s: [] for s in strains}
 
+    hi = 1.0 - maf_threshold  # allele considered (nearly) fixed in a strain
+
     for v in range(n_variants):
         for target_strain in strains:
             target_af = af_by_strain[target_strain][v]
-            target_maf = min(target_af, 1 - target_af) if not math.isnan(target_af) else 0
-
-            if target_maf < maf_threshold:
+            if math.isnan(target_af):
                 continue
 
-            # Check that all other strains have low MAF
-            is_private = True
-            for other_strain in strains:
-                if other_strain == target_strain:
-                    continue
-                other_af = af_by_strain[other_strain][v]
-                other_maf = min(other_af, 1 - other_af) if not math.isnan(other_af) else 0
-                if other_maf >= maf_threshold:
-                    is_private = False
-                    break
+            other_afs = [
+                af_by_strain[s][v] for s in strains if s != target_strain and not math.isnan(af_by_strain[s][v])
+            ]
 
-            if is_private:
+            # Polymorphic-private: minor allele present in target, absent elsewhere
+            target_maf = min(target_af, 1 - target_af)
+            polymorphic_private = target_maf >= maf_threshold and all(
+                min(oa, 1 - oa) < maf_threshold for oa in other_afs
+            )
+
+            # Fixed-difference-private: an allele nearly fixed in the target
+            # and rare in every other strain (MAF-based check above misses
+            # this because a fixed allele has MAF = 0).
+            alt_fixed_private = target_af >= hi and all(oa <= maf_threshold for oa in other_afs)
+            ref_fixed_private = target_af <= maf_threshold and all(oa >= hi for oa in other_afs)
+
+            if polymorphic_private or alt_fixed_private or ref_fixed_private:
                 result[target_strain].append(v)
 
     for strain, variants in result.items():

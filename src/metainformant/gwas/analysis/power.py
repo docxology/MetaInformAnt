@@ -449,10 +449,17 @@ def saturation_analysis(
                 best_k_inf = k_inf_try
                 best_kappa = kappa_try
 
-    # Marginal gain from 0.9 → 1.0
+    # Marginal gain from 0.9 → 1.0, normalized by the linear (non-saturating)
+    # gain over the same interval, 0.1·K∞. The un-normalized quantity
+    # (val_100 − val_90)/K∞ = e^{−0.9κ} − e^{−κ} is bounded above by ≈0.0387
+    # for ALL κ, so comparing it against thresholds ≥0.05 always declared
+    # saturation regardless of the data. Normalizing makes the criterion
+    # "the last 10% of data added < `threshold` of a non-saturating curve's
+    # gain" — meaningful and reachable in both directions.
     val_90 = best_k_inf * (1.0 - math.exp(-best_kappa * 0.9))
     val_100 = best_k_inf * (1.0 - math.exp(-best_kappa * 1.0))
-    marginal_gain = (val_100 - val_90) / best_k_inf if best_k_inf > 0 else 0.0
+    linear_gain_90_to_100 = 0.1 * best_k_inf if best_k_inf > 0 else 0.0
+    marginal_gain = (val_100 - val_90) / linear_gain_90_to_100 if linear_gain_90_to_100 > 0 else 0.0
 
     is_saturated = marginal_gain < convergence_threshold
 
