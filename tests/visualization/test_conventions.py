@@ -1,7 +1,7 @@
 """Zero-mocks tests for visualization chart-convention utilities.
 
 All tests use real matplotlib Agg figures, real files in tmp_path, and real
-byte comparisons of saved output. No mock frameworks.
+byte comparisons of saved output. Real-implementation policy: no test doubles.
 """
 
 from __future__ import annotations

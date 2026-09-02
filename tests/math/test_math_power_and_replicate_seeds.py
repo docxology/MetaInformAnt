@@ -1,7 +1,7 @@
 """Tests for round-4 additions: power/sample-size helpers and deterministic replicate seeds.
 
 All tests use real computation (scipy normal quantiles, SHA-256 hashing,
-actual sequence evolution) - no mock frameworks.
+actual sequence evolution) - real-implementation policy: no test doubles.
 """
 
 from __future__ import annotations

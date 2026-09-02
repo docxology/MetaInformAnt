@@ -444,8 +444,10 @@ def score_pathogenicity(
     # Component 6: Population frequency (rare = more pathogenic)
     freq_score = 1.0
     if pop_freq is not None and pop_freq > 0:
-        # Common variants are less likely pathogenic
-        freq_score = max(0.0, 1.0 - math.log10(pop_freq + 1e-6) / (-1.0))
+        # Log-scaled decrease: AF <= 1e-6 scores 1.0; AF ~0.5 scores ~0.15.
+        # (Previously the sign was inverted, making common variants score
+        # higher than rare ones - contradicts the documented intent.)
+        freq_score = max(0.0, 1.0 - (math.log10(pop_freq + 1e-6) + 6.0) / 6.7)
         freq_score = min(1.0, max(0.0, freq_score))
 
     # Weighted combination

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -31,6 +32,11 @@ SKIP_PATHS = {
     Path("scripts/quality/verify_real_implementation_policy.py"),
     Path("tests/quality/test_real_implementation_policy.py"),
 }
+
+# Transient, untracked lane/status reports at the repo root legitimately
+# discuss the policy by name (e.g. "no-mocks: ..."). They are session-local
+# artifacts, not tracked source, so they must never gate the scan.
+SKIP_REPORT_GLOBS = ("PROJECT_STATE_REPORT_*.md",)
 
 TEXT_SUFFIXES = {
     ".md",
@@ -75,9 +81,26 @@ class PolicyViolation:
     text: str
 
 
+def _tracked_files(repo_root: Path) -> set[str] | None:
+    """Return the set of git-tracked POSIX paths, or None outside a repo."""
+    try:
+        result = subprocess.run(
+            ["git", "ls-files", "-z"],
+            cwd=repo_root,
+            capture_output=True,
+            text=False,
+            check=True,
+            timeout=60,
+        )
+    except (OSError, subprocess.CalledProcessError, subprocess.TimeoutExpired):
+        return None
+    return {p.decode("utf-8", errors="replace") for p in result.stdout.split(b"\0") if p}
+
+
 def iter_policy_files(repo_root: Path = REPO_ROOT) -> Iterable[Path]:
     """Yield text files covered by the policy scanner."""
     repo_root = repo_root.resolve()
+    tracked = _tracked_files(repo_root)
     for current_root, dirnames, filenames in os.walk(
         repo_root,
         topdown=True,
@@ -107,6 +130,12 @@ def iter_policy_files(repo_root: Path = REPO_ROOT) -> Iterable[Path]:
                 continue
             rel = path.relative_to(repo_root)
             if rel in SKIP_PATHS:
+                continue
+            if any(rel.match(glob) for glob in SKIP_REPORT_GLOBS):
+                continue
+            if tracked is not None and rel.as_posix() not in tracked:
+                # Untracked worktree files are not repository state: transient
+                # lane reports and in-flight sibling work must not gate the scan.
                 continue
             if path.suffix in TEXT_SUFFIXES or path.name in {
                 "AGENTS.md",

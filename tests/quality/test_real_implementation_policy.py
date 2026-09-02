@@ -37,3 +37,47 @@ def test_policy_file_discovery_prunes_submodules_and_symlinked_directories(
     discovered = {path.relative_to(root) for path in iter_policy_files(root)}
 
     assert discovered == {Path("included.py")}
+
+
+def test_transient_project_state_reports_are_out_of_scan_scope(tmp_path: Path) -> None:
+    """Untracked lane/status reports must never gate the policy scan.
+
+    Parallel campaign lanes drop PROJECT_STATE_REPORT_*.md files at the repo
+    root that legitimately discuss the policy by name. They are session-local
+    artifacts, not tracked source, so the scanner must skip them.
+    """
+
+    root = tmp_path / "repo"
+    root.mkdir()
+    report = root / "PROJECT_STATE_REPORT_2026-09-01_R4_T5.md"
+    report.write_text("no-mocks policy reference here\nMock(\n", encoding="utf-8")
+    tracked = root / "src.py"
+    tracked.write_text("x = 1\n", encoding="utf-8")
+
+    discovered = {path.relative_to(root) for path in iter_policy_files(root)}
+
+    assert discovered == {Path("src.py")}
+    assert scan_repo(root) == []
+
+
+def test_untracked_files_excluded_from_scan_scope(tmp_path: Path) -> None:
+    """Untracked worktree files are not repository state for this scan.
+
+    A tracked file with a banned phrase fails; the same content untracked is
+    out of scope (it belongs to its authoring lane until committed).
+    """
+    import subprocess as sp
+
+    root = tmp_path / "repo"
+    root.mkdir()
+    env_banned = root / "banned.py"
+    env_banned.write_text("x = 1  # NO_MOCKING_POLICY\n", encoding="utf-8")
+    sp.run(["git", "init", "-q", str(root)], check=True)
+    sp.run(["git", "-C", str(root), "add", "banned.py"], check=True)
+
+    assert scan_repo(root) != []
+
+    # Now make the file untracked again - it leaves the scan scope.
+    sp.run(["git", "-C", str(root), "rm", "--cached", "-q", "banned.py"], check=True)
+    assert env_banned.exists()
+    assert scan_repo(root) == []
