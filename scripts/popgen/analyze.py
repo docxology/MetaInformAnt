@@ -3,7 +3,7 @@
 
 Thin orchestrator: generates a multi-scenario synthetic dataset and runs the
 full popgen analysis pipeline. All business logic lives in
-``metainformant.popgen`` (analysis) and
+``metainformant.popgen`` (workflow analysis) and
 ``metainformant.simulation.models.popgen`` (generators).
 """
 
@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from metainformant.core.io import ensure_directory, load_json
 from metainformant.core.utils.logging import setup_logger
-from metainformant.popgen.analysis import analyze_dataset
+from metainformant.popgen.workflow.analysis import analyze_dataset
 from scripts.popgen.generate_dataset import generate_comprehensive_dataset
 from scripts.popgen.report import generate_summary_report
 from scripts.popgen.visualize import generate_visualizations

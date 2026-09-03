@@ -2,8 +2,9 @@
 """Check METAINFORMANT package dependency boundaries.
 
 Domain modules may depend on ``metainformant.core``.  Cross-domain imports are
-allowed only from explicit adapter surfaces such as ``integration`` and
-``workflow`` modules, or from CLI entry points.
+allowed only from explicit adapter surfaces: ``integration`` and ``workflow``
+modules, CLI entry points, and the MCP tool layer (``mcp`` packages, whose
+purpose is to expose domain APIs to external clients).
 """
 
 from __future__ import annotations
@@ -39,6 +40,10 @@ def is_allowed_adapter(path: Path, src_root: Path) -> bool:
     """Return True if ``path`` is an approved cross-domain adapter surface."""
     rel_parts = path.relative_to(src_root).parts
     if rel_parts[0] == "__main__.py":
+        return True
+    if "mcp" in rel_parts and "tools" in rel_parts:
+        # The MCP tool layer is an approved cross-domain adapter surface by
+        # design: each tool file wraps exactly one target domain's public API.
         return True
     return any(part in {"integration", "workflow"} for part in rel_parts)
 

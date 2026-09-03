@@ -13,7 +13,7 @@ variant statistics, and pipeline orchestration.
 
 ## Data Structures
 
-- **Submodules**: synthetic, variant_calling, variant_stats, pipeline
+- **Submodules**: workflow.synthetic, workflow.variant_calling, variant_stats, pipeline
 - **Key Concepts**: cis-eQTL inputs (expression genes x samples, genotype
   dosages variants x samples, gene/variant positions), HISAT2 index and
   BAM alignment, bcftools mpileup/call/filter/merge, Ti/Tv and record
@@ -21,14 +21,14 @@ variant statistics, and pipeline orchestration.
 
 ## API Definition
 
-### Exports — `synthetic.py`
+### Exports — `workflow/synthetic.py`
 
 - `create_synthetic_data` — Synthetic expression/genotype matrices with known cis-eQTL effects
 - `parse_gene_positions` — Approximate positions from kallisto target IDs
 - `create_synthetic_genotypes` — Synthetic dosages matched to gene positions
 - `load_real_expression_data` — Real quantification loader (TPM filter, top-gene cap)
 
-### Exports — `variant_calling.py`
+### Exports — `workflow/variant_calling.py`
 
 - `check_tools` — Verify hisat2/samtools/bcftools/curl availability
 - `find_completed_samples` — Completed-sample discovery under amalgkit output

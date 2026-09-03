@@ -172,7 +172,6 @@ IMPORT_FIXES = {
     "metainformant.simulation.rna": "metainformant.simulation.models.rna",
     "metainformant.simulation.sequences": "metainformant.simulation.models.sequences",
     "metainformant.simulation.workflow": "metainformant.simulation.workflow.workflow",
-    "metainformant.simulation.visualization": "metainformant.simulation.visualization.visualization",
     # Phenotype
     "metainformant.phenotype.antwiki": "metainformant.phenotype.data.antwiki",
     "metainformant.phenotype.scraper": "metainformant.phenotype.data.scraper",

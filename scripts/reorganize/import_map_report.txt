@@ -849,15 +849,15 @@ Building import map...
   add_agent -> metainformant.simulation.models.agents
   add_technical_noise -> metainformant.simulation.models.rna
   analyze_sequence_divergence -> metainformant.simulation.models.sequences
-  animate_population_dynamics -> metainformant.simulation.visualization.visualization
-  animate_sequence_evolution -> metainformant.simulation.visualization.visualization
+  animate_population_dynamics -> metainformant.visualization.analysis.simulation_plots
+  animate_sequence_evolution -> metainformant.visualization.analysis.simulation_plots
   benchmark_suite -> metainformant.simulation.benchmark.generators
   calculate_biodiversity_metrics -> metainformant.simulation.models.agents
   calculate_sequence_similarity -> metainformant.simulation.models.sequences
   calibrate_simulation_parameters -> metainformant.simulation.workflow.workflow
   count_agents_by_type -> metainformant.simulation.models.agents
   create_ecosystem -> metainformant.simulation.models.agents
-  create_interactive_simulation_dashboard -> metainformant.simulation.visualization.visualization
+  create_interactive_simulation_dashboard -> metainformant.visualization.analysis.simulation_plots
   create_simulation_config -> metainformant.simulation.workflow.workflow
   evaluate_benchmark -> metainformant.simulation.benchmark.generators
   evolve_sequence -> metainformant.simulation.models.sequences
@@ -875,13 +875,13 @@ Building import map...
   generate_two_populations -> metainformant.simulation.models.popgen
   get_population_dynamics -> metainformant.simulation.models.agents
   mutate_sequence -> metainformant.simulation.models.sequences
-  plot_agent_based_model_results -> metainformant.simulation.visualization.visualization
-  plot_evolutionary_simulation_summary -> metainformant.simulation.visualization.visualization
-  plot_population_dynamics_simulation -> metainformant.simulation.visualization.visualization
-  plot_rnaseq_simulation_results -> metainformant.simulation.visualization.visualization
-  plot_sequence_evolution -> metainformant.simulation.visualization.visualization
-  plot_simulation_parameter_sensitivity -> metainformant.simulation.visualization.visualization
-  plot_simulation_validation_comparison -> metainformant.simulation.visualization.visualization
+  plot_agent_based_model_results -> metainformant.visualization.analysis.simulation_plots
+  plot_evolutionary_simulation_summary -> metainformant.visualization.analysis.simulation_plots
+  plot_population_dynamics_simulation -> metainformant.visualization.analysis.simulation_plots
+  plot_rnaseq_simulation_results -> metainformant.visualization.analysis.simulation_plots
+  plot_sequence_evolution -> metainformant.visualization.analysis.simulation_plots
+  plot_simulation_parameter_sensitivity -> metainformant.visualization.analysis.simulation_plots
+  plot_simulation_validation_comparison -> metainformant.visualization.analysis.simulation_plots
   remove_agent -> metainformant.simulation.models.agents
   reverse_transcribe_protein_to_dna -> metainformant.simulation.models.sequences
   run_benchmark_simulation -> metainformant.simulation.workflow.workflow

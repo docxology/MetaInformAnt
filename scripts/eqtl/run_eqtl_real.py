@@ -22,7 +22,7 @@ import pandas as pd
 # Add project to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from metainformant.eqtl.synthetic import (
+from metainformant.eqtl.workflow.synthetic import (
     create_synthetic_genotypes,
     load_real_expression_data,
     parse_gene_positions,

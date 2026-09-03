@@ -6,7 +6,7 @@ for pre-existing outputs (idempotent resume). Tools required on PATH:
 ``hisat2``, ``hisat2-build``, ``samtools``, ``bcftools``, ``curl``.
 
 Example:
-    >>> from metainformant.eqtl.variant_calling import check_tools
+    >>> from metainformant.eqtl.workflow.variant_calling import check_tools
     >>> isinstance(check_tools(), bool)
     True
 """

@@ -22,7 +22,12 @@ import time
 from pathlib import Path
 from typing import Any
 
-from metainformant.eqtl.variant_calling import (
+from metainformant.eqtl.variant_stats import (
+    compute_allele_frequencies,
+    compute_popgen_summary,
+    compute_sample_stats,
+)
+from metainformant.eqtl.workflow.variant_calling import (
     align_reads,
     build_hisat2_index,
     call_variants,
@@ -32,11 +37,6 @@ from metainformant.eqtl.variant_calling import (
     find_completed_samples,
     find_reference_genome,
     merge_vcfs,
-)
-from metainformant.eqtl.variant_stats import (
-    compute_allele_frequencies,
-    compute_popgen_summary,
-    compute_sample_stats,
 )
 
 logger = logging.getLogger(__name__)

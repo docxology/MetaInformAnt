@@ -19,7 +19,7 @@ Before editing files in this subtree:
 This module provides comprehensive tools for simulating evolutionary processes,
 including agent-based modeling, population genetics simulation, molecular evolution,
 and sequence generation.
-- Public submodules: `benchmark`, `methylation`, `models`, `visualization`, `workflow`.
+- Public submodules: `benchmark`, `methylation`, `models`, `workflow`.
 - Canonical import: `import metainformant.simulation` (submodules: `from metainformant import simulation` then `simulation.<submodule>`).
 - Test entry point: `uv run pytest tests/simulation -q` (one pytest directory per invocation).
 

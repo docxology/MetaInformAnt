@@ -11,7 +11,6 @@ This module provides functionality organized into the following structure:
 - `benchmark/` — exports: `generators`
 - `methylation/`
 - `models/` — exports: `agents`, `popgen`, `rna`, `sequences`
-- `visualization/` — exports: `visualization`
 - `workflow/` — exports: `workflow`
 
 ## Shared helpers

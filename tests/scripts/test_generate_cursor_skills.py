@@ -82,6 +82,6 @@ def test_docstring_prose_backticks_do_not_fail_validation() -> None:
     prose_body = (
         "## Module surface (generated, validated)\n"
         "Purpose: exposed via :func:`analyze_dataset`, with scripts as orchestrator.\n"
-        "- Public submodules: `analysis`."
+        "- Public submodules: `workflow`."
     )
     assert gcs.validate_module_skill(module_dir, prose_body) == []

@@ -24,11 +24,10 @@ dataset workflow) is exposed via :func:`analyze_dataset`, with
 ``scripts/popgen/`` as its thin orchestrator.
 
 Example:
-    >>> from metainformant.popgen.analysis import summarize_scenario
+    >>> from metainformant.popgen.workflow.analysis import summarize_scenario
     >>> result = summarize_scenario(
     ...     ["ATCG", "ATCG", "GCTA"], label="demo"
     ... )  # doctest: +SKIP
-- Public submodules: `analysis`.
 - Canonical import: `import metainformant.popgen` (submodules: `from metainformant import popgen` then `popgen.<submodule>`).
 - Test entry point: `uv run pytest tests/popgen -q` (one pytest directory per invocation).
 

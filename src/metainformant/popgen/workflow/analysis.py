@@ -55,7 +55,7 @@ __all__ = [
     "simulate_population_expansion",
 ]
 
-logger = setup_logger("metainformant.popgen.analysis")
+logger = setup_logger("metainformant.popgen.workflow.analysis")
 
 _SEQUENCE_SCENARIOS = (
     "neutral",

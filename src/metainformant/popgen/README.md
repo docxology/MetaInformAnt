@@ -24,7 +24,7 @@ evidence-manifest freeze per repo policy.
 ```mermaid
 graph TD
     subgraph "Population Genetics"
-        AN[analysis.py] --> DP[dna.population statistics]
+        AN[workflow/analysis.py] --> DP[dna.population statistics]
         AN --> GS[gwas.analysis structure/quality]
         AN --> LD[math.population_genetics ld/demography]
         AN --> SIM[simulation.models.popgen generators]
@@ -35,7 +35,7 @@ graph TD
 
 | Module | Purpose |
 |--------|---------|
-| [`analysis.py`](analysis.py) | Scenario suites, population comparison, PCA/kinship/HWE, LD summary, demographic comparisons, dataset pipeline |
+| [`workflow/analysis.py`](workflow/analysis.py) | Scenario suites, population comparison, PCA/kinship/HWE, LD summary, demographic comparisons, dataset pipeline |
 
 ## Quick Start
 
@@ -48,7 +48,7 @@ print(suite["neutrality_tests"]["tajimas_d"])
 
 ```bash
 # Full synthetic-dataset workflow (generate -> analyze -> report -> visualize)
-uv run python scripts/popgen/analysis.py --output-dir output/popgen
+uv run python scripts/popgen/analyze.py --output-dir output/popgen
 ```
 
 ## Tests

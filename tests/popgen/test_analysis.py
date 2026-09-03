@@ -1,4 +1,4 @@
-"""Tests for metainformant.popgen.analysis (zero-mocks).
+"""Tests for metainformant.popgen.workflow.analysis (zero-mocks).
 
 Uses real seeded simulation generators (no mocks) and real temp files.
 """
@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.popgen.analysis import (
+from metainformant.popgen.workflow.analysis import (
     analyze_dataset,
     compare_two_population_sequences,
     demographic_model_comparisons,
@@ -154,9 +154,7 @@ class TestLdSummary:
 
 class TestDemographicModelComparisons:
     def test_structure_and_positivity(self):
-        demo = demographic_model_comparisons(
-            bottleneck_diversity=0.004, expansion_diversity=0.006
-        )
+        demo = demographic_model_comparisons(bottleneck_diversity=0.004, expansion_diversity=0.006)
         assert set(demo) == {"bottleneck", "expansion"}
         for model in demo.values():
             assert model["estimated_ne"] > 0
@@ -230,9 +228,7 @@ class TestAnalyzeDataset:
         # A scenario entry with no analyzable content triggers validation warnings
         # compare on empty paths raises (real file error), so only check the
         # validator contract directly instead:
-        from metainformant.popgen.analysis import _validate_results
+        from metainformant.popgen.workflow.analysis import _validate_results
 
-        issues = _validate_results(
-            {"scenario_analyses": {"two_populations_low_fst": {"fst": None}}}
-        )
+        issues = _validate_results({"scenario_analyses": {"two_populations_low_fst": {"fst": None}}})
         assert issues == [] or all("Fst" not in i for i in issues)

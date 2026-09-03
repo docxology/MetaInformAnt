@@ -1,4 +1,4 @@
-"""Tests for metainformant.eqtl.variant_calling (zero-mocks).
+"""Tests for metainformant.eqtl.workflow.variant_calling (zero-mocks).
 
 Exercises discovery, decompression, and tool-availability logic with real
 files; external-tool runs are skipped when tools are absent (marked by the
@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.eqtl.variant_calling import (
+from metainformant.eqtl.workflow.variant_calling import (
     check_tools,
     decompress_if_needed,
     find_completed_samples,
@@ -88,12 +88,10 @@ class TestDecompressIfNeeded:
         assert out.read_text() == "old"
 
 
-@pytest.mark.skipif(
-    shutil.which("hisat2-build") is None, reason="hisat2-build not installed"
-)
+@pytest.mark.skipif(shutil.which("hisat2-build") is None, reason="hisat2-build not installed")
 class TestBuildHisat2Index:
     def test_builds_index_for_tiny_fasta(self, tmp_path: Path):
-        from metainformant.eqtl.variant_calling import build_hisat2_index
+        from metainformant.eqtl.workflow.variant_calling import build_hisat2_index
 
         fasta = tmp_path / "genome.fna"
         fasta.write_text(">c1\n" + "ACGT" * 100 + "\n")
@@ -103,7 +101,7 @@ class TestBuildHisat2Index:
         assert any(out_dir.glob("genome*.ht2")) or prefix.exists()
 
     def test_resume_skips_rebuild(self, tmp_path: Path):
-        from metainformant.eqtl.variant_calling import build_hisat2_index
+        from metainformant.eqtl.workflow.variant_calling import build_hisat2_index
 
         fasta = tmp_path / "genome.fna"
         fasta.write_text(">c1\n" + "ACGT" * 100 + "\n")

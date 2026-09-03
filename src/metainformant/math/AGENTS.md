@@ -9,7 +9,7 @@ This module provides functionality organized into the following structure:
 ## Subpackages
 
 - `bayesian/` — exports: `inference`
-- `core/` — exports: `utilities`, `visualization`
+- `core/` — exports: `utilities`
 - `decision_theory/` — exports: `ddm`
 - `epidemiology/` — exports: `models`
 - `evolutionary_dynamics/` — exports: `core`, `egt`

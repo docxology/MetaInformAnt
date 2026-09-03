@@ -11,7 +11,7 @@ Evolutionary and Population Genetics Simulation module for METAINFORMANT.
 
 ## Data Structures
 
-- **Sub-packages**: benchmark, methylation, models, visualization, workflow
+- **Sub-packages**: benchmark, methylation, models, workflow
 - **Key Concepts**: Agent-based evolution, methylation simulation, population genetics, Wright-Fisher models
 
 ## API Definition

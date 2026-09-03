@@ -14,7 +14,7 @@ comparisons.
 
 ## Data Structures
 
-- **Submodules**: analysis
+- **Submodules**: workflow.analysis
 - **Key Concepts**: nucleotide diversity, Watterson's theta, Tajima's D,
   Fu & Li D*/F*, Fay & Wu's H, Fst, PCA/kinship/VanRaden, Hardy-Weinberg
   equilibrium, r-squared linkage disequilibrium, bottleneck/expansion
@@ -22,7 +22,7 @@ comparisons.
 
 ## API Definition
 
-### Exports — `analysis.py`
+### Exports — `workflow/analysis.py`
 
 - `summarize_scenario` — Full descriptive suite for one sequence set
 - `sequence_scenario_suite` — FASTA-loading variant of summarize_scenario

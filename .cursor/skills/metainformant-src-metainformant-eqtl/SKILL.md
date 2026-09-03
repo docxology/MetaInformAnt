@@ -23,13 +23,13 @@ parsing. Scripts under ``scripts/eqtl/`` are thin orchestrators that import
 from this module.
 
 Example:
-    >>> from metainformant.eqtl.synthetic import create_synthetic_data
+    >>> from metainformant.eqtl.workflow.synthetic import create_synthetic_data
     >>> expr, geno, gene_pos, var_pos = create_synthetic_data(
     ...     n_genes=5, n_variants=25, n_samples=12
     ... )
     >>> expr.shape
     (5, 12)
-- Public submodules: `pipeline`, `synthetic`, `variant_calling`, `variant_stats`.
+- Public submodules: `pipeline`, `variant_stats`.
 - Canonical import: `import metainformant.eqtl` (submodules: `from metainformant import eqtl` then `eqtl.<submodule>`).
 - Test entry point: `uv run pytest tests/eqtl -q` (one pytest directory per invocation).
 

@@ -12,7 +12,8 @@ summaries, demographic model comparisons, and the dataset pipeline
 (`analyze_dataset`).
 
 ## Contents
-- `analysis.py` - all analysis methods + re-exported simulation generators
+- `workflow/` - cross-domain analysis workflow (sanctioned adapter surface):
+  `workflow/analysis.py` holds all analysis methods + re-exported simulation generators
 
 ## Rules
 - Scripts under `scripts/popgen/` must only orchestrate; add methods here.

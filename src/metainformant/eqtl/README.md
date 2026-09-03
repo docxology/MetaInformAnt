@@ -20,8 +20,8 @@ pipeline (GWAS variants x Amalgkit RNA-seq expression). Scripts under
 ```mermaid
 graph TD
     subgraph "eQTL Module"
-        SYN[synthetic.py] --> |matrices| SCAN[gwas.finemapping.eqtl scan]
-        VC[variant_calling.py] --> |HISAT2/samtools/bcftools| VCF[per-sample VCFs]
+        SYN[workflow/synthetic.py] --> |matrices| SCAN[gwas.finemapping.eqtl scan]
+        VC[workflow/variant_calling.py] --> |HISAT2/samtools/bcftools| VCF[per-sample VCFs]
         VS[variant_stats.py] --> |bcftools stats| SUM[variant summaries]
         PL[pipeline.py] --> VC
         PL --> VS
@@ -35,8 +35,8 @@ graph TD
 
 | Module | Purpose |
 |--------|---------|
-| [`synthetic.py`](synthetic.py) | Synthetic expression/genotype generators, kallisto target-ID position parsing, real quantification loader |
-| [`variant_calling.py`](variant_calling.py) | Tool checks, FASTQ acquisition, HISAT2 index/alignment, bcftools call/filter/merge |
+| [`workflow/synthetic.py`](workflow/synthetic.py) | Synthetic expression/genotype generators, kallisto target-ID position parsing, real quantification loader |
+| [`workflow/variant_calling.py`](workflow/variant_calling.py) | Tool checks, FASTQ acquisition, HISAT2 index/alignment, bcftools call/filter/merge |
 | [`variant_stats.py`](variant_stats.py) | bcftools stats parsing, per-sample and population summaries, allele-frequency extraction |
 | [`pipeline.py`](pipeline.py) | Parameter resolution and end-to-end run orchestration |
 

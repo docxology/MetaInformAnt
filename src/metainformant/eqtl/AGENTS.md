@@ -9,8 +9,9 @@ Reusable eQTL input construction, transcriptome SNP-calling wrappers
 orchestration. Scripts are thin; business logic lives here.
 
 ## Contents
-- `synthetic.py` - synthetic data generators + real quantification loader
-- `variant_calling.py` - external-tool wrappers (idempotent, resume-safe)
+- `workflow/` - cross-domain workflow adapters (sanctioned adapter surface):
+  `workflow/synthetic.py` - synthetic data generators + real quantification loader
+  `workflow/variant_calling.py` - external-tool wrappers (idempotent, resume-safe)
 - `variant_stats.py` - bcftools stats parsing and summaries
 - `pipeline.py` - parameter resolution + end-to-end run
 

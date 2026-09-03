@@ -8,7 +8,7 @@ This module provides functionality organized into the following structure:
 
 ## Subpackages
 
-- `analysis/` — exports: `dimred`, `information`, `quality`, `quality_assessment`, `quality_omics`
+- `analysis/` — exports: `dimred`, `information`, `math_plots`, `quality`, `quality_assessment`, `quality_omics`, `simulation_plots`
 - `config/` — exports: `palettes`, `themes`
 - `dashboards/` — exports: `composite`, `interactive`
 - `genomics/` — exports: `expression`, `genomics`, `networks`, `trees`

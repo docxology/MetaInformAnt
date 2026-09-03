@@ -126,7 +126,7 @@ S, I, R = sir_step(S=990, I=10, R=0, beta=0.3, gamma=0.1, N=1000)
 | [`decision_theory/`](decision_theory/) | Drift-diffusion models for decision processes |
 | [`bayesian/`](bayesian/) | MCMC sampling, ABC, Bayes factors, information criteria (DIC, WAIC) |
 | [`perception/`](perception/) | Psychophysics (Weber-Fechner, Stevens), signal detection theory |
-| [`core/`](core/) | Statistical utilities (correlation, linear regression, visualization) |
+| [`core/`](core/) | Statistical utilities (correlation, linear regression) |
 
 ## Quick Start
 

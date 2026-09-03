@@ -68,7 +68,6 @@ MAPPING = {
     "metainformant.simulation.rna": "metainformant.simulation.models.rna",
     "metainformant.simulation.sequences": "metainformant.simulation.models.sequences",
     "metainformant.simulation.workflow": "metainformant.simulation.workflow.workflow",
-    "metainformant.simulation.visualization": "metainformant.simulation.visualization.visualization",
     # RNA
     "metainformant.rna.configs": "metainformant.rna.core.configs",
     "metainformant.rna.deps": "metainformant.rna.core.deps",

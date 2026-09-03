@@ -170,6 +170,6 @@ def load_real_expression_data_hint() -> str:
     """Return pointer to the real-expression loader (kept for API symmetry).
 
     The real-expression loader lives in
-    :func:`metainformant.eqtl.synthetic.load_real_expression_data`.
+    :func:`metainformant.eqtl.workflow.synthetic.load_real_expression_data`.
     """
-    return "metainformant.eqtl.synthetic.load_real_expression_data"
+    return "metainformant.eqtl.workflow.synthetic.load_real_expression_data"

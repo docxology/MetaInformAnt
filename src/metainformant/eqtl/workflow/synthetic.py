@@ -5,7 +5,7 @@ cis-eQTL effects (for demonstrations and zero-mocks tests) and loaders that
 prepare real Amalgkit quantification data for eQTL scanning.
 
 Example:
-    >>> from metainformant.eqtl.synthetic import create_synthetic_data
+    >>> from metainformant.eqtl.workflow.synthetic import create_synthetic_data
     >>> expr, geno, gene_pos, var_pos = create_synthetic_data(
     ...     n_genes=5, n_variants=25, n_samples=12
     ... )

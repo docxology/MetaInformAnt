@@ -1,10 +1,9 @@
-"""Mathematical core utilities and visualization."""
+"""Mathematical core utilities."""
 
 from __future__ import annotations
 
-from . import utilities, visualization
+from . import utilities
 
 __all__ = [
     "utilities",
-    "visualization",
 ]

@@ -21,7 +21,7 @@ import pandas as pd
 # Add project to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from metainformant.eqtl.synthetic import create_synthetic_data
+from metainformant.eqtl.workflow.synthetic import create_synthetic_data
 from metainformant.gwas.finemapping.eqtl import (
     cis_eqtl_scan,
     eqtl_effect_sizes,

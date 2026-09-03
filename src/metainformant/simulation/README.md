@@ -30,7 +30,6 @@ graph TD
         M --> |agents.py| AG[Agent-Based Ecosystems]
 
         W[workflow/] --> |workflow.py| WF[SimulationConfig & Orchestration]
-        V[visualization/] --> |visualization.py| VZ[Simulation Plots]
         B[benchmark/] --> BM[Performance Benchmarks]
     end
 
@@ -38,9 +37,6 @@ graph TD
     WF --> PG
     WF --> RN
     WF --> AG
-    SQ --> VZ
-    PG --> VZ
-    AG --> VZ
 ```
 
 ## Key Capabilities
@@ -101,7 +97,6 @@ The `Agent` class supports energy-based interactions, reproduction with mutation
 | [`models/`](models/) | Core generators: `sequences`, `popgen`, `rna`, `agents` |
 | [`methylation/`](methylation/) | Methylation pattern simulation |
 | [`workflow/`](workflow/) | `SimulationConfig`, `run_simulation_workflow`, calibration |
-| [`visualization/`](visualization/) | `plot_sequence_evolution`, `plot_population_dynamics_simulation`, animations |
 | [`benchmark/`](benchmark/) | Performance benchmarking utilities |
 
 ## Quick Start

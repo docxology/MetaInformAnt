@@ -8,7 +8,7 @@ dataset workflow) is exposed via :func:`analyze_dataset`, with
 ``scripts/popgen/`` as its thin orchestrator.
 
 Example:
-    >>> from metainformant.popgen.analysis import summarize_scenario
+    >>> from metainformant.popgen.workflow.analysis import summarize_scenario
     >>> result = summarize_scenario(
     ...     ["ATCG", "ATCG", "GCTA"], label="demo"
     ... )  # doctest: +SKIP
@@ -16,8 +16,8 @@ Example:
 
 from __future__ import annotations
 
-from . import analysis
-from .analysis import (
+from .workflow import analysis
+from .workflow.analysis import (
     analyze_dataset,
     compare_two_population_sequences,
     demographic_model_comparisons,

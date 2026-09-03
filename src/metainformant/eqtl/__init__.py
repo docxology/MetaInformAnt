@@ -7,7 +7,7 @@ parsing. Scripts under ``scripts/eqtl/`` are thin orchestrators that import
 from this module.
 
 Example:
-    >>> from metainformant.eqtl.synthetic import create_synthetic_data
+    >>> from metainformant.eqtl.workflow.synthetic import create_synthetic_data
     >>> expr, geno, gene_pos, var_pos = create_synthetic_data(
     ...     n_genes=5, n_variants=25, n_samples=12
     ... )
@@ -17,14 +17,24 @@ Example:
 
 from __future__ import annotations
 
-from . import pipeline, synthetic, variant_calling, variant_stats
-from .synthetic import (
+from . import pipeline, variant_stats
+from .pipeline import (
+    resolve_run_parameters,
+    run_pipeline,
+)
+from .variant_stats import (
+    compute_popgen_summary,
+    compute_sample_stats,
+    parse_bcftools_stats,
+)
+from .workflow import synthetic, variant_calling
+from .workflow.synthetic import (
     create_synthetic_data,
     create_synthetic_genotypes,
     load_real_expression_data,
     parse_gene_positions,
 )
-from .variant_calling import (
+from .workflow.variant_calling import (
     align_reads,
     build_hisat2_index,
     call_variants,
@@ -35,15 +45,6 @@ from .variant_calling import (
     find_completed_samples,
     find_reference_genome,
     merge_vcfs,
-)
-from .pipeline import (
-    resolve_run_parameters,
-    run_pipeline,
-)
-from .variant_stats import (
-    compute_popgen_summary,
-    compute_sample_stats,
-    parse_bcftools_stats,
 )
 
 __all__ = [

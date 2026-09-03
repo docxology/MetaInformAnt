@@ -1,4 +1,4 @@
-"""Tests for metainformant.eqtl.synthetic (zero-mocks, real frames)."""
+"""Tests for metainformant.eqtl.workflow.synthetic (zero-mocks, real frames)."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.eqtl.synthetic import (
+from metainformant.eqtl.workflow.synthetic import (
     create_synthetic_data,
     create_synthetic_genotypes,
     parse_gene_positions,
@@ -15,38 +15,28 @@ from metainformant.eqtl.synthetic import (
 
 class TestCreateSyntheticData:
     def test_shapes_and_determinism(self):
-        expr, geno, gene_pos, var_pos = create_synthetic_data(
-            n_genes=10, n_variants=50, n_samples=20, seed=42
-        )
+        expr, geno, gene_pos, var_pos = create_synthetic_data(n_genes=10, n_variants=50, n_samples=20, seed=42)
         assert expr.shape == (10, 20)
         assert geno.shape == (50, 20)
         assert len(gene_pos) == 10
         assert len(var_pos) == 50
         # Determinism: same seed -> identical matrices
-        expr2, geno2, _, _ = create_synthetic_data(
-            n_genes=10, n_variants=50, n_samples=20, seed=42
-        )
+        expr2, geno2, _, _ = create_synthetic_data(n_genes=10, n_variants=50, n_samples=20, seed=42)
         pd.testing.assert_frame_equal(expr, expr2)
         pd.testing.assert_frame_equal(geno, geno2)
 
     def test_columns_align_across_matrices(self):
-        expr, geno, _, _ = create_synthetic_data(
-            n_genes=6, n_variants=30, n_samples=15, seed=7
-        )
+        expr, geno, _, _ = create_synthetic_data(n_genes=6, n_variants=30, n_samples=15, seed=7)
         assert list(expr.columns) == list(geno.columns)
         assert all(col.startswith("SRR") for col in expr.columns)
 
     def test_genotype_dosages_valid(self):
-        _, geno, _, _ = create_synthetic_data(
-            n_genes=6, n_variants=30, n_samples=40, seed=3
-        )
+        _, geno, _, _ = create_synthetic_data(n_genes=6, n_variants=30, n_samples=40, seed=3)
         assert set(np.unique(geno.values)).issubset({0, 1, 2})
 
     def test_true_eqtl_effects_present(self):
         """With 30 genes and seed 42, some genes must carry injected effects."""
-        expr, geno, _, _ = create_synthetic_data(
-            n_genes=30, n_variants=150, n_samples=60, seed=42
-        )
+        expr, geno, _, _ = create_synthetic_data(n_genes=30, n_variants=150, n_samples=60, seed=42)
         # Correlate each gene against its first cis variant
         n_correlated = 0
         for g in range(30):
@@ -88,9 +78,7 @@ class TestCreateSyntheticGenotypes:
                 "tss_position": [1_000_000, 2_000_000],
             }
         )
-        geno, var_pos = create_synthetic_genotypes(
-            [f"S{i}" for i in range(12)], gene_pos, variants_per_gene=3, seed=1
-        )
+        geno, var_pos = create_synthetic_genotypes([f"S{i}" for i in range(12)], gene_pos, variants_per_gene=3, seed=1)
         assert geno.shape == (6, 12)
         assert len(var_pos) == 6
         assert set(np.unique(geno.values)).issubset({0, 1, 2})
@@ -98,9 +86,7 @@ class TestCreateSyntheticGenotypes:
         assert var_pos.iloc[0]["position"] == 1_000_000 - 5000
 
     def test_determinism(self):
-        gene_pos = pd.DataFrame(
-            {"gene_id": ["LOC1"], "chrom": ["1"], "tss_position": [1_000_000]}
-        )
+        gene_pos = pd.DataFrame({"gene_id": ["LOC1"], "chrom": ["1"], "tss_position": [1_000_000]})
         g1, _ = create_synthetic_genotypes(["A", "B"], gene_pos, seed=5)
         g2, _ = create_synthetic_genotypes(["A", "B"], gene_pos, seed=5)
         pd.testing.assert_frame_equal(g1, g2)
