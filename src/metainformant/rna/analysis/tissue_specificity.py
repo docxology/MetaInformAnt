@@ -20,7 +20,7 @@ called on mid-campaign data.
 
 from __future__ import annotations
 
-from typing import Dict, Tuple
+from typing import Dict
 
 import numpy as np
 import pandas as pd
@@ -186,40 +186,71 @@ def classify_orthogroups(
     if bridge_table.empty:
         return pd.DataFrame(columns=["n_species_mapped", "max_copies", "orthology_class"])
 
-    records = []
-    for og_name, row in bridge_table.iterrows():
-        n_mapped = 0
-        max_copies = 0
-        for cell in row:
-            ids = _parse_ids(cell)
-            if ids:
-                n_mapped += 1
-                max_copies = max(max_copies, len(ids))
-        if n_mapped < min_species:
-            cls = "insufficient"
-        elif max_copies > 1:
-            cls = "multicopy"
-        else:
-            cls = "single_copy"
-        records.append(
-            {
-                "orthogroup": og_name,
-                "n_species_mapped": n_mapped,
-                "max_copies": max_copies,
-                "orthology_class": cls,
-            }
-        )
-    return pd.DataFrame(records).set_index("orthogroup")
+    # Vectorized classification. Measured baseline: tests/perf/BASELINES.md
+    # section 2 -- iterrows() + per-cell _parse_ids ran at ~30,500
+    # orthogroups/s on the 150,000 x 27 bridge; counting parts with a single
+    # vectorized pass per column (no Python per-cell loop) keeps the outputs
+    # bit-identical and several times faster (see
+    # PROJECT_STATE_REPORT_2026-09-01_R5_PERF.md section 3).
+    n_rows = len(bridge_table)
+    n_mapped = np.zeros(n_rows, dtype=np.int64)
+    max_copies = np.zeros(n_rows, dtype=np.int64)
+    for column in bridge_table.columns:
+        cell_counts = _count_cell_parts(bridge_table[column]).to_numpy(dtype=np.int64)
+        n_mapped += cell_counts > 0
+        np.maximum(max_copies, cell_counts, out=max_copies)
+
+    orthology_class = np.full(n_rows, "single_copy", dtype=object)
+    orthology_class[max_copies > 1] = "multicopy"
+    orthology_class[n_mapped < min_species] = "insufficient"
+    return pd.DataFrame(
+        {
+            "n_species_mapped": n_mapped,
+            "max_copies": max_copies,
+            "orthology_class": orthology_class,
+        },
+        index=bridge_table.index,
+    ).rename_axis(index="orthogroup")
 
 
-def _parse_ids(cell: object) -> Tuple[str, ...]:
-    """Parse a comma-separated bridge-table cell into transcript IDs."""
-    if cell is None or (isinstance(cell, float) and np.isnan(cell)):
-        return ()
-    text = str(cell).strip()
-    if not text or text.lower() == "nan":
-        return ()
-    return tuple(part.strip() for part in text.split(",") if part.strip())
+def _count_cell_parts(cells: pd.Series) -> pd.Series:
+    """Count the non-empty comma-separated parts of each cell (vectorized).
+
+    Mirrors the historical ``_parse_ids`` semantics: None/NaN cells and cells
+    equal to "nan" (case-insensitive) count as 0, and whitespace-only parts
+    are not counted.
+    """
+    text = cells.astype(str)
+    text = text.mask(cells.isna() | text.str.strip().str.lower().eq("nan"), "")
+    # Whitespace is irrelevant to part counting, so collapsing it first lets a
+    # single anchor-free pattern count non-empty parts (anchored patterns are
+    # unreliable across pandas regex engines).
+    compact = text.str.replace(r"\s+", "", regex=True)
+    return compact.str.count(r"[^,]+").astype("int64")
+
+
+def _normalized_cell_text(cells: pd.Series) -> pd.Series:
+    """Normalize bridge-table cells to stripped text, unmapped cells to "".
+
+    Preserves the historical ``_parse_ids`` semantics: None/NaN cells and the
+    literal string "nan" (case-insensitive) count as unmapped.
+    """
+    text = cells.astype(str).str.strip()
+    return text.mask(cells.isna() | text.str.lower().eq("nan"), "")
+
+
+def _split_cell_parts(cells: pd.Series) -> tuple[np.ndarray, np.ndarray]:
+    """Flatten the non-empty comma-separated parts of a cell column.
+
+    Returns ``(positions, parts)``: ``positions[i]`` is the 0-based row
+    position within ``cells`` that produced ``parts[i]``, in row order.
+    """
+    split = _normalized_cell_text(cells).str.split(",")
+    lengths = split.str.len().to_numpy()
+    flat = split.explode().str.strip().to_numpy()
+    keep = flat != ""
+    positions = np.repeat(np.arange(len(cells), dtype=np.int64), lengths)
+    return positions[keep], flat[keep]
 
 
 def join_expression_with_orthology(
@@ -253,27 +284,32 @@ def join_expression_with_orthology(
         raise ValueError(f"Species '{species}' not in bridge table columns")
     classes = classify_orthogroups(bridge_table, min_species=min_species)
 
-    transcript_map: Dict[str, Tuple[str, str]] = {}
-    for og_name, cell in bridge_table[species].items():
-        for tid in _parse_ids(cell):
-            transcript_map[tid] = (str(og_name), str(classes.loc[og_name, "orthology_class"]))
+    # Vectorized transcript -> orthogroup mapping. Measured baseline:
+    # tests/perf/BASELINES.md section 2 -- per-row dict records via iterrows()
+    # took ~8.5 s for 200,000 transcripts; exploding the species column once
+    # and reindexing keeps rows, ordering, and dtypes identical.
+    positions, tids = _split_cell_parts(bridge_table[species])
+    og_labels = bridge_table.index.astype(str).to_numpy()
+    mapping = pd.DataFrame(
+        {
+            "orthogroup": og_labels[positions],
+            "orthology_class": classes["orthology_class"].to_numpy()[positions],
+            "n_species_mapped": classes["n_species_mapped"].to_numpy()[positions],
+            "max_copies": classes["max_copies"].to_numpy()[positions],
+        },
+        index=pd.Index(tids),
+    )
+    # A transcript id listed under several orthogroups keeps the last one,
+    # matching the previous dict-assignment overwrite semantics.
+    mapping = mapping[~mapping.index.duplicated(keep="last")]
 
-    records = []
-    for gene, row in expression_df.iterrows():
-        og_name, cls = transcript_map.get(str(gene), ("", "unmapped"))
-        record = dict(row)
-        record["orthogroup"] = og_name
-        record["orthology_class"] = cls
-        if og_name:
-            info = classes.loc[og_name]
-            record["n_species_mapped"] = int(info["n_species_mapped"])
-            record["max_copies"] = int(info["max_copies"])
-        else:
-            record["n_species_mapped"] = 0
-            record["max_copies"] = 0
-        records.append(record)
-
-    return pd.DataFrame(records, index=expression_df.index)
+    aligned = mapping.reindex(pd.Index(expression_df.index.astype(str)))
+    result = expression_df.copy()
+    result["orthogroup"] = aligned["orthogroup"].fillna("")
+    result["orthology_class"] = aligned["orthology_class"].fillna("unmapped")
+    result["n_species_mapped"] = aligned["n_species_mapped"].fillna(0).astype("int64")
+    result["max_copies"] = aligned["max_copies"].fillna(0).astype("int64")
+    return result
 
 
 # =============================================================================
