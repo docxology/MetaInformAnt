@@ -66,7 +66,7 @@ class TestExamples:
             cwd=Path.cwd(),
             capture_output=True,
             text=True,
-            timeout=120,  # 2 minute timeout per example
+            timeout=300,  # headroom for cold imports on contended external-drive checkouts under full-suite load
             env={**dict(os.environ), "MPLBACKEND": "Agg"},
         )
 

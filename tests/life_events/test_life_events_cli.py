@@ -108,7 +108,8 @@ def test_cli_predict_basic(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
+    # headroom for cold imports on contended external-drive checkouts under full-suite load
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=_get_cli_env())
 
     # Should succeed
     assert result.returncode == 0
@@ -142,7 +143,8 @@ def test_cli_predict_missing_model(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
+    # headroom for cold imports on contended external-drive checkouts under full-suite load
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=_get_cli_env())
 
     # Should fail with error
     assert result.returncode != 0
@@ -166,7 +168,8 @@ def test_cli_predict_missing_events(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
+    # headroom for cold imports on contended external-drive checkouts under full-suite load
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=_get_cli_env())
 
     # Should fail with error
     assert result.returncode != 0
@@ -191,7 +194,8 @@ def test_cli_predict_invalid_model(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
+    # headroom for cold imports on contended external-drive checkouts under full-suite load
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=_get_cli_env())
 
     # Should fail with error
     assert result.returncode != 0
@@ -215,7 +219,8 @@ def test_cli_predict_output_format(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
+    # headroom for cold imports on contended external-drive checkouts under full-suite load
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=_get_cli_env())
     assert result.returncode == 0
 
     predictions_file = output_dir / "predictions.json"
@@ -251,7 +256,8 @@ def test_cli_predict_classification_probs(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
+    # headroom for cold imports on contended external-drive checkouts under full-suite load
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=_get_cli_env())
     assert result.returncode == 0
 
     predictions_file = output_dir / "predictions.json"
@@ -299,7 +305,8 @@ def test_cli_predict_regression_stats(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
+    # headroom for cold imports on contended external-drive checkouts under full-suite load
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=_get_cli_env())
     assert result.returncode == 0
 
     # Check for statistics in output
@@ -358,7 +365,8 @@ def test_cli_interpret_missing_model(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
+    # headroom for cold imports on contended external-drive checkouts under full-suite load
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=_get_cli_env())
 
     # Should fail with error
     assert result.returncode != 0
@@ -382,7 +390,8 @@ def test_cli_interpret_missing_sequences(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
+    # headroom for cold imports on contended external-drive checkouts under full-suite load
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=_get_cli_env())
 
     # Should fail with error
     assert result.returncode != 0
@@ -422,7 +431,8 @@ def test_cli_interpret_no_embeddings_error(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
+    # headroom for cold imports on contended external-drive checkouts under full-suite load
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, env=_get_cli_env())
 
     # May fail if model doesn't have embeddings, or succeed if it handles gracefully
     # The important thing is it doesn't crash
