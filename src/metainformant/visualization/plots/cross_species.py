@@ -91,6 +91,27 @@ def _fmt(name: str) -> str:
     return str(name).replace("_", " ")
 
 
+def _species_note(n: int) -> str:
+    """Species denominator taken from the data actually plotted."""
+    return f"n={n} species in plotted matrix"
+
+
+def _descriptive_pairwise_caption(n: int) -> str:
+    """Default honesty caption for native pairwise divergence figures."""
+    return (
+        "Descriptive summary of native pairwise expression divergence; "
+        "no significance tests, p-values, or confidence intervals. "
+        f"{_species_note(n)}."
+    )
+
+
+def _dendrogram_caption(n: int) -> str:
+    """Default caption stating the dendrogram is not a species tree."""
+    return (
+        "Average-linkage clustering of expression profiles; " "not a species tree or phylogeny. " f"{_species_note(n)}."
+    )
+
+
 def _get_family_color(
     sp: str, family_map: Optional[Dict[str, str]] = None, family_colors: Optional[Dict[str, str]] = None
 ) -> str:
@@ -107,8 +128,15 @@ def plot_divergence_heatmap(
     family_colors: Optional[Dict[str, str]] = None,
     title: str = "Expression Divergence Matrix",
     cbar_label: str = "Divergence (1 − Spearman ρ)",
+    *,
+    caption: Optional[str] = None,
 ) -> None:
     """Generate a clustered heatmap of expression divergence.
+
+    The figure is a descriptive sensitivity summary of native pairwise
+    divergence: it never attaches significance stars, p-value annotations, or
+    confidence-interval language, and it reports the species denominator from
+    the matrix actually plotted.
 
     Args:
         div_matrix: Symmetric divergence matrix (1 - correlation)
@@ -117,6 +145,8 @@ def plot_divergence_heatmap(
         family_colors: Dictionary mapping families to hex colors
         title: Plot title
         cbar_label: Colorbar label
+        caption: Optional honesty caption; defaults to a descriptive-summary
+            caption carrying the species denominator from the data
     """
     n = len(div_matrix)
     condensed = _validated_condensed(div_matrix)
@@ -168,6 +198,15 @@ def plot_divergence_heatmap(
     ax.set_title(title, fontsize=14, fontweight="bold", pad=20)
     plt.xticks(rotation=45, ha="right")
     plt.tight_layout()
+    fig.text(
+        0.5,
+        0.0,
+        caption or _descriptive_pairwise_caption(n),
+        ha="center",
+        va="bottom",
+        fontsize=9,
+        color="#333333",
+    )
     save_figure_deterministic(plt.gcf(), output_path, dpi=250, bbox_inches="tight")
     logger.info(f"Saved divergence heatmap to {output_path}")
 
@@ -177,9 +216,15 @@ def plot_dendrogram(
     output_path: Path,
     family_map: Optional[Dict[str, str]] = None,
     family_colors: Optional[Dict[str, str]] = None,
-    title: str = "Hierarchical Clustering of Expression Divergence",
+    title: str = "Hierarchical Clustering of Expression Profiles",
+    *,
+    caption: Optional[str] = None,
 ) -> None:
     """Generate a hierarchical clustering dendrogram annotated with taxonomy.
+
+    The clustering groups species by expression-profile divergence; it is not
+    a species tree or phylogeny, and the caption carries the species
+    denominator from the matrix actually plotted.
 
     Args:
         div_matrix: Symmetric divergence matrix
@@ -187,6 +232,8 @@ def plot_dendrogram(
         family_map: Dictionary mapping species names to taxonomic families
         family_colors: Dictionary mapping families to hex colors
         title: Plot title
+        caption: Optional honesty caption; defaults to a not-a-species-tree
+            caption carrying the species denominator from the data
     """
     condensed = _validated_condensed(div_matrix)
     # Average linkage is appropriate for the correlation-derived dissimilarity.
@@ -217,6 +264,15 @@ def plot_dendrogram(
 
     ax.set_title(title, fontsize=14, fontweight="bold", pad=15)
     ax.set_ylabel("Average-linkage distance (1 − Spearman ρ)", fontsize=11)
+    fig.text(
+        0.5,
+        0.0,
+        caption or _dendrogram_caption(len(div_matrix)),
+        ha="center",
+        va="bottom",
+        fontsize=9,
+        color="#333333",
+    )
     plt.tight_layout()
     save_figure_deterministic(plt.gcf(), output_path, dpi=250, bbox_inches="tight")
     logger.info(f"Saved dendrogram to {output_path}")
@@ -260,7 +316,11 @@ def plot_coverage(
         )
 
     ax.set_xlabel("Number of Orthogroups with Mapped Transcripts", fontsize=11)
-    ax.set_title(f"Ortholog Coverage per Species\nTotal orthogroups: {total_groups:,}", fontsize=13, fontweight="bold")
+    ax.set_title(
+        f"Ortholog Coverage per Species\nTotal orthogroups: {total_groups:,} | n={len(cov)} species shown",
+        fontsize=13,
+        fontweight="bold",
+    )
     max_coverage = float(cov.max()) if not cov.empty else 0.0
     ax.set_xlim(0, max(1.0, max_coverage * 1.25))
 
@@ -322,7 +382,12 @@ def plot_top_pairs(div_matrix: pd.DataFrame, output_path: Path) -> None:
         ax2.text(v + 0.003, i, f"{v:.3f}", va="center", fontsize=8, fontweight="bold")
     ax2.set_xlim(0, max(vals_d) * 1.08 if vals_d else 1)
 
-    fig.suptitle("Pairwise Expression Divergence Extremes", fontsize=14, fontweight="bold", y=1.01)
+    fig.suptitle(
+        f"Pairwise Expression Divergence Extremes (descriptive; {_species_note(n)})",
+        fontsize=14,
+        fontweight="bold",
+        y=1.01,
+    )
     plt.tight_layout()
     save_figure_deterministic(plt.gcf(), output_path, dpi=200, bbox_inches="tight")
     logger.info(f"Saved top pairs plot to {output_path}")
@@ -383,7 +448,7 @@ def plot_family_violin(
     )
 
     ax.set_title(
-        "Expression Divergence by Taxonomic Relationship\n(descriptive; no inferential test)",
+        f"Expression Divergence by Taxonomic Relationship\n(descriptive; no inferential test; {_species_note(n)})",
         fontsize=14,
         fontweight="bold",
     )
@@ -467,7 +532,9 @@ def plot_method_comparison(
     ax.text(
         0.05,
         0.95,
-        f"Descriptive Spearman rho = {rho:.3f}\n" f"Dependent pair records; no p-value\n" f"n = {len(df)} pairs",
+        f"Descriptive Spearman rho = {rho:.3f}\n"
+        f"Dependent pair records; no p-value\n"
+        f"n = {len(df)} pairs from {n} shared species",
         transform=ax.transAxes,
         fontsize=10,
         va="top",
@@ -476,7 +543,9 @@ def plot_method_comparison(
 
     ax.set_xlabel("Fingerprint Divergence (distribution shape)", fontsize=11)
     ax.set_ylabel("Ortholog-Mapped Divergence (gene-level correlation)", fontsize=11)
-    ax.set_title("Method Comparison: Fingerprint vs Ortholog-Mapped Divergence", fontsize=13, fontweight="bold")
+    ax.set_title(
+        "Method Comparison: Fingerprint vs Ortholog-Mapped Divergence (descriptive)", fontsize=13, fontweight="bold"
+    )
     ax.legend(fontsize=9)
     ax.grid(True, alpha=0.2)
     ax.set_aspect("equal")
@@ -513,7 +582,7 @@ def plot_mean_divergence_rank(
         ax.text(v + 0.002, i, f"{v:.3f}", va="center", fontsize=8)
     ax.set_xlabel("Mean Divergence from All Other Species", fontsize=11)
     ax.set_title(
-        "Species Ranked by Mean Expression Divergence (descriptive)",
+        f"Species Ranked by Mean Expression Divergence (descriptive; {_species_note(n)})",
         fontsize=13,
         fontweight="bold",
     )
@@ -580,7 +649,7 @@ def plot_species_summary(feature_stats: pd.DataFrame, output_path: Path) -> None
     ax1.set_yticks(y_pos)
     ax1.set_yticklabels([_fmt(s) for s in feature_stats_sorted["species"]], fontsize=9)
     ax1.set_xlabel("Number of feature rows (labels: positive / total)")
-    ax1.set_title("Feature Counts per Species", fontsize=14, pad=15)
+    ax1.set_title(f"Feature Counts per Species (n={len(feature_stats_sorted)} species)", fontsize=14, pad=15)
     ax1.set_xlim(0, max(1.0, max_feature_count * 1.28))
     ax1.legend(loc="lower right")
 
@@ -637,7 +706,7 @@ def plot_profile_quality(profile_quality: pd.DataFrame, output_path: Path) -> No
     ax.set_yticks(y)
     ax.set_yticklabels([_fmt(value) for value in frame["species"]])
     ax.set_xlabel("Feature rows in finalized input profile")
-    ax.set_title("Expression-Profile Quality and Coverage")
+    ax.set_title(f"Expression-Profile Quality and Coverage (n={len(frame)} species)")
     ax.legend(loc="lower right", frameon=True)
     ax.grid(axis="x", color="#D9D9D9", linewidth=0.6)
     ax.set_axisbelow(True)
@@ -671,6 +740,7 @@ def plot_divergence_stability(
         .head(max_pairs)
         .sort_values("sensitivity_iqr", ascending=True)
     )
+    n_species = len(set(frame["species_a"]).union(frame["species_b"]))
     y = np.arange(len(frame))
     point = frame["point_estimate"].to_numpy(dtype=float)
     lower = np.maximum(0.0, point - frame["sensitivity_lower"].to_numpy(dtype=float))
@@ -691,11 +761,13 @@ def plot_divergence_stability(
     ax.set_yticklabels([f"{a} vs {b}" for a, b in zip(frame["species_a"], frame["species_b"])])
     ax.set_xlim(_DIVERGENCE_VMIN, _DIVERGENCE_VMAX)
     ax.set_xlabel("Divergence (1 − Spearman rho)")
-    ax.set_title("Feature-Resampling Stability of Pairwise Divergence")
+    ax.set_title("Feature-Resampling Sensitivity of Pairwise Divergence (descriptive)")
     ax.text(
         0.99,
         1.01,
-        "Intervals are sensitivity diagnostics, not confidence intervals",
+        "Descriptive sensitivity summary; no p-values or significance stars\n"
+        "Intervals are feature-resampling sensitivity diagnostics, not confidence intervals\n"
+        f"n={n_species} species in plotted pairs",
         transform=ax.transAxes,
         ha="right",
         va="bottom",
@@ -753,7 +825,10 @@ def plot_combined_summary(
         ax1.legend(handles=legend, loc="upper right", fontsize=8)
 
     ax1.set_title(
-        f"A. Expression-Based Clustering ({n} species, Average Linkage)", fontsize=12, fontweight="bold", loc="left"
+        f"A. Expression-Profile Clustering ({n} species, Average Linkage; not a species tree)",
+        fontsize=12,
+        fontweight="bold",
+        loc="left",
     )
     ax1.set_ylabel("Average Linkage Distance")
 
@@ -796,6 +871,6 @@ def plot_combined_summary(
     ax3.set_title("C. Divergence Distribution", fontsize=12, fontweight="bold", loc="left")
     ax3.legend(fontsize=9)
 
-    fig.suptitle(title, fontsize=15, fontweight="bold", y=0.99)
+    fig.suptitle(f"{title} (descriptive; {_species_note(n)})", fontsize=15, fontweight="bold", y=0.99)
     save_figure_deterministic(plt.gcf(), output_path, dpi=200, bbox_inches="tight")
     logger.info(f"Saved combined summary figure to {output_path}")
