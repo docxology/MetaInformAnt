@@ -51,6 +51,7 @@ import pandas as pd
 from scipy import stats
 
 from metainformant.core.utils import logging
+from metainformant.rna.analysis.statistics_contract import DESCRIPTIVE_ROLE
 
 logger = logging.get_logger(__name__)
 
@@ -879,8 +880,9 @@ def compute_fingerprint_divergence_matrix(
                 div_score = 1.0 - (0.0 if np.isnan(corr) else corr)
             div_matrix[i, j] = div_score
             div_matrix[j, i] = div_score
-
-    return pd.DataFrame(div_matrix, index=species_names, columns=species_names)
+    result = pd.DataFrame(div_matrix, index=species_names, columns=species_names)
+    result.attrs["role"] = DESCRIPTIVE_ROLE
+    return result
 
 
 def compute_fingerprint_stability(
@@ -979,7 +981,9 @@ def compute_fingerprint_stability(
                 "replicate_count": int(sampled.size),
             }
         )
-    return pd.DataFrame(records)
+    stability = pd.DataFrame(records)
+    stability.attrs["role"] = DESCRIPTIVE_ROLE
+    return stability
 
 
 def compute_feature_count_summary(species_profiles: Dict[str, Any]) -> pd.DataFrame:
