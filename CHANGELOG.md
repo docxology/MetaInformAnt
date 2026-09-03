@@ -1,5 +1,26 @@
 # Changelog
 
+
+## Unreleased
+
+### Added
+- `metainformant.rna.analysis.statistics_contract`: predeclared, fail-closed
+  analysis-provenance records (descriptive/inferential role separation,
+  role-conditional multiple-testing semantics), BH-FDR helper, gated
+  inferential wrapper, orthology profile invariants, and species-tree
+  invariants with caller-declared rootedness provenance. The hymenoptera
+  cross-species runner validates provenance before writing any artifact.
+
+### Changed
+- `classify_orthogroups` and `join_expression_with_orthology` vectorized
+  (~8.9x and ~12.6x on the campaign-scale benchmark, outputs bit-identical).
+- Cross-species figures are provenance-honest: descriptive-only annotations,
+  data-derived species denominators, explicit not-a-species-tree labeling.
+- Static boundary gate: the MCP tool layer is a recognized adapter surface;
+  eqtl/popgen orchestration modules moved under sanctioned `workflow/`
+  packages; math/simulation plot helpers moved into `visualization/analysis/`.
+- Subprocess test timeouts raised for cold-import headroom on contended
+  external-drive checkouts (examples runner, life-events CLI).
 All notable changes to METAINFORMANT are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),

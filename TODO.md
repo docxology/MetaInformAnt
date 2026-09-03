@@ -112,11 +112,18 @@ controls, failure evidence, and provenance artifacts remain part of the record.
   Scope: `src/metainformant/rna/analysis/cross_species.py`, visualization
   consumers, RNA docs, and synthetic/fixture tests.
 
-- [ ] **Make cross-species statistics honest and reproducible.** Specify
-  estimands and replicate units, apply an appropriate multiple-testing
-  procedure, distinguish descriptive permutation scores from inferential
-  p-values, and record random seeds/parameters in provenance. Add tree and
-  orthology invariants for phylogenetic profiles.
+- [x] **Make cross-species statistics honest and reproducible.** Completed
+  2026-09-03: `metainformant.rna.analysis.statistics_contract` provides
+  fail-closed provenance records with explicit descriptive/inferential role
+  separation and role-conditional multiple-testing semantics (descriptive
+  records render family/method/count as not-applicable), a BH-FDR helper, a
+  gated inferential wrapper, orthology profile invariants, and species-tree
+  invariants with caller-declared rootedness provenance. The hymenoptera
+  cross-species runner validates provenance before writing any artifact and
+  renders an additive `analysis_provenance_*` block into
+  `analysis_summary.txt`; negative fixtures cover duplicate labels, missing
+  mappings, low replication, incomplete orthology, and placeholder
+  provenance.
 
   Upcoming slices: define biological-replicate units and estimands; record
   seeds, permutation counts, null models, and correction procedures; expose
