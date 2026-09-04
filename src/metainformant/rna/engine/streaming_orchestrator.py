@@ -36,6 +36,7 @@ from metainformant.rna.amalgkit.sra_environment import (
 )
 from metainformant.rna.amalgkit.tissue_normalizer import apply_tissue_normalization
 from metainformant.rna.core.sample_utils import find_quantification_file
+from metainformant.rna.engine.preflight import PreflightError, run_campaign_preflight
 from metainformant.rna.engine.progress_db import ProgressDB
 from metainformant.rna.engine.provenance import (
     QUANT_STATUS_CURRENT,
@@ -3830,6 +3831,23 @@ class StreamingPipelineOrchestrator:
         self._quant_semaphore = threading.BoundedSemaphore(profile.quant_slots)
         self._fasterq_semaphore = threading.BoundedSemaphore(profile.fasterq_slots)
         self._raw_validation_semaphore = threading.BoundedSemaphore(profile.validation_slots)
+        # A producer that starts into a broken environment poisons the cohort
+        # instead of processing it (observed 2026-09-03: 7,291 tasks failed
+        # with EPERM because the process lacked external-volume write access,
+        # and quant batches failed with ENOENT because 'amalgkit' was not on
+        # PATH). Verify both before any discovery or scheduling work.
+        try:
+            preflight_facts = run_campaign_preflight(_data_root())
+        except PreflightError as exc:
+            logger.error("Campaign preflight failed; refusing to start the producer.\n%s", exc)
+            raise
+        else:
+            logger.info(
+                "Campaign preflight passed: data_root=%s amalgkit_cli=%s",
+                preflight_facts["data_root"],
+                preflight_facts["amalgkit_cli"],
+            )
+
         configured_discovery_workers: Any = discovery_workers
         if configured_discovery_workers is None:
             configured_discovery_workers = os.environ.get("AMALGKIT_PIPELINE_DISCOVERY_WORKERS")
