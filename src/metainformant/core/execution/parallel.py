@@ -11,7 +11,7 @@ from concurrent.futures import (
     ThreadPoolExecutor,
     as_completed,
 )
-from typing import TypeVar
+from typing import TypeVar, cast
 
 T = TypeVar("T")
 U = TypeVar("U")
@@ -91,7 +91,8 @@ def thread_map(
     if not items:
         return []
 
-    results: list[U] = [None] * len(items)  # type: ignore[assignment]
+    # None-padded placeholder slots; every slot is overwritten before return.
+    results: list[U] = cast("list[U]", [None] * len(items))
     errors: list[tuple[int, Exception]] = []
 
     with ThreadPoolExecutor(max_workers=max_workers) as pool:
@@ -189,7 +190,8 @@ def process_map(
     if max_workers is None:
         max_workers = max(1, cpu_count() - 1)
 
-    results: list[U] = [None] * len(items)  # type: ignore[assignment]
+    # None-padded placeholder slots; every slot is overwritten before return.
+    results: list[U] = cast("list[U]", [None] * len(items))
 
     with ProcessPoolExecutor(max_workers=max_workers) as pool:
         future_to_idx: dict[Future[U], int] = {}
@@ -277,7 +279,8 @@ def rate_limited_map(
         return []
 
     interval = 1.0 / max_per_second
-    results: list[U] = [None] * len(items)  # type: ignore[assignment]
+    # None-padded placeholder slots; every slot is overwritten before return.
+    results: list[U] = cast("list[U]", [None] * len(items))
 
     # Token bucket for rate limiting submission
     lock = threading.Lock()

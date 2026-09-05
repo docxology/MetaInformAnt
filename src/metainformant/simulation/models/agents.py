@@ -517,7 +517,7 @@ def count_agents_by_type(ecosystem: Ecosystem) -> Dict[str, int]:
     Returns:
         Dictionary mapping agent types to counts
     """
-    counts = {}
+    counts: Dict[str, int] = {}
     for agent in ecosystem.agents.values():
         if agent.alive:
             counts[agent.agent_type] = counts.get(agent.agent_type, 0) + 1

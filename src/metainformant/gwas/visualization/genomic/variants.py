@@ -6,7 +6,7 @@ This module provides plots for visualizing variant-level data and statistics.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import numpy as np
 
@@ -27,7 +27,7 @@ def _extract_float_values(data: Any, key: str) -> List[float]:
         List of float values.
     """
     if isinstance(data, np.ndarray):
-        return data.tolist()
+        return cast(List[float], data.tolist())
     if not data:
         return []
     if isinstance(data, (list, tuple)):

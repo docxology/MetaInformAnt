@@ -30,4 +30,4 @@ h = shannon_entropy([0.25, 0.25, 0.25, 0.25])
 ```
 
 Population genetics and mathematical biology plotting now lives in
-[`src/metainformant/visualization/analysis/math_plots.py`](../../../visualization/analysis/math_plots.py).
+[`src/metainformant/visualization/analysis/math_plots.py`](../../visualization/analysis/math_plots.py).

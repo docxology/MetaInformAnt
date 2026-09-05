@@ -35,7 +35,7 @@ def read_fasta(path: Union[str, Path]) -> Dict[str, str]:
 
     sequences = {}
     current_id = None
-    current_seq = []
+    current_seq: List[str] = []
 
     try:
         with io.open_text_auto(path) as f:

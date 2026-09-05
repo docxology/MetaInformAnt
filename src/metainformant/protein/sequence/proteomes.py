@@ -255,7 +255,7 @@ def proteome_statistics(fasta_path: Union[str, Path]) -> Dict[str, Any]:
 
         sequences = read_fasta(fasta_path)
 
-        stats = {
+        stats: Dict[str, Any] = {
             "protein_count": len(sequences),
             "total_residues": 0,
             "average_length": 0.0,

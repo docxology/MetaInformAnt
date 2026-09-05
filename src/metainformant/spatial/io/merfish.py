@@ -26,13 +26,13 @@ try:
     import numpy as np
     from numpy.typing import NDArray
 except ImportError:
-    np = None  # type: ignore[assignment]
-    NDArray = None  # type: ignore[assignment,misc]
+    np = None
+    NDArray = None
 
 try:
     import pandas as pd
 except ImportError:
-    pd = None  # type: ignore[assignment]
+    pd = None
 
 
 @dataclass

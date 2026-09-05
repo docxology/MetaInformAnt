@@ -22,7 +22,7 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 try:
-    import seaborn as sns  # type: ignore[import-untyped]
+    import seaborn as sns
 
     HAS_SEABORN = True
 except ImportError:
@@ -30,8 +30,8 @@ except ImportError:
     sns = None
 
 try:
-    import plotly.express as px  # type: ignore[import-untyped]
-    import plotly.graph_objects as go  # type: ignore[import-untyped]
+    import plotly.express as px
+    import plotly.graph_objects as go
 
     HAS_PLOTLY = True
 except ImportError:
@@ -73,7 +73,7 @@ def plot_trait_distribution(
     else:
         ax.hist(trait_values, bins=30, alpha=0.7, density=True, **kwargs)
         # Add simple density estimate
-        from scipy.stats import gaussian_kde  # type: ignore[import-untyped]
+        from scipy.stats import gaussian_kde
 
         try:
             kde = gaussian_kde(trait_values)
@@ -555,7 +555,7 @@ def plot_phenotype_network(
         matplotlib Axes object
     """
     try:
-        import networkx as nx  # type: ignore[import-untyped]
+        import networkx as nx
     except ImportError:
         raise ImportError("networkx required for phenotype network visualization")
 

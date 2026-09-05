@@ -41,6 +41,7 @@ def ld_coefficients(
     # Check if we're in frequency mode
     if pa is not None and pB is not None and pb is not None and pAB is not None:
         pA = pA_or_genotypes
+        assert isinstance(pA, float)
         # Calculate D = P(AB) - P(A)*P(B)
         D = pAB - pA * pB
 
@@ -56,6 +57,7 @@ def ld_coefficients(
 
     # Otherwise use genotype mode
     genotypes = pA_or_genotypes
+    assert isinstance(genotypes, list)
     if len(genotypes) < 2 or len(genotypes[0]) != 2:
         raise ValueError("Need at least 2 samples with 2 loci each")
 
@@ -71,7 +73,7 @@ def ld_coefficients(
 
     # Calculate haplotype frequencies (simplified)
     # Assuming 0/1 coding
-    haplotype_freqs = {}
+    haplotype_freqs: Dict[str, float] = {}
     for g1, g2 in zip(locus1, locus2):
         key = f"{g1}{g2}"
         haplotype_freqs[key] = haplotype_freqs.get(key, 0) + 1
@@ -121,7 +123,8 @@ def ld_decay_r2(
     # Filter by max distance if specified
     if max_distance is not None:
         filtered = [(d, r) for d, r in zip(distances, r_squared_values) if d <= max_distance]
-        distances, r_squared_values = zip(*filtered) if filtered else ([], [])
+        distances = [d for d, _ in filtered]
+        r_squared_values = [r for _, r in filtered]
 
     if not distances:
         return {"decay_rate": 0.0, "half_decay_distance": float("inf")}
@@ -177,7 +180,7 @@ def haldane_c_to_d(recombination_fraction: float) -> float:
         return float("inf")
 
     # Haldane's mapping function: d = -0.5 * ln(1 - 2c)
-    return -0.5 * np.log(1 - 2 * recombination_fraction)
+    return float(-0.5 * np.log(1 - 2 * recombination_fraction))
 
 
 def haldane_d_to_c(genetic_distance: float) -> float:

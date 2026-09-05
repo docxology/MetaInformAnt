@@ -7,7 +7,7 @@ including result summarization and workflow coordination.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
 
 from metainformant.core.utils import logging
 from metainformant.rna.core.configs import RNAPipelineConfig
@@ -17,7 +17,7 @@ logger = logging.get_logger(__name__)
 __all__ = ["RNAPipelineConfig", "summarize_finalize_tables"]
 
 
-def summarize_finalize_tables(finalize_dir: str | Path) -> Dict[str, int]:
+def summarize_finalize_tables(finalize_dir: str | Path) -> Dict[str, Any]:
     """Summarize current Amalgkit finalization outputs.
 
     Scans the finalization directory for TSV files and current metadata,
@@ -42,7 +42,7 @@ def summarize_finalize_tables(finalize_dir: str | Path) -> Dict[str, int]:
         logger.warning(f"Finalize directory does not exist: {finalize_path}")
         return {"_error": f"Directory not found: {finalize_path}", "_total": 0}
 
-    counts = {}
+    counts: Dict[str, int] = {}
 
     # Count only TSV files by their basename
     for tsv_file in finalize_path.glob("**/*.tsv"):

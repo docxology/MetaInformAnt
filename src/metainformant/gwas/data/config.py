@@ -7,7 +7,7 @@ GWAS analysis configurations.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from metainformant.core import io
 from metainformant.core.utils import logging
@@ -308,7 +308,7 @@ def load_gwas_config(config_path: str | Path) -> AttrDict:
     logger.info(f"Loaded and validated GWAS configuration from {config_path}")
 
     # Convert to AttrDict recursively for attribute-style access
-    return _to_attrdict(config)
+    return cast(AttrDict, _to_attrdict(config))
 
 
 def save_gwas_config(config: Dict[str, Any], output_path: str | Path) -> None:

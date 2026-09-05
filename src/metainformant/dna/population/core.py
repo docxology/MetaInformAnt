@@ -8,7 +8,7 @@ metrics used in population genomics.
 from __future__ import annotations
 
 import math
-from typing import Dict, Iterable, List, Sequence, Tuple
+from typing import Dict, Iterable, List, Sequence, Tuple, cast
 
 from metainformant.core.utils import logging
 
@@ -49,9 +49,11 @@ def allele_frequencies(
             site_frequencies.append({base: count / total for base, count in counts.items()} if total else {})
         return site_frequencies
 
-    frequencies = []
+    genotype_counts = cast("Sequence[Sequence[int]]", genotype_matrix)
 
-    for locus in genotype_matrix:
+    frequencies: List[float] = []
+
+    for locus in genotype_counts:
         total_alleles = sum(locus)
         total_possible = len(locus) * 2  # diploid
 
@@ -102,7 +104,7 @@ def nucleotide_diversity(seqs: Sequence[str]) -> float:
     if not _check_alignment(seqs):
         raise ValueError("Sequences must be aligned (same length)")
 
-    total_differences = 0
+    total_differences = 0.0
     total_comparisons = 0
     seq_length = len(seqs[0])
 
@@ -439,7 +441,7 @@ def expected_heterozygosity(genotype_matrix: Sequence[Sequence[int]]) -> float:
     total_he = 0.0
 
     for locus in genotype_matrix:
-        freqs = allele_frequencies([locus])  # Wrap in list for single locus
+        freqs = cast("List[float]", allele_frequencies([locus]))  # Wrap in list for single locus
         p = freqs[0]  # Allele frequency
         q = 1 - p  # Other allele frequency
 
@@ -519,7 +521,7 @@ def linkage_disequilibrium(seqs: Sequence[str], pos1: int, pos2: int) -> float:
         raise ValueError("Positions have different numbers of valid alleles")
 
     # Calculate haplotype frequencies
-    haplotypes = {}
+    haplotypes: Dict[Tuple[str, str], int] = {}
     for a1, a2 in zip(alleles1, alleles2):
         hap = (a1, a2)
         haplotypes[hap] = haplotypes.get(hap, 0) + 1

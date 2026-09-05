@@ -26,9 +26,9 @@ from metainformant.core.utils.logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    import numpy as np  # type: ignore[import-untyped]
+    import numpy as np
 except ImportError:
-    np = None  # type: ignore[assignment]
+    np = None
 
 
 @dataclass
@@ -551,7 +551,7 @@ def scaffold_with_long_reads(
 
 
 def _extract_sequences(
-    reads: Sequence[str | dict[str, Any]],
+    reads: Sequence[str | dict[str, Any] | object],
     min_length: int = 0,
 ) -> list[Any]:
     """Extract sequence data from various read representations."""

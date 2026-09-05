@@ -51,8 +51,7 @@ class StarAllele:
         if not self.name.startswith("*"):
             self.name = f"*{self.name}"
         self.gene = self.gene.upper()
-        if isinstance(self.defining_variants, (set, list, tuple)):
-            object.__setattr__(self, "defining_variants", frozenset(self.defining_variants))
+        object.__setattr__(self, "defining_variants", frozenset(self.defining_variants))
 
     @property
     def is_reference(self) -> bool:

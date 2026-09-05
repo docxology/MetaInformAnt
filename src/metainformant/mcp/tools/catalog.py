@@ -56,7 +56,8 @@ def _adapt_handler(handler: Any) -> Any:
     """Wrap a **kwargs handler into the registry's Mapping-argument form."""
 
     def _call(arguments: Mapping[str, Any]) -> dict[str, Any]:
-        return handler(**arguments)
+        result: dict[str, Any] = handler(**arguments)
+        return result
 
     return _call
 

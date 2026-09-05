@@ -8,7 +8,7 @@ interaction networks, gene regulatory networks, and other biological graphs.
 from __future__ import annotations
 
 import random
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from metainformant.core.utils import logging
 
@@ -126,7 +126,7 @@ def louvain_communities(
     partition = community_louvain.best_partition(graph, resolution=resolution, randomize=randomize, **kwargs)
 
     # Convert partition to community lists
-    communities = {}
+    communities: dict[Any, list[Any]] = {}
     for node, community_id in partition.items():
         if community_id not in communities:
             communities[community_id] = []
@@ -435,7 +435,7 @@ def detect_communities(graph: Any, method: str = "louvain", **kwargs: Any) -> Di
     Raises:
         ValueError: If method not supported
     """
-    method_map = {
+    method_map: dict[str, Callable[..., Any]] = {
         "louvain": louvain_communities,
         "leiden": leiden_communities,
         "greedy": greedy_modularity_communities,
@@ -472,7 +472,7 @@ def detect_communities(graph: Any, method: str = "louvain", **kwargs: Any) -> Di
     return node_to_community
 
 
-def evaluate_communities(graph: Any, communities: List[List[str]]) -> Dict[str, Any]:
+def evaluate_communities(graph: Any, communities: List[List[str]] | Dict[str, int]) -> Dict[str, Any]:
     """Evaluate quality of community partitioning.
 
     Args:
@@ -566,7 +566,7 @@ def compare_community_methods(graph: Any, methods: Optional[List[str]] = None, *
     if methods is None:
         methods = ["louvain", "greedy", "label_propagation"]
 
-    results = {}
+    results: dict[str, Any] = {}
 
     for method in methods:
         try:
@@ -764,7 +764,7 @@ def optimize_resolution(
     }
 
 
-def modularity(graph: Any, communities: List[List[str]]) -> float:
+def modularity(graph: Any, communities: List[List[str]] | Dict[str, int]) -> float:
     """Calculate modularity of community partitioning.
 
     Args:
@@ -824,7 +824,7 @@ def community_metrics(graph: Any, communities: List[List[str]]) -> Dict[str, Any
 
     graph = _as_networkx_graph(graph)
     community_lists = _communities_to_lists(communities, graph)
-    metrics = {}
+    metrics: dict[str, Any] = {}
 
     # Basic community statistics
     community_sizes = [len(comm) for comm in community_lists]

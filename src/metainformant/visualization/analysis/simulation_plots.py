@@ -47,7 +47,7 @@ def _save_plot(output_path: str | Path, label: str) -> str:
     Consolidates the repeated ensure_directory / save_figure_deterministic / logger
     triple used by every plot function in this module (behavior identical).
     """
-    output_path = paths.ensure_directory(Path(output_path).parent)
+    paths.ensure_directory(Path(output_path).parent)
     save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
     logger.info(f"{label} saved to {output_path}")
     return str(output_path)
@@ -59,7 +59,7 @@ def plot_sequence_evolution(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot sequence evolution over generations.
 
@@ -111,7 +111,7 @@ def animate_sequence_evolution(
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
     interval: int = 500,
-    **kwargs,
+    **kwargs: Any,
 ) -> Tuple[plt.Figure, animation.FuncAnimation]:
     """Create an animation of sequence evolution.
 
@@ -135,7 +135,7 @@ def animate_sequence_evolution(
     # Create mutation matrix
     mutation_matrix = np.zeros((generations, seq_length))
 
-    def animate(frame):
+    def animate(frame: int) -> list[Any]:
         ax.clear()
 
         # Update mutation matrix up to current frame
@@ -155,12 +155,13 @@ def animate_sequence_evolution(
     anim = animation.FuncAnimation(fig, animate, frames=generations, interval=interval, blit=False)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        if output_path.suffix.lower() == ".gif":
-            anim.save(str(output_path), writer="pillow")
+        paths.ensure_directory(Path(output_path).parent)
+        save_path = Path(output_path)
+        if save_path.suffix.lower() == ".gif":
+            anim.save(str(save_path), writer="pillow")
         else:
-            anim.save(str(output_path.with_suffix(".mp4")), writer="ffmpeg")
-        logger.info(f"Sequence evolution animation saved to {output_path}")
+            anim.save(str(save_path.with_suffix(".mp4")), writer="ffmpeg")
+        logger.info(f"Sequence evolution animation saved to {save_path}")
 
     return fig, anim
 
@@ -171,7 +172,7 @@ def plot_rnaseq_simulation_results(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (14, 10),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot RNA-seq simulation results.
 
@@ -284,7 +285,8 @@ def plot_rnaseq_simulation_results(
     if output_path:
         output_path = _save_plot(output_path, "RNA-seq simulation results plot")
 
-    return axes[0]
+    first_ax: Axes = axes[0]
+    return first_ax
 
 
 def plot_population_dynamics_simulation(
@@ -293,7 +295,7 @@ def plot_population_dynamics_simulation(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot population dynamics simulation results.
 
@@ -339,7 +341,7 @@ def plot_agent_based_model_results(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot agent-based model simulation results.
 
@@ -386,7 +388,7 @@ def plot_agent_based_model_results(
         if isinstance(states_history, list):
             time_points = np.arange(len(states_history))
             # Count agents in each state over time
-            state_counts = {}
+            state_counts: dict[str, list[int]] = {}
             for t, states in enumerate(states_history):
                 unique_states, counts = np.unique(states, return_counts=True)
                 for state, count in zip(unique_states, counts):
@@ -460,7 +462,8 @@ def plot_agent_based_model_results(
     if output_path:
         output_path = _save_plot(output_path, "Agent-based model results plot")
 
-    return axes[0]
+    first_ax: Axes = axes[0]
+    return first_ax
 
 
 def plot_evolutionary_simulation_summary(
@@ -469,7 +472,7 @@ def plot_evolutionary_simulation_summary(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (14, 10),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot comprehensive evolutionary simulation summary.
 
@@ -602,7 +605,8 @@ def plot_evolutionary_simulation_summary(
     if output_path:
         output_path = _save_plot(output_path, "Evolutionary simulation summary plot")
 
-    return axes[0]
+    first_ax: Axes = axes[0]
+    return first_ax
 
 
 def plot_simulation_parameter_sensitivity(
@@ -611,7 +615,7 @@ def plot_simulation_parameter_sensitivity(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot parameter sensitivity analysis results.
 
@@ -665,7 +669,7 @@ def animate_population_dynamics(
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
     interval: int = 200,
-    **kwargs,
+    **kwargs: Any,
 ) -> Tuple[plt.Figure, animation.FuncAnimation]:
     """Create an animation of population dynamics.
 
@@ -699,7 +703,7 @@ def animate_population_dynamics(
     ax.legend()
     ax.grid(True, alpha=0.3)
 
-    def animate(frame):
+    def animate(frame: int) -> list[Any]:
         for i, line in enumerate(lines):
             x_data = time_points[: frame + 1]
             y_data = [pop[i] for pop in population_history[: frame + 1]]
@@ -711,12 +715,13 @@ def animate_population_dynamics(
     anim = animation.FuncAnimation(fig, animate, frames=len(population_history), interval=interval, blit=True)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
-        if output_path.suffix.lower() == ".gif":
-            anim.save(str(output_path), writer="pillow")
+        paths.ensure_directory(Path(output_path).parent)
+        save_path = Path(output_path)
+        if save_path.suffix.lower() == ".gif":
+            anim.save(str(save_path), writer="pillow")
         else:
-            anim.save(str(output_path.with_suffix(".mp4")), writer="ffmpeg")
-        logger.info(f"Population dynamics animation saved to {output_path}")
+            anim.save(str(save_path.with_suffix(".mp4")), writer="ffmpeg")
+        logger.info(f"Population dynamics animation saved to {save_path}")
 
     return fig, anim
 
@@ -728,7 +733,7 @@ def plot_simulation_validation_comparison(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot comparison between observed and simulated data for validation.
 
@@ -775,7 +780,7 @@ def plot_simulation_validation_comparison(
 
 
 def create_interactive_simulation_dashboard(
-    simulation_results: Dict[str, Any], *, output_path: str | Path | None = None, **kwargs
+    simulation_results: Dict[str, Any], *, output_path: str | Path | None = None, **kwargs: Any
 ) -> Any:
     """Create an interactive simulation results dashboard.
 
@@ -826,7 +831,7 @@ def create_interactive_simulation_dashboard(
     fig.update_layout(title="Interactive Simulation Results Dashboard", **kwargs)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         html_path = Path(output_path).with_suffix(".html")
         fig.write_html(str(html_path))
         logger.info(f"Interactive simulation dashboard saved to {html_path}")

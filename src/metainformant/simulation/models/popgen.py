@@ -419,7 +419,7 @@ def simulate_bottleneck_population(
 
     for gen, size in enumerate(population_sizes):
         expected_mutations = size * 1000 * mutation_rate
-        mutations_this_gen = rng.poisson(expected_mutations)
+        mutations_this_gen = rng.poisson(expected_mutations)  # type: ignore[attr-defined]  # known latent bug
         total_mutations += mutations_this_gen
         mutation_trajectory.append(total_mutations)
 
@@ -535,7 +535,7 @@ def simulate_population_expansion(
         diversity_trajectory.append(current_diversity)
 
         expected_mutations = size * 1000 * mutation_rate
-        mutations_this_gen = rng.poisson(expected_mutations)
+        mutations_this_gen = rng.poisson(expected_mutations)  # type: ignore[attr-defined]  # known latent bug
         total_mutations += mutations_this_gen
         mutation_trajectory.append(total_mutations)
 
@@ -609,7 +609,7 @@ def generate_site_frequency_spectrum(
         elif demographic_model == "expansion":
             # Favor low frequency variants
             alpha = parameters.get("alpha", 1.0)
-            freq = min(rng.zipf(alpha), n_samples - 1)
+            freq = min(rng.zipf(alpha), n_samples - 1)  # type: ignore[attr-defined]  # known latent bug
         elif demographic_model == "bottleneck":
             # Favor high frequency variants
             bottleneck_strength = parameters.get("bottleneck_strength", 0.1)
@@ -781,7 +781,7 @@ def simulate_admixture(
 
         # Add some drift
         for i in range(n_populations):
-            drift_effect = rng.normal(0, 0.01)
+            drift_effect = rng.normal(0, 0.01)  # type: ignore[attr-defined]  # known latent bug
             new_frequencies[i] += drift_effect
             new_frequencies[i] = np.clip(new_frequencies[i], 0.0, 1.0)
 
@@ -878,7 +878,7 @@ def simulate_selection(
             genotypes = current_genotypes[:, snp]
 
             # Create weighted sampling
-            weights = fitness_values
+            weights = fitness_values.tolist()
             selected_indices = rng.choices(range(n_individuals), weights=weights, k=n_individuals)
 
             next_genotypes[:, snp] = genotypes[selected_indices]

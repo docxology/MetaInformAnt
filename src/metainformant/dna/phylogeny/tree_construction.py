@@ -36,7 +36,7 @@ def neighbor_joining_tree(id_to_seq: Dict[str, str]) -> Tree:
     distance_matrix = _calculate_distance_matrix(id_to_seq)
 
     # Initialize tree with taxa as leaves
-    tree = {taxon: None for taxon in taxa}
+    tree: Tree = {taxon: None for taxon in taxa}
     active_taxa = set(taxa)
 
     while len(active_taxa) > 2:
@@ -120,7 +120,7 @@ def upgma_tree(id_to_seq: Dict[str, str]) -> Tree:
     distance_matrix = _calculate_distance_matrix(id_to_seq)
 
     # Initialize tree
-    tree = {taxon: None for taxon in taxa}
+    tree: Tree = {taxon: None for taxon in taxa}
     active_taxa = set(taxa)
     cluster_sizes = {taxon: 1 for taxon in taxa}
 
@@ -201,7 +201,7 @@ def nj_tree_from_kmer(id_to_seq: Dict[str, str], *, k: int = 3, metric: str = "c
     taxa = list(id_to_seq.keys())
 
     # Initialize tree with taxa as leaves
-    tree = {taxon: None for taxon in taxa}
+    tree: Tree = {taxon: None for taxon in taxa}
     active_taxa = set(taxa)
 
     # Work with a copy of distance matrix that we can modify

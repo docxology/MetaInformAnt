@@ -8,7 +8,7 @@ information landscapes, and information flow networks.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,7 +32,11 @@ except ImportError:
 
 
 def plot_entropy_profile(
-    entropy_data: dict[str, List[float]], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    entropy_data: dict[str, List[float]],
+    *,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
+    **kwargs: Any,
 ) -> Axes:
     """Create an entropy profile plot across different scales.
 
@@ -84,7 +88,7 @@ def plot_mutual_information_matrix(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a mutual information matrix heatmap.
 
@@ -142,7 +146,7 @@ def plot_renyi_spectra(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a Rényi entropy spectra plot.
 
@@ -201,7 +205,7 @@ def plot_information_landscape(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create an information landscape plot.
 
@@ -259,7 +263,7 @@ def plot_information_network(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create an information flow network visualization.
 

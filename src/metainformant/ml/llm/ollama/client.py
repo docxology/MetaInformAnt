@@ -11,7 +11,7 @@ import time
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
-from typing import Any, Callable, Iterator, Optional
+from typing import Any, Callable, Iterable, Iterator, Optional
 
 from metainformant.core.utils import logging
 
@@ -236,7 +236,7 @@ class OllamaClient:
             except urllib.error.HTTPError as e:
                 raise RuntimeError(f"Ollama API error {e.code}: {e.read().decode('utf-8')}") from e
 
-    def _stream_response(self, response) -> Iterator[dict]:
+    def _stream_response(self, response: Iterable[bytes]) -> Iterator[dict]:
         """Stream NDJSON response from Ollama.
 
         Args:
@@ -290,7 +290,7 @@ class OllamaClient:
         context: Optional[list[int]] = None,
         stream: bool = False,
         stream_callback: Optional[Callable[[str], None]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> GenerateResponse:
         """Generate text completion.
 
@@ -379,7 +379,7 @@ class OllamaClient:
         model: Optional[str] = None,
         stream: bool = False,
         stream_callback: Optional[Callable[[str], None]] = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> ChatResponse:
         """Conduct a chat conversation.
 

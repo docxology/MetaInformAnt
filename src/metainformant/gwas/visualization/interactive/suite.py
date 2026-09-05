@@ -592,7 +592,7 @@ def generate_all_plots(
         # ---------------------------------------------------------------
         if h2_data is not None:
             try:
-                from ..analysis.heritability import heritability_bar_chart
+                from ...analysis.heritability import heritability_bar_chart
 
                 h2_file = output_dir / "heritability_bar_chart.png"
                 h2_result = heritability_bar_chart(

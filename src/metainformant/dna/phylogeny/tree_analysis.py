@@ -7,7 +7,7 @@ testing, pruning, diameter calculation, and basic statistics.
 
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
@@ -28,7 +28,7 @@ def to_newick(tree: Tree) -> str:
         Newick format string
     """
 
-    def _to_newick_recursive(node):
+    def _to_newick_recursive(node: str) -> str:
         if isinstance(tree[node], dict):
             children = []
             for child, branch_length in tree[node].items():
@@ -45,7 +45,7 @@ def to_newick(tree: Tree) -> str:
 
     # Find root (node with no parent)
     all_nodes = set(tree.keys())
-    child_nodes = set()
+    child_nodes: set[str] = set()
 
     for node_data in tree.values():
         if isinstance(node_data, dict):
@@ -125,7 +125,7 @@ def bootstrap_support(tree: Tree, sequences: Dict[str, str], n_replicates: int =
     # Add bootstrap values to tree
     supported_tree = tree.copy()
 
-    def _add_bootstrap_values(node, current_clade=None):
+    def _add_bootstrap_values(node: str, current_clade: Any = None) -> None:
         if isinstance(supported_tree.get(node), dict):
             children = [c for c in supported_tree[node].keys() if c != "bootstrap"]
 
@@ -162,7 +162,7 @@ def to_ascii(tree: Tree) -> str:
         ASCII art string representation
     """
 
-    def _build_ascii(node, prefix="", is_last=True):
+    def _build_ascii(node: str, prefix: str = "", is_last: bool = True) -> list[str]:
         lines = []
 
         if isinstance(tree[node], dict):
@@ -185,7 +185,7 @@ def to_ascii(tree: Tree) -> str:
 
     # Find root
     all_nodes = set(tree.keys())
-    child_nodes = set()
+    child_nodes: set[str] = set()
 
     for node_data in tree.values():
         if isinstance(node_data, dict):
@@ -217,7 +217,7 @@ def basic_tree_stats(tree: Tree) -> Dict[str, int]:
         Dictionary with tree statistics
     """
 
-    def _count_leaves(node):
+    def _count_leaves(node: str) -> int:
         if not isinstance(tree[node], dict):
             return 1
 
@@ -229,7 +229,7 @@ def basic_tree_stats(tree: Tree) -> Dict[str, int]:
 
         return total
 
-    def _count_internal_nodes(node):
+    def _count_internal_nodes(node: str) -> int:
         if not isinstance(tree[node], dict):
             return 0
 
@@ -243,7 +243,7 @@ def basic_tree_stats(tree: Tree) -> Dict[str, int]:
 
     # Find root
     all_nodes = set(tree.keys())
-    child_nodes = set()
+    child_nodes: set[str] = set()
 
     for node_data in tree.values():
         if isinstance(node_data, dict):
@@ -654,7 +654,7 @@ def _extract_clades(tree: Tree) -> List[List[str]]:
     """Extract all clades (sets of descendant leaves) from a tree."""
     clades = []
 
-    def _get_leaves(node):
+    def _get_leaves(node: str) -> list[str]:
         if tree.get(node) is None or not isinstance(tree.get(node), dict):
             return [node]
         children = [c for c in tree[node].keys() if c != "bootstrap"]
@@ -663,7 +663,7 @@ def _extract_clades(tree: Tree) -> List[List[str]]:
             leaves.extend(_get_leaves(child))
         return leaves
 
-    def _traverse(node):
+    def _traverse(node: str) -> None:
         if isinstance(tree.get(node), dict):
             children = [c for c in tree[node].keys() if c != "bootstrap"]
             if children:

@@ -25,7 +25,7 @@ def find_partial_downloads(fastq_dir: Path, quant_dir: Path) -> List[Tuple[str, 
     Returns:
         List of tuples: (sample_id, sample_dir, size_mb)
     """
-    partial = []
+    partial: List[Tuple[str, Path, int]] = []
 
     if not fastq_dir.exists():
         return partial
@@ -146,7 +146,9 @@ def fix_abundance_naming(quant_dir: Path, sample_id: str) -> bool:
         return False
 
 
-def fix_abundance_naming_for_species(config_or_path: Union[Path, str], species: str = None) -> Tuple[int, int]:
+def fix_abundance_naming_for_species(
+    config_or_path: Union[Path, str], species: Union[str, None] = None
+) -> Tuple[int, int]:
     """Fix abundance file naming for all samples in a species workflow.
 
     Args:
@@ -199,7 +201,7 @@ def cleanup_unquantified_samples(work_dir: Path) -> List[str]:
     Returns:
         List of cleaned up sample identifiers
     """
-    cleaned_samples = []
+    cleaned_samples: List[str] = []
 
     fastq_dir = work_dir / "fastq"
     quant_dir = work_dir / "quant"

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import math
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, List, Optional, cast
 
 import numpy as np
 
@@ -102,7 +102,7 @@ def lambda_gc_plot(
 
             style = get_style()
 
-        fig = None
+        fig: Any = None
         if axes is None:
             fig, (ax1, ax2) = plt.subplots(1, 2, figsize=kwargs.get("figsize", (12, 5)))
         else:
@@ -644,7 +644,7 @@ def volcano_plot(
             p_values: list[float] = [r["p_value"] for r in results]
         else:
             effect_sizes = list(results)
-            p_values = list(output_path) if output_path is not None else []
+            p_values = cast(list[float], list(cast(Any, output_path)) if output_path is not None else [])
             output_path = None
 
         if len(effect_sizes) != len(p_values):

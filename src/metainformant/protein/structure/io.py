@@ -40,7 +40,7 @@ def parse_pdb_file(file_path: str | Path) -> Dict[str, Any]:
 
     atoms = []
     coordinates = []
-    residues = {}
+    residues: Dict[Tuple[str, int], List[Dict[str, Any]]] = {}
 
     with open(file_path, "r") as f:
         for line_num, line in enumerate(f, 1):

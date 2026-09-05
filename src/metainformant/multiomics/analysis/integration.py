@@ -324,7 +324,7 @@ def integrate_omics_data(
     protein_data: pd.DataFrame | None = None,
     epigenome_data: pd.DataFrame | None = None,
     metabolomics_data: pd.DataFrame | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> "MultiOmicsData":
     """Integrate data from multiple omics types.
 
@@ -421,7 +421,7 @@ def joint_pca(
     n_components: int = 50,
     standardize: bool = True,
     layer_weights: Optional[Dict[str, float]] = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Tuple[np.ndarray, Dict[str, np.ndarray], np.ndarray]:
     """Perform joint PCA across multiple omics datasets.
 
@@ -503,7 +503,7 @@ def joint_nmf(
     max_iter: int = 200,
     regularization: float = 0.0,
     random_state: Optional[int] = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
     """Perform joint NMF across multiple omics datasets.
 
@@ -578,7 +578,7 @@ def canonical_correlation(
     layer_pair: Optional[Tuple[str, str]] = None,
     n_components: int = 10,
     regularization: float = 0.0,
-    **kwargs,
+    **kwargs: Any,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Perform canonical correlation analysis between omics datasets.
 
@@ -643,20 +643,20 @@ def canonical_correlation(
     X_c, Y_c = cca.fit_transform(X_scaled, Y_scaled)
 
     # Compute canonical correlations for each component
-    correlations = []
+    correlations: List[float] = []
     for i in range(X_c.shape[1]):
         corr = np.corrcoef(X_c[:, i], Y_c[:, i])[0, 1]
         correlations.append(abs(corr))
-    correlations = np.array(correlations)
-    order = np.argsort(correlations)[::-1]
+    correlations_arr = np.array(correlations)
+    order = np.argsort(correlations_arr)[::-1]
     X_c = X_c[:, order]
     Y_c = Y_c[:, order]
     x_weights = cca.x_weights_[:, order]
     y_weights = cca.y_weights_[:, order]
-    correlations = correlations[order]
+    correlations_arr = correlations_arr[order]
 
-    logger.info(f"CCA completed: {len(correlations)} components")
-    return X_c, Y_c, x_weights, y_weights, correlations
+    logger.info(f"CCA completed: {len(correlations_arr)} components")
+    return X_c, Y_c, x_weights, y_weights, correlations_arr
 
 
 def _normalize_variant_id(chrom: object, pos: object, variant_id: object, ref: object, alt: object) -> str:
@@ -670,16 +670,16 @@ def _normalize_variant_id(chrom: object, pos: object, variant_id: object, ref: o
 def _genotype_to_dosage(sample_value: object, format_keys: List[str]) -> float:
     """Convert a VCF sample genotype field to reference-alt dosage."""
     if sample_value is None or pd.isna(sample_value):
-        return np.nan
+        return float("nan")
 
     fields = str(sample_value).split(":")
     gt_index = format_keys.index("GT") if "GT" in format_keys else 0
     if gt_index >= len(fields):
-        return np.nan
+        return float("nan")
 
     genotype = fields[gt_index]
     if not genotype or genotype == "." or "." in genotype:
-        return np.nan
+        return float("nan")
 
     alleles = genotype.replace("|", "/").split("/")
     dosage = 0
@@ -687,7 +687,7 @@ def _genotype_to_dosage(sample_value: object, format_keys: List[str]) -> float:
         try:
             dosage += 0 if int(allele) == 0 else 1
         except ValueError:
-            return np.nan
+            return float("nan")
     return float(dosage)
 
 
@@ -846,7 +846,7 @@ def from_dna_variants(
     vcf_data: Union[pd.DataFrame, str, Path],
     sample_ids: Optional[List[str]] = None,
     variant_ids: Optional[List[str]] = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """Convert DNA variant data for multi-omics integration.
 
@@ -881,7 +881,7 @@ def from_rna_expression(
     sample_ids: Optional[List[str]] = None,
     gene_ids: Optional[List[str]] = None,
     transpose: bool = False,
-    **kwargs,
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """Convert RNA expression data for multi-omics integration.
 
@@ -922,7 +922,7 @@ def from_protein_abundance(
     sample_ids: Optional[List[str]] = None,
     protein_ids: Optional[List[str]] = None,
     transpose: bool = False,
-    **kwargs,
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """Convert protein abundance data for multi-omics integration.
 
@@ -954,7 +954,7 @@ def from_protein_abundance(
     return processed_data
 
 
-def from_epigenome_data(epigenome_data: pd.DataFrame, data_type: str = "methylation", **kwargs) -> pd.DataFrame:
+def from_epigenome_data(epigenome_data: pd.DataFrame, data_type: str = "methylation", **kwargs: Any) -> pd.DataFrame:
     """Convert epigenome data for multi-omics integration.
 
     Args:
@@ -980,7 +980,7 @@ def from_epigenome_data(epigenome_data: pd.DataFrame, data_type: str = "methylat
     return processed_data
 
 
-def from_metabolomics(metabolomics_data: pd.DataFrame, normalize: bool = True, **kwargs) -> pd.DataFrame:
+def from_metabolomics(metabolomics_data: pd.DataFrame, normalize: bool = True, **kwargs: Any) -> pd.DataFrame:
     """Convert metabolomics data for multi-omics integration.
 
     Args:
@@ -1009,11 +1009,11 @@ def from_metabolomics(metabolomics_data: pd.DataFrame, normalize: bool = True, *
     return processed_data
 
 
-def _integrate_by_correlation(aligned_data: Dict[str, pd.DataFrame], **kwargs) -> Dict[str, Any]:
+def _integrate_by_correlation(aligned_data: Dict[str, pd.DataFrame], **kwargs: Any) -> Dict[str, Any]:
     """Integrate omics data by computing cross-omics correlations."""
     logger.info("Integrating by correlation analysis")
 
-    results = {}
+    results: Dict[str, Any] = {}
 
     # Compute pairwise correlations between all omics types
     omics_types = list(aligned_data.keys())
@@ -1142,11 +1142,11 @@ def compute_multiomics_similarity(omics_data: Dict[str, pd.DataFrame], method: s
 
         similarity = cosine_similarity(concatenated)
 
-    return similarity
+    return np.asarray(similarity)
 
 
 def find_multiomics_modules(
-    omics_data: Union["MultiOmicsData", Dict[str, pd.DataFrame]], n_modules: int = 10, **kwargs
+    omics_data: Union["MultiOmicsData", Dict[str, pd.DataFrame]], n_modules: int = 10, **kwargs: Any
 ) -> Dict[str, Any]:
     """Identify multi-omics modules (co-regulated features across omics types).
 

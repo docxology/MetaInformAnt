@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Optional
 
 import numpy as np
-from scipy import stats  # type: ignore[import-untyped]
+from scipy import stats
 
 from metainformant.core.data import validation
 from metainformant.core.utils import logging

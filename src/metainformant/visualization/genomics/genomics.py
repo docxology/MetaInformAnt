@@ -8,6 +8,7 @@ coverage plots, and variant visualizations.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -30,7 +31,7 @@ def manhattan_plot(
     pval_col: str = "P",
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a Manhattan plot for GWAS results.
 
@@ -125,7 +126,7 @@ def volcano_plot(
     pval_col: str = "padj",
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a volcano plot for differential expression analysis.
 
@@ -203,7 +204,7 @@ def regional_plot(
     end: int,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a regional association plot for a specific genomic region.
 
@@ -273,7 +274,7 @@ def regional_plot(
 
 
 def circular_manhattan_plot(
-    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a circular Manhattan plot.
 
@@ -326,7 +327,7 @@ def circular_manhattan_plot(
         ax.text(angle, ax.get_ylim()[1] * 1.1, f"{chr_num}", ha="center", va="bottom", fontsize=8)
 
     ax.set_title("Circular Manhattan Plot")
-    ax.set_rlabel_position(90)
+    cast("Any", ax).set_rlabel_position(90)
     ax.grid(True, alpha=0.3)
 
     if output_path:
@@ -337,7 +338,7 @@ def circular_manhattan_plot(
     return ax
 
 
-def chromosome_ideogram(*, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs) -> Axes:
+def chromosome_ideogram(*, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any) -> Axes:
     """Create a chromosome ideogram visualization.
 
     Args:
@@ -408,7 +409,7 @@ def coverage_plot(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a sequencing coverage plot.
 
@@ -451,7 +452,7 @@ def coverage_plot(
 
 
 def variant_plot(
-    variants: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    variants: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a variant visualization plot.
 

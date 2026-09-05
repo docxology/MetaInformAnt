@@ -329,6 +329,7 @@ def predict_localization(sequence: str) -> Dict[str, Any]:
         "peroxisome": 0.0,
     }
 
+    match: re.Match[str] | None
     # Check for nuclear localization signals
     for nls_def in _NLS_PATTERNS:
         for match in re.finditer(nls_def["pattern"], seq):

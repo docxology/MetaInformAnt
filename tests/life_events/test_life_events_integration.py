@@ -216,15 +216,25 @@ model:
     assert loaded.model_type == "embedding"
 
 
+@pytest.mark.slow
 def test_cli_end_to_end_workflow(tmp_path: Path):
-    """Test embed -> predict -> interpret CLI workflow."""
+    """Test embed -> predict -> interpret CLI workflow.
+
+    Slow-marked: the CLI subprocesses pay the full package import cost on the
+    external data volume, which is saturated while the campaign producer runs
+    (measured >300 s per subprocess under load). Run this test on a quiescent
+    volume or deselect it with the standard slow-marker convention.
+    """
     import subprocess
     import sys
 
     # Check if CLI is available
     try:
         result = subprocess.run(
-            [sys.executable, "-m", "metainformant", "--help"], capture_output=True, text=True, timeout=5
+            [sys.executable, "-m", "metainformant", "--help"],
+            capture_output=True,
+            text=True,
+            timeout=300,
         )
         if result.returncode != 0:
             pytest.skip("metainformant CLI not available in test environment")
@@ -263,7 +273,7 @@ def test_cli_end_to_end_workflow(tmp_path: Path):
         f"--output={predict_output}",
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
     assert result.returncode == 0
 
     predictions_file = predict_output / "predictions.json"
@@ -282,7 +292,7 @@ def test_cli_end_to_end_workflow(tmp_path: Path):
         f"--output={interpret_output}",
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
     assert result.returncode == 0
 
     report_file = interpret_output / "interpretation_report.json"

@@ -7,7 +7,7 @@ heatmaps, bar charts, pie charts, area plots, and step plots.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Sequence
+from typing import Any, Sequence
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,7 +27,7 @@ def lineplot(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a line plot.
 
@@ -67,7 +67,7 @@ def lineplot(
 
 
 def scatter_plot(
-    x: np.ndarray, y: np.ndarray, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    x: np.ndarray, y: np.ndarray, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a scatter plot.
 
@@ -104,7 +104,12 @@ def scatter_plot(
 
 
 def heatmap(
-    data: np.ndarray, *, cmap: str = "viridis", ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    data: np.ndarray,
+    *,
+    cmap: str = "viridis",
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
+    **kwargs: Any,
 ) -> Axes:
     """Create a 2D heatmap.
 
@@ -146,7 +151,7 @@ def bar_plot(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a bar plot.
 
@@ -190,7 +195,7 @@ def pie_chart(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a pie chart.
 
@@ -229,7 +234,7 @@ def pie_chart(
 
 
 def area_plot(
-    x: np.ndarray, y: np.ndarray, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    x: np.ndarray, y: np.ndarray, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a filled area plot.
 
@@ -266,7 +271,7 @@ def area_plot(
 
 
 def step_plot(
-    x: np.ndarray, y: np.ndarray, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    x: np.ndarray, y: np.ndarray, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a step plot.
 

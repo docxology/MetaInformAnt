@@ -71,15 +71,15 @@ class SingleCellData:
 
     @property
     def n_obs(self) -> int:
-        return self.X.shape[0]
+        return int(self.X.shape[0])
 
     @property
     def n_vars(self) -> int:
-        return self.X.shape[1]
+        return int(self.X.shape[1])
 
     @property
     def shape(self) -> Tuple[int, int]:
-        return self.X.shape
+        return (int(self.X.shape[0]), int(self.X.shape[1]))
 
     def copy(self) -> SingleCellData:
         """Create a copy of the data."""
@@ -107,7 +107,7 @@ class SingleCellData:
         return df
 
 
-def load_count_matrix(filepath: str | Path, format: str = "h5ad", **kwargs) -> SingleCellData:
+def load_count_matrix(filepath: str | Path, format: str = "h5ad", **kwargs: Any) -> SingleCellData:
     """Load single-cell count matrix from file.
 
     Args:
@@ -132,7 +132,7 @@ def load_count_matrix(filepath: str | Path, format: str = "h5ad", **kwargs) -> S
             from metainformant.core.utils.optional_deps import warn_optional_dependency
 
             warn_optional_dependency("anndata", "H5AD file format support")
-            raise errors.ConfigurationError("h5ad format requires anndata package")
+            raise errors.ConfigError("h5ad format requires anndata package")
 
         try:
             adata = ad.read_h5ad(filepath, **kwargs)
@@ -140,7 +140,7 @@ def load_count_matrix(filepath: str | Path, format: str = "h5ad", **kwargs) -> S
             return _annadata_to_singlecelldata(adata)
         except Exception as e:
             logger.error(f"Failed to load h5ad file: {e}")
-            raise errors.FileIOError(f"Could not load h5ad file: {e}") from e
+            raise errors.IOError(f"Could not load h5ad file: {e}") from e
 
     elif format in ["csv", "tsv"]:
         separator = "\t" if format == "tsv" else ","
@@ -158,7 +158,7 @@ def load_count_matrix(filepath: str | Path, format: str = "h5ad", **kwargs) -> S
             return SingleCellData(X=X, obs=obs, var=var)
         except Exception as e:
             logger.error(f"Failed to load {format} file: {e}")
-            raise errors.FileIOError(f"Could not load {format} file: {e}") from e
+            raise errors.IOError(f"Could not load {format} file: {e}") from e
 
     elif format == "mtx":
         # Matrix Market format - requires genes and barcodes files
@@ -195,7 +195,7 @@ def load_count_matrix(filepath: str | Path, format: str = "h5ad", **kwargs) -> S
 
         except Exception as e:
             logger.error(f"Failed to load Matrix Market files: {e}")
-            raise errors.FileIOError(f"Could not load Matrix Market files: {e}") from e
+            raise errors.IOError(f"Could not load Matrix Market files: {e}") from e
 
     else:
         raise errors.ValidationError(f"Unsupported format: {format}")

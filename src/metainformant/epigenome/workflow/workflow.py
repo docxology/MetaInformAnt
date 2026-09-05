@@ -58,7 +58,7 @@ class EpigenomeConfig:
     memory_limit_gb: float = 8.0
     chunk_size: int = 1000000  # Process data in chunks
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate configuration after initialization."""
         validation.validate_range(self.methylation_threshold, 0.0, 1.0, "methylation_threshold")
         validation.validate_range(self.chipseq_qvalue_threshold, 0.0, 1.0, "chipseq_qvalue_threshold")
@@ -85,13 +85,13 @@ def load_epigenome_config(config_path: str | Path | None = None) -> EpigenomeCon
             "config/epigenome.json",
         ]
         for path in default_paths:
-            if paths.validate_path_exists(path, raise_error=False):
+            if Path(path).exists():
                 config_path = path
                 break
 
     if config_path:
         try:
-            config_data = config.load_config_file(config_path)
+            config_data = config.load_config_file(Path(config_path))
             return EpigenomeConfig(**config_data)
         except Exception as e:
             logger.warning(f"Failed to load config from {config_path}: {e}")
@@ -124,7 +124,7 @@ def run_methylation_workflow(
 
     logger.info(f"Starting methylation workflow: {input_dir} -> {output_dir}")
 
-    results = {
+    results: Dict[str, Any] = {
         "workflow_type": "methylation",
         "input_dir": str(input_dir),
         "output_dir": str(output_dir),
@@ -140,7 +140,7 @@ def run_methylation_workflow(
         logger.info(f"Found {len(methylation_files)} methylation data files")
 
         if not methylation_files:
-            raise errors.WorkflowError(f"No methylation data files found in {input_dir}")
+            raise errors.PipelineError(f"No methylation data files found in {input_dir}")
 
         # Process each methylation file
         all_sites = {}
@@ -151,7 +151,7 @@ def run_methylation_workflow(
                 logger.info(f"Processing methylation file: {file_path}")
 
                 # Load methylation data
-                from .methylation import load_methylation_bedgraph, load_methylation_cov
+                from ..assays.methylation import load_methylation_bedgraph, load_methylation_cov
 
                 file_ext = file_path.suffix.lower()
                 if file_ext == ".bedgraph" or file_ext == ".bg":
@@ -163,7 +163,7 @@ def run_methylation_workflow(
                     continue
 
                 # Calculate statistics
-                from .methylation import calculate_methylation_statistics
+                from ..assays.methylation import calculate_methylation_statistics
 
                 stats = calculate_methylation_statistics(sites)
 
@@ -212,10 +212,14 @@ def run_methylation_workflow(
 
         # Generate report
         if config.generate_reports:
-            from .methylation import generate_methylation_report
+            from ..assays.methylation import MethylationSite, generate_methylation_report
 
             report_path = output_dir / "methylation_report.txt"
-            generate_methylation_report(all_sites, output_path=report_path)
+            combined_sites: Dict[str, List[MethylationSite]] = {}
+            for sample_sites in all_sites.values():
+                for chrom_name, chrom_sites in sample_sites.items():
+                    combined_sites.setdefault(chrom_name, []).extend(chrom_sites)
+            generate_methylation_report(combined_sites, output_path=report_path)
             results["report_path"] = str(report_path)
 
         logger.info(f"Methylation workflow completed. Processed {len(results['processed_files'])} files")
@@ -224,7 +228,7 @@ def run_methylation_workflow(
         error_msg = f"Methylation workflow failed: {e}"
         logger.error(error_msg)
         results["errors"].append(error_msg)
-        raise errors.WorkflowError(error_msg) from e
+        raise errors.PipelineError(error_msg) from e
 
     return results
 
@@ -253,7 +257,7 @@ def run_chipseq_workflow(
 
     logger.info(f"Starting ChIP-seq workflow: {input_dir} -> {output_dir}")
 
-    results = {
+    results: Dict[str, Any] = {
         "workflow_type": "chipseq",
         "input_dir": str(input_dir),
         "output_dir": str(output_dir),
@@ -269,7 +273,7 @@ def run_chipseq_workflow(
         logger.info(f"Found {len(peak_files)} ChIP-seq peak files")
 
         if not peak_files:
-            raise errors.WorkflowError(f"No ChIP-seq peak files found in {input_dir}")
+            raise errors.PipelineError(f"No ChIP-seq peak files found in {input_dir}")
 
         # Process each peak file
         all_peaks = []
@@ -280,7 +284,7 @@ def run_chipseq_workflow(
                 logger.info(f"Processing ChIP-seq file: {file_path}")
 
                 # Load peak data
-                from .chipseq import filter_peaks_by_score, load_chip_peaks
+                from ..assays.chipseq import filter_peaks_by_score, load_chip_peaks
 
                 format_type = _detect_peak_format(file_path)
                 peaks = load_chip_peaks(file_path, format=format_type)
@@ -294,7 +298,7 @@ def run_chipseq_workflow(
                 ]
 
                 # Calculate statistics
-                from .chipseq import calculate_peak_statistics
+                from ..assays.chipseq import calculate_peak_statistics
 
                 stats = calculate_peak_statistics(filtered_peaks)
 
@@ -323,7 +327,7 @@ def run_chipseq_workflow(
 
                 # Save filtered peaks
                 peak_output = output_dir / f"{sample_name}_peaks.narrowPeak"
-                from .chipseq import save_chip_peaks
+                from ..assays.chipseq import save_chip_peaks
 
                 save_chip_peaks(filtered_peaks, peak_output)
 
@@ -347,7 +351,7 @@ def run_chipseq_workflow(
 
         # Generate report
         if config.generate_reports:
-            from .chipseq import generate_chip_report
+            from ..assays.chipseq import generate_chip_report
 
             report_path = output_dir / "chipseq_report.txt"
             generate_chip_report(all_peaks, output_path=report_path)
@@ -359,7 +363,7 @@ def run_chipseq_workflow(
         error_msg = f"ChIP-seq workflow failed: {e}"
         logger.error(error_msg)
         results["errors"].append(error_msg)
-        raise errors.WorkflowError(error_msg) from e
+        raise errors.PipelineError(error_msg) from e
 
     return results
 
@@ -388,7 +392,7 @@ def run_atacseq_workflow(
 
     logger.info(f"Starting ATAC-seq workflow: {input_dir} -> {output_dir}")
 
-    results = {
+    results: Dict[str, Any] = {
         "workflow_type": "atacseq",
         "input_dir": str(input_dir),
         "output_dir": str(output_dir),
@@ -404,7 +408,7 @@ def run_atacseq_workflow(
         logger.info(f"Found {len(peak_files)} ATAC-seq peak files")
 
         if not peak_files:
-            raise errors.WorkflowError(f"No ATAC-seq peak files found in {input_dir}")
+            raise errors.PipelineError(f"No ATAC-seq peak files found in {input_dir}")
 
         # Process each peak file
         all_peaks = []
@@ -415,7 +419,7 @@ def run_atacseq_workflow(
                 logger.info(f"Processing ATAC-seq file: {file_path}")
 
                 # Load peak data
-                from .atacseq import load_atac_peaks
+                from ..assays.atacseq import load_atac_peaks
 
                 format_type = _detect_peak_format(file_path)
                 peaks = load_atac_peaks(file_path, format=format_type)
@@ -429,7 +433,7 @@ def run_atacseq_workflow(
                 ]
 
                 # Calculate statistics
-                from .atacseq import calculate_atac_statistics
+                from ..assays.atacseq import calculate_atac_statistics
 
                 stats = calculate_atac_statistics(filtered_peaks)
 
@@ -458,7 +462,7 @@ def run_atacseq_workflow(
 
                 # Save filtered peaks
                 peak_output = output_dir / f"{sample_name}_peaks.narrowPeak"
-                from .atacseq import save_atac_peaks
+                from ..assays.atacseq import save_atac_peaks
 
                 save_atac_peaks(filtered_peaks, peak_output)
 
@@ -482,7 +486,7 @@ def run_atacseq_workflow(
 
         # Generate report
         if config.generate_reports:
-            from .atacseq import generate_atac_report
+            from ..assays.atacseq import generate_atac_report
 
             report_path = output_dir / "atacseq_report.txt"
             generate_atac_report(all_peaks, output_path=report_path)
@@ -494,7 +498,7 @@ def run_atacseq_workflow(
         error_msg = f"ATAC-seq workflow failed: {e}"
         logger.error(error_msg)
         results["errors"].append(error_msg)
-        raise errors.WorkflowError(error_msg) from e
+        raise errors.PipelineError(error_msg) from e
 
     return results
 
@@ -526,7 +530,7 @@ def integrate_epigenome_results(
 
     logger.info(f"Integrating epigenome results to {output_dir}")
 
-    integrated_results = {
+    integrated_results: Dict[str, Any] = {
         "integration_type": "epigenome_multi_assay",
         "output_dir": str(output_dir),
         "config": config.__dict__,
@@ -599,7 +603,7 @@ def integrate_epigenome_results(
         error_msg = f"Epigenome integration failed: {e}"
         logger.error(error_msg)
         integrated_results["errors"].append(error_msg)
-        raise errors.WorkflowError(error_msg) from e
+        raise errors.PipelineError(error_msg) from e
 
     return integrated_results
 
@@ -607,7 +611,7 @@ def integrate_epigenome_results(
 def _find_methylation_files(input_dir: Path) -> List[Path]:
     """Find methylation data files in input directory."""
     extensions = ["*.bedgraph", "*.bg", "*.cov", "*.bedGraph", "*.BEDGRAPH"]
-    files = []
+    files: List[Path] = []
     for ext in extensions:
         files.extend(input_dir.glob(f"**/{ext}"))
     return sorted(list(set(files)))
@@ -616,7 +620,7 @@ def _find_methylation_files(input_dir: Path) -> List[Path]:
 def _find_chipseq_files(input_dir: Path) -> List[Path]:
     """Find ChIP-seq peak files in input directory."""
     extensions = ["*.narrowPeak", "*.broadPeak", "*.bed", "*.narrowpeak", "*.broadpeak"]
-    files = []
+    files: List[Path] = []
     for ext in extensions:
         files.extend(input_dir.glob(f"**/{ext}"))
     return sorted(list(set(files)))
@@ -649,7 +653,7 @@ def _analyze_methylation_chip_associations(
     Performs coordinate-based intersection analysis to identify overlapping
     epigenetic marks between methylation sites and ChIP-seq peaks.
     """
-    associations = {
+    associations: Dict[str, Any] = {
         "analysis_type": "methylation_chipseq_association",
         "max_distance": config.max_distance_for_integration,
         "correlation_threshold": config.correlation_threshold,
@@ -764,7 +768,7 @@ def _analyze_methylation_atac_associations(
     Analyzes chromatin accessibility around methylated sites to identify
     relationships between methylation and open chromatin regions.
     """
-    associations = {
+    associations: Dict[str, Any] = {
         "analysis_type": "methylation_atacseq_association",
         "max_distance": config.max_distance_for_integration,
         "correlation_threshold": config.correlation_threshold,
@@ -902,7 +906,7 @@ def _analyze_chip_atac_associations(
     chipseq_results: Dict[str, Any], atacseq_results: Dict[str, Any], config: EpigenomeConfig
 ) -> Dict[str, Any]:
     """Analyze associations between ChIP-seq and ATAC-seq data."""
-    associations = {
+    associations: Dict[str, Any] = {
         "analysis_type": "chipseq_atacseq_association",
         "max_distance": config.max_distance_for_integration,
         "correlation_threshold": config.correlation_threshold,

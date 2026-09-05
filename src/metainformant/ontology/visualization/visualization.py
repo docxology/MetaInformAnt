@@ -20,7 +20,7 @@ from metainformant.core.utils import logging
 
 # Optional scientific dependencies
 try:
-    import networkx as nx  # type: ignore[import-untyped]
+    import networkx as nx
 
     HAS_NETWORKX = True
 except ImportError:
@@ -30,7 +30,7 @@ except ImportError:
 logger = logging.get_logger(__name__)
 
 try:
-    import seaborn as sns  # type: ignore[import-untyped]
+    import seaborn as sns
 
     HAS_SEABORN = True
 except ImportError:
@@ -38,8 +38,8 @@ except ImportError:
     sns = None
 
 try:
-    import plotly.express as px  # type: ignore[import-untyped]
-    import plotly.graph_objects as go  # type: ignore[import-untyped]
+    import plotly.express as px
+    import plotly.graph_objects as go
 
     HAS_PLOTLY = True
 except ImportError:

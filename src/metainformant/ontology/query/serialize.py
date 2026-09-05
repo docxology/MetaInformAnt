@@ -101,7 +101,7 @@ def ontology_to_graph(onto: Ontology) -> Any:
         >>> nx.draw(graph)  # Visualize the ontology
     """
     try:
-        import networkx as nx  # type: ignore[import-untyped]
+        import networkx as nx
     except ImportError:
         raise ImportError("networkx is required for ontology_to_graph. Install with: pip install networkx")
 

@@ -287,4 +287,4 @@ def weighted_correlation(x: List[float], y: List[float], weights: List[float]) -
     if weighted_var_x <= 0 or weighted_var_y <= 0:
         return 0.0
 
-    return weighted_cov_xy / (weighted_var_x**0.5 * weighted_var_y**0.5)
+    return float(weighted_cov_xy / (weighted_var_x**0.5 * weighted_var_y**0.5))

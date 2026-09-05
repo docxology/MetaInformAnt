@@ -36,10 +36,10 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
+    np = None
 
 try:
-    from scipy import stats as scipy_stats  # type: ignore[import-untyped]
+    from scipy import stats as scipy_stats
 
     HAS_SCIPY = True
 except ImportError:

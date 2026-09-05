@@ -87,7 +87,7 @@ def _handle_association_summary(
     from metainformant.gwas.analysis.summary_stats import compute_comprehensive_summary
 
     records = frame.to_dict(orient="records")
-    summary = compute_comprehensive_summary(records, significance_threshold=significance_threshold)
+    summary: dict[str, Any] = compute_comprehensive_summary(records, significance_threshold=significance_threshold)
     summary = json.loads(json.dumps(summary, default=float))
     if output_dir is not None:
         out_dir = validate_output_dir(output_dir)

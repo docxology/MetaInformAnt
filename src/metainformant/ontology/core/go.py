@@ -444,7 +444,7 @@ def _fisher_exact_test(a: int, b: int, c: int, d: int) -> float:
     """Calculate Fisher's exact test p-value."""
     # Simplified implementation - in practice, would use scipy.stats.fisher_exact
     try:
-        from scipy.stats import fisher_exact  # type: ignore[import-untyped]
+        from scipy.stats import fisher_exact
 
         _, p_value = fisher_exact([[a, b], [c, d]], alternative="greater")
         return float(p_value)

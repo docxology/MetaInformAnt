@@ -45,7 +45,7 @@ def plot_pca(
     n_components: int = 2,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a PCA scatter plot.
 
@@ -96,11 +96,14 @@ def plot_pca(
             fig = plt.figure(figsize=kwargs.pop("figsize", (10, 8)))
             ax = fig.add_subplot(111, projection="3d")
 
-        ax.scatter(pca_result[:, 0], pca_result[:, 1], pca_result[:, 2], **kwargs)
-        ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0]:.1%} variance)")
-        ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1]:.1%} variance)")
-        ax.set_zlabel(f"PC3 ({pca.explained_variance_ratio_[2]:.1%} variance)")
-        ax.set_title("3D PCA Plot")
+        # mpl_toolkits.mplot3d exposes no mypy-visible stubs; the 3D axes are
+        # dynamically typed here so scatter's zs slot and set_zlabel resolve.
+        ax_3d: Any = ax
+        ax_3d.scatter(pca_result[:, 0], pca_result[:, 1], pca_result[:, 2], **kwargs)
+        ax_3d.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0]:.1%} variance)")
+        ax_3d.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1]:.1%} variance)")
+        ax_3d.set_zlabel(f"PC3 ({pca.explained_variance_ratio_[2]:.1%} variance)")
+        ax_3d.set_title("3D PCA Plot")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
@@ -116,7 +119,7 @@ def plot_umap(
     n_components: int = 2,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a UMAP scatter plot.
 
@@ -169,11 +172,14 @@ def plot_umap(
             fig = plt.figure(figsize=kwargs.pop("figsize", (10, 8)))
             ax = fig.add_subplot(111, projection="3d")
 
-        ax.scatter(umap_result[:, 0], umap_result[:, 1], umap_result[:, 2], **kwargs)
-        ax.set_xlabel("UMAP 1")
-        ax.set_ylabel("UMAP 2")
-        ax.set_zlabel("UMAP 3")
-        ax.set_title("3D UMAP Plot")
+        # mpl_toolkits.mplot3d exposes no mypy-visible stubs; the 3D axes are
+        # dynamically typed here so scatter's zs slot and set_zlabel resolve.
+        ax_3d: Any = ax
+        ax_3d.scatter(umap_result[:, 0], umap_result[:, 1], umap_result[:, 2], **kwargs)
+        ax_3d.set_xlabel("UMAP 1")
+        ax_3d.set_ylabel("UMAP 2")
+        ax_3d.set_zlabel("UMAP 3")
+        ax_3d.set_title("3D UMAP Plot")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
@@ -189,7 +195,7 @@ def plot_tsne(
     n_components: int = 2,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a t-SNE scatter plot.
 
@@ -247,11 +253,14 @@ def plot_tsne(
             fig = plt.figure(figsize=kwargs.pop("figsize", (10, 8)))
             ax = fig.add_subplot(111, projection="3d")
 
-        ax.scatter(tsne_result[:, 0], tsne_result[:, 1], tsne_result[:, 2], **kwargs)
-        ax.set_xlabel("t-SNE 1")
-        ax.set_ylabel("t-SNE 2")
-        ax.set_zlabel("t-SNE 3")
-        ax.set_title("3D t-SNE Plot")
+        # mpl_toolkits.mplot3d exposes no mypy-visible stubs; the 3D axes are
+        # dynamically typed here so scatter's zs slot and set_zlabel resolve.
+        ax_3d: Any = ax
+        ax_3d.scatter(tsne_result[:, 0], tsne_result[:, 1], tsne_result[:, 2], **kwargs)
+        ax_3d.set_xlabel("t-SNE 1")
+        ax_3d.set_ylabel("t-SNE 2")
+        ax_3d.set_zlabel("t-SNE 3")
+        ax_3d.set_title("3D t-SNE Plot")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
@@ -262,7 +271,12 @@ def plot_tsne(
 
 
 def plot_pca_loadings(
-    pca_model: Any, *, n_components: int = 2, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    pca_model: Any,
+    *,
+    n_components: int = 2,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
+    **kwargs: Any,
 ) -> Axes:
     """Create a PCA loadings plot.
 
@@ -324,7 +338,7 @@ def biplot(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a PCA biplot showing both samples and loadings.
 

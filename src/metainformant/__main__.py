@@ -306,7 +306,7 @@ def _handle_gwas(args: argparse.Namespace) -> int:
     return 1
 
 
-def _load_life_event_sequences(path: str | Path):
+def _load_life_event_sequences(path: str | Path) -> list:
     """Load EventSequence records from JSON for CLI helpers."""
     from metainformant.core.io.io import load_json
     from metainformant.life_events.core.events import EventSequence
@@ -345,9 +345,18 @@ def _handle_life_events(args: argparse.Namespace) -> int:
         for i, (sequence, prediction) in enumerate(zip(sequences, prediction_values)):
             entry = {"sequence_id": sequence.person_id, "prediction": prediction}
             if probabilities is not None:
-                classes = predictor.classes_.tolist() if hasattr(predictor.classes_, "tolist") else predictor.classes_
+                raw_classes = getattr(predictor, "classes_", None)
+                classes = (
+                    raw_classes.tolist()
+                    if raw_classes is not None and hasattr(raw_classes, "tolist")
+                    else raw_classes
+                )
+                assert classes is not None
+                prob_row = probabilities[i]
+                if prob_row is None or not hasattr(prob_row, "tolist"):
+                    continue
                 entry["probabilities"] = {
-                    str(cls): float(prob) for cls, prob in zip(classes, probabilities[i].tolist())
+                    str(cls): float(prob) for cls, prob in zip(classes, prob_row.tolist())
                 }
             entries.append(entry)
 
@@ -362,12 +371,13 @@ def _handle_life_events(args: argparse.Namespace) -> int:
             import numpy as np
 
             values = np.asarray(prediction_values, dtype=float)
-            payload["statistics"] = {
+            statistics = {
                 "mean": float(values.mean()),
                 "min": float(values.min()),
                 "max": float(values.max()),
             }
-            print(f"Mean: {payload['statistics']['mean']:.6f}")
+            payload["statistics"] = statistics
+            print(f"Mean: {statistics['mean']:.6f}")
         dump_json(payload, output_dir / "predictions.json")
         return 0
 

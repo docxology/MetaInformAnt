@@ -10,7 +10,7 @@ statistic distribution, summary statistics grid, and Tajima's D comparisons.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import numpy as np
 
@@ -24,7 +24,7 @@ def plot_demographic_comparison(
     pop2_data: Optional[Dict[str, Any]] = None,
     output_file: Optional[str] = None,
     output_path: Optional[str] = None,
-) -> Optional[any]:
+) -> Optional[Any]:
     """Compare demographic histories between populations.
 
     Args:
@@ -102,7 +102,7 @@ def plot_demographic_comparison(
 
 def plot_diversity_comparison(
     diversity_data: Dict[str, float], output_file: Optional[str] = None, output_path: Optional[str] = None
-) -> Optional[any]:
+) -> Optional[Any]:
     """Compare diversity metrics across populations.
 
     Args:
@@ -155,7 +155,7 @@ def plot_diversity_comparison(
 
 def plot_fst_comparison(
     fst_data: Dict[str, float], output_file: Optional[str] = None, output_path: Optional[str] = None
-) -> Optional[any]:
+) -> Optional[Any]:
     """Compare F_ST values across loci or populations.
 
     Args:
@@ -199,7 +199,7 @@ def plot_fst_comparison(
     return plt.gcf()
 
 
-def plot_hardy_weinberg_test(results: List[Dict[str, Any]], output_file: Optional[str] = None) -> Optional[any]:
+def plot_hardy_weinberg_test(results: List[Dict[str, Any]], output_file: Optional[str] = None) -> Optional[Any]:
     """Plot Hardy-Weinberg equilibrium test results.
 
     Args:
@@ -243,7 +243,7 @@ def plot_hardy_weinberg_test(results: List[Dict[str, Any]], output_file: Optiona
 
 def plot_heterozygosity_distribution(
     het_data: Dict[str, List[float]] | List[float], output_file: Optional[str] = None
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot distribution of heterozygosity across loci.
 
     Args:
@@ -290,7 +290,7 @@ def plot_kinship_matrix(
     output_file: Optional[str] = None,
     output_path: Optional[str] = None,
     max_samples: Optional[int] = None,
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot kinship matrix as heatmap.
 
     Args:
@@ -348,7 +348,7 @@ def plot_linkage_disequilibrium_decay(
     distances: Optional[List[float]] = None,
     output_file: Optional[str] = None,
     output_path: Optional[str] = None,
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot linkage disequilibrium decay with distance."""
     output = output_file or output_path
     try:
@@ -382,7 +382,7 @@ def plot_linkage_disequilibrium_decay(
 
 def plot_neutrality_test_suite(
     results: Dict[str, Any], output_file: Optional[str] = None, output_path: Optional[str] = None
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot comprehensive neutrality test results."""
     try:
         import matplotlib.pyplot as plt
@@ -418,7 +418,7 @@ def plot_neutrality_test_suite(
 
 def plot_neutrality_test_summary(
     summary: Dict[str, Any], output_file: Optional[str] = None, output_path: Optional[str] = None
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot summary of neutrality test interpretations."""
     output = output_file or output_path
     try:
@@ -435,7 +435,8 @@ def plot_neutrality_test_summary(
     flat_axes = axes.ravel()
     for ax, (test_name, result) in zip(flat_axes, summary.items()):
         if isinstance(result, dict):
-            statistic = float(result.get("statistic", result.get("value", 0.0)))
+            default_statistic = result.get("value", 0.0)
+            statistic = float(cast(float, result.get("statistic", default_statistic)))
             p_value = result.get("p_value")
         else:
             statistic = float(result)
@@ -462,7 +463,7 @@ def plot_outlier_detection(
     outliers: Optional[List[int]] = None,
     output_file: Optional[str] = None,
     output_path: Optional[str] = None,
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot outlier detection results."""
     try:
         import matplotlib.pyplot as plt
@@ -506,7 +507,7 @@ def plot_pca_results(
     output_file: Optional[str] = None,
     output_path: Optional[str] = None,
     n_components: Optional[int] = None,
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot PCA results."""
     output = output_file or output_path
 
@@ -541,7 +542,7 @@ def plot_permutation_test(
     p_value: Optional[float] = None,
     output_file: Optional[str] = None,
     output_path: Optional[str] = None,
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot permutation test results."""
     try:
         import matplotlib.pyplot as plt
@@ -584,7 +585,7 @@ def plot_pi_vs_theta(
     theta_values: List[float],
     locus_names: Optional[List[str]] = None,
     output_file: Optional[str] = None,
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot pi vs theta comparison."""
     try:
         import matplotlib.pyplot as plt
@@ -615,7 +616,7 @@ def plot_pi_vs_theta(
 
 def plot_site_frequency_spectrum(
     sfs_data: List[int], output_file: Optional[str] = None, output_path: Optional[str] = None
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot site frequency spectrum."""
     output = output_file or output_path
     try:
@@ -649,7 +650,7 @@ def plot_site_frequency_spectrum(
 
 def plot_statistic_correlation_matrix(
     stats_data: Dict[str, List[float]], output_file: Optional[str] = None
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot correlation matrix of population statistics."""
     try:
         import matplotlib.pyplot as plt
@@ -685,7 +686,7 @@ def plot_statistic_distribution(
     stat_name: str = "Statistic",
     output_file: Optional[str] = None,
     plot_type: str = "histogram",
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot distribution of a population statistic."""
     try:
         import matplotlib.pyplot as plt
@@ -726,7 +727,7 @@ def plot_statistic_distribution(
 
 def plot_summary_statistics_grid(
     stats_dict: Dict[str, Dict[str, float]], output_file: Optional[str] = None, output_path: Optional[str] = None
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot grid of summary statistics for multiple populations."""
     output = output_file or output_path
     try:
@@ -762,7 +763,7 @@ def plot_summary_statistics_grid(
 
 def plot_tajimas_d_comparison(
     tajima_d_values: Dict[str, float], output_file: Optional[str] = None, output_path: Optional[str] = None
-) -> Optional[any]:
+) -> Optional[Any]:
     """Compare Tajima's D values across populations."""
     output = output_file or output_path
     try:

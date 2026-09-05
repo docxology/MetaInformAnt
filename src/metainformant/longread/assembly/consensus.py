@@ -25,9 +25,9 @@ from metainformant.core.utils.logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    import numpy as np  # type: ignore[import-untyped]
+    import numpy as np
 except ImportError:
-    np = None  # type: ignore[assignment]
+    np = None
 
 
 @dataclass
@@ -442,8 +442,8 @@ def _simple_align(ref: str, query: str) -> dict[str, Any]:
     anchors.sort(key=lambda a: a[0])
 
     # Simple anchored alignment: use anchors to define aligned blocks
-    ref_aligned = []
-    query_aligned = []
+    ref_aligned: list[str] = []
+    query_aligned: list[str] = []
     prev_ref = 0
     prev_query = 0
 

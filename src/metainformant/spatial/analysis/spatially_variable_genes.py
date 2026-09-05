@@ -13,7 +13,7 @@ suited to whole-slide gene panels (Visium, MERFISH, Xenium aggregated counts).
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from metainformant.core.utils.logging import get_logger
 from metainformant.spatial.analysis.autocorrelation import spatial_weights_matrix
@@ -25,13 +25,13 @@ try:
     import numpy as np
     from numpy.typing import NDArray
 except ImportError:
-    np = None  # type: ignore[assignment]
-    NDArray = None  # type: ignore[assignment,misc]
+    np = None
+    NDArray = None
 
 try:
     from scipy.stats import false_discovery_control
 except ImportError:  # pragma: no cover - scipy<1.11 fallback
-    false_discovery_control = None  # type: ignore[assignment]
+    false_discovery_control = None
 
 
 @dataclass
@@ -66,7 +66,7 @@ def detect_spatially_variable_genes(
     coordinates: Any,
     genes: Optional[list[str]] = None,
     *,
-    method: str = "knn",
+    method: Literal["knn", "distance", "binary"] = "knn",
     k: int = 6,
     min_mean_expression: Optional[float] = None,
     min_variance: float = 0.0,

@@ -22,13 +22,13 @@ try:
     import numpy as np
     from numpy.typing import NDArray
 except ImportError:
-    np = None  # type: ignore[assignment]
-    NDArray = Any  # type: ignore[assignment, misc]
+    np = None
+    NDArray = Any
 
 try:
     from scipy import stats as scipy_stats
 except ImportError:
-    scipy_stats = None  # type: ignore[assignment]
+    scipy_stats = None
 
 logger = get_logger(__name__)
 

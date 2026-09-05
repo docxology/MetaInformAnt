@@ -210,7 +210,7 @@ def load_atac_peaks(path: str | Path, format: str = "narrowpeak") -> List[ATACPe
 
     except Exception as e:
         logger.error(f"Error loading ATAC-seq peaks from {path}: {e}")
-        raise errors.FileIOError(f"Failed to load ATAC-seq peaks: {e}") from e
+        raise errors.IOError(f"Failed to load ATAC-seq peaks: {e}") from e
 
     logger.info(f"Loaded {len(peaks)} ATAC-seq peaks")
     return peaks
@@ -254,7 +254,7 @@ def calculate_atac_statistics(peaks: List[ATACPeak]) -> Dict[str, Any]:
     scores = [p.score for p in peaks]
     signal_values = [p.signal_value for p in peaks if p.signal_value > 0]
 
-    stats = {
+    stats: Dict[str, Any] = {
         "total_peaks": len(peaks),
         "mean_length": statistics.mean(lengths),
         "median_length": statistics.median(lengths),
@@ -278,7 +278,7 @@ def calculate_atac_statistics(peaks: List[ATACPeak]) -> Dict[str, Any]:
         )
 
     # Peak length distribution (ATAC-seq peaks are typically nucleosome-free)
-    length_bins = defaultdict(int)
+    length_bins: Dict[str, int] = defaultdict(int)
     for length in lengths:
         if length <= 100:
             length_bins["<=100"] += 1
@@ -292,7 +292,7 @@ def calculate_atac_statistics(peaks: List[ATACPeak]) -> Dict[str, Any]:
     stats["length_distribution"] = dict(length_bins)
 
     # Accessibility score distribution
-    accessibility_bins = defaultdict(int)
+    accessibility_bins: Dict[str, int] = defaultdict(int)
     for peak in peaks:
         accessibility = peak.accessibility_score
         if accessibility < 10:
@@ -307,7 +307,7 @@ def calculate_atac_statistics(peaks: List[ATACPeak]) -> Dict[str, Any]:
     stats["accessibility_distribution"] = dict(accessibility_bins)
 
     # Per-chromosome distribution
-    chr_counts = defaultdict(int)
+    chr_counts: Dict[str, int] = defaultdict(int)
     for peak in peaks:
         chr_counts[peak.chromosome] += 1
 
@@ -328,7 +328,7 @@ def calculate_atac_specific_metrics(peaks: List[ATACPeak]) -> Dict[str, Any]:
     Returns:
         Dictionary with ATAC-seq specific metrics
     """
-    metrics = {}
+    metrics: Dict[str, Any] = {}
 
     # Fragment size analysis (based on peak lengths)
     lengths = [p.length for p in peaks]
@@ -469,7 +469,7 @@ def find_tf_binding_sites(
     # This is a simplified implementation
     # In practice, this would use tools like FIMO or MOODS
 
-    results = {
+    results: Dict[str, Any] = {
         "peaks_analyzed": len(peaks),
         "motifs_analyzed": len(tf_motifs),
         "motif_counts": {},

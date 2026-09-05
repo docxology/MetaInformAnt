@@ -7,7 +7,7 @@ clustermaps for visualizing population relatedness and ancestry proportions.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import numpy as np
 
@@ -120,9 +120,11 @@ def kinship_heatmap(
         if isinstance(kinship_matrix, np.ndarray) and kinship_matrix.dtype == object:
             kinship_matrix = kinship_matrix.astype(np.float64)
 
+        mat = cast(np.ndarray, kinship_matrix)
+
         row_colors = None
         col_colors = None
-        if population_labels is not None and len(population_labels) == kinship_matrix.shape[0]:
+        if population_labels is not None and len(population_labels) == mat.shape[0]:
             unique_pops = sorted(set(population_labels))
             cmap_colors = plt.cm.tab10(np.linspace(0, 1, max(len(unique_pops), 1)))
             pop_color_map = {pop: cmap_colors[i] for i, pop in enumerate(unique_pops)}
@@ -133,7 +135,7 @@ def kinship_heatmap(
 
         # Apply seaborn clustermap for Phase 20 uniformity
         g = sns.clustermap(
-            kinship_matrix,
+            mat,
             cmap="viridis",
             row_colors=row_colors,
             col_colors=col_colors,
@@ -160,7 +162,7 @@ def kinship_heatmap(
         plt.close(g.fig)
         return {
             "status": "success",
-            "n_samples": kinship_matrix.shape[0],
+            "n_samples": mat.shape[0],
             "output_path": str(actual_output_path) if actual_output_path else None,
         }
 

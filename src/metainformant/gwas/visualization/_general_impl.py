@@ -33,7 +33,7 @@ except ImportError:
     logger.warning("numpy not available, some visualizations may not work")
 
 
-def set_accessible_style():
+def set_accessible_style() -> None:
     """Apply accessible, high-contrast presentation style for visualizations."""
     if HAS_MATPLOTLIB:
         plt.rcParams.update(
@@ -184,7 +184,7 @@ def manhattan_plot(
     # fixed 100 Mb offset makes small synthetic contigs look artificially far
     # apart and can dominate downstream axis limits. The small proportional
     # gap preserves visual separation without assuming a reference genome.
-    chrom_extent = {}
+    chrom_extent: dict[str, float] = {}
     for result in result_records:
         chrom = str(result.get("chrom", result.get("chromosome", "1")))
         try:
@@ -434,7 +434,7 @@ def qq_plot(
             from metainformant.gwas.analysis.correction import genomic_control
 
             gc_result = genomic_control(p_values=p_vals.tolist())
-            lambda_gc = gc_result.get("lambda_gc", 1.0)
+            lambda_gc = gc_result.get("lambda_gc", 1.0) if isinstance(gc_result, dict) else 1.0
         except (ImportError, Exception):
             median_p = float(np.median(p_vals))
             if 0 < median_p < 1 and _has_scipy:
@@ -978,7 +978,9 @@ def kinship_heatmap(
     except ImportError:
         STRAIN_PALETTE = {}
         STRAIN_NAMES = {}
-        _extract_strain = lambda s: "?"  # noqa: E731
+
+        def _extract_strain(sample_id: str) -> str:
+            return "?"
 
     try:
         # Convert to numpy array if needed
@@ -1209,7 +1211,7 @@ def effect_size_plot(results: List[Dict[str, Any]], output_path: Optional[Union[
 
 
 def generate_all_plots(
-    association_results: Union[str, Path],
+    association_results: Union[str, Path, List[Dict[str, Any]]],
     output_dir: Union[str, Path],
     pca_file: Optional[Union[str, Path]] = None,
     kinship_file: Optional[Union[str, Path]] = None,
@@ -1318,9 +1320,9 @@ def generate_all_plots(
         # Q-Q plot — with N-aware diagnostics
         try:
             p_vals = [
-                r.get("p_value", r.get("pval", r.get("pvalue")))
+                p
                 for r in results_data
-                if r.get("p_value", r.get("pval", r.get("pvalue"))) is not None
+                if (p := r.get("p_value", r.get("pval", r.get("pvalue")))) is not None
             ]
             if p_vals:
                 qq_path = output_dir / "qq_plot.png"
@@ -1371,7 +1373,7 @@ def generate_all_plots(
                 with open(kinship_path_obj) as fh:
                     kinship_data = _json.load(fh)
 
-                # Handle both direct matrix list and wrapped dict
+                matrix: Any
                 if isinstance(kinship_data, list):
                     matrix = kinship_data
                 elif isinstance(kinship_data, dict):
@@ -1502,7 +1504,7 @@ def functional_enrichment_plot(
         return fig
 
     # Create summary plot of p-value distribution by chromosome
-    chrom_counts = {}
+    chrom_counts: dict[str, int] = {}
     for r in significant:
         chrom = str(r.get("chrom", r.get("chromosome", "unknown")))
         chrom_counts[chrom] = chrom_counts.get(chrom, 0) + 1

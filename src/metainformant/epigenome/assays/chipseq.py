@@ -223,7 +223,7 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
 
     except Exception as e:
         logger.error(f"Error loading ChIP-seq peaks from {path}: {e}")
-        raise errors.FileIOError(f"Failed to load ChIP-seq peaks: {e}") from e
+        raise errors.IOError(f"Failed to load ChIP-seq peaks: {e}") from e
 
     logger.info(f"Loaded {len(peaks)} ChIP-seq peaks")
     return peaks
@@ -317,7 +317,7 @@ def calculate_peak_statistics(peaks: List[ChIPPeak]) -> Dict[str, Any]:
     scores = [p.score for p in peaks]
     signal_values = [p.signal_value for p in peaks if p.signal_value > 0]
 
-    stats = {
+    stats: Dict[str, Any] = {
         "total_peaks": len(peaks),
         "mean_length": statistics.mean(lengths),
         "median_length": statistics.median(lengths),
@@ -341,7 +341,7 @@ def calculate_peak_statistics(peaks: List[ChIPPeak]) -> Dict[str, Any]:
         )
 
     # Peak length distribution
-    length_bins = defaultdict(int)
+    length_bins: Dict[str, int] = defaultdict(int)
     for length in lengths:
         if length <= 200:
             length_bins["<=200"] += 1
@@ -355,7 +355,7 @@ def calculate_peak_statistics(peaks: List[ChIPPeak]) -> Dict[str, Any]:
     stats["length_distribution"] = dict(length_bins)
 
     # Score distribution
-    score_bins = defaultdict(int)
+    score_bins: Dict[str, int] = defaultdict(int)
     for score in scores:
         if score < 100:
             score_bins["<100"] += 1
@@ -369,7 +369,7 @@ def calculate_peak_statistics(peaks: List[ChIPPeak]) -> Dict[str, Any]:
     stats["score_distribution"] = dict(score_bins)
 
     # Per-chromosome distribution
-    chr_counts = defaultdict(int)
+    chr_counts: Dict[str, int] = defaultdict(int)
     for peak in peaks:
         chr_counts[peak.chromosome] += 1
 
@@ -560,7 +560,7 @@ def find_motifs_in_peaks(
     # This is a simplified implementation
     # In practice, this would use a proper motif finding tool like MEME or HOMER
 
-    motif_counts = defaultdict(int)
+    motif_counts: Dict[str, int] = defaultdict(int)
     motif_positions = defaultdict(list)
 
     # Simulate motif finding (in practice, would parse genome sequence)

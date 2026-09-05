@@ -157,7 +157,7 @@ def scaling_model(
 
     elif model == "k3":
         # O(k³) — region-level, approximate with variant ratio
-        return (target_m / pilot_m) ** 1.5  # sub-cubic approximation
+        return float((target_m / pilot_m) ** 1.5)  # sub-cubic approximation
 
     else:
         logger.warning(f"Unknown scaling model '{model}', using linear (O(m)) fallback")

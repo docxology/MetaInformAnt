@@ -98,7 +98,7 @@ def _pairwise_distances(tree: dict) -> dict[tuple[str, str], float]:
 
 def _total_branch_length(node: dict) -> float:
     """Compute total branch length of the tree."""
-    total = node.get("branch_length", 0.0)
+    total: float = node.get("branch_length", 0.0)
     for child in node.get("children", []):
         total += _total_branch_length(child)
     return total

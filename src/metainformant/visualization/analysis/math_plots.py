@@ -46,7 +46,7 @@ def _save_plot(output_path: str | Path, label: str) -> str:
     Consolidates the repeated ensure_directory / save_figure_deterministic / logger
     triple used by every plot function in this module (behavior identical).
     """
-    output_path = paths.ensure_directory(Path(output_path).parent)
+    paths.ensure_directory(Path(output_path).parent)
     save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
     logger.info(f"{label} saved to {output_path}")
     return str(output_path)
@@ -58,7 +58,7 @@ def plot_allele_frequency_spectrum(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot site frequency spectrum from allele frequencies.
 
@@ -101,7 +101,7 @@ def plot_population_genetics_summary(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot comprehensive population genetics summary statistics.
 
@@ -159,7 +159,7 @@ def plot_evolutionary_trajectory(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot evolutionary trajectory over time.
 
@@ -210,7 +210,7 @@ def plot_selection_coefficient_distribution(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot distribution of selection coefficients.
 
@@ -253,7 +253,7 @@ def plot_fst_distribution(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot distribution of Fst values between populations.
 
@@ -300,7 +300,7 @@ def plot_coalescent_tree(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot coalescent tree from population genetics simulation.
 
@@ -353,7 +353,7 @@ def plot_genetic_drift_simulation(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot genetic drift simulation trajectories.
 
@@ -403,7 +403,7 @@ def plot_moran_model_evolution(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot evolution in the Moran model.
 
@@ -450,7 +450,7 @@ def plot_price_equation_components(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot Price equation components over time.
 
@@ -493,7 +493,7 @@ def plot_epidemic_model_simulation(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot epidemic model simulation results.
 
@@ -538,7 +538,7 @@ def plot_population_structure_pca(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot population structure from PCA of genetic data.
 
@@ -595,7 +595,7 @@ def plot_linkage_disequilibrium_decay(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot linkage disequilibrium decay with distance.
 
@@ -648,7 +648,7 @@ def plot_linkage_disequilibrium_decay(
 
 
 def create_interactive_population_genetics_dashboard(
-    popgen_data: Dict[str, Any], *, output_path: str | Path | None = None, **kwargs
+    popgen_data: Dict[str, Any], *, output_path: str | Path | None = None, **kwargs: Any,
 ) -> Any:
     """Create an interactive population genetics dashboard using Plotly.
 
@@ -681,7 +681,7 @@ def create_interactive_population_genetics_dashboard(
     fig.update_layout(title="Interactive Population Genetics Dashboard", **kwargs)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         html_path = Path(output_path).with_suffix(".html")
         fig.write_html(str(html_path))
         logger.info(f"Interactive population genetics dashboard saved to {html_path}")

@@ -24,7 +24,7 @@ try:
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
-    plt = None  # type: ignore
+    plt = None
 
 try:
     import numpy as np
@@ -32,7 +32,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore
+    np = None
 
 
 def _compute_r_squared(geno_a: List[int], geno_b: List[int]) -> float:

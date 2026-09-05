@@ -59,7 +59,7 @@ def get_sample_pipeline_status(
     else:
         quant_dir = Path(quant_dir)
 
-    status = {
+    status: dict[str, Any] = {
         "sample_id": sample_id,
         "download": False,
         "extraction": False,

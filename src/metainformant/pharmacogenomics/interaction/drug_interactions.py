@@ -135,7 +135,8 @@ def default_interaction_database() -> dict:
         evidence: str,
         recommendation: str,
     ) -> None:
-        key = tuple(sorted([a.lower(), b.lower()]))
+        pair = sorted([a.lower(), b.lower()])
+        key = (pair[0], pair[1])
         db[key] = {
             "severity": severity,
             "mechanism": mechanism,

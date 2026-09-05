@@ -25,8 +25,8 @@ try:
 
     HAS_PLOTLY = True
 except ImportError:
-    go = None  # type: ignore[assignment]
-    px = None  # type: ignore[assignment]
+    go = None
+    px = None
     HAS_PLOTLY = False
 
 

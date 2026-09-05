@@ -11,7 +11,7 @@ for pseudoaligners like kallisto. It handles filtering of:
 
 import gzip
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import IO, Any, Callable, List, Optional, Union
 
 # Use internal logging
 from metainformant.core.utils.logging import get_logger
@@ -56,15 +56,15 @@ class IndexComplexityManager:
 
         # Determine open function based on extension
         is_gzip = input_path.suffix == ".gz"
-        open_func = gzip.open if is_gzip else open
+        open_func: Callable[..., IO[Any]] = gzip.open if is_gzip else open
         mode = "rt" if is_gzip else "r"
 
         try:
             with open_func(input_path, mode) as f_in, open(output_path, "w") as f_out:
                 header = None
-                sequence = []
+                sequence: list[str] = []
 
-                def process_entry(h, s):
+                def process_entry(h: str, s: list[str]) -> None:
                     stats["total"] += 1
                     s_str = "".join(s)
 

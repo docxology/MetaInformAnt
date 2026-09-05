@@ -1046,7 +1046,7 @@ def _count_fastq_records_and_bases(path: Path) -> tuple[int, int]:
     opener = gzip.open if path.name.endswith(".gz") else open
     records = 0
     bases = 0
-    with opener(path, "rb") as handle:  # type: ignore[arg-type]
+    with opener(path, "rb") as handle:
         while True:
             header = handle.readline()
             if not header:

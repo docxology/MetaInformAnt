@@ -104,7 +104,8 @@ def _cluster_feature_matrix(
 
     if HAS_SKLEARN:
         kmeans = KMeans(n_clusters=n_clusters, random_state=0 if random_state is None else random_state, n_init=10)
-        return kmeans.fit_predict(X).astype(int)
+        labels: np.ndarray = kmeans.fit_predict(X).astype(int)
+        return labels
 
     centered = X - np.mean(X, axis=0)
     try:
@@ -115,7 +116,8 @@ def _cluster_feature_matrix(
 
     quantiles = np.linspace(0.0, 1.0, n_clusters + 1)[1:-1]
     thresholds = np.quantile(scores, quantiles)
-    return np.digitize(scores, thresholds).astype(int)
+    digitized: np.ndarray = np.digitize(scores, thresholds).astype(int)
+    return digitized
 
 
 def leiden_clustering(
@@ -634,7 +636,7 @@ def compute_cluster_composition(data: SingleCellData, groupby: str, cluster_col:
 
 def compute_cluster_silhouette(
     data: SingleCellData, cluster_col: str = "cluster", metric: str = "euclidean", sample_size: int | None = None
-) -> Dict[str, float]:
+) -> Dict[str, Any]:
     """Compute silhouette scores for cluster evaluation.
 
     Args:
@@ -730,7 +732,8 @@ def _compute_pairwise_distances(X: np.ndarray) -> np.ndarray:
     # For large datasets, consider using approximate methods
     from scipy.spatial.distance import cdist
 
-    return cdist(X, X, metric="euclidean")
+    pairwise: np.ndarray = cdist(X, X, metric="euclidean")
+    return pairwise
 
 
 def _build_knn_adjacency(distances: np.ndarray, n_neighbors: int) -> sparse.csr_matrix:
@@ -762,10 +765,10 @@ def _student_t_cdf(t: float, df: int) -> float:
     if df <= 1:
         return 0.5
     elif df == 2:
-        return 0.5 + (t / np.sqrt(2 + t**2)) / (2 * np.sqrt(2))
+        return 0.5 + float((t / np.sqrt(2 + t**2)) / (2 * np.sqrt(2)))
     else:
         # Use normal approximation for large df
-        return 0.5 * (1 + np.sign(t) * np.sqrt(1 - np.exp(-2 * t**2 / np.pi)))
+        return float(0.5 * (1 + np.sign(t) * np.sqrt(1 - np.exp(-2 * t**2 / np.pi))))
 
 
 def evaluate_clustering_performance(

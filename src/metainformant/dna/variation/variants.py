@@ -69,7 +69,7 @@ def parse_vcf(path: str | Path) -> Dict[str, Any]:
                 continue
 
             try:
-                variant = {
+                variant: Dict[str, Any] = {
                     "chrom": fields[0],
                     "pos": int(fields[1]),
                     "id": fields[2],
@@ -104,7 +104,7 @@ def _parse_info_field(info_str: str) -> Dict[str, Any]:
     if info_str == ".":
         return {}
 
-    info = {}
+    info: Dict[str, Any] = {}
     for item in info_str.split(";"):
         if "=" in item:
             key, value = item.split("=", 1)
@@ -165,7 +165,7 @@ def filter_variants_by_maf(vcf_data: Dict[str, Any], min_maf: float = 0.01) -> D
 
     for variant in vcf_data["variants"]:
         # Calculate MAF from sample data
-        allele_counts = {}
+        allele_counts: Dict[int, int] = {}
 
         for sample_data in variant["samples"].values():
             if "GT" in sample_data:
@@ -212,7 +212,7 @@ def calculate_variant_statistics(vcf_data: Dict[str, Any]) -> Dict[str, Any]:
     if not variants:
         return {"total_variants": 0}
 
-    stats = {
+    stats: Dict[str, Any] = {
         "total_variants": len(variants),
         "snps": 0,
         "indels": 0,

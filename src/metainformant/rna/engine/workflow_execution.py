@@ -254,7 +254,7 @@ def _process_streaming_sample(
                             run_accession=sample_id,
                             config_path=(
                                 config.source_path
-                                if getattr(config, "source_path", None) is not None
+                                if config.source_path is not None
                                 else config.work_dir / "workflow_config.yaml"
                             ),
                             command=command_args,

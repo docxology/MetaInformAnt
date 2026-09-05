@@ -66,7 +66,7 @@ class PromptTemplate:
     template: str
     variables: dict[str, str] = field(default_factory=dict)
 
-    def format(self, **kwargs) -> str:
+    def format(self, **kwargs: str) -> str:
         """Format the template with provided variables.
 
         Args:
@@ -81,7 +81,7 @@ class PromptTemplate:
         all_vars = {**self.variables, **kwargs}
         return self.template.format(**all_vars)
 
-    def partial(self, **kwargs) -> "PromptTemplate":
+    def partial(self, **kwargs: str) -> "PromptTemplate":
         """Create a new template with some variables filled in.
 
         Args:
@@ -98,7 +98,7 @@ class PromptTemplate:
         """Get list of variable names in the template."""
         return re.findall(r"\{(\w+)\}", self.template)
 
-    def validate(self, **kwargs) -> bool:
+    def validate(self, **kwargs: str) -> bool:
         """Check if all required variables are provided.
 
         Args:

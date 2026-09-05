@@ -11,7 +11,7 @@ import shutil
 import subprocess
 import tempfile
 from pathlib import Path
-from typing import Dict
+from typing import Dict, List
 
 from metainformant.core.utils import logging
 
@@ -114,8 +114,7 @@ def _run_external_alignment(sequences: Dict[str, str], method: str) -> Dict[str,
     temp_base.mkdir(parents=True, exist_ok=True)
 
     # Create a unique temporary directory within repo-local temp
-    tmpdir = tempfile.mkdtemp(dir=str(temp_base), prefix="msa_")
-    tmpdir = Path(tmpdir)
+    tmpdir = Path(tempfile.mkdtemp(dir=str(temp_base), prefix="msa_"))
 
     try:
         # Write input FASTA
@@ -128,7 +127,6 @@ def _run_external_alignment(sequences: Dict[str, str], method: str) -> Dict[str,
         if method == "mafft":
             cmd = ["mafft", "--quiet", str(input_fasta)]
             # MAFFT outputs to stdout
-            output_fasta = None
             result = subprocess.run(cmd, capture_output=True, text=True, cwd=tmpdir)
         elif method == "muscle":
             result = _run_muscle(input_fasta, output_fasta, tmpdir)
@@ -251,7 +249,7 @@ def generate_consensus_from_alignment(aligned_sequences: Dict[str, str], thresho
     nucleotides = ["A", "C", "G", "T", "-"]
 
     for pos in range(seq_length):
-        base_counts = {}
+        base_counts: Dict[str, int] = {}
 
         # Count bases at this position
         for seq in aligned_sequences.values():
@@ -398,7 +396,7 @@ def _parse_fasta(fasta_content: str) -> Dict[str, str]:
     """Parse FASTA format content."""
     sequences = {}
     current_id = None
-    current_seq = []
+    current_seq: List[str] = []
 
     for line in fasta_content.strip().split("\n"):
         line = line.strip()

@@ -8,6 +8,7 @@ making under uncertainty.
 from __future__ import annotations
 
 import math
+from typing import Any
 
 import numpy as np
 import scipy.stats as stats
@@ -122,7 +123,7 @@ def ddm_log_likelihood(
     # Log-likelihood assuming normal distribution
     try:
         log_lik = stats.norm.logpdf(decision_time, loc=mean_time, scale=math.sqrt(var_time))
-        return log_lik
+        return float(log_lik)
     except (ValueError, ZeroDivisionError):
         return float("-inf")
 
@@ -160,7 +161,7 @@ def fit_ddm_parameters(
         from scipy.optimize import minimize
 
         # Negative log-likelihood function for minimization
-        def neg_log_lik(params):
+        def neg_log_lik(params: np.ndarray) -> float:
             v, a, z, t0 = params
             # Pentalize invalid parameters
             if a <= 0 or not (0 < z < 1) or t0 < 0:
@@ -211,7 +212,7 @@ def fit_ddm_parameters(
         logger.warning("scipy.optimize not available, falling back to grid search")
 
     # Simple grid search (Fallback)
-    best_params = None
+    best_params_grid: dict[str, Any] | None = None
     best_likelihood = float("-inf")
 
     # Coarse grid search
@@ -231,7 +232,7 @@ def fit_ddm_parameters(
 
                     if total_log_lik > best_likelihood:
                         best_likelihood = total_log_lik
-                        best_params = {
+                        best_params_grid = {
                             "drift_rate": v,
                             "boundary_separation": a,
                             "starting_point": z,
@@ -239,9 +240,9 @@ def fit_ddm_parameters(
                             "log_likelihood": best_likelihood,
                         }
 
-    if best_params is None:
+    if best_params_grid is None:
         # Fallback to reasonable defaults
-        best_params = {
+        best_params_grid = {
             "drift_rate": 0.5,
             "boundary_separation": 1.0,
             "starting_point": 0.5,
@@ -249,7 +250,7 @@ def fit_ddm_parameters(
             "log_likelihood": float("-inf"),
         }
 
-    return best_params
+    return best_params_grid
 
 
 def island_model_update(p: float, m: float, pm: float) -> float:

@@ -73,7 +73,7 @@ logger = get_logger(__name__)
 
 def _load_yaml(path: Path) -> dict:
     try:
-        import yaml  # type: ignore[import-untyped]
+        import yaml
 
         with open(path) as f:
             return yaml.safe_load(f) or {}

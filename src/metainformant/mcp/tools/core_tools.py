@@ -33,7 +33,7 @@ def _handle_config_validate(config_path: str) -> dict:
     from metainformant.core.utils.config import load_mapping_from_file
 
     try:
-        data = load_mapping_from_file(p)
+        data: object = load_mapping_from_file(p)
     except Exception as exc:  # real parse errors reported, not swallowed
         return {"valid": False, "error": f"{type(exc).__name__}: {exc}"}
     if not isinstance(data, dict):

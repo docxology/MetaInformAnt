@@ -20,9 +20,9 @@ from metainformant.core.utils.logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    import pysam  # type: ignore[import-untyped]
+    import pysam
 except ImportError:
-    pysam = None  # type: ignore[assignment]
+    pysam = None
 
 
 @dataclass

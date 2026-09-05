@@ -10,7 +10,7 @@ import re
 import stat
 import zipfile
 from pathlib import Path
-from typing import Any, BinaryIO, Dict, List
+from typing import Any, BinaryIO, Dict, IO, List
 
 import requests
 
@@ -140,7 +140,7 @@ def _extract_zip_safely(zip_path: Path, extract_dir: Path) -> None:
                 _copy_zip_member(source, sink)
 
 
-def _copy_zip_member(source: BinaryIO, sink: BinaryIO, chunk_size: int = 1024 * 1024) -> None:
+def _copy_zip_member(source: IO[bytes], sink: BinaryIO, chunk_size: int = 1024 * 1024) -> None:
     """Copy one validated ZIP member to its confined destination."""
     while chunk := source.read(chunk_size):
         sink.write(chunk)
@@ -936,6 +936,7 @@ Study information:
         metadata_file = study_dir / f"{study_accession}_metadata.json"
         with open(metadata_file, "w") as f:
             import json
+            import pandas as pd
 
             json.dump(
                 {
@@ -943,7 +944,7 @@ Study information:
                     "trait": trait,
                     "pubmed_id": pubmed_id,
                     "downloaded_files": [str(f) for f in downloaded_files],
-                    "download_date": str(pd.Timestamp.now()),  # noqa: F821
+                    "download_date": str(pd.Timestamp.now()),
                 },
                 f,
                 indent=2,

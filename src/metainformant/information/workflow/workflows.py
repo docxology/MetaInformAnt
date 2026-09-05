@@ -392,7 +392,7 @@ def _compare_entropy_distributions(analysis1: Dict, analysis2: Dict) -> Dict[str
         return {"error": "No entropy values found"}
 
     # Statistical comparison
-    from scipy import stats  # type: ignore[import-untyped]
+    from scipy import stats
 
     comparison: Dict[str, Any] = {
         "dataset1": {

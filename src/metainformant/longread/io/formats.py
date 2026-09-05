@@ -12,26 +12,26 @@ from __future__ import annotations
 
 import gzip
 from pathlib import Path
-from typing import Any, Sequence
+from typing import IO, Any, Callable, Sequence
 
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
 try:
-    import h5py  # type: ignore[import-untyped]
+    import h5py
 except ImportError:
-    h5py = None  # type: ignore[assignment]
+    h5py = None
 
 try:
-    import pod5 as pod5_lib  # type: ignore[import-untyped]
+    import pod5 as pod5_lib
 except ImportError:
-    pod5_lib = None  # type: ignore[assignment]
+    pod5_lib = None
 
 try:
-    import numpy as np  # type: ignore[import-untyped]
+    import numpy as np
 except ImportError:
-    np = None  # type: ignore[assignment]
+    np = None
 
 
 def fast5_to_fastq(
@@ -71,7 +71,7 @@ def fast5_to_fastq(
     reads = read_fast5(fast5_path)
     written = 0
 
-    opener = gzip.open if gzip_output else open
+    opener: Callable[..., IO[Any]] = gzip.open if gzip_output else open
     mode = "wt" if gzip_output else "w"
 
     with opener(str(output_path), mode) as fout:

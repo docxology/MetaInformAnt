@@ -476,7 +476,7 @@ def _compute_maf(genotypes: np.ndarray) -> float:
     valid = ~np.isnan(genotypes)
     if valid.sum() == 0:
         return 0.0
-    af = np.mean(genotypes[valid]) / 2
+    af: float = np.mean(genotypes[valid]) / 2
     return min(af, 1 - af)
 
 

@@ -19,7 +19,7 @@ logger = logging.get_logger(__name__)
 
 # Optional network analysis dependencies
 try:
-    import networkx as nx  # type: ignore[import-untyped]
+    import networkx as nx
 
     HAS_NETWORKX = True
 except ImportError:
@@ -439,7 +439,7 @@ def _map_equation_community_detection(graph: Any, **kwargs: Any) -> Dict[str, An
 def _louvain_community_detection(graph: Any, **kwargs: Any) -> Dict[str, Any]:
     """Louvain community detection with information-theoretic interpretation."""
     try:
-        import community as community_louvain  # type: ignore[import-not-found]
+        import community as community_louvain
 
         # Convert to undirected graph if needed
         if graph.is_directed():

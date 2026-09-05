@@ -251,9 +251,6 @@ def detect_batch_effects(
             "batch_sizes": {str(k): int(v) for k, v in batch_sizes.items()},
         }
 
-    # Should not reach here
-    return {"method": method, "batch_effect_detected": False}
-
 
 # =============================================================================
 # GC and Length Bias

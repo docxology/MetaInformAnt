@@ -23,7 +23,7 @@ except ImportError:
     logger.warning("matplotlib not available, life events statistical visualization disabled")
 
 try:
-    import seaborn as sns  # type: ignore[import-untyped]
+    import seaborn as sns
 
     HAS_SEABORN = True
 except ImportError:
@@ -79,7 +79,7 @@ def plot_event_embeddings(
             reducer = TSNE(n_components=plot_components, random_state=42)
         elif method.lower() == "umap":
             try:
-                import umap  # type: ignore[import-not-found]
+                import umap
 
                 reducer = umap.UMAP(n_components=plot_components, random_state=42)
             except ImportError:
@@ -107,7 +107,7 @@ def plot_event_embeddings(
             cmap="viridis",
             alpha=0.7,
         )
-        ax.set_zlabel(f"{method.upper()} Component 3")  # type: ignore[attr-defined]
+        ax.set_zlabel(f"{method.upper()} Component 3")
     else:
         fig, ax = plt.subplots(figsize=figsize)
         scatter = ax.scatter(
@@ -938,7 +938,7 @@ def plot_prediction_accuracy(
         axes[1, 0].set_title("Residuals Distribution")
 
         # Q-Q plot of residuals
-        from scipy import stats  # type: ignore[import-untyped]
+        from scipy import stats
 
         stats.probplot(residuals, dist="norm", plot=axes[1, 1])
         axes[1, 1].set_title("Q-Q Plot of Residuals")

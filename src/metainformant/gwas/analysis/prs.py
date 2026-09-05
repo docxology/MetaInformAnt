@@ -200,7 +200,7 @@ def prs_full_analysis(
 
     betas = [r.get("beta", 0.0) for r in association_results]
     n_samples = len(phenotypes)
-    threshold_results = []
+    threshold_results: List[Dict[str, Any]] = []
 
     for p_thresh in p_thresholds:
         clumped_idx = clump_variants(
@@ -259,7 +259,7 @@ def prs_distribution_plot(
 
     thresholds = prs_result.get("thresholds", [])
     best_thresh = prs_result.get("best_threshold")
-    best_prs = next((t["prs_scores"] for t in thresholds if t["p_threshold"] == best_thresh), [])
+    best_prs: List[Any] = next((t["prs_scores"] for t in thresholds if t["p_threshold"] == best_thresh), [])
 
     if not thresholds:
         return None

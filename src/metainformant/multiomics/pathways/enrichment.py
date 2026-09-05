@@ -31,7 +31,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
+    np = None
 
 try:
     from scipy import stats as sp_stats
@@ -39,7 +39,7 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    sp_stats = None  # type: ignore[assignment]
+    sp_stats = None
 
 
 # ---------------------------------------------------------------------------

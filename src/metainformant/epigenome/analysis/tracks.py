@@ -37,7 +37,7 @@ class GenomicTrack:
         self.data: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
         self.metadata: Dict[str, Any] = {}
 
-    def add_feature(self, chromosome: str, start: int, end: int, value: float = 0.0, **kwargs) -> None:
+    def add_feature(self, chromosome: str, start: int, end: int, value: float = 0.0, **kwargs: Any) -> None:
         """Add a feature to the track.
 
         Args:
@@ -130,7 +130,7 @@ class GenomicTrack:
         Args:
             method: Normalization method ("minmax", "zscore", "robust")
         """
-        all_values = []
+        all_values: List[float] = []
         for features in self.data.values():
             all_values.extend(f["value"] for f in features)
 
@@ -232,7 +232,7 @@ def load_bed_track(path: str | Path, name: str = "", description: str = "") -> G
 
     except Exception as e:
         logger.error(f"Error loading BED track from {path}: {e}")
-        raise errors.FileIOError(f"Failed to load BED track: {e}") from e
+        raise errors.IOError(f"Failed to load BED track: {e}") from e
 
     logger.info(f"Loaded BED track with {track.get_total_features()} features")
     return track
@@ -281,7 +281,7 @@ def load_bedgraph_track(path: str | Path, name: str = "", description: str = "")
 
     except Exception as e:
         logger.error(f"Error loading BEDgraph track from {path}: {e}")
-        raise errors.FileIOError(f"Failed to load BEDgraph track: {e}") from e
+        raise errors.IOError(f"Failed to load BEDgraph track: {e}") from e
 
     logger.info(f"Loaded BEDgraph track with {track.get_total_features()} features")
     logger.info(f"Loaded BEDgraph track with {track.get_total_features()} features")
@@ -358,17 +358,16 @@ def load_bigwig_track(
                 if values:
                     # Store as genomic feature
                     track.add_feature(
-                        {
-                            "chrom": chrom,
-                            "start": start,
-                            "end": end,
-                            "values": values,
-                            "mean": (
-                                sum(v for v in values if v is not None) / len([v for v in values if v is not None])
-                                if any(v is not None for v in values)
-                                else 0
-                            ),
-                        }
+                        chromosome=chrom,
+                        start=start,
+                        end=end,
+                        value=(
+                            sum(v for v in values if v is not None)
+                            / len([v for v in values if v is not None])
+                            if any(v is not None for v in values)
+                            else 0
+                        ),
+                        values=values,
                     )
         else:
             # Load summary statistics for each chromosome
@@ -377,14 +376,7 @@ def load_bigwig_track(
                 try:
                     stats = bw.stats(chrom, 0, length)
                     if stats and stats[0] is not None:
-                        track.add_feature(
-                            {
-                                "chrom": chrom,
-                                "start": 0,
-                                "end": length,
-                                "mean": stats[0],
-                            }
-                        )
+                        track.add_feature(chromosome=chrom, start=0, end=length, value=stats[0])
                 except Exception as e:
                     logger.warning(f"Could not load stats for {chrom}: {e}")
                     continue
@@ -592,7 +584,7 @@ def calculate_track_statistics(track: GenomicTrack) -> Dict[str, Any]:
     }
 
     # Value distribution
-    value_bins = defaultdict(int)
+    value_bins: Dict[str, int] = defaultdict(int)
     for value in all_values:
         if value < 1:
             value_bins["<1"] += 1
@@ -658,7 +650,7 @@ def compare_tracks(track1: GenomicTrack, track2: GenomicTrack) -> Dict[str, Any]
     """
     logger.info("Comparing genomic tracks")
 
-    comparison = {
+    comparison: Dict[str, Any] = {
         "track1_features": track1.get_total_features(),
         "track2_features": track2.get_total_features(),
         "shared_chromosomes": 0,

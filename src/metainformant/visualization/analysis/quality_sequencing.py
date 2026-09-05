@@ -31,7 +31,7 @@ except ImportError:
 
 
 def plot_quality_metrics(
-    qc_data: Dict[str, Any], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    qc_data: Dict[str, Any], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a comprehensive quality metrics visualization.
 
@@ -47,8 +47,8 @@ def plot_quality_metrics(
     if not qc_data:
         raise ValueError("QC data dictionary cannot be empty")
 
-    fig, axes = plt.subplots(2, 2, figsize=kwargs.pop("figsize", (12, 10)))
-    axes = axes.flatten()
+    fig, axes_grid = plt.subplots(2, 2, figsize=kwargs.pop("figsize", (12, 10)))
+    axes: list[Axes] = list(axes_grid.flatten())
 
     if "per_base_quality" in qc_data:
         qual_data = qc_data["per_base_quality"]
@@ -107,7 +107,11 @@ def plot_quality_metrics(
 
 
 def plot_adapter_content(
-    adapter_data: Dict[str, List[float]], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    adapter_data: Dict[str, List[float]],
+    *,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
+    **kwargs: Any,
 ) -> Axes:
     """Create an adapter content visualization.
 
@@ -155,7 +159,7 @@ def plot_adapter_content(
 
 
 def plot_gc_distribution(
-    gc_data: List[float], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    gc_data: List[float], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a GC content distribution plot.
 
@@ -202,7 +206,7 @@ def plot_gc_distribution(
 
 
 def plot_length_distribution(
-    length_data: List[int], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    length_data: List[int], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a read length distribution plot.
 
@@ -255,7 +259,7 @@ def plot_per_base_quality_boxplot(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a per-base quality boxplot from FastQC-like data.
 
@@ -309,7 +313,7 @@ def plot_sequence_duplication_levels(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot sequence duplication levels from FastQC analysis.
 
@@ -362,7 +366,7 @@ def plot_overrepresented_sequences(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot overrepresented sequences analysis.
 
@@ -422,7 +426,7 @@ def plot_kmer_profiles(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot k-mer frequency profiles.
 

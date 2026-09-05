@@ -8,6 +8,7 @@ ridge plots, ROC curves, precision-recall curves, residual plots, and leverage p
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -48,7 +49,7 @@ except ImportError:
 
 
 def histogram(
-    data: np.ndarray, *, bins: int = 30, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    data: np.ndarray, *, bins: int = 30, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a histogram.
 
@@ -83,7 +84,7 @@ def histogram(
 
 
 def box_plot(
-    data: list[np.ndarray], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    data: list[np.ndarray], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a box plot.
 
@@ -122,7 +123,7 @@ def box_plot(
 
 
 def violin_plot(
-    data: list[np.ndarray], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    data: list[np.ndarray], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a violin plot.
 
@@ -177,7 +178,7 @@ def qq_plot(
     distribution: str = "norm",
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a Q-Q plot.
 
@@ -236,7 +237,7 @@ def qq_plot(
 
 
 def correlation_heatmap(
-    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a correlation heatmap.
 
@@ -293,7 +294,13 @@ def correlation_heatmap(
     return ax
 
 
-def density_plot(data: np.ndarray, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs) -> Axes:
+def density_plot(
+    data: np.ndarray,
+    *,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
+    **kwargs: Any,
+) -> Axes:
     """Create a kernel density estimate plot.
 
     Args:
@@ -331,7 +338,7 @@ def density_plot(data: np.ndarray, *, ax: Axes | None = None, output_path: str |
 
 
 def ridge_plot(
-    data: list[np.ndarray], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    data: list[np.ndarray], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a ridge plot (overlapping density plots).
 
@@ -382,7 +389,12 @@ def ridge_plot(
 
 
 def roc_curve(
-    y_true: np.ndarray, y_scores: np.ndarray, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    y_true: np.ndarray,
+    y_scores: np.ndarray,
+    *,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
+    **kwargs: Any,
 ) -> Axes:
     """Create a ROC curve plot.
 
@@ -430,7 +442,12 @@ def roc_curve(
 
 
 def precision_recall_curve(
-    y_true: np.ndarray, y_scores: np.ndarray, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    y_true: np.ndarray,
+    y_scores: np.ndarray,
+    *,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
+    **kwargs: Any,
 ) -> Axes:
     """Create a precision-recall curve plot.
 
@@ -477,7 +494,12 @@ def precision_recall_curve(
 
 
 def residual_plot(
-    y_true: np.ndarray, y_pred: np.ndarray, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    y_true: np.ndarray,
+    y_pred: np.ndarray,
+    *,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
+    **kwargs: Any,
 ) -> Axes:
     """Create a residual plot.
 
@@ -520,7 +542,7 @@ def residual_plot(
 
 
 def leverage_plot(
-    X: np.ndarray, y: np.ndarray, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    X: np.ndarray, y: np.ndarray, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a leverage plot for regression diagnostics.
 

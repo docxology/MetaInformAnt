@@ -98,7 +98,7 @@ def library_versions(
     return versions
 
 
-def python_environment() -> Dict[str, str]:
+def python_environment() -> Dict[str, Any]:
     """Capture the Python runtime environment.
 
     Returns:

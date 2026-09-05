@@ -267,7 +267,7 @@ def compute_pseudotime_from_dimensionality_reduction(
     if root_cell is None:
         # Choose cell with minimum norm as root
         norms = np.sum(embedding**2, axis=1)
-        root_cell = np.argmin(norms)
+        root_cell = int(np.argmin(norms))
 
     # Compute pairwise distances in embedding space
     from scipy.spatial.distance import pdist, squareform
@@ -416,7 +416,7 @@ def _compute_simple_diffusion_pseudotime(X: np.ndarray, root_cell: int | None, n
     if root_cell is None:
         # Choose cell with highest expression variance as root
         variances = np.var(X, axis=0)
-        root_cell = np.argmax(np.sum(X * variances, axis=1))
+        root_cell = int(np.argmax(np.sum(X * variances, axis=1)))
 
     # Compute pairwise distances
     from scipy.spatial.distance import pdist, squareform
@@ -495,7 +495,7 @@ def _compute_cluster_pseudotime(connectivity: np.ndarray, unique_clusters: np.nd
 
     # Find starting cluster (most incoming connections)
     incoming = connectivity.sum(axis=0)
-    start_idx = np.argmin(incoming)  # Cluster with fewest incoming connections
+    start_idx = int(np.argmin(incoming))  # Cluster with fewest incoming connections
 
     # Assign pseudotime based on graph distance from start
     distances = np.full(n_clusters, np.inf)

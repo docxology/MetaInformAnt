@@ -25,7 +25,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
+    np = None
 
 try:
     from scipy import stats as scipy_stats
@@ -33,7 +33,7 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None  # type: ignore[assignment]
+    scipy_stats = None
 
 
 # =============================================================================
@@ -290,8 +290,8 @@ def _classify_by_coordinates(
                     "confidence": 0.6,
                 }
             )
-            for j in unclassified:
-                classified_juncs.add(id(j))
+            for uj in unclassified:
+                classified_juncs.add(id(uj))
 
     # Detect alternative 3' splice sites: same donor, different acceptors
     for donor, juncs in by_donor.items():
@@ -307,8 +307,8 @@ def _classify_by_coordinates(
                     "confidence": 0.6,
                 }
             )
-            for j in unclassified:
-                classified_juncs.add(id(j))
+            for uj in unclassified:
+                classified_juncs.add(id(uj))
 
     # Remaining junctions are unclassified
     for junc in junctions:
@@ -816,9 +816,9 @@ def find_novel_junctions(
         logger.info("No known junctions provided, all junctions are novel")
         results = []
         for junc in junctions:
-            novel = dict(junc)
-            novel["nearest_known_distance"] = -1
-            results.append(novel)
+            result = dict(junc)
+            result["nearest_known_distance"] = -1
+            results.append(result)
         return results
 
     # Index known junctions by chromosome for fast lookup

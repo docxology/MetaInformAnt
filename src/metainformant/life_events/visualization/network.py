@@ -44,7 +44,7 @@ def plot_transition_network(
         return None
 
     try:
-        import networkx as nx  # type: ignore[import-untyped]
+        import networkx as nx
 
     except ImportError:
         logger.warning("networkx not available, cannot create transition network plot")

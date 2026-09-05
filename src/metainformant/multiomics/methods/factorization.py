@@ -31,7 +31,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
+    np = None
 
 try:
     from scipy import linalg as sp_linalg
@@ -39,7 +39,7 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    sp_linalg = None  # type: ignore[assignment]
+    sp_linalg = None
 
 
 # ---------------------------------------------------------------------------
@@ -833,7 +833,7 @@ def _simple_kmeans(X: Any, k: int, max_iter: int = 50) -> list[int]:
             break
         centroids = new_centroids
 
-    return labels.tolist()
+    return [int(x) for x in labels]
 
 
 def _compute_silhouette(similarity: Any, labels: list[int]) -> float:

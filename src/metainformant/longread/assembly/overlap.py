@@ -26,9 +26,9 @@ from metainformant.core.utils.logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    import numpy as np  # type: ignore[import-untyped]
+    import numpy as np
 except ImportError:
-    np = None  # type: ignore[assignment]
+    np = None
 
 
 @dataclass
@@ -197,7 +197,7 @@ def minimizer_sketch(
 
 
 def find_overlaps(
-    reads: Sequence[dict[str, Any] | str],
+    reads: Sequence[dict[str, Any] | str | object],
     min_overlap: int = 2000,
     k: int = 15,
     w: int = 10,

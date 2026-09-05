@@ -16,7 +16,7 @@ from metainformant.core.utils.logging import get_logger
 try:
     import numpy as np
 except ImportError:
-    np = None  # type: ignore[assignment]
+    np = None
 
 logger = get_logger(__name__)
 
@@ -340,10 +340,10 @@ def calculate_breakpoint_confidence(
         Confidence score between 0 and 1.
     """
     if isinstance(evidence, dict):
-        support = evidence.get("support", 0)
-        total_clips = evidence.get("total_clips", support)
-        position_std = evidence.get("position_std", 10.0)
-        mapq_mean = evidence.get("mapq_mean", 30.0)
+        support: int = evidence.get("support", 0)
+        total_clips: int = evidence.get("total_clips", support)
+        position_std: float = evidence.get("position_std", 10.0)
+        mapq_mean: float = evidence.get("mapq_mean", 30.0)
     else:
         support = getattr(evidence, "support", 0)
         total_clips = getattr(evidence, "total_clips", support)

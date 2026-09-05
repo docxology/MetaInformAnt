@@ -332,7 +332,8 @@ def _load_guidelines_from_file(filepath: str | Path) -> list[dict[str, Any]]:
         if isinstance(data, list):
             return data
         elif isinstance(data, dict):
-            return data.get("guidelines", [data])
+            guidelines_loaded: list[dict[str, Any]] = data.get("guidelines", [data])
+            return guidelines_loaded
         return [data]
 
     # TSV format

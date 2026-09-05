@@ -447,6 +447,10 @@ def filter_metadata_for_unquantified(
         logger.error(f"Could not read metadata: {e}")
         return 0
 
+    if not fieldnames:
+        logger.error("Source metadata has no header; cannot write filtered metadata")
+        return 0
+
     filtered_rows = []
     for row in rows:
         run_id = extract_sample_id(row)

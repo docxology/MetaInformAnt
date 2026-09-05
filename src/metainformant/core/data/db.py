@@ -22,7 +22,7 @@ try:
 
     HAS_PSYCOPG2 = True
 except ImportError:
-    psycopg2 = None
+    psycopg2 = None  # type: ignore[assignment]  # stubs type the import as Module; keep the optional fallback name
     HAS_PSYCOPG2 = False
     # Use lazy warning - only warn when database functionality is actually used
 

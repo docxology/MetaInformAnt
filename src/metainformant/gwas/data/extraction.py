@@ -6,6 +6,7 @@ import re
 import shutil
 import zipfile
 from pathlib import Path
+from typing import Any, Dict, List
 
 from metainformant.core.utils.logging import get_logger
 
@@ -59,7 +60,7 @@ def build_sample_file_map(zip_dir: Path, accessions: set[str] | None = None) -> 
         if item.name.startswith("."):
             continue
 
-        entries = []
+        entries: List[Dict[str, Any]] = []
         if item.suffix == ".zip":
             try:
                 with zipfile.ZipFile(item, "r") as zf:

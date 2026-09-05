@@ -266,7 +266,7 @@ def batch_download_sra(
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    results = {
+    results: dict[str, Any] = {
         "total_requested": len(accessions),
         "successful_downloads": 0,
         "failed_downloads": 0,
@@ -380,7 +380,7 @@ def validate_sra_download(accession: str, download_dir: Path) -> Dict[str, Any]:
     Returns:
         Validation results
     """
-    validation = {
+    validation: dict[str, Any] = {
         "accession": accession,
         "valid": False,
         "files_found": [],

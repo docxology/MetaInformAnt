@@ -37,12 +37,12 @@ class ChainResult(Generic[T]):
     metadata: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def ok(cls, value: T, **metadata) -> "ChainResult[T]":
+    def ok(cls, value: T, **metadata: Any) -> "ChainResult[T]":
         """Create a successful result."""
         return cls(value=value, success=True, metadata=metadata)
 
     @classmethod
-    def fail(cls, error: str, **metadata) -> "ChainResult[T]":
+    def fail(cls, error: str, **metadata: Any) -> "ChainResult[T]":
         """Create a failed result."""
         return cls(value=None, success=False, error=error, metadata=metadata)
 
@@ -104,7 +104,7 @@ class PromptChain(Chain[dict, str]):
         self,
         template: PromptTemplate,
         client: Optional[OllamaClient] = None,
-        **generate_kwargs,
+        **generate_kwargs: Any,
     ) -> None:
         """Initialize the prompt chain.
 

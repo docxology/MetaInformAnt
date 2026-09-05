@@ -205,7 +205,8 @@ def fetch_uniprot_fasta(uniprot_id: str) -> Optional[str]:
         )
         response.raise_for_status()
 
-        return response.text
+        text: str = response.text
+        return text
 
     except requests.RequestException as e:
         logger.error(f"Failed to fetch FASTA for {uniprot_id}: {e}")
@@ -415,7 +416,7 @@ def get_uniprot_taxonomy_info(taxon_id: int) -> Optional[Dict[str, Any]]:
         return None
 
 
-def batch_fetch_uniprot_records(uniprot_ids: List[str]) -> Dict[str, Dict[str, Any]]:
+def batch_fetch_uniprot_records(uniprot_ids: List[str]) -> Dict[str, Optional[Dict[str, Any]]]:
     """Fetch multiple UniProt records in batch.
 
     Args:
@@ -430,7 +431,7 @@ def batch_fetch_uniprot_records(uniprot_ids: List[str]) -> Dict[str, Dict[str, A
         >>> isinstance(records, dict)
         True
     """
-    results = {}
+    results: Dict[str, Optional[Dict[str, Any]]] = {}
 
     for uniprot_id in uniprot_ids:
         try:
@@ -443,7 +444,7 @@ def batch_fetch_uniprot_records(uniprot_ids: List[str]) -> Dict[str, Dict[str, A
     return results
 
 
-def validate_uniprot_accession(accession: str) -> bool:
+def validate_uniprot_accession(accession: object) -> bool:
     """Validate UniProt accession format.
 
     Args:
@@ -505,6 +506,7 @@ def map_ids_uniprot(
     ids_string = " ".join(protein_ids)
 
     # Determine source database
+    from_db: Optional[str]
     if source_db == "auto":
         # Try to auto-detect based on ID patterns
         if protein_ids and protein_ids[0].startswith("ENSP"):

@@ -10,7 +10,7 @@ All implementations are pure Python using numpy, scipy, and pandas.
 
 from __future__ import annotations
 
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import Any, Dict, List, Literal, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -74,7 +74,7 @@ def differential_expression(
     conditions: Union[List[str], pd.Series],
     method: DEMethod = "deseq2_like",
     reference: Optional[str] = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> pd.DataFrame:
     """Perform differential expression analysis between conditions.
 
@@ -383,13 +383,13 @@ def _negative_binomial_test(
     def nb_loglik(counts: np.ndarray, mu: float, dispersion: float) -> float:
         """Compute negative binomial log-likelihood."""
         if mu <= 0 or dispersion <= 0:
-            return -np.inf
+            return float("-inf")
 
         r = 1.0 / dispersion  # Size parameter
         loglik = 0.0
         for k in counts:
             if k < 0:
-                return -np.inf
+                return float("-inf")
             # NB log-likelihood: log(C(k+r-1, k)) + k*log(p) + r*log(1-p)
             # where p = mu/(mu + r)
             p = mu / (mu + r)

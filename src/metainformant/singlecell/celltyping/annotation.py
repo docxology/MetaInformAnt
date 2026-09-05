@@ -35,7 +35,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
+    np = None
 
 try:
     from scipy import stats as scipy_stats
@@ -43,7 +43,7 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None  # type: ignore[assignment]
+    scipy_stats = None
 
 
 def annotate_by_markers(
@@ -588,15 +588,18 @@ def _to_list_matrix(data: Any) -> list[list[float]]:
 
     # numpy array
     if HAS_NUMPY and isinstance(data, np.ndarray):
-        return data.tolist()
+        converted: list[list[float]] = data.tolist()
+        return converted
 
     # scipy sparse or anndata-like
     if hasattr(data, "toarray"):
-        return data.toarray().tolist()
+        dense: list[list[float]] = data.toarray().tolist()
+        return dense
 
     # pandas DataFrame
     if hasattr(data, "values"):
-        return data.values.tolist()
+        framed: list[list[float]] = data.values.tolist()
+        return framed
 
     raise TypeError(f"Unsupported expression matrix type: {type(data)}")
 

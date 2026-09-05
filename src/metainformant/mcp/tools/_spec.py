@@ -17,10 +17,14 @@ Handler contract:
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 Handler = Callable[..., dict]
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 
 def validate_output_dir(path: str | Path) -> Path:
@@ -42,9 +46,10 @@ def dump_json(obj: Any, path: Path) -> Path:
     return path
 
 
-def read_table(path: str | Path, sep: str | None = None, index_col=0):
+def read_table(
+    path: str | Path, sep: str | None = None, index_col: int | str | Sequence[int | str] | None = 0
+) -> pd.DataFrame:
     """Read a delimited expression/summary table into a DataFrame.
-
     Auto-detects comma vs tab when ``sep`` is None. Pass index_col=None for
     tables whose first column is plain data. Raises FileNotFoundError
     (not a silent empty frame) so callers see real input errors.

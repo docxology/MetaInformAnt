@@ -35,7 +35,7 @@ def plot_vcf_quality_metrics(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (14, 10),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot comprehensive VCF quality control metrics.
 
@@ -50,8 +50,8 @@ def plot_vcf_quality_metrics(
     """
     validation.validate_type(vcf_qc_data, dict, "vcf_qc_data")
 
-    fig, axes = plt.subplots(2, 3, figsize=figsize)
-    axes = axes.flatten()
+    fig, axes_grid = plt.subplots(2, 3, figsize=figsize)
+    axes: list[Axes] = list(axes_grid.flatten())
 
     if "qual_distribution" in vcf_qc_data:
         qual_data = vcf_qc_data["qual_distribution"]
@@ -133,7 +133,7 @@ def plot_singlecell_qc_metrics(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (14, 10),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot comprehensive single-cell QC metrics.
 
@@ -148,8 +148,8 @@ def plot_singlecell_qc_metrics(
     """
     validation.validate_type(qc_metrics, dict, "qc_metrics")
 
-    fig, axes = plt.subplots(2, 3, figsize=figsize)
-    axes = axes.flatten()
+    fig, axes_grid = plt.subplots(2, 3, figsize=figsize)
+    axes: list[Axes] = list(axes_grid.flatten())
     plot_idx = 0
 
     if "n_counts" in qc_metrics:
@@ -250,7 +250,7 @@ def plot_protein_structure_quality(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot protein structure quality metrics.
 
@@ -265,8 +265,8 @@ def plot_protein_structure_quality(
     """
     validation.validate_type(structure_quality, dict, "structure_quality")
 
-    fig, axes = plt.subplots(2, 2, figsize=figsize)
-    axes = axes.flatten()
+    fig, axes_grid = plt.subplots(2, 2, figsize=figsize)
+    axes: list[Axes] = list(axes_grid.flatten())
 
     if "b_factors" in structure_quality:
         b_factors = structure_quality["b_factors"]
@@ -343,7 +343,7 @@ def plot_multiomics_quality_overview(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (14, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot quality overview across multiple omics layers.
 

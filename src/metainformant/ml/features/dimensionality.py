@@ -6,7 +6,7 @@ for biological data analysis, including PCA, ICA, UMAP, and t-SNE.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import numpy as np
 
@@ -175,7 +175,7 @@ def umap_reduction(
         f"UMAP reduction: {X.shape[1]} → {n_components} dimensions " f"(n_neighbors={n_neighbors}, min_dist={min_dist})"
     )
 
-    return X_umap
+    return cast("np.ndarray", X_umap)
 
 
 def tsne_reduction(
@@ -221,12 +221,12 @@ def tsne_reduction(
         f"(perplexity={perplexity}, learning_rate={learning_rate})"
     )
 
-    return X_tsne
+    return cast("np.ndarray", X_tsne)
 
 
 def compare_dimensionality_methods(
     X: np.ndarray,
-    methods: List[str] = None,
+    methods: List[str] | None = None,
     n_components: int = 2,
     random_state: int | None = None,
 ) -> Dict[str, Any]:
@@ -301,7 +301,7 @@ def compare_dimensionality_methods(
 def optimize_dimensionality_parameters(
     X: np.ndarray,
     method: str = "pca",
-    param_grid: Dict[str, List] = None,
+    param_grid: Dict[str, List] | None = None,
     cv_metric: str = "reconstruction_error",
     random_state: int | None = None,
 ) -> Dict[str, Any]:
@@ -338,8 +338,9 @@ def optimize_dimensionality_parameters(
     # Simple grid search (could be improved with proper CV)
     from itertools import product
 
-    param_names = list(param_grid.keys())
-    param_values = list(param_grid.values())
+    grid = cast("Dict[str, List]", param_grid)
+    param_names = list(grid.keys())
+    param_values = list(grid.values())
 
     for param_combination in product(*param_values):
         params = dict(zip(param_names, param_combination))
@@ -400,7 +401,7 @@ def optimize_dimensionality_parameters(
 def biological_dimensionality_analysis(
     X: np.ndarray,
     y: Optional[np.ndarray] = None,
-    methods: List[str] = None,
+    methods: List[str] | None = None,
     n_components: int = 2,
     random_state: int | None = None,
 ) -> Dict[str, Any]:
@@ -421,7 +422,7 @@ def biological_dimensionality_analysis(
         if HAS_UMAP:
             methods.append("umap")
 
-    results = {
+    results: Dict[str, Any] = {
         "input_analysis": {
             "shape": X.shape,
             "data_type": str(X.dtype),

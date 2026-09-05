@@ -122,6 +122,7 @@ def r_squared(
     if pB is not None and pb is not None and pAB is not None:
         pA = x_or_pA
         pa = y_or_pa
+        assert isinstance(pA, float) and isinstance(pa, float)
         # Calculate D = P(AB) - P(A)*P(B)
         D = pAB - pA * pB
         # r² = D² / (pA * pa * pB * pb)
@@ -135,6 +136,7 @@ def r_squared(
     y = y_or_pa
     if y is None:
         raise ValueError("y is required for linear regression mode")
+    assert isinstance(x, list) and isinstance(y, list)
     _, _, r2 = linear_regression(x, y)
     return r2
 
@@ -237,7 +239,7 @@ def covariance(x: List[float], y: List[float]) -> float:
     x_arr = np.array(x)
     y_arr = np.array(y)
 
-    return np.cov(x_arr, y_arr, ddof=0)[0, 1]
+    return float(np.cov(x_arr, y_arr, ddof=0)[0, 1])
 
 
 def shannon_entropy(values: List[float], base: float = 2.0) -> float:

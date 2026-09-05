@@ -8,7 +8,7 @@ tree comparisons, and annotated tree visualizations.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Tuple, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -30,7 +30,7 @@ except ImportError:
     HAS_NETWORKX = False
 
 
-def plot_phylo_tree(tree: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs) -> Axes:
+def plot_phylo_tree(tree: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any) -> Axes:
     """Create a basic phylogenetic tree visualization.
 
     Args:
@@ -88,7 +88,9 @@ def plot_phylo_tree(tree: Any, *, ax: Axes | None = None, output_path: str | Pat
     return ax
 
 
-def circular_tree_plot(tree: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs) -> Axes:
+def circular_tree_plot(
+    tree: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
+) -> Axes:
     """Create a circular phylogenetic tree visualization.
 
     Args:
@@ -133,7 +135,7 @@ def circular_tree_plot(tree: Any, *, ax: Axes | None = None, output_path: str | 
     )
 
     ax.set_title("Circular Phylogenetic Tree")
-    ax.set_rlabel_position(0)  # Move radial labels
+    cast("Any", ax).set_rlabel_position(0)  # Move radial labels
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
@@ -143,7 +145,9 @@ def circular_tree_plot(tree: Any, *, ax: Axes | None = None, output_path: str | 
     return ax
 
 
-def unrooted_tree_plot(tree: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs) -> Axes:
+def unrooted_tree_plot(
+    tree: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
+) -> Axes:
     """Create an unrooted phylogenetic tree visualization.
 
     Args:
@@ -197,7 +201,7 @@ def unrooted_tree_plot(tree: Any, *, ax: Axes | None = None, output_path: str | 
 
 
 def tree_comparison_plot(
-    tree1: Any, tree2: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    tree1: Any, tree2: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a side-by-side comparison of two phylogenetic trees.
 
@@ -221,8 +225,7 @@ def tree_comparison_plot(
         fig, axes = plt.subplots(1, 2, figsize=kwargs.pop("figsize", (15, 8)))
     else:
         # Assume ax is a single axes, create subplots anyway
-        fig = ax.figure
-        axes = [fig.add_subplot(1, 2, 1), fig.add_subplot(1, 2, 2)]
+        axes = [ax.figure.add_subplot(1, 2, 1), ax.figure.add_subplot(1, 2, 2)]
 
     # Convert trees to NetworkX
     G1 = _convert_tree_to_networkx(tree1) if not isinstance(tree1, nx.DiGraph) else tree1
@@ -245,11 +248,16 @@ def tree_comparison_plot(
         save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Tree comparison plot saved to {output_path}")
 
-    return axes[0]  # Return first axes for consistency
+    return cast("Axes", axes[0])  # Return first axes for consistency
 
 
 def tree_annotation_plot(
-    tree: Any, annotations: Dict[str, Any], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    tree: Any,
+    annotations: Dict[str, Any],
+    *,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
+    **kwargs: Any,
 ) -> Axes:
     """Create an annotated phylogenetic tree visualization.
 
@@ -351,7 +359,7 @@ def _convert_tree_to_networkx(tree: Any, directed: bool = True) -> nx.Graph:
     # Handle dict-based tree representation
     if isinstance(tree, dict):
 
-        def add_edges(parent, children):
+        def add_edges(parent: Any, children: Any) -> None:
             for child, subtree in children.items():
                 G.add_edge(parent, child)
                 if isinstance(subtree, dict):
@@ -363,7 +371,7 @@ def _convert_tree_to_networkx(tree: Any, directed: bool = True) -> nx.Graph:
         # Find root (node with no parent in edges)
         all_nodes = set()
 
-        def collect_nodes(node, subtree):
+        def collect_nodes(node: Any, subtree: Any) -> None:
             all_nodes.add(node)
             if isinstance(subtree, dict):
                 for child, subsubtree in subtree.items():
@@ -387,7 +395,7 @@ def _convert_tree_to_networkx(tree: Any, directed: bool = True) -> nx.Graph:
                 # Convert Bio.Phylo tree to NetworkX graph
                 node_counter = 0
 
-                def _add_clade(clade, parent_name=None):
+                def _add_clade(clade: Any, parent_name: str | None = None) -> None:
                     nonlocal node_counter
                     name = clade.name if clade.name else f"internal_{node_counter}"
                     node_counter += 1
@@ -422,7 +430,7 @@ def _hierarchical_tree_layout(G: nx.DiGraph) -> Dict[str, Tuple[float, float]]:
     root = roots[0]
 
     # Assign levels based on distance from root
-    levels = {}
+    levels: Dict[Any, int] = {}
     for node in nx.topological_sort(G):
         if node == root:
             levels[node] = 0
@@ -436,7 +444,7 @@ def _hierarchical_tree_layout(G: nx.DiGraph) -> Dict[str, Tuple[float, float]]:
 
     # Assign positions
     max(levels.values()) if levels else 0
-    nodes_per_level = {}
+    nodes_per_level: Dict[Any, list[Any]] = {}
     for node, level in levels.items():
         if level not in nodes_per_level:
             nodes_per_level[level] = []

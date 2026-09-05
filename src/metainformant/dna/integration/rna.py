@@ -7,7 +7,7 @@ and cross-omics correlation studies.
 
 from __future__ import annotations
 
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from metainformant.core.utils import logging
 
@@ -91,7 +91,7 @@ def find_transcription_factor_binding_sites(dna_sequence: str, tf_motifs: Dict[s
     return find_motifs(dna_sequence, list(tf_motifs.values()))
 
 
-def calculate_codon_usage_bias(dna_sequence: str) -> Dict[str, float]:
+def calculate_codon_usage_bias(dna_sequence: str) -> Dict[str, Any]:
     """Calculate codon usage bias for coding sequences.
 
     Args:
@@ -126,7 +126,7 @@ def calculate_codon_usage_bias(dna_sequence: str) -> Dict[str, float]:
     }
 
 
-def analyze_gene_structure(dna_sequence: str) -> Dict[str, any]:
+def analyze_gene_structure(dna_sequence: str) -> Dict[str, Any]:
     """Analyze gene structure including exons, introns, and regulatory elements.
 
     Args:
@@ -149,7 +149,7 @@ def analyze_gene_structure(dna_sequence: str) -> Dict[str, any]:
 
     # Basic promoter analysis
     promoter_region = dna_sequence[:100] if len(dna_sequence) > 100 else dna_sequence
-    gc_content_promoter = promoter_region.count("G") + promoter_region.count("C")
+    gc_content_promoter: float = promoter_region.count("G") + promoter_region.count("C")
     gc_content_promoter = gc_content_promoter / len(promoter_region) if promoter_region else 0
 
     return {
@@ -162,7 +162,7 @@ def analyze_gene_structure(dna_sequence: str) -> Dict[str, any]:
 
 
 def correlate_dna_with_rna_expression(
-    dna_features: Dict[str, any], rna_expression: Dict[str, float]
+    dna_features: Dict[str, Any], rna_expression: Dict[str, float]
 ) -> Dict[str, float]:
     """Correlate DNA sequence features with RNA expression levels.
 
@@ -213,7 +213,7 @@ def calculate_correlation(x: List[float], y: List[float]) -> float:
     return numerator / denominator if denominator != 0 else 0.0
 
 
-def predict_splice_sites(dna_sequence: str) -> Dict[str, List[int]]:
+def predict_splice_sites(dna_sequence: str) -> Dict[str, Any]:
     """Predict splice donor and acceptor sites in DNA sequence.
 
     Args:
@@ -267,7 +267,7 @@ def analyze_regulatory_elements(dna_sequence: str) -> Dict[str, List[Tuple[int, 
         >>> isinstance(elements, dict)
         True
     """
-    elements = {"tata_box": [], "caat_box": [], "gc_box": [], "enhancer_motifs": []}
+    elements: dict[str, list[tuple[int, str]]] = {"tata_box": [], "caat_box": [], "gc_box": [], "enhancer_motifs": []}
 
     # TATA box
     tata_positions = []
@@ -300,7 +300,7 @@ def find_motif_positions(sequence: str, motif: str) -> List[int]:
     return positions
 
 
-def integrate_dna_rna_data(dna_data: Dict[str, any], rna_data: Dict[str, any]) -> Dict[str, any]:
+def integrate_dna_rna_data(dna_data: Dict[str, Any], rna_data: Dict[str, Any]) -> Dict[str, Any]:
     """Integrate DNA sequence data with RNA expression data.
 
     Args:
@@ -334,7 +334,7 @@ def integrate_dna_rna_data(dna_data: Dict[str, any], rna_data: Dict[str, any]) -
     return integrated
 
 
-def predict_gene_function_from_sequence(dna_sequence: str) -> Dict[str, any]:
+def predict_gene_function_from_sequence(dna_sequence: str) -> Dict[str, Any]:
     """Predict gene function based on DNA sequence features.
 
     Args:

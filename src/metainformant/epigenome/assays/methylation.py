@@ -134,7 +134,7 @@ def load_methylation_bedgraph(path: str | Path, min_coverage: int = 1) -> Dict[s
 
     except Exception as e:
         logger.error(f"Error loading BEDgraph file {path}: {e}")
-        raise errors.FileIOError(f"Failed to load methylation BEDgraph: {e}") from e
+        raise errors.IOError(f"Failed to load methylation BEDgraph: {e}") from e
 
     # Sort sites by position for each chromosome
     for chromosome in methylation_data:
@@ -197,7 +197,7 @@ def load_methylation_cov(path: str | Path, min_coverage: int = 1) -> Dict[str, L
 
     except Exception as e:
         logger.error(f"Error loading coverage file {path}: {e}")
-        raise errors.FileIOError(f"Failed to load methylation coverage: {e}") from e
+        raise errors.IOError(f"Failed to load methylation coverage: {e}") from e
 
     # Sort sites by position
     for chromosome in methylation_data:
@@ -232,7 +232,7 @@ def calculate_methylation_statistics(methylation_data: Dict[str, List[Methylatio
     methylation_levels = [site.methylation_level for site in all_sites]
     coverages = [site.coverage for site in all_sites]
 
-    stats = {
+    stats: Dict[str, Any] = {
         "total_sites": len(all_sites),
         "total_chromosomes": len(methylation_data),
         "mean_methylation": statistics.mean(methylation_levels),
@@ -245,7 +245,7 @@ def calculate_methylation_statistics(methylation_data: Dict[str, List[Methylatio
     }
 
     # Coverage distribution
-    coverage_bins = defaultdict(int)
+    coverage_bins: Dict[str, int] = defaultdict(int)
     for coverage in coverages:
         if coverage <= 10:
             coverage_bins[str(coverage)] += 1
@@ -257,7 +257,7 @@ def calculate_methylation_statistics(methylation_data: Dict[str, List[Methylatio
     stats["coverage_distribution"] = dict(coverage_bins)
 
     # Methylation distribution
-    methylation_bins = defaultdict(int)
+    methylation_bins: Dict[str, int] = defaultdict(int)
     for level in methylation_levels:
         bin_key = f"{int(level * 10) / 10:.1f}-{int(level * 10) / 10 + 0.1:.1f}"
         methylation_bins[bin_key] += 1
@@ -324,7 +324,7 @@ def find_differentially_methylated_regions(
             continue
 
         # Calculate differences and identify potential DMRs
-        current_dmr = None
+        current_dmr: Optional[Dict[str, Any]] = None
 
         for i, pos in enumerate(positions):
             site1 = pos_to_site1[pos]
@@ -405,7 +405,7 @@ def identify_cpg_islands(
     """
     logger.info("Identifying CpG islands")
 
-    cpg_islands = []
+    cpg_islands: List[Dict[str, Any]] = []
 
     for chromosome, sites in methylation_data.items():
         if len(sites) < 10:  # Need minimum sites for analysis
@@ -456,7 +456,7 @@ def identify_cpg_islands(
     # Remove overlapping islands (keep the one with highest CpG ratio)
     cpg_islands.sort(key=lambda x: x["cpg_ratio"], reverse=True)
 
-    filtered_islands = []
+    filtered_islands: List[Dict[str, Any]] = []
     for island in cpg_islands:
         # Check for overlap with already selected islands
         overlaps = False

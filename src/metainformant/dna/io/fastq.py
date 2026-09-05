@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import gzip
 from pathlib import Path
-from typing import Any, Dict, Iterator, Tuple
+from typing import Any, Callable, Dict, IO, Iterator, Tuple
 
 from metainformant.core.utils import logging
 
@@ -42,7 +42,7 @@ def read_fastq(path: str | Path) -> Dict[str, Tuple[str, str]]:
     reads = {}
 
     # Open file (handle gzip compression)
-    opener = gzip.open if path.suffix == ".gz" else open
+    opener: Callable[..., IO[str]] = gzip.open if path.suffix == ".gz" else open
     mode = "rt" if path.suffix == ".gz" else "r"
 
     with opener(path, mode) as f:
@@ -155,7 +155,7 @@ def assess_quality(fastq_path: str | Path) -> Dict[str, Any]:
     median_quality = sorted(all_qualities)[len(all_qualities) // 2] if all_qualities else 0.0
 
     # Quality distribution (bucketed)
-    quality_distribution = {}
+    quality_distribution: Dict[int, int] = {}
     for q in all_qualities:
         bucket = (q // 5) * 5  # Group by 5-point buckets
         quality_distribution[bucket] = quality_distribution.get(bucket, 0) + 1
@@ -194,7 +194,7 @@ def filter_reads(fastq_path: str | Path, min_quality: int = 20) -> Iterator[str]
     """
     # Open file (handle gzip compression)
     path = Path(fastq_path)
-    opener = gzip.open if path.suffix == ".gz" else open
+    opener: Callable[..., IO[str]] = gzip.open if path.suffix == ".gz" else open
     mode = "rt" if path.suffix == ".gz" else "r"
 
     with opener(path, mode) as f:
@@ -372,7 +372,7 @@ def iter_fastq(fastq_path: str | Path) -> Iterator[Tuple[str, str, str]]:
         raise FileNotFoundError(f"FASTQ file not found: {fastq_path}")
 
     # Open file (handle gzip compression)
-    opener = gzip.open if fastq_path.suffix == ".gz" else open
+    opener: Callable[..., IO[str]] = gzip.open if fastq_path.suffix == ".gz" else open
     mode = "rt" if fastq_path.suffix == ".gz" else "r"
 
     with opener(fastq_path, mode) as f:
@@ -418,7 +418,7 @@ def calculate_per_base_quality(fastq_path: str | Path) -> Dict[int, Dict[str, fl
     first_read_len = len(next(iter(reads.values()))[0])
 
     # Initialize statistics for each position
-    position_stats = {}
+    position_stats: Dict[int, Dict[str, Any]] = {}
     for pos in range(first_read_len):
         position_stats[pos] = {
             "mean_quality": 0.0,
@@ -454,7 +454,7 @@ def calculate_per_base_quality(fastq_path: str | Path) -> Dict[int, Dict[str, fl
     return position_stats
 
 
-def summarize_fastq(fastq_path: str | Path) -> Dict[str, int]:
+def summarize_fastq(fastq_path: str | Path) -> Dict[str, float]:
     """Summarize contents of a FASTQ file.
 
     Args:
@@ -468,7 +468,7 @@ def summarize_fastq(fastq_path: str | Path) -> Dict[str, int]:
         raise FileNotFoundError(f"FASTQ file not found: {fastq_path}")
 
     # Open file (handle gzip compression)
-    opener = gzip.open if fastq_path.suffix == ".gz" else open
+    opener: Callable[..., IO[str]] = gzip.open if fastq_path.suffix == ".gz" else open
     mode = "rt" if fastq_path.suffix == ".gz" else "r"
 
     summary = {"total_reads": 0, "total_bases": 0, "min_length": float("inf"), "max_length": 0, "mean_length": 0.0}
@@ -634,7 +634,7 @@ class FastqRecord:
         """Return sequence length."""
         return self.length()
 
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: object) -> bool:
         """Check equality with another FastqRecord."""
         if not isinstance(other, FastqRecord):
             return False

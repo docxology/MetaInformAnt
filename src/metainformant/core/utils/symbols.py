@@ -9,6 +9,7 @@ from __future__ import annotations
 import ast
 import difflib
 import os
+from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -81,7 +82,7 @@ _SKIPPED_INDEX_DIRECTORIES = {
 }
 
 
-def _iter_python_files(repo_root: Path):
+def _iter_python_files(repo_root: Path) -> Iterator[Path]:
     """Yield maintained Python files without traversing generated or nested repos."""
     for directory, dirnames, filenames in os.walk(repo_root):
         dirnames[:] = sorted(name for name in dirnames if name not in _SKIPPED_INDEX_DIRECTORIES)
@@ -177,10 +178,10 @@ def index_functions(repo_root: str | Path, use_cache: bool = True) -> dict[str, 
             cached_data = load_json(cache_file)
             # Check if cache is still valid (simplified - could check mtimes)
             if cached_data:
-                index: dict[str, list[SymbolDefinition]] = {}
+                cached_index: dict[str, list[SymbolDefinition]] = {}
                 for name, defs in cached_data.items():
-                    index[name] = [SymbolDefinition(**def_data) for def_data in defs]
-                return index
+                    cached_index[name] = [SymbolDefinition(**def_data) for def_data in defs]
+                return cached_index
         except Exception:
             # Cache invalid, rebuild
             pass
@@ -267,10 +268,10 @@ def index_classes(repo_root: str | Path, use_cache: bool = True) -> dict[str, li
         try:
             cached_data = load_json(cache_file)
             if cached_data:
-                index: dict[str, list[SymbolDefinition]] = {}
+                cached_index: dict[str, list[SymbolDefinition]] = {}
                 for name, defs in cached_data.items():
-                    index[name] = [SymbolDefinition(**def_data) for def_data in defs]
-                return index
+                    cached_index[name] = [SymbolDefinition(**def_data) for def_data in defs]
+                return cached_index
         except Exception:
             pass
 
@@ -441,7 +442,7 @@ def find_symbol_references(symbol_name: str, repo_root: str | Path) -> list[Symb
             continue
 
         class ReferenceVisitor(ast.NodeVisitor):
-            def visit_Name(self, node: ast.Name):
+            def visit_Name(self, node: ast.Name) -> None:
                 if node.id == symbol_name:
                     # Skip if this is a definition (already handled above)
                     # We can't easily check parent context without more complex traversal,

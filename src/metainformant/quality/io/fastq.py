@@ -93,7 +93,7 @@ def read_fastq_records(path: str | Path, max_records: int | None = None) -> Iter
             record_count = 0
             while max_records is None or record_count < max_records:
                 # Read 4 lines for each record
-                lines = []
+                lines: list[str] = []
                 for i in range(4):
                     line = f.readline()
                     if not line:
@@ -113,7 +113,7 @@ def read_fastq_records(path: str | Path, max_records: int | None = None) -> Iter
 
     except Exception as e:
         logger.error(f"Error reading FASTQ file {path}: {e}")
-        raise errors.FileIOError(f"Failed to read FASTQ file: {e}") from e
+        raise errors.IOError(f"Failed to read FASTQ file: {e}") from e
 
 
 def analyze_fastq_quality(fastq_path: str | Path, n_reads: int | None = None) -> Dict[str, Any]:
@@ -209,7 +209,7 @@ def per_base_quality(records: List[FastqRecord]) -> Dict[str, Any]:
     # Calculate statistics for each position
     positions = []
     for pos in range(max_length):
-        pos_qualities = [row[pos] for row in quality_matrix if row[pos] is not None]
+        pos_qualities = [q for row in quality_matrix if (q := row[pos]) is not None]
         if pos_qualities:
             entry = {
                 "position": pos + 1,
@@ -349,7 +349,7 @@ def adapter_content(records: List[FastqRecord], adapters: List[str] | None = Non
             "CTGTCTCTTAT",  # Nextera Transposase Sequence
         ]
 
-    results = {}
+    results: Dict[str, Any] = {}
     for adapter in adapters:
         adapter_name = f"adapter_{len(results) + 1}"
         adapter_length = len(adapter)
@@ -443,7 +443,7 @@ def duplication_levels(records: List[FastqRecord]) -> Dict[str, Any]:
     total_sequences = len(sequences)
 
     # Group by duplication level
-    duplication_bins = defaultdict(int)
+    duplication_bins: defaultdict[str, int] = defaultdict(int)
     for count in seq_counts.values():
         if count <= 10:
             duplication_bins[str(count)] += 1

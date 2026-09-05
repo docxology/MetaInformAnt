@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import math
+from collections.abc import Sequence
 from pathlib import Path
 
 from metainformant.core.utils.logging import get_logger
@@ -213,7 +214,7 @@ def check_qc_thresholds(
 # ---------------------------------------------------------------------------
 
 
-def _mean(values: list[float]) -> float:
+def _mean(values: Sequence[float]) -> float:
     """Arithmetic mean."""
     return sum(values) / len(values) if values else 0.0
 

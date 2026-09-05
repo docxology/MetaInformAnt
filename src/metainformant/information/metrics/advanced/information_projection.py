@@ -12,7 +12,7 @@ import math
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
-from scipy.spatial.distance import pdist  # type: ignore[import-untyped]
+from scipy.spatial.distance import pdist
 
 from metainformant.core.data import validation
 from metainformant.core.utils import logging

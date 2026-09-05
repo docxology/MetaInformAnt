@@ -215,7 +215,7 @@ def save_config(config: LifeEventsWorkflowConfig, output_file: str | Path) -> No
 
     # Determine format from extension
     if str(output_file).endswith(".yaml") or str(output_file).endswith(".yml"):
-        import yaml  # type: ignore[import-untyped]
+        import yaml
 
         with open(output_file, "w") as f:
             yaml.dump(config_dict, f, default_flow_style=False)

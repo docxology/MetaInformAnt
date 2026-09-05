@@ -79,7 +79,7 @@ def _plugin_entropy_estimator(counts: np.ndarray, total: int, bias_correction: b
         correction = (k - 1) / (2 * total)
         entropy -= correction
 
-    return max(0.0, entropy)
+    return max(0.0, float(entropy))
 
 
 def _miller_madow_entropy_estimator(counts: np.ndarray, total: int) -> float:
@@ -97,7 +97,7 @@ def _miller_madow_entropy_estimator(counts: np.ndarray, total: int) -> float:
 
     entropy = -np.sum(probs * np.log2(probs)) - correction
 
-    return max(0.0, entropy)
+    return max(0.0, float(entropy))
 
 
 def _chao_shen_entropy_estimator(counts: np.ndarray, total: int) -> float:

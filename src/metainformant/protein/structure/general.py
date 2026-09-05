@@ -71,7 +71,7 @@ def compute_rmsd_kabsch(coords_ref: np.ndarray, coords_mobile: np.ndarray) -> fl
     diff = ref_centered - aligned_mobile
     rmsd = np.sqrt(np.sum(diff**2) / len(diff))
 
-    return rmsd
+    return float(rmsd)
 
 
 def compute_rmsd_simple(coords_ref: np.ndarray, coords_mobile: np.ndarray) -> float:
@@ -97,7 +97,7 @@ def compute_rmsd_simple(coords_ref: np.ndarray, coords_mobile: np.ndarray) -> fl
     diff = coords_ref - coords_mobile
     rmsd = np.sqrt(np.sum(diff**2) / len(diff))
 
-    return rmsd
+    return float(rmsd)
 
 
 def align_structures_kabsch(coords_ref: np.ndarray, coords_mobile: np.ndarray) -> Tuple[np.ndarray, np.ndarray, float]:
@@ -174,7 +174,7 @@ def calculate_radius_of_gyration(coords: np.ndarray) -> float:
     distances = np.linalg.norm(coords - centroid, axis=1)
     rg = np.sqrt(np.mean(distances**2))
 
-    return rg
+    return float(rg)
 
 
 def calculate_center_of_mass(coords: np.ndarray, masses: Optional[np.ndarray] = None) -> np.ndarray:
@@ -295,7 +295,7 @@ def calculate_structural_statistics(coords: np.ndarray) -> Dict[str, float]:
         >>> "radius_of_gyration" in stats
         True
     """
-    stats = {}
+    stats: Dict[str, Any] = {}
 
     # Basic properties
     stats["n_atoms"] = len(coords)
@@ -391,4 +391,4 @@ def calculate_solvent_accessible_surface_area(coords: np.ndarray, probe_radius: 
         radius = np.max(np.linalg.norm(coords - np.mean(coords, axis=0), axis=1))
         surface_area = 4 * np.pi * (radius + probe_radius) ** 2
 
-    return surface_area
+    return float(surface_area)

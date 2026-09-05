@@ -12,6 +12,7 @@ dependencies are not available.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 from metainformant.core.utils.logging import get_logger
 
@@ -27,8 +28,8 @@ try:
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
-    plt = None  # type: ignore
-    mpatches = None  # type: ignore
+    plt = None
+    mpatches = None
 
 try:
     import numpy as np
@@ -36,7 +37,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore
+    np = None
 
 try:
     import seaborn as sns
@@ -44,7 +45,7 @@ try:
     HAS_SEABORN = True
 except ImportError:
     HAS_SEABORN = False
-    sns = None  # type: ignore
+    sns = None
 
 
 def _ensure_matplotlib() -> None:
@@ -195,7 +196,7 @@ def plot_allele_frequencies(
             labels_display.append(f"Other\n({other_sum:.1%})")
             sizes_display.append(other_sum)
 
-        colors_pie = plt.cm.Set3(range(len(labels_display)))
+        colors_pie = plt.cm.Set3(range(len(labels_display))).tolist()
         wedges, texts, autotexts = ax.pie(
             sizes_display,
             labels=labels_display,
@@ -271,7 +272,7 @@ def plot_activity_score_distribution(
 
     # Histogram
     if HAS_NUMPY:
-        bins = np.arange(0, max(scores) + 0.5, 0.25) if scores else [0, 0.5, 1.0]
+        bins = np.arange(0, max(scores) + 0.5, 0.25).tolist() if scores else [0, 0.5, 1.0]
     else:
         max_score = max(scores) if scores else 1.0
         bins = [i * 0.25 for i in range(int(max_score / 0.25) + 3)]
@@ -463,6 +464,7 @@ def plot_population_comparison(
     n_pops = len(populations)
     bar_width = 0.8 / n_pops
 
+    x_positions: Any
     if HAS_NUMPY:
         x_positions = np.arange(n_alleles)
     else:

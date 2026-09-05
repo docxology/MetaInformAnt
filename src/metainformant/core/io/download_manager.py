@@ -26,7 +26,7 @@ class DownloadManager:
         self.executor = ThreadPoolExecutor(max_workers=max_threads)
         self.tasks: List[Dict] = []
 
-    def add_download(self, url: str, dest_path: Path, label: str):
+    def add_download(self, url: str, dest_path: Path, label: str) -> None:
         """Queue a download task."""
         self.tasks.append({"url": url, "dest": dest_path, "label": label, "id": f"task_{len(self.tasks)}"})
         self.ui.add_bar(f"task_{len(self.tasks)-1}", label, total=0.0, unit="%")
@@ -116,7 +116,7 @@ class DownloadManager:
             logger.error(f"Worker error: {e}")
             return False
 
-    def _update_progress(self):
+    def _update_progress(self) -> None:
         """Poll file sizes to update UI speed/activity and footer status."""
         active_count = 0
         done_count = 0

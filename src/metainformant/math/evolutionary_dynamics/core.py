@@ -113,7 +113,7 @@ def replicator_derivative(frequencies: List[float], fitness_matrix: np.ndarray) 
 
     derivatives = x * (fitness - avg_fitness)
 
-    return derivatives.tolist()
+    return [float(d) for d in derivatives]
 
 
 def replicator_step(frequencies: List[float], fitness_matrix: np.ndarray, dt: float = 0.1) -> List[float]:

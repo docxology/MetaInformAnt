@@ -30,7 +30,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
+    np = None
 
 try:
     from scipy import stats as scipy_stats
@@ -38,7 +38,7 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None  # type: ignore[assignment]
+    scipy_stats = None
 
 
 def genotype_sv_population(
@@ -768,10 +768,10 @@ def _should_merge(
     if call_a.get("sv_type", "") != call_b.get("sv_type", ""):
         return False
 
-    start_a = call_a.get("start", 0)
-    end_a = call_a.get("end", 0)
-    start_b = call_b.get("start", 0)
-    end_b = call_b.get("end", 0)
+    start_a: int = call_a.get("start", 0)
+    end_a: int = call_a.get("end", 0)
+    start_b: int = call_b.get("start", 0)
+    end_b: int = call_b.get("end", 0)
 
     # Breakpoint distance check
     if abs(start_a - start_b) > max_bp_dist:

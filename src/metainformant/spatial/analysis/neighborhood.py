@@ -19,20 +19,20 @@ try:
     import numpy as np
     from numpy.typing import NDArray
 except ImportError:
-    np = None  # type: ignore[assignment]
-    NDArray = None  # type: ignore[assignment,misc]
+    np = None
+    NDArray = None
 
 try:
     from scipy import sparse as sp_sparse
     from scipy.spatial import KDTree
 except ImportError:
-    sp_sparse = None  # type: ignore[assignment]
-    KDTree = None  # type: ignore[assignment,misc]
+    sp_sparse = None
+    KDTree = None
 
 try:
     from sklearn.cluster import KMeans
 except ImportError:
-    KMeans = None  # type: ignore[assignment,misc]
+    KMeans = None
 
 
 @dataclass

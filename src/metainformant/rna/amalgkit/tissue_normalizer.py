@@ -229,7 +229,7 @@ def get_unmapped_tissues(df: pd.DataFrame, mapping_path: str | Path, tissue_colu
     mapping = load_tissue_mapping(mapping_path)
     synonym_lookup = build_synonym_lookup(mapping)
 
-    unmapped = {}
+    unmapped: dict[str, int] = {}
 
     for value in df[tissue_column]:
         if not value or pd.isna(value):

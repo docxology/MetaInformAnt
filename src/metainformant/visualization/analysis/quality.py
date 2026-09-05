@@ -31,7 +31,7 @@ except ImportError:
 
 
 def plot_quality_metrics(
-    qc_data: Dict[str, Any], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    qc_data: Dict[str, Any], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a comprehensive quality metrics visualization.
 
@@ -121,11 +121,16 @@ def plot_quality_metrics(
         save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Quality metrics plot saved to {output_path}")
 
-    return axes[0]  # Return first axis for consistency
+    first_axis: Axes = axes[0]
+    return first_axis  # Return first axis for consistency
 
 
 def plot_adapter_content(
-    adapter_data: Dict[str, List[float]], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    adapter_data: Dict[str, List[float]],
+    *,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
+    **kwargs: Any,
 ) -> Axes:
     """Create an adapter content visualization.
 
@@ -183,7 +188,7 @@ def plot_adapter_content(
 
 
 def plot_gc_distribution(
-    gc_data: List[float], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    gc_data: List[float], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a GC content distribution plot.
 
@@ -238,7 +243,7 @@ def plot_gc_distribution(
 
 
 def plot_length_distribution(
-    length_data: List[int], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    length_data: List[int], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a read length distribution plot.
 
@@ -300,7 +305,7 @@ def plot_per_base_quality_boxplot(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a per-base quality boxplot from FastQC-like data.
 
@@ -361,7 +366,7 @@ def plot_sequence_duplication_levels(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot sequence duplication levels from FastQC analysis.
 
@@ -416,7 +421,7 @@ def plot_overrepresented_sequences(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot overrepresented sequences analysis.
 
@@ -481,7 +486,7 @@ def plot_kmer_profiles(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot k-mer frequency profiles.
 
@@ -538,7 +543,7 @@ def plot_vcf_quality_metrics(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (14, 10),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot comprehensive VCF quality control metrics.
 
@@ -641,10 +646,13 @@ def plot_vcf_quality_metrics(
         save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"VCF quality metrics plot saved to {output_path}")
 
-    return axes[0]
+    first_axis: Axes = axes[0]
+    return first_axis
 
 
-def _hist_with_optional_seaborn(ax, values, color, xlabel, ylabel, title) -> None:
+def _hist_with_optional_seaborn(
+    ax: Axes, values: np.ndarray, color: str | None, xlabel: str, ylabel: str, title: str
+) -> None:
     """Plot a histogram on *ax*, using seaborn KDE styling when available.
 
     Consolidates the repeated HAS_SEABORN / matplotlib-fallback branch used for
@@ -673,7 +681,7 @@ def plot_singlecell_qc_metrics(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (14, 10),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot comprehensive single-cell QC metrics.
 
@@ -782,7 +790,8 @@ def plot_singlecell_qc_metrics(
         save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Single-cell QC metrics plot saved to {output_path}")
 
-    return axes[0]
+    first_axis: Axes = axes[0]
+    return first_axis
 
 
 def plot_protein_structure_quality(
@@ -791,7 +800,7 @@ def plot_protein_structure_quality(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot protein structure quality metrics.
 
@@ -888,7 +897,8 @@ def plot_protein_structure_quality(
         save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Protein structure quality plot saved to {output_path}")
 
-    return axes[0]
+    first_axis: Axes = axes[0]
+    return first_axis
 
 
 def plot_multiomics_quality_overview(
@@ -897,7 +907,7 @@ def plot_multiomics_quality_overview(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (14, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot quality overview across multiple omics layers.
 
@@ -965,7 +975,7 @@ def plot_coverage_uniformity(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot sequencing coverage uniformity.
 
@@ -1032,7 +1042,7 @@ def plot_error_profiles(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot error profiles across different error types.
 
@@ -1078,7 +1088,7 @@ def plot_batch_effects_qc(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (14, 10),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot batch effects quality control analysis.
 
@@ -1208,7 +1218,8 @@ def plot_batch_effects_qc(
         save_figure_deterministic(plt.gcf(), output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Batch effects QC plot saved to {output_path}")
 
-    return axes[0]
+    first_axis: Axes = axes[0]
+    return first_axis
 
 
 def plot_data_integrity_metrics(
@@ -1217,7 +1228,7 @@ def plot_data_integrity_metrics(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot data integrity and completeness metrics.
 

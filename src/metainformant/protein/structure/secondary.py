@@ -7,7 +7,7 @@ structure elements using various algorithms and methods.
 from __future__ import annotations
 
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 from metainformant.core.utils import logging
 
@@ -308,7 +308,7 @@ def identify_ss_elements(ss_assignments: List[str], min_length: int = 3) -> List
         >>> len(elements) >= 2
         True
     """
-    elements = []
+    elements: List[Dict[str, Any]] = []
 
     if not ss_assignments:
         return elements
@@ -601,7 +601,7 @@ def predict_transmembrane_regions(sequence: str) -> List[Dict[str, Any]]:
     return regions
 
 
-def calculate_ss_propensities(sequence: str) -> Dict[str, Dict[str, float]]:
+def calculate_ss_propensities(sequence: str) -> Dict[str, Dict[str, Union[float, str]]]:
     """Calculate secondary structure propensities for amino acids.
 
     Args:
@@ -694,7 +694,7 @@ def validate_ss_prediction(ss_assignments: List[str], sequence: str) -> Dict[str
         >>> validation['valid_length']
         True
     """
-    validation = {
+    validation: Dict[str, Any] = {
         "valid_length": len(ss_assignments) == len(sequence),
         "valid_states": all(ss in ["H", "E", "C"] for ss in ss_assignments),
         "has_structure": any(ss in ["H", "E"] for ss in ss_assignments),

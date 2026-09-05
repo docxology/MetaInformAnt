@@ -489,13 +489,13 @@ def build_call_graph(entry_point: str | Path, repo_root: str | Path | None = Non
     class CallVisitor(ast.NodeVisitor):
         current_function: str | None = None
 
-        def visit_FunctionDef(self, node: ast.FunctionDef):
+        def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
             self.current_function = node.name
             call_graph[self.current_function] = []
             self.generic_visit(node)
             self.current_function = None
 
-        def visit_Call(self, node: ast.Call):
+        def visit_Call(self, node: ast.Call) -> None:
             if self.current_function:
                 if isinstance(node.func, ast.Name):
                     call_graph[self.current_function].append(node.func.id)

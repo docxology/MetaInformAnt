@@ -7,9 +7,9 @@ from typing import Any, Mapping
 
 # Lightweight, optional YAML/TOML support without hard deps
 try:  # pragma: no cover - optional dependency
-    import yaml  # type: ignore
+    import yaml
 except Exception:  # pragma: no cover - optional
-    yaml = None  # type: ignore
+    yaml = None
 
 try:  # pragma: no cover - optional dependency
     import importlib

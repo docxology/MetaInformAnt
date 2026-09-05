@@ -25,7 +25,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
+    np = None
 
 try:
     from sklearn.model_selection import cross_val_score
@@ -109,7 +109,7 @@ def _cross_validate(
     # Pure Python fallback
     n = len(y_list)
     fold_size = n // cv
-    scores: list[float] = []
+    fold_scores: list[float] = []
 
     for fold in range(cv):
         start = fold * fold_size
@@ -147,11 +147,11 @@ def _cross_validate(
                 scores.append(1.0 - ss_res / ss_tot if ss_tot > 1e-15 else 0.0)
             else:
                 correct = sum(1 for yt, yp in zip(test_y, preds_list) if round(yt) == round(yp))
-                scores.append(correct / len(test_y))
+            fold_scores.append(correct / len(test_y))
         except Exception:
-            scores.append(0.0)
+            fold_scores.append(0.0)
 
-    return sum(scores) / len(scores) if scores else 0.0
+    return sum(fold_scores) / len(fold_scores) if fold_scores else 0.0
 
 
 def _sample_from_distribution(name: str, dist: Any) -> Any:

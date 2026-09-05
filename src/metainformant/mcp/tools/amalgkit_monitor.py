@@ -33,7 +33,9 @@ import re
 import shutil
 import sqlite3
 from argparse import ArgumentParser
+from collections.abc import Sequence
 from pathlib import Path
+from typing import Any
 
 import psutil
 
@@ -42,7 +44,7 @@ WORK_DIR = Path("output/amalgkit")
 LOG_FILE = Path("output/amalgkit/run_all_species_incremental.log")
 
 
-def is_pipeline_cmdline(cmdline):
+def is_pipeline_cmdline(cmdline: Sequence[str]) -> bool:
     """Return True when a process command line looks like an Amalgkit workflow."""
     if any("amalgkit_monitor" in arg for arg in cmdline):
         return False
@@ -57,7 +59,7 @@ def is_pipeline_cmdline(cmdline):
     return any(Path(arg).name == "amalgkit" for arg in cmdline)
 
 
-def get_process_status():
+def get_process_status() -> dict[str, Any]:
     """Find the active Amalgkit process."""
     current_pid = os.getpid()
     for proc in psutil.process_iter(["pid", "name", "cmdline"]):
@@ -72,7 +74,7 @@ def get_process_status():
     return {"running": False, "pid": None}
 
 
-def parse_log_progress(log_file: Path = LOG_FILE):
+def parse_log_progress(log_file: Path = LOG_FILE) -> dict[str, Any]:
     """Parse the last relevant line from the log file."""
     if not log_file.exists():
         return {"processed": 0, "total": 0, "last_line": "No log file found"}
@@ -119,7 +121,7 @@ def parse_log_progress(log_file: Path = LOG_FILE):
         return {"error": str(e)}
 
 
-def get_system_stats(work_dir: Path = WORK_DIR):
+def get_system_stats(work_dir: Path = WORK_DIR) -> dict[str, Any]:
     """Get system load and disk space."""
     load = os.getloadavg()
 
@@ -229,7 +231,7 @@ def build_status(
     }
 
 
-def main():
+def main() -> None:
     """Print an operational snapshot suitable for a terminal or adapter."""
     parser = ArgumentParser(description=__doc__)
     parser.add_argument("--data-root", type=Path, default=Path(os.environ.get("AMALGKIT_DATA_ROOT", "output/amalgkit")))

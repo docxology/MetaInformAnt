@@ -14,7 +14,7 @@ import csv
 import math
 import random
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TypedDict
 
 from metainformant.core.utils.logging import get_logger
 
@@ -115,7 +115,15 @@ APIS_GENES = [
 
 # ── Calibration modes ───────────────────────────────────────────────────
 
-CALIBRATION_MODES = {
+class CalibrationMode(TypedDict):
+    """Per-mode calibration parameters for synthetic phenotype generation."""
+
+    target_gw_sig_pct: float
+    h2: float
+    label: str
+
+
+CALIBRATION_MODES: Dict[str, CalibrationMode] = {
     "NULL": {
         "target_gw_sig_pct": 0.0,
         "h2": 0.0,

@@ -101,6 +101,7 @@ def call_variants_bcftools(
         # Pipe mpileup output into call (no shell=True needed)
         mpileup_proc = subprocess.Popen(mpileup_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         result = subprocess.run(call_cmd, stdin=mpileup_proc.stdout, capture_output=True, text=True)
+        assert mpileup_proc.stdout is not None
         mpileup_proc.stdout.close()
         mpileup_proc.wait()
         result.check_returncode()
@@ -351,14 +352,14 @@ def merge_vcfs(vcf_files: List[str | Path], output_vcf: str | Path) -> subproces
         raise
 
 
-def index_vcf(vcf_path: str | Path) -> subprocess.CompletedProcess:
+def index_vcf(vcf_path: str | Path) -> Path:
     """Create tabix index for VCF file.
 
     Args:
         vcf_path: VCF file to index
 
     Returns:
-        CompletedProcess with indexing results
+        Path to the indexed/compressed VCF file
     """
     vcf_path = Path(vcf_path)
 
@@ -408,7 +409,7 @@ def validate_vcf(vcf_path: str | Path) -> Dict[str, Any]:
     if not vcf_path.exists():
         return {"valid": False, "error": "File not found"}
 
-    validation = {
+    validation: dict[str, Any] = {
         "valid": True,
         "errors": [],
         "warnings": [],

@@ -309,7 +309,7 @@ def mutation_selection_balance_recessive(mutation_rate: float, selection_coeffic
         raise ValueError("Mutation rate cannot be negative")
 
     # q ~ sqrt(mu/s)
-    return (mutation_rate / selection_coefficient) ** 0.5
+    return float((mutation_rate / selection_coefficient) ** 0.5)
 
 
 def mutation_selection_balance_dominant(mutation_rate: float, selection_coefficient: float) -> float:
@@ -373,6 +373,7 @@ def multilevel_selection_decomposition(
 
     if group_size is None or group_size <= 0:
         raise ValueError("Group size must be positive")
+    assert individual_trait_variance is not None and group_trait_variance is not None
 
     # Total phenotypic variance
     total_variance = individual_trait_variance + group_trait_variance * group_size

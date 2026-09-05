@@ -256,12 +256,12 @@ class AntWikiScraper:
             # Extract description
             desc_elem = soup.find("div", {"class": "mw-parser-output"})
             if desc_elem:
-                paragraphs = desc_elem.find_all("p", limit=3)  # type: ignore[attr-defined]
+                paragraphs = desc_elem.find_all("p", limit=3)
                 data["description"] = " ".join(p.get_text().strip() for p in paragraphs)
 
             # Extract images
             img_elems = soup.find_all("img", src=re.compile(r"\.(jpg|jpeg|png|gif)", re.IGNORECASE))
-            data["images"] = [img.get("src", "") for img in img_elems[:10]]  # type: ignore[union-attr]
+            data["images"] = [img.get("src", "") for img in img_elems[:10]]
 
             # Extract traits from behavioral and ecological data
             if behavior:

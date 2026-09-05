@@ -6,7 +6,7 @@ including domain identification, surface analysis, and structural motifs.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
@@ -70,7 +70,7 @@ def identify_domains(structure: Dict[str, Any]) -> List[Dict[str, Any]]:
         return []
 
     # Group atoms by residue
-    residues = {}
+    residues: Dict[Tuple[Any, Any], List[Any]] = {}
     for atom in atoms:
         key = (atom["chain_id"], atom["res_seq"])
         if key not in residues:
@@ -81,7 +81,7 @@ def identify_domains(structure: Dict[str, Any]) -> List[Dict[str, Any]]:
     domains = []
     current_domain = []
     prev_chain = None
-    prev_res_seq = None
+    prev_res_seq: Any = None
 
     for (chain_id, res_seq), residue_atoms in sorted(residues.items()):
         if prev_chain is not None and (chain_id != prev_chain or res_seq > prev_res_seq + 10):
@@ -140,7 +140,7 @@ def calculate_surface_area(coords: np.ndarray, probe_radius: float = 1.4) -> flo
         # For small structures, approximate as sphere
         if len(coords) > 0:
             radius = np.max(np.linalg.norm(coords - np.mean(coords, axis=0), axis=1))
-            return 4 * np.pi * (radius + probe_radius) ** 2
+            return float(4 * np.pi * (radius + probe_radius) ** 2)
         return 0.0
 
     # Use convex hull as approximation
@@ -156,7 +156,7 @@ def calculate_surface_area(coords: np.ndarray, probe_radius: float = 1.4) -> flo
         # Add probe radius effect (simplified)
         surface_area *= 1 + probe_radius / 10.0
 
-        return surface_area
+        return float(surface_area)
 
     except ImportError:
         # Fallback to bounding box approximation
@@ -169,7 +169,7 @@ def calculate_surface_area(coords: np.ndarray, probe_radius: float = 1.4) -> flo
             dimensions[0] * dimensions[1] + dimensions[1] * dimensions[2] + dimensions[2] * dimensions[0]
         )
 
-        return surface_area
+        return float(surface_area)
 
 
 def analyze_structural_motifs(structure: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -334,7 +334,7 @@ def analyze_protein_flexibility(structure: Dict[str, Any]) -> Dict[str, Any]:
     flexible_regions = []
 
     # Group by residue
-    residue_b_factors = {}
+    residue_b_factors: Dict[Tuple[Any, Any], List[Any]] = {}
     for atom in atoms:
         key = (atom["chain_id"], atom["res_seq"])
         b_factor = atom.get("temp_factor", 0.0)

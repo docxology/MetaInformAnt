@@ -30,7 +30,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
+    np = None
 
 try:
     from scipy import stats as scipy_stats
@@ -38,7 +38,7 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None  # type: ignore[assignment]
+    scipy_stats = None
 
 
 def phase_reads(

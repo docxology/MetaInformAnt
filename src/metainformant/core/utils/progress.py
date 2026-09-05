@@ -6,7 +6,7 @@ Provides progress bars and task tracking for long-running operations.
 from __future__ import annotations
 
 import contextlib
-from typing import Any, Iterator
+from typing import Any, Iterable, Iterator, Self
 
 from .logging import get_logger
 
@@ -22,20 +22,26 @@ except ImportError:
 
     # Create a minimal tqdm-like interface
     class tqdm:  # type: ignore
-        def __init__(self, iterable=None, total=None, desc=None, **kwargs):
+        def __init__(
+            self,
+            iterable: Iterable[Any] | None = None,
+            total: int | None = None,
+            desc: str | None = None,
+            **kwargs: Any,
+        ) -> None:
             self.iterable = iterable
             self.total = total
             self.desc = desc or ""
             self.n = 0
 
-        def __enter__(self):
+        def __enter__(self) -> Self:
             return self
 
-        def __exit__(self, *args):
+        def __exit__(self, *args: object) -> None:
             if self.desc:
                 logger.info(f"{self.desc}: completed {self.n} items")
 
-        def __iter__(self):
+        def __iter__(self) -> Any:
             if self.iterable:
                 for item in self.iterable:
                     self.n += 1
@@ -43,10 +49,10 @@ except ImportError:
             else:
                 return self
 
-        def update(self, n=1):
+        def update(self, n: int = 1) -> None:
             self.n += n
 
-        def set_description(self, desc):
+        def set_description(self, desc: str) -> None:
             self.desc = desc
 
 
@@ -98,7 +104,7 @@ def task_context(task_name: str, total_steps: int | None = None) -> Iterator[Any
             self.total = total
             self.current = 0
 
-        def update(self, n: int = 1):
+        def update(self, n: int = 1) -> None:
             self.current += n
             if self.total:
                 pct = (self.current / self.total) * 100
@@ -106,7 +112,7 @@ def task_context(task_name: str, total_steps: int | None = None) -> Iterator[Any
             else:
                 logger.debug(f"{self.name}: {self.current} steps completed")
 
-        def set_description(self, desc: str):
+        def set_description(self, desc: str) -> None:
             logger.info(f"{self.name}: {desc}")
 
     tracker = TaskTracker(task_name, total_steps)

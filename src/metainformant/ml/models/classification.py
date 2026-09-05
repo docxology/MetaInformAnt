@@ -7,7 +7,7 @@ and biological data handling.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 import numpy as np
 
@@ -100,7 +100,7 @@ class BiologicalClassifier:
             model_params = {**params}
             if random_state is not None:
                 model_params["random_state"] = random_state
-            self.model = factory(**model_params)
+            self.model: Any = factory(**model_params)
         elif model is not None:
             # Model-based initialization
             self.algorithm = model_type
@@ -161,7 +161,7 @@ class BiologicalClassifier:
         """
         if not self._is_fitted:
             raise ValueError("Model not fitted")
-        return self.model.predict(X)
+        return cast("np.ndarray", self.model.predict(X))
 
     def predict_proba(self, X: np.ndarray) -> np.ndarray:
         """Predict class probabilities.
@@ -175,7 +175,7 @@ class BiologicalClassifier:
         if not self._is_fitted:
             raise ValueError("Model not fitted")
         if hasattr(self.model, "predict_proba"):
-            return self.model.predict_proba(X)
+            return cast("np.ndarray", self.model.predict_proba(X))
         else:
             raise AttributeError(f"Model {self.model_type} does not support probability prediction")
 
@@ -188,9 +188,12 @@ class BiologicalClassifier:
         if not self._is_fitted:
             raise ValueError("Model not fitted")
         if hasattr(self.model, "feature_importances_"):
-            return self.model.feature_importances_
+            return cast("np.ndarray", self.model.feature_importances_)
         elif hasattr(self.model, "coef_"):
-            return np.abs(self.model.coef_).mean(axis=0) if self.model.coef_.ndim > 1 else np.abs(self.model.coef_)
+            return cast(
+                "np.ndarray",
+                np.abs(self.model.coef_).mean(axis=0) if self.model.coef_.ndim > 1 else np.abs(self.model.coef_),
+            )
         else:
             raise AttributeError(f"Model {self.model_type} does not support feature importance")
 
@@ -405,7 +408,7 @@ def cross_validate_biological(
     # Evaluate multiple metrics
     scoring = ["accuracy", "precision_weighted", "recall_weighted", "f1_weighted"]
 
-    cv_results = {}
+    cv_results: Dict[str, Any] = {}
     for metric in scoring:
         try:
             scores = cross_val_score(classifier, X, y, cv=cv, scoring=metric, n_jobs=parallel_jobs)
@@ -486,7 +489,7 @@ def create_biological_classifier(method: str = "rf", **kwargs: Any) -> Biologica
 def compare_classifiers(
     X: np.ndarray,
     y: np.ndarray,
-    methods: List[str] = None,
+    methods: List[str] | None = None,
     cv_folds: int = 5,
     random_state: int | None = None,
 ) -> Dict[str, Any]:

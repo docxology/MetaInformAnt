@@ -16,7 +16,7 @@ References:
 from __future__ import annotations
 
 import math
-from typing import Any
+from typing import Any, cast
 
 from metainformant.core.utils.logging import get_logger
 
@@ -28,7 +28,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
+    np = None
 
 
 # ---------------------------------------------------------------------------
@@ -741,7 +741,7 @@ def _apply_ld_adjustment(
         penalty = 1.0 - max_ld_with_stronger**2
         adjusted[idx] = bf_arr[idx] * max(penalty, 0.01)
 
-    return adjusted.tolist()
+    return cast(list[float], adjusted.tolist())
 
 
 def _compute_prior_probabilities(

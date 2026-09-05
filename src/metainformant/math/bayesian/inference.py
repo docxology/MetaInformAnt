@@ -222,7 +222,7 @@ def abc_rejection(
     """
     if distance == "manhattan":
 
-        def dist_fn(a, b):
+        def dist_fn(a: list[float], b: list[float]) -> float:
             return sum(abs(ai - bi) for ai, bi in zip(a, b))
 
     else:

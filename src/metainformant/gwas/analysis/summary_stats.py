@@ -13,6 +13,14 @@ from typing import Any, Dict, List, Union
 
 from metainformant.core.utils import logging
 
+try:
+    import numpy as np
+
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
+    np = None
+
 logger = logging.get_logger(__name__)
 
 
@@ -331,7 +339,7 @@ def calculate_ld_decay(
 
     import random
 
-    pairs = set()
+    pairs: set[tuple[int, int]] = set()
     attempts = 0
     while len(pairs) < sample_pairs and attempts < sample_pairs * 5:
         attempts += 1

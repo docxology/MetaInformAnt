@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import math
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 from metainformant.core.utils import logging
 
@@ -382,7 +382,7 @@ def _vanraden_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
         valid_p_mask = (p > 0.0) & (p < 1.0)
 
         if not np.any(valid_p_mask):
-            return np.eye(n_samples).tolist()
+            return cast(List[List[float]], np.eye(n_samples).tolist())
 
         # Filter genotype matrix to valid variants
         X = X[valid_p_mask, :]
@@ -423,14 +423,14 @@ def _vanraden_kinship(genotype_matrix: List[List[int]]) -> List[List[float]]:
         scaling = 2.0 * np.sum(p * (1.0 - p))
 
         if scaling <= 0:
-            return np.eye(n_samples).tolist()
+            return cast(List[List[float]], np.eye(n_samples).tolist())
 
         # Compute Kinship: K = Z.T @ Z / scaling
         # Z is (variants, samples). Z.T is (samples, variants)
         # Result is (samples, samples)
         K = np.matmul(Z.T, Z) / scaling
 
-        return K.tolist()
+        return cast(List[List[float]], K.tolist())
 
     except ImportError:
         pass
@@ -645,7 +645,7 @@ def _compute_covariance_matrix(matrix: List[List[float]]) -> List[List[float]]:
     try:
         import numpy as np
 
-        return np.cov(matrix).tolist()
+        return cast(List[List[float]], np.cov(matrix).tolist())
     except ImportError:
         pass
 

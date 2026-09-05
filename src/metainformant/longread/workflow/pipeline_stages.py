@@ -173,7 +173,7 @@ def _build_assembly_steps(orch: LongReadOrchestrator, reads: Any) -> list[Pipeli
         raw_reads = orch._load_reads_sync(reads)
         length_filtered = filter_by_length(raw_reads, min_length=min_read_length)
         quality_filtered = filter_by_quality(length_filtered, min_q=min_read_quality)
-        return quality_filtered  # type: ignore[return-value]
+        return quality_filtered
 
     steps.append(PipelineStep(name="filter_reads", function=_filter_reads, params={}, depends_on=[]))
 

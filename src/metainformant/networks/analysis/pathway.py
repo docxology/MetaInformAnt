@@ -220,7 +220,7 @@ def pathway_topology_analysis(pathway_graph: Any, **kwargs: Any) -> Dict[str, An
     return analysis
 
 
-def find_pathway_modules(pathway_graph: Any, method: str = "louvain", **kwargs: Any) -> List[List[str]]:
+def find_pathway_modules(pathway_graph: Any, method: str = "louvain", **kwargs: Any) -> Dict[str, int]:
     """Identify functional modules within pathways.
 
     Args:
@@ -229,7 +229,7 @@ def find_pathway_modules(pathway_graph: Any, method: str = "louvain", **kwargs: 
         **kwargs: Parameters for community detection
 
     Returns:
-        List of module (community) node lists
+        Dict mapping node IDs to community IDs
 
     Raises:
         ImportError: If networkx not available
@@ -338,7 +338,7 @@ def pathway_hierarchy_analysis(
 
             # Calculate hierarchy statistics
             try:
-                levels = {}
+                levels: dict[str, int] = {}
                 for node in nx.topological_sort(hierarchy_graph):
                     predecessors = list(hierarchy_graph.predecessors(node))
                     if not predecessors:
@@ -422,7 +422,7 @@ def pathway_disease_association(
             _ = []  # Would need pathway gene lists
 
             # Calculate overlap
-            pathway_gene_set = set()  # Would need to populate this
+            pathway_gene_set: set[str] = set()  # Would need to populate this
             disease_gene_set = set(genes)
             overlap = len(pathway_gene_set & disease_gene_set)
 
@@ -515,7 +515,7 @@ class PathwayNetwork:
         """
         self.name = name
         self.pathways = pathways or {}
-        self.metadata = {}
+        self.metadata: Dict[str, Any] = {}
         self.pathway_metadata: Dict[str, Dict[str, Any]] = {}
 
     @property
@@ -631,7 +631,7 @@ class PathwayNetwork:
             Dictionary of dictionaries with Jaccard similarity between pathways
         """
         pathway_names = list(self.pathways.keys())
-        overlap_matrix = {}
+        overlap_matrix: Dict[str, Dict[str, float]] = {}
 
         # Initialize all keys first
         for name in pathway_names:
@@ -821,10 +821,10 @@ def pathway_enrichment(
 
     # Prepare background genes
     if background_genes is None:
-        background_genes = set()
+        background_gene_set: set[str] = set()
         for genes in pathway_network.pathways.values():
-            background_genes.update(genes)
-        background_genes = list(background_genes)
+            background_gene_set.update(genes)
+        background_genes = list(background_gene_set)
 
     # Convert gene list to set for faster lookup
     query_genes = set(gene_list)

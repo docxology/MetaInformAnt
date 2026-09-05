@@ -149,7 +149,7 @@ def identify_salt_bridges(
     negative_residues = {"ASP", "GLU"}
 
     # Group atoms by residue
-    residue_atoms = {}
+    residue_atoms: Dict[Tuple[Any, Any, Any], List[Tuple[int, Dict[str, Any]]]] = {}
     for i, atom in enumerate(atoms):
         res_key = (atom["chain_id"], atom["res_seq"], atom["res_name"])
         if res_key not in residue_atoms:
@@ -236,7 +236,7 @@ def identify_hydrophobic_contacts(
     hydrophobic_residues = {"ALA", "VAL", "LEU", "ILE", "MET", "PHE", "TRP", "PRO"}
 
     # Group atoms by residue
-    residue_atoms = {}
+    residue_atoms: Dict[Tuple[Any, Any, Any], List[Tuple[int, Dict[str, Any]]]] = {}
     for i, atom in enumerate(atoms):
         res_key = (atom["chain_id"], atom["res_seq"], atom["res_name"])
         if res_key not in residue_atoms:

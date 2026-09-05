@@ -109,9 +109,9 @@ def analyze_regulatory_motifs(
     }
 
 
-def _find_feed_forward_loops(G: Any) -> List[List[str]]:
+def _find_feed_forward_loops(G: Any) -> List[Dict[str, Any]]:
     """Find feed-forward loop motifs in regulatory network."""
-    ffl_motifs = []
+    ffl_motifs: List[Dict[str, Any]] = []
 
     # FFL: A -> B, A -> C, B -> C
     for a in G.nodes():
@@ -134,9 +134,9 @@ def _find_feed_forward_loops(G: Any) -> List[List[str]]:
     return ffl_motifs
 
 
-def _find_feedback_loops(G: Any) -> List[List[str]]:
+def _find_feedback_loops(G: Any) -> List[Dict[str, Any]]:
     """Find feedback loop motifs in regulatory network."""
-    feedback_motifs = []
+    feedback_motifs: List[Dict[str, Any]] = []
 
     # Simple feedback: A -> B -> A
     for a in G.nodes():
@@ -152,9 +152,9 @@ def _find_feedback_loops(G: Any) -> List[List[str]]:
     return feedback_motifs
 
 
-def _find_regulatory_cascades(G: Any, max_length: int = 5) -> List[List[str]]:
+def _find_regulatory_cascades(G: Any, max_length: int = 5) -> List[Dict[str, Any]]:
     """Find regulatory cascades in the network."""
-    cascades = []
+    cascades: List[Dict[str, Any]] = []
 
     # Find paths of length 2 to max_length
     for source in G.nodes():
@@ -207,7 +207,7 @@ def calculate_regulatory_influence(regulatory_graph: Any, source_nodes: List[str
     influence_scores = {}
 
     for node in regulatory_graph.nodes():
-        total_influence = 0
+        total_influence: float = 0
 
         for source in valid_sources:
             if source == node:
@@ -366,7 +366,7 @@ def regulatory_network_stability_analysis(regulatory_graph: Any, **kwargs: Any) 
     if not HAS_NETWORKX:
         raise ImportError("networkx required for stability analysis")
 
-    analysis = {
+    analysis: Dict[str, Dict[str, Any]] = {
         "structural_stability": {},
         "dynamical_stability": {},
     }
@@ -466,9 +466,9 @@ class GeneRegulatoryNetwork:
             self.name = name
             if self.graph is None and HAS_NETWORKX:
                 self.graph = nx.DiGraph()
-        self.metadata = {}
-        self.tf_targets = {}  # Map of transcription factors to their targets
-        self.target_tfs = {}  # Map of targets to their regulators
+        self.metadata: Dict[str, Any] = {}
+        self.tf_targets: Dict[str, List[str]] = {}  # Map of transcription factors to their targets
+        self.target_tfs: Dict[str, List[str]] = {}  # Map of targets to their regulators
         self._gene_metadata: Dict[str, Dict[str, Any]] = {}
 
     @property
@@ -668,7 +668,7 @@ class GeneRegulatoryNetwork:
         Returns:
             Dictionary of motif types and their instances
         """
-        motifs = {
+        motifs: Dict[str, List[List[str]]] = {
             "feed_forward": [],  # TF1 -> TF2 -> Target
             "auto_regulation": [],  # TF regulates itself
             "mutual_regulation": [],  # TF1 <-> TF2

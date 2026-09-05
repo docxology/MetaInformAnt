@@ -20,7 +20,7 @@ from metainformant.core.utils.logging import get_logger
 try:
     import numpy as np
 except ImportError:
-    np = None  # type: ignore[assignment]
+    np = None
 
 try:
     import matplotlib
@@ -33,7 +33,7 @@ try:
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
-    Figure = Any  # type: ignore[assignment, misc]
+    Figure = Any
 
 logger = get_logger(__name__)
 
@@ -361,7 +361,7 @@ def plot_sv_size_distribution(
         max_size = max(all_sizes)
         bins = np.logspace(np.log10(min_size), np.log10(max_size), 50)
     else:
-        bins = 50  # type: ignore[assignment]
+        bins = 50
 
     for vtype in sorted(sizes_by_type.keys()):
         color = SV_COLORS.get(vtype, SV_COLORS["UNKNOWN"])

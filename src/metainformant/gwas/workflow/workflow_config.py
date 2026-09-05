@@ -13,7 +13,7 @@ This module provides configuration management for GWAS workflows:
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union, cast
 
 from metainformant.core import io
 from metainformant.core.utils import logging
@@ -31,8 +31,8 @@ class GWASWorkflowConfig:
         vcf_path: Optional[str] = None,
         phenotype_path: Optional[str] = None,
         log_dir: Optional[Union[str, Path]] = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> None:
         """Initialize GWAS workflow configuration.
 
         Args:
@@ -220,7 +220,7 @@ def load_gwas_config(config_file: Union[str, Path]) -> Dict[str, Any]:
         else:
             raise ValueError(f"Unsupported config format: {config_path.suffix}")
 
-        return config
+        return cast(Dict[str, Any], config)
 
     except Exception as e:
         raise ValueError(f"Error loading configuration from {config_path}: {e}")

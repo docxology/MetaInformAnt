@@ -7,7 +7,7 @@ and permutation importance analysis.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Callable, Dict, List, Tuple
 
 import numpy as np
 
@@ -229,7 +229,7 @@ def permutation_importance_biological(
 def validate_model_stability(
     X: np.ndarray,
     y: np.ndarray,
-    model_factory: callable,
+    model_factory: Callable[..., Any],
     n_bootstraps: int = 50,
     test_size: float = 0.2,
     random_state: int | None = None,
@@ -298,7 +298,7 @@ def validate_model_stability(
     # Calculate stability metrics
     scores_array = np.array(scores)
 
-    results = {
+    results: Dict[str, Any] = {
         "n_bootstraps": n_bootstraps,
         "scores": {
             "mean": float(scores_array.mean()),
@@ -333,8 +333,8 @@ def validate_model_stability(
 def compare_validation_strategies(
     X: np.ndarray,
     y: np.ndarray,
-    model_factory: callable,
-    strategies: List[str] = None,
+    model_factory: Callable[..., Any],
+    strategies: List[str] | None = None,
     random_state: int | None = None,
 ) -> Dict[str, Any]:
     """Compare different validation strategies.
@@ -352,7 +352,7 @@ def compare_validation_strategies(
     if strategies is None:
         strategies = ["holdout", "5fold_cv", "10fold_cv", "stratified_5fold"]
 
-    results = {}
+    results: Dict[str, Any] = {}
 
     for strategy in strategies:
         try:
@@ -418,7 +418,7 @@ def compare_validation_strategies(
 def biological_data_validator(
     X: np.ndarray,
     y: np.ndarray,
-    checks: List[str] = None,
+    checks: List[str] | None = None,
 ) -> Dict[str, Any]:
     """Validate biological data for machine learning.
 
@@ -508,7 +508,7 @@ def biological_data_validator(
 def bootstrap_validate(
     X: np.ndarray,
     y: np.ndarray,
-    model_func: callable,
+    model_func: Callable[..., Any],
     n_bootstrap: int = 100,
     test_size: float = 0.2,
     random_state: int = 42,
@@ -702,11 +702,11 @@ def k_fold_split(
 def learning_curve(
     X: np.ndarray,
     y: np.ndarray,
-    model_factory: callable = None,
+    model_factory: Any = None,
     train_sizes: np.ndarray = None,
     cv: int = 5,
     random_state: int = 42,
-    classifier_func: callable = None,
+    classifier_func: Any = None,
     cv_folds: int | None = None,
 ) -> Dict[str, Any]:
     """Generate learning curves for model evaluation.

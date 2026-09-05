@@ -7,7 +7,7 @@ including Bonferroni, FDR, and genomic control methods.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from metainformant.core.utils import logging
 
@@ -370,7 +370,7 @@ def _estimate_pi0(p_values: List[float]) -> float:
     return 1.0
 
 
-def adjust_p_values(p_values: List[float], method: str = "bonferroni", **kwargs) -> List[float]:
+def adjust_p_values(p_values: List[float], method: str = "bonferroni", **kwargs: Any) -> List[float]:
     """General function for p-value adjustment.
 
     Args:
@@ -387,16 +387,19 @@ def adjust_p_values(p_values: List[float], method: str = "bonferroni", **kwargs)
         return [min(p * len(p_values), 1.0) for p in p_values]
 
     elif method.lower() == "fdr":
-        _, adjusted_p = fdr_correction(
-            p_values,
-            kwargs.get("alpha", 0.05),
-            kwargs.get("fdr_method", "bh"),
-            return_dict=False,
+        _, adjusted_p = cast(
+            Tuple[List[bool], List[float]],
+            fdr_correction(
+                p_values,
+                kwargs.get("alpha", 0.05),
+                kwargs.get("fdr_method", "bh"),
+                return_dict=False,
+            ),
         )
         return adjusted_p
 
     elif method.lower() == "genomic_control":
-        adjusted_p, _ = genomic_control(p_values, return_dict=False)
+        adjusted_p, _ = cast(Tuple[List[float], float], genomic_control(p_values, return_dict=False))
         return adjusted_p
 
     elif method.lower() == "qvalue":

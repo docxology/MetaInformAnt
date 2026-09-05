@@ -42,7 +42,7 @@ class PipelineConfig:
     def from_yaml(cls, path: Union[str, Path]) -> PipelineConfig:
         """Load configuration from YAML file."""
         try:
-            import yaml  # type: ignore[import-untyped]
+            import yaml
         except ImportError:
             raise ImportError("YAML loading requires pyyaml: uv pip install pyyaml")
 

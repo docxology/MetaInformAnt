@@ -31,7 +31,7 @@ except ImportError:
     HAS_NETWORKX = False
 
 
-def plot_network_basic(G: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs) -> Axes:
+def plot_network_basic(G: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any) -> Axes:
     """Create a basic network visualization using spring layout.
 
     Args:
@@ -78,7 +78,9 @@ def plot_network_basic(G: Any, *, ax: Axes | None = None, output_path: str | Pat
     return ax
 
 
-def plot_network_circular(G: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs) -> Axes:
+def plot_network_circular(
+    G: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
+) -> Axes:
     """Create a circular network visualization.
 
     Args:
@@ -126,7 +128,7 @@ def plot_network_circular(G: Any, *, ax: Axes | None = None, output_path: str | 
 
 
 def plot_network_hierarchical(
-    G: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    G: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a hierarchical network visualization.
 
@@ -201,7 +203,7 @@ def plot_network_hierarchical(
 
 
 def plot_network_force_directed(
-    G: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    G: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a force-directed network visualization.
 
@@ -250,7 +252,12 @@ def plot_network_force_directed(
 
 
 def plot_community_network(
-    G: Any, communities: Dict[str, int], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    G: Any,
+    communities: Dict[str, int],
+    *,
+    ax: Axes | None = None,
+    output_path: str | Path | None = None,
+    **kwargs: Any,
 ) -> Axes:
     """Create a community-colored network visualization.
 

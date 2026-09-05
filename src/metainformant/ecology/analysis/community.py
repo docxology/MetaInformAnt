@@ -10,7 +10,7 @@ from __future__ import annotations
 import math
 import statistics
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from metainformant.core.data import validation
 from metainformant.core.utils import logging
@@ -43,15 +43,15 @@ def calculate_diversity(
     logger.info(f"Calculating {method} diversity for ecological communities")
 
     if isinstance(species_matrix, dict):
-        results = {}
+        results_by_name: Dict[str, List[float]] = {}
         for community_name, abundances in species_matrix.items():
-            results[community_name] = [calculate_single_diversity(abundances, method)]
-        return results
+            results_by_name[community_name] = [calculate_single_diversity(abundances, method)]
+        return results_by_name
     else:
-        results = []
+        diversity_values: List[float] = []
         for abundances in species_matrix:
-            results.append(calculate_single_diversity(abundances, method))
-        return results
+            diversity_values.append(calculate_single_diversity(abundances, method))
+        return diversity_values
 
 
 def calculate_single_diversity(abundances: List[float], method: str) -> float:
@@ -122,22 +122,22 @@ def species_richness(
 
     # Simple list case (flat list of numbers, not nested)
     if isinstance(community_data, list) and (not community_data or not isinstance(community_data[0], list)):
-        return species_richness_simple(community_data)
+        return species_richness_simple(cast("List[float]", community_data))
 
     # Dict case
     if isinstance(community_data, dict):
-        results = {}
+        richness_by_community: Dict[str, int] = {}
         for community_name, abundances in community_data.items():
             richness = sum(1 for abundance in abundances if abundance > 0)
-            results[community_name] = richness
-        return results
+            richness_by_community[community_name] = richness
+        return richness_by_community
 
     # Nested list case
-    results = []
+    richness_counts: List[int] = []
     for abundances in community_data:
         richness = sum(1 for abundance in abundances if abundance > 0)
-        results.append(richness)
-    return results
+        richness_counts.append(richness)
+    return richness_counts
 
 
 def calculate_evenness(abundances: List[float], method: str = "pielou") -> float:
@@ -196,12 +196,12 @@ def rarefaction_curve(abundances: List[float], max_samples: Optional[int] = None
         List of (sample_size, richness) tuples
     """
     # Filter and sort abundances (descending)
-    abundances = sorted([int(x) for x in abundances if x > 0], reverse=True)
+    counts: List[int] = sorted([int(x) for x in abundances if x > 0], reverse=True)
 
-    if len(abundances) == 0:
+    if len(counts) == 0:
         return [(0, 0.0)]
 
-    total_individuals = sum(abundances)
+    total_individuals = sum(counts)
 
     if max_samples is None:
         max_samples = min(total_individuals, 1000)  # Default max
@@ -214,7 +214,7 @@ def rarefaction_curve(abundances: List[float], max_samples: Optional[int] = None
         # Calculate expected richness for sample size n
         expected_richness = 0.0
 
-        for abundance in abundances:
+        for abundance in counts:
             if abundance > 0:
                 # Hypergeometric expectation
                 prob = 1.0 - math.exp(-n * abundance / total_individuals)
@@ -344,17 +344,14 @@ def dominance_diversity_curve(abundances: List[float]) -> List[Tuple[float, floa
     if total_abundance == 0:
         return [(0.0, 0.0)]
 
-    curve = []
+    curve: List[Tuple[float, float]] = []
     cumulative_abundance = 0.0
 
     for i, abundance in enumerate(sorted_abundances):
         cumulative_abundance += abundance
         dominance = cumulative_abundance / total_abundance
 
-        # Number of species needed to reach this dominance level
-        diversity = i + 1
-
-        curve.append((dominance, diversity))
+        curve.append((dominance, float(i + 1)))
 
     return curve
 
@@ -482,7 +479,7 @@ def calculate_biodiversity_indices(
     if indices is None:
         indices = ["shannon", "simpson", "invsimpson", "richness"]
 
-    results = {}
+    results: Dict[str, List[float]] = {}
 
     for index_name in indices:
         try:
@@ -490,7 +487,9 @@ def calculate_biodiversity_indices(
             if isinstance(values, list):
                 results[index_name] = values
             else:
-                results[index_name] = [values]
+                # calculate_diversity only returns a dict for dict input; community_data is
+                # a list, so fall back to the same zeros used when the index fails.
+                results[index_name] = [0.0] * len(community_data)
         except Exception as e:
             logger.warning(f"Could not calculate {index_name} index: {e}")
             results[index_name] = [0.0] * len(community_data)
@@ -545,10 +544,7 @@ def alpha_beta_gamma_diversity(communities: List[List[float]]) -> Dict[str, floa
 
     # Alpha diversity (mean Shannon diversity)
     alpha_values = calculate_diversity(communities, "shannon")
-    if isinstance(alpha_values, list):
-        alpha = statistics.mean(alpha_values) if alpha_values else 0.0
-    else:
-        alpha = alpha_values
+    alpha = statistics.mean(alpha_values) if isinstance(alpha_values, list) and alpha_values else 0.0
 
     # Gamma diversity (diversity of pooled communities)
     pooled_abundances = []

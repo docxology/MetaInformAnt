@@ -410,7 +410,7 @@ def get_highly_variable_genes(
     sorted_genes = variability.sort_values(ascending=False)
 
     n_top = min(n_top, len(sorted_genes))
-    top_genes = sorted_genes.head(n_top).index.tolist()
+    top_genes: list[str] = sorted_genes.head(n_top).index.tolist()
 
     logger.info(f"Selected {len(top_genes)} highly variable genes using {method}")
 

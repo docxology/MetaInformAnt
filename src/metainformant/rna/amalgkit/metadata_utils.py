@@ -9,7 +9,7 @@ from metainformant.core.utils import logging
 logger = logging.get_logger(__name__)
 
 
-def deduplicate_metadata(file_path: str | Path, output_path: str | Path = None) -> bool:
+def deduplicate_metadata(file_path: str | Path, output_path: str | Path | None = None) -> bool:
     """Deduplicate amalgkit metadata table and fix placeholder scientific names.
 
     Args:

@@ -280,7 +280,7 @@ def regulatory_motifs(grn: GeneRegulatoryNetwork) -> List[Dict[str, Any]]:
     Returns:
         List of identified motifs with type, genes, and confidence
     """
-    motifs = []
+    motifs: List[Dict[str, Any]] = []
 
     if not HAS_NETWORKX:
         return motifs

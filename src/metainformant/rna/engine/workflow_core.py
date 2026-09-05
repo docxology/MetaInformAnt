@@ -112,7 +112,7 @@ class AmalgkitWorkflowConfig:
         auto_install_amalgkit: bool = True,
         log_dir: Optional[str] = None,
         source_path: Optional[Union[str, Path]] = None,
-        **kwargs,
+        **kwargs: Any,
     ):
         """Initialize workflow configuration.
 

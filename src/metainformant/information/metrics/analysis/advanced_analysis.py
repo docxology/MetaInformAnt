@@ -59,7 +59,7 @@ def fisher_information(
             return float(np.mean(grads**2))
         else:
             # Empirical estimation using KDE score function
-            from scipy.stats import gaussian_kde  # type: ignore[import-untyped]
+            from scipy.stats import gaussian_kde
 
             kde = gaussian_kde(samples)
             # Score function: d/dx log f(x) = f'(x)/f(x)

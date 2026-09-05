@@ -17,7 +17,7 @@ import csv
 import gzip
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
+from typing import IO, Any, cast
 
 from metainformant.core.utils.logging import get_logger
 
@@ -28,20 +28,20 @@ try:
     import numpy as np
     from numpy.typing import NDArray
 except ImportError:
-    np = None  # type: ignore[assignment]
-    NDArray = None  # type: ignore[assignment,misc]
+    np = None
+    NDArray = None
 
 try:
     from scipy import sparse as sp_sparse
     from scipy.io import mmread
 except ImportError:
-    sp_sparse = None  # type: ignore[assignment]
-    mmread = None  # type: ignore[assignment]
+    sp_sparse = None
+    mmread = None
 
 try:
     import pandas as pd
 except ImportError:
-    pd = None  # type: ignore[assignment]
+    pd = None
 
 
 @dataclass
@@ -117,10 +117,10 @@ class XeniumDataset:
         return len(self.gene_names)
 
 
-def _open_maybe_gzipped(filepath: Path, mode: str = "rt"):
+def _open_maybe_gzipped(filepath: Path, mode: str = "rt") -> IO[str]:
     """Open a file that may or may not be gzipped."""
     if str(filepath).endswith(".gz"):
-        return gzip.open(filepath, mode)
+        return cast(IO[str], gzip.open(filepath, mode))
     return open(filepath, mode, newline="")
 
 

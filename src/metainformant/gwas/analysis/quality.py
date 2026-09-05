@@ -9,7 +9,7 @@ from __future__ import annotations
 import gzip
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, TextIO, Tuple, Union, cast
 
 import numpy as np
 
@@ -70,7 +70,7 @@ def parse_vcf_full(vcf_path: Union[str, Path]) -> Dict[str, Any]:
 
     n_variants = 0
     try:
-        with opener(vcf_path, mode) as f:
+        with cast(TextIO, opener(vcf_path, mode)) as f:
             for line in f:
                 if not line.startswith("#"):
                     n_variants += 1
@@ -185,7 +185,7 @@ def filter_by_maf(genotypes: List[List[int]], maf_threshold: float = 0.01) -> Tu
 
     for i, variant_genotypes in enumerate(genotypes):
         # Calculate allele frequencies
-        allele_counts = {}
+        allele_counts: Dict[int, int] = {}
         total_alleles = 0
 
         for genotype in variant_genotypes:
@@ -429,7 +429,7 @@ def check_haplodiploidy(
 
 def apply_qc_filters(
     vcf_input: Union[str, Path, Dict[str, Any]],
-    qc_config: Optional[Dict[str, Any]] = None,  # noqa: F821
+    qc_config: Optional[Dict[str, Any]] = None,
 ) -> Dict[str, Any]:
     """Apply comprehensive quality control filters to VCF data.
 

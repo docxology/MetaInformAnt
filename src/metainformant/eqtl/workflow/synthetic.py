@@ -15,6 +15,8 @@ Example:
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import logging
 import re
 
@@ -214,7 +216,7 @@ def create_synthetic_genotypes(
 
 
 def load_real_expression_data(
-    quant_dir,
+    quant_dir: Path | str,
     max_samples: int = 100,
     min_tpm: float = 1.0,
     max_genes: int = 1000,

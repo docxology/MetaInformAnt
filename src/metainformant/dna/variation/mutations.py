@@ -306,7 +306,7 @@ def calculate_substitution_matrix(seq1: str, seq2: str) -> Dict[Tuple[str, str],
     if len(seq1) != len(seq2):
         return {}
 
-    substitutions = {}
+    substitutions: Dict[Tuple[str, str], int] = {}
 
     for a, b in zip(seq1.upper(), seq2.upper()):
         if a != b:

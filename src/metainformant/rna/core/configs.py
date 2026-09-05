@@ -239,7 +239,7 @@ class AmalgkitRunLayout:
     log_dir: Optional[Path] = None
     base_dir: Optional[Path] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.base_dir:
             if not self.work_dir:
                 self.work_dir = self.base_dir / "work"
@@ -267,6 +267,8 @@ class AmalgkitRunLayout:
     @property
     def merge_table(self) -> Path:
         """Get path to the merged expression table."""
+        if self.merge_dir is None:
+            raise ValueError("AmalgkitRunLayout.merge_dir is not configured")
         return self.merge_dir / "expression_matrix.tsv"
 
     @classmethod
@@ -296,6 +298,8 @@ class AmalgkitRunLayout:
             self.sanity_dir,
             self.log_dir,
         ]:
+            if dir_path is None:
+                raise ValueError("AmalgkitRunLayout directory is not configured")
             dir_path.mkdir(parents=True, exist_ok=True)
 
     def get_step_output_dir(self, step: str) -> Path:
@@ -322,7 +326,10 @@ class AmalgkitRunLayout:
         if step not in step_dirs:
             raise ValueError(f"Unknown step: {step}")
 
-        return step_dirs[step]
+        dir_path = step_dirs[step]
+        if dir_path is None:
+            raise ValueError(f"Step directory for '{step}' is not configured")
+        return dir_path
 
 
 @dataclass
@@ -354,7 +361,7 @@ def build_step_params(species: SpeciesProfile, layout: AmalgkitRunLayout) -> Dic
     }
 
     # Step-specific parameters
-    step_params = {
+    step_params: Dict[str, Dict[str, Any]] = {
         "metadata": {
             **base_params,
             "taxon-id": species.taxon_id,

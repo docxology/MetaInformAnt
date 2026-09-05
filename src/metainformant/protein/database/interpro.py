@@ -398,7 +398,8 @@ def get_interpro_go_annotations(interpro_id: str) -> List[Dict[str, Any]]:
     entry = fetch_interpro_by_accession(interpro_id)
 
     if entry and "go_terms" in entry:
-        return entry["go_terms"]
+        go_terms: List[Dict[str, Any]] = entry["go_terms"]
+        return go_terms
 
     return []
 

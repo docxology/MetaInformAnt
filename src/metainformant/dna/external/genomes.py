@@ -266,7 +266,7 @@ def list_genome_assemblies(organism: str, max_results: int = 10) -> List[Dict[st
     # Use NCBI Datasets API search
     api_url = "https://api.ncbi.nlm.nih.gov/datasets/v2/genome"
 
-    params = {
+    params: dict[str, str | int] = {
         "filters.reference_only": "false",
         "filters.assembly_source": "refseq",
         "taxon": organism,
@@ -492,7 +492,7 @@ def validate_genome_files(genome_dir: str | Path) -> Dict[str, Any]:
     fasta_files = list(genome_dir.glob("*.fasta")) + list(genome_dir.glob("*.fa"))
     gff_files = list(genome_dir.glob("*.gff")) + list(genome_dir.glob("*.gff3"))
 
-    results = {
+    results: dict[str, Any] = {
         "valid": True,
         "fasta_files": len(fasta_files),
         "gff_files": len(gff_files),

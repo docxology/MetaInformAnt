@@ -76,7 +76,7 @@ class AmalgkitParams:
     """Parameters for amalgkit commands."""
 
     def __init__(
-        self, work_dir: Union[str, Path], threads: int = 8, species_list: Optional[List[str]] = None, **kwargs
+        self, work_dir: Union[str, Path], threads: int = 8, species_list: Optional[List[str]] = None, **kwargs: Any
     ):
         """Initialize amalgkit parameters.
 
@@ -128,7 +128,7 @@ def build_cli_args(
         >>> build_cli_args(params, subcommand='getfastq')
         ['--out_dir', '/work', '--threads', '4', '--redo', 'yes']
     """
-    args = []
+    args: list[str] = []
 
     if params is None:
         return args
@@ -639,7 +639,7 @@ def run_amalgkit(
                     except (ImportError, ValueError, AttributeError):
                         pass
 
-                proc_kwargs = {"env": env}
+                proc_kwargs: dict[str, Any] = {"env": env}
                 if cwd:
                     proc_kwargs["cwd"] = cwd
 
@@ -738,7 +738,7 @@ def run_amalgkit(
                 proc_kwargs["capture_output"] = True
                 proc_kwargs["text"] = True
 
-        result = subprocess.run(command, **proc_kwargs)
+        result: subprocess.CompletedProcess[str] = subprocess.run(command, **proc_kwargs)
 
         # Log failure info if captured
         if result.returncode != 0:
@@ -1090,13 +1090,13 @@ def _run_parallel_getfastq(
         Combined CompletedProcess
     """
     # Extract metadata path
-    metadata_path = None
+    metadata_path: Path | None = None
     if isinstance(params, dict):
         metadata_path = Path(params.get("metadata", ""))
-    else:
+    elif isinstance(params, AmalgkitParams):
         metadata_path = Path(params.extra_params.get("metadata", ""))
 
-    if not metadata_path.exists():
+    if metadata_path is None or not metadata_path.exists():
         # Fallback to single process if metadata not found
         logger.warning(f"Metadata not found at {metadata_path}, falling back to sequential execution")
         return run_amalgkit("getfastq", params, **kwargs)
@@ -1112,8 +1112,9 @@ def _run_parallel_getfastq(
         # Only one chunk needed (small sample size), run normally
         # MUST strip 'jobs' from params because CLI doesn't support it
         if isinstance(params, dict):
-            single_params = params.copy()
-            single_params.pop("jobs", None)
+            single_dict = params.copy()
+            single_dict.pop("jobs", None)
+            single_params: AmalgkitParams | Dict[str, Any] | None = single_dict
         elif isinstance(params, AmalgkitParams):
             extra_params = params.extra_params.copy()
             extra_params.pop("jobs", None)
@@ -1138,11 +1139,12 @@ def _run_parallel_getfastq(
         for i, chunk_path in enumerate(chunk_paths):
             # Create specific params for this worker
             if isinstance(params, dict):
-                worker_params = params.copy()
-                worker_params["metadata"] = str(chunk_path)
+                worker_dict = params.copy()
+                worker_dict["metadata"] = str(chunk_path)
                 # Ensure jobs param is removed/reset to prevent recursion if passed down
-                worker_params.pop("jobs", None)
-            else:
+                worker_dict.pop("jobs", None)
+                worker_params: AmalgkitParams | Dict[str, Any] | None = worker_dict
+            elif isinstance(params, AmalgkitParams):
                 # Clone object
                 worker_params = AmalgkitParams(
                     work_dir=params.work_dir,
@@ -1186,7 +1188,7 @@ def _run_parallel_getfastq(
 
             # Log heartbeat
             # NOTE: Local import to avoid circular dependency with workflow.py
-            from metainformant.rna.engine.workflow import _log_heartbeat
+            from metainformant.rna.engine.workflow_planning import _log_heartbeat
 
             _log_heartbeat(f"getfastq parallel ({len(done)}/{len(chunk_paths)} chunks done)", start_time=start_time)
 

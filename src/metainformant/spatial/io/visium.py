@@ -27,30 +27,30 @@ try:
     import numpy as np
     from numpy.typing import NDArray
 except ImportError:
-    np = None  # type: ignore[assignment]
-    NDArray = None  # type: ignore[assignment,misc]
+    np = None
+    NDArray = None
 
 try:
     from scipy import sparse as sp_sparse
     from scipy.io import mmread
 except ImportError:
-    sp_sparse = None  # type: ignore[assignment]
-    mmread = None  # type: ignore[assignment]
+    sp_sparse = None
+    mmread = None
 
 try:
     from PIL import Image
 except ImportError:
-    Image = None  # type: ignore[assignment]
+    Image = None
 
 try:
     import pandas as pd
 except ImportError:
-    pd = None  # type: ignore[assignment]
+    pd = None
 
 try:
     import h5py
 except ImportError:
-    h5py = None  # type: ignore[assignment]
+    h5py = None
 
 
 @dataclass
@@ -265,7 +265,7 @@ def _read_mex_matrix(matrix_dir: Path) -> tuple[Any, list[str], list[str], list[
 
     barcodes: list[str] = []
     opener = gzip.open if str(barcodes_file).endswith(".gz") else open
-    with opener(barcodes_file, "rt") as fh:  # type: ignore[call-overload]
+    with opener(barcodes_file, "rt") as fh:
         for line in fh:
             barcodes.append(line.strip())
 
@@ -281,7 +281,7 @@ def _read_mex_matrix(matrix_dir: Path) -> tuple[Any, list[str], list[str], list[
     gene_ids: list[str] = []
     gene_names: list[str] = []
     opener = gzip.open if str(features_file).endswith(".gz") else open
-    with opener(features_file, "rt") as fh:  # type: ignore[call-overload]
+    with opener(features_file, "rt") as fh:
         for line in fh:
             parts = line.strip().split("\t")
             gene_ids.append(parts[0] if len(parts) > 0 else "")
@@ -336,7 +336,7 @@ def _read_scale_factors(spatial_dir: Path) -> dict[str, Any]:
         return {}
 
     with open(sf_path, "r") as fh:
-        scale_factors = json.load(fh)
+        scale_factors: dict[str, Any] = json.load(fh)
 
     logger.info(f"Read scale factors: {list(scale_factors.keys())}")
     return scale_factors

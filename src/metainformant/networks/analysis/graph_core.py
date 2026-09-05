@@ -9,7 +9,7 @@ validation.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union, cast
 
 from metainformant.core.utils import logging
 
@@ -44,7 +44,7 @@ class BiologicalNetwork:
     including protein-protein interactions, gene regulatory networks, and pathways.
     """
 
-    def __init__(self, directed: bool = False, **kwargs):
+    def __init__(self, directed: bool = False, **kwargs: Any):
         """Initialize a biological network.
 
         Args:
@@ -65,9 +65,9 @@ class BiologicalNetwork:
     @property
     def directed(self) -> bool:
         """Whether the network is directed."""
-        return self.graph.is_directed()
+        return cast("bool", self.graph.is_directed())
 
-    def add_node(self, node_id: str, **attributes):
+    def add_node(self, node_id: str, **attributes: Any) -> None:
         """Add a node to the network.
 
         Args:
@@ -76,7 +76,7 @@ class BiologicalNetwork:
         """
         self.graph.add_node(node_id, **attributes)
 
-    def add_edge(self, source: str, target: str, **attributes):
+    def add_edge(self, source: str, target: str, **attributes: Any) -> None:
         """Add an edge to the network.
 
         Args:
@@ -86,15 +86,15 @@ class BiologicalNetwork:
         """
         self.graph.add_edge(source, target, **attributes)
 
-    def add_nodes_from(self, nodes, **attributes) -> None:
+    def add_nodes_from(self, nodes: Iterable[Any], **attributes: Any) -> None:
         """Add multiple nodes to the network."""
         self.graph.add_nodes_from(nodes, **attributes)
 
-    def add_edges_from(self, edges, **attributes) -> None:
+    def add_edges_from(self, edges: Iterable[Any], **attributes: Any) -> None:
         """Add multiple edges to the network."""
         self.graph.add_edges_from(edges, **attributes)
 
-    def remove_node(self, node_id: str):
+    def remove_node(self, node_id: str) -> None:
         """Remove a node from the network.
 
         Args:
@@ -102,7 +102,7 @@ class BiologicalNetwork:
         """
         self.graph.remove_node(node_id)
 
-    def remove_edge(self, source: str, target: str):
+    def remove_edge(self, source: str, target: str) -> None:
         """Remove an edge from the network.
 
         Args:
@@ -111,33 +111,33 @@ class BiologicalNetwork:
         """
         self.graph.remove_edge(source, target)
 
-    def get_nodes(self):
+    def get_nodes(self) -> list[str]:
         """Get all nodes in the network."""
         return list(self.graph.nodes())
 
-    def get_edges(self):
+    def get_edges(self) -> list[tuple[str, str]]:
         """Get all edges in the network."""
         return list(self.graph.edges())
 
     def number_of_nodes(self) -> int:
         """Get the number of nodes in the network."""
-        return self.graph.number_of_nodes()
+        return cast("int", self.graph.number_of_nodes())
 
     def num_nodes(self) -> int:
         """Get the number of nodes in the network."""
-        return self.graph.number_of_nodes()
+        return cast("int", self.graph.number_of_nodes())
 
     def number_of_edges(self) -> int:
         """Get the number of edges in the network."""
-        return self.graph.number_of_edges()
+        return cast("int", self.graph.number_of_edges())
 
     def num_edges(self) -> int:
         """Get the number of edges in the network."""
-        return self.graph.number_of_edges()
+        return cast("int", self.graph.number_of_edges())
 
     def has_edge(self, source: str, target: str) -> bool:
         """Check if an edge exists between two nodes."""
-        return self.graph.has_edge(source, target)
+        return cast("bool", self.graph.has_edge(source, target))
 
     def get_edge_weight(self, source: str, target: str, weight_key: str = "weight") -> float | None:
         """Get the weight of an edge.
@@ -151,7 +151,7 @@ class BiologicalNetwork:
             Edge weight value, or 1.0 if not found
         """
         if self.graph.has_edge(source, target):
-            return self.graph[source][target].get(weight_key, 1.0)
+            return cast("float | None", self.graph[source][target].get(weight_key, 1.0))
         return None
 
     def size(self, weight: str | None = None) -> int | float:
@@ -163,37 +163,37 @@ class BiologicalNetwork:
         Returns:
             Number of edges or sum of edge weights.
         """
-        return self.graph.size(weight=weight)
+        return cast("int | float", self.graph.size(weight=weight))
 
     def is_directed(self) -> bool:
         """Check if the network is directed."""
-        return self.graph.is_directed()
+        return cast("bool", self.graph.is_directed())
 
     # Delegate common NetworkX methods to the underlying graph
-    def __iter__(self):
+    def __iter__(self) -> Iterator[str]:
         """Iterate over nodes."""
-        return iter(self.graph)
+        return cast("Iterator[str]", iter(self.graph))
 
-    def __contains__(self, node):
+    def __contains__(self, node: object) -> bool:
         """Check if node is in network."""
         return node in self.graph
 
-    def __len__(self):
+    def __len__(self) -> int:
         """Return number of nodes."""
         return len(self.graph)
 
     @property
-    def nodes(self):
+    def nodes(self) -> Any:
         """Return a NodeView of the graph."""
         return self.graph.nodes
 
     @property
-    def edges(self):
+    def edges(self) -> Any:
         """Return an EdgeView of the graph."""
         return self.graph.edges
 
     @property
-    def node_attrs(self):
+    def node_attrs(self) -> Any:
         """Return node attributes keyed by node ID."""
         return self.graph.nodes
 
@@ -207,34 +207,34 @@ class BiologicalNetwork:
         """Return graph density."""
         return float(nx.density(self.graph))
 
-    def copy(self):
+    def copy(self) -> Any:
         """Return a copy of the underlying NetworkX graph."""
         return self.graph.copy()
 
-    def subgraph(self, nodes):
+    def subgraph(self, nodes: Iterable[str]) -> Any:
         """Return a NetworkX subgraph view for selected nodes."""
         return self.graph.subgraph(nodes)
 
     def is_multigraph(self) -> bool:
         """Return whether the underlying graph is a multigraph."""
-        return self.graph.is_multigraph()
+        return cast("bool", self.graph.is_multigraph())
 
-    def to_networkx(self):
+    def to_networkx(self) -> Any:
         """Return the underlying NetworkX graph."""
         return self.graph
 
-    def neighbors(self, node):
+    def neighbors(self, node: str) -> Any:
         """Return neighbors of a node."""
         return self.graph.neighbors(node)
 
-    def degree(self, node=None, weight=None):
+    def degree(self, node: str | None = None, weight: str | None = None) -> Any:
         """Return degree of nodes."""
         if node is None:
             return self.graph.degree(weight=weight)
         return self.graph.degree(node, weight=weight)
 
     @property
-    def adj(self):
+    def adj(self) -> Any:
         """Return adjacency object."""
         return self.graph.adj
 
@@ -261,7 +261,7 @@ def create_network(
     network = BiologicalNetwork(directed=directed, **kwargs)
     values = list(edges)
     if values and all(isinstance(edge, tuple) and len(edge) in (2, 3) for edge in values):
-        for edge in values:
+        for edge in cast("list[tuple[Any, ...]]", values):
             if len(edge) == 2:
                 source, target = edge
                 network.add_edge(source, target)
@@ -438,7 +438,7 @@ def add_edges_from_dataframe(
     if not isinstance(df, pd.DataFrame):
         raise ValueError("df must be a pandas DataFrame")
 
-    edges_to_add = []
+    edges_to_add: list[tuple[Any, ...]] = []
     for _, row in df.iterrows():
         source = row[source_column]
         target = row[target_column]
@@ -752,7 +752,7 @@ def validate_network(graph: Any) -> Tuple[bool, List[str]]:
     # Check for multiple edges in simple graph
     if not graph.is_multigraph():
         # Count edges between each pair
-        edge_counts = {}
+        edge_counts: dict[tuple[str, str], int] = {}
         for u, v in graph.edges():
             key = tuple(sorted([u, v]))
             edge_counts[key] = edge_counts.get(key, 0) + 1
@@ -814,7 +814,8 @@ def add_edges_from_interactions(
         if isinstance(interaction, dict):
             source = interaction["source"]
             target = interaction["target"]
-            weight = float(interaction.get("confidence", interaction.get("weight", 1.0)))
+            raw_weight: Any = interaction.get("confidence", interaction.get("weight", 1.0))
+            weight = float(raw_weight)
             interaction_type = str(interaction.get("type", "interaction"))
             attrs = {
                 key: value

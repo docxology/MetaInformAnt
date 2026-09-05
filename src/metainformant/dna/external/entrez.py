@@ -67,7 +67,7 @@ class EntrezClient:
         Returns:
             Search results dictionary
         """
-        params = {
+        params: dict[str, str | int] = {
             "db": db,
             "term": query,
             "retmax": min(max_results, 10000),  # NCBI limit
@@ -84,7 +84,8 @@ class EntrezClient:
             response = self.session.get(f"{self.base_url}/esearch.fcgi", params=params, timeout=self.timeout)
             response.raise_for_status()
 
-            return response.json()
+            data: Dict[str, Any] = response.json()
+            return data
 
         except requests.RequestException as e:
             logger.error(f"Entrez search failed: {e}")
@@ -117,7 +118,8 @@ class EntrezClient:
             response = self.session.get(f"{self.base_url}/efetch.fcgi", params=params, timeout=self.timeout)
             response.raise_for_status()
 
-            return response.text
+            text: str = response.text
+            return text
 
         except requests.RequestException as e:
             logger.error(f"Entrez fetch failed: {e}")
@@ -133,7 +135,7 @@ class EntrezClient:
         Returns:
             Summary data dictionary
         """
-        params = {"db": db, "id": ",".join(ids), "retmode": "json"}
+        params: dict[str, str] = {"db": db, "id": ",".join(ids), "retmode": "json"}
 
         if self.api_key:
             params["api_key"] = self.api_key
@@ -144,7 +146,8 @@ class EntrezClient:
             response = self.session.get(f"{self.base_url}/esummary.fcgi", params=params, timeout=self.timeout)
             response.raise_for_status()
 
-            return response.json()
+            data: Dict[str, Any] = response.json()
+            return data
 
         except requests.RequestException as e:
             logger.error(f"Entrez summary failed: {e}")
@@ -161,7 +164,7 @@ class EntrezClient:
         Returns:
             Link data dictionary
         """
-        params = {"db": db, "id": ",".join(ids), "linkname": linkname, "retmode": "json"}
+        params: dict[str, str] = {"db": db, "id": ",".join(ids), "linkname": linkname, "retmode": "json"}
 
         if self.api_key:
             params["api_key"] = self.api_key
@@ -172,7 +175,8 @@ class EntrezClient:
             response = self.session.get(f"{self.base_url}/elink.fcgi", params=params, timeout=self.timeout)
             response.raise_for_status()
 
-            return response.json()
+            data: Dict[str, Any] = response.json()
+            return data
 
         except requests.RequestException as e:
             logger.error(f"Entrez link failed: {e}")

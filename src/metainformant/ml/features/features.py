@@ -423,7 +423,11 @@ def biological_feature_ranking(
 
 
 def select_features_biological(
-    X: np.ndarray, y: np.ndarray, methods: List[str] = None, feature_names: List[str] | None = None, **kwargs: Any
+    X: np.ndarray,
+    y: np.ndarray,
+    methods: List[str] | None = None,
+    feature_names: List[str] | None = None,
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """Comprehensive biological feature selection.
 
@@ -446,7 +450,7 @@ def select_features_biological(
     if feature_names is None:
         feature_names = [f"feature_{i}" for i in range(X.shape[1])]
 
-    results = {
+    results: Dict[str, Any] = {
         "input_shape": X.shape,
         "methods": {},
         "consensus": {},

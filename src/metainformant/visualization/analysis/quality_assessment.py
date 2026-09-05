@@ -28,7 +28,7 @@ def plot_coverage_uniformity(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot sequencing coverage uniformity.
 
@@ -91,7 +91,7 @@ def plot_error_profiles(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot error profiles across different error types.
 
@@ -136,7 +136,7 @@ def plot_batch_effects_qc(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (14, 10),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot batch effects quality control analysis.
 
@@ -151,8 +151,8 @@ def plot_batch_effects_qc(
     """
     validation.validate_type(batch_qc_data, dict, "batch_qc_data")
 
-    fig, axes = plt.subplots(2, 3, figsize=figsize)
-    axes = axes.flatten()
+    fig, axes_grid = plt.subplots(2, 3, figsize=figsize)
+    axes: list[Axes] = list(axes_grid.flatten())
     plot_idx = 0
 
     if "batch_sizes" in batch_qc_data:
@@ -259,7 +259,7 @@ def plot_data_integrity_metrics(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot data integrity and completeness metrics.
 

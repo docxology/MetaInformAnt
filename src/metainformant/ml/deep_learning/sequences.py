@@ -9,6 +9,7 @@ are available when torch is importable.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import cast
 
 import numpy as np
 
@@ -122,7 +123,7 @@ def conv1d_forward(
 
 def relu(x: np.ndarray) -> np.ndarray:
     """ReLU activation."""
-    return np.maximum(x, 0)
+    return cast("np.ndarray", np.maximum(x, 0))
 
 
 def global_max_pool(x: np.ndarray) -> np.ndarray:
@@ -256,5 +257,5 @@ def predict_sequences(
     else:
         pooled = global_max_pool(x)
 
-    logits = pooled @ weights.dense_weights + weights.dense_bias
+    logits = cast("np.ndarray", pooled @ weights.dense_weights + weights.dense_bias)
     return logits

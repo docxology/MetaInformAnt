@@ -19,9 +19,9 @@ from metainformant.core.utils.logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    import numpy as np  # type: ignore[import-untyped]
+    import numpy as np
 except ImportError:
-    np = None  # type: ignore[assignment]
+    np = None
 
 
 @dataclass
@@ -169,7 +169,7 @@ def _calculate_lx(read_lengths: Sequence[int], x: int = 50) -> int:
     return len(sorted_lengths)
 
 
-def read_length_stats(reads: Sequence[dict[str, Any] | int]) -> ReadLengthStatistics:
+def read_length_stats(reads: Sequence[dict[str, Any] | int | object]) -> ReadLengthStatistics:
     """Calculate comprehensive read length statistics.
 
     Accepts either a sequence of integers (read lengths) or a sequence of
@@ -264,7 +264,7 @@ def read_length_stats(reads: Sequence[dict[str, Any] | int]) -> ReadLengthStatis
 
 
 def quality_score_distribution(
-    reads: Sequence[dict[str, Any] | str],
+    reads: Sequence[dict[str, Any] | str | object],
 ) -> QualityDistribution:
     """Compute Phred quality score distribution across reads.
 
@@ -364,14 +364,14 @@ def estimate_accuracy(quality_scores: Sequence[int] | str) -> float:
         return 0.0
 
     # Compute mean error probability
-    error_probs = [10.0 ** (-q / 10.0) for q in scores]
-    mean_error = sum(error_probs) / len(error_probs)
+    error_probs: list[float] = [10.0 ** (-q / 10.0) for q in scores]
+    mean_error: float = sum(error_probs) / len(error_probs)
 
     return 1.0 - mean_error
 
 
 def calculate_throughput(
-    reads: Sequence[dict[str, Any] | int],
+    reads: Sequence[dict[str, Any] | int | object],
     run_duration: float | None = None,
 ) -> dict[str, float]:
     """Calculate sequencing throughput metrics.

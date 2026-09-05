@@ -122,7 +122,7 @@ def gene_annotation_plot(
     ax2.set_yticks([])
 
     # Format x-axis labels
-    def format_bp(x, pos):
+    def format_bp(x: float, pos: int | None) -> str:
         if x >= 1e6:
             return f"{x / 1e6:.1f}M"
         elif x >= 1e3:
@@ -150,7 +150,7 @@ def gene_annotation_plot(
     }
 
 
-def plot_gene_track(ax, chrom: str, start: int, end: int, gene_data: Dict[str, Any]):
+def plot_gene_track(ax: Any, chrom: str, start: int, end: int, gene_data: Dict[str, Any]) -> None:
     """Plot gene annotation track."""
     from matplotlib.patches import Rectangle
 
@@ -559,7 +559,7 @@ def regional_plot(
     ax2.grid(True, alpha=0.3)
 
     # Format x-axis labels
-    def format_bp(x, pos):
+    def format_bp(x: float, pos: int | None) -> str:
         if x >= 1e6:
             return f"{x / 1e6:.1f}M"
         elif x >= 1e3:
@@ -725,7 +725,7 @@ def regional_ld_plot(
     ax1.grid(True, alpha=0.3)
 
     # Format x-axis
-    def format_bp(x, pos):
+    def format_bp(x: float, pos: int | None) -> str:
         if x >= 1e6:
             return f"{x / 1e6:.1f}M"
         elif x >= 1e3:

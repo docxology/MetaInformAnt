@@ -104,7 +104,7 @@ def check_memory_gb() -> float:
         import psutil
 
         memory = psutil.virtual_memory()
-        return memory.available / (1024**3)  # Convert to GB
+        return float(memory.available) / (1024**3)  # Convert to GB
     except ImportError:
         # Fallback to reading /proc/meminfo on Linux
         try:
@@ -135,7 +135,7 @@ def check_disk_space_gb() -> float:
         import psutil
 
         disk = psutil.disk_usage("/")
-        return disk.free / (1024**3)  # Convert to GB
+        return float(disk.free) / (1024**3)  # Convert to GB
     except ImportError:
         return 0.0  # Unknown
 

@@ -34,7 +34,7 @@ from __future__ import annotations
 
 import math
 from collections import defaultdict
-from typing import Any
+from typing import Any, Callable
 
 from metainformant.core.utils.logging import get_logger
 
@@ -47,7 +47,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
+    np = None
 
 try:
     from scipy import stats as scipy_stats
@@ -56,8 +56,8 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None  # type: ignore[assignment]
-    scipy_nnls = None  # type: ignore[assignment]
+    scipy_stats = None
+    scipy_nnls = None
 
 try:
     from sklearn.svm import NuSVR
@@ -65,7 +65,7 @@ try:
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
-    NuSVR = None  # type: ignore[assignment]
+    NuSVR = None
 
 
 # =============================================================================
@@ -339,14 +339,16 @@ def _nnls_projected_gradient_pure(
 def _to_flat_list(data: Any, expected_len: int) -> list[float]:
     """Convert data to a flat list of floats."""
     if HAS_NUMPY and isinstance(data, np.ndarray):
-        return data.ravel().tolist()
+        flat: list[float] = data.ravel().tolist()
+        return flat
     return [float(x) for x in data]
 
 
 def _to_nested_list(data: Any, n_rows: int, n_cols: int) -> list[list[float]]:
     """Convert data to nested list of floats."""
     if HAS_NUMPY and isinstance(data, np.ndarray):
-        return data.tolist()
+        nested: list[list[float]] = data.tolist()
+        return nested
     return [[float(x) for x in row] for row in data]
 
 
@@ -355,7 +357,8 @@ def _matrix_vector_multiply(matrix: Any, vector: Any) -> list[float]:
     if HAS_NUMPY:
         m = np.asarray(matrix, dtype=float)
         v = np.asarray(vector, dtype=float)
-        return (m @ v).tolist()
+        product: list[float] = (m @ v).tolist()
+        return product
 
     n_rows = len(matrix)
     n_cols = len(matrix[0]) if n_rows > 0 else 0
@@ -1094,7 +1097,7 @@ def batch_deconvolve(
 
     # Determine deconvolution function
     if method == "nnls":
-        deconvolve_fn = deconvolve_nnls
+        deconvolve_fn: Callable[..., dict[Any, Any]] = deconvolve_nnls
     elif method == "svr":
         deconvolve_fn = deconvolve_svr
     else:
@@ -1130,7 +1133,7 @@ def batch_deconvolve(
 
     # Compute summary statistics per cell type
     if proportions:
-        all_ct_labels = set()
+        all_ct_labels: set[str] = set()
         for sp in proportions.values():
             all_ct_labels.update(sp.keys())
 

@@ -6,7 +6,7 @@ performing virtual DNA digestion, and analyzing restriction fragment patterns.
 
 from __future__ import annotations
 
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from metainformant.core.utils import logging
 
@@ -234,7 +234,7 @@ def find_unique_sites(seq: str, enzymes: List[str]) -> Dict[str, int]:
     return {enzyme: len(positions) for enzyme, positions in all_sites.items()}
 
 
-def analyze_restriction_map(seq: str, enzymes: List[str]) -> Dict[str, any]:
+def analyze_restriction_map(seq: str, enzymes: List[str]) -> Dict[str, Any]:
     """Generate a complete restriction map analysis.
 
     Args:
@@ -252,7 +252,13 @@ def analyze_restriction_map(seq: str, enzymes: List[str]) -> Dict[str, any]:
     """
     sites = find_restriction_sites(seq, enzymes)
 
-    analysis = {"sequence_length": len(seq), "sites": sites, "fragments": {}, "total_cuts": {}, "fragment_sizes": {}}
+    analysis: dict[str, Any] = {
+        "sequence_length": len(seq),
+        "sites": sites,
+        "fragments": {},
+        "total_cuts": {},
+        "fragment_sizes": {},
+    }
 
     for enzyme in enzymes:
         if enzyme in sites:
@@ -331,13 +337,13 @@ def is_palindromic_site(recognition_site: str) -> bool:
     return recognition_site.upper() == reverse_complement
 
 
-def get_enzyme_properties() -> Dict[str, Dict[str, any]]:
+def get_enzyme_properties() -> Dict[str, Dict[str, Any]]:
     """Get properties of all known restriction enzymes.
 
     Returns:
         Dictionary with enzyme properties
     """
-    properties = {}
+    properties: dict[str, dict[str, Any]] = {}
 
     for enzyme, site in RESTRICTION_ENZYMES.items():
         properties[enzyme] = {
@@ -385,7 +391,7 @@ def simulate_cloning(
     vector_enzyme1: str,
     vector_enzyme2: str,
     vector_sequence: str | None = None,
-) -> Dict[str, any]:
+) -> Dict[str, Any]:
     """Simulate molecular cloning with restriction enzymes.
 
     Args:
@@ -424,7 +430,7 @@ def simulate_cloning(
         "vector_enzymes": list(vector_enzymes),
     }
 
-    result = {
+    result: dict[str, Any] = {
         "insert_fragments": insert_fragments,
         "compatible_enzymes": [insert_enzyme1, insert_enzyme2],
         "enzyme_compatibility": enzyme_compatibility,

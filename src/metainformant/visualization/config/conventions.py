@@ -18,7 +18,8 @@ here computes inferential results.
 
 from __future__ import annotations
 
-from typing import Dict, List, Sequence, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Sequence, Tuple, cast
 
 import matplotlib as mpl
 
@@ -149,13 +150,13 @@ DETERMINISTIC_RCPARAMS: Dict[str, object] = {
 
 def apply_deterministic_rcparams() -> None:
     """Apply rc-params that strip nondeterministic metadata from figure output."""
-    mpl.rcParams.update(DETERMINISTIC_RCPARAMS)
+    mpl.rcParams.update(cast("Dict[str, Any]", DETERMINISTIC_RCPARAMS))
     logger.debug("Applied deterministic figure rc-params")
 
 
 def save_figure_deterministic(
     fig: "mpl.figure.Figure",
-    path,
+    path: "str | Path",
     *,
     dpi: int = 300,
     bbox_inches: "str | None" = None,

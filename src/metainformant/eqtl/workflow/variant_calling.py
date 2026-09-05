@@ -258,8 +258,10 @@ def align_reads(
     sort_cmd = ["samtools", "sort", "-@", str(threads), "-o", str(output_bam)]
     sort_proc = subprocess.Popen(sort_cmd, stdin=hisat2_proc.stdout, stderr=subprocess.PIPE)
 
+    assert hisat2_proc.stdout is not None
     hisat2_proc.stdout.close()
     sort_stderr = sort_proc.communicate()[1].decode()
+    assert hisat2_proc.stderr is not None
     hisat2_stderr = hisat2_proc.stderr.read().decode()
     hisat2_proc.wait()
 
@@ -337,8 +339,10 @@ def call_variants(bam_path: Path, ref_fasta: Path, output_vcf: Path) -> bool:
     mpileup_proc = subprocess.Popen(mpileup_cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     call_proc = subprocess.Popen(call_cmd, stdin=mpileup_proc.stdout, stderr=subprocess.PIPE)
 
+    assert mpileup_proc.stdout is not None
     mpileup_proc.stdout.close()
     call_stderr = call_proc.communicate()[1].decode()
+    assert mpileup_proc.stderr is not None
     mpileup_proc.stderr.read().decode()
     mpileup_proc.wait()
 

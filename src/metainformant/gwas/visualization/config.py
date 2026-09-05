@@ -176,7 +176,7 @@ def style_from_config(config: Dict[str, Any]) -> PlotStyle:
     # Map config keys to PlotStyle fields with defaults from the dataclass
     defaults = PlotStyle()
     return PlotStyle(
-        figsize=tuple(viz_config.get("figsize", defaults.figsize)),  # type: ignore[arg-type]
+        figsize=tuple(viz_config.get("figsize", defaults.figsize)),
         dpi=viz_config.get("dpi", defaults.dpi),
         font_size=viz_config.get("font_size", defaults.font_size),
         title_size=viz_config.get("title_size", defaults.title_size),

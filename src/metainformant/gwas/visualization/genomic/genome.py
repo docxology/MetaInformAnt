@@ -409,7 +409,7 @@ def genome_wide_ld_heatmap(
         return {"status": "error", "message": "No LD data provided"}
 
     # Group data by chromosome
-    chrom_data = {}
+    chrom_data: dict[str, list[dict[str, Any]]] = {}
     for entry in ld_data:
         chrom = entry["CHROM"]
         if chromosomes and chrom not in chromosomes:
@@ -470,7 +470,7 @@ def genome_wide_ld_heatmap(
         ax.legend(loc="upper right", fontsize=8)
 
         # Format axis labels
-        def format_bp(x, pos):
+        def format_bp(x: float, pos: int | None) -> str:
             if x >= 1e6:
                 return f"{x / 1e6:.1f}M"
             elif x >= 1e3:
@@ -562,11 +562,11 @@ def manhattan_plot(
         chrom_max_pos = {}
         current_pos = 0
 
-        for i, (chrom, pos) in enumerate(zip(chrom_nums, positions)):
-            if chrom not in chrom_max_pos:
-                chrom_max_pos[chrom] = current_pos
+        for i, (cnum, pos) in enumerate(zip(chrom_nums, positions)):
+            if cnum not in chrom_max_pos:
+                chrom_max_pos[cnum] = current_pos
             x_positions.append(current_pos + pos)
-            current_pos = max(current_pos, chrom_max_pos[chrom] + pos + 1)
+            current_pos = max(current_pos, chrom_max_pos[cnum] + pos + 1)
 
         # Convert p-values to -log10
         neg_log_p = [-math.log10(max(p, 1e-300)) for p in p_values]

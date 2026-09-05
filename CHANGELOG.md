@@ -31,6 +31,13 @@
   surfaced as `db_failure_classes` in the hymenoptera campaign status report.
 
 ### Changed
+- Repository-wide typing completion: `mypy --config-file pyproject.toml
+  src/metainformant` reports **0 errors in 690 files** under the locked mypy
+  2.3.1 (previously 1,705). Includes: third-party import overrides for
+  unstubbed libraries (scipy, seaborn, networkx, yaml, psutil, defusedxml,
+  plotly, umap, igraph, and others), removal of 102 stale `# type: ignore`
+  comments, and real typing fixes across every domain package. The quality
+  budget gate (`scripts/quality/check_mypy_budget.py`) is now set to 0.
 - `classify_orthogroups` and `join_expression_with_orthology` vectorized
   (~8.9x and ~12.6x on the campaign-scale benchmark, outputs bit-identical).
 - Cross-species figures are provenance-honest: descriptive-only annotations,

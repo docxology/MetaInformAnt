@@ -21,7 +21,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
+    np = None
 
 # Optional scipy for statistical tests
 try:
@@ -30,7 +30,7 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None  # type: ignore[assignment]
+    scipy_stats = None
 
 
 # ---------------------------------------------------------------------------
@@ -642,7 +642,7 @@ def filter_peaks(
 
         def _overlaps_blacklist(peak: dict) -> bool:
             peak_chrom = peak.get("chrom", "")
-            for bl in blacklist_regions:  # type: ignore[union-attr]
+            for bl in blacklist_regions:
                 if bl.get("chrom", "") != peak_chrom:
                     continue
                 # Check overlap

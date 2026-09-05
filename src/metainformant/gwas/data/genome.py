@@ -7,7 +7,7 @@ and GFF3 gene annotation parsing for the Apis mellifera reference genome.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, TextIO, Union, cast
 
 from metainformant.core.utils import logging
 
@@ -175,7 +175,7 @@ def parse_gff3_genes(
     opener = gzip.open if str(gff_path).endswith(".gz") else open
     mode = "rt" if str(gff_path).endswith(".gz") else "r"
 
-    with opener(gff_path, mode) as f:  # type: ignore[call-overload]
+    with cast(TextIO, opener(gff_path, mode)) as f:
         for line in f:
             line = line.strip()
             if not line or line.startswith("#"):

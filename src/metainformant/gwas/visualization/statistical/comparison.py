@@ -7,7 +7,7 @@ studies, populations, or analysis methods.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Sequence
 
 import numpy as np
 
@@ -57,6 +57,8 @@ def compare_gwas_studies(
     ax1 = axes[0, 0]
     for i, (study_name, study_data) in enumerate(study_results.items()):
         results = study_data.get("results")
+        if results is None:
+            continue
         if isinstance(results, dict):
             # Convert dict to DataFrame if needed
             results = pd.DataFrame(results)
@@ -72,6 +74,8 @@ def compare_gwas_studies(
     ax2 = axes[0, 1]
     for i, (study_name, study_data) in enumerate(study_results.items()):
         results = study_data.get("results")
+        if results is None:
+            continue
         if isinstance(results, dict):
             results = pd.DataFrame(results)
 
@@ -89,6 +93,8 @@ def compare_gwas_studies(
 
     for study_name, study_data in study_results.items():
         results = study_data.get("results")
+        if results is None:
+            continue
         if isinstance(results, dict):
             import pandas as pd
 
@@ -114,6 +120,8 @@ def compare_gwas_studies(
     summary_data = []
     for study_name, study_data in study_results.items():
         results = study_data.get("results")
+        if results is None:
+            continue
         if isinstance(results, dict):
             import pandas as pd
 
@@ -195,7 +203,7 @@ def plot_manhattan_overlay(ax: Any, results: Any, label: str, color: str) -> Non
     ax.legend()
 
 
-def plot_qq_overlay(ax: Any, p_values: np.ndarray, label: str, color: str) -> None:
+def plot_qq_overlay(ax: Any, p_values: np.ndarray, label: str, color: str | None) -> None:
     """Plot Q-Q plot for one study on given axis."""
     # Remove NA values and sort
     p_values = p_values[~np.isnan(p_values)]
@@ -714,7 +722,13 @@ def miami_plot(
         return {"status": "failed", "error": str(e)}
 
 
-def plot_manhattan_with_colors(ax, results_df, colors, threshold, chroms):
+def plot_manhattan_with_colors(
+    ax: Any,
+    results_df: Any,
+    colors: Sequence[Any],
+    threshold: float,
+    chroms: Sequence[Any],
+) -> None:
     """Helper function to plot Manhattan plot with alternating colors."""
     current_pos = 0
     color_idx = 0
@@ -1148,7 +1162,7 @@ def concordance_plot(
 
         plt.close(fig)
 
-        result: Dict[str, Any] = {
+        concordance_result: Dict[str, Any] = {
             "status": "success",
             "n_overlapping_snps": n,
             "study1_snps": len(snp_to_data1),
@@ -1156,9 +1170,9 @@ def concordance_plot(
             "output_path": str(output_path) if output_path else None,
         }
         if correlation is not None:
-            result["correlation"] = correlation
+            concordance_result["correlation"] = correlation
 
-        return result
+        return concordance_result
 
     except Exception as e:
         return {"status": "failed", "error": str(e)}

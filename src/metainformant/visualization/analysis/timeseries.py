@@ -8,11 +8,13 @@ forecasting visualizations, and trend analysis.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from matplotlib.axes import Axes
+from matplotlib.figure import Figure, SubFigure
 
 from metainformant.core.data import validation
 from metainformant.core.io import paths
@@ -34,7 +36,7 @@ except ImportError:
 
 
 def plot_time_series(
-    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a basic time series plot.
 
@@ -81,7 +83,7 @@ def plot_time_series(
 
 
 def plot_autocorrelation(
-    data: pd.Series, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    data: pd.Series, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create an autocorrelation function (ACF) plot.
 
@@ -129,7 +131,7 @@ def plot_seasonal_decomposition(
     period: int | None = None,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a seasonal decomposition plot.
 
@@ -159,8 +161,11 @@ def plot_seasonal_decomposition(
     # Create decomposition
     decomposition = seasonal_decompose(data, model=model, period=period)
 
+    fig: Figure | SubFigure
+    axes: list[Axes]
     if ax is None:
-        fig, axes = plt.subplots(4, 1, figsize=kwargs.pop("figsize", (12, 10)), sharex=True)
+        fig, axes_grid = plt.subplots(4, 1, figsize=kwargs.pop("figsize", (12, 10)), sharex=True)
+        axes = list(axes_grid.flatten())
     else:
         # If single ax provided, create subplots anyway for decomposition
         fig = ax.figure
@@ -202,7 +207,7 @@ def plot_forecast(
     confidence_intervals: pd.DataFrame | None = None,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a forecast plot with optional confidence intervals.
 
@@ -265,7 +270,7 @@ def plot_forecast(
 
 
 def plot_trend_analysis(
-    data: pd.Series, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    data: pd.Series, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a trend analysis plot with fitted trend line.
 

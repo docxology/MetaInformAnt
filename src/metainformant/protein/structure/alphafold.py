@@ -180,7 +180,7 @@ def find_alphafold_models_by_sequence(sequence: str, identity_threshold: float =
 
 def batch_download_alphafold_models(
     uniprot_accessions: List[str], out_dir: Path, max_workers: int = 4
-) -> Dict[str, Path]:
+) -> Dict[str, Path | None]:
     """Download multiple AlphaFold models in parallel.
 
     Args:
@@ -197,7 +197,7 @@ def batch_download_alphafold_models(
         >>> isinstance(models, dict)
         True
     """
-    results = {}
+    results: Dict[str, Path | None] = {}
 
     for acc in uniprot_accessions:
         try:
@@ -225,7 +225,7 @@ def validate_alphafold_structure(pdb_path: Path) -> Dict[str, Any]:
         >>> # validation['is_valid']
         >>> # True
     """
-    validation = {
+    validation: Dict[str, Any] = {
         "is_valid": False,
         "n_atoms": 0,
         "n_residues": 0,
@@ -335,7 +335,7 @@ def get_alphafold_structure_quality(pdb_path: Path) -> Dict[str, float]:
         >>> # isinstance(quality, dict)
         >>> # True
     """
-    quality = {
+    quality: Dict[str, Any] = {
         "plddt_score": 0.0,  # Predicted LDDT score
         "confidence_distribution": {},
         "high_confidence_residues": 0,

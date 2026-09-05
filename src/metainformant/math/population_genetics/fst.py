@@ -82,7 +82,7 @@ def fst_from_allele_freqs(pop1_freqs: List[float], pop2_freqs: List[float] | Non
     mean_freqs = [(f1 + f2) / 2 for f1, f2 in zip(pop1_freqs, pop2_freqs)]
 
     # Calculate within-population variance
-    var_within = 0
+    var_within = 0.0
     for f1, f2, mean_f in zip(pop1_freqs, pop2_freqs, mean_freqs):
         # Variance within populations for this locus
         var_within += ((f1 - mean_f) ** 2 + (f2 - mean_f) ** 2) / 2
@@ -90,7 +90,7 @@ def fst_from_allele_freqs(pop1_freqs: List[float], pop2_freqs: List[float] | Non
     var_within /= n_loci
 
     # Calculate between-population variance
-    var_between = 0
+    var_between = 0.0
     for f1, f2 in zip(pop1_freqs, pop2_freqs):
         var_between += (f1 - f2) ** 2 / 2
 

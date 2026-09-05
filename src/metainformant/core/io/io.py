@@ -4,8 +4,9 @@ import csv
 import gzip
 import io
 import json
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Iterable, Iterator, Mapping
+from typing import IO, Any, Iterable, Iterator, Mapping, cast
 
 
 def ensure_directory(path: str | Path) -> Path:
@@ -24,8 +25,10 @@ def open_text_auto(path: str | Path, mode: str = "rt", encoding: str = "utf-8") 
     if "b" in mode:
         raise ValueError("open_text_auto supports text modes only; do not include 'b' in mode")
     if p.suffix == ".gz":
-        return io.TextIOWrapper(gzip.open(p, mode.replace("t", "")), encoding=encoding)
-    return open(p, mode, encoding=encoding)
+        # gzip.open's str-mode overload yields a broad union; narrow to the binary buffer TextIOWrapper needs.
+        gz = cast("IO[bytes]", gzip.open(p, mode.replace("t", "")))
+        return io.TextIOWrapper(gz, encoding=encoding)
+    return cast("io.TextIOBase", open(p, mode, encoding=encoding))
 
 
 # JSON utilities
@@ -195,7 +198,7 @@ def load_toml(path: str | Path) -> Any:
         raise CoreIOError(f"Failed to read TOML file {path}: {e}") from e
 
 
-def read_parquet(path: str | Path, **kwargs) -> Any:
+def read_parquet(path: str | Path, **kwargs: Any) -> Any:
     """Read Parquet file with pandas."""
     try:
         import pandas as pd
@@ -209,7 +212,7 @@ def read_parquet(path: str | Path, **kwargs) -> Any:
         raise ImportError(f"pandas is required for Parquet reading: {e}. Install with: uv add pandas") from e
 
 
-def write_parquet(df: Any, path: str | Path, **kwargs) -> None:
+def write_parquet(df: Any, path: str | Path, **kwargs: Any) -> None:
     """Write DataFrame to Parquet file."""
     try:
         ensure_directory(Path(path).parent)
@@ -379,7 +382,7 @@ def write_delimited(
 
 
 # Pandas-compatible CSV/TSV utilities
-def read_csv(path: str | Path, **kwargs) -> Any:
+def read_csv(path: str | Path, **kwargs: Any) -> Any:
     """Read CSV file using pandas if available, fallback to native implementation.
 
     Args:
@@ -409,7 +412,7 @@ def read_csv(path: str | Path, **kwargs) -> Any:
         return dict(data)
 
 
-def write_csv(data: Any, path: str | Path, **kwargs) -> None:
+def write_csv(data: Any, path: str | Path, **kwargs: Any) -> None:
     """Write CSV file using pandas if available, fallback to native implementation.
 
     Args:
@@ -462,7 +465,7 @@ def read_tsv(path: str | Path) -> list[list[str]]:
         return list(reader)
 
 
-def write_tsv(data, path: str | Path) -> None:
+def write_tsv(data: Iterable[Sequence[Any]], path: str | Path) -> None:
     """Write TSV file."""
     ensure_directory(Path(path).parent)
     with open_text_auto(path, mode="wt") as fh:
@@ -564,7 +567,8 @@ def download_text(url: str, *, timeout: int = 30) -> str | None:
     try:
         response = requests.get(url, timeout=timeout)
         response.raise_for_status()
-        return response.text
+        text: str = response.text
+        return text
     except requests.RequestException as e:
         logger.debug(f"Failed to download text from {url}: {e}")
         return None
@@ -573,7 +577,7 @@ def download_text(url: str, *, timeout: int = 30) -> str | None:
         return None
 
 
-def download_csv(url: str, *, timeout: int = 30, **kwargs) -> Any:
+def download_csv(url: str, *, timeout: int = 30, **kwargs: Any) -> Any:
     """Download and parse CSV from a URL.
 
     Args:

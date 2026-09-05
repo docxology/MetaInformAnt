@@ -8,6 +8,7 @@ expression analysis visualizations.
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -32,7 +33,7 @@ except ImportError:
 
 
 def plot_expression_heatmap(
-    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a gene expression heatmap.
 
@@ -99,7 +100,7 @@ def plot_expression_heatmap(
 
 
 def plot_enrichment_barplot(
-    enrichment_results: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    enrichment_results: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a pathway enrichment barplot.
 
@@ -177,7 +178,7 @@ def plot_enrichment_barplot(
 
 
 def plot_differential_expression(
-    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a differential expression analysis plot.
 

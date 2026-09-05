@@ -284,7 +284,7 @@ def discover_motifs(sequences: List[str], motif_length: int = 6, min_occurrences
     from collections import Counter
 
     # Extract all k-mers
-    kmer_counts = Counter()
+    kmer_counts: Counter[str] = Counter()
 
     for seq in sequences:
         seq = seq.upper()

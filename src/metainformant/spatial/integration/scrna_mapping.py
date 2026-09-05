@@ -19,25 +19,25 @@ try:
     import numpy as np
     from numpy.typing import NDArray
 except ImportError:
-    np = None  # type: ignore[assignment]
-    NDArray = None  # type: ignore[assignment,misc]
+    np = None
+    NDArray = None
 
 try:
     from scipy import sparse as sp_sparse
     from scipy.stats import pearsonr, spearmanr
 except ImportError:
-    sp_sparse = None  # type: ignore[assignment]
-    pearsonr = None  # type: ignore[assignment]
-    spearmanr = None  # type: ignore[assignment]
+    sp_sparse = None
+    pearsonr = None
+    spearmanr = None
 
 try:
     from sklearn.decomposition import PCA
     from sklearn.neighbors import NearestNeighbors
     from sklearn.preprocessing import StandardScaler
 except ImportError:
-    NearestNeighbors = None  # type: ignore[assignment,misc]
-    StandardScaler = None  # type: ignore[assignment,misc]
-    PCA = None  # type: ignore[assignment,misc]
+    NearestNeighbors = None
+    StandardScaler = None
+    PCA = None
 
 
 @dataclass

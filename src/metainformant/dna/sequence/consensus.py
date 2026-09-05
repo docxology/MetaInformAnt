@@ -55,7 +55,7 @@ def generate_consensus(sequences: List[str], threshold: float = 0.5) -> str:
 
     for pos in range(seq_lengths[0]):
         # Count nucleotides at this position
-        base_counts = {}
+        base_counts: dict[str, int] = {}
         total_bases = 0
 
         for seq in sequences:
@@ -112,7 +112,7 @@ def consensus_with_ambiguity(sequences: List[str]) -> str:
 
     for pos in range(seq_lengths[0]):
         # Count nucleotides at this position
-        base_counts = {}
+        base_counts: dict[str, int] = {}
 
         for seq in sequences:
             base = seq[pos].upper()

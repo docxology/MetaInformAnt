@@ -65,7 +65,7 @@ class SimulationConfig:
     validate_output: bool = True
     quality_checks: List[str] = field(default_factory=lambda: ["basic", "consistency"])
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         """Validate configuration after initialization."""
         valid_types = [
             "sequence_evolution",
@@ -146,7 +146,7 @@ def run_benchmark_simulation(
 
     logger.info(f"Starting benchmark simulation with {n_replicates} replicates")
 
-    results = {
+    results: dict[str, Any] = {
         "simulation_type": config.simulation_type,
         "n_replicates": n_replicates,
         "config": config.__dict__,
@@ -341,7 +341,7 @@ def calibrate_simulation_parameters(
 
     if fitness_function is None:
         # Default fitness function - minimize difference
-        def default_fitness(params, target):
+        def default_fitness(params: Dict[str, float], target: Any) -> float:
             # Simple placeholder - would need domain-specific implementation
             return 1.0  # Perfect match
 

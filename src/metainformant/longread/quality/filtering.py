@@ -11,16 +11,17 @@ Optional dependencies:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Sequence
+from typing import Any, Sequence, TypeVar, cast
 
 from metainformant.core.utils.logging import get_logger
 
 logger = get_logger(__name__)
 
+_ReadT = TypeVar("_ReadT")
 try:
-    import numpy as np  # type: ignore[import-untyped]
+    import numpy as np
 except ImportError:
-    np = None  # type: ignore[assignment]
+    np = None
 
 
 # Standard ONT adapter sequences
@@ -84,10 +85,10 @@ class AdapterMatch:
 
 
 def filter_by_length(
-    reads: Sequence[dict[str, Any] | ReadRecord],
+    reads: Sequence[_ReadT],
     min_length: int = 1000,
     max_length: int | None = None,
-) -> list[dict[str, Any] | ReadRecord]:
+) -> list[_ReadT]:
     """Filter reads by sequence length.
 
     Args:
@@ -98,7 +99,7 @@ def filter_by_length(
     Returns:
         List of reads passing the length filter.
     """
-    filtered: list[dict[str, Any] | ReadRecord] = []
+    filtered: list[_ReadT] = []
     total = 0
     passed = 0
 
@@ -128,9 +129,9 @@ def filter_by_length(
 
 
 def filter_by_quality(
-    reads: Sequence[dict[str, Any] | ReadRecord],
+    reads: Sequence[_ReadT],
     min_q: float = 7.0,
-) -> list[dict[str, Any] | ReadRecord]:
+) -> list[_ReadT]:
     """Filter reads by mean Phred quality score.
 
     Calculates the mean quality for each read and retains only those
@@ -143,7 +144,7 @@ def filter_by_quality(
     Returns:
         List of reads passing the quality filter.
     """
-    filtered: list[dict[str, Any] | ReadRecord] = []
+    filtered: list[_ReadT] = []
     total = 0
     passed = 0
 
@@ -385,7 +386,7 @@ def split_chimeric_reads(
 
         # Split at internal adapters
         chimeric_count += 1
-        split_points = [(0, None)]  # (start, adapter_match)
+        split_points: list[tuple[int, AdapterMatch | None]] = [(0, None)]
         for match in internal_matches:
             split_points.append((match.position, match))
             split_points.append((match.end_position, None))
@@ -445,9 +446,9 @@ def _get_sequence(read: Any) -> str | None:
     if isinstance(read, dict):
         return read.get("sequence")
     elif hasattr(read, "sequence"):
-        return read.sequence
+        return cast(str, read.sequence)
     elif hasattr(read, "query_sequence"):
-        return read.query_sequence
+        return cast(str, read.query_sequence)
     return None
 
 
@@ -456,7 +457,7 @@ def _get_quality(read: Any) -> str | None:
     if isinstance(read, dict):
         return read.get("quality") or read.get("quality_string")
     elif hasattr(read, "quality_string"):
-        return read.quality_string
+        return cast(str, read.quality_string)
     return None
 
 

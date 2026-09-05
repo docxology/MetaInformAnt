@@ -193,7 +193,7 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
 
     for step in workflow_steps:
         # Start with defaults from common config
-        step_params = {
+        step_params: Dict[str, Any] = {
             "out_dir": str(config.work_dir),
         }
         # Amalgkit 0.16.60's native NCBI taxonomy database is shared read-only
@@ -567,6 +567,10 @@ def create_extraction_metadata(getfastq_dir: Path, source_metadata: Path, output
         logger.error(f"Could not read metadata: {e}")
         return 0
 
+    if not fieldnames:
+        logger.error("Source metadata has no header; cannot write extraction metadata")
+        return 0
+
     # Filter rows to only those with SRA files present
     filtered_rows = []
     moved_count = 0
@@ -737,8 +741,6 @@ def prepare_reference_genome(config: AmalgkitWorkflowConfig) -> bool:
 
     except Exception as e:
         logger.error(f"Failed to prepare reference genome: {e}")
-        return False
-
         return False
 
 

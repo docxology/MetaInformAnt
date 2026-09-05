@@ -749,7 +749,8 @@ def matrix_align(
         if mode == "local":
             # A local alignment can choose the empty alignment when either
             # input has no residues.
-            aligned_seq1, aligned_seq2, score = "", "", 0
+            aligned_seq1, aligned_seq2 = "", ""
+            score: float = 0
         elif m == 0 and n == 0:
             aligned_seq1, aligned_seq2, score = "", "", 0
         else:
@@ -800,7 +801,7 @@ def matrix_align(
             X_mat[0][j] = 0
             Y_mat[0][j] = 0
 
-    max_score = 0
+    max_score: float = 0
     max_i, max_j = 0, 0
     max_state = "M"
 
@@ -1052,4 +1053,4 @@ def pairwise_identity(seq1: str, seq2: str) -> float:
         Identity fraction (0.0 to 1.0)
     """
     result = global_align(seq1, seq2)
-    return result["identity"]
+    return float(result["identity"])

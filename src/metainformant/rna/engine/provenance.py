@@ -434,10 +434,8 @@ def is_current_quantification(
 ) -> bool:
     """Return whether a sample sidecar records the exact current runtime."""
 
-    return (
-        classify_quantification(sample_dir, run_accession, verify_content=verify_content)["status"]
-        == QUANT_STATUS_CURRENT
-    )
+    status: str = classify_quantification(sample_dir, run_accession, verify_content=verify_content)["status"]
+    return status == QUANT_STATUS_CURRENT
 
 
 def metadata_provenance_path(work_dir: str | Path) -> Path:
@@ -798,7 +796,7 @@ def write_quant_provenance(
     # re-verified fail-closed on every resume; any restart-varying byte would
     # invalidate reusable quantification work.  Recency lives in the
     # orchestrator log and the progress DB, not here.
-    payload: Mapping[str, Any] = {
+    payload: dict[str, Any] = {
         "schema": QUANT_PROVENANCE_SCHEMA,
         "species": species,
         "run_accession": run_accession,

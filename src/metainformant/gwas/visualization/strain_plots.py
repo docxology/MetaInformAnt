@@ -203,17 +203,17 @@ def strain_pca_plot(
 
 
 def _plot_strain_scatter(
-    ax,
-    x_vals,
-    y_vals,
-    strains,
-    sample_ids,
-    explained_var,
-    pc_x,
-    pc_y,
-    show_labels=True,
-    show_ellipses=True,
-):
+    ax: Any,
+    x_vals: Any,
+    y_vals: Any,
+    strains: Any,
+    sample_ids: Any,
+    explained_var: Any,
+    pc_x: int,
+    pc_y: int,
+    show_labels: bool = True,
+    show_ellipses: bool = True,
+) -> None:
     """Helper: plot strain-colored scatter on given axes."""
     unique_strains = sorted(set(strains))
 
@@ -267,7 +267,7 @@ def _plot_strain_scatter(
     ax.legend(fontsize=9, loc="best", framealpha=0.9, edgecolor="black")
 
 
-def _draw_confidence_ellipse(ax, x, y, color, n_std=2.0, alpha=0.15):
+def _draw_confidence_ellipse(ax: Any, x: Any, y: Any, color: str, n_std: float = 2.0, alpha: float = 0.15) -> None:
     """Draw a 95% confidence ellipse around points."""
     import numpy as np
     from matplotlib.patches import Ellipse
@@ -342,7 +342,7 @@ def dendrogram_plot(
     fig, ax = plt.subplots(figsize=(16, 8))
 
     # Custom link coloring function
-    def link_color_func(k):
+    def link_color_func(k: Any) -> str:
         return "#555555"
 
     sch.dendrogram(

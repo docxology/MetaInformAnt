@@ -481,7 +481,7 @@ def tsallis_entropy(probs: Sequence[float], q: float = 2.0, base: float = 2.0) -
         return math.log(len(probs_array), base)
     else:
         # Tsallis entropy: S_q = (1 - sum(p^q)) / (q - 1)
-        sum_p_q = np.sum(probs_array**q)
+        sum_p_q = float(np.sum(probs_array**q))
         return (1.0 - sum_p_q) / (q - 1.0)
 
 

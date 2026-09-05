@@ -21,7 +21,7 @@ from typing import Any, Dict, List, Optional
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import seaborn as sns  # type: ignore[import-untyped]
+import seaborn as sns
 from matplotlib.offsetbox import AnchoredText
 
 # ── Strain palette (shared with GWAS viz) ───────────────────────────────
@@ -309,7 +309,7 @@ def plot_boxplot_with_swarm(
             title_fontsize=13,
         )
 
-    return ax.figure  # type: ignore[return-value]
+    return ax.figure
 
 
 def plot_violin(
@@ -400,7 +400,7 @@ def plot_violin(
             title_fontsize=14,
         )
 
-    return ax.figure  # type: ignore[return-value]
+    return ax.figure
 
 
 def plot_regression_scatter(
@@ -553,7 +553,7 @@ def plot_categorical_proportions(
         fig, ax = plt.subplots(figsize=(12, 6))
 
     bottom = np.zeros(len(proportions))
-    colors = list(plt.get_cmap("tab20").colors)  # type: ignore[attr-defined]
+    colors = list(plt.get_cmap("tab20").colors)
     groups = proportions.index.astype(str).tolist()
     cats = proportions.columns.tolist()
     x_pos = np.arange(len(groups))
@@ -593,7 +593,7 @@ def plot_categorical_proportions(
         tick.set_rotation(45)
         tick.set_horizontalalignment("right")
 
-    return ax.figure  # type: ignore[return-value]
+    return ax.figure
 
 
 def plot_interaction(
@@ -691,8 +691,8 @@ def plot_correlation_heatmap(
 
     # Try scipy for dendrograms
     try:
-        from scipy.cluster.hierarchy import dendrogram, linkage  # type: ignore[import-untyped]
-        from scipy.spatial.distance import squareform  # type: ignore[import-untyped]
+        from scipy.cluster.hierarchy import dendrogram, linkage
+        from scipy.spatial.distance import squareform
 
         has_scipy = True
     except ImportError:
@@ -852,4 +852,4 @@ def plot_correlation_heatmap(
                 color="gray",
             )
 
-        return ax.figure  # type: ignore[return-value]
+        return ax.figure

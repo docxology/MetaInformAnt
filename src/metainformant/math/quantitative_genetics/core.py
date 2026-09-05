@@ -94,4 +94,4 @@ def lande_equation_response(
     # Calculate response: R = G * β
     response_vector = np.dot(G, beta)
 
-    return response_vector.tolist()
+    return [float(v) for v in response_vector]

@@ -7,7 +7,7 @@ This module provides specialized tools for analyzing protein-protein interaction
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 from metainformant.core import io
 from metainformant.core.utils import logging
@@ -178,7 +178,7 @@ def ppi_network_analysis(ppi_graph: Any, **kwargs: Any) -> Dict[str, Any]:
     if not HAS_NETWORKX:
         raise ImportError("networkx required for PPI analysis")
 
-    analysis = {
+    analysis: Dict[str, Any] = {
         "basic_stats": {
             "n_proteins": len(ppi_graph.nodes()),
             "n_interactions": len(ppi_graph.edges()),
@@ -290,7 +290,7 @@ def find_ppi_hubs(
     return hubs
 
 
-def ppi_network_clustering(ppi_graph: Any, method: str = "louvain", **kwargs: Any) -> List[List[str]]:
+def ppi_network_clustering(ppi_graph: Any, method: str = "louvain", **kwargs: Any) -> Dict[str, int]:
     """Cluster PPI network into functional modules.
 
     Args:
@@ -299,7 +299,7 @@ def ppi_network_clustering(ppi_graph: Any, method: str = "louvain", **kwargs: An
         **kwargs: Additional clustering parameters
 
     Returns:
-        List of protein clusters
+        Dict mapping protein identifiers to cluster IDs
 
     Raises:
         ImportError: If networkx not available
@@ -550,7 +550,7 @@ class ProteinNetwork:
         else:
             self.graph = graph
         self.name = name
-        self.metadata = {}
+        self.metadata: Dict[str, Any] = {}
         self._interactions: list[tuple[str, str, dict[str, Any]]] = []
         self._protein_metadata: dict[str, dict[str, Any]] = {}
         if HAS_NETWORKX and self.graph is not None:
@@ -687,7 +687,7 @@ class ProteinNetwork:
         if not HAS_NETWORKX:
             return None
         try:
-            return nx.shortest_path(self.graph, protein1, protein2)
+            return cast("Optional[List[str]]", nx.shortest_path(self.graph, protein1, protein2))
         except (nx.NetworkXNoPath, nx.NodeNotFound):
             return None
 
@@ -704,9 +704,9 @@ class ProteinNetwork:
             return {} if protein is None else 0.0
 
         if protein is not None:
-            return nx.clustering(self.graph, protein)
+            return cast("Union[float, Dict[str, float]]", nx.clustering(self.graph, protein))
         else:
-            return nx.clustering(self.graph)
+            return cast("Union[float, Dict[str, float]]", nx.clustering(self.graph))
 
     def betweenness_centrality(self) -> Dict[str, float]:
         """Calculate betweenness centrality for all proteins.
@@ -716,7 +716,7 @@ class ProteinNetwork:
         """
         if not HAS_NETWORKX:
             return {}
-        return nx.betweenness_centrality(self.graph)
+        return cast("Dict[str, float]", nx.betweenness_centrality(self.graph))
 
     def connected_components(self) -> List[List[str]]:
         """Find connected components in the network.
@@ -968,7 +968,7 @@ def _predict_by_similarity(
     target_proteins: List[str], known_network: ProteinNetwork, threshold: float, max_predictions: int
 ) -> Dict[str, List[Dict[str, Any]]]:
     """Predict interactions using network similarity."""
-    predictions = {}
+    predictions: Dict[str, List[Dict[str, Any]]] = {}
 
     if not HAS_NETWORKX:
         return predictions
@@ -1057,7 +1057,7 @@ def _predict_by_guilt_by_association(
     target_proteins: List[str], known_network: ProteinNetwork, threshold: float, max_predictions: int
 ) -> Dict[str, List[Dict[str, Any]]]:
     """Predict interactions using guilt-by-association."""
-    predictions = {}
+    predictions: Dict[str, List[Dict[str, Any]]] = {}
 
     if not HAS_NETWORKX:
         return predictions

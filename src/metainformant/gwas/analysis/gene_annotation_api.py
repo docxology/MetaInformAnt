@@ -17,7 +17,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-from typing import Any
+from typing import Any, cast
 
 from metainformant.core.utils.logging import get_logger
 
@@ -37,7 +37,8 @@ def _ncbi_get(url: str) -> dict | list | None:
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "metainformant/1.0"})
         with urllib.request.urlopen(req, timeout=NCBI_TIMEOUT) as resp:  # nosec B310
-            return json.load(resp)
+            payload: dict | list | None = json.load(resp)
+            return payload
     except urllib.error.HTTPError as exc:
         logger.debug("NCBI HTTP %d for %s", exc.code, url)
         return None
@@ -93,7 +94,7 @@ def lookup_genes_by_region_ncbi(
     # a simple term, so we query by accession and organism, then filter.
     term = f"{taxon_id}[taxid] AND {chrom_accession}[accession]"
     search_url = f"{NCBI_EUTILS_BASE}/esearch.fcgi" f"?db=gene&term={urllib.parse.quote(term)}&retmax=100&retmode=json"
-    result = _ncbi_get(search_url)
+    result = cast("dict[str, Any]", _ncbi_get(search_url))
     if not result:
         logger.debug("NCBI esearch returned nothing for %s", term)
         return []
@@ -105,7 +106,7 @@ def lookup_genes_by_region_ncbi(
     # Fetch summaries in one batch
     ids_joined = ",".join(gene_ids[:50])
     summary_url = f"{NCBI_EUTILS_BASE}/esummary.fcgi?db=gene&id={ids_joined}&retmode=json"
-    summary = _ncbi_get(summary_url)
+    summary = cast("dict[str, Any]", _ncbi_get(summary_url))
     if not summary:
         return []
 

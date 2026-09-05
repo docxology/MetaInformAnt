@@ -6,7 +6,7 @@ adaptation index (CAI), and performing codon optimization for heterologous expre
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from metainformant.core.utils import logging
 
@@ -107,7 +107,7 @@ def codon_usage(seq: str) -> Dict[str, float]:
         return {}
 
     # Count codons
-    codon_counts = {}
+    codon_counts: dict[str, int] = {}
     total_codons = 0
 
     for i in range(0, len(seq), 3):
@@ -412,7 +412,7 @@ def calculate_enc(sequence: str, reference_usage: Optional[Dict[str, float]] = N
     usage = reference_usage or codon_freq
 
     # Group codons by amino acid
-    aa_groups = {}
+    aa_groups: dict[str, dict[str, float]] = {}
     for codon, freq in usage.items():
         if codon in GENETIC_CODE:
             aa = GENETIC_CODE[codon]
@@ -452,7 +452,7 @@ def calculate_enc(sequence: str, reference_usage: Optional[Dict[str, float]] = N
     return total_enc / total_aa if total_aa > 0 else 61.0
 
 
-def detect_codon_bias(sequence: str) -> Dict[str, float]:
+def detect_codon_bias(sequence: str) -> Dict[str, Any]:
     """Detect codon usage bias patterns in a sequence.
 
     Args:

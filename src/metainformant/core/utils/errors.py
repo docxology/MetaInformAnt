@@ -155,7 +155,7 @@ def retry_with_backoff(
     backoff_factor: float = 2.0,
     max_delay: float = 60.0,
     exceptions: tuple[type[Exception], ...] = (Exception,),
-):
+) -> Callable[[Callable[..., T]], Callable[..., T]]:
     """Decorator for retrying functions with exponential backoff.
 
     Args:

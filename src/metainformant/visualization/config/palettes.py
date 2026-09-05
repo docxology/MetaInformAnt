@@ -188,7 +188,7 @@ def alternating_pair(n: int = 2) -> List[str]:
         ("#A6D854", "#4DAF4A"),
         ("#FFD92F", "#E6AB02"),
     ]
-    result = []
+    result: List[str] = []
     for i in range(n):
         pair = base_pairs[i % len(base_pairs)]
         result.extend(pair)

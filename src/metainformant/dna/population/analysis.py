@@ -54,7 +54,7 @@ def calculate_fst(population1: List[str], population2: List[str]) -> float:
         alleles_pop2 = [seq[pos] for seq in population2]
 
         # Count alleles
-        allele_counts = {}
+        allele_counts: Dict[str, int] = {}
         for allele in alleles_pop1 + alleles_pop2:
             allele_counts[allele] = allele_counts.get(allele, 0) + 1
 
@@ -236,7 +236,7 @@ def calculate_fu_li_d(sequences: List[str]) -> Tuple[float, float]:
 
     for pos in range(seq_length):
         alleles = [seq[pos] for seq in sequences]
-        allele_counts = {}
+        allele_counts: Dict[str, int] = {}
 
         for allele in alleles:
             allele_counts[allele] = allele_counts.get(allele, 0) + 1
@@ -355,7 +355,7 @@ def estimate_population_size(sequences: List[str], mutation_rate: float = 1e-8) 
     }
 
 
-def detect_population_structure(sequences: List[str], k_max: int = 5) -> Dict[str, any]:
+def detect_population_structure(sequences: List[str], k_max: int = 5) -> Dict[str, Any]:
     """Detect population structure using simple clustering.
 
     Args:
@@ -537,7 +537,7 @@ def calculate_summary_statistics(
     sequences: List[str] | None = None,
     genotype_matrix: List[List[int]] | None = None,
     populations: List[int] | None = None,
-) -> Dict[str, any]:
+) -> Dict[str, Any]:
     """Calculate comprehensive population genetics summary statistics.
 
     Args:
@@ -554,7 +554,7 @@ def calculate_summary_statistics(
         >>> isinstance(stats, dict)
         True
     """
-    results = {}
+    results: Dict[str, Any] = {}
 
     if sequences:
         logger.info(f"Calculating summary statistics for {len(sequences)} sequences")
@@ -661,7 +661,7 @@ def compare_populations(pop1_data: Dict[str, Any], pop2_data: Dict[str, Any]) ->
         comparison["tajima_d_difference"] = d2 - d1
 
         # Classify selection patterns
-        def classify_selection(d: float) -> str:
+        def classify_selection(d: float | None) -> str:
             if d is None:
                 return "unknown"
             elif d > 2:
@@ -807,7 +807,7 @@ def neutrality_test_suite(sequences: List[str]) -> Dict[str, Any]:
         >>> isinstance(results, dict)
         True
     """
-    results = {}
+    results: Dict[str, Any] = {}
 
     if not sequences:
         return results

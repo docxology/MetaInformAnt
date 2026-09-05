@@ -9,6 +9,7 @@ from __future__ import annotations
 
 from math import pi
 from pathlib import Path
+from typing import Any, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -33,7 +34,7 @@ except ImportError:
 
 
 def plot_pairwise_relationships(
-    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a pairwise relationships plot (scatter plot matrix).
 
@@ -69,11 +70,11 @@ def plot_pairwise_relationships(
         logger.info(f"Pairwise relationships plot saved to {output_path}")
 
     # Return the first axes from the grid
-    return g.fig.axes[0] if g.fig.axes else None
+    return cast("Axes", g.fig.axes[0] if g.fig.axes else None)
 
 
 def plot_parallel_coordinates(
-    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a parallel coordinates plot.
 
@@ -146,7 +147,7 @@ def plot_parallel_coordinates(
 
 
 def plot_radar_chart(
-    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
+    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs: Any
 ) -> Axes:
     """Create a radar chart (spider chart).
 
@@ -215,7 +216,7 @@ def plot_3d_scatter(
     z_col: str | None = None,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a 3D scatter plot.
 
@@ -268,7 +269,7 @@ def plot_3d_scatter(
 
     ax.set_xlabel(x_col)
     ax.set_ylabel(y_col)
-    ax.set_zlabel(z_col)
+    cast("Any", ax).set_zlabel(z_col)
     ax.set_title("3D Scatter Plot")
 
     if output_path:

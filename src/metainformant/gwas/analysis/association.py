@@ -18,13 +18,13 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore
+    np = None
 
 logger = logging.get_logger(__name__)
 
 
 def association_test_linear(
-    genotypes: List[int], phenotypes: List[float], covariates: Optional[List[List[float]]] = None, **kwargs
+    genotypes: List[int], phenotypes: List[float], covariates: Optional[List[List[float]]] = None, **kwargs: Any
 ) -> Dict[str, Any]:
     """Perform linear regression association test.
 
@@ -95,7 +95,7 @@ def association_test_logistic(
     phenotypes: List[int],
     covariates: Optional[List[List[float]]] = None,
     max_iter: int = 100,
-    **kwargs,
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """Perform logistic regression association test.
 
@@ -191,6 +191,78 @@ def association_test_logistic(
         }
 
     return result
+
+
+def run_linear_model_gwas(
+    genotype_matrix: List[List[int]],
+    phenotypes: List[float],
+    variant_info: Optional[List[Dict[str, Any]]] = None,
+    covariates: Optional[List[List[float]]] = None,
+) -> List[Dict[str, Any]]:
+    """Run linear-model GWAS across all variants.
+
+    Batch wrapper that tests each variant with :func:`association_test_linear`,
+    matching the result contract of :func:`metainformant.gwas.analysis.mixed_model.run_mixed_model_gwas`.
+
+    Args:
+        genotype_matrix: Genotype matrix (variants x samples)
+        phenotypes: Quantitative phenotype values
+        variant_info: Optional variant metadata (id, chrom, pos per variant)
+        covariates: Optional covariate matrix (covariates x samples)
+
+    Returns:
+        List of result dictionaries, one per variant
+    """
+    results: List[Dict[str, Any]] = []
+    for i, genotypes in enumerate(genotype_matrix):
+        result = dict(association_test_linear(list(genotypes), list(phenotypes), covariates=covariates))
+        result["variant_index"] = i
+        if variant_info and i < len(variant_info):
+            result["variant_id"] = variant_info[i].get("id", f"variant_{i}")
+            result["chrom"] = variant_info[i].get("chrom", "")
+            result["pos"] = variant_info[i].get("pos", 0)
+        results.append(result)
+    logger.info(f"Linear model GWAS complete: {len(results)} variants tested")
+    return results
+
+
+def run_logistic_model_gwas(
+    genotype_matrix: List[List[int]],
+    phenotypes: List[int],
+    variant_info: Optional[List[Dict[str, Any]]] = None,
+    covariates: Optional[List[List[float]]] = None,
+    max_iter: int = 100,
+) -> List[Dict[str, Any]]:
+    """Run logistic-model GWAS across all variants.
+
+    Batch wrapper that tests each variant with :func:`association_test_logistic`,
+    matching the result contract of :func:`metainformant.gwas.analysis.mixed_model.run_mixed_model_gwas`.
+
+    Args:
+        genotype_matrix: Genotype matrix (variants x samples)
+        phenotypes: Binary phenotype values (0/1)
+        variant_info: Optional variant metadata (id, chrom, pos per variant)
+        covariates: Optional covariate matrix (covariates x samples)
+        max_iter: Maximum IRLS iterations per variant
+
+    Returns:
+        List of result dictionaries, one per variant
+    """
+    results: List[Dict[str, Any]] = []
+    for i, genotypes in enumerate(genotype_matrix):
+        result = dict(
+            association_test_logistic(
+                list(genotypes), list(phenotypes), covariates=covariates, max_iter=max_iter
+            )
+        )
+        result["variant_index"] = i
+        if variant_info and i < len(variant_info):
+            result["variant_id"] = variant_info[i].get("id", f"variant_{i}")
+            result["chrom"] = variant_info[i].get("chrom", "")
+            result["pos"] = variant_info[i].get("pos", 0)
+        results.append(result)
+    logger.info(f"Logistic model GWAS complete: {len(results)} variants tested")
+    return results
 
 
 def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[float, float, float, float, float]:

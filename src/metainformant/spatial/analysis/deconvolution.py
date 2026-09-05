@@ -19,22 +19,22 @@ try:
     import numpy as np
     from numpy.typing import NDArray
 except ImportError:
-    np = None  # type: ignore[assignment]
-    NDArray = None  # type: ignore[assignment,misc]
+    np = None
+    NDArray = None
 
 try:
     from scipy import sparse as sp_sparse
     from scipy.optimize import nnls
 except ImportError:
-    sp_sparse = None  # type: ignore[assignment]
-    nnls = None  # type: ignore[assignment]
+    sp_sparse = None
+    nnls = None
 
 try:
     from sklearn.decomposition import NMF
     from sklearn.preprocessing import normalize
 except ImportError:
-    NMF = None  # type: ignore[assignment,misc]
-    normalize = None  # type: ignore[assignment]
+    NMF = None
+    normalize = None
 
 
 @dataclass

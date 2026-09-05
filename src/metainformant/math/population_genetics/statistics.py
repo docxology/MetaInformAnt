@@ -207,8 +207,11 @@ def effective_size_from_family_size_variance(family_sizes: List[int] | float, Vk
         Estimated effective population size
     """
     if Vk is not None:
+        assert isinstance(family_sizes, float)
         N = float(family_sizes)
         return (4.0 * N - 2.0) / (Vk + 2.0)
+
+    assert isinstance(family_sizes, list)
 
     if not family_sizes:
         return 0.0

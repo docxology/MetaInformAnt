@@ -8,7 +8,7 @@ commonly used in bioinformatics and systems biology.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, cast
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -49,7 +49,7 @@ def plot_venn_diagram(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a Venn diagram from set data.
 
@@ -100,7 +100,7 @@ def plot_venn_diagram(
     return ax
 
 
-def _plot_venn2(ax: Axes, sets: Dict[str, set], **kwargs) -> None:
+def _plot_venn2(ax: Axes, sets: Dict[str, set], **kwargs: Any) -> None:
     """Simple fallback Venn diagram for 2 sets."""
     set_names = list(sets.keys())
     set1, set2 = [sets[name] for name in set_names]
@@ -127,7 +127,7 @@ def _plot_venn2(ax: Axes, sets: Dict[str, set], **kwargs) -> None:
     ax.axis("off")
 
 
-def _plot_venn3(ax: Axes, sets: Dict[str, set], **kwargs) -> None:
+def _plot_venn3(ax: Axes, sets: Dict[str, set], **kwargs: Any) -> None:
     """Simple fallback Venn diagram for 3 sets."""
     set_names = list(sets.keys())
     set1, set2, set3 = [sets[name] for name in set_names]
@@ -169,7 +169,7 @@ def plot_sankey_diagram(
     *,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Any:
     """Create a Sankey diagram for flow visualization.
 
@@ -186,9 +186,9 @@ def plot_sankey_diagram(
 
     if HAS_PLOTLY:
         # Use Plotly for better Sankey diagrams
-        sources = []
-        targets = []
-        values = []
+        sources: list[Any] = []
+        targets: list[Any] = []
+        values: list[Any] = []
         labels = set()
 
         for source, target, value in flows:
@@ -259,7 +259,7 @@ def plot_chord_diagram(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a chord diagram for showing relationships between categories.
 
@@ -310,7 +310,7 @@ def plot_chord_diagram(
                     (theta2, 0.5),  # End
                 ]
 
-                codes = [Path.MOVETO, Path.CURVE4, Path.CURVE4, Path.CURVE4, Path.CURVE4]
+                codes = [MplPath.MOVETO, MplPath.CURVE4, MplPath.CURVE4, MplPath.CURVE4, MplPath.CURVE4]
                 path = MplPath(verts, codes)
                 patch = PathPatch(path, facecolor="blue", alpha=0.3, edgecolor="blue")
                 ax.add_patch(patch)
@@ -320,7 +320,7 @@ def plot_chord_diagram(
         label = labels[i] if labels else f"Node {i+1}"
         ax.text(angle, 0.8, label, ha="center", va="center", fontsize=10, rotation=np.degrees(angle) - 90)
 
-    ax.set_rlim(0, 1)
+    cast("Any", ax).set_rlim(0, 1)
     ax.set_title("Chord Diagram")
     ax.axis("off")
 
@@ -339,7 +339,7 @@ def plot_alluvial_diagram(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create an alluvial diagram (flow diagram) for showing transitions.
 
@@ -378,7 +378,7 @@ def plot_alluvial_diagram(
     return ax
 
 
-def _plot_simple_alluvial(ax: Axes, data: pd.DataFrame, stages: List[str], **kwargs) -> None:
+def _plot_simple_alluvial(ax: Axes, data: pd.DataFrame, stages: List[str], **kwargs: Any) -> None:
     """Simple fallback alluvial diagram."""
     n_stages = len(stages)
     colors = plt.cm.tab10(np.linspace(0, 1, len(data)))
@@ -403,7 +403,7 @@ def plot_circular_barplot(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a circular bar plot.
 
@@ -436,7 +436,7 @@ def plot_circular_barplot(
                 angle, max(values) * 1.1, label, ha="center", va="center", rotation=np.degrees(angle) - 90, fontsize=8
             )
 
-    ax.set_rlabel_position(0)
+    cast("Any", ax).set_rlabel_position(0)
     ax.set_title("Circular Bar Plot")
     ax.grid(True, alpha=0.3)
 
@@ -454,7 +454,7 @@ def plot_network_circular_layout(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 10),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot a network in circular layout.
 
@@ -491,7 +491,7 @@ def plot_network_circular_layout(
 
     ax.set_title("Circular Network Layout")
     ax.grid(False)
-    ax.set_rlabel_position(0)
+    cast("Any", ax).set_rlabel_position(0)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
@@ -502,7 +502,11 @@ def plot_network_circular_layout(
 
 
 def plot_upset_plot(
-    data: Dict[str, set], *, output_path: str | Path | None = None, figsize: Tuple[float, float] = (10, 6), **kwargs
+    data: Dict[str, set],
+    *,
+    output_path: str | Path | None = None,
+    figsize: Tuple[float, float] = (10, 6),
+    **kwargs: Any,
 ) -> Any:
     """Create an UpSet plot for set intersections.
 

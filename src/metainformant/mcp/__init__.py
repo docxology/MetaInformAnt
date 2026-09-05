@@ -9,13 +9,15 @@ bundled tool adapters under ``metainformant.mcp.tools`` plus this package's
 
 from __future__ import annotations
 
+from types import ModuleType
+
 #: Declarative list of tool modules registered into the default MCP registry.
 TOOLS_MODULES = ("metainformant.mcp.tool_adapters", "metainformant.mcp.tools.catalog")
 
 __all__ = ["TOOLS_MODULES", "registry", "server", "tool_adapters", "tools"]
 
 
-def __getattr__(name: str):
+def __getattr__(name: str) -> ModuleType:
     """Lazily expose submodules to honor ``__all__`` without import side effects."""
 
     if name in __all__:

@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import Any, Dict, List, Sequence
 
 import numpy as np
 import pandas as pd
@@ -109,15 +109,15 @@ def plot_eqtl_boxplot(
 
     # Group by genotype
     gt_rounded = np.round(genotypes).astype(int)
-    groups = {0: [], 1: [], 2: []}
+    groups: Dict[int, List[Any]] = {0: [], 1: [], 2: []}
 
     for gt, expr in zip(gt_rounded, expression):
         if gt in groups and not np.isnan(expr):
             groups[gt].append(expr)
 
     # Create boxplot
-    data = [groups[0], groups[1], groups[2]]
-    labels = ["0/0 (Ref)", "0/1 (Het)", "1/1 (Alt)"]
+    data: Sequence[Any] = [groups[0], groups[1], groups[2]]
+    labels: Sequence[str] = ["0/0 (Ref)", "0/1 (Het)", "1/1 (Alt)"]
 
     # Filter empty groups
     valid_data = [(d, lbl) for d, lbl in zip(data, labels) if len(d) > 0]

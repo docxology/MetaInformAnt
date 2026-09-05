@@ -28,7 +28,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore
+    np = None
 
 
 def estimate_heritability(
@@ -272,7 +272,7 @@ def heritability_bar_chart(
 
         # Color bars by relative contribution
         max_h2 = max(h2_values) if max(h2_values) > 0 else 1.0
-        colors = plt.cm.YlOrRd([v / max_h2 for v in h2_values])  # type: ignore[attr-defined]
+        colors = plt.cm.YlOrRd([v / max_h2 for v in h2_values])
 
         x_positions = range(len(sorted_chroms))
         ax.bar(

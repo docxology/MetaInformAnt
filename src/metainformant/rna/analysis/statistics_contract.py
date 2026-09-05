@@ -58,8 +58,15 @@ __all__ = [
 
 DESCRIPTIVE_ROLE = "descriptive"
 INFERENTIAL_ROLE = "inferential"
+# Predeclared non-analysis states (statistical_analysis_plan.md section 8):
+# an analysis that was declared but halted before producing results is
+# recorded as stopped/unavailable instead of silently disappearing from an
+# evidence bundle.
+STOPPED_ROLE = "stopped"
+UNAVAILABLE_ROLE = "unavailable"
 
-_ALLOWED_ROLES = frozenset({DESCRIPTIVE_ROLE, INFERENTIAL_ROLE})
+_ALLOWED_ROLES = frozenset({DESCRIPTIVE_ROLE, INFERENTIAL_ROLE, STOPPED_ROLE, UNAVAILABLE_ROLE})
+NON_ANALYSIS_ROLES = frozenset({STOPPED_ROLE, UNAVAILABLE_ROLE})
 # Predeclared multiplicity procedures (statistical_analysis_plan.md section 6).
 _ALLOWED_MT_METHODS = frozenset({"bh-fdr", "benjamini-hochberg", "bonferroni"})
 # Strings that make a declared field a placeholder rather than a declaration.
@@ -106,6 +113,23 @@ class AnalysisProvenance:
     tested_feature_count: int | None
     software_versions: Mapping[str, str]
     analysis_role: str = DESCRIPTIVE_ROLE
+    # Reporting-contract fields (plan section 9): bind the analysis to the
+    # data-root snapshot it ran against and to the exact cohort denominators
+    # and artifact paths. All optional; declared values are validated
+    # fail-closed (no placeholders) so a record cannot imply evidence that
+    # was not bound.
+    data_root_snapshot_id: str | None = None
+    cohort_included_count: int | None = None
+    cohort_excluded_count: int | None = None
+    artifact_paths: Mapping[str, str] | None = None
+    # Metadata-harmonization review flag (plan section 3): records the
+    # review state of the harmonization table the analysis consumed.
+    metadata_harmonization_review: str | None = None
+    # Species-tree binding (plan section 4 / methods 'versioned species
+    # tree'): source identity plus branch-length scale so a tree-dependent
+    # analysis names the exact tree it used.
+    species_tree_source: str | None = None
+    species_tree_branch_length_scale: str | None = None
 
 
 def _require_declared(value: object, field: str) -> str:
@@ -150,6 +174,26 @@ def validate_analysis_provenance(record: AnalysisProvenance) -> None:
 
     if record.analysis_role not in _ALLOWED_ROLES:
         raise ProvenanceError(f"analysis_role must be one of {sorted(_ALLOWED_ROLES)}, got {record.analysis_role!r}")
+
+    # Non-analysis states (plan section 8): a stopped/unavailable record
+    # documents that a declared analysis did NOT run to results. It must not
+    # carry multiplicity declarations, tested features, or analysis binding
+    # fields that would imply results exist.
+    if record.analysis_role in NON_ANALYSIS_ROLES:
+        for field, value in (
+            ("multiple_testing_family", record.multiple_testing_family),
+            ("multiple_testing_method", record.multiple_testing_method),
+            ("tested_feature_count", record.tested_feature_count),
+            ("cohort_included_count", record.cohort_included_count),
+            ("cohort_excluded_count", record.cohort_excluded_count),
+            ("artifact_paths", record.artifact_paths),
+        ):
+            if value is not None:
+                raise ProvenanceError(
+                    f"analysis_role={record.analysis_role!r} records a halted or "
+                    f"unavailable analysis, so {field}={value!r} must not be declared"
+                )
+        return
 
     if not isinstance(record.random_seed, int) or isinstance(record.random_seed, bool) or record.random_seed < 0:
         raise ProvenanceError(f"random_seed must be a non-negative integer, got {record.random_seed!r}")
@@ -232,6 +276,29 @@ def validate_analysis_provenance(record: AnalysisProvenance) -> None:
     for name, version in record.software_versions.items():
         _require_declared(name, "software_versions key")
         _require_declared(version, f"software_versions[{name!r}]")
+    # Reporting-contract bindings (plan section 9) and the harmonization /
+    # species-tree flags are optional: when declared they must be real
+    # values, never placeholders. Denominator consistency is checked
+    # structurally (non-negative, integers).
+    for field in (
+        "data_root_snapshot_id",
+        "metadata_harmonization_review",
+        "species_tree_source",
+        "species_tree_branch_length_scale",
+    ):
+        value = getattr(record, field)
+        if value is not None:
+            _require_declared(value, field)
+    for field in ("cohort_included_count", "cohort_excluded_count"):
+        value = getattr(record, field)
+        if value is not None and (not isinstance(value, int) or isinstance(value, bool) or value < 0):
+            raise ProvenanceError(f"{field} must be a non-negative integer when declared, got {value!r}")
+    if record.artifact_paths is not None:
+        if not isinstance(record.artifact_paths, Mapping) or not record.artifact_paths:
+            raise ProvenanceError("artifact_paths must be a non-empty mapping when declared")
+        for name, path in record.artifact_paths.items():
+            _require_declared(name, "artifact_paths key")
+            _require_declared(path, f"artifact_paths[{name!r}]")
 
 
 def render_analysis_provenance_block(record: AnalysisProvenance) -> list[str]:
@@ -247,7 +314,7 @@ def render_analysis_provenance_block(record: AnalysisProvenance) -> list[str]:
     """
     validate_analysis_provenance(record)
     versions = "; ".join(f"{name}={record.software_versions[name]}" for name in sorted(record.software_versions))
-    return [
+    lines = [
         f"analysis_provenance_role: {record.analysis_role}",
         f"analysis_provenance_analysis_id: {record.analysis_id}",
         f"analysis_provenance_estimand: {record.estimand}",
@@ -265,8 +332,26 @@ def render_analysis_provenance_block(record: AnalysisProvenance) -> list[str]:
         ),
         "analysis_provenance_tested_feature_count: "
         + ("not-applicable" if record.tested_feature_count is None else str(record.tested_feature_count)),
-        f"analysis_provenance_software_versions: {versions}",
     ]
+    lines.extend(
+        f"analysis_provenance_{name}: {value}"
+        for name, value in (
+            ("data_root_snapshot_id", record.data_root_snapshot_id),
+            ("cohort_included_count", record.cohort_included_count),
+            ("cohort_excluded_count", record.cohort_excluded_count),
+            ("metadata_harmonization_review", record.metadata_harmonization_review),
+            ("species_tree_source", record.species_tree_source),
+            ("species_tree_branch_length_scale", record.species_tree_branch_length_scale),
+        )
+        if value is not None
+    )
+    if record.artifact_paths is not None:
+        lines.extend(
+            f"analysis_provenance_artifact_{name}: {record.artifact_paths[name]}"
+            for name in sorted(record.artifact_paths)
+        )
+    lines.append(f"analysis_provenance_software_versions: {versions}")
+    return lines
 
 
 def result_role(result: Any) -> str:
@@ -358,7 +443,8 @@ def declared_inferential_bh_fdr(
             f"declared_inferential_bh_fdr requires a contract declared "
             f"analysis_role={INFERENTIAL_ROLE!r}, got {contract.analysis_role!r}"
         )
-    if contract.multiple_testing_method.strip().lower() not in {"bh-fdr", "benjamini-hochberg"}:
+    declared_method = contract.multiple_testing_method
+    if declared_method is None or declared_method.strip().lower() not in {"bh-fdr", "benjamini-hochberg"}:
         raise StatisticsContractError(
             f"declared_inferential_bh_fdr requires a BH-FDR procedure, got " f"{contract.multiple_testing_method!r}"
         )
@@ -572,6 +658,7 @@ def validate_species_tree_invariants(
         ProvenanceError: If ``require_rooted`` is set and ``rooted`` was not
             explicitly declared by the caller.
     """
+    root: Mapping[str, Any]
     if isinstance(tree, str):
         root = _parse_newick(tree)
         internal_names_optional = True

@@ -7,7 +7,7 @@ and quality control plots.
 
 from __future__ import annotations
 
-from typing import Any, List, Optional
+from typing import Any, List, Optional, cast
 
 import numpy as np
 
@@ -28,7 +28,7 @@ except ImportError:
     logger.warning("matplotlib not available - visualization functions will return None")
 
 
-def plot_umap(data: SingleCellData, color: Optional[str] = None, **kwargs) -> Any:
+def plot_umap(data: SingleCellData, color: Optional[str] = None, **kwargs: Any) -> Any:
     """Create UMAP plot of single-cell data.
 
     Args:
@@ -106,7 +106,7 @@ def plot_umap(data: SingleCellData, color: Optional[str] = None, **kwargs) -> An
     return fig
 
 
-def plot_tsne(data: SingleCellData, color: Optional[str] = None, **kwargs) -> Any:
+def plot_tsne(data: SingleCellData, color: Optional[str] = None, **kwargs: Any) -> Any:
     """Create t-SNE plot of single-cell data.
 
     Args:
@@ -183,7 +183,7 @@ def plot_tsne(data: SingleCellData, color: Optional[str] = None, **kwargs) -> An
     return fig
 
 
-def plot_pca(data: SingleCellData, color: Optional[str] = None, n_components: int = 2, **kwargs) -> Any:
+def plot_pca(data: SingleCellData, color: Optional[str] = None, n_components: int = 2, **kwargs: Any) -> Any:
     """Create PCA plot of single-cell data.
 
     Args:
@@ -296,7 +296,7 @@ def plot_pca(data: SingleCellData, color: Optional[str] = None, n_components: in
     return fig
 
 
-def plot_trajectory(data: SingleCellData, trajectory_key: str, color_by_pseudotime: bool = True, **kwargs) -> Any:
+def plot_trajectory(data: SingleCellData, trajectory_key: str, color_by_pseudotime: bool = True, **kwargs: Any) -> Any:
     """Create trajectory plot showing pseudotime and cell ordering.
 
     Args:
@@ -389,7 +389,9 @@ def plot_trajectory(data: SingleCellData, trajectory_key: str, color_by_pseudoti
     return fig
 
 
-def plot_marker_expression(data: SingleCellData, marker_genes: List[str], method: str = "dotplot", **kwargs) -> Any:
+def plot_marker_expression(
+    data: SingleCellData, marker_genes: List[str], method: str = "dotplot", **kwargs: Any
+) -> Any:
     """Create marker gene expression plots.
 
     Args:
@@ -437,7 +439,7 @@ def plot_marker_expression(data: SingleCellData, marker_genes: List[str], method
 
 
 def _plot_marker_dotplot(
-    data: SingleCellData, genes: List[str], gene_indices: List[int], X: np.ndarray, **kwargs
+    data: SingleCellData, genes: List[str], gene_indices: List[int], X: np.ndarray, **kwargs: Any
 ) -> Any:
     """Create dot plot for marker genes."""
     fig, ax = plt.subplots(figsize=kwargs.get("figsize", (len(genes) * 0.8, 6)))
@@ -484,7 +486,7 @@ def _plot_marker_dotplot(
 
 
 def _plot_marker_heatmap(
-    data: SingleCellData, genes: List[str], gene_indices: List[int], X: np.ndarray, **kwargs
+    data: SingleCellData, genes: List[str], gene_indices: List[int], X: np.ndarray, **kwargs: Any
 ) -> Any:
     """Create heatmap for marker genes."""
     # Subsample cells for visualization if too many
@@ -519,7 +521,7 @@ def _plot_marker_heatmap(
 
 
 def _plot_marker_violin(
-    data: SingleCellData, genes: List[str], gene_indices: List[int], X: np.ndarray, **kwargs
+    data: SingleCellData, genes: List[str], gene_indices: List[int], X: np.ndarray, **kwargs: Any
 ) -> Any:
     """Create violin plots for marker genes."""
     fig, ax = plt.subplots(figsize=kwargs.get("figsize", (len(genes) * 0.8, 6)))
@@ -535,7 +537,7 @@ def _plot_marker_violin(
     parts = ax.violinplot(expr_data, showmeans=True, showextrema=True)
 
     # Customize violin plot
-    for pc in parts["bodies"]:
+    for pc in cast("List[Any]", parts["bodies"]):
         pc.set_facecolor("lightblue")
         pc.set_edgecolor("black")
         pc.set_alpha(0.7)
@@ -553,7 +555,7 @@ def _plot_marker_violin(
     return fig
 
 
-def plot_qc_metrics(data: SingleCellData, **kwargs) -> Any:
+def plot_qc_metrics(data: SingleCellData, **kwargs: Any) -> Any:
     """Create QC metrics visualization.
 
     Args:
@@ -618,7 +620,7 @@ def plot_qc_metrics(data: SingleCellData, **kwargs) -> Any:
 
 
 def plot_cluster_comparison(
-    data: SingleCellData, cluster_cols: List[str], embedding_cols: Optional[List[str]] = None, **kwargs
+    data: SingleCellData, cluster_cols: List[str], embedding_cols: Optional[List[str]] = None, **kwargs: Any
 ) -> Any:
     """Compare different clustering results side by side.
 

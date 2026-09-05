@@ -9,7 +9,10 @@ bootstrap distribution.
 
 from __future__ import annotations
 
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, cast
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes
 
 import numpy as np
 
@@ -22,7 +25,7 @@ def plot_fst_matrix(
     data: Dict[str, List[str]] | np.ndarray | List[List[float]],
     pop_names: Optional[List[str]] = None,
     output_file: Optional[str] = None,
-) -> Optional[any]:
+) -> Optional[Any]:
     """Create F_ST matrix heatmap visualization.
 
     Args:
@@ -76,7 +79,7 @@ def plot_fst_matrix(
     return plt.gcf()
 
 
-def plot_tajima_d_distribution(tajima_d_values: List[float], output_file: Optional[str] = None) -> Optional[any]:
+def plot_tajima_d_distribution(tajima_d_values: List[float], output_file: Optional[str] = None) -> Optional[Any]:
     """Plot distribution of Tajima's D values.
 
     Args:
@@ -115,7 +118,7 @@ def plot_tajima_d_distribution(tajima_d_values: List[float], output_file: Option
     return plt.gcf()
 
 
-def plot_selection_statistics(statistics: Dict[str, List[float]], output_file: Optional[str] = None) -> Optional[any]:
+def plot_selection_statistics(statistics: Dict[str, List[float]], output_file: Optional[str] = None) -> Optional[Any]:
     """Plot multiple selection statistics.
 
     Args:
@@ -159,7 +162,7 @@ def plot_selection_statistics(statistics: Dict[str, List[float]], output_file: O
 
 def plot_population_diversity(
     diversity_data: Dict[str, float], output_file: Optional[str] = None, output_path: Optional[str] = None
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot population diversity comparison.
 
     Args:
@@ -203,7 +206,7 @@ def plot_population_diversity(
     return plt.gcf()
 
 
-def plot_ld_decay(ld_data: List[Tuple[int, float]], output_file: Optional[str] = None) -> Optional[any]:
+def plot_ld_decay(ld_data: List[Tuple[int, float]], output_file: Optional[str] = None) -> Optional[Any]:
     """Plot linkage disequilibrium decay with distance.
 
     Args:
@@ -237,7 +240,7 @@ def plot_ld_decay(ld_data: List[Tuple[int, float]], output_file: Optional[str] =
         try:
             from scipy.optimize import curve_fit
 
-            def exp_decay(x, a, b):
+            def exp_decay(x: Any, a: float, b: float) -> Any:
                 return a * np.exp(-b * x)
 
             popt, _ = curve_fit(exp_decay, distances, ld_values, p0=[1, 0.1])
@@ -262,7 +265,7 @@ def plot_ld_decay(ld_data: List[Tuple[int, float]], output_file: Optional[str] =
 
 def plot_population_structure(
     pca_coords: np.ndarray, cluster_labels: Optional[List[int]] = None, output_file: Optional[str] = None
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot population structure using PCA coordinates.
 
     Args:
@@ -292,7 +295,7 @@ def plot_population_structure(
 
     if pca_coords.shape[1] >= 3:
         # 3D plot
-        ax = plt.axes(projection="3d")
+        ax = cast("Axes", plt.axes(projection="3d"))
 
         if cluster_labels is not None:
             scatter = ax.scatter(
@@ -331,7 +334,7 @@ def plot_population_structure(
 
 def plot_demographic_history(
     ne_estimates: List[float], generations: List[int], output_file: Optional[str] = None
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot demographic history (effective population size over time).
 
     Args:
@@ -376,7 +379,7 @@ def plot_demographic_history(
 
 def create_population_summary_plot(
     population_data: Dict[str, Dict[str, float]], output_file: Optional[str] = None
-) -> Optional[any]:
+) -> Optional[Any]:
     """Create comprehensive population summary plot.
 
     Args:
@@ -407,7 +410,7 @@ def create_population_summary_plot(
     metrics = {}
 
     # Get all available metrics
-    all_metrics = set()
+    all_metrics: set[str] = set()
     for pop_data in population_data.values():
         all_metrics.update(pop_data.keys())
 
@@ -451,7 +454,7 @@ def create_population_summary_plot(
     return plt.gcf()
 
 
-def plot_mutation_spectrum(mutation_counts: Dict[str, int], output_file: Optional[str] = None) -> Optional[any]:
+def plot_mutation_spectrum(mutation_counts: Dict[str, int], output_file: Optional[str] = None) -> Optional[Any]:
     """Plot mutation spectrum (types of mutations).
 
     Args:
@@ -503,7 +506,7 @@ def plot_mutation_spectrum(mutation_counts: Dict[str, int], output_file: Optiona
     return plt.gcf()
 
 
-def plot_allele_frequency_spectrum(allele_frequencies: List[float], output_file: Optional[str] = None) -> Optional[any]:
+def plot_allele_frequency_spectrum(allele_frequencies: List[float], output_file: Optional[str] = None) -> Optional[Any]:
     """Plot allele frequency spectrum.
 
     Args:
@@ -530,7 +533,7 @@ def plot_allele_frequency_spectrum(allele_frequencies: List[float], output_file:
 
     # Create histogram bins for frequency classes
     bins = np.linspace(0, 1, 11)  # 10 bins from 0 to 1
-    plt.hist(allele_frequencies, bins=bins, alpha=0.7, color="skyblue", edgecolor="black")
+    plt.hist(allele_frequencies, bins=bins.tolist(), alpha=0.7, color="skyblue", edgecolor="black")
 
     plt.xlabel("Allele Frequency")
     plt.ylabel("Number of Variants")
@@ -550,7 +553,7 @@ def plot_allele_frequency_spectrum(allele_frequencies: List[float], output_file:
 
 def plot_bootstrap_distribution(
     bootstrap_values: List[float], observed_value: float | None = None, output_file: Optional[str] = None
-) -> Optional[any]:
+) -> Optional[Any]:
     """Plot bootstrap distribution with confidence intervals.
 
     Args:

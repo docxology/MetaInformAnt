@@ -127,7 +127,7 @@ def plot_species_bars(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) -> None:
         ax.text(0.5, 0.5, "No data", transform=ax.transAxes, ha="center", va="center", color=MUTED, fontsize=14)
         return
 
-    bar_data = {s: [] for s in STATE_ORDER}
+    bar_data: dict[str, list[int]] = {s: [] for s in STATE_ORDER}
     for sp in species:
         for state in STATE_ORDER:
             bar_data[state].append(counts.get(sp, {}).get(state, 0))
@@ -288,7 +288,7 @@ def plot_state_summary_table(ax: plt.Axes, counts: Dict[str, Dict[str, int]]) ->
     y = 0.82
     line_h = 0.085
 
-    def _row(label: str, value: str, color: str = TEXT_COLOR, bold: bool = False):
+    def _row(label: str, value: str, color: str = TEXT_COLOR, bold: bool = False) -> None:
         nonlocal y
         weight = "bold" if bold else "normal"
         ax.text(0.05, y, label, transform=ax.transAxes, fontsize=11, color=MUTED, va="top", fontfamily="sans-serif")

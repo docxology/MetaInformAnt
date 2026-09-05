@@ -8,7 +8,7 @@ and regional effect plots.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 import numpy as np
 
@@ -707,7 +707,7 @@ def effect_direction_plot(
         # Add chromosome labels
         chrom_centers = []
         for chrom in unique_chroms:
-            chrom_x = [x for x, c in zip(x_positions, chrom_nums) if c == chrom]
+            chrom_x = [x for x, c in zip(x_positions, chrom_nums) if c == cast(int, chrom)]
             if chrom_x:
                 chrom_centers.append((chrom, sum(chrom_x) / len(chrom_x)))
 

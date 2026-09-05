@@ -14,7 +14,7 @@ import math
 import random
 import statistics
 from collections import defaultdict
-from typing import Any
+from typing import Any, cast
 
 from metainformant.core.utils import logging
 
@@ -27,7 +27,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
+    np = None
 
 # Optional scipy for statistical tests
 try:
@@ -36,7 +36,7 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None  # type: ignore[assignment]
+    scipy_stats = None
 
 
 # ---------------------------------------------------------------------------
@@ -62,7 +62,7 @@ def _to_2d_list(signal_matrix: list[list[float]] | Any) -> list[list[float]]:
     if HAS_NUMPY and isinstance(signal_matrix, np.ndarray):
         if signal_matrix.ndim != 2:
             raise ValueError(f"Expected 2D array, got {signal_matrix.ndim}D")
-        return signal_matrix.tolist()
+        return cast("list[list[float]]", signal_matrix.tolist())
 
     if not signal_matrix:
         raise ValueError("signal_matrix must not be empty")

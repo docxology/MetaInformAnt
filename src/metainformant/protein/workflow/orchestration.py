@@ -8,7 +8,7 @@ comparative studies.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Callable, Dict, List, Optional, Union
 
 from metainformant.core.utils import logging
 
@@ -220,6 +220,7 @@ def comparative_analysis(
 
     # Pairwise alignments
     pairwise = {}
+    align_fn: Callable[[str, str], Dict[str, Any]]
     if use_blosum:
         from metainformant.protein.sequence.alignment import matrix_align
 

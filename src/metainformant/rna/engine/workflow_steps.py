@@ -118,7 +118,7 @@ def check_step_completion_status(
     steps_planned: List[Tuple[str, Dict[str, Any]]],
     config: AmalgkitWorkflowConfig,
     **kwargs: Any,
-) -> Tuple[List[Tuple[str, str]], List[str]]:
+) -> Tuple[List[Tuple[str, Optional[str]]], List[str]]:
     """Check which planned steps are already completed.
 
     Args:
@@ -132,7 +132,7 @@ def check_step_completion_status(
     """
     from metainformant.rna.engine.workflow import _is_step_completed
 
-    completed_steps: List[Tuple[str, str]] = []
+    completed_steps: List[Tuple[str, Optional[str]]] = []
     steps_to_run: List[str] = []
 
     for step_name, step_params in steps_planned:

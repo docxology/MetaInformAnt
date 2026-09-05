@@ -6,7 +6,7 @@ designed for biological trait prediction and quantitative analysis.
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 import numpy as np
 
@@ -88,7 +88,7 @@ class BiologicalRegressor:
             model_params = {**params}
             if random_state is not None:
                 model_params["random_state"] = random_state
-            self.model = factory(**model_params)
+            self.model: Any = factory(**model_params)
         elif model is not None:
             self.algorithm = model_type
             self.model_type = model_type
@@ -149,7 +149,7 @@ class BiologicalRegressor:
         """
         if not self._is_fitted:
             raise ValueError("Model not fitted")
-        return self.model.predict(X)
+        return cast("np.ndarray", self.model.predict(X))
 
     def evaluate(self, X: np.ndarray, y: np.ndarray, detailed: bool = True) -> Dict[str, Any]:
         """Evaluate regressor performance.
@@ -382,17 +382,17 @@ def create_ensemble_regressor(
 
     # Simple averaging ensemble (could be improved with more sophisticated methods)
     class AveragingRegressor:
-        def __init__(self, estimators):
+        def __init__(self, estimators: List[Tuple[str, Any]]):
             self.estimators = estimators
             self.is_fitted = False
 
-        def fit(self, X, y):
+        def fit(self, X: np.ndarray, y: np.ndarray) -> "AveragingRegressor":
             for name, estimator in self.estimators:
                 estimator.fit(X, y)
             self.is_fitted = True
             return self
 
-        def predict(self, X):
+        def predict(self, X: np.ndarray) -> np.ndarray:
             if not self.is_fitted:
                 raise ValueError("Model not fitted")
             predictions = [estimator.predict(X) for _, estimator in self.estimators]
@@ -409,7 +409,7 @@ def create_ensemble_regressor(
 def compare_regression_methods(
     X: np.ndarray,
     y: np.ndarray,
-    methods: List[str] = None,
+    methods: List[str] | None = None,
     cv_folds: int = 5,
     random_state: int | None = None,
 ) -> Dict[str, Any]:
@@ -428,7 +428,7 @@ def compare_regression_methods(
     if methods is None:
         methods = ["rf", "gb", "ridge", "lasso"]
 
-    results = {}
+    results: Dict[str, Any] = {}
 
     for method in methods:
         try:
@@ -561,15 +561,15 @@ def analyze_prediction_uncertainty(
         all_predictions.append(predictions)
 
     # Convert to array
-    all_predictions = np.array(all_predictions)
+    predictions_array = np.array(all_predictions)
 
     # Calculate uncertainty metrics
-    mean_predictions = np.mean(all_predictions, axis=0)
-    std_predictions = np.std(all_predictions, axis=0)
+    mean_predictions = np.mean(predictions_array, axis=0)
+    std_predictions = np.std(predictions_array, axis=0)
 
     # Confidence intervals (95%)
-    ci_lower = np.percentile(all_predictions, 2.5, axis=0)
-    ci_upper = np.percentile(all_predictions, 97.5, axis=0)
+    ci_lower = np.percentile(predictions_array, 2.5, axis=0)
+    ci_upper = np.percentile(predictions_array, 97.5, axis=0)
 
     return {
         "n_bootstraps": n_bootstraps,

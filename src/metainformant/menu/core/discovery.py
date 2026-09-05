@@ -103,8 +103,9 @@ def _extract_python_metadata(script_path: Path) -> tuple[str, list[str], list[st
         tree = ast.parse(content, filename=str(script_path))
 
         # Extract module docstring
-        if ast.get_docstring(tree):
-            description = ast.get_docstring(tree).split("\n")[0].strip()
+        docstring = ast.get_docstring(tree)
+        if docstring:
+            description = docstring.split("\n")[0].strip()
 
         # Find argparse parser to extract arguments
         for node in ast.walk(tree):
@@ -114,13 +115,15 @@ def _extract_python_metadata(script_path: Path) -> tuple[str, list[str], list[st
                         # Try to extract argument info
                         for keyword in node.keywords:
                             if keyword.arg in ("dest", "name"):
-                                if isinstance(keyword.value, ast.Constant):
+                                if isinstance(keyword.value, ast.Constant) and isinstance(
+                                    keyword.value.value, str
+                                ):
                                     arg_name = keyword.value.value
                                     # Check if required
                                     is_required = True
                                     for kw in node.keywords:
                                         if kw.arg == "required" and isinstance(kw.value, ast.Constant):
-                                            is_required = kw.value.value
+                                            is_required = bool(kw.value.value)
                                             break
 
                                     if is_required:

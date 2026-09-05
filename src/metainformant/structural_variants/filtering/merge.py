@@ -16,7 +16,7 @@ from metainformant.core.utils.logging import get_logger
 try:
     import numpy as np
 except ImportError:
-    np = None  # type: ignore[assignment]
+    np = None
 
 logger = get_logger(__name__)
 
@@ -268,10 +268,10 @@ def calculate_reciprocal_overlap(
     if chrom1 != chrom2:
         return 0.0
 
-    start1 = sv1.get("start", 0)
-    end1 = sv1.get("end", 0)
-    start2 = sv2.get("start", 0)
-    end2 = sv2.get("end", 0)
+    start1: int = sv1.get("start", 0)
+    end1: int = sv1.get("end", 0)
+    start2: int = sv2.get("start", 0)
+    end2: int = sv2.get("end", 0)
 
     size1 = max(1, end1 - start1)
     size2 = max(1, end2 - start2)

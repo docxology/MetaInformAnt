@@ -1511,6 +1511,11 @@ def test_campaign_ncbi_settings_preserve_global_configuration(tmp_path: Path) ->
     assert str(data_root / ".sra-cache") in settings_path.read_text()
 
 
+
+def _stub_preflight(_data_root: object, **_kwargs: object) -> dict[str, str]:
+    """These tests exercise later failure paths; the preflight has its own tests."""
+    return {"data_root": "stub", "amalgkit_cli": "stub"}
+
 def test_run_all_keeps_submitted_sample_tasks_bounded(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """A large task list never exceeds the configured in-flight window."""
 
@@ -1565,6 +1570,7 @@ def test_run_all_keeps_submitted_sample_tasks_bounded(tmp_path: Path, monkeypatc
         tmp_path / "logs",
         db_path=tmp_path / "progress.db",
     )
+    monkeypatch.setattr(orchestrator_module, "run_campaign_preflight", _stub_preflight)
     monkeypatch.setattr(orchestrator, "discover_species_tasks", lambda *_args: tasks)
     monkeypatch.setattr(orchestrator, "process_single_sample", fake_process)
     monkeypatch.setattr(orchestrator_module.concurrent.futures, "ThreadPoolExecutor", RecordingExecutor)
@@ -1616,6 +1622,7 @@ def test_run_all_parallelizes_discovery_and_preserves_species_order(
         observed.append(str(args[4]))
         return {"quantified": True, "skipped": False, "error": None}
 
+    monkeypatch.setattr(orchestrator_module, "run_campaign_preflight", _stub_preflight)
     monkeypatch.setattr(orchestrator, "discover_species_tasks", fake_discover)
     monkeypatch.setattr(orchestrator, "process_single_sample", fake_process)
     orchestrator.run_all(
@@ -1653,6 +1660,7 @@ def test_run_all_aborts_before_execution_on_discovery_exception(
         executed = True
         return {"quantified": True, "skipped": False, "error": None}
 
+    monkeypatch.setattr(orchestrator_module, "run_campaign_preflight", _stub_preflight)
     monkeypatch.setattr(orchestrator, "discover_species_tasks", fake_discover)
     monkeypatch.setattr(orchestrator, "process_single_sample", fake_process)
     with pytest.raises(RuntimeError, match="Species discovery failed"):

@@ -242,7 +242,7 @@ def six_frame_translation(dna_seq: str) -> Dict[str, str]:
     return frames
 
 
-def calculate_cai(sequence: str, reference_usage: Dict[str, float] = None) -> float:
+def calculate_cai(sequence: str, reference_usage: Dict[str, float] | None = None) -> float:
     """Calculate Codon Adaptation Index (CAI) for a sequence.
 
     Args:
@@ -260,7 +260,7 @@ def calculate_cai(sequence: str, reference_usage: Dict[str, float] = None) -> fl
     seq_upper = sequence.upper()
 
     # Count codons (simplified - assumes sequence is codons)
-    codon_counts = {}
+    codon_counts: dict[str, int] = {}
     for i in range(0, len(seq_upper) - 2, 3):
         codon = seq_upper[i : i + 3]
         codon_counts[codon] = codon_counts.get(codon, 0) + 1
@@ -269,7 +269,7 @@ def calculate_cai(sequence: str, reference_usage: Dict[str, float] = None) -> fl
         return 0.0
 
     # Calculate CAI-like score
-    total_weight = 0
+    total_weight: float = 0
     total_codons = 0
 
     for codon, count in codon_counts.items():
@@ -304,7 +304,7 @@ def optimize_codons(sequence: str, target_usage: Dict[str, float]) -> str:
     genetic_code = {codon.replace("U", "T"): aa for codon, aa in GENETIC_CODE.items()}
 
     # Build codon preference map: amino_acid -> [(codon, frequency), ...]
-    codon_preferences = {}
+    codon_preferences: dict[str, list[tuple[str, float]]] = {}
     for codon, aa in genetic_code.items():
         if aa not in codon_preferences:
             codon_preferences[aa] = []
@@ -400,7 +400,7 @@ def get_genetic_code(code_id: int = 1) -> Dict[str, str]:
     return GENETIC_CODE.copy()
 
 
-def back_translate(protein_seq: str, codon_usage: Dict[str, float] = None) -> str:
+def back_translate(protein_seq: str, codon_usage: Dict[str, float] | None = None) -> str:
     """Back-translate amino acid sequence to DNA using optimal codons.
 
     Args:

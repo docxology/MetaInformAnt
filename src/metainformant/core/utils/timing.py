@@ -5,7 +5,7 @@ from __future__ import annotations
 import functools
 import threading
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from typing import Any, ParamSpec, TypeVar
 
@@ -148,7 +148,7 @@ def rate_limiter(calls_per_second: float) -> Callable[[Callable[P, T]], Callable
 
 
 @contextmanager
-def timeout_after(seconds: float, message: str = ""):
+def timeout_after(seconds: float, message: str = "") -> Iterator[threading.Event]:
     """Context manager that raises TimeoutError after N seconds.
 
     Uses threading.Timer (not signals) so it works in any thread and on any OS.

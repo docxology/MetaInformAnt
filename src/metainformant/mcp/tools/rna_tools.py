@@ -9,7 +9,7 @@ from __future__ import annotations
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from metainformant.mcp.tools._spec import read_table, validate_output_dir
 
@@ -29,7 +29,8 @@ def _handle_campaign_status(log_paths: list[str], total: int | None = None) -> d
         return {"error": proc.stderr.strip()[-2000:], "returncode": proc.returncode}
     import json
 
-    return json.loads(proc.stdout)
+    payload: dict[str, Any] = json.loads(proc.stdout)
+    return payload
 
 
 def _handle_tau(expression_table: str, output_dir: str, lowest_fraction: float = 0.10) -> dict:
@@ -193,7 +194,10 @@ CONSERVATION_SPEC: dict[str, Any] = {
 
 
 def _handle_normalize_counts(
-    counts_table: str, output_dir: str, method: str = "tpm", gene_lengths: str | None = None
+    counts_table: str,
+    output_dir: str,
+    method: Literal["cpm", "tpm", "rpkm", "log2cpm", "quantile", "median_ratio"] = "tpm",
+    gene_lengths: str | None = None,
 ) -> dict:
     """Normalize a raw count matrix (genes x samples) to CPM/TPM/RPKM/quantile.
 

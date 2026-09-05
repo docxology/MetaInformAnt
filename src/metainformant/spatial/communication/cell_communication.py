@@ -29,7 +29,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
+    np = None
 
 try:
     from scipy.spatial.distance import cdist
@@ -38,8 +38,8 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    cdist = None  # type: ignore[assignment]
-    mannwhitneyu = None  # type: ignore[assignment]
+    cdist = None
+    mannwhitneyu = None
 
 
 def compute_ligand_receptor_interactions(

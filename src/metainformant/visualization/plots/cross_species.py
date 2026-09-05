@@ -520,10 +520,10 @@ def plot_method_comparison(
         )
 
     # Reference line
-    lims = [
+    lims = (
         min(df["Fingerprint"].min(), df["Ortholog"].min()) - 0.05,
         max(df["Fingerprint"].max(), df["Ortholog"].max()) + 0.05,
-    ]
+    )
     ax.plot(lims, lims, "--", color="#7f8c8d", linewidth=1, alpha=0.7, label="y = x")
     ax.set_xlim(lims)
     ax.set_ylim(lims)

@@ -49,7 +49,7 @@ def plot_multiomics_correlation_heatmap(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 10),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot correlation heatmap across multiple omics layers.
 
@@ -93,7 +93,7 @@ def plot_multiomics_correlation_heatmap(
     ax.set_title("Multi-Omics Correlation Matrix")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Multi-omics correlation heatmap saved to {output_path}")
 
@@ -108,7 +108,7 @@ def plot_integrated_omics_heatmap(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (14, 10),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot integrated heatmap showing multiple omics layers.
 
@@ -157,7 +157,7 @@ def plot_integrated_omics_heatmap(
     ax.set_title("Integrated Multi-Omics Heatmap")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Integrated omics heatmap saved to {output_path}")
 
@@ -171,7 +171,7 @@ def plot_omics_layer_comparison(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot comparison between different omics layers.
 
@@ -244,7 +244,7 @@ def plot_omics_layer_comparison(
     plt.colorbar(im, ax=ax, label=comparison_metric.capitalize())
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Omics layer comparison saved to {output_path}")
 
@@ -259,7 +259,7 @@ def plot_multiomics_pca(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot PCA of integrated multi-omics data.
 
@@ -309,7 +309,7 @@ def plot_multiomics_pca(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Multi-omics PCA saved to {output_path}")
 
@@ -322,7 +322,7 @@ def plot_pathway_enrichment_integration(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot integrated pathway enrichment across multiple omics.
 
@@ -346,14 +346,14 @@ def plot_pathway_enrichment_integration(
     for results in enrichment_results.values():
         all_pathways.update([r.get("pathway", r.get("term", "")) for r in results])
 
-    all_pathways = list(all_pathways)
-    n_pathways = len(all_pathways)
+    pathway_list = list(all_pathways)
+    n_pathways = len(pathway_list)
     omics_types = list(enrichment_results.keys())
 
     # Create enrichment matrix
     enrichment_matrix = np.full((n_pathways, len(omics_types)), np.nan)
 
-    for i, pathway in enumerate(all_pathways):
+    for i, pathway in enumerate(pathway_list):
         for j, omics_type in enumerate(omics_types):
             results = enrichment_results[omics_type]
             for result in results:
@@ -368,7 +368,7 @@ def plot_pathway_enrichment_integration(
             cmap="Reds",
             ax=ax,
             xticklabels=omics_types,
-            yticklabels=all_pathways,
+            yticklabels=pathway_list,
             mask=np.isnan(enrichment_matrix),
             **kwargs,
         )
@@ -377,13 +377,13 @@ def plot_pathway_enrichment_integration(
         ax.set_xticks(range(len(omics_types)))
         ax.set_yticks(range(n_pathways))
         ax.set_xticklabels(omics_types, rotation=45, ha="right")
-        ax.set_yticklabels(all_pathways)
+        ax.set_yticklabels(pathway_list)
         plt.colorbar(im, ax=ax)
 
     ax.set_title("Integrated Pathway Enrichment")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Pathway enrichment integration saved to {output_path}")
 
@@ -397,7 +397,7 @@ def plot_multiomics_network(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 10),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot multi-omics integration network.
 
@@ -449,7 +449,7 @@ def plot_multiomics_network(
     ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc="upper left")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Multi-omics network saved to {output_path}")
 
@@ -464,7 +464,7 @@ def plot_omics_factor_analysis(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot factor analysis results for multi-omics data.
 
@@ -511,7 +511,7 @@ def plot_omics_factor_analysis(
     ax.set_title("Multi-Omics Factor Loadings")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Omics factor analysis saved to {output_path}")
 
@@ -523,7 +523,7 @@ def plot_multiomics_upset(
     *,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Any:
     """Create an UpSet plot for multi-omics feature overlaps.
 
@@ -551,7 +551,7 @@ def plot_multiomics_upset(
     upsetplot.plot(upset_data, fig=fig, **kwargs)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Multi-omics UpSet plot saved to {output_path}")
 
@@ -559,7 +559,7 @@ def plot_multiomics_upset(
 
 
 def create_interactive_multiomics_dashboard(
-    multiomics_data: Dict[str, Any], *, output_path: str | Path | None = None, **kwargs
+    multiomics_data: Dict[str, Any], *, output_path: str | Path | None = None, **kwargs: Any
 ) -> Any:
     """Create an interactive multi-omics dashboard using Plotly.
 
@@ -601,7 +601,7 @@ def create_interactive_multiomics_dashboard(
     fig.update_layout(title="Interactive Multi-Omics Dashboard", **kwargs)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         html_path = Path(output_path).with_suffix(".html")
         fig.write_html(str(html_path))
         logger.info(f"Interactive multi-omics dashboard saved to {html_path}")

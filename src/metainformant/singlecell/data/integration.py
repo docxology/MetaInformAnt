@@ -522,7 +522,7 @@ def _correct_batch_effects_mnn(
 
 
 def integrate_multiple_batches(
-    data_list: List[SingleCellData], integration_method: str = "scanorama", **kwargs
+    data_list: List[SingleCellData], integration_method: str = "scanorama", **kwargs: Any
 ) -> SingleCellData:
     """Integrate multiple single-cell datasets using specified method.
 

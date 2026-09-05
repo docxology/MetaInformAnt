@@ -63,7 +63,7 @@ class NCBIClient:
             List of search results
         """
         # First, search using esearch
-        search_params = {
+        search_params: dict[str, str | int] = {
             "db": "nucleotide",
             "term": query,
             "retmax": min(max_results, 1000),  # NCBI limit
@@ -182,7 +182,7 @@ class NCBIClient:
             List of protein search results
         """
         # Similar to nucleotide search but for protein database
-        search_params = {
+        search_params: dict[str, str | int] = {
             "db": "protein",
             "term": query,
             "retmax": min(max_results, 1000),

@@ -13,7 +13,7 @@ import threading
 import time
 from dataclasses import dataclass
 from types import FrameType
-from typing import ClassVar, Dict, List, Optional
+from typing import Any, Callable, ClassVar, Dict, List, Optional
 
 # ANSI Escape Codes
 CSI = "\033["
@@ -104,7 +104,7 @@ class TerminalInterface:
         self._term_size_ttl: float = 1.0  # seconds
 
         # Stash original SIGINT handler so we can restore it
-        self._original_sigint: Optional[signal.Handlers] = None
+        self._original_sigint: Callable[[int, FrameType | None], Any] | int | None = None
 
     # ------------------------------------------------------------------
     # Terminal size caching
@@ -204,12 +204,12 @@ class TerminalInterface:
     def update(
         self,
         task_id: str,
-        current: float = None,
-        total: float = None,
-        status: str = None,
-        speed: str = None,
-        color: str = None,
-        stage: str = None,
+        current: float | None = None,
+        total: float | None = None,
+        status: str | None = None,
+        speed: str | None = None,
+        color: str | None = None,
+        stage: str | None = None,
     ) -> None:
         """Update a specific bar's state."""
         with self._lock:

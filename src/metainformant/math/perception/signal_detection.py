@@ -31,7 +31,7 @@ def d_prime(hit_rate: float, false_alarm_rate: float, correction: float = 1e-6) 
     h = np.clip(hit_rate, correction, 1 - correction)
     fa = np.clip(false_alarm_rate, correction, 1 - correction)
 
-    return norm.ppf(h) - norm.ppf(fa)
+    return float(norm.ppf(h)) - float(norm.ppf(fa))
 
 
 def criterion_c(hit_rate: float, false_alarm_rate: float, correction: float = 1e-6) -> float:
@@ -55,7 +55,7 @@ def criterion_c(hit_rate: float, false_alarm_rate: float, correction: float = 1e
     h = np.clip(hit_rate, correction, 1 - correction)
     fa = np.clip(false_alarm_rate, correction, 1 - correction)
 
-    return -(norm.ppf(h) + norm.ppf(fa)) / 2.0
+    return -(float(norm.ppf(h)) + float(norm.ppf(fa))) / 2.0
 
 
 def likelihood_ratio_beta(hit_rate: float, false_alarm_rate: float, correction: float = 1e-6) -> float:

@@ -28,8 +28,8 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
-    NDArray = None  # type: ignore[assignment,misc]
+    np = None
+    NDArray = None
 
 try:
     from scipy.optimize import nnls as scipy_nnls
@@ -38,8 +38,8 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_nnls = None  # type: ignore[assignment]
-    cdist = None  # type: ignore[assignment]
+    scipy_nnls = None
+    cdist = None
 
 
 def deconvolve_spots(

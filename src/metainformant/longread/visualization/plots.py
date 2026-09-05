@@ -24,25 +24,25 @@ from metainformant.core.utils.logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    import matplotlib  # type: ignore[import-untyped]
+    import matplotlib
 
     matplotlib.use("Agg")  # Non-interactive backend
-    import matplotlib.patches as mpatches  # type: ignore[import-untyped]
-    import matplotlib.pyplot as plt  # type: ignore[import-untyped]
+    import matplotlib.patches as mpatches
+    import matplotlib.pyplot as plt
 
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
 
 try:
-    import seaborn as sns  # type: ignore[import-untyped]
+    import seaborn as sns
 
     HAS_SEABORN = True
 except ImportError:
     HAS_SEABORN = False
 
 try:
-    import numpy as np  # type: ignore[import-untyped]
+    import numpy as np
 
     HAS_NUMPY = True
 except ImportError:
@@ -596,7 +596,7 @@ def plot_methylation_track(
 
 
 def plot_phasing_blocks(
-    phase_blocks: Sequence[dict[str, Any]],
+    phase_blocks: Sequence[dict[str, Any] | object],
     output_path: str | Path,
     title: str = "Haplotype Phase Blocks",
     figsize: tuple[float, float] = (14, 6),
@@ -644,8 +644,8 @@ def plot_phasing_blocks(
             blocks.append(
                 {
                     "chromosome": b.chromosome,
-                    "start": b.start,
-                    "end": b.end,
+                    "start": getattr(b, "start"),
+                    "end": getattr(b, "end"),
                     "num_variants": getattr(b, "num_variants", 0),
                     "quality": getattr(b, "quality", 0.0),
                 }
@@ -740,7 +740,7 @@ def plot_phasing_blocks(
     return output_path
 
 
-def _extract_lengths(reads: Sequence[int | dict[str, Any]]) -> list[int]:
+def _extract_lengths(reads: Sequence[int | dict[str, Any] | object]) -> list[int]:
     """Extract read lengths from various representations."""
     lengths: list[int] = []
     for r in reads:

@@ -555,7 +555,7 @@ class WorkflowManager(BasePipelineManager):
         import yaml
 
         with open(self.config_path) as fh:
-            self.config: Dict[str, Any] = yaml.safe_load(fh)  # type: ignore[no-redef]
+            self.config: Dict[str, Any] = yaml.safe_load(fh)
 
         self.work_dir = Path(self.config.get("work_dir", "output/amalgkit"))
         self.species: str = self.config.get("species", "unknown")

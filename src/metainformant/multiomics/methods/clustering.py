@@ -27,7 +27,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore[assignment]
+    np = None
 
 
 # ---------------------------------------------------------------------------
@@ -70,7 +70,7 @@ def _simple_kmeans(X: Any, k: int, max_iter: int = 50, seed: int = 42) -> list[i
             break
         centroids = new_centroids
 
-    return labels.tolist()
+    return [int(x) for x in labels]
 
 
 def _silhouette_from_data(X: Any, labels: list[int]) -> float:

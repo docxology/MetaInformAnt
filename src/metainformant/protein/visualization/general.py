@@ -61,7 +61,7 @@ def plot_sequence_logo(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 4),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a sequence logo from aligned protein sequences.
 
@@ -76,7 +76,7 @@ def plot_sequence_logo(
         matplotlib Axes object
     """
     validation.validate_type(sequences, (list, tuple), "sequences")
-    validation.validate_not_empty(sequences, "sequences")
+    validation.validate_not_empty(list(sequences), "sequences")
 
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
@@ -134,7 +134,7 @@ def plot_domain_architecture(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 3),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot protein domain architecture.
 
@@ -230,7 +230,7 @@ def plot_secondary_structure(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 4),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot protein secondary structure along sequence.
 
@@ -286,7 +286,7 @@ def plot_contact_map(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot protein contact map.
 
@@ -332,7 +332,7 @@ def plot_ramachandran_plot(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Create a Ramachandran plot.
 
@@ -394,7 +394,7 @@ def plot_alignment_quality(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 4),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot alignment quality scores along sequence positions.
 
@@ -438,7 +438,7 @@ def plot_conservation_scores(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 4),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot sequence conservation scores.
 
@@ -482,7 +482,7 @@ def plot_structure_superposition(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot superposition of protein structures.
 
@@ -503,17 +503,20 @@ def plot_structure_superposition(
         fig, ax = plt.subplots(figsize=figsize, projection="3d")
 
     colors = plt.cm.tab10(np.linspace(0, 1, len(structures)))
+    # mpl_toolkits.mplot3d exposes no mypy-visible stubs; the 3D axes are
+    # dynamically typed here so scatter's zs slot and set_zlabel resolve.
+    ax_3d: Any = ax
 
     for i, coords in enumerate(structures):
         if coords.shape[1] != 3:
             raise ValueError("Coordinates must be n_atoms x 3")
 
         label = labels[i] if labels else f"Structure {i+1}"
-        ax.scatter(coords[:, 0], coords[:, 1], coords[:, 2], c=[colors[i]], label=label, alpha=0.6, s=1)
+        ax_3d.scatter(coords[:, 0], coords[:, 1], coords[:, 2], c=[colors[i]], label=label, alpha=0.6, s=1)
 
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
-    ax.set_zlabel("Z")
+    ax_3d.set_zlabel("Z")
     ax.set_title("Protein Structure Superposition")
     ax.legend()
 
@@ -531,7 +534,7 @@ def plot_protein_properties(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot various protein physicochemical properties along sequence.
 
@@ -632,7 +635,7 @@ def plot_pdb_structure_quality(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 4),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot PDB structure quality metrics (B-factors).
 
@@ -670,7 +673,7 @@ def plot_pdb_structure_quality(
 
 
 def create_interactive_structure_viewer(
-    pdb_data: Dict[str, Any], *, output_path: str | Path | None = None, **kwargs
+    pdb_data: Dict[str, Any], *, output_path: str | Path | None = None, **kwargs: Any
 ) -> Any:
     """Create an interactive 3D structure viewer using Plotly.
 
@@ -731,7 +734,7 @@ def plot_helical_wheel(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot a helical wheel diagram for a protein segment.
 
@@ -823,7 +826,7 @@ def plot_msa_heatmap(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (14, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot a heatmap visualization of a multiple sequence alignment.
 
@@ -902,7 +905,7 @@ def plot_property_distribution(
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
     kind: str = "box",
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot distribution of protein properties across multiple proteins.
 
@@ -938,7 +941,8 @@ def plot_property_distribution(
         try:
             ax.boxplot(data, tick_labels=names)
         except TypeError:
-            ax.boxplot(data, labels=names)
+            boxplot_kwargs: dict[str, Any] = {"labels": names}
+            ax.boxplot(data, **boxplot_kwargs)
 
     ax.set_ylabel("Value")
     ax.set_title("Protein Property Distributions")

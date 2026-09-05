@@ -299,8 +299,8 @@ def calculate_pdb_statistics(pdb_data: Dict[str, Any]) -> Dict[str, Any]:
     }
 
     # Atom type distribution
-    atom_types = {}
-    elements = {}
+    atom_types: Dict[str, int] = {}
+    elements: Dict[str, int] = {}
 
     for atom in atoms:
         # Atom name
@@ -316,7 +316,7 @@ def calculate_pdb_statistics(pdb_data: Dict[str, Any]) -> Dict[str, Any]:
     stats["elements"] = elements
 
     # Residue type distribution
-    res_types = {}
+    res_types: Dict[str, int] = {}
     for atom in atoms:
         res_name = atom["res_name"]
         res_types[res_name] = res_types.get(res_name, 0) + 1
@@ -342,7 +342,13 @@ def validate_pdb_file(path: Path) -> Dict[str, Any]:
         >>> # validation['is_valid']
         >>> # True
     """
-    validation = {"is_valid": False, "has_atoms": False, "has_header": False, "n_atoms": 0, "issues": []}
+    validation: Dict[str, Any] = {
+        "is_valid": False,
+        "has_atoms": False,
+        "has_header": False,
+        "n_atoms": 0,
+        "issues": [],
+    }
 
     try:
         with open(path, "r") as f:

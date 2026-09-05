@@ -310,7 +310,7 @@ def plot_temporal_density(
 
     # Plot density estimate
     try:
-        from scipy import stats  # type: ignore[import-untyped]
+        from scipy import stats
 
         kde = stats.gaussian_kde(timestamps_numeric)
         x_range = np.linspace(min(timestamps_numeric), max(timestamps_numeric), 200)

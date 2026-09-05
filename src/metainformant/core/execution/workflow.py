@@ -21,7 +21,7 @@ logger = get_logger(__name__)
 
 
 def validate_config_file(
-    config_path: Union[str, Path],
+    config_path: Union[str, Path, Dict[str, Any]],
     schema_path: Optional[Union[str, Path]] = None,
 ) -> Tuple[bool, List[str]]:
     """Validate configuration file.
@@ -38,7 +38,7 @@ def validate_config_file(
     try:
         # Load config
         if isinstance(config_path, dict):
-            raw_config = config_path
+            raw_config: object = config_path
         else:
             raw_config = config.load_mapping_from_file(config_path)
 
@@ -138,14 +138,14 @@ def create_sample_config(
 
 
 def download_and_process_data(
-    config_data: Dict[str, Any],
+    config_data: Union[Dict[str, Any], str, Path],
     output_dir: Union[str, Path],
     verbose: bool = False,
 ) -> Dict[str, Any]:
     """Download data and process it based on configuration.
 
     Args:
-        config_data: Configuration dictionary (or path, but typed as dict for now per tests usually passing dict)
+        config_data: Configuration dictionary, or a path to a configuration file to load.
         output_dir: Directory to save outputs
         verbose: Verbose logging
 
@@ -160,7 +160,13 @@ def download_and_process_data(
     output_dir.mkdir(parents=True, exist_ok=True)
 
     start_time = time.time()
-    results = {"config": config_data, "downloads": {}, "processing": {}, "errors": [], "start_time": start_time}
+    results: Dict[str, Any] = {
+        "config": config_data,
+        "downloads": {},
+        "processing": {},
+        "errors": [],
+        "start_time": start_time,
+    }
 
     # 1. Downloads
     downloads = config_data.get("downloads", {})
@@ -388,7 +394,7 @@ class BaseWorkflowOrchestrator:
 
         module_path, func_name = func_ref.rsplit(":", 1)
         module = importlib.import_module(module_path)
-        func = getattr(module, func_name)
+        func: Callable[..., Any] = getattr(module, func_name)
         if not callable(func):
             raise AttributeError(f"{func_ref!r} resolved to a non-callable object")
         return func

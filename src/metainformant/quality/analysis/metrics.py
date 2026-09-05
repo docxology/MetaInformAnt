@@ -144,7 +144,7 @@ def _calculate_vcf_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with overall_score, components breakdown, and grade
     """
-    score_components = {}
+    score_components: Dict[str, Dict[str, Any]] = {}
 
     # Variant quality component (40% weight)
     if "quality_scores" in data:
@@ -594,13 +594,13 @@ def batch_quality_analysis(
     Returns:
         Dictionary with batch analysis results
     """
-    results = {}
+    results: Dict[str, Dict[str, Any]] = {}
 
     for file_path in file_paths:
         try:
             logger.info(f"Analyzing {file_path}")
             if data_type == "fastq":
-                from .fastq import analyze_fastq_quality
+                from metainformant.quality.io.fastq import analyze_fastq_quality
 
                 quality_data = analyze_fastq_quality(file_path, n_reads)
             else:
@@ -719,7 +719,7 @@ def calculate_duplication_metrics(duplication_levels: Dict[int, int]) -> Dict[st
 
     total_reads = sum(duplication_levels.values())
 
-    metrics = {
+    metrics: Dict[str, Any] = {
         "total_reads": total_reads,
         "unique_reads": duplication_levels.get(1, 0),
         "duplicate_reads": total_reads - duplication_levels.get(1, 0),
@@ -764,7 +764,7 @@ def calculate_gc_metrics(gc_content: List[float]) -> Dict[str, Any]:
 
     gc_array = np.array(gc_content)
 
-    metrics = {
+    metrics: Dict[str, Any] = {
         "mean_gc": float(np.mean(gc_array)),
         "median_gc": float(np.median(gc_array)),
         "min_gc": float(np.min(gc_array)),
@@ -808,7 +808,7 @@ def calculate_length_metrics(lengths: List[int]) -> Dict[str, Any]:
 
     length_array = np.array(lengths)
 
-    metrics = {
+    metrics: Dict[str, Any] = {
         "mean_length": float(np.mean(length_array)),
         "median_length": float(np.median(length_array)),
         "min_length": int(np.min(length_array)),
@@ -852,7 +852,7 @@ def calculate_quality_metrics(quality_scores: List[float]) -> Dict[str, Any]:
     flat_scores = score_array.flatten()
 
     total = len(flat_scores)
-    metrics = {
+    metrics: Dict[str, Any] = {
         "mean_quality": float(np.mean(flat_scores)),
         "median_quality": float(np.median(flat_scores)),
         "min_quality": float(np.min(flat_scores)),
@@ -924,7 +924,7 @@ def calculate_complexity_metrics(sequences: List[str]) -> Dict[str, Any]:
         total_kmers = len(all_kmers)
 
         # Shannon entropy
-        entropy = 0
+        entropy = 0.0
         for count in kmer_counts.values():
             p = count / total_kmers
             entropy -= p * math.log2(p)

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Sequence, Union
 
 try:
     import numpy as np
@@ -22,7 +22,7 @@ try:
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
-    np = None  # type: ignore
+    np = None
 
 from metainformant.core.utils import logging
 
@@ -35,7 +35,7 @@ try:
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
-    scipy_stats = None  # type: ignore
+    scipy_stats = None
 
 
 # ---------------------------------------------------------------------------
@@ -201,7 +201,7 @@ def subsample_convergence(
         f"Convergence analysis: {n_variants} variants, {len(fractions)} fractions, " f"{n_replicates} replicates each"
     )
 
-    metrics: Dict[str, List[Dict[str, float]]] = {
+    metrics: Dict[str, List[Dict[str, Any]]] = {
         "lambda_gc": [],
         "n_significant": [],
         "mean_abs_beta": [],
@@ -516,14 +516,14 @@ def _compute_statistic(
         return 0.0
 
 
-def _mean(values: List[float]) -> float:
+def _mean(values: Sequence[float]) -> float:
     """Compute mean of a list of values."""
     if not values:
         return 0.0
     return sum(values) / len(values)
 
 
-def _std(values: List[float]) -> float:
+def _std(values: Sequence[float]) -> float:
     """Compute sample standard deviation."""
     if len(values) < 2:
         return 0.0

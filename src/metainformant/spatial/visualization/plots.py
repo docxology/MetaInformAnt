@@ -20,7 +20,7 @@ logger = get_logger(__name__)
 try:
     import numpy as np
 except ImportError:
-    np = None  # type: ignore[assignment]
+    np = None
 
 try:
     import matplotlib
@@ -31,20 +31,20 @@ try:
     from matplotlib.collections import PatchCollection
     from matplotlib.patches import Wedge
 except ImportError:
-    plt = None  # type: ignore[assignment]
-    PatchCollection = None  # type: ignore[assignment,misc]
-    Wedge = None  # type: ignore[assignment,misc]
-    mcolors = None  # type: ignore[assignment]
+    plt = None
+    PatchCollection = None
+    Wedge = None
+    mcolors = None
 
 try:
     import seaborn as sns
 except ImportError:
-    sns = None  # type: ignore[assignment]
+    sns = None
 
 try:
     from scipy import sparse as sp_sparse
 except ImportError:
-    sp_sparse = None  # type: ignore[assignment]
+    sp_sparse = None
 
 
 def _ensure_plotting_deps() -> None:

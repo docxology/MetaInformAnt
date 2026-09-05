@@ -633,8 +633,8 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
         plot_results = {}
         if association_results:
             # Save PCA intermediate data
-            pca_file = out_dir / "pca_results.json"
-            kinship_file = out_dir / "kinship_results.json"
+            pca_file: Optional[Path] = out_dir / "pca_results.json"
+            kinship_file: Optional[Path] = out_dir / "kinship_results.json"
 
             pcs_list = pca_result.get("pcs", [])
             explained_var = pca_result.get("explained_variance_ratio", [])
@@ -648,12 +648,14 @@ def execute_gwas_workflow(config: Dict[str, Any], *, check: bool = False) -> Dic
                     "explained_variance": explained_var,
                     "loadings": [],
                 }
+                assert pca_file is not None
                 with open(pca_file, "w") as f:
                     json.dump(pca_plot_data, f)
             else:
                 pca_file = None
 
             if kinship_list:
+                assert kinship_file is not None
                 with open(kinship_file, "w") as f:
                     json.dump(kinship_list, f)
             else:

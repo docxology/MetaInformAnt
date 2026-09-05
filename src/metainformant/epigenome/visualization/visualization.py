@@ -48,7 +48,7 @@ def plot_methylation_profile(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot DNA methylation profile along genomic positions.
 
@@ -93,7 +93,7 @@ def plot_methylation_profile(
     cbar.set_label("Methylation Level")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Methylation profile saved to {output_path}")
 
@@ -107,7 +107,7 @@ def plot_chipseq_peaks(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 4),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot ChIP-seq peaks along a chromosome.
 
@@ -165,7 +165,7 @@ def plot_chipseq_peaks(
         cbar.set_label("Peak Score")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"ChIP-seq peaks plot saved to {output_path}")
 
@@ -179,7 +179,7 @@ def plot_atacseq_signal(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot ATAC-seq accessibility signal.
 
@@ -210,7 +210,7 @@ def plot_atacseq_signal(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"ATAC-seq signal plot saved to {output_path}")
 
@@ -224,7 +224,7 @@ def plot_histone_modification_heatmap(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot heatmap of multiple histone modifications.
 
@@ -261,7 +261,7 @@ def plot_histone_modification_heatmap(
     cbar.set_label("Signal Intensity")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Histone modification heatmap saved to {output_path}")
 
@@ -274,7 +274,7 @@ def plot_differential_methylation(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot differential methylation results (volcano plot).
 
@@ -319,7 +319,7 @@ def plot_differential_methylation(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Differential methylation plot saved to {output_path}")
 
@@ -334,7 +334,7 @@ def plot_chromatin_states(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 4),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot chromatin state segmentation.
 
@@ -399,7 +399,7 @@ def plot_chromatin_states(
     ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc="upper left")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Chromatin states plot saved to {output_path}")
 
@@ -412,7 +412,7 @@ def plot_epigenetic_correlation_heatmap(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot correlation heatmap between epigenetic marks.
 
@@ -470,7 +470,7 @@ def plot_epigenetic_correlation_heatmap(
     ax.set_title("Epigenetic Mark Correlations")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Epigenetic correlation heatmap saved to {output_path}")
 
@@ -485,7 +485,7 @@ def plot_genome_browser_tracks(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot genome browser-style tracks for epigenetic data.
 
@@ -517,7 +517,7 @@ def plot_genome_browser_tracks(
         label = track_data.get("label", track_name)
 
         # Create subplot for this track
-        ax_track = ax.inset_axes([0.1, 0.1 + i * 0.8 / n_tracks, 0.8, 0.8 / n_tracks])
+        ax_track = ax.inset_axes((0.1, 0.1 + i * 0.8 / n_tracks, 0.8, 0.8 / n_tracks))
 
         if isinstance(data, (list, np.ndarray)) and len(data) > 0:
             positions = np.linspace(region_start, region_end, len(data))
@@ -541,7 +541,7 @@ def plot_genome_browser_tracks(
     ax.set_xticks([])
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Genome browser tracks saved to {output_path}")
 
@@ -555,7 +555,7 @@ def plot_dna_methylation_clusters(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs,
+    **kwargs: Any,
 ) -> Axes:
     """Plot clustered DNA methylation data.
 
@@ -600,7 +600,7 @@ def plot_dna_methylation_clusters(
     cbar.set_label("Methylation Level")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Methylation clustering plot saved to {output_path}")
 
@@ -608,7 +608,7 @@ def plot_dna_methylation_clusters(
 
 
 def create_interactive_epigenome_browser(
-    epigenetic_tracks: Dict[str, Any], *, output_path: str | Path | None = None, **kwargs
+    epigenetic_tracks: Dict[str, Any], *, output_path: str | Path | None = None, **kwargs: Any
 ) -> Any:
     """Create an interactive epigenome browser using Plotly.
 
@@ -661,7 +661,7 @@ def create_interactive_epigenome_browser(
     )
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         html_path = Path(output_path).with_suffix(".html")
         fig.write_html(str(html_path))
         logger.info(f"Interactive epigenome browser saved to {html_path}")

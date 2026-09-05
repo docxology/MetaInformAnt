@@ -22,19 +22,23 @@ logger = get_logger(__name__)
 
 # Optional dependency imports
 try:
-    import h5py  # type: ignore[import-untyped]
+    import h5py
 except ImportError:
-    h5py = None  # type: ignore[assignment]
+    h5py = None
 
 try:
-    import pod5 as pod5_lib  # type: ignore[import-untyped]
+    import pod5 as pod5_lib
 except ImportError:
-    pod5_lib = None  # type: ignore[assignment]
+    pod5_lib = None
 
 try:
-    import numpy as np  # type: ignore[import-untyped]
+    import numpy as np
+
+    HAS_NUMPY = True
 except ImportError:
-    np = None  # type: ignore[assignment]
+    np = None
+
+    HAS_NUMPY = False
 
 
 @dataclass
@@ -146,7 +150,7 @@ def _parse_fast5_read_group(read_group: Any, group_name: str) -> Fast5Read:
     signal = None
     if "Raw/Signal" in read_group:
         signal_data = read_group["Raw/Signal"][:]
-        if np is not None:
+        if HAS_NUMPY:
             signal = np.array(signal_data, dtype=np.float32)
         else:
             signal = list(signal_data)
@@ -256,7 +260,7 @@ def _parse_single_read_fast5(f5: Any, fallback_id: str) -> Fast5Read:
             first_read = reads_grp[read_keys[0]]
             if "Signal" in first_read:
                 signal_data = first_read["Signal"][:]
-                if np is not None:
+                if HAS_NUMPY:
                     signal = np.array(signal_data, dtype=np.float32)
                 else:
                     signal = list(signal_data)
@@ -330,7 +334,7 @@ def _read_pod5(filepath: Path) -> list[Fast5Read]:
     with pod5_lib.Reader(filepath) as reader:
         for record in reader.reads():
             signal = None
-            if np is not None:
+            if HAS_NUMPY:
                 signal = np.array(record.signal, dtype=np.float32)
             else:
                 signal = list(record.signal)
@@ -381,7 +385,7 @@ def extract_signal(fast5_data: Fast5Read) -> Any:
         return None
 
     # Convert raw ADC to pA using calibration: pA = (raw + offset) * (range / digitisation)
-    if np is not None:
+    if HAS_NUMPY:
         raw = np.asarray(fast5_data.signal, dtype=np.float64)
         scale = fast5_data.range_value / fast5_data.digitisation if fast5_data.digitisation != 0 else 1.0
         pa_signal = (raw + fast5_data.offset) * scale

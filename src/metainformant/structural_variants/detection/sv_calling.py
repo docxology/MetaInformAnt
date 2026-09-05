@@ -21,12 +21,12 @@ from metainformant.core.utils.logging import get_logger
 try:
     import numpy as np
 except ImportError:
-    np = None  # type: ignore[assignment]
+    np = None
 
 try:
     from scipy import stats as scipy_stats
 except ImportError:
-    scipy_stats = None  # type: ignore[assignment]
+    scipy_stats = None
 
 logger = get_logger(__name__)
 

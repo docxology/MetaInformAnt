@@ -56,7 +56,7 @@ class ProcessWatchdog:
         self._stop_event = threading.Event()
         self._thread: Optional[threading.Thread] = None
 
-    def start(self):
+    def start(self) -> None:
         """Start the monitoring thread."""
         if self._thread and self._thread.is_alive():
             logger.warning(f"Watchdog for PID {self.pid} is already running.")
@@ -69,7 +69,7 @@ class ProcessWatchdog:
             f"Watchdog started for PID {self.pid} (Threshold: <{self.cpu_threshold}% CPU for {self.timeout_seconds}s)"
         )
 
-    def stop(self):
+    def stop(self) -> None:
         """Stop the monitoring thread."""
         if self._thread and self._thread.is_alive():
             self._stop_event.set()
@@ -77,7 +77,7 @@ class ProcessWatchdog:
             logger.info(f"Watchdog stopped for PID {self.pid}")
 
     @staticmethod
-    def kill_process_tree(pid: int):
+    def kill_process_tree(pid: int) -> None:
         """Kill a process and its children."""
         try:
             parent = psutil.Process(pid)
@@ -92,7 +92,7 @@ class ProcessWatchdog:
         except psutil.NoSuchProcess:
             pass
 
-    def _monitor_loop(self):
+    def _monitor_loop(self) -> None:
         """Internal monitoring loop."""
         try:
             process = psutil.Process(self.pid)

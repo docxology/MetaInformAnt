@@ -20,16 +20,16 @@ try:
     import numpy as np
     from numpy.typing import NDArray
 except ImportError:
-    np = None  # type: ignore[assignment]
-    NDArray = None  # type: ignore[assignment,misc]
+    np = None
+    NDArray = None
 
 try:
     from scipy import sparse as sp_sparse
     from scipy.spatial import Delaunay, KDTree
 except ImportError:
-    sp_sparse = None  # type: ignore[assignment]
-    Delaunay = None  # type: ignore[assignment,misc]
-    KDTree = None  # type: ignore[assignment,misc]
+    sp_sparse = None
+    Delaunay = None
+    KDTree = None
 
 try:
     from sklearn.cluster import KMeans
@@ -37,10 +37,10 @@ try:
     from sklearn.neighbors import NearestNeighbors
     from sklearn.preprocessing import StandardScaler
 except ImportError:
-    KMeans = None  # type: ignore[assignment,misc]
-    PCA = None  # type: ignore[assignment,misc]
-    NearestNeighbors = None  # type: ignore[assignment,misc]
-    StandardScaler = None  # type: ignore[assignment,misc]
+    KMeans = None
+    PCA = None
+    NearestNeighbors = None
+    StandardScaler = None
 
 
 @dataclass
