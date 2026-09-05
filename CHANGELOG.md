@@ -10,6 +10,13 @@
   inferential wrapper, orthology profile invariants, and species-tree
   invariants with caller-declared rootedness provenance. The hymenoptera
   cross-species runner validates provenance before writing any artifact.
+  Extended additively: optional fail-closed-when-declared bindings for the
+  data-root snapshot id, cohort inclusion/exclusion denominators, per-artifact
+  paths, metadata-harmonization review state, and species-tree source plus
+  branch-length scale; new non-analysis roles `stopped`/`unavailable`
+  (statistical_analysis_plan sections 3, 4, 8, 9) that cannot carry
+  result-implying fields, rendered as additive `analysis_provenance_*`
+  summary lines.
 - `metainformant.rna.engine.preflight`: mandatory start-of-run campaign
   preflight. `StreamingPipelineOrchestrator.run_all()` now probes data-root
   write access (create/rename/stat/unlink) and bare `amalgkit` PATH resolution
