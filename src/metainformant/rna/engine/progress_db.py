@@ -579,10 +579,10 @@ class ProgressDB:
         """Close the database connection."""
         self._conn.close()
 
-    def __enter__(self):
+    def __enter__(self) -> "ProgressDB":
         return self
 
-    def __exit__(self, *args):
+    def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
         self.close()
 
     def __repr__(self) -> str:
