@@ -43,8 +43,8 @@ __all__ = [
     "AnalysisProvenance",
     "DESCRIPTIVE_ROLE",
     "INFERENTIAL_ROLE",
-    "OrthologyInvariantError",
     "ProvenanceError",
+    "SensitivityAnalysis",
     "StatisticsContractError",
     "TreeInvariantError",
     "benjamini_hochberg_fdr",
@@ -53,6 +53,7 @@ __all__ = [
     "result_role",
     "validate_analysis_provenance",
     "validate_orthology_profile_invariants",
+    "validate_sensitivity_analysis",
     "validate_species_tree_invariants",
 ]
 
@@ -74,6 +75,11 @@ _PLACEHOLDER_STRINGS = frozenset(
     {"", "na", "n/a", "none", "null", "todo", "tbd", "placeholder", "unknown", "pending", "?"}
 )
 
+# Predeclared sensitivity-analysis expectation directions (plan section 7):
+# what the primary estimand is expected to do under the variation if the
+# result is robust. Anything outside this set is not a declaration.
+_ALLOWED_SENSITIVITY_DIRECTIONS = frozenset({"increase", "decrease", "either", "none"})
+
 
 class StatisticsContractError(ValueError):
     """Base class for fail-closed statistical-contract violations."""
@@ -89,6 +95,25 @@ class OrthologyInvariantError(StatisticsContractError):
 
 class TreeInvariantError(StatisticsContractError):
     """A species tree is unrooted, malformed, or has conflicting labels."""
+
+
+@dataclass(frozen=True)
+class SensitivityAnalysis:
+    """Predeclared sensitivity analysis (plan section 7).
+
+    Declares, before the analysis runs, one parameter that is varied around
+    a baseline, the exact values it takes, and the direction the primary
+    estimand is expected to move under the variation if the result is
+    robust. The record is frozen like :class:`AnalysisProvenance`: it is
+    part of the predeclared contract, not a post-hoc narrative.
+    """
+
+    name: str
+    varied_parameter: str
+    baseline_value: str
+    varied_values: tuple[str, ...]
+    expected_direction: str
+    notes: str = ""
 
 
 @dataclass(frozen=True)
@@ -130,6 +155,10 @@ class AnalysisProvenance:
     # analysis names the exact tree it used.
     species_tree_source: str | None = None
     species_tree_branch_length_scale: str | None = None
+    # Sensitivity-analysis registry (plan section 7): predeclared
+    # robustness checks that vary one parameter around a baseline. Empty by
+    # default; declared entries are validated fail-closed.
+    sensitivity_analyses: tuple[SensitivityAnalysis, ...] = ()
 
 
 def _require_declared(value: object, field: str) -> str:
@@ -140,6 +169,38 @@ def _require_declared(value: object, field: str) -> str:
             f"(got {value!r}); a declared value is required"
         )
     return value
+
+
+def validate_sensitivity_analysis(analysis: SensitivityAnalysis) -> None:
+    """Fail closed on missing, placeholder, or inconsistent sensitivity fields.
+
+    Raises:
+        TypeError: If ``analysis`` is not a :class:`SensitivityAnalysis`.
+        ProvenanceError: If the name, varied parameter, or baseline value is
+            missing or a placeholder; if ``varied_values`` is not a
+            non-empty tuple of declared strings; or if
+            ``expected_direction`` is not one of the allowed directions.
+    """
+    if not isinstance(analysis, SensitivityAnalysis):
+        raise TypeError(
+            "validate_sensitivity_analysis requires a SensitivityAnalysis record; "
+            "ad-hoc dictionaries cannot predeclare a sensitivity check"
+        )
+    _require_declared(analysis.name, "sensitivity name")
+    _require_declared(analysis.varied_parameter, "sensitivity varied_parameter")
+    _require_declared(analysis.baseline_value, "sensitivity baseline_value")
+    if not isinstance(analysis.varied_values, tuple) or not analysis.varied_values:
+        raise ProvenanceError(
+            "sensitivity varied_values must be a non-empty tuple of varied values, "
+            f"got {analysis.varied_values!r}"
+        )
+    for value in analysis.varied_values:
+        _require_declared(value, "sensitivity varied_values entry")
+    if analysis.expected_direction not in _ALLOWED_SENSITIVITY_DIRECTIONS:
+        raise ProvenanceError(
+            f"sensitivity expected_direction must be one of "
+            f"{sorted(_ALLOWED_SENSITIVITY_DIRECTIONS)}, got {analysis.expected_direction!r}"
+        )
 
 
 def validate_analysis_provenance(record: AnalysisProvenance) -> None:
@@ -156,7 +217,10 @@ def validate_analysis_provenance(record: AnalysisProvenance) -> None:
             ``'descriptive'`` (no inferential test was performed); a real
             declared family, BH-FDR | Benjamini-Hochberg | Bonferroni
             method, and positive tested-feature count are required exactly
-            when the role is ``'inferential'``.
+            when the role is ``'inferential'``. Each entry of
+            ``sensitivity_analyses`` is validated in full
+            (:func:`validate_sensitivity_analysis`), and a record with a
+            non-analysis role must not declare any.
         TypeError: If ``record`` is not an :class:`AnalysisProvenance`.
     """
     if not isinstance(record, AnalysisProvenance):
@@ -193,6 +257,12 @@ def validate_analysis_provenance(record: AnalysisProvenance) -> None:
                     f"analysis_role={record.analysis_role!r} records a halted or "
                     f"unavailable analysis, so {field}={value!r} must not be declared"
                 )
+        if record.sensitivity_analyses:
+            raise ProvenanceError(
+                f"analysis_role={record.analysis_role!r} records a halted or "
+                f"unavailable analysis, so sensitivity_analyses="
+                f"{record.sensitivity_analyses!r} must not be declared"
+            )
         return
 
     if not isinstance(record.random_seed, int) or isinstance(record.random_seed, bool) or record.random_seed < 0:
@@ -299,6 +369,13 @@ def validate_analysis_provenance(record: AnalysisProvenance) -> None:
         for name, path in record.artifact_paths.items():
             _require_declared(name, "artifact_paths key")
             _require_declared(path, f"artifact_paths[{name!r}]")
+    if not isinstance(record.sensitivity_analyses, tuple):
+        raise ProvenanceError(
+            "sensitivity_analyses must be a tuple of SensitivityAnalysis records, "
+            f"got {type(record.sensitivity_analyses).__name__}"
+        )
+    for sensitivity in record.sensitivity_analyses:
+        validate_sensitivity_analysis(sensitivity)
 
 
 def render_analysis_provenance_block(record: AnalysisProvenance) -> list[str]:
@@ -350,6 +427,19 @@ def render_analysis_provenance_block(record: AnalysisProvenance) -> list[str]:
             f"analysis_provenance_artifact_{name}: {record.artifact_paths[name]}"
             for name in sorted(record.artifact_paths)
         )
+    for index, sensitivity in enumerate(record.sensitivity_analyses, start=1):
+        lines.extend(
+            f"analysis_provenance_sensitivity_{index}_{field}: {value}"
+            for field, value in (
+                ("name", sensitivity.name),
+                ("varied_parameter", sensitivity.varied_parameter),
+                ("baseline_value", sensitivity.baseline_value),
+                ("varied_values", ",".join(sensitivity.varied_values)),
+                ("expected_direction", sensitivity.expected_direction),
+            )
+        )
+        if sensitivity.notes:
+            lines.append(f"analysis_provenance_sensitivity_{index}_notes: {sensitivity.notes}")
     lines.append(f"analysis_provenance_software_versions: {versions}")
     return lines
 

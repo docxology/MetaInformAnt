@@ -15,7 +15,7 @@ All fixtures are small deterministic real pandas/numpy data. No mocks,
 no network, no live data root.
 """
 
-from __future__ import annotations
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -31,6 +31,7 @@ from metainformant.rna.analysis.statistics_contract import (
     AnalysisProvenance,
     OrthologyInvariantError,
     ProvenanceError,
+    SensitivityAnalysis,
     StatisticsContractError,
     TreeInvariantError,
     benjamini_hochberg_fdr,
@@ -39,6 +40,7 @@ from metainformant.rna.analysis.statistics_contract import (
     result_role,
     validate_analysis_provenance,
     validate_orthology_profile_invariants,
+    validate_sensitivity_analysis,
     validate_species_tree_invariants,
 )
 
@@ -62,6 +64,19 @@ def _provenance(**overrides) -> AnalysisProvenance:
     )
     fields.update(overrides)
     return AnalysisProvenance(**fields)
+
+
+def _sensitivity(**overrides: Any) -> SensitivityAnalysis:
+    """A valid predeclared sensitivity analysis with optional field overrides."""
+    fields: dict[str, Any] = dict(
+        name="resampling_fraction_stability",
+        varied_parameter="feature_resampling_fraction",
+        baseline_value="0.8",
+        varied_values=("0.5", "0.6", "0.9"),
+        expected_direction="none",
+    )
+    fields.update(overrides)
+    return SensitivityAnalysis(**fields)
 
 
 def _species_profiles(n_features: int = 60) -> dict[str, pd.Series]:
@@ -155,6 +170,96 @@ class TestAnalysisProvenanceValidation:
     def test_render_refuses_placeholder_records(self) -> None:
         with pytest.raises(ProvenanceError):
             render_analysis_provenance_block(_provenance(estimand="unknown"))
+
+
+# =============================================================================
+# Sensitivity-analysis registry (plan section 7)
+# =============================================================================
+
+
+class TestSensitivityAnalysisRegistry:
+    def test_constructs_and_validates(self) -> None:
+        analysis = _sensitivity()
+        assert analysis.name == "resampling_fraction_stability"
+        assert analysis.varied_parameter == "feature_resampling_fraction"
+        assert analysis.baseline_value == "0.8"
+        assert analysis.varied_values == ("0.5", "0.6", "0.9")
+        assert analysis.expected_direction == "none"
+        assert analysis.notes == ""
+        validate_sensitivity_analysis(analysis)
+
+    @pytest.mark.parametrize(
+        "overrides",
+        [
+            {"name": ""},
+            {"name": "TBD"},
+            {"varied_parameter": "n/a"},
+            {"baseline_value": "unknown"},
+            {"varied_values": ()},
+            {"varied_values": ["0.5", "0.9"]},
+            {"varied_values": ("0.5", "")},
+            {"varied_values": ("0.5", "tbd")},
+            {"expected_direction": "higher"},
+            {"expected_direction": ""},
+        ],
+    )
+    def test_placeholder_empty_or_bad_direction_fails_closed(self, overrides: dict[str, Any]) -> None:
+        with pytest.raises(ProvenanceError):
+            validate_sensitivity_analysis(_sensitivity(**overrides))
+
+    def test_ad_hoc_dict_is_refused(self) -> None:
+        with pytest.raises(TypeError):
+            validate_sensitivity_analysis(_sensitivity().__dict__)  # type: ignore[arg-type]
+
+    def test_non_analysis_role_must_not_declare_sensitivity_analyses(self) -> None:
+        with pytest.raises(ProvenanceError) as excinfo:
+            validate_analysis_provenance(
+                _provenance(
+                    analysis_role="stopped",
+                    sensitivity_analyses=(_sensitivity(),),
+                )
+            )
+        assert "sensitivity_analyses" in str(excinfo.value)
+
+    def test_non_tuple_registry_is_refused(self) -> None:
+        with pytest.raises(ProvenanceError):
+            validate_analysis_provenance(_provenance(sensitivity_analyses=[_sensitivity()]))
+
+    def test_render_covers_index_and_fields(self) -> None:
+        record = _provenance(
+            sensitivity_analyses=(
+                _sensitivity(),
+                _sensitivity(name="temperature_shift", varied_values=("15c", "25c")),
+            )
+        )
+        lines = render_analysis_provenance_block(record)
+        joined = "\n".join(lines)
+        assert "analysis_provenance_sensitivity_1_name: resampling_fraction_stability" in joined
+        assert "analysis_provenance_sensitivity_1_varied_parameter: feature_resampling_fraction" in joined
+        assert "analysis_provenance_sensitivity_1_baseline_value: 0.8" in joined
+        assert "analysis_provenance_sensitivity_1_varied_values: 0.5,0.6,0.9" in joined
+        assert "analysis_provenance_sensitivity_1_expected_direction: none" in joined
+        # Empty notes are omitted entirely; only non-empty notes render.
+        assert "analysis_provenance_sensitivity_1_notes" not in joined
+        assert "analysis_provenance_sensitivity_2_name: temperature_shift" in joined
+        assert "analysis_provenance_sensitivity_2_varied_values: 15c,25c" in joined
+        # Sensitivity lines are additive: they keep the standard key prefix.
+        assert all(line.startswith("analysis_provenance_sensitivity_") for line in lines if "_sensitivity_" in line)
+
+    def test_notes_rendered_only_when_non_empty(self) -> None:
+        record = _provenance(sensitivity_analyses=(_sensitivity(notes="checked on pilot cohort"),))
+        joined = "\n".join(render_analysis_provenance_block(record))
+        assert "analysis_provenance_sensitivity_1_notes: checked on pilot cohort" in joined
+
+    def test_full_provenance_round_trip(self) -> None:
+        record = _provenance(sensitivity_analyses=(_sensitivity(),))
+        validate_analysis_provenance(record)
+        lines = render_analysis_provenance_block(record)
+        assert lines == render_analysis_provenance_block(record)
+        assert all(": " in line for line in lines)
+        joined = "\n".join(lines)
+        assert "analysis_provenance_sensitivity_1_varied_values: 0.5,0.6,0.9" in joined
+        assert "analysis_provenance_sensitivity_1_expected_direction: none" in joined
 
 
 # =============================================================================
