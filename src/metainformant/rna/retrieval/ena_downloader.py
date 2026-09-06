@@ -46,6 +46,8 @@ def _run_command_in_process_group(
     timeout: int,
     *,
     env: Mapping[str, str] | None = None,
+    output_dirs: list[Path] | None = None,
+    stall_timeout: int = 0,
 ) -> subprocess.CompletedProcess[str]:
     """Run a transfer command and terminate its descendants on timeout.
 
@@ -53,6 +55,14 @@ def _run_command_in_process_group(
     in their own process group makes timeout recovery uniform and prevents a
     future wrapper or retry helper from surviving as an orphan. Partial files
     are intentionally left to the caller so a later run can resume them.
+
+    When ``output_dirs`` is non-empty and ``stall_timeout`` > 0, the runner
+    polls the total size of those directories every 30 seconds and terminates
+    the process group early once no output has grown for ``stall_timeout``
+    seconds — a stalled writer then fails in minutes instead of holding its
+    slot for the full ``timeout``. The raised
+    :class:`subprocess.TimeoutExpired` carries ``output=b"stalled"`` so
+    callers can distinguish a stall from a plain timeout.
     """
 
     process = subprocess.Popen(
@@ -63,9 +73,8 @@ def _run_command_in_process_group(
         start_new_session=True,
         env=dict(env) if env is not None else None,
     )
-    try:
-        stdout, stderr = process.communicate(timeout=timeout)
-    except subprocess.TimeoutExpired as exc:
+
+    def _terminate_group() -> tuple[str, str]:
         try:
             os.killpg(process.pid, signal.SIGTERM)
         except (OSError, ProcessLookupError):
@@ -78,6 +87,59 @@ def _run_command_in_process_group(
             except (OSError, ProcessLookupError):
                 process.kill()
             stdout, stderr = process.communicate()
+        return stdout or "", stderr or ""
+
+    if output_dirs and stall_timeout > 0:
+        stalled = False
+        last_size = -1
+        last_growth = time.monotonic()
+        elapsed = 0
+        while True:
+            try:
+                process.wait(timeout=30)
+                break
+            except subprocess.TimeoutExpired:
+                pass
+            elapsed += 30
+            size = 0
+            for directory in output_dirs:
+                root = Path(directory)
+                if not root.is_dir():
+                    continue
+                for entry in root.rglob("*"):
+                    try:
+                        if entry.is_file():
+                            size += entry.stat().st_size
+                    except OSError:
+                        continue
+            if size > last_size:
+                last_size = size
+                last_growth = time.monotonic()
+            elif time.monotonic() - last_growth >= stall_timeout:
+                stalled = True
+            if stalled:
+                _terminate_group()
+                raise subprocess.TimeoutExpired(
+                    command,
+                    stall_timeout,
+                    output=b"stalled",
+                    stderr=b"output growth stopped",
+                )
+            if elapsed >= timeout:
+                stdout, stderr = _terminate_group()
+                raise subprocess.TimeoutExpired(
+                    command,
+                    timeout,
+                    output=stdout.encode() if stdout else b"",
+                    stderr=stderr.encode() if stderr else b"",
+                )
+        stdout, stderr = process.communicate()
+        return subprocess.CompletedProcess(command, process.returncode, stdout, stderr)
+
+    try:
+        stdout, stderr = process.communicate(timeout=timeout)
+    except subprocess.TimeoutExpired as exc:
+        stdout, stderr = _terminate_group()
         raise subprocess.TimeoutExpired(
             command,
             timeout,

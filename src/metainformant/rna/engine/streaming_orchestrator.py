@@ -1962,6 +1962,9 @@ class StreamingPipelineOrchestrator:
         self.sra_validation_timeout_seconds = _duration_setting("AMALGKIT_PIPELINE_SRA_VALIDATE_TIMEOUT_SECONDS", 600)
         self.compression_timeout_seconds = _duration_setting("AMALGKIT_PIPELINE_COMPRESSION_TIMEOUT_SECONDS", 1800)
         self.quant_timeout_seconds = _duration_setting("AMALGKIT_PIPELINE_QUANT_TIMEOUT_SECONDS", 7200)
+        self.quant_stall_timeout_seconds = _duration_setting(
+            "AMALGKIT_PIPELINE_QUANT_STALL_TIMEOUT_SECONDS", 0
+        )
 
         local_quant_cache = os.environ.get("AMALGKIT_LOCAL_QUANT_SCRATCH_DIR", "").strip()
         self.local_quant_scratch_dir = Path(local_quant_cache).expanduser() if local_quant_cache else None
@@ -2807,7 +2810,15 @@ class StreamingPipelineOrchestrator:
                     f"\n[{time.strftime('%Y-%m-%d %H:%M:%S')}] Quant batch {batch_index} START: {' '.join(run_cmd)}\n"
                 )
 
-            result = _run_command_in_process_group(run_cmd, self.quant_timeout_seconds)
+            quant_output_dirs = [work_dir / "quant" / srr_id]
+            if scratch_root is not None:
+                quant_output_dirs.append(Path(scratch_root))
+            result = _run_command_in_process_group(
+                run_cmd,
+                self.quant_timeout_seconds,
+                output_dirs=quant_output_dirs,
+                stall_timeout=self.quant_stall_timeout_seconds,
+            )
 
             with open(log_path, "a") as log_f:
                 log_f.write(
@@ -2850,14 +2861,20 @@ class StreamingPipelineOrchestrator:
                     error_msg = line.strip()[:120]
                     break
             return False, error_msg
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as exc:
+            stalled = exc.output == b"stalled"
+            label = "Quant stalled" if stalled else "Quant timeout"
             logger.error(
-                "Quant timeout batch %s after %s",
+                "%s batch %s after %s",
+                label,
                 batch_index,
-                _format_duration(self.quant_timeout_seconds),
+                _format_duration(self.quant_stall_timeout_seconds if stalled else self.quant_timeout_seconds),
             )
             with open(log_path, "a") as log_f:
-                log_f.write(f"TIMEOUT after {self.quant_timeout_seconds}s\n")
+                log_f.write(f"{'STALL' if stalled else 'TIMEOUT'} detected for batch {batch_index}\n")
+            if stalled:
+                stall_desc = _format_duration(self.quant_stall_timeout_seconds)
+                return False, f"Quant stalled (no output growth for {stall_desc})"
             return False, f"Quant timeout (>{_format_duration(self.quant_timeout_seconds)})"
         except Exception as e:
             logger.error(f"Quant exception batch {batch_index}: {e}")

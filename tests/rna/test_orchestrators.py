@@ -329,6 +329,66 @@ class TestAcrossSpeciesOrchestrator:
         for sp in div.index:
             assert abs(div.loc[sp, sp]) < 1e-10
 
+    def test_missing_pair_map_fails_closed(self, tmp_path):
+        """A species with no ortholog rows connecting it to the reference has
+        no pair map; it must fail loudly, not silently vanish from the
+        divergence matrix."""
+        import pandas as pd
+
+        # Two species whose ortholog table rows never co-occur: no orthogroup
+        # contains genes of both, so the (spX, ref) pair map is empty/missing.
+        table = tmp_path / "disjoint_orthologs.tsv"
+        table.write_text(
+            "Orthogroup\tref_species\tspX\n"
+            "OG1\tref_g1\t\n"
+            "OG2\tref_g2\t\n"
+            "OG3\t\tspx_g1\n"
+            "OG4\t\tspx_g2\n"
+        )
+        ref_expr = pd.DataFrame({"s1": [1.0, 2.0]}, index=["ref_g1", "ref_g2"])
+        ref_path = tmp_path / "ref.tsv"
+        ref_expr.to_csv(ref_path, sep="\t")
+        spx_expr = pd.DataFrame({"s1": [3.0, 4.0]}, index=["spx_g1", "spx_g2"])
+        spx_path = tmp_path / "spx.tsv"
+        spx_expr.to_csv(spx_path, sep="\t")
+
+        orch = AcrossSpeciesOrchestrator(table, tmp_path / "output")
+        orch.load_orthologs()
+        orch.load_species_expression("ref_species", ref_path)
+        orch.load_species_expression("spX", spx_path)
+        with pytest.raises(ValueError, match="[Nn]o ortholog map"):
+            orch.run_comparative_analysis()
+
+    def test_id_space_mismatch_fails_closed(self, tmp_path, ortholog_table):
+        """A reference expression matrix in a different ID space must fail
+        closed instead of producing degenerate ref-pair divergences."""
+        import numpy as np
+        import pandas as pd
+
+        orth_path, orth_df = ortholog_table
+        orch = AcrossSpeciesOrchestrator(orth_path, tmp_path / "output")
+        orch.load_orthologs()
+        # Reference expression uses a DIFFERENT identifier space than the
+        # ortholog table's reference column (ortho_* vs gene_*).
+        mismatched = pd.DataFrame(
+            np.random.lognormal(size=(50, 3)),
+            index=[f"gene_{i}" for i in range(50)],
+            columns=["Apis_mellifera_s0", "Apis_mellifera_s1", "Apis_mellifera_s2"],
+        )
+        mismatched_path = tmp_path / "mismatched.tsv"
+        mismatched.to_csv(mismatched_path, sep="\t")
+        orch.load_species_expression("Apis_mellifera", mismatched_path)
+        aligned = pd.DataFrame(
+            np.random.lognormal(size=(50, 3)),
+            index=[f"ortho_{i}" for i in range(50)],
+            columns=["Pogonomyrmex_barbatus_s0", "Pogonomyrmex_barbatus_s1", "Pogonomyrmex_barbatus_s2"],
+        )
+        aligned_path = tmp_path / "aligned.tsv"
+        aligned.to_csv(aligned_path, sep="\t")
+        orch.load_species_expression("Pogonomyrmex_barbatus", aligned_path)
+        with pytest.raises(ValueError, match="shares zero genes"):
+            orch.run_comparative_analysis()
+
     def test_no_expression_data_raises(self, tmp_path, ortholog_table):
         """Test that running analysis without loading expression raises error."""
         orth_path, _ = ortholog_table

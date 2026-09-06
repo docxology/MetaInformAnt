@@ -116,14 +116,42 @@ class AcrossSpeciesOrchestrator:
         logger.info(f"Mapping all species to reference space: {ref_species}")
 
         shared_expr = {ref_species: self.species_expressions[ref_species]}
+        ref_axis = set(self.species_expressions[ref_species].index)
 
         for sp in self.species_expressions:
             if sp == ref_species:
                 continue
             pair_map = orth_maps.get((sp, ref_species))
-            if pair_map:
-                mapped = map_expression_to_orthologs(self.species_expressions[sp], pair_map)
-                shared_expr[sp] = mapped
+            if not pair_map:
+                raise ValueError(
+                    f"No ortholog map from '{sp}' to the reference axis "
+                    f"('{ref_species}'); the ortholog table has no usable rows "
+                    "for this pair, so including the species would silently "
+                    "drop it from the divergence matrix."
+                )
+            mapped = map_expression_to_orthologs(self.species_expressions[sp], pair_map)
+            if mapped.empty:
+                raise ValueError(
+                    f"Ortholog mapping for '{sp}' produced an empty expression "
+                    "matrix: no source genes matched the ortholog table. Check "
+                    "that the species' expression row IDs and the ortholog "
+                    "table column share an identifier space."
+                )
+            shared_expr[sp] = mapped
+
+        for sp, expr in shared_expr.items():
+            if sp == ref_species:
+                continue
+            overlap = len(expr.index.intersection(ref_axis))
+            if overlap == 0:
+                raise ValueError(
+                    f"Mapped expression for '{sp}' shares zero genes with the "
+                    f"reference axis ({len(expr.index)} mapped rows vs "
+                    f"{len(ref_axis)} reference rows); the identifier spaces "
+                    "differ, so ref-pair divergences would be degenerate. "
+                    "Verify that the ortholog table's reference column and "
+                    "the reference expression matrix use the same ID space."
+                )
 
         div_matrix = compute_expression_divergence_matrix(
             shared_expr,
